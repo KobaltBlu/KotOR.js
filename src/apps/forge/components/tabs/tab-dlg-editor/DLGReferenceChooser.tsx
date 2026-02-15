@@ -13,9 +13,9 @@
 
 import React, { useState, useEffect } from 'react';
 
-import { DLGTreeNode, DLGNodeReference } from '../../../interfaces/DLGTreeNode';
-import { DLGTreeModel } from '../../../utils/DLGTreeModel';
-import './DLGReferenceChooser.scss';
+import { DLGTreeNode, DLGNodeReference } from '@/apps/forge/interfaces/DLGTreeNode';
+import { DLGTreeModel } from '@/apps/forge/utils/DLGTreeModel';
+import "@/apps/forge/components/tabs/tab-dlg-editor/DLGReferenceChooser.scss";
 
 interface DLGReferenceChooserProps {
   references: DLGNodeReference[];

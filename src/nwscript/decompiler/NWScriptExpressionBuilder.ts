@@ -1,10 +1,8 @@
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import { createScopedLogger, LogScope } from "../../utility/Logger";
-
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-
-import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
-import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
+import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 
 
 const log = createScopedLogger(LogScope.NWScript);
@@ -15,7 +13,7 @@ import {
   OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
   OP_NEG, OP_COMPI, OP_NOTI,
   OP_CPTOPBP, OP_CPTOPSP
-} from '../NWScriptOPCodes';
+} from '@/nwscript/NWScriptOPCodes';
 
 /**
  * Builds expressions from stack-based instructions.

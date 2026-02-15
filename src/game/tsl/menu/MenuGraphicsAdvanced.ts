@@ -1,8 +1,7 @@
-import { MenuGraphicsAdvanced as K1_MenuGraphicsAdvanced } from "../../kotor/KOTOR";
-
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
-import { TextureLoaderState } from "../../../loaders/TextureLoaderState";
+import { MenuGraphicsAdvanced as K1_MenuGraphicsAdvanced } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "@/gui";
+import { TextureLoaderState } from "@/loaders/TextureLoaderState";
 
 /**
  * MenuGraphicsAdvanced class.

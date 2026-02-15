@@ -1,16 +1,16 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 
 const LTR_HEADER_LENGTH = 9;
 
 /**
  * LTRObject class
- * 
+ *
  * Class representing a LTR file in memory.
  * uses Markov Chains to generate random names for character generation ingame
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LTRObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -45,7 +45,7 @@ export class LTRObject {
 
   }
 
-  openFile(file: string){
+  openFile(_file: string){
 
   }
 
@@ -84,11 +84,11 @@ export class LTRObject {
         for(let j = 0; j < this.charCount; j++){
           this.doubleArray[i][0][j] = br.readSingle();
         }
-  
+
         for(let j = 0; j < this.charCount; j++){
           this.doubleArray[i][1][j] = br.readSingle();
         }
-  
+
         for(let j = 0; j < this.charCount; j++){
           this.doubleArray[i][2][j] = br.readSingle();
         }
@@ -106,11 +106,11 @@ export class LTRObject {
           for(let k = 0; k < this.charCount; k++){
             this.tripleArray[i][j][0][k] = br.readSingle();
           }
-    
+
           for(let k = 0; k < this.charCount; k++){
             this.tripleArray[i][j][1][k] = br.readSingle();
           }
-    
+
           for(let k = 0; k < this.charCount; k++){
             this.tripleArray[i][j][2][k] = br.readSingle();
           }
@@ -136,7 +136,7 @@ export class LTRObject {
     let i = 0;
     let wordIndex = 0;
     const chars = [];
-    
+
     let attempts = 0;
     const bGetFirstThree = true;
     let bGenerating = false;
@@ -146,7 +146,7 @@ export class LTRObject {
       for (i = 0, prob = Math.random(); i < this.charCount; i++)
         if (prob < this.singleArray[0][i])
           break;
-        
+
       if (i == this.charCount){
         continue;
       }
@@ -169,7 +169,7 @@ export class LTRObject {
         continue;
       }
       chars[wordIndex++] = i;
-      
+
       bGenerating = true;
       while(bGenerating && !bDone){
         prob = Math.random();
@@ -182,19 +182,19 @@ export class LTRObject {
             }
           }
         }
-  
-        if(!bGenerating){ 
+
+        if(!bGenerating){
           bDone = true;
-          break; 
+          break;
         }
-  
+
         for (i = 0; i < this.charCount; i++) {
           if (prob < this.tripleArray[chars[wordIndex-2]][chars[wordIndex-1]][1][i]) {
             chars[wordIndex++] = i;
             break;
           }
         }
-  
+
         if (i == this.charCount) {
           if (chars.length < 3 || ++attempts > 100){
             bGenerating = false;
@@ -202,7 +202,7 @@ export class LTRObject {
         }
       }
     }
-    
+
     return chars.map((value: number, index: number) => {
       return index == 0 ? letters[value].toUpperCase() : letters[value];
     }).join('') as string;

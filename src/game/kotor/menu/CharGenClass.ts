@@ -1,16 +1,15 @@
 import * as THREE from "three";
 
-import { CharGenClasses } from "../../CharGenClasses";
-
-import { GameMenu } from "../../../gui";
-import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import type { ModulePlayer } from "../../../module";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { CharGenClasses } from "@/game/CharGenClasses";
+import { GameMenu } from "@/gui";
+import type { GUIControl, GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { ModulePlayer } from "@/module";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { GameState } from "../../../GameState";
+import { GameState } from "@/GameState";
 
 /**
  * CharGenClass class.

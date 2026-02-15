@@ -1,12 +1,12 @@
 import * as THREE from "three";
 
-import { GameState } from "../GameState";
-import { MDLLoader } from "../loaders";
-import type { ModuleObject } from "../module";
-import { OdysseyModel } from "../odyssey";
-import type { TalentSpell } from "../talents";
-import { OdysseyModel3D } from "../three/odyssey";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { GameState } from "@/GameState";
+import { MDLLoader } from "@/loaders";
+import type { ModuleObject } from "@/module";
+import { OdysseyModel } from "@/odyssey";
+import type { TalentSpell } from "@/talents";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

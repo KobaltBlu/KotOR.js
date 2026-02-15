@@ -1,44 +1,29 @@
 import React, { useCallback, useEffect, useState } from "react"
 
-import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { FormField } from "../../form-field/FormField";
-import { InfoBubble } from "../../info-bubble/info-bubble";
-
-import { SubTab, SubTabHost } from "../../SubTabHost";
-import { UI3DRendererView } from "../../UI3DRendererView";
-
-import {
-  sanitizeResRef,
-  clampByte,
-  clampWord,
-  createNumberFieldHandler,
-  createByteFieldHandler,
-  createWordFieldHandler,
-  createBooleanFieldHandler,
-  createResRefFieldHandler,
-  createCExoStringFieldHandler,
-  createCExoLocStringFieldHandler,
-  createForgeCheckboxFieldHandler
-} from "../../../helpers/UTxEditorHelpers";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import * as KotOR from "../../../KotOR";
-import { ForgePlaceable } from "../../../module-editor/ForgePlaceable";
-import { TabUTIEditorState, TabUTPEditorState } from "../../../states/tabs";
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
+import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
+import { TabUTPEditorState } from "@/apps/forge/states/tabs";
 
 export const TabUTPEditor = function(props: BaseTabProps){
 
   const tab: TabUTPEditorState = props.tab as TabUTPEditorState;
-  const [selectedTab, setSelectedTab] = useState<string>('basic');
+  const [selectedTab, _setSelectedTab] = useState<string>('basic');
 
   const [animationState, setAnimationState] = useState<number>(0);
   const [appearance, setAppearance] = useState<number>(0);
   const [autoRemoveKey, setAutoRemoveKey] = useState<boolean>(false);
-  const [bodyBag, setBodyBag] = useState<boolean>(false);
+  const [_bodyBag, setBodyBag] = useState<boolean>(false);
   const [closeLockDC, setCloseLockDC] = useState<number>(0);
   const [comment, setComment] = useState<string>('');
   const [conversation, setConversation] = useState<string>('');
-  const [currentHP, setCurrentHP] = useState<number>(0);
+  const [_currentHP, setCurrentHP] = useState<number>(0);
   const [description, setDescription] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
   const [disarmDC, setDisarmDC] = useState<number>(0);
   const [faction, setFaction] = useState<number>(0);
@@ -71,10 +56,10 @@ export const TabUTPEditor = function(props: BaseTabProps){
   const [onUsed, setOnUsed] = useState<string>('');
   const [onUserDefined, setOnUserDefined] = useState<string>('');
   const [openLockDC, setOpenLockDC] = useState<number>(0);
-  const [paletteID, setPaletteID] = useState<number>(0);
+  const [_paletteID, setPaletteID] = useState<number>(0);
   const [partyInteract, setPartyInteract] = useState<boolean>(false);
   const [plot, setPlot] = useState<boolean>(false);
-  const [portraitId, setPortraitId] = useState<number>(0);
+  const [_portraitId, setPortraitId] = useState<number>(0);
   const [ref, setRef] = useState<number>(0);
   const [static_, setStatic] = useState<boolean>(false);
   const [tag, setTag] = useState<string>('');
@@ -89,20 +74,20 @@ export const TabUTPEditor = function(props: BaseTabProps){
   const [useable, setUseable] = useState<boolean>(false);
   const [will, setWill] = useState<number>(0);
 
-  const [kPlaceableAppearances, setKPlaceableAppearances] = useState<any[]>([]);
-  const [kFactions, setKFactions] = useState<any[]>([]);
+  const [kPlaceableAppearances, setKPlaceableAppearances] = useState<Record<string, string>[]>([]);
+  const [kFactions, setKFactions] = useState<Record<string, string>[]>([]);
 
   // Helper functions using ForgePlaceable methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgePlaceable, parser: (value: number) => number = (v) => v) => 
+const _onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgePlaceable, parser: (value: number) => number = (v) => v) =>
     tab.placeable.createNumberFieldHandler(setter, property, tab.placeable, tab, parser);
   
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgePlaceable) => 
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createByteFieldHandler(setter, property, tab.placeable, tab);
   
   const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgePlaceable) => 
     tab.placeable.createWordFieldHandler(setter, property, tab.placeable, tab);
   
-  const updateBooleanField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) => 
+  const _updateBooleanField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) => 
     tab.placeable.createBooleanFieldHandler(setter, property, tab.placeable, tab);
   
   const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgePlaceable) => 
@@ -209,7 +194,7 @@ export const TabUTPEditor = function(props: BaseTabProps){
               </FormField>
               <FormField label="Appearance" info="The appearance of the placeable. This is the model that will be used to display the placeable in-game.">
                 <select className="form-select" value={appearance} onChange={onUpdateByteField(setAppearance, 'appearance')}>
-                  {kPlaceableAppearances.map((appearance: any, index: number) => (
+                  {kPlaceableAppearances.map((appearance: Record<string, string>, index: number) => (
                     <option key={index} value={index}>{appearance.label}</option>
                   ))}
                 </select>
@@ -322,7 +307,7 @@ export const TabUTPEditor = function(props: BaseTabProps){
               <tr>
                 <td><label>Faction</label></td>
                 <td><select className="form-select" value={faction} onChange={onUpdateByteField(setFaction, 'faction')}>
-                  {kFactions.map((faction: any, index: number) => (
+                  {kFactions.map((faction: Record<string, string>, index: number) => (
                     <option key={index} value={index}>{faction.label}</option>
                   ))}
                 </select></td>

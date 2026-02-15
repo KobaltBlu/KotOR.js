@@ -1,11 +1,11 @@
-import { GameEngineType } from "../../../enums/engine";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUIButton } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { GameEngineType } from "@/enums/engine";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { TwoDAObject } from "../../../resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
  * InGameConfirm class.

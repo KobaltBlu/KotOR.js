@@ -23,7 +23,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
     setOpenSubmenu(null);
   }, [openMenu]);
 
-  const handleSubmenuClick = useCallback((label: string) => {
+  const _handleSubmenuClick = useCallback((label: string) => {
     setOpenSubmenu(openSubmenu === label ? null : label);
   }, [openSubmenu]);
 
@@ -144,7 +144,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
             onMouseEnter={() => setOpenSubmenu(itemPath)}
             onMouseLeave={() => setOpenSubmenu(null)}
           >
-            {item.children!.map((child, childIndex) => renderMenuItem(child, childIndex, itemPath))}
+            {(item.children ?? []).map((child, childIndex) => renderMenuItem(child, childIndex, itemPath))}
           </div>
         )}
       </div>

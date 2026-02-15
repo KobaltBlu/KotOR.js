@@ -1,9 +1,9 @@
-import * as KotOR from "../KotOR";
-import { ItemPropertyEntry } from "../states/tabs/TabUTIEditorState";
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ItemPropertyEntry } from "@/apps/forge/states/tabs/TabUTIEditorState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-
-import { ForgeGameObject } from "./ForgeGameObject";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -40,7 +40,14 @@ export class ForgeItem extends ForgeGameObject {
     if(buffer){
       this.loadFromBuffer(buffer);
     }
-    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
+      this.onPropertyChange(
+        args[0] as string,
+        args[1] as string | number | boolean | object,
+        args[2] as string | number | boolean | object
+      );
+    };
+    this.addEventListener('onPropertyChange', onPropChange);
   }
 
   onPropertyChange(property: string, newValue: string | number | boolean | object, oldValue: string | number | boolean | object){
@@ -147,7 +154,7 @@ export class ForgeItem extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'AddCost', this.addCost) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'BaseItem', this.baseItem) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Charges', this.charges) );
@@ -186,7 +193,7 @@ export class ForgeItem extends ForgeGameObject {
   }
 
   loadBaseItem(){
-    if(!this.baseItem){ 
+    if(!this.baseItem){
       this.kBaseItem = {};
       return this.kBaseItem;
     }
@@ -208,10 +215,10 @@ export class ForgeItem extends ForgeGameObject {
   async loadModel(){
     if(this.model){
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch(e){}
+      try{ this.model.dispose(); }catch{ /* ignore */ }
     }
 
-    if(!this.baseItem){ 
+    if(!this.baseItem){
       this.model = new KotOR.OdysseyModel3D();
       return this.model;
     }

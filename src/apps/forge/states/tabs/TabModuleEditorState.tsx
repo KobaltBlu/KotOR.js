@@ -1,31 +1,29 @@
 import React from "react";
 import * as THREE from 'three';
 
-import { TabModuleEditor } from "../../components/tabs/tab-module-editor/TabModuleEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { ForgeArea } from "../../module-editor/ForgeArea";
-import { ForgeCamera } from "../../module-editor/ForgeCamera";
-import { ForgeCreature } from "../../module-editor/ForgeCreature";
-import { ForgeDoor } from "../../module-editor/ForgeDoor";
-import { ForgeEncounter } from "../../module-editor/ForgeEncounter";
-import { ForgeGameObject } from "../../module-editor/ForgeGameObject";
-import { ForgeItem } from "../../module-editor/ForgeItem";
-import { ForgeModule } from "../../module-editor/ForgeModule";
-import { ForgePlaceable } from "../../module-editor/ForgePlaceable";
-import { ForgeRoom } from "../../module-editor/ForgeRoom";
-import { ForgeSound } from "../../module-editor/ForgeSound";
-import { ForgeStore } from "../../module-editor/ForgeStore";
-import { ForgeTrigger } from "../../module-editor/ForgeTrigger";
-import { ForgeWaypoint } from "../../module-editor/ForgeWaypoint";
-import { ForgeState } from "../../states/ForgeState";
-import { ModalBlueprintBrowserState, BlueprintType } from "../../states/modal/ModalBlueprintBrowserState";
-
-import { createScopedLogger, LogScope } from "../../../../utility/Logger";
-import * as KotOR from '../../KotOR';
-import { Project } from "../../Project";
-import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "../../UI3DRenderer";
-
-import { TabState } from "./";
+import { TabModuleEditor } from "@/apps/forge/components/tabs/tab-module-editor/TabModuleEditor";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from '@/apps/forge/KotOR';
+import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
+import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
+import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
+import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
+import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
+import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
+import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
+import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
+import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { Project } from "@/apps/forge/Project";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalBlueprintBrowserState, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
+import { TabState } from "@/apps/forge/states/tabs";
+import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "@/apps/forge/UI3DRenderer";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -77,12 +75,13 @@ export class TabModuleEditorState extends TabState {
   private mouseVector: THREE.Vector2 = new THREE.Vector2();
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace('TabModuleEditorState constructor entry');
     super(options);
     this.singleInstance = true;
     this.isClosable = true;
 
-    // Create UI3DRenderer first
     this.ui3DRenderer = new UI3DRenderer();
+    log.trace('TabModuleEditorState constructor ui3DRenderer created');
 
     // Geometry
     this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
@@ -143,21 +142,24 @@ export class TabModuleEditorState extends TabState {
         }
       });
     }
+    log.trace('TabModuleEditorState constructor exit');
   }
 
   show(): void {
+    log.trace('TabModuleEditorState show');
     super.show();
     this.ui3DRenderer.enabled = true;
     this.ui3DRenderer.render();
   }
 
   hide(): void {
+    log.trace('TabModuleEditorState hide');
     super.hide();
     this.ui3DRenderer.enabled = false;
   }
 
   destroy(): void {
-    // Dispose ghost preview
+    log.trace('TabModuleEditorState destroy entry');
     if(this.ghostPreviewMesh){
       this.ui3DRenderer.scene.remove(this.ghostPreviewMesh);
       this.ghostPreviewMesh.geometry.dispose();
@@ -165,12 +167,11 @@ export class TabModuleEditorState extends TabState {
     }
 
     this.ui3DRenderer.destroy();
-    // this.disposeLayout();
     super.destroy();
+    log.trace('TabModuleEditorState destroy exit');
   }
 
   animate(delta: number = 0){
-    // Don't update ghost preview every frame - only on mouse move
     this.processEventListener('onAnimate', [delta]);
 
     // Update the module area (which updates all game objects)
@@ -324,6 +325,7 @@ export class TabModuleEditorState extends TabState {
   }
 
   setControlMode(mode: TabModuleEditorControlMode){
+    log.trace('TabModuleEditorState setControlMode', mode);
     this.controlMode = mode;
 
     const isTransformTool =

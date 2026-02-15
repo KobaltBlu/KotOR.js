@@ -1,14 +1,14 @@
 import * as path from "path";
 
-import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
-import { ERFObject } from "../resource/ERFObject";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { ApplicationProfile } from "../utility/ApplicationProfile";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { ERFObject } from "@/resource/ERFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { IERFKeyEntry } from "../interface/resource/IERFKeyEntry";
+import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
 
 /**
  * CurrentGame class.

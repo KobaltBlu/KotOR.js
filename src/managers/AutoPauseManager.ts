@@ -1,20 +1,21 @@
-import { GameState } from "../GameState";
-import type { INIConfig } from "../engine/INIConfig";
-import { AutoPauseState } from "../enums/engine/AutoPauseState";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import type { INIConfig } from "@/engine/INIConfig";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { EngineState } from "@/enums/engine/EngineState";
+import { GameState } from "@/GameState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
-import { EngineState } from "../enums/engine/EngineState";
 
 /**
  * AutoPauseManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AutoPauseManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+/* eslint-disable @typescript-eslint/no-extraneous-class -- Manager is a static namespace by design */
 export class AutoPauseManager {
 
   static INIConfig: INIConfig;
@@ -32,7 +33,7 @@ export class AutoPauseManager {
   static AutoPauseReason: Map<AutoPauseState, string> = new Map();
   static AutoPauseMessages: Map<AutoPauseState, string> = new Map();
 
-  static onPauseStateChange: Function;
+  static onPauseStateChange: (type: AutoPauseState) => void;
 
   static Init(){
     log.info('AutoPauseManager.Init', this.INIConfig.getProperty('Autopause Options.End Of Combat Round'))
@@ -73,8 +74,9 @@ export class AutoPauseManager {
     GameState.MenuManager.InGamePause.LBL_PAUSEREASON.setText(this.AutoPauseReason.get(type));
     // MenuManager.InGamePause.LBL_PRESS.setText(this.AutoPauseMessages.get(type));
 
-    if(typeof this.onPauseStateChange === 'function'){
-      this.onPauseStateChange(type);
+    const cb = this.onPauseStateChange;
+    if (typeof cb === 'function') {
+      cb(type);
     }
 
     return true;

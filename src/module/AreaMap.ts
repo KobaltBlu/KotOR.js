@@ -1,11 +1,11 @@
 import * as THREE from "three";
 
-import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
+import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 
-import type { ModuleWaypoint } from "./ModuleWaypoint";
 
 /**
 * AreaMap class.
@@ -43,8 +43,8 @@ export class AreaMap {
   mapNotes: ModuleWaypoint[] = [];
 
   eventListeners: {
-    mapNoteAdded: Function[],
-    mapNoteRemoved: Function[],
+    mapNoteAdded: ((...args: (string | number | boolean | object)[]) => void)[],
+    mapNoteRemoved: ((...args: (string | number | boolean | object)[]) => void)[],
   } = {
     mapNoteAdded: [],
     mapNoteRemoved: []
@@ -355,7 +355,7 @@ export class AreaMap {
     return dataStruct;
   }
 
-  addEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', callback: Function){
+  addEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', callback: (...args: (string | number | boolean | object)[]) => void){
     if(!(typeof callback === 'function')) return;
 
     const list = this.eventListeners[name];
@@ -365,7 +365,7 @@ export class AreaMap {
     list.push(callback);
   }
 
-  removeEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', callback: Function){
+  removeEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', callback: (...args: (string | number | boolean | object)[]) => void){
     if(!(typeof callback === 'function')) return;
 
     const list = this.eventListeners[name];

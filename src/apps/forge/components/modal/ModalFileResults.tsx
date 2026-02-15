@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Button, ListGroup } from "react-bootstrap";
 
-import { ReferenceSearchResult } from "../../helpers/ReferenceFinder";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { ModalFileResultsState } from "../../states/modal/ModalFileResultsState";
+import { ReferenceSearchResult } from "@/apps/forge/helpers/ReferenceFinder";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { ModalFileResultsState } from "@/apps/forge/states/modal/ModalFileResultsState";
 
 export const ModalFileResults = (props: BaseModalProps) => {
   const modal = props.modal as ModalFileResultsState;

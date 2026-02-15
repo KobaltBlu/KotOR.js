@@ -22,6 +22,8 @@ import {
 import { trace, debug } from './logger';
 import {
   ASTNode,
+  Declaration,
+  FunctionDeclaration,
   Program
 } from './nwscript-ast';
 import { NWScriptParser } from './nwscript-parser';
@@ -161,37 +163,42 @@ export class CompletionProvider {
         }
       }
       // Recurse into children where applicable
-      const anyNode = node as any;
-      for (const key of Object.keys(anyNode)) {
-        const value = anyNode[key];
+      const nodeRecord = (node as unknown) as Record<string, unknown>;
+      for (const key of Object.keys(nodeRecord)) {
+        const value = nodeRecord[key];
         if (value && typeof value === 'object') {
           if (Array.isArray(value)) {
-            value.forEach(v => v && v.type && visit(v));
-          } else if (value.type) {
+            value.forEach((v: unknown) => {
+              if (isASTNode(v)) visit(v);
+            });
+          } else if (isASTNode(value)) {
             visit(value);
           }
         }
       }
     };
 
+    function isASTNode(o: unknown): o is ASTNode {
+      return typeof o === 'object' && o !== null && 'type' in o && 'range' in o;
+    }
     visit(program as unknown as ASTNode);
     return nearest;
   }
 
   private determineScope(program: Program, position: { line: number; character: number }): 'global' | 'function' | 'local' {
     // Determine if inside any function declaration
-    const isWithin = (range: { start: any; end: any }) => {
+    const isWithin = (range: { start: { line: number; column: number }; end: { line: number; column: number } }) => {
       const s = range.start; const e = range.end;
       const afterStart = position.line > s.line || (position.line === s.line && position.character >= s.column);
       const beforeEnd = position.line < e.line || (position.line === e.line && position.character <= e.column);
       return afterStart && beforeEnd;
     };
 
-    let inFunc: any | undefined;
-    (program.body || []).forEach((decl: any) => {
+    let inFunc: FunctionDeclaration | undefined;
+    (program.body || []).forEach((decl: Declaration) => {
       if (decl && decl.type === 'FunctionDeclaration') {
         if (isWithin(decl.range)) {
-          inFunc = decl;
+          inFunc = decl as FunctionDeclaration;
         }
       }
     });
@@ -201,7 +208,7 @@ export class CompletionProvider {
     return 'function';
   }
 
-  private isExpectingType(beforeCursor: string, lines: string[], currentLine: number): boolean {
+  private isExpectingType(beforeCursor: string, _lines: string[], _currentLine: number): boolean {
     const trimmed = beforeCursor.trim();
 
     // Check if we're at the start of a declaration
@@ -259,7 +266,7 @@ export class CompletionProvider {
     }));
   }
 
-  private getFunctionCompletions(context: CompletionContext): CompletionItem[] {
+  private getFunctionCompletions(_context: CompletionContext): CompletionItem[] {
     return this.functions.map(func => {
       const params = func.parameters.map(p =>
         p.defaultValue ? `${p.type} ${p.name} = ${p.defaultValue}` : `${p.type} ${p.name}`
@@ -292,7 +299,7 @@ export class CompletionProvider {
     });
   }
 
-  private getConstantCompletions(context: CompletionContext): CompletionItem[] {
+  private getConstantCompletions(_context: CompletionContext): CompletionItem[] {
     return this.constants.map(constant => ({
       label: constant.name,
       kind: CompletionItemKind.Constant,

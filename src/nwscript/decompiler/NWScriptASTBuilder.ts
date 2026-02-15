@@ -1,5 +1,4 @@
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptASTNodeUnion ,
   NWScriptProgramNode,
   NWScriptFunctionNode,
@@ -19,16 +18,16 @@ import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptAS
   NWScriptContinueNode,
   NWScriptVariableDeclarationNode,
   NWScriptGlobalVariableDeclarationNode
-} from "./NWScriptAST";
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import type { NWScriptControlStructure } from "./NWScriptControlStructureBuilder";
-import { ControlStructureType } from "./NWScriptControlStructureBuilder";
-import { NWScriptExpression, type NWScriptConstantValue } from "./NWScriptExpression";
-import type { NWScriptFunction } from "./NWScriptFunctionAnalyzer";
-import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
-import type { NWScriptLocalInit } from "./NWScriptLocalVariableAnalyzer";
-import type { NWScriptStatement , NWScriptProcessedBlock } from "./NWScriptStatementBuilder";
+} from "@/nwscript/decompiler/NWScriptAST";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import type { NWScriptControlStructure } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
+import { ControlStructureType } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
+import { NWScriptExpression, type NWScriptConstantValue } from "@/nwscript/decompiler/NWScriptExpression";
+import type { NWScriptFunction } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import type { NWScriptLocalInit } from "@/nwscript/decompiler/NWScriptLocalVariableAnalyzer";
+import type { NWScriptStatement , NWScriptProcessedBlock } from "@/nwscript/decompiler/NWScriptStatementBuilder";
 
 
 

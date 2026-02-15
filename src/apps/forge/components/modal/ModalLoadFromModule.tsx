@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Button, Form, ListGroup } from "react-bootstrap";
 
-import { listModuleFiles, type ModuleFileEntry } from "../../helpers/ListModuleFiles";
-import { CapsuleResourceEntry } from "../../helpers/LoadFromCapsule";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { ModalLoadFromModuleState } from "../../states/modal/ModalLoadFromModuleState";
+import { listModuleFiles, type ModuleFileEntry } from "@/apps/forge/helpers/ListModuleFiles";
+import { CapsuleResourceEntry } from "@/apps/forge/helpers/LoadFromCapsule";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ModalLoadFromModuleState } from "@/apps/forge/states/modal/ModalLoadFromModuleState";
 
-import * as KotOR from "../../KotOR";
 
 export const ModalLoadFromModule = (props: BaseModalProps) => {
   const modal = props.modal as ModalLoadFromModuleState;

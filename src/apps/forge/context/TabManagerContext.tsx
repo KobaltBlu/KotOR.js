@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import type { EditorTabManager } from '../managers/EditorTabManager';
-import type { TabState } from '../states/tabs';
-
-import { createScopedLogger, LogScope } from '../../../utility/Logger';
+import type { EditorTabManager } from '@/apps/forge/managers/EditorTabManager';
+import type { TabState } from '@/apps/forge/states/tabs';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 

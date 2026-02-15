@@ -1,21 +1,24 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import { registerElectronLoadingErrorHandler } from "../common/electronLoadingErrorHandler";
 
-import { GameApp } from "./app";
-import { AppProvider } from "./context/AppContext";
-import * as KotOR from "./KotOR";
+import { registerElectronLoadingErrorHandler } from "@/apps/common/electronLoadingErrorHandler";
+import { GameApp } from "@/apps/game/app";
+import { AppProvider } from "@/apps/game/context/AppContext";
+import * as KotOR from "@/apps/game/KotOR";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import './app.scss';
+import "@/apps/game/app.scss";
+
+const log = createScopedLogger(LogScope.Game);
 
 registerElectronLoadingErrorHandler();
 
-window.addEventListener('beforeunload', (e) => {
+window.addEventListener('beforeunload', (_e) => {
   try {
     KotOR.GameState.Debugger.close();
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    log.error('beforeunload Debugger.close', err);
   }
 });
 

@@ -1,6 +1,6 @@
-import { BinaryWriter } from '../utility/binary/BinaryWriter';
+import { SSFObject } from '@/resource/SSFObject';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
-import { SSFObject } from './SSFObject';
 
 describe('SSFObject', () => {
   function makeMinimalSSF(): Uint8Array {

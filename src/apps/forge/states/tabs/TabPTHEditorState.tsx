@@ -2,15 +2,13 @@ import React from "react";
 import * as THREE from 'three';
 import type { Intersection } from 'three';
 
-import { TabPTHEditor } from "../../components/tabs/tab-pth-editor/TabPTHEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-
-import { createScopedLogger, LogScope } from "../../../../utility/Logger";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
-import { CameraFocusMode, GroupType, UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
-
-import { TabState } from "./TabState";
+import { TabPTHEditor } from "@/apps/forge/components/tabs/tab-pth-editor/TabPTHEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { CameraFocusMode, GroupType, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
 const POINT_OFFSET_HEIGHT = 1;
@@ -54,6 +52,7 @@ export class TabPTHEditorState extends TabState {
   previewValid: boolean = false;
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace('TabPTHEditorState constructor entry');
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
@@ -110,9 +109,11 @@ export class TabPTHEditorState extends TabState {
         this.deleteSelectedPoint();
       }
     });
+    log.trace('TabPTHEditorState constructor exit');
   }
 
   public openFile(file?: EditorFile){
+    log.trace('TabPTHEditorState openFile entry', !!file);
     return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
@@ -131,17 +132,20 @@ export class TabPTHEditorState extends TabState {
           this.blueprint = new KotOR.GFFObject(response.buffer);
           this.setPropsFromBlueprint();
 
-          // Try to load the corresponding LYT file
           await this.loadLayoutFile();
 
           this.processEventListener('onEditorFileLoad', [this]);
+          log.trace('TabPTHEditorState openFile loaded');
           resolve(this.blueprint);
         });
+      } else {
+        log.trace('TabPTHEditorState openFile no file');
       }
     });
   }
 
   public setControlMode(mode: TabPTHEditorControlMode = TabPTHEditorControlMode.SELECT): void {
+    log.trace('TabPTHEditorState setControlMode', mode);
     this.controlMode = mode;
 
     this.ui3DRenderer.disableSelection = mode !== TabPTHEditorControlMode.SELECT;

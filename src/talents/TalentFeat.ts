@@ -1,18 +1,18 @@
-import { CombatRound } from "../combat/CombatRound";
-import { type CreatureClass } from "../combat/CreatureClass";
-import { EffectACDecrease, EffectAttackDecrease } from "../effects";
-import { ModuleObjectType, TalentObjectType } from "../enums";
-import { GameEffectDurationType } from "../enums/effects";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { TwoDAManager } from "../managers/TwoDAManager";
-import type { ModuleObject } from "../module";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import type { ITwoDARowData } from "../resource/TwoDAObject";
-import { TwoDAObject } from "../resource/TwoDAObject";
-import { BitWise } from "../utility/BitWise";
+import { CombatRound } from "@/combat/CombatRound";
+import { type CreatureClass } from "@/combat/CreatureClass";
+import { EffectACDecrease, EffectAttackDecrease } from "@/effects";
+import { ModuleObjectType, TalentObjectType } from "@/enums";
+import { GameEffectDurationType } from "@/enums/effects";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import type { ModuleObject } from "@/module";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TalentObject } from "@/talents/TalentObject";
+import { BitWise } from "@/utility/BitWise";
 
-import { TalentObject } from "./TalentObject";
 
 const FEAT_PENALTY_DURATION = CombatRound.ROUND_LENGTH;
 

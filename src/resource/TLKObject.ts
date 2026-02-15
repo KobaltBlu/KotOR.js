@@ -1,11 +1,10 @@
-/* eslint-disable no-console */
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { TLKString } from "@/resource/TLKString";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
-import { TLKString } from "./TLKString";
 
 /**
  * TLKObject class.
@@ -19,22 +18,19 @@ import { TLKString } from "./TLKString";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class TLKObject {
-  // eslint-disable-next-line no-undef
-  [x: string]: unknown;
-
   file: Uint8Array|string;
   reader: BinaryReader;
   TLKStrings: TLKString[];
 
-  onSuccess: Function;
-  onProgress: Function
+  onSuccess: (() => void) | undefined;
+  onProgress: ((current: number, total: number) => void) | undefined;
   FileType: string;
   FileVersion: string;
   LanguageID: number;
   StringCount: number;
   StringEntriesOffset: number;
 
-  constructor(file: Uint8Array|string = '', onSuccess?: Function, onProgress?: Function){
+  constructor(file: Uint8Array|string = '', onSuccess?: () => void, onProgress?: (current: number, total: number) => void){
     this.file = file;
     this.TLKStrings = [];
     log.info('TLKObject', 'Opening TLK');
@@ -53,7 +49,7 @@ export class TLKObject {
     }
   }
 
-  LoadFromBuffer( buffer: Uint8Array, onProgress?: Function ){
+  LoadFromBuffer( buffer: Uint8Array, onProgress?: (current: number, total: number) => void ){
     return new Promise<void>( (resolve, reject) => {
       try{
         log.info('TLKObject', 'Reading');
@@ -95,9 +91,9 @@ export class TLKObject {
     })
   }
 
-  LoadFromDisk( resource_path: string, onProgress?: Function ){
+  LoadFromDisk( resource_path: string, onProgress?: (current: number, total: number) => void ){
     return new Promise<void>( (resolve, reject) => {
-      GameFileSystem.readFile(resource_path).then((buffer) => {
+      GameFileSystem.readFile(resource_path).then((buffer: Uint8Array) => {
         this.LoadFromBuffer(buffer, onProgress).then( () => {
           resolve();
         }).catch( () => {
@@ -109,7 +105,7 @@ export class TLKObject {
     });
   }
 
-  GetStringById(id: number, onReturn?: Function): string {
+  GetStringById(id: number, onReturn?: (value: string) => void): string {
     if(this.TLKStrings[id] != null){
       if(this.TLKStrings[id].Value == null){
         this.TLKStrings[id].GetValue(this.reader, onReturn);
@@ -120,8 +116,8 @@ export class TLKObject {
     }
 
     try{
-      return this.TLKStrings[id].Value;
-    }catch(e){
+      return this.TLKStrings[id]?.Value ?? '';
+    }catch{
       return '';
     }
   }
@@ -159,7 +155,7 @@ export class TLKObject {
 
     const stringEntriesOffset = headerSize + stringCount * entrySize;
 
-    const values: string[] = new Array(stringCount);
+    const values: string[] = Array.from({ length: stringCount }, () => '');
     let stringDataSize = 0;
     for(let i = 0; i < stringCount; i++){
       const rawValue = this.TLKStrings[i]?.Value;

@@ -5,20 +5,20 @@
  * @file ResourceAuto.ts
  */
 
-import { bytesMDL, readMDL } from './MDLAuto';
-import { MDL } from './MDLData';
-import { ResourceTypes } from './ResourceTypes';
-import { TPCObject, detectTPCFormat, readTPCFromBuffer, writeTPCToBuffer, type WriteTPCFormat } from './TPCObject';
+import { bytesMDL, readMDL } from '@/resource/MDLAuto';
+import { MDL } from '@/resource/MDLData';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { TPCObject, detectTPCFormat, readTPCFromBuffer, writeTPCToBuffer, type WriteTPCFormat } from '@/resource/TPCObject';
 import {
   TwoDAObject,
   detectTwoDAFormat,
   readTwoDAFromBuffer,
   writeTwoDAToBuffer,
   type WriteTwoDAFormat,
-} from './TwoDAObject';
-import { TXI } from './TXI';
-import { VISObject } from './VISObject';
-import { WAVObject } from './WAVObject';
+} from '@/resource/TwoDAObject';
+import { TXI } from '@/resource/TXI';
+import { VISObject } from '@/resource/VISObject';
+import { WAVObject } from '@/resource/WAVObject';
 
 export type ReadResourceResult =
   | MDL

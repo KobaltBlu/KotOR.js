@@ -1,6 +1,6 @@
-import * as KotOR from "../KotOR";
-
-import { ForgeGameObject } from "./ForgeGameObject";
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 export class ForgePlaceable extends ForgeGameObject {
 
@@ -83,7 +83,14 @@ export class ForgePlaceable extends ForgeGameObject {
     if(buffer){
       this.loadFromBuffer(buffer);
     }
-    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
+      this.onPropertyChange(
+        args[0] as string,
+        args[1] as string | number | boolean | object | undefined,
+        args[2] as string | number | boolean | object | undefined
+      );
+    };
+    this.addEventListener('onPropertyChange', onPropChange);
   }
 
   onPropertyChange(property: string, newValue: string | number | boolean | object | undefined, oldValue: string | number | boolean | object | undefined): void {
@@ -297,7 +304,7 @@ export class ForgePlaceable extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AnimationState', this.animationState || 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Appearance', this.appearance) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AutoRemoveKey', this.autoRemoveKey ? 1 : 0) );
@@ -386,7 +393,7 @@ export class ForgePlaceable extends ForgeGameObject {
   async loadModel(){
     if(this.model){
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch(e){}
+      try{ this.model.dispose(); }catch{ /* ignore */ }
     }
 
     // Load appearance data first if not already loaded
@@ -410,7 +417,7 @@ export class ForgePlaceable extends ForgeGameObject {
       this.model = model;
       this.container.add(this.model);
       return this.model;
-    }catch(e){
+    }catch{
       this.model = new KotOR.OdysseyModel3D();
       return this.model;
     }

@@ -1,15 +1,15 @@
 import * as THREE from "three";
 
-import { GameEngineType } from "../../../enums/engine";
-import { GameState } from "../../../GameState";
-import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { GFFStruct } from "../../../resource/GFFStruct";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { GameEngineType } from "@/enums/engine";
+import { GameState } from "@/GameState";
+import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import type { TalentSkill } from "../../../talents/TalentSkill";
+import type { TalentSkill } from "@/talents/TalentSkill";
 
 /**
  * GUICreatureSkill class.

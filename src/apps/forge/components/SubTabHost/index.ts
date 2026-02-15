@@ -1,3 +1,3 @@
-export { SubTabHost } from './SubTabHost';
-export type { SubTab, SubTabHostProps } from './SubTabHost';
+export { SubTabHost } from '@/apps/forge/components/SubTabHost/SubTabHost';
+export type { SubTab, SubTabHostProps } from '@/apps/forge/components/SubTabHost/SubTabHost';
 

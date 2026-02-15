@@ -1,1 +1,1 @@
-export * from './PazaakDeck';
+export * from '@/engine/minigames/PazaakDeck';

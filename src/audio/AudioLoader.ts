@@ -1,12 +1,12 @@
 import * as path from "path";
 
-import { ResourceLoader } from "../loaders";
-import { KEYManager } from "../managers/KEYManager";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { AudioFile } from "@/audio/AudioFile";
+import { ResourceLoader } from "@/loaders";
+import { KEYManager } from "@/managers/KEYManager";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { AudioFile } from "./AudioFile";
 
 const log = createScopedLogger(LogScope.Loader);
 

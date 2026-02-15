@@ -1,16 +1,16 @@
 import * as THREE from "three";
 
-import { TextureType } from "../../../enums/loaders/TextureType";
-import { ModuleObjectType } from "../../../enums/module/ModuleObjectType";
-import { GameState } from "../../../GameState";
-import { GUIProtoItem, GUIButton } from "../../../gui";
-import type { GUIControl, GameMenu } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import type { ModuleCreature } from "../../../module/ModuleCreature";
-import type { GFFStruct } from "../../../resource/GFFStruct";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { BitWise } from "../../../utility/BitWise";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { GUIProtoItem, GUIButton } from "@/gui";
+import type { GUIControl, GameMenu } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /**
  * GUIFeatItem class.

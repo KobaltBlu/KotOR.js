@@ -1,30 +1,32 @@
 import * as THREE from "three";
 
-import { FollowerCamera } from "../engine/FollowerCamera";
-import { KeyMapAction } from "../enums/controls/KeyMapAction";
-import { MouseState } from "../enums/controls/MouseState";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { EngineState } from "../enums/engine/EngineState";
-import { MiniGameType } from "../enums/engine/MiniGameType";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import type { GUIControl, GUIListBox, GUIScrollBar } from "../gui";
-import { GUIControlEventFactory } from "../gui/GUIControlEventFactory";
-import type { ModuleObject } from "../module";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import { TGAObject } from "../resource/TGAObject";
-import { BitWise } from "../utility/BitWise";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { Utility } from "../utility/Utility";
-// import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "../managers";
+import { AnalogInput } from "@/controls/AnalogInput";
+import { GamePad } from "@/controls/GamePad";
+import { Keyboard } from "@/controls/Keyboard";
+import { KeyMapper } from "@/controls/KeyMapper";
+import { Mouse } from "@/controls/Mouse";
+import { FollowerCamera } from "@/engine/FollowerCamera";
+import { KeyMapAction } from "@/enums/controls/KeyMapAction";
+import { MouseState } from "@/enums/controls/MouseState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { EngineState } from "@/enums/engine/EngineState";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { GUIControl, GUIListBox, GUIScrollBar } from "@/gui";
+import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
+import type { ModuleObject } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { TGAObject } from "@/resource/TGAObject";
+import { BitWise } from "@/utility/BitWise";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
+// import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "@/managers";
 
-import { AnalogInput } from "./AnalogInput";
-import { GamePad } from "./GamePad";
-import { Keyboard } from "./Keyboard";
-import { KeyMapper } from "./KeyMapper";
-import { Mouse } from "./Mouse";
 
+const log = createScopedLogger(LogScope.Controls);
 
 /**
  * IngameControls class.
@@ -160,7 +162,7 @@ export class IngameControls {
       if(event.target == this.element){
         GameState.MenuManager.activeGUIElement = undefined;
         if(GameState.debug.CONTROLS)
-          console.log('Valid Mouse Target');
+          log.debug('Valid Mouse Target');
         Mouse.ButtonState = event.which;
         Mouse.MouseDown = true;
         // let parentOffset = this.editor.canvas.offset();
@@ -174,11 +176,11 @@ export class IngameControls {
           this.element.requestPointerLock();
         }
       }else{
-        //console.log('Invalid Mouse Target', this.element);
+        log.trace('Invalid Mouse Target', this.element);
       }
 
       if(GameState.debug.CONTROLS)
-        console.log('DOWN');
+        log.debug('DOWN');
 
       // GameState.mouse.x = ( event.clientX / ResolutionManager.getViewportWidth() ) * 2 - 1;
       // GameState.mouse.y = - ( event.clientY / ResolutionManager.getViewportHeight() ) * 2 + 1;
@@ -201,7 +203,7 @@ export class IngameControls {
         if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
           clickCaptured = true;
           if(GameState.debug.CONTROLS)
-            console.log('uiControls', control)
+            log.debug('uiControls', control)
           try{
             if(control.processEventListener('mouseDown', [customEvent])){
               Mouse.downItem = control;
@@ -216,7 +218,7 @@ export class IngameControls {
             
             //GameState.guiAudioEmitter.playSound('gui_click');
             if(GameState.debug.CONTROLS)
-              console.log('MouseDown', control, Mouse.downItem, Mouse.clickItem, typeof control.onClick);
+              log.debug('MouseDown', control, Mouse.downItem, Mouse.clickItem, typeof control.onClick);
           }catch(e){
 
           }
@@ -231,14 +233,14 @@ export class IngameControls {
       Mouse.Update( event.clientX, event.clientY );
 
       //onMouseMove events HERE
-      //console.log('move', Mouse.downItem, Mouse.leftDown);
+      log.trace('Mouse move', Mouse.downItem, Mouse.leftDown);
       if(Mouse.downItem && Mouse.leftDown){
         if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
           //if(typeof Mouse.downItem.widget.parent !== 'undefined'){
             if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
               Mouse.downItem.processEventListener('mouseMove', [])
               /*if(typeof Mouse.downItem.onMouseMove === 'function'){
-                //console.log('Dragging');
+                log.trace('Dragging');
                 Mouse.downItem.onMouseMove();
               }*/
             }
@@ -269,7 +271,7 @@ export class IngameControls {
 
       //event.preventDefault();
       if(GameState.debug.CONTROLS)
-        console.log('UP');
+        log.debug('UP');
 
       if(Mouse.leftDown){
         Mouse.Update( event.clientX, event.clientY );
@@ -296,10 +298,10 @@ export class IngameControls {
                 //Mouse.downItem.onMouseUp(customEvent);
                 //GameState.guiAudioEmitter.playSound('gui_click');
                 if(GameState.debug.CONTROLS)
-                  console.log('MouseUp', Mouse.downItem, Mouse.downItem.name);
+                  log.debug('MouseUp', Mouse.downItem, Mouse.downItem.name);
                 Mouse.leftClick = false;
               }catch(e){
-                console.error(e);
+                log.error('mouseUp processEventListener', e);
               }
 
             }
@@ -323,10 +325,10 @@ export class IngameControls {
                   control.processEventListener('click', [customEvent]);
                   GameState.guiAudioEmitter.playSoundFireAndForget('gui_click');
                   if(GameState.debug.CONTROLS)
-                    console.log('MouseClick', control, control.name);
+                    log.debug('MouseClick', control, control.name);
                   Mouse.leftClick = false;
                 }catch(e){
-                  console.error(e);
+                  log.error('click processEventListener', e);
                 }
               }
             }
@@ -352,7 +354,7 @@ export class IngameControls {
                     moduleObject.onClick(GameState.getCurrentPlayer());
                   }else{
                     const distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
-                    //console.log(distance);
+                    log.trace('Distance to object', distance);
                     if(distance > 1.5){
                       GameState.getCurrentPlayer().clearAllActions();
                       moduleObject.clearAllActions();
@@ -363,10 +365,10 @@ export class IngameControls {
                 GameState.CursorManager.setReticleSelectedObject(moduleObject);
               }
               if(GameState.debug.SELECTED_OBJECT)
-                console.log('Ingame Object', moduleObject);
+                log.debug('Ingame Object', moduleObject);
             }else{
               if(GameState.debug.SELECTED_OBJECT)
-                console.log('Object', moduleObject);
+                log.debug('Object', moduleObject);
             }
 
             if(!selectedObject){
@@ -904,7 +906,7 @@ export class IngameControls {
       this.element.addEventListener("mousemove", this.plMoveEvent = (e: MouseEvent) => { this.plMouseMove(e); }, true);
       Mouse.Dragging = true;
     } else {
-      //console.log('The pointer lock status is now unlocked');
+      log.trace('Pointer lock status: unlocked');
       this.element.removeEventListener("mousemove", this.plMoveEvent, true);
       Mouse.Dragging = false;
     }
@@ -915,7 +917,7 @@ export class IngameControls {
     Mouse.OffsetX = event.movementX || 0;
     Mouse.OffsetY = (event.movementY || 0)*-1.0;
 
-    //console.log(Mouse.OffsetX, Mouse.OffsetY, Mouse.Dragging, event);
+    log.trace('PL mouse move', Mouse.OffsetX, Mouse.OffsetY, Mouse.Dragging);
   }
 
 }

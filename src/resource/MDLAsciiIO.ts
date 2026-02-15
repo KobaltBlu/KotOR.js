@@ -7,8 +7,8 @@
  * @license GPL-3.0
  */
 
-import { MDL, MDLNode } from './MDLData';
-import { MDLClassification, MDLNodeType } from './MDLTypes';
+import { MDL, MDLNode } from '@/resource/MDLData';
+import { MDLClassification, MDLNodeType } from '@/resource/MDLTypes';
 
 function parseFloatRobust(s: string): number {
   const v = s.trim().toLowerCase();

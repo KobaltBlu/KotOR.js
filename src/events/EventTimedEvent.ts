@@ -1,13 +1,13 @@
-import { GameEventType } from "../enums/events/GameEventType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { BitWise } from "../utility/BitWise";
+import { GameEventType } from "@/enums/events/GameEventType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameEvent } from "@/events/GameEvent";
+import { GameState } from "@/GameState";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { BitWise } from "@/utility/BitWise";
 
-import { GameEvent } from "./GameEvent";
 
 /**
  * EventTimedEvent class.

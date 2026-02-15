@@ -1,5 +1,5 @@
 import React, { useState, useCallback, memo } from "react";
-import "./ForgeTreeView.scss";
+import "@/apps/forge/components/treeview/ForgeTreeView.scss";
 
 export interface ListItemNodeProps {
   // Core node data
@@ -41,13 +41,13 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
     hasChildren = false,
     isExpanded = false,
     isSelected = false,
-    isFocused = false,
-    isLoading = false,
-    hasContextMenu = false,
-    depth = 0,
+    isFocused: _isFocused = false,
+    isLoading: _isLoading = false,
+    hasContextMenu: _hasContextMenu = false,
+    depth: _depth = 0,
     icon,
     iconType = 'file',
-    fileType,
+    fileType: _fileType,
     iconImageUrl,
     onToggle,
     onClick,

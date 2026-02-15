@@ -1,6 +1,6 @@
-import { GameEffectType } from "../enums/effects/GameEffectType";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
 
-import { GameEffect } from "./GameEffect";
 
 /**
  * EffectSkillIncrease class.

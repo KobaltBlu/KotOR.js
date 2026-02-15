@@ -1,31 +1,30 @@
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import React from "react";
 
-import { TabTextEditor } from "../../components/tabs/tab-text-editor/TabTextEditor";
-import { findAllReferencesInText, getWordAtIndex, createKeyResources, findScriptReferences, findStrRefReferences, findConversationReferences } from "../../helpers/ReferenceFinder";
-import type { ReferenceSearchResult } from "../../helpers/ReferenceFinderCore";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { EditorTabManager } from "../../managers/EditorTabManager";
-
-// import { NWScriptCompiler } from "../../../../nwscript/NWScriptCompiler";
-
-import { SemanticFunctionNode } from "../../../../nwscript/compiler/ASTSemanticTypes";
-import type { CompilerProgramNode } from "../../../../nwscript/compiler/CompilerNodeTypes";
-import { NWScriptCompiler } from "../../../../nwscript/compiler/NWScriptCompiler";
-import { NWScriptParser } from "../../../../nwscript/compiler/NWScriptParser";
-import { createScopedLogger, LogScope } from "../../../../utility/Logger";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
-import { ForgeState } from "../ForgeState";
-import { LYTLanguageService } from "../LYTLanguageService";
-import { ModalFileResultsState } from "../modal/ModalFileResultsState";
-import { ModalReferenceSearchOptionsState } from "../modal/ModalReferenceSearchOptionsState";
-import { NWScriptLanguageService } from "../NWScriptLanguageService";
-
-
-import { TabState } from "./TabState";
-
 import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState, TabScriptFindReferencesState, TextReferenceMatch } from ".";
+
+import { TabTextEditor } from "@/apps/forge/components/tabs/tab-text-editor/TabTextEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { findAllReferencesInText, getWordAtIndex, createKeyResources, findScriptReferences, findStrRefReferences, findConversationReferences } from "@/apps/forge/helpers/ReferenceFinder";
+import type { ReferenceSearchResult } from "@/apps/forge/helpers/ReferenceFinderCore";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+
+// import { NWScriptCompiler } from "@/nwscript/NWScriptCompiler";
+
+import * as KotOR from "@/apps/forge/KotOR";
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
+import { ModalFileResultsState } from "@/apps/forge/states/modal/ModalFileResultsState";
+import { ModalReferenceSearchOptionsState } from "@/apps/forge/states/modal/ModalReferenceSearchOptionsState";
+import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { SemanticFunctionNode } from "@/nwscript/compiler/ASTSemanticTypes";
+import type { CompilerProgramNode } from "@/nwscript/compiler/CompilerNodeTypes";
+import { NWScriptCompiler } from "@/nwscript/compiler/NWScriptCompiler";
+import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
 
 const log = createScopedLogger(LogScope.Forge);
 

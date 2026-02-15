@@ -1,17 +1,13 @@
-import React from 'react';
+import * as fs from "fs";
 
-import { ContextMenuItem } from '../../common/ContextMenu';
-
-import { createScopedLogger, LogScope } from '../../../../../utility/Logger';
-
-import { EditorFile } from '../../../EditorFile';
-import { FileTypeManager } from '../../../FileTypeManager';
-import * as KotOR from '../../../KotOR';
+import { ContextMenuItem } from '@/apps/forge/components/common/ContextMenu';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import { FileTypeManager } from '@/apps/forge/FileTypeManager';
+import * as KotOR from '@/apps/forge/KotOR';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 const exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
-
-import * as fs from "fs";
 declare const dialog: {
   showSaveDialog: (options?: { title?: string; defaultPath?: string; properties?: string[] }) => Promise<{ cancelled?: boolean; filePath?: string }>;
   showOpenDialog: (options?: { title?: string; properties?: string[] }) => Promise<{ canceled?: boolean; filePaths?: string[] }>;
@@ -78,11 +74,12 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
               defaultPath: newFile.getFilename(),
             });
             if(savePath && !savePath.cancelled && savePath.filePath){
-              log.debug('savePath', savePath.filePath);
+              const filePath = savePath.filePath;
+              log.debug('savePath', filePath);
               try{
                 const saveBuffer = new Uint8Array(newFile.buffer)
-                fs.writeFile(savePath.filePath, saveBuffer, () => {
-                  newFile.setPath(savePath.filePath!);
+                fs.writeFile(filePath, saveBuffer, () => {
+                  newFile.setPath(filePath);
                   newFile.archive_path = undefined;
                   newFile.archive_path2 = undefined;
                   newFile.buffer = saveBuffer;

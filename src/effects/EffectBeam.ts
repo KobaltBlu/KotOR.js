@@ -1,12 +1,12 @@
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { GameState } from "../GameState";
-import { MDLLoader } from "../loaders";
-// import { TwoDAManager } from "../managers/TwoDAManager";
-import { OdysseyModel } from "../odyssey";
-import { OdysseyModel3D } from "../three/odyssey";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameState } from "@/GameState";
+import { MDLLoader } from "@/loaders";
+// import { TwoDAManager } from "@/managers/TwoDAManager";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
 
-import { GameEffect } from "./GameEffect";
 
 /**
  * EffectBeam class.

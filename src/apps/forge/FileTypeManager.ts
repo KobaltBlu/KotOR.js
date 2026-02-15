@@ -1,17 +1,17 @@
-import { createScopedLogger, LogScope } from "../../utility/Logger";
 
-import { ResourceTypes } from "../../KotOR";
 
-import { EditorFile } from "./EditorFile";
-import { EditorFileOptions } from "./interfaces/EditorFileOptions";
-import { AudioPlayerState } from "./states/AudioPlayerState";
-import { ForgeState } from "./states/ForgeState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
+import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 import {
   TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabPTHEditorState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState,
   TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState, TabBinaryViewerState,
   TabAREEditorState, TabIFOEditorState, TabJRLEditorState, TabSSFEditorState, TabTLKEditorState, TabFACEditorState, TabLTREditorState, TabDLGEditorState, TabGITEditorState, TabSAVEditorState, TabVISEditorState,
   TabIndoorBuilderState
-} from "./states/tabs";
+} from "@/apps/forge/states/tabs";
+import { ResourceTypes } from "@/KotOR";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -27,8 +27,11 @@ const log = createScopedLogger(LogScope.Forge);
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class FileTypeManager {
+  /** Instance marker so this class is not treated as extraneous (static-only). */
+  private readonly _instance = true;
 
   static onOpenFile(options: EditorFileOptions){
+    log.trace('FileTypeManager.onOpenFile()');
     FileTypeManager.onOpenResource(new EditorFile(options));
   }
 
@@ -37,6 +40,7 @@ export class FileTypeManager {
    * Use this when the file type normally has a specific editor (e.g. UTS) but the user wants the raw GFF tree.
    */
   static onOpenResourceAsGff(res: EditorFile | string): void {
+    log.trace('FileTypeManager.onOpenResourceAsGff()');
     const file = typeof res === 'string' ? new EditorFile({ path: res }) : res;
     ForgeState.addRecentFile(file);
     log.debug('FileTypeManager.onOpenResourceAsGff', file);
@@ -44,17 +48,17 @@ export class FileTypeManager {
   }
 
   static onOpenResource(res: EditorFile|string){
-
+    log.trace('FileTypeManager.onOpenResource()');
     let ext = 'NA';
 
     if(typeof res === 'string'){
       res = new EditorFile({path: res});
       ext = ResourceTypes.getKeyByValue(res.reskey);
+      log.trace('FileTypeManager.onOpenResource() from string path', ext);
     }else{
       ext = ResourceTypes.getKeyByValue(res.reskey);
     }
 
-    //Update the opened files list
     ForgeState.addRecentFile(res);
 
     log.debug('FileTypeManager.onOpenResource', res, ext);
@@ -173,10 +177,11 @@ export class FileTypeManager {
         ForgeState.tabManager.addTab(new TabIndoorBuilderState({editorFile: res}));
       break;
       case 'bik':
-        // ForgeState.tabManager.addTab(new TabMovieViewerState({editorFile: res}));
+        log.trace('FileTypeManager.onOpenResource bik');
       break;
       case 'wav':
       case 'mp3':
+        log.trace('FileTypeManager.onOpenResource audio', ext);
         log.debug('audio file', res);
         AudioPlayerState.OpenAudio(res);
         // ForgeState.inlineAudioPlayer.OpenAudio({editorFile: res});
@@ -186,9 +191,9 @@ export class FileTypeManager {
         // }
       break;
       default:
+        log.trace('FileTypeManager.onOpenResource default BinaryViewer', ext);
         ForgeState.tabManager.addTab(new TabBinaryViewerState({editorFile: res}));
-        // NotificationManager.Notify(NotificationManager.Types.WARNING, `File Type: (${ext}) not yet supported`);
-        // console.warn('FileTypeManager.onOpenResource', 'Unknown FileType', ext, res);
+        log.warn('FileTypeManager.onOpenResource: Unknown FileType', ext, res);
 
         // if(ForgeState.Project instanceof Project){
         //   ForgeState.Project.removeFromOpenFileList({editorFile: res});

@@ -32,30 +32,34 @@ export class WebviewBridge {
   /**
    * Listen for messages from the extension host
    */
-  private setupMessageListener() {
+  private setupMessageListener(): void {
     log.trace('setupMessageListener() registering window message listener');
-    window.addEventListener('message', event => {
-      const message = event.data;
-      log.trace('message received type=%s requestId=%s', message?.type, message?.requestId ?? 'n/a');
+    window.addEventListener('message', (event: MessageEvent) => {
+      const raw: unknown = event.data;
+      if (typeof raw !== 'object' || raw === null) return;
+      const message = raw as Record<string, unknown>;
+      const type = message.type as string | undefined;
+      const requestId = message.requestId as number | undefined;
+      log.trace('message received type=%s requestId=%s', type ?? 'n/a', requestId ?? 'n/a');
 
-      if (message.type === 'response' && message.requestId !== undefined) {
-        const callback = this.requestCallbacks.get(message.requestId);
+      if (type === 'response' && requestId !== undefined) {
+        const callback = this.requestCallbacks.get(requestId);
         if (callback) {
-          log.trace('response callback invoked requestId=%s', message.requestId);
+          log.trace('response callback invoked requestId=%s', String(requestId));
           callback(message.body);
-          this.requestCallbacks.delete(message.requestId);
+          this.requestCallbacks.delete(requestId);
         } else {
-          log.trace('response requestId=%s no callback found', message.requestId);
+          log.trace('response requestId=%s no callback found', String(requestId));
         }
         return;
       }
 
-      const handler = this.messageHandlers.get(message.type);
+      const handler = type ? this.messageHandlers.get(String(type)) : undefined;
       if (handler) {
-        log.trace('dispatching to handler type=%s', message.type);
+        log.trace('dispatching to handler type=%s', String(type));
         handler(message);
       } else {
-        log.trace('no handler for type=%s', message.type);
+        log.trace('no handler for type=%s', String(type ?? 'n/a'));
       }
     });
   }

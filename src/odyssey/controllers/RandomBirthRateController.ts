@@ -1,11 +1,9 @@
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
-
-import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
-
-import { OdysseyController } from "./OdysseyController";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
 
 /**
  * RandomBirthRateController class.
@@ -20,6 +18,7 @@ export class RandomBirthRateController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.RandomBirthRate;
 
+  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }
@@ -30,7 +29,7 @@ export class RandomBirthRateController extends OdysseyController {
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
     if(manager.modelNode.emitter){
       manager.modelNode.emitter.birthRateRandom = next.value;
     }

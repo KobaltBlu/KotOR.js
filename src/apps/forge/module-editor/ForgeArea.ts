@@ -1,30 +1,26 @@
-import * as KotOR from "../KotOR";
+import * as THREE from 'three';
 
-import { AreaMap } from "../../../module/AreaMap";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-
-import { ForgeCamera } from "./ForgeCamera";
-import { ForgeCreature } from "./ForgeCreature";
-import { ForgeDoor } from "./ForgeDoor";
-import { ForgeEncounter } from "./ForgeEncounter";
-import { ForgeGameObject } from "./ForgeGameObject";
-import { ForgeItem } from "./ForgeItem";
-import { ForgeMiniGame } from "./ForgeMiniGame";
-import type { ForgeModule } from "./ForgeModule";
-
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
+import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
+import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
+import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
+import { ForgeMiniGame } from "@/apps/forge/module-editor/ForgeMiniGame";
+import type { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
+import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
+import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
+import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { AreaMap } from "@/module/AreaMap";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
-import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
-import { ProjectFileSystem } from "../ProjectFileSystem";
-
-import { ForgePlaceable } from "./ForgePlaceable";
-import { ForgeRoom } from "./ForgeRoom";
-import { ForgeSound } from "./ForgeSound";
-import { ForgeStore } from "./ForgeStore";
-import { ForgeTrigger } from "./ForgeTrigger";
-import { ForgeWaypoint } from "./ForgeWaypoint";
-
-import * as THREE from 'three';
 
 export class ForgeArea extends ForgeGameObject{
 
@@ -196,23 +192,31 @@ export class ForgeArea extends ForgeGameObject{
   private cachedRoomKey: string = '';
 
   constructor(git: KotOR.GFFObject = new KotOR.GFFObject(), are: KotOR.GFFObject = new KotOR.GFFObject()){
+    log.trace('ForgeArea constructor entry');
     super();
     this.git = git;
     this.are = are;
+    log.trace('ForgeArea constructor done');
   }
 
   setContext(context: UI3DRenderer){
+    log.trace('ForgeArea setContext');
     this.context = context;
   }
 
   async load(){
-    //BEGIN AREA LOAD
+    log.trace('ForgeArea load entry');
+    log.info('ForgeArea load BEGIN AREA LOAD');
 
-    if(this.are.RootNode.hasField('ObjectId'))
+    if(this.are.RootNode.hasField('ObjectId')) {
       this.id = this.are.getFieldByLabel('ObjectId').getValue();
+      log.trace('ForgeArea load ObjectId', this.id);
+    }
 
     const rooms = this.are.getFieldByLabel('Rooms');
+    log.trace('ForgeArea load rooms field', rooms?.childStructs?.length ?? 0);
 
+    log.trace('ForgeArea load reading ARE fields');
     this.alphaTest = this.are.getFieldByLabel('AlphaTest').getValue();
     this.cameraStyle = this.are.getFieldByLabel('CameraStyle').getValue();
     this.chanceLightning = this.are.getFieldByLabel('ChanceLightning').getValue();
@@ -246,11 +250,14 @@ export class ForgeArea extends ForgeGameObject{
     this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
 
     const map = this.are.getFieldByLabel('Map').getChildStructs()[0];
+    log.trace('ForgeArea load Map', !!map);
     if(map){
       this.areaMap = AreaMap.FromStruct(map) as AreaMap;
+      log.trace('ForgeArea load areaMap assigned');
     }
 
     if(this.are.RootNode.hasField('MiniGame')){
+      log.trace('ForgeArea load MiniGame present');
       this.miniGame = new ForgeMiniGame(
         this.are.getFieldByLabel('MiniGame').getChildStructs()[0]
       );
@@ -289,10 +296,12 @@ export class ForgeArea extends ForgeGameObject{
     this.playerOnly = !!this.are.getFieldByLabel('PlayerOnly').getValue();
     this.playerVsPlayer = this.are.getFieldByLabel('PlayerVsPlayer').getValue();
 
-    //Rooms
+    log.trace('ForgeArea load Rooms loop', rooms.childStructs.length);
     for(let i = 0; i < rooms.childStructs.length; i++ ){
       const strt = rooms.childStructs[i];
-      const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
+      const roomNameVal = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue();
+      const roomName = String(roomNameVal ?? '').toLowerCase();
+      log.trace('ForgeArea load room', i, roomName);
       const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
       const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
       const room = new ForgeRoom(roomName);
@@ -300,6 +309,7 @@ export class ForgeArea extends ForgeGameObject{
       room.setEnvAudio(envAudio);
       this.rooms.push(room);
     }
+    log.debug('ForgeArea load rooms count', this.rooms.length);
 
     this.shadowOpacity = this.are.getFieldByLabel('ShadowOpacity').getValue();
 
@@ -332,20 +342,17 @@ export class ForgeArea extends ForgeGameObject{
     //   GameState.scene.fog = undefined;
     // }
 
-    //BEGIN GIT LOAD
-
-    // const areaMap = this.git.getFieldByLabel('AreaMap');
-    // const areaProps = this.git.getFieldByLabel('AreaProperties');
-    // const areaEffects = this.git.getFieldByLabel('AreaEffectList');
+    log.info('ForgeArea load BEGIN GIT LOAD');
     const cameras = this.git.getFieldByLabel('CameraList');
     const creatures = this.git.getFieldByLabel('Creature List');
     const doors = this.git.getFieldByLabel('Door List');
-    const encounters = this.git.getFieldByLabel('Encounter List');
+    const _encounters = this.git.getFieldByLabel('Encounter List');
     const placeables = this.git.getFieldByLabel('Placeable List');
     const sounds = this.git.getFieldByLabel('SoundList');
     const stores = this.git.getFieldByLabel('StoreList');
     const triggers = this.git.getFieldByLabel('TriggerList');
     const waypoints = this.git.getFieldByLabel('WaypointList');
+    log.trace('ForgeArea load GIT lists', { cameras: cameras?.childStructs?.length ?? 0, creatures: creatures?.childStructs?.length ?? 0, doors: doors?.childStructs?.length ?? 0, placeables: placeables?.childStructs?.length ?? 0, sounds: sounds?.childStructs?.length ?? 0, stores: stores?.childStructs?.length ?? 0, triggers: triggers?.childStructs?.length ?? 0, waypoints: waypoints?.childStructs?.length ?? 0 });
 
     // const areaPropsField = areaProps.getChildStructs()[0].getFields();
     // this.audio.ambient.day = this.git.getFieldByLabel('AmbientSndDay', areaPropsField).getValue();
@@ -364,9 +371,10 @@ export class ForgeArea extends ForgeGameObject{
     // this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
     // AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
 
-    //Cameras
+    log.trace('ForgeArea load Cameras');
     if(cameras){
       for(let i = 0; i < cameras.childStructs.length; i++){
+        log.trace('ForgeArea load camera', i);
         this.gitInstanceToForgeGameObject(cameras.childStructs[i], GroupType.CAMERA);
       }
     }
@@ -379,51 +387,58 @@ export class ForgeArea extends ForgeGameObject{
     //   }
     // }
 
-    //Creatures
+    log.trace('ForgeArea load Creatures');
     if(creatures){
       for(let i = 0; i < creatures.childStructs.length; i++){
+        log.trace('ForgeArea load creature', i);
         this.gitInstanceToForgeGameObject(creatures.childStructs[i], GroupType.CREATURE);
       }
     }
 
-    //Triggers
+    log.trace('ForgeArea load Triggers');
     if(triggers){
       for(let i = 0; i < triggers.childStructs.length; i++){
+        log.trace('ForgeArea load trigger', i);
         this.gitInstanceToForgeGameObject(triggers.childStructs[i], GroupType.TRIGGER);
       }
     }
 
-    //Doors
+    log.trace('ForgeArea load Doors');
     if(doors){
       for(let i = 0; i < doors.childStructs.length; i++ ){
+        log.trace('ForgeArea load door', i);
         this.gitInstanceToForgeGameObject(doors.childStructs[i], GroupType.DOOR);
       }
     }
 
-    //Placeables
+    log.trace('ForgeArea load Placeables');
     if(placeables){
       for(let i = 0; i < placeables.childStructs.length; i++ ){
+        log.trace('ForgeArea load placeable', i);
         this.gitInstanceToForgeGameObject(placeables.childStructs[i], GroupType.PLACEABLE);
       }
     }
 
-    //Sounds
+    log.trace('ForgeArea load Sounds');
     if(sounds){
       for(let i = 0; i < sounds.childStructs.length; i++ ){
+        log.trace('ForgeArea load sound', i);
         this.gitInstanceToForgeGameObject(sounds.childStructs[i], GroupType.SOUND);
       }
     }
 
-    //Stores
+    log.trace('ForgeArea load Stores');
     if(stores){
       for(let i = 0; i < stores.childStructs.length; i++ ){
+        log.trace('ForgeArea load store', i);
         this.gitInstanceToForgeGameObject(stores.childStructs[i], GroupType.STORE);
       }
     }
 
-    //Waypoints
+    log.trace('ForgeArea load Waypoints');
     if(waypoints){
       for(let i = 0; i < waypoints.childStructs.length; i++ ){
+        log.trace('ForgeArea load waypoint', i);
         this.gitInstanceToForgeGameObject(waypoints.childStructs[i], GroupType.WAYPOINT);
       }
     }
@@ -463,25 +478,33 @@ export class ForgeArea extends ForgeGameObject{
     //   FollowerCamera.setCameraFOV(FollowerCamera.DEFAULT_FOV);
     // }
 
+    log.trace('ForgeArea load reading LYT/VIS');
     try{
-      const lyt = await ProjectFileSystem.readFile(`${this.name.getValue()}.lyt`);
+      const areaName = this.name.getValue();
+      log.trace('ForgeArea load LYT path', `${areaName}.lyt`);
+      const lyt = await ProjectFileSystem.readFile(`${areaName}.lyt`);
       if(lyt){
+        log.trace('ForgeArea load LYT buffer length', lyt.length);
         this.layout = new KotOR.LYTObject(lyt);
+        log.debug('ForgeArea load layout rooms', this.layout.rooms.length);
 
-        //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
         const sortedRooms: ForgeRoom[] = [];
         for(let i = 0; i < this.layout.rooms.length; i++){
           const roomLYT = this.layout.rooms[i];
+          log.trace('ForgeArea load layout room', i, roomLYT.name);
           for(let r = 0; r != this.rooms.length; r++ ){
             const room = this.rooms[r];
             if(room.roomName.toLowerCase() == roomLYT.name.toLowerCase()){
               room.position.copy(roomLYT.position);
               sortedRooms.push(room);
+              log.trace('ForgeArea load room matched', room.roomName);
+              break;
             }
           }
         }
 
         this.rooms = sortedRooms;
+        log.trace('ForgeArea load sorted rooms count', this.rooms.length);
 
         // for(let i = 0; i < this.layout.doorhooks.length; i++){
         //   let _doorHook = this.layout.doorhooks[i];
@@ -499,11 +522,14 @@ export class ForgeArea extends ForgeGameObject{
         // }
       }
 
+      log.trace('ForgeArea load VIS path', `${this.name.getValue()}.vis`);
       const vis = await ProjectFileSystem.readFile(`${this.name.getValue()}.vis`);
       if(vis){
+        log.trace('ForgeArea load VIS buffer length', vis.length);
         this.visObject = new KotOR.VISObject(vis);
         this.visObject.read();
         this.visObject.attachArea(this);
+        log.debug('ForgeArea load VIS attached');
       }
 
       log.debug('lyt', this.layout);
@@ -517,13 +543,19 @@ export class ForgeArea extends ForgeGameObject{
     // await this.loadScripts();
     // GameState.scene.fog = this.fog;
 
+    log.trace('ForgeArea load loadRooms');
     await this.loadRooms();
+    log.trace('ForgeArea load loadCreatures');
     await this.loadCreatures();
+    log.trace('ForgeArea load sceneGraphManager.rebuild');
     this.context.sceneGraphManager.rebuild();
+    log.info('ForgeArea load complete');
   }
 
   getNextCameraId(): number {
-    return this.nextCameraId++;
+    const id = this.nextCameraId++;
+    log.trace('ForgeArea getNextCameraId', id);
+    return id;
   }
 
   private static objectTypeRegistry = new Map<typeof ForgeGameObject, {
@@ -534,10 +566,12 @@ export class ForgeArea extends ForgeGameObject{
   }>();
 
   static registerObjectType(objectType: typeof ForgeGameObject, array: keyof ForgeArea, groupType: GroupType, onAttach?: (object: ForgeGameObject) => void, onDetach?: (object: ForgeGameObject) => void){
+    log.trace('ForgeArea registerObjectType', objectType.name, array, groupType);
     this.objectTypeRegistry.set(objectType, { array, groupType, onAttach, onDetach });
   }
 
   attachObject(object: ForgeGameObject){
+    log.trace('ForgeArea attachObject', object?.constructor?.name);
     if(!object){ return; }
     object.setArea(this);
 
@@ -548,7 +582,8 @@ export class ForgeArea extends ForgeGameObject{
       const onAttach = registry.onAttach;
       this.context.addObjectToGroup(object.container, groupType);
       if(array){
-        this[array].push(object);
+        const arr = this[array] as ForgeGameObject[] | undefined;
+        if(Array.isArray(arr)) arr.push(object);
       }
       object.setContext(this.context);
       if(typeof onAttach === 'function'){
@@ -571,12 +606,15 @@ export class ForgeArea extends ForgeGameObject{
       const onDetach = registry.onDetach;
       this.context.removeObjectFromGroup(object.container, groupType);
       if(array){
-        const idx = this[array].indexOf(object);
-        if(idx >= 0){
-          this[array].splice(idx, 1);
+        const arr = this[array] as ForgeGameObject[] | undefined;
+        if(Array.isArray(arr)){
+          const idx = arr.indexOf(object);
+          if(idx >= 0) arr.splice(idx, 1);
         }
       }
-      if(this.context.transformControls.object === object.container){
+      const transformControls = this.context.transformControls as { object: unknown };
+      const selectedObj = transformControls.object;
+      if(selectedObj !== undefined && selectedObj === object.container){
         this.context.selectObject(undefined);
       }
       if(typeof onDetach === 'function'){
@@ -865,11 +903,10 @@ export class ForgeArea extends ForgeGameObject{
     are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'MoonShadows', this.moonShadows ? 1 : 0));
 
     // Name
-    const nameField = are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Name'))!;
-    // const nameLocString = new KotOR.CExoLocString();
-    // nameLocString.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
-    // nameField.setCExoLocString(nameLocString);
-    nameField.setCExoLocString(this.name);
+    const nameField = are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Name'));
+    if(nameField){
+      nameField.setCExoLocString(this.name);
+    }
 
     // NoHangBack
     are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'NoHangBack', this.noHangBack ? 1 : 0));
@@ -955,6 +992,7 @@ export class ForgeArea extends ForgeGameObject{
   }
 
   update(delta: number = 0){
+    log.debug('ForgeArea update', delta);
     // Update all game objects
     for(const room of this.rooms){
       room.update(delta);

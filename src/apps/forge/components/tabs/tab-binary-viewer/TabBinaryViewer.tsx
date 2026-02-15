@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-
-import { TabBinaryViewerState } from "../../../states/tabs";
-import './TabBinaryViewer.scss';
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import { TabBinaryViewerState } from "@/apps/forge/states/tabs";
+import "@/apps/forge/components/tabs/tab-binary-viewer/TabBinaryViewer.scss";
 
 interface BaseTabProps {
   tab: TabBinaryViewerState;

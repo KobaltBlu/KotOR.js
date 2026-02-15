@@ -1,10 +1,10 @@
-import { PazaakHandSlots } from "../../../enums/minigames/PazaakHandSlots";
-import { PazaakTableSlots } from "../../../enums/minigames/PazaakTableSlots";
-import { PazaakTurnMode } from "../../../enums/minigames/PazaakTurnMode";
-import { PazaakTurnState } from "../../../enums/minigames/PazaakTurnState";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
+import { PazaakHandSlots } from "@/enums/minigames/PazaakHandSlots";
+import { PazaakTableSlots } from "@/enums/minigames/PazaakTableSlots";
+import { PazaakTurnMode } from "@/enums/minigames/PazaakTurnMode";
+import { PazaakTurnState } from "@/enums/minigames/PazaakTurnState";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * MenuPazaakGame class.

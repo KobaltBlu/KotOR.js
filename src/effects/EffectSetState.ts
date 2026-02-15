@@ -1,10 +1,10 @@
 import * as THREE from "three";
 
-import { GameEffectSetStateType } from "../enums/effects/GameEffectSetStateType";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 
-import { GameEffect } from "./GameEffect";
 
 /**
  * EffectSetState class.

@@ -1,44 +1,53 @@
 import React from "react";
 
-import { TabWAVEditor } from "../../components/tabs/tab-wav-editor/TabWAVEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { TabWAVEditor } from "@/apps/forge/components/tabs/tab-wav-editor/TabWAVEditor";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import * as KotOR from "../../KotOR";
-
-import { TabState } from "./TabState";
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabWAVEditorState extends TabState {
   tabName: string = 'WAV Editor';
+  saveTypes: { description: string; accept: Record<string, string[]> }[] = [
+    {
+      description: 'Wave Audio',
+      accept: {
+        'application/octet-stream': ['.wav']
+      }
+    }
+  ];
   wavObject?: KotOR.WAVObject;
 
   constructor(options: BaseTabStateOptions = {}) {
+    log.trace('TabWAVEditorState constructor entry');
     super(options);
 
     if (this.file) {
       this.tabName = this.file.getFilename();
+      log.debug('TabWAVEditorState constructor tabName', this.tabName);
     }
-
-    this.saveTypes = [
-      {
-        description: 'Wave Audio',
-        accept: {
-          'application/octet-stream': ['.wav']
-        }
-      }
-    ];
 
     this.setContentView(<TabWAVEditor tab={this}></TabWAVEditor>);
     this.openFile();
+    log.trace('TabWAVEditorState constructor exit');
   }
 
   async openFile() {
-    if (!this.file) return;
+    log.trace('TabWAVEditorState openFile entry');
+    if (!this.file) {
+      log.trace('TabWAVEditorState openFile no file');
+      return;
+    }
     const response = await this.file.readFile();
     this.wavObject = new KotOR.WAVObject(response.buffer);
     this.processEventListener('onEditorFileLoad', [this]);
+    log.trace('TabWAVEditorState openFile loaded');
   }
 
   async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
+    log.trace('TabWAVEditorState getExportBuffer');
     if (this.wavObject) {
       return this.wavObject.toBuffer();
     }
@@ -49,10 +58,12 @@ export class TabWAVEditorState extends TabState {
   }
 
   updateFile() {
-    // View-only metadata; getExportBuffer uses wavObject.toBuffer()
+    log.trace('TabWAVEditorState updateFile');
   }
 
   getResourceID(): string | undefined {
-    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
+    const id = this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
+    log.trace('TabWAVEditorState getResourceID', id ?? '(none)');
+    return id;
   }
 }

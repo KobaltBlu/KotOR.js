@@ -1,13 +1,12 @@
-import { MainMenu as K1_MainMenu } from "../../kotor/KOTOR";
-
-import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { GameState } from "../../../GameState";
-import { LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
+import { MainMenu as K1_MainMenu } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import { LBL_3DView } from "@/gui";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

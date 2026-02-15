@@ -1,13 +1,12 @@
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import type { GFFStruct } from "../resource/GFFStruct";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
 
 
 const log = createScopedLogger(LogScope.Game);
-import { GUIControlEvent } from "./GUIControlEvent";
+import { GUIControlEvent } from "@/gui/GUIControlEvent";
 
 /**
  * GUILabel class.

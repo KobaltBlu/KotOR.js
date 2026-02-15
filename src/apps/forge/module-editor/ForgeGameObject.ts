@@ -1,13 +1,12 @@
 import * as THREE from 'three';
 
-import { EventListenerModel } from "../EventListenerModel";
-import * as KotOR from "../KotOR";
-import { TabState } from "../states/tabs/TabState";
-import { UI3DRenderer } from "../UI3DRenderer";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import type { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-
-import type { ForgeArea } from "./ForgeArea";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -30,6 +29,7 @@ export class ForgeGameObject extends EventListenerModel {
   templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.NA;
 
   constructor(){
+    log.trace('ForgeGameObject constructor');
     super();
     this.position = this.container.position;
     this.rotation = this.container.rotation;
@@ -39,41 +39,47 @@ export class ForgeGameObject extends EventListenerModel {
   }
 
   setArea(area: ForgeArea){
+    log.trace('ForgeGameObject setArea');
     this.area = area;
   }
 
   setContext(context: UI3DRenderer){
+    log.trace('ForgeGameObject setContext');
     this.context = context;
   }
 
   setTemplateResRef(resRef: string, resType: typeof KotOR.ResourceTypes){
+    log.trace('ForgeGameObject setTemplateResRef', resRef);
     this.templateResRef = resRef;
     this.templateResType = resType;
   }
 
   async loadBlueprint(){
+    log.trace('ForgeGameObject loadBlueprint', this.templateResRef);
     if(!this.templateResRef || this.templateResType === KotOR.ResourceTypes.NA) return;
     const buffer = await KotOR.ResourceLoader.loadResource(this.templateResType, this.templateResRef);
     if(buffer){
       const gff = new KotOR.GFFObject(buffer);
       this.blueprint = gff;
       this.loadFromBlueprint();
+      log.trace('ForgeGameObject loadBlueprint done');
     }
   }
 
   loadFromBlueprint(){
-    // stub method to be overridden by child classes
+    log.trace('ForgeGameObject loadFromBlueprint (stub)');
   }
 
   async load(){
-    
+    log.trace('ForgeGameObject load (stub)');
   }
 
-  update(delta: number = 0){
-    // Stub method to be overridden by child classes
+  update(_delta: number = 0){
+    // Stub; overridden by subclasses. No trace to avoid per-frame spam.
   }
 
   updateBoundingBox(){
+    log.trace('ForgeGameObject updateBoundingBox');
     this.box.setFromObject(this.container);
   }
   
@@ -81,7 +87,7 @@ export class ForgeGameObject extends EventListenerModel {
     return this.templateResRef;
   }
 
-  setGITInstance(instance: KotOR.GFFStruct){
+  setGITInstance(_instance: KotOR.GFFStruct){
     // stub method to be overridden by child classes
     log.error(`setGITInstance not implemented for ${this.constructor.name}`);
   }

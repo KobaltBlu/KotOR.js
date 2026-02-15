@@ -1,4 +1,4 @@
-import { TabState } from "../states/tabs";
+import { TabState } from "@/apps/forge/states/tabs";
 
 export const WIKI_BASE_URL = 'https://github.com/KobaltBlu/KotOR.js/wiki/';
 

@@ -1,17 +1,17 @@
 import React from "react";
 
-import { WIKI_BASE_URL } from "../../../data/EditorWikiMapping";
+import { WIKI_BASE_URL } from "@/apps/forge/data/EditorWikiMapping";
 import {
   HELP_FOLDERS,
   getHelpDocUrl,
   type HelpFolder,
   type HelpDocument,
-} from "../../../data/HelpContents";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { TabHelpState } from "../../../states/tabs/TabHelpState";
+} from "@/apps/forge/data/HelpContents";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { TabHelpState } from "@/apps/forge/states/tabs/TabHelpState";
 
 export const TabHelp = function TabHelp(props: BaseTabProps) {
-  const tab = props.tab as TabHelpState;
+  const _tab = props.tab as TabHelpState;
 
   const openUrl = (url: string) => {
     if (typeof window !== "undefined") window.open(url, "_blank");

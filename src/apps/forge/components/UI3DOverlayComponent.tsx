@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import * as THREE from 'three';
 
-import { useEffectOnce } from '../helpers/UseEffectOnce';
-import type { UI3DRenderer } from '../UI3DRenderer';
-import { createScopedLogger, LogScope } from '../../../utility/Logger';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import type { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 

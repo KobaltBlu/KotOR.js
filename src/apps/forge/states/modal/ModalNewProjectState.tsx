@@ -1,13 +1,11 @@
 import path from "path";
 
-import { createScopedLogger, LogScope } from "@kotor/utility/Logger";
 import React from "react";
 
-import { ModalNewProject } from "../../components/modal/ModalNewProject";
-
-import * as KotOR from "../../KotOR";
-
-import { ModalState } from "./ModalState";
+import { ModalNewProject } from "@/apps/forge/components/modal/ModalNewProject";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
 

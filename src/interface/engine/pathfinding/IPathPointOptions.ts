@@ -1,7 +1,7 @@
 import type * as THREE from "three";
 
-import type { PathPoint } from "../../../engine/pathfinding/PathPoint";
-import type { ModuleArea } from "../../../module/ModuleArea";
+import type { PathPoint } from "@/engine/pathfinding/PathPoint";
+import type { ModuleArea } from "@/module/ModuleArea";
 
 /**
  * IPathPointOptions interface.

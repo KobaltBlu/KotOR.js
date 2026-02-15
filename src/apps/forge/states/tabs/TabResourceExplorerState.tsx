@@ -2,19 +2,17 @@ import * as path from "path";
 
 import React from "react";
 
-import { TabResourceExplorer } from "../../components/tabs/tab-resource-explorer/TabResourceExplorer";
-import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-
-import { AsyncLoop } from "../../../../utility/AsyncLoop";
-import { createScopedLogger, LogScope } from "../../../../utility/Logger";
-import { FileBrowserNode, FileBrowserNodesWithIndex } from "../../FileBrowserNode";
+import { TabResourceExplorer } from "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { FileBrowserNode, FileBrowserNodesWithIndex } from "@/apps/forge/FileBrowserNode";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { AsyncLoop } from "@/utility/AsyncLoop";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
-import * as KotOR from "../../KotOR";
-import { ForgeState } from "../ForgeState";
-
-import { TabState } from "./TabState";
 
 export class TabResourceExplorerState extends TabState {
 
@@ -34,6 +32,7 @@ export class TabResourceExplorerState extends TabState {
   }
 
   reload(){
+    log.trace('TabResourceExplorerState.reload');
     if(typeof this.onReload === 'function'){
       this.onReload();
     }
@@ -62,22 +61,31 @@ export class TabResourceExplorerState extends TabState {
   static async GenerateResourceList(state: TabResourceExplorerState) {
     log.info("GenerateResourceList start");
     ForgeState.loaderMessage("Loading [BIFs]...");
+    log.trace('TabResourceExplorerState.GenerateResourceList LoadBifs');
     const bifs      = await TabResourceExplorerState.LoadBifs();
     ForgeState.loaderMessage('Loading [RIMs]...');
+    log.trace('TabResourceExplorerState.GenerateResourceList LoadRims');
     const rims      = await TabResourceExplorerState.LoadRims();
     ForgeState.loaderMessage('Loading [Modules]...');
+    log.trace('TabResourceExplorerState.GenerateResourceList LoadModules');
     const modules   = await TabResourceExplorerState.LoadModules();
     ForgeState.loaderMessage('Loading [LIPs]...');
+    log.trace('TabResourceExplorerState.GenerateResourceList LoadLips');
     const lips      = await TabResourceExplorerState.LoadLips();
     ForgeState.loaderMessage('Loading [Textures]...');
+    log.trace('TabResourceExplorerState.GenerateResourceList LoadTextures');
     const textures  = await TabResourceExplorerState.LoadTextures();
     ForgeState.loaderMessage('Loading [StreamWaves]...');
+    log.trace('TabResourceExplorerState.GenerateResourceList StreamWaves');
     const waves     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamWaves');   //KOTOR
     ForgeState.loaderMessage('Loading [StreamSounds]...');
+    log.trace('TabResourceExplorerState.GenerateResourceList StreamSounds');
     const sounds    = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamSounds');  //KOTOR & TSL
     ForgeState.loaderMessage('Loading [StreamMusic]...');
+    log.trace('TabResourceExplorerState.GenerateResourceList StreamMusic');
     const music     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamMusic');   //KOTOR & TSL
     ForgeState.loaderMessage('Loading [StreamVoice]...');
+    log.trace('TabResourceExplorerState.GenerateResourceList StreamVoice');
     const voice     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamVoice');   //TSL
 
     bifs.sort();
@@ -112,7 +120,8 @@ export class TabResourceExplorerState extends TabState {
   }
 
   static LoadBifs() {
-    return new Promise<FileBrowserNode>( (resolve, reject) => {
+    log.trace('TabResourceExplorerState.LoadBifs');
+    return new Promise<FileBrowserNode>( (resolve, _reject) => {
       const bifs: KotOR.BIFObject[] = [];
       KotOR.BIFManager.bifs.forEach( (bif: KotOR.BIFObject) => {
         bifs.push(bif);
@@ -180,7 +189,8 @@ export class TabResourceExplorerState extends TabState {
   }
 
   static LoadRims() {
-		return new Promise<FileBrowserNode>( (resolve, reject) => {
+    log.trace('TabResourceExplorerState.LoadRims');
+		return new Promise<FileBrowserNode>( (resolve, _reject) => {
       const rims: KotOR.RIMObject[] = [];
       KotOR.RIMManager.RIMs.forEach( (rim: KotOR.RIMObject) => {
         if(rim.group == "RIMs"){

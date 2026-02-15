@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Form } from 'react-bootstrap';
 
-import { useEffectOnce } from '../helpers/UseEffectOnce';
-import type * as KotOR from '../KotOR';
-import type { TabModelViewerState } from '../states/tabs';
-import { UI3DRenderer } from '../UI3DRenderer';
+import { SceneGraphTreeView } from '@/apps/forge/components/SceneGraphTreeView';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import type * as KotOR from '@/apps/forge/KotOR';
+import type { TabModelViewerState } from '@/apps/forge/states/tabs';
+import { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
 
-import { SceneGraphTreeView } from './SceneGraphTreeView';
 
 export interface ModelViewerSidebarComponentProps {
   tab: TabModelViewerState;
@@ -42,7 +42,7 @@ export const ModelViewerSidebarComponent: React.FC<ModelViewerSidebarComponentPr
 
     const keys: KotOR.IKEYEntry[] = [];
     const res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
-    res_list.forEach( (res, index) => {
+    res_list.forEach( (res, _index) => {
       keys.push(
         KotOR.KEYManager.Key.getFileKeyByRes(res)
       );
@@ -67,7 +67,7 @@ export const ModelViewerSidebarComponent: React.FC<ModelViewerSidebarComponentPr
     UI3DRenderer.CameraMoveSpeed = value;
   };
 
-  const onBtnAlignToCameraHook = function(e: React.MouseEvent<HTMLButtonElement>){
+  const onBtnAlignToCameraHook = function(_e: React.MouseEvent<HTMLButtonElement>){
 
   }
 
@@ -89,11 +89,11 @@ export const ModelViewerSidebarComponent: React.FC<ModelViewerSidebarComponentPr
     // tab.setLayoutByIndex(value);
   };
 
-  const onBtnLoadLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onBtnLoadLayout = (_e: React.MouseEvent<HTMLButtonElement>) => {
     tab.loadLayout( layouts.find( key => key.resId == selectedLayout ) );
   };
 
-  const onBtnDisposeLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onBtnDisposeLayout = (_e: React.MouseEvent<HTMLButtonElement>) => {
     tab.disposeLayout();
   };
 

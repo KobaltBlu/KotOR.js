@@ -1,4 +1,4 @@
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 
 /** Constant value held by an expression (number, string, or boolean). */
 export type NWScriptConstantValue = number | string | boolean;

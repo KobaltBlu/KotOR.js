@@ -3,24 +3,23 @@ import * as fs from "fs";
 import React from "react";
 
 
-import { pathParse } from "../../helpers/PathParse";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabStoreState } from "../../interfaces/TabStoreState";
-import type { EditorTabManager } from "../../managers/EditorTabManager";
-import { GetNewTabID } from "../../managers/TabIdGenerator";
-
-import { createScopedLogger, LogScope } from "../../../../utility/Logger";
+import type { EditorFile as EditorFileType, EditorFileEventListenerTypes } from "@/apps/forge/EditorFile";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { supportedFileDialogTypes, supportedFilePickerTypes } from "@/apps/forge/ForgeFileSystem";
+import { pathParse } from "@/apps/forge/helpers/PathParse";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
+import * as KotOR from "@/apps/forge/KotOR";
+import type { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { GetNewTabID } from "@/apps/forge/managers/TabIdGenerator";
+import type { ForgeState as ForgeStateType } from "@/apps/forge/states/ForgeState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 // IMPORTANT: EditorFile and ForgeState are NOT imported at the top level to
 // break circular-dependency TDZ errors that occur when the entire Forge
 // codebase is bundled into a single webpack chunk (VS Code webview).
 // Instead we use lazy accessors that resolve on first call, by which time
 // all modules have finished evaluating.
-import type { EditorFile as EditorFileType, EditorFileEventListenerTypes } from "../../EditorFile";
-import { EventListenerModel } from "../../EventListenerModel";
-import { supportedFileDialogTypes, supportedFilePickerTypes } from "../../ForgeFileSystem";
-import * as KotOR from "../../KotOR";
-import type { ForgeState as ForgeStateType } from "../ForgeState";
 
 
 const log = createScopedLogger(LogScope.Forge);
@@ -42,7 +41,7 @@ let _EditorFile: typeof import("../../EditorFile").EditorFile | null = null;
 function getEditorFile() {
   if (!_EditorFile) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    _EditorFile = require("../../EditorFile").EditorFile;
+    _EditorFile = require("@/apps/forge/EditorFile").EditorFile;
   }
   return _EditorFile!;
 }
@@ -51,7 +50,7 @@ let _ForgeState: typeof import("../ForgeState").ForgeState | null = null;
 function getForgeState() {
   if (!_ForgeState) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    _ForgeState = require("../ForgeState").ForgeState;
+    _ForgeState = require("@/apps/forge/states/ForgeState").ForgeState;
   }
   return _ForgeState!;
 }
@@ -101,6 +100,7 @@ export class TabState extends EventListenerModel {
 
   constructor(options: BaseTabStateOptions = {}){
     super();
+    log.trace('TabState constructor', this.constructor.name);
     this.isDestroyed = false;
 
     options = Object.assign({
@@ -111,6 +111,7 @@ export class TabState extends EventListenerModel {
     }, options);
 
     this.id = GetNewTabID();
+    log.trace('TabState constructor id', this.id);
 
     if(options.singleInstance){
       this.singleInstance = true;
@@ -118,6 +119,7 @@ export class TabState extends EventListenerModel {
 
     if(isEditorFile(options.editorFile)){
       this.file = options.editorFile;
+      log.trace('TabState constructor editorFile', this.file?.resref, this.file?.ext);
     }
 
     this.visible = false;
@@ -126,11 +128,11 @@ export class TabState extends EventListenerModel {
       this.isClosable = options.closeable;
     }
 
-    this.#_onSaveStateChanged = (file: EditorFileType) => {
+    this.  #_onSaveStateChanged = (_file: EditorFileType) => {
       this.editorFileUpdated();
     }
 
-    this.#_onNameChanged = (file: EditorFileType) => {
+    this.#_onNameChanged = (_file: EditorFileType) => {
       this.editorFileUpdated();
     }
 
@@ -148,6 +150,7 @@ export class TabState extends EventListenerModel {
     };
 
     this.editorFileUpdated();
+    log.debug('TabState constructor done', this.constructor.name, this.id);
   }
 
   getProperty<K extends keyof this>(property: K): this[K] {
@@ -195,6 +198,7 @@ export class TabState extends EventListenerModel {
   }
 
   getResourceID(): string | undefined {
+    log.trace('TabState.getResourceID base', this.constructor.name);
     return undefined;
   }
 
@@ -202,11 +206,12 @@ export class TabState extends EventListenerModel {
     return this.file;
   }
 
-  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
+  async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
     return this.file.buffer ? this.file.buffer : new Uint8Array(0);
   }
 
   show(){
+    log.trace('TabState.show', this.constructor.name, this.id);
     this.#tabManager.hideAll();
     this.visible = true;
 
@@ -214,28 +219,30 @@ export class TabState extends EventListenerModel {
     this.#tabManager.triggerEventListener('onTabShow', [this]);
     this.processEventListener('onTabShow', [this]);
 
-    // Attach keyboard event listeners
     window.addEventListener('keydown', this.#_onKeyDown);
     window.addEventListener('keyup', this.#_onKeyUp);
+    log.trace('TabState.show done');
   }
 
   hide(){
+    log.trace('TabState.hide', this.constructor.name, this.id);
     this.visible = false;
     this.#tabManager.triggerEventListener('onTabHide', [this]);
     this.processEventListener('onTabHide', [this]);
 
-    // Remove keyboard event listeners
     window.removeEventListener('keydown', this.#_onKeyDown);
     window.removeEventListener('keyup', this.#_onKeyUp);
   }
 
   remove(){
+    log.trace('TabState.remove', this.constructor.name, this.id);
     this.visible = false;
     this.#tabManager.removeTab(this);
     this.processEventListener('onTabRemoved', [this]);
   }
 
   attach(tabManager: EditorTabManager){
+    log.trace('TabState.attach', this.constructor.name);
     this.#tabManager = tabManager;
     this.isDestroyed = false;
   }
@@ -245,9 +252,9 @@ export class TabState extends EventListenerModel {
   }
 
   destroy() {
+    log.trace('TabState.destroy', this.constructor.name, this.id);
     this.isDestroyed = true;
 
-    // Remove keyboard event listeners if tab is still visible
     if(this.visible){
       window.removeEventListener('keydown', this.#_onKeyDown);
       window.removeEventListener('keyup', this.#_onKeyUp);
@@ -397,7 +404,7 @@ export class TabState extends EventListenerModel {
     const currentFile = this.getFile();
     // currentFile.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
     // currentFile.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
-    return new Promise<boolean>( async (resolve, reject) => {
+    return new Promise<boolean>( async (resolve, _reject) => {
       try{
         if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
           const savePath = await dialog.showSaveDialog({

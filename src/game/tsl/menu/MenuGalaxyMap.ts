@@ -1,15 +1,14 @@
-import { MenuGalaxyMap as K1_MenuGalaxyMap } from "../../kotor/KOTOR";
-
-import { Planetary } from "../../../engine/Planetary";
-import { GameState } from "../../../GameState";
-import { LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { Planetary } from "@/engine/Planetary";
+import { MenuGalaxyMap as K1_MenuGalaxyMap } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import { LBL_3DView } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "react-bootstrap";
 
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { ModalSettingsState } from "../../states/modal/ModalSettingsState";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import * as KotOR from '@/apps/forge/KotOR';
+import { ModalSettingsState } from "@/apps/forge/states/modal/ModalSettingsState";
 
-import { ForgeFileSystem } from '../../ForgeFileSystem';
-import * as KotOR from '../../KotOR';
-import './ModalSettings.scss';
+import "@/apps/forge/components/modal/ModalSettings.scss";
 
 export const ModalSettings: React.FC<BaseModalProps> = (props) => {
   const modal = props.modal as ModalSettingsState;

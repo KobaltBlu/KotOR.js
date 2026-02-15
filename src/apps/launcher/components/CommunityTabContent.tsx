@@ -1,12 +1,15 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
-import { useApp } from "../context/AppContext";
-import type { CommunityVideoItem } from "../context/CommunityContext";
-import { CommunityProvider, useCommunity } from "../context/CommunityContext";
-import type { LauncherProfileElement } from "../types";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { useApp } from "@/apps/launcher/context/AppContext";
 
-import { LightboxComponent } from "./LightboxComponenet";
-import { ProfilePromoItems, ProfilePromoItemsRef } from "./ProfilePromoItems";
+const log = createScopedLogger(LogScope.Launcher);
+
+import { LightboxComponent } from "@/apps/launcher/components/LightboxComponenet";
+import { ProfilePromoItems, ProfilePromoItemsRef } from "@/apps/launcher/components/ProfilePromoItems";
+import { CommunityProvider, useCommunity } from "@/apps/launcher/context/CommunityContext";
+import type { CommunityVideoItem } from "@/apps/launcher/context/CommunityContext";
+import type { LauncherProfileElement } from "@/apps/launcher/types";
 
 export interface CommunityTabContentProps {}
 
@@ -32,7 +35,7 @@ export const CommunityTabContent = forwardRef<CommunityTabContentRef, CommunityT
 
   useImperativeHandle(ref, () => ({
     showTab() {
-      // console.warn(`showTab: ${profile.name}`);
+      log.trace('CommunityTabContent showTab', 'Community');
       if(promoRef.current) promoRef.current.recalculate();
     }
   }));

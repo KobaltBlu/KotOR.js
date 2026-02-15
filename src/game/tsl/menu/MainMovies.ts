@@ -1,11 +1,12 @@
-import { MainMovies as K1_MainMovies } from "../../kotor/KOTOR";
+import { MainMovies as K1_MainMovies } from "@/game/kotor/KOTOR";
+import { GUIMovieItem } from "@/game/tsl/gui/GUIMovieItem";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { GUIMovieItem } from "../gui/GUIMovieItem";
 
 /**
  * MainMovies class.
@@ -27,9 +28,9 @@ export class MainMovies extends K1_MainMovies {
   declare BTN_BACK: GUIButton;
   declare LB_MOVIES: GUIListBox;
 
-  selected: any;
+  selected: ITwoDARowData | undefined;
   selectedIndex: number = 0;
-  movieList: any[] = [];
+  movieList: ITwoDARowData[] = [];
 
   constructor(){
     super();
@@ -39,9 +40,11 @@ export class MainMovies extends K1_MainMovies {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
+    log.trace('menuControlInitializer entered', { skipInit });
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if(skipInit) { log.trace('menuControlInitializer skipInit, returning'); return; }
     return new Promise<void>((resolve, reject) => {
+      log.debug('MainMovies initializing LB_MOVIES');
       this.LB_MOVIES.GUIProtoItemClass = GUIMovieItem;
       
       const table = GameState.TwoDAManager.datatables.get('movies');
@@ -53,18 +56,20 @@ export class MainMovies extends K1_MainMovies {
 
       this.LBL_UNLOCKED_VALUE.setText(`${table.RowCount} / ${table.RowCount}`);
 
-      this.LB_MOVIES.onSelected = (node: any) => {
-        log.info(node);
+      this.LB_MOVIES.onSelected = (node: ITwoDARowData) => {
+        log.info('Movie selected', node.__rowlabel ?? node.__index);
         this.selected = node;
         this.selectedIndex = this.movieList.indexOf(node);
       }
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
+        log.debug('MainMovies BTN_BACK clicked');
         this.close();
       });
       this._button_b = this.BTN_BACK;
 
+      log.trace('MainMovies menuControlInitializer completed');
       resolve();
     });
   }

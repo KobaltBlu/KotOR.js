@@ -1,16 +1,19 @@
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import type { ModuleDoor } from "../module/ModuleDoor";
-import type { ModuleObject } from "../module/ModuleObject";
-import type { ModulePlaceable } from "../module/ModulePlaceable";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
+import { Action } from "@/actions/Action";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleDoor } from "@/module/ModuleDoor";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModulePlaceable } from "@/module/ModulePlaceable";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
 
-import { Action } from "./Action";
+
+const log = createScopedLogger(LogScope.Action);
 
 /**
  * ActionLockObject class.
@@ -32,7 +35,7 @@ export class ActionLockObject extends Action {
     
   }
 
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
     if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable))
       return ActionStatus.FAILED;
 
@@ -60,7 +63,7 @@ export class ActionLockObject extends Action {
       }else{
         this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
         this.owner.force = 0;
-        //console.log(action.object);
+        log.debug('ActionLockObject: locking object', { targetId: this.target?.id });
 
         this.owner.setFacingObject( this.target );
 

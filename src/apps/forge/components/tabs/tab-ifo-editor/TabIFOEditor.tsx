@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-
-import type { GFFFieldValue } from "../../../interfaces/GFFFormField";
-import * as KotOR from "../../../KotOR";
-import { TabIFOEditorState } from "../../../states/tabs";
-import "./TabIFOEditor.scss";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import type { GFFFieldValue } from "@/apps/forge/interfaces/GFFFormField";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabIFOEditorState } from "@/apps/forge/states/tabs";
+import "@/apps/forge/components/tabs/tab-ifo-editor/TabIFOEditor.scss";
 
 interface BaseTabProps {
   tab: TabIFOEditorState;
@@ -327,7 +326,7 @@ const ScriptsTab = ({ ifo, onUpdate }: TabProps) => {
   );
 };
 
-const AreasTab = ({ ifo, onUpdate }: TabProps) => {
+const AreasTab = ({ ifo, onUpdate: _onUpdate }: TabProps) => {
   const areaList = ifo.RootNode.getFieldByLabel('Mod_Area_list');
   const areas = areaList?.getChildStructs() || [];
 

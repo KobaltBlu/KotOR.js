@@ -1,8 +1,7 @@
 import React from "react";
 
-import { ModalCloneModule } from "../../components/modal/ModalCloneModule";
-
-import { ModalState } from "./ModalState";
+import { ModalCloneModule } from "@/apps/forge/components/modal/ModalCloneModule";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
 
 export interface ModalCloneModuleStateOptions {
   title?: string;

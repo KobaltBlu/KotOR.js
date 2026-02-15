@@ -1,15 +1,15 @@
 import * as THREE from "three";
 
-import { TextureType } from "../../../enums/loaders/TextureType";
-import { GameState } from "../../../GameState";
-import { GUIButton, GUIListBox, GUIProtoItem } from "../../../gui";
-import type { GUIControl, GameMenu } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { GFFStruct } from "../../../resource/GFFStruct";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GameState } from "@/GameState";
+import { GUIButton, GUIListBox, GUIProtoItem } from "@/gui";
+import type { GUIControl, GameMenu } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { GameEngineType } from "../../../enums/engine";
+import { GameEngineType } from "@/enums/engine";
 
 /**
  * GUIInventoryItem class.

@@ -1,10 +1,10 @@
 import { useState, useCallback, memo } from "react";
 
-import { FileTypeManager } from "../FileTypeManager";
-import { useEffectOnce } from "../helpers/UseEffectOnce";
-import { MenuTopItem } from "../MenuTopItem";
-import { ForgeState } from "../states/ForgeState";
-import { MenuTopState } from "../states/MenuTopState";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { MenuTopItem } from "@/apps/forge/MenuTopItem";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { MenuTopState } from "@/apps/forge/states/MenuTopState";
 
 export interface MenuTopProps {
   className?: string;

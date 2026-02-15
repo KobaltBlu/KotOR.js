@@ -60,10 +60,13 @@ export class ContinueException extends Error {
   }
 }
 
-export class ReturnException extends Error {
-  public value: any;
+/** Runtime value of an NWScript variable (int, float, string, object id, vector, etc.). */
+export type NWScriptRuntimeValue = string | number | boolean | null | { x: number; y: number; z: number };
 
-  constructor(value: any = null) {
+export class ReturnException extends Error {
+  public value: NWScriptRuntimeValue;
+
+  constructor(value: NWScriptRuntimeValue = null) {
     super('return');
     this.value = value;
     this.name = 'ReturnException';
@@ -72,7 +75,7 @@ export class ReturnException extends Error {
 
 export interface NWScriptValue {
   type: string;
-  value: any;
+  value: NWScriptRuntimeValue;
 }
 
 export class Environment {
@@ -185,7 +188,8 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
       return this.executeFunction(mainFunc, []);
     } catch (error) {
       if (error instanceof ReturnException) {
-        return error.value || this.createValue('void', null);
+        const v = error.value;
+        return v !== null && v !== undefined ? this.runtimeValueToNWScriptValue(v) : this.createValue('void', null);
       }
       throw error;
     }
@@ -242,7 +246,8 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
 
     } catch (error) {
       if (error instanceof ReturnException) {
-        return error.value || this.getDefaultValueForType(func.returnType.name);
+        const v = error.value;
+        return v !== null && v !== undefined ? this.runtimeValueToNWScriptValue(v) : this.getDefaultValueForType(func.returnType.name);
       }
       throw error;
     } finally {
@@ -279,7 +284,7 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
     return result;
   }
 
-  public visitFunctionDeclaration(node: FunctionDeclaration): NWScriptValue {
+  public visitFunctionDeclaration(_node: FunctionDeclaration): NWScriptValue {
     // Function declarations are handled during the collection phase
     return this.createValue('void', null);
   }
@@ -322,7 +327,7 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
       value = walkAST(node.argument, this)!;
     }
 
-    throw new ReturnException(value);
+    throw new ReturnException(value.value);
   }
 
   public visitIfStatement(node: IfStatement): NWScriptValue {
@@ -343,9 +348,10 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
     this.checkBreakpoint(node);
 
     let result = this.createValue('void', null);
+    let loopDone = false;
 
     try {
-      while (true) {
+      while (!loopDone) {
         const condition = walkAST(node.test, this)!;
         if (!this.isTruthy(condition)) break;
 
@@ -360,7 +366,7 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
       }
     } catch (error) {
       if (error instanceof BreakException) {
-        // Break out of loop
+        loopDone = true;
       } else {
         throw error;
       }
@@ -383,9 +389,10 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
       }
 
       let result = this.createValue('void', null);
+      let forLoopDone = false;
 
       try {
-        while (true) {
+        while (!forLoopDone) {
           // Test condition
           if (node.test) {
             const condition = walkAST(node.test, this)!;
@@ -410,7 +417,7 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
         }
       } catch (error) {
         if (error instanceof BreakException) {
-          // Break out of loop
+          forLoopDone = true;
         } else {
           throw error;
         }
@@ -427,6 +434,7 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
 
     let result = this.createValue('void', null);
 
+    let doWhileDone = false;
     try {
       do {
         try {
@@ -440,12 +448,15 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
         }
 
         const condition = walkAST(node.test, this)!;
-        if (!this.isTruthy(condition)) break;
+        if (!this.isTruthy(condition)) {
+          doWhileDone = true;
+          break;
+        }
 
-      } while (true);
+      } while (!doWhileDone);
     } catch (error) {
       if (error instanceof BreakException) {
-        // Break out of loop
+        doWhileDone = true;
       } else {
         throw error;
       }
@@ -750,20 +761,23 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
       case 'GetFirstPC':
         return this.createValue('object', 'PLAYER_OBJECT');
 
-      case 'GetObjectByTag':
+      case 'GetObjectByTag': {
         const tag = args[0]?.value || '';
         return this.createValue('object', `OBJECT_BY_TAG_${tag}`);
+      }
 
-      case 'GetIsObjectValid':
+      case 'GetIsObjectValid': {
         const obj = args[0]?.value;
         const isValid = obj && obj !== null && obj !== 'OBJECT_INVALID';
         return this.createValue('int', isValid ? 1 : 0);
+      }
 
       // KOTOR global variable functions
-      case 'GetGlobalNumber':
-        const globalName = args[0]?.value || '';
+      case 'GetGlobalNumber': {
+        const _globalName = args[0]?.value || '';
         // In a real implementation, this would access actual global state
         return this.createValue('int', 0);
+      }
 
       case 'SetGlobalNumber':
         // In a real implementation, this would set actual global state
@@ -782,11 +796,12 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
         return this.createValue('void', null);
 
       // Vector functions
-      case 'Vector':
+      case 'Vector': {
         const x = Number(args[0]?.value || 0);
         const y = Number(args[1]?.value || 0);
         const z = Number(args[2]?.value || 0);
         return this.createValue('vector', { x, y, z });
+      }
 
       case 'GetPosition':
         return this.createValue('vector', { x: 0.0, y: 0.0, z: 0.0 });
@@ -804,10 +819,11 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
       case 'sqrt':
         return this.createValue('float', Math.sqrt(Number(args[0]?.value || 0.0)));
 
-      case 'pow':
+      case 'pow': {
         const base = Number(args[0]?.value || 0.0);
         const exp = Number(args[1]?.value || 0.0);
         return this.createValue('float', Math.pow(base, exp));
+      }
 
       case 'log':
         return this.createValue('float', Math.log(Number(args[0]?.value || 1.0)));
@@ -831,9 +847,10 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
         return this.createValue('float', Math.atan(Number(args[0]?.value || 0.0)));
 
       // Random functions
-      case 'Random':
+      case 'Random': {
         const max = Math.max(1, Math.floor(Number(args[0]?.value || 1)));
         return this.createValue('int', Math.floor(Math.random() * max));
+      }
 
       case 'd2':
         return this.createValue('int', Math.floor(Math.random() * 2) + 1);
@@ -869,8 +886,28 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
     }
   }
 
-  private createValue(type: string, value: any): NWScriptValue {
+  private createValue(type: string, value: NWScriptRuntimeValue): NWScriptValue {
     return { type, value };
+  }
+
+  /** Convert a raw runtime value (e.g. from ReturnException) to NWScriptValue. */
+  private runtimeValueToNWScriptValue(v: NWScriptRuntimeValue): NWScriptValue {
+    if (v === null || v === undefined) {
+      return this.createValue('void', null);
+    }
+    if (typeof v === 'number') {
+      return this.createValue(Number.isInteger(v) ? 'int' : 'float', v);
+    }
+    if (typeof v === 'string') {
+      return this.createValue('string', v);
+    }
+    if (typeof v === 'boolean') {
+      return this.createValue('int', v ? 1 : 0);
+    }
+    if (typeof v === 'object' && 'x' in v && 'y' in v && 'z' in v) {
+      return this.createValue('vector', v);
+    }
+    return this.createValue('unknown', null);
   }
 
   private getDefaultValue(param: Parameter): NWScriptValue {
@@ -923,9 +960,9 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
     }
 
     if (left.type === 'vector' && right.type === 'vector') {
-      return left.value.x === right.value.x &&
-        left.value.y === right.value.y &&
-        left.value.z === right.value.z;
+      const lv = left.value as { x: number; y: number; z: number };
+      const rv = right.value as { x: number; y: number; z: number };
+      return lv.x === rv.x && lv.y === rv.y && lv.z === rv.z;
     }
 
     return left.value === right.value;

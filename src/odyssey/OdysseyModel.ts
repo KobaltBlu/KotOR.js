@@ -1,19 +1,18 @@
-import { OdysseyModelEngine } from "../enums/odyssey/OdysseyModelEngine";
-import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
-import { IOdysseyFileHeader } from "../interface/odyssey/IOdysseyFileHeader";
-import { IOdysseyGeometryHeader } from "../interface/odyssey/IOdysseyGeometryHeader";
-import { IOdysseyModelHeader } from "../interface/odyssey/IOdysseyModelHeader";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-
-import { OdysseyModelAnimation } from "./OdysseyModelAnimation";
-import { OdysseyModelFactory } from "./OdysseyModelFactory";
-import { OdysseyModelNode } from "./OdysseyModelNode";
+import { OdysseyModelEngine } from "@/enums/odyssey/OdysseyModelEngine";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
+import { IOdysseyFileHeader } from "@/interface/odyssey/IOdysseyFileHeader";
+import { IOdysseyGeometryHeader } from "@/interface/odyssey/IOdysseyGeometryHeader";
+import { IOdysseyModelHeader } from "@/interface/odyssey/IOdysseyModelHeader";
+import { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import { OdysseyModelFactory } from "@/odyssey/OdysseyModelFactory";
+import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
 
 
 const log = createScopedLogger(LogScope.Loader);
-import { OdysseyModelUtility } from "./OdysseyModelUtility";
+import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const mdlStringCleaner = (str: string = ''): string => {
   const cleaned = str.replace(/\0[\s\S]*$/g,'').toLowerCase().trim();

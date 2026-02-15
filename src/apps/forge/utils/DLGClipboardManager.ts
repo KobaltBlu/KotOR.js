@@ -11,9 +11,9 @@
  */
 
 
-import { DLGNodeType } from '../../../enums/dialog/DLGNodeType';
-import { DLGNode } from '../../../resource/DLGNode';
-import { createScopedLogger, LogScope } from '../../../utility/Logger';
+import { DLGNodeType } from '@/enums/dialog/DLGNodeType';
+import { DLGNode } from '@/resource/DLGNode';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 

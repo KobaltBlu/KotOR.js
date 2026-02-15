@@ -3,8 +3,8 @@ import * as path from "path";
 
 import * as THREE from "three";
 
-import { Kit, KitComponent, KitComponentHook, KitDoor, MDLMDXTuple } from "./IndoorKit";
-import { cloneWalkmeshFromBuffer } from "./IndoorWalkmesh";
+import { Kit, KitComponent, KitComponentHook, KitDoor, MDLMDXTuple } from "@/apps/forge/data/IndoorKit";
+import { cloneWalkmeshFromBuffer } from "@/apps/forge/data/IndoorWalkmesh";
 
 const numberRegex = /(\d+)/g;
 
@@ -70,7 +70,7 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
     let kitJson: KitJsonShape;
     try {
       kitJson = JSON.parse(Buffer.from(readFile(filePath)).toString("utf8")) as KitJsonShape;
-    } catch (err) {
+    } catch {
       continue;
     }
     if (!kitJson || typeof kitJson !== "object" || !kitJson.name) {
@@ -88,7 +88,7 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
         const alwaysFile = path.join(alwaysPath, fileName);
         try {
           kit.always.set(alwaysFile, readFile(alwaysFile));
-        } catch (err) {
+        } catch {
           missingFiles.push([kitName, alwaysFile, "always file"]);
         }
       });
@@ -102,7 +102,7 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
         const textureFile = path.join(texturesPath, fileName);
         try {
           kit.textures.set(textureId, readFile(textureFile));
-        } catch (err) {
+        } catch {
           missingFiles.push([kitName, textureFile, "texture"]);
         }
         const txiPath = path.join(texturesPath, `${textureId}.txi`);
@@ -122,7 +122,7 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
         const lightmapFile = path.join(lightmapsPath, fileName);
         try {
           kit.lightmaps.set(lightmapId, readFile(lightmapFile));
-        } catch (err) {
+        } catch {
           missingFiles.push([kitName, lightmapFile, "lightmap"]);
         }
         const txiPath = path.join(lightmapsPath, `${lightmapId}.txi`);
@@ -179,13 +179,15 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
           if (!kit.sidePadding.has(doorId)) {
             kit.sidePadding.set(doorId, new Map());
           }
-          kit.sidePadding.get(doorId)!.set(paddingSize, tuple);
+          const sideMap = kit.sidePadding.get(doorId);
+          if (sideMap) sideMap.set(paddingSize, tuple);
         }
         if (paddingId.toLowerCase().startsWith("top")) {
           if (!kit.topPadding.has(doorId)) {
             kit.topPadding.set(doorId, new Map());
           }
-          kit.topPadding.get(doorId)!.set(paddingSize, tuple);
+          const topMap = kit.topPadding.get(doorId);
+          if (topMap) topMap.set(paddingSize, tuple);
         }
       });
     }

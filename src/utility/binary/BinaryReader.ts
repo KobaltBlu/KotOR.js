@@ -1,6 +1,5 @@
-import { Endians } from "../../enums/resource/Endians";
-
-import { createScopedLogger, LogScope } from "../Logger";
+import { Endians } from "@/enums/resource/Endians";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
 

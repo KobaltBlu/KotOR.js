@@ -12,7 +12,7 @@ import {
   MDLGeometryType,
   MDLNodeFlags,
   MDLNodeType
-} from './MDLTypes';
+} from '@/resource/MDLTypes';
 
 /** 3D vector (x, y, z). */
 export interface Vector3 {
@@ -325,7 +325,8 @@ export class MDL {
   get(nodeName: string): MDLNode | null {
     const stack: MDLNode[] = [this.root];
     while (stack.length > 0) {
-      const node = stack.pop()!;
+      const node = stack.pop();
+      if (node === undefined) break;
       if (node.name === nodeName) return node;
       stack.push(...node.children);
     }
@@ -337,7 +338,8 @@ export class MDL {
     const out: MDLNode[] = [];
     const stack: MDLNode[] = [this.root];
     while (stack.length > 0) {
-      const node = stack.pop()!;
+      const node = stack.pop();
+      if (node === undefined) break;
       out.push(node);
       stack.push(...node.children.slice().reverse());
     }

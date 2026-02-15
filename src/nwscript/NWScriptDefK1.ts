@@ -1,55 +1,52 @@
 import * as THREE from "three";
 
-import { AudioEngine } from "../audio/AudioEngine";
-import { CombatRound } from "../combat/CombatRound";
-import type { GameEffect } from "../effects/GameEffect";
-import EngineLocation from "../engine/EngineLocation";
-import { Planetary } from "../engine/Planetary";
-import { VideoPlayer } from "../engine/VideoPlayer";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionType } from "../enums/actions/ActionType";
-import { AttackResult } from "../enums/combat/AttackResult";
-import { WeaponWield } from "../enums/combat/WeaponWield";
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { ExperienceType } from "../enums/engine/ExperienceType";
-import { PerceptionMask } from "../enums/engine/PerceptionMask";
-import { TalentObjectType } from "../enums/engine/TalentObjectType";
-import { TalkVolume } from "../enums/engine/TalkVolume";
-import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
-import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import { CreatureClassType } from "../enums/nwscript/CreatureClassType";
-import { NWModuleObjectType } from "../enums/nwscript/NWModuleObjectType";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import type { GameEvent } from "../events/GameEvent";
-import { GameState } from "../GameState";
-import { ResourceLoader } from "../loaders";
-import type { ModuleCreature, ModuleObject, ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "../module";
-import type { OdysseyWalkMesh } from "../odyssey/OdysseyWalkMesh";
-import { GFFObject } from "../resource/GFFObject";
-import type { TalentObject } from "../talents/TalentObject";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { CombatRound } from "@/combat/CombatRound";
+import type { GameEffect } from "@/effects/GameEffect";
+import EngineLocation from "@/engine/EngineLocation";
+import { Planetary } from "@/engine/Planetary";
+import { VideoPlayer } from "@/engine/VideoPlayer";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionType } from "@/enums/actions/ActionType";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { ExperienceType } from "@/enums/engine/ExperienceType";
+import { PerceptionMask } from "@/enums/engine/PerceptionMask";
+import { TalentObjectType } from "@/enums/engine/TalentObjectType";
+import { TalkVolume } from "@/enums/engine/TalkVolume";
+import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { CreatureClassType } from "@/enums/nwscript/CreatureClassType";
+import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import type { GameEvent } from "@/events/GameEvent";
+import { GameState } from "@/GameState";
+import type { INWScriptStoreState } from "@/interface/nwscript/INWScriptStoreState";
+import { ResourceLoader } from "@/loaders";
+import type { ModuleCreature, ModuleObject, ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "@/module";
+import { EventConversation, EventSpellCastAt, EventUserDefined, NWScriptEvent } from "@/nwscript/events";
+import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
+import { NWScriptDef } from "@/nwscript/NWScriptDef";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
+import type { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
+import { DLGObject } from "@/resource/DLGObject";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import type { TalentObject } from "@/talents/TalentObject";
+import type { OdysseyModel3D } from "@/three/odyssey";
+import { BitWise } from "@/utility/BitWise";
+import { Dice } from "@/utility/Dice";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
 
-import type { OdysseyModel3D } from "../three/odyssey";
 
-import { Dice } from "../utility/Dice";
-import type { NWScriptInstance } from "./NWScriptInstance";
-import { NWScriptSubroutine } from "./NWScriptSubroutine";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { Utility } from "../utility/Utility";
 
-import { EventConversation, EventSpellCastAt, EventUserDefined, NWScriptEvent } from "./events";
-import { NWScriptDef } from "./NWScriptDef";
-
-import { DLGObject } from "../resource/DLGObject";
-
-import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
-
-import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
 
 const log = createScopedLogger(LogScope.NWScript);
 

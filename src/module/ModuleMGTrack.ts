@@ -1,14 +1,13 @@
-import { ModuleObject } from "./ModuleObject";
-
-import { OdysseyModel3D } from "../three/odyssey";
-import { OdysseyModel } from "../odyssey";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import { ILayoutTrack } from "../interface/resource/ILayoutTrack";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ModuleObject } from "@/module/ModuleObject";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyModel } from "@/odyssey";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { ILayoutTrack } from "@/interface/resource/ILayoutTrack";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Module);
-import { MDLLoader } from "../loaders";
+import { MDLLoader } from "@/loaders";
 
 /**
 * ModuleMGTrack class.

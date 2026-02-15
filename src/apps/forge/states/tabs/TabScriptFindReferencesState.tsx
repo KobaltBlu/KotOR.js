@@ -1,9 +1,10 @@
 import React from "react";
 
-import { TabScriptFindReferences } from "../../components/tabs/tab-script-find-references/TabScriptFindReferences";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-
 import { TabState } from ".";
+
+import { TabScriptFindReferences } from "@/apps/forge/components/tabs/tab-script-find-references/TabScriptFindReferences";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+
 
 export interface TextReferenceMatch {
   line: number;

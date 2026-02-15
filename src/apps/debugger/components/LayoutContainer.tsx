@@ -1,16 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
-import Draggable from 'react-draggable';
+import Draggable from "react-draggable";
 
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-import { useEffectOnce } from "../../forge/helpers/UseEffectOnce";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Debug);
 
 export interface LayoutContainerProps {
-  northContent?: JSX.Element;
-  southContent?: JSX.Element;
-  eastContent?: JSX.Element;
-  westContent?: JSX.Element;
+  northContent?: React.ReactNode;
+  southContent?: React.ReactNode;
+  eastContent?: React.ReactNode;
+  westContent?: React.ReactNode;
   northSize?: number;
   southSize?: number;
   eastSize?: number;
@@ -22,38 +22,38 @@ export interface LayoutContainerProps {
 }
 
 export const LayoutContainer = function(props: LayoutContainerProps) {
-  const containerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const centerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const northRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const northHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const northHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const southRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const southHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const southHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const eastRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const eastHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const eastHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const westRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const westHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const westHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const centerRef = useRef<HTMLDivElement | null>(null);
+  const northRef = useRef<HTMLDivElement | null>(null);
+  const northHandleRef = useRef<HTMLDivElement | null>(null);
+  const northHandleToggleRef = useRef<HTMLDivElement | null>(null);
+  const southRef = useRef<HTMLDivElement | null>(null);
+  const southHandleRef = useRef<HTMLDivElement | null>(null);
+  const southHandleToggleRef = useRef<HTMLDivElement | null>(null);
+  const eastRef = useRef<HTMLDivElement | null>(null);
+  const eastHandleRef = useRef<HTMLDivElement | null>(null);
+  const eastHandleToggleRef = useRef<HTMLDivElement | null>(null);
+  const westRef = useRef<HTMLDivElement | null>(null);
+  const westHandleRef = useRef<HTMLDivElement | null>(null);
+  const westHandleToggleRef = useRef<HTMLDivElement | null>(null);
 
-  const layoutNorthSize = useRef<number>() as React.MutableRefObject<number>;
-  const layoutSouthSize = useRef<number>() as React.MutableRefObject<number>;
-  const layoutEastSize = useRef<number>() as React.MutableRefObject<number>;
-  const layoutWestSize = useRef<number>() as React.MutableRefObject<number>;
+  const layoutNorthSize = useRef<number>(0);
+  const layoutSouthSize = useRef<number>(0);
+  const layoutEastSize = useRef<number>(0);
+  const layoutWestSize = useRef<number>(0);
 
-  const layoutNorthOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
-  const layoutSouthOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
-  const layoutEastOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
-  const layoutWestOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
+  const layoutNorthOpen = useRef<boolean>(false);
+  const layoutSouthOpen = useRef<boolean>(false);
+  const layoutEastOpen = useRef<boolean>(false);
+  const layoutWestOpen = useRef<boolean>(false);
 
-  const layoutBarOpenSize = useRef<number>() as React.MutableRefObject<number>;
-  const layoutBarClosedSize = useRef<number>() as React.MutableRefObject<number>;
+  const layoutBarOpenSize = useRef<number>(0);
+  const layoutBarClosedSize = useRef<number>(0);
 
-  const northContent: JSX.Element = props.northContent as JSX.Element;
-  const southContent: JSX.Element = props.southContent as JSX.Element;
-  const eastContent: JSX.Element = props.eastContent as JSX.Element;
-  const westContent: JSX.Element = props.westContent as JSX.Element;
+  const northContent = props.northContent;
+  const southContent = props.southContent;
+  const eastContent = props.eastContent;
+  const westContent = props.westContent;
 
   const layout_north_enabled: boolean = northContent ? true : false;
   const layout_south_enabled: boolean = southContent ? true : false;
@@ -66,13 +66,13 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
   let northStyle: React.CSSProperties = {};
   let southStyle: React.CSSProperties = {};
   let northHandleStyle: React.CSSProperties = {};
-  const northHandleToggleStyle: React.CSSProperties = {};
+  const _northHandleToggleStyle: React.CSSProperties = {};
   let southHandleStyle: React.CSSProperties = {};
-  const southHandleToggleStyle: React.CSSProperties = {};
+  const _southHandleToggleStyle: React.CSSProperties = {};
   let eastHandleStyle: React.CSSProperties = {};
-  const eastHandleToggleStyle: React.CSSProperties = {};
+  const _eastHandleToggleStyle: React.CSSProperties = {};
   let westHandleStyle: React.CSSProperties = {};
-  const westHandleToggleStyle: React.CSSProperties = {};
+  const _westHandleToggleStyle: React.CSSProperties = {};
 
   const handleStart = (_e: { clientX: number; clientY: number }, handle: string) => {
     log.trace('Layout drag start', handle);
@@ -182,7 +182,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
     if(typeof layoutBarClosedSize.current === 'undefined'){
       layoutBarClosedSize.current = (typeof props?.barClosedSize === 'number') ? props.barClosedSize : 14;
     }
-    
+
     rerender(!render);
     window.addEventListener('resize', onWindowResize);
     return () => {
@@ -202,16 +202,16 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       return;
     }
 
-    const north_gutter_size = 
+    const north_gutter_size =
       layout_north_enabled ? (layoutNorthOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
-      
-    const south_gutter_size = 
+
+    const south_gutter_size =
       layout_south_enabled ? (layoutSouthOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
-    const east_gutter_size = 
+    const east_gutter_size =
       layout_east_enabled ? (layoutEastOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
-    const west_gutter_size = 
+    const west_gutter_size =
       layout_west_enabled ? (layoutWestOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
     const west_bounds = {

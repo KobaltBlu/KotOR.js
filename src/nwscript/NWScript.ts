@@ -1,31 +1,31 @@
-import { GameEngineType } from "../enums/engine/GameEngineType";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { Endians } from "../enums/resource/Endians";
-import { IPCMessageType } from "../enums/server/ipc/IPCMessageType";
-import { GameState } from "../GameState";
-import { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
-import { ResourceLoader } from "../loaders";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-
-import { NWScriptControlFlowGraph } from "./decompiler/NWScriptControlFlowGraph";
-import { NWScriptDecompiler } from "./decompiler/NWScriptDecompiler";
-import { NWScriptDefK2 } from "./NWScriptDefK2";
-import { NWScriptInstance } from "./NWScriptInstance";
-import { NWScriptInstruction } from "./NWScriptInstruction";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { Endians } from "@/enums/resource/Endians";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { GameState } from "@/GameState";
+import { INWScriptDefAction } from "@/interface/nwscript/INWScriptDefAction";
+import { ResourceLoader } from "@/loaders";
+import { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import { NWScriptDecompiler } from "@/nwscript/decompiler/NWScriptDecompiler";
+import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
+import { NWScriptDefK2 } from "@/nwscript/NWScriptDefK2";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import {
   OP_CPDOWNSP, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_EQUAL, OP_NEQUAL, OP_MOVSP, OP_JMP, OP_JSR, OP_JZ, OP_RETN, 
   OP_DESTRUCT, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP, OP_STORE_STATE, OP_T
-} from './NWScriptOPCodes';
-import { NWScriptStack } from "./NWScriptStack";
+} from '@/nwscript/NWScriptOPCodes';
+import { NWScriptStack } from "@/nwscript/NWScriptStack";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
 
 
 
 
 const log = createScopedLogger(LogScope.NWScript);
-import { NWScriptDefK1 } from "./NWScriptDefK1";
 
 /**
  * NWScript class.

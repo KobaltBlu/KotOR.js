@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-import * as KotOR from "../KotOR";
-import { AppState } from "../states/AppState";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import * as KotOR from "@/apps/game/KotOR";
+import { AppState } from "@/apps/game/states/AppState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

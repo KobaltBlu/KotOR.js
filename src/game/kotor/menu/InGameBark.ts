@@ -1,16 +1,16 @@
 import * as THREE from "three";
 
-import { DLGNodeType, ModuleObjectType } from "../../../enums";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUILabel } from "../../../gui";
-import { ResourceLoader } from "../../../loaders";
-import { DLGNode } from "../../../resource/DLGNode";
-import { LIPObject } from "../../../resource/LIPObject";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
-import { BitWise } from "../../../utility/BitWise";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { DLGNodeType, ModuleObjectType } from "@/enums";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUILabel } from "@/gui";
+import { ResourceLoader } from "@/loaders";
+import { DLGNode } from "@/resource/DLGNode";
+import { LIPObject } from "@/resource/LIPObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

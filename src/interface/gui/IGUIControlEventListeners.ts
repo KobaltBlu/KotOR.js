@@ -1,4 +1,4 @@
-import type { GUIControlEvent , GUIControlEventData } from "../gui/GUIControlEvent";
+import type { GUIControlEvent , GUIControlEventData } from "@/interface/gui/GUIControlEvent";
 
 /** Callback for GUI control events (click, hover, etc.). */
 export type IGUIControlEventListenerCallback = (event: GUIControlEvent, ...args: GUIControlEventData[]) => void;

@@ -1,15 +1,14 @@
-import { createScopedLogger, LogScope } from "../../utility/Logger";
 
-import type { NWScript } from "../NWScript";
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-
-import { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import { NWScriptEdge, EdgeType } from "./NWScriptEdge";
-import type { NWScriptExpression } from "./NWScriptExpression";
-
+import { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import { NWScriptEdge, EdgeType } from "@/nwscript/decompiler/NWScriptEdge";
+import type { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
+import type { NWScript } from "@/nwscript/NWScript";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import {
   OP_JMP, OP_JSR, OP_JZ, OP_JNZ, OP_RETN, OP_STORE_STATE, OP_STORE_STATEALL
-} from "../NWScriptOPCodes";
+} from "@/nwscript/NWScriptOPCodes";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
 
 const log = createScopedLogger(LogScope.NWScript);
 

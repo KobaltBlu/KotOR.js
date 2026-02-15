@@ -1,7 +1,6 @@
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptExpression } from "./NWScriptExpression";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
 
 /**
  * AST Node Types for NWScript

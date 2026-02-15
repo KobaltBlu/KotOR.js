@@ -1,7 +1,7 @@
-import * as KotOR from "../KotOR";
-import { CExoLocString, ResourceTypes } from "../KotOR";
-
-import { ForgeGameObject } from "./ForgeGameObject";
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { CExoLocString, ResourceTypes } from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 const PRIORITY_LOOPING_AREAWIDE_AMBIENTS = 4;
 const PRIORITY_POSITIONAL_AMBIENTS = 5;
@@ -44,7 +44,10 @@ export class ForgeSound extends ForgeGameObject {
     if(buffer){
       this.loadFromBuffer(buffer);
     }
-    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
+      this.onPropertyChange(args[0] as unknown, args[1] as unknown);
+    };
+    this.addEventListener('onPropertyChange', onPropChange);
   }
 
   onPropertyChange(property: string, newValue: unknown, oldValue: unknown){

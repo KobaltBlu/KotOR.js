@@ -1,5 +1,5 @@
 import React from "react";
-import "./ForgeTreeView.scss";
+import "@/apps/forge/components/treeview/ForgeTreeView.scss";
 
 export const ForgeTreeView = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   return (

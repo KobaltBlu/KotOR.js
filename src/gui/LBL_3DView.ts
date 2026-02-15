@@ -1,10 +1,10 @@
 import * as THREE from "three";
 
-import { GameState } from "../GameState";
-import type { LightManager } from "../managers";
-import { OdysseyModel3D } from "../three/odyssey";
+import { GameState } from "@/GameState";
+import type { GUIControl } from "@/gui/GUIControl";
+import type { LightManager } from "@/managers";
+import { OdysseyModel3D } from "@/three/odyssey";
 
-import type { GUIControl } from "./GUIControl";
 
 /**
  * LBL_3DView class.
@@ -27,8 +27,8 @@ export class LBL_3DView {
   currentCamera: THREE.Camera;
   globalLight: THREE.AmbientLight;
   lightManager: LightManager = new GameState.LightManager();
-  emitters: any = {};
-  _emitters: any = {};
+  emitters: Record<string, { tick: (delta: number) => void }> = {};
+  _emitters: Record<string, { tick: (delta: number) => void }> = {};
   group: { 
     emitters: THREE.Group; 
     lights: THREE.Group; 
@@ -36,7 +36,7 @@ export class LBL_3DView {
     shadow_lights: THREE.Group; 
     creatures: THREE.Group; 
   };
-  control: any;
+  control: GUIControl | undefined;
   frustumMat4: THREE.Matrix4;
   viewportFrustum: THREE.Frustum;
 
@@ -157,7 +157,7 @@ export class LBL_3DView {
     GameState.renderer.setRenderTarget(this.texture);
     GameState.renderer.clear();
     GameState.renderer.render(this.scene, this.currentCamera);
-    (this.texture as any).needsUpdate = true;
+    (this.texture as THREE.WebGLRenderTarget & { needsUpdate?: boolean }).needsUpdate = true;
     GameState.renderer.setRenderTarget(null);
     //GameState.renderer.setClearColor(oldClearColor, 1);
 

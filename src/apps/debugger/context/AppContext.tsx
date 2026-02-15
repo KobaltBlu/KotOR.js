@@ -1,21 +1,17 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 
-import * as KotOR from "../KotOR";
-import { DebuggerState } from "../states/DebuggerState";
-
-import { IPCDataType } from "../../../enums/server/ipc/IPCDataType";
-import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
-import { IPCMessage } from "../../../server/ipc/IPCMessage";
-import { IPCMessageParam } from "../../../server/ipc/IPCMessageParam";
+import * as KotOR from "@/apps/debugger/KotOR";
+import { DebuggerState } from "@/apps/debugger/states/DebuggerState";
+import { IPCMessage } from "@/server/ipc/IPCMessage";
 
 export interface AppProviderValues {
   stateRef: React.MutableRefObject<DebuggerState>;
   scriptMap: [Map<string, KotOR.NWScript>, React.Dispatch<Map<string, KotOR.NWScript>>];
   instanceMap: [Map<string, KotOR.NWScriptInstance>, React.Dispatch<Map<string, KotOR.NWScriptInstance>>];
   parentMap: [Map<string, Set<string>>, React.Dispatch<Map<string, Set<string>>>];
-  selectedInstance: [KotOR.NWScriptInstance, React.Dispatch<KotOR.NWScriptInstance>];
-  setSelectedInstanceHelper: Function;
-  sendMessageHelper: Function;
+  selectedInstance: [KotOR.NWScriptInstance | undefined, React.Dispatch<KotOR.NWScriptInstance | undefined>];
+  setSelectedInstanceHelper: (instance: KotOR.NWScriptInstance) => void;
+  sendMessageHelper: (data: ArrayBuffer | ArrayBufferView) => void;
 }
 const defaultAppContextValue: AppProviderValues = null as unknown as AppProviderValues;
 export const AppContext = createContext<AppProviderValues>(defaultAppContextValue);
@@ -81,7 +77,6 @@ export const AppProvider = (props: AppProviderProps) => {
     scriptMap: [scriptMap, setScriptMap],
     instanceMap: [instanceMap, setInstanceMap],
     parentMap: [parentMap, setParentMap],
-    //@ts-ignore
     selectedInstance: [selectedInstance, setSelectedInstance],
     setSelectedInstanceHelper: setSelectedInstanceHelper,
     sendMessageHelper: sendMessageHelper

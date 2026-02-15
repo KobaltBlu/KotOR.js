@@ -1,10 +1,10 @@
-import { PazaakCardGUITextures } from "../../../enums/minigames/PazaakCardGUITextures";
-import { PazaakCards } from "../../../enums/minigames/PazaakCards";
-import { PazaakSideDeckSlots } from "../../../enums/minigames/PazaakSideDeckSlots";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIControl , GUILabel, GUIButton } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { PazaakCardGUITextures } from "@/enums/minigames/PazaakCardGUITextures";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
+import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIControl , GUILabel, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 const MSG_CONFIRM_SIDE_DECK = 32322;

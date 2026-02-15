@@ -1,16 +1,16 @@
 import * as path from 'path';
 
-import { IRIMResource } from '../interface/resource/IRIMResource';
-import { BinaryReader } from '../utility/binary/BinaryReader';
-import { BinaryWriter } from '../utility/binary/BinaryWriter';
-import { GameFileSystem } from '../utility/GameFileSystem';
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { IRIMResource } from '@/interface/resource/IRIMResource';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { ResourceTypes } from './ResourceTypes';
 
 
 const log = createScopedLogger(LogScope.Resource);
-import { IRIMHeader } from '../interface/resource/IRIMHeader';
+import { IRIMHeader } from '@/interface/resource/IRIMHeader';
 
 const RIM_HEADER_LENGTH = 160;
 const RIM_RESOURCE_ENTRY_SIZE = 34;

@@ -1,49 +1,47 @@
-import { ActionType } from "../enums/actions/ActionType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import type { Action } from "@/actions/Action";
+import { ActionCastSpell } from "@/actions/ActionCastSpell";
+import { ActionCloseDoor } from "@/actions/ActionCloseDoor";
+import { ActionCombat } from "@/actions/ActionCombat";
+import { ActionDialogObject } from "@/actions/ActionDialogObject";
+import { ActionDisarmMine } from "@/actions/ActionDisarmMine";
+import { ActionDoCommand } from "@/actions/ActionDoCommand";
+import { ActionDropItem } from "@/actions/ActionDropItem";
+import { ActionEquipItem } from "@/actions/ActionEquipItem";
+import { ActionExamineMine } from "@/actions/ActionExamineMine";
+import { ActionFlagMine } from "@/actions/ActionFlagMine";
+import { ActionFollowLeader } from "@/actions/ActionFollowLeader";
+import { ActionForceFollowObject } from "@/actions/ActionForceFollowObject";
+import { ActionGiveItem } from "@/actions/ActionGiveItem";
+import { ActionItemCastSpell } from "@/actions/ActionItemCastSpell";
+import { ActionJumpToObject } from "@/actions/ActionJumpToObject";
+import { ActionJumpToPoint } from "@/actions/ActionJumpToPoint";
+import { ActionLockObject } from "@/actions/ActionLockObject";
+import { ActionMoveToPoint } from "@/actions/ActionMoveToPoint";
+import { ActionOpenDoor } from "@/actions/ActionOpenDoor";
+import { ActionPauseDialog } from "@/actions/ActionPauseDialog";
+import { ActionPhysicalAttacks } from "@/actions/ActionPhysicalAttacks";
+import { ActionPickUpItem } from "@/actions/ActionPickUpItem";
+import { ActionPlayAnimation } from "@/actions/ActionPlayAnimation";
+import { ActionRandomWalk } from "@/actions/ActionRandomWalk";
+import { ActionRecoverMine } from "@/actions/ActionRecoverMine";
+import { ActionResumeDialog } from "@/actions/ActionResumeDialog";
+import { ActionSetCommandable } from "@/actions/ActionSetCommandable";
+import { ActionSetMine } from "@/actions/ActionSetMine";
+import { ActionSpeak } from "@/actions/ActionSpeak";
+import { ActionSpeakStrRef } from "@/actions/ActionSpeakStrRef";
+import { ActionTakeItem } from "@/actions/ActionTakeItem";
+import { ActionUnequipItem } from "@/actions/ActionUnequipItem";
+import { ActionUnlockObject } from "@/actions/ActionUnlockObject";
+import { ActionUseObject } from "@/actions/ActionUseObject";
+import { ActionWait } from "@/actions/ActionWait";
+import { ActionType } from "@/enums/actions/ActionType";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 
-import type { Action } from "./Action";
-import { ActionCastSpell } from "./ActionCastSpell"; 
-import { ActionCloseDoor } from "./ActionCloseDoor"; 
-import { ActionCombat } from "./ActionCombat"; 
-import { ActionDialogObject } from "./ActionDialogObject"; 
-import { ActionDisarmMine } from "./ActionDisarmMine";
-import { ActionDoCommand } from "./ActionDoCommand";
-import { ActionDropItem } from "./ActionDropItem";
-import { ActionEquipItem } from "./ActionEquipItem";
-import { ActionExamineMine } from "./ActionExamineMine";
-import { ActionFlagMine } from "./ActionFlagMine";
-import { ActionFollowLeader } from "./ActionFollowLeader";
-import { ActionForceFollowObject } from "./ActionForceFollowObject";
-import { ActionGiveItem } from "./ActionGiveItem";
-import { ActionItemCastSpell } from "./ActionItemCastSpell";
-import { ActionJumpToObject } from "./ActionJumpToObject";
-import { ActionJumpToPoint } from "./ActionJumpToPoint";
-import { ActionLockObject } from "./ActionLockObject";
-import { ActionMoveToPoint } from "./ActionMoveToPoint";
-import { ActionOpenDoor } from "./ActionOpenDoor";
-import { ActionPauseDialog } from "./ActionPauseDialog";
-import { ActionPhysicalAttacks } from "./ActionPhysicalAttacks";
-import { ActionPickUpItem } from "./ActionPickUpItem";
-import { ActionPlayAnimation } from "./ActionPlayAnimation";
-import { ActionRandomWalk } from "./ActionRandomWalk";
-import { ActionRecoverMine } from "./ActionRecoverMine";
-import { ActionResumeDialog } from "./ActionResumeDialog";
-import { ActionSetCommandable } from "./ActionSetCommandable";
-import { ActionSetMine } from "./ActionSetMine";
-import { ActionSpeak } from "./ActionSpeak";
-import { ActionSpeakStrRef } from "./ActionSpeakStrRef";
-import { ActionTakeItem } from "./ActionTakeItem";
-import { ActionUnequipItem } from "./ActionUnequipItem";
-import { ActionUnlockObject } from "./ActionUnlockObject";
-import { ActionUseObject } from "./ActionUseObject";
-import { ActionWait } from "./ActionWait";
-
 /**
- * ActionFactory class.
- * Static-only registry of action constructors; do not instantiate.
+ * ActionFactory – static-only registry of action constructors.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -51,49 +49,44 @@ import { ActionWait } from "./ActionWait";
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class ActionFactory {
+export const ActionFactory = {
+  ActionCombat,
+  ActionCastSpell,
+  ActionCloseDoor,
+  ActionDialogObject,
+  ActionDoCommand,
+  ActionDropItem,
+  ActionEquipItem,
+  ActionFollowLeader,
+  ActionGiveItem,
+  ActionItemCastSpell,
+  ActionJumpToObject,
+  ActionJumpToPoint,
+  ActionLockObject,
+  ActionMoveToPoint,
+  ActionOpenDoor,
+  ActionPauseDialog,
+  ActionPhysicalAttacks,
+  ActionPickUpItem,
+  ActionPlayAnimation,
+  ActionResumeDialog,
+  ActionSetCommandable,
+  ActionTakeItem,
+  ActionUnlockObject,
+  ActionUnequipItem,
+  ActionUseObject,
+  ActionWait,
+  ActionRandomWalk,
+  ActionForceFollowObject,
+  ActionSpeakStrRef,
+  ActionSetMine,
+  ActionRecoverMine,
+  ActionDisarmMine,
+  ActionExamineMine,
+  ActionFlagMine,
+  ActionSpeak,
 
-  private constructor() {
-    // Static-only class; use ActionFactory.ActionX to access action types.
-  }
-
-  static ActionCombat: typeof ActionCombat = ActionCombat;
-  static ActionCastSpell: typeof ActionCastSpell = ActionCastSpell;
-  static ActionCloseDoor: typeof ActionCloseDoor = ActionCloseDoor;
-  static ActionDialogObject: typeof ActionDialogObject = ActionDialogObject;
-  static ActionDoCommand: typeof ActionDoCommand = ActionDoCommand;
-  static ActionDropItem: typeof ActionDropItem = ActionDropItem;
-  static ActionEquipItem: typeof ActionEquipItem = ActionEquipItem;
-  static ActionFollowLeader: typeof ActionFollowLeader = ActionFollowLeader;
-  static ActionGiveItem: typeof ActionGiveItem = ActionGiveItem;
-  static ActionItemCastSpell: typeof ActionItemCastSpell = ActionItemCastSpell;
-  static ActionJumpToObject: typeof ActionJumpToObject = ActionJumpToObject;
-  static ActionJumpToPoint: typeof ActionJumpToPoint = ActionJumpToPoint;
-  static ActionLockObject: typeof ActionLockObject = ActionLockObject;
-  static ActionMoveToPoint: typeof ActionMoveToPoint = ActionMoveToPoint;
-  static ActionOpenDoor: typeof ActionOpenDoor = ActionOpenDoor;
-  static ActionPauseDialog: typeof ActionPauseDialog = ActionPauseDialog;
-  static ActionPhysicalAttacks: typeof ActionPhysicalAttacks = ActionPhysicalAttacks;
-  static ActionPickUpItem: typeof ActionPickUpItem = ActionPickUpItem;
-  static ActionPlayAnimation: typeof ActionPlayAnimation = ActionPlayAnimation;
-  static ActionResumeDialog: typeof ActionResumeDialog = ActionResumeDialog;
-  static ActionSetCommandable: typeof ActionSetCommandable = ActionSetCommandable;
-  static ActionTakeItem: typeof ActionTakeItem = ActionTakeItem;
-  static ActionUnlockObject: typeof ActionUnlockObject = ActionUnlockObject;
-  static ActionUnequipItem: typeof ActionUnequipItem = ActionUnequipItem;
-  static ActionUseObject: typeof ActionUseObject = ActionUseObject;
-  static ActionWait: typeof ActionWait = ActionWait;
-  static ActionRandomWalk: typeof ActionRandomWalk = ActionRandomWalk;
-  static ActionForceFollowObject: typeof ActionForceFollowObject = ActionForceFollowObject;
-  static ActionSpeakStrRef: typeof ActionSpeakStrRef = ActionSpeakStrRef;
-  static ActionSetMine: typeof ActionSetMine = ActionSetMine;
-  static ActionRecoverMine: typeof ActionRecoverMine = ActionRecoverMine;
-  static ActionDisarmMine: typeof ActionDisarmMine = ActionDisarmMine;
-  static ActionExamineMine: typeof ActionExamineMine = ActionExamineMine;
-  static ActionFlagMine: typeof ActionFlagMine = ActionFlagMine;
-  static ActionSpeak: typeof ActionSpeak = ActionSpeak;
-
-  static FromStruct( struct: GFFStruct ): Action {
+  FromStruct(struct: GFFStruct): Action {
     let action: Action | undefined;
     const actionId: number = struct.getNumberByLabel('ActionId');
     const groupId: number = struct.getNumberByLabel('GroupActionId');
@@ -220,6 +213,5 @@ export class ActionFactory {
     }
 
     return action as Action;
-  }
-
-}
+  },
+};

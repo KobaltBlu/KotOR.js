@@ -1,18 +1,18 @@
 import * as THREE from "three";
 
-import { Mouse } from "../controls/Mouse";
-import { EngineMode, GameEngineType } from "../enums/engine";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import { TextureLoader } from "../loaders";
-import type { ModuleObject } from "../module";
-import { OdysseyObject3D } from "../three/odyssey/OdysseyObject3D";
-import { ApplicationProfile } from "../utility/ApplicationProfile";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { Mouse } from "@/controls/Mouse";
+import { EngineMode, GameEngineType } from "@/enums/engine";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { TextureLoader } from "@/loaders";
+import type { MenuManager } from "@/managers/MenuManager";
+import type { ModuleObject } from "@/module";
+import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import type { MenuManager } from "./MenuManager";
 
 const log = createScopedLogger(LogScope.Manager);
 

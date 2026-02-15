@@ -77,14 +77,18 @@ module.exports = (_env, argv) => {
         path.resolve(__dirname, 'node_modules'),
         path.resolve(__dirname, '../../node_modules')
       ],
-      alias: {
-        '@kotor': path.resolve(__dirname, '../../src'),
-        '@forge': path.resolve(__dirname, '../../src/apps/forge'),
-        'three': path.resolve(__dirname, '../../node_modules/three'),
-        // Forge app.scss uses ~bootstrap and ~@fortawesome; resolve from root
-        '~bootstrap': path.resolve(__dirname, '../../node_modules/bootstrap'),
-        '~@fortawesome/fontawesome-free': path.resolve(__dirname, '../../node_modules/@fortawesome/fontawesome-free')
-      },
+      alias: (() => {
+        const src = path.resolve(__dirname, '../../src');
+        return {
+          '@': src,
+          '@kotor': src,
+          '@forge': path.join(src, 'apps', 'forge'),
+          'three': path.resolve(__dirname, '../../node_modules/three'),
+          // Forge app.scss uses ~bootstrap and ~@fortawesome; resolve from root
+          '~bootstrap': path.resolve(__dirname, '../../node_modules/bootstrap'),
+          '~@fortawesome/fontawesome-free': path.resolve(__dirname, '../../node_modules/@fortawesome/fontawesome-free'),
+        };
+      })(),
       fallback: {
         path: require.resolve('path-browserify'),
         fs: false,

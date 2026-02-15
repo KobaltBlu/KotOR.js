@@ -1,6 +1,9 @@
-import { EventListener } from "../utility/EventListener";
+import type { AudioEngine } from "@/audio/AudioEngine";
+import { EventListener } from "@/utility/EventListener";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import type { AudioEngine } from "./AudioEngine";
+
+const log = createScopedLogger(LogScope.Audio);
 
 /**
  * AmbientAudioEmitter class.
@@ -70,12 +73,12 @@ export class AmbientAudioEmitter extends EventListener {
    */
   async play(loop = false){
     if(!this.data){
-      console.warn('AmbientAudioEmitter', 'No data to play');
+      log.warn('AmbientAudioEmitter No data to play');
       return;
     }
 
     if(!this.destination){
-      console.warn('AmbientAudioEmitter', 'No destination to play to');
+      log.warn('AmbientAudioEmitter No destination to play to');
       return;
     }
 

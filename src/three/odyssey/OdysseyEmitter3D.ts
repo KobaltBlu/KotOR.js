@@ -1,14 +1,14 @@
 import * as THREE from "three";
 
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { TextureLoader } from "../../loaders/TextureLoader";
-import type { OdysseyController } from "../../odyssey/controllers";
-import { createScopedLogger, LogScope } from "../../utility/Logger";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { TextureLoader } from "@/loaders/TextureLoader";
+import { OdysseyModelNode, OdysseyModelNodeEmitter } from "@/odyssey";
+import type { OdysseyController } from "@/odyssey/controllers";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { OdysseyModelNode, OdysseyModelNodeEmitter } from "../../odyssey";
 
 const log = createScopedLogger(LogScope.Loader);
-import { OdysseyObject3D } from "./OdysseyObject3D";
+import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 
 /** Context passed to emitter for depth/camera (e.g. currentCamera, depthTarget). currentCamera may be omitted when context provides camera. */
 export interface IOdysseyEmitterContext {

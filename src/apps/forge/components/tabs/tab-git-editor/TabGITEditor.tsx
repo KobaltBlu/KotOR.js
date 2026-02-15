@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-
-import type { GFFFieldValue } from "../../../interfaces/GFFFormField";
-import * as KotOR from "../../../KotOR";
-import { TabGITEditorState } from "../../../states/tabs";
-import "./TabGITEditor.scss";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import type { GFFFieldValue } from "@/apps/forge/interfaces/GFFFormField";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabGITEditorState } from "@/apps/forge/states/tabs";
+import "@/apps/forge/components/tabs/tab-git-editor/TabGITEditor.scss";
 
 interface BaseTabProps {
   tab: TabGITEditorState;
@@ -123,7 +122,7 @@ interface InstanceListProps {
 }
 
 const InstanceList = (props: InstanceListProps) => {
-  const { label, icon, instances, instanceType, selectedIndex, onSelect } = props;
+  const { label, icon, instances, instanceType: _instanceType, selectedIndex, onSelect } = props;
 
   if(instances.length === 0){
     return null;

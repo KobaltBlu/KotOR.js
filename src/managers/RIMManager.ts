@@ -1,8 +1,8 @@
 import * as path from "path";
 
-import { RIMObject } from "../resource/RIMObject";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { RIMObject } from "@/resource/RIMObject";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
 

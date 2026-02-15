@@ -1,11 +1,13 @@
 /**
  * MDL (Model) type definitions for KotOR.
  * Enums, flags, and constants for MDL/MDX model files (K1 and TSL).
+ * MDL controller type IDs intentionally repeat across categories (particle vs mesh etc.).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * @file MDLTypes.ts
  * @license GPL-3.0
  */
+/* eslint-disable @typescript-eslint/no-duplicate-enum-values -- MDL format uses same numeric IDs for different controller names */
 
 /** Model geometry type (how the mesh is rendered). */
 export enum MDLGeometryType {

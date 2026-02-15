@@ -23,10 +23,10 @@ import {
   INDOOR_ROOM_HOVER_COLOR,
   INDOOR_WARP_POINT_COLOR,
   INDOOR_WARP_POINT_RADIUS,
-} from "../data/IndoorBuilderConstants";
-import { KitComponent } from "../data/IndoorKit";
-import { IndoorMap, IndoorMapRoom } from "../data/IndoorMap";
-import { clamp, toRadians } from "../data/IndoorTypes";
+} from "@/apps/forge/data/IndoorBuilderConstants";
+import { KitComponent } from "@/apps/forge/data/IndoorKit";
+import { IndoorMap, IndoorMapRoom } from "@/apps/forge/data/IndoorMap";
+import { clamp, toRadians } from "@/apps/forge/data/IndoorTypes";
 
 type RendererOptions = {
   showGrid: boolean;
@@ -205,7 +205,7 @@ export class IndoorMapCanvasRenderer {
   onWheel(event: WheelEvent): void {
     if (!this.canvas) return;
     const delta = event.deltaY;
-    const scaleFactor = delta < 0 ? 1 / INDOOR_ZOOM_STEP_FACTOR : INDOOR_ZOOM_STEP_FACTOR;
+    const _scaleFactor = delta < 0 ? 1 / INDOOR_ZOOM_STEP_FACTOR : INDOOR_ZOOM_STEP_FACTOR;
     const wheelFactor = 1 + Math.abs(delta) * INDOOR_ZOOM_WHEEL_SENSITIVITY;
     const nextScale = delta < 0 ? this.cameraScale / wheelFactor : this.cameraScale * wheelFactor;
     this.cameraScale = clamp(nextScale, INDOOR_MIN_CAMERA_ZOOM, INDOOR_MAX_CAMERA_ZOOM);
@@ -227,8 +227,9 @@ export class IndoorMapCanvasRenderer {
   }
 
   private getComponentFaces(component: KitComponent): Face2D[] {
-    if (this.componentFaces.has(component)) {
-      return this.componentFaces.get(component)!;
+    const cached = this.componentFaces.get(component);
+    if (cached !== undefined) {
+      return cached;
     }
     const faces: Face2D[] = component.bwm.faces.map((face) => {
       const v1 = component.bwm.vertices[face.a];

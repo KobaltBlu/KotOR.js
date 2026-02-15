@@ -151,6 +151,7 @@ const libraryConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -237,6 +238,7 @@ const launcherConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -320,6 +322,7 @@ const gameConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -420,6 +423,7 @@ const forgeConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       three: path.resolve('./node_modules/three'),
       '@kotor': path.resolve('./src'),
       '@forge': path.resolve('./src/apps/forge'),
@@ -515,6 +519,7 @@ const debuggerConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       three: path.resolve('./node_modules/three'),
     },
     extensions: ['.tsx', '.ts', '.js'],

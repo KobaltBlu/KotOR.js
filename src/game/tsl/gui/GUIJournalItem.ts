@@ -1,12 +1,12 @@
-import { JournalCategory } from "../../../engine/JournalCategory";
-import { JournalEntry } from "../../../engine/JournalEntry";
-import type { SaveGame } from "../../../engine/SaveGame";
-import { GUIProtoItem } from "../../../gui";
-import type { GameMenu, GUIControl } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { JournalCategory } from "@/engine/JournalCategory";
+import { JournalEntry } from "@/engine/JournalEntry";
+import type { SaveGame } from "@/engine/SaveGame";
+import { GUIProtoItem } from "@/gui";
+import type { GameMenu, GUIControl } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { GFFStruct } from "../../../resource/GFFStruct";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 const toPaddedDigit = (num: number, len = 2) => {
   return new String(num).padStart(len, '0');

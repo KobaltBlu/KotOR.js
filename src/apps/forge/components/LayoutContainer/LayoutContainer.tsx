@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Draggable from 'react-draggable';
 
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import './LayoutContainer.scss';
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import "@/apps/forge/components/LayoutContainer/LayoutContainer.scss";
 
 // Types for better type safety
 interface LayoutBounds {
@@ -97,12 +97,12 @@ export const LayoutContainer = React.memo<LayoutContainerProps>(function LayoutC
   const DRAG_THRESHOLD = 3; // Minimum pixels of movement to trigger resize
 
   // Event handlers with proper memoization
-  const handleStart = useCallback((e: React.MouseEvent | MouseEvent, handle: string) => {
+  const handleStart = useCallback((e: React.MouseEvent | MouseEvent, _handle: string) => {
     // Store the initial drag position
     dragStartPos.current = { x: e.clientX, y: e.clientY };
   }, []);
 
-  const handleStop = useCallback((e: React.MouseEvent | MouseEvent, handle: string) => {
+  const handleStop = useCallback((e: React.MouseEvent | MouseEvent, _handle: string) => {
     if (!refs.current.container || !dragStartPos.current) return;
 
     // Calculate the distance moved

@@ -324,11 +324,14 @@ export class Identifier extends Expression {
   }
 }
 
+/** Parsed literal value (number, string, boolean, or null). */
+export type LiteralValue = string | number | boolean | null;
+
 export class Literal extends Expression {
-  public value: any;
+  public value: LiteralValue;
   public raw: string;
 
-  constructor(range: SourceRange, value: any, raw: string) {
+  constructor(range: SourceRange, value: LiteralValue, raw: string) {
     super('Literal', range);
     this.value = value;
     this.raw = raw;
@@ -372,10 +375,10 @@ export class StructExpression extends Expression {
 // Engine constants and built-ins
 export class EngineConstant extends Expression {
   public name: string;
-  public value: any;
+  public value: string | number;
   public constantType: string;
 
-  constructor(range: SourceRange, name: string, value: any, constantType: string) {
+  constructor(range: SourceRange, name: string, value: string | number, constantType: string) {
     super('EngineConstant', range);
     this.name = name;
     this.value = value;
@@ -421,7 +424,8 @@ export function walkAST<T>(node: ASTNode, visitor: ASTVisitor<T>): T | undefined
   const method = visitor[methodName];
 
   if (method && typeof method === 'function') {
-    return (method as Function).call(visitor, node);
+    const fn = method as (n: ASTNode) => T;
+    return fn.call(visitor, node) as T;
   }
 
   return undefined;

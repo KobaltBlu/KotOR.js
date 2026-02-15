@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import { Button, Modal } from "react-bootstrap";
 
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { ForgeState } from "../../states/ForgeState";
-
-import { createScopedLogger, LogScope } from "../../../../utility/Logger";
-import * as KotOR from "../../KotOR";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 const log = createScopedLogger(LogScope.Forge);
@@ -83,19 +82,23 @@ export const ModalChangeGame = function(_props: Record<string, unknown>){
 
 export type ModalChangeGameEventListenerTypes = 'onShow'|'onHide';
 
+type ModalChangeGameCallback = (...args: unknown[]) => void;
+
 export interface ModalChangeGameEventListeners {
-  onShow: Function[];
-  onHide: Function[];
+  onShow: ModalChangeGameCallback[];
+  onHide: ModalChangeGameCallback[];
 }
 
 export class ModalChangeGameState {
+  /** Instance marker so this class is not treated as extraneous (static-only). */
+  private readonly _instance = true;
 
   static eventListeners: ModalChangeGameEventListeners = {
     onShow: [],
     onHide: [],
   };
 
-  static AddEventListener(type: ModalChangeGameEventListenerTypes, cb: Function){
+  static AddEventListener(type: ModalChangeGameEventListenerTypes, cb: ModalChangeGameCallback){
     if(Array.isArray(ModalChangeGameState.eventListeners[type])){
       const ev = ModalChangeGameState.eventListeners[type];
       const index = ev.indexOf(cb);
@@ -109,7 +112,7 @@ export class ModalChangeGameState {
     }
   }
 
-  static RemoveEventListener(type: ModalChangeGameEventListenerTypes, cb: Function){
+  static RemoveEventListener(type: ModalChangeGameEventListenerTypes, cb: ModalChangeGameCallback){
     if(Array.isArray(ModalChangeGameState.eventListeners[type])){
       const ev = ModalChangeGameState.eventListeners[type];
       const index = ev.indexOf(cb);

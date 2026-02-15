@@ -1,10 +1,10 @@
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import { BitWise } from "../utility/BitWise";
+import { Action } from "@/actions/Action";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { BitWise } from "@/utility/BitWise";
 
-import { Action } from "./Action";
 
 /**
  * ActionDropItem class.
@@ -22,7 +22,7 @@ export class ActionDropItem extends Action {
     this.type = ActionType.ActionDropItem;
   }
 
-  update(delta?: number): ActionStatus {
+  update(_delta?: number): ActionStatus {
     if(!this.owner){
       return ActionStatus.FAILED;
     }
@@ -31,7 +31,7 @@ export class ActionDropItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner: ModuleCreature = this.owner as ModuleCreature;
+    const _owner: ModuleCreature = this.owner as ModuleCreature;
 
     return ActionStatus.COMPLETE;
   }

@@ -1,11 +1,9 @@
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { OP_JSR, OP_RETN, OP_RSADD, OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_SAVEBP, OP_RESTOREBP, OP_MOVSP, OP_CPTOPBP } from '../NWScriptOPCodes';
-
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { OP_JSR, OP_RETN, OP_RSADD, OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_SAVEBP, OP_RESTOREBP, OP_MOVSP, OP_CPTOPBP } from '@/nwscript/NWScriptOPCodes';
 
 
 

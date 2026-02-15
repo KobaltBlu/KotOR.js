@@ -1,16 +1,14 @@
-import { MenuEquipment as K1_MenuEquipment } from "../../kotor/KOTOR";
-
-import { GUIInventoryItem } from "../gui/GUIInventoryItem";
-
-import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
-import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
-import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { MenuEquipment as K1_MenuEquipment } from "@/game/kotor/KOTOR";
+import { GUIInventoryItem } from "@/game/tsl/gui/GUIInventoryItem";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
+import { GUIItemEquipped } from "@/gui/protoitem/GUIItemEquipped";
+import { GUIItemNone } from "@/gui/protoitem/GUIItemNone";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import type { ModuleItem } from "../../../module";
+import type { ModuleItem } from "@/module";
 
 
 /**

@@ -1,7 +1,7 @@
-import { EditorFile } from "./EditorFile";
-import { EditorTabManager } from "./managers/EditorTabManager";
-import { ModalManagerState } from "./states/modal/ModalManagerState";
-import { TabState } from "./states/tabs/TabState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
 
 /**
  * Optional host adapter for running Forge inside an embedded context (e.g. VS Code webview).

@@ -1,11 +1,9 @@
-import { OdysseyModel } from "../odyssey";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-
-import { ResourceLoader } from "./ResourceLoader";
-
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import { OdysseyModel } from "@/odyssey";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Loader);
-import { ResourceTypes } from "../resource/ResourceTypes";
 
 /**
  * Interface defining the structure of the model cache.
@@ -99,6 +97,7 @@ export class MDLLoader {
    * }
    */
 	async load (resref: string = ''): Promise<OdysseyModel> {
+    log.trace("load", resref);
     resref = resref?.toLocaleLowerCase();
 
     //Validate the resource reference

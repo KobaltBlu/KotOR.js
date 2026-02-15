@@ -1,15 +1,14 @@
 import * as THREE from "three";
 
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
-import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
-import type { OdysseyLight3D } from "../../three/odyssey/OdysseyLight3D";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 
-import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
-
-import { OdysseyController } from "./OdysseyController";
 
 /**
  * RadiusController class.
@@ -24,6 +23,7 @@ export class RadiusController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Radius;
 
+  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }

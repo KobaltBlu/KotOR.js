@@ -1,26 +1,25 @@
-import { ModuleObject } from "./ModuleObject";
-
-import { GFFObject } from "../resource/GFFObject";
+import { ModuleObject } from "@/module/ModuleObject";
+import { GFFObject } from "@/resource/GFFObject";
 
 import * as THREE from "three";
 
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleDoorAnimState, SignalEventType } from "../enums";
-import { EngineMode } from "../enums/engine/EngineMode";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleDoorAnimState, SignalEventType } from "@/enums";
+import { EngineMode } from "@/enums/engine/EngineMode";
 
 
 const log = createScopedLogger(LogScope.Module);
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { ConfigClient } from "../utility/ConfigClient";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { ConfigClient } from "@/utility/ConfigClient";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 const OBJECTS_INSIDE_UPDATE_THRESHOLD = 15; // 15 frame ticks
@@ -163,7 +162,7 @@ export class ModuleTrigger extends ModuleObject {
     return trigGeom;
   }
 
-  load( onLoad?: Function ){
+  load( onLoad?: () => void ){
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utt'], this.getTemplateResRef());

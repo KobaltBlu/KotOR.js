@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-
-import type { GFFFieldValue } from "../../../interfaces/GFFFormField";
-import * as KotOR from "../../../KotOR";
-import { TabAREEditorState } from "../../../states/tabs";
-import './TabAREEditor.scss';
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import type { GFFFieldValue } from "@/apps/forge/interfaces/GFFFormField";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabAREEditorState } from "@/apps/forge/states/tabs";
+import "@/apps/forge/components/tabs/tab-are-editor/TabAREEditor.scss";
 
 interface BaseTabProps {
   tab: TabAREEditorState;
@@ -543,7 +542,7 @@ const ScriptsTab = ({ are, onUpdate }: TabProps) => {
   );
 };
 
-const RoomsTab = ({ are, onUpdate }: TabProps) => {
+const RoomsTab = ({ are, onUpdate: _onUpdate }: TabProps) => {
   const rooms = are.RootNode.getFieldByLabel('Rooms')?.getChildStructs() || [];
 
   return (

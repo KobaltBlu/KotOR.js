@@ -1,8 +1,7 @@
-import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
-import { ApplicationMode } from "../enums/ApplicationMode";
-import { GameEngineType } from "../enums/engine";
-
-import { OSInfo } from "./OSInfo";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { ApplicationMode } from "@/enums/ApplicationMode";
+import { GameEngineType } from "@/enums/engine";
+import { OSInfo } from "@/utility/OSInfo";
 
 /**
  * ApplicationProfile class.

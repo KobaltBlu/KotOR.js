@@ -1,20 +1,24 @@
-import { IScreenResolution } from "../interface/graphics/IScreenResolution";
+import { IScreenResolution } from "@/interface/graphics/IScreenResolution";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Manager);
 
 /**
  * ResolutionManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ResolutionManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+/* eslint-disable @typescript-eslint/no-extraneous-class -- static manager pattern */
 export class ResolutionManager {
 
   public static vpScaleFactor: number = 1;
   public static hpScaleFactor: number = 1;
 
-  public static windowResolution: {width: number; height: number;} = {
+  public static windowResolution: { width: number; height: number } = {
     width: 0,
     height: 0
   };
@@ -35,47 +39,54 @@ export class ResolutionManager {
   }
 
   public static set screenResolution(res: IScreenResolution) {
-    const isChanging = this.#_screenResolution != res;
+    const isChanging = this.#_screenResolution !== res;
     const oldRes = this.#_screenResolution;
     this.#_screenResolution = res;
-    if(isChanging){
+    if (isChanging) {
+      log.debug('ResolutionManager.screenResolution changed label=%s', res.label ?? res.getName?.() ?? '');
       this.processEventListener('onChange', res, oldRes);
     }
   }
 
 
-  static #eventListeners: {[key: string]: Function[]} = {
+  static #eventListeners: {[key: string]: ((...args: (string | number | boolean | object)[]) => void)[]} = {
     'onChange': [],
     'onResize': []
   };
 
-  static addEventListener(key: string, func: Function){
+  static addEventListener(key: string, func: (...args: (string | number | boolean | object)[]) => void): void {
+    log.trace('ResolutionManager.addEventListener()', key);
     const el = this.#eventListeners[key];
-    if(Array.isArray(el)){
-      const canPush = el.indexOf(func) == -1;
-      if(canPush){
+    if (Array.isArray(el)) {
+      const canPush = el.indexOf(func) === -1;
+      if (canPush) {
         el.push(func);
+        log.debug('ResolutionManager.addEventListener() added listener for key=%s', key);
       }
     }
   }
 
-  static removeEventListener(key: string, func: Function){
+  static removeEventListener(key: string, func: (...args: (string | number | boolean | object)[]) => void): void {
+    log.trace('ResolutionManager.removeEventListener()', key);
     const el = this.#eventListeners[key];
-    if(Array.isArray(el)){
+    if (Array.isArray(el)) {
       const idx = el.indexOf(func);
       const removeAll = typeof func === 'undefined';
-      if(removeAll){
+      if (removeAll) {
         this.#eventListeners[key] = [];
-      }else if(idx >= 0){
+        log.debug('ResolutionManager.removeEventListener() cleared all for key=%s', key);
+      } else if (idx >= 0) {
         el.splice(idx, 1);
+        log.debug('ResolutionManager.removeEventListener() removed one for key=%s', key);
       }
     }
   }
 
   static processEventListener(key: string, ...args: (string | number | boolean | object)[]): void {
     const el = this.#eventListeners[key];
-    if(Array.isArray(el)){
-      for(let i = 0, len = el.length; i < len; i++){
+    if (Array.isArray(el)) {
+      log.trace('ResolutionManager.processEventListener() key=%s listenerCount=%s', key, String(el.length));
+      for (let i = 0, len = el.length; i < len; i++) {
         el[i](...args);
       }
     }
@@ -106,6 +117,7 @@ export class ResolutionManager {
   }
 
   static recalculate(): void {
+    log.trace('ResolutionManager.recalculate()');
     const scaleX = window.innerWidth / this.getViewportWidth();
     const scaleY = window.innerHeight / this.getViewportHeight();
 
@@ -115,21 +127,17 @@ export class ResolutionManager {
     this.vpScaleFactor = 1.0;
     this.hpScaleFactor = 1.0;
 
-    if(!this.screenResolution.isDynamicRes){
+    if (!this.screenResolution.isDynamicRes) {
       this.vpScaleFactor = scaleY;
       this.hpScaleFactor = scaleX;
-      // if(!xExceeds && !yExceeds){
-      //   this.vpScaleFactor = scaleY;
-      // }else if(!yExceeds){
-      //   this.vpScaleFactor = scaleY;
-      // }else if(!xExceeds){
-      //   this.vpScaleFactor = scaleX;
-      // }
+      log.debug('ResolutionManager.recalculate() fixed res scaleX=%s scaleY=%s', String(scaleX), String(scaleY));
     }
   }
 
-  static getSupportedResolutions(){
-    if(!this.resolutionsGenerated){
+  static getSupportedResolutions(): IScreenResolution[] {
+    log.trace('ResolutionManager.getSupportedResolutions()');
+    if (!this.resolutionsGenerated) {
+      log.debug('ResolutionManager.getSupportedResolutions() generating resolutions list');
       this.availableResolutions.push({
         label: 'Auto Resolution',
         width: 1,
@@ -276,15 +284,15 @@ export class ResolutionManager {
         getName: function(){ return this.label }
       });
       this.resolutionsGenerated = true;
+      log.info('ResolutionManager.getSupportedResolutions() generated count=%s', String(this.availableResolutions.length));
     }
-
     return this.availableResolutions;
-
   }
 
 }
 
 window.addEventListener('resize', () => {
+  log.trace('ResolutionManager window resize innerWidth=%s innerHeight=%s', String(window.innerWidth), String(window.innerHeight));
   ResolutionManager.windowResolution.width = window.innerWidth;
   ResolutionManager.windowResolution.height = window.innerHeight;
   ResolutionManager.recalculate();

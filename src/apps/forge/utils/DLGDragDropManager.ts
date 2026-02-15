@@ -12,12 +12,10 @@
  */
 
 
-import { DLGTreeNode } from '../interfaces/DLGTreeNode';
-
-import { DLGNodeType } from '../../../enums/dialog/DLGNodeType';
-import { createScopedLogger, LogScope } from '../../../utility/Logger';
-
-import { DLGTreeModel } from './DLGTreeModel';
+import { DLGTreeNode } from '@/apps/forge/interfaces/DLGTreeNode';
+import { DLGTreeModel } from '@/apps/forge/utils/DLGTreeModel';
+import { DLGNodeType } from '@/enums/dialog/DLGNodeType';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 

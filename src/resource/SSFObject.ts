@@ -1,6 +1,6 @@
-import { TLKManager } from "../managers/TLKManager";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
+import { TLKManager } from "@/managers/TLKManager";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 
 /**
  * SSFObject class.
@@ -37,7 +37,7 @@ export class SSFObject {
       const reader = new BinaryReader(this.data);
       this.FileType = reader.readChars(4);
       this.FileVersion = reader.readChars(4);
-      const unknown = reader.readUInt32(); //Always 12?
+      const _unknown = reader.readUInt32(); //Always 12?
 
       const soundCount = Math.min(28, Math.max(0, (this.data.length - 12) >> 2));
       for (let i = 0; i < soundCount; i++) {

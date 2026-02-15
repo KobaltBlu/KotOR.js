@@ -1,9 +1,8 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from '../utility/binary/BinaryWriter';
-import { createScopedLogger, LogScope } from "../utility/Logger";
-
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 const log = createScopedLogger(LogScope.Resource);
-import { GameFileSystem } from '../utility/GameFileSystem';
 
 /** Blank cell token in 2DA files. */
 export const TWODA_BLANK = '****';
@@ -121,6 +120,12 @@ export interface ITwoDARowData {
 /** Alias for row data; exported from resource index. */
 export type TwoDARowData = ITwoDARowData;
 
+/** JSON input for fromJSON (PyKotor { headers, rows } or legacy { rows }). */
+export interface TwoDAJSONInput {
+  headers?: string[];
+  rows?: Array<{ label?: string; _id?: string; cells?: string[]; [key: string]: string | string[] | undefined }>;
+}
+
 export class TwoDAObject {
 
   file: Uint8Array|string|undefined = undefined;
@@ -139,7 +144,7 @@ export class TwoDAObject {
    * @param file - The file to read from
    * @param onComplete - The function to call when the 2DA object is loaded
    */
-  constructor(file: Uint8Array|string|undefined = undefined, onComplete?: Function){
+  constructor(file: Uint8Array|string|undefined = undefined, onComplete?: (obj: TwoDAObject) => void){
     this.file = file;
     this.columns = ["__rowlabel"];
     this.ColumnCount = 0;
@@ -218,7 +223,7 @@ export class TwoDAObject {
       offsets[i] = br.readUInt16();
     }
 
-    const dataSize = br.readUInt16();
+    const _dataSize = br.readUInt16();
     const dataOffset = br.position;
 
     //Get the Row Data
@@ -384,7 +389,9 @@ export class TwoDAObject {
     this.columns = this.columns.filter(c => c !== header);
     this.ColumnCount = this.columns.length - 1;
     for (const idx of Object.keys(this.rows)) {
-      delete this.rows[idx][header];
+      const current = this.rows[idx];
+      const { [header]: _removed, ...rest } = current;
+      this.rows[idx] = rest as ITwoDARowData;
     }
   }
 
@@ -393,9 +400,11 @@ export class TwoDAObject {
     if (rowCount < 0) throw new Error('Row count cannot be negative.');
     const keys = Object.keys(this.rows).map(k => parseInt(k, 10)).sort((a, b) => a - b);
     if (rowCount < keys.length) {
-      for (let i = rowCount; i < keys.length; i++) {
-        delete this.rows[keys[i]];
+      const next: Record<string, ITwoDARowData> = {};
+      for (const i of keys) {
+        if (i < rowCount) next[i] = this.rows[i];
       }
+      this.rows = next;
       this._rebuildLabelLookup();
     } else {
       const dataColumns = this.columns.filter(c => c !== '__rowlabel' && c !== '__index');
@@ -467,8 +476,8 @@ export class TwoDAObject {
     for (const h of dataColumns) out.addColumn(h);
     const keys = Object.keys(this.rows).map(k => parseInt(k, 10)).sort((a, b) => a - b);
     for (const i of keys) {
-      const row = this.getRow(i)!;
-      if (predicate(row)) out.addRow(row.rowLabel, row.data);
+      const row = this.getRow(i);
+      if (row && predicate(row)) out.addRow(row.rowLabel, row.data);
     }
     return out;
   }
@@ -713,10 +722,11 @@ export class TwoDAObject {
    * Load from JSON (supports PyKotor format { headers, rows } or legacy { rows: [ { _id, ... } ] }).
    * Clears existing data and replaces with JSON.
    */
-  fromJSON(json: string | { headers?: string[]; rows?: Array<{ label?: string; _id?: string; cells?: string[]; [key: string]: string | string[] | undefined }> }): void {
-    const obj = typeof json === 'string' ? JSON.parse(json) : json;
+  fromJSON(json: string | TwoDAJSONInput): void {
+    type Parsed = TwoDAJSONInput;
+    const obj: Parsed = typeof json === 'string' ? (JSON.parse(json) as Parsed) : json;
     if (obj.headers && Array.isArray(obj.rows)) {
-      const headers = obj.headers as string[];
+      const headers = obj.headers;
       this.columns = ['__rowlabel', ...headers];
       this.ColumnCount = headers.length;
       this.rows = {};
@@ -726,7 +736,7 @@ export class TwoDAObject {
         const label = String(row.label ?? '');
         const cells = row.cells ?? [];
         const cellMap: Record<string, string> = {};
-        headers.forEach((h, i) => { cellMap[h] = cells[i] ?? ''; });
+        headers.forEach((h, i) => { cellMap[h] = (cells[i] as string) ?? ''; });
         this.addRow(label, cellMap);
       }
       return;
@@ -739,10 +749,7 @@ export class TwoDAObject {
     const legacyRows = obj.rows ?? [];
     for (const row of legacyRows) {
       const label = String(row._id ?? row.label ?? '');
-      const rest = { ...row };
-      delete rest._id;
-      delete rest.label;
-      delete rest.cells;
+      const { _id: _ri, label: _rl, cells: _rc, ...rest } = row;
       for (const h of Object.keys(rest)) {
         if (!this.columns.includes(h)) {
           this.columns.push(h);

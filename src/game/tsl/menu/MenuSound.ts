@@ -1,10 +1,10 @@
-import { AudioEngine } from "../../../audio/AudioEngine";
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { MenuSound as K1_MenuSound } from "../../kotor/KOTOR";
+import { MenuSound as K1_MenuSound } from "@/game/kotor/KOTOR";
 
 const DEFAULT_GAIN = 0.75;
 

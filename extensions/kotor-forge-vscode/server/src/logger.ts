@@ -10,7 +10,7 @@ const PREFIX = '[HoloLSP Server]';
 
 let connection: Connection | undefined;
 
-function noop(_msg: string) {}
+function _noop(_msg: string) {}
 
 export function setServerConnection(conn: Connection): void {
   connection = conn;

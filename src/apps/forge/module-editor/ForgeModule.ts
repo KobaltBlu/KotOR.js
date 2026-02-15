@@ -1,7 +1,7 @@
-import * as KotOR from "../KotOR";
-import type { UI3DRenderer } from "../UI3DRenderer";
+import * as KotOR from "@/apps/forge/KotOR";
+import type { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
+import type { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 
-import type { ForgeArea } from "./ForgeArea";
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
@@ -140,10 +140,12 @@ export class ForgeModule {
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Expansion_Pack', this.expansionPack));
 
     // Mod_Area_list - KotOR only supports one Area per module
-    const areaList = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Mod_Area_list'))!;
-    const areaStruct = new KotOR.GFFStruct(6);
-    areaStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', this.areas[0].name.getValue()));
-    areaList.addChildStruct(areaStruct);
+    const areaList = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Mod_Area_list'));
+    if(areaList){
+      const areaStruct = new KotOR.GFFStruct(6);
+      areaStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', this.areas[0].name.getValue()));
+      areaList.addChildStruct(areaStruct);
+    }
 
     // Mod_Creator_ID
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'Mod_Creator_ID', this.creatorId));
@@ -155,8 +157,8 @@ export class ForgeModule {
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_DawnHour', this.dawnHour));
 
     // Mod_Description
-    const modDescriptionField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Mod_Description'))!;
-    modDescriptionField.setCExoLocString(this.description);
+    const modDescriptionField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Mod_Description'));
+    if(modDescriptionField) modDescriptionField.setCExoLocString(this.description);
 
     // Mod_DuskHour
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_DuskHour', this.duskHour));
@@ -183,8 +185,8 @@ export class ForgeModule {
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Mod_Hak', ''));
 
     // Mod_ID (BINARY/VOID)
-    const modIdField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.VOID, 'Mod_ID'))!;
-    modIdField.setData(this.id);
+    const modIdField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.VOID, 'Mod_ID'));
+    if(modIdField) modIdField.setData(this.id);
 
     // Mod_IsSaveGame
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_IsSaveGame', this.isSaveGame ? 1 : 0));
@@ -193,11 +195,8 @@ export class ForgeModule {
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_MinPerHour', this.timeManager.minutesPerHour));
 
     // Mod_Name
-    const modNameField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Mod_Name'))!;
-    // const modNameLocString = new KotOR.CExoLocString();
-    // modNameLocString.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
-    // modNameField.setCExoLocString(modNameLocString);
-    modNameField.setCExoLocString(this.name);
+    const modNameField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Mod_Name'));
+    if(modNameField) modNameField.setCExoLocString(this.name);
 
     // Event Handler Scripts (all RESREF)
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnAcquirItem', this.scriptResRefs.get('Mod_OnAcquirItem') || ''));

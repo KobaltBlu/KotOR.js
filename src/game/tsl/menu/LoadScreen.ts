@@ -1,7 +1,8 @@
-import { LoadScreen as K1_LoadScreen } from "../../kotor/KOTOR";
+import * as THREE from "three";
 
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import type { GUIProgressBar, GUILabel } from "../../../gui";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { LoadScreen as K1_LoadScreen } from "@/game/kotor/KOTOR";
+import type { GUIProgressBar, GUILabel } from "@/gui";
 
 /**
  * LoadScreen class.
@@ -19,7 +20,6 @@ export class LoadScreen extends K1_LoadScreen {
   declare LBL_HINT: GUILabel;
   declare LBL_LOGO: GUILabel;
   declare LBL_LOADING: GUILabel;
-  // defaultTex: any;
 
   constructor(){
     super();
@@ -33,7 +33,8 @@ export class LoadScreen extends K1_LoadScreen {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LBL_HINT.visible = false;
-      this.defaultTex = (this.tGuiPanel.getFill().material as any).uniforms.map.value;
+      const mat = this.tGuiPanel.getFill().material;
+      this.defaultTex = (mat as THREE.ShaderMaterial & { uniforms: { map: { value: THREE.Texture } } }).uniforms.map.value;
       resolve();
     });
   }

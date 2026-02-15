@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import { TabLTREditorState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
-
-import * as KotOR from "../../../KotOR";
-import { TabLTREditorState } from "../../../states/tabs";
-import "./TabLTREditor.scss";
+import "@/apps/forge/components/tabs/tab-ltr-editor/TabLTREditor.scss";
 
 const log = createScopedLogger(LogScope.Forge);
 

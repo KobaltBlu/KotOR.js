@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { Shader } from "./Shader";
+import { Shader } from "@/shaders/Shader";
 
 /**
  * ShaderAuroraGUI class.

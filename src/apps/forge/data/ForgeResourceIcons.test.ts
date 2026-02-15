@@ -3,7 +3,7 @@ import {
   getResourceIconPath,
   RESOURCE_ICON_BY_EXTENSION,
   RESOURCE_ICON_PATH_PREFIX,
-} from './ForgeResourceIcons';
+} from '@/apps/forge/data/ForgeResourceIcons';
 
 describe('ForgeResourceIcons', () => {
   describe('getResourceIconId', () => {

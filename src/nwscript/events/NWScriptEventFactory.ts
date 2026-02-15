@@ -1,15 +1,14 @@
-import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
-import { GFFStruct } from "../../resource/GFFStruct";
-import { createScopedLogger, LogScope } from "../../utility/Logger";
-
-import { EventActivateItem } from "./EventActivateItem";
-import { EventConversation } from "./EventConversation";
-import { EventSpellCastAt } from "./EventSpellCastAt";
-import { EventUserDefined } from "./EventUserDefined";
+import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { EventActivateItem } from "@/nwscript/events/EventActivateItem";
+import { EventConversation } from "@/nwscript/events/EventConversation";
+import { EventSpellCastAt } from "@/nwscript/events/EventSpellCastAt";
+import { EventUserDefined } from "@/nwscript/events/EventUserDefined";
 
 
 const log = createScopedLogger(LogScope.NWScript);
-import { NWScriptEvent } from "./NWScriptEvent";
+import { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
 
 /**
  * NWScriptEventFactory class.

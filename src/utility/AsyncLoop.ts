@@ -1,6 +1,5 @@
-import type { IAsyncLoopHandle, IAsyncLoopOptions } from "../interface/utility/IAsyncLoopOptions";
-
-import { createScopedLogger, LogScope } from "./Logger";
+import type { IAsyncLoopHandle, IAsyncLoopOptions } from "@/interface/utility/IAsyncLoopOptions";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
 

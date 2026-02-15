@@ -1,7 +1,6 @@
-import * as KotOR from "../KotOR";
-
-import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import * as KotOR from "@/apps/game/KotOR";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

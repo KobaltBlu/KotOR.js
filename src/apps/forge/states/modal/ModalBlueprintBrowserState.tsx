@@ -1,11 +1,9 @@
 import React from "react";
 
-import { ModalBlueprintBrowser } from "../../components/modal/ModalBlueprintBrowser";
-
-import { createScopedLogger, LogScope } from "../../../../utility/Logger";
-import * as KotOR from "../../KotOR";
-
-import { ModalState } from "./ModalState";
+import { ModalBlueprintBrowser } from "@/apps/forge/components/modal/ModalBlueprintBrowser";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
 

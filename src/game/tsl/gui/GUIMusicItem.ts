@@ -1,10 +1,11 @@
-import { GameState } from "../../../GameState";
-import { GUIProtoItem } from "../../../gui";
-import type { GameMenu, GUIControl } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { GameState } from "@/GameState";
+import { GUIProtoItem } from "@/gui";
+import type { GameMenu, GUIControl } from "@/gui";
+import { GFFStruct } from "@/resource/GFFStruct";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { GFFStruct } from "../../../resource/GFFStruct";
 
 /**
  * GUIMusicItem class.
@@ -17,19 +18,23 @@ import { GFFStruct } from "../../../resource/GFFStruct";
  */
 export class GUIMusicItem extends GUIProtoItem {
 
-  declare node: any;
+  declare node: ITwoDARowData;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.extent.height = 39.5;
+    log.trace('GUIMusicItem constructor', { scale });
   }
 
   createControl(){
+    log.trace('GUIMusicItem.createControl');
     try{
       super.createControl();
-      this.setText(GameState.TLKManager.GetStringById(this.node.strrefname).Value);
+      const label = GameState.TLKManager.GetStringById(this.node.strrefname).Value;
+      log.debug('GUIMusicItem.createControl: setting text', { strrefname: this.node.strrefname });
+      this.setText(label);
     }catch(e){
-      log.error(e);
+      log.error('GUIMusicItem.createControl failed', e);
     }
     return this.widget;
   }

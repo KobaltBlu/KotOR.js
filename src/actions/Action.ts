@@ -1,40 +1,42 @@
 import * as THREE from "three";
 
-import { ComputedPath } from "../engine/pathfinding/ComputedPath";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import { ICombatAction } from "../interface/combat/ICombatAction";
-// import { ModuleObjectManager, PartyManager } from "../managers";
-import { type ModuleCreature, type ModuleObject } from "../module";
-// import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFStruct } from "../resource/GFFStruct";
-import { BitWise } from "../utility/BitWise";
+import { ACTION_QUEUE_AUTO_INCREMENT_GROUP_ID } from "@/actions/ActionConstants";
+import { ActionParameter } from "@/actions/ActionParameter";
+import { ActionQueue } from "@/actions/ActionQueue";
+import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { ICombatAction } from "@/interface/combat/ICombatAction";
+import { type ModuleCreature, type ModuleObject } from "@/module";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { ActionParameter } from "./ActionParameter";
-import { ActionQueue } from "./ActionQueue";
+const log = createScopedLogger(LogScope.Game);
+
 
 
 
 /**
  * Base class for all game actions in the engine.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @remarks
  * Actions represent discrete behaviors that game objects can perform. They are managed
  * by the ActionQueue system and can be chained together to create complex behaviors.
  * Each action type extends this base class and implements its own update logic.
- * 
+ *
  * @file Action.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class Action {
-  
+
   /** Reference to the ActionQueue class */
   static ActionQueue: typeof ActionQueue = ActionQueue;
 
@@ -42,13 +44,13 @@ export class Action {
   type: ActionType;
 
   /** Group identifier for related actions */
-  groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID;
+  groupId: number = ACTION_QUEUE_AUTO_INCREMENT_GROUP_ID;
 
   /** The object performing the action */
-  owner: ModuleObject;
+  owner: ModuleObject | undefined;
 
   /** The target of the action, if any */
-  target: ModuleObject;
+  target: ModuleObject | undefined;
 
   /** Array of parameters controlling the action's behavior */
   parameters: ActionParameter[];
@@ -81,28 +83,31 @@ export class Action {
 
   /**
    * Creates a new action instance.
-   * 
+   *
    * @param actionId - Unique identifier for this action
    * @param groupId - Identifier for grouping related actions
    */
-  constructor(actionId: number = -1, groupId: number = -1) {
+  constructor(_actionId: number = -1, groupId: number = -1) {
+    log.trace('Action constructor', _actionId, groupId);
     this.type = ActionType.ActionInvalid;
-    this.groupId = groupId == -1 ? ActionQueue.AUTO_INCREMENT_GROUP_ID : groupId;
+    this.groupId = groupId === -1 ? ACTION_QUEUE_AUTO_INCREMENT_GROUP_ID : groupId;
     this.owner = undefined;
     this.target = undefined;
     this.parameters = [];
     this.path = undefined;
     this.openSpot = undefined;
+    log.trace('Action constructor done', this.type);
   }
 
   /**
    * Updates the action state.
-   * 
+   *
    * @param delta - Time elapsed since last update in seconds
    * @returns Current status of the action
    * @virtual
    */
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
+    log.trace('Action.update() base', this.type);
     return ActionStatus.FAILED;
   }
 
@@ -110,53 +115,58 @@ export class Action {
    * The destructor for this action
    */
   dispose(){
-    //stub
+    log.trace('Action.dispose()', this.type);
   }
 
   /**
    * Sets the owner of this action.
-   * 
+   *
    * @param owner - The object that will perform this action
    */
   setOwner(owner: ModuleObject) {
+    log.trace('Action.setOwner()', this.type);
     this.owner = owner;
   }
 
   /**
    * Gets the owner of this action.
-   * 
+   *
    * @returns The object performing this action
    */
   getOwner() {
+    log.trace('Action.getOwner()', this.type);
     return this.owner;
   }
 
   /**
    * Sets the target of this action.
-   * 
+   *
    * @param target - The object this action is targeting
    */
   setTarget(target: ModuleObject) {
+    log.trace('Action.setTarget()', this.type);
     this.target = target;
   }
 
   /**
    * Gets the target of this action.
-   * 
+   *
    * @returns The target of this action
    */
   getTarget() {
+    log.trace('Action.getTarget()', this.type);
     return this.target;
   }
 
   setComputedPath(path: ComputedPath){
+    log.trace('Action.setComputedPath()', this.type);
     this.computedPath = path;
-    this.owner.setComputedPath(path);
+    if (this.owner) this.owner.setComputedPath(path);
   }
 
   /**
    * Handles creature collision avoidance during movement.
-   * 
+   *
    * @param delta - Time elapsed since last update in seconds
    * @param finalTarget - The final destination point
    * @param excludeTarget - Optional object to exclude from avoidance (e.g., target object being moved to)
@@ -166,10 +176,10 @@ export class Action {
    * objects that are part of the party.
    */
   runCreatureAvoidance(delta = 0, finalTarget: THREE.Vector3, excludeTarget?: ModuleObject) {
-    if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
+    log.trace('Action.runCreatureAvoidance()', this.type);
+    if (!this.owner || !BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
     const owner = this.owner as ModuleCreature;
 
-    // Early exit if no movement vector
     if (owner.forceVector.lengthSq() < 0.001) return;
 
     // Check if this is the player character
@@ -226,27 +236,27 @@ export class Action {
       }
     };
 
-    // Check area creatures
+    log.trace('Action.runCreatureAvoidance area creatures', owner.area.creatures.length);
     for (let i = 0; i < owner.area.creatures.length; i++) {
       checkCreatureCollision(owner.area.creatures[i]);
     }
 
-    // For NPCs, also check party members for avoidance
     if (!isPlayerCharacter) {
+      log.trace('Action.runCreatureAvoidance party check', GameState.PartyManager.party.length);
       for (let i = 0; i < GameState.PartyManager.party.length; i++) {
         checkCreatureCollision(GameState.PartyManager.party[i]);
       }
     }
 
-    // If no obstacle found, decay blocking timer and return
     if (!closestObstacle) {
       if (owner.blockingTimer > 0) {
         owner.blockingTimer = Math.max(0, owner.blockingTimer - BLOCKING_DECAY_RATE * delta);
       }
+      log.trace('Action.runCreatureAvoidance() no obstacle');
       return;
     }
 
-    // Different avoidance behavior for player vs NPCs
+    log.trace('Action.runCreatureAvoidance() obstacle', isPlayerCharacter ? 'player' : 'npc');
     if (isPlayerCharacter) {
       // For player character, use force-based avoidance (adjust movement vector)
       this.applyPlayerAvoidance(owner, closestObstacle, closestDistance, delta);
@@ -262,42 +272,48 @@ export class Action {
   /**
    * Applies force-based avoidance for player character
    */
-  private applyPlayerAvoidance(owner: ModuleCreature, obstacle: ModuleCreature, obstacleDistance: number, delta: number) {
+  private applyPlayerAvoidance(owner: ModuleCreature, obstacle: ModuleCreature, _obstacleDistance: number, delta: number) {
+    log.trace('Action.applyPlayerAvoidance', this.type);
     const AVOIDANCE_FORCE = 0.3; // How strong the avoidance force is
-    const MIN_AVOIDANCE_DISTANCE = 0.5; // Minimum distance before applying avoidance
-    
+    const _MIN_AVOIDANCE_DISTANCE = 0.5; // Minimum distance before applying avoidance
+
     // Calculate avoidance force based on distance to obstacle
     const distanceToObstacle = owner.position.distanceTo(obstacle.position);
     const avoidanceStrength = Math.max(0, 1 - (distanceToObstacle / (obstacle.getHitDistance() * 2)));
-    
-    if (avoidanceStrength < 0.1) return; // Don't apply very weak forces
-    
+
+    if (avoidanceStrength < 0.1) {
+      log.trace('Action.applyPlayerAvoidance strength too low');
+      return; // Don't apply very weak forces
+    }
+
     // Calculate direction away from obstacle
     const awayFromObstacle = owner.position.clone().sub(obstacle.position).normalize();
-    
+
     // Calculate perpendicular direction (90 degrees to the right)
     const perpendicular = new THREE.Vector3(-awayFromObstacle.y, awayFromObstacle.x, 0).normalize();
-    
+
     // Determine which side to avoid to (based on current movement direction)
     const currentDirection = owner.forceVector.clone().normalize();
     const dotProduct = currentDirection.dot(perpendicular);
     const avoidDirection = dotProduct > 0 ? perpendicular : perpendicular.clone().negate();
-    
+
     // Apply avoidance force to movement vector
     const avoidanceForce = avoidDirection.clone().multiplyScalar(AVOIDANCE_FORCE * avoidanceStrength * delta);
     owner.forceVector.add(avoidanceForce);
-    
+
     // Normalize to maintain consistent speed
     const originalLength = owner.forceVector.length();
     if (originalLength > 0) {
       owner.forceVector.normalize().multiplyScalar(originalLength);
     }
+    log.trace('Action.applyPlayerAvoidance done');
   }
 
   /**
    * Calculates the avoidance path around an obstacle
    */
-  private calculateAvoidancePath(owner: ModuleCreature, obstacle: ModuleCreature, finalTarget: THREE.Vector3, obstacleDistance: number) {
+  private calculateAvoidancePath(owner: ModuleCreature, obstacle: ModuleCreature, finalTarget: THREE.Vector3, _obstacleDistance: number) {
+    log.trace('Action.calculateAvoidancePath', this.type);
     const SAFETY_BUFFER = 1.5;
     const safeRadius = obstacle.getHitDistance() * SAFETY_BUFFER;
 
@@ -331,16 +347,24 @@ export class Action {
     path.setColor(owner.helperColor);
     path.smooth();
     this.setComputedPath(path);
+    log.trace('Action.calculateAvoidancePath done');
   }
 
   /**
    * Coordinates avoidance behavior with the obstacle creature
    */
   private coordinateObstacleAvoidance(owner: ModuleCreature, obstacle: ModuleCreature) {
-    if (obstacle.action?.type !== ActionType.ActionMoveToPoint) return;
+    log.trace('Action.coordinateObstacleAvoidance', this.type);
+    if (obstacle.action?.type !== ActionType.ActionMoveToPoint) {
+      log.trace('Action.coordinateObstacleAvoidance obstacle not ActionMoveToPoint');
+      return;
+    }
 
     const isObstacleMoving = obstacle.forceVector.lengthSq() > 0.001;
-    if (!isObstacleMoving) return;
+    if (!isObstacleMoving) {
+      log.trace('Action.coordinateObstacleAvoidance obstacle not moving');
+      return;
+    }
 
     const hitDistance = obstacle.getHitDistance() * 1.1;
     const obstacleAhead = obstacle.position.clone().add(obstacle.forceVector.clone().normalize());
@@ -358,7 +382,7 @@ export class Action {
       const direction = obstacle.forceVector.clone().normalize();
       const perpendicular = new THREE.Vector3(-direction.y, direction.x, 0).normalize();
       const safeRadius = obstacle.getHitDistance() * 1.5;
-      
+
       const alternateDetour = owner.area.getNearestWalkablePoint(
         obstacle.position.clone().sub(perpendicular.clone().multiplyScalar(safeRadius)),
         obstacle.getHitDistance()
@@ -373,47 +397,59 @@ export class Action {
       path.setColor(obstacle.helperColor);
       path.smooth();
       obstacle.action.setComputedPath(path);
+      log.trace('Action.coordinateObstacleAvoidance set path on obstacle');
     }
+    log.trace('Action.coordinateObstacleAvoidance done');
   }
 
   /**
    * Sets multiple parameters for this action from GFF structs.
-   * 
+   *
    * @param params - Array of GFF structs containing parameter data
    * @param count - Number of parameters to set
    */
   setParameters(params: GFFStruct[] = [], count = 0) {
+    log.trace('Action.setParameters', this.type, 'count=%s', count);
     if (count) {
       if (Array.isArray(params)) {
         for (let i = 0; i < count; i++) {
           this.parameters[i] = ActionParameter.FromStruct(params[i]);
+          log.trace('Action.setParameters param', i);
         }
       }
     }
+    log.trace('Action.setParameters done');
   }
 
   /**
    * Gets the value of a parameter at the specified index.
-   * 
+   *
    * @param index - Index of the parameter to retrieve
    * @returns The parameter value, converted to appropriate type
    */
   getParameter<T>(index = 0): T {
+    log.trace('Action.getParameter', this.type, 'index=%s', index);
     const param = this.parameters[index];
-    if (!param) { return; }
+    if (!param) {
+      log.trace('Action.getParameter no param');
+      return;
+    }
     switch (param.type) {
       case ActionParameterType.DWORD:
+        log.trace('Action.getParameter DWORD');
         return GameState.ModuleObjectManager.GetObjectById(param.value as number) as T;
       case ActionParameterType.SCRIPT_SITUATION:
+        log.trace('Action.getParameter SCRIPT_SITUATION');
         return param.scriptInstance as T;
       default:
+        log.trace('Action.getParameter default');
         return param.value as T;
     }
   }
 
   /**
    * Sets a parameter value at the specified index.
-   * 
+   *
    * @param index - Index of the parameter to set
    * @param type - Type of the parameter from ActionParameterType
    * @param value - Value to set
@@ -425,10 +461,12 @@ export class Action {
     type = 0,
     value: number | string | boolean | GFFStruct | object = 0
   ): T {
+    log.trace('Action.setParameter', this.type, 'index=%s type=%s', index, type);
     let param = this.parameters[index];
 
     if (typeof param == 'undefined') {
       param = this.parameters[index] = new ActionParameter(type);
+      log.trace('Action.setParameter new ActionParameter');
     }
 
     switch (param.type) {
@@ -476,8 +514,10 @@ export class Action {
           param.scriptInstance = value;
         break;
       default:
+        log.error('Action.setParameter invalid type', type);
         throw 'setParameter: Invalid type: (' + type + ')';
     }
+    log.trace('Action.setParameter done');
     return param.value as T;
   }
 }

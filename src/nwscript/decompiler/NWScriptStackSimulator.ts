@@ -1,10 +1,8 @@
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import { createScopedLogger, LogScope } from "../../utility/Logger";
-
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-
-import { NWScriptExpression } from "./NWScriptExpression";
-import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
+import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 
 
 const log = createScopedLogger(LogScope.NWScript);
@@ -17,7 +15,7 @@ import {
   OP_CPTOPBP, OP_CPTOPSP, OP_CPDOWNSP, OP_CPDOWNBP,
   OP_MOVSP, OP_DESTRUCT, OP_RSADD,
   OP_DECISP, OP_INCISP, OP_DECIBP, OP_INCIBP
-} from '../NWScriptOPCodes';
+} from '@/nwscript/NWScriptOPCodes';
 
 /**
  * Represents an item on the stack

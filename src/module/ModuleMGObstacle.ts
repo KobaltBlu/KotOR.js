@@ -1,15 +1,14 @@
-import { ModuleObject } from "./ModuleObject";
-
-import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
-import { NWScript } from "../nwscript/NWScript";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFObject } from "../resource/GFFObject";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ILayoutObstacle } from "@/interface/resource/ILayoutObstacle";
+import { ModuleObject } from "@/module/ModuleObject";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFObject } from "@/resource/GFFObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Module);
-import { GameState } from "../GameState";
+import { GameState } from "@/GameState";
 
 /**
 * ModuleMGObstacle class.

@@ -1,16 +1,15 @@
-import React, { NewLifecycle, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Form } from "react-bootstrap";
 
-import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
-import { SceneGraphTreeView } from "../../SceneGraphTreeView";
-import { SectionContainer } from "../../SectionContainer";
-
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import * as KotOR from "../../../KotOR";
-import { SceneGraphNode } from "../../../SceneGraphNode";
-import { ForgeState } from "../../../states/ForgeState";
-import { ModalLIPBatchProcessorState } from "../../../states/modal/ModalLIPBatchProcessorState";
-import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes, TabLIPEditorOptionsState } from "../../../states/tabs";
+import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
+import { SectionContainer } from "@/apps/forge/components/SectionContainer";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import * as KotOR from "@/apps/forge/KotOR";
+import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalLIPBatchProcessorState } from "@/apps/forge/states/modal/ModalLIPBatchProcessorState";
+import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes, TabLIPEditorOptionsState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 const log = createScopedLogger(LogScope.Forge);
@@ -22,7 +21,7 @@ export interface TabLIPEditorOptionsProps {
 
 export const TabLIPEditorOptions = function(props: TabLIPEditorOptionsProps){
   const { tab, parentTab } = props;
-  const [nodes, setNodes] = useState<SceneGraphNode[]>(tab.sceneGraphNodes);
+  const [_nodes, _setNodes] = useState<SceneGraphNode[]>(tab.sceneGraphNodes);
   const [selectedFrame, setSelectedFrame] = useState<KotOR.ILIPKeyFrame>(parentTab.selected_frame);
   const [selectedHead, setSelectedHead] = useState<string>(parentTab.current_head);
   const [duration, setDuration] = useState<number>(parentTab.lip.duration);
@@ -61,7 +60,7 @@ export const TabLIPEditorOptions = function(props: TabLIPEditorOptionsProps){
     log.debug('duration', 'change');
   }, [duration]);
 
-  const onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const _onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const shape = parseInt(e.target.value);
     parentTab.selected_frame.shape = !isNaN(shape) ? shape : 0;
     parentTab.selectKeyFrame(parentTab.selected_frame);
@@ -72,11 +71,11 @@ export const TabLIPEditorOptions = function(props: TabLIPEditorOptionsProps){
     parentTab.loadHead(head);
   }
 
-  const onImportPHNClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onImportPHNClick = (_e: React.MouseEvent<HTMLButtonElement>) => {
     parentTab.importPHN();
   }
 
-  const onFitToKeyFrames = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onFitToKeyFrames = (_e: React.MouseEvent<HTMLButtonElement>) => {
     parentTab.fitDurationToKeyFrames();
   }
 
@@ -116,7 +115,7 @@ export const TabLIPEditorOptions = function(props: TabLIPEditorOptionsProps){
               <b>Heads</b>
               <Form.Select onChange={onPreviewHeadChange} value={selectedHead}>
                 {
-                  heads.map( (row: { head: string }, i: number) => {
+                  heads.map( (row: { head: string }, _i: number) => {
                     const head = (row.head as string).toLocaleLowerCase();
                     return <option value={head}>{head}</option>
                   })

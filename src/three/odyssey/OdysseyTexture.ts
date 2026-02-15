@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
-import type { ITPCHeader } from "../../interface/resource/ITPCHeader";
-import { TXI } from "../../resource/TXI";
+import type { ITPCHeader } from "@/interface/resource/ITPCHeader";
+import { TXI } from "@/resource/TXI";
 
 /**
  * OdysseyTexture class.

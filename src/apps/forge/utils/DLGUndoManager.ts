@@ -11,9 +11,9 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { DLGNode } from '../../../resource/DLGNode';
-import { DLGObject } from '../../../resource/DLGObject';
-import { GFFObject } from '../../../resource/GFFObject';
+import { DLGNode } from '@/resource/DLGNode';
+import { DLGObject } from '@/resource/DLGObject';
+import { GFFObject } from '@/resource/GFFObject';
 
 export interface UndoAction {
   type: string;

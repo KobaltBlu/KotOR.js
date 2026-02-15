@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Launcher);
 
@@ -46,7 +46,7 @@ export const CommunityProvider = (props: CommunityProviderProps) => {
   const [videos, setVideos] = useState<CommunityVideoItem[]>([]);
 
   useEffect(() => {
-    // console.log('useEffect lightboxActive', lightboxActiveValue);
+    log.trace('CommunityContext lightboxActive changed', lightboxActiveValue);
   }, [lightboxActiveValue]);
 
   useEffect( () => {

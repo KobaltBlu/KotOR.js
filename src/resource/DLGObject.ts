@@ -1,26 +1,26 @@
 import * as THREE from "three";
 
-import { AudioEngine } from "../audio/AudioEngine";
-import { AudioLoader } from "../audio/AudioLoader";
-import { ModuleObjectType } from "../enums";
-import { DLGNodeType } from "../enums/dialog/DLGNodeType";
-import { GameState } from "../GameState";
-import { IDLGStuntActor } from "../interface/dialog/IDLGStuntActor";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import type { ModuleCreature, ModuleObject } from "../module";
-import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { OdysseyModel } from "../odyssey";
-import { OdysseyModel3D } from "../three/odyssey";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { ModuleObjectType } from "@/enums";
+import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
+import { GameState } from "@/GameState";
+import { IDLGStuntActor } from "@/interface/dialog/IDLGStuntActor";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import type { ModuleCreature, ModuleObject } from "@/module";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel } from "@/odyssey";
+import { DLGNode } from "@/resource/DLGNode";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { DLGNode } from "./DLGNode";
-import { GFFObject } from "./GFFObject";
-import { ResourceTypes } from "./ResourceTypes";
 
 const log = createScopedLogger(LogScope.Game);
 
-// import { NWScript } from "../nwscript/NWScript";
+// import { NWScript } from "@/nwscript/NWScript";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,

@@ -4,7 +4,9 @@
  * Used when saving a resource into an open ERF/MOD file.
  */
 
-import { ERFObject } from "../../../resource/ERFObject";
+import type { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
+import type { IERFResource } from "@/interface/resource/IERFResource";
+import { ERFObject } from "@/resource/ERFObject";
 
 export interface AddResourceToErfOptions {
   /** Existing ERF/MOD buffer. */
@@ -14,9 +16,16 @@ export interface AddResourceToErfOptions {
   data: Uint8Array;
 }
 
+/** Resource entry that may not have data loaded yet (e.g. from buffer). */
+interface ERFResourceWithOptionalData {
+  offset: number;
+  size: number;
+  data?: Uint8Array;
+}
+
 /** Ensure all ERF resources have .data populated (from buffer) so getExportBuffer works. */
 function ensureResourcesHaveData(erf: ERFObject, buffer: Uint8Array): void {
-  const resources = (erf as any).resources as Array<{ offset: number; size: number; data?: Uint8Array }>;
+  const resources = erf.resources as ERFResourceWithOptionalData[];
   for (let i = 0; i < resources.length; i++) {
     const r = resources[i];
     if (!r.data && r.offset >= 0 && r.size > 0) {
@@ -37,8 +46,8 @@ export async function addResourceToErf(options: AddResourceToErfOptions): Promis
   ensureResourcesHaveData(erf, erfBuffer);
 
   const normalizedRef = resRef.toLowerCase().trim();
-  const keyList = (erf as any).keyList as Array<{ resRef: string; resType: number; resId: number }>;
-  const resources = (erf as any).resources as Array<{ offset: number; size: number; data: Uint8Array }>;
+  const keyList: IERFKeyEntry[] = erf.keyList;
+  const resources: IERFResource[] = erf.resources;
 
   const existingIndex = keyList.findIndex(
     (k) => k.resRef.toLowerCase() === normalizedRef && k.resType === resType

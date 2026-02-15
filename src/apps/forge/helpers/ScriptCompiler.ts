@@ -3,10 +3,10 @@
  * Wraps NWScriptParser + NWScriptCompiler to compile NSS → NCS, and NWScript for NCS → NSS.
  */
 
-import type { CompilerProgramNode } from "../../../nwscript/compiler/CompilerNodeTypes";
-import { NWScriptCompiler } from "../../../nwscript/compiler/NWScriptCompiler";
-import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
-import { NWScript } from "../../../nwscript/NWScript";
+import type { CompilerProgramNode } from "@/nwscript/compiler/CompilerNodeTypes";
+import { NWScriptCompiler } from "@/nwscript/compiler/NWScriptCompiler";
+import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
+import { NWScript } from "@/nwscript/NWScript";
 
 export interface ScriptCompileResult {
   success: boolean;

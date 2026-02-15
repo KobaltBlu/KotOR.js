@@ -1,4 +1,4 @@
-import type { LauncherProfile } from '../types';
+import type { LauncherProfile } from '@/apps/launcher/types';
 
 export const LauncherConfig: LauncherProfile = {
   "name": "KotOR II",

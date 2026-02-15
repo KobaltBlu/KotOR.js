@@ -1,11 +1,10 @@
-import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "../../kotor/KOTOR";
-import { GUISaveGameItem } from "../../tsl/gui/GUISaveGameItem";
-
-import { SaveGame } from "../../../engine/SaveGame";
-import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
+import { SaveGame } from "@/engine/SaveGame";
+import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
+import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "@/game/kotor/KOTOR";
+import { GUISaveGameItem } from "@/game/tsl/gui/GUISaveGameItem";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
 
 /**
  * MenuSaveLoad class.

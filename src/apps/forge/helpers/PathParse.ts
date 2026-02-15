@@ -14,8 +14,8 @@ export interface ParsedPath {
 export const pathParse = (filepath: string): ParsedPath => {
   // Detect protocol patterns (file://, ftp://, http://, etc.)
   const protocolMatch = filepath.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//);
-  const hasProtocol = !!protocolMatch;
-  const protocol = hasProtocol ? protocolMatch![1] : '';
+  const hasProtocol = protocolMatch !== null;
+  const protocol = hasProtocol ? protocolMatch[1] : '';
   
   // Remove protocol from path for processing
   const pathWithoutProtocol = hasProtocol ? filepath.substring(protocol.length + 3) : filepath;

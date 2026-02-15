@@ -1,14 +1,14 @@
 import * as THREE from "three";
 
-import { EngineDebugType } from "../enums/engine/EngineDebugType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject, ModulePlaceable, ModuleRoom } from "../module";
-import { OdysseyWalkMesh, WalkmeshEdge } from "../odyssey";
-import { OdysseyFace3 } from "../three/odyssey";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-import { Utility } from "../utility/Utility";
+import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleObject, ModulePlaceable, ModuleRoom } from "@/module";
+import { OdysseyWalkMesh, WalkmeshEdge } from "@/odyssey";
+import { OdysseyFace3 } from "@/three/odyssey";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
 
 const log = createScopedLogger(LogScope.Game);
 

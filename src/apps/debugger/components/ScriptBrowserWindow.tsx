@@ -1,10 +1,9 @@
 import React from "react";
 
-import { useApp } from "../context/AppContext";
-import * as KotOR from "../KotOR";
-
-import { IPCDataType } from "../../../enums/server/ipc/IPCDataType";
-import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
+import { useApp } from "@/apps/debugger/context/AppContext";
+import * as KotOR from "@/apps/debugger/KotOR";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 
 /**
  * Script Browser Window

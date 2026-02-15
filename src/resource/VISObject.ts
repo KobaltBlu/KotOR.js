@@ -1,13 +1,12 @@
-/* eslint-disable no-console */
-import { ModuleObjectType } from "../enums";
-import type { IVISRoom } from "../interface/module/IVISRoom";
-import type { ModuleArea, ModuleRoom } from "../module";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ModuleObjectType } from "@/enums";
+import type { IVISRoom } from "@/interface/module/IVISRoom";
+import type { ModuleArea, ModuleRoom } from "@/module";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { BitWise } from "@/utility/BitWise";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
-import { GameFileSystem } from "../utility/GameFileSystem";
 
 enum VISReadMode {
   ROOM = 0,
@@ -283,7 +282,8 @@ export class VISObject {
     if (!this.rooms.has(whenKey) || !this.rooms.has(showKey)) {
       throw new Error('One of the specified rooms does not exist.');
     }
-    const visRoom = this.rooms.get(whenKey)!;
+    const visRoom = this.rooms.get(whenKey);
+    if (visRoom === undefined) throw new Error('One of the specified rooms does not exist.');
     const idx = visRoom.rooms.findIndex(r => r.toLowerCase() === showKey);
     if (visible) {
       if (idx < 0) {
@@ -307,7 +307,8 @@ export class VISObject {
     if (!this.rooms.has(whenKey) || !this.rooms.has(showKey)) {
       throw new Error('One of the specified rooms does not exist.');
     }
-    const visRoom = this.rooms.get(whenKey)!;
+    const visRoom = this.rooms.get(whenKey);
+    if (visRoom === undefined) throw new Error('One of the specified rooms does not exist.');
     return visRoom.rooms.some(r => r.toLowerCase() === showKey);
   }
 
@@ -317,7 +318,8 @@ export class VISObject {
   setAllVisible(): void {
     const allRooms = Array.from(this.rooms.keys());
     for (const whenInside of allRooms) {
-      const visRoom = this.rooms.get(whenInside)!;
+      const visRoom = this.rooms.get(whenInside);
+      if (visRoom === undefined) continue;
       visRoom.rooms = allRooms.filter(r => r !== whenInside);
       visRoom.count = visRoom.rooms.length;
     }

@@ -1,8 +1,7 @@
-import * as KotOR from "../KotOR";
-
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-
-import { ForgeGameObject } from "./ForgeGameObject";
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -22,7 +21,14 @@ export class ForgeRoom extends ForgeGameObject {
   constructor(roomName: string){
     super();
     this.roomName = roomName;
-    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
+      this.onPropertyChange(
+        args[0] as string,
+        args[1] as string | number | boolean | object,
+        args[2] as string | number | boolean | object
+      );
+    };
+    this.addEventListener('onPropertyChange', onPropChange);
   }
 
   onPropertyChange(property: string, newValue: string | number | boolean | object, oldValue: string | number | boolean | object){
@@ -73,7 +79,7 @@ export class ForgeRoom extends ForgeGameObject {
     this.updateBoundingBox();
   }
 
-  async loadModel(resRef = ''): Promise<KotOR.OdysseyModel3D | undefined> {
+  async loadModel(_resRef = ''): Promise<KotOR.OdysseyModel3D | undefined> {
     //Check if the room name is NULL
     if(KotOR.Utility.is2daNULL(this.roomName)){
       return this.model;
@@ -91,7 +97,7 @@ export class ForgeRoom extends ForgeGameObject {
     //Remove the old model
     if(this.model instanceof KotOR.OdysseyModel3D){
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch(e){}
+      try{ this.model.dispose(); }catch{ /* ignore */ }
     }
 
     this.model = room;

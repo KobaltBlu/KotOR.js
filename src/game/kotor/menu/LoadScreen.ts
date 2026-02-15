@@ -1,11 +1,11 @@
 import * as THREE from "three";
 
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUILabel, GUIProgressBar } from "../../../gui";
-import type { ITwoDARowData } from "../../../resource/TwoDAObject";
-import { createScopedLogger } from "../../../utility/Logger";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUILabel, GUIProgressBar } from "@/gui";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger } from "@/utility/Logger";
 
 /**
  * LoadScreen class.

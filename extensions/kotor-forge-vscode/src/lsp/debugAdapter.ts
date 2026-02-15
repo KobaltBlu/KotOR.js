@@ -344,14 +344,9 @@ export class NWScriptDebugAdapter extends DebugSession {
       const variablesReference = args.variablesReference;
       const result = await this.client.sendRequest('nwscript/debug/variables', { variablesReference }) as { variables: Array<{ name: string; value: string; type?: string; variablesReference?: number }> };
 
-      const variables = result.variables.map((v) => {
-        return new Variable(
-          v.name,
-          v.value,
-          v.type,
-          v.variablesReference
-        );
-      });
+      const variables = result.variables.map((v) =>
+        new Variable(v.name, v.value, v.variablesReference ?? 0)
+      );
 
       response.body = {
         variables
@@ -435,14 +430,16 @@ export class NWScriptDebugAdapterDescriptorFactory implements vscode.DebugAdapte
   createDebugAdapterDescriptor(session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
     log.trace(`createDebugAdapterDescriptor() sessionId=${session.id} name=${session.name}`);
     const debugAdapter = new NWScriptDebugAdapter(this.client);
-    const descriptor = new vscode.DebugAdapterInlineImplementation(debugAdapter);
+    const descriptor: vscode.DebugAdapterDescriptor = new vscode.DebugAdapterInlineImplementation(debugAdapter) as vscode.DebugAdapterDescriptor;
     log.debug('createDebugAdapterDescriptor() returning inline implementation');
-    return descriptor;
+    return descriptor as vscode.DebugAdapterDescriptor;
   }
 
   dispose(): void {
     log.trace(`NWScriptDebugAdapterDescriptorFactory dispose() disposables=${this.disposables.length}`);
-    this.disposables.forEach(d => d.dispose());
+    for (const d of this.disposables) {
+      d.dispose();
+    }
     this.disposables = [];
   }
 }
@@ -456,8 +453,8 @@ export class NWScriptConfigurationProvider implements vscode.DebugConfigurationP
    */
   provideDebugConfigurations(_folder: vscode.WorkspaceFolder | undefined): vscode.ProviderResult<vscode.DebugConfiguration[]> {
     log.trace('provideDebugConfigurations() entered');
-    const configs = [
-      { type: 'nwscript', request: 'launch', name: 'Debug NWScript', script: '${file}' }
+    const configs: vscode.DebugConfiguration[] = [
+      { type: 'nwscript', request: 'launch', name: 'Debug NWScript', script: '${file}' } as vscode.DebugConfiguration
     ];
     log.debug('provideDebugConfigurations() returning default launch config');
     return configs;

@@ -1,8 +1,8 @@
-import { TwoDAObject, type ITwoDARowData } from "../../resource/TwoDAObject";
-import { createScopedLogger, LogScope } from "../../utility/Logger";
+import { TwoDAObject, type ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { Utility } from "../../utility/Utility";
+import { Utility } from "@/utility/Utility";
 
 /**
  * SWCreatureAppearance class.

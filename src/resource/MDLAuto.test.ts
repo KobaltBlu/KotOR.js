@@ -2,10 +2,10 @@
  * MDL auto-detection and ASCII roundtrip tests.
  */
 
-import { bytesMDL, detectMDLFormat, readMDL, writeMDL } from './MDLAuto';
-import { MDL } from './MDLData';
-import { readResourceFromBuffer, resourceToBytes } from './ResourceAuto';
-import { ResourceTypes } from './ResourceTypes';
+import { bytesMDL, detectMDLFormat, readMDL, writeMDL } from '@/resource/MDLAuto';
+import { MDL } from '@/resource/MDLData';
+import { readResourceFromBuffer, resourceToBytes } from '@/resource/ResourceAuto';
+import { ResourceTypes } from '@/resource/ResourceTypes';
 
 const MINIMAL_ASCII_MDL = `# ASCII MDL
 filedependancy test_model NULL.mlk

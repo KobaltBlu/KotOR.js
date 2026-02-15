@@ -1,9 +1,9 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 /**
  * CharGenSkills class.

@@ -1,8 +1,7 @@
-import * as KotOR from "../KotOR";
-
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-
-import { ForgeGameObject } from "./ForgeGameObject";
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -95,7 +94,14 @@ export class ForgeDoor extends ForgeGameObject {
     if(buffer){
       this.loadFromBuffer(buffer);
     }
-    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
+      this.onPropertyChange(
+        args[0] as string,
+        args[1] as string | number | boolean | object,
+        args[2] as string | number | boolean | object
+      );
+    };
+    this.addEventListener('onPropertyChange', onPropChange);
   }
 
   onPropertyChange(property: string, newValue: string | number | boolean | object, oldValue: string | number | boolean | object){
@@ -291,7 +297,7 @@ export class ForgeDoor extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AnimationState', this.animationState || 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Appearance', this.appearance) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AutoRemoveKey', this.autoRemoveKey ? 1 : 0) );
@@ -365,7 +371,7 @@ export class ForgeDoor extends ForgeGameObject {
   async loadModel(){
     if(this.model){
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch(e){}
+      try{ this.model.dispose(); }catch{ /* ignore */ }
     }
 
     // Load appearance data first if not already loaded

@@ -1,4 +1,4 @@
-import { getExtension, getSidecarPath, normalizePath, withSuffix } from './PathUtil';
+import { getExtension, getSidecarPath, normalizePath, withSuffix } from '@/utility/PathUtil';
 
 describe('PathUtil', () => {
   describe('getExtension', () => {

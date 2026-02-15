@@ -1,9 +1,8 @@
 import React from "react";
 
-import { ModalReferenceSearchOptions } from "../../components/modal/ModalReferenceSearchOptions";
-import { getAllSearchableFileTypes } from "../../data/ReferenceSearchConfig";
-
-import { ModalState } from "./ModalState";
+import { ModalReferenceSearchOptions } from "@/apps/forge/components/modal/ModalReferenceSearchOptions";
+import { getAllSearchableFileTypes } from "@/apps/forge/data/ReferenceSearchConfig";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
 
 export interface ReferenceSearchOptionsStateDefaults {
   defaultPartialMatch?: boolean;

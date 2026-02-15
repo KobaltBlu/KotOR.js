@@ -1,9 +1,9 @@
-import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
-import type { INIConfig } from "../engine/INIConfig";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
+import type { INIConfig } from "@/engine/INIConfig";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
-import { FeedbackOption } from "../enums/engine/FeedbackOption";
+import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 
 /**
  * FeedbackMessageManager class.

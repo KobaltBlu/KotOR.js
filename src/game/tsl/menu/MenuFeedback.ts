@@ -1,8 +1,7 @@
-import { MenuFeedback as K1_MenuFeedback } from "../../kotor/KOTOR";
-
-import { FeedbackOption } from "../../../enums/engine/FeedbackOption";
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
+import { FeedbackOption } from "@/enums/engine/FeedbackOption";
+import { MenuFeedback as K1_MenuFeedback } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "@/gui";
 
 
 const LBL_HIDE_UNEQ = 42279;

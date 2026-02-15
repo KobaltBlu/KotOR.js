@@ -1,17 +1,17 @@
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import { MDLLoader, TextureLoader } from "../loaders";
-// import { TwoDAManager } from "../managers";
-import type { ModuleCreature } from "../module";
-import { OdysseyModel } from "../odyssey";
-import { OdysseyModel3D } from "../three/odyssey";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { MDLLoader, TextureLoader } from "@/loaders";
+// import { TwoDAManager } from "@/managers";
+import type { ModuleCreature } from "@/module";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
 
-import { GameEffect } from "./GameEffect";
 
 /**
  * EffectVisualEffect class.

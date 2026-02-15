@@ -1,4 +1,5 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 export class PazaakDeck {
 
@@ -68,7 +69,7 @@ export class PazaakDeck {
     return -1;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}){
     const deck = new PazaakDeck();
 
     deck.id = parseInt(row.__index);

@@ -1,7 +1,7 @@
-import { AudioFileAudioType } from '../enums/audio/AudioFileAudioType';
-import { AudioFileWaveEncoding } from '../enums/audio/AudioFileWaveEncoding';
-import { BinaryReader } from '../utility/binary/BinaryReader';
-import { BinaryWriter } from '../utility/binary/BinaryWriter';
+import { AudioFileAudioType } from '@/enums/audio/AudioFileAudioType';
+import { AudioFileWaveEncoding } from '@/enums/audio/AudioFileWaveEncoding';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
 /** KotOR WAV type: VO = voice (streamwaves), SFX = sound effects (streammusic with 470-byte header). */
 export enum WAVType {

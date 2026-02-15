@@ -1,10 +1,9 @@
-import * as swForge from '../profiles/forge';
-import * as swKotOR from '../profiles/kotor';
-import * as swKotOR2 from '../profiles/tsl';
-import type { AppCategoriesMap, LauncherProfile, ProfileCategory } from '../types';
-
-import { ConfigClient } from '../../../utility/ConfigClient';
-import { createScopedLogger, LogScope } from '../../../utility/Logger';
+import * as swForge from '@/apps/launcher/profiles/forge';
+import * as swKotOR from '@/apps/launcher/profiles/kotor';
+import * as swKotOR2 from '@/apps/launcher/profiles/tsl';
+import type { AppCategoriesMap, LauncherProfile, ProfileCategory } from '@/apps/launcher/types';
+import { ConfigClient } from '@/utility/ConfigClient';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Launcher);
 

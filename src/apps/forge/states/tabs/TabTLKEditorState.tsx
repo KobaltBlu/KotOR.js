@@ -1,11 +1,12 @@
 import React from "react";
 
-import { TabTLKEditor } from "../../components/tabs/tab-tlk-editor/TabTLKEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { TabTLKEditor } from "@/apps/forge/components/tabs/tab-tlk-editor/TabTLKEditor";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import * as KotOR from "../../KotOR";
-
-import { TabState } from "./TabState";
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabTLKEditorState extends TabState {
   tabName: string = 'TLK Editor';
@@ -18,10 +19,12 @@ export class TabTLKEditorState extends TabState {
   jumpValue: number = 0;
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace('TabTLKEditorState constructor entry');
     super(options);
 
     if(this.file){
       this.tabName = this.file.getFilename();
+      log.debug('TabTLKEditorState constructor tabName', this.tabName);
     }
 
     this.saveTypes = [
@@ -35,11 +38,17 @@ export class TabTLKEditorState extends TabState {
 
     this.setContentView(<TabTLKEditor tab={this}></TabTLKEditor>);
     this.openFile();
+    log.trace('TabTLKEditorState constructor exit');
   }
 
   async openFile() {
-    if(!this.file) return;
+    log.trace('TabTLKEditorState openFile entry');
+    if(!this.file) {
+      log.trace('TabTLKEditorState openFile no file');
+      return;
+    }
     const response = await this.file.readFile();
+    log.debug('TabTLKEditorState openFile readFile done', response.buffer?.length ?? 0);
     await new Promise<void>((resolve, reject) => {
       this.tlk = new KotOR.TLKObject(response.buffer, () => resolve(), undefined);
     });
@@ -55,46 +64,55 @@ export class TabTLKEditorState extends TabState {
     this.processEventListener('onSearchBoxToggled', [this.searchBoxVisible]);
     this.processEventListener('onJumpBoxToggled', [this.jumpBoxVisible]);
     this.processEventListener('onJumpValueChanged', [this.jumpValue]);
+    log.trace('TabTLKEditorState openFile exit');
   }
 
   selectString(index: number) {
+    log.trace('TabTLKEditorState selectString', index);
     this.selectedStringIndex = index;
     this.processEventListener('onStringSelected', [index]);
   }
 
   setSearchQuery(query: string) {
+    log.trace('TabTLKEditorState setSearchQuery');
     this.searchQuery = query;
     this.processEventListener('onSearchQueryChanged', [query]);
   }
 
   applySearchFilter(query?: string) {
+    log.trace('TabTLKEditorState applySearchFilter');
     this.filterQuery = typeof query === 'string' ? query : this.searchQuery;
     this.processEventListener('onFilterChanged', [this.filterQuery]);
   }
 
   clearSearchFilter() {
+    log.trace('TabTLKEditorState clearSearchFilter');
     this.filterQuery = '';
     this.processEventListener('onFilterChanged', [this.filterQuery]);
   }
 
   toggleSearchBox(force?: boolean) {
+    log.trace('TabTLKEditorState toggleSearchBox', force);
     const next = typeof force === 'boolean' ? force : !this.searchBoxVisible;
     this.searchBoxVisible = next;
     this.processEventListener('onSearchBoxToggled', [next]);
   }
 
   toggleJumpBox(force?: boolean) {
+    log.trace('TabTLKEditorState toggleJumpBox', force);
     const next = typeof force === 'boolean' ? force : !this.jumpBoxVisible;
     this.jumpBoxVisible = next;
     this.processEventListener('onJumpBoxToggled', [next]);
   }
 
   setJumpValue(value: number) {
+    log.trace('TabTLKEditorState setJumpValue', value);
     this.jumpValue = value;
     this.processEventListener('onJumpValueChanged', [value]);
   }
 
   insertEntry() {
+    log.trace('TabTLKEditorState insertEntry');
     if (!this.tlk) return;
     const entry = new KotOR.TLKString(0, '', 0, 0, 0, 0, 0, '');
     this.tlk.TLKStrings.push(entry);
@@ -109,10 +127,10 @@ export class TabTLKEditorState extends TabState {
 
   async findReferencesForIndex(index: number): Promise<void> {
     if (index < 0) return;
-    const { ModalReferenceSearchOptionsState } = require('../modal/ModalReferenceSearchOptionsState');
-    const { ModalFileResultsState } = require('../modal/ModalFileResultsState');
-    const { ForgeState } = require('../ForgeState');
-    const { createKeyResources, findStrRefReferences } = require('../../helpers/ReferenceFinder');
+    const { ModalReferenceSearchOptionsState } = require('@/apps/forge/states/modal/ModalReferenceSearchOptionsState');
+    const { ModalFileResultsState } = require('@/apps/forge/states/modal/ModalFileResultsState');
+    const { ForgeState } = require('@/apps/forge/states/ForgeState');
+    const { createKeyResources, findStrRefReferences } = require('@/apps/forge/helpers/ReferenceFinder');
 
     const modal = new ModalReferenceSearchOptionsState({
       onApply: async (options: import('../modal/ModalReferenceSearchOptionsState').ReferenceSearchOptionsStateValues) => {
@@ -131,8 +149,11 @@ export class TabTLKEditorState extends TabState {
   }
 
   async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
+    log.trace('TabTLKEditorState getExportBuffer');
     if(this.tlk){
-      return this.tlk.toBuffer();
+      const buf = this.tlk.toBuffer();
+      log.debug('TabTLKEditorState getExportBuffer tlk length', buf?.length ?? 0);
+      return buf;
     }
     if(this.file?.buffer){
       return this.file.buffer;
@@ -141,6 +162,7 @@ export class TabTLKEditorState extends TabState {
   }
 
   updateFile() {
+    log.trace('TabTLKEditorState updateFile');
     // UI edits TLKStrings in place; getExportBuffer uses this.tlk.toBuffer()
   }
 

@@ -1,9 +1,9 @@
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { GameState } from "../GameState";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { Action } from "@/actions/Action";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { GameState } from "@/GameState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { Action } from "./Action";
 
 const log = createScopedLogger(LogScope.Game);
 

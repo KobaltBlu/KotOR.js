@@ -1,6 +1,6 @@
 import type * as THREE from "three";
 
-import type { OdysseyFace3 } from "../../three/odyssey/OdysseyFace3";
+import type { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 
 /**
  * IOdysseyModelAABBNode interface.

@@ -1,10 +1,10 @@
-import { AudioEngine } from "../../../audio/AudioEngine";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 /**
  * MenuSoundAdvanced class.

@@ -1,9 +1,7 @@
-import { MenuJournal as K1_MenuJournal } from "../../kotor/KOTOR";
-
-import { GUIJournalItem } from "../gui/GUIJournalItem";
-
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { MenuJournal as K1_MenuJournal } from "@/game/kotor/KOTOR";
+import { GUIJournalItem } from "@/game/tsl/gui/GUIJournalItem";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

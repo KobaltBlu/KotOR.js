@@ -1,11 +1,11 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import { MDLLoader } from "../loaders/MDLLoader";
-import { OdysseyModel } from "../odyssey";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { TwoDAObject, type ITwoDARowData } from "../resource/TwoDAObject";
-import { createScopedLogger , LogScope } from "../utility/Logger";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { MDLLoader } from "@/loaders/MDLLoader";
+import { OdysseyModel } from "@/odyssey";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { TwoDAObject, type ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger , LogScope } from "@/utility/Logger";
 
 
 const log = createScopedLogger(LogScope.Game);

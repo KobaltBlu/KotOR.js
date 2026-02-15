@@ -1,14 +1,12 @@
-import { MenuAbilities as K1_MenuAbilities } from "../../kotor/KOTOR";
-
-import { GUICreatureSkill } from "../gui/GUICreatureSkill";
-import { GUIFeatItem } from "../gui/GUIFeatItem";
-import { GUISpellItem } from "../gui/GUISpellItem";
-
-import { GameState } from "../../../GameState";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import type { ModuleCreature } from "../../../module/ModuleCreature";
-import { type TalentFeat } from "../../../talents/TalentFeat";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { MenuAbilities as K1_MenuAbilities } from "@/game/kotor/KOTOR";
+import { GUICreatureSkill } from "@/game/tsl/gui/GUICreatureSkill";
+import { GUIFeatItem } from "@/game/tsl/gui/GUIFeatItem";
+import { GUISpellItem } from "@/game/tsl/gui/GUISpellItem";
+import { GameState } from "@/GameState";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { type TalentFeat } from "@/talents/TalentFeat";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

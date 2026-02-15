@@ -1,15 +1,15 @@
-import { createScopedLogger, LogScope } from "../../utility/Logger";
 
-import type { NWScript } from "../NWScript";
 
-import { NWScriptAST } from "./NWScriptAST";
-import { NWScriptASTCodeGenerator } from "./NWScriptASTCodeGenerator";
-import { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import { NWScriptControlNodeToASTConverter } from "./NWScriptControlNodeToASTConverter";
-import { NWScriptControlStructureBuilder } from "./NWScriptControlStructureBuilder";
-import { NWScriptFunctionAnalyzer } from "./NWScriptFunctionAnalyzer";
-import { NWScriptGlobalVariableAnalyzer } from "./NWScriptGlobalVariableAnalyzer";
-import { NWScriptLocalVariableAnalyzer } from "./NWScriptLocalVariableAnalyzer";
+import { NWScriptAST } from "@/nwscript/decompiler/NWScriptAST";
+import { NWScriptASTCodeGenerator } from "@/nwscript/decompiler/NWScriptASTCodeGenerator";
+import { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import { NWScriptControlNodeToASTConverter } from "@/nwscript/decompiler/NWScriptControlNodeToASTConverter";
+import { NWScriptControlStructureBuilder } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
+import { NWScriptFunctionAnalyzer } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import { NWScriptGlobalVariableAnalyzer } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import { NWScriptLocalVariableAnalyzer } from "@/nwscript/decompiler/NWScriptLocalVariableAnalyzer";
+import type { NWScript } from "@/nwscript/NWScript";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 const log = createScopedLogger(LogScope.NWScript);

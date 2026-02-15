@@ -1,15 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-
-import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
-
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import * as KotOR from "../../../KotOR";
-import { TabImageViewerState } from "../../../states/tabs";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabImageViewerState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
+
+interface Vec3 { x: number; y: number; z: number }
+function isVec3(v: unknown): v is Vec3 {
+  return typeof v === 'object' && v !== null && 'x' in v && 'y' in v && 'z' in v;
+}
 
 export const TabImageViewer = function(props: BaseTabProps){
 
@@ -18,8 +21,8 @@ export const TabImageViewer = function(props: BaseTabProps){
   const [canvasScale, setCanvasScale] = useState<number>(1);
   const [canvasWidth, setCanvasWidth] = useState<number>(512);
   const [canvasHeight, setCanvasHeight] = useState<number>(512);
-  const [txiObject, setTXIObject] = useState<object>();
-  const [txiPane, setTXIPane] = useState<React.ReactElement | undefined>();
+  const [_txiObject, _setTXIObject] = useState<object>();
+  const [_txiPane, _setTXIPane] = useState<React.ReactElement | undefined>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -147,16 +150,12 @@ export const TabImageViewer = function(props: BaseTabProps){
     if (value == null) return String(value);
     if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
     if (Array.isArray(value)) {
-      return value.map((item) => {
-        if (item != null && typeof item === 'object' && 'x' in item && 'y' in item && 'z' in item) {
-          return `(${item.x}, ${item.y}, ${item.z})`;
-        }
+      return value.map((item: unknown) => {
+        if (isVec3(item)) return `(${item.x}, ${item.y}, ${item.z})`;
         return typeof item === 'object' ? JSON.stringify(item) : String(item);
       }).join(', ');
     }
-    if (typeof value === 'object' && value !== null && 'x' in value && 'y' in value && 'z' in value) {
-      return `(${(value as {x: number; y: number; z: number}).x}, ${(value as {x: number; y: number; z: number}).y}, ${(value as {x: number; y: number; z: number}).z})`;
-    }
+    if (isVec3(value)) return `(${value.x}, ${value.y}, ${value.z})`;
     return JSON.stringify(value);
   };
 

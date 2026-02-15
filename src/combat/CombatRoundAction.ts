@@ -1,15 +1,15 @@
-import { ModuleObjectType } from "../enums";
-import { AttackResult } from "../enums/combat/AttackResult";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { CombatFeatType } from "../enums/combat/CombatFeatType";
-import { ProjectilePath } from "../enums/combat/ProjectilePath";
-import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import type { ModuleCreature, ModuleItem, ModuleObject } from "../module";
-import { OdysseyModelAnimation } from "../odyssey";
-import { TalentFeat, TalentSpell } from "../talents";
-import { BitWise } from "../utility/BitWise";
+import { SpellCastInstance } from "@/combat/SpellCastInstance";
+import { ModuleObjectType } from "@/enums";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
+import { ProjectilePath } from "@/enums/combat/ProjectilePath";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import { OdysseyModelAnimation } from "@/odyssey";
+import { TalentFeat, TalentSpell } from "@/talents";
+import { BitWise } from "@/utility/BitWise";
 
-import { SpellCastInstance } from "./SpellCastInstance";
 
 
 export class CombatRoundAction {
@@ -89,7 +89,7 @@ export class CombatRoundAction {
   calculateAttackAnimation(){
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
 
-    const owner: ModuleCreature = this.owner as any;
+    const owner = this.owner as ModuleCreature;
     let attackKey = owner.getCombatAnimationAttackType();
     const weaponWield = owner.getCombatAnimationWeaponType();
     let attackType = 1;
@@ -144,7 +144,7 @@ export class CombatRoundAction {
 
     //Get random basic melee attack in combat with another melee creature that is targeting you
     if(attackKey == 'm' && BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
-      const target: ModuleCreature = this.target as any;
+      const target = this.target as ModuleCreature;
       if(owner.isDuelingObject(target)){
         attackKey = 'c';
         attackType = Math.round(Math.random()*4)+1;

@@ -1,18 +1,18 @@
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
-import { GameEffectSubType } from "../enums/effects/GameEffectSubType";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-// import { ModuleObjectManager } from "../managers/ModuleObjectManager";
-import type { Module, ModuleObject } from "../module";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+// import { ModuleObjectManager } from "@/managers/ModuleObjectManager";
+import type { Module, ModuleObject } from "@/module";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * GameEffect class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GameEffect.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -36,7 +36,7 @@ export class GameEffect {
   objectList: ModuleObject[] = [];
   object: ModuleObject;
   type: GameEffectType;
-  
+
   constructor(){
     this.creator = undefined;
     this.duration = 0;
@@ -111,8 +111,7 @@ export class GameEffect {
   }
 
   setNumIntegers( num = 8 ){
-    this.intList = new Array(num);
-    this.intList.fill(0);
+    this.intList = Array.from({ length: num }, () => 0);
   }
 
   setSkipOnLoad( bSkipOnLoad = true ){
@@ -222,7 +221,7 @@ export class GameEffect {
   }
 
   dispose(){
-    
+
   }
 
   ///////////////
@@ -241,7 +240,7 @@ export class GameEffect {
   onRemove(){
 
   }
-  
+
   //When the effect duration has expired
   onDurationEnd(){
     this.durationEnded = true;

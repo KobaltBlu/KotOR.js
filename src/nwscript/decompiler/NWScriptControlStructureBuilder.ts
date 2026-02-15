@@ -1,13 +1,12 @@
-import { createScopedLogger, LogScope } from "../../utility/Logger";
-
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import { EdgeType } from "./NWScriptEdge";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import { EdgeType } from "@/nwscript/decompiler/NWScriptEdge";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 
 
 const log = createScopedLogger(LogScope.NWScript);
-import { OP_JZ, OP_JNZ, OP_JMP, OP_INCISP, OP_DECIBP, OP_INCIBP, OP_DECISP, OP_CPTOPSP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPDOWNBP, OP_EQUAL, OP_CONST } from '../NWScriptOPCodes';
+import { OP_JZ, OP_JNZ, OP_JMP, OP_INCISP, OP_DECIBP, OP_INCIBP, OP_DECISP, OP_CPTOPSP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPDOWNBP, OP_EQUAL, OP_CONST } from '@/nwscript/NWScriptOPCodes';
 
 /** JSON-serializable debug info for control structure analysis. */
 export interface ControlStructureDebugInfo {

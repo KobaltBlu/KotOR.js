@@ -1,20 +1,19 @@
 import React, { useState } from "react";
 import { Container, Nav, Navbar } from 'react-bootstrap';
 
-import { useEffectOnce } from "../helpers/UseEffectOnce";
-import { MenuTopItem } from "../MenuTopItem";
-import { MenuTopState } from "../states/MenuTopState";
+import { MenuItem } from "@/apps/debugger/components/MenuItem";
+import { useEffectOnce } from "@/apps/debugger/helpers/UseEffectOnce";
+import { MenuTopItem } from "@/apps/debugger/MenuTopItem";
+import { MenuTopState } from "@/apps/debugger/states/MenuTopState";
 
-import { MenuItem } from "./MenuItem";
 
-export interface MenuTopProps {
-  /** Optional - MenuTop manages its own state from MenuTopState */
-}
+/** MenuTop manages its own state from MenuTopState; no required props. */
+export type MenuTopProps = Record<string, never>;
 
 export const MenuTop = function(_props: MenuTopProps) {
 
   const [items, setItems] = useState<MenuTopItem[]>([]);
-  const [render, rerender] = useState<boolean>(false);
+  const [_render, _setRerender] = useState<boolean>(false);
 
   useEffectOnce( () => { //constructor
     setItems([...MenuTopState.items]);
@@ -32,7 +31,7 @@ export const MenuTop = function(_props: MenuTopProps) {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            {items.map((item, i: number) => 
+            {items.map((item, _i: number) =>
               (
                 <MenuItem key={(`menu-item-${item.uuid}`)} item={item}></MenuItem>
               )

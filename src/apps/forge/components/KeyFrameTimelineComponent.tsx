@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Form } from "react-bootstrap";
 
-import { useEffectOnce } from "../helpers/UseEffectOnce";
-import * as KotOR from "../KotOR";
-import { TabModelViewerState } from "../states/tabs";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabModelViewerState } from "@/apps/forge/states/tabs";
 
 export interface KeyFrameTimelineProps {
   tab: TabModelViewerState;
@@ -23,7 +23,7 @@ export const KeyFrameTimelineComponent = function(props: KeyFrameTimelineProps){
 
   const [animations, setAnimations] = useState<KotOR.OdysseyModelAnimation[]>([]);
   const [timelineZoom, setTimelineZoom] = useState<number>(tab.timelineZoom);
-  const [timelineOffset, setTimelineOffset] = useState<number>(tab.timelineOffset);
+  const [timelineOffset, _setTimelineOffset] = useState<number>(tab.timelineOffset);
   const [looping, setLooping] = useState<boolean>(tab.looping);
   const [paused, setPaused] = useState<boolean>(tab.paused);
 
@@ -61,7 +61,7 @@ export const KeyFrameTimelineComponent = function(props: KeyFrameTimelineProps){
     setPaused(true);
   }
 
-  const panelObserver = new ResizeObserver((elements: ResizeObserverEntry[]) => {
+  const panelObserver = new ResizeObserver((_elements: ResizeObserverEntry[]) => {
     setPanelHeight(keyframeWindowRef.current?.clientHeight || 0);
   });
 
@@ -162,13 +162,13 @@ export const KeyFrameTimelineComponent = function(props: KeyFrameTimelineProps){
     }
   }
 
-  const onMouseDownKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onMouseDownKeyFrameWindow = (_e: React.MouseEvent<HTMLDivElement>) => {
     tab.dragging_frame = undefined;
     tab.scrubbing = true;
     tab.pause();
   }
 
-  const onMouseUpKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onMouseUpKeyFrameWindow = (_e: React.MouseEvent<HTMLDivElement>) => {
     clearTimeout(tab.scrubbingTimeout);
     if(tab.scrubbing){
       tab.pause();
@@ -256,14 +256,14 @@ export const KeyFrameTimelineComponent = function(props: KeyFrameTimelineProps){
         <div className="keyframe-controls-center">
           {/* <a title="Delete Keyframe" className="fa-solid fa-trash"></a> */}
           {/* <a title="Previous Keyframe" className="fa-solid fa-chevron-left"></a> */}
-          <a title={!paused ? `Pause` : `Play`} className={`fa-solid fa-${!paused ? `pause` : `play`}`} onClick={ (e) => onBtnPlayPause() }></a>
-          <a title="Stop" className="fa-solid fa-stop" onClick={ (e) => onBtnStop() }></a>
+          <a title={!paused ? `Pause` : `Play`} className={`fa-solid fa-${!paused ? `pause` : `play`}`} onClick={ (_e) => onBtnPlayPause() }></a>
+          <a title="Stop" className="fa-solid fa-stop" onClick={ (_e) => onBtnStop() }></a>
           {/* <a title="Next Keyframe" className="fa-solid fa-chevron-right"></a> */}
           {/* <a title="Add Keyframe" className="fa-solid fa-plus"></a> */}
         </div>
         <div className="keyframe-controls-right">
-          <a title="Timeline Zoom In" className="fa-solid fa-magnifying-glass-plus" onClick={ (e) => onBtnZoomIn() }></a>
-          <a title="Timeline Zoom Out" className="fa-solid fa-magnifying-glass-minus" onClick={ (e) => onBtnZoomOut() }></a>
+          <a title="Timeline Zoom In" className="fa-solid fa-magnifying-glass-plus" onClick={ (_e) => onBtnZoomIn() }></a>
+          <a title="Timeline Zoom Out" className="fa-solid fa-magnifying-glass-minus" onClick={ (_e) => onBtnZoomOut() }></a>
         </div>
       </div>
       <div ref={keyframeWindowRef} className="keyframe-bar" onClick={onClickKeyFrameWindow} onMouseDown={onMouseDownKeyFrameWindow} onMouseUp={onMouseUpKeyFrameWindow} onMouseMove={onMouseMoveKeyFrameWindow} onScroll={onScrollKeyFrameWindow}>
@@ -271,8 +271,8 @@ export const KeyFrameTimelineComponent = function(props: KeyFrameTimelineProps){
         <div className="keyframe-time-track" style={{ top: scrollTop, right: 'initial', width: 200 + (tab.getCurrentAnimationLength() * tab.timelineZoom), zIndex: 1 }}>{ timestamps }</div>
         <div className="keyframe-track" style={{ height: scrollHeight, right: 'initial', width: 200 + (tab.getCurrentAnimationLength() * tab.timelineZoom) }}>
           {(
-            currentAnimation ? currentAnimation.nodes.map( (node, index) => {
-              return <AnimationNodeTimelineComponent key={`keyframe-node-${index}`} node={node} timelineZoom={timelineZoom} timelineOffset={timelineOffset} />
+            currentAnimation ? currentAnimation.nodes.map( (node, _index) => {
+              return <AnimationNodeTimelineComponent key={`keyframe-node-${_index}`} node={node} timelineZoom={timelineZoom} timelineOffset={timelineOffset} />
             }) : <></>
           )}
         </div>
@@ -304,7 +304,7 @@ const AnimationNodeTimelineComponent = function(props: AnimationNodeTimelineProp
       </div>
     </div>
       {
-        [...node.controllers.entries()].map( (value, index) => {
+        [...node.controllers.entries()].map( (value, _index) => {
           return <ControllerTimelineComponent key={`keyframe-controller-${value[1].uuid}`} controller={value[1]} timelineZoom={timelineZoom} timelineOffset={timelineOffset} />
         })
       }

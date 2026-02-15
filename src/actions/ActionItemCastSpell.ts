@@ -1,7 +1,6 @@
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
+import { Action } from "@/actions/Action";
+import { ActionType } from "@/enums/actions/ActionType";
 
-import { Action } from "./Action";
 
 /**
  * ActionItemCastSpell class.

@@ -6,80 +6,80 @@ export const VERSION =
     ? process.env.VERSION
     : undefined;
 export * as dxtJs from "dxt-js";
-export * from "./utility/polyfills";
-export * from "./audio";
-export * from "./module";
-export * from "./gui";
-export * from "./GameInitializer";
-export * from "./GameState";
-export * from "./managers";
+export * from "@/utility/polyfills";
+export * from "@/audio";
+export * from "@/module";
+export * from "@/gui";
+export * from "@/GameInitializer";
+export * from "@/GameState";
+export * from "@/managers";
 
-export * from "./utility/binary/BinaryReader";
-export * from "./utility/binary/BinaryWriter";
+export * from "@/utility/binary/BinaryReader";
+export * from "@/utility/binary/BinaryWriter";
 
-export * from "./combat";
+export * from "@/combat";
 
-export * from "./controls";
+export * from "@/controls";
 
-export * from "./enums";
+export * from "@/enums";
 
-export * from "./interface";
+export * from "@/interface";
 
-export * from "./LoadingScreen";
-export * from "./engine/SaveGame";
-export * from "./utility/ConfigClient";
+export * from "@/LoadingScreen";
+export * from "@/engine/SaveGame";
+export * from "@/utility/ConfigClient";
 
-export * from "./odyssey";
-export * from "./odyssey/controllers/OdysseyController";
+export * from "@/odyssey";
+export * from "@/odyssey/controllers/OdysseyController";
 
-export * from "./loaders";
+export * from "@/loaders";
 
-export * from "./nwscript/NWScript";
-export * from "./nwscript/NWScriptInstance";
-export * from "./nwscript/NWScriptInstruction";
-export * from "./nwscript/NWScriptDefK1";
-export * from "./nwscript/NWScriptDefK2";
+export * from "@/nwscript/NWScript";
+export * from "@/nwscript/NWScriptInstance";
+export * from "@/nwscript/NWScriptInstruction";
+export * from "@/nwscript/NWScriptDefK1";
+export * from "@/nwscript/NWScriptDefK2";
 
-export * from "./resource/CExoLocString";
-export * from "./resource/CExoLocSubString";
-export * from "./resource/BIFObject";
-export * from "./resource/BIKObject";
-export * from "./resource/ERFObject";
-export * from "./resource/DLGObject";
-export * from "./resource/DLGNode";
-export * from "./resource/GFFObject";
-export * from "./resource/GFFStruct";
-export * from "./resource/GFFField";
-export * from "./resource/KEYObject";
-export * from "./resource/LIPObject";
-export * from "./resource/LTRObject";
-export * from "./resource/LYTObject";
-export * from "./resource/RIMObject";
-export * from "./resource/SSFObject";
-export * from "./resource/TGAObject";
-export * from "./resource/TLKObject";
-export * from "./resource/TPCObject";
-export * from "./resource/TwoDAObject";
-export * from "./resource/VISObject";
-export * from "./resource/ResourceTypes";
-export * from "./resource/ResourceTypeInfo";
+export * from "@/resource/CExoLocString";
+export * from "@/resource/CExoLocSubString";
+export * from "@/resource/BIFObject";
+export * from "@/resource/BIKObject";
+export * from "@/resource/ERFObject";
+export * from "@/resource/DLGObject";
+export * from "@/resource/DLGNode";
+export * from "@/resource/GFFObject";
+export * from "@/resource/GFFStruct";
+export * from "@/resource/GFFField";
+export * from "@/resource/KEYObject";
+export * from "@/resource/LIPObject";
+export * from "@/resource/LTRObject";
+export * from "@/resource/LYTObject";
+export * from "@/resource/RIMObject";
+export * from "@/resource/SSFObject";
+export * from "@/resource/TGAObject";
+export * from "@/resource/TLKObject";
+export * from "@/resource/TPCObject";
+export * from "@/resource/TwoDAObject";
+export * from "@/resource/VISObject";
+export * from "@/resource/ResourceTypes";
+export * from "@/resource/ResourceTypeInfo";
 
-export * from "./three/odyssey";
+export * from "@/three/odyssey";
 
-export * from "./utility/ApplicationProfile";
-export * from "./utility/GameFileSystem";
-export * from "./utility/Utility";
-export * from "./engine/TextSprite3D";
+export * from "@/utility/ApplicationProfile";
+export * from "@/utility/GameFileSystem";
+export * from "@/utility/Utility";
+export * from "@/engine/TextSprite3D";
 
-export * from "./engine/INIConfig";
-export * from "./engine/CurrentGame";
-export * from "./engine/rules";
-export * from "./engine/pathfinding";
+export * from "@/engine/INIConfig";
+export * from "@/engine/CurrentGame";
+export * from "@/engine/rules";
+export * from "@/engine/pathfinding";
 
-export * from "./talents";
-export * from "./engine/menu/ActionMenuManager";
-export * from "./actions/ActionFactory";
-export * from "./effects/GameEffectFactory";
-export * from "./events/GameEventFactory";
+export * from "@/talents";
+export * from "@/engine/menu/ActionMenuManager";
+export * from "@/actions/ActionFactory";
+export * from "@/effects/GameEffectFactory";
+export * from "@/events/GameEventFactory";
 
 

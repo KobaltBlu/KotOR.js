@@ -1,7 +1,7 @@
-import { ENCODING } from '../enums/graphics/tpc/Encoding';
-import { BinaryWriter } from '../utility/binary/BinaryWriter';
+import { ENCODING } from '@/enums/graphics/tpc/Encoding';
+import { detectTPCFormat, isTPCBuffer, readTPCFromBuffer, TPCObject, writeTPCToBuffer } from '@/resource/TPCObject';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
-import { detectTPCFormat, isTPCBuffer, readTPCFromBuffer, TPCObject, writeTPCToBuffer } from './TPCObject';
 
 describe('TPCObject', () => {
   /** Minimal valid TPC: uncompressed RGBA 2x2, one mipmap, no TXI. */

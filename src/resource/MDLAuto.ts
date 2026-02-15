@@ -7,10 +7,10 @@
  * @license GPL-3.0
  */
 
-import { readMDLFromAsciiBuffer, writeMDLToAsciiBuffer } from './MDLAsciiIO';
-import { readMDLFromBinaryBuffer, type MDLBinaryReaderOptions } from './MDLBinaryReader';
-import type { MDL } from './MDLData';
-import type { MDLFormat } from './MDLTypes';
+import { readMDLFromAsciiBuffer, writeMDLToAsciiBuffer } from '@/resource/MDLAsciiIO';
+import { readMDLFromBinaryBuffer, type MDLBinaryReaderOptions } from '@/resource/MDLBinaryReader';
+import type { MDL } from '@/resource/MDLData';
+import type { MDLFormat } from '@/resource/MDLTypes';
 
 /** First 4 bytes of binary MDL (zero = binary, otherwise treated as ASCII). */
 const BINARY_MDL_MAGIC = new Uint8Array([0, 0, 0, 0]);
@@ -130,7 +130,7 @@ export function readMDLFast(buffer: Uint8Array, options: ReadMDLOptions = {}): M
 }
 
 // Re-export for callers that need direct ASCII I/O
-export { readMDLFromAsciiBuffer, writeMDLToAsciiBuffer } from './MDLAsciiIO';
+export { readMDLFromAsciiBuffer, writeMDLToAsciiBuffer } from '@/resource/MDLAsciiIO';
 
 export interface WriteMDLOptions {
   /** Output format: 'mdl' (binary) or 'mdl_ascii'. */

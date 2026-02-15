@@ -8,14 +8,13 @@ declare global {
 import ReactDOM from "react-dom/client";
 
 import 'bootstrap';
-import './app.scss';
-import { createScopedLogger, LogScope } from '../../utility/Logger';
+import "@/apps/forge/app.scss";
 
-import { registerElectronLoadingErrorHandler } from '../common/electronLoadingErrorHandler';
-
-import { App } from './App';
-import { AppProvider } from './context/AppContext';
-import * as KotOR from "./KotOR";
+import { registerElectronLoadingErrorHandler } from '@/apps/common/electronLoadingErrorHandler';
+import { App } from '@/apps/forge/App';
+import { AppProvider } from '@/apps/forge/context/AppContext';
+import * as KotOR from "@/apps/forge/KotOR";
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 
 const log = createScopedLogger(LogScope.Forge);

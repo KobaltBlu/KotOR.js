@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import { BitWise } from "../utility/BitWise";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { BitWise } from "@/utility/BitWise";
 
-import { GameEffect } from "./GameEffect";
 
 /**
  * EffectForcePushed class.

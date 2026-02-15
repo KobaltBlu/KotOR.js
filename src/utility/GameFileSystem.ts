@@ -1,11 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
-import { IGameFileSystemReadDirOptions } from "../interface/filesystem/IGameFileSystemReadDirOptions";
-
-import { ApplicationProfile } from "./ApplicationProfile";
-import { createScopedLogger, LogScope } from "./Logger";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /** Electron dialog (injected by preload when ENV is ELECTRON). Used by showOpenFileDialog/showSaveFileDialog when implemented. */
 declare const _dialog: {
@@ -513,7 +512,7 @@ export class GameFileSystem {
     } else {
       if (handleOrPath instanceof FileSystemFileHandle) {
         const file = await handleOrPath.getFile();
-        //@ts-expect-error
+        // @ts-expect-error - File.remove() is File System Access API; DOM lib types may not include it yet
         file.remove();
       }
     }

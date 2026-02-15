@@ -1,10 +1,10 @@
-import { ModuleObjectType } from "../../../enums/module/ModuleObjectType";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import type { ModuleCreature, ModuleItem, ModuleStore } from "../../../module";
-import { BitWise } from "../../../utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { ModuleCreature, ModuleItem, ModuleStore } from "@/module";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * MenuStore class.

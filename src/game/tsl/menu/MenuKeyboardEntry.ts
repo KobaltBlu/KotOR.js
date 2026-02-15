@@ -1,6 +1,5 @@
-import { MenuKeyboardEntry as K1_MenuKeyboardEntry } from "../../kotor/KOTOR";
-
-import type { GUILabel, GUIButton } from "../../../gui";
+import { MenuKeyboardEntry as K1_MenuKeyboardEntry } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * MenuKeyboardEntry class.

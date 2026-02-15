@@ -1,5 +1,5 @@
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptExpression } from "./NWScriptExpression";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
 
 /**
  * Represents an edge type in the control flow graph

@@ -1,12 +1,12 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import type { ITwoDARowData } from "../resource/TwoDAObject";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { JournalCategory } from "@/engine/JournalCategory";
+import { JournalCategoryEntry } from "@/engine/JournalCategoryEntry";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { JournalCategory } from "./JournalCategory";
-import { JournalCategoryEntry } from "./JournalCategoryEntry";
 
 const log = createScopedLogger(LogScope.Game);
 

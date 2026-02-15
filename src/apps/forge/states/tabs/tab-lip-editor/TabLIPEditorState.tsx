@@ -1,22 +1,21 @@
 import React from "react";
 import * as THREE from 'three';
 
-import { ILIPKeyFrame } from "../../../../../interface/resource/ILIPKeyFrame";
-import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "../TabState";
 
-import { TabLIPEditor } from "../../../components/tabs/tab-lip-editor/TabLIPEditor";
-import { UI3DRendererView } from "../../../components/UI3DRendererView";
-import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
-import { EditorFile } from "../../../EditorFile";
-import { ForgeFileSystem, ForgeFileSystemResponse } from "../../../ForgeFileSystem";
-import BaseTabStateOptions from "../../../interfaces/BaseTabStateOptions";
-import * as KotOR from "../../../KotOR";
-import { EditorTabManager } from "../../../managers/EditorTabManager";
-import { SceneGraphNode } from "../../../SceneGraphNode";
-import { UI3DRenderer } from "../../../UI3DRenderer";
-
-import { TabLIPEditorOptionsState } from "./TabLIPEditorOptionsState";
+import { TabLIPEditor } from "@/apps/forge/components/tabs/tab-lip-editor/TabLIPEditor";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
+import { TabLIPEditorOptionsState } from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorOptionsState";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs/TabState";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { ILIPKeyFrame } from "@/interface/resource/ILIPKeyFrame";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 

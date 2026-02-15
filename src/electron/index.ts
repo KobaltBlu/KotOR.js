@@ -1,9 +1,9 @@
 import { app } from 'electron';
 
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Extension);
-import Main from "./Main";
+import Main from "@/electron/Main";
 
 log.info('args', process.argv, __dirname, app.getAppPath());
 

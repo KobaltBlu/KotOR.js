@@ -1,9 +1,9 @@
 import * as THREE from "three";
 
-import { OdysseyWalkMeshType } from "../enums/odyssey/OdysseyWalkMeshType";
-import { OdysseyFace3 } from "../three/odyssey";
+import { OdysseyWalkMeshType } from "@/enums/odyssey/OdysseyWalkMeshType";
+import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
+import { OdysseyFace3 } from "@/three/odyssey";
 
-import { OdysseyWalkMesh } from "./OdysseyWalkMesh";
 
 /**
  * WalkmeshEdge class.

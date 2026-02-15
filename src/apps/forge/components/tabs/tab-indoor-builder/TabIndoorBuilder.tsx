@@ -1,21 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-
-import { UI3DRendererView } from "../../UI3DRendererView";
-
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import { Kit, KitComponent } from "../../../data/IndoorKit";
-import { ensureComponentPreview } from "../../../data/IndoorKitPreview";
-import { IndoorMapRoom } from "../../../data/IndoorMap";
-import { ForgeFileSystem } from "../../../ForgeFileSystem";
-import { IndoorMapCanvasRenderer } from "../../../helpers/IndoorMapCanvasRenderer";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { TabIndoorBuilderState, IndoorBuilderViewMode } from "../../../states/tabs/TabIndoorBuilderState";
-
-
-import "./TabIndoorBuilder.scss";
 import * as THREE from "three";
+
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
+import { Kit, KitComponent } from "@/apps/forge/data/IndoorKit";
+import { ensureComponentPreview } from "@/apps/forge/data/IndoorKitPreview";
+import { IndoorMapRoom } from "@/apps/forge/data/IndoorMap";
+import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
+import { IndoorMapCanvasRenderer } from "@/apps/forge/helpers/IndoorMapCanvasRenderer";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { TabIndoorBuilderState, IndoorBuilderViewMode } from "@/apps/forge/states/tabs/TabIndoorBuilderState";
+
+
+import "@/apps/forge/components/tabs/tab-indoor-builder/TabIndoorBuilder.scss";
 
 export const TabIndoorBuilder = function TabIndoorBuilder(props: BaseTabProps) {
   const tab = props.tab as TabIndoorBuilderState;

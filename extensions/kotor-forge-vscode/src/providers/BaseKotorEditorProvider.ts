@@ -6,6 +6,22 @@ import { LogScope, createScopedLogger } from '../logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
+/** Webview message type (VSCode API sends unknown; we validate and narrow) */
+type WebviewMessage = Record<string, unknown> & {
+  type?: string;
+  requestId?: number;
+  buffer?: number[];
+  label?: string;
+  data?: number[];
+  undoData?: unknown;
+  redoData?: unknown;
+  body?: unknown;
+};
+
+function asWebviewMessage(e: unknown): WebviewMessage {
+  return (typeof e === 'object' && e !== null ? e : {}) as WebviewMessage;
+}
+
 /**
  * Base class for all KotOR custom editor providers
  */
@@ -98,11 +114,12 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview, document);
     log.debug('resolveCustomEditor() HTML set, webview will load and post ready');
 
-    webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
+    webviewPanel.webview.onDidReceiveMessage((e: unknown) => this.onMessage(document, asWebviewMessage(e)));
 
-    webviewPanel.webview.onDidReceiveMessage(async (e) => {
-      log.trace(`resolveCustomEditor() message from webview type=${e?.type}`);
-      if (e.type === 'ready') {
+    webviewPanel.webview.onDidReceiveMessage(async (e: unknown) => {
+      const msg = asWebviewMessage(e);
+      log.trace(`resolveCustomEditor() message from webview type=${msg.type ?? 'undefined'}`);
+      if (msg.type === 'ready') {
         log.info(`resolveCustomEditor() webview ready, sending init uri=${document.uri.fsPath}`);
         const extra = await this.getExtraInitData?.(document) ?? {};
         const editorType = this.getEditorTypeForDocument(document);

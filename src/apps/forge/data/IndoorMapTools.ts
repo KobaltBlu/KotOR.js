@@ -1,22 +1,21 @@
 import * as THREE from "three";
 
-import { OdysseyWalkMesh } from "../KotOR";
+import { Kit } from "@/apps/forge/data/IndoorKit";
+import { loadKits } from "@/apps/forge/data/IndoorKitLoader";
+import { IndoorMap, IndoorMapRoom } from "@/apps/forge/data/IndoorMap";
+import { cloneWalkmesh, applyWalkmeshTransform } from "@/apps/forge/data/IndoorWalkmesh";
+import { OdysseyWalkMesh } from "@/apps/forge/KotOR";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { AreaMap } from "@/module/AreaMap";
+import { ModuleArea } from "@/module/ModuleArea";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { ERFObject } from "@/resource/ERFObject";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { LYTObject } from "@/resource/LYTObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 
-import { GFFDataType } from "../../../enums/resource/GFFDataType";
-import { AreaMap } from "../../../module/AreaMap";
-import { ModuleArea } from "../../../module/ModuleArea";
-import { CExoLocString } from "../../../resource/CExoLocString";
-import { ERFObject } from "../../../resource/ERFObject";
-import { GFFField } from "../../../resource/GFFField";
-import { GFFObject } from "../../../resource/GFFObject";
-import { LYTObject } from "../../../resource/LYTObject";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
-import { BinaryWriter } from "../../../utility/binary/BinaryWriter";
-
-import { Kit } from "./IndoorKit";
-import { loadKits } from "./IndoorKitLoader";
-import { IndoorMap, IndoorMapRoom } from "./IndoorMap";
-import { cloneWalkmesh, applyWalkmeshTransform } from "./IndoorWalkmesh";
 
 
 export type IndoorBuildOptions = {
@@ -103,7 +102,8 @@ export const buildModFromIndoorMap = async (indoorMap: IndoorMap, kits: Kit[], o
 
   const visRooms: Map<string, string[]> = new Map();
   indoorMap.rooms.forEach((room) => {
-    const roomName = roomNames.get(room)!;
+    const roomName = roomNames.get(room);
+    if (roomName === undefined) return;
     const visible: string[] = [];
     room.hooks.forEach((hookRoom) => {
       if (!hookRoom) return;
@@ -245,7 +245,7 @@ export const inferRoomTransform = (
   maxRms = 1e-3
 ): { flipX: boolean; flipY: boolean; rotationDeg: number; translation: THREE.Vector3; rmsError: number } | null => {
   if (baseVertices.length !== instanceVertices.length || !baseVertices.length) return null;
-  const baseCentroid = centroid(baseVertices);
+  const _baseCentroid = centroid(baseVertices);
   const instCentroid = centroid(instanceVertices);
   let best: { flipX: boolean; flipY: boolean; rotationDeg: number; translation: THREE.Vector3; rmsError: number } | null = null;
 

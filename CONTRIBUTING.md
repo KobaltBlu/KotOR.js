@@ -10,6 +10,7 @@ Thank you for your interest in contributing to KotOR.js! This document provides 
 - [Project Structure](#project-structure)
 - [Development Workflow](#development-workflow)
 - [Coding Standards](#coding-standards)
+- [ESLint and type safety](#eslint-and-type-safety)
 - [Testing](#testing)
 - [Documentation](#documentation)
 - [Submitting Changes](#submitting-changes)
@@ -229,6 +230,12 @@ npm run format:check
 - Avoid `any` types; use proper types or `unknown`
 - Use interfaces for object shapes, types for unions/intersections
 - Export types and interfaces that may be used elsewhere
+
+### ESLint and type safety
+
+The project uses strict TypeScript ESLint rules, including the `@typescript-eslint/no-unsafe-*` rules (e.g. `no-unsafe-assignment`, `no-unsafe-call`). These report uses of values whose type is `any` or could not be resolved ("unsafe" use).
+
+For a beginner-friendly explanation of what "unsafe" means, why these rules exist, and how to fix or handle them, see **[docs/ESLINT_TYPE_SAFETY.md](docs/ESLINT_TYPE_SAFETY.md)**.
 
 ### Code Style
 

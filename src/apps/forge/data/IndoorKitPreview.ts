@@ -1,6 +1,6 @@
-import type { OdysseyWalkMesh } from "../KotOR";
+import type { KitComponent } from "@/apps/forge/data/IndoorKit";
+import type { OdysseyWalkMesh } from "@/apps/forge/KotOR";
 
-import type { KitComponent } from "./IndoorKit";
 
 const PREVIEW_PIXELS_PER_UNIT = 10;
 const PREVIEW_MIN_SIZE = 256;

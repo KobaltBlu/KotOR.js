@@ -1,15 +1,15 @@
 import * as path from "path";
 
-import { IERFKeyEntry } from "../interface/resource/IERFKeyEntry";
-import { IERFLanguage } from "../interface/resource/IERFLanguage";
-import { IERFObjectHeader } from "../interface/resource/IERFObjectHeader";
-import { IERFResource } from "../interface/resource/IERFResource";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
+import { IERFLanguage } from "@/interface/resource/IERFLanguage";
+import { IERFObjectHeader } from "@/interface/resource/IERFObjectHeader";
+import { IERFResource } from "@/interface/resource/IERFResource";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { ResourceTypes } from "./ResourceTypes";
 
 const log = createScopedLogger(LogScope.Resource);
   
@@ -281,8 +281,8 @@ export class ERFObject {
 
   }
 
-  export( file: string, onExport?: Function, onError?: Function ){
-    return new Promise( (resolve: Function, reject: Function) => {
+  export( file: string, onExport?: () => void, onError?: (err?: unknown) => void ){
+    return new Promise<void>( (resolve: () => void, reject: (reason?: unknown) => void) => {
 
       if(!file){
         reject('Failed to export: Missing file path.');

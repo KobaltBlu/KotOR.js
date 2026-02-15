@@ -1,4 +1,34 @@
 import {
+  SemanticProgramNode,
+  SemanticFunctionNode,
+  SemanticStatementNode,
+  SemanticBlockNode,
+  SemanticReturnNode,
+  SemanticFunctionCallNode,
+  SemanticLiteralNode,
+  SemanticExpressionNode,
+  SemanticVariableReferenceNode,
+  SemanticAssignNode,
+  SemanticBinaryNode,
+  SemanticCompareNode,
+  SemanticUnaryNode,
+  SemanticIncDecNode,
+  SemanticIfNode,
+  SemanticElseNode,
+  SemanticWhileNode,
+  SemanticDoWhileNode,
+  SemanticForNode,
+  SemanticSwitchNode,
+  SemanticPropertyNode,
+  SemanticIndexNode,
+  SemanticArrayLiteralNode,
+  SemanticVariableNode,
+  SemanticVariableListNode,
+  SemanticBreakNode,
+  SemanticContinueNode,
+  type SemanticDataType,
+} from "@/nwscript/compiler/ASTSemanticTypes";
+import {
   OP_CPDOWNSP,
   OP_RSADD,
   OP_CPTOPSP,
@@ -40,37 +70,8 @@ import {
   OP_INCISP,
   OP_NOP,
   OP_STORE_STATE,
-} from "../NWScriptOPCodes";
+} from "@/nwscript/NWScriptOPCodes";
 
-import {
-  SemanticProgramNode,
-  SemanticFunctionNode,
-  SemanticStatementNode,
-  SemanticBlockNode,
-  SemanticReturnNode,
-  SemanticFunctionCallNode,
-  SemanticLiteralNode,
-  SemanticExpressionNode,
-  SemanticVariableReferenceNode,
-  SemanticAssignNode,
-  SemanticBinaryNode,
-  SemanticCompareNode,
-  SemanticUnaryNode,
-  SemanticIncDecNode,
-  SemanticIfNode,
-  SemanticElseNode,
-  SemanticWhileNode,
-  SemanticDoWhileNode,
-  SemanticForNode,
-  SemanticSwitchNode,
-  SemanticPropertyNode,
-  SemanticIndexNode,
-  SemanticArrayLiteralNode,
-  SemanticVariableNode,
-  SemanticVariableListNode,
-  SemanticBreakNode,
-  SemanticContinueNode,
-} from "./ASTSemanticTypes";
 
 // Minimal IR types: label-based, linear instruction list.
 export type IRProgram = {
@@ -250,7 +251,7 @@ export class NWScriptIRBuilder {
 
     return {
       name: fn.name,
-      isEngineAction: (fn as any).is_engine_action || false,
+      isEngineAction: fn.is_engine_action ?? false,
       arguments: [],
       returnType: fn.returntype
         ? { kind: "datatype", value: fn.returntype.value, unary: fn.returntype.unary }
@@ -364,8 +365,8 @@ export class NWScriptIRBuilder {
     const dt: IRType = prop.datatype
       ? { kind: "datatype", value: prop.datatype.value, unary: prop.datatype.unary }
       : { kind: "datatype", value: "int", unary: 0x03 };
-    const parentStruct =
-      (prop.left as any)?.datatype?.struct || (prop.left as any)?.datatype?.value || undefined;
+    const leftDt = (prop.left as SemanticExpressionNode & { datatype?: SemanticDataType })?.datatype;
+    const parentStruct = leftDt?.struct ?? leftDt?.value ?? undefined;
     if (prop.right) {
       this.lowerExpression(prop.right as SemanticExpressionNode, acc);
       acc.push({ op: "storefield", type: dt, field: prop.name, parent: parentStruct });
@@ -377,12 +378,13 @@ export class NWScriptIRBuilder {
   private lowerIndex(idx: SemanticIndexNode, acc: IRInstruction[]) {
     this.lowerExpression(idx.left as SemanticExpressionNode, acc);
     this.lowerExpression(idx.index as SemanticExpressionNode, acc);
-    const dt: IRType = (idx as any).datatype
-      ? { kind: "datatype", value: (idx as any).datatype.value, unary: (idx as any).datatype.unary }
+    const idxDt = (idx as SemanticIndexNode & { datatype?: SemanticDataType }).datatype;
+    const dt: IRType = idxDt
+      ? { kind: "datatype", value: idxDt.value, unary: idxDt.unary }
       : { kind: "datatype", value: "int", unary: 0x03 };
     let litIdx: number | undefined;
-    if (idx.index.type === "literal" && typeof (idx.index as any).value === "number") {
-      litIdx = (idx.index as any).value;
+    if (idx.index.type === "literal" && typeof (idx.index as SemanticLiteralNode).value === "number") {
+      litIdx = (idx.index as SemanticLiteralNode).value as number;
     }
     // If part of assignment, store will be handled in assign lowering; otherwise load.
     acc.push({ op: "loadindex", type: dt, indexLiteral: litIdx });
@@ -396,7 +398,7 @@ export class NWScriptIRBuilder {
 
   private lowerAssign(asn: SemanticAssignNode, acc: IRInstruction[]) {
     this.lowerExpression(asn.right as SemanticExpressionNode, acc);
-    const left = asn.left as any;
+    const left = asn.left;
     if (left.type === "variable_reference") {
       const vr = left as SemanticVariableReferenceNode;
       const dt: IRType = vr.datatype
@@ -412,14 +414,15 @@ export class NWScriptIRBuilder {
       acc.push({ op: "storefield", type: dt, field: prop.name });
     } else if (left.type === "index") {
       const idx = left as SemanticIndexNode;
-      const dt: IRType = (idx as any).datatype
-        ? { kind: "datatype", value: (idx as any).datatype.value, unary: (idx as any).datatype.unary }
+      const idxDt = (idx as SemanticIndexNode & { datatype?: SemanticDataType }).datatype;
+      const dt: IRType = idxDt
+        ? { kind: "datatype", value: idxDt.value, unary: idxDt.unary }
         : { kind: "datatype", value: "int", unary: 0x03 };
       this.lowerExpression(idx.left as SemanticExpressionNode, acc);
       this.lowerExpression(idx.index as SemanticExpressionNode, acc);
       let litIdx: number | undefined;
-      if (idx.index.type === "literal" && typeof (idx.index as any).value === "number") {
-        litIdx = (idx.index as any).value;
+      if (idx.index.type === "literal" && typeof (idx.index as SemanticLiteralNode).value === "number") {
+        litIdx = (idx.index as SemanticLiteralNode).value as number;
       }
       acc.push({ op: "storeindex", type: dt, indexLiteral: litIdx });
     } else {
@@ -432,8 +435,8 @@ export class NWScriptIRBuilder {
     this.lowerExpression(bin.right as SemanticExpressionNode, acc);
     const typeCode = NWScriptIRBuilder.getBinaryOpTypeCode(
       bin.type,
-      (bin.left as any)?.datatype,
-      (bin.right as any)?.datatype
+      (bin.left as SemanticExpressionNode & { datatype?: SemanticDataType })?.datatype,
+      (bin.right as SemanticExpressionNode & { datatype?: SemanticDataType })?.datatype
     );
     switch (bin.type) {
       case "add":
@@ -494,9 +497,9 @@ export class NWScriptIRBuilder {
     this.lowerExpression(cmp.left as SemanticExpressionNode, acc);
     this.lowerExpression(cmp.right as SemanticExpressionNode, acc);
     const typeInfo = NWScriptIRBuilder.getCompareTypeInfo(
-      (cmp.left as any)?.datatype,
-      (cmp.right as any)?.datatype,
-      (cmp as any)?.datatype
+      (cmp.left as SemanticExpressionNode & { datatype?: SemanticDataType })?.datatype,
+      (cmp.right as SemanticExpressionNode & { datatype?: SemanticDataType })?.datatype,
+      (cmp as SemanticCompareNode & { datatype?: SemanticDataType })?.datatype
     );
     switch (op) {
       case "==":
@@ -525,7 +528,11 @@ export class NWScriptIRBuilder {
 
   private lowerUnary(un: SemanticUnaryNode, acc: IRInstruction[]) {
     this.lowerExpression(un.value as SemanticExpressionNode, acc);
-    const typeCode = NWScriptIRBuilder.getUnaryTypeCode(un.type, (un as any).datatype || (un.value as any)?.datatype);
+    const typeCode = NWScriptIRBuilder.getUnaryTypeCode(
+      un.type,
+      (un as SemanticUnaryNode & { datatype?: SemanticDataType }).datatype ??
+        (un.value as SemanticExpressionNode & { datatype?: SemanticDataType })?.datatype
+    );
     switch (un.type) {
       case "neg":
         acc.push({ op: "unary", kind: "neg", typeCode });
@@ -540,10 +547,10 @@ export class NWScriptIRBuilder {
   }
 
   private lowerIncDec(id: SemanticIncDecNode, acc: IRInstruction[]) {
-    const vr = id.value as any;
+    const vr = id.value as SemanticVariableReferenceNode;
     if (vr && vr.type === "variable_reference") {
       const name = vr.name;
-      const isPost = (id as any).postFix ?? (id as any).postfix;
+      const isPost = (id as SemanticIncDecNode & { postFix?: boolean; postfix?: boolean }).postFix ?? (id as SemanticIncDecNode & { postfix?: boolean }).postfix;
       if (id.type === "inc") {
         acc.push({ op: "inc", varName: name, isGlobal: vr.is_global, postfix: isPost });
       } else {
@@ -617,7 +624,7 @@ export class NWScriptIRBuilder {
     this.breakLabels.push(lblEnd);
     // initializer
     if (node.initializer) {
-      this.lowerExpression(node.initializer as any, acc);
+      this.lowerExpression(node.initializer as SemanticExpressionNode, acc);
     }
     acc.push({ op: "label", name: lblStart });
     // condition
@@ -742,7 +749,7 @@ export class NWScriptIRBuilder {
       0
     );
 
-    const isEngine = call.function_reference && (call.function_reference as any).is_engine_action;
+    const isEngine = call.function_reference && (call.function_reference as SemanticFunctionNode & { is_engine_action?: boolean }).is_engine_action;
     const retSize = NWScriptIRBuilder.getTypeSize(call.function_reference?.returntype);
 
     // For script calls with return, preallocate return slot (RSADD)
@@ -770,7 +777,7 @@ export class NWScriptIRBuilder {
 
     // Emit arguments (reverse order), with action-type trampoline handling
     for (const arg of reversedArgs) {
-      const dt = (arg as any).datatype;
+      const dt = (arg as SemanticExpressionNode & { datatype?: SemanticDataType }).datatype;
       if (dt && dt.value === "action") {
         const afterLabel = this.newLabel("action_after");
         acc.push({ op: "store_state", bStackSize: 0, stackSize: 0 }); // computed at emit
@@ -803,7 +810,7 @@ export class NWScriptIRBuilder {
   }
 
   // Size helpers -----------------------------------------------------
-  private static getTypeSize(dt: any): number {
+  private static getTypeSize(dt: SemanticDataType | undefined): number {
     if (!dt) return 0;
     // In NWScript, most types are 4-byte stack slots (int, float, string ref, object ref).
     // Vectors are 12 bytes; structs unknown -> sum of fields handled elsewhere.
@@ -828,7 +835,7 @@ export class NWScriptIRBuilder {
       case "property":
         return NWScriptIRBuilder.getTypeSize((expr as SemanticPropertyNode).datatype);
       case "index":
-        return NWScriptIRBuilder.getTypeSize((expr as any).datatype);
+        return NWScriptIRBuilder.getTypeSize((expr as SemanticExpressionNode & { datatype?: SemanticDataType }).datatype);
       case "assign":
         return NWScriptIRBuilder.getStatementSize(
           (expr as SemanticAssignNode).right as SemanticExpressionNode
@@ -870,7 +877,7 @@ export class NWScriptIRBuilder {
     // Build global init stub: reserve globals, run initializers via expression lowering, anchor BP at globals,
     // JSR into main/start, restore BP, pop globals, RETN.
     const globalStub: Uint8Array[] = [];
-    const globalsList = (program.scope?.variables || []).filter((v: any) => v.is_global);
+    const globalsList = (program.scope?.variables || []).filter((v: SemanticVariableNode) => v.is_global);
     // Reserve each global slot
     for (const g of globalsList) {
       const gSize = NWScriptIRBuilder.getTypeSize(g.datatype);
@@ -896,7 +903,7 @@ export class NWScriptIRBuilder {
         const initInstrs: IRInstruction[] = [];
         if (g.value) {
           const builder = new NWScriptIRBuilder();
-          builder.lowerExpression(g.value as any, initInstrs);
+          builder.lowerExpression(g.value as SemanticExpressionNode, initInstrs);
         } else {
           initInstrs.push({
             op: "loadconst",
@@ -958,7 +965,7 @@ export class NWScriptIRBuilder {
       const mov = allocBuffer(6);
       mov.writeInt8(OP_MOVSP, 0);
       mov.writeInt8(0x00, 1);
-      const globalsSize = globalsList.reduce((s: number, g: any) => s + NWScriptIRBuilder.getTypeSize(g.datatype), 0);
+      const globalsSize = globalsList.reduce((s: number, g: SemanticVariableNode) => s + NWScriptIRBuilder.getTypeSize(g.datatype), 0);
       mov.writeInt32BE(-globalsSize, 2);
       globalStub.push(mov);
     }
@@ -1026,7 +1033,7 @@ export class NWScriptIRBuilder {
         case "for":
         case "switch":
           // Traverse nested statements for locals
-          this.collectLocals((stmt as any).statements as SemanticStatementNode[], bucket);
+          this.collectLocals((stmt as SemanticBlockNode).statements, bucket);
           break;
         default:
           break;
@@ -1091,7 +1098,7 @@ export class NWScriptIRBuilder {
   ): Record<string, IRStackSlot> {
     const globals: Record<string, IRStackSlot> = {};
     let offset = 0;
-    const addGlobal = (name: string, dt: any) => {
+    const addGlobal = (name: string, dt: SemanticDataType) => {
       const size =
         dt?.struct && structLayouts[dt.struct] ? structLayouts[dt.struct].size : NWScriptIRBuilder.getTypeSize(dt);
       offset -= size;
@@ -1101,7 +1108,7 @@ export class NWScriptIRBuilder {
       if (v.is_global) addGlobal(v.name, v.datatype);
     }
     for (const c of program.scope?.constants || []) {
-      if ((c as any).is_global) addGlobal(c.name, c.datatype);
+      if ((c as SemanticVariableNode).is_global) addGlobal(c.name, (c as SemanticVariableNode).datatype);
     }
     return globals;
   }
@@ -1517,8 +1524,9 @@ export class NWScriptIRBuilder {
       case "store_state": {
         // Size globals: globals offsets are negative; capture total span
         const minGlobal = Math.min(0, ...Object.values(globals || {}).map((g) => g.offset));
-        const bStackSize = (instr as any).bStackSize ?? -minGlobal;
-        const stackSize = (instr as any).stackSize ?? (sp - entrySp);
+        const storeInstr = instr as Extract<IRInstruction, { op: "store_state" }>;
+        const bStackSize = storeInstr.bStackSize ?? -minGlobal;
+        const stackSize = storeInstr.stackSize ?? (sp - entrySp);
         const buf = allocBuffer(6);
         buf.writeInt8(OP_STORE_STATE, 0);
         buf.writeInt8(0x00, 1);
@@ -1559,7 +1567,7 @@ export class NWScriptIRBuilder {
     }
   }
 
-  private static getTypeCodeFromNode(dt: any, fallback: number): number {
+  private static getTypeCodeFromNode(dt: SemanticDataType | undefined, fallback: number): number {
     if (!dt || typeof dt !== "object") return fallback;
     const val = dt.value ?? dt;
     switch (val) {
@@ -1579,7 +1587,7 @@ export class NWScriptIRBuilder {
     }
   }
 
-  private static getBinaryOpTypeCode(op: string, left: any, right: any): number {
+  private static getBinaryOpTypeCode(op: string, left: SemanticDataType | { value?: string; unary?: number } | undefined, right: SemanticDataType | { value?: string; unary?: number } | undefined): number {
     const l = left?.value ?? left;
     const r = right?.value ?? right;
     // Mixed numeric cases
@@ -1598,7 +1606,7 @@ export class NWScriptIRBuilder {
     return 0x20; // default int/int
   }
 
-  private static getCompareTypeInfo(left: any, right: any, dt: any): { typeCode: number; size?: number } {
+  private static getCompareTypeInfo(left: SemanticDataType | { value?: string; unary?: number; size?: number } | undefined, right: SemanticDataType | { value?: string; unary?: number } | undefined, dt: SemanticDataType | { value?: string; unary?: number; size?: number } | undefined): { typeCode: number; size?: number } {
     const l = left?.value ?? left;
     const r = right?.value ?? right;
     const base = dt?.value ?? dt;
@@ -1621,7 +1629,7 @@ export class NWScriptIRBuilder {
     return { typeCode: 0x20 };
   }
 
-  private static getUnaryTypeCode(op: string, dt: any): number {
+  private static getUnaryTypeCode(op: string, dt: SemanticDataType | { value?: string; unary?: number } | undefined): number {
     const val = dt?.value ?? dt;
     if (op === "not") return 0x03; // NOTI uses int
     if (val === "float") return 0x04; // NEGF

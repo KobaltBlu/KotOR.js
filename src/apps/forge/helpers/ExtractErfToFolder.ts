@@ -4,11 +4,9 @@
  * Electron only (uses path and fs).
  */
 
-import type { ExtractOptions } from "../data/ExtractOptions";
-
-import type { IERFKeyEntry } from "../../../interface/resource/IERFKeyEntry";
-import type { ERFObject } from "../../../resource/ERFObject";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
+import type { ExtractOptions } from "@/apps/forge/data/ExtractOptions";
+import type { ERFObject } from "@/resource/ERFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
 
 
 export interface ExtractErfToFolderOptions {
@@ -60,13 +58,13 @@ export async function extractErfToFolder(options: ExtractErfToFolderOptions): Pr
       const buffer = await erf.getResourceBufferByResRef(key.resRef, key.resType);
       if (!buffer || buffer.length === 0) continue;
 
-      if (useFs) {
+      if (useFs && outputPath) {
         const pathMod = await import("path");
         const fsMod = await import("fs");
-        const filePath = pathMod.join(outputPath!, filename);
+        const filePath = pathMod.join(outputPath, filename);
         await fsMod.promises.writeFile(filePath, Buffer.from(buffer));
-      } else if (useHandle) {
-        const handle = await outputDirHandle!.getFileHandle(filename, { create: true });
+      } else if (useHandle && outputDirHandle) {
+        const handle = await outputDirHandle.getFileHandle(filename, { create: true });
         const writable = await (handle as FileSystemFileHandle).createWritable();
         await writable.write(new Blob([buffer as BlobPart]));
         await writable.close();

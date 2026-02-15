@@ -1,6 +1,5 @@
-import { MenuPazaakWager as K1_MenuPazaakWager } from "../../kotor/KOTOR";
-
-import type { GUILabel, GUIButton } from "../../../gui";
+import { MenuPazaakWager as K1_MenuPazaakWager } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * MenuPazaakWager class.

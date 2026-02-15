@@ -1,13 +1,13 @@
-import { GUISaveGameItem } from "../gui/GUISaveGameItem";
 
-import { SaveGame } from "../../../engine/SaveGame";
-import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { Module } from "../../../module";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+import { SaveGame } from "@/engine/SaveGame";
+import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
+import { GUISaveGameItem } from "@/game/kotor/gui/GUISaveGameItem";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { Module } from "@/module";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 /**
  * MenuSaveLoad class.

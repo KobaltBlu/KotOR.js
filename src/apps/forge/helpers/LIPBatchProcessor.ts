@@ -10,8 +10,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { LIPShape } from "../../../enums/resource/LIPShape";
-import { LIPObject } from "../../../resource/LIPObject";
+import { LIPShape } from "@/enums/resource/LIPShape";
+import { LIPObject } from "@/resource/LIPObject";
 
 /** Basic lip shapes used for auto-generated LIP (closed -> open -> round -> closed). */
 const DEFAULT_LIP_SHAPES = [

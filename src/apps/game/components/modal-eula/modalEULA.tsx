@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
 
-import * as KotOR from "../../../KotOR";
-import { useApp } from "../../context/AppContext";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-import { EULA_VERSION, EULA_DATE, EULA } from "../../eula";
-import { KotORModal } from "../modal/modal";
+import { KotORModal } from "@/apps/game/components/modal/modal";
+import { useApp } from "@/apps/game/context/AppContext";
+import { EULA_VERSION, EULA_DATE, EULA } from "@/apps/game/eula";
+import * as KotOR from "@/apps/KotOR";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

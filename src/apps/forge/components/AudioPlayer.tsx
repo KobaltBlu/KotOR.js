@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
 
-import { useEffectOnce } from '../helpers/UseEffectOnce';
-import { AudioPlayerState } from '../states/AudioPlayerState';
-
-import { createScopedLogger, LogScope } from '../../../utility/Logger';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { AudioPlayerState } from '@/apps/forge/states/AudioPlayerState';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
-export interface AudioPlayerProps {
-  /** Optional; component uses global AudioPlayerState */
-}
+/** Optional; component uses global AudioPlayerState. No required props. */
+export type AudioPlayerProps = Record<string, never>;
 
 export const AudioPlayer: React.FC<AudioPlayerProps> = (_props) => {
 
   const [isReady, setIsReady] = useState<boolean>(false);
-  const [isDisposed, setIsDisposed] = useState<boolean>(false);
+  const [, setIsDisposed] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
@@ -77,7 +75,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = (_props) => {
     }
   })
 
-  const onBtnPlay = (e: React.MouseEvent<HTMLSpanElement>) => {
+  const onBtnPlay = (_e: React.MouseEvent<HTMLSpanElement>) => {
     log.trace('AudioPlayer onBtnPlay', { isPlaying });
     if(isPlaying){
       AudioPlayerState.Pause();
@@ -86,7 +84,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = (_props) => {
     }
   };
 
-  const onBtnStop = (e: React.MouseEvent<HTMLSpanElement>) => {
+  const onBtnStop = (_e: React.MouseEvent<HTMLSpanElement>) => {
     log.trace('AudioPlayer onBtnStop');
     AudioPlayerState.Stop();
   };
@@ -99,7 +97,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = (_props) => {
     try{ AudioPlayerState.Play(); }catch(err){ log.warn('onTrackBarChange Play failed', err); }
   };
 
-  const onBtnSave = (e: React.MouseEvent<HTMLSpanElement>) => {
+  const onBtnSave = (_e: React.MouseEvent<HTMLSpanElement>) => {
     log.info('AudioPlayer onBtnSave - exporting audio');
     AudioPlayerState.Pause();
     AudioPlayerState.ExportAudio().then( () => {
@@ -112,7 +110,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = (_props) => {
   return (
     <div className="inline-audio-player">
       {/* <div className="audio-player-info">
-        <span className="audio-player-title-label">Now Playing: 
+        <span className="audio-player-title-label">Now Playing:
           <span className="audio-player-marquee">
             <span className="audio-player-title"></span>
           </span>
@@ -125,7 +123,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = (_props) => {
         <span className="btn-stop" title="Stop" style={{cursor: 'pointer', flex:1}} onClick={onBtnStop}>
           <i className="fa-solid fa-stop"></i>
         </span>
-        <input className="track" type="range" step="0.01" min="0" value={currentTime} max={duration} disabled={!!isReady} onChange={onTrackBarChange} />
+        <input className="track" type="range" step="0.01" min="0" value={currentTime} max={duration} disabled={!!isReady} onChange={onTrackBarChange} title="Seek Bar" />
         <span className="time">{currentTimeString} / {durationString}</span>
         <span className="btn-save" title="Export Audio" style={{cursor: 'pointer', flex:1, marginLeft: '3px'}} onClick={onBtnSave}>
           <i className="fa-solid fa-download"></i>

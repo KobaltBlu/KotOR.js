@@ -2,18 +2,18 @@ import * as path from "path";
 
 import * as THREE from 'three';
 
-import { GameEngineType } from '../enums/engine';
-import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
-import { TXIBlending } from '../enums/graphics/txi/TXIBlending';
-import { TXIPROCEDURETYPE } from '../enums/graphics/txi/TXIPROCEDURETYPE';
-import { TextureType } from '../enums/loaders/TextureType';
-import { ITextureLoaderQueuedRef } from '../interface/loaders/ITextureLoaderQueuedRef';
-import { OdysseyTexture } from '../three/odyssey/OdysseyTexture';
-import { GameFileSystem } from '../utility/GameFileSystem';
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { GameEngineType } from '@/enums/engine';
+import { PixelFormat } from '@/enums/graphics/tpc/PixelFormat';
+import { TXIBlending } from '@/enums/graphics/txi/TXIBlending';
+import { TXIPROCEDURETYPE } from '@/enums/graphics/txi/TXIPROCEDURETYPE';
+import { TextureType } from '@/enums/loaders/TextureType';
+import { ITextureLoaderQueuedRef } from '@/interface/loaders/ITextureLoaderQueuedRef';
+import { TGALoader } from '@/loaders/TGALoader';
+import { TPCLoader } from '@/loaders/TPCLoader';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { TGALoader } from './TGALoader';
-import { TPCLoader } from './TPCLoader';
 
 const log = createScopedLogger(LogScope.Loader);
 
@@ -45,6 +45,9 @@ type OdysseyTextureWithMaterial = OdysseyTexture & { material?: THREE.Material }
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+/* eslint-disable @typescript-eslint/no-extraneous-class -- static-only loader API */
+/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment -- THREE.ShaderMaterial.uniforms and texture APIs use loosely-typed values */
+/* eslint-disable import/namespace -- THREE['NormalBlending'] etc. dynamic access */
 export class TextureLoader {
 
   static tpcLoader = new TPCLoader();
@@ -69,13 +72,16 @@ export class TextureLoader {
   static NOCACHE = true;
 
   static async Load(resRef: string, noCache: boolean = false): Promise<OdysseyTexture> {
+    log.trace("Load", resRef, noCache);
     resRef = resRef.toLowerCase();
     if(TextureLoader.textures.has(resRef) || TextureLoader.guiTextures.has(resRef) && !noCache){
+      log.trace("Load cache hit", resRef);
       return (TextureLoader.textures.has(resRef) ? TextureLoader.textures.get(resRef) : TextureLoader.guiTextures.has(resRef) ? TextureLoader.guiTextures.get(resRef) : undefined)
     }
 
     const tga = await TextureLoader.tgaLoader.fetch(resRef);
     if(tga){
+      log.trace("Load TGA hit", resRef);
       tga.anisotropy = TextureLoader.Anisotropy;
       tga.wrapS = tga.wrapT = THREE.RepeatWrapping;
 
@@ -85,6 +91,7 @@ export class TextureLoader {
     
     const texture = await TextureLoader.tpcLoader.fetch(resRef);
     if(texture){
+      log.trace("Load TPC hit", resRef);
       texture.anisotropy = TextureLoader.Anisotropy;
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
@@ -99,11 +106,12 @@ export class TextureLoader {
       return texture;
     }
 
+    log.trace("Load miss", resRef);
     return undefined;
   }
 
   static async LoadLocal(resRef: string, noCache: boolean = false): Promise<OdysseyTexture> {
-
+    log.trace("LoadLocal", resRef, noCache);
     const dir = resRef;
     const tga_exists = await GameFileSystem.exists(path.join(dir, resRef));
     if(!tga_exists){ return undefined; }
@@ -121,8 +129,10 @@ export class TextureLoader {
   }
 
   static async LoadLightmap(resRef: string, noCache: boolean = false){
+    log.trace("LoadLightmap", resRef, noCache);
     resRef = resRef.toLowerCase();
-    if(TextureLoader.lightmaps.hasOwnProperty(resRef) && !noCache){
+    if(Object.prototype.hasOwnProperty.call(TextureLoader.lightmaps, resRef) && !noCache){
+      log.trace("LoadLightmap cache hit", resRef);
       return TextureLoader.lightmaps[resRef];
     }
     
@@ -147,7 +157,8 @@ export class TextureLoader {
     }
   }
 
-  static enQueue(name: string|string[], material: THREE.Material, type = TextureType.TEXTURE, onLoad?: Function, fallback?: string){
+  static enQueue(name: string|string[], material: THREE.Material, type = TextureType.TEXTURE, onLoad?: (texture: THREE.Texture | undefined, ref: ITextureLoaderQueuedRef) => void, fallback?: string){
+    log.trace("enQueue", typeof name === 'string' ? name : name?.length, type);
     if(typeof name == 'string' && name.length){
       name = name.toLowerCase();
       const obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad } as ITextureLoaderQueuedRef;
@@ -177,15 +188,18 @@ export class TextureLoader {
   }
 
   static enQueueParticle(name: string, partGroup: ITextureLoaderQueuedRef['partGroup'], onLoad?: ITextureLoaderQueuedRef['onLoad']): void {
+    log.trace("enQueueParticle", name);
     name = name.toLowerCase();
     TextureLoader.queue.push({ name: name, partGroup: partGroup, type: TextureType.PARTICLE, onLoad });
   }
 
   static async LoadQueue(onProgress?: onProgressCallback){
+    log.trace("LoadQueue", TextureLoader.queue.length);
     const queue = TextureLoader.queue.slice(0);
     TextureLoader.queue = [];
     const promises = queue.map(tex => TextureLoader.UpdateMaterial(tex));
     await Promise.all(promises);
+    log.debug("LoadQueue done", queue.length);
     for(let i = 0; i < queue.length; i++){
       if(typeof onProgress == 'function'){
         onProgress(queue[i], i, promises.length);
@@ -194,8 +208,9 @@ export class TextureLoader {
   }
 
   static async UpdateMaterial(tex: ITextureLoaderQueuedRef){
+    log.trace("UpdateMaterial", tex.name, tex.type);
     switch(tex.type){
-      case TextureType.TEXTURE:
+      case TextureType.TEXTURE: {
         const texture: OdysseyTexture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
         if(!!texture && tex.material instanceof THREE.Material){
 
@@ -306,8 +321,9 @@ export class TextureLoader {
           if(typeof tex.onLoad == 'function')
             tex.onLoad(texture, tex)
         }
+      }
       break;
-      case TextureType.LIGHTMAP:
+      case TextureType.LIGHTMAP: {
         const lightmap: OdysseyTexture = await TextureLoader.LoadLightmap(tex.name, TextureLoader.CACHE);
         if(lightmap){
           if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
@@ -326,7 +342,7 @@ export class TextureLoader {
           }else{
             (tex.material as OdysseyMaterialLike).lightMap = lightmap;
             (tex.material as OdysseyMaterialLike).defines = (tex.material as OdysseyMaterialLike).defines || {};
-            if((tex.material as OdysseyMaterialLike).defines.hasOwnProperty('IGNORE_LIGHTING')){
+            if(Object.prototype.hasOwnProperty.call((tex.material as OdysseyMaterialLike).defines, 'IGNORE_LIGHTING')){
               delete (tex.material as OdysseyMaterialLike).defines.IGNORE_LIGHTING;
             }
           }
@@ -341,8 +357,9 @@ export class TextureLoader {
 
         if(typeof tex.onLoad == 'function')
           tex.onLoad(lightmap, tex)
+      }
       break;
-      case TextureType.PARTICLE:
+      case TextureType.PARTICLE: {
         const particle_texture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
         if(particle_texture){
           if(tex.partGroup?.type == 'OdysseyEmitter'){
@@ -360,6 +377,7 @@ export class TextureLoader {
 
         if(typeof tex.onLoad == 'function')
           tex.onLoad(texture, tex)
+      }
       break;
       default:
         log.warn('TextureLoader.UpdateMaterial: Unhandled Texture Type', tex);
@@ -368,10 +386,11 @@ export class TextureLoader {
   }
 
   static ParseTXI(texture: OdysseyTexture, tex: ITextureLoaderQueuedRef){
-    //log.info('ParseTXI', texture.txi);
+    log.trace("ParseTXI", texture?.name ?? tex?.name);
     if(!texture.txi) return;
 
-    return new Promise<void>( async (resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
+      void (async () => {
       try{
         //ENVMAP
         if(texture.txi.envMapTexture){
@@ -408,7 +427,7 @@ export class TextureLoader {
             tex.material.needsUpdate = true;
 
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-              if(tex.material.defines.hasOwnProperty('HOLOGRAM')){
+              if(Object.prototype.hasOwnProperty.call(tex.material.defines, 'HOLOGRAM')){
                 //tex.material.alphaTest = 1;
                 (tex.material as OdysseyMaterialLike).combine = THREE.AddOperation;
                 tex.material.blending = THREE['NormalBlending'];
@@ -617,6 +636,7 @@ export class TextureLoader {
         log.error('TextureLoader.parseTXI', e);
         resolve();
       }
+      })();
     });
   }
 

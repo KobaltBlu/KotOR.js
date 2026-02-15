@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 
-import { useEffectOnce } from '../../../helpers/UseEffectOnce';
-import type { TabScriptCompileLogState, TabTextEditorState } from '../../../states/tabs';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import type { TabScriptCompileLogState, TabTextEditorState } from '@/apps/forge/states/tabs';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
+
+const _log = createScopedLogger(LogScope.Forge);
 
 export interface ScriptCompileLogEntry {
   message: string;
@@ -12,17 +15,12 @@ export interface TabScriptCompileLogProps {
   parentTab: TabTextEditorState;
 }
 
-export const TabScriptCompileLog: React.FC<TabScriptCompileLogProps> = (props) => {
-  const tab = props.tab;
-  const parentTab = props.parentTab;
+export const TabScriptCompileLog: React.FC<TabScriptCompileLogProps> = (_props) => {
 
-  const [logs, setLogs] = useState<ScriptCompileLogEntry[]>([]);
+  const [logs, _setLogs] = useState<ScriptCompileLogEntry[]>([]);
 
-  const onCompile = () => {
-    // console.log('onCompile');
-  };
 
-  useEffectOnce( () => {
+  useEffectOnce(() => {
     // parentTab.addEventListener('onCompile', onCompile);
     return () => {
       // parentTab.removeEventListener('onCompile', onCompile);

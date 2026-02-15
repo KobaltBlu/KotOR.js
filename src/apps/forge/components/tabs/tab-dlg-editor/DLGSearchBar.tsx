@@ -13,11 +13,11 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-import { DLGNodeType } from '../../../../../enums/dialog/DLGNodeType';
 
-import { DLGTreeNode } from '../../../interfaces/DLGTreeNode';
-import { DLGTreeModel } from '../../../utils/DLGTreeModel';
-import './DLGSearchBar.scss';
+import { DLGTreeNode } from '@/apps/forge/interfaces/DLGTreeNode';
+import { DLGTreeModel } from '@/apps/forge/utils/DLGTreeModel';
+import { DLGNodeType } from '@/enums/dialog/DLGNodeType';
+import "@/apps/forge/components/tabs/tab-dlg-editor/DLGSearchBar.scss";
 
 interface DLGSearchBarProps {
   model: DLGTreeModel;
@@ -309,7 +309,7 @@ export const DLGSearchBar: React.FC<DLGSearchBarProps> = ({
 
       {mode === 'goto' && gotoSuggestions.length > 0 && (
         <div className="dlg-goto-suggestions">
-          {gotoSuggestions.map((node, index) => (
+          {gotoSuggestions.map((node, _index) => (
             <div
               key={node.id}
               className="dlg-goto-suggestion"

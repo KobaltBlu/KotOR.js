@@ -1,33 +1,25 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 // import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify';
-import { useContextMenu } from "../../common/ContextMenu";
-import { ERFListNode } from "../../treeview/ERFListNode";
-import { ForgeTreeView } from "../../treeview/ForgeTreeView";
+import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
+import { createERFContextMenuItems } from "@/apps/forge/components/tabs/tab-erf-editor/ERFContextMenu";
+import { ERFListNode } from "@/apps/forge/components/treeview/ERFListNode";
+import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabERFEditorState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
 
-import { EditorFile } from "../../../EditorFile";
-import { FileBrowserNode } from "../../../FileBrowserNode";
-import { FileTypeManager } from "../../../FileTypeManager";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import * as KotOR from "../../../KotOR";
-import { TabERFEditorState } from "../../../states/tabs";
-
-
-import { createERFContextMenuItems } from "./ERFContextMenu";
-import "./TabERFEditor.scss";
+import "@/apps/forge/components/tabs/tab-erf-editor/TabERFEditor.scss";
 
 const log = createScopedLogger(LogScope.Forge);
-const MENU_ID = 'context-tab-erf-editor-entry';
-
-const exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
-
-interface ContextMenuProps {
-  archive: KotOR.ERFObject;
-  resource: KotOR.IERFKeyEntry;
-}
+const _MENU_ID = 'context-tab-erf-editor-entry';
+const _exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
 
 export const TabERFEditor = function(props: BaseTabProps) {
   const tab = props.tab as TabERFEditorState;
@@ -52,11 +44,14 @@ export const TabERFEditor = function(props: BaseTabProps) {
 
   useEffect(() => {
     if(!selectedEntry) return;
-    const { resource, archive } = selectedEntry.data || {};
-    const res = archive.getResource(resource?.resRef, resource?.resType);
-    setSelectedFilename(resource?.resRef);
-    setSelectedFiletype(KotOR.ResourceTypes.getKeyByValue(resource?.resType));
-    setSelectedFilesize(KotOR.Utility.bytesToSize( res ? res.size : 0 ));
+    const data = selectedEntry.data as { resource?: KotOR.IERFKeyEntry; archive?: KotOR.ERFObject } | undefined;
+    const resource = data?.resource;
+    const archive = data?.archive;
+    if (!archive || !resource) return;
+    const res = archive.getResource(resource.resRef, resource.resType);
+    setSelectedFilename(resource.resRef);
+    setSelectedFiletype(KotOR.ResourceTypes.getKeyByValue(resource.resType));
+    setSelectedFilesize(KotOR.Utility.bytesToSize(res ? res.size : 0));
   }, [selectedEntry]);
 
   const onResourceClick = (node: FileBrowserNode) => {

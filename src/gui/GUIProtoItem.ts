@@ -1,18 +1,18 @@
 import * as THREE from "three";
 
-import { Anchor } from "../enums/gui/Anchor";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import type { GFFStruct } from "../resource/GFFStruct";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { Anchor } from "@/enums/gui/Anchor";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import type { GUIListBox } from "./GUIListBox";
 
 
 const log = createScopedLogger(LogScope.Game);
-import { Mouse } from "../controls/Mouse";
+import { Mouse } from "@/controls/Mouse";
 
 /**
  * GUIProtoItem class.

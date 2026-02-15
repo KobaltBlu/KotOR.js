@@ -1,13 +1,13 @@
 import * as THREE from "three";
 
-import { EngineMode } from "../enums/engine/EngineMode";
-import { MiniGameType } from "../enums/engine/MiniGameType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import type { ModuleArea, ModuleMGPlayer } from "../module";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import type { ModuleArea, ModuleMGPlayer } from "@/module";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
 
 /**
  * FollowerCamera class.

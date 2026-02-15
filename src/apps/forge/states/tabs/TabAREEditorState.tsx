@@ -1,11 +1,12 @@
 import React from "react";
 
-import { TabAREEditor } from "../../components/tabs/tab-are-editor/TabAREEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { TabAREEditor } from "@/apps/forge/components/tabs/tab-are-editor/TabAREEditor";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import * as KotOR from "../../KotOR";
-
-import { TabState } from "./TabState";
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabAREEditorState extends TabState {
   tabName: string = 'ARE Editor';
@@ -13,10 +14,12 @@ export class TabAREEditorState extends TabState {
   activeTab: string = 'basic';
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace('TabAREEditorState constructor entry');
     super(options);
 
     if(this.file){
       this.tabName = this.file.getFilename();
+      log.debug('TabAREEditorState constructor tabName', this.tabName);
     }
 
     this.saveTypes = [
@@ -30,33 +33,46 @@ export class TabAREEditorState extends TabState {
 
     this.setContentView(<TabAREEditor tab={this}></TabAREEditor>);
     this.openFile();
+    log.trace('TabAREEditorState constructor exit');
   }
 
   async openFile() {
+    log.trace('TabAREEditorState openFile entry');
     if(this.file){
       const response = await this.file.readFile();
+      log.debug('TabAREEditorState openFile readFile done', response.buffer?.length ?? 0);
       this.are = new KotOR.GFFObject(response.buffer);
       this.processEventListener('onEditorFileLoad', [this]);
+      log.trace('TabAREEditorState openFile are loaded');
+    } else {
+      log.trace('TabAREEditorState openFile no file');
     }
+    log.trace('TabAREEditorState openFile exit');
   }
 
   setActiveTab(tab: string) {
+    log.trace('TabAREEditorState setActiveTab', tab);
     this.activeTab = tab;
     this.processEventListener('onTabChange', [tab]);
   }
 
-  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
+  async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
+    log.trace('TabAREEditorState getExportBuffer');
     if(this.are){
-      return this.are.getExportBuffer();
+      const buf = this.are.getExportBuffer();
+      log.debug('TabAREEditorState getExportBuffer length', buf?.length ?? 0);
+      return buf;
     }
     return new Uint8Array(0);
   }
 
   updateFile() {
-    // Sync UI changes to ARE GFF if needed
+    log.trace('TabAREEditorState updateFile');
   }
 
   getResourceID(): string | undefined {
-    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
+    const id = this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
+    log.trace('TabAREEditorState getResourceID', id ?? '(none)');
+    return id;
   }
 }

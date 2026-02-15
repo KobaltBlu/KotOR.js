@@ -1,31 +1,31 @@
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+
 type ScoreFunctionType<T> = (node: T) => number;
 
 //https://github.com/bgrins/javascript-astar
 export class BinaryHeap<T> {
   content: T[];
-  scoreFunction?: ScoreFunctionType<T>;
+  scoreFunction: ScoreFunctionType<T>;
 
-  constructor(scoreFunction?: ScoreFunctionType<T>){
+  constructor(scoreFunction: ScoreFunctionType<T>) {
+    log.trace('BinaryHeap constructor');
     this.content = [];
     this.scoreFunction = scoreFunction;
   }
 
   push(element: T) {
-    // Add the new element to the end of the array.
+    log.trace('BinaryHeap.push', this.content.length);
     this.content.push(element);
-
-    // Allow it to sink down.
     this.sinkDown(this.content.length - 1);
   }
 
-  pop() {
-    // Store the first element so we can return it later.
+  pop(): T | undefined {
+    log.trace('BinaryHeap.pop', this.content.length);
     const result = this.content[0];
-    // Get the element at the end of the array.
     const end = this.content.pop();
-    // If there are any elements left, put the end element at the
-    // start, and let it bubble up.
-    if (this.content.length > 0) {
+    if (this.content.length > 0 && end !== undefined) {
       this.content[0] = end;
       this.bubbleUp(0);
     }
@@ -33,13 +33,14 @@ export class BinaryHeap<T> {
   }
 
   remove(node: T) {
+    log.trace('BinaryHeap.remove', this.content.length);
     const i = this.content.indexOf(node);
 
     // When it is found, the process seen in 'pop' is repeated
     // to fill up the hole.
     const end = this.content.pop();
 
-    if (i !== this.content.length - 1) {
+    if (i !== this.content.length - 1 && end !== undefined) {
       this.content[i] = end;
 
       if (this.scoreFunction(end) < this.scoreFunction(node)) {
@@ -55,10 +56,12 @@ export class BinaryHeap<T> {
   }
 
   rescoreElement(node: T) {
+    log.trace('BinaryHeap.rescoreElement');
     this.sinkDown(this.content.indexOf(node));
   }
 
   sinkDown(n: number) {
+    log.trace('BinaryHeap.sinkDown', n);
     // Fetch the element that has to be sunk.
     const element = this.content[n];
 
@@ -83,18 +86,19 @@ export class BinaryHeap<T> {
   }
 
   bubbleUp(n: number) {
-    // Look up the target element and its score.
+    log.trace('BinaryHeap.bubbleUp', n);
     const length = this.content.length;
     const element = this.content[n];
     const elemScore = this.scoreFunction(element);
 
+    // eslint-disable-next-line no-constant-condition -- heap bubbleUp loop
     while (true) {
       // Compute the indices of the child elements.
       const child2N = (n + 1) << 1;
       const child1N = child2N - 1;
       // This is used to store the new position of the element, if any.
-      let swap = null;
-      let child1Score;
+      let swap: number | null = null;
+      let child1Score: number = elemScore;
       // If the first child exists (is inside the array)...
       if (child1N < length) {
         // Look it up and compute its score.

@@ -1,16 +1,16 @@
 import * as THREE from "three";
 
-import { AudioEngine } from "../audio/AudioEngine";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
-import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
 
 /**
  * BIKObject class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BIKObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -149,7 +149,7 @@ export class BIKObject {
     this.scene = new THREE.Scene();
     this.scene.add(this.backPlane);
     this.scene.add(this.videoPlane);
-    
+
     this.videoPlane.position.z = 99;
     this.resize();
 
@@ -206,7 +206,7 @@ export class BIKObject {
     this.material.uniformsNeedsUpdate = true;
   }
 
-  async play(file: string = '', onComplete?: Function) {
+  async play(file: string = '', onComplete?: () => void) {
     return;
     // Beamcoder has been removed from the project.
     // I plan on writing a bink decoder at some point,
@@ -382,7 +382,7 @@ export class BIKObject {
   async update(delta = 0){
     this.playbackPosition += delta;
     const frameTimer = (this.fps/1000);
-    
+
     //Process audio buffer queue
     this.processAudioQueue();
 
@@ -459,7 +459,8 @@ export class BIKObject {
 
   toFloat32Array(channel: Uint8Array){
     if(channel instanceof Uint8Array){
-      let i, l = channel.length/4;
+      const l = channel.length/4;
+      let i;
       const buffer = new Buffer(channel);
       const float32 = new Float32Array(l);
 

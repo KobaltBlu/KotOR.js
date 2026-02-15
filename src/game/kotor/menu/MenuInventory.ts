@@ -1,10 +1,10 @@
 
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
-import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
-import { TextureLoader } from "../../../loaders";
-import { ModuleItem } from "../../../module";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import { TextureLoader } from "@/loaders";
+import { ModuleItem } from "@/module";
 
 /**
  * MenuInventory class.

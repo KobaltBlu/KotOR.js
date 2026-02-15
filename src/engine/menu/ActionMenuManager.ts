@@ -1,19 +1,24 @@
-import { ActionType } from "../../enums/actions/ActionType";
-import { GameEngineType } from "../../enums/engine/GameEngineType";
-import { SkillType } from "../../enums/nwscript/SkillType";
-import { IActionPanelLists } from "../../interface/gui/IActionPanelLists";
-import type { ModuleCreature } from "../../module/ModuleCreature";
-import type { ModuleObject } from "../../module/ModuleObject";
-import type { TalentFeat } from "../../talents/TalentFeat";
-import { TalentObject } from "../../talents/TalentObject";
-import type { TalentSpell } from "../../talents/TalentSpell";
-import { createScopedLogger, LogScope } from "../../utility/Logger";
+import { Action } from "@/actions/Action";
+import type { ActionMenuActionDescriptor } from "@/engine/menu/ActionMenuItem";
+import { ActionMenuItem } from "@/engine/menu/ActionMenuItem";
+import { ActionMenuPanel } from "@/engine/menu/ActionMenuPanel";
+import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "@/enums";
+import { ActionType } from "@/enums/actions/ActionType";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import { GameState } from "@/GameState";
+import { IActionPanelLists } from "@/interface/gui/IActionPanelLists";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { TalentFeat } from "@/talents/TalentFeat";
+import { TalentObject } from "@/talents/TalentObject";
+import type { TalentSpell } from "@/talents/TalentSpell";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "../../enums";
-import { GameState } from "../../GameState";
 
-import { ActionMenuItem } from "./ActionMenuItem";
-import { ActionMenuPanel } from "./ActionMenuPanel";
+function isAction(a: Action | ActionMenuActionDescriptor): a is Action {
+  return a instanceof Action;
+}
 
 const log = createScopedLogger(LogScope.Game);
 
@@ -342,7 +347,7 @@ export class ActionMenuManager {
       if(index==0){
         if(action.action && action.action.type == ActionType.ActionPhysicalAttacks){
           ActionMenuManager.oPC.attackCreature(action.target, undefined);
-        }else if(action.action){
+        }else if(action.action && isAction(action.action)){
           log.debug('onTargetMenuAction index=0 actionType=%s', String(action.action?.type));
           ActionMenuManager.oPC.actionQueue.addFront(
             action.action
@@ -352,7 +357,7 @@ export class ActionMenuManager {
         }
       }else if(action.talent){
         action.talent.useTalentOnObject(action.target, ActionMenuManager.oPC);
-      }else if(action.action){
+      }else if(action.action && isAction(action.action)){
         log.debug('onTargetMenuAction index=%s actionType=%s', String(index), String(action.action?.type));
         ActionMenuManager.oPC.actionQueue.addFront(
           action.action

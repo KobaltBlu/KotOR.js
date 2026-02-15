@@ -1,12 +1,6 @@
-import * as KotOR from "../KotOR";
-
-import { ForgeGameObject } from "./ForgeGameObject";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 export class ForgePath extends ForgeGameObject {
-  constructor(){
-    super();
-  }
-
   async load(){
     
   }

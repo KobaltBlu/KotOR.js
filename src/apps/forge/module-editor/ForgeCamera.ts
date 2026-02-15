@@ -1,8 +1,7 @@
 import * as THREE from "three";
 
-import * as KotOR from "../KotOR";
-
-import { ForgeGameObject } from "./ForgeGameObject";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 export class ForgeCamera extends ForgeGameObject {
   aspectRatio: number = 1;
@@ -19,7 +18,7 @@ export class ForgeCamera extends ForgeGameObject {
     super();
     this.aspectRatio = 1920 / 1080;
   }
-  
+
   getEditorName(): string {
     return `Camera ${this.cameraID}`;
   }
@@ -38,9 +37,9 @@ export class ForgeCamera extends ForgeGameObject {
     this.perspectiveCamera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
     this.perspectiveCamera.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
 
-    //@ts-ignore
+    // @ts-expect-error - THREE.Vector3.copy expects Vector3; our position is Vector3-compatible
     this.perspectiveCamera.position.copy(this.position);
-    //@ts-ignore
+    // @ts-expect-error - quaternion copy omitted; position/orientation synced via manual rotation
     // this.perspectiveCamera.quaternion.copy(this.quaternion);
 
     this.cameraHelper = new THREE.CameraHelper(this.perspectiveCamera);

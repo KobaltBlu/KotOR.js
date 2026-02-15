@@ -1,15 +1,13 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react";
 
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-import { useApp } from "../context/AppContext";
-import * as KotOR from "../KotOR";
+import { useApp } from "@/apps/debugger/context/AppContext";
+import * as KotOR from "@/apps/debugger/KotOR";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { IPCMessageTypeDebug } from "@/enums/server/ipc/IPCMessageTypeDebug";
+import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "@/nwscript/NWScriptOPCodes";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Debug);
-
-import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
-import { IPCMessageTypeDebug } from "../../../enums/server/ipc/IPCMessageTypeDebug";
-import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "../../../nwscript/NWScriptOPCodes";
 import {} from "@fortawesome/free-solid-svg-icons";
 
 /**
@@ -128,7 +126,7 @@ const InstructionValue = (props: {instruction: KotOR.NWScriptInstruction}) => {
 
 const InstructionOffset = (props: {instance: KotOR.NWScriptInstance, instruction: KotOR.NWScriptInstruction}) => {
   const {instance, instruction} = props;
-  const [address, setAddress] = useState(instruction.intToHex(instruction.offset + instruction.address, 8));
+  const [address, _setAddress] = useState(instruction.intToHex(instruction.offset + instruction.address, 8));
   const onClick = () => {
     log.debug('Seeking to', instruction.intToHex(instruction.offset + instruction.address, 8));
     if(instance){
@@ -236,7 +234,7 @@ export const ScriptInstanceWindow = () => {
   };
 
   const onSelectedInstance = (inst: KotOR.NWScriptInstance) => {
-    const oldInst = instance;
+    const _oldInst = instance;
     setInstance(inst);
     setInstructions([...inst.instructions.values()]);
     setBreakpointMap(new Map(inst.breakPoints));

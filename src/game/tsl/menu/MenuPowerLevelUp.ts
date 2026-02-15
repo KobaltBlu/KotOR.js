@@ -1,6 +1,5 @@
-import { MenuPowerLevelUp as K1_MenuPowerLevelUp } from "../../kotor/KOTOR";
-
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { MenuPowerLevelUp as K1_MenuPowerLevelUp } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
 
 /**
  * MenuPowerLevelUp class.

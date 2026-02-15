@@ -2,10 +2,10 @@ import * as path from "path";
 
 import { BrowserWindow, dialog } from "electron";
 
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ApplicationWindow } from "@/electron/ApplicationWindow";
+import { LauncherWindow } from "@/electron/LauncherWindow";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { ApplicationWindow } from "./ApplicationWindow";
-import { LauncherWindow } from "./LauncherWindow";
 //exec & execFile are used for launching the original games from the launcher
 
 

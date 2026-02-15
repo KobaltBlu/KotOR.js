@@ -1,7 +1,7 @@
-import { GameEffectType } from "../enums/effects/GameEffectType";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
 
-import { GameEffect } from "./GameEffect";
-// import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+// import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 
 /**
  * EffectDeath class.

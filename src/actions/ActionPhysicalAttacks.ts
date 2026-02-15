@@ -1,20 +1,20 @@
 import * as THREE from 'three';
 
-import { CombatRound } from "../combat/CombatRound";
-import { ModuleObjectType, SSFType } from "../enums";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { AttackResult } from "../enums/combat/AttackResult";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { GameState } from "../GameState";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import type { ModuleObject } from "../module/ModuleObject";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
+import { Action } from "@/actions/Action";
+import { CombatRound } from "@/combat/CombatRound";
+import { ModuleObjectType, SSFType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { GameState } from "@/GameState";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
 
-import { Action } from "./Action";
 
 /**
  * ActionPhysicalAttacks class.
@@ -48,7 +48,7 @@ export class ActionPhysicalAttacks extends Action {
     // 9 - INT: attackDamage (when resultsCalculated)
   }
 
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(1);
 
     if (!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleObject)) {

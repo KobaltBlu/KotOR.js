@@ -11,11 +11,10 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { DLGTreeNode, DLGNodePath, DLGNodeReference } from "../interfaces/DLGTreeNode";
-
-import { DLGNodeType } from "../../../enums/dialog/DLGNodeType";
-import { DLGNode } from "../../../resource/DLGNode";
-import { DLGObject } from "../../../resource/DLGObject";
+import { DLGTreeNode, DLGNodePath, DLGNodeReference } from "@/apps/forge/interfaces/DLGTreeNode";
+import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
+import { DLGNode } from "@/resource/DLGNode";
+import { DLGObject } from "@/resource/DLGObject";
 
 export class DLGTreeModel {
   private rootNodes: DLGTreeNode[] = [];

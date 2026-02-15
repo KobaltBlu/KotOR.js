@@ -1,4 +1,4 @@
-import { VISObject } from './VISObject';
+import { VISObject } from '@/resource/VISObject';
 
 describe('VISObject', () => {
   const sampleVIS = [

@@ -2,10 +2,10 @@ import * as path from 'path';
 
 import * as THREE from 'three';
 
-import { createScopedLogger, LogScope } from ".//Logger";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
-import { GameFileSystem } from './GameFileSystem';
+import { GameFileSystem } from '@/utility/GameFileSystem';
 
 const PI: number = Math.PI;
 const TWO_PI: number = Math.PI * 2;
@@ -104,7 +104,7 @@ export class Utility {
 
   }
 
-  static FileExists(file: string, onComplete?: Function){
+  static FileExists(file: string, onComplete?: (exists: boolean) => void){
     if(file != null){
       GameFileSystem.exists(file).then( (exists) => {
         if(onComplete != null)

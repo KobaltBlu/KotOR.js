@@ -1,12 +1,11 @@
 import React, { useState, useCallback, memo, useMemo } from "react";
 
-import { createScopedLogger, LogScope } from "../../../../utility/Logger";
-import { getResourceIconPath } from "../../data";
-import { EditorFile } from "../../EditorFile";
-import { FileBrowserNode } from "../../FileBrowserNode";
-import { FileTypeManager } from "../../FileTypeManager";
-
-import { ListItemNode } from "./ListItemNode";
+import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
+import { getResourceIconPath } from "@/apps/forge/data";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -55,7 +54,7 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
     }
   }, [node, onContextMenu]);
 
-  const handleSelect = useCallback((nodeId: string) => {
+  const handleSelect = useCallback((_nodeId: string) => {
     if (onSelect) {
       onSelect(node);
     }

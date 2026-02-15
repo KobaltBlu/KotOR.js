@@ -1,5 +1,5 @@
-import type { ITwoDARowData } from "../../resource/TwoDAObject";
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 export class SWDifficulty {
   name: number;

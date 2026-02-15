@@ -18,6 +18,7 @@ import {
   BinaryExpression,
   CallExpression,
   ConditionalExpression,
+  Declaration,
   FunctionDeclaration,
   Identifier,
   Literal,
@@ -25,6 +26,7 @@ import {
   Parameter,
   Program,
   SourceRange,
+  StructDeclaration,
   UnaryExpression,
   VariableDeclaration,
   VectorLiteral,
@@ -81,11 +83,11 @@ export class TypeChecker implements ASTVisitor<TypeInfo> {
       ast.body.forEach(decl => {
         if (decl instanceof FunctionDeclaration) {
           this.context.userFunctions.set(decl.name, decl);
-        } else if ((decl as any).type === 'StructDeclaration') {
-          const structDecl = decl as any;
+        } else if ((decl as Declaration).type === 'StructDeclaration') {
+          const structDecl = decl as StructDeclaration;
           const members = new Map<string, DataTypeEnum>();
-          (structDecl.members || []).forEach((m: any) => {
-            const t = (m.varType?.name || 'void') as DataTypeEnum;
+          (structDecl.members ?? []).forEach((m: VariableDeclaration) => {
+            const t = (m.varType?.name ?? 'void') as DataTypeEnum;
             members.set(m.name, t);
           });
           this.structRegistry.set(structDecl.name, members);

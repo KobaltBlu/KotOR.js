@@ -1,10 +1,9 @@
-import { createScopedLogger, LogScope } from "../utility/Logger";
-
-import { ModuleCalendar } from "./ModuleCalendar";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { ModuleCalendar } from "@/module/ModuleCalendar";
 
 
 const log = createScopedLogger(LogScope.Module);
-import { GFFObject } from "../resource/GFFObject";
+import { GFFObject } from "@/resource/GFFObject";
 
 /**
 * ModuleTimeManager class.

@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 
-import { createScopedLogger, LogScope } from '@kotor/utility/Logger';
-
-import { useEffectOnce } from '../../../helpers/UseEffectOnce';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import type { TabScriptFindReferencesState, TextReferenceMatch } from '@/apps/forge/states/tabs/TabScriptFindReferencesState';
+import type { TabTextEditorState } from '@/apps/forge/states/tabs/TabTextEditorState';
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
-import type { TabScriptFindReferencesState, TextReferenceMatch } from '../../../states/tabs/TabScriptFindReferencesState';
-import type { TabTextEditorState } from '../../../states/tabs/TabTextEditorState';
 
 export interface TabScriptFindReferencesProps {
   tab: TabScriptFindReferencesState;

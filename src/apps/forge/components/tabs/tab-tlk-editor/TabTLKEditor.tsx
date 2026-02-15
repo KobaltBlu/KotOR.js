@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { CommandPaletteState } from "../../../states/CommandPaletteState";
-import { TabTLKEditorState } from "../../../states/tabs";
-import "./TabTLKEditor.scss";
+import { CommandPaletteState } from "@/apps/forge/states/CommandPaletteState";
+import { TabTLKEditorState } from "@/apps/forge/states/tabs";
+import "@/apps/forge/components/tabs/tab-tlk-editor/TabTLKEditor.scss";
 
 interface BaseTabProps {
   tab: TabTLKEditorState;

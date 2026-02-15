@@ -1,23 +1,23 @@
 
 import * as path from "path";
 
-import { CurrentGame } from "../engine/CurrentGame";
-import { Faction } from "../engine/Faction";
-import { Reputation } from "../engine/Reputation";
-import { ReputationConstant } from "../enums/engine/ReputationConstant";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject } from "../module";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { BitWise } from "../utility/BitWise";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { CurrentGame } from "@/engine/CurrentGame";
+import { Faction } from "@/engine/Faction";
+import { Reputation } from "@/engine/Reputation";
+import { ReputationConstant } from "@/enums/engine/ReputationConstant";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import type { ModuleCreature, ModuleObject } from "@/module";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { BitWise } from "@/utility/BitWise";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
-import { TwoDAManager } from "./TwoDAManager";
 
 const blacklist = ['(Row Label)', '__index', 'label'];
 

@@ -452,7 +452,7 @@ export class NWScriptLexer {
     return this.makeToken(TokenType.IDENTIFIER, directive, start);
   }
 
-  private makeToken(type: TokenType, value: any, start: SourceLocation, raw?: string): Token {
+  private makeToken(type: TokenType, value: string | number, start: SourceLocation, raw?: string): Token {
     return {
       type,
       value,

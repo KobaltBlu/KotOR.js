@@ -1,9 +1,9 @@
-import { TXIBlending } from "../enums/graphics/txi/TXIBlending";
-import { TXIPROCEDURETYPE } from "../enums/graphics/txi/TXIPROCEDURETYPE";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { TXIBlending } from "@/enums/graphics/txi/TXIBlending";
+import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
-import { TXITexType } from "../enums/graphics/txi/TXITexType";
+import { TXITexType } from "@/enums/graphics/txi/TXITexType";
 
 /**
  * TXI class.

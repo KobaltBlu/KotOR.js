@@ -2,8 +2,8 @@ import {
   detectResourceTypeFromBuffer,
   getResourceTypeFromExtension,
   resolveResourceType,
-} from './ResourceHeuristics';
-import { ResourceTypes } from './ResourceTypes';
+} from '@/resource/ResourceHeuristics';
+import { ResourceTypes } from '@/resource/ResourceTypes';
 
 describe('ResourceHeuristics', () => {
   describe('getResourceTypeFromExtension', () => {

@@ -1,10 +1,8 @@
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import * as KotOR from "../KotOR";
-import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
-
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-
-import { ForgeGameObject } from "./ForgeGameObject";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -65,7 +63,7 @@ export class ForgeCreature extends ForgeGameObject {
   //GIT Instance Properties
   templateResRef: string = '';
   templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utc;
-  
+
   //Blueprint Properties
   appearanceType: number = 0;
   bodyBag: number = 0;
@@ -187,7 +185,14 @@ export class ForgeCreature extends ForgeGameObject {
     } else {
       this.blueprint = new KotOR.GFFObject();
     }
-    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
+      this.onPropertyChange(
+        args[0] as keyof ForgeCreature,
+        args[1] as string | number | boolean,
+        args[2] as string | number | boolean
+      );
+    };
+    this.addEventListener('onPropertyChange', onPropChange);
   }
 
   onPropertyChange(property: keyof ForgeCreature, newValue: string | number | boolean, oldValue: string | number | boolean){
@@ -347,7 +352,7 @@ export class ForgeCreature extends ForgeGameObject {
       if(slotKey){
         this.templateSlots[slotKey] = undefined;
       }
-      
+
       if(itemTemplate && typeof slotKey === 'string'){
         const root = itemTemplate.RootNode;
         if(root.hasField('BaseItem')){
@@ -392,7 +397,7 @@ export class ForgeCreature extends ForgeGameObject {
 
     if(this.model){
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch(e){}
+      try{ this.model.dispose(); }catch{ /* ignore */ }
     }
 
     const appearance = this.creatureAppearance;
@@ -409,7 +414,7 @@ export class ForgeCreature extends ForgeGameObject {
         isHologram: false,
         context: this.context,
       });
-    }catch(e){
+    }catch{
       this.model = new KotOR.OdysseyModel3D();
     }
     this.container.add(this.model);
@@ -461,7 +466,7 @@ export class ForgeCreature extends ForgeGameObject {
     if(!this.blueprint) return;
     const root = this.blueprint.RootNode;
     if(!root) return;
-    
+
     if(root.hasField('Appearance_Type')){
       this.appearanceType = root.getFieldByLabel('Appearance_Type').getValue() || 0;
     }
@@ -763,7 +768,7 @@ export class ForgeCreature extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Appearance_Type', this.appearanceType) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BodyBag', this.bodyBag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BodyVariation', this.bodyVariation) );

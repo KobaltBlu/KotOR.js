@@ -1,46 +1,46 @@
 
-import { ModalChangeGameState } from "../components/modal/ModalChangeGame";
-import { getWikiDocUrlForTab } from "../data/EditorWikiMapping";
-import { EditorFile } from "../EditorFile";
-import { SaveDestination } from "../enum/SaveDestination";
-import { FileTypeManager } from "../FileTypeManager";
-import { createEmptyErfHeader, createEmptyModHeader } from "../helpers/CloneModule";
-import { extractErfToFolder } from "../helpers/ExtractErfToFolder";
-import * as KotOR from "../KotOR";
-import { MenuTopItem } from "../MenuTopItem";
-import { Project } from "../Project";
-
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-
-import { ForgeState } from "./ForgeState";
-import { ModalAboutState } from "./modal/ModalAboutState";
-import { ModalCloneModuleState } from "./modal/ModalCloneModuleState";
-import { ModalExtractOptionsState } from "./modal/ModalExtractOptionsState";
-import { ModalHelpBrowserState } from "./modal/ModalHelpBrowserState";
-import { ModalInsertInstanceState } from "./modal/ModalInsertInstanceState";
-import { ModalLoadFromModuleState } from "./modal/ModalLoadFromModuleState";
-import { ModalNewProjectState } from "./modal/ModalNewProjectState";
-import { ModalPatcherProjectState } from "./modal/ModalPatcherProjectState";
-import { ModalResourceComparisonState } from "./modal/ModalResourceComparisonState";
-import { ModalSaveToModuleState } from "./modal/ModalSaveToModuleState";
-import { TabLIPEditorState } from "./tabs/tab-lip-editor/TabLIPEditorState";
-import { TabERFEditorState } from "./tabs/TabERFEditorState";
-import { TabHelpState } from "./tabs/TabHelpState";
-import { TabQuickStartState } from "./tabs/TabQuickStartState";
-import { TabReferenceFinderState } from "./tabs/TabReferenceFinderState";
-import { TabState } from "./tabs/TabState";
-import { TabTextEditorState } from "./tabs/TabTextEditorState";
-import { TabUTCEditorState } from "./tabs/TabUTCEditorState";
-import { TabUTDEditorState } from "./tabs/TabUTDEditorState";
-import { TabUTMEditorState } from "./tabs/TabUTMEditorState";
-import { TabUTPEditorState } from "./tabs/TabUTPEditorState";
-import { TabUTSEditorState } from "./tabs/TabUTSEditorState";
-import { TabUTTEditorState } from "./tabs/TabUTTEditorState";
-import { TabUTWEditorState } from "./tabs/TabUTWEditorState";
+import { ModalChangeGameState } from "@/apps/forge/components/modal/ModalChangeGame";
+import { getWikiDocUrlForTab } from "@/apps/forge/data/EditorWikiMapping";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { SaveDestination } from "@/apps/forge/enum/SaveDestination";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { createEmptyErfHeader, createEmptyModHeader } from "@/apps/forge/helpers/CloneModule";
+import { extractErfToFolder } from "@/apps/forge/helpers/ExtractErfToFolder";
+import * as KotOR from "@/apps/forge/KotOR";
+import { MenuTopItem } from "@/apps/forge/MenuTopItem";
+import { Project } from "@/apps/forge/Project";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalAboutState } from "@/apps/forge/states/modal/ModalAboutState";
+import { ModalCloneModuleState } from "@/apps/forge/states/modal/ModalCloneModuleState";
+import { ModalExtractOptionsState } from "@/apps/forge/states/modal/ModalExtractOptionsState";
+import { ModalHelpBrowserState } from "@/apps/forge/states/modal/ModalHelpBrowserState";
+import { ModalInsertInstanceState } from "@/apps/forge/states/modal/ModalInsertInstanceState";
+import { ModalLoadFromModuleState } from "@/apps/forge/states/modal/ModalLoadFromModuleState";
+import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
+import { ModalPatcherProjectState } from "@/apps/forge/states/modal/ModalPatcherProjectState";
+import { ModalResourceComparisonState } from "@/apps/forge/states/modal/ModalResourceComparisonState";
+import { ModalSaveToModuleState } from "@/apps/forge/states/modal/ModalSaveToModuleState";
+import { TabLIPEditorState } from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorState";
+import { TabERFEditorState } from "@/apps/forge/states/tabs/TabERFEditorState";
+import { TabHelpState } from "@/apps/forge/states/tabs/TabHelpState";
+import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
+import { TabReferenceFinderState } from "@/apps/forge/states/tabs/TabReferenceFinderState";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TabTextEditorState } from "@/apps/forge/states/tabs/TabTextEditorState";
+import { TabUTCEditorState } from "@/apps/forge/states/tabs/TabUTCEditorState";
+import { TabUTDEditorState } from "@/apps/forge/states/tabs/TabUTDEditorState";
+import { TabUTMEditorState } from "@/apps/forge/states/tabs/TabUTMEditorState";
+import { TabUTPEditorState } from "@/apps/forge/states/tabs/TabUTPEditorState";
+import { TabUTSEditorState } from "@/apps/forge/states/tabs/TabUTSEditorState";
+import { TabUTTEditorState } from "@/apps/forge/states/tabs/TabUTTEditorState";
+import { TabUTWEditorState } from "@/apps/forge/states/tabs/TabUTWEditorState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
 
 export class MenuTopState {
+  private constructor() {}
+  private readonly _staticOnly?: undefined;
 
   static title: string = `KotOR Forge`;
   static items: MenuTopItem[] = [];
@@ -106,9 +106,9 @@ export class MenuTopState {
   static menuItemHelpBrowser: MenuTopItem;
   static menuItemGettingStarted: MenuTopItem;
 
-  static #eventListeners: Record<string, Function[]> = {};
+  static #eventListeners: Record<string, ((...args: unknown[]) => void)[]> = {};
 
-  static addEventListener(event: string, callback: Function) {
+  static addEventListener(event: string, callback: (...args: unknown[]) => void) {
     if (typeof callback !== 'function') { return; }
     if (!Array.isArray(this.#eventListeners[event])) {
       this.#eventListeners[event] = [];
@@ -126,7 +126,7 @@ export class MenuTopState {
     }
   }
 
-  static removeEventListener(event: string, callback: Function) {
+  static removeEventListener(event: string, callback: (...args: unknown[]) => void) {
     if (typeof callback !== 'function') { return; }
     if (!Array.isArray(this.#eventListeners[event])) {
       this.#eventListeners[event] = [];
@@ -215,7 +215,7 @@ export class MenuTopState {
 
     this.menuItemCloseProject = new MenuTopItem({
       name: 'Close Project', onClick: () => {
-        // Forge.Project = undefined as any;
+        // Forge.Project = undefined;
         // for(let i = 0; i < Forge.tabManager.tabs.length; i++){
         //   Forge.tabManager.tabs[i].Remove();
         // }

@@ -1,15 +1,15 @@
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
+import { Action } from "@/actions/Action";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
 
-import { Action } from "./Action";
 
 /**
  * ActionFollowLeader class.
@@ -32,7 +32,7 @@ export class ActionFollowLeader extends Action {
 
   }
 
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
     if((BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))){
       if(GameState.Mode == EngineMode.DIALOG){
         this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);

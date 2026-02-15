@@ -1,16 +1,16 @@
-import { ModuleItemCostTable } from "../enums/module/ModuleItemCostTable";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import type { ModuleItem } from "../module/ModuleItem";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { TwoDAObject, type ITwoDARowData } from "../resource/TwoDAObject";
-import { Dice } from "../utility/Dice";
-import { createScopedLogger , LogScope } from "../utility/Logger";
+import { SWCostTable } from "@/engine/rules/SWCostTable";
+import { SWItemPropsDef } from "@/engine/rules/SWItemPropsDef";
+import { ModuleItemCostTable } from "@/enums/module/ModuleItemCostTable";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import type { ModuleItem } from "@/module/ModuleItem";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { TwoDAObject, type ITwoDARowData } from "@/resource/TwoDAObject";
+import { Dice } from "@/utility/Dice";
+import { createScopedLogger , LogScope } from "@/utility/Logger";
 
-import { SWCostTable } from "./rules/SWCostTable";
-import { SWItemPropsDef } from "./rules/SWItemPropsDef";
 
 const log = createScopedLogger(LogScope.Game);
 

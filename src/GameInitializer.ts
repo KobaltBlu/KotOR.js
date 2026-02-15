@@ -1,40 +1,41 @@
 import * as path from "path";
 
-import { ActionFactory } from "./actions/ActionFactory";
-import { GamePad, KeyMapper } from "./controls";
-import { GameEffectFactory } from "./effects/GameEffectFactory";
-import { CurrentGame } from "./engine/CurrentGame";
-import { INIConfig } from "./engine/INIConfig";
-import { ActionMenuManager } from "./engine/menu/ActionMenuManager";
-import { SWRuleSet } from "./engine/rules/SWRuleSet";
-import { SaveGame } from "./engine/SaveGame";
-import { CacheScope } from "./enums";
-import { GameEngineType } from "./enums/engine";
-import { GameEventFactory } from "./events/GameEventFactory";
-import { GameState } from "./GameState";
-import { ResourceLoader } from "./loaders";
+import { ActionFactory } from "@/actions/ActionFactory";
+import { GamePad, KeyMapper } from "@/controls";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import { CurrentGame } from "@/engine/CurrentGame";
+import { INIConfig } from "@/engine/INIConfig";
+import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
+import { SWRuleSet } from "@/engine/rules/SWRuleSet";
+import { SaveGame } from "@/engine/SaveGame";
+import { CacheScope } from "@/enums";
+import { GameEngineType } from "@/enums/engine";
+import { GameEventFactory } from "@/events/GameEventFactory";
+import { GameState } from "@/GameState";
+import { ResourceLoader } from "@/loaders";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager, KEYManager, RIMManager, ERFManager, VideoEffectManager, PazaakManager, UINotificationManager, CutsceneManager
-} from "./managers";
-import { Module } from "./module/Module";
-import { NWScript } from "./nwscript/NWScript";
-import { ERFObject } from "./resource/ERFObject";
-import { ResourceTypes } from "./resource/ResourceTypes";
-import { RIMObject } from "./resource/RIMObject";
-import { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
-import { ConfigClient } from "./utility/ConfigClient";
-import { GameFileSystem } from "./utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "./utility/Logger";
-import { PerformanceMonitor } from "./utility/PerformanceMonitor";
+} from "@/managers";
+import { Module } from "@/module/Module";
+import { NWScript } from "@/nwscript/NWScript";
+import { ERFObject } from "@/resource/ERFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { RIMObject } from "@/resource/RIMObject";
+import { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "@/talents";
+import { ConfigClient } from "@/utility/ConfigClient";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 
 const log = createScopedLogger(LogScope.Game);
 
+/** Event listener callback type. */
+type GameInitializerEventListener = (...args: unknown[]) => void;
+
 /**
- * GameInitializer class.
- *
- * Handles the loading of game archives for use later during runtime
+ * GameInitializer – handles the loading of game archives for use later during runtime.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -42,87 +43,66 @@ const log = createScopedLogger(LogScope.Game);
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class GameInitializer {
+const eventListeners: Record<string, GameInitializerEventListener[]> = {};
 
-  static currentGame: GameEngineType;
-
-  /**
-   * Event listeners
-   */
-  static #eventListeners: Record<string, Function[]> = {};
+export const GameInitializer = {
+  currentGame: undefined as GameEngineType | undefined,
 
   /**
    * Add an event listener
-   * @param type
-   * @param cb
    */
-  static AddEventListener<T extends string>(type: T, cb: Function): void {
-    if (!Array.isArray(this.#eventListeners[type])) {
-      this.#eventListeners[type] = [];
+  AddEventListener<T extends string>(type: T, cb: GameInitializerEventListener): void {
+    log.trace("AddEventListener", type);
+    if (!Array.isArray(eventListeners[type])) {
+      eventListeners[type] = [];
     }
-    if (Array.isArray(this.#eventListeners[type])) {
-      const ev = this.#eventListeners[type];
-      const index = ev.indexOf(cb);
-      if (index == -1) {
-        ev.push(cb);
-      } else {
-        log.warn('Event Listener: Already added', type);
-      }
+    const ev = eventListeners[type];
+    const index = ev.indexOf(cb);
+    if (index === -1) {
+      ev.push(cb);
     } else {
-      log.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Already added', type);
     }
-  }
+  },
 
   /**
    * Remove an event listener
-   * @param type
-   * @param cb
    */
-  static RemoveEventListener<T extends string>(type: T, cb: Function): void {
-    if (!Array.isArray(this.#eventListeners[type])) {
-      this.#eventListeners[type] = [];
+  RemoveEventListener<T extends string>(type: T, cb: GameInitializerEventListener): void {
+    log.trace("RemoveEventListener", type);
+    if (!Array.isArray(eventListeners[type])) {
+      eventListeners[type] = [];
     }
-    if (Array.isArray(this.#eventListeners[type])) {
-      const ev = this.#eventListeners[type];
-      const index = ev.indexOf(cb);
-      if (index >= 0) {
-        ev.splice(index, 1);
-      } else {
-        log.warn('Event Listener: Already removed', type);
-      }
+    const ev = eventListeners[type];
+    const index = ev.indexOf(cb);
+    if (index >= 0) {
+      ev.splice(index, 1);
     } else {
-      log.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Already removed', type);
     }
-  }
+  },
 
   /**
    * Process an event listener
-   * @param type
-   * @param args
    */
-  static ProcessEventListener<T extends string>(type: T, args: unknown[] = []): void {
-    if (!Array.isArray(this.#eventListeners[type])) {
-      this.#eventListeners[type] = [];
+  ProcessEventListener<T extends string>(type: T, args: unknown[] = []): void {
+    log.trace("ProcessEventListener", type, args.length);
+    if (!Array.isArray(eventListeners[type])) {
+      eventListeners[type] = [];
     }
-    if (Array.isArray(this.#eventListeners[type])) {
-      const ev = this.#eventListeners[type];
-      for (let i = 0; i < ev.length; i++) {
-        const callback = ev[i];
-        if (typeof callback === 'function') {
-          callback(...args);
-        }
-      }
-    } else {
-      log.warn('Event Listener: Unsupported', type);
+    const ev = eventListeners[type];
+    for (let i = 0; i < ev.length; i++) {
+      const callback = ev[i];
+      callback(...args);
     }
-  }
+  },
 
-  static SetLoadingMessage(message: string) {
+  SetLoadingMessage(message: string): void {
     GameInitializer.ProcessEventListener('on-loader-message', [message]);
-  }
+  },
 
-  static async Init(game: GameEngineType) {
-
+  async Init(game: GameEngineType): Promise<void> {
+    log.trace("Init", game);
     ResourceLoader.InitCache();
     GameState.PerformanceMonitor = PerformanceMonitor;
 
@@ -174,7 +154,7 @@ export class GameInitializer {
     await CurrentGame.CleanGameInProgressFolder();
 
     //Keeps the initializer from loading the same game twice if it's already loaded
-    if (GameInitializer.currentGame == game) {
+    if (GameInitializer.currentGame === game) {
       return;
     }
 
@@ -271,9 +251,11 @@ export class GameInitializer {
 
     const videoeffects = TwoDAManager.datatables.get('videoeffects');
     if (videoeffects) VideoEffectManager.Init2DA(videoeffects);
-  }
+    log.debug("Init complete", game);
+  },
 
-  static async LoadGameResources() {
+  async LoadGameResources(): Promise<void> {
+    log.trace("LoadGameResources");
     GameInitializer.SetLoadingMessage("Loading Assets");
     const promises = [
       GameInitializer.LoadOverride(),
@@ -287,18 +269,19 @@ export class GameInitializer {
       GameInitializer.LoadGameAudioResources(GameState.GameKey != GameEngineType.TSL ? 'streamwaves' : 'streamvoice')
     ];
     await Promise.all(promises);
-  }
+  },
 
-  static async LoadRIMs() {
+  async LoadRIMs(): Promise<void> {
+    log.trace("LoadRIMs");
     if (GameState.GameKey == GameEngineType.TSL) {
       return;
     }
     PerformanceMonitor.start('RIMManager.Load');
     await RIMManager.Load();
     PerformanceMonitor.stop('RIMManager.Load');
-  }
+  },
 
-  static async LoadLips() {
+  async LoadLips(): Promise<void> {
     PerformanceMonitor.start('GameInitializer.LoadLips');
     const data_dir = 'lips';
     const filenames = await GameFileSystem.readdir(data_dir);
@@ -311,12 +294,12 @@ export class GameInitializer {
         filename: filename
       };
     }).filter(function (file_obj) {
-      return file_obj.ext == 'mod';
+      return file_obj.ext === 'mod';
     });
     for (let i = 0, len = modules.length; i < len; i++) {
       const module_obj = modules[i];
       switch (module_obj.ext) {
-        case 'mod':
+        case 'mod': {
           const mod = new ERFObject(path.join(data_dir, module_obj.filename));
           await mod.load();
           if (mod instanceof ERFObject) {
@@ -324,6 +307,7 @@ export class GameInitializer {
             ERFManager.addERF(module_obj.name, mod);
           }
           break;
+        }
         default:
           log.warn('GameInitializer.LoadLips: Encountered incorrect filetype');
           log.debug(String(module_obj));
@@ -331,9 +315,10 @@ export class GameInitializer {
       }
     }
     PerformanceMonitor.stop('GameInitializer.LoadLips');
-  }
+  },
 
-  static async LoadModules() {
+  async LoadModules(): Promise<void> {
+    log.trace("LoadModules");
     const data_dir = 'modules';
     PerformanceMonitor.start('GameInitializer.LoadModules');
     try {
@@ -354,7 +339,7 @@ export class GameInitializer {
       for (let i = 0, len = modules.length; i < len; i++) {
         const module_obj = modules[i];
         switch (module_obj.ext) {
-          case 'rim':
+          case 'rim': {
             const rim = new RIMObject(path.join(data_dir, module_obj.filename));
             await rim.load();
             if (rim instanceof RIMObject) {
@@ -362,7 +347,8 @@ export class GameInitializer {
               RIMManager.addRIM(module_obj.name, rim);
             }
             break;
-          case 'mod':
+          }
+          case 'mod': {
             const mod = new ERFObject(path.join(data_dir, module_obj.filename));
             await mod.load();
             if (mod instanceof ERFObject) {
@@ -370,6 +356,7 @@ export class GameInitializer {
               ERFManager.addERF(module_obj.name, mod);
             }
             break;
+          }
           default:
             log.warn('GameInitializer.LoadModules: Encountered incorrect filetype');
             log.debug(String(module_obj));
@@ -381,19 +368,19 @@ export class GameInitializer {
       log.error(String(e), e);
     }
     PerformanceMonitor.stop('GameInitializer.LoadModules');
-  }
+  },
 
-  static async Load2DAs() {
+  async Load2DAs(): Promise<void> {
     PerformanceMonitor.start('GameInitializer.Load2DAs');
     await GameState.TwoDAManager.Load2DATables();
     PerformanceMonitor.stop('GameInitializer.Load2DAs');
-  }
+  },
 
-  static async LoadTexturePacks() {
+  async LoadTexturePacks(): Promise<void> {
     PerformanceMonitor.start('GameInitializer.LoadTexturePacks');
     const data_dir = 'TexturePacks';
     try {
-      const filenames = await GameFileSystem.readdir(data_dir)
+      const filenames = await GameFileSystem.readdir(data_dir);
       const erfs = filenames.map(function (file) {
         const filename = file.split(path.sep).pop() as string;
         const args = filename.split('.');
@@ -403,7 +390,7 @@ export class GameInitializer {
           filename: filename
         };
       }).filter(function (file_obj) {
-        return file_obj.ext == 'erf';
+        return file_obj.ext === 'erf';
       });
 
       await Promise.all(erfs.map(async (_erf) => {
@@ -419,18 +406,18 @@ export class GameInitializer {
       log.error(String(e), e);
     }
     PerformanceMonitor.stop('GameInitializer.LoadTexturePacks');
-  }
+  },
 
-  static async LoadGameAudioResources(folder: string) {
+  async LoadGameAudioResources(folder: string): Promise<void> {
     PerformanceMonitor.start(`GameInitializer.LoadGameAudioResources[${folder}]`);
     try {
-      const files = await GameFileSystem.readdir(folder, { recursive: true })
+      const files = await GameFileSystem.readdir(folder, { recursive: true });
       for (let i = 0, len = files.length; i < len; i++) {
         const f = files[i];
         const _parsed = path.parse(f);
         const ext = _parsed.ext.substr(1, _parsed.ext.length);
 
-        if (typeof ResourceTypes[ext] != 'undefined') {
+        if (typeof ResourceTypes[ext] !== 'undefined') {
           ResourceLoader.setResource(ResourceTypes[ext], _parsed.name.toLowerCase(), {
             inArchive: false,
             file: f,
@@ -447,9 +434,9 @@ export class GameInitializer {
       log.error(String(e), e);
     }
     PerformanceMonitor.stop(`GameInitializer.LoadGameAudioResources[${folder}]`);
-  }
+  },
 
-  static async LoadOverride() {
+  async LoadOverride(): Promise<void> {
     PerformanceMonitor.start('GameInitializer.LoadOverride');
     try {
       const files = await GameFileSystem.readdir('Override', { recursive: false });
@@ -473,6 +460,5 @@ export class GameInitializer {
       log.error(String(e), e);
     }
     PerformanceMonitor.stop('GameInitializer.LoadOverride');
-  }
-
-}
+  },
+};

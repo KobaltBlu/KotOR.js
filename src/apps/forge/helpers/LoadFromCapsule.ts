@@ -3,9 +3,11 @@
  * Used by ModalLoadFromModule to pick a resource from a capsule file.
  */
 
-import { ERFObject } from "../../../resource/ERFObject";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
-import { RIMObject } from "../../../resource/RIMObject";
+import type { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
+import type { IRIMResource } from "@/interface/resource/IRIMResource";
+import { ERFObject } from "@/resource/ERFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { RIMObject } from "@/resource/RIMObject";
 
 export interface CapsuleResourceEntry {
   resref: string;
@@ -22,7 +24,7 @@ export interface LoadFromCapsuleResult {
 }
 
 function getExtFromResType(resType: number): string {
-  const ext = (ResourceTypes as any).getKeyByValue?.(resType);
+  const ext = ResourceTypes.getKeyByValue(resType);
   return typeof ext === "string" ? ext : "res";
 }
 
@@ -40,9 +42,9 @@ export async function loadFromCapsuleBuffer(
   if (sig === "MOD " || sig === "ERF ") {
     const erf = new ERFObject(buffer);
     await erf.load();
-    const keyList = (erf as any).keyList as Array<{ resRef: string; resId: number; resType: number }>;
+    const keyList: IERFKeyEntry[] = erf.keyList;
     if (!keyList || !keyList.length) return null;
-    const entries: CapsuleResourceEntry[] = keyList.map((k) => ({
+    const entries: CapsuleResourceEntry[] = keyList.map((k: IERFKeyEntry) => ({
       resref: (k.resRef || "").toLowerCase(),
       resType: k.resType,
       ext: getExtFromResType(k.resType),
@@ -61,9 +63,9 @@ export async function loadFromCapsuleBuffer(
   if (sig === "RIM ") {
     const rim = new RIMObject(buffer);
     await rim.load();
-    const resources = (rim as any).resources as Array<{ resRef?: string; resType: number }>;
+    const resources: IRIMResource[] = rim.resources;
     if (!resources || !resources.length) return null;
-    const entries: CapsuleResourceEntry[] = resources.map((r: any) => ({
+    const entries: CapsuleResourceEntry[] = resources.map((r: IRIMResource) => ({
       resref: (r.resRef || "").toLowerCase(),
       resType: r.resType,
       ext: getExtFromResType(r.resType),

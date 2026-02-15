@@ -1,17 +1,17 @@
-import { GameState } from "../../../GameState";
-import { LBL_3DView } from "../../../gui";
-import type { GUILabel, GUICheckBox, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { ModuleCreature } from "../../../module";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { GameState } from "@/GameState";
+import { LBL_3DView } from "@/gui";
+import type { GUILabel, GUICheckBox, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { ModuleCreature } from "@/module";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { MenuPartySelection as K1_MenuPartySelection } from "../../kotor/KOTOR";
+import { MenuPartySelection as K1_MenuPartySelection } from "@/game/kotor/KOTOR";
 
 /**
  * MenuPartySelection class.

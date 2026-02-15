@@ -36,11 +36,12 @@ rules:
       varsIgnorePattern: "^_"
   "@typescript-eslint/explicit-function-return-type": off
   "@typescript-eslint/no-explicit-any": error
-  "@typescript-eslint/no-unsafe-argument": warn
-  "@typescript-eslint/no-unsafe-assignment": warn
-  "@typescript-eslint/no-unsafe-call": warn
-  "@typescript-eslint/no-unsafe-member-access": warn
-  "@typescript-eslint/no-unsafe-return": warn
+  "@typescript-eslint/no-unsafe-argument": error
+  # Disabled: strict any/error-type checks; re-enable when codebase is typed (or use per-file disable)
+  # "@typescript-eslint/no-unsafe-assignment": error
+  "@typescript-eslint/no-unsafe-call": error
+  "@typescript-eslint/no-unsafe-member-access": error
+  "@typescript-eslint/no-unsafe-return": error
 
   # Use shared logger instead of console (see src/utility/Logger.ts)
   no-console: error
@@ -62,6 +63,17 @@ rules:
   no-misleading-character-class: warn
   prefer-const: warn
   no-var: warn
+
+  # All project imports must use @ path alias (no relative ../../ or ./)
+  no-restricted-imports:
+    - error
+    - patterns:
+        - group:
+            - "../*"
+            - "../**"
+            - "./*"
+            - "./**"
+          message: "Use @/ path alias instead of relative imports (e.g. from \"@/utility/Logger\")"
 
   # Import rules (warn only - do not block build/debug)
   import/order:
@@ -88,6 +100,7 @@ rules:
   import/no-unresolved:
     - warn
     - ignore:
+        - "^@/"     # path alias (tsconfig paths)
         - "^\\./"   # relative imports - assume paths are correct
         - "^\\.\\." # parent relative imports - assume paths are correct
   import/no-duplicates: warn
@@ -119,8 +132,13 @@ overrides:
             - "^path$"
             - "^@vscode/"
             - "^vscode-languageclient"
+            - "^@/"
             - "^@forge/"
             - "^@kotor/"
             - '^\\.'
     globals:
       Thenable: readonly
+  # Webview: use main eslint tsconfig (avoids parser path resolution on Windows)
+  - files: extensions/kotor-forge-vscode/src/webview/**/*.{ts,tsx}
+    parserOptions:
+      project: ./tsconfig.eslint.json

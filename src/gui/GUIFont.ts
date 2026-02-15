@@ -1,12 +1,12 @@
 import * as THREE from "three";
 
-import { GUIControlAlignment } from "../enums/gui/GUIControlAlignment";
-import { TXI } from "../resource/TXI";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
+import { TXI } from "@/resource/TXI";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { createQuadElements as createIndicies } from "../utility/QuadIndices";
+import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
 
 interface Line {
   chars: GUIFontChar[];
@@ -38,19 +38,16 @@ export class GUIFont {
     if(this.texture.txi){
       this.txi = this.texture.txi;
       this.scale = 1;
-  
+
       this.ratio = texture.image.width / texture.image.height;
-  
+
       this.height = this.txi.fontheight     * 100;
       this.bsline = this.txi.baselineheight * 100;
       this.spaceR = this.txi.spacingr       * 100;
       this.spaceB = this.txi.spacingb       * 100;
       this.charCount = this.txi.numchars;
 
-      this.chars = new Array(this.charCount);
-      for(let i = 0; i < this.charCount; i++){
-        this.chars[i] = new GUIFontChar(this, String.fromCharCode(i));
-      }
+      this.chars = Array.from({ length: this.charCount }, (_, i) => new GUIFontChar(this, String.fromCharCode(i)));
     }
   }
 

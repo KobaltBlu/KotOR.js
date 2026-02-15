@@ -13,9 +13,9 @@
 
 import React, { useState, useEffect } from 'react';
 
-import * as KotOR from '../../../KotOR';
-import { DLGUndoManager, DLGUndoActions } from '../../../utils/DLGUndoManager';
-import './DLGNodePropertiesPanel.scss';
+import * as KotOR from '@/apps/forge/KotOR';
+import { DLGUndoManager, DLGUndoActions } from '@/apps/forge/utils/DLGUndoManager';
+import "@/apps/forge/components/tabs/tab-dlg-editor/DLGNodePropertiesPanel.scss";
 
 interface DLGNodePropertiesPanelProps {
   node: KotOR.DLGNode | null;
@@ -30,7 +30,7 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
   undoManager,
   onUpdate
 }) => {
-  const [localNode, setLocalNode] = useState(node);
+  const [_localNode, setLocalNode] = useState(node);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['basic', 'text', 'audio'])
   );

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
-import type * as KotOR from '../KotOR';
-import { createScopedLogger, LogScope } from '../../../utility/Logger';
+import type * as KotOR from '@/apps/forge/KotOR';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -12,7 +12,7 @@ export interface TwoDAEditorColumnHeaderProps {
 
 export const TwoDAEditorColumnHeader: React.FC<TwoDAEditorColumnHeaderProps> = (props) => {
   log.trace('TwoDAEditorColumnHeader render', props.column);
-  const [, rerender] = useState<boolean>(false);
+  const [, _rerender] = useState<boolean>(false);
 
   const twoDAObject = props.twoDAObject;
   const column = props.column;

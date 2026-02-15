@@ -1,18 +1,18 @@
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import type { ModuleObject } from "../module/ModuleObject";
-import { DLGObject } from "../resource/DLGObject";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-import { Utility } from "../utility/Utility";
+import { Action } from "@/actions/Action";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { DLGObject } from "@/resource/DLGObject";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
 
-import { Action } from "./Action";
 
 const log = createScopedLogger(LogScope.Game);
 
@@ -44,7 +44,7 @@ export class ActionDialogObject extends Action {
     
   }
 
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
     log.trace('ActionDialogObject update()');
 
     this.target = this.getParameter<ModuleObject>(0);

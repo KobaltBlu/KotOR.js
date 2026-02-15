@@ -1,6 +1,6 @@
-import * as KotOR from "../KotOR";
-
-import { ForgeGameObject } from "./ForgeGameObject";
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 export class ForgeWaypoint extends ForgeGameObject {
   //GIT Instance Properties
@@ -23,7 +23,14 @@ export class ForgeWaypoint extends ForgeGameObject {
     if(buffer){
       this.loadFromBuffer(buffer);
     }
-    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
+      this.onPropertyChange(
+        args[0] as string,
+        args[1] as string | number | boolean | object | undefined,
+        args[2] as string | number | boolean | object | undefined
+      );
+    };
+    this.addEventListener('onPropertyChange', onPropChange);
   }
 
   onPropertyChange(property: string, newValue: string | number | boolean | object | undefined, oldValue: string | number | boolean | object | undefined): void {
@@ -87,7 +94,7 @@ export class ForgeWaypoint extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Appearance', this.appearance) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description) );

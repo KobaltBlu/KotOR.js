@@ -2,7 +2,7 @@
  * Help contents and topic URLs for Forge (aligned with Holocron Toolset help structure).
  * Maps topic names to wiki/documentation URLs. Used for Help menu and onboarding.
  */
-import { WIKI_BASE_URL } from "./EditorWikiMapping";
+import { WIKI_BASE_URL } from "@/apps/forge/data/EditorWikiMapping";
 
 export interface HelpDocument {
   name: string;

@@ -1,24 +1,21 @@
 import React, { useState, useCallback, memo } from "react";
 
-import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
-
-import { EditorFile } from "../../../EditorFile";
-import { FileTypeManager } from "../../../FileTypeManager";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import * as KotOR from "../../../KotOR";
-import { Project } from "../../../Project";
-import { ProjectFileSystem } from "../../../ProjectFileSystem";
-import { RecentProject } from "../../../RecentProject";
-import { ForgeState } from "../../../states/ForgeState";
-
-
-import "./TabQuickStart.scss";
-import { ModalNewProjectState } from "../../../states/modal/ModalNewProjectState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { Project } from "@/apps/forge/Project";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { RecentProject } from "@/apps/forge/RecentProject";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import "@/apps/forge/components/tabs/tab-quick-start/TabQuickStart.scss";
 
 const log = createScopedLogger(LogScope.Forge);
 
-export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
+export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
   const [files, setFiles] = useState<EditorFile[]>(ForgeState.recentFiles);
   const [projects, setProjects] = useState<RecentProject[]>(ForgeState.recentProjects);
 

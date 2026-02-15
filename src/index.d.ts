@@ -47,5 +47,7 @@ declare global {
     ConfigClient?: unknown;
     /** Root render result (set by launcher index). */
     launcherView?: unknown;
+    /** Node require (Electron renderer); only present in Electron context. */
+    require?: NodeRequire;
   }
 }

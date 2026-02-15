@@ -1,21 +1,23 @@
 import React from "react";
 import * as THREE from 'three';
 
-import { TabUTDEditor } from "../../components/tabs/tab-utd-editor/TabUTDEditor";
-import { UI3DRendererView } from "../../components/UI3DRendererView";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { ForgeDoor } from "../../module-editor/ForgeDoor";
+import { TabUTDEditor } from "@/apps/forge/components/tabs/tab-utd-editor/TabUTDEditor";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
-import { UI3DRenderer } from "../../UI3DRenderer";
+const log = createScopedLogger(LogScope.Forge);
 
-import { TabState } from "./TabState";
 
 export class TabUTDEditorState extends TabState {
   tabName: string = `UTD`;
   door: ForgeDoor = new ForgeDoor();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.door.blueprint;
   }
@@ -23,6 +25,7 @@ export class TabUTDEditorState extends TabState {
   ui3DRenderer: UI3DRenderer;
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace('TabUTDEditorState constructor entry');
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
@@ -38,27 +41,33 @@ export class TabUTDEditorState extends TabState {
         }
       }
     ];
+    log.trace('TabUTDEditorState constructor exit');
   }
 
   public openFile(file?: EditorFile){
+    log.trace('TabUTDEditorState openFile entry', !!file);
     return new Promise<KotOR.GFFObject>( (resolve, reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
+
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-  
+        log.debug('TabUTDEditorState openFile tabName', this.tabName);
+
         file.readFile().then( async (response) => {
           this.door = new ForgeDoor(response.buffer);
           this.door.setContext(this.ui3DRenderer);
           await this.door.load();
           this.ui3DRenderer.attachObject(this.door.container, false);
           this.processEventListener('onEditorFileLoad', [this]);
+          log.trace('TabUTDEditorState openFile loaded');
           resolve(this.blueprint);
         });
+      } else {
+        log.trace('TabUTDEditorState openFile no file');
       }
     });
   }
@@ -113,7 +122,7 @@ export class TabUTDEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-  
+
   updateFile(){
     this.door.exportToBlueprint();
   }

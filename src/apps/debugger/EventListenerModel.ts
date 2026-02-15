@@ -1,4 +1,4 @@
-import { createScopedLogger, LogScope } from "../../utility/Logger";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Debug);
 

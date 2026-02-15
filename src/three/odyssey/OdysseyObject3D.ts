@@ -1,11 +1,10 @@
 import * as THREE from "three";
 
-import type { OdysseyController } from "../../odyssey/controllers/OdysseyController";
-import type { OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
-
-import type { OdysseyEmitter3D } from "./OdysseyEmitter3D";
-import type { OdysseyLight3D } from "./OdysseyLight3D";
-import type { OdysseyModel3D } from "./OdysseyModel3D";
+import type { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import type { OdysseyEmitter3D } from "@/three/odyssey/OdysseyEmitter3D";
+import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
+import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 
 /**
  * OdysseyObject3D class.
@@ -23,7 +22,14 @@ export class OdysseyObject3D extends THREE.Object3D {
   isWalkmesh: boolean;
   controllers: Map<number, OdysseyController>;
   controllerCache: Record<number, unknown>;
-  controllerHelpers: { hasOrientation: boolean; hasPosition: boolean; hasScale: boolean } = {
+  controllerHelpers: {
+    hasOrientation: boolean;
+    hasPosition: boolean;
+    hasScale: boolean;
+    orientation?: OdysseyController;
+    position?: OdysseyController;
+    scale?: OdysseyController;
+  } = {
     hasOrientation: false,
     hasPosition: false,
     hasScale: false,
@@ -75,7 +81,7 @@ export class OdysseyObject3D extends THREE.Object3D {
     throw new Error("Method not implemented.");
   }
 
-  traverseIgnore( ignoreName: string = '', callback?: Function ){
+  traverseIgnore( ignoreName: string = '', callback?: (obj: THREE.Object3D) => void ){
 
     if(this.name == ignoreName)
       return;
@@ -86,7 +92,7 @@ export class OdysseyObject3D extends THREE.Object3D {
     const children = this.children;
   
     for ( let i = 0, l = children.length; i < l; i ++ ) {
-      const child = children[ i ] as THREE.Object3D & { traverseIgnore?: (ignoreName: string, callback?: Function) => void };
+      const child = children[ i ] as THREE.Object3D & { traverseIgnore?: (ignoreName: string, callback?: (obj: THREE.Object3D) => void) => void };
       if(typeof child.traverseIgnore === 'function'){
         child.traverseIgnore( ignoreName, callback );
       }

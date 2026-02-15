@@ -2,7 +2,7 @@ import * as fs from "fs";
 
 import { contextBridge, ipcRenderer, shell } from "electron";
 
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /** Profile shape for launch (matches ElectronProfile from src/index.d.ts). */
 interface LaunchProfile {

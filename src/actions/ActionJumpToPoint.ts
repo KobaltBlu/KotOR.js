@@ -1,12 +1,12 @@
 import * as THREE from "three";
 
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleObject } from "../module/ModuleObject";
-import { BitWise } from "../utility/BitWise";
+import { Action } from "@/actions/Action";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
 
-import { Action } from "./Action";
 
 /**
  * ActionJumpToPoint class.
@@ -45,7 +45,7 @@ export class ActionJumpToPoint extends Action {
     
   }
 
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(3);
 
     //if(!(this.target instanceof ModuleObject))

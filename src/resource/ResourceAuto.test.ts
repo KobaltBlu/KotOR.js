@@ -1,12 +1,12 @@
-import { BinaryWriter } from '../utility/binary/BinaryWriter';
 
-import { readResourceFromBuffer, resourceToBytes } from './ResourceAuto';
-import { ResourceTypes } from './ResourceTypes';
-import { TPCObject } from './TPCObject';
-import { TwoDAObject } from './TwoDAObject';
-import { TXI } from './TXI';
-import { VISObject } from './VISObject';
-import { WAVObject } from './WAVObject';
+import { readResourceFromBuffer, resourceToBytes } from '@/resource/ResourceAuto';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { TPCObject } from '@/resource/TPCObject';
+import { TwoDAObject } from '@/resource/TwoDAObject';
+import { TXI } from '@/resource/TXI';
+import { VISObject } from '@/resource/VISObject';
+import { WAVObject } from '@/resource/WAVObject';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
 describe('ResourceAuto', () => {
   function makeMinimal2DABuffer(): Uint8Array {

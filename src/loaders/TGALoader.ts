@@ -1,17 +1,14 @@
 import * as path from "path";
 
-import { ResourceLoader } from "./ResourceLoader";
-
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { TXI } from "../resource/TXI";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-
-import type { TextureLoader } from "./TextureLoader";
-
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import type { TextureLoader } from "@/loaders/TextureLoader";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TXI } from "@/resource/TXI";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Loader);
-import { GameFileSystem } from "../utility/GameFileSystem";
 
 /**
  * TGALoader class.
@@ -49,6 +46,7 @@ export class TGALoader {
 	static TextureLoader: typeof TextureLoader;
 
 	async fetch( resRef: string ): Promise<OdysseyTexture> {
+		log.trace("fetch", resRef);
 		const texture = new OdysseyTexture();
 		
 		try{
@@ -75,12 +73,10 @@ export class TGALoader {
 				}
 
 				return texture;
-			}catch(e){
-				// log.error(e);
+			}catch{
 				return texture;
 			}
-		}catch(e){
-			// log.error(e);
+		}catch{
 			return undefined;
 		}
 	}
@@ -88,77 +84,51 @@ export class TGALoader {
 	async fetchOverride ( name: string ): Promise<OdysseyTexture> {
 		const dir = path.join('Override');
 		const texture = new OdysseyTexture();
-	
-		try{
-			const buffer = await GameFileSystem.readFile(path.join(dir, name)+'.tga');
 
-			texture.image = this.parse( buffer, name );
-			texture.needsUpdate = true;
-			texture.name = name;
-			texture.bumpMapType = 'BUMP';
-			texture.generateMipmaps = true;
-			texture.txi = new TXI('');
+		const buffer = await GameFileSystem.readFile(path.join(dir, name)+'.tga');
 
-			const txiBuffer = await GameFileSystem.readFile(path.join(dir, name)+'.txi');
+		texture.image = this.parse( buffer, name );
+		texture.needsUpdate = true;
+		texture.name = name;
+		texture.bumpMapType = 'BUMP';
+		texture.generateMipmaps = true;
+		texture.txi = new TXI('');
 
-			const tpcCheck = await TGALoader.TextureLoader.tpcLoader.fetch(name);
+		await GameFileSystem.readFile(path.join(dir, name)+'.txi');
 
-			if(tpcCheck){
-				texture.txi = tpcCheck.txi;
-				return texture;
-			}else{
-				texture.txi = new TXI('');
-				return texture;
-			}
-		}catch(e){
-			// log.error(e);
-			throw e;
+		const tpcCheck = await TGALoader.TextureLoader.tpcLoader.fetch(name);
+
+		if(tpcCheck){
+			texture.txi = tpcCheck.txi;
+			return texture;
 		}
+		texture.txi = new TXI('');
+		return texture;
 	}
 	
 	async fetchLocal( resRef: string ) {
+		log.trace("fetchLocal", resRef);
 		const texture = new OdysseyTexture();
-	
+
+		const buffer = await GameFileSystem.readFile(resRef);
+		texture.image = this.parse( buffer, resRef );
+		texture.needsUpdate = true;
+		texture.name = resRef;
+		texture.bumpMapType = 'BUMP';
+		texture.generateMipmaps = true;
+
 		try{
-			const buffer = await GameFileSystem.readFile(resRef);
-			texture.image = this.parse( buffer, resRef );
-			texture.needsUpdate = true;
-			texture.name = resRef;
-			texture.bumpMapType = 'BUMP';
-			texture.generateMipmaps = true;
-	
-			//fs.readFile(path.join(dir, name)+'.txi', (err, txiBuffer) => {
-	
-				//if(err){
-			
-				try{
-					const tpcCheck = await TGALoader.TextureLoader.tpcLoader.fetch(resRef);
-	
-					/*if(tpcCheck){
-						texture.txi = tpcCheck.txi;
-						onLoad( texture );
-					}else{*/
-						texture.txi = new TXI('');
-					//}
-				}catch(e){
-
-				}
-
-				/*}else{
-					texture.txi = new TXI(txiBuffer);
-					if(typeof onLoad == 'function')
-						onLoad( texture );
-				}*/
-	
-			//});
-			return texture;
-		}catch(e){
-			throw e;
+			const _tpcCheck = await TGALoader.TextureLoader.tpcLoader.fetch(resRef);
+			texture.txi = new TXI('');
+		}catch{
+			// ignore TXI fetch failure
 		}
+
+		return texture;
 	}
 
 	// reference from vthibault, https://github.com/vthibault/roBrowser/blob/master/src/Loaders/Targa.js
-	parse( buffer: Uint8Array, name: string ) {
+	parse( buffer: Uint8Array, _name: string ) {
 
 		// TGA Constants
 		const TGA_TYPE_NO_DATA = 0,
@@ -180,9 +150,9 @@ export class TGALoader {
 		if ( buffer.length < 19 )
 			log.error( 'THREE.TGALoader.parse: Not enough data to contain header.' );
 
-		let content = new Uint8Array( buffer ),
-			offset = 0,
-			header = {
+		const content = new Uint8Array( buffer );
+		let offset = 0;
+		const header = {
 				id_length:       content[ offset ++ ],
 				colormap_type:   content[ offset ++ ],
 				image_type:      content[ offset ++ ],
@@ -229,6 +199,7 @@ export class TGALoader {
 				// What the need of a file without data ?
 				case TGA_TYPE_NO_DATA:
 					log.error( 'THREE.TGALoader.parse.tgaCheckHeader: No data' );
+					break;
 
 				// Invalid type ?
 				default:
@@ -304,13 +275,9 @@ export class TGALoader {
 		// Parse tga image buffer
 		function tgaParse( use_rle: boolean, use_pal: boolean, header: TGAParseHeader, offset: number, data: Uint8Array, face = 0 ) {
 
-			let pixel_data,
-				pixel_size,
-				pixel_total,
-				palettes;
-
-			pixel_size = header.pixel_size >> 3;
-			pixel_total = header.width * header.height * pixel_size;
+			let pixel_data, palettes;
+			const pixel_size = header.pixel_size >> 3;
+			const pixel_total = header.width * header.height * pixel_size;
 
 			offset += (pixel_total * face);
 
@@ -629,7 +596,7 @@ export class TGALoader {
 			const imageData = context.createImageData( header.width, header.height );
 
 			const result = tgaParse( use_rle, use_pal, header, offset, content, 0 );
-			const rgbaData = getTgaRGBA( imageData.data, header.width, header.height, result.pixel_data, result.palettes );
+			const _rgbaData = getTgaRGBA( imageData.data, header.width, header.height, result.pixel_data, result.palettes );
 
 			context.putImageData( imageData, 0, 0 );
 			return canvas;
@@ -645,7 +612,7 @@ export class TGALoader {
 			const context = canvas.getContext( '2d' );
 			const imageData = context.createImageData( header.width, header.width );
 			const result = tgaParse( use_rle, use_pal, header, offset, content, i );
-			const rgbaData = getTgaRGBA( imageData.data, header.width, header.width, result.pixel_data, result.palettes );
+			const _rgbaData = getTgaRGBA( imageData.data, header.width, header.width, result.pixel_data, result.palettes );
 
 			context.putImageData( imageData, 0, 0 );
 

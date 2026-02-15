@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-
-import type { GFFFieldValue } from "../../../interfaces/GFFFormField";
-import * as KotOR from "../../../KotOR";
-import { TabJRLEditorState } from "../../../states/tabs";
-import "./TabJRLEditor.scss";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import type { GFFFieldValue } from "@/apps/forge/interfaces/GFFFormField";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabJRLEditorState } from "@/apps/forge/states/tabs";
+import "@/apps/forge/components/tabs/tab-jrl-editor/TabJRLEditor.scss";
 
 interface BaseTabProps {
   tab: TabJRLEditorState;
@@ -88,15 +87,15 @@ export const TabJRLEditor = function(props: BaseTabProps){
                   </div>
                   {selectedQuestIndex === index && entries.length > 0 && (
                     <div className="entry-list">
-                      {entries.map((entry, entryIdx) => {
-                        const entryId = entry.getFieldByLabel('ID')?.getValue() || entryIdx;
-                        const text = entry.getFieldByLabel('Text')?.getValue() || '(empty)';
+                      {entries.map((entry: KotOR.GFFStruct, entryIdx: number) => {
+                        const entryId = entry.getFieldByLabel('ID')?.getValue() ?? entryIdx;
+                        const text = (entry.getFieldByLabel('Text')?.getValue() as string | undefined) ?? '(empty)';
 
                         return (
                           <div
                             key={entryIdx}
                             className={`entry-item ${entryIdx === selectedEntryIndex ? 'selected' : ''}`}
-                            onClick={(e) => {
+                            onClick={(e: React.MouseEvent) => {
                               e.stopPropagation();
                               tab.selectEntry(entry, entryIdx);
                             }}

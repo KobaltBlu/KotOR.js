@@ -1,13 +1,13 @@
 import * as THREE from "three";
 
-import { TextureType } from "../../../enums/loaders/TextureType";
-import { GameState } from "../../../GameState";
-import { GUIProtoItem, GUIButton } from "../../../gui";
-import type { GUIControl, GameMenu } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import type { GFFStruct } from "../../../resource/GFFStruct";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GameState } from "@/GameState";
+import { GUIProtoItem, GUIButton } from "@/gui";
+import type { GUIControl, GameMenu } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

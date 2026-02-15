@@ -1,10 +1,7 @@
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-
-import { EditorFile } from "../EditorFile";
-import { EventListenerModel } from "../EventListenerModel";
-import { TabStoreState } from "../interfaces/TabStoreState";
-
-const log = createScopedLogger(LogScope.Forge);
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
+import { GetNewTabID } from "@/apps/forge/managers/TabIdGenerator";
 import {
   TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabModelViewerState,
   TabModuleEditorState, TabQuickStartState, TabHelpState, TabTwoDAEditorState,
@@ -13,20 +10,23 @@ import {
   TabDLGEditorState, TabGITEditorState, TabSAVEditorState, TabVISEditorState, TabState,
   TabERFEditorState, TabTextEditorState, TabLIPEditorState, TabPTHEditorState, TabWOKEditorState, TabDiffToolState,
   TabIndoorBuilderState,
-} from "../states/tabs";
-import { TabReferenceFinderState } from "../states/tabs/TabReferenceFinderState";
-import { TabScriptFindReferencesState } from "../states/tabs/TabScriptFindReferencesState";
+} from "@/apps/forge/states/tabs";
+import { TabReferenceFinderState } from "@/apps/forge/states/tabs/TabReferenceFinderState";
+import { TabScriptFindReferencesState } from "@/apps/forge/states/tabs/TabScriptFindReferencesState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { GetNewTabID } from "./TabIdGenerator";
+const log = createScopedLogger(LogScope.Forge);
 
 export type TabManagerEventListenerTypes =
   'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide';
 
+export type TabManagerEventCallback = () => void;
+
 export interface TabManagerEventListeners {
-  onTabAdded: Function[],
-  onTabRemoved: Function[],
-  onTabShow: Function[],
-  onTabHide: Function[],
+  onTabAdded: TabManagerEventCallback[];
+  onTabRemoved: TabManagerEventCallback[];
+  onTabShow: TabManagerEventCallback[];
+  onTabHide: TabManagerEventCallback[];
 }
 
 export class EditorTabManager extends EventListenerModel {
@@ -39,16 +39,20 @@ export class EditorTabManager extends EventListenerModel {
 
   constructor(){
     super();
+    log.trace('EditorTabManager constructor');
     this.currentTab = undefined;
     this.tabs = [];
+    log.debug('EditorTabManager constructor complete');
   }
 
   addTab(tab: TabState){
-    //Check to see if the tab has the singleInstance flag set to TRUE
+    log.trace('EditorTabManager.addTab()', tab.constructor.name, tab.id);
     if(tab.singleInstance){
+      log.trace('EditorTabManager.addTab() singleInstance check');
       if(this.tabTypeExists(tab)){
+        log.debug('EditorTabManager.addTab() singleInstance already exists, show');
         this.getTabByType(tab.constructor.name)?.show();
-        return; //Return because the TabManager can only have one of these
+        return;
       }
     }
 
@@ -58,134 +62,167 @@ export class EditorTabManager extends EventListenerModel {
       return;
     }
 
-    //Check to see if a tab is already editing this resource
+    log.trace('EditorTabManager.addTab() isResourceIdOpenInTab check');
     const alreadyOpen = this.isResourceIdOpenInTab(tab.getResourceID());
     if(alreadyOpen != null){
-      //Show the tab that is already open
+      log.debug('EditorTabManager.addTab() resource already open, show');
       alreadyOpen.show();
-      //return so that the rest of the function is not called
       return;
     }
 
+    log.trace('EditorTabManager.addTab() attaching and pushing');
     this.currentTab = tab;
     tab.attach(this);
     tab.show();
     this.tabs.push(tab);
-
+    log.trace('EditorTabManager.addTab() processEventListener onTabAdded');
     this.processEventListener('onTabAdded');
-
+    log.info('EditorTabManager.addTab() done', tab.constructor.name, this.tabs.length);
     return tab;
   }
 
   removeTab(tab: TabState){
+    log.trace('EditorTabManager.removeTab()', tab.constructor.name, tab.id);
     const length = this.tabs.length;
     const tabIndex = this.tabs.indexOf(tab);
+    log.trace('EditorTabManager.removeTab() tabIndex', tabIndex, 'tabs.length', length);
 
     for(let i = 0; i < length; i++){
       if(tab == this.tabs[i]){
         log.debug('removeTab', 'Tab found. Deleting');
         tab.destroy();
         this.tabs.splice(i, 1);
+        log.trace('EditorTabManager.removeTab() spliced at', i);
         break;
       }
     }
     try{
       if(this.currentTab == tab){
+        log.trace('EditorTabManager.removeTab() currentTab was removed');
         let tabIndexToSelect = tabIndex-1;
         if(tabIndexToSelect < 0) tabIndexToSelect = 0;
         if(this.tabs.length){
           log.debug('removeTab', 'Current tab removed. Trying to show sibling child');
           const t = this.tabs[tabIndexToSelect];
           if(t){
-            log.trace(t);
+            log.trace('EditorTabManager.removeTab() showing tab at index', tabIndexToSelect);
             t.show();
           }
+        } else {
+          log.trace('EditorTabManager.removeTab() no tabs left');
         }
       }
     }catch(e){ log.debug(String(e), e); }
 
+    log.trace('EditorTabManager.removeTab() processEventListener onTabRemoved');
     this.processEventListener('onTabRemoved');
-
+    log.info('EditorTabManager.removeTab() done', this.tabs.length);
   }
 
   //Checks the supplied resource ID against all open tabs and returns tab if it is found
   isResourceIdOpenInTab(resID: number){
-
+    log.trace('EditorTabManager.isResourceIdOpenInTab()', resID);
     if(resID){
       for(let i = 0; i < this.tabs.length; i++){
-        if(this.tabs[i].getResourceID() == resID){
+        const tid = this.tabs[i].getResourceID();
+        log.trace('EditorTabManager.isResourceIdOpenInTab() tab', i, 'resID', tid);
+        if(tid == resID){
+          log.debug('EditorTabManager.isResourceIdOpenInTab() found', this.tabs[i].constructor.name);
           return this.tabs[i];
         }
       }
+      log.trace('EditorTabManager.isResourceIdOpenInTab() not found');
+    } else {
+      log.trace('EditorTabManager.isResourceIdOpenInTab() no resID');
     }
-
     return null;
-
   }
 
   getTabByType(tabClass: string): TabState | undefined {
+    log.trace('EditorTabManager.getTabByType()', tabClass);
     for(let i = 0; i < this.tabs.length; i++){
-      if(this.tabs[i].constructor.name === tabClass)
+      const name = this.tabs[i].constructor.name;
+      log.trace('EditorTabManager.getTabByType() tab', i, name);
+      if(name === tabClass){
+        log.debug('EditorTabManager.getTabByType() found', tabClass);
         return this.tabs[i];
+      }
     }
+    log.trace('EditorTabManager.getTabByType() not found');
     return;
   }
 
   tabTypeExists(tab: TabState){
     const tabClass = tab.constructor.name;
+    log.trace('EditorTabManager.tabTypeExists()', tabClass);
     for(let i = 0; i < this.tabs.length; i++){
-      if(this.tabs[i].constructor.name === tabClass)
+      if(this.tabs[i].constructor.name === tabClass){
+        log.trace('EditorTabManager.tabTypeExists() found at', i);
         return true;
+      }
     }
+    log.trace('EditorTabManager.tabTypeExists() false');
     return false;
   }
 
   hideAll(){
+    log.trace('EditorTabManager.hideAll()', this.tabs.length);
     for(let i = 0; i < this.tabs.length; i++){
       this.tabs[i].hide();
+      log.trace('EditorTabManager.hideAll() hid', i);
     }
+    log.debug('EditorTabManager.hideAll() done');
   }
 
   restoreTabState(tabState: TabStoreState) {
+    log.trace('EditorTabManager.restoreTabState()', tabState.type);
     if(tabState.file){
       tabState.file = Object.assign(new EditorFile(), tabState.file);
-      log.trace('file', tabState.file);
+      log.trace('restoreTabState file', tabState.file);
     }
     switch(tabState.type){
       case 'TabQuickStartState':
+        log.trace('EditorTabManager.restoreTabState TabQuickStartState');
         this.addTab(
           new TabQuickStartState({editorFile: tabState.file})
         );
       break;
       case 'TabHelpState':
+        log.trace('EditorTabManager.restoreTabState TabHelpState');
         this.addTab(new TabHelpState());
       break;
       case 'TabImageViewerState':
+        log.trace('EditorTabManager.restoreTabState TabImageViewerState');
         this.addTab(
           new TabImageViewerState({editorFile: tabState.file})
         );
       break;
       case 'TabModelViewerState':
+        log.trace('EditorTabManager.restoreTabState TabModelViewerState');
         this.addTab(
           new TabModelViewerState({editorFile: tabState.file})
         );
       break;
       case 'TabGFFEditorState':
+        log.trace('EditorTabManager.restoreTabState TabGFFEditorState');
         this.addTab(
           new TabGFFEditorState({editorFile: tabState.file})
         );
       break;
       case 'TabModuleEditorState':
+        log.trace('EditorTabManager.restoreTabState TabModuleEditorState');
         this.addTab(
           new TabModuleEditorState({editorFile: tabState.file})
         );
       break;
       case 'TabTwoDAEditorState':
+        log.trace('EditorTabManager.restoreTabState TabTwoDAEditorState');
         this.addTab(
           new TabTwoDAEditorState({editorFile: tabState.file})
         );
       break;
       case 'TabUTCEditorState':
+        log.trace('EditorTabManager.restoreTabState TabUTCEditorState');
         this.addTab(
           new TabUTCEditorState({editorFile: tabState.file})
         );
@@ -335,9 +372,13 @@ export class EditorTabManager extends EventListenerModel {
         );
       break;
       case 'TabDiffToolState':
+        log.trace('EditorTabManager.restoreTabState TabDiffToolState');
         this.addTab(new TabDiffToolState());
       break;
+      default:
+        log.trace('EditorTabManager.restoreTabState unknown type', tabState.type);
     }
+    log.debug('EditorTabManager.restoreTabState done', tabState.type);
   }
 
 }

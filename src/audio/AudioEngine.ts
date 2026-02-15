@@ -1,16 +1,16 @@
 import * as THREE from "three";
 
-import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
-import { AudioEngineMode } from "../enums/audio/AudioEngineMode";
-import { BackgroundMusicMode } from "../enums/audio/BackgroundMusicMode";
-import { BackgroundMusicState } from "../enums/audio/BackgroundMusicState";
-import { IAreaAudioProperties } from "../interface/area/IAreaAudioProperties";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { AmbientAudioEmitter } from "@/audio/AmbientAudioEmitter";
+import type { AudioEmitter } from "@/audio/AudioEmitter";
+import { EAXPresets } from "@/audio/EAXPresets";
+import { ReverbEngine } from "@/audio/ReverbEngine";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { AudioEngineMode } from "@/enums/audio/AudioEngineMode";
+import { BackgroundMusicMode } from "@/enums/audio/BackgroundMusicMode";
+import { BackgroundMusicState } from "@/enums/audio/BackgroundMusicState";
+import { IAreaAudioProperties } from "@/interface/area/IAreaAudioProperties";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { AmbientAudioEmitter } from "./AmbientAudioEmitter";
-import type { AudioEmitter } from "./AudioEmitter";
-import { EAXPresets } from "./EAXPresets";
-import { ReverbEngine } from "./ReverbEngine";
 
 const log = createScopedLogger(LogScope.Game);
 

@@ -1,24 +1,24 @@
 import * as THREE from "three";
 
-import { KeyMapper } from "../controls";
-import { Mouse } from "../controls/Mouse";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { GUIControlType } from "../enums/gui/GUIControlType";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GameState } from "../GameState";
-import { ResourceLoader, TextureLoader } from "../loaders";
-import type { MenuManager } from "../managers/MenuManager";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import { ShaderManager } from "../managers/ShaderManager"
-import { GFFObject } from "../resource/GFFObject";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { KeyMapper } from "@/controls";
+import { Mouse } from "@/controls/Mouse";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GameState } from "@/GameState";
+import { GUIControl } from "@/gui/GUIControl";
+import { GUIControlFactory } from "@/gui/GUIControlFactory";
+import type { GUIProtoItem } from "@/gui/GUIProtoItem";
+import { ResourceLoader, TextureLoader } from "@/loaders";
+import type { MenuManager } from "@/managers/MenuManager";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import { ShaderManager } from "@/managers/ShaderManager"
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { GUIControl } from "./GUIControl";
-import { GUIControlFactory } from "./GUIControlFactory";
-import type { GUIProtoItem } from "./GUIProtoItem";
 
 
 const log = createScopedLogger(LogScope.Game);
@@ -80,7 +80,7 @@ export class GameMenu {
 
   engineMode: EngineMode = EngineMode.GUI;
 
-  eventListenters: Map<string, Function[]> = new Map<string, Function[]>();
+  eventListenters: Map<string, ((...args: (string | number | boolean | object)[]) => void)[]> = new Map();
   context: typeof GameState = GameState;
 
   constructor() {
@@ -459,7 +459,7 @@ export class GameMenu {
 
   }
 
-  addEventListener(name: string, callback: Function) {
+  addEventListener(name: string, callback: (...args: (string | number | boolean | object)[]) => void) {
     if (typeof callback !== 'function') { return; }
 
     name = name.toUpperCase().trim();
@@ -472,7 +472,7 @@ export class GameMenu {
     }
   }
 
-  removeEventListener(name: string, callback: Function) {
+  removeEventListener(name: string, callback: (...args: (string | number | boolean | object)[]) => void) {
     if (typeof callback !== 'function') { return; }
 
     name = name.toUpperCase().trim();

@@ -1,9 +1,7 @@
-/* eslint-disable no-console */
-
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { ADPCMBlock } from "./ADPCMBlock";
+import { ADPCMBlock } from "@/audio/ADPCMBlock";
 
 interface ADPCMHeader {
 	sampleRate: number;
@@ -214,10 +212,10 @@ export class ADPCMDecoder {
 	}
 
 	static stepIdxTable: number[] = [
-			-1, -1, -1, -1,		/* +0 - +3, decrease the step size */
-			 2,  4,  6,  8,     /* +4 - +7, increase the step size */
-			-1, -1, -1, -1,		/* -0 - -3, decrease the step size */
-			 2,  4,  6,  8,
+		-1, -1, -1, -1, /* +0 - +3, decrease the step size */
+		2, 4, 6, 8,     /* +4 - +7, increase the step size */
+		-1, -1, -1, -1, /* -0 - -3, decrease the step size */
+		2, 4, 6, 8,
 	];
 
 	static stepTable: number[] = [

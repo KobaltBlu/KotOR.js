@@ -1,23 +1,22 @@
-/* eslint-disable no-console */
 import * as path from "path";
 
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { CExoLocSubString } from "@/resource/CExoLocSubString";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct, coerceGFFToNumber, coerceGFFToString, coerceGFFToBoolean } from "@/resource/GFFStruct";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { CExoLocString } from "./CExoLocString";
-import { CExoLocSubString } from "./CExoLocSubString";
-import { GFFField } from "./GFFField";
 
 
 const log = createScopedLogger(LogScope.Resource);
-import { GFFStruct, coerceGFFToNumber, coerceGFFToString, coerceGFFToBoolean } from "./GFFStruct";
 
 
 
-export type GFFObjectOnCompleteCallback = (gff: GFFObject) => void;
+export type GFFObjectOnCompleteCallback = (gff: GFFObject, rootNode?: GFFStruct) => void;
 
 /** Parsed struct table entry used during GFF build. */
 export interface GFFStructTableEntry {
@@ -81,16 +80,10 @@ export class GFFObject {
   exportedStructs: GFFStruct[];
   exportedFields: GFFField[];
 
-  constructor(file?: string | Uint8Array, onComplete?: GFFObjectOnCompleteCallback, onError?: Function) {
+  constructor(file?: string | Uint8Array, onComplete?: GFFObjectOnCompleteCallback, onError?: (err?: unknown) => void) {
+    log.trace('GFFObject constructor', typeof file === 'string' ? file?.slice(0, 50) : file instanceof Uint8Array ? file.length : 'none');
 
-    //START EXPORT VARS
-
-    this.BWStructs;
-    this.BWFields;
-    this.BWFieldData;
-    this.BWLabels;
-    this.BWFieldIndicies;
-    this.BWListIndicies;
+    //START EXPORT VARS (BW* writers are assigned in export())
 
     this.FileType = '';
     this.FileVersion = 'V3.2';
@@ -174,11 +167,13 @@ export class GFFObject {
     this.resourceID = resID;
   }
 
-  parse(binary: Uint8Array, onComplete?: Function) {
+  parse(binary: Uint8Array, onComplete?: GFFObjectOnCompleteCallback) {
+    log.trace('GFFObject.parse()', binary?.length);
     this.reader = new BinaryReader(binary);
 
     this.FileType = this.reader.readChars(4);
     this.FileVersion = this.reader.readChars(4);
+    log.trace('GFFObject.parse() FileType', this.FileType);
     this.StructOffset = this.reader.readUInt32();
     this.StructCount = this.reader.readUInt32();
     this.FieldOffset = this.reader.readUInt32();
@@ -430,7 +425,7 @@ export class GFFObject {
     const OriginalPos = this.reader.tell();//Store the original position of the reader object
     this.reader.seek(this.FieldDataOffset + offset);
 
-    const length = this.reader.readInt32();// Get the length of the string
+    const _length = this.reader.readInt32();// Get the length of the string
     data.setRESREF(this.reader.readInt32());
     const stringCount = this.reader.readInt32()
 
@@ -523,7 +518,7 @@ export class GFFObject {
       strt = this.RootNode;
     }
     const fields = strt.getFields();
-    const fieldLength = fields.length;
+    const _fieldLength = fields.length;
     let cField: GFFField;
     for (let i = 0, len = fields.length; i < len; i++) {
       cField = fields[i];
@@ -567,11 +562,11 @@ export class GFFObject {
     }
   }
 
-  save(file: string, onExport?: Function, onError?: Function) {
+  save(file: string, onExport?: () => void, onError?: (err?: unknown) => void) {
     this.export(file, onExport, onError);
   }
 
-  export(file: string, onExport?: Function, onError?: Function) {
+  export(file: string, onExport?: () => void, onError?: (err?: unknown) => void) {
     return new Promise((resolve, reject) => {
       const savePath: string = file ? file : this.file;
 
@@ -787,7 +782,7 @@ export class GFFObject {
           case GFFDataType.BYTE:
             this.BWFields.writeUInt32(field.value as number);
             break;
-          case GFFDataType.CEXOLOCSTRING:
+          case GFFDataType.CEXOLOCSTRING: {
             this.BWFields.writeUInt32(this.BWFieldData.position);
             //Calculate the total length of the CExoLocString structure
             let CExoLocStringTotalSize = 8;//the size of two DWORDS
@@ -808,6 +803,7 @@ export class GFFObject {
             }
 
             break;
+          }
           case GFFDataType.CEXOSTRING: {
             const strVal = field.value as string;
             this.BWFields.writeUInt32(this.BWFieldData.position);

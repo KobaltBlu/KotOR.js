@@ -1,8 +1,8 @@
 import * as fs from "fs";
 
-import { createScopedLogger, LogScope } from "../../utility/Logger";
+import * as KotOR from "@/apps/forge/KotOR";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import * as KotOR from "./KotOR";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -60,18 +60,24 @@ interface ShowOpenDirectoryDialogOptions {
 }
 
 export class ForgeFileSystem {
+  /** Instance marker so this class is not treated as extraneous (static-only). */
+  private readonly _instance = true;
+
   static OpenFile(options: OpenFileOptions = {}): Promise<ForgeFileSystemResponse> {
+    log.trace('ForgeFileSystem.OpenFile()', options.ext?.length ?? 0);
     options = Object.assign({
       multiple: false,
       ext: []
     }, options);
-    return new Promise( (resolve, reject) => {
+    return new Promise( (resolve, _reject) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        log.trace('ForgeFileSystem.OpenFile() ELECTRON dialog');
         dialog.showOpenDialog({
           title: 'Open File',
           filters: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
           properties: ['createDirectory', 'openFile'],
         }).then( (result: { canceled?: boolean; filePaths?: string[] }) => {
+          log.trace('ForgeFileSystem.OpenFile() ELECTRON result', !!result.canceled, result.filePaths?.length ?? 0);
           if(!result.canceled){
             if(result.filePaths?.length){
               resolve({
@@ -87,8 +93,6 @@ export class ForgeFileSystem {
             paths: [],
             multiple: options.multiple,
           });
-          // log.info(result.canceled);
-          // log.info(result.filePaths);
         }).catch( (e: unknown) => {
           log.error(String(e), e);
           resolve({
@@ -98,11 +102,13 @@ export class ForgeFileSystem {
           });
         })
       }else{
+        log.trace('ForgeFileSystem.OpenFile() BROWSER showOpenFilePicker');
         window.showOpenFilePicker({
           types: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
           multiple: options.multiple ?? false,
         }).then( (handles: FileSystemFileHandle | FileSystemFileHandle[]) => {
           const arr = Array.isArray(handles) ? handles : (handles ? [handles] : []);
+          log.trace('ForgeFileSystem.OpenFile() BROWSER handles', arr.length);
           if(arr.length){
             resolve({
               type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
@@ -165,18 +171,21 @@ export class ForgeFileSystem {
   }
 
   static OpenDirectory(options: OpenFileOptions = {}): Promise<ForgeFileSystemResponse> {
+    log.trace('ForgeFileSystem.OpenDirectory()');
     options = Object.assign({
       multiple: false,
       exts: []
     }, options);
     options.multiple = false;
-    return new Promise( (resolve, reject) => {
+    return new Promise( (resolve, _reject) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        log.trace('ForgeFileSystem.OpenDirectory() ELECTRON');
         dialog.showOpenDialog({
           title: 'Open Directory',
           // filters: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
           properties: ['createDirectory', 'openDirectory'],
         }).then( (result: { canceled?: boolean; filePaths?: string[] }) => {
+          log.trace('ForgeFileSystem.OpenDirectory() ELECTRON result', !!result.canceled, result.filePaths?.length ?? 0);
           if(!result.canceled){
             if(result.filePaths?.length){
               resolve({
@@ -192,8 +201,6 @@ export class ForgeFileSystem {
             paths: [],
             multiple: false,
           });
-          // log.info(result.canceled);
-          // log.info(result.filePaths);
         }).catch( (e: unknown) => {
           log.error(String(e), e);
           resolve({
@@ -203,6 +210,7 @@ export class ForgeFileSystem {
           });
         })
       }else{
+        log.trace('ForgeFileSystem.OpenDirectory() BROWSER');
         window.showDirectoryPicker({
           mode: "readwrite" as FileSystemPermissionMode,
         }).then( (handle: FileSystemDirectoryHandle) => {
@@ -242,7 +250,7 @@ export class ForgeFileSystem {
       }
     }else{
       if(ext.length){
-        // return supportedFilePickerTypes.filter( (element: any) => {
+        // return supportedFilePickerTypes.filter( (element: { name: string }) => {
         //   return element.accept['application/*'].some( (extension: string)=> ext.includes(extension.substring(1)) )
         // });
         return [

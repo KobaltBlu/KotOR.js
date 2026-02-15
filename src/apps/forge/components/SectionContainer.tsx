@@ -1,6 +1,6 @@
 import React from "react";
 
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
 

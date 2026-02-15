@@ -1,10 +1,10 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { TalentFeat } from "../../../talents";
+import { TalentFeat } from "@/talents";
 
 /**
  * CharGenQuickOrCustom class.

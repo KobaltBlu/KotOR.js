@@ -1,17 +1,17 @@
 import * as THREE from "three";
 
-import EngineLocation from "../engine/EngineLocation";
-import { PerceptionMask } from "../enums/engine/PerceptionMask";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { CreatureType } from "../enums/nwscript/CreatureType";
-import { NWModuleObjectType } from "../enums/nwscript/NWModuleObjectType";
-import { ReputationType } from "../enums/nwscript/ReputationType";
-import type { Module, ModuleCreature, ModuleObject } from "../module";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import EngineLocation from "@/engine/EngineLocation";
+import { PerceptionMask } from "@/enums/engine/PerceptionMask";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { CreatureType } from "@/enums/nwscript/CreatureType";
+import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
+import { ReputationType } from "@/enums/nwscript/ReputationType";
+import { PartyManager } from "@/managers/PartyManager";
+import type { Module, ModuleCreature, ModuleObject } from "@/module";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { PartyManager } from "./PartyManager";
 
 const log = createScopedLogger(LogScope.Manager);
 

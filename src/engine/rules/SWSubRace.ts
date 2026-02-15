@@ -1,5 +1,5 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
-import type { ITwoDARowData } from "../../resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
 
 export class SWSubRace {
   id: number;

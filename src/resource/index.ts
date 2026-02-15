@@ -3,22 +3,22 @@
  * Re-exports resource classes and format helpers (TPC auto-detect, WAV obfuscation, etc.).
  */
 
-export { BIFObject } from './BIFObject';
-export { CExoLocString } from './CExoLocString';
-export { CExoLocSubString } from './CExoLocSubString';
-export { DLGNode } from './DLGNode';
-export type { DLGObjectScripts } from './DLGObject';
-export { DLGObject } from './DLGObject';
-export { ERFObject } from './ERFObject';
-export { GFFField } from './GFFField';
-export type { GFFFieldValue } from './GFFField';
-export { GFFObject } from './GFFObject';
-export type { GFFFieldTableEntry, GFFStructTableEntry } from './GFFObject';
-export { GFFStruct, coerceGFFToNumber, coerceGFFToString, coerceGFFToBoolean } from './GFFStruct';
-export { KEYObject } from './KEYObject';
-export { LIPObject } from './LIPObject';
-export { LTRObject } from './LTRObject';
-export { LYTObject } from './LYTObject';
+export { BIFObject } from '@/resource/BIFObject';
+export { CExoLocString } from '@/resource/CExoLocString';
+export { CExoLocSubString } from '@/resource/CExoLocSubString';
+export { DLGNode } from '@/resource/DLGNode';
+export type { DLGObjectScripts } from '@/resource/DLGObject';
+export { DLGObject } from '@/resource/DLGObject';
+export { ERFObject } from '@/resource/ERFObject';
+export { GFFField } from '@/resource/GFFField';
+export type { GFFFieldValue } from '@/resource/GFFField';
+export { GFFObject } from '@/resource/GFFObject';
+export type { GFFFieldTableEntry, GFFStructTableEntry } from '@/resource/GFFObject';
+export { GFFStruct, coerceGFFToNumber, coerceGFFToString, coerceGFFToBoolean } from '@/resource/GFFStruct';
+export { KEYObject } from '@/resource/KEYObject';
+export { LIPObject } from '@/resource/LIPObject';
+export { LTRObject } from '@/resource/LTRObject';
+export { LYTObject } from '@/resource/LYTObject';
 export type {
   MDLAABBNode,
   MDLAnimation,
@@ -40,8 +40,8 @@ export type {
   Vector2,
   Vector3,
   Vector4,
-} from './MDLData';
-export { MDL, MDLNode } from './MDLData';
+} from '@/resource/MDLData';
+export { MDL, MDLNode } from '@/resource/MDLData';
 export {
   bytesMDL,
   detectMDLFormat,
@@ -50,9 +50,9 @@ export {
   readMDLFromAsciiBuffer,
   writeMDL,
   writeMDLToAsciiBuffer,
-} from './MDLAuto';
-export type { ReadMDLOptions, WriteMDLOptions } from './MDLAuto';
-export { readMDLFromBinaryBuffer, type MDLBinaryReaderOptions } from './MDLBinaryReader';
+} from '@/resource/MDLAuto';
+export type { ReadMDLOptions, WriteMDLOptions } from '@/resource/MDLAuto';
+export { readMDLFromBinaryBuffer, type MDLBinaryReaderOptions } from '@/resource/MDLBinaryReader';
 export {
   MDLBlendType,
   MDLClassification,
@@ -69,31 +69,31 @@ export {
   MDLTrimeshProps,
   MDLControllerType,
   MDLUpdateType,
-} from './MDLTypes';
-export type { MDLFormat } from './MDLTypes';
-export { readResourceFromBuffer, resourceToBytes } from './ResourceAuto';
-export type { ReadResourceResult, ResourceToBytesFormat } from './ResourceAuto';
+} from '@/resource/MDLTypes';
+export type { MDLFormat } from '@/resource/MDLTypes';
+export { readResourceFromBuffer, resourceToBytes } from '@/resource/ResourceAuto';
+export type { ReadResourceResult, ResourceToBytesFormat } from '@/resource/ResourceAuto';
 export {
   detectResourceTypeFromBuffer,
   getResourceTypeFromExtension,
   resolveResourceType,
-} from './ResourceHeuristics';
-export { ResourceTypeInfo } from './ResourceTypeInfo';
-export { ResourceTypes } from './ResourceTypes';
-export { RIMObject } from './RIMObject';
-export { SSFObject } from './SSFObject';
-export { TGAObject } from './TGAObject';
-export { TLKObject } from './TLKObject';
-export { TLKString } from './TLKString';
-export type { TLKStringDBRow } from './TLKString';
+} from '@/resource/ResourceHeuristics';
+export { ResourceTypeInfo } from '@/resource/ResourceTypeInfo';
+export { ResourceTypes } from '@/resource/ResourceTypes';
+export { RIMObject } from '@/resource/RIMObject';
+export { SSFObject } from '@/resource/SSFObject';
+export { TGAObject } from '@/resource/TGAObject';
+export { TLKObject } from '@/resource/TLKObject';
+export { TLKString } from '@/resource/TLKString';
+export type { TLKStringDBRow } from '@/resource/TLKString';
 export {
   detectTPCFormat,
   isTPCBuffer,
   readTPCFromBuffer,
   TPCObject,
   writeTPCToBuffer,
-} from './TPCObject';
-export type { TPCDetectedFormat, TPCDDSResult, TPCMipmap, WriteTPCFormat } from './TPCObject';
+} from '@/resource/TPCObject';
+export type { TPCDetectedFormat, TPCDDSResult, TPCMipmap, WriteTPCFormat } from '@/resource/TPCObject';
 export {
   detectTwoDAFormat,
   readTwoDAFromBuffer,
@@ -101,10 +101,10 @@ export {
   TwoDAObject,
   TwoDARow,
   writeTwoDAToBuffer,
-} from './TwoDAObject';
-export type { TwoDAFormat, TwoDARowData, WriteTwoDAFormat } from './TwoDAObject';
-export { readTXIFromBuffer, TXI, writeTXIToBuffer } from './TXI';
-export { readVISFromBuffer, VISObject, writeVISToBuffer } from './VISObject';
+} from '@/resource/TwoDAObject';
+export type { TwoDAFormat, TwoDARowData, WriteTwoDAFormat } from '@/resource/TwoDAObject';
+export { readTXIFromBuffer, TXI, writeTXIToBuffer } from '@/resource/TXI';
+export { readVISFromBuffer, VISObject, writeVISToBuffer } from '@/resource/VISObject';
 export {
   DeobfuscationResult,
   detectAudioFormat,
@@ -115,4 +115,4 @@ export {
   VO_HEADER_LEN,
   WAVObject,
   WAVType,
-} from './WAVObject';
+} from '@/resource/WAVObject';

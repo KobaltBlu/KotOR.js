@@ -1,12 +1,10 @@
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-
-import type { NWScript } from "../NWScript";
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_CPDOWNBP, OP_MOVSP, OP_NEG, OP_ACTION, OP_SAVEBP, OP_JSR, OP_RESTOREBP, OP_RETN } from '../NWScriptOPCodes';
-
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import { EdgeType } from './NWScriptEdge';
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import { EdgeType } from '@/nwscript/decompiler/NWScriptEdge';
+import type { NWScript } from "@/nwscript/NWScript";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_CPDOWNBP, OP_MOVSP, OP_NEG, OP_ACTION, OP_SAVEBP, OP_JSR, OP_RESTOREBP, OP_RETN } from '@/nwscript/NWScriptOPCodes';
 
 /**
  * Represents a detected global variable initialization

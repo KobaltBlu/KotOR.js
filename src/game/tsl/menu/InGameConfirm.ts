@@ -1,8 +1,8 @@
-import type { GUIListBox, GUIButton } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import type { GUIListBox, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { InGameConfirm as K1_InGameConfirm } from "../../kotor/KOTOR";
+import { InGameConfirm as K1_InGameConfirm } from "@/game/kotor/KOTOR";
 
 /**
  * InGameConfirm class.

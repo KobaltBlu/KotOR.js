@@ -1,23 +1,23 @@
 import * as path from 'path';
 
-import { IResourceDiskInfo } from "../interface/resource/IResourceDiskInfo";
-import { KEYManager } from "../managers/KEYManager";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { IResourceDiskInfo } from "@/interface/resource/IResourceDiskInfo";
+import { KEYManager } from "@/managers/KEYManager";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
-import { IBIFResource } from "../interface/resource/IBIFResource";
+import { IBIFResource } from "@/interface/resource/IBIFResource";
 
 const BIF_HEADER_SIZE = 20;
 
 /**
  * BIFObject class.
- * 
+ *
  * Class representing a BIF archive file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BIFObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -206,7 +206,7 @@ export class BIFObject {
       await GameFileSystem.read(fd, buffer, 0, buffer.length, res.offset);
       await GameFileSystem.close(fd);
       return buffer;
-    } catch (e) {
+    } catch {
       return new Uint8Array(0);
     }
   }

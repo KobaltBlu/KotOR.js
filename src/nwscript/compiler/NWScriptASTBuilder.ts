@@ -1,8 +1,8 @@
-import { ArgumentNode, BlockNode, BreakNode, CaseNode, CommentNode, ContinueNode, DataTypeNode, DefaultNode, DefineNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionNode, IfNode, IncludeNode, ProgramNode, ReturnNode, StatementNode, StructNode, SwitchNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./ASTTypes";
-import { NWScriptLexer } from "./NWScriptLexer";
-import type { Token } from "./NWScriptToken";
+import { ArgumentNode, BlockNode, BreakNode, CaseNode, CommentNode, ContinueNode, DataTypeNode, DefaultNode, DefineNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionNode, IfNode, IncludeNode, ProgramNode, ReturnNode, StatementNode, StructNode, SwitchNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "@/nwscript/compiler/ASTTypes";
+import { NWScriptLexer } from "@/nwscript/compiler/NWScriptLexer";
+import type { Token } from "@/nwscript/compiler/NWScriptToken";
 
-const NWEngineTypeUnaryTypeOffset = 0x10;
+const _NWEngineTypeUnaryTypeOffset = 0x10;
 const NWCompileDataTypes: Record<string, number> = {
   void: 0x00,
   int: 0x03,
@@ -16,10 +16,10 @@ const NWCompileDataTypes: Record<string, number> = {
 
 // Error shape compatible with NWScriptParser error console consumption
 export class NWScriptASTBuilderError extends Error {
-  type: "parse" = "parse";
-  statement: any;
-  offender: any;
-  constructor(message: string, offender: any = undefined) {
+  type = "parse" as const;
+  statement: Token | ExpressionNode | undefined;
+  offender: Token | ExpressionNode | undefined;
+  constructor(message: string, offender: Token | ExpressionNode | undefined = undefined) {
     super(message);
     this.name = "NWScriptASTBuilderError";
     this.offender = offender;
@@ -245,7 +245,7 @@ export class NWScriptASTBuilder {
     if (this.is("punct", "{")) {
       this.next(); // consume '{'
 
-      const properties: any[] = [];
+      const properties: Array<{ type: "property"; datatype: DataTypeNode; name: string; source: { first_line?: number; first_column?: number } }> = [];
       while (!this.is("punct", "}")) {
         // datatype name ;
         const propType = this.mustParseDataType();
@@ -292,7 +292,7 @@ export class NWScriptASTBuilder {
         const argType = this.mustParseDataType();
 
         const argNameTok = this.expect("name");
-        let defaultValue: any = undefined;
+        let defaultValue: ExpressionNode | undefined = undefined;
 
         if (this.is("op", "=")) {
           this.next();
@@ -824,7 +824,7 @@ export class NWScriptASTBuilder {
     if (this.is("punct", "[")) {
       const openTok = this.tok;
       this.next(); // consume '['
-      const elements: any[] = [];
+      const elements: ExpressionNode[] = [];
       if (!this.is("punct", "]")) {
         while (true) {
           elements.push(this.parseExpression(0));
@@ -861,7 +861,7 @@ export class NWScriptASTBuilder {
     // function call: <name>(args)
     if (this.is("punct", "(")) {
       this.expect("punct", "(");
-      const args: any[] = [];
+      const args: ExpressionNode[] = [];
       if (!this.is("punct", ")")) {
         while (true) {
           args.push(this.parseExpression(0));

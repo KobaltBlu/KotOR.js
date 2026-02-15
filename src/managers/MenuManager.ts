@@ -1,14 +1,14 @@
-import { ActionMenuManager } from "../engine/menu/ActionMenuManager";
-import { EngineMode, GameEngineType } from "../enums/engine";
-import { EngineState } from "../enums/engine/EngineState";
-import * as KOTOR from "../game/kotor/KOTOR";
-import * as TSL from "../game/tsl/TSL";
-import { GameState } from "../GameState";
-import type { GUIControl, GameMenu } from "../gui";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
+import { EngineMode, GameEngineType } from "@/enums/engine";
+import { EngineState } from "@/enums/engine/EngineState";
+import * as KOTOR from "@/game/kotor/KOTOR";
+import * as TSL from "@/game/tsl/TSL";
+import { GameState } from "@/GameState";
+import type { GUIControl, GameMenu } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
-import { PerformanceMonitor } from "../utility/PerformanceMonitor";
+import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 
 /**
  * MenuManager class.

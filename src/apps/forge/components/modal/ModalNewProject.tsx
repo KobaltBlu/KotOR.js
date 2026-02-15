@@ -1,17 +1,14 @@
-import path from "path";
-
-import { createScopedLogger, LogScope } from "@kotor/utility/Logger";
 import React, { useEffect, useState } from "react";
 import { Button, FormControl, FormSelect, InputGroup, Modal } from "react-bootstrap";
 
-import { ProjectType } from "../../enum/ProjectType";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { ForgeState } from "../../states/ForgeState";
-
-import { ForgeFileSystem, ForgeFileSystemResponseType } from "../../ForgeFileSystem";
-import * as KotOR from "../../KotOR";
-import { Project } from "../../Project";
-import { ProjectFileSystem } from "../../ProjectFileSystem";
+import { ProjectType } from "@/apps/forge/enum/ProjectType";
+import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { Project } from "@/apps/forge/Project";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 const log = createScopedLogger(LogScope.Forge);
@@ -72,7 +69,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
     modal.close();
   };
 
-  const handleClose = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClose = (_e: React.MouseEvent<HTMLButtonElement>) => {
     modal.close();
   };
 
@@ -113,7 +110,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
             await ProjectFileSystem.writeFile(areaName + '.vis', vis);
           }
         }
-        const { ifo, are, git } = await project.buildModuleAndArea(moduleName, areaName, gameModule?.rooms || []);
+        const { ifo: _ifo, are: _are, git: _git } = await project.buildModuleAndArea(moduleName, areaName, gameModule?.rooms || []);
       }
       modal.close();
       return;
@@ -142,7 +139,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
             await ProjectFileSystem.writeFile(areaName + '.vis', vis);
           }
         }
-        const { ifo, are, git } = await project.buildModuleAndArea(moduleName, areaName, gameModule?.rooms || []);
+        const { ifo: _ifo2, are: _are2, git: _git2 } = await project.buildModuleAndArea(moduleName, areaName, gameModule?.rooms || []);
       }
       modal.close();
       return;

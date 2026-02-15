@@ -1,21 +1,21 @@
 import React from "react";
 import * as THREE from 'three';
 
-import { TabUTCEditor } from "../../components/tabs/tab-utc-editor/TabUTCEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { ForgeCreature } from "../../module-editor/ForgeCreature";
+import { TabUTCEditor } from "@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
-import { UI3DRenderer } from "../../UI3DRenderer";
-
-
-import { TabState } from "./TabState";
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabUTCEditorState extends TabState {
   tabName: string = `UTC`;
   creature: ForgeCreature = new ForgeCreature();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.creature.blueprint;
   }
@@ -23,6 +23,7 @@ export class TabUTCEditorState extends TabState {
   ui3DRenderer: UI3DRenderer;
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace('TabUTCEditorState constructor entry');
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
@@ -38,27 +39,32 @@ export class TabUTCEditorState extends TabState {
         }
       }
     ];
-
+    log.trace('TabUTCEditorState constructor exit');
   }
 
   public openFile(file?: EditorFile){
+    log.trace('TabUTCEditorState openFile entry', !!file);
     return new Promise<KotOR.GFFObject>( (resolve, reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
+
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
-  
+        log.debug('TabUTCEditorState openFile tabName', this.tabName);
+
         file.readFile().then( (response) => {
           this.creature = new ForgeCreature(response.buffer);
           this.creature.setContext(this.ui3DRenderer);
           this.creature.load();
           this.ui3DRenderer.attachObject(this.creature.container, false);
           this.processEventListener('onEditorFileLoad', [this]);
+          log.trace('TabUTCEditorState openFile loaded');
           resolve(this.blueprint);
         });
+      } else {
+        log.trace('TabUTCEditorState openFile no file');
       }
     });
   }
@@ -126,7 +132,7 @@ export class TabUTCEditorState extends TabState {
     //     }
     //   }
     // }
-    
+
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
@@ -137,7 +143,7 @@ export class TabUTCEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-  
+
   updateFile(){
     this.creature.exportToBlueprint();
   }

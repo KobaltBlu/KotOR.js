@@ -1,8 +1,8 @@
 import * as THREE from "three";
 
-import type { SurfaceMaterial } from "../../engine/SurfaceMaterial";
-import { IAdjacentWalkableFaces } from "../../interface/odyssey";
-import type { OdysseyWalkMesh } from "../../odyssey/OdysseyWalkMesh";
+import type { SurfaceMaterial } from "@/engine/SurfaceMaterial";
+import { IAdjacentWalkableFaces } from "@/interface/odyssey";
+import type { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 
 /**
  * OdysseyFace3 class.

@@ -1,8 +1,7 @@
 import React from "react";
 
-import { ModalLIPBatchProcessor } from "../../components/modal/ModalLIPBatchProcessor";
-
-import { ModalState } from "./ModalState";
+import { ModalLIPBatchProcessor } from "@/apps/forge/components/modal/ModalLIPBatchProcessor";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
 
 export interface ModalLIPBatchProcessorStateOptions {
   title?: string;

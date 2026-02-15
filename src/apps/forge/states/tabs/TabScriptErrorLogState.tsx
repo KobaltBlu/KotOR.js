@@ -1,9 +1,10 @@
 import React from "react";
 
-import { TabScriptErrorLog } from "../../components/tabs/tab-script-error-log/TabScriptErrorLog";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-
 import { TabState } from ".";
+
+import { TabScriptErrorLog } from "@/apps/forge/components/tabs/tab-script-error-log/TabScriptErrorLog";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+
 
 /** Monaco editor marker data (from monaco-editor). */
 export type ScriptErrorMarker = import('monaco-editor').editor.IMarkerData;

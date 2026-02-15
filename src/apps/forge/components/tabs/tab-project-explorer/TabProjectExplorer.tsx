@@ -1,22 +1,20 @@
 import React, { useState } from "react";
 
-import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
-
-import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
+import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
+import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { Project } from "@/apps/forge/Project";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabProjectExplorerState } from "@/apps/forge/states/tabs";
+import { TabReferenceFinderState } from "@/apps/forge/states/tabs/TabReferenceFinderState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
-import { ForgeTreeView } from "../../treeview/ForgeTreeView";
-
-import { EditorFile } from "../../../EditorFile";
-import { FileBrowserNode } from "../../../FileBrowserNode";
-import { FileTypeManager } from "../../../FileTypeManager";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { Project } from "../../../Project";
-import { ForgeState } from "../../../states/ForgeState";
-import { TabProjectExplorerState } from "../../../states/tabs";
-import { TabReferenceFinderState } from "../../../states/tabs/TabReferenceFinderState";
-import "./TabProjectExplorer.scss";
+import "@/apps/forge/components/tabs/tab-project-explorer/TabProjectExplorer.scss";
 
 export interface ResourceListNodeProps {
   node: FileBrowserNode;

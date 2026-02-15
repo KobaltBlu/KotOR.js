@@ -1,14 +1,13 @@
 import * as THREE from "three";
 
-import { CharGenClasses } from "../../CharGenClasses";
-
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUILabel } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { CharGenClasses } from "@/game/CharGenClasses";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUILabel } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

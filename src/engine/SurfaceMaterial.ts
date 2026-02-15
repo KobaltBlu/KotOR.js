@@ -18,11 +18,12 @@ export class SurfaceMaterial {
   lineOfSight: boolean = false;
   grass: boolean = false;
 
-  static From2DA(row: any = {}){
+  static From2DA(row: Record<string, string | number> = {}): SurfaceMaterial {
     const surface = new SurfaceMaterial();
-    if(typeof row.label !== 'undefined') surface.label = row.label == '****' ? '' : row.label;
-    if(typeof row.sound !== 'undefined') surface.sound = row.sound == '****' ? '' : row.sound;
-    if(typeof row.name !== 'undefined') surface.name = row.name == '****' ? '' : row.name;
+    surface.label = '';
+    if (typeof row.label !== 'undefined') surface.label = String(row.label) === '****' ? '' : String(row.label);
+    if (typeof row.sound !== 'undefined') surface.sound = String(row.sound) === '****' ? '' : String(row.sound);
+    if (typeof row.name !== 'undefined') surface.name = String(row.name) === '****' ? '' : String(row.name);
     if(typeof row.walk !== 'undefined') surface.walk = parseInt(row.walk) ? true : false;
     if(typeof row.walkcheck !== 'undefined') surface.walkCheck = parseInt(row.walkcheck) ? true : false;
     if(typeof row.lineofsight !== 'undefined') surface.lineOfSight = parseInt(row.lineofsight) ? true : false;

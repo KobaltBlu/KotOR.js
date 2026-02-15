@@ -1,29 +1,29 @@
-import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
-import { TextSprite3D } from "../engine/TextSprite3D";
-import { ActionType } from "../enums/actions/ActionType";
-import { AttackResult } from "../enums/combat/AttackResult";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { CombatFeatType } from "../enums/combat/CombatFeatType";
-import { DamageType } from "../enums/combat/DamageType";
-import { DiceType } from "../enums/combat/DiceType";
-import { WeaponSize } from "../enums/combat/WeaponSize";
-import { WeaponWield } from "../enums/combat/WeaponWield";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { FeebackMessageColor } from "../enums/engine/FeedbackMessageColor";
-import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleItem, ModuleObject } from "../module";
-import { OdysseyModelAnimation } from "../odyssey";
-import { GFFStruct } from "../resource/GFFStruct";
-import { BitWise } from "../utility/BitWise";
-import { Dice } from "../utility/Dice";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { CombatAttackData } from "@/combat/CombatAttackData";
+import type { CombatRoundAction } from "@/combat/CombatRoundAction";
+import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
+import { TextSprite3D } from "@/engine/TextSprite3D";
+import { ActionType } from "@/enums/actions/ActionType";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
+import { DamageType } from "@/enums/combat/DamageType";
+import { DiceType } from "@/enums/combat/DiceType";
+import { WeaponSize } from "@/enums/combat/WeaponSize";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
+import { TextSprite3DType } from "@/enums/engine/TextSprite3DType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import { OdysseyModelAnimation } from "@/odyssey";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { BitWise } from "@/utility/BitWise";
+import { Dice } from "@/utility/Dice";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { CombatAttackData } from "./CombatAttackData";
-import type { CombatRoundAction } from "./CombatRoundAction";
 
 const log = createScopedLogger(LogScope.Game);
 
@@ -123,10 +123,7 @@ export class CombatRound {
     this.parryActions = 0;
     this.offHandTaken = false;
     this.extraTaken = false;
-    this.attackList = new Array(5);
-    for(let i = 0; i < 5; i++){
-      this.attackList[i] = new CombatAttackData();
-    }
+    this.attackList = Array.from({ length: 5 }, () => new CombatAttackData());
   }
 
   /**

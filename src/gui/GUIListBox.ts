@@ -1,21 +1,21 @@
 import * as THREE from "three";
 
-import { Mouse } from "../controls/Mouse";
-import { GameEngineType } from "../enums/engine";
-import { GUIControlType } from "../enums/gui/GUIControlType";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GameState } from "../GameState";
-import type { IGUIControlListNode } from "../interface/gui/IGUIControlListNode";
-import { TextureLoader } from "../loaders/TextureLoader";
-import type { GFFStruct } from "../resource/GFFStruct";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { Mouse } from "@/controls/Mouse";
+import { GameEngineType } from "@/enums/engine";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GameState } from "@/GameState";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import { GUIControlEvent } from "@/gui/GUIControlEvent";
+import { GUIProtoItem } from "@/gui/GUIProtoItem";
+import type { GUIScrollBar } from "@/gui/GUIScrollBar";
+import type { IGUIControlListNode } from "@/interface/gui/IGUIControlListNode";
+import { TextureLoader } from "@/loaders/TextureLoader";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import { GUIControlEvent } from "./GUIControlEvent";
-import { GUIProtoItem } from "./GUIProtoItem";
-import type { GUIScrollBar } from "./GUIScrollBar";
 
 const log = createScopedLogger(LogScope.Game);
 

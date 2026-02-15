@@ -1,29 +1,26 @@
-import { DEFAULT_EXTRACT_OPTIONS, type ExtractOptions } from "../data/ExtractOptions";
-import { RECENT_FILES_MAX, RECENT_PROJECTS_MAX } from "../data/ForgeConstants";
-import { EditorFile } from "../EditorFile";
-import { EditorFileProtocol } from "../enum/EditorFileProtocol";
-import { FileTypeManager } from "../FileTypeManager";
-import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
-import type { IForgeHostAdapter } from "../ForgeHostAdapter";
-import { pathParse } from "../helpers/PathParse";
-import { TabStoreState } from "../interfaces/TabStoreState";
-import * as KotOR from '../KotOR';
-import { EditorTabManager } from "../managers/EditorTabManager";
-import { Project } from "../Project";
-import { ProjectFileSystem } from "../ProjectFileSystem";
-import { RecentProject } from "../RecentProject";
-
-import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
-
-
-import { LYTLanguageService } from "./LYTLanguageService";
-import { MenuTopState } from "./MenuTopState";
-import { ModalManagerState } from "./modal/ModalManagerState";
-import { NWScriptLanguageService } from "./NWScriptLanguageService";
-import { TabProjectExplorerState } from "./tabs/TabProjectExplorerState";
-import { TabQuickStartState } from "./tabs/TabQuickStartState";
-import { TabResourceExplorerState } from "./tabs/TabResourceExplorerState";
+import { DEFAULT_EXTRACT_OPTIONS, type ExtractOptions } from "@/apps/forge/data/ExtractOptions";
+import { RECENT_PROJECTS_MAX } from "@/apps/forge/data/ForgeConstants";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
+import type { IForgeHostAdapter } from "@/apps/forge/ForgeHostAdapter";
+import { pathParse } from "@/apps/forge/helpers/PathParse";
+import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
+import * as KotOR from '@/apps/forge/KotOR';
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { Project } from "@/apps/forge/Project";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { RecentProject } from "@/apps/forge/RecentProject";
+import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
+import { MenuTopState } from "@/apps/forge/states/MenuTopState";
+import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
+import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
+import { TabProjectExplorerState } from "@/apps/forge/states/tabs/TabProjectExplorerState";
+import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
+import { TabResourceExplorerState } from "@/apps/forge/states/tabs/TabResourceExplorerState";
+import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 
@@ -31,7 +28,14 @@ import { TabResourceExplorerState } from "./tabs/TabResourceExplorerState";
 
 const log = createScopedLogger(LogScope.Forge);
 
+/** Static event listener callback type for ForgeState. */
+type ForgeStateListener = (...args: unknown[]) => void;
+
 export class ForgeState {
+  private constructor() {}
+  /** Prevents treating this class as extraneous (static-only); do not use. */
+  private readonly _instanceMarker?: undefined;
+
   // static MenuTop: MenuTop = new MenuTop()
   static project: Project
   // static loader: LoadingScreen = new KotOR.LoadingScreen();
@@ -59,22 +63,33 @@ export class ForgeState {
   private static __resourceExplorerTab: TabResourceExplorerState | null = null;
 
   static get _defaultModalManager(): ModalManagerState {
-    if (!ForgeState.__defaultModalManager) ForgeState.__defaultModalManager = new ModalManagerState();
+    if (!ForgeState.__defaultModalManager) {
+      log.trace('ForgeState._defaultModalManager lazy init');
+      ForgeState.__defaultModalManager = new ModalManagerState();
+    }
     return ForgeState.__defaultModalManager;
   }
   static get _defaultTabManager(): EditorTabManager {
-    if (!ForgeState.__defaultTabManager) ForgeState.__defaultTabManager = new EditorTabManager();
+    if (!ForgeState.__defaultTabManager) {
+      log.trace('ForgeState._defaultTabManager lazy init');
+      ForgeState.__defaultTabManager = new EditorTabManager();
+    }
     return ForgeState.__defaultTabManager;
   }
 
   static get modalManager(): ModalManagerState {
-    return ForgeState._hostAdapter ? ForgeState._hostAdapter.getModalManager() : ForgeState._defaultModalManager;
+    const out = ForgeState._hostAdapter ? ForgeState._hostAdapter.getModalManager() : ForgeState._defaultModalManager;
+    log.trace('ForgeState.modalManager get', !!ForgeState._hostAdapter);
+    return out;
   }
   static get tabManager(): EditorTabManager {
-    return ForgeState._hostAdapter ? ForgeState._hostAdapter.getTabManager() : ForgeState._defaultTabManager;
+    const out = ForgeState._hostAdapter ? ForgeState._hostAdapter.getTabManager() : ForgeState._defaultTabManager;
+    log.trace('ForgeState.tabManager get', !!ForgeState._hostAdapter);
+    return out;
   }
 
   static setHostAdapter(adapter: IForgeHostAdapter | null): void {
+    log.trace('ForgeState.setHostAdapter()', !!adapter);
     ForgeState._hostAdapter = adapter;
   }
   static getHostAdapter(): IForgeHostAdapter | null {
@@ -82,24 +97,36 @@ export class ForgeState {
   }
 
   static get explorerTabManager(): EditorTabManager {
-    if (!ForgeState.__explorerTabManager) ForgeState.__explorerTabManager = new EditorTabManager();
+    if (!ForgeState.__explorerTabManager) {
+      log.trace('ForgeState.explorerTabManager lazy init');
+      ForgeState.__explorerTabManager = new EditorTabManager();
+    }
     return ForgeState.__explorerTabManager;
   }
   static set explorerTabManager(value: EditorTabManager) {
+    log.trace('ForgeState.explorerTabManager set');
     ForgeState.__explorerTabManager = value;
   }
   static get projectExplorerTab(): TabProjectExplorerState {
-    if (!ForgeState.__projectExplorerTab) ForgeState.__projectExplorerTab = new TabProjectExplorerState();
+    if (!ForgeState.__projectExplorerTab) {
+      log.trace('ForgeState.projectExplorerTab lazy init');
+      ForgeState.__projectExplorerTab = new TabProjectExplorerState();
+    }
     return ForgeState.__projectExplorerTab;
   }
   static set projectExplorerTab(value: TabProjectExplorerState) {
+    log.trace('ForgeState.projectExplorerTab set');
     ForgeState.__projectExplorerTab = value;
   }
   static get resourceExplorerTab(): TabResourceExplorerState {
-    if (!ForgeState.__resourceExplorerTab) ForgeState.__resourceExplorerTab = new TabResourceExplorerState();
+    if (!ForgeState.__resourceExplorerTab) {
+      log.trace('ForgeState.resourceExplorerTab lazy init');
+      ForgeState.__resourceExplorerTab = new TabResourceExplorerState();
+    }
     return ForgeState.__resourceExplorerTab;
   }
   static set resourceExplorerTab(value: TabResourceExplorerState) {
+    log.trace('ForgeState.resourceExplorerTab set');
     ForgeState.__resourceExplorerTab = value;
   }
 
@@ -112,34 +139,36 @@ export class ForgeState {
   static recentFiles: EditorFile[] = [];
   static recentProjects: RecentProject[] = [];
 
-  static #eventListeners: Record<string, ((...args: unknown[]) => void)[]> = {};
+  static #eventListeners: Record<string, ForgeStateListener[]> = {};
 
   static nwscript_nss: Uint8Array;
   static nwScriptParser: NWScriptParser;
 
-  static addEventListener<T>(type: T, cb: Function): void {
-    if(!Array.isArray(this.#eventListeners[type])){
-      this.#eventListeners[type] = [];
+  static addEventListener<T extends string>(type: T, cb: ForgeStateListener): void {
+    log.trace('ForgeState.addEventListener()', type);
+    const key = type as string;
+    if(!Array.isArray(this.#eventListeners[key])){
+      this.#eventListeners[key] = [] as ForgeStateListener[];
     }
-    if(Array.isArray(this.#eventListeners[type])){
-      const ev = this.#eventListeners[type];
-      const index = ev.indexOf(cb);
-      if(index == -1){
-        ev.push(cb);
-      }else{
-        log.warn('Event Listener: Already added', type);
-      }
+    const ev: ForgeStateListener[] = this.#eventListeners[key];
+    const index = ev.indexOf(cb);
+    if(index === -1){
+      ev.push(cb);
+      log.debug('ForgeState.addEventListener() added', type, ev.length);
     }else{
-      log.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Already added', type);
     }
   }
 
-  static removeEventListener<T>(type: T, cb: Function): void {
-    if(Array.isArray(this.#eventListeners[type])){
-      const ev = this.#eventListeners[type];
+  static removeEventListener<T extends string>(type: T, cb: ForgeStateListener): void {
+    log.trace('ForgeState.removeEventListener()', type);
+    const key = type as string;
+    if(Array.isArray(this.#eventListeners[key])){
+      const ev: ForgeStateListener[] = this.#eventListeners[key];
       const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
+        log.debug('ForgeState.removeEventListener() removed', type);
       }else{
         log.warn('Event Listener: Already removed', type);
       }
@@ -148,9 +177,12 @@ export class ForgeState {
     }
   }
 
-  static processEventListener<T>(type: T, args: unknown[] = []): void {
-    if(Array.isArray(this.#eventListeners[type])){
-      const ev = this.#eventListeners[type];
+  static processEventListener<T extends string>(type: T, args: unknown[] = []): void {
+    const key = type as string;
+    log.trace('ForgeState.processEventListener()', key);
+    if(Array.isArray(this.#eventListeners[key])){
+      const ev: ForgeStateListener[] = this.#eventListeners[key];
+      log.trace('ForgeState.processEventListener() listeners', ev.length);
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
@@ -170,6 +202,7 @@ export class ForgeState {
    * Initializes the loading screen
    */
   static loaderInit(backgroundURL: string, logoURL: string): void {
+    log.trace('ForgeState.loaderInit()');
     ForgeState.processEventListener('on-loader-init', [backgroundURL, logoURL]);
   }
 
@@ -177,6 +210,7 @@ export class ForgeState {
    * Shows the loading screen
    */
   static loaderShow(): void {
+    log.trace('ForgeState.loaderShow()');
     ForgeState.processEventListener('on-loader-show', []);
   }
 
@@ -184,6 +218,7 @@ export class ForgeState {
    * Hides the loading screen
    */
   static loaderHide(): void {
+    log.trace('ForgeState.loaderHide()');
     ForgeState.processEventListener('on-loader-hide', []);
   }
 
@@ -191,19 +226,23 @@ export class ForgeState {
    * Sets the loading screen message
    */
   static loaderMessage(message: string): void {
+    log.trace('ForgeState.loaderMessage()', message);
     ForgeState.processEventListener('on-loader-message', [message]);
   }
 
   static async InitializeApp(): Promise<void>{
-    return new Promise( (resolve, reject) => {
-      // Load theme preference
+    log.trace('ForgeState.InitializeApp() entry');
+    return new Promise( (resolve, _reject) => {
       ForgeState.theme = KotOR.ConfigClient.get('Appearance.Theme', 'dark') as string;
+      log.trace('ForgeState.InitializeApp() theme', ForgeState.theme);
       ForgeState.applyTheme(ForgeState.theme);
 
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         KotOR.ApplicationProfile.directory = KotOR.ApplicationProfile.profile.directory;
+        log.trace('ForgeState.InitializeApp() ELECTRON directory');
       }else{
         KotOR.ApplicationProfile.directoryHandle = KotOR.ApplicationProfile.profile.directory_handle;
+        log.trace('ForgeState.InitializeApp() BROWSER directoryHandle');
       }
       log.debug('loading game...');
       ForgeState.loaderInit(KotOR.ApplicationProfile.profile.background, KotOR.ApplicationProfile.profile.logo);
@@ -236,7 +275,7 @@ export class ForgeState {
             if(!proj.handle && proj.name){
               const handleKey = `project_handle_${proj.getIdentifier()}`;
               try {
-                const handle = await get(handleKey);
+                const handle = await get(handleKey) as unknown;
                 if(handle instanceof FileSystemDirectoryHandle){
                   proj.handle = handle;
                 }
@@ -250,13 +289,16 @@ export class ForgeState {
         this.processEventListener('onRecentProjectsUpdated', []);
         this.processEventListener('onRecentFilesUpdated', []);
 
-        const tabStates: TabStoreState[] = KotOR.ConfigClient.get('open_tabs', []);
-        if(tabStates.length){
+        const tabStates = KotOR.ConfigClient.get('open_tabs', []) as TabStoreState[];
+        log.trace('ForgeState.InitializeApp() open_tabs count', Array.isArray(tabStates) ? tabStates.length : 0);
+        if(Array.isArray(tabStates) && tabStates.length > 0){
           for(let i = 0; i < tabStates.length; i++){
             const tabState = tabStates[i];
+            log.trace('ForgeState.InitializeApp() restoreTabState', i);
             this.tabManager.restoreTabState(tabState);
           }
         }else{
+          log.trace('ForgeState.InitializeApp() add TabQuickStartState');
           ForgeState.tabManager.addTab(new TabQuickStartState());
         }
 
@@ -272,46 +314,54 @@ export class ForgeState {
         ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
         ForgeState.resourceExplorerTab.show();
 
-        TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
+        TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (_resourceList) => {
+          log.trace('ForgeState.InitializeApp() resource list done');
           ForgeState.loaderHide();
-          // ScriptEditorTab.InitNWScriptLanguage();
           resolve();
         });
       });
     });
+    log.trace('ForgeState.InitializeApp() promise returned');
   }
 
-  static async VerifyGameDirectory(onVerified: Function, onError: Function){
+  static async VerifyGameDirectory(onVerified: () => void, onError: (err?: unknown) => void){
+    log.trace('ForgeState.VerifyGameDirectory() entry');
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
       // let validated = await KotOR.GameFileSystem.validateDirectory(KotOR.ApplicationProfile.rootDirectory);
       if(await KotOR.GameFileSystem.exists('chitin.key')){
+        log.trace('ForgeState.VerifyGameDirectory() chitin.key exists');
         onVerified();
       }else{
+        log.trace('ForgeState.VerifyGameDirectory() chitin.key missing, locate dialog');
         try{
           const dir = await (window as Window & { dialog: { locateDirectoryDialog: () => Promise<string | null> } }).dialog.locateDirectoryDialog();
           if(dir){
             KotOR.ApplicationProfile.profile.directory = dir;
+            log.debug('ForgeState.VerifyGameDirectory() directory set');
             onVerified();
           }else{
             log.error('no directory');
           }
-
         }catch(e: unknown){
           log.error(String(e), e);
         }
       }
     }else{
       if(KotOR.ApplicationProfile.directoryHandle){
+        log.trace('ForgeState.VerifyGameDirectory() validate handle');
         const validated = await KotOR.GameFileSystem.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
         if(validated){
           onVerified();
         }else{
+          log.debug('ForgeState.VerifyGameDirectory() handle invalid');
           onError();
         }
       }else{
+        log.trace('ForgeState.VerifyGameDirectory() no handle');
         onError();
       }
     }
+    log.trace('ForgeState.VerifyGameDirectory() exit');
   }
 
   static InitManagers(){
@@ -322,7 +372,7 @@ export class ForgeState {
   }
 
   static initNWScriptParser(){
-    return new Promise<void>( (resolve, reject) => {
+    return new Promise<void>( (resolve, _reject) => {
       KotOR.ResourceLoader.loadResource( KotOR.ResourceTypes.nss, 'nwscript').then(
         (nss: Uint8Array) => {
           this.nwscript_nss = nss;
@@ -337,54 +387,61 @@ export class ForgeState {
   }
 
   static getRecentProjects(): RecentProject[] {
+    log.trace('ForgeState.getRecentProjects() entry');
     if(Array.isArray(KotOR.ConfigClient.options.recent_projects)){
-      // Convert stored objects to RecentProject instances
       KotOR.ConfigClient.options.recent_projects = KotOR.ConfigClient.options.recent_projects
         .filter((proj: Record<string, unknown> & { path?: string; handle?: FileSystemDirectoryHandle; name?: string }) => proj && (proj.path || proj.handle || proj.name))
         .map((proj: Record<string, unknown> & { path?: string; handle?: FileSystemDirectoryHandle; name?: string }) => RecentProject.From(proj))
         .slice(0, 10);
+      log.debug('ForgeState.getRecentProjects() count', KotOR.ConfigClient.options.recent_projects.length);
     }else{
       KotOR.ConfigClient.options.recent_projects = [];
+      log.trace('ForgeState.getRecentProjects() init empty');
     }
     return KotOR.ConfigClient.options.recent_projects as RecentProject[];
   }
 
   static getRecentFiles(): EditorFile[] {
+    log.trace('ForgeState.getRecentFiles() entry');
     if(Array.isArray(KotOR.ConfigClient.options.recent_files)){
       KotOR.ConfigClient.options.recent_files = KotOR.ConfigClient.options.recent_files.map( (file: Partial<EditorFile> & Record<string, unknown>) => {
         return Object.assign(new EditorFile(), file);
       });
+      log.debug('ForgeState.getRecentFiles() count', KotOR.ConfigClient.options.recent_files.length);
     }else{
       KotOR.ConfigClient.options.recent_files = [];
+      log.trace('ForgeState.getRecentFiles() init empty');
     }
     return KotOR.ConfigClient.options.recent_files as EditorFile[];
   }
 
   static addRecentFile(file: EditorFile){
+    log.trace('ForgeState.addRecentFile()');
     try{
       if (ForgeState._hostAdapter?.addRecentFile) {
+        log.trace('ForgeState.addRecentFile() delegate to host');
         ForgeState._hostAdapter.addRecentFile(file);
         return;
       }
-      //Update the opened files list
       const file_path = file.getPath();
+      log.trace('ForgeState.addRecentFile() path', file_path ?? '(empty)');
       if(file_path){
         this.removeRecentFile(file);
 
-        //Append this file to the beginning of the list
         ForgeState.recentFiles.unshift(file);
         const maxRecentFiles = 20;
         if (ForgeState.recentFiles.length > maxRecentFiles) {
           ForgeState.recentFiles = ForgeState.recentFiles.slice(0, maxRecentFiles);
+          log.trace('ForgeState.addRecentFile() trimmed to', maxRecentFiles);
         }
 
         this.saveState();
 
-        //Notify the project we have opened a new file
         if(ForgeState.project instanceof Project){
           ForgeState.project.addToOpenFileList(file);
         }
         this.processEventListener('onRecentFilesUpdated', [file]);
+        log.debug('ForgeState.addRecentFile() done', ForgeState.recentFiles.length);
       }
     }catch(e){
       log.error(String(e), e);
@@ -392,62 +449,70 @@ export class ForgeState {
   }
 
   static removeRecentFile(file: EditorFile){
-    if(!file) return;
+    log.trace('ForgeState.removeRecentFile() entry');
+    if(!file) {
+      log.trace('ForgeState.removeRecentFile() no file, return');
+      return;
+    }
     const file_path = file.getPath();
+    log.debug('ForgeState.removeRecentFile() path', file_path ?? '(empty)');
     if(file_path){
-      const index = ForgeState.recentFiles.findIndex( (file: EditorFile) => {
-        return file.getPath() == file_path;
-      })
+      const index = ForgeState.recentFiles.findIndex( (f: EditorFile) => f.getPath() === file_path);
+      log.trace('ForgeState.removeRecentFile() index', index);
       if (index >= 0) {
         ForgeState.recentFiles.splice(index, 1);
+        log.debug('ForgeState.removeRecentFile() removed', index);
       }
     }
     this.processEventListener('onRecentFilesUpdated', [file]);
     this.saveState();
+    log.trace('ForgeState.removeRecentFile() exit');
   }
 
   static async addRecentProject(projectPathOrHandle: string | FileSystemDirectoryHandle, handle?: FileSystemDirectoryHandle){
+    log.trace('ForgeState.addRecentProject()');
     try{
       let project: RecentProject | null = null;
 
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-        // For Electron, projectPathOrHandle is a string path
         if(typeof projectPathOrHandle === 'string' && projectPathOrHandle){
           const normalizedPath = projectPathOrHandle.replace(/\\/g, '/');
           project = new RecentProject({ path: normalizedPath });
+          log.trace('ForgeState.addRecentProject() ELECTRON path', normalizedPath);
         }
       } else {
-        // For Browser, projectPathOrHandle could be a handle or a string name
         if(projectPathOrHandle instanceof FileSystemDirectoryHandle){
           project = new RecentProject({
             handle: projectPathOrHandle,
             name: projectPathOrHandle.name
           });
+          log.trace('ForgeState.addRecentProject() BROWSER handle', projectPathOrHandle.name);
         } else if(handle instanceof FileSystemDirectoryHandle){
           project = new RecentProject({
             handle: handle,
             name: typeof projectPathOrHandle === 'string' ? projectPathOrHandle : handle.name
           });
+          log.trace('ForgeState.addRecentProject() BROWSER handle (alt)');
         } else if(typeof projectPathOrHandle === 'string'){
-          // Fallback: just store the name if handle is not available
           project = new RecentProject({ name: projectPathOrHandle });
+          log.trace('ForgeState.addRecentProject() BROWSER name only');
         }
       }
 
-      if(!project) return;
+      if(!project) {
+        log.trace('ForgeState.addRecentProject() no project, return');
+        return;
+      }
 
-      // Remove if already exists (by identifier)
       await this.removeRecentProject(project);
 
-      // Add to beginning of list
       ForgeState.recentProjects.unshift(project);
 
       if (ForgeState.recentProjects.length > RECENT_PROJECTS_MAX) {
         ForgeState.recentProjects = ForgeState.recentProjects.slice(0, RECENT_PROJECTS_MAX);
+        log.trace('ForgeState.addRecentProject() trimmed to', RECENT_PROJECTS_MAX);
       }
 
-      // Sync with ConfigClient (handles are stored in IndexedDB via idb-keyval)
-      // We serialize the project data, but handles are stored separately
       const { set } = await import('idb-keyval');
       KotOR.ConfigClient.options.recent_projects = ForgeState.recentProjects.map((proj: RecentProject) => {
         const serialized: { path?: string; name?: string; handleKey?: string } = {
@@ -468,13 +533,18 @@ export class ForgeState {
 
       this.saveState();
       this.processEventListener('onRecentProjectsUpdated', [project]);
+      log.debug('ForgeState.addRecentProject() done', ForgeState.recentProjects.length);
     }catch(e){
       log.error('Error adding recent project:', e);
     }
   }
 
   static async removeRecentProject(projectOrIdentifier: RecentProject | string){
-    if(!projectOrIdentifier) return;
+    log.trace('ForgeState.removeRecentProject() entry');
+    if(!projectOrIdentifier) {
+      log.trace('ForgeState.removeRecentProject() no arg, return');
+      return;
+    }
 
     let index = -1;
     if(projectOrIdentifier instanceof RecentProject){
@@ -491,9 +561,10 @@ export class ForgeState {
       });
     }
 
+    log.debug('ForgeState.removeRecentProject() index', index);
     if(index >= 0){
       const removed = ForgeState.recentProjects[index];
-      // Clean up stored handle if it exists
+      log.trace('ForgeState.removeRecentProject() removing', index);
       if(removed.handle){
         const handleKey = `project_handle_${removed.getIdentifier()}`;
         const { del } = await import('idb-keyval');
@@ -519,11 +590,14 @@ export class ForgeState {
       });
       this.saveState();
       this.processEventListener('onRecentProjectsUpdated', []);
+      log.trace('ForgeState.removeRecentProject() done');
     }
+    log.trace('ForgeState.removeRecentProject() exit');
   }
 
   /** Clear all recent projects from the list. */
   static async clearRecentProjects(): Promise<void> {
+    log.trace('ForgeState.clearRecentProjects() entry');
     for (const proj of [...ForgeState.recentProjects]) {
       if (proj.handle) {
         const handleKey = `project_handle_${proj.getIdentifier()}`;
@@ -535,11 +609,13 @@ export class ForgeState {
     KotOR.ConfigClient.options.recent_projects = [];
     this.saveState();
     this.processEventListener('onRecentProjectsUpdated', []);
+    log.trace('ForgeState.clearRecentProjects() exit');
   }
 
   static saveState(){
+    log.trace('ForgeState.saveState()');
     try{
-      KotOR.ConfigClient.save(null as unknown, true); //Save the configuration silently
+      KotOR.ConfigClient.save(null as unknown, true);
     }catch(e){
       log.error(String(e), e);
     }
@@ -550,9 +626,13 @@ export class ForgeState {
    * If any open tab has unsaved changes, prompts the user to confirm before switching.
    */
   static switchGame(profile: { key?: string } = {}){
+    log.trace('ForgeState.switchGame()', profile?.key);
     if (!profile?.key) return;
     const currentKey = KotOR.ApplicationProfile.profile?.key;
-    if (profile.key === currentKey) return;
+    if (profile.key === currentKey) {
+      log.trace('ForgeState.switchGame() same key, return');
+      return;
+    }
 
     const tabs = ForgeState.tabManager?.tabs ?? [];
     const hasUnsaved = tabs.some((t: { file?: EditorFile }) => t.file?.unsaved_changes);
@@ -565,14 +645,17 @@ export class ForgeState {
 
     try {
       KotOR.ConfigClient.save(null as unknown, true);
+      log.trace('ForgeState.switchGame() config saved');
     } catch (e) {
       log.error(String(e), e);
     }
+    log.info('ForgeState.switchGame() reloading', profile.key);
     window.location.search = `?key=${profile.key}`;
     window.location.reload();
   }
 
   static openFile(){
+    log.trace('ForgeState.openFile()');
     ForgeFileSystem.OpenFile().then( async (response: ForgeFileSystemResponse) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         if(Array.isArray(response.paths)){
@@ -648,6 +731,7 @@ export class ForgeState {
   }
 
   static saveOpenTabsState(){
+    log.trace('ForgeState.saveOpenTabsState()');
     return;
     try{
       const states: TabStoreState[] = ForgeState.tabManager.tabs.map( (state) => {
@@ -667,24 +751,24 @@ export class ForgeState {
    * Themes: 'dark' (default), 'light', 'auto' (system preference)
    */
   static applyTheme(theme: string) {
+    log.trace('ForgeState.applyTheme()', theme);
     ForgeState.theme = theme;
 
     let effectiveTheme = theme;
     if(theme === 'auto'){
-      // Detect system preference
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       effectiveTheme = prefersDark ? 'dark' : 'light';
+      log.debug('ForgeState.applyTheme() auto effective', effectiveTheme);
     }
 
     const appContainer = document.getElementById('app');
     if(appContainer){
       appContainer.setAttribute('data-theme', effectiveTheme);
+      log.trace('ForgeState.applyTheme() app container set');
     }
-
-    // Also set on body for global styles
     document.body.setAttribute('data-theme', effectiveTheme);
-
     ForgeState.processEventListener('onThemeChange', [effectiveTheme]);
+    log.trace('ForgeState.applyTheme() done');
   }
 
 }

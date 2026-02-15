@@ -1,11 +1,13 @@
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "../../../gui";
-import { GameMenu } from "../../../gui/GameMenu";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { GUIMusicItem } from "@/game/tsl/gui/GUIMusicItem";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "@/gui";
+import { GameMenu } from "@/gui/GameMenu";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
 
 const log = createScopedLogger(LogScope.Game);
-import { GUIMusicItem } from "../gui/GUIMusicItem";
 
 /**
  * MainMusic class.
@@ -33,7 +35,7 @@ export class MainMusic extends GameMenu {
   declare LB_MUSIC: GUIListBox;
   declare SLI_VOLUME: GUISlider;
 
-  selected: any;
+  selected: ITwoDARowData | undefined;
   selectedIndex = 0;
   musicVolume = 0.5;
 
@@ -43,7 +45,7 @@ export class MainMusic extends GameMenu {
   bgm: AudioBufferSourceNode;
   loop: boolean = false;
 
-  musicList: any[] = [];
+  musicList: ITwoDARowData[] = [];
 
   constructor(){
     super();
@@ -53,12 +55,16 @@ export class MainMusic extends GameMenu {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
+    log.trace('menuControlInitializer entered', { skipInit });
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if(skipInit) { log.trace('menuControlInitializer skipInit, returning'); return; }
     return new Promise<void>((resolve, reject) => {
+      log.debug('MainMusic initializing LB_MUSIC and audio');
       this.LB_MUSIC.GUIProtoItemClass = GUIMusicItem;
       
-      this.audioCtx = new (global.AudioContext || (global as any).webkitAudioContext)();
+      const AudioContextCtor = (typeof globalThis !== 'undefined' && (globalThis as { AudioContext?: typeof AudioContext }).AudioContext) ||
+        (typeof globalThis !== 'undefined' && (globalThis as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
+      this.audioCtx = new (AudioContextCtor || AudioContext)();
       this.musicGain = this.audioCtx.createGain();
       this.musicGain.gain.value = this.musicVolume;
       this.musicGain.connect(this.audioCtx.destination);
@@ -72,20 +78,22 @@ export class MainMusic extends GameMenu {
 
       this.LBL_TRACKNUM.setText(`${0} / ${table.RowCount}`);
 
-      this.LB_MUSIC.onSelected = (node: any) => {
-        log.info(node);
+      this.LB_MUSIC.onSelected = (node: ITwoDARowData) => {
+        log.info('Music track selected', node.__rowlabel);
         this.selected = node;
-        this.LBL_TRACKNAME.setText(GameState.TLKManager.GetStringById(node.strrefname).Value);
+        const strref = typeof node.strrefname === 'number' ? node.strrefname : parseInt(String(node.strrefname), 10);
+        this.LBL_TRACKNAME.setText(GameState.TLKManager.GetStringById(strref).Value);
         this.LBL_TRACKNUM.setText(`${node.__rowlabel} / ${table.RowCount}`);
         this.selectedIndex = this.musicList.indexOf(node);
       }
 
       this.BTN_PLAY.addEventListener('click', (e) => {
         e.stopPropagation();
-        AudioLoader.LoadMusic(this.selected.filename).then((data: Uint8Array) => {
+        const filename = this.selected ? String(this.selected.filename ?? '') : '';
+        AudioLoader.LoadMusic(filename).then((data: Uint8Array) => {
           this.setBackgroundMusic(data.buffer as ArrayBuffer);
         }, () => {
-          log.error('Background Music not found', this.selected.filename);
+          log.error('Background Music not found', filename);
         });
       });
 
@@ -100,7 +108,7 @@ export class MainMusic extends GameMenu {
         if(this.selectedIndex >= table.RowCount){
           this.selectedIndex = 0;
         }
-        log.info(this.selectedIndex);
+        log.info('Music track index', String(this.selectedIndex));
         this.LB_MUSIC.selectItem(this.LB_MUSIC.listItems[this.selectedIndex]);
       });
 
@@ -120,21 +128,25 @@ export class MainMusic extends GameMenu {
         value = Math.min(1, Math.max(0, value));
         this.musicVolume = value;
         this.musicGain.gain.value = value;
+        log.debug('MainMusic volume changed', value);
       }
 
+      log.trace('MainMusic menuControlInitializer completed');
       resolve();
     });
   }
 
   setBackgroundMusic ( data: ArrayBuffer ) {
+    log.trace('setBackgroundMusic decoding');
     this.audioCtx.decodeAudioData( data, ( buffer ) => {
       this.bgmBuffer = buffer;
+      log.debug('setBackgroundMusic decode complete');
       this.startBackgroundMusic();
     });
   }
 
   startBackgroundMusic(buffer?: AudioBuffer){
-
+    log.trace('startBackgroundMusic', { hasBuffer: !!buffer, hasBgmBuffer: !!this.bgmBuffer });
     if(buffer == undefined)
       buffer = this.bgmBuffer;
 
@@ -156,14 +168,18 @@ export class MainMusic extends GameMenu {
   }
 
   stopBackgroundMusic(){
+    log.trace('MainMusic.stopBackgroundMusic');
     try{
       if (this.bgm != null) {
         this.bgm.onended = undefined;
         this.bgm.disconnect();
         this.bgm.stop(0);
         this.bgm = null;
+        log.debug('stopBackgroundMusic stopped');
       }
-    }catch(e){}
+    }catch(e){
+      log.warn('stopBackgroundMusic error', e);
+    }
   }
   
 }

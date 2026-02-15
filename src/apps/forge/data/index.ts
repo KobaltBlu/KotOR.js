@@ -1,6 +1,6 @@
 /**
  * Forge data – reference search config, 2DA registry, extract options, wiki mapping, help.
- * Re-exports for convenient imports (e.g. import { getAllSearchableFileTypes, TwoDARegistry } from "../data").
+ * Re-exports for convenient imports (e.g. import { getAllSearchableFileTypes, TwoDARegistry } from "@/apps/forge/data").
  */
 
 export {
@@ -22,19 +22,19 @@ export {
   getConversationFieldsForType,
   getItemListFieldsForType,
   getAllSearchableFileTypes,
-} from "./ReferenceSearchConfig";
+} from "@/apps/forge/data/ReferenceSearchConfig";
 
 export {
   TwoDARegistry,
   TWODA_CANONICAL_RESNAMES,
   getTwoDAResname,
   type TwoDARegistryKey,
-} from "./TwoDARegistry";
+} from "@/apps/forge/data/TwoDARegistry";
 
 export {
   DEFAULT_EXTRACT_OPTIONS,
   type ExtractOptions,
-} from "./ExtractOptions";
+} from "@/apps/forge/data/ExtractOptions";
 
 export {
   WIKI_BASE_URL,
@@ -42,7 +42,7 @@ export {
   EDITOR_WIKI_MAP_BY_EXTENSION,
   getWikiDocForTab,
   getWikiDocUrlForTab,
-} from "./EditorWikiMapping";
+} from "@/apps/forge/data/EditorWikiMapping";
 
 export {
   HELP_INTRODUCTION,
@@ -52,24 +52,24 @@ export {
   getHelpDocUrl,
   type HelpDocument,
   type HelpFolder,
-} from "./HelpContents";
+} from "@/apps/forge/data/HelpContents";
 
-export { LIPShapeLabels } from "./LIPShapeLabels";
-export { RECENT_FILES_MAX, RECENT_PROJECTS_MAX } from "./ForgeConstants";
+export { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
+export { RECENT_FILES_MAX, RECENT_PROJECTS_MAX } from "@/apps/forge/data/ForgeConstants";
 
 export {
   RESOURCE_ICON_BY_EXTENSION,
   RESOURCE_ICON_PATH_PREFIX,
   getResourceIconId,
   getResourceIconPath,
-} from "./ForgeResourceIcons";
+} from "@/apps/forge/data/ForgeResourceIcons";
 
-export * from "./IndoorBuilderConstants";
-export * from "./IndoorTypes";
-export * from "./IndoorKit";
-export * from "./IndoorKitLoader";
-export * from "./IndoorKitPreview";
-export * from "./IndoorWalkmesh";
-export * from "./IndoorMap";
-export * from "./IndoorMapTools";
-export * from "./IndoorCli";
+export * from "@/apps/forge/data/IndoorBuilderConstants";
+export * from "@/apps/forge/data/IndoorTypes";
+export * from "@/apps/forge/data/IndoorKit";
+export * from "@/apps/forge/data/IndoorKitLoader";
+export * from "@/apps/forge/data/IndoorKitPreview";
+export * from "@/apps/forge/data/IndoorWalkmesh";
+export * from "@/apps/forge/data/IndoorMap";
+export * from "@/apps/forge/data/IndoorMapTools";
+export * from "@/apps/forge/data/IndoorCli";

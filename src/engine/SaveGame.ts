@@ -1,24 +1,24 @@
 import { exists } from "fs";
 import * as path from "path";
 
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import { ResourceTypes } from "../KotOR";
-import { TextureLoader } from "../loaders";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import { ERFObject } from "../resource/ERFObject";
-import { GFFField } from "../resource/GFFField";
-import type { GFFFieldValue } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-import { Utility } from "../utility/Utility";
+import { CurrentGame } from "@/engine/CurrentGame";
+import EngineLocation from "@/engine/EngineLocation";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { ResourceTypes } from "@/KotOR";
+import { TextureLoader } from "@/loaders";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { ERFObject } from "@/resource/ERFObject";
+import { GFFField } from "@/resource/GFFField";
+import type { GFFFieldValue } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
 
-import { CurrentGame } from "./CurrentGame";
-import EngineLocation from "./EngineLocation";
 
 
 const log = createScopedLogger(LogScope.Game);
@@ -787,7 +787,7 @@ export class SaveGame {
     let name = undefined;
 
     const key = 'PORTRAIT' + nth;
-    const portrait = (this as SaveGame & Record<string, string | undefined>)[key];
+    const portrait = (this as unknown as SaveGame & Record<string, string | undefined>)[key];
     if (typeof portrait === 'string') {
       name = portrait;
     }

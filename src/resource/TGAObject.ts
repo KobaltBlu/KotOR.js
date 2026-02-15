@@ -1,20 +1,21 @@
-import { ITGAHeader } from "../interface/graphics/tga/ITGAHeader";
-import { ITGAObjectOptions } from "../interface/graphics/tga/ITGAObjectOptions";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+/* eslint-disable import/order */
+import { ITGAHeader } from "@/interface/graphics/tga/ITGAHeader";
+import { ITGAObjectOptions } from "@/interface/graphics/tga/ITGAObjectOptions";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
-import type { TXI } from "./TXI";
+import type { TXI } from "@/resource/TXI";
 
 /**
  * TGAObject class.
- * 
+ *
  * Class representing a TGA texture file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TGAObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -77,7 +78,7 @@ export class TGAObject {
       Header.ColorMapIndex = reader.readByte();
 
       if(Header.hasColorMap){
-
+        // Color map present; layout read from header fields above.
       }
 
       Header.offsetX = reader.readUInt32();
@@ -96,11 +97,11 @@ export class TGAObject {
 
   }
 
-  getPixelData( onLoad?: Function ){
+  getPixelData( onLoad?: (pixels: Uint8Array) => void ){
 
     const reader = new BinaryReader(this.file);
-    log.info('TGAObject', this.header)
-  	reader.seek(this.header.pixelDataOffset);
+    log.info('TGAObject', this.header);
+    reader.seek(this.header.pixelDataOffset);
 
     //32bpp RGBA
     if(this.header.bitsPerPixel == 32){
@@ -147,7 +148,7 @@ export class TGAObject {
     return true;
   }
 
-  static FlipY(pixelData: Uint8Array, width = 1, height = 1){
+  static FlipY(pixelData: Uint8Array, width = 1, _height = 1){
     let offset = 0;
     const stride = width * 4;
 

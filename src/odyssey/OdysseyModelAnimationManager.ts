@@ -1,16 +1,16 @@
 import * as THREE from "three";
 
-import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { OdysseyController } from "./controllers/OdysseyController";
-import type { OdysseyModelAnimation } from "./OdysseyModelAnimation";
-import type { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
 
 const log = createScopedLogger(LogScope.Loader);
-import { OdysseyModelAnimationManagerState } from "../enums/odyssey/OdysseyModelAnimationManagerState";
+import { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyModelAnimationManagerState";
 
 /**
  * OdysseyModelAnimationManager class.

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import type * as KotOR from '../KotOR';
+import type * as KotOR from '@/apps/forge/KotOR';
 
 export interface TwoDAEditorRowProps {
   selected: boolean;

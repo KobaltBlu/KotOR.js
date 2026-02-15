@@ -1,9 +1,9 @@
-import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
-import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { AudioEngine } from "./AudioEngine";
-import { AudioLoader } from "./AudioLoader";
 
 const log = createScopedLogger(LogScope.Game);
 

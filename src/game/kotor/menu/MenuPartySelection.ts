@@ -1,13 +1,13 @@
-import { GameState } from "../../../GameState";
-import { GameMenu, GUIControl } from "../../../gui";
-import type { GUILabel, GUIButton, GUICheckBox } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { GameState } from "@/GameState";
+import { GameMenu, GUIControl } from "@/gui";
+import type { GUILabel, GUIButton, GUICheckBox } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 const TLK_REMOVE = 38456;
 const TLK_ADD = 38455;

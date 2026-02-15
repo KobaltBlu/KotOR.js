@@ -1,14 +1,12 @@
 import React from "react";
 
-import { ModalFileResults } from "../../components/modal/ModalFileResults";
-import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
-import { ReferenceSearchResult } from "../../helpers/ReferenceFinder";
-
-import type { EditorFile } from "../../EditorFile";
-import type { EditorFileOptions } from "../../interfaces/EditorFileOptions";
-import { ResourceTypes } from "../../../../resource/ResourceTypes";
-
-import { ModalState } from "./ModalState";
+import { ModalFileResults } from "@/apps/forge/components/modal/ModalFileResults";
+import type { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { ReferenceSearchResult } from "@/apps/forge/helpers/ReferenceFinder";
+import type { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ResourceTypes } from "@/resource/ResourceTypes";
 
 export interface ModalFileResultsStateOptions {
   results: ReferenceSearchResult[];
@@ -80,15 +78,18 @@ export class ModalFileResultsState extends ModalState {
     };
   }
 
-  createEditorFile(result: ReferenceSearchResult): any {
-    const { EditorFile } = require("../../EditorFile");
-    return new EditorFile(this.getEditorFileOptions(result));
+  createEditorFile(result: ReferenceSearchResult): EditorFile {
+    // Lazy require to avoid circular deps (EditorFile → Project → ForgeState → EditorFile)
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires -- circular dep break
+    const EditorFileCtor = (require("@/apps/forge/EditorFile") as { EditorFile: new (opts: EditorFileOptions) => EditorFile }).EditorFile;
+    return new EditorFileCtor(this.getEditorFileOptions(result));
   }
 
   openResult(result: ReferenceSearchResult): void {
     const editorFile = this.createEditorFile(result);
-    // Lazy import to avoid pulling UI/tab dependencies into test compilation
-    const { FileTypeManager } = require("../../FileTypeManager");
+    // Lazy require to avoid pulling UI/tab dependencies into test compilation
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires -- lazy load
+    const { FileTypeManager } = require("@/apps/forge/FileTypeManager") as { FileTypeManager: { onOpenResource: (f: EditorFile) => void } };
     FileTypeManager.onOpenResource(editorFile);
   }
 }

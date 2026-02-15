@@ -1,12 +1,12 @@
-import type { SWCreatureAppearance } from "../engine/rules/SWCreatureAppearance";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { AppearanceManager } from "../managers/AppearanceManager";
-import type { ModuleCreature } from "../module";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { GameEffect } from "@/effects/GameEffect";
+import type { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { AppearanceManager } from "@/managers/AppearanceManager";
+import type { ModuleCreature } from "@/module";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { GameEffect } from "./GameEffect";
 
 const log = createScopedLogger(LogScope.Game);
 

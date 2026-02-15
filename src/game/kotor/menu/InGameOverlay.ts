@@ -1,22 +1,22 @@
 import * as THREE from "three";
 
-import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { EngineState } from "../../../enums/engine/EngineState";
-import { Anchor } from "../../../enums/gui/Anchor";
-import { SSFType } from "../../../enums/resource/SSFType";
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_MapView } from "../../../gui";
-import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { ResolutionManager } from "../../../managers/ResolutionManager";
-import { TalentObject } from "../../../talents";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { BitWise } from "../../../utility/BitWise";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { EngineState } from "@/enums/engine/EngineState";
+import { Anchor } from "@/enums/gui/Anchor";
+import { SSFType } from "@/enums/resource/SSFType";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_MapView } from "@/gui";
+import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import { TalentObject } from "@/talents";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { KeyMapAction, ModuleObjectType } from "../../../enums";
+import { KeyMapAction, ModuleObjectType } from "@/enums";
 
 const TLK_TOOLTIP_FULL_HEALTH = 42498;
 

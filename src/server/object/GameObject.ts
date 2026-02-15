@@ -1,12 +1,17 @@
-import { ModuleObjectType } from "../../enums/module";
+import { ModuleObjectType } from "@/enums/module";
+
+export interface IObjectListEntry {
+  id?: number;
+  type?: ModuleObjectType;
+  tag?: string;
+}
 
 export class GameObject {
   id: number;
   type: ModuleObjectType;
   tag: string;
 
-  static FromObjectListEntry(entry: any) {
-
+  static FromObjectListEntry(_entry: IObjectListEntry): void {
+    // TODO: implement when server object list is used
   }
-
 }

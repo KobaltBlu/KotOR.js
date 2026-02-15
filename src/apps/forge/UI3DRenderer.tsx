@@ -1,19 +1,18 @@
-import { createScopedLogger, LogScope } from "../../utility/Logger";
-
-import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager";
-import { EventListenerModel } from "./EventListenerModel";
-import * as KotOR from "./KotOR";
-
 import * as THREE from 'three';
-
-const log = createScopedLogger(LogScope.Forge);
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
 
-import { ForgeGameObject } from "./module-editor/ForgeGameObject";
-import { ForgeModule } from "./module-editor/ForgeModule";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import { createOrbitControls } from "@/apps/forge/threeControlsFactory";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export enum CameraView {
   Top = 'top',
@@ -29,21 +28,23 @@ export enum CameraView {
 export type UI3DRendererEventListenerTypes =
   'onBeforeRender' | 'onAfterRender' | 'onCreate' | 'onDispose' | 'onResize' | 'onCanvasAttached' | 'onSelect' | 'onMouseDown' | 'onMouseUp' | 'onMouseMove' | 'onMouseWheel' | 'onKeyDown' | 'onKeyUp';
 
-export interface UI3DRendererEventListeners {
-  onBeforeRender: Function[],
-  onAfterRender: Function[],
-  onCreate: Function[],
-  onDispose: Function[],
-  onResize: Function[],
-  onCanvasAttached: Function[],
-  onSelect: Function[],
-  onMouseDown: Function[],
-  onMouseUp: Function[],
-  onMouseMove: Function[],
-  onMouseWheel: Function[],
-  onKeyDown: Function[],
-  onKeyUp: Function[],
+/** Callback types for 3D renderer events (signatures may vary by event). */
+type UI3DRendererCallback = (...args: unknown[]) => void;
 
+export interface UI3DRendererEventListeners {
+  onBeforeRender: UI3DRendererCallback[];
+  onAfterRender: UI3DRendererCallback[];
+  onCreate: UI3DRendererCallback[];
+  onDispose: UI3DRendererCallback[];
+  onResize: UI3DRendererCallback[];
+  onCanvasAttached: UI3DRendererCallback[];
+  onSelect: UI3DRendererCallback[];
+  onMouseDown: UI3DRendererCallback[];
+  onMouseUp: UI3DRendererCallback[];
+  onMouseMove: UI3DRendererCallback[];
+  onMouseWheel: UI3DRendererCallback[];
+  onKeyDown: UI3DRendererCallback[];
+  onKeyUp: UI3DRendererCallback[];
 }
 
 const dummyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
@@ -182,6 +183,14 @@ export class UI3DRenderer extends EventListenerModel {
   transformControls: TransformControls;
   viewHelper: ViewHelper;
 
+  /** Bound DOM handlers stored so add/remove use same reference; typed for addEventListener */
+  private readonly boundOnMouseDown: (this: HTMLCanvasElement, ev: MouseEvent) => void = (ev) => this.onMouseDown(ev);
+  private readonly boundOnMouseUp: (this: HTMLCanvasElement, ev: MouseEvent) => void = (ev) => this.onMouseUp(ev);
+  private readonly boundOnMouseMove: (this: HTMLCanvasElement, ev: MouseEvent) => void = (ev) => this.onMouseMove(ev);
+  private readonly boundOnMouseWheel: (this: HTMLCanvasElement, ev: WheelEvent) => void = (ev) => this.onMouseWheel(ev);
+  private readonly boundOnKeyDown: (this: HTMLCanvasElement, ev: KeyboardEvent) => void = (ev) => this.onKeyDown(ev);
+  private readonly boundOnKeyUp: (this: HTMLCanvasElement, ev: KeyboardEvent) => void = (ev) => this.onKeyUp(ev);
+
   // Camera preview
   previewCamera: THREE.PerspectiveCamera | null = null;
   previewEnabled: boolean = false;
@@ -230,6 +239,7 @@ export class UI3DRenderer extends EventListenerModel {
 
   constructor(canvas?: HTMLCanvasElement, width: number = 640, height: number = 480) {
     super();
+    log.trace('UI3DRenderer constructor', !!canvas, width, height);
     this.uuid = crypto.randomUUID();
     this.sceneGraphManager = new SceneGraphTreeViewManager();
     this.sceneGraphManager.attachUI3DRenderer(this);
@@ -287,50 +297,61 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   setModule(module: ForgeModule) {
+    log.trace('UI3DRenderer.setModule', !!module, module?.entryArea);
     this.module = module;
     if (module) {
       this.processEventListener('onModuleSet', [module]);
     }
   }
 
-  buildTransformControls() {
+  buildTransformControls(): void {
+    log.trace('buildTransformControls');
     if (this.transformControls) {
-      this.transformControls.dispose();
-      (this.transformControls as unknown as THREE.Object3D).removeFromParent();
+      const tcObj = this.transformControls as unknown as THREE.Object3D & { dispose(): void };
+      tcObj.dispose();
+      tcObj.removeFromParent();
     }
     if (this.canvas) {
       if (this.orbitControls) {
-        this.orbitControls.dispose();
+        const oc = this.orbitControls as unknown as { dispose(): void };
+        oc.dispose();
       }
-      this.orbitControls = new OrbitControls(this.currentCamera, this.canvas);
-      this.orbitControls.enableDamping = true;
-      this.orbitControls.enableZoom = true;
-      this.orbitControls.enablePan = true;
-      this.orbitControls.enableRotate = true;
-      this.orbitControls.panSpeed = 2;
-      this.transformControls = new TransformControls(this.currentCamera, this.canvas);
-      const tcObj = this.transformControls as unknown as THREE.Object3D;
+      const newOrbit = createOrbitControls(this.currentCamera, this.canvas);
+      this.orbitControls = newOrbit;
+      newOrbit.enableDamping = true;
+      newOrbit.enableZoom = true;
+      newOrbit.enablePan = true;
+      newOrbit.enableRotate = true;
+      newOrbit.panSpeed = 2;
+      const newTc = new TransformControls(this.currentCamera, this.canvas);
+      this.transformControls = newTc;
+      const tcObj = newTc as unknown as THREE.Object3D;
       tcObj.visible = false;
       this.unselectable.add(tcObj);
-      tcObj.userData.uuids = [];
+      const uuids: string[] = [];
+      (tcObj.userData as { uuids: string[] }).uuids = uuids;
       tcObj.traverse((obj: THREE.Object3D) => {
-        tcObj.userData.uuids.push(obj.uuid);
+        uuids.push(obj.uuid);
       });
 
-      this.transformControls.addEventListener('dragging-changed', (event: { value: unknown }) => {
-        this.transformControlsDragging = event.value === true;
+      interface TransformControlsDragListeners {
+        addEventListener(type: string, listener: (event?: { value?: unknown }) => void): void;
+      }
+      const tcWithEvents = newTc as unknown as TransformControlsDragListeners;
+      tcWithEvents.addEventListener('dragging-changed', (event: { value: unknown }) => {
+        this.transformControlsDragging = event?.value === true;
         if (this.orbitControls) {
-          this.orbitControls.enabled = !this.transformControlsDragging;
+          (this.orbitControls as { enabled: boolean }).enabled = !this.transformControlsDragging;
         }
       });
-
-      this.transformControls.addEventListener('mouseDown', () => {
-        if (this.orbitControls) this.orbitControls.enabled = false;
+      tcWithEvents.addEventListener('mouseDown', () => {
+        if (this.orbitControls) (this.orbitControls as { enabled: boolean }).enabled = false;
       });
-      this.transformControls.addEventListener('mouseUp', () => {
-        if (this.orbitControls) this.orbitControls.enabled = true;
+      tcWithEvents.addEventListener('mouseUp', () => {
+        if (this.orbitControls) (this.orbitControls as { enabled: boolean }).enabled = true;
       });
     }
+    log.debug('buildTransformControls', 'done');
   }
 
   buildViewHelper() {
@@ -359,10 +380,11 @@ export class UI3DRenderer extends EventListenerModel {
       target: this.orbitControls.target.clone()
     };
 
-    if (this.cameraViewCache[view]) {
-      this.camera.position.copy(this.cameraViewCache[view].position);
-      this.camera.lookAt(this.cameraViewCache[view].target);
-      this.orbitControls.target.copy(this.cameraViewCache[view].target);
+    const cached = this.cameraViewCache[view];
+    if (cached) {
+      this.camera.position.copy(cached.position);
+      this.camera.lookAt(cached.target);
+      this.orbitControls.target.copy(cached.target);
       this.orbitControls.update();
       this.orbitControls.enableRotate = view === CameraView.Default;
       return;
@@ -398,12 +420,13 @@ export class UI3DRenderer extends EventListenerModel {
         this.camera.up.set(0, 0, 1);
         break;
       case CameraView.Orthogonal:
-      case CameraView.Default:
+      case CameraView.Default: {
         // Isometric view: equal distance on all axes
         const isoDistance = distance * 1.5;
         this.camera.position.set(isoDistance, isoDistance, isoDistance);
         this.camera.up.set(0, 0, 1);
         break;
+      }
     }
 
     this.camera.lookAt(lookAt);
@@ -529,13 +552,14 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   buildDOMEventHandlers() {
+    log.trace('UI3DRenderer buildDOMEventHandlers', !!this.canvas);
     if (this.canvas) {
-      this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
-      this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
-      this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
-      this.canvas.addEventListener('wheel', this.onMouseWheel.bind(this));
-      this.canvas.addEventListener('keydown', this.onKeyDown.bind(this));
-      this.canvas.addEventListener('keyup', this.onKeyUp.bind(this));
+      this.canvas.addEventListener('mousedown', this.boundOnMouseDown);
+      this.canvas.addEventListener('mouseup', this.boundOnMouseUp);
+      this.canvas.addEventListener('mousemove', this.boundOnMouseMove);
+      this.canvas.addEventListener('wheel', this.boundOnMouseWheel);
+      this.canvas.addEventListener('keydown', this.boundOnKeyDown);
+      this.canvas.addEventListener('keyup', this.boundOnKeyUp);
       // Make canvas focusable for keyboard events
       this.canvas.setAttribute('tabindex', '0');
       this.canvas.style.outline = 'none'; // Remove focus outline
@@ -543,13 +567,14 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   removeDOMEventHandlers() {
+    log.trace('UI3DRenderer removeDOMEventHandlers', !!this.canvas);
     if (this.canvas) {
-      this.canvas.removeEventListener('mousedown', this.onMouseDown.bind(this));
-      this.canvas.removeEventListener('mouseup', this.onMouseUp.bind(this));
-      this.canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
-      this.canvas.removeEventListener('wheel', this.onMouseWheel.bind(this));
-      this.canvas.removeEventListener('keydown', this.onKeyDown.bind(this));
-      this.canvas.removeEventListener('keyup', this.onKeyUp.bind(this));
+      this.canvas.removeEventListener('mousedown', this.boundOnMouseDown);
+      this.canvas.removeEventListener('mouseup', this.boundOnMouseUp);
+      this.canvas.removeEventListener('mousemove', this.boundOnMouseMove);
+      this.canvas.removeEventListener('wheel', this.boundOnMouseWheel);
+      this.canvas.removeEventListener('keydown', this.boundOnKeyDown);
+      this.canvas.removeEventListener('keyup', this.boundOnKeyUp);
     }
   }
 
@@ -640,8 +665,6 @@ export class UI3DRenderer extends EventListenerModel {
       const intersects = this.raycaster.intersectObjects(this.selectable.children, true);
       if (intersects.length) {
         const closestIntersection = intersects[0];
-        const isVertexHelper = closestIntersection.object instanceof THREE.Mesh &&
-          closestIntersection.object.userData?.vertexIndex !== undefined;
 
         this.selectObject(closestIntersection.object);
         // this.processEventListener('onSelect', [intersection]);
@@ -875,7 +898,7 @@ export class UI3DRenderer extends EventListenerModel {
   detachObject(object: THREE.Object3D) {
     object.removeFromParent();
 
-    object.traverse((node) => {
+    object.traverse((node: THREE.Object3D) => {
       if (node instanceof KotOR.OdysseyModel3D) {
         const index = this.odysseyModels.indexOf(node);
         if (index >= 0) {
@@ -888,12 +911,14 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   attachCamera(camera: THREE.PerspectiveCamera) {
-    camera.userData.heler = new THREE.CameraHelper(camera);
-    this.scene.add(camera.userData.heler);
+    const helper = new THREE.CameraHelper(camera);
+    (camera.userData as { heler?: THREE.CameraHelper }).heler = helper;
+    this.scene.add(helper);
     this.cameras.push(camera);
   }
 
   selectObject(object: THREE.Object3D | undefined) {
+    log.trace('UI3DRenderer.selectObject', !!object, this.disableSelection);
     if (!object || this.disableSelection) {
       this.selectionBox.visible = false;
       this.processEventListener('onSelect', [undefined]);
@@ -936,7 +961,7 @@ export class UI3DRenderer extends EventListenerModel {
     arr.fill(0);
     this.selectionBox.geometry.attributes.position.needsUpdate = true;
 
-    this.selectionBox.setFromObject(object as THREE.Object3D, true);
+    this.selectionBox.setFromObject(object as THREE.Object3D);
     this.selectionBox.visible = true;
 
     const size = arr.reduce((a, b) => a + b, 0);
@@ -946,7 +971,7 @@ export class UI3DRenderer extends EventListenerModel {
       // object.getWorldPosition(dummyMesh.position);
       object.getWorldQuaternion(dummyMesh.quaternion);
       // dummyMesh.scale.copy(object.scale);
-      this.selectionBox.setFromObject(dummyMesh, true);
+      this.selectionBox.setFromObject(dummyMesh);
       this.selectionBox.visible = true;
     }
 
@@ -961,7 +986,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   setCanvas(canvas: HTMLCanvasElement) {
-    //remove old event handlers
+    log.trace('UI3DRenderer setCanvas', !!canvas);
     this.removeDOMEventHandlers();
 
     const oCanvas = this.canvas;
@@ -982,6 +1007,7 @@ export class UI3DRenderer extends EventListenerModel {
       if (this.canvas.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
       this.setSize(this.canvas.width, this.canvas.height);
       this.processEventListener('onCanvasAttached', [this.canvas]);
+      log.trace('UI3DRenderer setCanvas onCanvasAttached fired');
     }
   }
 
@@ -1021,7 +1047,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   private buildScene() {
-    // this.scene = new THREE.Scene();
+    log.trace('UI3DRenderer buildScene');
     this.group.light_helpers.visible = false;
 
     this.scene.add(this.selectionBox);
@@ -1077,6 +1103,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   setSize(width = 100, height = 100) {
+    log.trace('UI3DRenderer setSize', width, height);
     this.width = width;
     this.height = height;
     if (this.renderer) this.renderer.setSize(this.width, this.height);
@@ -1095,6 +1122,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   triggerResize() {
+    log.trace('UI3DRenderer triggerResize');
     if (this.canvas) {
       this.setSize(this.canvas.width, this.canvas.height);
     }
@@ -1242,7 +1270,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   destroy() {
-    //remove old event handlers
+    log.trace('UI3DRenderer destroy entry');
     this.removeDOMEventHandlers();
 
     this.enabled = false;
@@ -1265,6 +1293,7 @@ export class UI3DRenderer extends EventListenerModel {
       this.scene.children[0].removeFromParent();
     }
     this.canvas = undefined;
+    log.trace('UI3DRenderer destroy exit');
   }
 
 }

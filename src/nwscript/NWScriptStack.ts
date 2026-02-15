@@ -1,16 +1,16 @@
-import { GameEffectFactory } from "../effects/GameEffectFactory";
-import EngineLocation from "../engine/EngineLocation";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import type { ModuleObject } from "../module";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import EngineLocation from "@/engine/EngineLocation";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import type { ModuleObject } from "@/module";
+import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
+import type { NWScriptStackValue } from "@/nwscript/NWScriptStackVariable";
+import { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { NWScriptEventFactory } from "./events/NWScriptEventFactory";
-import type { NWScriptStackValue } from "./NWScriptStackVariable";
-import { NWScriptStackVariable } from "./NWScriptStackVariable";
 
 const log = createScopedLogger(LogScope.NWScript);
 

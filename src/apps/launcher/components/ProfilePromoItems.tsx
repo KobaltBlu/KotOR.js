@@ -1,9 +1,12 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
-import { useApp } from "../context/AppContext";
-import type { LauncherProfile, LauncherProfileElement } from "../types";
+import { useApp } from "@/apps/launcher/context/AppContext";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { ProfilePromoItem } from "./ProfilePromoItem";
+
+const log = createScopedLogger(LogScope.Launcher);
+import type { LauncherProfile, LauncherProfileElement } from "@/apps/launcher/types";
+import { ProfilePromoItem } from "@/apps/launcher/components/ProfilePromoItem";
 
 export type ProfilePromoItemsProfile = LauncherProfile | { name: string; elements?: LauncherProfileElement[] };
 
@@ -81,7 +84,7 @@ export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoIt
 
   useImperativeHandle(ref, () => ({
     recalculate() {
-      // console.warn(`recalculate: ${profile.name} promo`);
+      log.debug('ProfilePromoItems recalculate', profile.name);
       updateScrollAndButtons();
     }
   }), [updateScrollAndButtons]);

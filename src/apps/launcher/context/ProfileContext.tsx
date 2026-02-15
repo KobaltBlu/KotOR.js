@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Launcher);
 
@@ -36,7 +36,7 @@ export const ProfileProvider = (props: ProfileProviderProps) => {
   const [lightboxImageHeightValue, setLightboxImageHeight] = useState<number>(0);
 
   useEffect(() => {
-    // console.log('useEffect lightboxActive', lightboxActiveValue);
+    log.trace('ProfileContext lightboxActive changed', lightboxActiveValue);
   }, [lightboxActiveValue]);
 
   useEffect( () => {
@@ -56,7 +56,7 @@ export const ProfileProvider = (props: ProfileProviderProps) => {
 
 
   useEffect(() => {
-    // console.log('Global', 'useEffect');
+    log.trace('ProfileContext mounted');
   }, [])
 
   const providerValue: ProfileProviderValues = {

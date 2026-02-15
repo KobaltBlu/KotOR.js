@@ -1,13 +1,13 @@
-import { Planet, Planetary } from "../../../engine/Planetary";
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { Planet, Planetary } from "@/engine/Planetary";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

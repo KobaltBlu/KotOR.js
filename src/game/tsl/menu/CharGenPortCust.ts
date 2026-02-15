@@ -1,10 +1,8 @@
-import { CharGenPortCust as K1_CharGenPortCust } from "../../kotor/KOTOR";
-
-import { CharGenClasses } from "../../CharGenClasses";
-
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { OdysseyModel3D } from "../../../three/odyssey";
+import { CharGenClasses } from "@/game/CharGenClasses";
+import { CharGenPortCust as K1_CharGenPortCust } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIButton } from "@/gui";
+import { OdysseyModel3D } from "@/three/odyssey";
 
 /**
  * CharGenPortCust class.

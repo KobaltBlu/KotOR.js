@@ -1,8 +1,8 @@
 import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 import React, { useMemo, useState } from 'react';
 
-import { useEffectOnce } from '../../../helpers/UseEffectOnce';
-import type { TabScriptErrorLogState, TabTextEditorState } from '../../../states/tabs';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import type { TabScriptErrorLogState, TabTextEditorState } from '@/apps/forge/states/tabs';
 
 export interface TabScriptErrorLogProps {
   tab: TabScriptErrorLogState;

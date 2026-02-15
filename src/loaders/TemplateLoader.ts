@@ -1,8 +1,8 @@
-import { GFFObject } from "../resource/GFFObject";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import { GFFObject } from "@/resource/GFFObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Loader);
-import { ResourceLoader } from "./ResourceLoader";
 
 /**
  * TemplateLoader class.
@@ -28,12 +28,13 @@ export interface TemplateLoaderLoadArgs {
   onFail?: ((e: unknown) => void) | null;
 }
 
+/* eslint-disable @typescript-eslint/no-extraneous-class -- static-only loader API */
 export class TemplateLoader {
 
   static cache: Record<string, unknown> = {};
 
   static Load(args: TemplateLoaderLoadArgs = {}): void {
-
+    log.trace("Load", args.ResRef, args.ResType);
     const opts = Object.assign({
       ResRef: null,
       ResType: null,

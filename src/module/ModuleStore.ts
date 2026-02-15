@@ -1,18 +1,18 @@
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import { ResourceLoader } from "../loaders";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { ResourceLoader } from "@/loaders";
+import { ModuleItem } from "@/module/ModuleItem";
+import { ModuleObject } from "@/module/ModuleObject";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { ModuleItem } from "./ModuleItem";
-import { ModuleObject } from "./ModuleObject";
 
 const log = createScopedLogger(LogScope.Module);
-// import { ModuleObjectManager } from "../managers";
+// import { ModuleObjectManager } from "@/managers";
 
 /**
 * ModuleStore class.

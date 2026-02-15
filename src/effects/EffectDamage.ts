@@ -1,8 +1,8 @@
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { BitWise } from "../utility/BitWise";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { BitWise } from "@/utility/BitWise";
 
-import { GameEffect } from "./GameEffect";
 
 /**
  * EffectDamage class.

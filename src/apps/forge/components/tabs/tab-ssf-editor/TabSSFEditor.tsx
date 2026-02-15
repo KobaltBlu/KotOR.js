@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-
-import * as KotOR from "../../../KotOR";
-import { TabSSFEditorState } from "../../../states/tabs";
-import "./TabSSFEditor.scss";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import { TabSSFEditorState } from "@/apps/forge/states/tabs";
+import type { SSFObject } from "@/resource/SSFObject";
+import "@/apps/forge/components/tabs/tab-ssf-editor/TabSSFEditor.scss";
 
 interface BaseTabProps {
   tab: TabSSFEditorState;
@@ -74,12 +73,18 @@ export const TabSSFEditor = function(props: BaseTabProps){
     { id: 27, name: 'Poisoned' },
   ];
 
+  /** Clone SSF preserving prototype so React re-renders; avoids unsafe assignment from Object.assign. */
+  function createSSFClone(source: SSFObject): SSFObject {
+    const proto: object = Object.getPrototypeOf(source) as object;
+    const base: SSFObject = Object.create(proto) as SSFObject;
+    return Object.assign(base, source) as SSFObject;
+  }
+
   const updateSoundRef = (index: number, value: number) => {
     if(ssf && ssf.sound_refs[index] !== undefined){
       ssf.sound_refs[index] = value;
       tab.file.unsaved_changes = true;
-      // Force re-render with a new reference, but preserving the SSFObject prototype and methods
-      setSsf(Object.assign(Object.create(Object.getPrototypeOf(ssf)), ssf));
+      setSsf(createSSFClone(ssf));
     }
   };
 

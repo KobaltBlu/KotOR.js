@@ -1,14 +1,13 @@
-/* eslint-disable no-console */
 /**
  * Server Worker
  * This is a stub for the eventual server worker that will be used to handle the game server logic.
  */
 
 
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
-import { IPCMessage } from "../server/ipc/IPCMessage";
+import { IPCMessage } from "@/server/ipc/IPCMessage";
 
 /**
  * Odyssey Server

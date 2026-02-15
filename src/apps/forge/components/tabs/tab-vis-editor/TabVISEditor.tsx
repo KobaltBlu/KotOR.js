@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from "react";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-
-import * as KotOR from "../../../KotOR";
-import { TabVISEditorState } from "../../../states/tabs";
-import "./TabVISEditor.scss";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import { TabVISEditorState } from "@/apps/forge/states/tabs";
+import "@/apps/forge/components/tabs/tab-vis-editor/TabVISEditor.scss";
 
 interface BaseTabProps {
   tab: TabVISEditorState;
@@ -18,10 +16,10 @@ export const TabVISEditor = function(props: BaseTabProps){
   useEffect(() => {
     const loadHandler = () => setVis(tab.vis);
     const selectHandler = () => setSelectedRoom(tab.selectedRoomName);
-    
+
     tab.addEventListener('onEditorFileLoad', loadHandler);
     tab.addEventListener('onRoomSelected', selectHandler);
-    
+
     return () => {
       tab.removeEventListener('onEditorFileLoad', loadHandler);
       tab.removeEventListener('onRoomSelected', selectHandler);
@@ -70,7 +68,7 @@ export const TabVISEditor = function(props: BaseTabProps){
             <h4>Rooms</h4>
             <div className="room-list">
               {rooms.map((room, index) => (
-                <div 
+                <div
                   key={index}
                   className={`room-item ${selectedRoom === room.name ? 'selected' : ''}`}
                   onClick={() => tab.selectRoom(room.name)}
@@ -94,7 +92,7 @@ export const TabVISEditor = function(props: BaseTabProps){
                     {selectedRoomData.rooms.map((visibleRoom, idx) => (
                       <div key={idx} className="visible-room-item">
                         <span className="visible-room-name">{visibleRoom}</span>
-                        <button 
+                        <button
                           className="goto-button"
                           onClick={() => tab.selectRoom(visibleRoom)}
                           title="Go to this room"
@@ -125,7 +123,7 @@ export const TabVISEditor = function(props: BaseTabProps){
         </div>
 
         <div className="vis-notice">
-          <strong>Note:</strong> Direct editing of visibility relationships is not yet fully implemented. 
+          <strong>Note:</strong> Direct editing of visibility relationships is not yet fully implemented.
           The VIS file can be viewed and saved in its current state.
         </div>
       </div>

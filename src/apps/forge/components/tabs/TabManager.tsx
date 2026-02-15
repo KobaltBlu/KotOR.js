@@ -1,17 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import { useTabManager } from "../../context/TabManagerContext";
-import { TabState } from "../../states/tabs";
+import TabButton from "@/apps/forge/components/tabs/TabButton";
+import { useTabManager } from "@/apps/forge/context/TabManagerContext";
+import { TabState } from "@/apps/forge/states/tabs";
 
-
-import { createScopedLogger, LogScope } from "../../../../utility/Logger";
-
-const log = createScopedLogger(LogScope.Default);
-import TabButton from "./TabButton";
-
-export interface TabManagerProps {
-  // manager: EditorTabManager
-}
+/** Props for TabManager; currently none required */
+export type TabManagerProps = object;
 
 export const TabManager = function(_props: TabManagerProps){
 

@@ -1,17 +1,16 @@
 import * as THREE from "three";
 
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { NWScriptTypes } from "../enums/nwscript/NWScriptTypes";
-import { GameState } from "../GameState";
-import { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
-// import { ModuleObjectManager } from "../managers/ModuleObjectManager";
-import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-
-import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
-import type { NWScriptInstance } from "./NWScriptInstance";
-import type { NWScriptInstruction } from "./NWScriptInstruction";
-import { NWScriptSubroutine } from "./NWScriptSubroutine";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { NWScriptTypes } from "@/enums/nwscript/NWScriptTypes";
+import { GameState } from "@/GameState";
+import { INWScriptDefAction } from "@/interface/nwscript/INWScriptDefAction";
+// import { ModuleObjectManager } from "@/managers/ModuleObjectManager";
+import type { INWScriptStoreState } from "@/interface/nwscript/INWScriptStoreState";
+import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.NWScript);
 

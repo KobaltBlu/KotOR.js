@@ -1,22 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
 
-import './app.scss';
+import "@/apps/launcher/app.scss";
 
-import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
-import { ApplicationProfile } from "../../utility/ApplicationProfile";
-import { ConfigClient } from "../../utility/ConfigClient";
-import { createScopedLogger, LogScope } from "../../utility/Logger";
 
-import { CategoryMenuItem } from "./components/CategoryMenuItem";
-import { CommunityTabContent } from "./components/CommunityTabContent";
-import DiscordWidget from "./components/DiscordWidget";
-import { GOGWidget } from "./components/GOGWidget";
-import type { ProfileTabContentHandle } from "./components/ProfileTabContent";
-import { ProfileTabContent } from "./components/ProfileTabContent";
-import { AppProvider, useApp } from "./context/AppContext";
-import { Launcher } from "./context/Launcher";
-import type { LauncherProfile, ProfileCategory } from "./types";
+import { CategoryMenuItem } from "@/apps/launcher/components/CategoryMenuItem";
+import { CommunityTabContent } from "@/apps/launcher/components/CommunityTabContent";
+import DiscordWidget from "@/apps/launcher/components/DiscordWidget";
+import { GOGWidget } from "@/apps/launcher/components/GOGWidget";
+import type { ProfileTabContentHandle } from "@/apps/launcher/components/ProfileTabContent";
+import { ProfileTabContent } from "@/apps/launcher/components/ProfileTabContent";
+import { AppProvider, useApp } from "@/apps/launcher/context/AppContext";
+import { Launcher } from "@/apps/launcher/context/Launcher";
+import type { LauncherProfile, ProfileCategory } from "@/apps/launcher/types";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { ConfigClient } from "@/utility/ConfigClient";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Launcher);
 
@@ -226,17 +226,17 @@ const App = function() {
               <div className="panel scroll-y">
                 <p>This project does not support piracy. To use this app, you will need to have obtained a legal copy of the supported games that you wish to play.</p>
                 <br />
-                
+
                 <h3 className="title">GOG Store</h3>
                 <div className="buy-widgets" style={{display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '20px'}}>
-                  <GOGWidget 
+                  <GOGWidget
                     productId="1207666283" // KotOR 1 GOG ID
                     onError={(error) => log.error('GOG Widget Error', error)}
                     onProductLoaded={(product) => log.info('GOG Widget product loaded', product)}
                     showPrice={true}
                     showDiscount={true}
                   />
-                  <GOGWidget 
+                  <GOGWidget
                     productId="1421404581" // KotOR 2 GOG ID
                     onError={(error) => log.error('GOG Widget Error', error)}
                     onProductLoaded={(product) => log.info('GOG Widget product loaded', product)}
@@ -244,7 +244,7 @@ const App = function() {
                     showDiscount={true}
                   />
                 </div>
-                
+
                 <br />
                 <h3 className="title">Steam Store</h3>
                 <div className="buy">

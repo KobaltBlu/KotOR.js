@@ -1,8 +1,7 @@
-import { MenuGameplay as K1_MenuGameplay } from "../../kotor/KOTOR";
-
-import type { SWDifficulty } from "../../../engine/rules/SWDifficulty";
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUICheckBox, GUIButton, GUIListBox } from "../../../gui";
+import type { SWDifficulty } from "@/engine/rules/SWDifficulty";
+import { MenuGameplay as K1_MenuGameplay } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUICheckBox, GUIButton, GUIListBox } from "@/gui";
 
 
 /**

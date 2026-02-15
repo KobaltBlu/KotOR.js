@@ -4,7 +4,9 @@ import {
   Diagnostic,
   DiagnosticSeverity,
   DidChangeConfigurationNotification,
+  DocumentHighlight,
   DocumentSymbol,
+  FoldingRange,
   Hover,
   InitializeParams,
   InitializeResult,
@@ -16,8 +18,9 @@ import {
   SignatureInformation,
   SymbolKind,
   TextDocumentPositionParams,
-  TextDocuments,
   TextDocumentSyncKind,
+  TextDocuments,
+  TextEdit,
   WorkspaceSymbol
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -54,10 +57,13 @@ const FUNCTION_ALIASES: Record<string, string> = {
   ClearGlobalInt: 'SetGlobalNumber' // clearing -> setting to 0, but we only use this to suppress diagnostics
 };
 
+/** Scriptlib constant value (int/float/string from parsing). */
+type ScriptlibConstantValue = string | number;
+
 // Include-aware scriptlib scanning (KOTOR + TSL)
 type IncludeScanResult = {
   functions: (NWScriptFunction & { location?: { line: number; character: number } })[];
-  constants: { [key: string]: any };
+  constants: Record<string, ScriptlibConstantValue>;
   constantMeta: { [name: string]: { line: number; character: number } };
 };
 
@@ -82,9 +88,10 @@ const includeCache: Map<string, IncludeScanResult> = new Map();
 // Parse the *entire* bundled script libraries once at start-up so that
 // commonly-used helper includes like k_inc_generic are always recognised,
 // even when the current document hasn’t explicitly included them.
+type NWScriptFunctionWithLocation = NWScriptFunction & { location?: { line: number; character: number } };
 interface GlobalScriptlib {
-  functions: NWScriptFunction[];
-  constants: { [key: string]: any };
+  functions: NWScriptFunctionWithLocation[];
+  constants: Record<string, ScriptlibConstantValue>;
 }
 
 const GLOBAL_SCRIPTLIB: GlobalScriptlib = (() => {
@@ -94,7 +101,7 @@ const GLOBAL_SCRIPTLIB: GlobalScriptlib = (() => {
   const addFunc = (f: NWScriptFunction & { location?: { line: number; character: number } }) => {
     if (!agg.functions.find(x => x.name === f.name)) agg.functions.push(f);
   };
-  const addConst = (name: string, value: any) => {
+  const addConst = (name: string, value: ScriptlibConstantValue) => {
     if (!(name in agg.constants)) agg.constants[name] = value;
   };
 
@@ -113,15 +120,15 @@ const GLOBAL_SCRIPTLIB: GlobalScriptlib = (() => {
     });
   };
 
-  loadFromLibrary(KOTOR_LIBRARY as any);
-  loadFromLibrary(TSL_LIBRARY as any);
+  loadFromLibrary(KOTOR_LIBRARY as Record<string, Uint8Array>);
+  loadFromLibrary(TSL_LIBRARY as Record<string, Uint8Array>);
   return agg;
 })();
 
 // --------------------------------------------------------------------------
 
 function decodeInclude(name: string): string | null {
-  const libBuf: Uint8Array | undefined = (KOTOR_LIBRARY as any)[name] || (TSL_LIBRARY as any)[name];
+  const libBuf: Uint8Array | undefined = (KOTOR_LIBRARY as Record<string, Uint8Array>)[name] ?? (TSL_LIBRARY as Record<string, Uint8Array>)[name];
   if (!libBuf) return null;
   try {
     return new TextDecoder('utf-8').decode(libBuf);
@@ -245,7 +252,7 @@ function parseScriptlib(source: string, includeName: string): IncludeScanResult 
     }
   }
 
-  const globalSource = globals.lines.join('\n');
+  const _globalSource = globals.lines.join('\n');
 
   // Parse functions (prototypes and definitions)
   const functions: (NWScriptFunction & { location?: { line: number; character: number } })[] = [];
@@ -280,7 +287,7 @@ function parseScriptlib(source: string, includeName: string): IncludeScanResult 
   }
 
   // Parse constants at global scope
-  const constants: { [key: string]: any } = {};
+  const constants: Record<string, ScriptlibConstantValue> = {};
   const constantMeta: { [name: string]: { line: number; character: number } } = {};
   const constRegex = /^(?:\s*)(int|float|string)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([^;]+);/gm;
   let cm: RegExpExecArray | null;
@@ -296,7 +303,7 @@ function parseScriptlib(source: string, includeName: string): IncludeScanResult 
       const floatVal = parseFloat(raw);
       if (!Number.isNaN(floatVal)) constants[name!] = floatVal;
     } else if (type === 'string') {
-      constants[name!] = raw.replace(/^[\'"]|[\'"]$/g, '');
+      constants[name!] = raw.replace(/^['"]|['"]$/g, '');
     }
     // Position
     const absoluteIndex = cm.index || 0;
@@ -395,7 +402,7 @@ function detectCircularDependencies(rootIncludes: string[]): IncludeDependencyGr
 }
 
 // Generate include-related diagnostics
-function generateIncludeDiagnostics(source: string, uri: string): Diagnostic[] {
+function generateIncludeDiagnostics(source: string, _uri: string): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const includeInfos = extractIncludesWithLocation(source);
   const rootIncludes = includeInfos.map(inc => inc.name);
@@ -465,7 +472,7 @@ function generateIncludeDiagnostics(source: string, uri: string): Diagnostic[] {
   return diagnostics;
 }
 
-function getAvailableConstants(text: string): { [key: string]: any } {
+function getAvailableConstants(text: string): Record<string, ScriptlibConstantValue> {
   try {
     const includes = extractIncludes(text);
     if (includes.length === 0) return {};
@@ -477,7 +484,7 @@ function getAvailableConstants(text: string): { [key: string]: any } {
   }
 }
 
-function getAvailableFunctions(text: string): NWScriptFunction[] {
+function getAvailableFunctions(text: string): NWScriptFunctionWithLocation[] {
   try {
     const includes = extractIncludes(text);
     if (includes.length === 0) return [];
@@ -486,20 +493,6 @@ function getAvailableFunctions(text: string): NWScriptFunction[] {
     return agg.functions;
   } catch {
     return [];
-  }
-
-  // Helper: resolve function by name across core, scriptlib and aliases
-  function resolveFunctionByName(name: string, sourceText: string): NWScriptFunction | undefined {
-    let func = findFunction(name);
-    if (func) return func;
-    const documentScriptlibFunctions = getAvailableFunctions(sourceText);
-    func = documentScriptlibFunctions.find(f => f.name === name);
-    if (func) return func;
-    const alias = FUNCTION_ALIASES[name];
-    if (alias) {
-      func = findFunction(alias) || documentScriptlibFunctions.find(f => f.name === alias);
-    }
-    return func;
   }
 }
 // Create a connection for the server, using Node's IPC as a transport.
@@ -630,19 +623,19 @@ connection.onInitialized(() => {
   interpreter = new NWScriptInterpreter(connection, documents);
   connection.console.info("[Initialize] NWScript interpreter initialized");
 
-  // Register debug request handlers
-  connection.onRequest('nwscript/debug/setBreakpoints', interpreter.handleSetBreakpoints.bind(interpreter));
-  connection.onRequest('nwscript/debug/start', interpreter.handleStart.bind(interpreter));
-  connection.onRequest('nwscript/debug/continue', interpreter.handleContinue.bind(interpreter));
-  connection.onRequest('nwscript/debug/next', interpreter.handleNext.bind(interpreter));
-  connection.onRequest('nwscript/debug/stepIn', interpreter.handleStepIn.bind(interpreter));
-  connection.onRequest('nwscript/debug/stepOut', interpreter.handleStepOut.bind(interpreter));
-  connection.onRequest('nwscript/debug/pause', interpreter.handlePause.bind(interpreter));
-  connection.onRequest('nwscript/debug/stackTrace', interpreter.handleStackTrace.bind(interpreter));
-  connection.onRequest('nwscript/debug/scopes', interpreter.handleScopes.bind(interpreter));
-  connection.onRequest('nwscript/debug/variables', interpreter.handleVariables.bind(interpreter));
-  connection.onRequest('nwscript/debug/evaluate', interpreter.handleEvaluate.bind(interpreter));
-  connection.onRequest('nwscript/debug/stop', interpreter.handleStop.bind(interpreter));
+  // Register debug request handlers (arrow wrappers for correct handler typing)
+  connection.onRequest('nwscript/debug/setBreakpoints', (params: { source: { path: string }; breakpoints: Array<{ line?: number }> }) => interpreter.handleSetBreakpoints(params));
+  connection.onRequest('nwscript/debug/start', (params: { scriptPath: string }) => interpreter.handleStart(params));
+  connection.onRequest('nwscript/debug/continue', () => interpreter.handleContinue());
+  connection.onRequest('nwscript/debug/next', () => interpreter.handleNext());
+  connection.onRequest('nwscript/debug/stepIn', () => interpreter.handleStepIn());
+  connection.onRequest('nwscript/debug/stepOut', () => interpreter.handleStepOut());
+  connection.onRequest('nwscript/debug/pause', () => interpreter.handlePause());
+  connection.onRequest('nwscript/debug/stackTrace', () => interpreter.handleStackTrace());
+  connection.onRequest('nwscript/debug/scopes', (params: { frameId?: number }) => interpreter.handleScopes(params));
+  connection.onRequest('nwscript/debug/variables', (params: { variablesReference: number }) => interpreter.handleVariables(params));
+  connection.onRequest('nwscript/debug/evaluate', (params: { expression: string; frameId?: number }) => interpreter.handleEvaluate(params));
+  connection.onRequest('nwscript/debug/stop', () => interpreter.handleStop());
   connection.console.log("[Initialize] Debug request handlers registered");
 
   // Register capability if client supports configuration
@@ -659,9 +652,8 @@ connection.onDidChangeConfiguration(change => {
   if (hasConfigurationCapability) {
     documentSettings.clear();
   } else {
-    globalSettings = <ForgeNWScriptSettings>(
-      (change.settings?.kotorForge?.nwscript || defaultSettings)
-    );
+    const settings = change.settings as { kotorForge?: { nwscript?: ForgeNWScriptSettings } } | undefined;
+    globalSettings = (settings?.kotorForge?.nwscript ?? defaultSettings) as ForgeNWScriptSettings;
   }
 
   documents.all().forEach(validateTextDocument);
@@ -1109,7 +1101,7 @@ connection.onHover((params: TextDocumentPositionParams): Hover | null => {
   // Check if it's a function (core first)
   const func = findFunction(word) || (FUNCTION_ALIASES[word] ? findFunction(FUNCTION_ALIASES[word]!) : undefined);
   if (func) {
-    const params = func.parameters.map((p: any) =>
+    const params = func.parameters.map((p: NWScriptParameter) =>
       p.defaultValue ? `${p.type} ${p.name} = ${p.defaultValue}` : `${p.type} ${p.name}`
     ).join(', ');
 
@@ -1140,7 +1132,7 @@ connection.onHover((params: TextDocumentPositionParams): Hover | null => {
     return {
       contents: {
         kind: MarkupKind.Markdown,
-        value: `**${scriptlibFunc.name}** (${scriptlibFunc.returnType})${(scriptlibFunc as any).includeFile ? ` from \`${(scriptlibFunc as any).includeFile}\`` : ''}\n\n\`\`\`nwscript\n${scriptlibFunc.returnType} ${scriptlibFunc.name}(${params})\n\`\`\`\n\n${cleanDescription || 'NWScript scriptlib function'}${scriptlibFunc.category ? `\n\n*Category:* ${scriptlibFunc.category}` : ''}`
+        value: `**${scriptlibFunc.name}** (${scriptlibFunc.returnType})${scriptlibFunc.includeFile ? ` from \`${scriptlibFunc.includeFile}\`` : ''}\n\n\`\`\`nwscript\n${scriptlibFunc.returnType} ${scriptlibFunc.name}(${params})\n\`\`\`\n\n${cleanDescription || 'NWScript scriptlib function'}${scriptlibFunc.category ? `\n\n*Category:* ${scriptlibFunc.category}` : ''}`
       },
       range: {
         start: { line: position.line, character: wordRange.start },
@@ -1151,8 +1143,8 @@ connection.onHover((params: TextDocumentPositionParams): Hover | null => {
 
   // Check for scriptlib constants in document or global
   const scriptlibConsts = getAvailableConstants(text);
-  if (scriptlibConsts.hasOwnProperty(word) || GLOBAL_SCRIPTLIB.constants.hasOwnProperty(word)) {
-    const val = scriptlibConsts.hasOwnProperty(word) ? (scriptlibConsts as any)[word] : (GLOBAL_SCRIPTLIB.constants as any)[word];
+  if (Object.prototype.hasOwnProperty.call(scriptlibConsts, word) || Object.prototype.hasOwnProperty.call(GLOBAL_SCRIPTLIB.constants, word)) {
+    const val = Object.prototype.hasOwnProperty.call(scriptlibConsts, word) ? scriptlibConsts[word] : GLOBAL_SCRIPTLIB.constants[word];
     const type = typeof val === 'number' ? 'int' : typeof val === 'string' ? 'string' : 'unknown';
     return {
       contents: {
@@ -1313,8 +1305,8 @@ connection.onDefinition(async (params: TextDocumentPositionParams) => {
   const word = line.substring(range.start, range.end);
 
   // Try functions first (document includes, then global)
-  const docFuncs = getAvailableFunctions(text) as any[];
-  const func = (docFuncs.find(f => f.name === word) as any) || (GLOBAL_SCRIPTLIB.functions as any[]).find(f => f.name === word);
+  const docFuncs = getAvailableFunctions(text);
+  const func = docFuncs.find(f => f.name === word) ?? GLOBAL_SCRIPTLIB.functions.find(f => f.name === word);
   if (func && func.includeFile && func.location) {
     const uri = resolveBuiltinScriptUri(func.includeFile, params.textDocument.uri, settings);
     return {
@@ -1327,14 +1319,14 @@ connection.onDefinition(async (params: TextDocumentPositionParams) => {
   }
 
   // Then constants (document includes, then global)
-  const docConsts = getAvailableConstants(text) as any;
-  const inDocConsts = Object.prototype.hasOwnProperty.call(docConsts, word);
-  const inGlobalConsts = Object.prototype.hasOwnProperty.call(GLOBAL_SCRIPTLIB.constants, word);
+  const docConsts = getAvailableConstants(text) as Record<string, ScriptlibConstantValue>;
+  const inDocConsts: boolean = Boolean(Object.prototype.hasOwnProperty.call(docConsts, word));
+  const inGlobalConsts: boolean = Boolean(Object.prototype.hasOwnProperty.call(GLOBAL_SCRIPTLIB.constants as Record<string, ScriptlibConstantValue>, word));
   if (inDocConsts || inGlobalConsts) {
     // We don't currently store per-document const positions. Use global if available.
     // Try to find in any parsed include by scanning cache
     for (const [inc, parsed] of includeCache.entries()) {
-      const loc = parsed.constantMeta?.[word];
+      const loc: { line: number; character: number } | undefined = parsed.constantMeta?.[word];
       if (loc) {
         const uri = resolveBuiltinScriptUri(inc, params.textDocument.uri, settings);
         return {
@@ -1550,7 +1542,7 @@ connection.onWorkspaceSymbol((params) => {
 });
 
 // Code action provider
-connection.onCodeAction((params) => {
+connection.onCodeAction((_params) => {
   // This would be where we add quick fixes
   return [];
 });
@@ -1728,19 +1720,20 @@ connection.onDocumentHighlight((params: TextDocumentPositionParams) => {
   if (!range) return [];
 
   const word = line.substring(range.start, range.end);
-  const highlights: any[] = [];
+  const highlights: DocumentHighlight[] = [];
 
   // Find all occurrences of the word in the document
   for (let i = 0; i < lines.length; i++) {
     const currentLine = lines[i] || '';
     const regex = new RegExp(`\\b${word}\\b`, 'g');
-    let match;
+    let match: RegExpExecArray | null;
 
     while ((match = regex.exec(currentLine)) !== null) {
+      const startChar = match.index;
       highlights.push({
         range: {
-          start: { line: i, character: match.index },
-          end: { line: i, character: match.index + word.length }
+          start: { line: i, character: startChar },
+          end: { line: i, character: startChar + word.length }
         },
         kind: 1 // Text highlight kind
       });
@@ -1799,19 +1792,20 @@ connection.onRenameRequest((params) => {
   if (!range) return null;
 
   const oldName = line.substring(range.start, range.end);
-  const changes: any[] = [];
+  const changes: TextEdit[] = [];
 
   // Find all occurrences of the old name and replace with new name
   for (let i = 0; i < lines.length; i++) {
     const currentLine = lines[i] || '';
     const regex = new RegExp(`\\b${oldName}\\b`, 'g');
-    let match;
+    let match: RegExpExecArray | null;
 
     while ((match = regex.exec(currentLine)) !== null) {
+      const startChar = match.index;
       changes.push({
         range: {
-          start: { line: i, character: match.index },
-          end: { line: i, character: match.index + oldName.length }
+          start: { line: i, character: startChar },
+          end: { line: i, character: startChar + oldName.length }
         },
         newText: params.newName
       });
@@ -1832,7 +1826,7 @@ connection.onFoldingRanges((params) => {
 
   const text = document.getText();
   const lines = text.split('\n');
-  const foldingRanges: any[] = [];
+  const foldingRanges: FoldingRange[] = [];
 
   const braceStack: number[] = [];
   let commentStart: number | null = null;

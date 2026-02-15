@@ -3,9 +3,9 @@
  * Uses fetch for GitHub API; no Qt/widgets.
  */
 
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { LOCAL_PROGRAM_INFO } from "@/apps/forge/config/ConfigInfo";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { LOCAL_PROGRAM_INFO } from "./ConfigInfo";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -32,23 +32,27 @@ export async function fetchUpdateInfo(
   try {
     const res = await fetch(updateLink, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    const data = await res.json();
-    if (data && typeof data.content === "string") {
-      const decoded = atob(data.content.replace(/\s/g, ""));
-      const str = new TextDecoder("utf-8").decode(Uint8Array.from(decoded, (c) => c.charCodeAt(0)));
-      const jsonMatch = str.match(/<---JSON_START--->\s*#\s*(\{[\s\S]*?\})\s*#\s*<---JSON_END--->/);
-      if (jsonMatch) {
-        const cleaned = jsonMatch[1].replace(/,(\s*[}\]])/g, "$1");
-        return JSON.parse(cleaned) as RemoteUpdateInfo;
+    const data: unknown = await res.json();
+    if (data && typeof data === "object" && data !== null) {
+      const obj = data as Record<string, unknown>;
+      if (typeof obj.content === "string") {
+        const decoded = atob(obj.content.replace(/\s/g, ""));
+        const str = new TextDecoder("utf-8").decode(Uint8Array.from(decoded, (c: string) => c.charCodeAt(0)));
+        const jsonMatch = str.match(/<---JSON_START--->\s*#\s*(\{[\s\S]*?\})\s*#\s*<---JSON_END--->/);
+        if (jsonMatch && jsonMatch[1]) {
+          const cleaned = jsonMatch[1].replace(/,(\s*[}\]])/g, "$1");
+          return JSON.parse(cleaned) as RemoteUpdateInfo;
+        }
+        const parsed = JSON.parse(str) as Record<string, unknown>;
+        if (typeof parsed.version === "string") {
+          return { toolsetLatestVersion: parsed.version, currentVersion: parsed.version };
+        }
+        return parsed as RemoteUpdateInfo;
       }
-      const parsed = JSON.parse(str) as Record<string, unknown>;
-      if (typeof parsed.version === "string") {
-        return { toolsetLatestVersion: parsed.version, currentVersion: parsed.version };
+      if (typeof obj.version === "string") {
+        const v = obj.version;
+        return { toolsetLatestVersion: v, currentVersion: v };
       }
-      return parsed as RemoteUpdateInfo;
-    }
-    if (data && typeof data.version === "string") {
-      return { toolsetLatestVersion: data.version, currentVersion: data.version };
     }
     return data as RemoteUpdateInfo;
   } finally {

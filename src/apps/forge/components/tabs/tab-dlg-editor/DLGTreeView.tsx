@@ -13,11 +13,11 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-import { DLGNodeType } from '../../../../../enums/dialog/DLGNodeType';
 
-import { DLGTreeNode } from '../../../interfaces/DLGTreeNode';
-import { DLGTreeModel } from '../../../utils/DLGTreeModel';
-import './DLGTreeView.scss';
+import { DLGTreeNode } from '@/apps/forge/interfaces/DLGTreeNode';
+import { DLGTreeModel } from '@/apps/forge/utils/DLGTreeModel';
+import { DLGNodeType } from '@/enums/dialog/DLGNodeType';
+import "@/apps/forge/components/tabs/tab-dlg-editor/DLGTreeView.scss";
 
 interface DLGTreeViewProps {
   model: DLGTreeModel;
@@ -33,7 +33,7 @@ export const DLGTreeView: React.FC<DLGTreeViewProps> = ({
   onNodeContextMenu
 }) => {
   const [rootNodes, setRootNodes] = useState<DLGTreeNode[]>(model.getRootNodes());
-  const [selectedNode, setSelectedNode] = useState<DLGTreeNode | null>(null);
+  const [_selectedNode, setSelectedNode] = useState<DLGTreeNode | null>(null);
   const [draggedNode, setDraggedNode] = useState<DLGTreeNode | null>(null);
   const [dropTarget, setDropTarget] = useState<{ nodeId: string; position: 'before' | 'after' | 'child' } | null>(null);
   const [hoveredNode, setHoveredNode] = useState<DLGTreeNode | null>(null);

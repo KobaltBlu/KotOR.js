@@ -1,4 +1,4 @@
-import { BIFObject } from './BIFObject';
+import { BIFObject } from '@/resource/BIFObject';
 
 describe('BIFObject', () => {
   it('readFromMemory parses minimal BIF buffer and getResourceBuffer returns slice', async () => {

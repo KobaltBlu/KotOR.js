@@ -1,19 +1,19 @@
 import * as THREE from "three";
 
-import { ComputedPath } from "../engine/pathfinding/ComputedPath";
-import { PathPoint } from "../engine/pathfinding/PathPoint";
-import { EngineDebugType } from "../enums";
-import { GameState } from "../GameState";
-import { IClosestPathPointData } from "../interface/engine/pathfinding/IClosestPathPointData";
-import { ResourceLoader } from "../loaders";
-import type { WalkmeshEdge } from "../odyssey/WalkmeshEdge";
-import { GFFObject } from "../resource/GFFObject";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-import { Utility } from "../utility/Utility";
+import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
+import { PathPoint } from "@/engine/pathfinding/PathPoint";
+import { EngineDebugType } from "@/enums";
+import { GameState } from "@/GameState";
+import { IClosestPathPointData } from "@/interface/engine/pathfinding/IClosestPathPointData";
+import { ResourceLoader } from "@/loaders";
+import type { ModuleArea } from "@/module/ModuleArea";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
 
-import type { ModuleArea } from "./ModuleArea";
-import type { ModuleObject } from "./ModuleObject";
 
 
 const log = createScopedLogger(LogScope.Module);

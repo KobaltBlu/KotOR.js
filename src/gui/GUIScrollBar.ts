@@ -1,21 +1,21 @@
 
 import * as THREE from "three";
 
-import { Mouse } from "../controls/Mouse";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { TextureType } from "../enums/loaders/TextureType";
-import { TextureLoader } from "../loaders";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import type { GFFStruct } from "../resource/GFFStruct";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { Mouse } from "@/controls/Mouse";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { TextureType } from "@/enums/loaders/TextureType";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import type { GUIControlEvent } from "@/gui/GUIControlEvent";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import { TextureLoader } from "@/loaders";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
 
 const log = createScopedLogger(LogScope.Game);
-import type { GUIControlEvent } from "./GUIControlEvent";
-import type { GUIListBox } from "./GUIListBox";
 
 /**
  * GUIScrollBar class.

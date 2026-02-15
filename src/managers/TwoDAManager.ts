@@ -1,14 +1,14 @@
-import { IKEYEntry } from "../interface/resource/IKEYEntry";
-import { ResourceLoader } from "../loaders/ResourceLoader";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { TwoDAObject } from "../resource/TwoDAObject";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { IKEYEntry } from "@/interface/resource/IKEYEntry";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import { KEYManager } from "@/managers/KEYManager";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { KEYManager } from "./KEYManager";
 
 
 const log = createScopedLogger(LogScope.Manager);
-import { IBIFResource } from "../interface/resource/IBIFResource";
+import { IBIFResource } from "@/interface/resource/IBIFResource";
 
 /**
  * TwoDAManager class.

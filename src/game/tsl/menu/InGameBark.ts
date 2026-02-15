@@ -1,6 +1,5 @@
-import { InGameBark as K1_InGameBark } from "../../kotor/KOTOR";
-
-import type { GUILabel } from "../../../gui";
+import { InGameBark as K1_InGameBark } from "@/game/kotor/KOTOR";
+import type { GUILabel } from "@/gui";
 
 /**
  * InGameBark class.

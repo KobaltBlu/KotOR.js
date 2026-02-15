@@ -459,7 +459,7 @@ export class SyntaxValidator implements ASTVisitor<void> {
     const paramNames = new Set<string>();
     let foundDefaultParam = false;
 
-    parameters.forEach((param, index) => {
+    parameters.forEach((param, _index) => {
       // Check for duplicate parameter names
       if (paramNames.has(param.name)) {
         this.addError({
@@ -506,7 +506,7 @@ export class SyntaxValidator implements ASTVisitor<void> {
     });
   }
 
-  private validateKotorFunctionCall(functionName: string, args: Expression[], range: SourceRange): void {
+  private validateKotorFunctionCall(functionName: string, args: Expression[], _range: SourceRange): void {
     // Validate specific KOTOR function usage patterns
     switch (functionName) {
       case 'GetGlobalNumber':

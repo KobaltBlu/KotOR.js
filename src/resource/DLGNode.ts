@@ -1,23 +1,22 @@
-import { AudioEmitter } from "../audio";
-import { DialogMessageEntry } from "../engine/DialogMessageEntry";
-import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
-import { DLGNodeEngineType } from "../enums/dialog/DLGNodeEngineType";
-import { DLGNodeType } from "../enums/dialog/DLGNodeType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import type { IDLGNodeCheckList } from "../interface/dialog/IDLGNodeCheckList";
-import type { IDLGNodeScriptParams } from "../interface/dialog/IDLGNodeScriptParams";
-// import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "../managers";
-import type { ModuleCreature, ModuleObject } from "../module";
-// import { NWScript } from "../nwscript/NWScript";
-import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-
-import { CExoLocString } from "./CExoLocString";
-import type { DLGObject } from "./DLGObject";
-import { GFFStruct } from "./GFFStruct";
-import { LIPObject } from "./LIPObject";
+import { AudioEmitter } from "@/audio";
+import { DialogMessageEntry } from "@/engine/DialogMessageEntry";
+import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
+import { DLGNodeEngineType } from "@/enums/dialog/DLGNodeEngineType";
+import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { IDLGNodeCheckList } from "@/interface/dialog/IDLGNodeCheckList";
+import type { IDLGNodeScriptParams } from "@/interface/dialog/IDLGNodeScriptParams";
+// import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "@/managers";
+import type { ModuleCreature, ModuleObject } from "@/module";
+// import { NWScript } from "@/nwscript/NWScript";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { CExoLocString } from "@/resource/CExoLocString";
+import type { DLGObject } from "@/resource/DLGObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { LIPObject } from "@/resource/LIPObject";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 
@@ -359,7 +358,7 @@ export class DLGNode {
           return true;
         }
         return false;
-      }catch(_e){
+      }catch{
         this.checkList.voiceOverError = true;
         return false;
       }

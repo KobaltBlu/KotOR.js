@@ -1,14 +1,13 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
-import { useApp } from '../context/AppContext';
-import { ProfileProvider } from '../context/ProfileContext';
-import type { LauncherProfile } from '../types';
+import { LightboxComponent } from '@/apps/launcher/components/LightboxComponenet';
+import { ProfileLaunchButtons } from '@/apps/launcher/components/ProfileLaunchButtons';
+import { ProfilePromoItems } from '@/apps/launcher/components/ProfilePromoItems';
+import { useApp } from '@/apps/launcher/context/AppContext';
+import { ProfileProvider } from '@/apps/launcher/context/ProfileContext';
+import type { LauncherProfile } from '@/apps/launcher/types';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
-import { createScopedLogger, LogScope } from '../../../utility/Logger';
-
-import { LightboxComponent } from './LightboxComponenet';
-import { ProfileLaunchButtons } from './ProfileLaunchButtons';
-import { ProfilePromoItems } from './ProfilePromoItems';
 
 const log = createScopedLogger(LogScope.Launcher);
 

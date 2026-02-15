@@ -1,10 +1,8 @@
 import React, { useRef } from "react";
 
-import { useApp } from "../../context/AppContext";
-
-import { createScopedLogger, LogScope } from "../../../../utility/Logger";
-
-import type { LauncherProfileElement } from "../../../types";
+import { useApp } from "@/apps/launcher/context/AppContext";
+import type { LauncherProfileElement } from "@/apps/types";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Launcher);
 

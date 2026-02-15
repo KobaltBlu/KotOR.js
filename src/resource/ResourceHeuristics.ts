@@ -5,9 +5,9 @@
  * @file ResourceHeuristics.ts
  */
 
-import { ResourceTypes } from './ResourceTypes';
-import { detectTPCFormat } from './TPCObject';
-import { detectTwoDAFormat } from './TwoDAObject';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { detectTPCFormat } from '@/resource/TPCObject';
+import { detectTwoDAFormat } from '@/resource/TwoDAObject';
 
 /** Extension to ResourceTypes key (lowercase, no leading dot). */
 const EXT_TO_KEY: Record<string, string> = {

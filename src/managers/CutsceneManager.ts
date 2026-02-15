@@ -1,24 +1,24 @@
 import * as THREE from "three";
 
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { AudioEngine } from "../audio/AudioEngine";
-import { CameraMode } from "../enums/dialog/CameraMode";
-import { ConversationState } from "../enums/dialog/ConversationState";
-import { CutsceneMode } from "../enums/dialog/CutsceneMode";
-import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
-import { DLGConversationType } from "../enums/dialog/DLGConversationType";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import { ICameraParticipant } from "../interface/dialog/ICameraParticipant";
-import { ICameraState } from "../interface/dialog/ICameraState";
-import type { ModuleCreature, ModuleObject } from "../module";
-import { DLGNode } from "../resource/DLGNode";
-import { DLGObject } from "../resource/DLGObject";
-import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { CameraMode } from "@/enums/dialog/CameraMode";
+import { ConversationState } from "@/enums/dialog/ConversationState";
+import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
+import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
+import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { ICameraParticipant } from "@/interface/dialog/ICameraParticipant";
+import { ICameraState } from "@/interface/dialog/ICameraState";
+import type { ModuleCreature, ModuleObject } from "@/module";
+import { DLGNode } from "@/resource/DLGNode";
+import { DLGObject } from "@/resource/DLGObject";
+import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

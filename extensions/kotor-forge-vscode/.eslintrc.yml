@@ -3,6 +3,8 @@
 root: true
 ignorePatterns:
   - "server/out/**"
+  - "dist/**"
+  - "webpack.config.js"
 extends:
   - eslint:recommended
   - plugin:import/recommended
@@ -13,6 +15,7 @@ parserOptions:
   sourceType: module
   ecmaFeatures:
     jsx: true
+  project: "tsconfig.eslint.json"
 plugins:
   - "@typescript-eslint"
   - import
@@ -40,12 +43,17 @@ settings:
 
 rules:
   "@typescript-eslint/explicit-function-return-type": off
-  "@typescript-eslint/no-explicit-any": warn
+  "@typescript-eslint/no-explicit-any": error
+  "@typescript-eslint/no-unsafe-argument": error
+  "@typescript-eslint/no-unsafe-assignment": error
+  "@typescript-eslint/no-unsafe-call": error
+  "@typescript-eslint/no-unsafe-member-access": error
+  "@typescript-eslint/no-unsafe-return": error
   "@typescript-eslint/no-unused-vars":
     - warn
     - argsIgnorePattern: "^_"
       varsIgnorePattern: "^_"
-  no-console: warn
+  no-console: error
   no-debugger: warn
   no-unused-vars: off
   no-case-declarations: warn
@@ -94,7 +102,7 @@ overrides:
       - "src/webview/**/*.ts"
       - "src/webview/**/*.tsx"
     parserOptions:
-      # Resolve relative to this extension folder (our lint task runs here).
+      # Use extension tsconfig.webview.json (relative to this config file)
       project: "./tsconfig.webview.json"
     rules:
       no-console: off

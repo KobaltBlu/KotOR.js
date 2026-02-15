@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "react-bootstrap";
 
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { ModalPatcherProjectState, PatcherFile } from "../../states/modal/ModalPatcherProjectState";
+import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ModalPatcherProjectState, PatcherFile } from "@/apps/forge/states/modal/ModalPatcherProjectState";
 
-import { ForgeFileSystem } from "../../ForgeFileSystem";
-import * as KotOR from "../../KotOR";
-import "./ModalPatcherProject.scss";
+import "@/apps/forge/components/modal/ModalPatcherProject.scss";
 
 declare const dialog: { locateDirectoryDialog: () => Promise<string | null> };
 

@@ -1,18 +1,16 @@
 import React, { ChangeEvent, useEffect, useState, useCallback, memo, useMemo } from "react";
 import { Form, InputGroup } from "react-bootstrap";
 
-import { useContextMenu } from "../../common/ContextMenu";
-import { ForgeTreeView } from "../../treeview/ForgeTreeView";
-import { ListItemNode } from "../../treeview/ListItemNode";
+import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
+import { createGFFContextMenuItems } from "@/apps/forge/components/tabs/tab-gff-editor/GFFContextMenu";
+import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
+import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
-
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import * as KotOR from "../../../KotOR";
-import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "../../../states/tabs";
-
-import { createGFFContextMenuItems } from "./GFFContextMenu";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -133,7 +131,7 @@ const GFFStructElement = memo(function GFFStructElement(props: GFFStructElementP
     showContextMenu(e.clientX, e.clientY, contextMenuItems);
   }, [struct, render, showContextMenu]);
 
-  const handleSelect = useCallback((nodeId: string) => {
+  const handleSelect = useCallback((_nodeId: string) => {
     tab.setSelectedField(struct);
   }, [tab, struct]);
 
@@ -221,11 +219,11 @@ const GFFFieldElement = memo(function GFFFieldElement(props: GFFFieldElementProp
     // Add double-click logic if needed
   }, []);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+  const handleContextMenu = useCallback((_e: React.MouseEvent) => {
     // Add context menu logic if needed
   }, []);
 
-  const handleSelect = useCallback((nodeId: string) => {
+  const handleSelect = useCallback((_nodeId: string) => {
     tab.setSelectedField(field);
   }, [tab, field]);
 
@@ -325,7 +323,7 @@ const GFFFieldElement = memo(function GFFFieldElement(props: GFFFieldElementProp
 });
 
 const GFFStructProperties = function(props: GFFStructPropertiesProps){
-  const node = props.node;
+  const _node = props.node;
 
   return <></>;
 }
@@ -407,11 +405,11 @@ const GFFFieldProperties = function(props: GFFFieldPropertiesProps){
     }
 
     if(node.getType() == KotOR.GFFDataType.DWORD64){
-      val = val;
+      void 0; /* val unchanged */
     }
 
     if(node.getType() == KotOR.GFFDataType.INT64){
-      val = val;
+      void 0; /* val unchanged */
     }
 
     node.setValue(val);

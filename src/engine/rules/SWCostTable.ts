@@ -1,5 +1,5 @@
-import { TLKManager } from "../../managers/TLKManager";
-import { TwoDAObject, type ITwoDARowData } from "../../resource/TwoDAObject";
+import { TLKManager } from "@/managers/TLKManager";
+import { TwoDAObject, type ITwoDARowData } from "@/resource/TwoDAObject";
 
 /**
  * SWItemPropsDef class.

@@ -1,8 +1,8 @@
 import * as THREE from "three";
 
-import { Kit, KitComponent, KitComponentHook, KitDoor } from "./IndoorKit";
-import { IndoorLocalizedString, ColorRGB } from "./IndoorTypes";
-import { cloneWalkmesh, cloneWalkmeshFromBuffer, applyWalkmeshTransform } from "./IndoorWalkmesh";
+import { Kit, KitComponent, KitComponentHook, KitDoor } from "@/apps/forge/data/IndoorKit";
+import { IndoorLocalizedString, ColorRGB } from "@/apps/forge/data/IndoorTypes";
+import { cloneWalkmesh, cloneWalkmeshFromBuffer, applyWalkmeshTransform } from "@/apps/forge/data/IndoorWalkmesh";
 
 export type DoorInsertion = {
   door: KitDoor;
@@ -267,15 +267,16 @@ export class IndoorMap {
             );
             component.hooks.push(hook);
           });
-          if (existingById.has(compId)) {
-            const index = embeddedKit.components.indexOf(existingById.get(compId)!);
+          const existingComp = existingById.get(compId);
+          if (existingComp !== undefined) {
+            const index = embeddedKit.components.indexOf(existingComp);
             embeddedKit.components[index] = component;
             existingById.set(compId, component);
           } else {
             embeddedKit.components.push(component);
             existingById.set(compId, component);
           }
-        } catch (err) {
+        } catch {
           return;
         }
       });
@@ -338,7 +339,7 @@ export class IndoorMapRoom {
     this.rotation = rotation;
     this.flipX = flipX;
     this.flipY = flipY;
-    this.hooks = new Array(component.hooks.length).fill(null);
+    this.hooks = Array.from<IndoorMapRoom | null>({ length: component.hooks.length }, () => null);
   }
 
   hookPosition(hook: KitComponentHook, worldOffset = true): THREE.Vector3 {
@@ -357,7 +358,7 @@ export class IndoorMapRoom {
   }
 
   rebuildConnections(rooms: IndoorMapRoom[]): void {
-    this.hooks = new Array(this.component.hooks.length).fill(null);
+    this.hooks = Array.from<IndoorMapRoom | null>({ length: this.component.hooks.length }, () => null);
     this.component.hooks.forEach((hook, hookIndex) => {
       const hookPos = this.hookPosition(hook);
       rooms.forEach((otherRoom) => {

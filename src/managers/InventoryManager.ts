@@ -1,18 +1,18 @@
 import * as path from "path";
 
-import { CurrentGame } from "../engine/CurrentGame";
-import { BaseItemType } from "../enums/combat/BaseItemType";
-import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleItem } from "../module";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { CurrentGame } from "@/engine/CurrentGame";
+import { BaseItemType } from "@/enums/combat/BaseItemType";
+import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleItem } from "@/module";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 const log = createScopedLogger(LogScope.Manager);
-// import { PartyManager } from "./PartyManager";
+// import { PartyManager } from "@/managers/PartyManager";
 
 /**
  * InventoryManager class.

@@ -7,9 +7,9 @@
  * @license GPL-3.0
  */
 
-import type { MDLAABBNode, MDLAnimation, MDLColor, MDLController, MDLControllerRow, MDLEmitter, MDLEvent, MDLFace, MDLLight, MDLMesh, MDLReference, MDLWalkmesh, Vector2, Vector3, Vector4 } from './MDLData';
-import { MDL, MDLNode } from './MDLData';
-import { MDLClassification, MDLDynamicType, MDLNodeFlags, MDLNodeType } from './MDLTypes';
+import type { MDLAABBNode, MDLAnimation, MDLColor, MDLController, MDLControllerRow, MDLEmitter, MDLEvent, MDLFace, MDLLight, MDLMesh, MDLReference, MDLWalkmesh, Vector2, Vector3, Vector4 } from '@/resource/MDLData';
+import { MDL, MDLNode } from '@/resource/MDLData';
+import { MDLClassification, MDLDynamicType, MDLNodeFlags, MDLNodeType } from '@/resource/MDLTypes';
 
 const GEOM_HEADER_SIZE = 0x50;
 const MODEL_HEADER_SIZE = 0xc4;

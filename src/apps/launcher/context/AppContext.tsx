@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import type { AppCategoriesMap, LauncherProfile } from '../types';
-
-import { ConfigClient } from '../../../utility/ConfigClient';
-import { createScopedLogger, LogScope } from '../../../utility/Logger';
+import type { AppCategoriesMap, LauncherProfile } from '@/apps/launcher/types';
+import { ConfigClient } from '@/utility/ConfigClient';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Launcher);
 

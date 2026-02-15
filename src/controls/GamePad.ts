@@ -1,7 +1,7 @@
-import { createScopedLogger, LogScope } from "../utility/Logger";
 
-import { AnalogInput } from "./AnalogInput";
-import { KeyInput } from "./KeyInput";
+import { AnalogInput } from "@/controls/AnalogInput";
+import { KeyInput } from "@/controls/KeyInput";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

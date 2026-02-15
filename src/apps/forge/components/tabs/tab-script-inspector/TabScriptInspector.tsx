@@ -1,13 +1,11 @@
 import React, { useState } from "react";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-
-import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP } from "../../../../../nwscript/NWScriptOPCodes";
-import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
-
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import * as KotOR from "../../../KotOR";
-import { TabTextEditorState } from "../../../states/tabs";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabTextEditorState } from "@/apps/forge/states/tabs";
+import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP } from "@/nwscript/NWScriptOPCodes";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 

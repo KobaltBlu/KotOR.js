@@ -2,9 +2,9 @@ import * as path from "path";
 
 import { BrowserWindow, shell } from "electron";
 
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import Main from "@/electron/Main";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import Main from "./Main";
 
 
 const log = createScopedLogger(LogScope.Debug);

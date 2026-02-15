@@ -1,6 +1,6 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type {  GUILabel, GUIButton } from "../../../gui";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type {  GUILabel, GUIButton } from "@/gui";
 
 /** TLK 32321: "Max wager" label prefix */
 const TLK_MAX_WAGER = 0x7e41;

@@ -14,6 +14,7 @@ import {
   Identifier,
   Literal,
   Program,
+  SourceRange,
   VariableDeclaration,
   walkAST
 } from './nwscript-ast';
@@ -97,8 +98,8 @@ export class KotorValidator implements ASTVisitor<void> {
   private validateKotorIncludes(program: Program): void {
     const includeNames = program.includes.map(inc => inc.filename);
 
-    // Check for common KOTOR includes
-    const commonIncludes = [
+    // Check for common KOTOR includes (reserved for future use)
+    const _commonIncludes = [
       'k_inc_generic',
       'k_inc_utility',
       'k_inc_debug',
@@ -385,7 +386,7 @@ export class KotorValidator implements ASTVisitor<void> {
     }
   }
 
-  private validateGlobalPattern(node: CallExpression, functionName: string): void {
+  private validateGlobalPattern(node: CallExpression, _functionName: string): void {
     if (node.arguments.length > 0) {
       const firstArg = node.arguments[0];
       if (firstArg instanceof Literal && typeof firstArg.value === 'string') {
@@ -506,7 +507,7 @@ export class KotorValidator implements ASTVisitor<void> {
     });
   }
 
-  private checkDeprecatedFunctions(functionName: string, range: any): void {
+  private checkDeprecatedFunctions(functionName: string, range: SourceRange): void {
     // Functions that were deprecated or changed between KOTOR versions
     const deprecatedFunctions = new Map([
       ['GetLocalInt', 'Use GetLocalNumber instead'],
@@ -526,7 +527,7 @@ export class KotorValidator implements ASTVisitor<void> {
     }
   }
 
-  private checkGameSpecificFunctions(functionName: string, range: any): void {
+  private checkGameSpecificFunctions(functionName: string, range: SourceRange): void {
     // Functions that are specific to KOTOR 1 or KOTOR 2
     const kotor1OnlyFunctions = [
       'GetModuleItemAcquiredStackSize',

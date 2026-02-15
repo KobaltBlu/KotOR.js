@@ -1,6 +1,6 @@
-import { BinaryWriter } from '../utility/binary/BinaryWriter';
+import { detectTwoDAFormat, readTwoDAFromBuffer, TwoDAObject, writeTwoDAToBuffer } from '@/resource/TwoDAObject';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
-import { detectTwoDAFormat, readTwoDAFromBuffer, TwoDAObject, writeTwoDAToBuffer } from './TwoDAObject';
 
 describe('TwoDAObject', () => {
   function makeMinimal2DA(): Uint8Array {
@@ -38,11 +38,14 @@ describe('TwoDAObject', () => {
     const two = new TwoDAObject(data);
     const row0 = two.getRow(0);
     expect(row0).toBeDefined();
-    expect(row0!.label()).toBe('0');
-    expect(row0!.getString('col1')).toBe('a');
-    expect(row0!.getInteger('col1', -1)).toBe(-1);
+    if (!row0) return;
+    expect(row0.label()).toBe('0');
+    expect(row0.getString('col1')).toBe('a');
+    expect(row0.getInteger('col1', -1)).toBe(-1);
     const row1 = two.getRow(1);
-    expect(row1!.getString('col1')).toBe('b');
+    expect(row1).toBeDefined();
+    if (!row1) return;
+    expect(row1.getString('col1')).toBe('b');
   });
 
   it('findRow finds by label', () => {
@@ -50,7 +53,8 @@ describe('TwoDAObject', () => {
     const two = new TwoDAObject(data);
     const row = two.findRow('1');
     expect(row).not.toBeNull();
-    expect(row!.getString('col1')).toBe('b');
+    if (!row) return;
+    expect(row.getString('col1')).toBe('b');
     expect(two.findRow('99')).toBeNull();
   });
 
@@ -65,7 +69,9 @@ describe('TwoDAObject', () => {
     const data = makeMinimal2DA();
     const two = new TwoDAObject(data);
     two.setCell(0, 'col1', 'new');
-    expect(two.getRow(0)!.getString('col1')).toBe('new');
+    const r0 = two.getRow(0);
+    expect(r0).toBeDefined();
+    expect(r0?.getString('col1')).toBe('new');
   });
 
   it('addRow adds row and returns index', () => {
@@ -74,7 +80,9 @@ describe('TwoDAObject', () => {
     const idx = two.addRow('2', { col1: 'c' });
     expect(idx).toBe(2);
     expect(two.getHeight()).toBe(3);
-    expect(two.findRow('2')!.getString('col1')).toBe('c');
+    const f2 = two.findRow('2');
+    expect(f2).toBeDefined();
+    expect(f2?.getString('col1')).toBe('c');
   });
 
   it('getColumn returns column values', () => {
@@ -134,12 +142,17 @@ describe('TwoDAObject', () => {
   it('copyRow and rowIndex', () => {
     const data = makeMinimal2DA();
     const two = new TwoDAObject(data);
-    const row0 = two.getRow(0)!;
+    const row0 = two.getRow(0);
+    expect(row0).toBeDefined();
+    if (!row0) return;
     const idx = two.copyRow(row0, '2', { col1: 'copy' });
     expect(idx).toBe(2);
-    expect(two.getRow(2)!.getString('col1')).toBe('copy');
+    const row2 = two.getRow(2);
+    expect(row2).toBeDefined();
+    if (!row2) return;
+    expect(row2.getString('col1')).toBe('copy');
     expect(two.rowIndex(row0)).toBe(0);
-    expect(two.rowIndex(two.getRow(2)!)).toBe(2);
+    expect(two.rowIndex(row2)).toBe(2);
   });
 
   it('filterRows', () => {
@@ -147,7 +160,9 @@ describe('TwoDAObject', () => {
     const two = new TwoDAObject(data);
     const filtered = two.filterRows(row => row.getString('col1') === 'b');
     expect(filtered.getHeight()).toBe(1);
-    expect(filtered.getRow(0)!.getString('col1')).toBe('b');
+    const fr0 = filtered.getRow(0);
+    expect(fr0).toBeDefined();
+    expect(fr0?.getString('col1')).toBe('b');
   });
 
   it('columnMax and labelMax', () => {
@@ -230,7 +245,9 @@ describe('TwoDAObject', () => {
     const buf = new TextEncoder().encode(JSON.stringify({ headers: ['c'], rows: [{ label: '0', cells: ['v'] }] }));
     const two = TwoDAObject.fromBuffer(buf);
     expect(two.getHeight()).toBe(1);
-    expect(two.getRow(0)!.getString('c')).toBe('v');
+    const jr0 = two.getRow(0);
+    expect(jr0).toBeDefined();
+    expect(jr0?.getString('c')).toBe('v');
   });
 
   it('fromBuffer with explicit format', () => {
@@ -242,13 +259,15 @@ describe('TwoDAObject', () => {
   it('TwoDARow hasString and updateValues', () => {
     const data = makeMinimal2DA();
     const two = new TwoDAObject(data);
-    const row = two.getRow(0)!;
+    const row = two.getRow(0);
+    expect(row).toBeDefined();
+    if (!row) return;
     expect(row.hasString('col1')).toBe(true);
     expect(row.hasString('__rowlabel')).toBe(true);
     expect(row.hasString('nonexistent')).toBe(false);
     row.updateValues({ col1: 'updated' });
     expect(row.getString('col1')).toBe('updated');
-    expect(two.getRow(0)!.getString('col1')).toBe('updated');
+    expect(two.getRow(0)?.getString('col1')).toBe('updated');
   });
 
   it('readTwoDAFromBuffer and writeTwoDAToBuffer round-trip csv/json', () => {
@@ -271,6 +290,7 @@ describe('TwoDAObject', () => {
     const csv = two.toBuffer('csv');
     expect(new TextDecoder().decode(csv)).toContain('col1');
     const json = two.toBuffer('json');
-    expect(JSON.parse(new TextDecoder().decode(json)).headers).toContain('col1');
+    const parsed = JSON.parse(new TextDecoder().decode(json)) as { headers: string[] };
+    expect(parsed.headers).toContain('col1');
   });
 });

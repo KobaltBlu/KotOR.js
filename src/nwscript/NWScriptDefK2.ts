@@ -1,18 +1,17 @@
-import { ModuleObjectScript, ModuleObjectType } from "../enums";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject } from "../module";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-
-import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
-import { NWScriptDef } from "./NWScriptDef";
-import { NWScriptDefK1 } from "./NWScriptDefK1";
+import { ModuleObjectScript, ModuleObjectType } from "@/enums";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleObject } from "@/module";
+import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
+import { NWScriptDef } from "@/nwscript/NWScriptDef";
+import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
 
 
 const log = createScopedLogger(LogScope.NWScript);
-import { NWScriptInstance } from "./NWScriptInstance";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /**
  * NWScriptDefK2 class.

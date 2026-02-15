@@ -1,25 +1,25 @@
-import { SignalEventType } from "../enums";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import { SkillType } from "../enums/nwscript/SkillType";
-import { GameState } from "../GameState";
-import { ResourceLoader } from "../loaders/ResourceLoader";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import type { ModuleDoor } from "../module/ModuleDoor";
-import type { ModuleObject } from "../module/ModuleObject";
-import type { ModulePlaceable } from "../module/ModulePlaceable";
-import type { ModuleTrigger } from "../module/ModuleTrigger";
-import { GFFObject } from "../resource/GFFObject";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
+import { Action } from "@/actions/Action";
+import type { ActionFactory } from "@/actions/ActionFactory";
+import { SignalEventType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import { GameState } from "@/GameState";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleDoor } from "@/module/ModuleDoor";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModulePlaceable } from "@/module/ModulePlaceable";
+import type { ModuleTrigger } from "@/module/ModuleTrigger";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
 
-import { Action } from "./Action";
-import type { ActionFactory } from "./ActionFactory";
 
 /** Recover delay in seconds (4.5s). */
 const RECOVER_DELAY_SECONDS = 4.5;
@@ -71,7 +71,7 @@ export class ActionRecoverMine extends Action {
     // 0 - DWORD: oTarget (trigger/mine, door, or placeable with trap)
   }
 
-  update(delta?: number): ActionStatus {
+  update(_delta?: number): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
     if (!this.target) {
       this.stopRecoverState();

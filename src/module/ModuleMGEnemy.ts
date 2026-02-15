@@ -1,19 +1,19 @@
 import * as THREE from "three";
 
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import { IModelListItem } from "../interface/module/minigame/IModelListItem";
-import { MDLLoader } from "../loaders";
-import { NWScript } from "../nwscript/NWScript";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyModel3D } from "../three/odyssey";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
+import { MDLLoader } from "@/loaders";
+import { ModuleMGGunBank } from "@/module/ModuleMGGunBank";
+import { ModuleObject } from "@/module/ModuleObject";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel, OdysseyModelAnimationManager } from "@/odyssey";
+import { GFFObject } from "@/resource/GFFObject";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { ModuleMGGunBank } from "./ModuleMGGunBank";
-import { ModuleObject } from "./ModuleObject";
 
 const log = createScopedLogger(LogScope.Game);
 

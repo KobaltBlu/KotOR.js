@@ -1,13 +1,13 @@
 import * as path from 'path';
 
-import { IBIFEntry } from '../interface/resource/IBIFEntry';
-import { IBIFResource } from '../interface/resource/IBIFResource';
-import { IKEYEntry } from '../interface/resource/IKEYEntry';
-import { BIFManager } from '../managers/BIFManager';
-import { BinaryReader } from '../utility/binary/BinaryReader';
-import { GameFileSystem } from '../utility/GameFileSystem';
+import { IBIFEntry } from '@/interface/resource/IBIFEntry';
+import { IBIFResource } from '@/interface/resource/IBIFResource';
+import { IKEYEntry } from '@/interface/resource/IKEYEntry';
+import { BIFManager } from '@/managers/BIFManager';
+import { BIFObject } from '@/resource/BIFObject';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { GameFileSystem } from '@/utility/GameFileSystem';
 
-import { BIFObject } from './BIFObject';
 
 /**
  * KEYObject class.

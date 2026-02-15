@@ -1,11 +1,11 @@
 import * as THREE from "three";
 
-import { ActionParameterType, ActionStatus, ActionType, ModuleObjectType } from "../enums";
-import { GameState } from "../GameState";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import { BitWise } from "../utility/BitWise";
+import { Action } from "@/actions/Action";
+import { ActionParameterType, ActionStatus, ActionType, ModuleObjectType } from "@/enums";
+import { GameState } from "@/GameState";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { BitWise } from "@/utility/BitWise";
 
-import { Action } from "./Action";
 
 /**
  * ActionRandomWalk class.
@@ -25,7 +25,7 @@ export class ActionRandomWalk extends Action {
     //PARAMS
   }
 
-  update(delta?: number): ActionStatus {
+  update(_delta?: number): ActionStatus {
     if(!this.owner){
       return ActionStatus.FAILED;
     }

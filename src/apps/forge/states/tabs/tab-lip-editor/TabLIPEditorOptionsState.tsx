@@ -1,28 +1,39 @@
 import React from 'react';
 
-import type BaseTabStateOptions from '../../../interfaces/BaseTabStateOptions';
-import { TabLIPEditorOptions } from '../../../components/tabs/tab-lip-editor/TabLIPEditorOptions';
-import { SceneGraphNode } from '../../../SceneGraphNode';
-import { TabState } from '../TabState';
+
+import { TabLIPEditorOptions } from '@/apps/forge/components/tabs/tab-lip-editor/TabLIPEditorOptions';
+import type BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { SceneGraphNode } from '@/apps/forge/SceneGraphNode';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabLIPEditorOptionsState extends TabState {
 
   tabName: string = 'LIP';
 
   sceneGraphNodes: SceneGraphNode[] = [];
-  sceneGraphNode: SceneGraphNode = new SceneGraphNode({ name: 'Scene' });
-  keyframesGraphNode: SceneGraphNode = new SceneGraphNode({ name: 'Key Frames' });
+  sceneGraphNode!: SceneGraphNode;
+  keyframesGraphNode!: SceneGraphNode;
 
   constructor(options: BaseTabStateOptions = {}) {
+    log.trace('TabLIPEditorOptionsState constructor entry');
     super(options);
     this.singleInstance = true;
     this.isClosable = false;
 
+    /* SceneGraphNode can be reported as unresolved when @/ path is not resolved by ESLint parser */
+    /* eslint-disable-next-line @typescript-eslint/no-unsafe-call -- construction; type from @/apps/forge/SceneGraphNode */
+    this.sceneGraphNode = new SceneGraphNode({ name: 'Scene' });
+    /* eslint-disable-next-line @typescript-eslint/no-unsafe-call -- construction; type from @/apps/forge/SceneGraphNode */
+    this.keyframesGraphNode = new SceneGraphNode({ name: 'Key Frames' });
     this.sceneGraphNodes = [
-      this.sceneGraphNode, this.keyframesGraphNode
+      this.sceneGraphNode,
+      this.keyframesGraphNode,
     ];
 
     this.setContentView(<TabLIPEditorOptions tab={this} parentTab={options.parentTab}></TabLIPEditorOptions>);
+    log.trace('TabLIPEditorOptionsState constructor exit');
   }
-
 }

@@ -10,8 +10,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { DLGNodeType } from "../../../enums/dialog/DLGNodeType";
-import { DLGNode } from "../../../resource/DLGNode";
+import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
+import { DLGNode } from "@/resource/DLGNode";
 
 export interface DLGTreeNode {
   /** Unique ID for this tree node */

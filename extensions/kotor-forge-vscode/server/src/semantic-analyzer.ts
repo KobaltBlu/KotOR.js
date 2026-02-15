@@ -38,6 +38,7 @@ import {
   Program,
   ReturnStatement,
   SourceRange,
+  Statement,
   StructDeclaration,
   SwitchStatement,
   UnaryExpression,
@@ -94,7 +95,7 @@ export class SemanticAnalyzer implements ASTVisitor<void> {
 
   constructor(
     scriptlibFunctions: NWScriptFunction[] = [],
-    scriptlibConstants: { [key: string]: any } = {},
+    scriptlibConstants: Record<string, string | number> = {},
     gameVersion: GameVersion = 'both'
   ) {
     this.gameVersion = gameVersion;
@@ -1283,7 +1284,7 @@ export class SemanticAnalyzer implements ASTVisitor<void> {
     }
   }
 
-  private hasReturnInAllPaths(stmt: any): boolean {
+  private hasReturnInAllPaths(stmt: Statement): boolean {
     // Best-effort static analysis:
     // - ReturnStatement: true
     // - BlockStatement: walk sequentially; if any statement guarantees return, the block returns
@@ -1309,7 +1310,7 @@ export class SemanticAnalyzer implements ASTVisitor<void> {
       for (const c of stmt.cases) {
         if (!c.test) hasDefault = true;
         // Case returns if any of its consequent statements returns
-        const caseReturns = c.consequent?.some((cs: any) => this.hasReturnInAllPaths(cs)) || false;
+        const caseReturns = c.consequent?.some((cs: Statement) => this.hasReturnInAllPaths(cs)) || false;
         if (!caseReturns) return false;
       }
       // Require a default case to be confident

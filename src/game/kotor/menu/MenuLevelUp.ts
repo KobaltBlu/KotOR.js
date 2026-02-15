@@ -1,5 +1,5 @@
-import { GameMenu } from "../../../gui";
-import type { GUILabel, GUIButton, GUIControl } from "../../../gui";
+import { GameMenu } from "@/gui";
+import type { GUILabel, GUIButton, GUIControl } from "@/gui";
 
 /**
  * MenuLevelUp class.

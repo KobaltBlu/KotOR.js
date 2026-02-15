@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from "react";
 
-import { createScopedLogger, LogScope } from "../../utility/Logger";
 
-import { LoadingScreen } from "../common/components/loadingScreen/LoadingScreen";
-
-import { CommandPalette } from "./components/CommandPalette";
-import { LayoutContainer } from "./components/LayoutContainer/LayoutContainer";
-import { ModalChangeGame } from "./components/modal/ModalChangeGame";
-import ModalGrantAccess from "./components/modal/ModalGrantAccess";
-import { ModalManager } from "./components/modal/ModalManager";
-import TabManager from "./components/tabs/TabManager";
-import { useApp } from "./context/AppContext";
-import { LayoutContainerProvider } from "./context/LayoutContainerContext";
-import { TabManagerProvider } from "./context/TabManagerContext";
-import { useEffectOnce } from "./helpers/UseEffectOnce";
-import { ForgeState } from "./states/ForgeState";
+import { LoadingScreen } from "@/apps/common/components/loadingScreen/LoadingScreen";
+import { CommandPalette } from "@/apps/forge/components/CommandPalette";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { ModalChangeGame } from "@/apps/forge/components/modal/ModalChangeGame";
+import ModalGrantAccess from "@/apps/forge/components/modal/ModalGrantAccess";
+import { ModalManager } from "@/apps/forge/components/modal/ModalManager";
+import TabManager from "@/apps/forge/components/tabs/TabManager";
+import { useApp } from "@/apps/forge/context/AppContext";
+import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
+import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 // MenuTop removed: top menu disabled
-// import { MenuTop } from "./components/MenuTop";
+// import { MenuTop } from "@/apps/forge/components/MenuTop";
 
 
 
@@ -31,7 +30,7 @@ export const App = (_props: AppProps) => {
 
   const appContext = useApp();
   const [appReady, setAppReady] = appContext.appReady;
-  const [showGrantModal, setShowGrantModal] = appContext.showGrantModal;
+  const [_showGrantModal, setShowGrantModal] = appContext.showGrantModal;
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showLoadingScreen] = appContext.showLoadingScreen;
   const [loadingScreenMessage] = appContext.loadingScreenMessage;
@@ -56,10 +55,7 @@ export const App = (_props: AppProps) => {
       dispatchEvent( new Event('resize'));
     }, 100);
 
-    // console.log('start');
-    // TabResourceExplorerState.GenerateResourceList().then( () => {
-    //   console.log('end');
-    // })
+    log.trace('Forge init complete');
   };
 
   const onUserCancel = () => {

@@ -1,10 +1,9 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import type { IGFFFieldJSON } from "../interface/resource/IGFFFieldJSON";
-import type { IGFFStructJSON } from "../interface/resource/IGFFStructJSON";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-
-import { CExoLocString } from "./CExoLocString";
-import { GFFStruct } from "./GFFStruct";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import type { IGFFFieldJSON } from "@/interface/resource/IGFFFieldJSON";
+import type { IGFFStructJSON } from "@/interface/resource/IGFFStructJSON";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Loader);
 

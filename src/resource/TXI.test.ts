@@ -1,4 +1,4 @@
-import { TXI } from './TXI';
+import { TXI } from '@/resource/TXI';
 
 describe('TXI', () => {
   it('parses from string', () => {

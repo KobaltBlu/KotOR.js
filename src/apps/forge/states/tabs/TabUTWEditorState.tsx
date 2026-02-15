@@ -1,14 +1,15 @@
 import React from "react";
 import * as THREE from 'three';
 
-import { TabUTWEditor } from "../../components/tabs/tab-utw-editor/TabUTWEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { ForgeWaypoint } from "../../module-editor/ForgeWaypoint";
+import { TabUTWEditor } from "@/apps/forge/components/tabs/tab-utw-editor/TabUTWEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
-
-import { TabState } from "./TabState";
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabUTWEditorState extends TabState {
   tabName: string = `UTW`;
@@ -19,6 +20,7 @@ export class TabUTWEditorState extends TabState {
   }
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace('TabUTWEditorState constructor entry');
     super(options);
 
     this.setContentView(<TabUTWEditor tab={this}></TabUTWEditor>);
@@ -32,12 +34,12 @@ export class TabUTWEditorState extends TabState {
       }
     ];
 
-    this.addEventListener('onTabRemoved', (tab: TabState) => {
-
-    });
+    this.addEventListener('onTabRemoved', (_tab: TabState) => {});
+    log.trace('TabUTWEditorState constructor exit');
   }
 
   public openFile(file?: EditorFile){
+    log.trace('TabUTWEditorState openFile entry', !!file);
     return new Promise<KotOR.GFFObject>( (resolve, reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
@@ -47,21 +49,27 @@ export class TabUTWEditorState extends TabState {
         if(this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
+        log.debug('TabUTWEditorState openFile tabName', this.tabName);
 
         file.readFile().then( (response) => {
           this.waypoint = new ForgeWaypoint(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
+          log.trace('TabUTWEditorState openFile loaded');
           resolve(this.blueprint);
         });
+      } else {
+        log.trace('TabUTWEditorState openFile no file');
       }
     });
   }
 
   show(): void {
+    log.trace('TabUTWEditorState show');
     super.show();
   }
 
   hide(): void {
+    log.trace('TabUTWEditorState hide');
     super.hide();
   }
 
@@ -70,6 +78,7 @@ export class TabUTWEditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
+    log.trace('TabUTWEditorState getExportBuffer', resref, ext);
     if(!!resref && ext == 'utw'){
       this.waypoint.templateResRef = resref;
       this.updateFile();
@@ -79,6 +88,7 @@ export class TabUTWEditorState extends TabState {
   }
 
   updateFile(){
+    log.trace('TabUTWEditorState updateFile');
     this.waypoint.exportToBlueprint();
   }
 

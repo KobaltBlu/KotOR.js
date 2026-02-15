@@ -1,8 +1,7 @@
-import { MenuContainer as K1_MenuContainer } from "../../kotor/KOTOR";
-
-import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { ModuleCreature, ModulePlaceable } from "../../../module";
+import { MenuContainer as K1_MenuContainer } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { ModuleCreature, ModulePlaceable } from "@/module";
 
 /**
  * MenuContainer class.

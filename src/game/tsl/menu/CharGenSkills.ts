@@ -1,6 +1,5 @@
-import { CharGenSkills as K1_CharGenSkills } from "../../kotor/KOTOR";
-
-import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { CharGenSkills as K1_CharGenSkills } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
 
 /**
  * CharGenSkills class.

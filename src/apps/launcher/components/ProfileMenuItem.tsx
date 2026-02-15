@@ -1,7 +1,7 @@
 import React from "react";
 
-import { AppProvider, AppProviderValues, useApp } from "../context/AppContext";
-import type { LauncherProfile } from "../types";
+import { AppProvider, AppProviderValues, useApp } from "@/apps/launcher/context/AppContext";
+import type { LauncherProfile } from "@/apps/launcher/types";
 
 export interface ProfileMenuItemProps {
   profile: LauncherProfile;

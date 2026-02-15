@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Button, Form, FormCheck } from "react-bootstrap";
 
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { ModalExtractOptionsState } from "../../states/modal/ModalExtractOptionsState";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { ModalExtractOptionsState } from "@/apps/forge/states/modal/ModalExtractOptionsState";
 
 /**
  * Dialog for configuring extraction options (ported from Holocron ExtractOptionsDialog).

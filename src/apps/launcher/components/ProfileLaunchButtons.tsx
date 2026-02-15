@@ -1,12 +1,11 @@
 import React, { useState } from "react";
 
-import { useApp } from "../context/AppContext";
-import type { LauncherProfile } from "../types";
-
-import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
-import { ApplicationProfile } from "../../../utility/ApplicationProfile";
-import { ConfigClient } from "../../../utility/ConfigClient";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { useApp } from "@/apps/launcher/context/AppContext";
+import type { LauncherProfile } from "@/apps/launcher/types";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { ConfigClient } from "@/utility/ConfigClient";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Launcher);
 

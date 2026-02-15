@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-
-import type { GFFFieldValue } from "../../../interfaces/GFFFormField";
-import * as KotOR from "../../../KotOR";
-import { TabFACEditorState } from "../../../states/tabs";
-import "./TabFACEditor.scss";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import type { GFFFieldValue } from "@/apps/forge/interfaces/GFFFormField";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabFACEditorState } from "@/apps/forge/states/tabs";
+import "@/apps/forge/components/tabs/tab-fac-editor/TabFACEditor.scss";
 
 interface BaseTabProps {
   tab: TabFACEditorState;
@@ -170,11 +169,11 @@ const FactionProperties = (props: FactionPropertiesProps) => {
         {reputations.length === 0 ? (
           <p className="no-data">No reputation relationships defined.</p>
         ) : (
-          reputations.map((rep, index) => {
-            const targetID = rep.getFieldByLabel('FactionID')?.getValue() || 0;
-            const repValue = rep.getFieldByLabel('FactionRep')?.getValue() || 50;
+          reputations.map((rep: KotOR.GFFStruct, index: number) => {
+            const targetID = (rep.getFieldByLabel('FactionID')?.getValue() as number | undefined) ?? 0;
+            const repValue = (rep.getFieldByLabel('FactionRep')?.getValue() as number | undefined) ?? 50;
             const targetFaction = allFactions[targetID];
-            const targetName = targetFaction?.getFieldByLabel('FactionName')?.getValue() || `Faction ${targetID}`;
+            const targetName = (targetFaction?.getFieldByLabel('FactionName')?.getValue() as string | undefined) ?? `Faction ${targetID}`;
 
             return (
               <div key={index} className="reputation-item">

@@ -1,27 +1,32 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import { DLGDialogPropertiesPanel } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGDialogPropertiesPanel";
+import { DLGNodePropertiesPanel } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGNodePropertiesPanel";
+import { DLGReferenceChooser } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGReferenceChooser";
+import { DLGSearchBar } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGSearchBar";
+import { DLGTreeView } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGTreeView";
+import { DLGTreeNode, DLGNodeReference } from "@/apps/forge/interfaces/DLGTreeNode";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabDLGEditorState } from "@/apps/forge/states/tabs";
+import { DLGClipboardManager } from "@/apps/forge/utils/DLGClipboardManager";
+import { DLGDragDropManager } from "@/apps/forge/utils/DLGDragDropManager";
+import { DLGNavigationManager } from "@/apps/forge/utils/DLGNavigationManager";
+import { DLGTreeModel } from "@/apps/forge/utils/DLGTreeModel";
+import { DLGUndoManager } from "@/apps/forge/utils/DLGUndoManager";
+import { DLGValidation, ValidationSeverity } from "@/apps/forge/utils/DLGValidation";
 
-import { DLGTreeNode, DLGNodeReference } from "../../../interfaces/DLGTreeNode";
-import * as KotOR from "../../../KotOR";
-import { TabDLGEditorState } from "../../../states/tabs";
-import { DLGClipboardManager } from "../../../utils/DLGClipboardManager";
-import { DLGDragDropManager } from "../../../utils/DLGDragDropManager";
-import { DLGNavigationManager } from "../../../utils/DLGNavigationManager";
-import { DLGTreeModel } from "../../../utils/DLGTreeModel";
-import { DLGUndoManager } from "../../../utils/DLGUndoManager";
-import { DLGValidation, ValidationSeverity } from "../../../utils/DLGValidation";
-
-import { DLGDialogPropertiesPanel } from "./DLGDialogPropertiesPanel";
-import { DLGNodePropertiesPanel } from "./DLGNodePropertiesPanel";
-import { DLGReferenceChooser } from "./DLGReferenceChooser";
-import { DLGSearchBar } from "./DLGSearchBar";
-import { DLGTreeView } from "./DLGTreeView";
-
-import "./TabDLGEditor.scss";
+import "@/apps/forge/components/tabs/tab-dlg-editor/TabDLGEditor.scss";
 
 interface BaseTabProps {
   tab: TabDLGEditorState;
+}
+
+/** Tab methods used by menu; typed to avoid unresolved/circular type in tab.save/saveAs/revert */
+interface TabSaveRevert {
+  save: () => Promise<boolean>;
+  saveAs: () => Promise<boolean>;
+  revert: () => Promise<boolean>;
 }
 
 type ViewMode = 'tree' | 'list' | 'split';
@@ -58,7 +63,7 @@ export const TabDLGEditor = function (props: BaseTabProps) {
   // Managers
   const undoManager = useRef(new DLGUndoManager(100));
   const navigationManager = useRef(new DLGNavigationManager(50));
-  const clipboardManager = useRef(new DLGClipboardManager());
+  const clipboardManager = useRef<DLGClipboardManager>(new DLGClipboardManager());
   const dragDropManager = useRef<DLGDragDropManager | null>(null);
 
   // Undo/redo state
@@ -68,6 +73,16 @@ export const TabDLGEditor = function (props: BaseTabProps) {
   // Navigation state
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
+
+  // Clipboard state (Paste enabled when clipboard has data)
+  const [canPaste, setCanPaste] = useState(false);
+  useEffect(() => {
+    const unsubscribe = clipboardManager.current.onChange(() => {
+      setCanPaste(clipboardManager.current.hasClipboard());
+    });
+    setCanPaste(clipboardManager.current.hasClipboard());
+    return unsubscribe;
+  }, []);
 
   // Initialize tree model when dialog loads
   useEffect(() => {
@@ -287,7 +302,7 @@ export const TabDLGEditor = function (props: BaseTabProps) {
   const handleAutoFix = useCallback(() => {
     if (dlg) {
       const validation = new DLGValidation(dlg);
-      const fixed = validation.autoFix();
+      const fixed: number = validation.autoFix();
       setValidationIssues(validation.validate());
       treeModel?.refresh();
       tab.file.unsaved_changes = true;
@@ -295,13 +310,18 @@ export const TabDLGEditor = function (props: BaseTabProps) {
     }
   }, [dlg, treeModel, tab]);
 
+  const tabActions = tab as TabDLGEditorState & TabSaveRevert;
+  const onSave = useCallback(() => { void tabActions.save(); }, [tabActions]);
+  const onSaveAs = useCallback(() => { void tabActions.saveAs(); }, [tabActions]);
+  const onRevert = useCallback(() => { void tabActions.revert(); }, [tabActions]);
+
   const menuItems: MenuItem[] = useMemo(() => [
     {
       label: 'File',
       children: [
-        { label: 'Save', onClick: () => tab.save(), disabled: !tab.file.unsaved_changes },
-        { label: 'Save As', onClick: () => tab.saveAs() },
-        { label: 'Revert', onClick: () => tab.revert(), disabled: !tab.file.unsaved_changes }
+        { label: 'Save', onClick: onSave, disabled: !tab.file.unsaved_changes },
+        { label: 'Save As', onClick: onSaveAs },
+        { label: 'Revert', onClick: onRevert, disabled: !tab.file.unsaved_changes }
       ]
     },
     {
@@ -312,7 +332,7 @@ export const TabDLGEditor = function (props: BaseTabProps) {
         { label: '---' },
         { label: 'Copy', onClick: handleCopy, disabled: !selectedTreeNode },
         { label: 'Cut', onClick: handleCut, disabled: !selectedTreeNode },
-        { label: 'Paste', onClick: handlePaste, disabled: !clipboardManager.current.hasClipboard() },
+        { label: 'Paste', onClick: handlePaste, disabled: !canPaste },
         { label: '---' },
         { label: 'Find', onClick: () => { setSearchMode('search'); setShowSearch(true); } },
         { label: 'Go To', onClick: () => { setSearchMode('goto'); setShowSearch(true); } }
@@ -329,8 +349,8 @@ export const TabDLGEditor = function (props: BaseTabProps) {
         { label: 'Dialog Properties', onClick: () => setPanelMode('dialog'), disabled: panelMode === 'dialog' },
         { label: 'Both Panels', onClick: () => setPanelMode('both'), disabled: panelMode === 'both' },
         { label: '---' },
-        { label: 'Expand All', onClick: () => treeModel?.expandAll() },
-        { label: 'Collapse All', onClick: () => treeModel?.collapseAll() }
+        { label: 'Expand All', onClick: () => { if (treeModel) treeModel.expandAll(); } },
+        { label: 'Collapse All', onClick: () => { if (treeModel) treeModel.collapseAll(); } }
       ]
     },
     {
@@ -359,8 +379,8 @@ export const TabDLGEditor = function (props: BaseTabProps) {
     canRedo,
     canGoBack,
     canGoForward,
+    canPaste,
     selectedTreeNode,
-    clipboardManager.current.hasClipboard(),
     validationIssues.length,
     showValidation,
     treeModel,
@@ -372,7 +392,10 @@ export const TabDLGEditor = function (props: BaseTabProps) {
     handleNavigateBack,
     handleNavigateForward,
     handleRunValidation,
-    handleAutoFix
+    handleAutoFix,
+    onSave,
+    onSaveAs,
+    onRevert
   ]);
 
   // Statistics

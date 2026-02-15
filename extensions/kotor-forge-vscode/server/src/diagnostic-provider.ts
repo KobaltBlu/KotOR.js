@@ -3,7 +3,7 @@
  * Provides detailed error messages with suggestions and quick fixes
  */
 
-import { Diagnostic, DiagnosticRelatedInformation } from 'vscode-languageserver/node';
+import { CodeAction, Diagnostic, DiagnosticRelatedInformation } from 'vscode-languageserver/node';
 
 import { GameVersionDetector } from './game-version-detector';
 import {
@@ -193,7 +193,7 @@ export class DiagnosticProvider {
     }
   }
 
-  private enhanceInvalidTypeError(diagnostic: EnhancedDiagnostic, error: SemanticError): void {
+  private enhanceInvalidTypeError(diagnostic: EnhancedDiagnostic, _error: SemanticError): void {
     const validTypes = ['void', 'int', 'float', 'string', 'object', 'vector', 'location', 'event', 'effect', 'itemproperty', 'talent', 'action'];
     diagnostic.suggestions = [`Valid types are: ${validTypes.join(', ')}`];
   }
@@ -225,7 +225,7 @@ export class DiagnosticProvider {
     }
   }
 
-  private enhanceDivisionByZeroError(diagnostic: EnhancedDiagnostic, error: SemanticError): void {
+  private enhanceDivisionByZeroError(diagnostic: EnhancedDiagnostic, _error: SemanticError): void {
     diagnostic.suggestions = [
       'Check the divisor value',
       'Add a condition to ensure the divisor is not zero',
@@ -235,7 +235,7 @@ export class DiagnosticProvider {
     diagnostic.message = 'Division by zero detected. This will cause a runtime error.';
   }
 
-  private enhanceMissingReturnError(diagnostic: EnhancedDiagnostic, error: SemanticError): void {
+  private enhanceMissingReturnError(diagnostic: EnhancedDiagnostic, _error: SemanticError): void {
     diagnostic.suggestions = [
       'Add a return statement at the end of the function',
       'Ensure all code paths return a value',
@@ -243,7 +243,7 @@ export class DiagnosticProvider {
     ];
   }
 
-  private enhanceNoEntryPointError(diagnostic: EnhancedDiagnostic, error: SemanticError): void {
+  private enhanceNoEntryPointError(diagnostic: EnhancedDiagnostic, _error: SemanticError): void {
     diagnostic.suggestions = [
       'Add a main() function for executable scripts',
       'Add a StartingConditional() function for conditional scripts',
@@ -270,7 +270,7 @@ export class DiagnosticProvider {
     ];
   }
 
-  private enhanceMissingGameVersionError(diagnostic: EnhancedDiagnostic, error: SemanticError): void {
+  private enhanceMissingGameVersionError(diagnostic: EnhancedDiagnostic, _error: SemanticError): void {
     diagnostic.suggestions = [
       'Add a target comment at the top of the file to specify the game version',
       'Use "// @target kotor1" for KOTOR 1 scripts',
@@ -320,7 +320,9 @@ export class DiagnosticProvider {
   }
 
   private levenshteinDistance(a: string, b: string): number {
-    const matrix = Array(a.length + 1).fill(null).map(() => Array(b.length + 1).fill(null));
+    const matrix: number[][] = Array(a.length + 1)
+      .fill(null)
+      .map(() => Array(b.length + 1).fill(null) as number[]);
 
     for (let i = 0; i <= a.length; i++) {
       matrix[i]![0] = i;
@@ -347,8 +349,8 @@ export class DiagnosticProvider {
   /**
    * Generate code action suggestions for common errors
    */
-  public generateCodeActions(diagnostic: EnhancedDiagnostic): any[] {
-    const actions: any[] = [];
+  public generateCodeActions(diagnostic: EnhancedDiagnostic): CodeAction[] {
+    const actions: CodeAction[] = [];
 
     if (diagnostic.quickFixes) {
       diagnostic.quickFixes.forEach(fix => {
@@ -370,7 +372,7 @@ export class DiagnosticProvider {
   /**
    * Add contextual information to diagnostics
    */
-  public addContextualInfo(diagnostic: EnhancedDiagnostic, sourceText: string): void {
+  public addContextualInfo(diagnostic: EnhancedDiagnostic, _sourceText: string): void {
     trace(`addContextualInfo() code=${diagnostic.code}`);
     if (diagnostic.code === 'unknown-function') {
       const functionName = this.extractIdentifierFromMessage(diagnostic.message);

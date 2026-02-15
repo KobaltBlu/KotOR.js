@@ -1,5 +1,4 @@
-import { AudioFileAudioType } from '../enums/audio/AudioFileAudioType';
-
+import { AudioFileAudioType } from '@/enums/audio/AudioFileAudioType';
 import {
   DeobfuscationResult,
   detectAudioFormat,
@@ -7,7 +6,7 @@ import {
   obfuscateAudio,
   WAVObject,
   WAVType,
-} from './WAVObject';
+} from '@/resource/WAVObject';
 
 describe('WAVObject', () => {
   it('constructs without buffer', () => {

@@ -1,5 +1,5 @@
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.NWScript);
 

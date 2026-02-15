@@ -1,4 +1,4 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
 
 /**
  * TLKString class.
@@ -42,7 +42,7 @@ export class TLKString {
     // this.Value = Value;
   }
 
-  GetValue(binary: BinaryReader, onReturn?: Function) {
+  GetValue(binary: BinaryReader, onReturn?: (value: string) => void) {
     if(this.Value == null) {
       const pos = binary.tell();
       binary.seek(this.StringOffset);

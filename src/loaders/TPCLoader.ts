@@ -1,16 +1,16 @@
 import * as path from "path";
 
-import { IFindTPCResult } from "../interface/graphics/IFindTPCResult";
-import { ERFManager } from "../managers/ERFManager";
-import { KEYManager } from "../managers/KEYManager";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { TPCObject } from "../resource/TPCObject";
-import { OdysseyCompressedTexture } from "../three/odyssey";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { IFindTPCResult } from "@/interface/graphics/IFindTPCResult";
+import { TextureLoaderState } from "@/loaders/TextureLoaderState";
+import { ERFManager } from "@/managers/ERFManager";
+import { KEYManager } from "@/managers/KEYManager";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TPCObject } from "@/resource/TPCObject";
+import { OdysseyCompressedTexture } from "@/three/odyssey";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Loader);
-import { TextureLoaderState } from "./TextureLoaderState";
 
 /**
  * TPCLoader class.
@@ -26,6 +26,7 @@ import { TextureLoaderState } from "./TextureLoaderState";
 export class TPCLoader {
   
   async findTPC( resRef: string ): Promise<IFindTPCResult> {
+    log.trace("findTPC", resRef);
     resRef = resRef.toLocaleLowerCase();
   
     let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResource(resRef, ResourceTypes['tpc']);
@@ -67,6 +68,7 @@ export class TPCLoader {
   }
   
   async fetch(resRef: string = ''): Promise<OdysseyCompressedTexture>{
+    log.trace("fetch", resRef);
     try{
       const result = await this.findTPC(resRef);
       const tpc = new TPCObject({
@@ -79,8 +81,7 @@ export class TPCLoader {
       //log.info("loaded texture", resRef);
 
       return texture;
-    }catch(e){
-      // log.error(e);
+    }catch{
       return undefined;
     }
   }
@@ -102,8 +103,8 @@ export class TPCLoader {
       const texture = tpc.toCompressedTexture();
 
       return texture;
-    }catch(e){
-
+    }catch{
+      return undefined;
     }
   }
   
@@ -131,7 +132,7 @@ export class TPCLoader {
   
   };
 
-  loadFromArchive( archive: string, tex: string, onComplete?: Function, onError?: Function ){
+  loadFromArchive( archive: string, tex: string, onComplete?: (tpc: TPCObject) => void, onError?: (message: string) => void ){
     let resKey = ERFManager.ERFs.get(archive).getResource(tex, ResourceTypes['tpc']);
     if(resKey instanceof Object){
   

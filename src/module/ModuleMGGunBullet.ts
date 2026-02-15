@@ -1,13 +1,13 @@
 import * as THREE from "three";
 
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import { MDLLoader } from "../loaders";
-import { OdysseyModel } from "../odyssey";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyModel3D } from "../three/odyssey";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { MDLLoader } from "@/loaders";
+import { ModuleObject } from "@/module/ModuleObject";
+import { OdysseyModel } from "@/odyssey";
+import { GFFObject } from "@/resource/GFFObject";
+import { OdysseyModel3D } from "@/three/odyssey";
 
-import { ModuleObject } from "./ModuleObject";
 
 /**
 * ModuleMGGunBullet class.

@@ -128,6 +128,7 @@ export const LogScope = {
   Event: '[Event]',
   Electron: '[Electron]',
   Launcher: '[Launcher]',
+  Controls: '[Controls]',
   Default: '',
 } as const;
 

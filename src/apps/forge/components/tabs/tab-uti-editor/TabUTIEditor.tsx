@@ -1,23 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { FormField } from "../../form-field/FormField";
-
-import { SubTab, SubTabHost } from "../../SubTabHost";
-import { UI3DRendererView } from "../../UI3DRendererView";
-
-import { clampByte } from "../../../helpers/UTxEditorHelpers";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import * as KotOR from "../../../KotOR";
-import { ForgeItem } from "../../../module-editor/ForgeItem";
-import { ItemPropertyEntry, TabUTIEditorState } from "../../../states/tabs";
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
+import { ItemPropertyEntry, TabUTIEditorState } from "@/apps/forge/states/tabs";
 
 
 export const TabUTIEditor = function(props: BaseTabProps){
 
   const tab: TabUTIEditorState = props.tab as TabUTIEditorState;
-  const [] = useState<string>('basic');
+  const [_selectedSubTab] = useState<string>('basic');
 
   const [locName, setLocName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
   const [description, setDescription] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());

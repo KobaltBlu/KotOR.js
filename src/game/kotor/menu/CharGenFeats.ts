@@ -1,13 +1,12 @@
-import { GUIFeatItem } from "../gui/GUIFeatItem";
-
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import type { ModuleCreature } from "../../../module";
-import type { ITwoDARowData } from "../../../resource/TwoDAObject";
-import { TalentFeat } from "../../../talents";
-import { createScopedLogger } from "../../../utility/Logger";
+import { GUIFeatItem } from "@/game/kotor/gui/GUIFeatItem";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { ModuleCreature } from "@/module";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { TalentFeat } from "@/talents";
+import { createScopedLogger } from "@/utility/Logger";
 
 /**
  * CharGenFeats class.

@@ -1,10 +1,10 @@
-import type { SaveGame } from "../../../engine/SaveGame";
-import { GUIProtoItem } from "../../../gui";
-import type { GameMenu, GUIControl } from "../../../gui";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import type { SaveGame } from "@/engine/SaveGame";
+import { GUIProtoItem } from "@/gui";
+import type { GameMenu, GUIControl } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { GFFStruct } from "../../../resource/GFFStruct";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * GUISaveGameItem class.

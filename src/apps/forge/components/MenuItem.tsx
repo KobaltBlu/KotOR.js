@@ -1,7 +1,7 @@
-import React, { ComponentProps, ReactEventHandler, useState } from "react";
-import { Container, Dropdown, Nav, NavDropdown, Navbar } from 'react-bootstrap';
+import React, { useState } from "react";
+import { Dropdown, Nav, NavDropdown } from 'react-bootstrap';
 
-import { useEffectOnce } from "../helpers/UseEffectOnce";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
 export interface MenuItemData {
   type?: string;
@@ -10,6 +10,8 @@ export interface MenuItemData {
   onClick?: (e: React.MouseEvent<HTMLElement>, item: MenuItemData) => void;
   uuid?: string;
   rebuild?: () => void;
+  addEventListener?(type: string, callback: () => void): void;
+  removeEventListener?(type: string, callback: () => void): void;
 }
 
 export interface MenuItemProps {
@@ -29,10 +31,10 @@ export const MenuItem = function(props: MenuItemProps){
   };
 
   useEffectOnce( () => { //constructor
-    if (item) {
+    if (item?.addEventListener && item?.removeEventListener) {
       item.addEventListener('onRebuild', onRebuild);
       return () => { //deconstructor
-        item.removeEventListener('onRebuild', onRebuild);
+        item?.removeEventListener?.('onRebuild', onRebuild);
       };
     }
   });

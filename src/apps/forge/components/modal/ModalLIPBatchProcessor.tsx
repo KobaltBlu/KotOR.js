@@ -3,12 +3,12 @@ import * as fs from "fs";
 import React, { useEffect, useState } from "react";
 import { Modal, Button, Form, ListGroup } from "react-bootstrap";
 
-import { processAudioToLIP } from "../../helpers/LIPBatchProcessor";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { ModalLIPBatchProcessorState, AudioFileEntry } from "../../states/modal/ModalLIPBatchProcessorState";
+import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
+import { processAudioToLIP } from "@/apps/forge/helpers/LIPBatchProcessor";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ModalLIPBatchProcessorState, AudioFileEntry } from "@/apps/forge/states/modal/ModalLIPBatchProcessorState";
 
-import { ForgeFileSystem } from "../../ForgeFileSystem";
-import * as KotOR from "../../KotOR";
 
 export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
   const modal = props.modal as ModalLIPBatchProcessorState;
@@ -112,7 +112,7 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
         try {
           const b = await fs.promises.readFile(entry.path);
           buf = b.buffer as ArrayBuffer;
-        } catch (e) {
+        } catch {
           errors++;
           continue;
         }
@@ -121,7 +121,7 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
         try {
           const file = await entry.handle.getFile();
           buf = await file.arrayBuffer();
-        } catch (e) {
+        } catch {
           errors++;
           continue;
         }
@@ -144,7 +144,7 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
         try {
           await fs.promises.writeFile(outPath, Buffer.from(result.lipBuffer));
           processed++;
-        } catch (e) {
+        } catch {
           errors++;
         }
       } else if (modal.outputDirHandle) {
@@ -158,7 +158,7 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
           } else {
             errors++;
           }
-        } catch (e) {
+        } catch {
           errors++;
         }
       }

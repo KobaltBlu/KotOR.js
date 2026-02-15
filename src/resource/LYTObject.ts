@@ -1,9 +1,9 @@
 import * as THREE from "three";
 
-import { ILayoutDoorHook } from "../interface/resource/ILayoutDoorHook";
-import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
-import { ILayoutRoom } from "../interface/resource/ILayoutRoom";
-import { ILayoutTrack } from "../interface/resource/ILayoutTrack";
+import { ILayoutDoorHook } from "@/interface/resource/ILayoutDoorHook";
+import { ILayoutObstacle } from "@/interface/resource/ILayoutObstacle";
+import { ILayoutRoom } from "@/interface/resource/ILayoutRoom";
+import { ILayoutTrack } from "@/interface/resource/ILayoutTrack";
 
 
 /**

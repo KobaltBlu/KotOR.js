@@ -2,31 +2,31 @@ import * as path from "path";
 
 import * as THREE from "three";
 
-import { CurrentGame } from "../engine/CurrentGame";
-import { DialogMessageEntry } from "../engine/DialogMessageEntry";
-import EngineLocation from "../engine/EngineLocation";
-import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
-import { JournalEntry } from "../engine/JournalEntry";
-import { type SWPortrait } from "../engine/rules/SWPortrait";
-import { GameEngineType, UIIconTimerType } from "../enums/engine";
-import { PazaakCards } from "../enums/minigames/PazaakCards";
-import { PazaakSideDeckSlots } from "../enums/minigames/PazaakSideDeckSlots";
-import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import { ResourceLoader } from "../loaders";
-import { ModuleCreature } from "../module/ModuleCreature";
-import { ModulePlayer } from "../module/ModulePlayer";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { OdysseyModel3D } from "../three/odyssey";
-import { PartyManagerEvent } from "../types/PartyManagerEvent";
-import { BitWise } from "../utility/BitWise";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { CurrentGame } from "@/engine/CurrentGame";
+import { DialogMessageEntry } from "@/engine/DialogMessageEntry";
+import EngineLocation from "@/engine/EngineLocation";
+import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
+import { JournalEntry } from "@/engine/JournalEntry";
+import { type SWPortrait } from "@/engine/rules/SWPortrait";
+import { GameEngineType, UIIconTimerType } from "@/enums/engine";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
+import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { ResourceLoader } from "@/loaders";
+import { ModuleCreature } from "@/module/ModuleCreature";
+import { ModulePlayer } from "@/module/ModulePlayer";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { PartyManagerEvent } from "@/types/PartyManagerEvent";
+import { BitWise } from "@/utility/BitWise";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
 
@@ -108,7 +108,7 @@ export class PartyManager {
   static SwoopUpgrade2: number = -1;
   static SwoopUpgrade3: number = -1;
 
-  static #eventListeners: Map<PartyManagerEvent, Function[]> = new Map();
+  static #eventListeners: Map<PartyManagerEvent, ((...args: (string | number | boolean | object)[]) => void)[]> = new Map();
 
   /**
    * Initialize the party manager
@@ -1008,7 +1008,7 @@ export class PartyManager {
    * @param onLoad - The function to call when the party member is loaded
    * @returns void
    */
-  static LoadPartyMemberCreature(npcId = 0, onLoad?: Function){
+  static LoadPartyMemberCreature(npcId = 0, onLoad?: (creature: ModuleCreature | null) => void){
     const npc = PartyManager.NPCS[npcId];
     if(!npc){
       if(typeof onLoad === 'function')
@@ -1348,10 +1348,10 @@ export class PartyManager {
    * @param cb - The function to call when the event is triggered
    * @returns void
    */
-  static AddEventListener(type: PartyManagerEvent, cb: Function){
+  static AddEventListener(type: PartyManagerEvent, cb: (...args: (string | number | boolean | object)[]) => void){
     if(typeof cb !== 'function'){ return; }
 
-    const events: Function[] = PartyManager.#eventListeners.get(type) || [];
+    const events = PartyManager.#eventListeners.get(type) || [];
     if(events.indexOf(cb) === -1){
       events.push(cb);
     }
@@ -1367,10 +1367,10 @@ export class PartyManager {
    * @param cb - The function to remove
    * @returns void
    */
-  static RemoveEventListener(type: PartyManagerEvent, cb: Function){
+  static RemoveEventListener(type: PartyManagerEvent, cb: (...args: (string | number | boolean | object)[]) => void){
     if(!PartyManager.#eventListeners.has(type)){ return; }
 
-    const events: Function[] = PartyManager.#eventListeners.get(type) || [];
+    const events = PartyManager.#eventListeners.get(type) || [];
     const idx = events.indexOf(cb);
     if(idx >= -1){
       events.splice(idx, 1);
@@ -1384,7 +1384,7 @@ export class PartyManager {
    * @returns void
    */
   static ProcessEventListener(type: PartyManagerEvent, args: (string | number | boolean | object)[]){
-    const events: Function[] = PartyManager.#eventListeners.get(type) || [];
+    const events = PartyManager.#eventListeners.get(type) || [];
     for(let i = 0; i < events.length; i++){
       events[i](...args);
     }

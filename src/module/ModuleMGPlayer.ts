@@ -1,25 +1,25 @@
 import * as THREE from "three";
 
-// import { NWScript } from "../nwscript/NWScript";
-import { MiniGameType } from "../enums/engine/MiniGameType";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import { IModelListItem } from "../interface/module/minigame/IModelListItem";
-import { MDLLoader } from "../loaders";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-import { Utility } from "../utility/Utility";
+// import { NWScript } from "@/nwscript/NWScript";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
+import { MDLLoader } from "@/loaders";
+import type { ModuleMGEnemy } from "@/module/ModuleMGEnemy";
+import { ModuleMGGunBank } from "@/module/ModuleMGGunBank";
+import type { ModuleMGGunBullet } from "@/module/ModuleMGGunBullet";
+import type { ModuleMGObstacle } from "@/module/ModuleMGObstacle";
+import { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleRoom } from "@/module/ModuleRoom";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel, OdysseyModelAnimationManager } from "@/odyssey";
+import { GFFObject } from "@/resource/GFFObject";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
 
-import type { ModuleMGEnemy } from "./ModuleMGEnemy";
-import { ModuleMGGunBank } from "./ModuleMGGunBank";
-import type { ModuleMGGunBullet } from "./ModuleMGGunBullet";
-import type { ModuleMGObstacle } from "./ModuleMGObstacle";
-import { ModuleObject } from "./ModuleObject";
-import type { ModuleRoom } from "./ModuleRoom";
 
 const log = createScopedLogger(LogScope.Game);
 
@@ -708,7 +708,7 @@ export class ModuleMGPlayer extends ModuleObject {
     GameState.scene.add(this.sphere_geom);
   }
 
-  loadCamera(onLoad?: Function) {
+  loadCamera(onLoad?: () => void) {
     if (this.cameraName) {
       const resref = this.cameraName.replace(/\0[\s\S]*$/g, '').toLowerCase();
       MDLLoader.loader.load(resref).then(

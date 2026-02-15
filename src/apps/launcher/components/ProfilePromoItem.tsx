@@ -1,12 +1,12 @@
 import React, { createRef, useEffect, useRef, useState } from "react";
 
-import { AppProvider, AppProviderValues, useApp } from "../context/AppContext";
-import type { LauncherProfileElement } from "../types";
 
-import { GalleryPromoItem } from "./PromoItems/GalleryPromoItem";
-import { VideoPromoItem } from "./PromoItems/VideoPromoItem";
-import { WebviewPromoItem } from "./PromoItems/WebviewPromoItem";
-import { YTVideoPromoItem } from "./PromoItems/YTVideoPromoItem";
+import { GalleryPromoItem } from "@/apps/launcher/components/PromoItems/GalleryPromoItem";
+import { VideoPromoItem } from "@/apps/launcher/components/PromoItems/VideoPromoItem";
+import { WebviewPromoItem } from "@/apps/launcher/components/PromoItems/WebviewPromoItem";
+import { YTVideoPromoItem } from "@/apps/launcher/components/PromoItems/YTVideoPromoItem";
+import { AppProvider, AppProviderValues, useApp } from "@/apps/launcher/context/AppContext";
+import type { LauncherProfileElement } from "@/apps/launcher/types";
 
 
 export interface ProfilePromoItemProps {

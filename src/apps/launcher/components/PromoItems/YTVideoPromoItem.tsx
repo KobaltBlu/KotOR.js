@@ -1,8 +1,7 @@
 import React, { useRef } from "react";
 
-import { useApp } from "../../context/AppContext";
-
-import type { LauncherProfileElement } from "../../../types";
+import { useApp } from "@/apps/launcher/context/AppContext";
+import type { LauncherProfileElement } from "@/apps/types";
 
 export interface YTVideoPromoItemProps {
   element: LauncherProfileElement;

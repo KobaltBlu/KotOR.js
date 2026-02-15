@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Button, ButtonGroup } from "react-bootstrap";
 
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-
-import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
-import { SectionContainer } from "../../SectionContainer";
-import { UI3DRendererView } from "../../UI3DRendererView";
-
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import * as KotOR from "../../../KotOR";
-import { TabWOKEditorControlMode, TabWOKEditorState } from "../../../states/tabs";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { SectionContainer } from "@/apps/forge/components/SectionContainer";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabWOKEditorControlMode, TabWOKEditorState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 
@@ -77,9 +75,9 @@ const UI3DToolPalette = function(props: UI3DToolPaletteProps){
   return (
     <div className="UI3DToolPalette" style={{ marginTop: '25px' }}>
       <ul>
-        <li className={`${controlMode == 0 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(0)}><a title="Face Mode"><i className="fa-solid fa-cube"></i></a></li>
-        <li className={`${controlMode == 1 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(1)}><a title="Vertex Mode"><i className="fa-solid fa-vector-square"></i></a></li>
-        <li className={`${controlMode == 2 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(2)}><a title="Edge Mode"><i className="fa-solid fa-circle-nodes"></i></a></li>
+        <li className={`${controlMode == 0 ? 'selected' : ''}`} onClick={(_e) => tab.setControlMode(0)}><a title="Face Mode"><i className="fa-solid fa-cube"></i></a></li>
+        <li className={`${controlMode == 1 ? 'selected' : ''}`} onClick={(_e) => tab.setControlMode(1)}><a title="Vertex Mode"><i className="fa-solid fa-vector-square"></i></a></li>
+        <li className={`${controlMode == 2 ? 'selected' : ''}`} onClick={(_e) => tab.setControlMode(2)}><a title="Edge Mode"><i className="fa-solid fa-circle-nodes"></i></a></li>
       </ul>
     </div>
   );
@@ -88,7 +86,7 @@ const UI3DToolPalette = function(props: UI3DToolPaletteProps){
 const WOKSidebarComponent = function(props: WOKSidebarComponentProps){
   const tab = props.tab;
 
-  const [walkmesh, setWalkmesh] = useState<KotOR.OdysseyWalkMesh>(props.walkmesh);
+  const [walkmesh, _setWalkmesh] = useState<KotOR.OdysseyWalkMesh>(props.walkmesh);
   const [selectedFace, setSelectedFace] = useState<KotOR.OdysseyFace3>();
   const [render, rerender] = useState<boolean>();
   const [controlMode, setControlMode] = useState<TabWOKEditorControlMode>(TabWOKEditorControlMode.FACE);
@@ -119,9 +117,9 @@ const WOKSidebarComponent = function(props: WOKSidebarComponentProps){
     <>
       <SectionContainer name="Mode" slim={true}>
         <ButtonGroup aria-label="Basic example">
-          <Button variant="secondary" active={controlMode == 0} onClick={(e) => tab.setControlMode(0)}>Face</Button>
-          <Button variant="secondary" active={controlMode == 1} onClick={(e) => tab.setControlMode(1)}>Vertex</Button>
-          <Button variant="secondary" active={controlMode == 2} onClick={(e) => tab.setControlMode(2)}>Edge</Button>
+          <Button variant="secondary" active={controlMode == 0} onClick={(_e) => tab.setControlMode(0)}>Face</Button>
+          <Button variant="secondary" active={controlMode == 1} onClick={(_e) => tab.setControlMode(1)}>Vertex</Button>
+          <Button variant="secondary" active={controlMode == 2} onClick={(_e) => tab.setControlMode(2)}>Edge</Button>
         </ButtonGroup>
       </SectionContainer>
       <SectionContainer name="Selected Face" slim={true}>

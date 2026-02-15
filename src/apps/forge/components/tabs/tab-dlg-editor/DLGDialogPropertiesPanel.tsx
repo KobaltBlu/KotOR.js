@@ -13,8 +13,8 @@
 
 import React, { useState, useEffect } from 'react';
 
-import * as KotOR from '../../../KotOR';
-import './DLGDialogPropertiesPanel.scss';
+import * as KotOR from '@/apps/forge/KotOR';
+import "@/apps/forge/components/tabs/tab-dlg-editor/DLGDialogPropertiesPanel.scss";
 
 interface DLGDialogPropertiesPanelProps {
   dlg: KotOR.DLGObject | null;
@@ -30,7 +30,7 @@ export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> =
   dlg,
   onUpdate
 }) => {
-  const [localDlg, setLocalDlg] = useState(dlg);
+  const [_localDlg, setLocalDlg] = useState(dlg);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['general', 'scripts'])
   );
@@ -101,7 +101,7 @@ export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> =
 
   const getStuntActors = (): StuntActor[] => {
     const actors: StuntActor[] = [];
-    dlg.stuntActors.forEach((actor, key) => {
+    dlg.stuntActors.forEach((actor, _key) => {
       actors.push({
         participant: actor.participant,
         resref: actor.resref

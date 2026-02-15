@@ -1,17 +1,17 @@
-import { ModuleCreatureAnimState, ModuleItemProperty } from "../enums";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { SignalEventType } from "../enums/events/SignalEventType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import type { ModuleItem } from "../module/ModuleItem";
-import type { ModuleObject } from "../module/ModuleObject";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-import { Utility } from "../utility/Utility";
+import { Action } from "@/actions/Action";
+import { ModuleCreatureAnimState, ModuleItemProperty } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { SignalEventType } from "@/enums/events/SignalEventType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
 
-import { Action } from "./Action";
 
 const log = createScopedLogger(LogScope.Game);
 
@@ -43,7 +43,7 @@ export class ActionSetMine extends Action {
     //4 - FLOAT: z
   }
 
-  update(delta?: number): ActionStatus {
+  update(_delta?: number): ActionStatus {
 
     this.oItem = this.getParameter<ModuleItem>(0);
     this.target = this.getParameter<ModuleObject>(1);

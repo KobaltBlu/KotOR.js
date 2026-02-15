@@ -1,21 +1,20 @@
 import * as THREE from "three";
 
-import { WalkmeshEdge } from "./WalkmeshEdge";
-
-import { SurfaceMaterial } from "../engine/SurfaceMaterial";
-import { TileColor } from "../engine/TileColor";
-import { OdysseyWalkMeshType } from "../enums/odyssey/OdysseyWalkMeshType";
-import { IPerimeter } from "../interface/odyssey";
-import { IOdysseyModelAABBNode } from "../interface/odyssey/IOdysseyModelAABBNode";
-import { TwoDAManager } from "../managers/TwoDAManager";
-import { ModuleObject } from "../module";
-import { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import { SurfaceMaterial } from "@/engine/SurfaceMaterial";
+import { TileColor } from "@/engine/TileColor";
+import { OdysseyWalkMeshType } from "@/enums/odyssey/OdysseyWalkMeshType";
+import { IPerimeter } from "@/interface/odyssey";
+import { IOdysseyModelAABBNode } from "@/interface/odyssey/IOdysseyModelAABBNode";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import { ModuleObject } from "@/module";
 
 const log = createScopedLogger(LogScope.Loader);
-import { OdysseyModelUtility } from "./OdysseyModelUtility";
+import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /** WOK file header as read by readHeader(). */
 export interface IWokHeader {

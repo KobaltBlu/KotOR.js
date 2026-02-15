@@ -2,24 +2,18 @@ import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import React, { useState, useRef, useEffect } from "react";
 import MonacoEditor from "react-monaco-editor";
 
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { TabTextEditorSidebar } from "@/apps/forge/components/tabs/tab-text-editor/TabTextEditorSidebar";
+import TabManager from "@/apps/forge/components/tabs/TabManager";
+import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
+import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import type { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { TabTextEditorState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
-import TabManager from "../TabManager";
-
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import { TabManagerProvider } from "../../../context/TabManagerContext";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import type { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { TabTextEditorState } from "../../../states/tabs";
-
-
-
-
-import { TabTextEditorSidebar } from "./TabTextEditorSidebar";
-
-import './TabTextEditor.scss';
+import "@/apps/forge/components/tabs/tab-text-editor/TabTextEditor.scss";
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -94,8 +88,10 @@ export const TabTextEditor = function(props: TabTextEditorProps){
         if (trimmed.startsWith("//")) {
           e.preventDefault();
           e.stopPropagation();
+          const sel = editor.getSelection();
+          if (!sel) return;
           const insert = "\n" + leadingWhitespace + "// ";
-          editor.executeEdits("comment-continuation", [{ range: editor.getSelection()!, text: insert }]);
+          editor.executeEdits("comment-continuation", [{ range: sel, text: insert }]);
           editor.setPosition({ lineNumber: position.lineNumber + 1, column: leadingWhitespace.length + 4 });
           return;
         }
@@ -105,9 +101,11 @@ export const TabTextEditor = function(props: TabTextEditorProps){
           if (match) {
             e.preventDefault();
             e.stopPropagation();
+            const sel = editor.getSelection();
+            if (!sel) return;
             const prefix = match[1] + "* ";
             const insert = "\n" + prefix;
-            editor.executeEdits("comment-continuation", [{ range: editor.getSelection()!, text: insert }]);
+            editor.executeEdits("comment-continuation", [{ range: sel, text: insert }]);
             editor.setPosition({ lineNumber: position.lineNumber + 1, column: prefix.length + 1 });
           }
         }
@@ -212,7 +210,7 @@ export const TabTextEditor = function(props: TabTextEditorProps){
   }, [tab.tabSize]);
 
   // Handle keyboard shortcuts using TabState's keybinding system
-  const onKeyDown = (event: KeyboardEvent, tabState: TabTextEditorState) => {
+  const onKeyDown = (event: KeyboardEvent, _tabState: TabTextEditorState) => {
     const isCtrlOrCmd = event.ctrlKey || event.metaKey;
 
     // Ctrl+S / Cmd+S - Save

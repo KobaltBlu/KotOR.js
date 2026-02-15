@@ -708,8 +708,8 @@ export class NWScriptParser {
 
   private parsePostfix(): Expression {
     let expr = this.parseCall();
-
-    while (true) {
+    let done = false;
+    while (!done) {
       if (this.match(TokenType.INCREMENT, TokenType.DECREMENT)) {
         const operator = this.previous().value as string;
         expr = new UnaryExpression(
@@ -738,7 +738,7 @@ export class NWScriptParser {
           true // computed
         );
       } else {
-        break;
+        done = true;
       }
     }
 
@@ -813,29 +813,29 @@ export class NWScriptParser {
     if (this.match(TokenType.TRUE_VALUE, TokenType.FALSE_VALUE,
                    TokenType.OBJECTSELF_VALUE, TokenType.OBJECTINVALID_VALUE)) {
       const token = this.previous();
-      let value: any;
-      let type: string;
+      let value: number | string;
+      let _type: string;
 
       switch (token.type) {
         case TokenType.TRUE_VALUE:
           value = 1;
-          type = 'int';
+          _type = 'int';
           break;
         case TokenType.FALSE_VALUE:
           value = 0;
-          type = 'int';
+          _type = 'int';
           break;
         case TokenType.OBJECTSELF_VALUE:
           value = 'OBJECT_SELF';
-          type = 'object';
+          _type = 'object';
           break;
         case TokenType.OBJECTINVALID_VALUE:
           value = 'OBJECT_INVALID';
-          type = 'object';
+          _type = 'object';
           break;
         default:
           value = token.value;
-          type = 'unknown';
+          _type = 'unknown';
       }
 
       return new Literal(

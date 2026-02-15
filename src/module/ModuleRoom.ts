@@ -1,31 +1,32 @@
-import { ModuleObject } from "./ModuleObject";
+import { ModuleObject } from "@/module/ModuleObject";
 
-import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from ".";
 
 import * as THREE from "three";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
 
-// import { ShaderManager } from "../managers";
+import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from ".";
+
+// import { ShaderManager } from "@/managers";
 
 
 const log = createScopedLogger(LogScope.Module);
-import { EngineMode } from "../enums/engine/EngineMode";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import { IVISRoom } from "../interface";
-import { MDLLoader, ResourceLoader, TextureLoader } from "../loaders";
-import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { VISObject } from "../resource/VISObject";
-import { OdysseyFace3, OdysseyModel3D } from "../three/odyssey";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BitWise } from "../utility/BitWise";
-import { createScopedLogger, LogScope } from "../utility/Logger";
-import { Utility } from "../utility/Utility";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { IVISRoom } from "@/interface";
+import { MDLLoader, ResourceLoader, TextureLoader } from "@/loaders";
+import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "@/odyssey";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { VISObject } from "@/resource/VISObject";
+import { OdysseyFace3, OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
 
 /**
 * ModuleRoom class.

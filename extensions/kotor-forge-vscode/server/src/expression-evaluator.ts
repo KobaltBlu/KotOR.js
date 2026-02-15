@@ -16,17 +16,24 @@ import {
   VectorLiteral
 } from './nwscript-ast';
 
+/** Evaluated constant value (int, float, string, vector, etc.). */
+export type EvaluatedValue = string | number | boolean | null | { x: number; y: number; z: number };
+
+function isVectorValue(v: EvaluatedValue): v is { x: number; y: number; z: number } {
+  return typeof v === 'object' && v !== null && 'x' in v && 'y' in v && 'z' in v;
+}
+
 export interface EvaluationResult {
-  value: any;
+  value: EvaluatedValue;
   type: DataTypeEnum;
   isConstant: boolean;
   isKnown: boolean;
 }
 
 export class ExpressionEvaluator {
-  private constants: Map<string, any> = new Map();
+  private constants: Map<string, EvaluatedValue> = new Map();
 
-  constructor(constants: { [key: string]: any } = {}) {
+  constructor(constants: { [key: string]: EvaluatedValue } = {}) {
     Object.entries(constants).forEach(([name, value]) => {
       this.constants.set(name, value);
     });
@@ -134,7 +141,7 @@ export class ExpressionEvaluator {
 
     try {
       switch (expr.operator) {
-        case '+':
+        case '+': {
           if (left.type === DataTypeEnum.STRING || right.type === DataTypeEnum.STRING) {
             return {
               value: String(left.value) + String(right.value),
@@ -143,7 +150,8 @@ export class ExpressionEvaluator {
               isKnown: true
             };
           }
-          if (left.type === DataTypeEnum.VECTOR && right.type === DataTypeEnum.VECTOR) {
+          if (left.type === DataTypeEnum.VECTOR && right.type === DataTypeEnum.VECTOR &&
+              isVectorValue(left.value) && isVectorValue(right.value)) {
             return {
               value: {
                 x: left.value.x + right.value.x,
@@ -159,9 +167,10 @@ export class ExpressionEvaluator {
           const addType = (left.type === DataTypeEnum.FLOAT || right.type === DataTypeEnum.FLOAT) ? 
                          DataTypeEnum.FLOAT : DataTypeEnum.INT;
           return { value: addResult, type: addType, isConstant: true, isKnown: true };
+        }
 
-        case '-':
-          if (left.type === DataTypeEnum.VECTOR && right.type === DataTypeEnum.VECTOR) {
+        case '-': {
+          if (left.type === DataTypeEnum.VECTOR && right.type === DataTypeEnum.VECTOR && isVectorValue(left.value) && isVectorValue(right.value)) {
             return {
               value: {
                 x: left.value.x - right.value.x,
@@ -177,9 +186,10 @@ export class ExpressionEvaluator {
           const subType = (left.type === DataTypeEnum.FLOAT || right.type === DataTypeEnum.FLOAT) ? 
                          DataTypeEnum.FLOAT : DataTypeEnum.INT;
           return { value: subResult, type: subType, isConstant: true, isKnown: true };
+        }
 
-        case '*':
-          if (left.type === DataTypeEnum.VECTOR && right.type === DataTypeEnum.VECTOR) {
+        case '*': {
+          if (left.type === DataTypeEnum.VECTOR && right.type === DataTypeEnum.VECTOR && isVectorValue(left.value) && isVectorValue(right.value)) {
             // Vector dot product
             return {
               value: left.value.x * right.value.x + left.value.y * right.value.y + left.value.z * right.value.z,
@@ -188,7 +198,7 @@ export class ExpressionEvaluator {
               isKnown: true
             };
           }
-          if (left.type === DataTypeEnum.VECTOR && this.isNumericType(right.type)) {
+          if (left.type === DataTypeEnum.VECTOR && this.isNumericType(right.type) && isVectorValue(left.value)) {
             return {
               value: {
                 x: left.value.x * Number(right.value),
@@ -204,8 +214,9 @@ export class ExpressionEvaluator {
           const mulType = (left.type === DataTypeEnum.FLOAT || right.type === DataTypeEnum.FLOAT) ? 
                          DataTypeEnum.FLOAT : DataTypeEnum.INT;
           return { value: mulResult, type: mulType, isConstant: true, isKnown: true };
+        }
 
-        case '/':
+        case '/': {
           if (Number(right.value) === 0) {
             throw new Error('Division by zero');
           }
@@ -213,8 +224,9 @@ export class ExpressionEvaluator {
           const divType = (left.type === DataTypeEnum.FLOAT || right.type === DataTypeEnum.FLOAT) ? 
                          DataTypeEnum.FLOAT : DataTypeEnum.INT;
           return { value: divResult, type: divType, isConstant: true, isKnown: true };
+        }
 
-        case '%':
+        case '%': {
           if (Number(right.value) === 0) {
             throw new Error('Modulo by zero');
           }
@@ -224,6 +236,7 @@ export class ExpressionEvaluator {
             isConstant: true,
             isKnown: true
           };
+        }
 
         case '==':
           return {
@@ -425,9 +438,9 @@ export class ExpressionEvaluator {
       return null;
     }
 
-    if (object.type === DataTypeEnum.VECTOR && !expr.computed && expr.property instanceof Identifier) {
-      const component = expr.property.name;
-      if (['x', 'y', 'z'].includes(component)) {
+    if (object.type === DataTypeEnum.VECTOR && !expr.computed && expr.property instanceof Identifier && isVectorValue(object.value)) {
+      const component = expr.property.name as 'x' | 'y' | 'z';
+      if (component === 'x' || component === 'y' || component === 'z') {
         return {
           value: object.value[component],
           type: DataTypeEnum.FLOAT,
@@ -446,7 +459,7 @@ export class ExpressionEvaluator {
     return type === DataTypeEnum.INT || type === DataTypeEnum.FLOAT;
   }
 
-  private isTruthy(value: any): boolean {
+  private isTruthy(value: EvaluatedValue): boolean {
     if (typeof value === 'number') {
       return value !== 0;
     }
@@ -459,7 +472,7 @@ export class ExpressionEvaluator {
     return Boolean(value);
   }
 
-  private valuesEqual(left: any, right: any): boolean {
+  private valuesEqual(left: EvaluatedValue, right: EvaluatedValue): boolean {
     if (typeof left === 'object' && typeof right === 'object') {
       if (left && right && left.x !== undefined && right.x !== undefined) {
         // Vector comparison
@@ -480,7 +493,7 @@ export class ExpressionEvaluator {
   /**
    * Get the constant value of an expression if possible
    */
-  public getConstantValue(expr: Expression): any {
+  public getConstantValue(expr: Expression): EvaluatedValue | undefined {
     const result = this.evaluate(expr);
     return (result && result.isKnown) ? result.value : undefined;
   }

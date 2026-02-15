@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import './LoadingScreen.scss';
+
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+import "@/apps/common/components/loadingScreen/LoadingScreen.scss";
+
+const log = createScopedLogger(LogScope.Loader);
 
 export interface ILoadingScreenProps {
   active?: boolean;
@@ -25,8 +30,14 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
   const fadeOutTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const onHide = () => {
-    clearTimeout(fadeOutTimeout.current as any);
-    clearTimeout(fadeInTimeout.current as any);
+    if (fadeOutTimeout.current != null) {
+      clearTimeout(fadeOutTimeout.current);
+      fadeOutTimeout.current = null;
+    }
+    if (fadeInTimeout.current != null) {
+      clearTimeout(fadeInTimeout.current);
+      fadeInTimeout.current = null;
+    }
     setFadeIn(false);
     setFadeOut(true);
     fadeOutTimeout.current = setTimeout(() => {
@@ -35,8 +46,14 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
   };
 
   const onShow = () => {
-    clearTimeout(fadeOutTimeout.current as any);
-    clearTimeout(fadeInTimeout.current as any);
+    if (fadeOutTimeout.current != null) {
+      clearTimeout(fadeOutTimeout.current);
+      fadeOutTimeout.current = null;
+    }
+    if (fadeInTimeout.current != null) {
+      clearTimeout(fadeInTimeout.current);
+      fadeInTimeout.current = null;
+    }
     setFadeIn(true);
     setFadeOut(false);
     // fadeInTimeout.current = setTimeout(() => {
@@ -45,7 +62,7 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
   };
 
   useEffect(() => {
-    console.log('active', active);
+    log.debug('LoadingScreen active changed', active);
     setActive(!!props.active);
     if(props.active){
       onShow();

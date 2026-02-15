@@ -1,13 +1,14 @@
 import React from "react";
 
-import { TabImageViewer } from "../../components/tabs/tab-image-viewer/TabImageViewer";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { TabImageViewer } from "@/apps/forge/components/tabs/tab-image-viewer/TabImageViewer";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@/apps/forge/states/tabs";
+import { PixelManager } from "@/utility/PixelManager";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { PixelManager } from "../../../../utility/PixelManager";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
-
-import { TabState } from "./";
+const log = createScopedLogger(LogScope.Forge);
 
 type TypedArrayConstructor = new (length: number) => { set(arr: ArrayLike<number>, offset: number): void; length: number };
 
@@ -34,12 +35,13 @@ export class TabImageViewerState extends TabState {
 
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace('TabImageViewerState constructor entry');
     super(options);
-    // this.singleInstance = true;
     this.isClosable = true;
 
     if(this.file){
       this.tabName = this.file.getFilename();
+      log.debug('TabImageViewerState constructor tabName', this.tabName);
     }
 
     this.setContentView(<TabImageViewer tab={this}></TabImageViewer>);
@@ -71,9 +73,11 @@ export class TabImageViewerState extends TabState {
         }
       }
     ];
+    log.trace('TabImageViewerState constructor exit');
   }
 
   openFile(file?: EditorFile){
+    log.trace('TabImageViewerState openFile entry', !!file);
     return new Promise<KotOR.TPCObject|KotOR.TGAObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
@@ -82,6 +86,7 @@ export class TabImageViewerState extends TabState {
         if(this.file != file) this.file = file;
         file.readFile().then( (response) => {
           const ext = file?.ext != null ? String(file.ext) : '';
+          log.debug('TabImageViewerState openFile ext', ext);
           switch(ext){
             case 'tga':
               this.image = new KotOR.TGAObject({file: response.buffer, filename: file.resref+'.tga' });
@@ -99,10 +104,12 @@ export class TabImageViewerState extends TabState {
 
           resolve(this.image);
           this.processEventListener('onEditorFileLoad');
+          log.trace('TabImageViewerState openFile loaded');
         });
+      } else {
+        log.trace('TabImageViewerState openFile no file');
       }
     });
-
   }
 
   getPixelData(): Promise<Uint8Array>{
@@ -114,7 +121,7 @@ export class TabImageViewerState extends TabState {
 
         const width = tpc.header.width;
         const height = tpc.header.height;
-        const mipmapCount = 1;
+        const _mipmapCount = 1;
 
         if(!tpc.txi.procedureType){
           if(tpc.header.faces > 1){

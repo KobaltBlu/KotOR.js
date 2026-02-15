@@ -1,5 +1,4 @@
-import { IPCDataType } from "../../enums/server/ipc/IPCDataType";
-import { BinaryReader } from "../../utility/binary/BinaryReader";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
 
 /**
  * Represents an IPCMessageParam.
@@ -24,7 +23,7 @@ export class IPCMessageParam {
 
   constructor(type: IPCDataType, value?: Uint8Array | string | number){
     this.type = type;
-    if(value?.constructor == Uint8Array){
+    if (value instanceof Uint8Array) {
       /**
        * Wrap the passed value in a Uint8Array to create a deep copy in memory.
        */
@@ -33,18 +32,18 @@ export class IPCMessageParam {
       this.value = new TextEncoder().encode(value ? value : '');
     }else if(typeof value == 'number' && type == IPCDataType.INTEGER){
       this.value = new Uint8Array(4);
-      const view = new DataView(this.value.buffer); 
+      const view = new DataView(this.value.buffer);
       view.setInt32(0, value, true);
     }else if(typeof value == 'number' && type == IPCDataType.FLOAT){
       this.value = new Uint8Array(4);
-      const view = new DataView(this.value.buffer); 
+      const view = new DataView(this.value.buffer);
       view.setFloat32(0, value, true);
     }else{
       return;
     }
     this.size = IPCMessageParam.HeaderSize + this.value.length;
   }
-  
+
   /**
    * Returns the value as a string.
    * @returns The decoded string.

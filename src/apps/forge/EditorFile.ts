@@ -1,40 +1,37 @@
 import * as fs from "fs";
 
-import { createScopedLogger, LogScope } from "../../utility/Logger";
 
-import * as KotOR from "../../KotOR";
 
-import { EditorFileProtocol } from "./enum/EditorFileProtocol";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { pathParse } from "@/apps/forge/helpers/PathParse";
+import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
+import type { ProjectFileSystem as ProjectFileSystemType } from "@/apps/forge/ProjectFileSystem";
+import * as KotOR from "@/KotOR";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
-import { FileLocationType } from "./enum/FileLocationType";
-import { EventListenerModel } from "./EventListenerModel";
-import { pathParse } from "./helpers/PathParse";
-import { EditorFileOptions } from "./interfaces/EditorFileOptions";
-// Project is not directly used at runtime in this file (only transitively);
-// keeping the import would create a circular chain:
-//   EditorFile → Project → ForgeState → EditorFile
-// import { Project } from "./Project";
-// ProjectFileSystem is lazily required to break circular chain:
-//   EditorFile → ProjectFileSystem → ForgeState → EditorFile
-import type { ProjectFileSystem as ProjectFileSystemType } from "./ProjectFileSystem";
 
-let _ProjectFileSystem: typeof ProjectFileSystemType | null = null;
-function getProjectFileSystem(): typeof ProjectFileSystemType {
-  if (!_ProjectFileSystem) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    _ProjectFileSystem = require("./ProjectFileSystem").ProjectFileSystem;
+let _projectFileSystemClass: typeof ProjectFileSystemType | null = null;
+async function getProjectFileSystem(): Promise<typeof ProjectFileSystemType> {
+  if (!_projectFileSystemClass) {
+    const mod = await import("./ProjectFileSystem") as { ProjectFileSystem: typeof ProjectFileSystemType };
+    _projectFileSystemClass = mod.ProjectFileSystem;
   }
-  return _ProjectFileSystem!;
+  return _projectFileSystemClass;
 }
 
 export type EditorFileEventListenerTypes =
   'onNameChanged' | 'onSaveStateChanged' | 'onSaved'
 
+/** Callback for editor file events: (editorFile: EditorFile) => void. */
+type EditorFileEventCallback = (editorFile: EditorFile) => void;
+
 export interface EditorFileEventListeners {
-  onNameChanged: Function[],
-  onSaveStateChanged: Function[],
-  onSaved: Function[],
+  onNameChanged: EditorFileEventCallback[];
+  onSaveStateChanged: EditorFileEventCallback[];
+  onSaved: EditorFileEventCallback[];
 }
 
 export interface EditorFileReadResponse {
@@ -46,9 +43,8 @@ export class EditorFile extends EventListenerModel {
 
   protocol: EditorFileProtocol | unknown;
 
-  //handle - is for file handling inside the web environment
-  handle?: unknown;
-  handle2?: unknown; //for dual file types like mdl/mdx
+  handle?: FileSystemFileHandle;
+  handle2?: FileSystemFileHandle;
   useGameFileSystem: boolean = false;
   useProjectFileSystem: boolean = false;
   useSystemFileSystem: boolean = false;
@@ -64,10 +60,10 @@ export class EditorFile extends EventListenerModel {
   archive_path2: string | undefined; //for dual file types like mdl/mdx
 
   location: unknown;
-  _unsaved_changes: unknown;
-  _resref: unknown;
-  _reskey: unknown;
-  _ext: number;
+  _unsaved_changes: boolean = false;
+  _resref: string = '';
+  _reskey: number = 0;
+  _ext: string = '';
 
   get unsaved_changes() {
     return this._unsaved_changes;
@@ -77,13 +73,10 @@ export class EditorFile extends EventListenerModel {
     this._unsaved_changes = (value || (this.location == FileLocationType.OTHER)) ? true : false;
     this.processEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', [this]);
     if (!this.unsaved_changes) {
-      // Lazy require to break circular dependency: EditorFile <-> ForgeState.
-      // ForgeState's static initialisers instantiate TabState subclasses whose
-      // constructors reference EditorFile, so a top-level import would trigger a
-      // TDZ error ("Cannot access 'EditorFile' before initialization").
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { ForgeState } = require("./states/ForgeState");
-      ForgeState.addRecentFile(this);
+      type ForgeStateModule = { ForgeState: { addRecentFile: (file: EditorFile) => void } };
+      void import("./states/ForgeState").then((m: ForgeStateModule) => {
+        m.ForgeState.addRecentFile(this);
+      });
     }
   }
 
@@ -91,7 +84,7 @@ export class EditorFile extends EventListenerModel {
     return this._resref;
   }
 
-  set resref(value) {
+  set resref(value: string) {
     this._resref = value;
     this.processEventListener<EditorFileEventListenerTypes>('onNameChanged', [this]);
   }
@@ -100,8 +93,7 @@ export class EditorFile extends EventListenerModel {
     return this._reskey;
   }
 
-  set reskey(value) {
-    // log.info('reskey', value);
+  set reskey(value: number) {
     this._reskey = value;
     this._ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
     this.processEventListener<EditorFileEventListenerTypes>('onNameChanged', [this]);
@@ -111,15 +103,15 @@ export class EditorFile extends EventListenerModel {
     return this._ext;
   }
 
-  set ext(value) {
-    // log.info('ext', value);
+  set ext(value: string) {
     this._ext = value;
-    this._reskey = KotOR.ResourceTypes[value];
+    this._reskey = (KotOR.ResourceTypes as Record<string, number>)[value] ?? 0;
     this.processEventListener<EditorFileEventListenerTypes>('onNameChanged', [this]);
   }
 
   constructor(options: EditorFileOptions = {}) {
     super();
+    log.trace('EditorFile constructor');
     options = Object.assign({
       path: null,
       path2: null,
@@ -136,13 +128,14 @@ export class EditorFile extends EventListenerModel {
       useProjectFileSystem: false,
     }, options);
 
-    this.buffer = options.buffer || new Uint8Array(0);
+    this.buffer = options.buffer ?? new Uint8Array(0);
     this.buffer2 = options.buffer2;
-    this.path = options.path;
-    this.path2 = options.path2;
-    this.ext = options.ext;
-    this.resref = options.resref;
-    this.reskey = options.reskey;
+    this.path = options.path ?? '';
+    this.path2 = options.path2 ?? null;
+    log.trace('EditorFile constructor path', this.path || '(empty)');
+    if (options.ext != null) this.ext = options.ext;
+    if (options.resref != null) this.resref = options.resref;
+    if (options.reskey != null) this.reskey = options.reskey;
     this.archive_path = options.archive_path;
     this.location = options.location;
     this.unsaved_changes = false;
@@ -165,7 +158,7 @@ export class EditorFile extends EventListenerModel {
 
     if (this.location == FileLocationType.OTHER)
       this.unsaved_changes = true;
-
+    log.debug('EditorFile constructor done', this.resref || this.path);
   }
 
   setGFFObject(gffObject: KotOR.GFFObject) {
@@ -173,6 +166,7 @@ export class EditorFile extends EventListenerModel {
   }
 
   setPath(filepath: string) {
+    log.trace('EditorFile.setPath()', filepath?.slice(0, 80));
     this.path = filepath;
     if (typeof this.path === 'string') {
       this.path = filepath.replace(/\\/g, "/");
@@ -180,8 +174,8 @@ export class EditorFile extends EventListenerModel {
 
       this.protocol = url.protocol as EditorFileProtocol;
       let pathname = url.pathname.replace(/%20/g, " ");
+      log.trace('EditorFile.setPath() pathname', pathname?.slice(0, 60));
 
-      //remove excess slashes on both ends
       pathname = pathname.replace(/^\/+|\/+$/g, '');
 
       if (pathname.indexOf('game.dir') >= 0) { //Use: GameFileSystem
@@ -216,11 +210,16 @@ export class EditorFile extends EventListenerModel {
           }
 
           if (url.searchParams.has('restype')) {
-            const ext = url.searchParams.get('restype') as string;
-            this.ext = KotOR.ResourceTypes.getKeyByValue(ext);
-
-            if (!this.reskey) {
-              this.reskey = KotOR.ResourceTypes[ext];
+            const restype = url.searchParams.get('restype');
+            if (restype != null) {
+              const num = parseInt(restype, 10);
+              if (!Number.isNaN(num)) {
+                this.ext = KotOR.ResourceTypes.getKeyByValue(num);
+                this.reskey = num;
+              } else {
+                this.ext = restype;
+                this.reskey = (KotOR.ResourceTypes as Record<string, number>)[restype] ?? 0;
+              }
             }
           }
 
@@ -244,8 +243,7 @@ export class EditorFile extends EventListenerModel {
   }
 
   getPath() {
-    //Check to see if the EditorFile has the path variable set.
-    //If not it's because the file was created in memory and hasn't been saved to the HDD yet
+    log.trace('EditorFile.getPath()');
     if (this.path && !this.archive_path) {
       return this.path;
     } else if (this.archive_path) {
@@ -255,144 +253,126 @@ export class EditorFile extends EventListenerModel {
   }
 
   async readFile(): Promise<EditorFileReadResponse> {
-    return new Promise<EditorFileReadResponse>(async (resolve, reject) => {
-      if (this.reskey == KotOR.ResourceTypes.mdl || this.reskey == KotOR.ResourceTypes.mdx) {
-        //Mdl / Mdx Special Loader
-        resolve(
-          await this.readMdlMdxFile()
-        );
-      } else {
-        //Common Loader
-        if (this.buffer instanceof Uint8Array && this.buffer.length) {
-          resolve({
-            buffer: this.buffer,
-          });
-        } else {
-          if (this.archive_path) {
-            const archive_path = pathParse(this.archive_path);
-            log.trace('archive_path.ext', archive_path.ext);
-
-            switch (this.protocol) {
-              case EditorFileProtocol.BIF:
-                const bif = new KotOR.BIFObject(this.archive_path);
-                bif.load().then((archive: KotOR.BIFObject) => {
-                  archive.getResourceBuffer(archive.getResource(this.resref, this.reskey)).then((buffer: Uint8Array) => {
-                    this.buffer = buffer;
-                    resolve({
-                      buffer: this.buffer,
-                    });
-                  });
-                });
-                break;
-              case EditorFileProtocol.ERF:
-              case EditorFileProtocol.MOD:
-                const erf = new KotOR.ERFObject(this.archive_path);
-                erf.load().then((archive: KotOR.ERFObject) => {
-                  archive.getResourceBufferByResRef(this.resref, this.reskey).then((buffer: Uint8Array) => {
-                    this.buffer = buffer;
-                    resolve({
-                      buffer: this.buffer,
-                    });
-                  });
-                });
-                break;
-              case EditorFileProtocol.RIM:
-                const rim = new KotOR.RIMObject(this.archive_path);
-                rim.load().then((archive: KotOR.RIMObject) => {
-                  archive.getResourceBuffer(archive.getResource(this.resref, this.reskey)).then((buffer: Uint8Array) => {
-                    this.buffer = buffer;
-                    resolve({
-                      buffer: this.buffer,
-                    });
-                  });
-                });
-                break;
-              default:
-                log.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
-                break;
-            }
-          } else {
-            if (typeof this.path === 'string') {
-              switch (this.protocol) {
-                case EditorFileProtocol.FILE:
-                  if (this.useGameFileSystem) {
-                    KotOR.GameFileSystem.readFile(this.path).then((buffer: Uint8Array) => {
-                      this.buffer = buffer;
-
-                      resolve({
-                        buffer: this.buffer,
-                      });
-                    }).catch((err: unknown) => {
-                      throw err;
-                    });
-                  } else if (this.useProjectFileSystem) {
-                    getProjectFileSystem().readFile(this.path).then((buffer: Uint8Array) => {
-                      this.buffer = buffer;
-
-                      resolve({
-                        buffer: this.buffer,
-                      });
-                    }).catch((err: unknown) => {
-                      throw err;
-                    });
-                  } else {
-                    if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
-                      fs.readFile(this.path, (err, buffer) => {
-                        if (err) throw err;
-
-                        this.buffer = new Uint8Array(buffer);
-                        resolve({
-                          buffer: this.buffer,
-                        });
-                      });
-                    } else {
-                      if (this.handle) {
-                        let granted = (await this.handle.queryPermission({ mode: 'read' })) === 'granted';
-                        if (!granted) {
-                          granted = (await this.handle.requestPermission({ mode: 'read' })) === 'granted';
-                        }
-
-                        if (granted) {
-                          const file = await this.handle.getFile();
-                          this.buffer = new Uint8Array(await file.arrayBuffer());
-                          resolve({
-                            buffer: this.buffer,
-                          });
-                        } else {
-                          //cannot open file
-                          log.warn('EditorFile.readFile', 'unable to open file', this.protocol);
-                          this.buffer = new Uint8Array(0);
-                          resolve({
-                            buffer: this.buffer,
-                          });
-                        }
-                      }
-                    }
-                  }
-                  break;
-                default:
-                  log.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
-                  break;
-              }
-            } else {
-                  log.warn('EditorFile.readFile', 'unable to open file', this.protocol);
-              this.buffer = new Uint8Array(0);
-              resolve({
-                buffer: this.buffer,
-              });
-            }
-          }
-
+    log.trace('EditorFile.readFile()', this.path?.slice(0, 60), this.reskey);
+    return new Promise<EditorFileReadResponse>((resolve, reject) => {
+      void (async () => {
+        if (this.reskey == KotOR.ResourceTypes.mdl || this.reskey == KotOR.ResourceTypes.mdx) {
+          log.trace('EditorFile.readFile() mdl/mdx branch');
+          resolve(await this.readMdlMdxFile());
+          return;
         }
-      }
+        if (this.buffer instanceof Uint8Array && this.buffer.length) {
+          log.trace('EditorFile.readFile() use existing buffer', this.buffer.length);
+          resolve({ buffer: this.buffer });
+          return;
+        }
+        if (!this.archive_path) {
+          if (typeof this.path !== 'string') {
+            log.warn('EditorFile.readFile', 'unable to open file', this.protocol);
+            this.buffer = new Uint8Array(0);
+            resolve({ buffer: this.buffer });
+            return;
+          }
+          switch (this.protocol) {
+            case EditorFileProtocol.FILE:
+              log.trace('EditorFile.readFile() FILE protocol');
+              if (this.useGameFileSystem) {
+                log.trace('EditorFile.readFile() GameFileSystem');
+                KotOR.GameFileSystem.readFile(this.path).then((buffer: Uint8Array) => {
+                  this.buffer = buffer;
+                  resolve({ buffer: this.buffer });
+                }).catch(reject);
+                return;
+              }
+              if (this.useProjectFileSystem) {
+                log.trace('EditorFile.readFile() ProjectFileSystem');
+                getProjectFileSystem().then((PFS) => PFS.readFile(this.path)).then((buffer: Uint8Array) => {
+                  this.buffer = buffer;
+                  resolve({ buffer: this.buffer });
+                }).catch(reject);
+                return;
+              }
+              if (KotOR.ApplicationProfile.ENV !== KotOR.ApplicationEnvironment.ELECTRON) {
+                if (this.handle) {
+                  const granted = (await this.handle.queryPermission({ mode: 'read' })) === 'granted'
+                    || (await this.handle.requestPermission({ mode: 'read' })) === 'granted';
+                  if (granted) {
+                    const file = await this.handle.getFile();
+                    this.buffer = new Uint8Array(await file.arrayBuffer());
+                    resolve({ buffer: this.buffer });
+                  } else {
+                    log.warn('EditorFile.readFile', 'unable to open file', this.protocol);
+                    this.buffer = new Uint8Array(0);
+                    resolve({ buffer: this.buffer });
+                  }
+                  return;
+                }
+              } else {
+                fs.readFile(this.path, (err, buffer) => {
+                  if (err) {
+                    reject(err);
+                    return;
+                  }
+                  this.buffer = new Uint8Array(buffer);
+                  resolve({ buffer: this.buffer });
+                });
+                return;
+              }
+              break;
+            default:
+              log.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
+          }
+          resolve({ buffer: this.buffer });
+          return;
+        }
+        const archive_path = pathParse(this.archive_path);
+        log.trace('archive_path.ext', archive_path.ext);
+        switch (this.protocol) {
+          case EditorFileProtocol.BIF: {
+            const bif = new KotOR.BIFObject(this.archive_path);
+            bif.load().then((archive: KotOR.BIFObject) => {
+              return archive.getResourceBuffer(archive.getResource(this.resref, this.reskey)).then((buffer: Uint8Array) => {
+                this.buffer = buffer;
+                resolve({ buffer: this.buffer });
+              });
+            }).catch(reject);
+            break;
+          }
+          case EditorFileProtocol.ERF:
+          case EditorFileProtocol.MOD: {
+            const erf = new KotOR.ERFObject(this.archive_path);
+            erf.load().then((archive: KotOR.ERFObject) => {
+              return archive.getResourceBufferByResRef(this.resref, this.reskey).then((buffer: Uint8Array) => {
+                this.buffer = buffer;
+                resolve({ buffer: this.buffer });
+              });
+            }).catch(reject);
+            break;
+          }
+          case EditorFileProtocol.RIM: {
+            const rim = new KotOR.RIMObject(this.archive_path);
+            rim.load().then((archive: KotOR.RIMObject) => {
+              return archive.getResourceBuffer(archive.getResource(this.resref, this.reskey)).then((buffer: Uint8Array) => {
+                this.buffer = buffer;
+                resolve({ buffer: this.buffer });
+              });
+            }).catch(reject);
+            break;
+          }
+          default:
+            log.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
+            resolve({ buffer: this.buffer });
+        }
+      })().catch(reject);
     });
   }
 
   async readMdlMdxFile(): Promise<EditorFileReadResponse> {
-    return new Promise<EditorFileReadResponse>(async (resolve, reject) => {
-      if (this.archive_path) {
+    return new Promise<EditorFileReadResponse>((resolve, reject) => {
+      void (async () => {
+        if (this.archive_path) {
         switch (this.protocol) {
-          case EditorFileProtocol.BIF:
+          case EditorFileProtocol.BIF: {
             const key_mdl = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdl']);
             const key_mdx = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdx']);
 
@@ -409,8 +389,9 @@ export class EditorFile extends EventListenerModel {
               buffer2: this.buffer2
             });
             break;
+          }
           case EditorFileProtocol.ERF:
-          case EditorFileProtocol.MOD:
+          case EditorFileProtocol.MOD: {
             const erf = new KotOR.ERFObject(this.archive_path);
             erf.load().then(async (archive: KotOR.ERFObject) => {
               //MDL
@@ -429,7 +410,8 @@ export class EditorFile extends EventListenerModel {
               });
             });
             break;
-          case EditorFileProtocol.RIM:
+          }
+          case EditorFileProtocol.RIM: {
             const rim = new KotOR.RIMObject(this.archive_path);
             rim.load().then(async (archive: KotOR.RIMObject) => {
               //MDL
@@ -448,13 +430,13 @@ export class EditorFile extends EventListenerModel {
               });
             });
             break;
+          }
           default:
-
             break;
         }
       } else {
         switch (this.protocol) {
-          case EditorFileProtocol.FILE:
+          case EditorFileProtocol.FILE: {
             if (this.useGameFileSystem) {
               try {
                 //MDL
@@ -472,11 +454,9 @@ export class EditorFile extends EventListenerModel {
               });
             } else if (this.useProjectFileSystem) {
               try {
-                //MDL
-                if (!(this.buffer instanceof Uint8Array) || !this.buffer?.length) this.buffer = await getProjectFileSystem().readFile(this.path);
-
-                //MDX
-                if (!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length) this.buffer2 = await getProjectFileSystem().readFile(this.path2);
+                const PFS = await getProjectFileSystem();
+                if (!(this.buffer instanceof Uint8Array) || !this.buffer?.length) this.buffer = await PFS.readFile(this.path);
+                if (!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length) this.buffer2 = await PFS.readFile(this.path2 ?? "");
               } catch (e) {
                 log.error(String(e), e);
               }
@@ -555,11 +535,13 @@ export class EditorFile extends EventListenerModel {
               }
             }
             break;
+          }
           default:
-            log.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
+            log.warn('EditorFile.readMdlMdxFile', 'unhandled protocol', this.protocol);
             break;
         }
       }
+      })().catch(reject);
     });
   }
 
@@ -611,8 +593,22 @@ export class EditorFile extends EventListenerModel {
     // Stub: tab handles save-as via TabState.saveAs() when user uses File → Save As.
   }
 
-  static From(editorFile: EditorFile) {
-    return new EditorFile(editorFile as EditorFileOptions);
+  static From(editorFile: EditorFile): EditorFile {
+    return new EditorFile({
+      path: editorFile.path,
+      path2: editorFile.path2,
+      handle: editorFile.handle,
+      handle2: editorFile.handle2,
+      buffer: editorFile.buffer,
+      buffer2: editorFile.buffer2,
+      resref: editorFile.resref,
+      reskey: editorFile.reskey,
+      ext: editorFile.ext,
+      archive_path: editorFile.archive_path,
+      location: editorFile.location as FileLocationType,
+      useGameFileSystem: editorFile.useGameFileSystem,
+      useProjectFileSystem: editorFile.useProjectFileSystem,
+    });
   }
 
 }

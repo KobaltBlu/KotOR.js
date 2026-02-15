@@ -1,11 +1,10 @@
 import React, { useState, useCallback, memo, useMemo, useEffect } from "react";
 
-import { useEffectOnce } from "../helpers/UseEffectOnce";
-import { SceneGraphTreeViewManager } from "../managers/SceneGraphTreeViewManager";
-import { SceneGraphNode, SceneGraphNodeEventListenerTypes } from "../SceneGraphNode";
+import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
+import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
+import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
+import { SceneGraphNode, SceneGraphNodeEventListenerTypes } from "@/apps/forge/SceneGraphNode";
 
-import { ForgeTreeView } from "./treeview/ForgeTreeView";
-import { ListItemNode } from "./treeview/ListItemNode";
 
 export const SceneGraphTreeView = function (props: { manager: SceneGraphTreeViewManager }) {
   const manager: SceneGraphTreeViewManager = props.manager;

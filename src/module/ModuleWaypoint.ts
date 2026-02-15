@@ -1,21 +1,20 @@
-import { ModuleObject } from "./ModuleObject";
-
-import { GFFObject } from "../resource/GFFObject";
+import { ModuleObject } from "@/module/ModuleObject";
+import { GFFObject } from "@/resource/GFFObject";
 
 import * as THREE from "three";
 
-import { CExoLocString } from "../resource/CExoLocString";
-import { ResourceLoader } from "../loaders";
-import { GameState } from "../GameState";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { ResourceLoader } from "@/loaders";
+import { GameState } from "@/GameState";
 
 const log = createScopedLogger(LogScope.Module);
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { OdysseyModel3D } from "../three/odyssey";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /**
 * ModuleWaypoint class.

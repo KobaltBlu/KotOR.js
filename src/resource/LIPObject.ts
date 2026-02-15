@@ -1,29 +1,28 @@
 import * as THREE from 'three';
 
-import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
-import { ILIPHeader } from "../interface/resource/ILIPHeader";
-import { ILIPKeyFrame } from "../interface/resource/ILIPKeyFrame";
-import { ResourceLoader } from "../loaders";
-import { OdysseyModelAnimation } from "../odyssey";
-import type { OdysseyController } from "../odyssey/controllers/OdysseyController";
-import { OdysseyModel3D } from "../three/odyssey";
-import type { OdysseyObject3D } from "../three/odyssey/OdysseyObject3D";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { ILIPKeyFrame } from "@/interface/resource/ILIPKeyFrame";
+import { ResourceLoader } from "@/loaders";
+import { OdysseyModelAnimation } from "@/odyssey";
+import type { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D } from "@/three/odyssey";
+import type { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { ResourceTypes } from "./ResourceTypes";
 
 const log = createScopedLogger(LogScope.Resource);
 
 /**
  * LIPObject class.
- * 
+ *
  * Class representing a Lip Sync file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LIPObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -44,7 +43,7 @@ export class LIPObject {
 
   static readonly MAX_LIP_SHAPES = 16;
 
-  constructor(file: string|Uint8Array, onComplete?: Function){
+  constructor(file: string|Uint8Array, onComplete?: (lip: LIPObject) => void){
     this.file = file;
     this.HeaderSize = 16;
 
@@ -56,7 +55,7 @@ export class LIPObject {
     this.lastTime = 0;
     this.elapsed = 0;
     this.anim = null;
-    
+
 
     if(this.file != null){
       this.readFile( (lip: LIPObject) => {
@@ -67,8 +66,8 @@ export class LIPObject {
 
   }
 
-  readFile(onComplete?: Function){
-    
+  readFile(onComplete?: (lip: LIPObject) => void){
+
     try{
 
       if(this.file instanceof Uint8Array){
@@ -104,13 +103,13 @@ export class LIPObject {
     }
   }
 
-  readBinary(buffer: Uint8Array, onComplete?: Function){
+  readBinary(buffer: Uint8Array, onComplete?: (lip: LIPObject) => void){
     if(buffer instanceof Uint8Array){
 
       const reader = new BinaryReader(buffer);
 
-      const fileType = reader.readChars(4);
-      const fileVersion = reader.readChars(4);
+      const _fileType = reader.readChars(4);
+      const _fileVersion = reader.readChars(4);
       this.duration = reader.readSingle();
       const entryCount = reader.readUInt32();
 
@@ -175,24 +174,24 @@ export class LIPObject {
 
       if(fl == Infinity) fl = 1;
       if(isNaN(fl)) fl = 0;
-      
+
       if(fl > 1){
         fl = 1;
       }
-      
+
       if(this.anim == null){
         this.anim = model.odysseyAnimationMap.get('talk');
       }
-      
+
       if(this.anim){
 
         for(let i = 0; i < this.anim.nodes.length; i++){
 
           const node = this.anim.nodes[i];
           const modelNode = model.nodes.get(node.name);
-      
+
           if(typeof modelNode != 'undefined'){
-            
+
             this.anim._position.x = this.anim._position.y = this.anim._position.z = 0;
             this.anim._quaternion.x = this.anim._quaternion.y = this.anim._quaternion.z = 0;
             this.anim._quaternion.w = 1;
@@ -237,18 +236,17 @@ export class LIPObject {
       }
 
       if(this.elapsed >= this.duration){
-        
-        if(model.userData.moduleObject)
-          model.userData.moduleObject.lipObject = undefined;
+        const mo = model.userData.moduleObject as { lipObject?: LIPObject } | undefined;
+        if (mo) mo.lipObject = undefined;
 
         if(this.anim){
           for(let i = 0; i < this.anim.nodes.length; i++){
-  
+
             const modelNode: OdysseyObject3D | undefined = model.animNodeCache[this.anim.nodes[i].name];
             if(typeof modelNode != 'undefined'){
               modelNode.lipping = false;
             }
-            
+
           }
         }
 
@@ -260,7 +258,7 @@ export class LIPObject {
   }
 
   reIndexKeyframes(){
-    this.keyframes.sort((a,b) => (a.time > b.time) ? 1 : ((b.time > a.time) ? -1 : 0)); 
+    this.keyframes.sort((a,b) => (a.time > b.time) ? 1 : ((b.time > a.time) ? -1 : 0));
   }
 
   toExportBuffer(): Uint8Array {
@@ -281,7 +279,7 @@ export class LIPObject {
     return writer.buffer;
   }
 
-  export( onComplete?: Function ){
+  export( onComplete?: (err?: unknown) => void ){
 
     //this.reIndexKeyframes();
 
@@ -300,7 +298,7 @@ export class LIPObject {
     }
   }
 
-  async exportAs( onComplete?: Function ){
+  async exportAs( _onComplete?: (err?: unknown) => void ){
 
     // let payload = await dialog.showSaveDialog({
     //   title: 'Export LIP',

@@ -11,8 +11,11 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import { findConstant, findFunction, KOTOR_CONSTANTS } from './kotor-definitions';
 import { Program } from './nwscript-ast';
 import { NWScriptParser, ParseError } from './nwscript-parser';
-import { NWScriptRuntime, NWScriptValue } from './nwscript-runtime';
+import { NWScriptRuntime, NWScriptRuntimeValue, NWScriptValue } from './nwscript-runtime';
 import { InferredValue, ScopeType, VariableTracker } from './variable-tracker';
+
+/** Runtime value held by a variable (NWScript int/float/string/object). */
+export type NWScriptVariableValue = string | number | boolean | null;
 
 /**
  * NWScript Variable represents a variable during script execution
@@ -20,8 +23,16 @@ import { InferredValue, ScopeType, VariableTracker } from './variable-tracker';
 export interface NWScriptVariable {
   name: string;
   type: string;
-  value: any;
+  value: NWScriptVariableValue;
   hasChildren?: boolean;
+}
+
+/** Variable entry returned by handleVariables (DAP-like). */
+export interface DebugVariable {
+  name: string;
+  value: string;
+  type: string;
+  variablesReference?: number;
 }
 
 /**
@@ -44,6 +55,56 @@ export interface NWScriptBreakpoint {
   line: number;
   condition?: string;
   verified: boolean;
+}
+
+/** Success response for start/stop/pause. */
+export interface InterpreterSuccessResponse {
+  success: true;
+  line?: number;
+  column?: number;
+  file?: string;
+}
+
+/** Continue/step response when execution stopped (breakpoint or end). */
+export interface InterpreterStoppedResponse {
+  success: true;
+  stopReason: 'breakpoint' | 'end';
+  line: number;
+  column: number;
+  file: string;
+  result?: NWScriptRuntimeValue;
+}
+
+/** Error response for interpreter commands. */
+export interface InterpreterErrorResponse {
+  success: false;
+  error: string;
+}
+
+export type InterpreterStartResult = InterpreterSuccessResponse | InterpreterErrorResponse;
+export type InterpreterContinueResult = InterpreterStoppedResponse | InterpreterErrorResponse;
+export type InterpreterPauseResult = InterpreterSuccessResponse | InterpreterErrorResponse;
+export type InterpreterStopResult = InterpreterSuccessResponse | InterpreterErrorResponse;
+
+/** Stack frame as returned by handleStackTrace. */
+export interface InterpreterStackFrame {
+  id: number;
+  name: string;
+  source: { name: string; path: string };
+  line: number;
+  column: number;
+}
+
+export interface InterpreterStackTraceResult {
+  stackFrames: InterpreterStackFrame[];
+  totalFrames: number;
+}
+
+/** Evaluate result (DAP-like). */
+export interface InterpreterEvaluateResult {
+  result: string;
+  variablesReference: number;
+  type: string;
 }
 
 /**
@@ -123,15 +184,15 @@ export class NWScriptInterpreter {
   /**
    * Handle a request to set breakpoints
    */
-  public handleSetBreakpoints(params: any): any {
+  public handleSetBreakpoints(params: { source: { path: string }; breakpoints: Array<{ line?: number }> }): { breakpoints: NWScriptBreakpoint[] } {
     const source = params.source;
-    const clientLines = params.breakpoints.map((bp: any) => bp.line);
+    const clientLines = params.breakpoints.map((bp: { line?: number }) => bp.line);
 
     try {
       const filePath = source.path;
 
       // Create verified breakpoints
-      const breakpoints: NWScriptBreakpoint[] = clientLines.map((line: number, i: number) => ({
+      const breakpoints: NWScriptBreakpoint[] = clientLines.map((line: number, _i: number) => ({
         file: filePath,
         line,
         verified: true // We'll verify against the AST later
@@ -141,28 +202,17 @@ export class NWScriptInterpreter {
 
       this.connection.console.log(`Set ${clientLines.length} breakpoints for ${filePath}`);
 
-      // Return breakpoints in expected format
-      return {
-        breakpoints: breakpoints.map((bp, i) => ({
-          id: i,
-          verified: bp.verified,
-          line: bp.line
-        }))
-      };
+      return { breakpoints };
     } catch (error) {
       this.connection.console.error(`Failed to set breakpoints: ${error}`);
-      return {
-        breakpoints: [],
-        success: false,
-        error: String(error)
-      };
+      return { breakpoints: [] };
     }
   }
 
   /**
    * Start debugging a script
    */
-  public async handleStart(params: { scriptPath: string }): Promise<any> {
+  public async handleStart(params: { scriptPath: string }): Promise<InterpreterStartResult> {
     try {
       this.currentFile = params.scriptPath;
       this.currentLine = 1;
@@ -195,7 +245,7 @@ export class NWScriptInterpreter {
   /**
    * Continue execution until next breakpoint or end
    */
-  public async handleContinue(): Promise<any> {
+  public async handleContinue(): Promise<InterpreterContinueResult> {
     if (!this.runtime || !this.program) {
       return { success: false, error: 'No active debugging session' };
     }
@@ -237,7 +287,7 @@ export class NWScriptInterpreter {
           line: this.currentLine,
           column: this.currentColumn,
           file: this.currentFile,
-          result: result.value
+          result: result.value as NWScriptVariableValue
         };
       }
     } catch (error) {
@@ -253,7 +303,7 @@ export class NWScriptInterpreter {
   /**
    * Step over the current line
    */
-  public async handleNext(): Promise<any> {
+  public async handleNext(): Promise<InterpreterContinueResult> {
     if (!this.runtime || !this.program) {
       return { success: false, error: 'No active debugging session' };
     }
@@ -277,7 +327,7 @@ export class NWScriptInterpreter {
   /**
    * Step into a function or include
    */
-  public async handleStepIn(): Promise<any> {
+  public async handleStepIn(): Promise<InterpreterContinueResult> {
     if (!this.runtime || !this.program) {
       return { success: false, error: 'No active debugging session' };
     }
@@ -301,7 +351,7 @@ export class NWScriptInterpreter {
   /**
    * Step out of the current function
    */
-  public async handleStepOut(): Promise<any> {
+  public async handleStepOut(): Promise<InterpreterContinueResult> {
     if (!this.runtime || !this.program) {
       return { success: false, error: 'No active debugging session' };
     }
@@ -325,7 +375,7 @@ export class NWScriptInterpreter {
   /**
    * Pause execution
    */
-  public async handlePause(): Promise<any> {
+  public async handlePause(): Promise<InterpreterPauseResult> {
     try {
       this.isPaused = true;
       this.stepMode = 'none';
@@ -348,7 +398,7 @@ export class NWScriptInterpreter {
   /**
    * Get stack trace information
    */
-  public async handleStackTrace(): Promise<any> {
+  public async handleStackTrace(): Promise<InterpreterStackTraceResult> {
     if (!this.runtime) {
       return {
         stackFrames: [],
@@ -386,8 +436,8 @@ export class NWScriptInterpreter {
   /**
    * Get available scopes for a stack frame
    */
-  public handleScopes(params: any): any {
-    const frameId = params.frameId || 0;
+  public handleScopes(params: { frameId?: number }): { scopes: Array<{ name: string; variablesReference: number; expensive: boolean }> } {
+    const frameId = params.frameId ?? 0;
 
     return {
       scopes: [
@@ -413,9 +463,9 @@ export class NWScriptInterpreter {
   /**
    * Get variables for a scope
    */
-  public async handleVariables(params: { variablesReference: number }): Promise<any> {
+  public async handleVariables(params: { variablesReference: number }): Promise<{ variables: DebugVariable[] }> {
     const variablesReference = params.variablesReference;
-    const variables: any[] = [];
+    const variables: DebugVariable[] = [];
 
     try {
       if (variablesReference === 1) {
@@ -478,7 +528,7 @@ export class NWScriptInterpreter {
   /**
    * Evaluate an expression in the current context
    */
-  public async handleEvaluate(params: { expression: string, frameId?: number }): Promise<any> {
+  public async handleEvaluate(params: { expression: string, frameId?: number }): Promise<InterpreterEvaluateResult> {
     if (!this.runtime) {
       return {
         result: 'No active debugging session',
@@ -524,7 +574,7 @@ export class NWScriptInterpreter {
 
       // Try to parse and evaluate as expression
       try {
-        const exprProgram = NWScriptParser.parse(`void main() { ${expression}; }`);
+        const _exprProgram = NWScriptParser.parse(`void main() { ${expression}; }`);
         // This would require more complex evaluation logic
         return {
           result: `Cannot evaluate complex expression: ${expression}`,
@@ -551,7 +601,7 @@ export class NWScriptInterpreter {
   /**
    * Stop the debug session
    */
-  public async handleStop(): Promise<any> {
+  public async handleStop(): Promise<InterpreterStopResult> {
     try {
       this.isRunning = false;
       this.isPaused = false;

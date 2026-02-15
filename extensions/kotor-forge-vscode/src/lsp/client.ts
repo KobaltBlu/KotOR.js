@@ -209,7 +209,9 @@ export function deactivateLsp(): PromiseLike<void> | undefined {
   log.trace('deactivateLsp() entered');
   log.info('Deactivating NWScript language server');
   const count = debugDisposables.length;
-  debugDisposables.forEach((d) => d.dispose());
+  for (const d of debugDisposables) {
+    d.dispose();
+  }
   debugDisposables = [];
   log.trace(`Disposed ${count} debug disposables`);
 
@@ -229,15 +231,18 @@ export function deactivateLsp(): PromiseLike<void> | undefined {
   }
 
   log.info('Stopping language server');
-  return current.stop().then(() => {
-    log.info('Language server stopped successfully');
-    log.trace('deactivateLsp() completed');
-  }).catch((error: unknown) => {
-    const msg = error instanceof Error ? error.message : String(error);
-    if (msg.includes("Client is not running and can't be stopped") || msg.includes('connection got disposed')) {
-      log.debug(`Stop skipped or connection already closed: ${msg}`);
-    } else {
-      log.error(`Error stopping language server: ${error}`);
-    }
-  });
+  const stopPromise = (current.stop() as Promise<void>)
+    .then((): void => {
+      log.info('Language server stopped successfully');
+      log.trace('deactivateLsp() completed');
+    })
+    .then(undefined, (error: unknown): void => {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (msg.includes("Client is not running and can't be stopped") || msg.includes('connection got disposed')) {
+        log.debug(`Stop skipped or connection already closed: ${msg}`);
+      } else {
+        log.error(`Error stopping language server: ${error}`);
+      }
+    });
+  return stopPromise;
 }

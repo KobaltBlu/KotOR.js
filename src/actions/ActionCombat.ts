@@ -1,13 +1,11 @@
-import { ModuleObjectConstant, ModuleObjectType } from "../enums";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { GameState } from "../GameState";
-import { BitWise } from "../utility/BitWise";
-
-import { Action } from "./Action";
-import { ActionQueue } from "./ActionQueue";
+import { Action } from "@/actions/Action";
+import { ModuleObjectConstant, ModuleObjectType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { GameState } from "@/GameState";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionCombat class.
@@ -42,7 +40,7 @@ export class ActionCombat extends Action {
    *          - IN_PROGRESS if round is paused
    *          - Status from processing scheduled actions
    */
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
     if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return ActionStatus.FAILED;
 
     const combatRound = this.owner.combatRound;
@@ -62,7 +60,7 @@ export class ActionCombat extends Action {
     combatRound.action = combatAction;
     switch (combatAction.actionType) {
       case CombatActionType.ATTACK:
-      case CombatActionType.ATTACK_USE_FEAT:
+      case CombatActionType.ATTACK_USE_FEAT: {
         const attackAction = new GameState.ActionFactory.ActionPhysicalAttacks();
         attackAction.setParameter(0, ActionParameterType.INT, combatAction.resultsCalculated);
         attackAction.setParameter(1, ActionParameterType.DWORD, combatAction.target.id);
@@ -76,8 +74,9 @@ export class ActionCombat extends Action {
         attackAction.setParameter(9, ActionParameterType.INT, combatAction.resultsCalculated ? combatAction.attackDamage : 0);
         attackAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(attackAction);
+        }
         break;
-      case CombatActionType.CAST_SPELL:
+      case CombatActionType.CAST_SPELL: {
         const spellAction = new GameState.ActionFactory.ActionCastSpell();
         spellAction.setParameter(0, ActionParameterType.INT, combatAction.spell ? combatAction.spell.id : 0); //Spell Id
         spellAction.setParameter(1, ActionParameterType.INT, combatAction.spellClassIndex);
@@ -93,6 +92,7 @@ export class ActionCombat extends Action {
         spellAction.setParameter(11, ActionParameterType.INT, combatAction.overrideSpell ? combatAction.overrideSpell.id : -1);
         spellAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(spellAction);
+        }
         break;
       case CombatActionType.ITEM_CAST_SPELL: {
         const itemCastSpellAction = new GameState.ActionFactory.ActionItemCastSpell();
@@ -116,21 +116,23 @@ export class ActionCombat extends Action {
         this.owner.actionQueue.unshift(itemCastSpellAction);
       }
         break;
-      case CombatActionType.ITEM_EQUIP:
+      case CombatActionType.ITEM_EQUIP: {
         const equipAction = new GameState.ActionFactory.ActionEquipItem();
         equipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
         equipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
         equipAction.setParameter(2, ActionParameterType.INT, combatAction.equipInstant ? 1 : 0);
-        attackAction.isUserAction = combatAction.isUserAction;
+        equipAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(equipAction);
+        }
         break;
-      case CombatActionType.ITEM_UNEQUIP:
+      case CombatActionType.ITEM_UNEQUIP: {
         const unequipAction = new GameState.ActionFactory.ActionUnequipItem();
         unequipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
         unequipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
         unequipAction.setParameter(2, ActionParameterType.INT, combatAction.equipInstant ? 1 : 0);
-        attackAction.isUserAction = combatAction.isUserAction;
+        unequipAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(unequipAction);
+        }
         break;
     }
 

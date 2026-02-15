@@ -1,8 +1,8 @@
 import React from "react";
 
-import type { ProfileCategory } from "../types";
+import { ProfileMenuItem } from "@/apps/launcher/components/ProfileMenuItem";
+import type { ProfileCategory } from "@/apps/launcher/types";
 
-import { ProfileMenuItem } from "./ProfileMenuItem";
 
 export interface CategoryMenuItemProps {
   category: ProfileCategory;

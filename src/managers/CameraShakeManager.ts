@@ -1,10 +1,10 @@
 import * as THREE from "three";
 
-import { EngineMode } from "../enums/engine/EngineMode";
-import { GameState } from "../GameState";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import { TwoDAManager } from "./TwoDAManager";
 
 const log = createScopedLogger(LogScope.Manager);
 

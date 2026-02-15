@@ -1,8 +1,8 @@
-import * as swKotOR from "../game/kotor/swkotor-config";
-import * as swKotOR2 from "../game/tsl/swkotor2-config";
-import { DeepObject } from "../utility/DeepObject";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import * as swKotOR from "@/game/kotor/swkotor-config";
+import * as swKotOR2 from "@/game/tsl/swkotor2-config";
+import { DeepObject } from "@/utility/DeepObject";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Default);
 

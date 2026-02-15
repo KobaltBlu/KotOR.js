@@ -1,11 +1,12 @@
-import { GameEngineType } from "../../enums/engine";
-import { GFFStruct } from "../../resource/GFFStruct";
-import { OdysseyTexture } from "../../three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "../../utility/Logger";
-
 import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "..";
-import { GameState } from "../../GameState";
-import { TextureLoader } from "../../loaders";
+
+import { GameEngineType } from "@/enums/engine";
+import { GameState } from "@/GameState";
+import { TextureLoader } from "@/loaders";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
 
 
 const log = createScopedLogger(LogScope.Game);

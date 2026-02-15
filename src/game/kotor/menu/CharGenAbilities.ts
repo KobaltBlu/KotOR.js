@@ -1,8 +1,8 @@
-import { CharGenAttribute } from "../../../enums/chargen/CharGenAttribute";
-import { GameState } from "../../../GameState";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { GameMenu } from "../../../gui";
-import type { ModuleCreature } from "../../../module";
+import { CharGenAttribute } from "@/enums/chargen/CharGenAttribute";
+import { GameState } from "@/GameState";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GameMenu } from "@/gui";
+import type { ModuleCreature } from "@/module";
 
 /**
  * CharGenAbilities class.
@@ -93,12 +93,15 @@ export class CharGenAbilities extends GameMenu {
       this.BTN_RECOMMENDED.addEventListener('click', (e) => {
         GameState.CharGenManager.availPoints = 0;
         if(this.creature){
-          GameState.CharGenManager.str = parseInt(this.creature.classes[0].str as any);
-          GameState.CharGenManager.dex = parseInt(this.creature.classes[0].dex as any);
-          GameState.CharGenManager.con = parseInt(this.creature.classes[0].con as any);
-          GameState.CharGenManager.wis = parseInt(this.creature.classes[0].wis as any);
-          GameState.CharGenManager.int = parseInt(this.creature.classes[0].int as any);
-          GameState.CharGenManager.cha = parseInt(this.creature.classes[0].cha as any);
+          const c = this.creature.classes[0];
+          if (c) {
+            GameState.CharGenManager.str = Number(c.str) || 10;
+            GameState.CharGenManager.dex = Number(c.dex) || 10;
+            GameState.CharGenManager.con = Number(c.con) || 10;
+            GameState.CharGenManager.wis = Number(c.wis) || 10;
+            GameState.CharGenManager.int = Number(c.int) || 10;
+            GameState.CharGenManager.cha = Number(c.cha) || 10;
+          }
         }
 
         this.updateButtonStates();

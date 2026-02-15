@@ -1,11 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import { EditorTabManager } from '../managers/EditorTabManager';
-import { ForgeState } from '../states/ForgeState';
+import { LoadingScreenProvider } from '@/apps/forge/context/LoadingScreenContext';
+import { EditorTabManager } from '@/apps/forge/managers/EditorTabManager';
+import { ForgeState } from '@/apps/forge/states/ForgeState';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
-import { createScopedLogger, LogScope } from '../../../utility/Logger';
-
-import { LoadingScreenProvider } from './LoadingScreenContext';
 
 const log = createScopedLogger(LogScope.Forge);
 

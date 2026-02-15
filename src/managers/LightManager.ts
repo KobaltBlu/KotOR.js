@@ -1,10 +1,10 @@
 import * as THREE from "three";
 
-import { OdysseyLight3D } from "../three/odyssey";
-import { createScopedLogger, LogScope } from "../utility/Logger";
+import { OdysseyLight3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
-import type { ModuleObject } from "../module";
+import type { ModuleObject } from "@/module";
 
 interface IOdysseyAnimatedLightUniformStruct {
   position: THREE.Vector3;

@@ -1,14 +1,14 @@
-import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
-import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
-import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
-import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
-import { TextureLoader } from "../../../loaders";
-import type { ModuleCreature } from "../../../module/ModuleCreature";
-import { ModuleItem } from "../../../module/ModuleItem";
-import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import { GUIItemEquipped } from "@/gui/protoitem/GUIItemEquipped";
+import { GUIItemNone } from "@/gui/protoitem/GUIItemNone";
+import { TextureLoader } from "@/loaders";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { ModuleItem } from "@/module/ModuleItem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 

@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 
-import { IPathPointOptions } from "../../interface/engine/pathfinding/IPathPointOptions";
-import type { ModuleArea } from '../../module/ModuleArea';
-import type { ModuleObject } from '../../module/ModuleObject';
-import type { WalkmeshEdge } from '../../odyssey/WalkmeshEdge';
-import type { GFFStruct } from '../../resource/GFFStruct';
-import { Utility } from '../../utility/Utility';
+import { IPathPointOptions } from "@/interface/engine/pathfinding/IPathPointOptions";
+import type { ModuleArea } from '@/module/ModuleArea';
+import type { ModuleObject } from '@/module/ModuleObject';
+import type { GFFStruct } from '@/resource/GFFStruct';
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from '@/utility/Utility';
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * PathPoint class.
@@ -37,6 +39,7 @@ export class PathPoint {
   end: boolean = false;
 
   constructor(options: IPathPointOptions){
+    log.trace('PathPoint constructor', options?.id);
     options = Object.assign({
       id: 0,
       connections: [],
@@ -56,6 +59,7 @@ export class PathPoint {
   }
 
   setArea(area: ModuleArea){
+    log.trace('PathPoint.setArea', !!area);
     this.area = area;
     if(this.area){
       this.nearestWalkableVector = this.area.getNearestWalkablePoint(this.vector);
@@ -64,6 +68,7 @@ export class PathPoint {
   }
 
   reset(){
+    log.trace('PathPoint.reset', this.id);
     this.h = this.g = this.f = 0;
     this.cost = 1;
     this.visited = false;
@@ -77,6 +82,7 @@ export class PathPoint {
   }
 
   hasLOS(point_b: PathPoint, owner?: ModuleObject): boolean {
+    log.trace('PathPoint.hasLOS', this.id, point_b?.id);
     if(!this.area)
       return true;
 

@@ -1,4 +1,4 @@
-import * as KotOR from "../../../KotOR";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export type DLGNodeTypeLabel = "starting" | "entry" | "reply";
 export type DLGTreeItemKind = "node" | "link";

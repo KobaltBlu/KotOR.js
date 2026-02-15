@@ -344,8 +344,8 @@ export class VariableTracker {
     if (func) {
       func.endLine = endLine;
       // If a function has exactly one return expression, mark it as simple
-      if (Array.isArray((func as any).returnExpressions) && (func as any).returnExpressions.length === 1) {
-        (func as any).simpleReturnExpression = (func as any).returnExpressions[0];
+      if (Array.isArray(func.returnExpressions) && func.returnExpressions.length === 1) {
+        func.simpleReturnExpression = func.returnExpressions[0];
       }
     }
 
@@ -388,8 +388,8 @@ export class VariableTracker {
   private identifyStructures(lines: string[]): void {
     const bracketStack: { type: ScopeType; line: number; condition?: string }[] = [];
     let inFunction: string | null = null;
-    let functionReturnType: ValueType = 'unknown';
-    let functionParams: { name: string; type: ValueType }[] = [];
+    let _functionReturnType: ValueType = 'unknown';
+    let _functionParams: { name: string; type: ValueType }[] = [];
 
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
       const currentLine = lines[lineIndex];
@@ -425,8 +425,8 @@ export class VariableTracker {
         }
 
         inFunction = funcName;
-        functionReturnType = returnType;
-        functionParams = params;
+        _functionReturnType = returnType;
+        _functionParams = params;
 
         // Register the function
         this.registerFunction(funcName, params, returnType, lineIndex);
@@ -441,8 +441,8 @@ export class VariableTracker {
           const fn = this.functions.get(inFunction);
           if (fn) {
             // Lazily create returnExpressions array if missing
-            (fn as any).returnExpressions = (fn as any).returnExpressions || [];
-            (fn as any).returnExpressions.push(retExpr);
+            fn.returnExpressions = fn.returnExpressions ?? [];
+            fn.returnExpressions.push(retExpr);
           }
         }
       }
@@ -502,7 +502,7 @@ export class VariableTracker {
       // Closing bracket
       if (line === '}') {
         if (bracketStack.length > 0) {
-          const scope = bracketStack.pop()!;
+          const _scope = bracketStack.pop()!;
           this.closeScope(lineIndex);
 
           // If we're closing a function
@@ -517,7 +517,7 @@ export class VariableTracker {
 
     // Close any remaining open scopes
     while (bracketStack.length > 0) {
-      const scope = bracketStack.pop()!;
+      const _scope = bracketStack.pop()!;
       this.closeScope(lines.length - 1);
     }
 
@@ -560,7 +560,7 @@ export class VariableTracker {
   }
 
   // Evaluate a function call
-  private evaluateFunctionCall(funcName: string, args: string[], position: Position): InferredValue | null {
+  private evaluateFunctionCall(funcName: string, args: string[], _position: Position): InferredValue | null {
     const func = this.functions.get(funcName);
     if (!func) {
       return null;
@@ -907,7 +907,7 @@ export class VariableTracker {
     }
 
     // Check for multiplication, division, and modulo (higher precedence)
-    const mulDivMatch = expr.match(/^(.+?)(\*|\/|\%)(.+)$/);
+    const mulDivMatch = expr.match(/^(.+?)(\*|\/|%)(.+)$/);
     if (mulDivMatch && mulDivMatch[1] && mulDivMatch[2] && mulDivMatch[3]) {
       const leftExpr = mulDivMatch[1].trim();
       const operator = mulDivMatch[2];
