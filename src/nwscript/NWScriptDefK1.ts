@@ -8061,7 +8061,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING],
     action: async function(this: NWScriptInstance, args: [string]){
-      //todo
+      console.log('PlayMovie', args[0]);
+      GameState.SetEngineMode(EngineMode.MOVIE);
+      GameState.VideoManager.playMovie(args[0], true);
     }
   },
   734:{
@@ -8434,20 +8436,26 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-        
+      return GameState.VideoManager.isMoviePlaying() ? 1 : 0;
     }
   },
   769:{
     comment: "769. QueueMovie\nQueues up a movie to be played using PlayMovieQueue.\nIf bSkippable is TRUE, the player can cancel the movie by hitting escape.\nIf bSkippable is FALSE, the player cannot cancel the movie and must wait\nfor it to finish playing.\n",
     name: "QueueMovie",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [string, number]){
+      GameState.VideoManager.queueMovie(args[0], args[1] === 1);
+    }
   },
   770:{
     comment: "770. PlayMovieQueue\nPlays the movies that have been added to the queue by QueueMovie\nIf bAllowSeparateSkips is TRUE, hitting escape to cancel a movie only\ncancels out of the currently playing movie rather than the entire queue\nof movies (assuming the currently playing movie is flagged as skippable).\nIf bAllowSeparateSkips is FALSE, the entire movie queue will be cancelled\nif the player hits escape (assuming the currently playing movie is flagged\nas skippable).\n",
     name: "PlayMovieQueue",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: async function(this: NWScriptInstance, args: [number]){
+      await GameState.VideoManager.playMovieQueue(args[0] === 1);
+    }
   },
   771:{
     comment: "771. YavinHackCloseDoor\nThis is an incredibly hacky function to allow the doors to be properly\nclosed on Yavin without running into the problems we've had.  It is too\nlate in development to fix it correctly, so thus we do this.  Life is\nhard.  You'll get over it\n",

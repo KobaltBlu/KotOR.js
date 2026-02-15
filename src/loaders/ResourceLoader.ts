@@ -131,11 +131,11 @@ export class ResourceLoader {
       return data;
     }
 
-    data = await this.searchLocal(resId, resRef);
-    if(data){
-      ResourceLoader.setCache(null, resId, resRef, data);
-      return data;
-    }
+    // data = await this.searchLocal(resId, resRef);
+    // if(data){
+    //   ResourceLoader.setCache(null, resId, resRef, data);
+    //   return data;
+    // }
 
     data = await this.searchKeyTable(resId, resRef);
     if(data){

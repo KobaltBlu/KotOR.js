@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import { 
-  AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
-  ResolutionManager, ShaderManager, TwoDAManager, FactionManager, 
-  VideoEffectManager, PazaakManager, UINotificationManager, CutsceneManager
+import {
+  AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager,
+  ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
+  VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, CutsceneManager
 } from "./managers";
 
 import type { SWRuleSet } from "./engine/rules/SWRuleSet";
@@ -22,7 +22,6 @@ import { IngameControls } from "./controls/IngameControls";
 // import { Mouse } from "./controls/Mouse";
 
 import { INIConfig } from "./engine/INIConfig";
-import { VideoPlayer } from "./engine/VideoPlayer";
 
 // import { OdysseyObject3D } from "./three/odyssey";
 import { AudioEngine, AudioEmitter } from "./audio";
@@ -136,6 +135,7 @@ export class GameState implements EngineContext {
   static GameEffectFactory: typeof GameEffectFactory;
   static GameEventFactory: typeof GameEventFactory;
   static VideoEffectManager: typeof VideoEffectManager;
+  static VideoManager: typeof VideoManager;
 
   static Planetary: typeof Planetary = Planetary;
 
@@ -225,6 +225,7 @@ export class GameState implements EngineContext {
 
   static scene: THREE.Scene;
   static scene_gui: THREE.Scene;
+  static scene_movie: THREE.Scene;
 
   //Camera properties
   static frustumMat4: THREE.Matrix4;
@@ -575,6 +576,7 @@ export class GameState implements EngineContext {
 
     GameState.scene = new THREE.Scene();
     GameState.scene_gui = new THREE.Scene();
+    GameState.scene_movie = new THREE.Scene();
     GameState.frustumMat4 = new THREE.Matrix4();
     GameState.camera = FollowerCamera.camera;
 
@@ -597,6 +599,7 @@ export class GameState implements EngineContext {
     GameState.camera_gui.position.z = 500;
     GameState.camera_gui.updateProjectionMatrix();
     GameState.scene_gui.add(new THREE.AmbientLight(0x60534A));
+    GameState.scene_movie.add(new THREE.AmbientLight(0x60534A));
 
     FollowerCamera.facing = Math.PI/2;
     FollowerCamera.speed = 0;
@@ -865,7 +868,11 @@ export class GameState implements EngineContext {
     GameState.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
 
     GameState.FadeOverlayManager.plane.scale.set(width, height, 1);
-    
+
+    if (GameState.VideoManager.bikObject) {
+      GameState.VideoManager.bikObject.resize(width, height);
+    }
+
     GameState.camera_gui.left = width / -2;
     GameState.camera_gui.right = width / 2;
     GameState.camera_gui.top = height / 2;
@@ -1046,12 +1053,12 @@ export class GameState implements EngineContext {
     
     GameState.VideoEffectManager.SetVideoEffect(-1);
     CursorManager.selectableObjects = [];
-    await VideoPlayer.Load(sMovie1);
-    await VideoPlayer.Load(sMovie2);
-    await VideoPlayer.Load(sMovie3);
-    await VideoPlayer.Load(sMovie4);
-    await VideoPlayer.Load(sMovie5);
-    await VideoPlayer.Load(sMovie6);
+    GameState.VideoManager.queueMovie(sMovie1);
+    GameState.VideoManager.queueMovie(sMovie2);
+    GameState.VideoManager.queueMovie(sMovie3);
+    GameState.VideoManager.queueMovie(sMovie4);
+    GameState.VideoManager.queueMovie(sMovie5);
+    GameState.VideoManager.queueMovie(sMovie6);
     GameState.SetEngineMode(EngineMode.LOADING);
     
     if(GameState.module){
@@ -1103,8 +1110,8 @@ export class GameState implements EngineContext {
     GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
     
     console.log('ModuleArea.initAreaObjects');
-    await GameState.module.area.initAreaObjects(runSpawnScripts);
     GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
+    await GameState.module.area.initAreaObjects(runSpawnScripts);
     console.log('ModuleArea: ready to play');
     GameState.module.readyToProcessEvents = true;
 
@@ -1242,6 +1249,14 @@ export class GameState implements EngineContext {
     }
 
     GameState.controls.Update(delta);
+    GameState.scene_cursor_holder.visible = GameState.Mode != EngineMode.MOVIE;
+    if(GameState.Mode == EngineMode.MOVIE || GameState.VideoManager.isMoviePlaying()){
+      GameState.Mode = EngineMode.MOVIE;
+      GameState.VideoManager.update(delta);
+      GameState.renderer.render(GameState.scene_movie, GameState.camera_gui);
+      return;
+    }
+
     GameState.VideoEffectManager.Update(delta);
 
     GameState.MenuManager.Update(delta);
@@ -1255,7 +1270,6 @@ export class GameState implements EngineContext {
       });
     } 
 
-    GameState.scene_cursor_holder.visible = true;
     if(GameState.MenuManager.InGamePause)
       GameState.MenuManager.InGamePause.hide();
 
