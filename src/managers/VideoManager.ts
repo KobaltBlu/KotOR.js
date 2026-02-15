@@ -147,16 +147,11 @@ export class VideoManager {
   }
 
   /**
-   * Handle movie completion
+   * Handle movie completion (cleanup only; queue advancement is done by
+   * the onComplete callback passed to playMovie, e.g. playNextMovie in playMovieQueue)
    */
   private static onMovieComplete(): void {
     this.cleanup();
-
-    // Check if there are more movies in the queue
-    if (this.movieQueue.length > 0) {
-      const nextMovie = this.movieQueue.shift()!;
-      this.playMovie(nextMovie.name, nextMovie.skippable, () => this.onMovieComplete());
-    }
   }
 
   /**

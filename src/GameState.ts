@@ -838,6 +838,12 @@ export class GameState implements EngineContext {
       await TextureLoader.LoadQueue();
       PerformanceMonitor.stop('TextureLoader.LoadQueue');
 
+      if(GameState.GameKey == GameEngineType.KOTOR){
+        GameState.VideoManager.queueMovie('leclogo');
+        GameState.VideoManager.queueMovie('biologo');
+        GameState.VideoManager.queueMovie('legal');
+      }
+
       GameState.Ready = true;
       if(GameState.OpeningMoviesComplete){
         GameState.Start();
@@ -852,6 +858,7 @@ export class GameState implements EngineContext {
     if(GameState.Ready && !GameState.OnReadyCalled){
       GameState.OnReadyCalled = true;
       GameState.processEventListener('ready');
+      GameState.VideoManager.playMovieQueue();
       GameState.MenuManager.MainMenu.Start();
       window.dispatchEvent(new Event('resize'));
 
