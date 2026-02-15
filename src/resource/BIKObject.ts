@@ -179,11 +179,21 @@ export class BIKObject {
     if(!height)
       height = window.innerHeight;
 
-    // Scale video to fit width while maintaining aspect ratio
-    this.videoPlane.scale.x = this.width * (width / this.width);
-    this.videoPlane.scale.y = this.height * (width / this.width);
+    // Scale video to fit inside the viewport while maintaining aspect ratio (contain).
+    // Plane is centered at (0,0); orthographic camera viewport is [-width/2, width/2] x [-height/2, height/2].
+    const videoAspect = this.width / this.height;
+    const windowAspect = width / height;
+    if (videoAspect >= windowAspect) {
+      // Video is wider or same as window — fit to width
+      this.videoPlane.scale.x = width;
+      this.videoPlane.scale.y = width / videoAspect;
+    } else {
+      // Video is taller than window — fit to height
+      this.videoPlane.scale.y = height;
+      this.videoPlane.scale.x = height * videoAspect;
+    }
 
-    // Back plane covers the full viewport
+    // Back plane covers the full viewport (letterbox/pillarbox visible behind video)
     this.backPlane.scale.x = width;
     this.backPlane.scale.y = height;
   }
