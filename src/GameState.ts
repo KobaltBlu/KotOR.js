@@ -1133,11 +1133,14 @@ export class GameState implements EngineContext {
   static RestoreEnginePlayMode(): void {
     if(GameState.module){
       if(GameState.module.area.miniGame){
+        console.log('RestoreEnginePlayMode: MINIGAME');
         GameState.SetEngineMode(EngineMode.MINIGAME)
       }else{
+        console.log('RestoreEnginePlayMode: INGAME');
         GameState.SetEngineMode(EngineMode.INGAME);
       }
     }else{
+      console.log('RestoreEnginePlayMode: GUI');
       GameState.SetEngineMode(EngineMode.GUI);
     }
   }
@@ -1146,6 +1149,7 @@ export class GameState implements EngineContext {
     if(GameState.Mode == mode){
       return;
     }
+    console.log('SetEngineMode: ', mode);
     GameState.Mode = mode;
     if(mode == EngineMode.LOADING){
       if(GameState.MenuManager.LoadScreen){

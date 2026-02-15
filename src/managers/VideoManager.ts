@@ -173,7 +173,8 @@ export class VideoManager {
 
     // Restore previous engine mode
     if (GameState.Mode === EngineMode.MOVIE) {
-      GameState.SetEngineMode(this.lastEngineMode);
+      GameState.RestoreEnginePlayMode();
+      // GameState.SetEngineMode(this.lastEngineMode);
     }
   }
 

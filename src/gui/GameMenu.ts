@@ -214,7 +214,7 @@ export class GameMenu {
 
   show(){
     // this.Hide();
-    if(!this.isOverlayGUI)
+    if(!this.isOverlayGUI && GameState.Mode !== EngineMode.MOVIE)
       GameState.SetEngineMode(this.engineMode);
       
     this.bVisible = true;
