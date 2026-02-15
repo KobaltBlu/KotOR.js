@@ -1,6 +1,6 @@
 import React from "react";
 
-import { TabState } from ".";
+import { TabState } from "./TabState";
 
 import { TabScriptFindReferences } from "@/apps/forge/components/tabs/tab-script-find-references/TabScriptFindReferences";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";

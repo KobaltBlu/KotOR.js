@@ -19,6 +19,17 @@ export interface RemoteUpdateInfo {
   [key: string]: unknown;
 }
 
+/** Parse response body as JSON; returns unknown to satisfy no-unsafe-* (fetch/JSON are typed as any). */
+async function fetchJsonAsUnknown(res: Response): Promise<unknown> {
+  const text: string = await res.text();
+  return parseJsonAsUnknown(text);
+}
+
+/** Parse JSON string to unknown; use to avoid assigning from JSON.parse's any return type. */
+function parseJsonAsUnknown(text: string): unknown {
+  return JSON.parse(text) as unknown;
+}
+
 /**
  * Fetch JSON from an update info URL. For GitHub contents API, response has { content: base64 }.
  * Supports: 1) Holocron-style JSON block with <---JSON_START---> markers, 2) plain JSON (e.g. package.json with "version").
@@ -32,7 +43,7 @@ export async function fetchUpdateInfo(
   try {
     const res = await fetch(updateLink, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    const data: unknown = await res.json();
+    const data = await fetchJsonAsUnknown(res);
     if (data && typeof data === "object" && data !== null) {
       const obj = data as Record<string, unknown>;
       if (typeof obj.content === "string") {
@@ -41,11 +52,13 @@ export async function fetchUpdateInfo(
         const jsonMatch = str.match(/<---JSON_START--->\s*#\s*(\{[\s\S]*?\})\s*#\s*<---JSON_END--->/);
         if (jsonMatch && jsonMatch[1]) {
           const cleaned = jsonMatch[1].replace(/,(\s*[}\]])/g, "$1");
-          return JSON.parse(cleaned) as RemoteUpdateInfo;
+          const parsed = parseJsonAsUnknown(cleaned);
+          return parsed as RemoteUpdateInfo;
         }
-        const parsed = JSON.parse(str) as Record<string, unknown>;
-        if (typeof parsed.version === "string") {
-          return { toolsetLatestVersion: parsed.version, currentVersion: parsed.version };
+        const parsed = parseJsonAsUnknown(str);
+        const rec = parsed as Record<string, unknown>;
+        if (typeof rec.version === "string") {
+          return { toolsetLatestVersion: rec.version, currentVersion: rec.version };
         }
         return parsed as RemoteUpdateInfo;
       }

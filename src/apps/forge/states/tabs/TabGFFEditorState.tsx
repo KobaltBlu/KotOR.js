@@ -10,12 +10,12 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 const log = createScopedLogger(LogScope.Forge);
 
 export type TabGFFEditorStateEventListenerTypes =
-TabStateEventListenerTypes & 
+TabStateEventListenerTypes &
   ''|'onEditorFileLoad'|'onNodeSelected';
 
 export interface TabGFFEditorStateEventListeners extends TabStateEventListeners {
-  onEditorFileLoad: Function[],
-  onNodeSelected: Function[],
+  onEditorFileLoad: (() => void)[];
+  onNodeSelected: (() => void)[];
 }
 
 export class TabGFFEditorState extends TabState {

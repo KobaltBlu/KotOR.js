@@ -1,9 +1,9 @@
 import React from 'react';
 
-
 import { TabLIPEditorOptions } from '@/apps/forge/components/tabs/tab-lip-editor/TabLIPEditorOptions';
 import type BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
 import { SceneGraphNode } from '@/apps/forge/SceneGraphNode';
+import type { TabLIPEditorState } from '@/apps/forge/states/tabs';
 import { TabState } from '@/apps/forge/states/tabs/TabState';
 import { createScopedLogger, LogScope } from '@/utility/Logger';
 
@@ -23,17 +23,16 @@ export class TabLIPEditorOptionsState extends TabState {
     this.singleInstance = true;
     this.isClosable = false;
 
-    /* SceneGraphNode can be reported as unresolved when @/ path is not resolved by ESLint parser */
-    /* eslint-disable-next-line @typescript-eslint/no-unsafe-call -- construction; type from @/apps/forge/SceneGraphNode */
     this.sceneGraphNode = new SceneGraphNode({ name: 'Scene' });
-    /* eslint-disable-next-line @typescript-eslint/no-unsafe-call -- construction; type from @/apps/forge/SceneGraphNode */
     this.keyframesGraphNode = new SceneGraphNode({ name: 'Key Frames' });
     this.sceneGraphNodes = [
       this.sceneGraphNode,
       this.keyframesGraphNode,
     ];
 
-    this.setContentView(<TabLIPEditorOptions tab={this} parentTab={options.parentTab}></TabLIPEditorOptions>);
+    const parentTab = options.parentTab;
+    if (!parentTab) throw new Error('TabLIPEditorOptionsState requires options.parentTab');
+    this.setContentView(<TabLIPEditorOptions tab={this} parentTab={parentTab as TabLIPEditorState} />);
     log.trace('TabLIPEditorOptionsState constructor exit');
   }
 }

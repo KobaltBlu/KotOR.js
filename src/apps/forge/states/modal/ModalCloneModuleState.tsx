@@ -1,6 +1,9 @@
 import React from "react";
 
 import { ModalCloneModule } from "@/apps/forge/components/modal/ModalCloneModule";
+import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
+import type { CloneModuleOptions } from "@/apps/forge/helpers/CloneModule";
+import * as KotOR from "@/apps/forge/KotOR";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
 
 export interface ModalCloneModuleStateOptions {
@@ -76,9 +79,7 @@ export class ModalCloneModuleState extends ModalState {
   }
 
   async browseSource(): Promise<void> {
-    const { ForgeFileSystem } = await import("../../ForgeFileSystem");
     const response = await ForgeFileSystem.OpenFile({ ext: [".mod"] });
-    const KotOR = await import("../../KotOR");
     if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
       if (response.paths && response.paths.length > 0) {
         this.sourceModPath = response.paths[0];
@@ -89,7 +90,7 @@ export class ModalCloneModuleState extends ModalState {
         this.sourceModPath = h.name;
       }
     }
-    const buffer = await ForgeFileSystem.ReadFileBufferFromResponse(response);
+    const buffer = (await ForgeFileSystem.ReadFileBufferFromResponse(response)) as Uint8Array;
     if (buffer.length > 0) {
       this.sourceModBuffer = buffer;
       this.error = "";
@@ -101,10 +102,17 @@ export class ModalCloneModuleState extends ModalState {
   }
 
   async runClone(outputPath: string): Promise<boolean> {
-    const { cloneModuleFromBuffer } = await import("../../helpers/CloneModule");
+    const cloneMod = (await import("@/apps/forge/helpers/CloneModule")) as {
+      cloneModuleFromBuffer: (opts: CloneModuleOptions) => Promise<void>;
+    };
+    const sourceBuffer = this.sourceModBuffer;
+    if (!sourceBuffer) {
+      this.error = "No source buffer.";
+      return false;
+    }
     try {
-      await cloneModuleFromBuffer({
-        sourceBuffer: this.sourceModBuffer!,
+      await cloneMod.cloneModuleFromBuffer({
+        sourceBuffer,
         identifier: this.identifier,
         prefix: this.prefix,
         name: this.name || this.identifier,

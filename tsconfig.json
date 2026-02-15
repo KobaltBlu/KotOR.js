@@ -7,7 +7,11 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react",
-    "lib": ["ESNext", "dom", "WebWorker"],
+    "lib": [
+      "ESNext",
+      "dom",
+      "WebWorker"
+    ],
     "listFiles": true,
     "module": "Node16",
     "moduleResolution": "node16",
@@ -15,7 +19,11 @@
     "noEmitOnError": true,
     "noImplicitAny": true,
     "outDir": "dist",
-    "paths": { "@/*": ["src/*"] },
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
     "removeComments": true,
     "rootDir": ".",
     "skipLibCheck": true,
@@ -23,8 +31,23 @@
     "strict": false,
     "strictNullChecks": false,
     "target": "ESNext",
-    "types": ["@types/wicg-file-system-access", "jest", "node", "offscreencanvas", "user-agent-data-types"]
+    "types": [
+      "@types/wicg-file-system-access",
+      "jest",
+      "node",
+      "offscreencanvas",
+      "user-agent-data-types"
+    ]
   },
-  "exclude": ["node_modules", "src/**/*.spec.ts", ".history"],
-  "include": ["src/KotOR.ts", "src/types", "src/index.d.ts"]
+  "exclude": [
+    "node_modules",
+    "src/**/*.spec.ts",
+    ".history"
+  ],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/types",
+    "src/index.d.ts"
+  ]
 }

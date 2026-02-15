@@ -29,19 +29,19 @@ TabStateEventListenerTypes &
   'onAnimate'|'onKeyFramesChange'|'onDurationChange';
 
 export interface TabLIPEditorStateEventListeners extends TabStateEventListeners {
-  onLIPLoaded: Function[],
-  onPlay: Function[],
-  onPause: Function[],
-  onStop: Function[],
-  onAudioLoad: Function[],
-  onHeadChange: Function[],
-  onHeadLoad: Function[],
-  onKeyFrameSelect: Function[],
-  onKeyFrameTrackZoomIn: Function[],
-  onKeyFrameTrackZoomOut: Function[],
-  onAnimate: Function[],
-  onKeyFramesChange: Function[],
-  onDurationChange: Function[],
+  onLIPLoaded: (() => void)[];
+  onPlay: (() => void)[];
+  onPause: (() => void)[];
+  onStop: (() => void)[];
+  onAudioLoad: (() => void)[];
+  onHeadChange: (() => void)[];
+  onHeadLoad: (() => void)[];
+  onKeyFrameSelect: (() => void)[];
+  onKeyFrameTrackZoomIn: (() => void)[];
+  onKeyFrameTrackZoomOut: (() => void)[];
+  onAnimate: (() => void)[];
+  onKeyFramesChange: (() => void)[];
+  onDurationChange: (() => void)[];
 }
 
 export class TabLIPEditorState extends TabState {

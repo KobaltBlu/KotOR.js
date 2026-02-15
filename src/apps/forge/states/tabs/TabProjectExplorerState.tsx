@@ -16,7 +16,7 @@ const log = createScopedLogger(LogScope.Forge);
 export class TabProjectExplorerState extends TabState {
 
   tabName: string = `Project`;
-  onReload?: Function;
+  onReload?: () => void;
   static Resources: FileBrowserNode[] = [];
   resourceNodes: FileBrowserNode[] = [];
 

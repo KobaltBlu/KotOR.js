@@ -35,10 +35,10 @@ rules:
     - argsIgnorePattern: "^_"
       varsIgnorePattern: "^_"
   "@typescript-eslint/explicit-function-return-type": off
+  "@typescript-eslint/no-extraneous-class": off
   "@typescript-eslint/no-explicit-any": error
   "@typescript-eslint/no-unsafe-argument": error
-  # Disabled: strict any/error-type checks; re-enable when codebase is typed (or use per-file disable)
-  # "@typescript-eslint/no-unsafe-assignment": error
+  "@typescript-eslint/no-unsafe-assignment": error
   "@typescript-eslint/no-unsafe-call": error
   "@typescript-eslint/no-unsafe-member-access": error
   "@typescript-eslint/no-unsafe-return": error
@@ -64,16 +64,14 @@ rules:
   prefer-const: warn
   no-var: warn
 
-  # All project imports must use @ path alias (no relative ../../ or ./)
+  # Prefer @ path alias; forbid parent relative (../); same-dir (./) allowed for co-located styles
   no-restricted-imports:
     - error
     - patterns:
         - group:
             - "../*"
             - "../**"
-            - "./*"
-            - "./**"
-          message: "Use @/ path alias instead of relative imports (e.g. from \"@/utility/Logger\")"
+          message: "Use @/ path alias instead of relative parent imports (e.g. from \"@/utility/Logger\")"
 
   # Import rules (warn only - do not block build/debug)
   import/order:
@@ -138,7 +136,7 @@ overrides:
             - '^\\.'
     globals:
       Thenable: readonly
-  # Webview: use main eslint tsconfig (avoids parser path resolution on Windows)
+  # Webview: use extension tsconfig so parser resolves from repo root (avoids c:\tsconfig.webview.json on Windows)
   - files: extensions/kotor-forge-vscode/src/webview/**/*.{ts,tsx}
     parserOptions:
-      project: ./tsconfig.eslint.json
+      project: extensions/kotor-forge-vscode/tsconfig.webview.json

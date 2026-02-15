@@ -73,18 +73,24 @@ export const TabSSFEditor = function(props: BaseTabProps){
     { id: 27, name: 'Poisoned' },
   ];
 
-  /** Clone SSF preserving prototype so React re-renders; avoids unsafe assignment from Object.assign. */
+  /** Clone SSF preserving prototype so React re-renders; avoids unsafe any from Object.assign. */
   function createSSFClone(source: SSFObject): SSFObject {
-    const proto: object = Object.getPrototypeOf(source) as object;
-    const base: SSFObject = Object.create(proto) as SSFObject;
-    return Object.assign(base, source) as SSFObject;
+    const proto = Object.getPrototypeOf(source);
+    const base = Object.create(proto) as SSFObject;
+    const src = source as unknown as Record<string, unknown>;
+    const dst = base as unknown as Record<string, unknown>;
+    for (const key of Object.keys(src)) {
+      dst[key] = src[key];
+    }
+    return base;
   }
 
   const updateSoundRef = (index: number, value: number) => {
-    if(ssf && ssf.sound_refs[index] !== undefined){
+    if (ssf && ssf.sound_refs[index] !== undefined) {
       ssf.sound_refs[index] = value;
       tab.file.unsaved_changes = true;
-      setSsf(createSSFClone(ssf));
+      const next: SSFObject = createSSFClone(ssf);
+      setSsf(next);
     }
   };
 

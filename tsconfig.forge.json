@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] },
     "declaration": false,
     "esModuleInterop": true,
     "experimentalDecorators": true,

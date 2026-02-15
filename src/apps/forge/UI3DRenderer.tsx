@@ -316,14 +316,14 @@ export class UI3DRenderer extends EventListenerModel {
         const oc = this.orbitControls as unknown as { dispose(): void };
         oc.dispose();
       }
-      const newOrbit = createOrbitControls(this.currentCamera, this.canvas);
+      const newOrbit: OrbitControls = createOrbitControls(this.currentCamera, this.canvas);
       this.orbitControls = newOrbit;
       newOrbit.enableDamping = true;
       newOrbit.enableZoom = true;
       newOrbit.enablePan = true;
       newOrbit.enableRotate = true;
       newOrbit.panSpeed = 2;
-      const newTc = new TransformControls(this.currentCamera, this.canvas);
+      const newTc: TransformControls = new TransformControls(this.currentCamera, this.canvas);
       this.transformControls = newTc;
       const tcObj = newTc as unknown as THREE.Object3D;
       tcObj.visible = false;

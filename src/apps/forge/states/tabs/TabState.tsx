@@ -4,7 +4,7 @@ import React from "react";
 
 
 import type { EditorFile as EditorFileType, EditorFileEventListenerTypes } from "@/apps/forge/EditorFile";
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { type EventListenerCallback, EventListenerModel } from "@/apps/forge/EventListenerModel";
 import { supportedFileDialogTypes, supportedFilePickerTypes } from "@/apps/forge/ForgeFileSystem";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
@@ -36,43 +36,45 @@ interface ElectronSaveDialogResult {
 }
 declare const dialog: { showSaveDialog: (opts: ElectronSaveDialogOptions) => Promise<ElectronSaveDialogResult> };
 
-// Lazy accessors – resolved on first call to avoid TDZ.
-let _EditorFile: typeof import("../../EditorFile").EditorFile | null = null;
-function getEditorFile() {
+// Lazy accessors – resolved on first call to avoid TDZ (dynamic import breaks circular deps).
+let _EditorFile: typeof EditorFileType | null = null;
+async function _getEditorFile(): Promise<typeof EditorFileType> {
   if (!_EditorFile) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    _EditorFile = require("@/apps/forge/EditorFile").EditorFile;
+    const mod = await import("@/apps/forge/EditorFile") as { EditorFile: typeof EditorFileType };
+    _EditorFile = mod.EditorFile;
   }
-  return _EditorFile!;
+  return _EditorFile;
 }
 
-let _ForgeState: typeof import("../ForgeState").ForgeState | null = null;
-function getForgeState() {
+let _ForgeState: typeof ForgeStateType | null = null;
+async function getForgeState(): Promise<typeof ForgeStateType> {
   if (!_ForgeState) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    _ForgeState = require("@/apps/forge/states/ForgeState").ForgeState;
+    const mod = await import("@/apps/forge/states/ForgeState") as { ForgeState: typeof ForgeStateType };
+    _ForgeState = mod.ForgeState;
   }
-  return _ForgeState!;
+  return _ForgeState;
 }
 
 function isEditorFile(obj: unknown): obj is EditorFileType {
-  return obj != null && typeof obj === 'object' && obj.constructor?.name === 'EditorFile';
+  if (obj == null || typeof obj !== 'object') return false;
+  const o = obj as { constructor?: { name?: string } };
+  return o.constructor?.name === 'EditorFile';
 }
 
 export type TabStateEventListenerTypes =
   'onTabDestroyed'|'onTabRemoved'|'onTabShow'|'onTabHide'|'onTabNameChange'|'onEditorFileLoad'|'onEditorFileChange'|'onEditorFileSaved'|'onKeyDown'|'onKeyUp';
 
 export interface TabStateEventListeners {
-  onTabDestroyed: Function[],
-  onTabRemoved: Function[],
-  onTabShow: Function[],
-  onTabHide: Function[],
-  onTabNameChange: Function[],
-  onEditorFileLoad: Function[],
-  onEditorFileChange: Function[],
-  onEditorFileSaved: Function[],
-  onKeyDown: Function[],
-  onKeyUp: Function[],
+  onTabDestroyed: EventListenerCallback[];
+  onTabRemoved: EventListenerCallback[];
+  onTabShow: EventListenerCallback[];
+  onTabHide: EventListenerCallback[];
+  onTabNameChange: EventListenerCallback[];
+  onEditorFileLoad: EventListenerCallback[];
+  onEditorFileChange: EventListenerCallback[];
+  onEditorFileSaved: EventListenerCallback[];
+  onKeyDown: EventListenerCallback[];
+  onKeyUp: EventListenerCallback[];
 }
 
 export class TabState extends EventListenerModel {
@@ -281,7 +283,7 @@ export class TabState extends EventListenerModel {
     if(currentFile.archive_path || currentFile.archive_path2){
       return this.saveAs();
     }
-    const hostAdapter = getForgeState().getHostAdapter();
+    const hostAdapter = (await getForgeState()).getHostAdapter();
     if (hostAdapter) {
       try {
         const pathInfo = pathParse(currentFile.path || currentFile.getFilename() || 'file');
@@ -295,88 +297,90 @@ export class TabState extends EventListenerModel {
         return false;
       }
     }
-    return new Promise<boolean>( async (resolve, _reject) => {
-      try{
-        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-          if(currentFile.path?.length){
-            log.debug('saveFile', currentFile.path);
-            //trigger a Save
+    return new Promise<boolean>((resolve, _reject) => {
+      void (async () => {
+        try{
+          if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+            if(currentFile.path?.length){
+              log.debug('saveFile', currentFile.path);
+              //trigger a Save
+              try{
+                const pathInfo = pathParse(currentFile.path);
+                const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+                fs.writeFile(currentFile.path, saveBuffer, () => {
+                  currentFile.buffer = saveBuffer;
+                  currentFile.unsaved_changes = false;
+                  resolve(true);
+                });
+              }catch(e){
+                log.error(String(e), e);
+                resolve(false);
+              }
+            }else{
+              this.saveAs().then( (status: boolean) => {
+                resolve(status);
+              })
+            }
+          }else{
             try{
-              const pathInfo = pathParse(currentFile.path);
-              const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-              fs.writeFile(currentFile.path, saveBuffer, () => {
-                currentFile.buffer = saveBuffer;
-                currentFile.unsaved_changes = false;
-                resolve(true);
-              });
+              if(currentFile.handle instanceof FileSystemFileHandle){
+                let granted = (await currentFile.handle.queryPermission({mode: 'readwrite'})) === 'granted';
+                if(!granted){
+                  granted = (await currentFile.handle.requestPermission({mode: 'readwrite'})) === 'granted';
+                }
+                if(granted){
+                  try{
+                    const pathInfo = pathParse(currentFile.handle.name);
+                    const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+                    const ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
+                    await ws.write(saveBuffer);
+                    currentFile.buffer = saveBuffer;
+                    currentFile.unsaved_changes = false;
+                    await ws.close();
+                    resolve(true);
+                  }catch(e){
+                    log.error(String(e), e);
+                    resolve(false);
+                  }
+                }else{
+                  log.error('Write permissions could not be obtained to save this file');
+                  resolve(false);
+                }
+              }else{
+                const newHandle = await window.showSaveFilePicker({
+                  suggestedName: currentFile.getFilename(),
+                  types: this.saveTypes.length ? this.saveTypes : undefined
+                });
+                if(newHandle){
+                  currentFile.handle = newHandle;
+                  try{
+                    const ws: FileSystemWritableFileStream = await newHandle.createWritable();
+                    const pathInfo = pathParse(newHandle.name);
+                    const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+                    await ws.write(saveBuffer ?? new Uint8Array(0));
+                    await ws.close();
+                    currentFile.buffer = saveBuffer;
+                    currentFile.unsaved_changes = false;
+                    resolve(true);
+                  }catch(e){
+                    log.error(String(e), e);
+                    resolve(false);
+                  }
+                }else{
+                  log.error('save handle invalid');
+                  resolve(false);
+                }
+              }
             }catch(e){
               log.error(String(e), e);
               resolve(false);
             }
-          }else{
-            this.saveAs().then( (status: boolean) => {
-              resolve(status);
-            })
           }
-        }else{
-          try{
-            if(currentFile.handle instanceof FileSystemFileHandle){
-              let granted = (await currentFile.handle.queryPermission({mode: 'readwrite'})) === 'granted';
-              if(!granted){
-                granted = (await currentFile.handle.requestPermission({mode: 'readwrite'})) === 'granted';
-              }
-              if(granted){
-                try{
-                  const pathInfo = pathParse(currentFile.handle.name);
-                  const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-                  const ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
-                  await ws.write(saveBuffer);
-                  currentFile.buffer = saveBuffer;
-                  currentFile.unsaved_changes = false;
-                  await ws.close();
-                  resolve(true);
-                }catch(e){
-                  log.error(String(e), e);
-                  resolve(false);
-                }
-              }else{
-                log.error('Write permissions could not be obtained to save this file');
-                resolve(false);
-              }
-            }else{
-              const newHandle = await window.showSaveFilePicker({
-                suggestedName: currentFile.getFilename(),
-                types: this.saveTypes.length ? this.saveTypes : undefined
-              });
-              if(newHandle){
-                currentFile.handle = newHandle;
-                try{
-                  const ws: FileSystemWritableFileStream = await newHandle.createWritable();
-                  const pathInfo = pathParse(newHandle.name);
-                  const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-                  await ws.write(saveBuffer ?? new Uint8Array(0));
-                  await ws.close();
-                  currentFile.buffer = saveBuffer;
-                  currentFile.unsaved_changes = false;
-                  resolve(true);
-                }catch(e){
-                  log.error(String(e), e);
-                  resolve(false);
-                }
-              }else{
-                log.error('save handle invalid');
-                resolve(false);
-              }
-            }
-          }catch(e){
-            log.error(String(e), e);
-            resolve(false);
-          }
+        }catch(e){
+          log.error(String(e), e);
+          resolve(false);
         }
-      }catch(e){
-        log.error(String(e), e);
-        resolve(false);
-      }
+      })();
     });
   }
 
@@ -404,72 +408,74 @@ export class TabState extends EventListenerModel {
     const currentFile = this.getFile();
     // currentFile.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
     // currentFile.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
-    return new Promise<boolean>( async (resolve, _reject) => {
-      try{
-        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-          const savePath = await dialog.showSaveDialog({
-            title: 'Save File As',
-            defaultPath: currentFile.getFilename(),
-            filters: this.getSaveTypes()
-          });
-          if(savePath && !savePath.cancelled){
-            log.debug('savePath', savePath.filePath);
-            const pathInfo = pathParse(savePath.filePath);
-            try{
-              const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-              fs.writeFile(savePath.filePath, saveBuffer, () => {
+    return new Promise<boolean>((resolve, _reject) => {
+      void (async () => {
+        try{
+          if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+            const savePath = await dialog.showSaveDialog({
+              title: 'Save File As',
+              defaultPath: currentFile.getFilename(),
+              filters: this.getSaveTypes()
+            });
+            if(savePath && !savePath.cancelled){
+              log.debug('savePath', savePath.filePath);
+              const pathInfo = pathParse(savePath.filePath);
+              try{
+                const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+                fs.writeFile(savePath.filePath, saveBuffer, () => {
+                  // this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
+                  // this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
+                  this.file = currentFile;
+                  currentFile.setPath(savePath.filePath);
+                  currentFile.archive_path = undefined;
+                  currentFile.archive_path2 = undefined;
+                  currentFile.buffer = saveBuffer;
+                  currentFile.unsaved_changes = false;
+                  this.editorFileUpdated();
+                  resolve(true);
+                });
+              }catch(e){
+                log.error(String(e), e);
+                resolve(false);
+              }
+            }
+          }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
+            const newHandle = await window.showSaveFilePicker({
+              suggestedName: currentFile.getFilename(),
+              types: this.getSaveTypes(),
+            });
+            if(newHandle){
+              currentFile.handle = newHandle;
+              try{
+                const pathInfo = pathParse(newHandle.name);
+                currentFile.setPath(`file://system.dir/${newHandle.name}`);
+                const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+                const ws: FileSystemWritableFileStream = await newHandle.createWritable();
+                await ws.write(saveBuffer ?? new Uint8Array(0));
+                await ws.close();
                 // this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
                 // this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
                 this.file = currentFile;
-                currentFile.setPath(savePath.filePath);
                 currentFile.archive_path = undefined;
                 currentFile.archive_path2 = undefined;
                 currentFile.buffer = saveBuffer;
                 currentFile.unsaved_changes = false;
                 this.editorFileUpdated();
                 resolve(true);
-              });
-            }catch(e){
-              log.error(String(e), e);
+              }catch(e){
+                log.error(String(e), e);
+                resolve(false);
+              }
+            }else{
+              log.error('save handle invalid');
               resolve(false);
             }
           }
-        }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
-          const newHandle = await window.showSaveFilePicker({
-            suggestedName: currentFile.getFilename(),
-            types: this.getSaveTypes(),
-          });
-          if(newHandle){
-            currentFile.handle = newHandle;
-            try{
-              const pathInfo = pathParse(newHandle.name);
-              currentFile.setPath(`file://system.dir/${newHandle.name}`);
-              const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-              const ws: FileSystemWritableFileStream = await newHandle.createWritable();
-              await ws.write(saveBuffer ?? new Uint8Array(0));
-              await ws.close();
-              // this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
-              // this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
-              this.file = currentFile;
-              currentFile.archive_path = undefined;
-              currentFile.archive_path2 = undefined;
-              currentFile.buffer = saveBuffer;
-              currentFile.unsaved_changes = false;
-              this.editorFileUpdated();
-              resolve(true);
-            }catch(e){
-              log.error(String(e), e);
-              resolve(false);
-            }
-          }else{
-            log.error('save handle invalid');
-            resolve(false);
-          }
+        }catch(e: unknown){
+          log.error(String(e), e);
+          resolve(false);
         }
-      }catch(e: unknown){
-        log.error(String(e), e);
-        resolve(false);
-      }
+      })();
     });
   }
 

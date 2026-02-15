@@ -97,8 +97,8 @@ function setCacheValue<T>(cache: Map<string, T>, key: string, value: T): void {
   }
   cache.set(key, value);
   if (cache.size > MAX_CACHE_ENTRIES) {
-    const firstKeyResult: IteratorResult<string, undefined> = cache.keys().next();
-    const oldestKey: string | undefined = firstKeyResult.done ? undefined : firstKeyResult.value;
+    const keys = Array.from(cache.keys());
+    const oldestKey: string | undefined = keys[0];
     if (oldestKey !== undefined) {
       cache.delete(oldestKey);
       log.trace('ReferenceFinderCore.setCacheValue evicted', oldestKey?.slice(0, 30));

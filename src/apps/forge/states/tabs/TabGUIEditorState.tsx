@@ -6,9 +6,10 @@ import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { createScopedLogger, LogScope, type IScopedLogger } from "@/utility/Logger";
+import type { GameState } from "@/GameState";
 
-const log = createScopedLogger(LogScope.Forge);
+const log: IScopedLogger = createScopedLogger(LogScope.Forge);
 
 
 
@@ -17,11 +18,11 @@ TabStateEventListenerTypes &
   ''|'onEditorFileLoad'|'onNodeSelected'|'onNodeAdded'|'onNodeRemoved'|'onAnimate';
 
 export interface TabGUIEditorStateEventListeners extends TabStateEventListeners {
-  onEditorFileLoad: Function[],
-  onNodeSelected: Function[],
-  onNodeAdded: Function[],
-  onNodeRemoved: Function[],
-  onAnimate: Function[],
+  onEditorFileLoad: (() => void)[];
+  onNodeSelected: (() => void)[];
+  onNodeAdded: (() => void)[];
+  onNodeRemoved: (() => void)[];
+  onAnimate: (() => void)[];
 }
 
 export class TabGUIEditorState extends TabState {
@@ -93,7 +94,7 @@ export class TabGUIEditorState extends TabState {
           this.menu = new KotOR.GameMenu();
           this.menu.voidFill = true;
           this.menu.bVisible = true;
-          this.menu.context = this.ui3DRenderer;
+          this.menu.context = this.ui3DRenderer as unknown as typeof GameState;
           await this.menu.loadBackground();
           await this.menu.buildMenu(this.gff);
           this.ui3DRenderer.scene.add(this.menu.tGuiPanel.widget);

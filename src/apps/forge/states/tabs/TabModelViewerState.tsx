@@ -20,21 +20,21 @@ TabStateEventListenerTypes &
   'onAnimate'|'onKeyFramesChange'|'onDurationChange'|'onAnimationChange'|'onLoopChange';
 
 export interface TabModelViewerStateEventListeners extends TabStateEventListeners {
-  onModelLoaded: Function[],
-  onPlay: Function[],
-  onPause: Function[],
-  onStop: Function[],
-  onAudioLoad: Function[],
-  onHeadChange: Function[],
-  onHeadLoad: Function[],
-  onKeyFrameSelect: Function[],
-  onKeyFrameTrackZoomIn: Function[],
-  onKeyFrameTrackZoomOut: Function[],
-  onAnimate: Function[],
-  onKeyFramesChange: Function[],
-  onDurationChange: Function[],
-  onAnimationChange: Function[],
-  onLoopChange: Function[],
+  onModelLoaded: (() => void)[];
+  onPlay: (() => void)[];
+  onPause: (() => void)[];
+  onStop: (() => void)[];
+  onAudioLoad: (() => void)[];
+  onHeadChange: (() => void)[];
+  onHeadLoad: (() => void)[];
+  onKeyFrameSelect: (() => void)[];
+  onKeyFrameTrackZoomIn: (() => void)[];
+  onKeyFrameTrackZoomOut: (() => void)[];
+  onAnimate: (() => void)[];
+  onKeyFramesChange: (() => void)[];
+  onDurationChange: (() => void)[];
+  onAnimationChange: (() => void)[];
+  onLoopChange: (() => void)[];
 }
 
 export class TabModelViewerState extends TabState {

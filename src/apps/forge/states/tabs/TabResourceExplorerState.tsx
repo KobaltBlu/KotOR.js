@@ -20,7 +20,7 @@ export class TabResourceExplorerState extends TabState {
   resourceNodes: FileBrowserNode[] = [];
   tabName: string = `Game`;
 
-  onReload?: Function;
+  onReload?: () => void;
 
   constructor(options: BaseTabStateOptions = {}) {
     super(options);
@@ -256,7 +256,7 @@ export class TabResourceExplorerState extends TabState {
       });
     });
 	}
-	
+
   static LoadModules() {
 		return new Promise<FileBrowserNode>( (resolve, reject) => {
       let modules: (KotOR.RIMObject | KotOR.ERFObject)[] = [];
@@ -272,12 +272,12 @@ export class TabResourceExplorerState extends TabState {
           modules.push(erf);
         }
       });
-      
+
       //Sort the array by filename
       modules = modules.sort( (a: KotOR.ERFObject|KotOR.RIMObject, b: KotOR.ERFObject|KotOR.RIMObject) => {
         const nameA = a.resource_path.split(path.sep).pop() || '';
         const nameB = b.resource_path.split(path.sep).pop() || '';
-        
+
         if (nameA < nameB) { return -1; }
         if (nameA > nameB) { return 1; }
         return 0;
@@ -343,7 +343,7 @@ export class TabResourceExplorerState extends TabState {
       });
     });
   }
-	
+
   static LoadLips() {
 		return new Promise<FileBrowserNode>( (resolve, reject) => {
 			let modules: (KotOR.RIMObject | KotOR.ERFObject)[] = [];
@@ -359,12 +359,12 @@ export class TabResourceExplorerState extends TabState {
 					modules.push(erf);
 				}
 			});
-			
+
 			//Sort the array by filename
 			modules = modules.sort( (a: KotOR.ERFObject|KotOR.RIMObject, b: KotOR.ERFObject|KotOR.RIMObject) => {
 				const nameA = a.resource_path.split(path.sep).pop() || '';
 				const nameB = b.resource_path.split(path.sep).pop() || '';
-				
+
 				if (nameA < nameB) { return -1; }
 				if (nameA > nameB) { return 1; }
 				return 0;
@@ -429,7 +429,7 @@ export class TabResourceExplorerState extends TabState {
 			});
 		});
   }
-	
+
   static LoadTextures() {
     return new Promise<FileBrowserNode>( (resolve, reject) => {
       const texture_packs: KotOR.ERFObject[] = [];

@@ -43,6 +43,7 @@ settings:
 
 rules:
   "@typescript-eslint/explicit-function-return-type": off
+  "@typescript-eslint/no-extraneous-class": off
   "@typescript-eslint/no-explicit-any": error
   "@typescript-eslint/no-unsafe-argument": error
   "@typescript-eslint/no-unsafe-assignment": error

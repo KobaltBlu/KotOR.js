@@ -1,7 +1,10 @@
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import React from "react";
 
-import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState, TabScriptFindReferencesState, TextReferenceMatch } from ".";
+import { TabScriptCompileLogState } from "./TabScriptCompileLogState";
+import { TabScriptErrorLogState } from "./TabScriptErrorLogState";
+import { TabScriptFindReferencesState, type TextReferenceMatch } from "./TabScriptFindReferencesState";
+import { TabScriptInspectorState } from "./TabScriptInspectorState";
 
 import { TabTextEditor } from "@/apps/forge/components/tabs/tab-text-editor/TabTextEditor";
 import { EditorFile } from "@/apps/forge/EditorFile";

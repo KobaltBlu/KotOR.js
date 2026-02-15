@@ -41,7 +41,10 @@ export class SelfIllumColorController extends OdysseyController {
         }
         (mat.defines as Record<string, string>).SELFILLUMCOLOR = "";
       } else {
-        mat.emissive.setRGB(x, y, z);
+        const withEmissive = mat as THREE.Material & { emissive?: THREE.Color };
+        if (withEmissive.emissive instanceof THREE.Color) {
+          withEmissive.emissive.setRGB(x, y, z);
+        }
       }
     }
   }
@@ -60,7 +63,10 @@ export class SelfIllumColorController extends OdysseyController {
         }
         (mat.defines as Record<string, string>).SELFILLUMCOLOR = "";
       } else {
-        mat.emissive.setRGB(lerpIllumColorR, lerpIllumColorG, lerpIllumColorB);
+        const withEmissive = mat as THREE.Material & { emissive?: THREE.Color };
+        if (withEmissive.emissive instanceof THREE.Color) {
+          withEmissive.emissive.setRGB(lerpIllumColorR, lerpIllumColorG, lerpIllumColorB);
+        }
       }
     }
   }

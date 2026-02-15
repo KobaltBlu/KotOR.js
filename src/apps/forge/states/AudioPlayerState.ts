@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import * as fs from "fs";
 
 import { EditorFile } from "@/apps/forge/EditorFile";
@@ -6,11 +5,17 @@ import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
+import type { AudioEngine } from "@/audio/AudioEngine";
+
+/** Typed access to audio engine to satisfy no-unsafe-call (KotOR re-export may be loosely typed). */
+function getAudioEngine(): AudioEngine {
+  return KotOR.AudioEngine.GetAudioEngine() as AudioEngine;
+}
 
 /** Runtime file dialog (Electron or browser); from external API. */
 declare const dialog: {
   showOpenDialog?: (opts?: { filters?: { name: string; extensions: string[] }[] }) => Promise<{ filePaths?: string[]; canceled?: boolean }>;
-  showSaveDialog?: (opts?: { defaultPath?: string }) => Promise<{ filePath?: string; canceled?: boolean }>;
+  showSaveDialog?: (opts?: { title?: string; defaultPath?: string; properties?: string[]; filters?: { name: string; extensions: string[] }[] }) => Promise<{ filePath?: string; canceled?: boolean }>;
 };
 
 const log = createScopedLogger(LogScope.Forge);
@@ -202,7 +207,7 @@ export class AudioPlayerState {
         log.trace("GetAudioBuffer playable stream length", data?.length ?? 0);
         try {
           log.debug("GetAudioBuffer decodeAudioData start");
-          KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(
+          getAudioEngine().audioCtx.decodeAudioData(
             data.buffer as ArrayBuffer,
             (buffer: AudioBuffer) => {
               log.trace("GetAudioBuffer decode success duration=%s", buffer?.duration);
@@ -248,7 +253,7 @@ export class AudioPlayerState {
 
     if(!AudioPlayerState.gainNode){
       log.trace("Reset creating gainNode");
-      AudioPlayerState.gainNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createGain();
+      AudioPlayerState.gainNode = getAudioEngine().audioCtx.createGain();
       AudioPlayerState.gainNode.gain.value = 0.25;
     } else {
       log.trace("Reset gainNode exists");
@@ -256,7 +261,7 @@ export class AudioPlayerState {
 
     if(!AudioPlayerState.source){
       log.trace("Reset creating source");
-      AudioPlayerState.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
+      AudioPlayerState.source = getAudioEngine().audioCtx.createBufferSource();
     } else {
       log.trace("Reset source exists");
     }
@@ -266,7 +271,7 @@ export class AudioPlayerState {
   static Play(){
     log.trace("Play entry");
     log.debug("Play loading=%s", AudioPlayerState.loading);
-    AudioPlayerState.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
+    AudioPlayerState.source = getAudioEngine().audioCtx.createBufferSource();
     log.trace("Play created new source");
     if(!AudioPlayerState.loading){
       log.trace("Play GetAudioBuffer");
@@ -278,11 +283,11 @@ export class AudioPlayerState {
           log.trace("Play offset", offset);
           AudioPlayerState.source.buffer = AudioPlayerState.buffer;
           log.trace("Play buffer set");
-          AudioPlayerState.analyser = KotOR.AudioEngine.GetAudioEngine().audioCtx.createAnalyser();
+          AudioPlayerState.analyser = getAudioEngine().audioCtx.createAnalyser();
           AudioPlayerState.analyser.fftSize = 128;
           AudioPlayerState.source.connect(AudioPlayerState.analyser);
           AudioPlayerState.analyser.connect(AudioPlayerState.gainNode);
-          AudioPlayerState.gainNode.connect(KotOR.AudioEngine.voChannel.getGainNode());
+          AudioPlayerState.gainNode.connect(KotOR.AudioEngine.voChannel.getGainNode() as GainNode);
           log.trace("Play graph connected");
           AudioPlayerState.source.loop = false;
           AudioPlayerState.source.start(0, offset);
@@ -292,7 +297,7 @@ export class AudioPlayerState {
           AudioPlayerState.analyserData = new Uint8Array(AudioPlayerState.analyserBufferLength);
           log.trace("Play analyser data allocated");
 
-          AudioPlayerState.startedAt = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - offset;
+          AudioPlayerState.startedAt = getAudioEngine().audioCtx.currentTime - offset;
           AudioPlayerState.pausedAt = 0;
           AudioPlayerState.playing = true;
           log.info("Play started");
@@ -332,7 +337,7 @@ export class AudioPlayerState {
 
   static Pause(){
     log.trace("Pause entry");
-    const elapsed = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
+    const elapsed = getAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
     log.debug("Pause elapsed", elapsed);
     AudioPlayerState.pausedAt = elapsed;
     AudioPlayerState.ProcessEventListener('onPause');
@@ -369,7 +374,7 @@ export class AudioPlayerState {
     log.trace("ExportAudio entry");
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
       log.trace("ExportAudio Electron showSaveDialog");
-      const payload = await dialog.showSaveDialog({
+      const payload = await dialog.showSaveDialog?.({
         title: 'Export Audio File',
         defaultPath: AudioPlayerState.audioFile.filename,
         properties: ['createDirectory'],
@@ -378,9 +383,13 @@ export class AudioPlayerState {
           {name: 'MP3 File', extensions: ['mp3']}
         ]
       });
+      if (!payload) {
+        log.warn("ExportAudio showSaveDialog not available");
+        return;
+      }
       log.debug("ExportAudio dialog result canceled=%s filePath=%s", payload.canceled, payload.filePath);
 
-      if(!payload.canceled && typeof payload.filePath != 'undefined'){
+      if (!payload.canceled && typeof payload.filePath !== "undefined") {
         log.trace("ExportAudio fs.writeFile");
         fs.writeFile(payload.filePath, AudioPlayerState.audioFile.getExportableData() || new Uint8Array(0), (err) => {
           if (err) {
@@ -438,7 +447,7 @@ export class AudioPlayerState {
         return AudioPlayerState.pausedAt;
       }
       if(AudioPlayerState.startedAt) {
-        const t = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
+        const t = getAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
         log.trace("GetCurrentTime return elapsed", t);
         return t;
       }
