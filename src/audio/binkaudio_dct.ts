@@ -1,5 +1,22 @@
-import { BitReaderLE } from '../video/bitreader';
-import { WMA_CRITICAL_FREQS } from './wma_freqs';
+import { BitReaderLE } from '../video/BitReaderLE';
+
+/**
+ * BinkAudioDCTDecoder class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file BinkAudioDCTDecoder.ts
+ * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
+ * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+
+export const WMA_CRITICAL_FREQS: number[] = [
+  100, 200, 300, 400, 510, 630, 770, 920,
+  1080, 1270, 1480, 1720, 2000, 2320, 2700, 3150,
+  3700, 4400, 5300, 6400, 7700, 9500, 12000, 15500,
+  24500,
+];
 
 // rle lengths table from FFmpeg
 const rle_length_tab: number[] = [

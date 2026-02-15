@@ -1,3 +1,14 @@
+/**
+ * UInt class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file UInt.ts
+ * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
+ * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+
 export function readU8(view: DataView, off: number): number { return view.getUint8(off); }
 export function readU16LE(view: DataView, off: number): number { return view.getUint16(off, true); }
 export function readU32LE(view: DataView, off: number): number { return view.getUint32(off, true); }

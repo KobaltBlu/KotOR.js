@@ -1,4 +1,4 @@
-import { BitReaderLE, BitReaderBE } from './bitreader';
+import { BitReaderLE } from './BitReaderLE';
 import { idctPut, idctAdd, scaleBlock, addPixels8 } from './bink-idct';
 import { bink_scan, bink_patterns, bink_intra_quant, bink_inter_quant } from './binkdata';
 import { readTree, getHuff, Tree } from './vlc';
@@ -21,6 +21,17 @@ export interface YUVFrame {
     linesizeV: number;
 }
 
+/**
+ * BinkVideoDecoder class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file BinkVideoDecoder.ts
+ * @see https://github.com/FFmpeg/FFmpeg/blob/release/3.4/libavcodec/bink.c
+ * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
+ * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class BinkVideoDecoder {
     private width: number;
     private height: number;

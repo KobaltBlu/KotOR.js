@@ -1,5 +1,16 @@
-import { BitReaderLE } from './bitreader';
+import { BitReaderLE } from './BitReaderLE';
 import { bink_tree_bits, bink_tree_lens } from './binkdata';
+
+/**
+ * VLC class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file VLC.ts
+ * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
+ * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 
 export interface Tree {
   vlc_num: number;

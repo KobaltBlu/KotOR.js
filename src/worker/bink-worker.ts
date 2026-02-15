@@ -1,4 +1,6 @@
 /**
+ * BinkWorker class.
+ * 
  * Web Worker for Bink file decoding.
  *
  * Handles demuxing, video decode (YUV->RGBA), and audio decode off the main thread.
@@ -12,6 +14,12 @@
  *   { type: 'ready',  header: BinkWorkerHeader }
  *   { type: 'frame',  frameIndex, video?, audio? }
  *   { type: 'error',  message: string }
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file BinkWorker.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
 import { BinkDemuxer } from '../video/bink-demuxer';

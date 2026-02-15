@@ -1,4 +1,14 @@
-// Ported from FFmpeg's libavcodec/binkdsp.c (LGPL 2.1+)
+/**
+ * BinkIDCT class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file BinkIDCT.ts
+ * @see https://github.com/FFmpeg/FFmpeg/blob/release/3.4/libavcodec/binkdsp.c
+ * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
+ * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 // Note: Arithmetic and constants follow the C reference closely to preserve behavior.
 
 // IDCT constants - pre-computed for better performance

@@ -1,6 +1,6 @@
 import { BinkAudioPacket, BinkAudioTrackInfo, BinkFormatError, BinkFrame, BinkFrameIndexEntry, BinkHeader, BinkVideoInfo, BINK_AUD_FLAGS, BINK_FLAGS, Rational } from './binktypes';
 import { readFourCCLE, readU16LE, readU32LE } from './uint';
-import { BitReaderLE, BitReaderBE } from './bitreader';
+import { BitReaderLE } from './BitReaderLE';
 import { readTree } from './vlc';
 
 function isSMUS(tag: string): boolean {
@@ -11,6 +11,16 @@ function isBink2(tag: string): boolean {
   return tag.startsWith('KB2');
 }
 
+/**
+ * BinkDemuxer class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file BinkDemuxer.ts
+ * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
+ * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class BinkDemuxer {
   private view: DataView;
   private bytes: Uint8Array;

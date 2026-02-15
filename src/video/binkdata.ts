@@ -1,4 +1,14 @@
-// Ported tables from FFmpeg (LGPL 2.1+), libavcodec/binkdata.h
+/**
+ * BinkData class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file BinkData.ts
+ * @see https://github.com/FFmpeg/FFmpeg/blob/release/3.4/libavcodec/binkdata.h
+ * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
+ * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 
 export const bink_scan: number[] = [
     0, 1, 8, 9, 2, 3, 10, 11,
