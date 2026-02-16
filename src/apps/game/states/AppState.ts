@@ -54,7 +54,7 @@ export class AppState {
     KotOR.ApplicationProfile.InitEnvironment(AppState.appProfile as Record<string, unknown>);
 
     document.title = `${AppState.appProfile?.full_name ? AppState.appProfile?.full_name : 'N/A' }`;
-    
+
     switch(AppState.appProfile?.launch?.args?.gameChoice){
       case 2:
         AppState.gameKey = KotOR.GameEngineType.TSL;
@@ -103,7 +103,7 @@ export class AppState {
   static async loadGameDirectory(){
     AppState.loaderShow();
     KotOR.GameInitializer.SetLoadingMessage('Locating Game Directory...');
-  
+
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       if(await KotOR.GameFileSystem.exists('chitin.key')){
         AppState.directoryLocated = true;
@@ -218,7 +218,7 @@ export class AppState {
     });
 
     AppState.processEventListener('on-game-loaded', []);
-    
+
     AppState.loaderMessage('GameState: Initializing...');
     await KotOR.GameState.Init();
     document.body.append(KotOR.GameState.stats.domElement);
@@ -230,7 +230,11 @@ export class AppState {
    * attachDirectoryPath
    * - Used for Electron
    */
-  static attachDirectoryPath(path: string){
+  static attachDirectoryPath(path: string): void {
+    if (!AppState.appProfile) {
+      log.error("attachDirectoryPath: appProfile is missing; cannot persist directory path");
+      return;
+    }
     KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory`, path);
     AppState.appProfile.directory = path;
     AppState.directoryLocated = true;
@@ -241,9 +245,21 @@ export class AppState {
    * attachDirectoryHandle
    * - Used for Browser
    */
-  static async attachDirectoryHandle(handle: FileSystemDirectoryHandle){
+  static async attachDirectoryHandle(handle: FileSystemDirectoryHandle | undefined | null): Promise<void> {
+    if (!handle) {
+      log.warn("attachDirectoryHandle called with no handle");
+      return;
+    }
+    const profileKey = AppState.appProfile?.key;
+    if (!profileKey) {
+      log.error("attachDirectoryHandle: appProfile is missing or has no key; cannot persist directory handle");
+      KotOR.ApplicationProfile.directoryHandle = handle;
+      AppState.directoryLocated = true;
+      AppState.loadGameDirectory();
+      return;
+    }
     KotOR.ApplicationProfile.directoryHandle = handle;
-    KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory_handle`, handle);
+    KotOR.ConfigClient.set(`Profiles.${profileKey}.directory_handle`, handle);
     AppState.directoryLocated = true;
     AppState.loadGameDirectory();
   }

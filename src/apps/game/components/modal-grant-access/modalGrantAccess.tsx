@@ -16,19 +16,23 @@ export const ModalGrantAccess = () => {
     alert("You must grant access to your local game directory to continue.");
     window.close();
   }
-  
-  const showBrowserDirectoryPicker = async () => {
-    const handle = await window.showDirectoryPicker({
-      mode: "readwrite"
-    });
-    if(!handle) return;
+
+  const showBrowserDirectoryPicker = async (): Promise<FileSystemDirectoryHandle | null> => {
+    let handle: FileSystemDirectoryHandle;
+    try {
+      handle = await window.showDirectoryPicker({ mode: "readwrite" });
+    } catch (e) {
+      log.warn("Directory picker canceled or failed", e);
+      return null;
+    }
+    if (!handle) return null;
 
     if (!(await appState.validateDirectoryHandle(handle))) {
-      return;
+      return null;
     }
 
     return handle;
-  }
+  };
 
   const showElectronDirectoryPicker = async () => {
     try{
@@ -49,30 +53,35 @@ export const ModalGrantAccess = () => {
     log.info("File System: access granted");
 
     // Electron
-    if(appState.env == ApplicationEnvironment.ELECTRON){
+    if (appState.env === ApplicationEnvironment.ELECTRON) {
       await showElectronDirectoryPicker();
       return;
     }
 
     // Browser
-    if(appState.env == ApplicationEnvironment.BROWSER){
+    if (appState.env === ApplicationEnvironment.BROWSER) {
+      if (!appState.appProfile?.key) {
+        log.error("No app profile key; cannot attach directory handle");
+        alert("Game profile is not loaded. Open the game from the launcher with a valid profile.");
+        return;
+      }
       const handle = await showBrowserDirectoryPicker();
-      if(!handle){
-        log.warn("File System: access denied");
+      if (!handle) {
+        log.warn("File System: access denied or canceled");
         alert("Unable to access your local game directory. Please try again.");
         return;
       }
-      appState.attachDirectoryHandle(handle);
+      await appState.attachDirectoryHandle(handle);
     }
-  }
+  };
 
   return (
-    <KotORModal 
-      title="Grant Access" 
-      show={true} 
-      onCancel={onCancel} 
-      onOk={onOk} 
-      cancelText="QUIT" 
+    <KotORModal
+      title="Grant Access"
+      show={true}
+      onCancel={onCancel}
+      onOk={onOk}
+      cancelText="QUIT"
       okText="GRANT ACCESS"
     >
       <span>Please grant this application access to your game install directory to continue.</span>
