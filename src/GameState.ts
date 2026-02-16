@@ -839,9 +839,9 @@ export class GameState implements EngineContext {
       PerformanceMonitor.stop('TextureLoader.LoadQueue');
 
       if(GameState.GameKey == GameEngineType.KOTOR){
-        GameState.VideoManager.queueMovie('leclogo');
-        GameState.VideoManager.queueMovie('biologo');
-        GameState.VideoManager.queueMovie('legal');
+        GameState.VideoManager.queueMovie('leclogo', true);
+        GameState.VideoManager.queueMovie('biologo', true);
+        GameState.VideoManager.queueMovie('legal', true);
       }
 
       GameState.Ready = true;
@@ -876,9 +876,7 @@ export class GameState implements EngineContext {
 
     GameState.FadeOverlayManager.plane.scale.set(width, height, 1);
 
-    if (GameState.VideoManager.bikObject) {
-      GameState.VideoManager.bikObject.resize(width, height);
-    }
+    GameState.VideoManager.resize(width, height);
 
     GameState.camera_gui.left = width / -2;
     GameState.camera_gui.right = width / 2;
