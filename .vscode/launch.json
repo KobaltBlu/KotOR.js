@@ -22,29 +22,56 @@
       "request": "launch",
       "type": "chrome",
       "url": "http://localhost:8080/launcher/index.html",
-      "webRoot": "${workspaceFolder}/dist"
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "Prepare KotOR Launcher (build + serve)"
     },
     {
-      "name": "KotOR",
+      "name": "KotOR Launcher (watch)",
       "presentation": {
         "group": "2-browser",
         "order": 2
       },
       "request": "launch",
       "type": "chrome",
-      "url": "http://localhost:8080/game/index.html?key=kotor",
-      "webRoot": "${workspaceFolder}/dist"
+      "url": "http://localhost:8080/launcher/index.html",
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "Prepare KotOR Launcher (watch + serve)"
     },
     {
-      "name": "TSL",
+      "name": "KotOR Launcher (clean build)",
       "presentation": {
         "group": "2-browser",
         "order": 3
       },
       "request": "launch",
       "type": "chrome",
+      "url": "http://localhost:8080/launcher/index.html",
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "Prepare KotOR Launcher (clean + serve)"
+    },
+    {
+      "name": "KotOR",
+      "presentation": {
+        "group": "2-browser",
+        "order": 4
+      },
+      "request": "launch",
+      "type": "chrome",
+      "url": "http://localhost:8080/game/index.html?key=kotor",
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "Prepare KotOR Launcher (build + serve)"
+    },
+    {
+      "name": "TSL",
+      "presentation": {
+        "group": "2-browser",
+        "order": 5
+      },
+      "request": "launch",
+      "type": "chrome",
       "url": "http://localhost:8080/game/index.html?key=tsl",
-      "webRoot": "${workspaceFolder}/dist"
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "Prepare KotOR Launcher (build + serve)"
     },
     {
       "name": "Attach to Extension Host",
@@ -160,6 +187,18 @@
       ],
       "smartStep": true,
       "type": "extensionHost"
+    },
+    {
+      "name": "Electron (root, with watch)",
+      "request": "launch",
+      "type": "node",
+      "runtimeExecutable": "npx",
+      "args": ["--yes", "electron", "${workspaceFolder}/main"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Watch web verbose (root)",
+      "presentation": { "group": "2-electron", "order": 1 },
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     }
   ],
   "version": "0.2.0"

@@ -11,6 +11,9 @@
   align-items: center;
   justify-content: center;
   z-index: $z-index-modal;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
   animation: fadeIn $transition-fast ease-out;
 }

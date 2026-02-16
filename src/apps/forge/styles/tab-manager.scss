@@ -97,7 +97,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    
+
     // height: 100%;
     // display: none;
     // box-shadow: rgb(0, 0, 0) 0px 0px 5px inset;
@@ -145,7 +145,7 @@
           color: $secondary-cyan-dark;
         }
       }
-      
+
       .tab-pane-content {
         position: absolute;
         top: 0;
@@ -164,7 +164,7 @@
         &.scroll-y {
           overflow-y: auto;
         }
-    
+
         &.scroll-x {
           overflow-x: auto;
         }
@@ -186,6 +186,7 @@
         left: 0;
         right: 0;
         bottom: 0;
+        -webkit-backdrop-filter: grayscale(100%) contrast(110%) opacity(0.25);
         backdrop-filter: grayscale(100%) contrast(110%) opacity(0.25);
       }
 
@@ -198,9 +199,9 @@
       }
 
     }
-    
+
   }
-  
+
   .tab {
     border: 1px solid #2196F3;
     float: left;
