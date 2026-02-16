@@ -335,7 +335,7 @@ export const ResourceTypes = {
   getKeyByValue: function (this: Record<string, number> & { getKeyByValue(value: number): string }, value: number): string {
     for (const prop in this) {
       if (prop === 'getKeyByValue') continue;
-      if (Object.prototype.hasOwnProperty.call(this, prop)) {
+      if (Object.hasOwn(this, prop)) {
         const v = this[prop];
         if (typeof v === 'number' && v === value) return prop;
       }

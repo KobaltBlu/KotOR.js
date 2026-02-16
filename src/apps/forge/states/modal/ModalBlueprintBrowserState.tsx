@@ -109,7 +109,7 @@ export class ModalBlueprintBrowserState extends ModalState {
           }
 
           if (!localizedName && root.hasField('Tag')) {
-            localizedName = root.getFieldByLabel('Tag').getValue() || '';
+            localizedName = root.getStringByLabel('Tag') || '';
           }
 
           // Use resref as fallback

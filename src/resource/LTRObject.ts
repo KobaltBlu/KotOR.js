@@ -1,5 +1,6 @@
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 
 const LTR_HEADER_LENGTH = 9;
 
@@ -245,5 +246,33 @@ export class LTRObject {
 
     return bw.position > 0 ? bw.buffer.slice(0, bw.position) : new Uint8Array(0);
   }
+
+  toJSON(): { fileType: string; fileVersion: string; charCount: number; singleArray: number[][]; doubleArray: number[][][]; tripleArray: number[][][][] } {
+    return {
+      fileType: this.fileType ?? 'LTR ',
+      fileVersion: this.fileVersion ?? 'V1.0',
+      charCount: this.charCount ?? 0,
+      singleArray: this.singleArray ?? [[], [], []],
+      doubleArray: this.doubleArray ?? [],
+      tripleArray: this.tripleArray ?? []
+    };
+  }
+
+  fromJSON(json: string | ReturnType<LTRObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<LTRObject['toJSON']>) : json;
+    this.fileType = obj.fileType ?? 'LTR ';
+    this.fileVersion = obj.fileVersion ?? 'V1.0';
+    this.charCount = obj.charCount ?? 0;
+    this.singleArray = obj.singleArray ?? [[], [], []];
+    this.doubleArray = obj.doubleArray ?? [];
+    this.tripleArray = obj.tripleArray ?? [];
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<LTRObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<LTRObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<LTRObject['toJSON']>); }
 
 }

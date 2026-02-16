@@ -141,12 +141,12 @@ export class MenuAbilities extends K1_MenuAbilities {
     return groups;
   }
 
-  buildSpellsList(_creature: ModuleCreature): (import("../../../resource/TwoDAObject").ITwoDARowData & { forcepriority?: string; usertype?: string; prerequisites?: string })[][] {
+  buildSpellsList(_creature: ModuleCreature): (import("@/resource/TwoDAObject").ITwoDARowData & { forcepriority?: string; usertype?: string; prerequisites?: string })[][] {
     const spellsTable = GameState.TwoDAManager.datatables.get('spells');
     const spells = spellsTable.rows;
     const spellCount = spellsTable.RowCount;
     const allowedTypes = [1, 6];
-    type SpellRow = import("../../../resource/TwoDAObject").ITwoDARowData & { forcepriority?: string; usertype?: string; prerequisites?: string };
+    type SpellRow = import("@/resource/TwoDAObject").ITwoDARowData & { forcepriority?: string; usertype?: string; prerequisites?: string };
     const _knownSpells: SpellRow[] = [];
 
     const unknownSpells: number[] = [176, 177, 178, 179, 180, 181, 182];

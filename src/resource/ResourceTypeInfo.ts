@@ -332,7 +332,7 @@ export const ResourceTypeInfo = {
 
     getKeyByValue: function (this: Record<string, string>, value: string): string | undefined {
         for (const prop in this) {
-            if (Object.prototype.hasOwnProperty.call(this, prop) && typeof this[prop] === 'string') {
+            if (Object.hasOwn(this, prop) && typeof this[prop] === 'string') {
                 if (this[prop] === value) return prop;
             }
         }

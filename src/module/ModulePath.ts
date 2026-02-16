@@ -105,7 +105,7 @@ export class ModulePath {
         
         const connIdx = point.first_connection;
         for(let j = 0; j < point.num_connections; j++){
-          const pointIdx = pathConnections[connIdx + j].getFieldByLabel('Destination').getValue();
+          const pointIdx = pathConnections[connIdx + j].getNumberByLabel('Destination');
           point.addConnection(this.points[pointIdx]);
         }
       }

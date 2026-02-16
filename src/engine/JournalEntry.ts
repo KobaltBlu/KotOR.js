@@ -29,10 +29,6 @@ export class JournalEntry {
   entry: JournalCategoryEntry;
   plot: ITwoDARowData | undefined;
 
-  constructor(){
-
-  }
-
   getName(): string {
     return this.category.name.getTLKValue();
   }

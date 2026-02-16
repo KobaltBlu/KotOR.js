@@ -1,17 +1,14 @@
-@import "~bootstrap/scss/bootstrap";
+@use "@fortawesome/fontawesome-free/scss/fontawesome" as *;
+@use "@fortawesome/fontawesome-free/scss/solid" as *;
+@use "@fortawesome/fontawesome-free/scss/brands" as *;
+@use "styles/menu-top" as *;
+@use "styles/jquery-layout" as *;
+@use "styles/layout-default" as *;
+@use "styles/layout-custom" as *;
+@use "styles/scrollbar" as *;
 
-$fa-font-path: "./fonts";
-@import "~@fortawesome/fontawesome-free/scss/fontawesome";
-
-// our project needs Solid + Brands
-@import "~@fortawesome/fontawesome-free/scss/solid.scss";
-@import "~@fortawesome/fontawesome-free/scss/brands.scss";
-
-@import "styles/menu-top.scss";
-@import "styles/jquery-layout.scss";
-@import "styles/layout-default.scss";
-@import "styles/layout-custom.scss";
-@import "styles/scrollbar.scss";
+// Use pre-built Bootstrap CSS to avoid Sass deprecation warnings from Bootstrap's source
+@import "bootstrap/dist/css/bootstrap.css";
 
 html,
 body {
@@ -210,12 +207,12 @@ body {
               color: red;
             }
 
-            &::hover::before {
+            &:hover::before {
               content: '\2299';
               color: grey;
             }
 
-            &.breakpoint::hover::before {
+            &.breakpoint:hover::before {
               content: '\2299';
               color: rgb(255, 45, 45);
             }

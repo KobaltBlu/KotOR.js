@@ -336,21 +336,25 @@ export class TabModuleEditorState extends TabState {
     const isSelectModeTool =
       mode === TabModuleEditorControlMode.SELECT;
 
+    const tr = this.ui3DRenderer?.transformControls;
     // Detach transform controls when not in SELECT mode
     if(!isTransformTool && !isSelectModeTool){
       this.selectedGameObject = undefined;
-      this.ui3DRenderer.transformControls.detach();
+      if (tr) tr.detach();
     }
 
-    if(mode === TabModuleEditorControlMode.TRANSFORM_CONTROL){
-      this.ui3DRenderer.transformControls.mode = 'translate';
-      this.updateTransformControlHelpers(this.selectedGameObject!);
-    } else if(mode === TabModuleEditorControlMode.ROTATE_CONTROL){
-      this.ui3DRenderer.transformControls.mode = 'rotate';
-      this.updateTransformControlHelpers(this.selectedGameObject!);
-    } else if(mode === TabModuleEditorControlMode.SCALE_CONTROL){
-      this.ui3DRenderer.transformControls.mode = 'scale';
-      this.updateTransformControlHelpers(this.selectedGameObject!);
+    const selected = this.selectedGameObject;
+    if (tr) {
+      if(mode === TabModuleEditorControlMode.TRANSFORM_CONTROL){
+        tr.mode = 'translate';
+        if (selected) this.updateTransformControlHelpers(selected);
+      } else if(mode === TabModuleEditorControlMode.ROTATE_CONTROL){
+        tr.mode = 'rotate';
+        if (selected) this.updateTransformControlHelpers(selected);
+      } else if(mode === TabModuleEditorControlMode.SCALE_CONTROL){
+        tr.mode = 'scale';
+        if (selected) this.updateTransformControlHelpers(selected);
+      }
     }
 
     this.processEventListener('onControlModeChange', [mode]);
@@ -558,7 +562,7 @@ export class TabModuleEditorState extends TabState {
     modal.open();
   }
 
-  setGameObjectControlOptions(gameObjectType: GameObjectType, resref: string, _resType: typeof KotOR.ResourceTypes){
+  setGameObjectControlOptions(gameObjectType: GameObjectType, resref: string, _resType: number | BlueprintType){
     this.selectedGameObjectType = gameObjectType;
     this.selectedBlueprintResRef = resref;
     this.controlMode = TabModuleEditorControlMode.ADD_GAME_OBJECT;
@@ -594,8 +598,8 @@ export class TabModuleEditorState extends TabState {
     return undefined;
   }
 
-  getResourceTypeForGameObjectType(gameObjectType: GameObjectType): typeof KotOR.ResourceTypes {
-    const mapping: Record<GameObjectType, typeof KotOR.ResourceTypes> = {
+  getResourceTypeForGameObjectType(gameObjectType: GameObjectType): number {
+    const mapping: Record<GameObjectType, number> = {
       [GameObjectType.ROOM]: KotOR.ResourceTypes.NA,
       [GameObjectType.CREATURE]: KotOR.ResourceTypes.utc,
       [GameObjectType.DOOR]: KotOR.ResourceTypes.utd,
@@ -608,7 +612,7 @@ export class TabModuleEditorState extends TabState {
       [GameObjectType.WAYPOINT]: KotOR.ResourceTypes.utw,
       [GameObjectType.CAMERA]: KotOR.ResourceTypes.NA, // Camera doesn't use blueprints
     };
-    return mapping[gameObjectType] || KotOR.ResourceTypes.NA;
+    return mapping[gameObjectType] ?? KotOR.ResourceTypes.NA;
   }
 
   createGameObject(type: GameObjectType): ForgeGameObject | null {

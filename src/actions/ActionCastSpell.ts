@@ -26,7 +26,7 @@ const log = createScopedLogger(LogScope.Action);
  */
 export class ActionCastSpell extends Action {
   
-  spell: import("../talents/TalentSpell").TalentSpell | Record<string, never> = {}
+  spell: import("@/talents/TalentSpell").TalentSpell | Record<string, never> = {}
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);

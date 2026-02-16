@@ -411,7 +411,7 @@ export class GameState implements EngineContext {
 
   static addEventListener(event: string, callback: (...args: unknown[]) => void) {
     log.trace("addEventListener", event);
-    if (Object.prototype.hasOwnProperty.call(GameState.eventListeners, event)) {
+    if (Object.hasOwn(GameState.eventListeners, event)) {
       const callbacks = GameState.eventListeners[event];
       if (callbacks) {
         callbacks.push(callback);
@@ -421,7 +421,7 @@ export class GameState implements EngineContext {
 
   static processEventListener(event: string, args: unknown[] = []) {
     log.trace("processEventListener", event, args.length);
-    if (Object.prototype.hasOwnProperty.call(GameState.eventListeners, event)) {
+    if (Object.hasOwn(GameState.eventListeners, event)) {
       const callbacks = GameState.eventListeners[event];
       if (callbacks && callbacks.length) {
         for (let i = 0, len = callbacks.length; i < len; i++) {

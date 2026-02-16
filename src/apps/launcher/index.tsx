@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import ReactDOM from "react-dom/client";
+import ReactDOM, { type Root } from "react-dom/client";
 
 import "@/apps/launcher/app.scss";
 
@@ -20,13 +20,8 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Launcher);
 
-declare global {
-  interface Window {
-    Launcher?: typeof Launcher;
-    ConfigClient?: typeof ConfigClient;
-    launcherView?: Promise<void>;
-  }
-}
+type LauncherRoot = Root;
+
 window.Launcher = Launcher;
 window.ConfigClient = ConfigClient;
 
@@ -74,7 +69,7 @@ const App = function() {
       setProfilesCategories(Launcher.AppCategories);
       setSelectedProfile(
         Launcher.GetProfileByKey(
-          ConfigClient.get(['Launcher', 'selected_profile'], 'kotor')
+          String(ConfigClient.get(['Launcher', 'selected_profile'], 'kotor') ?? 'kotor')
         )
       );
       document.body.style.display = '';
@@ -114,7 +109,7 @@ const App = function() {
       setProfilesCategories(Launcher.AppCategories);
       setSelectedProfile(
         Launcher.GetProfileByKey(
-          ConfigClient.get(['Launcher', 'selected_profile'], 'kotor')
+          String(ConfigClient.get(['Launcher', 'selected_profile'], 'kotor') ?? 'kotor')
         )
       );
       document.body.style.display = '';
@@ -265,14 +260,15 @@ const App = function() {
 
 }
 
-/** Launcher exposes root render on window for tooling. */
+/** Launcher exposes root (React root instance) on window for tooling. */
 interface WindowWithLauncherView extends Window {
-  launcherView?: void;
+  launcherView?: LauncherRoot;
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
 (async () => {
-  (window as WindowWithLauncherView).launcherView = root.render(
+  (window as WindowWithLauncherView).launcherView = root;
+  root.render(
     <React.StrictMode>
       <AppProvider>
         <App />

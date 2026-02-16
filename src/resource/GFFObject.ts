@@ -1,12 +1,14 @@
 import * as path from "path";
 
 import { GFFDataType } from "@/enums/resource/GFFDataType";
+import type { IGFFStructJSON } from "@/interface/resource/IGFFStructJSON";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { CExoLocSubString } from "@/resource/CExoLocSubString";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct, coerceGFFToNumber, coerceGFFToString, coerceGFFToBoolean } from "@/resource/GFFStruct";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
@@ -243,6 +245,31 @@ export class GFFObject {
   toJSON() {
     return this.RootNode.toJSON();
   }
+
+  /** Deserialize from JSON string or object into RootNode. */
+  fromJSON(json: string | IGFFStructJSON): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as IGFFStructJSON) : json;
+    this.RootNode.fromJSON(obj);
+    this.json = this.toJSON();
+  }
+
+  /** Serialize to XML string. */
+  toXML(): string { return objectToXML(this.toJSON()); }
+
+  /** Deserialize from XML string. */
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as IGFFStructJSON); }
+
+  /** Serialize to YAML string. */
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+
+  /** Deserialize from YAML string. */
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as IGFFStructJSON); }
+
+  /** Serialize to TOML string. */
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+
+  /** Deserialize from TOML string. */
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as IGFFStructJSON); }
 
   buildStruct(struct: GFFStructTableEntry): GFFStruct {
     const strt = new GFFStruct();

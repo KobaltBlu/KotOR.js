@@ -104,6 +104,37 @@
           { "filenamePattern": "*.vis" }
         ],
         "priority": "option"
+      },
+      {
+        "viewType": "kotor.forge.json",
+        "displayName": "KotOR Forge (JSON View)",
+        "selector": [
+          { "filenamePattern": "*.2da" },
+          { "filenamePattern": "*.are" },
+          { "filenamePattern": "*.bic" },
+          { "filenamePattern": "*.dlg" },
+          { "filenamePattern": "*.fac" },
+          { "filenamePattern": "*.gff" },
+          { "filenamePattern": "*.git" },
+          { "filenamePattern": "*.gui" },
+          { "filenamePattern": "*.ifo" },
+          { "filenamePattern": "*.jrl" },
+          { "filenamePattern": "*.ltr" },
+          { "filenamePattern": "*.pth" },
+          { "filenamePattern": "*.res" },
+          { "filenamePattern": "*.tlk" },
+          { "filenamePattern": "*.utc" },
+          { "filenamePattern": "*.utd" },
+          { "filenamePattern": "*.ute" },
+          { "filenamePattern": "*.uti" },
+          { "filenamePattern": "*.utm" },
+          { "filenamePattern": "*.utp" },
+          { "filenamePattern": "*.uts" },
+          { "filenamePattern": "*.utt" },
+          { "filenamePattern": "*.utw" },
+          { "filenamePattern": "*.vis" }
+        ],
+        "priority": "option"
       }
     ],
     "languages": [
@@ -239,6 +270,11 @@
         "command": "nwscript.startDebugging",
         "title": "Start Debugging",
         "category": "NWScript"
+      },
+      {
+        "command": "kotorForge.openAsJson",
+        "title": "Open as JSON",
+        "category": "KotOR Forge"
       }
     ],
     "menus": {
@@ -246,6 +282,11 @@
         {
           "when": "resourceLangId == nwscript || resourceExtname == .nss",
           "command": "nwscript.startDebugging",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .2da || resourceExtname == .tlk || resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis",
+          "command": "kotorForge.openAsJson",
           "group": "navigation"
         }
       ]

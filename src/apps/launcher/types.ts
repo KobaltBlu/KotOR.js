@@ -19,6 +19,7 @@ export interface LauncherProfileLaunch {
 
 export interface LauncherProfileElement {
   type: string;
+  id?: string;
   url?: string;
   thumbnail?: string;
   images?: Array<{ path_full: string; path_thumbnail: string }>;

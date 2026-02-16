@@ -78,18 +78,19 @@ export class ModalFileResultsState extends ModalState {
     };
   }
 
-  createEditorFile(result: ReferenceSearchResult): EditorFile {
-    // Lazy require to avoid circular deps (EditorFile → Project → ForgeState → EditorFile)
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires -- circular dep break
-    const EditorFileCtor = (require("@/apps/forge/EditorFile") as { EditorFile: new (opts: EditorFileOptions) => EditorFile }).EditorFile;
-    return new EditorFileCtor(this.getEditorFileOptions(result));
+  async createEditorFile(result: ReferenceSearchResult): Promise<EditorFile> {
+    // Dynamic import to avoid circular dependency; runtime requires relative path (path alias not resolved in import())
+    // eslint-disable-next-line no-restricted-imports -- dynamic import string not resolved by path alias
+    const mod = await import("../../EditorFile") as { EditorFile: new (opts: EditorFileOptions) => EditorFile };
+    return new mod.EditorFile(this.getEditorFileOptions(result));
   }
 
-  openResult(result: ReferenceSearchResult): void {
-    const editorFile = this.createEditorFile(result);
-    // Lazy require to avoid pulling UI/tab dependencies into test compilation
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires -- lazy load
-    const { FileTypeManager } = require("@/apps/forge/FileTypeManager") as { FileTypeManager: { onOpenResource: (f: EditorFile) => void } };
+  async openResult(result: ReferenceSearchResult): Promise<void> {
+    const editorFile = await this.createEditorFile(result);
+    // eslint-disable-next-line no-restricted-imports -- dynamic import string not resolved by path alias
+    const { FileTypeManager } = await import("../../FileTypeManager") as {
+      FileTypeManager: { onOpenResource: (f: EditorFile) => void };
+    };
     FileTypeManager.onOpenResource(editorFile);
   }
 }

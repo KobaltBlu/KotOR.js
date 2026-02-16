@@ -47,31 +47,31 @@ export class SWPriorityGroup {
 
     group.id = parseInt(row.__index);
 
-    if(row.hasOwnProperty('label'))
+    if(Object.hasOwn(row,'label'))
       group.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
     
-    if(row.hasOwnProperty('priority'))
+    if(Object.hasOwn(row,'priority'))
       group.priority = TwoDAObject.normalizeValue(row.priority, 'number', 0) as number;
     
-    if(row.hasOwnProperty('volume'))
+    if(Object.hasOwn(row,'volume'))
       group.volume = TwoDAObject.normalizeValue(row.volume, 'number', 0) as number;
     
-    if(row.hasOwnProperty('maxplaying'))
+    if(Object.hasOwn(row,'maxplaying'))
       group.maxplaying = TwoDAObject.normalizeValue(row.maxplaying, 'number', 0) as number;
     
-    if(row.hasOwnProperty('interrpt'))
+    if(Object.hasOwn(row,'interrpt'))
       group.interrpt = TwoDAObject.normalizeValue(row.interrpt, 'number', 0) as number;
     
-    if(row.hasOwnProperty('fadetime'))
+    if(Object.hasOwn(row,'fadetime'))
       group.fadetime = TwoDAObject.normalizeValue(row.fadetime, 'number', 0) as number;
     
-    if(row.hasOwnProperty('maxvolumedist'))
+    if(Object.hasOwn(row,'maxvolumedist'))
       group.maxvolumedist = TwoDAObject.normalizeValue(row.maxvolumedist, 'number', 1) as number;
 
-    if(row.hasOwnProperty('minvolumedist'))
+    if(Object.hasOwn(row,'minvolumedist'))
       group.minvolumedist = TwoDAObject.normalizeValue(row.minvolumedist, 'number', 0) as number;
 
-    if(row.hasOwnProperty('playbackvariance'))
+    if(Object.hasOwn(row,'playbackvariance'))
       group.playbackvariance = TwoDAObject.normalizeValue(row.playbackvariance, 'number', 0) as number;
 
     return group;

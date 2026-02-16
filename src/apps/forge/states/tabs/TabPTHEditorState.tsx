@@ -198,8 +198,7 @@ export class TabPTHEditorState extends TabState {
 
         const connIdx = point.first_connection;
         for(let j = 0; j < point.num_connections; j++){
-          const destVal = pathConnections[connIdx + j].getFieldByLabel('Destination').getValue();
-          const pointIdx = typeof destVal === 'number' ? destVal : -1;
+          const pointIdx = pathConnections[connIdx + j].getNumberByLabel('Destination');
           if (pointIdx >= 0 && pointIdx < this.points.length) {
             point.addConnection(this.points[pointIdx]);
           }

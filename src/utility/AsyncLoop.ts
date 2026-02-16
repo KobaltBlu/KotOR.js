@@ -1,7 +1,7 @@
 import type { IAsyncLoopHandle, IAsyncLoopOptions } from "@/interface/utility/IAsyncLoopOptions";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-const log = createScopedLogger(LogScope.Manager);
+const _log = createScopedLogger(LogScope.Manager);
 
 /**
  * AsyncLoop class.

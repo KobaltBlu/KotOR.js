@@ -270,15 +270,15 @@ export class MenuPazaakSetup extends GameMenu {
       if(button){
         button.swapBorderAndHighliteOnHover = false;
         button.disableSelection = !bCardAvailable;
-        bCardAvailable || bCardKnown ? button.show() : button.hide();
+        if (bCardAvailable || bCardKnown) button.show(); else button.hide();
       }
       const label = this.getCardCountLabel(i);
       if(label){
-        bCardAvailable || bCardKnown ? label.show() : label.hide();
+        if (bCardAvailable || bCardKnown) label.show(); else label.hide();
       }
       const label2 = this.getCardLabel(i);
       if(label2){
-        bCardAvailable || bCardKnown ? label2.show() : label2.hide();
+        if (bCardAvailable || bCardKnown) label2.show(); else label2.hide();
       }
     }
 

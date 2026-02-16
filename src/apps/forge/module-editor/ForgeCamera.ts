@@ -37,10 +37,7 @@ export class ForgeCamera extends ForgeGameObject {
     this.perspectiveCamera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
     this.perspectiveCamera.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
 
-    // @ts-expect-error - THREE.Vector3.copy expects Vector3; our position is Vector3-compatible
-    this.perspectiveCamera.position.copy(this.position);
-    // @ts-expect-error - quaternion copy omitted; position/orientation synced via manual rotation
-    // this.perspectiveCamera.quaternion.copy(this.quaternion);
+    this.perspectiveCamera.position.copy(this.position as THREE.Vector3);
 
     this.cameraHelper = new THREE.CameraHelper(this.perspectiveCamera);
     this.context.scene.add(this.perspectiveCamera);
@@ -61,12 +58,12 @@ export class ForgeCamera extends ForgeGameObject {
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
-    this.cameraID = strt.getFieldByLabel('CameraID').getValue() as number;
-    this.fov = strt.getFieldByLabel('FieldOfView').getValue() as number;
-    this.height = strt.getFieldByLabel('Height').getValue() as number;
-    this.micRange = strt.getFieldByLabel('MicRange').getValue() as number;
+    this.cameraID = strt.getNumberByLabel('CameraID');
+    this.fov = strt.getNumberByLabel('FieldOfView');
+    this.height = strt.getNumberByLabel('Height');
+    this.micRange = strt.getNumberByLabel('MicRange');
     this.quaternion.copy(strt.getFieldByLabel('Orientation').getOrientation() as THREE.Quaternion);
-    this.pitch = strt.getFieldByLabel('Pitch').getValue() as number;
+    this.pitch = strt.getNumberByLabel('Pitch');
     this.position.copy(strt.getFieldByLabel('Position').getVector() as THREE.Vector3);
   }
 

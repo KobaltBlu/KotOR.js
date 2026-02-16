@@ -1,5 +1,6 @@
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { GameFileSystem } from '@/utility/GameFileSystem';
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 const log = createScopedLogger(LogScope.Resource);
@@ -777,6 +778,33 @@ export class TwoDAObject {
     two.fromJSON(json);
     return two;
   }
+
+  /** Serialize to XML string. */
+  toXML(): string { return objectToXML(this.toJSON()); }
+
+  /** Deserialize from XML string. */
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as TwoDAJSONInput); }
+
+  /** Serialize to YAML string. */
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+
+  /** Deserialize from YAML string. */
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as TwoDAJSONInput); }
+
+  /** Serialize to TOML string. */
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+
+  /** Deserialize from TOML string. */
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as TwoDAJSONInput); }
+
+  /** Static factory from XML. */
+  static fromXML(xml: string): TwoDAObject { const two = new TwoDAObject(undefined); two.fromXML(xml); return two; }
+
+  /** Static factory from YAML. */
+  static fromYAML(yaml: string): TwoDAObject { const two = new TwoDAObject(undefined); two.fromYAML(yaml); return two; }
+
+  /** Static factory from TOML. */
+  static fromTOML(toml: string): TwoDAObject { const two = new TwoDAObject(undefined); two.fromTOML(toml); return two; }
 
   /**
    * Serialize this 2DA to a buffer in the given format (PyKotor write_2da / bytes_2da).

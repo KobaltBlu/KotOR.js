@@ -79,6 +79,13 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
       });
     }));
 
+    listeners.push(document.onDidChangeContent(e => {
+      if (e.content !== undefined) {
+        log.info(`document content changed (revert) uri=${document.uri.fsPath} bytes=${e.content.length}`);
+        this.postMessageToWebviews(document, { type: 'revert', content: Array.from(e.content) });
+      }
+    }));
+
     listeners.push(document.onDidDispose(() => {
       log.trace(`document onDidDispose for ${document.uri.fsPath}, disposing ${listeners.length} listeners`);
       for (const listener of listeners) {

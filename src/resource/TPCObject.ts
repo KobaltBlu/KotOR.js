@@ -9,6 +9,7 @@ import { TXI } from '@/resource/TXI';
 import { OdysseyCompressedTexture } from '@/three/odyssey/OdysseyCompressedTexture';
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
@@ -876,6 +877,37 @@ export class TPCObject {
     }
     return out;
   }
+
+  toJSON(): { header: ITPCHeader; filename: string; txi: string; fileBase64: string } {
+    const f = this.file ?? new Uint8Array(0);
+    const b64 = f.length ? (typeof Buffer !== 'undefined' ? Buffer.from(f).toString('base64') : btoa(String.fromCharCode(...f))) : '';
+    return {
+      header: { ...this.header },
+      filename: this.filename ?? '',
+      txi: this.txi?.toString?.() ?? '',
+      fileBase64: b64
+    };
+  }
+
+  fromJSON(json: string | ReturnType<TPCObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<TPCObject['toJSON']>) : json;
+    Object.assign(this.header, obj.header ?? {});
+    this.filename = obj.filename ?? '';
+    this.txi = new TXI(obj.txi ?? '');
+    if (obj.fileBase64) {
+      const raw = typeof Buffer !== 'undefined'
+        ? new Uint8Array(Buffer.from(obj.fileBase64, 'base64'))
+        : Uint8Array.from(atob(obj.fileBase64), c => c.charCodeAt(0));
+      this.file = raw;
+    }
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<TPCObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<TPCObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<TPCObject['toJSON']>); }
 
   /**
    * Serialize TPC to binary (header + texture data + optional TXI).

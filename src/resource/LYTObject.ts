@@ -4,6 +4,7 @@ import { ILayoutDoorHook } from "@/interface/resource/ILayoutDoorHook";
 import { ILayoutObstacle } from "@/interface/resource/ILayoutObstacle";
 import { ILayoutRoom } from "@/interface/resource/ILayoutRoom";
 import { ILayoutTrack } from "@/interface/resource/ILayoutTrack";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 
 
 /**
@@ -233,6 +234,36 @@ export class LYTObject {
       }
     }
   }
+
+  toJSON(): { filedependancy: string; rooms: Array<{ name: string; position: { x: number; y: number; z: number } }>; doorhooks: Array<{ room: string; name: string; position: { x: number; y: number; z: number }; quaternion: { x: number; y: number; z: number; w: number } }>; tracks: Array<{ name: string; position: { x: number; y: number; z: number } }>; obstacles: Array<{ name: string; position: { x: number; y: number; z: number } }> } {
+    return {
+      filedependancy: this.filedependancy ?? '',
+      rooms: (this.rooms ?? []).map(r => ({ name: r.name, position: { x: r.position.x, y: r.position.y, z: r.position.z } })),
+      doorhooks: (this.doorhooks ?? []).map(d => ({ room: d.room, name: d.name, position: { x: d.position.x, y: d.position.y, z: d.position.z }, quaternion: { x: d.quaternion.x, y: d.quaternion.y, z: d.quaternion.z, w: d.quaternion.w } })),
+      tracks: (this.tracks ?? []).map(t => ({ name: t.name, position: { x: t.position.x, y: t.position.y, z: t.position.z } })),
+      obstacles: (this.obstacles ?? []).map(o => ({ name: o.name, position: { x: o.position.x, y: o.position.y, z: o.position.z } }))
+    };
+  }
+
+  fromJSON(json: string | ReturnType<LYTObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<LYTObject['toJSON']>) : json;
+    this.filedependancy = obj.filedependancy ?? '';
+    this.rooms = (obj.rooms ?? []).map((r: { name: string; position: { x: number; y: number; z: number } }) => ({ name: r.name, position: new THREE.Vector3(r.position.x, r.position.y, r.position.z) }));
+    this.doorhooks = (obj.doorhooks ?? []).map((d: { room: string; name: string; position: { x: number; y: number; z: number }; quaternion: { x: number; y: number; z: number; w: number } }) => ({
+      room: d.room, name: d.name,
+      position: new THREE.Vector3(d.position.x, d.position.y, d.position.z),
+      quaternion: new THREE.Quaternion(d.quaternion.x, d.quaternion.y, d.quaternion.z, d.quaternion.w)
+    }));
+    this.tracks = (obj.tracks ?? []).map((t: { name: string; position: { x: number; y: number; z: number } }) => ({ name: t.name, position: new THREE.Vector3(t.position.x, t.position.y, t.position.z) }));
+    this.obstacles = (obj.obstacles ?? []).map((o: { name: string; position: { x: number; y: number; z: number } }) => ({ name: o.name, position: new THREE.Vector3(o.position.x, o.position.y, o.position.z) }));
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<LYTObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<LYTObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<LYTObject['toJSON']>); }
 
   export(){
     const encoder = new TextEncoder();

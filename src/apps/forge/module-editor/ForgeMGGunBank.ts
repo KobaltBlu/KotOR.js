@@ -31,25 +31,25 @@ export class ForgeMGGunBank {
 
     // Load basic properties
     if(struct.hasField('BankID')){
-      this.bankID = struct.getFieldByLabel('BankID').getValue();
+      this.bankID = struct.getNumberByLabel('BankID');
     }
     if(struct.hasField('Fire_Sound')){
-      this.fireSound = struct.getFieldByLabel('Fire_Sound').getValue();
+      this.fireSound = struct.getStringByLabel('Fire_Sound');
     }
     if(struct.hasField('Gun_Model')){
-      this.gunModel = struct.getFieldByLabel('Gun_Model').getValue();
+      this.gunModel = struct.getStringByLabel('Gun_Model');
     }
     if(struct.hasField('Horiz_Spread')){
-      this.horizSpread = struct.getFieldByLabel('Horiz_Spread').getValue();
+      this.horizSpread = struct.getNumberByLabel('Horiz_Spread');
     }
     if(struct.hasField('Inaccuracy')){
-      this.inaccuracy = struct.getFieldByLabel('Inaccuracy').getValue();
+      this.inaccuracy = struct.getNumberByLabel('Inaccuracy');
     }
     if(struct.hasField('Sensing_Radius')){
-      this.sensingRadius = struct.getFieldByLabel('Sensing_Radius').getValue();
+      this.sensingRadius = struct.getNumberByLabel('Sensing_Radius');
     }
     if(struct.hasField('Vert_Spread')){
-      this.vertSpread = struct.getFieldByLabel('Vert_Spread').getValue();
+      this.vertSpread = struct.getNumberByLabel('Vert_Spread');
     }
 
     // Load Bullet struct

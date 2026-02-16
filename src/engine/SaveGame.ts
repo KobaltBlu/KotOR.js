@@ -203,7 +203,7 @@ export class SaveGame {
       }
 
       if (this.savenfo.RootNode.hasField('LIVECONTENT')) {
-        this.LIVECONTENT = this.savenfo.getFieldByLabel('LIVECONTENT').getValue();
+        this.LIVECONTENT = this.savenfo.getNumberByLabel('LIVECONTENT');
       }
 
       if (this.savenfo.RootNode.hasField('PORTRAIT0')) {

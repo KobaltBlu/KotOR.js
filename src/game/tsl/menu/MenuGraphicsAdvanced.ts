@@ -48,7 +48,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
-      const texPacks = GameState.TwoDAManager.datatables.get('texpacks') || ({} as Record<string, import("../../../resource/TwoDAObject").ITwoDARowData>);
+      const texPacks = GameState.TwoDAManager.datatables.get('texpacks') || ({} as Record<string, import("@/resource/TwoDAObject").ITwoDARowData>);
 
       this.BTN_ANTIALIASLEFT.border.dimension = 0;
       this.BTN_ANISOTROPYLEFT.border.dimension = 0;
@@ -119,7 +119,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
   }
 
   updateTextureQualityLabel() {
-    const texPacks = GameState.TwoDAManager.datatables.get('texpacks') || ({} as Record<string, import("../../../resource/TwoDAObject").ITwoDARowData>);
+    const texPacks = GameState.TwoDAManager.datatables.get('texpacks') || ({} as Record<string, import("@/resource/TwoDAObject").ITwoDARowData>);
     const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
     const _2darow = texPacks.rows[quality];
     if (_2darow) {

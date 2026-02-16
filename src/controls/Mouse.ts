@@ -56,11 +56,7 @@ export class Mouse {
   static downItem: GUIControl;
   static clickItem: GUIControl;
 
-  constructor(){
-
-  }
-
-  static Update(x: number, y: number){
+  static Update(x: number, y: number): void {
     Mouse.positionWindow.x = x;
     Mouse.positionWindow.y = y;
 

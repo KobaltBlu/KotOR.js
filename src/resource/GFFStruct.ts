@@ -1,10 +1,10 @@
-import type { GFFField , GFFFieldValue } from "@/resource/GFFField";
+import type { IGFFStructJSON } from "@/interface/resource/IGFFStructJSON";
+import { GFFField, type GFFFieldValue } from "@/resource/GFFField";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 
 const _log = createScopedLogger(LogScope.Resource);
-import type { IGFFStructJSON } from "@/interface/resource/IGFFStructJSON";
 
 /** Value that getValue() can return (includes bigint for DWORD64). */
 type GFFFieldValueOrBigInt = GFFFieldValue | bigint | undefined;
@@ -352,6 +352,21 @@ export class GFFStruct {
     }
 
     return struct;
+  }
+
+  /**
+   * Build a GFFStruct from JSON (IGFFStructJSON).
+   */
+  fromJSON(json: IGFFStructJSON): void {
+    this.setType(json.type ?? 0);
+    this.fields.length = 0;
+    const fieldNames = Object.keys(json.fields ?? {});
+    for (const label of fieldNames) {
+      const fj = json.fields[label];
+      if (!fj) continue;
+      const field = GFFField.fromJSON(label, fj);
+      if (field) this.addField(field);
+    }
   }
 
 }

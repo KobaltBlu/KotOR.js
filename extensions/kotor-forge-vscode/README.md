@@ -18,6 +18,8 @@ A comprehensive Visual Studio Code extension for modding Star Wars: Knights of t
 - **No Browser Sandbox**: Full file system access without browser restrictions
 - **Native Feel**: Familiar VS Code interface with all your favorite extensions working alongside
 
+For design notes on syncing webview editors with VS Code (undo/redo, save, revert, format/sort) and TLK performance, see **[WEBVIEW_VSCODE_SYNC_DESIGN.md](./WEBVIEW_VSCODE_SYNC_DESIGN.md)**.
+
 ## Installation
 
 ### Prerequisites

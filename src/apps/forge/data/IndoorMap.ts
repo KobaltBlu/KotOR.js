@@ -331,7 +331,7 @@ export class IndoorMapRoom {
   hooks: Array<IndoorMapRoom | null>;
   flipX: boolean;
   flipY: boolean;
-  walkmeshOverride: import("../KotOR").OdysseyWalkMesh | null = null;
+  walkmeshOverride: import("@/apps/forge/KotOR").OdysseyWalkMesh | null = null;
 
   constructor(component: KitComponent, position: THREE.Vector3, rotation: number, flipX: boolean, flipY: boolean) {
     this.component = component;
@@ -373,11 +373,11 @@ export class IndoorMapRoom {
     });
   }
 
-  baseWalkmesh(): import("../KotOR").OdysseyWalkMesh {
+  baseWalkmesh(): import("@/apps/forge/KotOR").OdysseyWalkMesh {
     return this.walkmeshOverride || this.component.bwm;
   }
 
-  walkmesh(): import("../KotOR").OdysseyWalkMesh {
+  walkmesh(): import("@/apps/forge/KotOR").OdysseyWalkMesh {
     const walkmesh = cloneWalkmesh(this.baseWalkmesh());
     applyWalkmeshTransform(walkmesh, {
       position: this.position,

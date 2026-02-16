@@ -1,0 +1,43 @@
+.forge-json-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0f1116;
+  color: #d8e0ef;
+}
+
+.forge-json-view__header {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  background: #161a22;
+
+  .label {
+    color: #8aa4ff;
+    margin-right: 6px;
+  }
+}
+
+.forge-json-view__hint {
+  margin-left: 8px;
+  color: #6b7a99;
+  font-size: 11px;
+}
+
+.forge-json-view__content {
+  flex: 1;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.forge-json-view__error {
+  padding: 12px;
+  color: #e06c75;
+  font-size: 13px;
+}

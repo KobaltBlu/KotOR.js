@@ -112,7 +112,7 @@ export class ModuleWaypoint extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.LIST,  'VarTable') );
     
     if(this.template.RootNode.hasField('XOrientation')){
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.template.RootNode.getFieldByLabel('XOrientation').getValue());
+      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.template.RootNode.getNumberByLabel('XOrientation'));
     }else{
       gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(0);
     }
@@ -120,7 +120,7 @@ export class ModuleWaypoint extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
     
     if(this.template.RootNode.hasField('YOrientation')){
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.template.RootNode.getFieldByLabel('YOrientation').getValue());
+      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.template.RootNode.getNumberByLabel('YOrientation'));
     }else{
       gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(0);
     }
@@ -128,7 +128,7 @@ export class ModuleWaypoint extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
     
     if(this.template.RootNode.hasField('ZOrientation'))
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.template.RootNode.getFieldByLabel('ZOrientation').getValue());
+      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.template.RootNode.getNumberByLabel('ZOrientation'));
     
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
 

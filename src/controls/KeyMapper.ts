@@ -750,14 +750,14 @@ export function language0ToKeyCode(language0: number): string {
 }
 
 export enum KeyCodeToLanguage0 {
-  Backquote =       undefined, //UNUSED
-  AltLeft =         undefined, //UNUSED
-  AltRight =        undefined, //UNUSED
-  NumLock =         undefined, //UNUSED
-  MetaLeft =        undefined, //UNUSED
-  BracketLeft =     undefined, 
-  Quote =           undefined, 
-  Equal =           undefined,
+  Backquote =       -1, //UNUSED
+  AltLeft =         -1, //UNUSED
+  AltRight =        -1, //UNUSED
+  NumLock =         -1, //UNUSED
+  MetaLeft =        -1, //UNUSED
+  BracketLeft =     -1,
+  Quote =           -1,
+  Equal =           -1,
   UpArrow =         9,  //Up
   LeftArrow =       7, //Left
   RightArrow =      8, //Right

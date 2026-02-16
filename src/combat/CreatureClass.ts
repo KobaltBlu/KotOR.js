@@ -191,85 +191,85 @@ export class CreatureClass {
   apply2DA(row: ITwoDARowData): void {
     this.id = row.__index;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'label'))
+    if (Object.hasOwn(row, 'label'))
       this.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'name'))
+    if (Object.hasOwn(row, 'name'))
       this.name = TwoDAObject.normalizeValue(row.name, 'number', -1) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'description'))
+    if (Object.hasOwn(row, 'description'))
       this.description = TwoDAObject.normalizeValue(row.description, 'number', -1) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'icon'))
+    if (Object.hasOwn(row, 'icon'))
       this.icon = TwoDAObject.normalizeValue(row.icon, 'string', '') as string;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'hitdie'))
+    if (Object.hasOwn(row, 'hitdie'))
       this.hitdie = TwoDAObject.normalizeValue(row.hitdie, 'number', 8) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'attackbonustable'))
+    if (Object.hasOwn(row, 'attackbonustable'))
       this.attackbonustable = TwoDAObject.normalizeValue(row.attackbonustable, 'string', 'CLS_ATK_1') as 'CLS_ATK_1' | 'CLS_ATK_2' | 'CLS_ATK_3';
 
-    if (Object.prototype.hasOwnProperty.call(row, 'featstable'))
+    if (Object.hasOwn(row, 'featstable'))
       this.featstable = TwoDAObject.normalizeValue(row.featstable, 'string', 'SOL') as string;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'savingthrowtable'))
+    if (Object.hasOwn(row, 'savingthrowtable'))
       this.savingthrowtable = TwoDAObject.normalizeValue(row.savingthrowtable, 'string', 'CLS_ST_SOL') as string;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'skillstable'))
+    if (Object.hasOwn(row, 'skillstable'))
       this.skillstable = TwoDAObject.normalizeValue(row.skillstable, 'string', 'CLS_SK_SOL') as string;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'skillpointbase'))
+    if (Object.hasOwn(row, 'skillpointbase'))
       this.skillpointbase = TwoDAObject.normalizeValue(row.skillpointbase, 'number', 1) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'spellgaintable'))
+    if (Object.hasOwn(row, 'spellgaintable'))
       this.spellgaintable = TwoDAObject.normalizeValue(row.spellgaintable, 'string', '') as string;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'spellknowntable'))
+    if (Object.hasOwn(row, 'spellknowntable'))
       this.spellknowntable = TwoDAObject.normalizeValue(row.spellknowntable, 'string', '') as string;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'playerclass'))
+    if (Object.hasOwn(row, 'playerclass'))
       this.playerclass = TwoDAObject.normalizeValue(row.playerclass, 'boolean', false) as boolean;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'spellcaster'))
+    if (Object.hasOwn(row, 'spellcaster'))
       this.spellcaster = TwoDAObject.normalizeValue(row.spellcaster, 'boolean', false) as boolean;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'str'))
+    if (Object.hasOwn(row, 'str'))
       this.str = TwoDAObject.normalizeValue(row.str, 'number', 10) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'dex'))
+    if (Object.hasOwn(row, 'dex'))
       this.dex = TwoDAObject.normalizeValue(row.dex, 'number', 10) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'con'))
+    if (Object.hasOwn(row, 'con'))
       this.con = TwoDAObject.normalizeValue(row.con, 'number', 10) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'wis'))
+    if (Object.hasOwn(row, 'wis'))
       this.wis = TwoDAObject.normalizeValue(row.wis, 'number', 10) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'int'))
+    if (Object.hasOwn(row, 'int'))
       this.int = TwoDAObject.normalizeValue(row.int, 'number', 10) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'cha'))
+    if (Object.hasOwn(row, 'cha'))
       this.cha = TwoDAObject.normalizeValue(row.cha, 'number', 10) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'primaryabil'))
+    if (Object.hasOwn(row, 'primaryabil'))
       this.primaryabil = TwoDAObject.normalizeValue(row.primaryabil, 'string', 'STR') as 'STR' | 'DEX' | 'WIS' | 'CON' | 'INT' | 'CHA';
 
-    if (Object.prototype.hasOwnProperty.call(row, 'alignrestrict'))
+    if (Object.hasOwn(row, 'alignrestrict'))
       this.alignrestrict = TwoDAObject.normalizeValue(row.alignrestrict, 'number', 0) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'alignrstrcttype'))
+    if (Object.hasOwn(row, 'alignrstrcttype'))
       this.alignrstrcttype = TwoDAObject.normalizeValue(row.alignrstrcttype, 'number', 0) as number;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'constant'))
+    if (Object.hasOwn(row, 'constant'))
       this.constant = TwoDAObject.normalizeValue(row.constant, 'string', 'CCLASS_SOLDIER') as string;
 
-    if (Object.prototype.hasOwnProperty.call(row, 'forcedie'))
+    if (Object.hasOwn(row, 'forcedie'))
       this.forcedie = TwoDAObject.normalizeValue(row.forcedie, 'number', 0) as number;
 
-    if(Object.prototype.hasOwnProperty.call(row, 'armorclasscolumn'))
+    if(Object.hasOwn(row, 'armorclasscolumn'))
       this.armorclasscolumn = TwoDAObject.normalizeValue(row.armorclasscolumn, 'string', 'SOL') as string;
 
-    if(Object.prototype.hasOwnProperty.call(row, 'featgain'))
+    if(Object.hasOwn(row, 'featgain'))
       this.featgain = TwoDAObject.normalizeValue(row.featgain, 'string', 'SOL') as string;
 
     if(this.savingthrowtable){

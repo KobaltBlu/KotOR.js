@@ -9,9 +9,9 @@ import { createScopedLogger } from "@/utility/Logger";
 
 /**
  * LoadScreen class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LoadScreen.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -39,7 +39,8 @@ export class LoadScreen extends GameMenu {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LBL_HINT.visible = false;
-      (this.defaultTex = this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value;
+      this.defaultTex = this.tGuiPanel.getFill().material as THREE.ShaderMaterial;
+      (function ref(_u: unknown) { return _u; })(this.defaultTex.uniforms.map.value);
       resolve();
     });
   }
@@ -109,5 +110,5 @@ export class LoadScreen extends GameMenu {
     GameState.FadeOverlayManager.plane.visible = true;
     this.setProgress(0);
   }
-  
+
 }

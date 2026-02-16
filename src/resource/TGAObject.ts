@@ -4,6 +4,7 @@ import { ITGAObjectOptions } from "@/interface/graphics/tga/ITGAObjectOptions";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
@@ -147,6 +148,37 @@ export class TGAObject {
     await GameFileSystem.writeFile(resRef, buffer);
     return true;
   }
+
+  toJSON(): { header: ITGAHeader; pixelDataBase64: string; filename: string } {
+    const pd = this.pixelData ?? new Uint8Array(0);
+    let b64 = '';
+    if (pd.length) {
+      const buf = (typeof globalThis !== 'undefined' && (globalThis as { Buffer?: { from: (u: Uint8Array) => { toString: (enc: string) => string } } }).Buffer)
+        ? Buffer.from(pd).toString('base64')
+        : btoa(String.fromCharCode(...pd));
+      b64 = buf;
+    }
+    return { header: { ...this.header }, pixelDataBase64: b64, filename: this.filename ?? '' };
+  }
+
+  fromJSON(json: string | ReturnType<TGAObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<TGAObject['toJSON']>) : json;
+    Object.assign(this.header, obj.header ?? {});
+    this.filename = obj.filename ?? '';
+    if (obj.pixelDataBase64) {
+      const raw = (typeof globalThis !== 'undefined' && (globalThis as { Buffer?: unknown }).Buffer)
+        ? Buffer.from(obj.pixelDataBase64, 'base64')
+        : Uint8Array.from(atob(obj.pixelDataBase64), c => c.charCodeAt(0));
+      this.pixelData = raw instanceof Uint8Array ? raw : new Uint8Array(raw);
+    } else this.pixelData = new Uint8Array(0);
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<TGAObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<TGAObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<TGAObject['toJSON']>); }
 
   static FlipY(pixelData: Uint8Array, width = 1, _height = 1){
     let offset = 0;

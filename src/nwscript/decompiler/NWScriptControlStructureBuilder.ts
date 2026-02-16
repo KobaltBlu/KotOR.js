@@ -1235,8 +1235,8 @@ export class NWScriptControlStructureBuilder {
 
     // Use BFS instead of DFS for more predictable ordering
     while (queue.length > 0) {
-      const current = queue.shift()!;
-      
+      const current = queue.shift();
+      if (current === undefined) break;
       if (current === end || visited.has(current)) {
         continue;
       }
@@ -1331,7 +1331,8 @@ export class NWScriptControlStructureBuilder {
 
       // Process path1
       if (queue1.length > 0) {
-        const current = queue1.shift()!;
+        const current = queue1.shift();
+        if (current === undefined) break;
         if (visited2.has(current)) {
           return current; // Found merge point
         }
@@ -1349,7 +1350,8 @@ export class NWScriptControlStructureBuilder {
 
       // Process path2
       if (queue2.length > 0) {
-        const current = queue2.shift()!;
+        const current = queue2.shift();
+        if (current === undefined) break;
         if (visited1.has(current)) {
           return current; // Found merge point
         }
@@ -1476,7 +1478,8 @@ export class NWScriptControlStructureBuilder {
 
     // BFS to collect all reachable blocks
     while (queue.length > 0) {
-      const current = queue.shift()!;
+      const current = queue.shift();
+      if (current === undefined) break;
       if (visited.has(current)) {
         continue;
       }

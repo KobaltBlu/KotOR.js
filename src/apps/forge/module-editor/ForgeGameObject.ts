@@ -26,7 +26,7 @@ export class ForgeGameObject extends EventListenerModel {
   sphere: THREE.Sphere = new THREE.Sphere();
 
   templateResRef: string = '';
-  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.NA;
+  templateResType: number = KotOR.ResourceTypes.NA;
 
   constructor(){
     log.trace('ForgeGameObject constructor');
@@ -48,7 +48,7 @@ export class ForgeGameObject extends EventListenerModel {
     this.context = context;
   }
 
-  setTemplateResRef(resRef: string, resType: typeof KotOR.ResourceTypes){
+  setTemplateResRef(resRef: string, resType: number){
     log.trace('ForgeGameObject setTemplateResRef', resRef);
     this.templateResRef = resRef;
     this.templateResType = resType;

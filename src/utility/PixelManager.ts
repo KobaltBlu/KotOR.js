@@ -9,10 +9,6 @@
  */
 export class PixelManager {
 
-  constructor(){
-
-  }
-
   static Rotate90deg(buffer: Uint8Array, channels: number = 4, width: number = 0, height: number = 0){
 
     if(!(buffer instanceof Uint8Array))

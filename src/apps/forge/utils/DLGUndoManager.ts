@@ -61,7 +61,8 @@ export class DLGUndoManager {
       return false;
     }
 
-    const action = this.undoStack.pop()!;
+    const action = this.undoStack.pop();
+    if (!action) return false;
     action.undo();
 
     this.redoStack.push(action);
@@ -78,7 +79,8 @@ export class DLGUndoManager {
       return false;
     }
 
-    const action = this.redoStack.pop()!;
+    const action = this.redoStack.pop();
+    if (!action) return false;
     action.redo();
 
     this.undoStack.push(action);

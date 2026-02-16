@@ -1,6 +1,7 @@
 import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import type { IGameContext } from "@/interface/engine/IGameContext";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
@@ -30,7 +31,7 @@ export class ForgeDoor extends ForgeGameObject {
   modelLoading: boolean = false;
 
   //GIT Instance Properties
-  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utd;
+  templateResType: number = KotOR.ResourceTypes.utd;
 
   // Appearance data
   kDoorAppearances: Record<string, string | number>[] = [];
@@ -111,7 +112,7 @@ export class ForgeDoor extends ForgeGameObject {
         this.loadModel();
       }
     }
-    if(property === 'hp'){
+    if(property === 'hp' && typeof newValue === 'number'){
       this.currentHP = newValue;
     }
     if(property === 'templateResRef'){
@@ -134,160 +135,160 @@ export class ForgeDoor extends ForgeGameObject {
     if(!root) return;
 
     if(root.hasField('AnimationState')){
-      this.animationState = root.getFieldByLabel('AnimationState').getValue() || 0;
+      this.animationState = root.getNumberByLabel('AnimationState');
     }
     if(root.hasField('Appearance')){
-      this.appearance = root.getFieldByLabel('Appearance').getValue() || 0;
+      this.appearance = root.getNumberByLabel('Appearance');
     }
     if(root.hasField('AutoRemoveKey')){
-      this.autoRemoveKey = root.getFieldByLabel('AutoRemoveKey').getValue() || false;
+      this.autoRemoveKey = root.getBooleanByLabel('AutoRemoveKey');
     }
     if(root.hasField('CloseLockDC')){
-      this.closeLockDC = root.getFieldByLabel('CloseLockDC').getValue() || 0;
+      this.closeLockDC = root.getNumberByLabel('CloseLockDC');
     }
     if(root.hasField('Comment')){
-      this.comment = root.getFieldByLabel('Comment').getValue() || '';
+      this.comment = root.getStringByLabel('Comment');
     }
     if(root.hasField('Conversation')){
-      this.conversation = root.getFieldByLabel('Conversation').getValue() || '';
+      this.conversation = root.getStringByLabel('Conversation');
     }
     if(root.hasField('CurrentHP')){
-      this.currentHP = root.getFieldByLabel('CurrentHP').getValue() || 0;
+      this.currentHP = root.getNumberByLabel('CurrentHP');
     }
     if(root.hasField('Description')){
       this.description = root.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('DisarmDC')){
-      this.disarmDC = root.getFieldByLabel('DisarmDC').getValue() || 0;
+      this.disarmDC = root.getNumberByLabel('DisarmDC');
     }
     if(root.hasField('Faction')){
-      this.factionId = root.getFieldByLabel('Faction').getValue() || 0;
+      this.factionId = root.getNumberByLabel('Faction');
     }
     if(root.hasField('Fort')){
-      this.fort = root.getFieldByLabel('Fort').getValue() || 0;
+      this.fort = root.getNumberByLabel('Fort');
     }
     if(root.hasField('GenericType')){
-      this.genericType = root.getFieldByLabel('GenericType').getValue() || 0;
+      this.genericType = root.getNumberByLabel('GenericType');
     }
     if(root.hasField('HP')){
-      this.hp = root.getFieldByLabel('HP').getValue() || 0;
+      this.hp = root.getNumberByLabel('HP');
     }
     if(root.hasField('Hardness')){
-      this.hardness = root.getFieldByLabel('Hardness').getValue() || 0;
+      this.hardness = root.getNumberByLabel('Hardness');
     }
     if(root.hasField('Interruptable')){
-      this.interruptable = root.getFieldByLabel('Interruptable').getValue() || false;
+      this.interruptable = root.getBooleanByLabel('Interruptable');
     }
     if(root.hasField('KeyName')){
-      this.keyName = root.getFieldByLabel('KeyName').getValue() || '';
+      this.keyName = root.getStringByLabel('KeyName');
     }
     if(root.hasField('KeyRequired')){
-      this.keyRequired = root.getFieldByLabel('KeyRequired').getValue() || false;
+      this.keyRequired = root.getBooleanByLabel('KeyRequired');
     }
     if(root.hasField('LoadScreenID')){
-      this.loadScreenID = root.getFieldByLabel('LoadScreenID').getValue() || 0;
+      this.loadScreenID = root.getNumberByLabel('LoadScreenID');
     }
     if(root.hasField('LocName')){
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('Lockable')){
-      this.lockable = root.getFieldByLabel('Lockable').getValue() || false;
+      this.lockable = root.getBooleanByLabel('Lockable');
     }
     if(root.hasField('Locked')){
-      this.locked = root.getFieldByLabel('Locked').getValue() || false;
+      this.locked = root.getBooleanByLabel('Locked');
     }
     if(root.hasField('Min1HP')){
-      this.min1HP = root.getFieldByLabel('Min1HP').getValue() || false;
+      this.min1HP = root.getBooleanByLabel('Min1HP');
     }
     if(root.hasField('OnClick')){
-      this.onClick = root.getFieldByLabel('OnClick').getValue() || '';
+      this.onClick = root.getStringByLabel('OnClick');
     }
     if(root.hasField('OnClosed')){
-      this.onClosed = root.getFieldByLabel('OnClosed').getValue() || '';
+      this.onClosed = root.getStringByLabel('OnClosed');
     }
     if(root.hasField('OnDamaged')){
-      this.onDamaged = root.getFieldByLabel('OnDamaged').getValue() || '';
+      this.onDamaged = root.getStringByLabel('OnDamaged');
     }
     if(root.hasField('OnDeath')){
-      this.onDeath = root.getFieldByLabel('OnDeath').getValue() || '';
+      this.onDeath = root.getStringByLabel('OnDeath');
     }
     if(root.hasField('OnDisarm')){
-      this.onDisarm = root.getFieldByLabel('OnDisarm').getValue() || '';
+      this.onDisarm = root.getStringByLabel('OnDisarm');
     }
     if(root.hasField('OnFailToOpen')){
-      this.onFailToOpen = root.getFieldByLabel('OnFailToOpen').getValue() || '';
+      this.onFailToOpen = root.getStringByLabel('OnFailToOpen');
     }
     if(root.hasField('OnHeartbeat')){
-      this.onHeartbeat = root.getFieldByLabel('OnHeartbeat').getValue() || '';
+      this.onHeartbeat = root.getStringByLabel('OnHeartbeat');
     }
     if(root.hasField('OnLock')){
-      this.onLock = root.getFieldByLabel('OnLock').getValue() || '';
+      this.onLock = root.getStringByLabel('OnLock');
     }
     if(root.hasField('OnMeleeAttacked')){
-      this.onMeleeAttacked = root.getFieldByLabel('OnMeleeAttacked').getValue() || '';
+      this.onMeleeAttacked = root.getStringByLabel('OnMeleeAttacked');
     }
     if(root.hasField('OnOpen')){
-      this.onOpen = root.getFieldByLabel('OnOpen').getValue() || '';
+      this.onOpen = root.getStringByLabel('OnOpen');
     }
     if(root.hasField('OnSpellCastAt')){
-      this.onSpellCastAt = root.getFieldByLabel('OnSpellCastAt').getValue() || '';
+      this.onSpellCastAt = root.getStringByLabel('OnSpellCastAt');
     }
     if(root.hasField('OnTrapTriggered')){
-      this.onTrapTriggered = root.getFieldByLabel('OnTrapTriggered').getValue() || '';
+      this.onTrapTriggered = root.getStringByLabel('OnTrapTriggered');
     }
     if(root.hasField('OnUnlock')){
-      this.onUnlock = root.getFieldByLabel('OnUnlock').getValue() || '';
+      this.onUnlock = root.getStringByLabel('OnUnlock');
     }
     if(root.hasField('OnUserDefined')){
-      this.onUserDefined = root.getFieldByLabel('OnUserDefined').getValue() || '';
+      this.onUserDefined = root.getStringByLabel('OnUserDefined');
     }
     if(root.hasField('OpenLockDC')){
-      this.openLockDC = root.getFieldByLabel('OpenLockDC').getValue() || 0;
+      this.openLockDC = root.getNumberByLabel('OpenLockDC');
     }
     if(root.hasField('OpenState')){
-      this.openState = root.getFieldByLabel('OpenState').getValue() || 0;
+      this.openState = root.getNumberByLabel('OpenState');
     }
     if(root.hasField('PaletteID')){
-      this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
+      this.paletteID = root.getNumberByLabel('PaletteID');
     }
     if(root.hasField('Plot')){
-      this.plot = root.getFieldByLabel('Plot').getValue() || false;
+      this.plot = root.getBooleanByLabel('Plot');
     }
     if(root.hasField('PortraitId')){
-      this.portraitId = root.getFieldByLabel('PortraitId').getValue() || 0;
+      this.portraitId = root.getNumberByLabel('PortraitId');
     }
     if(root.hasField('Ref')){
-      this.ref = root.getFieldByLabel('Ref').getValue() || 0;
+      this.ref = root.getNumberByLabel('Ref');
     }
     if(root.hasField('Static')){
-      this.static = root.getFieldByLabel('Static').getValue() || false;
+      this.static = root.getBooleanByLabel('Static');
     }
     if(root.hasField('Tag')){
-      this.tag = root.getFieldByLabel('Tag').getValue() || '';
+      this.tag = root.getStringByLabel('Tag');
     }
     if(root.hasField('TemplateResRef')){
-      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
+      this.templateResRef = root.getStringByLabel('TemplateResRef');
     }
     if(root.hasField('TrapDetectDC')){
-      this.trapDetectDC = root.getFieldByLabel('TrapDetectDC').getValue() || 0;
+      this.trapDetectDC = root.getNumberByLabel('TrapDetectDC');
     }
     if(root.hasField('TrapDetectable')){
-      this.trapDetectable = root.getFieldByLabel('TrapDetectable').getValue() || false;
+      this.trapDetectable = root.getBooleanByLabel('TrapDetectable');
     }
     if(root.hasField('TrapDisarmable')){
-      this.trapDisarmable = root.getFieldByLabel('TrapDisarmable').getValue() || false;
+      this.trapDisarmable = root.getBooleanByLabel('TrapDisarmable');
     }
     if(root.hasField('TrapFlag')){
-      this.trapFlag = root.getFieldByLabel('TrapFlag').getValue() || false;
+      this.trapFlag = root.getBooleanByLabel('TrapFlag');
     }
     if(root.hasField('TrapOneShot')){
-      this.trapOneShot = root.getFieldByLabel('TrapOneShot').getValue() || false;
+      this.trapOneShot = root.getBooleanByLabel('TrapOneShot');
     }
     if(root.hasField('TrapType')){
-      this.trapType = root.getFieldByLabel('TrapType').getValue() || 0;
+      this.trapType = root.getNumberByLabel('TrapType');
     }
     if(root.hasField('Will')){
-      this.will = root.getFieldByLabel('Will').getValue() || 0;
+      this.will = root.getNumberByLabel('Will');
     }
   }
 
@@ -387,14 +388,14 @@ export class ForgeDoor extends ForgeGameObject {
       return this.model;
     }
 
-    const modelName = this.stringCleaner(this.kDoorAppearance?.modelname) || 'plc_invis';
+    const modelName = this.stringCleaner(String(this.kDoorAppearance?.modelname ?? '')) || 'plc_invis';
 
     try{
       this.modelLoading = true;
       this.processEventListener('onModelChange', [this]);
       const mdl = await KotOR.MDLLoader.loader.load(modelName);
       const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
-        context: this.context,
+        context: this.context as unknown as IGameContext,
         lighting: true
       });
       this.model = model;
@@ -430,16 +431,16 @@ export class ForgeDoor extends ForgeGameObject {
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
-    this.rotation.z = strt.getFieldByLabel('Bearing').getValue() as number;
-    this.linkedTo = strt.getFieldByLabel('LinkedTo').getValue() as string;
-    this.linkedToFlags = strt.getFieldByLabel('LinkedToFlags').getValue() as number;
-    this.linkedToModule = strt.getFieldByLabel('LinkedToModule').getValue() as string;
-    this.tag = strt.getFieldByLabel('Tag').getValue() as string;
-    this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    this.transitionDestin = strt.getFieldByLabel('TransitionDestin').getValue() as string;
-    this.position.x = strt.getFieldByLabel('X').getValue() as number;
-    this.position.y = strt.getFieldByLabel('Y').getValue() as number;
-    this.position.z = strt.getFieldByLabel('Z').getValue() as number;
+    this.rotation.z = strt.getNumberByLabel('Bearing');
+    this.linkedTo = strt.getStringByLabel('LinkedTo');
+    this.linkedToFlags = strt.getNumberByLabel('LinkedToFlags');
+    this.linkedToModule = strt.getStringByLabel('LinkedToModule');
+    this.tag = strt.getStringByLabel('Tag');
+    this.templateResRef = strt.getStringByLabel('TemplateResRef');
+    this.transitionDestin = strt.getStringByLabel('TransitionDestin');
+    this.position.x = strt.getNumberByLabel('X');
+    this.position.y = strt.getNumberByLabel('Y');
+    this.position.z = strt.getNumberByLabel('Z');
   }
 
 }

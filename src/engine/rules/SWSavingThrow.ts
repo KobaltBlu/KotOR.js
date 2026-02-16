@@ -12,16 +12,11 @@ import { TwoDAObject } from "@/resource/TwoDAObject";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class SWSavingThrow {
-
   index: number = 0;
   level: number = 0;
   fortsave: number = 0;
   willsave: number = 0;
   refsave: number = 0;
-
-  constructor(index: number = 0){
-    // this.index = index;
-  }
 
   apply2DA(row: ITwoDARowData | Record<string, string | number>): void {
     this.index = TwoDAObject.normalizeValue(row.__index, 'number', 0);

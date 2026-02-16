@@ -70,6 +70,32 @@ export function activate(context: vscode.ExtensionContext) {
       } else {
         log.debug('kotorForge.setTSLPath cancelled or no path selected');
       }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.openAsJson', async () => {
+      log.debug('Command invoked: kotorForge.openAsJson');
+      const jsonExts = new Set(['.2da', '.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.tlk', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
+      let uri: vscode.Uri | undefined;
+      const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
+      const input = tab?.input as { uri?: vscode.Uri } | undefined;
+      if (input?.uri) {
+        uri = input.uri;
+      } else if (vscode.window.activeTextEditor?.document?.uri) {
+        uri = vscode.window.activeTextEditor.document.uri;
+      }
+      const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
+      if (!uri || !jsonExts.has(`.${ext}`)) {
+        vscode.window.showWarningMessage('Open a KotOR file that supports JSON view (e.g. .utc, .gff, .2da, .tlk) first.');
+        log.debug('openAsJson: no suitable file active');
+        return;
+      }
+      try {
+        await vscode.commands.executeCommand('vscode.openWith', uri, KotorForgeProvider.viewTypeJson);
+        log.info('openAsJson: opened JSON view');
+      } catch (e) {
+        log.error(`openAsJson failed: ${e}`);
+        vscode.window.showErrorMessage(`Failed to open as JSON: ${e instanceof Error ? e.message : String(e)}`);
+      }
     })
   );
   log.trace('Extension commands registered');

@@ -2,10 +2,10 @@ import * as path from 'path';
 
 import * as THREE from 'three';
 
+import { GameFileSystem } from '@/utility/GameFileSystem';
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-const log = createScopedLogger(LogScope.Manager);
-import { GameFileSystem } from '@/utility/GameFileSystem';
+const _log = createScopedLogger(LogScope.Manager);
 
 const PI: number = Math.PI;
 const TWO_PI: number = Math.PI * 2;
@@ -147,8 +147,8 @@ export class Utility {
 
       const filePathInfo = path.parse(filePath);
 
-      let fileInfo = filePath.split('\\');
-      fileInfo = fileInfo[fileInfo.length - 1].split('.');
+      let _fileInfo = filePath.split('\\');
+      _fileInfo = _fileInfo[_fileInfo.length - 1].split('.');
 
       if(filePathInfo.ext.indexOf('.') == 0)
         filePathInfo.ext = filePathInfo.ext.substr(1, filePathInfo.ext.length - 1);
@@ -190,14 +190,14 @@ export class Utility {
 
     //possible relative filePath
     else{
-
+      // fallthrough to return empty path info
     }
 
     return {} as OdysseyPathInfo;
 
   }
 
-  static isPOW2(n: number): boolean{
+  static isPOW2(_n: number): boolean{
     return false;
   }
 
@@ -231,24 +231,22 @@ export class Utility {
   }
 
   static LineLineIntersection (x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number) {
-    let det, gamma, lambda;
-    det = (x2 - x1) * (y4 - y3) - (x4 - x3) * (y2 - y1);
+    const det = (x2 - x1) * (y4 - y3) - (x4 - x3) * (y2 - y1);
     if (det === 0)
       return false;
 
-    lambda = ((y4 - y3) * (x4 - x1) + (x3 - x4) * (y4 - y1)) / det;
-    gamma = ((y1 - y2) * (x4 - x1) + (x2 - x1) * (y4 - y1)) / det;
+    const lambda = ((y4 - y3) * (x4 - x1) + (x3 - x4) * (y4 - y1)) / det;
+    const gamma = ((y1 - y2) * (x4 - x1) + (x2 - x1) * (y4 - y1)) / det;
     return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
   }
 
   static THREELineLineIntersection (a: THREE.Line3, b: THREE.Line3) {
-    let det, gamma, lambda;
-    det = (a.end.x - a.start.x) * (b.end.y - b.start.y) - (b.end.x - b.start.x) * (a.end.y - a.start.y);
+    const det = (a.end.x - a.start.x) * (b.end.y - b.start.y) - (b.end.x - b.start.x) * (a.end.y - a.start.y);
     if (det === 0)
       return false;
 
-    lambda = ((b.end.y - b.start.y) * (b.end.x - a.start.x) + (b.start.x - b.end.x) * (b.end.y - a.start.y)) / det;
-    gamma = ((a.start.y - a.end.y) * (b.end.x - a.start.x) + (a.end.x - a.start.x) * (b.end.y - a.start.y)) / det;
+    const lambda = ((b.end.y - b.start.y) * (b.end.x - a.start.x) + (b.start.x - b.end.x) * (b.end.y - a.start.y)) / det;
+    const gamma = ((a.start.y - a.end.y) * (b.end.x - a.start.x) + (a.end.x - a.start.x) * (b.end.y - a.start.y)) / det;
     return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
   }
 

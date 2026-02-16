@@ -18,24 +18,24 @@ export class SWEffectIcon {
   description: number = -1;
   priority: number = 0;
 
-  static From2DA(row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWEffectIcon {
+  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWEffectIcon {
     const effectIcon = new SWEffectIcon();
 
     effectIcon.id = parseInt(row.__index);
 
-    if(row.hasOwnProperty('label'))
+    if(Object.hasOwn(row,'label'))
       effectIcon.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
     
-    if(row.hasOwnProperty('iconresref'))
+    if(Object.hasOwn(row,'iconresref'))
       effectIcon.iconresref = TwoDAObject.normalizeValue(row.iconresref, 'string', '') as string;
     
-    if(row.hasOwnProperty('good'))
+    if(Object.hasOwn(row,'good'))
       effectIcon.good = TwoDAObject.normalizeValue(row.good, 'number', 0) as number;
     
-    if(row.hasOwnProperty('description'))
+    if(Object.hasOwn(row,'description'))
       effectIcon.description = TwoDAObject.normalizeValue(row.description, 'number', -1) as number;
     
-    if(row.hasOwnProperty('priority'))
+    if(Object.hasOwn(row,'priority'))
       effectIcon.priority = TwoDAObject.normalizeValue(row.priority, 'number', 0) as number;
 
     return effectIcon;

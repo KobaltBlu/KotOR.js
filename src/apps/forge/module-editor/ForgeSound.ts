@@ -45,7 +45,7 @@ export class ForgeSound extends ForgeGameObject {
       this.loadFromBuffer(buffer);
     }
     const onPropChange: EventListenerCallback = (...args: unknown[]) => {
-      this.onPropertyChange(args[0] as unknown, args[1] as unknown);
+      this.onPropertyChange(args[0] as string, args[1] as unknown, args[2] as unknown);
     };
     this.addEventListener('onPropertyChange', onPropChange);
   }
@@ -74,83 +74,83 @@ export class ForgeSound extends ForgeGameObject {
     if(!root) return;
 
     if(root.hasField('Active')){
-      this.active = root.getFieldByLabel('Active').getValue() || false;
+      this.active = root.getBooleanByLabel('Active');
     }
     if(root.hasField('Comment')){
-      this.comment = root.getFieldByLabel('Comment').getValue() || '';
+      this.comment = root.getStringByLabel('Comment');
     }
     if(root.hasField('Continuous')){
-      this.continuous = root.getFieldByLabel('Continuous').getValue() || false;
+      this.continuous = root.getBooleanByLabel('Continuous');
     }
     if(root.hasField('Elevation')){
-      this.elevation = root.getFieldByLabel('Elevation').getValue() || 0;
+      this.elevation = root.getNumberByLabel('Elevation');
     }
     if(root.hasField('Hours')){
-      this.hours = root.getFieldByLabel('Hours').getValue() || 0;
+      this.hours = root.getNumberByLabel('Hours');
     }
     if(root.hasField('Interval')){
-      this.interval = root.getFieldByLabel('Interval').getValue() || 0;
+      this.interval = root.getNumberByLabel('Interval');
     }
     if(root.hasField('IntervalVrtn')){
-      this.intervalVariation = root.getFieldByLabel('IntervalVrtn').getValue() || 0;
+      this.intervalVariation = root.getNumberByLabel('IntervalVrtn');
     }
     if(root.hasField('LocName')){
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('Looping')){
-      this.looping = root.getFieldByLabel('Looping').getValue() || false;
+      this.looping = root.getBooleanByLabel('Looping');
     }
     if(root.hasField('MaxDistance')){
-      this.maxDistance = root.getFieldByLabel('MaxDistance').getValue() || 0;
+      this.maxDistance = root.getNumberByLabel('MaxDistance');
     }
     if(root.hasField('MinDistance')){
-      this.minDistance = root.getFieldByLabel('MinDistance').getValue() || 0;
+      this.minDistance = root.getNumberByLabel('MinDistance');
     }
     if(root.hasField('PaletteID')){
-      this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
+      this.paletteID = root.getNumberByLabel('PaletteID');
     }
     if(root.hasField('PitchVariation')){
-      this.pitchVariation = root.getFieldByLabel('PitchVariation').getValue() || 0;
+      this.pitchVariation = root.getNumberByLabel('PitchVariation');
     }
     if(root.hasField('Positional')){
-      this.positional = root.getFieldByLabel('Positional').getValue() || false;
+      this.positional = root.getBooleanByLabel('Positional');
     }
     if(root.hasField('Priority')){
-      this.priority = root.getFieldByLabel('Priority').getValue() || 0;
+      this.priority = root.getNumberByLabel('Priority');
     }
     if(root.hasField('Random')){
-      this.random = root.getFieldByLabel('Random').getValue() || false;
+      this.random = root.getBooleanByLabel('Random');
     }
     if(root.hasField('RandomPosition')){
-      this.randomPosition = root.getFieldByLabel('RandomPosition').getValue() || false;
+      this.randomPosition = root.getBooleanByLabel('RandomPosition');
     }
     if(root.hasField('RandomRangeX')){
-      this.randomRangeX = root.getFieldByLabel('RandomRangeX').getValue() || 0;
+      this.randomRangeX = root.getNumberByLabel('RandomRangeX');
     }
     if(root.hasField('RandomRangeY')){
-      this.randomRangeY = root.getFieldByLabel('RandomRangeY').getValue() || 0;
+      this.randomRangeY = root.getNumberByLabel('RandomRangeY');
     }
     if(root.hasField('Sounds')){
       const sounds = root.getFieldByLabel('Sounds').getChildStructs();
       this.soundResRefs = [];
       for(let i = 0; i < sounds.length; i++){
-        this.soundResRefs.push(sounds[i].getFieldByLabel('Sound').getValue());
+        this.soundResRefs.push(sounds[i].getStringByLabel('Sound'));
       }
     }
     if(root.hasField('Tag')){
-      this.tag = root.getFieldByLabel('Tag').getValue() || '';
+      this.tag = root.getStringByLabel('Tag');
     }
     if(root.hasField('TemplateResRef')){
-      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
+      this.templateResRef = root.getStringByLabel('TemplateResRef');
     }
     if(root.hasField('Times')){
-      this.times = root.getFieldByLabel('Times').getValue() || 0;
+      this.times = root.getNumberByLabel('Times');
     }
     if(root.hasField('Volume')){
-      this.volume = root.getFieldByLabel('Volume').getValue() || 0;
+      this.volume = root.getNumberByLabel('Volume');
     }
     if(root.hasField('VolumeVrtn')){
-      this.volumeVariation = root.getFieldByLabel('VolumeVrtn').getValue() || 0;
+      this.volumeVariation = root.getNumberByLabel('VolumeVrtn');
     }
   }
 
@@ -239,11 +239,11 @@ export class ForgeSound extends ForgeGameObject {
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
-    this.generatedType = strt.getFieldByLabel('GeneratedType').getValue() as number;
-    this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    this.position.x = strt.getFieldByLabel('X').getValue() as number;
-    this.position.y = strt.getFieldByLabel('Y').getValue() as number;
-    this.position.z = strt.getFieldByLabel('Z').getValue() as number;
+    this.generatedType = strt.getNumberByLabel('GeneratedType');
+    this.templateResRef = strt.getStringByLabel('TemplateResRef');
+    this.position.x = strt.getNumberByLabel('X');
+    this.position.y = strt.getNumberByLabel('Y');
+    this.position.z = strt.getNumberByLabel('Z');
   }
 
 }

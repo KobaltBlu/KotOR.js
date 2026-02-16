@@ -17,7 +17,7 @@ export class MenuSaveName extends GameMenu {
   EDITBOX: GUILabel;
   LBL_TITLE: GUILabel;
 
-  onSave: Function;
+  onSave: () => void;
 
   constructor() {
     super();

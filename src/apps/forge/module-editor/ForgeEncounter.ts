@@ -24,7 +24,7 @@ export class ForgeEncounter extends ForgeGameObject {
   spawnPointList: KotOR.EncounterSpawnPointEntry[] = [];
 
   //GIT Instance Properties
-  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.ute;
+  templateResType: number = KotOR.ResourceTypes.ute;
 
   //Blueprint Properties
   active: boolean = false;
@@ -109,78 +109,78 @@ export class ForgeEncounter extends ForgeGameObject {
     }
 
     if(root.hasField('Active')){
-      this.active = root.getFieldByLabel('Active').getValue() || false;
+      this.active = root.getBooleanByLabel('Active');
     }
     if(root.hasField('Comment')){
-      this.comment = root.getFieldByLabel('Comment').getValue() || '';
+      this.comment = root.getStringByLabel('Comment');
     }
     if(root.hasField('CreatureList')){
       const creatureListField = root.getFieldByLabel('CreatureList');
       this.creatureList = creatureListField.getChildStructs().map( (struct) => {
         return {
-          appearance: struct.getFieldByLabel('Appearance').getValue() || 0,
-          resref: struct.getFieldByLabel('ResRef').getValue() || '',
-          cr: struct.getFieldByLabel('CR').getValue() || 0,
-          singleSpawn: !!struct.getFieldByLabel('SingleSpawn').getValue()
+          appearance: struct.getNumberByLabel('Appearance'),
+          resref: struct.getStringByLabel('ResRef'),
+          cr: struct.getNumberByLabel('CR'),
+          singleSpawn: struct.getBooleanByLabel('SingleSpawn')
         } as CreatureListEntry;
       });
     }
     if(root.hasField('Difficulty')){
-      this.difficulty = root.getFieldByLabel('Difficulty').getValue() || 0;
+      this.difficulty = root.getNumberByLabel('Difficulty');
     }
     if(root.hasField('DifficultyIndex')){
-      this.difficultyIndex = root.getFieldByLabel('DifficultyIndex').getValue() || 0;
+      this.difficultyIndex = root.getNumberByLabel('DifficultyIndex');
     }
     if(root.hasField('Faction')){
-      this.faction = root.getFieldByLabel('Faction').getValue() || 0;
+      this.faction = root.getNumberByLabel('Faction');
     }
     if(root.hasField('LocalizedName')){
       this.localizedName = root.getFieldByLabel('LocalizedName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('MaxCreatures')){
-      this.maxCreatures = root.getFieldByLabel('MaxCreatures').getValue() || 0;
+      this.maxCreatures = root.getNumberByLabel('MaxCreatures');
     }
     if(root.hasField('OnEntered')){
-      this.onEntered = root.getFieldByLabel('OnEntered').getValue() || '';
+      this.onEntered = root.getStringByLabel('OnEntered');
     }
     if(root.hasField('OnExhausted')){
-      this.onExhausted = root.getFieldByLabel('OnExhausted').getValue() || '';
+      this.onExhausted = root.getStringByLabel('OnExhausted');
     }
     if(root.hasField('OnExit')){
-      this.onExit = root.getFieldByLabel('OnExit').getValue() || '';
+      this.onExit = root.getStringByLabel('OnExit');
     }
     if(root.hasField('OnHeartbeat')){
-      this.onHeartbeat = root.getFieldByLabel('OnHeartbeat').getValue() || '';
+      this.onHeartbeat = root.getStringByLabel('OnHeartbeat');
     }
     if(root.hasField('OnUserDefined')){
-      this.onUserDefined = root.getFieldByLabel('OnUserDefined').getValue() || '';
+      this.onUserDefined = root.getStringByLabel('OnUserDefined');
     }
     if(root.hasField('PaletteID')){
-      this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
+      this.paletteID = root.getNumberByLabel('PaletteID');
     }
     if(root.hasField('PlayerOnly')){
-      this.playerOnly = root.getFieldByLabel('PlayerOnly').getValue() || false;
+      this.playerOnly = root.getBooleanByLabel('PlayerOnly');
     }
     if(root.hasField('RecCreatures')){
-      this.recCreatures = root.getFieldByLabel('RecCreatures').getValue() || 0;
+      this.recCreatures = root.getNumberByLabel('RecCreatures');
     }
     if(root.hasField('Reset')){
-      this.reset = root.getFieldByLabel('Reset').getValue() || false;
+      this.reset = root.getBooleanByLabel('Reset');
     }
     if(root.hasField('ResetTime')){
-      this.resetTime = root.getFieldByLabel('ResetTime').getValue() || 0;
+      this.resetTime = root.getNumberByLabel('ResetTime');
     }
     if(root.hasField('Respawns')){
-      this.respawns = root.getFieldByLabel('Respawns').getValue() || 0;
+      this.respawns = root.getNumberByLabel('Respawns');
     }
     if(root.hasField('SpawnOption')){
-      this.spawnOption = root.getFieldByLabel('SpawnOption').getValue() || 0;
+      this.spawnOption = root.getNumberByLabel('SpawnOption');
     }
     if(root.hasField('Tag')){
-      this.tag = root.getFieldByLabel('Tag').getValue() || '';
+      this.tag = root.getStringByLabel('Tag');
     }
     if(root.hasField('TemplateResRef')){
-      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
+      this.templateResRef = root.getStringByLabel('TemplateResRef');
     }
     log.trace('ForgeEncounter loadFromBlueprint done', this.tag || this.templateResRef);
   }
@@ -400,7 +400,7 @@ export class ForgeEncounter extends ForgeGameObject {
     if(geometryField){
       for(let i = 0, len = geometryField.getChildStructs().length; i < len; i++){
         const geometryStruct = geometryField.getChildStructs()[i];
-        this.vertices.push(new THREE.Vector3(geometryStruct.getFieldByLabel('PointX').getValue() as number, geometryStruct.getFieldByLabel('PointY').getValue() as number, geometryStruct.getFieldByLabel('PointZ').getValue() as number));
+        this.vertices.push(new THREE.Vector3(geometryStruct.getNumberByLabel('PointX'), geometryStruct.getNumberByLabel('PointY'), geometryStruct.getNumberByLabel('PointZ')));
       }
     }
     this.spawnPointList = [];
@@ -414,12 +414,12 @@ export class ForgeEncounter extends ForgeGameObject {
         }
       }
     }
-    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
-    this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
-    this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('ZOrientation').getValue() as number;
-    this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
+    this.rotation.z = strt.getNumberByLabel('XOrientation');
+    this.position.x = strt.getNumberByLabel('XPosition');
+    this.rotation.z = strt.getNumberByLabel('YOrientation');
+    this.position.y = strt.getNumberByLabel('YPosition');
+    this.rotation.z = strt.getNumberByLabel('ZOrientation');
+    this.position.z = strt.getNumberByLabel('ZPosition');
   }
 
 }

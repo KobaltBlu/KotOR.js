@@ -1162,7 +1162,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function (this: NWScriptInstance, args: [ModuleObject]) {
       if (BitWise.InstanceOfObject(GameState.module.area, ModuleObjectType.ModuleArea)) {
-        GameState.module.area.restrictMode ? NW_TRUE : NW_FALSE;
+        return GameState.module.area.restrictMode ? NW_TRUE : NW_FALSE;
       }
       return 0;
     }
@@ -6146,7 +6146,6 @@ NWScriptDefK1.Actions = {
             case ActionType.ActionDropItem: return 2;
             case ActionType.ActionPhysicalAttacks: return 3;
             case ActionType.ActionCastSpell: return 4;
-            case ActionType.ActionItemCastSpell: return 4;
             case ActionType.ActionOpenDoor: return 5;
             case ActionType.ActionCloseDoor: return 6;
             case ActionType.ActionDialogObject: return 7;
@@ -6168,7 +6167,9 @@ NWScriptDefK1.Actions = {
             case ActionType.ActionForceFollowObject: return 35;
             case ActionType.ActionWait: return 36;
             //case ActionType.ActionSit: return 37;
-            case ActionType.ActionFollowLeader: return 38;
+            case ActionType.ActionFollowLeader:
+            case ActionType.ActionPartyFollowLeader:
+              return 38;
           }
         } else {
           return 65534; //Empty
@@ -8772,7 +8773,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT]
   }
-} as unknown as { [key: number]: import("../interface/nwscript/INWScriptDefAction").INWScriptDefAction };
+} as unknown as { [key: number]: import("@/interface/nwscript/INWScriptDefAction").INWScriptDefAction };
 
 // for (let property in NWScriptDef.Actions) {
 //   if (NWScriptDef.Actions.hasOwnProperty(property)) {

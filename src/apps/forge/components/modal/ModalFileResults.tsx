@@ -47,7 +47,7 @@ export const ModalFileResults = (props: BaseModalProps) => {
               <ListGroup.Item
                 key={`${result.fileResource.resRef}-${result.fieldPath}-${index}`}
                 action
-                onClick={() => modal.openResult(result)}
+                onClick={() => { void modal.openResult(result); }}
                 title={modal.getTooltip(result)}
               >
                 {modal.getDisplayText(result)}

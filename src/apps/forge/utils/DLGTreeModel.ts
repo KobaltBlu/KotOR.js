@@ -11,7 +11,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { DLGTreeNode, DLGNodePath, DLGNodeReference } from "@/apps/forge/interfaces/DLGTreeNode";
+import { DLGTreeNode, DLGNodeReference } from "@/apps/forge/interfaces/DLGTreeNode";
 import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
 import { DLGNode } from "@/resource/DLGNode";
 import { DLGObject } from "@/resource/DLGObject";
@@ -202,7 +202,8 @@ export class DLGTreeModel {
    * Expand all nodes in a subtree
    */
   public expandAll(nodeId?: string): void {
-    const nodes = nodeId ? [this.nodeMap.get(nodeId)!] : this.rootNodes;
+    const found = nodeId ? this.nodeMap.get(nodeId) : undefined;
+    const nodes: DLGTreeNode[] = found !== undefined ? [found] : this.rootNodes;
 
     const expandRecursive = (node: DLGTreeNode) => {
       if (!node.childrenLoaded) {
@@ -220,7 +221,8 @@ export class DLGTreeModel {
    * Collapse all nodes in a subtree
    */
   public collapseAll(nodeId?: string): void {
-    const nodes = nodeId ? [this.nodeMap.get(nodeId)!] : this.rootNodes;
+    const found = nodeId ? this.nodeMap.get(nodeId) : undefined;
+    const nodes: DLGTreeNode[] = found !== undefined ? [found] : this.rootNodes;
 
     const collapseRecursive = (node: DLGTreeNode) => {
       node.expanded = false;

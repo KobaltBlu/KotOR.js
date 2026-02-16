@@ -23,16 +23,16 @@ export class SWBodyBag {
 
     bodyBag.id = parseInt(String(row.__index ?? -1), 10);
 
-    if(row.hasOwnProperty('label'))
+    if(Object.hasOwn(row,'label'))
       bodyBag.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
 
-    if(row.hasOwnProperty('iconresref'))
+    if(Object.hasOwn(row,'iconresref'))
       bodyBag.name = TwoDAObject.normalizeValue(row.name, 'number', -1) as number;
     
-    if(row.hasOwnProperty('appearance'))
+    if(Object.hasOwn(row,'appearance'))
       bodyBag.appearance = TwoDAObject.normalizeValue(row.appearance, 'number', 0) as number;
     
-    if(row.hasOwnProperty('description'))
+    if(Object.hasOwn(row,'description'))
       bodyBag.corpse = TwoDAObject.normalizeValue(row.corpse, 'number', -1) as number;
 
     return bodyBag;

@@ -23,7 +23,7 @@ export class ForgeMGObstacle {
 
     // Load Name field
     if(struct.hasField('Name')){
-      this.name = struct.getFieldByLabel('Name').getValue();
+      this.name = struct.getStringByLabel('Name');
     }
 
     // Load Scripts struct
@@ -40,7 +40,7 @@ export class ForgeMGObstacle {
 
         for(const scriptKey of scriptKeys){
           if(scriptsNode.hasField(scriptKey)){
-            const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+            const resRef = scriptsNode.getStringByLabel(scriptKey);
             if(resRef){
               this.scripts[scriptKey] = resRef;
             }

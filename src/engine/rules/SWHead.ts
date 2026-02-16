@@ -38,7 +38,7 @@ export class SWHead {
     }
   }
 
-  static From2DA(row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number>): SWHead {
+  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number>): SWHead {
     const head = new SWHead();
     head.id = TwoDAObject.normalizeValue(row.__index, "number", -1);
     head.head = (TwoDAObject.normalizeValue(row.head, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();

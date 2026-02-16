@@ -29,7 +29,10 @@ const scssRule = {
     {
       loader: 'sass-loader',
       options: {
-        sourceMap: !isProd
+        sourceMap: !isProd,
+        sassOptions: {
+          loadPaths: [path.join(__dirname, 'node_modules')]
+        }
       }
     }
   ]

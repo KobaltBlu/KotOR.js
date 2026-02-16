@@ -11,7 +11,7 @@ export class SWCreatureSize {
     return this.strref != -1 ? TLKManager.GetStringById(this.strref).Value : this.label;
   }
 
-  static From2DA(row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWCreatureSize {
+  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWCreatureSize {
     const creatureSize = new SWCreatureSize();
     creatureSize.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     creatureSize.label = TwoDAObject.normalizeValue(row.label, 'string', '');

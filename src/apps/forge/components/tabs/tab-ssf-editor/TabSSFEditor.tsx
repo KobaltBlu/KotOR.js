@@ -75,7 +75,7 @@ export const TabSSFEditor = function(props: BaseTabProps){
 
   /** Clone SSF preserving prototype so React re-renders; avoids unsafe any from Object.assign. */
   function createSSFClone(source: SSFObject): SSFObject {
-    const proto = Object.getPrototypeOf(source);
+    const proto: object = Object.getPrototypeOf(source) as object;
     const base = Object.create(proto) as SSFObject;
     const src = source as unknown as Record<string, unknown>;
     const dst = base as unknown as Record<string, unknown>;

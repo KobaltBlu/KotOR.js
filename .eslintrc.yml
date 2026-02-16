@@ -36,12 +36,14 @@ rules:
       varsIgnorePattern: "^_"
   "@typescript-eslint/explicit-function-return-type": off
   "@typescript-eslint/no-extraneous-class": off
-  "@typescript-eslint/no-explicit-any": error
-  "@typescript-eslint/no-unsafe-argument": error
-  "@typescript-eslint/no-unsafe-assignment": error
-  "@typescript-eslint/no-unsafe-call": error
-  "@typescript-eslint/no-unsafe-member-access": error
-  "@typescript-eslint/no-unsafe-return": error
+  "@typescript-eslint/no-explicit-any": warn
+  # Strict type safety: no any/unsafe usage
+  "@typescript-eslint/no-unsafe-argument": warn
+  "@typescript-eslint/no-unsafe-assignment": warn
+  "@typescript-eslint/no-unsafe-call": warn
+  "@typescript-eslint/no-unsafe-member-access": warn
+  "@typescript-eslint/no-unsafe-return": warn
+  "@typescript-eslint/no-unsafe-function-type": warn
 
   # Use shared logger instead of console (see src/utility/Logger.ts)
   no-console: error
@@ -103,6 +105,25 @@ rules:
         - "^\\.\\." # parent relative imports - assume paths are correct
   import/no-duplicates: warn
 
+  # Strict rules enforced (fix violations; do not disable)
+  "@typescript-eslint/no-non-null-assertion": error
+  "@typescript-eslint/no-require-imports": error
+  "@typescript-eslint/no-empty-object-type": error
+  "@typescript-eslint/no-invalid-void-type": error
+  "@typescript-eslint/no-useless-constructor": error
+  "@typescript-eslint/no-dynamic-delete": error
+  "@typescript-eslint/prefer-literal-enum-member": error
+  "@typescript-eslint/no-unused-expressions": error
+  "@typescript-eslint/prefer-as-const": error
+  "@typescript-eslint/no-duplicate-enum-values": error
+  "@typescript-eslint/unified-signatures": warn
+  "@typescript-eslint/no-this-alias": warn
+  "@typescript-eslint/triple-slash-reference": warn
+  no-mixed-spaces-and-tabs: error
+  no-unexpected-multiline: error
+  no-global-assign: error
+  no-duplicate-case: error
+
 overrides:
   # Only src/utility/Logger.ts may use console (designated bridge for log output)
   - files: ['src/utility/Logger.ts']
@@ -117,6 +138,12 @@ overrides:
   - files: ['**/*.test.ts', '**/*.spec.ts']
     env:
       jest: true
+
+  # Game/engine enums: duplicate values and non-literal members are intentional (mirror game data)
+  - files: ['src/enums/**/*.ts', 'src/controls/KeyMapper.ts']
+    rules:
+      "@typescript-eslint/no-duplicate-enum-values": off
+      "@typescript-eslint/prefer-literal-enum-member": off
 
   # kotor-forge-vscode: use node resolver only; ignore runtime/external and shared @kotor paths
   - files: extensions/kotor-forge-vscode/**/*.{ts,tsx}

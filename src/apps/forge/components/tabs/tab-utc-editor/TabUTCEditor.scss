@@ -1,4 +1,4 @@
-@import '../../../styles/_variables.scss';
+@use '../../../styles/variables' as *;
 .feat-row {
   display: flex;
   gap: 10px;

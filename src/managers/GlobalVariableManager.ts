@@ -23,7 +23,7 @@ export class GlobalVariableManager {
   public static Init(){
     const _initGlobals = TwoDAManager.datatables.get('globalcat').rows;
     for (const key in _initGlobals) {
-      if (_initGlobals.hasOwnProperty(key)) {
+      if (Object.hasOwn(_initGlobals, key)) {
         const globItem = _initGlobals[key];
 
         switch(globItem.type){

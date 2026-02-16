@@ -20,7 +20,7 @@ export class BinaryReader {
   endians: Endians = Endians.LITTLE;
   isLE: boolean;
 
-  _value: number | string | bigint | undefined;
+  _value: number | string | bigint | Uint8Array | undefined;
 
   /**
    * Constructor for the BinaryReader class.

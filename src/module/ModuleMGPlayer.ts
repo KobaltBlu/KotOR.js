@@ -870,7 +870,7 @@ export class ModuleMGPlayer extends ModuleObject {
     if (scriptsNode) {
       for (const scriptKey of scriptResRefs) {
         if (scriptsNode.hasField(scriptKey)) {
-          const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+          const resRef = scriptsNode.getStringByLabel(scriptKey);
           if (!resRef) { continue; }
           const nwscript = GameState.NWScript.Load(resRef);
           if (!nwscript) {
@@ -886,66 +886,66 @@ export class ModuleMGPlayer extends ModuleObject {
 
   initProperties() {
     if (this.template.RootNode.hasField('Accel_Secs'))
-      this.accel_secs = this.template.getFieldByLabel('Accel_Secs').getValue();
+      this.accel_secs = this.template.getNumberByLabel('Accel_Secs');
 
     if (this.template.RootNode.hasField('Bump_Damage'))
-      this.bump_damage = this.template.getFieldByLabel('Bump_Damage').getValue();
+      this.bump_damage = this.template.getNumberByLabel('Bump_Damage');
 
     if (this.template.RootNode.hasField('Camera'))
-      this.cameraName = this.template.getFieldByLabel('Camera').getValue();
+      this.cameraName = this.template.getStringByLabel('Camera');
 
     if (this.template.RootNode.hasField('CameraRotate'))
-      this.cameraRotate = this.template.getFieldByLabel('CameraRotate').getValue();
+      this.cameraRotate = this.template.getNumberByLabel('CameraRotate');
 
     if (this.template.RootNode.hasField('Hit_Points'))
-      this.hit_points = this.template.getFieldByLabel('Hit_Points').getValue();
+      this.hit_points = this.template.getNumberByLabel('Hit_Points');
 
     if (this.template.RootNode.hasField('Invince_Period'))
-      this.invince_period = this.template.getFieldByLabel('Invince_Period').getValue();
+      this.invince_period = this.template.getNumberByLabel('Invince_Period');
 
     if (this.template.RootNode.hasField('Max_HPs'))
-      this.max_hps = this.template.getFieldByLabel('Max_HPs').getValue();
+      this.max_hps = this.template.getNumberByLabel('Max_HPs');
 
     if (this.template.RootNode.hasField('Maximum_Speed'))
-      this.speed_max = this.template.getFieldByLabel('Maximum_Speed').getValue();
+      this.speed_max = this.template.getNumberByLabel('Maximum_Speed');
 
     if (this.template.RootNode.hasField('Minimum_Speed'))
-      this.speed_min = this.template.getFieldByLabel('Minimum_Speed').getValue();
+      this.speed_min = this.template.getNumberByLabel('Minimum_Speed');
 
     if (this.template.RootNode.hasField('Num_Loops'))
-      this.num_loops = this.template.getFieldByLabel('Num_Loops').getValue();
+      this.num_loops = this.template.getNumberByLabel('Num_Loops');
 
     if (this.template.RootNode.hasField('Sphere_Radius'))
-      this.sphere_radius = this.template.getFieldByLabel('Sphere_Radius').getValue();
+      this.sphere_radius = this.template.getNumberByLabel('Sphere_Radius');
 
     if (this.template.RootNode.hasField('Track'))
-      this.trackName = this.template.getFieldByLabel('Track').getValue();
+      this.trackName = this.template.getStringByLabel('Track');
 
     if (this.template.RootNode.hasField('TunnelXNeg'))
-      this.tunnel.neg.x = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelXNeg').getValue());
+      this.tunnel.neg.x = THREE.MathUtils.degToRad(this.template.getNumberByLabel('TunnelXNeg'));
 
     if (this.template.RootNode.hasField('TunnelXPos'))
-      this.tunnel.pos.x = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelXPos').getValue());
+      this.tunnel.pos.x = THREE.MathUtils.degToRad(this.template.getNumberByLabel('TunnelXPos'));
 
     if (this.template.RootNode.hasField('TunnelYNeg'))
-      this.tunnel.neg.y = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelYNeg').getValue());
+      this.tunnel.neg.y = THREE.MathUtils.degToRad(this.template.getNumberByLabel('TunnelYNeg'));
 
     if (this.template.RootNode.hasField('TunnelYPos'))
-      this.tunnel.pos.y = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelYPos').getValue());
+      this.tunnel.pos.y = THREE.MathUtils.degToRad(this.template.getNumberByLabel('TunnelYPos'));
 
     if (this.template.RootNode.hasField('TunnelZNeg'))
-      this.tunnel.neg.z = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelZNeg').getValue());
+      this.tunnel.neg.z = THREE.MathUtils.degToRad(this.template.getNumberByLabel('TunnelZNeg'));
 
     if (this.template.RootNode.hasField('TunnelZPos'))
-      this.tunnel.pos.z = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelZPos').getValue());
+      this.tunnel.pos.z = THREE.MathUtils.degToRad(this.template.getNumberByLabel('TunnelZPos'));
 
     if (this.template.RootNode.hasField('Models')) {
       const models = this.template.getFieldByLabel('Models').getChildStructs();
       for (let i = 0; i < models.length; i++) {
         const modelStruct = models[i];
         this.modelProps.push({
-          model: modelStruct.getFieldByLabel('Model').getValue(),
-          rotating: !!modelStruct.getFieldByLabel('RotatingModel').getValue()
+          model: modelStruct.getStringByLabel('Model'),
+          rotating: modelStruct.getBooleanByLabel('RotatingModel')
         });
       }
     }

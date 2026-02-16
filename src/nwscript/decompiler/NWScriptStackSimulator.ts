@@ -237,8 +237,9 @@ export class NWScriptStackSimulator {
       return expr;
     }
 
-    const right = this.pop()!;
-    const left = this.pop()!;
+    const right = this.pop();
+    const left = this.pop();
+    if (right === null || left === null) throw new Error('Stack underflow in binary op');
     const operator = this.getBinaryOperator(instruction.code);
     const dataType = this.getResultType(instruction.type);
     
@@ -261,8 +262,9 @@ export class NWScriptStackSimulator {
       return expr;
     }
 
-    const right = this.pop()!;
-    const left = this.pop()!;
+    const right = this.pop();
+    const left = this.pop();
+    if (right === null || left === null) throw new Error('Stack underflow in comparison');
     const operator = this.getComparisonOperator(instruction.code);
     
     const expr = NWScriptExpression.comparison(operator, left.expression, right.expression);
@@ -284,8 +286,9 @@ export class NWScriptStackSimulator {
       return expr;
     }
 
-    const right = this.pop()!;
-    const left = this.pop()!;
+    const right = this.pop();
+    const left = this.pop();
+    if (right === null || left === null) throw new Error('Stack underflow in logical op');
     const operator = this.getLogicalOperator(instruction.code);
     
     const expr = NWScriptExpression.logical(operator, left.expression, right.expression);
@@ -307,10 +310,11 @@ export class NWScriptStackSimulator {
       return expr;
     }
 
-    const right = this.pop()!;
-    const left = this.pop()!;
+    const right = this.pop();
+    const left = this.pop();
+    if (right === null || left === null) throw new Error('Stack underflow in bitwise op');
     const operator = instruction.code === OP_INCORII ? '|' : '^';
-    
+
     const expr = NWScriptExpression.binaryOp(operator, left.expression, right.expression, NWScriptDataType.INTEGER);
     this.push(expr, instruction.address);
     return expr;
@@ -337,9 +341,10 @@ export class NWScriptStackSimulator {
       return expr;
     }
 
-    const right = this.pop()!;
-    const left = this.pop()!;
-    
+    const right = this.pop();
+    const left = this.pop();
+    if (right === null || left === null) throw new Error('Stack underflow in shift op');
+
     let operator: string;
     switch (instruction.code) {
       case OP_SHLEFTII: operator = '<<'; break;
@@ -366,7 +371,8 @@ export class NWScriptStackSimulator {
       return expr;
     }
 
-    const item = this.pop()!;
+    const item = this.pop();
+    if (item === null) throw new Error('Stack underflow in unary op');
     const operator = this.getUnaryOperator(instruction.code);
     const dataType = instruction.type === 0x03 ? NWScriptDataType.INTEGER : NWScriptDataType.FLOAT;
     
@@ -429,13 +435,15 @@ export class NWScriptStackSimulator {
       
       if (offsetSigned < 0 && this.functionParameters.has(offsetSigned)) {
         // This is a function parameter (negative offset relative to BP)
-        const param = this.functionParameters.get(offsetSigned)!;
+        const param = this.functionParameters.get(offsetSigned);
+        if (param === undefined) throw new Error('function parameter missing');
         varName = param.name;
         dataType = param.dataType;
       } else if (offsetSigned < 0 && this.globalVariables.has(offsetSigned)) {
         // This is a global variable (negative offset relative to BP)
         // ALL stack offsets are negative - we're always looking down from the top
-        const globalVar = this.globalVariables.get(offsetSigned)!;
+        const globalVar = this.globalVariables.get(offsetSigned);
+        if (globalVar === undefined) throw new Error('global variable missing');
         varName = globalVar.name;
         dataType = globalVar.dataType;
       } else {
@@ -482,7 +490,8 @@ export class NWScriptStackSimulator {
           const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
           if (this.localVariables.has(offsetUnsigned)) {
             // Use mapped local variable name from static mapping
-            const localVar = this.localVariables.get(offsetUnsigned)!;
+            const localVar = this.localVariables.get(offsetUnsigned);
+            if (localVar === undefined) throw new Error('local variable missing');
             varName = localVar.name;
             dataType = localVar.dataType;
           } else {
@@ -704,9 +713,9 @@ export class NWScriptStackSimulator {
     if (this.stack.length === 0) {
       return null;
     }
-    const item = this.stack.pop()!;
+    const item = this.stack.pop();
     this.stackPointer -= 4;
-    return item;
+    return item ?? null;
   }
 
   /**

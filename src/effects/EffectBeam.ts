@@ -20,7 +20,7 @@ import { OdysseyModel3D } from "@/three/odyssey";
 export class EffectBeam extends GameEffect {
   modelName: string;
   model: OdysseyModel3D;
-  visualEffect: import("../resource/TwoDAObject").ITwoDARowData | undefined;
+  visualEffect: import("@/resource/TwoDAObject").ITwoDARowData | undefined;
 
   constructor(){
     super();

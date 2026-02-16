@@ -14,7 +14,7 @@ import { GameState } from "@/GameState";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectForceShield extends GameEffect {
-  forceShield: import("../resource/TwoDAObject").ITwoDARowData | undefined;
+  forceShield: import("@/resource/TwoDAObject").ITwoDARowData | undefined;
   constructor(){
     super();
     this.type = GameEffectType.EffectForceShield;

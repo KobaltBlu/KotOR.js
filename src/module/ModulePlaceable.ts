@@ -864,7 +864,7 @@ export class ModulePlaceable extends ModuleObject {
     if(root.hasField('SWVarTable')){
       const localBools = root.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0; i < localBools.length; i++){
-        const data = coerceGFFToNumber(localBools[i].getFieldByLabel('Variable').getValue());
+        const data = localBools[i].getNumberByLabel('Variable');
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 !== 0);
         }

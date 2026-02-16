@@ -310,11 +310,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.maxParticleCount = this.birthRate * (this.lifeExp >= 0 ? this.lifeExp : 1);
       this.material.uniforms.tDepth.value = this.context?.depthTarget?.depthTexture;
       this.material.uniforms.maxAge.value = (this.lifeExp >= 0 ? this.lifeExp : -1);
-      this.material.uniforms.colorStart.value.copy(this.colorStart);
-      this.material.uniforms.colorMid.value.copy(this.colorMid);
-      this.material.uniforms.colorEnd.value.copy(this.colorEnd);
-      this.material.uniforms.opacity.value.fromArray(this.opacity);
-      this.material.uniforms.scale.value.fromArray(this.sizes);
+      (this.material.uniforms.colorStart.value as THREE.Vector3).copy(this.colorStart);
+      (this.material.uniforms.colorMid.value as THREE.Vector3).copy(this.colorMid);
+      (this.material.uniforms.colorEnd.value as THREE.Vector3).copy(this.colorEnd);
+      (this.material.uniforms.opacity.value as THREE.Vector4).fromArray(this.opacity);
+      (this.material.uniforms.scale.value as THREE.Vector3).fromArray(this.sizes);
       this.material.uniforms.rotate.value = this.angle;
       this.material.uniforms.drag.value = this.drag;
       this.material.uniforms.velocity.value = this.velocity;
@@ -569,7 +569,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     let birthCount = 0;
     let spawnableParticleCount = this.offsets.count;
-    let quaternion;
+    let _quaternion: THREE.Quaternion | undefined;
 
     let attrPerVertex = 1;
     if(this.node.renderMode == 'Linked'){
@@ -584,7 +584,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     let birthed = false;
 
     let firstLink = undefined;
-    let lastLink = undefined;
+    let _lastLink = undefined;
     let finalLink = undefined;
 
     for(let i = 0; i < spawnableParticleCount; i++){
@@ -598,7 +598,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         if(i < spawnableParticleCount){
 
           if(alive){
-            lastLink = i;
+            _lastLink = i;
             if(!firstLink){
               firstLink = i;
             }
@@ -751,8 +751,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
 
     if(this.node.renderMode == "Aligned_to_Particle_Dir"){
-      this.material.uniforms.matrix.value.copy(this.parent.matrix);
-      this.material.uniforms.matrix.value.setPosition(0, 0, 0);
+      (this.material.uniforms.matrix.value as THREE.Matrix4).copy(this.parent.matrix);
+      (this.material.uniforms.matrix.value as THREE.Matrix4).setPosition(0, 0, 0);
       this.material.uniformsNeedUpdate = true;
     }
 
@@ -973,12 +973,13 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
 
       //These will be scaled inside the shader
-      const linked_verts = [
+      const _linked_verts = [
         [-1, 1, 0],
         [1, 1, 0],
         [-1, -1, 0],
         [1, -1, 0]
       ];
+      void _linked_verts;
 
       //BEGIN TEST FIX
       this.setLinkedVertexPosition(i, newPosition);
@@ -1015,7 +1016,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
     }
 
-    const maxAge = this.getRandomMaxAge();
+    const _maxAge = this.getRandomMaxAge();
     if(this.node.renderMode != 'Linked'){
       this.velocities.setW(i, this.mass);
 
@@ -1123,14 +1124,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       case 'mass':
         this.parent.getWorldQuaternion(quat);
         this.vec3.set(0, 0, this.mass).applyQuaternion(this.quaternion);
-        this.material.uniforms.mass.value.copy(this.vec3);
+        (this.material.uniforms.mass.value as THREE.Vector3).copy(this.vec3);
         this.material.uniformsNeedUpdate = true;
       break;
     }
 
   }
 
-  setLinkedVertexPositionOLD(i = 0, newPosition = new THREE.Vector3){
+  setLinkedVertexPositionOLD(_i = 0, _newPosition = new THREE.Vector3()){
     /*for(let vi = 0; vi < 3; vi++){
 
       const offset = [

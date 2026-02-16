@@ -120,7 +120,10 @@ module.exports = (_env, argv) => {
             {
               loader: 'sass-loader',
               options: {
-                api: 'modern'
+                api: 'modern',
+                sassOptions: {
+                  quietDeps: true
+                }
               }
             }
           ]

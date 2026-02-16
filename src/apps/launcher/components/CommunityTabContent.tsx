@@ -11,11 +11,12 @@ import { CommunityProvider, useCommunity } from "@/apps/launcher/context/Communi
 import type { CommunityVideoItem } from "@/apps/launcher/context/CommunityContext";
 import type { LauncherProfileElement } from "@/apps/launcher/types";
 
-export interface CommunityTabContentProps {}
+/** Props for CommunityTabContent; no props are used but forwardRef requires a props type. */
+export type CommunityTabContentProps = Record<string, never>;
 
-export interface CommunityTabContentRef {
+export type CommunityTabContentRef = {
   showTab: () => void;
-}
+};
 
 export const CommunityTabContent = forwardRef<CommunityTabContentRef, CommunityTabContentProps>(function(props, ref){
   const appContext = useApp();

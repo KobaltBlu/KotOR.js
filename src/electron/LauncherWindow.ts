@@ -78,18 +78,22 @@ export class LauncherWindow {
     });
     
     this.browserWindow.on('show', () => {
-      //tray.setHighlightMode('always');
+      // tray.setHighlightMode('always');
     });
-  
+
     this.browserWindow.on('hide', () => {
-      //tray.setHighlightMode('never');
+      // tray.setHighlightMode('never');
     });
   }
 
   toggleWindow(){
-    if(this.browserWindow)
-      this.browserWindow.isVisible() ? 
-        this.browserWindow.hide() : this.browserWindow.show();
+    if (this.browserWindow) {
+      if (this.browserWindow.isVisible()) {
+        this.browserWindow.hide();
+      } else {
+        this.browserWindow.show();
+      }
+    }
   }
 
   hide(){

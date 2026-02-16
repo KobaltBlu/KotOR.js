@@ -138,25 +138,25 @@ export class ModuleMGGunBank extends ModuleObject {
 
   initProperties(){
     if(this.template.RootNode.hasField('BankID'))
-      this.bankID = this.template.getFieldByLabel('BankID').getValue()
+      this.bankID = this.template.getNumberByLabel('BankID');
 
     if(this.template.RootNode.hasField('Fire_Sound'))
-      this.fireSound = this.template.getFieldByLabel('Fire_Sound').getValue()
+      this.fireSound = this.template.getStringByLabel('Fire_Sound');
 
     if(this.template.RootNode.hasField('Gun_Model'))
-      this.gunModel = this.template.getFieldByLabel('Gun_Model').getValue()
+      this.gunModel = this.template.getStringByLabel('Gun_Model');
 
     if(this.template.RootNode.hasField('Horiz_Spread'))
-      this.horizSpread = this.template.getFieldByLabel('Horiz_Spread').getValue()
+      this.horizSpread = this.template.getNumberByLabel('Horiz_Spread');
 
     if(this.template.RootNode.hasField('Inaccuracy'))
-      this.inaccuracy = this.template.getFieldByLabel('Inaccuracy').getValue()
+      this.inaccuracy = this.template.getNumberByLabel('Inaccuracy');
 
     if(this.template.RootNode.hasField('Sensing_Radius'))
-      this.sensingRadius = this.template.getFieldByLabel('Sensing_Radius').getValue()
+      this.sensingRadius = this.template.getNumberByLabel('Sensing_Radius');
 
     if(this.template.RootNode.hasField('Vert_Spread'))
-      this.vertSpread = this.template.getFieldByLabel('Vert_Spread').getValue()
+      this.vertSpread = this.template.getNumberByLabel('Vert_Spread');
       
     this.bulletTemplate = GFFObject.FromStruct(this.template.RootNode.getFieldByLabel('Bullet').getChildStructs()[0]);
     this.proto_bullet = new ModuleMGGunBullet(this.bulletTemplate, this);

@@ -158,22 +158,22 @@ export class ModuleCamera {
   initProperties(){
 
     if(this.template.RootNode.hasField('CameraID'))
-      this.cameraID = this.template.getFieldByLabel('CameraID').getValue();
+      this.cameraID = this.template.getNumberByLabel('CameraID');
 
     if(this.template.RootNode.hasField('FieldOfView'))
-      this.fov = this.template.getFieldByLabel('FieldOfView').getValue();
+      this.fov = this.template.getNumberByLabel('FieldOfView');
 
     if(this.template.RootNode.hasField('Height'))
-      this.height = this.template.getFieldByLabel('Height').getValue();
+      this.height = this.template.getNumberByLabel('Height');
 
     if(this.template.RootNode.hasField('MicRange'))
-      this.micRange = this.template.getFieldByLabel('MicRange').getValue();
+      this.micRange = this.template.getNumberByLabel('MicRange');
 
     if(this.template.RootNode.hasField('Orientation'))
       this.orientation.copy(this.template.getFieldByLabel('Orientation').getOrientation() as THREE.Quaternion);
 
     if(this.template.RootNode.hasField('Pitch'))
-      this.pitch = this.template.getFieldByLabel('Pitch').getValue();
+      this.pitch = this.template.getNumberByLabel('Pitch');
 
     if(this.template.RootNode.hasField('Position')){
       this.position.copy(this.template.getFieldByLabel('Position').getVector() as THREE.Vector3);

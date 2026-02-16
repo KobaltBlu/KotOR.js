@@ -111,7 +111,8 @@ export class VideoPlayer {
     VideoPlayer._queuePlaying = true;
     while (VideoPlayer._queue.length > 0) {
       VideoPlayer._cancelled = false;
-      const entry = VideoPlayer._queue.shift()!;
+      const entry = VideoPlayer._queue.shift();
+      if (!entry) break;
       VideoPlayer._currentSkippable = entry.skippable;
       VideoPlayer._isPlaying = true;
       VideoPlayer._playCompleteResolve = null;

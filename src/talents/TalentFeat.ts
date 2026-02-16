@@ -386,281 +386,281 @@ export class TalentFeat extends TalentObject {
   }
 
   apply2DA(row: ITwoDARowData | Record<string, string | number> = {}){
-    if (row.hasOwnProperty('__rowlabel'))
+    if (Object.hasOwn(row,'__rowlabel'))
       this.rowLabel = TwoDAObject.normalizeValue(row.__rowlabel, 'number', 0);
 
-    if (row.hasOwnProperty('label'))
+    if (Object.hasOwn(row,'label'))
       this.label = TwoDAObject.normalizeValue(row.label, 'string', '');
 
-    if (row.hasOwnProperty('name'))
+    if (Object.hasOwn(row,'name'))
       this.name = TwoDAObject.normalizeValue(row.name, 'number', -1);
 
-    if (row.hasOwnProperty('description'))
+    if (Object.hasOwn(row,'description'))
       this.description = TwoDAObject.normalizeValue(row.description, 'number', -1);
 
-    if (row.hasOwnProperty('icon'))
+    if (Object.hasOwn(row,'icon'))
       this.icon = TwoDAObject.normalizeValue(row.icon, 'string', '');
 
-    if (row.hasOwnProperty('mincharlevel'))
+    if (Object.hasOwn(row,'mincharlevel'))
       this.minCharLevel = TwoDAObject.normalizeValue(row.mincharlevel, 'number', 0);
 
-    if (row.hasOwnProperty('minattackbonus'))
+    if (Object.hasOwn(row,'minattackbonus'))
       this.minAttackBonus = TwoDAObject.normalizeValue(row.minattackbonus, 'number', -1);
 
-    if (row.hasOwnProperty('minstr'))
+    if (Object.hasOwn(row,'minstr'))
       this.minStr = TwoDAObject.normalizeValue(row.minstr, 'number', -1);
 
-    if (row.hasOwnProperty('mindex'))
+    if (Object.hasOwn(row,'mindex'))
       this.minDex = TwoDAObject.normalizeValue(row.mindex, 'number', -1);
 
-    if (row.hasOwnProperty('minint'))
+    if (Object.hasOwn(row,'minint'))
       this.minInt = TwoDAObject.normalizeValue(row.minint, 'number', -1);
 
-    if (row.hasOwnProperty('minwis'))
+    if (Object.hasOwn(row,'minwis'))
       this.minWis = TwoDAObject.normalizeValue(row.minwis, 'number', -1);
 
-    if (row.hasOwnProperty('minspelllvl'))
+    if (Object.hasOwn(row,'minspelllvl'))
       this.minSpellLvl = TwoDAObject.normalizeValue(row.minspelllvl, 'number', -1);
 
-    if (row.hasOwnProperty('prereqfeat1'))
+    if (Object.hasOwn(row,'prereqfeat1'))
       this.prereqFeat1 = TwoDAObject.normalizeValue(row.prereqfeat1, 'number', -1);
 
-    if (row.hasOwnProperty('prereqfeat2'))
+    if (Object.hasOwn(row,'prereqfeat2'))
       this.prereqFeat2 = TwoDAObject.normalizeValue(row.prereqfeat2, 'number', -1);
 
-    if (row.hasOwnProperty('gainmultiple'))
+    if (Object.hasOwn(row,'gainmultiple'))
       this.gainMultiple = TwoDAObject.normalizeValue(row.gainmultiple, 'number', 0);
 
-    if (row.hasOwnProperty('effectsstack'))
+    if (Object.hasOwn(row,'effectsstack'))
       this.effectsStack = TwoDAObject.normalizeValue(row.effectsstack, 'number', 0);
 
-    if (row.hasOwnProperty('allclassescanuse'))
+    if (Object.hasOwn(row,'allclassescanuse'))
       this.allClassesCanUse = TwoDAObject.normalizeValue(row.allclassescanuse, 'number', 0);
 
-    if (row.hasOwnProperty('category'))
+    if (Object.hasOwn(row,'category'))
       this.category = TwoDAObject.normalizeValue(row.category, 'number', -1);
 
-    if (row.hasOwnProperty('maxcr'))
+    if (Object.hasOwn(row,'maxcr'))
       this.maxCR = TwoDAObject.normalizeValue(row.maxcr, 'number', -1);
 
-    if (row.hasOwnProperty('spellid'))
+    if (Object.hasOwn(row,'spellid'))
       this.spellId = TwoDAObject.normalizeValue(row.spellid, 'number', -1);
 
-    if (row.hasOwnProperty('successor'))
+    if (Object.hasOwn(row,'successor'))
       this.successor = TwoDAObject.normalizeValue(row.successor, 'number', -1);
 
-    if (row.hasOwnProperty('crvalue'))
+    if (Object.hasOwn(row,'crvalue'))
       this.crValue = TwoDAObject.normalizeValue(row.crvalue, 'number', -1);
 
-    if (row.hasOwnProperty('usesperday'))
+    if (Object.hasOwn(row,'usesperday'))
       this.usesPerDay = TwoDAObject.normalizeValue(row.usesperday, 'number', -1);
 
-    if (row.hasOwnProperty('masterfeat'))
+    if (Object.hasOwn(row,'masterfeat'))
       this.masterFeat = TwoDAObject.normalizeValue(row.masterfeat, 'number', -1);
 
-    if (row.hasOwnProperty('targetself'))
+    if (Object.hasOwn(row,'targetself'))
       this.targetSelf = TwoDAObject.normalizeValue(row.targetself, 'number', -1);
 
-    if (row.hasOwnProperty('orreqfeat0'))
+    if (Object.hasOwn(row,'orreqfeat0'))
       this.orReqFeat0 = TwoDAObject.normalizeValue(row.orreqfeat0, 'number', -1);
 
-    if (row.hasOwnProperty('orreqfeat1'))
+    if (Object.hasOwn(row,'orreqfeat1'))
       this.orReqFeat1 = TwoDAObject.normalizeValue(row.orreqfeat1, 'number', -1);
 
-    if (row.hasOwnProperty('orreqfeat2'))
+    if (Object.hasOwn(row,'orreqfeat2'))
       this.orReqFeat2 = TwoDAObject.normalizeValue(row.orreqfeat2, 'number', -1);
 
-    if (row.hasOwnProperty('orreqfeat3'))
+    if (Object.hasOwn(row,'orreqfeat3'))
       this.orReqFeat3 = TwoDAObject.normalizeValue(row.orreqfeat3, 'number', -1);
 
-    if (row.hasOwnProperty('orreqfeat4'))
+    if (Object.hasOwn(row,'orreqfeat4'))
       this.orReqFeat4 = TwoDAObject.normalizeValue(row.orreqfeat4, 'number', -1);
 
-    if (row.hasOwnProperty('reqskill'))
+    if (Object.hasOwn(row,'reqskill'))
       this.reqSkill = TwoDAObject.normalizeValue(row.reqskill, 'number', -1);
 
-    if (row.hasOwnProperty('constant'))
+    if (Object.hasOwn(row,'constant'))
       this.constant = TwoDAObject.normalizeValue(row.constant, 'string', '');
 
-    if (row.hasOwnProperty('toolscategories'))
+    if (Object.hasOwn(row,'toolscategories'))
       this.toolsCategories = TwoDAObject.normalizeValue(row.toolscategories, 'number', 0);
 
-    if (row.hasOwnProperty('hostilefeat'))
+    if (Object.hasOwn(row,'hostilefeat'))
       this.hostileFeat = TwoDAObject.normalizeValue(row.hostilefeat, 'number', -1);
 
     // Add parsing for the new properties
-    if (row.hasOwnProperty('scd_list'))
+    if (Object.hasOwn(row,'scd_list'))
       this.scdList = TwoDAObject.normalizeValue(row.scd_list, 'number', -1);
 
-    if (row.hasOwnProperty('scd_granted'))
+    if (Object.hasOwn(row,'scd_granted'))
       this.scdGranted = TwoDAObject.normalizeValue(row.scd_granted, 'number', -1);
 
-    if (row.hasOwnProperty('scd_recom'))
+    if (Object.hasOwn(row,'scd_recom'))
       this.scdRecom = TwoDAObject.normalizeValue(row.scd_recom, 'number', -1);
 
-    if (row.hasOwnProperty('sol_list'))
+    if (Object.hasOwn(row,'sol_list'))
       this.solList = TwoDAObject.normalizeValue(row.sol_list, 'number', -1);
 
-    if (row.hasOwnProperty('sol_granted'))
+    if (Object.hasOwn(row,'sol_granted'))
       this.solGranted = TwoDAObject.normalizeValue(row.sol_granted, 'number', -1);
 
-    if (row.hasOwnProperty('sol_recom'))
+    if (Object.hasOwn(row,'sol_recom'))
       this.solRecom = TwoDAObject.normalizeValue(row.sol_recom, 'number', -1);
 
-    if (row.hasOwnProperty('sct_list'))
+    if (Object.hasOwn(row,'sct_list'))
       this.sctList = TwoDAObject.normalizeValue(row.sct_list, 'number', -1);
 
-    if (row.hasOwnProperty('sct_granted'))
+    if (Object.hasOwn(row,'sct_granted'))
       this.sctGranted = TwoDAObject.normalizeValue(row.sct_granted, 'number', -1);
 
-    if (row.hasOwnProperty('sct_recom'))
+    if (Object.hasOwn(row,'sct_recom'))
       this.sctRecom = TwoDAObject.normalizeValue(row.sct_recom, 'number', -1);
 
-    if (row.hasOwnProperty('jcn_list'))
+    if (Object.hasOwn(row,'jcn_list'))
       this.jcnList = TwoDAObject.normalizeValue(row.jcn_list, 'number', -1);
 
-    if (row.hasOwnProperty('jcn_granted'))
+    if (Object.hasOwn(row,'jcn_granted'))
       this.jcnGranted = TwoDAObject.normalizeValue(row.jcn_granted, 'number', -1);
 
-    if (row.hasOwnProperty('jcn_pc_granted'))
+    if (Object.hasOwn(row,'jcn_pc_granted'))
       this.jcnPcGranted = TwoDAObject.normalizeValue(row.jcn_pc_granted, 'number', -1);
 
-    if (row.hasOwnProperty('jcn_recom'))
+    if (Object.hasOwn(row,'jcn_recom'))
       this.jcnRecom = TwoDAObject.normalizeValue(row.jcn_recom, 'number', -1);
 
-    if (row.hasOwnProperty('jgd_list'))
+    if (Object.hasOwn(row,'jgd_list'))
       this.jgdList = TwoDAObject.normalizeValue(row.jgd_list, 'number', -1);
 
-    if (row.hasOwnProperty('jgd_granted'))
+    if (Object.hasOwn(row,'jgd_granted'))
       this.jgdGranted = TwoDAObject.normalizeValue(row.jgd_granted, 'number', -1);
 
-    if (row.hasOwnProperty('jgd_pc_granted'))
+    if (Object.hasOwn(row,'jgd_pc_granted'))
       this.jgdPcGranted = TwoDAObject.normalizeValue(row.jgd_pc_granted, 'number', -1);
 
-    if (row.hasOwnProperty('jgd_recom'))
+    if (Object.hasOwn(row,'jgd_recom'))
       this.jgdRecom = TwoDAObject.normalizeValue(row.jgd_recom, 'number', -1);
 
-    if (row.hasOwnProperty('jsn_list'))
+    if (Object.hasOwn(row,'jsn_list'))
       this.jsnList = TwoDAObject.normalizeValue(row.jsn_list, 'number', -1);
 
-    if (row.hasOwnProperty('jsn_granted'))
+    if (Object.hasOwn(row,'jsn_granted'))
       this.jsnGranted = TwoDAObject.normalizeValue(row.jsn_granted, 'number', -1);
 
-    if (row.hasOwnProperty('jsn_pc_granted'))
+    if (Object.hasOwn(row,'jsn_pc_granted'))
       this.jsnPcGranted = TwoDAObject.normalizeValue(row.jsn_pc_granted, 'number', -1);
 
-    if (row.hasOwnProperty('jsn_recom'))
+    if (Object.hasOwn(row,'jsn_recom'))
       this.jsnRecom = TwoDAObject.normalizeValue(row.jsn_recom, 'number', -1);
 
-    if (row.hasOwnProperty('sas_list'))
+    if (Object.hasOwn(row,'sas_list'))
       this.sasList = TwoDAObject.normalizeValue(row.sas_list, 'number', -1);
 
-    if (row.hasOwnProperty('sas_granted'))
+    if (Object.hasOwn(row,'sas_granted'))
       this.sasGranted = TwoDAObject.normalizeValue(row.sas_granted, 'number', -1);
 
-    if (row.hasOwnProperty('sas_recom'))
+    if (Object.hasOwn(row,'sas_recom'))
       this.sasRecom = TwoDAObject.normalizeValue(row.sas_recom, 'number', -1);
 
-    if (row.hasOwnProperty('sld_list'))
+    if (Object.hasOwn(row,'sld_list'))
       this.sldList = TwoDAObject.normalizeValue(row.sld_list, 'number', -1);
 
-    if (row.hasOwnProperty('sld_granted'))
+    if (Object.hasOwn(row,'sld_granted'))
       this.sldGranted = TwoDAObject.normalizeValue(row.sld_granted, 'number', -1);
 
-    if (row.hasOwnProperty('sld_recom'))
+    if (Object.hasOwn(row,'sld_recom'))
       this.sldRecom = TwoDAObject.normalizeValue(row.sld_recom, 'number', -1);
 
-    if (row.hasOwnProperty('sma_list'))
+    if (Object.hasOwn(row,'sma_list'))
       this.smaList = TwoDAObject.normalizeValue(row.sma_list, 'number', -1);
 
-    if (row.hasOwnProperty('sma_granted'))
+    if (Object.hasOwn(row,'sma_granted'))
       this.smaGranted = TwoDAObject.normalizeValue(row.sma_granted, 'number', -1);
 
-    if (row.hasOwnProperty('sma_recom'))
+    if (Object.hasOwn(row,'sma_recom'))
       this.smaRecom = TwoDAObject.normalizeValue(row.sma_recom, 'number', -1);
 
-    if (row.hasOwnProperty('jwa_list'))
+    if (Object.hasOwn(row,'jwa_list'))
       this.jwaList = TwoDAObject.normalizeValue(row.jwa_list, 'number', -1);
 
-    if (row.hasOwnProperty('jwa_granted'))
+    if (Object.hasOwn(row,'jwa_granted'))
       this.jwaGranted = TwoDAObject.normalizeValue(row.jwa_granted, 'number', -1);
 
-    if (row.hasOwnProperty('jwa_recom'))
+    if (Object.hasOwn(row,'jwa_recom'))
       this.jwaRecom = TwoDAObject.normalizeValue(row.jwa_recom, 'number', -1);
 
-    if (row.hasOwnProperty('jma_list'))
+    if (Object.hasOwn(row,'jma_list'))
       this.jmaList = TwoDAObject.normalizeValue(row.jma_list, 'number', -1);
 
-    if (row.hasOwnProperty('jma_granted'))
+    if (Object.hasOwn(row,'jma_granted'))
       this.jmaGranted = TwoDAObject.normalizeValue(row.jma_granted, 'number', -1);
 
-    if (row.hasOwnProperty('jma_recom'))
+    if (Object.hasOwn(row,'jma_recom'))
       this.jmaRecom = TwoDAObject.normalizeValue(row.jma_recom, 'number', -1);
 
-    if (row.hasOwnProperty('jwm_list'))
+    if (Object.hasOwn(row,'jwm_list'))
       this.jwmList = TwoDAObject.normalizeValue(row.jwm_list, 'number', -1);
 
-    if (row.hasOwnProperty('jwm_granted'))
+    if (Object.hasOwn(row,'jwm_granted'))
       this.jwmGranted = TwoDAObject.normalizeValue(row.jwm_granted, 'number', -1);
 
-    if (row.hasOwnProperty('jwm_recom'))
+    if (Object.hasOwn(row,'jwm_recom'))
       this.jwmRecom = TwoDAObject.normalizeValue(row.jwm_recom, 'number', -1);
 
-    if (row.hasOwnProperty('tec_list'))
+    if (Object.hasOwn(row,'tec_list'))
       this.tecList = TwoDAObject.normalizeValue(row.tec_list, 'number', -1);
 
-    if (row.hasOwnProperty('tec_granted'))
+    if (Object.hasOwn(row,'tec_granted'))
       this.tecGranted = TwoDAObject.normalizeValue(row.tec_granted, 'number', -1);
 
-    if (row.hasOwnProperty('tec_recom'))
+    if (Object.hasOwn(row,'tec_recom'))
       this.tecRecom = TwoDAObject.normalizeValue(row.tec_recom, 'number', -1);
 
-    if (row.hasOwnProperty('drx_list'))
+    if (Object.hasOwn(row,'drx_list'))
       this.drxList = TwoDAObject.normalizeValue(row.drx_list, 'number', -1);
 
-    if (row.hasOwnProperty('drx_granted'))
+    if (Object.hasOwn(row,'drx_granted'))
       this.drxGranted = TwoDAObject.normalizeValue(row.drx_granted, 'number', -1);
 
-    if (row.hasOwnProperty('drx_recom'))
+    if (Object.hasOwn(row,'drx_recom'))
       this.drxRecom = TwoDAObject.normalizeValue(row.drx_recom, 'number', -1);
 
-    if (row.hasOwnProperty('drc_list'))
+    if (Object.hasOwn(row,'drc_list'))
       this.drcList = TwoDAObject.normalizeValue(row.drc_list, 'number', -1);
 
-    if (row.hasOwnProperty('drc_granted'))
+    if (Object.hasOwn(row,'drc_granted'))
       this.drcGranted = TwoDAObject.normalizeValue(row.drc_granted, 'number', -1);
 
-    if (row.hasOwnProperty('drc_recom'))
+    if (Object.hasOwn(row,'drc_recom'))
       this.drcRecom = TwoDAObject.normalizeValue(row.drc_recom, 'number', -1);
 
-    if (row.hasOwnProperty('handmaiden'))
+    if (Object.hasOwn(row,'handmaiden'))
       this.handmaiden = TwoDAObject.normalizeValue(row.handmaiden, 'number', 0);
 
-    if (row.hasOwnProperty('baodur'))
+    if (Object.hasOwn(row,'baodur'))
       this.baodur = TwoDAObject.normalizeValue(row.baodur, 'number', 0);
 
-    if (row.hasOwnProperty('hanharr'))
+    if (Object.hasOwn(row,'hanharr'))
       this.hanharr = TwoDAObject.normalizeValue(row.hanharr, 'number', 0);
 
-    if (row.hasOwnProperty('hk47'))
+    if (Object.hasOwn(row,'hk47'))
       this.hk47 = TwoDAObject.normalizeValue(row.hk47, 'number', 0);
 
-    if (row.hasOwnProperty('g0t0'))
+    if (Object.hasOwn(row,'g0t0'))
       this.g0t0 = TwoDAObject.normalizeValue(row.g0t0, 'number', 0);
 
-    if (row.hasOwnProperty('atton'))
+    if (Object.hasOwn(row,'atton'))
       this.atton = TwoDAObject.normalizeValue(row.atton, 'number', 0);
 
-    if (row.hasOwnProperty('kreia'))
+    if (Object.hasOwn(row,'kreia'))
       this.kreia = TwoDAObject.normalizeValue(row.kreia, 'number', 0);
 
-    if (row.hasOwnProperty('exclusion'))
+    if (Object.hasOwn(row,'exclusion'))
       this.exclusion = TwoDAObject.normalizeValue(row.exclusion, 'number', 0);
 
-    if (row.hasOwnProperty('usetype'))
+    if (Object.hasOwn(row,'usetype'))
       this.useType = TwoDAObject.normalizeValue(row.usetype, 'number', -1);
 
-    if (row.hasOwnProperty('pips'))
+    if (Object.hasOwn(row,'pips'))
       this.pips = TwoDAObject.normalizeValue(row.pips, 'number', -1);
   }
 

@@ -555,24 +555,24 @@ export class GUIControl {
     if (this.control instanceof GFFStruct) {
       const control = this.control;
 
-      this.type = (control.hasField('CONTROLTYPE') ? control.getFieldByLabel('CONTROLTYPE')?.getValue() : -1);
-      this.widget.name = this.name = (control.hasField('TAG') ? control.getFieldByLabel('TAG')?.getValue() : -1);
-      this.id = (control.hasField('ID') ? control.getFieldByLabel('ID')?.getValue() : -1);
-      this.objectLocked = (control.hasField('Obj_Locked') ? control.getFieldByLabel('Obj_Locked')?.getValue() : -1);
-      this.objectParent = (control.hasField('Obj_Parent') ? control.getFieldByLabel('Obj_Parent')?.getValue() : -1);
-      this.objectParentId = (control.hasField('Obj_ParentID') ? control.getFieldByLabel('Obj_ParentID')?.getValue() : -1);
+      this.type = control.hasField('CONTROLTYPE') ? control.getNumberByLabel('CONTROLTYPE') : -1;
+      this.widget.name = this.name = control.hasField('TAG') ? control.getStringByLabel('TAG') : '';
+      this.id = control.hasField('ID') ? control.getNumberByLabel('ID') : -1;
+      this.objectLocked = control.hasField('Obj_Locked') ? control.getNumberByLabel('Obj_Locked') : -1;
+      this.objectParent = control.hasField('Obj_Parent') ? control.getNumberByLabel('Obj_Parent') : -1;
+      this.objectParentId = control.hasField('Obj_ParentID') ? control.getNumberByLabel('Obj_ParentID') : -1;
 
-      this.padding = (control.hasField('PADDING') ? control.getFieldByLabel('PADDING')?.getValue() : 0);
+      this.padding = control.hasField('PADDING') ? control.getNumberByLabel('PADDING') : 0;
 
       //Extent
       this.hasExtent = control.hasField('EXTENT');
       if (this.hasExtent) {
         const extent = control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
         if (extent) {
-          this.extent.top = extent.getFieldByLabel('TOP')?.getValue();
-          this.extent.left = extent.getFieldByLabel('LEFT')?.getValue();
-          this.extent.width = extent.getFieldByLabel('WIDTH')?.getValue();
-          this.extent.height = extent.getFieldByLabel('HEIGHT')?.getValue();
+          this.extent.top = extent.getNumberByLabel('TOP');
+          this.extent.left = extent.getNumberByLabel('LEFT');
+          this.extent.width = extent.getNumberByLabel('WIDTH');
+          this.extent.height = extent.getNumberByLabel('HEIGHT');
         }
       }
 
@@ -595,17 +595,17 @@ export class GUIControl {
             this.border.color = new THREE.Color(1, 1, 1); //this.defaultColor;
           }
 
-          this.border.dimension = border.getFieldByLabel('DIMENSION')?.getValue() || 0;
-          this.border.corner = border.getFieldByLabel('CORNER')?.getValue();
-          this.border.edge = border.getFieldByLabel('EDGE')?.getValue();
-          this.border.fill.texture = border.getFieldByLabel('FILL')?.getValue();
-          this.border.fillstyle = border.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
-          this.border.inneroffset = this.border.inneroffsety = border.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
+          this.border.dimension = border.getNumberByLabel('DIMENSION') || 0;
+          this.border.corner = border.getStringByLabel('CORNER');
+          this.border.edge = border.getStringByLabel('EDGE');
+          this.border.fill.texture = border.getStringByLabel('FILL');
+          this.border.fillstyle = border.getNumberByLabel('FILLSTYLE') || 0;
+          this.border.inneroffset = this.border.inneroffsety = border.getNumberByLabel('INNEROFFSET') || 0;
 
           if (border.hasField('INNEROFFSETY'))
-            this.border.inneroffsety = border.getFieldByLabel('INNEROFFSETY')?.getValue();
+            this.border.inneroffsety = border.getNumberByLabel('INNEROFFSETY');
 
-          this.border.pulsing = border.getFieldByLabel('PULSING')?.getValue() || 0;
+          this.border.pulsing = border.getNumberByLabel('PULSING') || 0;
         }
 
       }
@@ -615,14 +615,14 @@ export class GUIControl {
       if (this.hasText) {
         const text = control.getFieldByLabel('TEXT')?.getChildStructs()[0];
         if (text) {
-          this.text.font = text.getFieldByLabel('FONT')?.getValue();
-          this.text.strref = text.getFieldByLabel('STRREF')?.getValue();
-          this.text.text = (text.hasField('TEXT') ? this.menu.gameStringParse(text.getFieldByLabel('TEXT')?.getValue()) : '');
+          this.text.font = text.getStringByLabel('FONT');
+          this.text.strref = text.getNumberByLabel('STRREF');
+          this.text.text = (text.hasField('TEXT') ? this.menu.gameStringParse(text.getStringByLabel('TEXT')) : '');
           if (this.text.text == '') {
             this.text.text = this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref]?.Value || '');
           }
-          this.text.alignment = text.getFieldByLabel('ALIGNMENT')?.getValue();
-          this.text.pulsing = text.getFieldByLabel('PULSING')?.getValue();
+          this.text.alignment = text.getNumberByLabel('ALIGNMENT');
+          this.text.pulsing = text.getNumberByLabel('PULSING');
 
           if (this.text.font == 'fnt_d16x16') {
             this.text.font = 'fnt_d16x16b';
@@ -658,17 +658,17 @@ export class GUIControl {
             this.highlight.color = new THREE.Color(1, 1, 1); //this.defaultColor;
           }
 
-          this.highlight.dimension = highlight.getFieldByLabel('DIMENSION')?.getValue() || 0;
-          this.highlight.corner = highlight.getFieldByLabel('CORNER')?.getValue() || '';
-          this.highlight.edge = highlight.getFieldByLabel('EDGE')?.getValue() || '';
-          this.highlight.fill.texture = highlight.getFieldByLabel('FILL')?.getValue() || '';
-          this.highlight.fillstyle = highlight.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
-          this.highlight.inneroffset = this.highlight.inneroffsety = highlight.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
+          this.highlight.dimension = highlight.getNumberByLabel('DIMENSION') || 0;
+          this.highlight.corner = highlight.getStringByLabel('CORNER') || '';
+          this.highlight.edge = highlight.getStringByLabel('EDGE') || '';
+          this.highlight.fill.texture = highlight.getStringByLabel('FILL') || '';
+          this.highlight.fillstyle = highlight.getNumberByLabel('FILLSTYLE') || 0;
+          this.highlight.inneroffset = this.highlight.inneroffsety = highlight.getNumberByLabel('INNEROFFSET') || 0;
 
           if (highlight.hasField('INNEROFFSETY'))
-            this.highlight.inneroffsety = highlight.getFieldByLabel('INNEROFFSETY')?.getValue();
+            this.highlight.inneroffsety = highlight.getNumberByLabel('INNEROFFSETY');
 
-          this.highlight.pulsing = highlight.getFieldByLabel('PULSING')?.getValue() || 0;
+          this.highlight.pulsing = highlight.getNumberByLabel('PULSING') || 0;
         }
       }
 
@@ -677,10 +677,10 @@ export class GUIControl {
       if (this.hasMoveTo) {
         const moveTo = control.getFieldByLabel('MOVETO')?.getChildStructs()[0];
         if (moveTo) {
-          this.moveTo.down = moveTo.getFieldByLabel('DOWN')?.getValue();
-          this.moveTo.left = moveTo.getFieldByLabel('LEFT')?.getValue();
-          this.moveTo.right = moveTo.getFieldByLabel('RIGHT')?.getValue();
-          this.moveTo.up = moveTo.getFieldByLabel('UP')?.getValue();
+          this.moveTo.down = moveTo.getNumberByLabel('DOWN');
+          this.moveTo.left = moveTo.getNumberByLabel('LEFT');
+          this.moveTo.right = moveTo.getNumberByLabel('RIGHT');
+          this.moveTo.up = moveTo.getNumberByLabel('UP');
         }
       }
     } else if (this.control != null && typeof this.control === 'object') {
@@ -1141,7 +1141,7 @@ export class GUIControl {
       const children = this.menu.tGuiPanel.control.getFieldByLabel('CONTROLS')?.getChildStructs() || [];
 
       for (let i = 0; i < children.length; i++) {
-        const childParent = (children[i].hasField('Obj_Parent') ? children[i].getFieldByLabel('Obj_Parent')?.getValue() : '');
+        const childParent = (children[i].hasField('Obj_Parent') ? children[i].getStringByLabel('Obj_Parent') : '');
         if (childParent == this.name) {
 
           const control: GUIControl = this.menu.factory.FromStruct(children[i], this.menu, this, this.scale);
@@ -2251,29 +2251,26 @@ export class GUIControl {
       }
       // this.computeSphere(positions, this.boundingSphere)
       if (isNaN(this.boundingSphere.radius)) {
-        log.error('THREE.BufferGeometry.computeBoundingSphere(): ' +
-          'Computed radius is NaN. The ' +
-          '"position" attribute is likely to have NaN values.')
+        log.error('THREE.BufferGeometry.computeBoundingSphere(): Computed radius is NaN. The "position" attribute is likely to have NaN values.');
       }
-    }
+    };
 
-    ((ctrl: GUIControl) => {
-      this.text.geometry.computeBoundingBox = function (this: THREE.BufferGeometry) {
-        if (this.boundingBox === null) {
-          this.boundingBox = new THREE.Box3();
-        }
-        const bbox = this.boundingBox;
-        const positions = this.attributes.position.array;
-        const itemSize = this.attributes.position.itemSize;
-        if (!positions || !itemSize || positions.length < 2) {
-          bbox.makeEmpty();
-          return;
-        }
-        ctrl.computeBox(positions, bbox);
-      };
-    })(this);
-
+    const ctrl = this;
+    this.text.geometry.computeBoundingBox = function (this: THREE.BufferGeometry) {
+      if (this.boundingBox === null) {
+        this.boundingBox = new THREE.Box3();
+      }
+      const bbox = this.boundingBox;
+      const positions = this.attributes.position.array;
+      const itemSize = this.attributes.position.itemSize;
+      if (!positions || !itemSize || positions.length < 2) {
+        bbox.makeEmpty();
+        return;
+      }
+      ctrl.computeBox(positions, bbox);
+    };
   }
+
 
   getCharPositions(char: number) {
     return {
@@ -2625,7 +2622,7 @@ export class GUIControl {
   //Add an event listener
   addEventListener(name: string = '', callback?: (event: GUIControlEvent, ...args: GUIControlEventData[]) => void) {
     if (typeof callback === 'function') {
-      if (Object.prototype.hasOwnProperty.call(this.eventListeners, name)) {
+      if (Object.hasOwn(this.eventListeners, name)) {
         (this.eventListeners as Record<string, Array<(event: GUIControlEvent, ...args: GUIControlEventData[]) => void>>)[name].push(callback);
       }
     }
@@ -2635,7 +2632,7 @@ export class GUIControl {
   //Remove an event listener
   removeEventListener(name: string = '', callback?: (event: GUIControlEvent, ...args: GUIControlEventData[]) => void) {
 
-    if (Object.prototype.hasOwnProperty.call(this.eventListeners, name)) {
+    if (Object.hasOwn(this.eventListeners, name)) {
       const arr = (this.eventListeners as Record<string, Array<(event: GUIControlEvent, ...args: GUIControlEventData[]) => void>>)[name];
       if (typeof callback === 'function') {
         const cbIndex = arr.indexOf(callback);
@@ -2664,7 +2661,7 @@ export class GUIControl {
       invokeArgs = [event, ...args];
     }
 
-    if (Object.prototype.hasOwnProperty.call(this.eventListeners, name)) {
+    if (Object.hasOwn(this.eventListeners, name)) {
       const arr = (this.eventListeners as Record<string, Array<(event: GUIControlEvent, ...args: GUIControlEventData[]) => void>>)[name];
       for (let i = 0; i < arr.length; i++) {
         const fn = arr[i];

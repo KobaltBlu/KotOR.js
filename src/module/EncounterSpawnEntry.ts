@@ -25,15 +25,15 @@ export class EncounterSpawnEntry {
     return struct;
   }
 
-  static FromStruct( struct: GFFStruct ){
-    if(struct instanceof GFFStruct){
+  static FromStruct(struct: GFFStruct): EncounterSpawnEntry | undefined {
+    if (struct instanceof GFFStruct) {
       const entry = new EncounterSpawnEntry();
 
       if(struct.hasField('SpawnResRef'))
-        entry.spawnResref = struct.getFieldByLabel('SpawnResRef').getValue();
+        entry.spawnResref = struct.getStringByLabel('SpawnResRef');
 
       if(struct.hasField('SpawnCR'))
-        entry.spawnCR = struct.getFieldByLabel('SpawnCR').getValue();
+        entry.spawnCR = struct.getNumberByLabel('SpawnCR');
 
       return entry;
     }

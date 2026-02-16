@@ -25,6 +25,7 @@ import {
   TabLIPEditorState,
   TabSSFEditorState,
   TabBinaryViewerState,
+  TabJsonViewState,
   TabAREEditorState,
   TabIFOEditorState,
   TabGITEditorState,
@@ -74,7 +75,8 @@ const EDITOR_MAP: Record<string, TabStateClass> = {
   pth: TabPTHEditorState,
   gui: TabGUIEditorState,
   sav: TabSAVEditorState,
-  audio: TabAudioPlayerState
+  audio: TabAudioPlayerState,
+  json: TabJsonViewState
 };
 
 export function createTabStateForEditorType(

@@ -45,6 +45,7 @@ function getEditorTypeFromExt(ext: string): string {
 export class KotorForgeProvider extends BaseKotorEditorProvider {
   public static readonly viewType = 'kotor.forge';
   public static readonly viewTypeGff = 'kotor.forge.gff';
+  public static readonly viewTypeJson = 'kotor.forge.json';
 
   /** If set, overrides editor type (e.g. 'gff' for generic GFF editor regardless of extension). */
   private readonly forceEditorType?: string;
@@ -59,10 +60,11 @@ export class KotorForgeProvider extends BaseKotorEditorProvider {
   }
 
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
-    log.debug('Registering KotorForgeProvider (default and GFF)');
-    log.trace(`register() viewType=${KotorForgeProvider.viewType} viewTypeGff=${KotorForgeProvider.viewTypeGff}`);
+    log.debug('Registering KotorForgeProvider (default, GFF, JSON)');
+    log.trace(`register() viewType=${KotorForgeProvider.viewType} viewTypeGff=${KotorForgeProvider.viewTypeGff} viewTypeJson=${KotorForgeProvider.viewTypeJson}`);
     const defaultProvider = new KotorForgeProvider(context);
     const gffProvider = new KotorForgeProvider(context, 'gff');
+    const jsonProvider = new KotorForgeProvider(context, 'json');
     const disp1 = vscode.window.registerCustomEditorProvider(
       KotorForgeProvider.viewType,
       defaultProvider,
@@ -83,8 +85,18 @@ export class KotorForgeProvider extends BaseKotorEditorProvider {
         supportsMultipleEditorsPerDocument: false
       }
     );
-    log.info('KotorForgeProvider registered (default + Generic GFF)');
-    return vscode.Disposable.from(disp1, disp2);
+    const disp3 = vscode.window.registerCustomEditorProvider(
+      KotorForgeProvider.viewTypeJson,
+      jsonProvider,
+      {
+        webviewOptions: {
+          retainContextWhenHidden: true
+        },
+        supportsMultipleEditorsPerDocument: false
+      }
+    );
+    log.info('KotorForgeProvider registered (default + Generic GFF + JSON View)');
+    return vscode.Disposable.from(disp1, disp2, disp3);
   }
 
   protected getEditorTypeForDocument(document: KotorDocument): string {

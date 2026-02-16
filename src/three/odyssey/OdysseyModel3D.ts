@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/triple-slash-reference -- ambient types for three/examples */
 /// <reference path="../../types/three-examples.d.ts" />
 import * as THREE from "three";
 import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
@@ -34,19 +35,24 @@ import { type OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
 import { type OdysseyModelNodeSkin } from "@/odyssey/OdysseyModelNodeSkin";
 import { type OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 import { OdysseyEmitter3D } from "@/three/odyssey/OdysseyEmitter3D";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 import { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
-
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Loader);
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+
+/** UserData shape for odyssey model nodes that carry a mesh. */
+interface OdysseyModelNodeUserData {
+  mesh?: THREE.Mesh;
+}
 
 function odysseyOnBeforeCompile(this: THREE.ShaderMaterial, shader: { vertexShader: string; fragmentShader: string }) {
-  const lightCount = this.uniforms.animPointLights.value.length;
-  const numAnimatedLights = (lightCount || 0).toString();
-  shader.vertexShader = shader.vertexShader.replace(/NUM_ANIM_POINT_LIGHTS/g, numAnimatedLights.toString());
-  shader.fragmentShader = (numAnimatedLights > 0 ? `#define NUM_ANIM_POINT_LIGHTS ${numAnimatedLights}\n #define USE_ANIMATED_LIGHTS\n` : '') + shader.fragmentShader.replace(/NUM_ANIM_POINT_LIGHTS/g, numAnimatedLights.toString());
+  const animLights = this.uniforms.animPointLights?.value as unknown[] | undefined;
+  const lightCount = animLights?.length ?? 0;
+  const numAnimatedLights = String(lightCount);
+  shader.vertexShader = shader.vertexShader.replace(/NUM_ANIM_POINT_LIGHTS/g, numAnimatedLights);
+  shader.fragmentShader = (Number(numAnimatedLights) > 0 ? `#define NUM_ANIM_POINT_LIGHTS ${numAnimatedLights}\n #define USE_ANIMATED_LIGHTS\n` : '') + shader.fragmentShader.replace(/NUM_ANIM_POINT_LIGHTS/g, numAnimatedLights);
 }
 
 /**
@@ -214,9 +220,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   }
 
   dispose(node?: THREE.Object3D) {
-
-    if (node == null)
-      node = this;
+    const target = node ?? this;
 
     while (this.childModels.length) {
       const childModel3D = this.childModels.shift();
@@ -231,31 +235,32 @@ export class OdysseyModel3D extends OdysseyObject3D {
         this.emitters[i].removeFromParent();
     }
 
-    // log.info('dispose', node)
-    for (let i = node.children.length; i > 0; i--) {
-      const object = node.children[i - 1];
-      node.remove(object);
+    // log.info('dispose', target)
+    for (let i = target.children.length; i > 0; i--) {
+      const object = target.children[i - 1];
+      target.remove(object);
       if (object.type === 'Mesh' || object.type === 'SkinnedMesh' || object.type === 'Points') {
         if (object instanceof THREE.Mesh) {
           if (Array.isArray(object.material)) {
             while (object.material.length) {
-              const material = object.material.splice(0, 1)[0];
+              const material = object.material.splice(0, 1)[0] as THREE.Material;
               this.disposeMaterial(material);
               material.dispose();
             }
           } else {
-            this.disposeMaterial(object.material);
-            object.material.dispose();
+            const mat = object.material as THREE.Material;
+            this.disposeMaterial(mat);
+            mat.dispose();
           }
-          object.geometry.dispose();
+          (object.geometry as THREE.BufferGeometry).dispose();
         }
       } else if (object.type === 'OdysseyLight') {
         if (!!this.context && !!this.context.lightManager) {
-          this.context.lightManager.removeLight(node as OdysseyLight3D);
+          this.context.lightManager.removeLight(target as OdysseyLight3D);
         }
       } else {
         const objWithMesh = object as THREE.Object3D & { mesh?: THREE.Mesh };
-        if (Object.prototype.hasOwnProperty.call(objWithMesh, 'mesh')) {
+        if (Object.hasOwn(objWithMesh, 'mesh')) {
           objWithMesh.mesh = undefined;
         }
       }
@@ -277,7 +282,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       this.dispose(object);
     }
 
-    if (node instanceof OdysseyModel3D) {
+    if (target instanceof OdysseyModel3D) {
       this.meshes = [];
       this.danglyMeshes = [];
       this.odysseyAnimations = [];
@@ -486,22 +491,22 @@ export class OdysseyModel3D extends OdysseyObject3D {
       if (typeof skinNode.userData.boneNames === 'undefined') {
         skinNode.userData.boneNames = [...this.nodes.keys()];
       }
-      const odysseyModelNode = skinNode.userData.odysseyModelNode;
+      const odysseyModelNode = skinNode.userData.odysseyModelNode as OdysseyModelNodeSkin | undefined;
       if (typeof odysseyModelNode?.bone_parts !== 'undefined') {
-        const bones = [];
-        const inverses = [];
+        const bones: THREE.Bone[] = [];
+        const inverses: THREE.Matrix4[] = [];
         // let parts = Array.from(this.nodes.values());
-        const boneNames = skinNode.userData.boneNames;
+        const boneNames = skinNode.userData.boneNames as string[];
         for (let j = 0; j < odysseyModelNode.bone_parts.length; j++) {
           const boneName = boneNames[odysseyModelNode.bone_parts[j]];
           const boneNode = this.nodes.get(boneName);
           if (typeof boneNode != 'undefined') {
-            bones[j] = boneNode;
+            bones[j] = boneNode as THREE.Bone;
             inverses[j] = odysseyModelNode.bone_inverse_matrix[j];
           }
         }
         // (skinNode.geometry as THREE.BufferGeometry & { bones?: THREE.Bone[] }).bones = bones;
-        skinNode.bind(new THREE.Skeleton(bones as unknown as THREE.Bone[], inverses));
+        skinNode.bind(new THREE.Skeleton(bones, inverses));
         skinNode.skeleton.update();
         skinNode.updateMatrixWorld();
       }
@@ -617,24 +622,23 @@ export class OdysseyModel3D extends OdysseyObject3D {
             modelNode.quaternion.set(data.x, data.y, data.z, data.w);
             break;
           }
-          case OdysseyModelControllerType.SelfIllumColor:
-            if (modelNode.userData.mesh) {
-              if (modelNode.userData.mesh.material instanceof THREE.ShaderMaterial) {
-                modelNode.userData.mesh.material.uniforms.selfIllumColor.value.setRGB(
+          case OdysseyModelControllerType.SelfIllumColor: {
+            const ud = modelNode.userData as OdysseyModelNodeUserData;
+            if (ud.mesh) {
+              if (ud.mesh.material instanceof THREE.ShaderMaterial) {
+                (ud.mesh.material.uniforms.selfIllumColor?.value as THREE.Color)?.setRGB(
                   data.x,
                   data.y,
                   data.z
                 );
-                modelNode.userData.mesh.material.defines.SELFILLUMCOLOR = "";
+                ud.mesh.material.defines.SELFILLUMCOLOR = "";
               } else {
-                modelNode.userData.mesh.material.emissive.setRGB(
-                  data.x,
-                  data.y,
-                  data.z
-                );
+                const mat = ud.mesh.material as THREE.MeshBasicMaterial;
+                (mat.emissive as THREE.Color).setRGB(data.x, data.y, data.z);
               }
             }
             break;
+          }
           case OdysseyModelControllerType.Color:
             if ((modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
               (modelNode.odysseyModelNode as OdysseyModelNodeLight).color.setRGB(
@@ -658,8 +662,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
       });
       modelNode.updateMatrix();
-      if (modelNode.userData.mesh) {
-        modelNode.userData.mesh.geometry.computeBoundingSphere();
+      const nodeUd = modelNode.userData as OdysseyModelNodeUserData;
+      if (nodeUd.mesh) {
+        nodeUd.mesh.geometry.computeBoundingSphere();
       }
 
     }
@@ -705,8 +710,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
       skinMaterial.defines.AURORA = '';
       skinMaterial.defines.USE_UV = '';
       skinMaterial.defines.USE_SKINNING = '';
-      skinMaterial.uniforms.diffuse.value.r = 0.5;
-      skinMaterial.onBeforeCompile = odysseyOnBeforeCompile.bind(skinMaterial);
+      (skinMaterial.uniforms.diffuse.value as THREE.Color).r = 0.5;
+      skinMaterial.onBeforeCompile = odysseyOnBeforeCompile.bind(skinMaterial) as (shader: { vertexShader: string; fragmentShader: string }) => void;
 
       // skinMaterial.opacity = 0.5;
       // skinMaterial.transparent = true;
@@ -1346,7 +1351,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
             mesh.matrixAutoUpdate = true;
             if (!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB)) {
               parentNode.add(mesh);
-              parentNode.userData.mesh = mesh;
+              (parentNode.userData as OdysseyModelNodeUserData).mesh = mesh;
             }
             if (!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB)) {
               mesh.castShadow = odysseyNode.flagShadow;// && !options.static;//options.castShadow;
@@ -1410,10 +1415,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
         //material.extensions.fragDepth = true;
         if (options.useTweakColor) {
           material.uniforms.diffuse.value = new THREE.Color(odysseyNode.diffuse.r, odysseyNode.diffuse.g, odysseyNode.diffuse.b);
-          material.uniforms.tweakColor.value.setRGB((options.tweakColor & 255) / 255, ((options.tweakColor >> 8) & 255) / 255, ((options.tweakColor >> 16) & 255) / 255);
+          (material.uniforms.tweakColor.value as THREE.Color).setRGB((options.tweakColor & 255) / 255, ((options.tweakColor >> 8) & 255) / 255, ((options.tweakColor >> 16) & 255) / 255);
           material.defines.USE_TWEAK_COLOR = '';
         } else {
-          material.uniforms.tweakColor.value.setRGB(1, 1, 1);
+          (material.uniforms.tweakColor.value as THREE.Color).setRGB(1, 1, 1);
           material.uniforms.diffuse.value = new THREE.Color(1, 1, 1);//odysseyNode.Diffuse.r, odysseyNode.Diffuse.g, odysseyNode.Diffuse.b );
         }
         material.uniforms.time.value = Number((options?.context as { time?: number } | undefined)?.time) || 0;
@@ -1439,10 +1444,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
           const frame = selfIllumColor.data[0];
           if (frame) {
             material.defines.SELFILLUMCOLOR = "";
-            material.uniforms.selfIllumColor.value.setRGB(frame.x, frame.y, frame.z);
+            (material.uniforms.selfIllumColor.value as THREE.Color).setRGB(frame.x, frame.y, frame.z);
           }
         }
-        material.onBeforeCompile = odysseyOnBeforeCompile.bind(material);
+        material.onBeforeCompile = odysseyOnBeforeCompile.bind(material) as (shader: { vertexShader: string; fragmentShader: string }) => void;
       }
 
       if (!odysseyNode.flagRender && !((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB)) {
@@ -1491,7 +1496,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
         //Set animated uv uniforms
         if (odysseyNode.nAnimateUV) {
-          material.uniforms.animatedUV.value.set(odysseyNode.fUVDirectionX, odysseyNode.fUVDirectionY, odysseyNode.fUVJitter, odysseyNode.fUVJitterSpeed);
+          (material.uniforms.animatedUV.value as THREE.Vector4).set(odysseyNode.fUVDirectionX, odysseyNode.fUVDirectionY, odysseyNode.fUVJitter, odysseyNode.fUVJitterSpeed);
           material.defines.ANIMATED_UV = '';
         }
       }
@@ -1524,7 +1529,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         TextureLoader.enQueue(tMap1, material, TextureType.TEXTURE, undefined, fallbackTexture);
       } else {
         if (material instanceof THREE.ShaderMaterial) {
-          material.uniforms.diffuse.value.copy(odysseyNode.diffuse);
+          (material.uniforms.diffuse.value as THREE.Color).copy(odysseyNode.diffuse);
         }
       }
 

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { AudioEngine } from "@/audio/AudioEngine";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
@@ -472,6 +473,33 @@ export class BIKObject {
     throw 'toFloat32Array missing Uint8Array';
   }
 
+
+  toJSON(): { width: number; height: number; fps: number; hasAudio: boolean; frameCount: number; file: string } {
+    return {
+      width: this.width ?? 640,
+      height: this.height ?? 480,
+      fps: this.fps ?? 29.97,
+      hasAudio: this.hasAudio ?? false,
+      frameCount: this.frame_array?.length ?? 0,
+      file: this.file ?? ''
+    };
+  }
+
+  fromJSON(json: string | ReturnType<BIKObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<BIKObject['toJSON']>) : json;
+    this.width = obj.width ?? 640;
+    this.height = obj.height ?? 480;
+    this.fps = obj.fps ?? 29.97;
+    this.hasAudio = obj.hasAudio ?? false;
+    this.file = obj.file ?? '';
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<BIKObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<BIKObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<BIKObject['toJSON']>); }
 
   dispose(){
 

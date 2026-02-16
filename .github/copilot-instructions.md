@@ -164,4 +164,18 @@ ResourceLoader.demand() → Checks archives (KEY→BIF lookup, or RIM/ERF) → P
 
 ---
 
-For detailed architecture, see [PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md). For setup help, see [SETUP.md](../SETUP.md).
+## Forge & VS Code Extension (Modding Toolkit)
+
+KotOR.js also includes **Forge** (a modding toolkit) and a **VS Code extension** that uses Forge in a webview. Use **AGENTS.md** at the repo root as the single source for agent context on these parts.
+
+### Quick reference
+
+- **Forge** (`src/apps/forge/`): Visual editors for KotOR file formats. Each format is handled by a **TabState** subclass (e.g. `TabTwoDAEditorState`, `TabTLKEditorState`, `TabJsonViewState`) and a React component under `components/tabs/`. `EditorFile` holds path and buffer; `IForgeHostAdapter` delegates save/tabs (Electron = real FS, webview = extension via postMessage).
+- **Extension** (`extensions/kotor-forge-vscode/`): Registers custom editors for KotOR files. File extension → **editorType** (e.g. `.2da` → `2da`); webview **forgeEditorRegistry** maps editorType → TabState class. Adding a new editor: add TabState + component in Forge, then add to `EDITOR_MAP` in `forgeEditorRegistry.ts` and to `getEditorTypeFromExt` in `KotorForgeProvider.ts`.
+- **Webview sync**: Extension and webview communicate with messages (`init`, `edit`, `undo`, `redo`, `revert`, `requestSave`, `saveComplete`, `getFileData`, etc.). See `extensions/kotor-forge-vscode/WEBVIEW_VSCODE_SYNC_DESIGN.md`.
+
+When changing resource formats, add or update tests in `src/resource/*.test.ts`. When changing the extension, build from `extensions/kotor-forge-vscode/` with `npm run compile` (or `npx webpack --mode production` for extension + webview only).
+
+---
+
+For detailed architecture, see [PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md). For setup help, see [SETUP.md](../SETUP.md). **For Forge, extension, and editor-type mappings, see [AGENTS.md](../AGENTS.md).**

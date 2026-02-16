@@ -14,8 +14,4 @@ export class WalkmeshPerimeter {
   start: number = -1;
   next: number = -1;
   edges: WalkmeshEdge[] = [];
-
-  constructor(){
-
-  }
 }

@@ -2,7 +2,7 @@ import React from "react";
 
 import { ModalCloneModule } from "@/apps/forge/components/modal/ModalCloneModule";
 import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
-import type { CloneModuleOptions } from "@/apps/forge/helpers/CloneModule";
+import { cloneModuleFromBuffer, type CloneModuleOptions } from "@/apps/forge/helpers/CloneModule";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
 
@@ -102,16 +102,13 @@ export class ModalCloneModuleState extends ModalState {
   }
 
   async runClone(outputPath: string): Promise<boolean> {
-    const cloneMod = (await import("@/apps/forge/helpers/CloneModule")) as {
-      cloneModuleFromBuffer: (opts: CloneModuleOptions) => Promise<void>;
-    };
     const sourceBuffer = this.sourceModBuffer;
     if (!sourceBuffer) {
       this.error = "No source buffer.";
       return false;
     }
     try {
-      await cloneMod.cloneModuleFromBuffer({
+      await cloneModuleFromBuffer({
         sourceBuffer,
         identifier: this.identifier,
         prefix: this.prefix,

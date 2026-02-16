@@ -266,9 +266,9 @@ export class ModuleSound extends ModuleObject {
     
     if(!this.initialized){
       if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+        this.id = this.template.getNumberByLabel('ObjectId');
       }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
+        this.id = this.template.getNumberByLabel('ID');
       }
       
       GameState.ModuleObjectManager.AddObjectById(this);
@@ -278,94 +278,94 @@ export class ModuleSound extends ModuleObject {
       this.name = this.template.getFieldByLabel('LocName').getCExoLocString().getValue();
 
     if(this.template.RootNode.hasField('Active'))
-      this.active = !!this.template.getFieldByLabel('Active').getValue()
+      this.active = this.template.getBooleanByLabel('Active');
 
     if(this.template.RootNode.hasField('Priority'))
-      this.priority = this.template.getFieldByLabel('Priority').getValue()
+      this.priority = this.template.getNumberByLabel('Priority');
 
     if(this.template.RootNode.hasField('Commandable'))
-      this.commandable = !!this.template.getFieldByLabel('Commandable').getValue()
+      this.commandable = this.template.getBooleanByLabel('Commandable');
 
     if(this.template.RootNode.hasField('FixedVariance'))
-      this.fixedVariance = this.template.getFieldByLabel('FixedVariance').getValue()
+      this.fixedVariance = this.template.getNumberByLabel('FixedVariance');
 
     if(this.template.RootNode.hasField('GeneratedType'))
-      this.generatedType = this.template.getFieldByLabel('GeneratedType').getValue()
+      this.generatedType = this.template.getNumberByLabel('GeneratedType');
 
     if(this.template.RootNode.hasField('Hours'))
-      this.hours = this.template.getFieldByLabel('Hours').getValue()
+      this.hours = this.template.getNumberByLabel('Hours');
 
     if(this.template.RootNode.hasField('Interval'))
-      this.interval = this.template.getFieldByLabel('Interval').getValue();
+      this.interval = this.template.getNumberByLabel('Interval');
 
     if(this.template.RootNode.hasField('IntervalVrtn'))
-      this.intervalVariation = this.template.getFieldByLabel('IntervalVrtn').getValue();
+      this.intervalVariation = this.template.getNumberByLabel('IntervalVrtn');
 
     if(this.template.RootNode.hasField('Looping'))
-      this.looping = this.template.getFieldByLabel('Looping').getValue();
+      this.looping = this.template.getNumberByLabel('Looping');
 
     if(this.template.RootNode.hasField('MaxDistance'))
-      this.maxDistance = this.template.getFieldByLabel('MaxDistance').getValue();
-      
+      this.maxDistance = this.template.getNumberByLabel('MaxDistance');
+
     if(this.template.RootNode.hasField('MinDistance'))
-      this.minDistance = this.template.getFieldByLabel('MinDistance').getValue();
+      this.minDistance = this.template.getNumberByLabel('MinDistance');
 
     if(this.template.RootNode.hasField('PitchVariation'))
-      this.pitchVariation = this.template.getFieldByLabel('PitchVariation').getValue();
+      this.pitchVariation = this.template.getNumberByLabel('PitchVariation');
 
     if(this.template.RootNode.hasField('Positional'))
-      this.positional = !!this.template.getFieldByLabel('Positional').getValue();
+      this.positional = this.template.getBooleanByLabel('Positional');
 
     if(this.template.RootNode.hasField('Random'))
-      this.random = this.template.getFieldByLabel('Random').getValue();
+      this.random = this.template.getNumberByLabel('Random');
 
     if(this.template.RootNode.hasField('RandomPosition'))
-      this.randomPosition = !!this.template.getFieldByLabel('RandomPosition').getValue();
+      this.randomPosition = this.template.getBooleanByLabel('RandomPosition');
 
     if(this.template.RootNode.hasField('RandomRangeX'))
-      this.randomRangeX = this.template.getFieldByLabel('RandomRangeX').getValue();
+      this.randomRangeX = this.template.getNumberByLabel('RandomRangeX');
 
     if(this.template.RootNode.hasField('RandomRangeY'))
-      this.randomRangeY = this.template.getFieldByLabel('RandomRangeY').getValue();
+      this.randomRangeY = this.template.getNumberByLabel('RandomRangeY');
 
     if(this.template.RootNode.hasField('Sounds')){
       const sounds = this.template.getFieldByLabel('Sounds').getChildStructs();
       for(let i = 0; i < sounds.length; i++){
-        this.soundResRefs.push(sounds[i].getFieldByLabel('Sound').getValue());
+        this.soundResRefs.push(sounds[i].getStringByLabel('Sound'));
       }
     }
 
     if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue();
+      this.tag = this.template.getStringByLabel('Tag');
 
     if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
+      this.templateResRef = this.template.getStringByLabel('TemplateResRef');
 
     if(this.template.RootNode.hasField('Times'))
-      this.times = this.template.getFieldByLabel('Times').getValue();
+      this.times = this.template.getNumberByLabel('Times');
 
     if(this.template.RootNode.hasField('Volume'))
-      this.volume = this.template.getFieldByLabel('Volume').getValue();
+      this.volume = this.template.getNumberByLabel('Volume');
 
     if(this.template.RootNode.hasField('VolumeVrtn'))
-      this.volumeVariation = this.template.getFieldByLabel('VolumeVrtn').getValue();
+      this.volumeVariation = this.template.getNumberByLabel('VolumeVrtn');
 
     if(this.template.RootNode.hasField('XPosition'))
-      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
+      this.position.x = this.template.RootNode.getNumberByLabel('XPosition');
 
     if(this.template.RootNode.hasField('YPosition'))
-      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
+      this.position.y = this.template.RootNode.getNumberByLabel('YPosition');
 
     if(this.template.RootNode.hasField('ZPosition'))
-      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
+      this.position.z = this.template.RootNode.getNumberByLabel('ZPosition');
 
     if(this.template.RootNode.hasField('Elevation'))
-      this.elevation = this.template.RootNode.getFieldByLabel('Elevation').getValue();
+      this.elevation = this.template.RootNode.getNumberByLabel('Elevation');
 
     if(this.template.RootNode.hasField('SWVarTable')){
       const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0; i < localBools.length; i++){
-        const data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getNumberByLabel('Variable');
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }

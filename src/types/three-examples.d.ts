@@ -58,7 +58,7 @@ declare module "three/examples/jsm/postprocessing/SSAARenderPass" {
 }
 
 declare module "three/examples/jsm/postprocessing/ShaderPass" {
-  import type * as THREE from "three";
+  import type * as _THREE from "three";
   export class ShaderPass {
     constructor(shader: { uniformLocations?: unknown; uniforms?: Record<string, { value: unknown }> });
     renderToScreen: boolean;

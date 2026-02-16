@@ -1,6 +1,7 @@
 import { AudioFileAudioType } from '@/enums/audio/AudioFileAudioType';
 import { AudioFileWaveEncoding } from '@/enums/audio/AudioFileWaveEncoding';
 import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
 /** KotOR WAV type: VO = voice (streamwaves), SFX = sound effects (streammusic with 470-byte header). */
@@ -191,6 +192,42 @@ export class WAVObject {
     bw.writeBytes(this.data);
     return bw.buffer;
   }
+
+  toJSON(): { wavType: number; audioFormat: number; encoding: number; channels: number; sampleRate: number; bitsPerSample: number; dataBase64: string } {
+    const d = this.data ?? new Uint8Array(0);
+    const b64 = d.length ? (typeof Buffer !== 'undefined' ? Buffer.from(d).toString('base64') : btoa(String.fromCharCode(...d))) : '';
+    return {
+      wavType: this.wavType ?? WAVType.VO,
+      audioFormat: this.audioFormat ?? 1,
+      encoding: this.encoding ?? 1,
+      channels: this.channels ?? 1,
+      sampleRate: this.sampleRate ?? 44100,
+      bitsPerSample: this.bitsPerSample ?? 16,
+      dataBase64: b64
+    };
+  }
+
+  fromJSON(json: string | ReturnType<WAVObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<WAVObject['toJSON']>) : json;
+    this.wavType = obj.wavType ?? WAVType.VO;
+    this.audioFormat = obj.audioFormat ?? 1;
+    this.encoding = obj.encoding ?? 1;
+    this.channels = obj.channels ?? 1;
+    this.sampleRate = obj.sampleRate ?? 44100;
+    this.bitsPerSample = obj.bitsPerSample ?? 16;
+    if (obj.dataBase64) {
+      this.data = typeof Buffer !== 'undefined'
+        ? new Uint8Array(Buffer.from(obj.dataBase64, 'base64'))
+        : Uint8Array.from(atob(obj.dataBase64), c => c.charCodeAt(0));
+    } else this.data = new Uint8Array(0);
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<WAVObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<WAVObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<WAVObject['toJSON']>); }
 
   /**
    * Write back to buffer. If wavType is SFX, prepends the 470-byte obfuscation header.

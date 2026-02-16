@@ -1,8 +1,8 @@
 import { TwoDAObject, type ITwoDARowData } from "@/resource/TwoDAObject";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
 
 const log = createScopedLogger(LogScope.Game);
-import { Utility } from "@/utility/Utility";
 
 /**
  * SWCreatureAppearance class.
@@ -93,7 +93,7 @@ export class SWCreatureAppearance {
   creperspace: number = 0.4;
   cameraspace: number = 0;
   height: number = 0;
-  targetheight: 'l' = 'l';
+  targetheight = 'l' as const;
   abortonparry: boolean = false;
   racialtype: number = 20;
   haslegs: boolean = true;
@@ -198,210 +198,210 @@ export class SWCreatureAppearance {
 
     appearance.id = parseInt(String(row.__index ?? 0), 10);
 
-    if(row.hasOwnProperty('label'))
+    if(Object.hasOwn(row,'label'))
       appearance.label = TwoDAObject.normalizeValue(row.label, 'string', '');
-    if(row.hasOwnProperty('string_ref'))
+    if(Object.hasOwn(row,'string_ref'))
       appearance.string_ref = TwoDAObject.normalizeValue(row.string_ref, 'number', -1);
-    if(row.hasOwnProperty('race'))
+    if(Object.hasOwn(row,'race'))
       appearance.race = TwoDAObject.normalizeValue(row.race, 'string', '');
-    if(row.hasOwnProperty('walkdist'))
+    if(Object.hasOwn(row,'walkdist'))
       appearance.walkdist = TwoDAObject.normalizeValue(row.walkdist, 'number', 1.7);
-    if(row.hasOwnProperty('rundist'))
+    if(Object.hasOwn(row,'rundist'))
       appearance.rundist = TwoDAObject.normalizeValue(row.rundist, 'number', 5.4);
-    if(row.hasOwnProperty('driveanimwalk'))
+    if(Object.hasOwn(row,'driveanimwalk'))
       appearance.driveanimwalk = TwoDAObject.normalizeValue(row.driveanimwalk, 'number', 1.7);
-    if(row.hasOwnProperty('driveanimrun'))
+    if(Object.hasOwn(row,'driveanimrun'))
       appearance.driveanimrun = TwoDAObject.normalizeValue(row.driveanimrun, 'number', 5.4);
-    if(row.hasOwnProperty('driveanimrun_pc'))
+    if(Object.hasOwn(row,'driveanimrun_pc'))
       appearance.driveanimrun_pc = TwoDAObject.normalizeValue(row.driveanimrun_pc, 'number', 5.4); //TSL
-    if(row.hasOwnProperty('driveanimrun_xbox'))
+    if(Object.hasOwn(row,'driveanimrun_xbox'))
       appearance.driveanimrun_xbox = TwoDAObject.normalizeValue(row.driveanimrun_xbox, 'number', 5.4); //TSL
-    if(row.hasOwnProperty('racetex'))
+    if(Object.hasOwn(row,'racetex'))
       appearance.racetex = TwoDAObject.normalizeValue(row.racetex, 'string', '');
-    if(row.hasOwnProperty('modeltype'))
+    if(Object.hasOwn(row,'modeltype'))
       appearance.modeltype = TwoDAObject.normalizeValue(row.modeltype, 'string', 'B') as 'B'|'F'|'S'|'L';
-    if(row.hasOwnProperty('normalhead'))
+    if(Object.hasOwn(row,'normalhead'))
       appearance.normalhead = TwoDAObject.normalizeValue(row.normalhead, 'number', -1);
-    if(row.hasOwnProperty('backuphead'))
+    if(Object.hasOwn(row,'backuphead'))
       appearance.backuphead = TwoDAObject.normalizeValue(row.backuphead, 'number', -1);
 
-    if(row.hasOwnProperty('modela'))
+    if(Object.hasOwn(row,'modela'))
       appearance.modela = TwoDAObject.normalizeValue(row.modela, 'string', '');
-    if(row.hasOwnProperty('texa'))
+    if(Object.hasOwn(row,'texa'))
       appearance.texa = TwoDAObject.normalizeValue(row.texa, 'string', '');
-    if(row.hasOwnProperty('texaevil'))
+    if(Object.hasOwn(row,'texaevil'))
       appearance.texaevil = TwoDAObject.normalizeValue(row.texaevil, 'string', '');
 
-    if(row.hasOwnProperty('modelb'))
+    if(Object.hasOwn(row,'modelb'))
       appearance.modelb = TwoDAObject.normalizeValue(row.modelb, 'string', '');
-    if(row.hasOwnProperty('texb'))
+    if(Object.hasOwn(row,'texb'))
       appearance.texb = TwoDAObject.normalizeValue(row.texb, 'string', '');
-    if(row.hasOwnProperty('texbevil'))
+    if(Object.hasOwn(row,'texbevil'))
       appearance.texbevil = TwoDAObject.normalizeValue(row.texbevil, 'string', ''); //TSL
 
-    if(row.hasOwnProperty('modelc'))
+    if(Object.hasOwn(row,'modelc'))
       appearance.modelc = TwoDAObject.normalizeValue(row.modelc, 'string', '');
-    if(row.hasOwnProperty('texc'))
+    if(Object.hasOwn(row,'texc'))
       appearance.texc = TwoDAObject.normalizeValue(row.texc, 'string', '');
 
-    if(row.hasOwnProperty('modeld'))
+    if(Object.hasOwn(row,'modeld'))
       appearance.modeld = TwoDAObject.normalizeValue(row.modeld, 'string', '');
-    if(row.hasOwnProperty('texd'))
+    if(Object.hasOwn(row,'texd'))
       appearance.texd = TwoDAObject.normalizeValue(row.texd, 'string', '');
 
-    if(row.hasOwnProperty('modele'))
+    if(Object.hasOwn(row,'modele'))
       appearance.modele = TwoDAObject.normalizeValue(row.modele, 'string', '');
-    if(row.hasOwnProperty('texe'))
+    if(Object.hasOwn(row,'texe'))
       appearance.texe = TwoDAObject.normalizeValue(row.texe, 'string', '');
 
-    if(row.hasOwnProperty('modelf'))
+    if(Object.hasOwn(row,'modelf'))
       appearance.modelf = TwoDAObject.normalizeValue(row.modelf, 'string', '');
-    if(row.hasOwnProperty('texf'))
+    if(Object.hasOwn(row,'texf'))
       appearance.texf = TwoDAObject.normalizeValue(row.texf, 'string', '');
 
-    if(row.hasOwnProperty('modelg'))
+    if(Object.hasOwn(row,'modelg'))
       appearance.modelg = TwoDAObject.normalizeValue(row.modelg, 'string', '');
-    if(row.hasOwnProperty('texg'))
+    if(Object.hasOwn(row,'texg'))
       appearance.texg = TwoDAObject.normalizeValue(row.texg, 'string', '');
 
-    if(row.hasOwnProperty('modelh'))
+    if(Object.hasOwn(row,'modelh'))
       appearance.modelh = TwoDAObject.normalizeValue(row.modelh, 'string', '');
-    if(row.hasOwnProperty('texh'))
+    if(Object.hasOwn(row,'texh'))
       appearance.texh = TwoDAObject.normalizeValue(row.texh, 'string', '');
 
-    if(row.hasOwnProperty('modeli'))
+    if(Object.hasOwn(row,'modeli'))
       appearance.modeli = TwoDAObject.normalizeValue(row.modeli, 'string', '');
-    if(row.hasOwnProperty('texi'))
+    if(Object.hasOwn(row,'texi'))
       appearance.texi = TwoDAObject.normalizeValue(row.texi, 'string', '');
-    if(row.hasOwnProperty('texievil'))
+    if(Object.hasOwn(row,'texievil'))
       appearance.texievil = TwoDAObject.normalizeValue(row.texievil, 'string', ''); //TSL
 
-    if(row.hasOwnProperty('modelj'))
+    if(Object.hasOwn(row,'modelj'))
       appearance.modelj = TwoDAObject.normalizeValue(row.modelj, 'string', '');
-    if(row.hasOwnProperty('texj'))
+    if(Object.hasOwn(row,'texj'))
       appearance.texj = TwoDAObject.normalizeValue(row.texj, 'string', '');
 
-    if(row.hasOwnProperty('modelk'))
+    if(Object.hasOwn(row,'modelk'))
       appearance.modelk = TwoDAObject.normalizeValue(row.modelk, 'string', ''); //TSL
-    if(row.hasOwnProperty('texk'))
+    if(Object.hasOwn(row,'texk'))
       appearance.texk = TwoDAObject.normalizeValue(row.texk, 'string', ''); //TSL
 
-    if(row.hasOwnProperty('modell'))
+    if(Object.hasOwn(row,'modell'))
       appearance.modell = TwoDAObject.normalizeValue(row.modell, 'string', ''); //TSL
-    if(row.hasOwnProperty('texl'))
+    if(Object.hasOwn(row,'texl'))
       appearance.texl = TwoDAObject.normalizeValue(row.texl, 'string', ''); //TSL
 
-    if(row.hasOwnProperty('modelm'))
+    if(Object.hasOwn(row,'modelm'))
       appearance.modelm = TwoDAObject.normalizeValue(row.modelm, 'string', ''); //TSL
-    if(row.hasOwnProperty('texm'))
+    if(Object.hasOwn(row,'texm'))
       appearance.texm = TwoDAObject.normalizeValue(row.texm, 'string', ''); //TSL
 
-    if(row.hasOwnProperty('modeln'))
+    if(Object.hasOwn(row,'modeln'))
       appearance.modeln = TwoDAObject.normalizeValue(row.modeln, 'string', ''); //TSL
-    if(row.hasOwnProperty('texn'))
+    if(Object.hasOwn(row,'texn'))
       appearance.texn = TwoDAObject.normalizeValue(row.texn, 'string', ''); //TSL
-    if(row.hasOwnProperty('texnevil'))
+    if(Object.hasOwn(row,'texnevil'))
       appearance.texnevil = TwoDAObject.normalizeValue(row.texnevil, 'string', ''); //TSL
 
-    if(row.hasOwnProperty('skin'))
+    if(Object.hasOwn(row,'skin'))
       appearance.skin = TwoDAObject.normalizeValue(row.skin, 'string', '');
-    if(row.hasOwnProperty('headtexve'))
+    if(Object.hasOwn(row,'headtexve'))
       appearance.headtexve = TwoDAObject.normalizeValue(row.headtexve, 'string', '');
-    if(row.hasOwnProperty('headtexe'))
+    if(Object.hasOwn(row,'headtexe'))
       appearance.headtexe = TwoDAObject.normalizeValue(row.headtexe, 'string', '');
-    if(row.hasOwnProperty('headtexg'))
+    if(Object.hasOwn(row,'headtexg'))
       appearance.headtexg = TwoDAObject.normalizeValue(row.headtexg, 'string', '');
-    if(row.hasOwnProperty('headtexvg'))
+    if(Object.hasOwn(row,'headtexvg'))
       appearance.headtexvg = TwoDAObject.normalizeValue(row.headtexvg, 'string', '');
-    if(row.hasOwnProperty('envmap'))
+    if(Object.hasOwn(row,'envmap'))
       appearance.envmap = TwoDAObject.normalizeValue(row.envmap, 'string', '');
-    if(row.hasOwnProperty('bloodcolr'))
+    if(Object.hasOwn(row,'bloodcolr'))
       appearance.bloodcolr = TwoDAObject.normalizeValue(row.bloodcolr, 'string', 'R') as 'R'|'S'|'G';
 
-      if(row.hasOwnProperty('weaponscale'))
+      if(Object.hasOwn(row,'weaponscale'))
       appearance.weaponscale = TwoDAObject.normalizeValue(row.weaponscale, 'number', 1.0);
-    if(row.hasOwnProperty('wing_tail_scale'))
+    if(Object.hasOwn(row,'wing_tail_scale'))
       appearance.wing_tail_scale = TwoDAObject.normalizeValue(row.wing_tail_scale, 'number', 1.0);
-    if(row.hasOwnProperty('moverate'))
+    if(Object.hasOwn(row,'moverate'))
       appearance.moverate = TwoDAObject.normalizeValue(row.moverate, 'string', 'NORM') as SWCreatureAppearance['moverate'];
-    if(row.hasOwnProperty('driveaccl'))
+    if(Object.hasOwn(row,'driveaccl'))
       appearance.driveaccl = TwoDAObject.normalizeValue(row.driveaccl, 'number', 50);
-    if(row.hasOwnProperty('drivemaxspeed'))
+    if(Object.hasOwn(row,'drivemaxspeed'))
       appearance.drivemaxspeed = TwoDAObject.normalizeValue(row.drivemaxspeed, 'number', 5.4);
-    if(row.hasOwnProperty('hitradius'))
+    if(Object.hasOwn(row,'hitradius'))
       appearance.hitradius = TwoDAObject.normalizeValue(row.hitradius, 'number', 0.25);
-    if(row.hasOwnProperty('perspace'))
+    if(Object.hasOwn(row,'perspace'))
       appearance.perspace = TwoDAObject.normalizeValue(row.perspace, 'number', 0.35);
-    if(row.hasOwnProperty('creperspace'))
+    if(Object.hasOwn(row,'creperspace'))
       appearance.creperspace = TwoDAObject.normalizeValue(row.creperspace, 'number', 0.4);
-    if(row.hasOwnProperty('cameraspace'))
+    if(Object.hasOwn(row,'cameraspace'))
       appearance.cameraspace = TwoDAObject.normalizeValue(row.cameraspace, 'number', 0);
-    if(row.hasOwnProperty('height'))
+    if(Object.hasOwn(row,'height'))
       appearance.height = TwoDAObject.normalizeValue(row.height, 'number', 0);
-    if(row.hasOwnProperty('targetheight'))
+    if(Object.hasOwn(row,'targetheight'))
       appearance.targetheight = TwoDAObject.normalizeValue(row.targetheight, 'string', 'l') as 'l';
-    if(row.hasOwnProperty('abortonparry'))
+    if(Object.hasOwn(row,'abortonparry'))
       appearance.abortonparry = TwoDAObject.normalizeValue(row.abortonparry, 'boolean', false);
-    if(row.hasOwnProperty('racialtype'))
+    if(Object.hasOwn(row,'racialtype'))
       appearance.racialtype = TwoDAObject.normalizeValue(row.racialtype, 'number', 20);
-    if(row.hasOwnProperty('haslegs'))
+    if(Object.hasOwn(row,'haslegs'))
       appearance.haslegs = TwoDAObject.normalizeValue(row.haslegs, 'boolean', true);
-    if(row.hasOwnProperty('hasarms'))
+    if(Object.hasOwn(row,'hasarms'))
       appearance.hasarms = TwoDAObject.normalizeValue(row.hasarms, 'boolean', true);
-    if(row.hasOwnProperty('portrait'))
+    if(Object.hasOwn(row,'portrait'))
       appearance.portrait = TwoDAObject.normalizeValue(row.portrait, 'string', 'po_default');
-    if(row.hasOwnProperty('footstepsound'))
+    if(Object.hasOwn(row,'footstepsound'))
       appearance.footstepsound = TwoDAObject.normalizeValue(row.footstepsound, 'string', '');
-    if(row.hasOwnProperty('footstepvolume'))
+    if(Object.hasOwn(row,'footstepvolume'))
       appearance.footstepvolume = TwoDAObject.normalizeValue(row.footstepvolume, 'number', 1);
-    if(row.hasOwnProperty('sizecategory'))
+    if(Object.hasOwn(row,'sizecategory'))
       appearance.sizecategory = TwoDAObject.normalizeValue(row.sizecategory, 'number', 3);
     
-    if(row.hasOwnProperty('armor_sound'))
+    if(Object.hasOwn(row,'armor_sound'))
       appearance.armor_sound = TwoDAObject.normalizeValue(row.armor_sound, 'string', '');
-    if(row.hasOwnProperty('combat_sound'))
+    if(Object.hasOwn(row,'combat_sound'))
       appearance.combat_sound = TwoDAObject.normalizeValue(row.combat_sound, 'string', '');
-    if(row.hasOwnProperty('helmet_scale_m'))
+    if(Object.hasOwn(row,'helmet_scale_m'))
       appearance.helmet_scale_m = TwoDAObject.normalizeValue(row.helmet_scale_m, 'number', 1.0);
-    if(row.hasOwnProperty('helmet_scale_f'))
+    if(Object.hasOwn(row,'helmet_scale_f'))
       appearance.helmet_scale_f = TwoDAObject.normalizeValue(row.helmet_scale_f, 'number', 1.0);
-    if(row.hasOwnProperty('perceptiondist'))
+    if(Object.hasOwn(row,'perceptiondist'))
       appearance.perceptiondist = TwoDAObject.normalizeValue(row.perceptiondist, 'number', 9.0);
-    if(row.hasOwnProperty('footsteptype'))
+    if(Object.hasOwn(row,'footsteptype'))
       appearance.footsteptype = TwoDAObject.normalizeValue(row.footsteptype, 'number', 0);
-    if(row.hasOwnProperty('soundapptype'))
+    if(Object.hasOwn(row,'soundapptype'))
       appearance.soundapptype = TwoDAObject.normalizeValue(row.soundapptype, 'number', 0);
-    if(row.hasOwnProperty('headtrack'))
+    if(Object.hasOwn(row,'headtrack'))
       appearance.headtrack = TwoDAObject.normalizeValue(row.headtrack, 'number', 0);
-    if(row.hasOwnProperty('head_arc_h'))
+    if(Object.hasOwn(row,'head_arc_h'))
       appearance.head_arc_h = TwoDAObject.normalizeValue(row.head_arc_h, 'number', 0);
-    if(row.hasOwnProperty('head_arc_v'))
+    if(Object.hasOwn(row,'head_arc_v'))
       appearance.head_arc_v = TwoDAObject.normalizeValue(row.head_arc_v, 'number', 0);
-    if(row.hasOwnProperty('headbone'))
+    if(Object.hasOwn(row,'headbone'))
       appearance.headbone = TwoDAObject.normalizeValue(row.headbone, 'string', '');
-    if(row.hasOwnProperty('hitdist'))
+    if(Object.hasOwn(row,'hitdist'))
       appearance.hitdist = TwoDAObject.normalizeValue(row.hitdist, 'number', 1);
-    if(row.hasOwnProperty('prefatckdist'))
+    if(Object.hasOwn(row,'prefatckdist'))
       appearance.prefatckdist = TwoDAObject.normalizeValue(row.prefatckdist, 'number', 0.5);
-    if(row.hasOwnProperty('groundtilt'))
+    if(Object.hasOwn(row,'groundtilt'))
       appearance.groundtilt = TwoDAObject.normalizeValue(row.groundtilt, 'number', 0);
-    if(row.hasOwnProperty('body_bag'))
+    if(Object.hasOwn(row,'body_bag'))
       appearance.body_bag = TwoDAObject.normalizeValue(row.body_bag, 'number', -1);
-    if(row.hasOwnProperty('freelookeffect'))
+    if(Object.hasOwn(row,'freelookeffect'))
       appearance.freelookeffect = TwoDAObject.normalizeValue(row.freelookeffect, 'number', -1);
-    if(row.hasOwnProperty('cameraheightoffset'))
+    if(Object.hasOwn(row,'cameraheightoffset'))
       appearance.cameraheightoffset = TwoDAObject.normalizeValue(row.cameraheightoffset, 'number', -1);
-    if(row.hasOwnProperty('deathfx'))
+    if(Object.hasOwn(row,'deathfx'))
       appearance.deathfx = TwoDAObject.normalizeValue(row.deathfx, 'number', -1);
-    if(row.hasOwnProperty('deathfxnode'))
+    if(Object.hasOwn(row,'deathfxnode'))
       appearance.deathfxnode = TwoDAObject.normalizeValue(row.deathfxnode, 'string', '');
-    if(row.hasOwnProperty('fadedelayondeath'))
+    if(Object.hasOwn(row,'fadedelayondeath'))
       appearance.fadedelayondeath = TwoDAObject.normalizeValue(row.fadedelayondeath, 'number', -1);
-    if(row.hasOwnProperty('destroyobjectdelay'))
+    if(Object.hasOwn(row,'destroyobjectdelay'))
       appearance.destroyobjectdelay = TwoDAObject.normalizeValue(row.destroyobjectdelay, 'number', -1);
-    if(row.hasOwnProperty('disableinjuredanim'))
+    if(Object.hasOwn(row,'disableinjuredanim'))
       appearance.disableinjuredanim = TwoDAObject.normalizeValue(row.disableinjuredanim, 'boolean', false);
-    if(row.hasOwnProperty('equipslotslocked'))
+    if(Object.hasOwn(row,'equipslotslocked'))
       appearance.equipslotslocked = TwoDAObject.normalizeValue(row.equipslotslocked, 'number', -1);
 
     return appearance;

@@ -6273,7 +6273,7 @@ NWScriptDefK2.Actions = {
 };
 
 for (const property in NWScriptDefK1.Actions) {
-  if (Object.prototype.hasOwnProperty.call(NWScriptDefK1.Actions, property)) {
+  if (Object.hasOwn(NWScriptDefK1.Actions, property)) {
     if(NWScriptDefK2.Actions[property]){
       if(NWScriptDefK2.Actions[property].action === undefined){
         NWScriptDefK2.Actions[property].action = NWScriptDefK1.Actions[property].action;

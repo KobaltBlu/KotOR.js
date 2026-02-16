@@ -1,8 +1,18 @@
 import React from "react";
 
 import { TabTLKEditor } from "@/apps/forge/components/tabs/tab-tlk-editor/TabTLKEditor";
+import {
+  createKeyResources,
+  findStrRefReferences,
+} from "@/apps/forge/helpers/ReferenceFinder";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalFileResultsState } from "@/apps/forge/states/modal/ModalFileResultsState";
+import {
+  ModalReferenceSearchOptionsState,
+  type ReferenceSearchOptionsStateValues,
+} from "@/apps/forge/states/modal/ModalReferenceSearchOptionsState";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
@@ -127,13 +137,9 @@ export class TabTLKEditorState extends TabState {
 
   async findReferencesForIndex(index: number): Promise<void> {
     if (index < 0) return;
-    const { ModalReferenceSearchOptionsState } = require('@/apps/forge/states/modal/ModalReferenceSearchOptionsState');
-    const { ModalFileResultsState } = require('@/apps/forge/states/modal/ModalFileResultsState');
-    const { ForgeState } = require('@/apps/forge/states/ForgeState');
-    const { createKeyResources, findStrRefReferences } = require('@/apps/forge/helpers/ReferenceFinder');
 
     const modal = new ModalReferenceSearchOptionsState({
-      onApply: async (options: import('../modal/ModalReferenceSearchOptionsState').ReferenceSearchOptionsStateValues) => {
+      onApply: async (options: ReferenceSearchOptionsStateValues) => {
         const resources = createKeyResources();
         const results = await findStrRefReferences(resources, index.toString(), options);
         const resultsModal = new ModalFileResultsState({

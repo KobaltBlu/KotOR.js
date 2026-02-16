@@ -103,33 +103,6 @@ export class OdysseyFace3 {
 		a: number,
 		b: number,
 		c: number,
-		normal?: THREE.Vector3,
-		color?: THREE.Color,
-		materialIndex?: number
-	);
-
-	constructor(
-		a: number,
-		b: number,
-		c: number,
-		normal?: THREE.Vector3,
-		vertexColors?: THREE.Color[],
-		materialIndex?: number
-	);
-
-	constructor(
-		a: number,
-		b: number,
-		c: number,
-		vertexNormals?: THREE.Vector3[],
-		color?: THREE.Color,
-		materialIndex?: number
-	);
-
-	constructor(
-		a: number,
-		b: number,
-		c: number,
 		vertexNormals?: THREE.Vector3|THREE.Vector3[],
 		vertexColors?: THREE.Color|THREE.Color[],
 		materialIndex?: number
@@ -196,7 +169,7 @@ export class OdysseyFace3 {
     return this;
   }
 
-	copy( source: OdysseyFace3 ): this {
+	copy( _source: OdysseyFace3 ): this {
     return this;
   }
 

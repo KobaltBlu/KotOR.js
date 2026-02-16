@@ -6,16 +6,17 @@ import { IKEYEntry } from '@/interface/resource/IKEYEntry';
 import { BIFManager } from '@/managers/BIFManager';
 import { BIFObject } from '@/resource/BIFObject';
 import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { GameFileSystem } from '@/utility/GameFileSystem';
 
 
 /**
  * KEYObject class.
- * 
+ *
  * Class representing a KEY file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file KEYObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -141,6 +142,34 @@ export class KEYObject {
   static getBIFIndex( ResID: number = 0 ): number{
     return (ResID >> 20);
   }
+
+  toJSON(): { fileType: string; FileVersion: string; bifCount: number; keyCount: number; bifs: Array<{ fileSize: number; filename: string }>; keys: Array<{ resRef: string; resType: number; resId: number }> } {
+    return {
+      fileType: this.fileType ?? 'KEY ',
+      FileVersion: this.FileVersion ?? 'V1  ',
+      bifCount: this.bifCount ?? 0,
+      keyCount: this.keyCount ?? 0,
+      bifs: (this.bifs ?? []).map(b => ({ fileSize: b.fileSize ?? 0, filename: b.filename ?? '' })),
+      keys: (this.keys ?? []).map(k => ({ resRef: k.resRef ?? '', resType: k.resType ?? 0, resId: k.resId ?? 0 }))
+    };
+  }
+
+  fromJSON(json: string | ReturnType<KEYObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<KEYObject['toJSON']>) : json;
+    this.fileType = (String(obj.fileType ?? 'KEY ').padEnd(4, ' ')).slice(0, 4);
+    this.FileVersion = (String(obj.FileVersion ?? 'V1  ').padEnd(4, ' ')).slice(0, 4);
+    this.bifCount = obj.bifCount ?? 0;
+    this.keyCount = obj.keyCount ?? 0;
+    this.bifs = (obj.bifs ?? []).map(b => ({ fileSize: b.fileSize, filename: b.filename, filenameOffset: 0, filenameSize: 0, drives: 0 } as IBIFEntry));
+    this.keys = (obj.keys ?? []).map(k => ({ resRef: k.resRef ?? '', resType: k.resType ?? 0, resId: k.resId ?? 0 } as IKEYEntry));
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<KEYObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<KEYObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<KEYObject['toJSON']>); }
 
   static getBIFResourceIndex( ResID: number = 0 ): number{
     return (ResID & 0x3FFF);

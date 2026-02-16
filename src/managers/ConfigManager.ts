@@ -105,7 +105,7 @@ export class ConfigManager {
     const keys = Object.keys(obj1);
     log.trace('ConfigManager.diff() keys count', keys.length);
     for (const _key of keys) {
-      if (Object.prototype.hasOwnProperty.call(obj1, _key)) {
+      if (Object.hasOwn(obj1, _key)) {
         log.trace('ConfigManager.diff() _compare', _key);
         this._compare(obj1[_key], obj2[_key], key ? key + '.' + _key : _key, diffs);
       }

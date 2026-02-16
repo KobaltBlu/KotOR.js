@@ -10,7 +10,7 @@ import { GFFStruct } from "@/resource/GFFStruct";
 // import { ModuleObjectManager } from "@/managers";
 
 /** Object list entries: object id (number) or ModuleObject. */
-export type NWScriptObjectListEntry = number | import('../../module/ModuleObject').ModuleObject;
+export type NWScriptObjectListEntry = number | import('@/module/ModuleObject').ModuleObject;
 
 /**
  * NWScriptEvent class.

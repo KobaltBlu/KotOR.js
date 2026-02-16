@@ -103,7 +103,7 @@ export class ModuleMGObstacle extends ModuleObject {
     if (!scriptsNode) return;
     for (const scriptKey of scriptKeys) {
       if (!scriptsNode.hasField(scriptKey)) continue;
-      const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+      const resRef = scriptsNode.getStringByLabel(scriptKey);
       if (!resRef) continue;
       const nwscript = GameState.NWScript.Load(resRef);
       if (!nwscript) {
@@ -117,7 +117,7 @@ export class ModuleMGObstacle extends ModuleObject {
 
   initProperties() {
     if (this.template?.RootNode?.hasField('Name'))
-      this.name = this.template.getFieldByLabel('Name').getValue().toLowerCase();
+      this.name = this.template.getStringByLabel('Name').toLowerCase();
     if (this.layout?.name) this.name = this.layout.name.toLowerCase();
     if (this.layout?.position) this.position.copy(this.layout.position as { x: number; y: number; z: number });
     this.initialized = true;

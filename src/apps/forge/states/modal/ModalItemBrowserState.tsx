@@ -65,11 +65,11 @@ export class ModalItemBrowserState extends ModalState {
           let modelVariation = 1;
 
           if (root.hasField('BaseItem')) {
-            baseItem = root.getFieldByLabel('BaseItem').getValue() || 0;
+            baseItem = root.getNumberByLabel('BaseItem') || 0;
           }
 
           if (root.hasField('ModelVariation')) {
-            modelVariation = root.getFieldByLabel('ModelVariation').getValue() || 1;
+            modelVariation = root.getNumberByLabel('ModelVariation') || 1;
           }
 
           if (root.hasField('LocalizedName')) {
@@ -88,7 +88,7 @@ export class ModalItemBrowserState extends ModalState {
             if (baseitems2DA) {
               const baseItemRow = baseitems2DA.getRowByIndex(baseItem);
               if (baseItemRow) {
-                iconResRef = (baseItemRow['itemclass'] || '').toLowerCase();
+                iconResRef = String(baseItemRow['itemclass'] ?? '').toLowerCase();
                 iconResRef = `i${iconResRef}_${("000" + modelVariation).slice(-3)}`;
               }
             }

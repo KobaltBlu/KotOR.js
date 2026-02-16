@@ -74,37 +74,37 @@ export class PazaakDeck {
 
     deck.id = parseInt(row.__index);
     
-    if(row.hasOwnProperty('deckname'))
+    if(Object.hasOwn(row,'deckname'))
       deck.deckname = TwoDAObject.normalizeValue(row.deckname, 'string', '') as string;
     
-    if(row.hasOwnProperty('card0'))
+    if(Object.hasOwn(row,'card0'))
       deck.card0 = TwoDAObject.normalizeValue(row.card0, 'string', '') as string;
     
-    if(row.hasOwnProperty('card1'))
+    if(Object.hasOwn(row,'card1'))
       deck.card1 = TwoDAObject.normalizeValue(row.card1, 'string', '') as string;
     
-    if(row.hasOwnProperty('card2'))
+    if(Object.hasOwn(row,'card2'))
       deck.card2 = TwoDAObject.normalizeValue(row.card2, 'string', '') as string;
     
-    if(row.hasOwnProperty('card3'))
+    if(Object.hasOwn(row,'card3'))
       deck.card3 = TwoDAObject.normalizeValue(row.card3, 'string', '') as string;
     
-    if(row.hasOwnProperty('card4'))
+    if(Object.hasOwn(row,'card4'))
       deck.card4 = TwoDAObject.normalizeValue(row.card4, 'string', '') as string;
     
-    if(row.hasOwnProperty('card5'))
+    if(Object.hasOwn(row,'card5'))
       deck.card5 = TwoDAObject.normalizeValue(row.card5, 'string', '') as string;
     
-    if(row.hasOwnProperty('card6'))
+    if(Object.hasOwn(row,'card6'))
       deck.card6 = TwoDAObject.normalizeValue(row.card6, 'string', '') as string;
     
-    if(row.hasOwnProperty('card7'))
+    if(Object.hasOwn(row,'card7'))
       deck.card7 = TwoDAObject.normalizeValue(row.card7, 'string', '') as string;
     
-    if(row.hasOwnProperty('card8'))
+    if(Object.hasOwn(row,'card8'))
       deck.card8 = TwoDAObject.normalizeValue(row.card8, 'string', '') as string;
     
-    if(row.hasOwnProperty('card9'))
+    if(Object.hasOwn(row,'card9'))
       deck.card9 = TwoDAObject.normalizeValue(row.card9, 'string', '') as string;
 
     deck.cards = [

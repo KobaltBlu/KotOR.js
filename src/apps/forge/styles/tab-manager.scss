@@ -1,3 +1,7 @@
+@use "variables" as *;
+@use "./tabs/tab-image-viewer" as *;
+@use "./tabs/tab-twoda-editor" as *;
+@use "./tabs/tab-script-error-log" as *;
 
 //Tab Manager
 
@@ -253,8 +257,4 @@
 .tab-container {
   position: relative;
 }
-
-@import "./tabs/tab-image-viewer";
-@import "./tabs/tab-twoda-editor";
-@import "./tabs/tab-script-error-log";
 

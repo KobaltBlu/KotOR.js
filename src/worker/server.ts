@@ -3,11 +3,10 @@
  * This is a stub for the eventual server worker that will be used to handle the game server logic.
  */
 
-
+import { IPCMessage } from "@/server/ipc/IPCMessage";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
-import { IPCMessage } from "@/server/ipc/IPCMessage";
 
 /**
  * Odyssey Server
@@ -39,8 +38,9 @@ class OdysseyServer {
  * This is the message handler for the server worker.
  */
 onmessage = function (e: MessageEvent){
-  if(e.data?.constructor === Uint8Array ){
-    const msg = IPCMessage.fromBuffer(e.data);
+  const data = e.data as unknown;
+  if(data instanceof Uint8Array){
+    const msg = IPCMessage.fromBuffer(data);
     OdysseyServer.HandleMessageFromClient(msg);
     return;
   }

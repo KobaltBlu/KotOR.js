@@ -1,3 +1,7 @@
+@use "./promo-items/promo-gallery" as *;
+@use "./promo-items/promo-webview" as *;
+@use "./promo-items/promo-video" as *;
+@use "./promo-items/promo-ytvideo" as *;
 
 .promo-elements {
   display: block;
@@ -82,8 +86,3 @@
   position: relative;
   margin-left: 10px;
 }
-
-@import "./promo-items/promo-gallery.scss";
-@import "./promo-items/promo-webview.scss";
-@import "./promo-items/promo-video.scss";
-@import "./promo-items/promo-ytvideo.scss";

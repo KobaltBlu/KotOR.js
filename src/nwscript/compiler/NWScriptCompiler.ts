@@ -2617,11 +2617,7 @@ class NWScriptScope {
   block: CompilerBlockNode | undefined;
   consumingValue = false;
 
-  constructor( ){
-
-  }
-
-  addNestedState( state: NWScriptNestedState ){
+  addNestedState( state: NWScriptNestedState ): void {
     if(state instanceof NWScriptNestedState){
       this.nested_states.push(state);
     }

@@ -209,7 +209,7 @@ export class ForgeArea extends ForgeGameObject{
     log.info('ForgeArea load BEGIN AREA LOAD');
 
     if(this.are.RootNode.hasField('ObjectId')) {
-      this.id = this.are.getFieldByLabel('ObjectId').getValue();
+      this.id = this.are.getNumberByLabel('ObjectId');
       log.trace('ForgeArea load ObjectId', this.id);
     }
 
@@ -217,19 +217,19 @@ export class ForgeArea extends ForgeGameObject{
     log.trace('ForgeArea load rooms field', rooms?.childStructs?.length ?? 0);
 
     log.trace('ForgeArea load reading ARE fields');
-    this.alphaTest = this.are.getFieldByLabel('AlphaTest').getValue();
-    this.cameraStyle = this.are.getFieldByLabel('CameraStyle').getValue();
-    this.chanceLightning = this.are.getFieldByLabel('ChanceLightning').getValue();
-    this.chanceRain = this.are.getFieldByLabel('ChanceRain').getValue();
-    this.chanceSnow = this.are.getFieldByLabel('ChanceSnow').getValue();
-    this.comments = this.are.getFieldByLabel('Comments').getValue();
-    this.creatorId = this.are.getFieldByLabel('Creator_ID').getValue();
-    this.dayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
-    this.defaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
-    this.dynamicAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
+    this.alphaTest = this.are.getNumberByLabel('AlphaTest');
+    this.cameraStyle = this.are.getNumberByLabel('CameraStyle');
+    this.chanceLightning = this.are.getNumberByLabel('ChanceLightning');
+    this.chanceRain = this.are.getNumberByLabel('ChanceRain');
+    this.chanceSnow = this.are.getNumberByLabel('ChanceSnow');
+    this.comments = this.are.getStringByLabel('Comments');
+    this.creatorId = this.are.getNumberByLabel('Creator_ID');
+    this.dayNightCycle = this.are.getBooleanByLabel('DayNightCycle');
+    this.defaultEnvMap = this.are.getStringByLabel('DefaultEnvMap');
+    this.dynamicAmbientColor = this.are.getNumberByLabel('DynAmbientColor');
     this.expansionList = [];
 
-    this.flags = this.are.getFieldByLabel('Flags').getValue();
+    this.flags = this.are.getNumberByLabel('Flags');
     // this.grass = {
     //   ambient: this.are.getFieldByLabel('Grass_Ambient').getValue(),
     //   density: this.are.getFieldByLabel('Grass_Density').getValue(),
@@ -244,10 +244,10 @@ export class ForgeArea extends ForgeGameObject{
     //   textureName: this.are.getFieldByLabel('Grass_TexName').getValue()
     // };
 
-    this.id = this.are.getFieldByLabel('ID').getValue();
-    this.isNight = this.are.getFieldByLabel('IsNight').getValue();
-    this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
-    this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
+    this.id = this.are.getNumberByLabel('ID');
+    this.isNight = this.are.getBooleanByLabel('IsNight');
+    this.lightingScheme = this.are.getNumberByLabel('LightingScheme');
+    this.loadScreenId = this.are.getNumberByLabel('LoadScreenID');
 
     const map = this.are.getFieldByLabel('Map').getChildStructs()[0];
     log.trace('ForgeArea load Map', !!map);
@@ -263,19 +263,19 @@ export class ForgeArea extends ForgeGameObject{
       );
     }
 
-    this.modListenCheck = this.are.getFieldByLabel('ModListenCheck').getValue();
-    this.modSpotCheck = this.are.getFieldByLabel('ModSpotCheck').getValue();
-    this.moonAmbientColor = this.are.getFieldByLabel('MoonAmbientColor').getValue();
-    this.moonDiffuseColor = this.are.getFieldByLabel('MoonDiffuseColor').getValue();
-    this.moonFogColor = this.are.getFieldByLabel('MoonFogColor').getValue();
-    this.moonFogFar = this.are.getFieldByLabel('MoonFogFar').getValue();
-    this.moonFogNear = this.are.getFieldByLabel('MoonFogNear').getValue();
-    this.moonFogOn = !!this.are.getFieldByLabel('MoonFogOn').getValue();
-    this.moonShadows = !!this.are.getFieldByLabel('MoonShadows').getValue();
+    this.modListenCheck = this.are.getNumberByLabel('ModListenCheck');
+    this.modSpotCheck = this.are.getNumberByLabel('ModSpotCheck');
+    this.moonAmbientColor = this.are.getNumberByLabel('MoonAmbientColor');
+    this.moonDiffuseColor = this.are.getNumberByLabel('MoonDiffuseColor');
+    this.moonFogColor = this.are.getNumberByLabel('MoonFogColor');
+    this.moonFogFar = this.are.getNumberByLabel('MoonFogFar');
+    this.moonFogNear = this.are.getNumberByLabel('MoonFogNear');
+    this.moonFogOn = this.are.getBooleanByLabel('MoonFogOn');
+    this.moonShadows = this.are.getBooleanByLabel('MoonShadows');
     this.name = this.are.getFieldByLabel('Name').getCExoLocString();
 
-    this.noHangBack = !!this.are.getFieldByLabel('NoHangBack').getValue();
-    this.noRest = !!this.are.getFieldByLabel('NoRest').getValue();
+    this.noHangBack = this.are.getBooleanByLabel('NoHangBack');
+    this.noRest = this.are.getBooleanByLabel('NoRest');
 
     // if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnEnter)){
     //   this.scriptResRefs.set(ModuleObjectScript.AreaOnEnter, this.are.getFieldByLabel(ModuleObjectScript.AreaOnEnter).getValue());
@@ -293,17 +293,16 @@ export class ForgeArea extends ForgeGameObject{
     //   this.scriptResRefs.set(ModuleObjectScript.AreaOnUserDefined, this.are.getFieldByLabel(ModuleObjectScript.AreaOnUserDefined).getValue());
     // }
 
-    this.playerOnly = !!this.are.getFieldByLabel('PlayerOnly').getValue();
-    this.playerVsPlayer = this.are.getFieldByLabel('PlayerVsPlayer').getValue();
+    this.playerOnly = this.are.getBooleanByLabel('PlayerOnly');
+    this.playerVsPlayer = this.are.getBooleanByLabel('PlayerVsPlayer');
 
     log.trace('ForgeArea load Rooms loop', rooms.childStructs.length);
     for(let i = 0; i < rooms.childStructs.length; i++ ){
       const strt = rooms.childStructs[i];
-      const roomNameVal = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue();
-      const roomName = String(roomNameVal ?? '').toLowerCase();
+      const roomName = strt.getStringByLabel('RoomName').toLowerCase();
       log.trace('ForgeArea load room', i, roomName);
-      const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
-      const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
+      const envAudio = strt.getNumberByLabel('EnvAudio');
+      const ambientScale = strt.getNumberByLabel('AmbientScale');
       const room = new ForgeRoom(roomName);
       room.setAmbientScale(ambientScale);
       room.setEnvAudio(envAudio);
@@ -311,23 +310,23 @@ export class ForgeArea extends ForgeGameObject{
     }
     log.debug('ForgeArea load rooms count', this.rooms.length);
 
-    this.shadowOpacity = this.are.getFieldByLabel('ShadowOpacity').getValue();
+    this.shadowOpacity = this.are.getNumberByLabel('ShadowOpacity');
 
-    this.stealthXPEnabled = this.are.getFieldByLabel('StealthXPEnabled').getValue();
-    this.stealthXPLoss = this.are.getFieldByLabel('StealthXPLoss').getValue();
-    this.stealthXPMax = this.are.getFieldByLabel('StealthXPMax').getValue();
+    this.stealthXPEnabled = this.are.getBooleanByLabel('StealthXPEnabled');
+    this.stealthXPLoss = this.are.getNumberByLabel('StealthXPLoss');
+    this.stealthXPMax = this.are.getNumberByLabel('StealthXPMax');
 
-    this.sunAmbientColor = this.are.getFieldByLabel('SunAmbientColor').getValue();
-    this.sunDiffuseColor = this.are.getFieldByLabel('SunDiffuseColor').getValue();
-    this.sunFogColor = this.are.getFieldByLabel('SunFogColor').getValue();
-    this.sunFogFar = this.are.getFieldByLabel('SunFogFar').getValue();
-    this.sunFogNear = this.are.getFieldByLabel('SunFogNear').getValue();
-    this.sunFogOn = this.are.getFieldByLabel('SunFogOn').getValue();
-    this.sunShadows = this.are.getFieldByLabel('SunShadows').getValue();
-    this.tag = this.are.getFieldByLabel('Tag').getValue();
-    this.unescapable = this.are.getFieldByLabel('Unescapable').getValue() ? true : false;
-    this.version = this.are.getFieldByLabel('Version').getValue();
-    this.windPower = this.are.getFieldByLabel('WindPower').getValue();
+    this.sunAmbientColor = this.are.getNumberByLabel('SunAmbientColor');
+    this.sunDiffuseColor = this.are.getNumberByLabel('SunDiffuseColor');
+    this.sunFogColor = this.are.getNumberByLabel('SunFogColor');
+    this.sunFogFar = this.are.getNumberByLabel('SunFogFar');
+    this.sunFogNear = this.are.getNumberByLabel('SunFogNear');
+    this.sunFogOn = this.are.getBooleanByLabel('SunFogOn');
+    this.sunShadows = this.are.getBooleanByLabel('SunShadows');
+    this.tag = this.are.getStringByLabel('Tag');
+    this.unescapable = this.are.getBooleanByLabel('Unescapable');
+    this.version = this.are.getNumberByLabel('Version');
+    this.windPower = this.are.getNumberByLabel('WindPower');
 
     // this.fog = undefined;
 
@@ -528,7 +527,7 @@ export class ForgeArea extends ForgeGameObject{
         log.trace('ForgeArea load VIS buffer length', vis.length);
         this.visObject = new KotOR.VISObject(vis);
         this.visObject.read();
-        this.visObject.attachArea(this);
+        this.visObject.attachArea(this as unknown as KotOR.ModuleArea);
         log.debug('ForgeArea load VIS attached');
       }
 
@@ -558,14 +557,15 @@ export class ForgeArea extends ForgeGameObject{
     return id;
   }
 
-  private static objectTypeRegistry = new Map<typeof ForgeGameObject, {
+  /** Constructor type that includes zero-arg (e.g. ForgeCreature) and one-arg (e.g. ForgeRoom) subclasses. */
+  private static objectTypeRegistry = new Map<new (...args: unknown[]) => ForgeGameObject, {
     array: keyof ForgeArea,
     groupType: GroupType,
     onAttach?: (object: ForgeGameObject) => void,
     onDetach?: (object: ForgeGameObject) => void
   }>();
 
-  static registerObjectType(objectType: typeof ForgeGameObject, array: keyof ForgeArea, groupType: GroupType, onAttach?: (object: ForgeGameObject) => void, onDetach?: (object: ForgeGameObject) => void){
+  static registerObjectType(objectType: new (...args: unknown[]) => ForgeGameObject, array: keyof ForgeArea, groupType: GroupType, onAttach?: (object: ForgeGameObject) => void, onDetach?: (object: ForgeGameObject) => void){
     log.trace('ForgeArea registerObjectType', objectType.name, array, groupType);
     this.objectTypeRegistry.set(objectType, { array, groupType, onAttach, onDetach });
   }
@@ -575,7 +575,7 @@ export class ForgeArea extends ForgeGameObject{
     if(!object){ return; }
     object.setArea(this);
 
-    const registry = ForgeArea.objectTypeRegistry.get(object.constructor as typeof ForgeGameObject);
+    const registry = ForgeArea.objectTypeRegistry.get(object.constructor as new (...args: unknown[]) => ForgeGameObject);
     if(registry){
       const array = registry.array;
       const groupType = registry.groupType;
@@ -599,7 +599,7 @@ export class ForgeArea extends ForgeGameObject{
   detachObject(object: ForgeGameObject){
     if(!object){ return; }
 
-    const registry = ForgeArea.objectTypeRegistry.get(object.constructor as typeof ForgeGameObject);
+    const registry = ForgeArea.objectTypeRegistry.get(object.constructor as new (...args: unknown[]) => ForgeGameObject);
     if(registry){
       const array = registry.array;
       const groupType = registry.groupType;

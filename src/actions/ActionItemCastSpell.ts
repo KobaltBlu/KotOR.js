@@ -13,7 +13,7 @@ import { ActionType } from "@/enums/actions/ActionType";
  */
 export class ActionItemCastSpell extends Action {
 
-  spell: import("../talents/TalentSpell").TalentSpell | Record<string, never> = {}
+  spell: import("@/talents/TalentSpell").TalentSpell | Record<string, never> = {}
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);

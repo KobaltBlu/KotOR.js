@@ -62,7 +62,7 @@ export class GUIScrollBar extends GUIControl{
     if(this.control.hasField('DIR')){
       this._dir = this.control.getFieldByLabel('DIR')?.getChildStructs()[0];
       if(this._dir?.hasField('IMAGE')){
-        TextureLoader.tpcLoader.fetch(this._dir.getFieldByLabel('IMAGE')?.getValue()).then((texture: OdysseyTexture) => {
+        TextureLoader.tpcLoader.fetch(this._dir.getStringByLabel('IMAGE')).then((texture: OdysseyTexture) => {
           this.arrowTex = texture;
           
           //Up Arrow
@@ -201,7 +201,7 @@ export class GUIScrollBar extends GUIControl{
       // };
 
       if(this._thumb.hasField('IMAGE')){
-        TextureLoader.enQueue(this._thumb.getFieldByLabel('IMAGE').getValue(), this.thumbMaterial, TextureType.TEXTURE);
+        TextureLoader.enQueue(this._thumb.getStringByLabel('IMAGE'), this.thumbMaterial, TextureType.TEXTURE);
         TextureLoader.LoadQueue();
       }
     }
@@ -286,8 +286,8 @@ export class GUIScrollBar extends GUIControl{
       }
 
       const maxScroll = ((scrollBarHeight - this.thumb.scale.y)/2);
-      scrollY = (this.thumb.position.y + maxScroll) / (maxScroll*2);
-      this.scrollPos = 1.0 - scrollY;
+      const scrollPositionVal = (this.thumb.position.y + maxScroll) / (maxScroll*2);
+      this.scrollPos = 1.0 - scrollPositionVal;
       this.update();
 
     //}

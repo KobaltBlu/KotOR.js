@@ -14,7 +14,7 @@ export class SWEncounterDifficulty {
     this.value = value;
   }
 
-  static From2DA(row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number>): SWEncounterDifficulty {
+  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number>): SWEncounterDifficulty {
     const difficulty = new SWEncounterDifficulty();
     difficulty.index = TwoDAObject.normalizeValue(row.__rowIndex, 'number', 0) as number;
     difficulty.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;

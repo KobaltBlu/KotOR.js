@@ -8,20 +8,21 @@ import { ResourceTypes } from "@/resource/ResourceTypes";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 const log = createScopedLogger(LogScope.Resource);
-  
+
 const ERF_HEADER_SIZE = 160;
 
 /**
  * ERFObject class.
- * 
+ *
  * Class representing a ERF archive file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ERFObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -30,7 +31,7 @@ export class ERFObject {
   resource_path: string;
   buffer: Uint8Array;
   inMemory: boolean = false;
-  
+
   localizedStrings: IERFLanguage[] = [];
   keyList: IERFKeyEntry[] = [];
   resources: IERFResource[] = [];
@@ -247,7 +248,7 @@ export class ERFObject {
     if(!resource){
       return new Uint8Array(0);
     }
-    
+
     if(this.inMemory){
         const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
       await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
@@ -263,6 +264,47 @@ export class ERFObject {
       return buffer;
     }
   }
+
+  toJSON(): { header: IERFObjectHeader; localizedStrings: IERFLanguage[]; keyList: IERFKeyEntry[]; resources: Array<{ offset: number; size: number; dataBase64?: string }> } {
+    return {
+      header: { ...this.header },
+      localizedStrings: [...(this.localizedStrings ?? [])],
+      keyList: (this.keyList ?? []).map(k => ({ resRef: k.resRef, resId: k.resId, resType: k.resType, unused: k.unused })),
+      resources: (this.resources ?? []).map(r => ({
+        offset: r.offset,
+        size: r.size,
+        dataBase64: r.data?.length ? (typeof Buffer !== 'undefined' ? Buffer.from(r.data).toString('base64') : btoa(String.fromCharCode(...r.data))) : undefined
+      }))
+    };
+  }
+
+  fromJSON(json: string | ReturnType<ERFObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<ERFObject['toJSON']>) : json;
+    Object.assign(this.header, obj.header);
+    this.header.fileType = (String(this.header.fileType ?? 'MOD ').padEnd(4, ' ')).slice(0, 4);
+    this.header.fileVersion = (String(this.header.fileVersion ?? 'V1.0').padEnd(4, ' ')).slice(0, 4);
+    this.localizedStrings = obj.localizedStrings ?? [];
+    this.keyList = (obj.keyList ?? []).map((k: IERFKeyEntry) => ({ ...k }));
+    this.resources = (obj.resources ?? []).map((r: { offset: number; size: number; dataBase64?: string }) => {
+      const res: IERFResource = {
+        offset: r.offset,
+        size: r.size,
+        data: r.dataBase64
+          ? (typeof Buffer !== 'undefined'
+              ? new Uint8Array(Buffer.from(r.dataBase64, 'base64'))
+              : Uint8Array.from(atob(r.dataBase64), c => c.charCodeAt(0)))
+          : new Uint8Array(0)
+      };
+      return res;
+    });
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<ERFObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<ERFObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<ERFObject['toJSON']>); }
 
   addResource(resRef: string, resType: number, buffer: Uint8Array){
 
@@ -372,12 +414,12 @@ export class ERFObject {
 
     return output.buffer;
   }
-  
+
   static DayOfTheYear(date?: Date) {
     if(!date){
       date = new Date(Date.now());
     }
-  
+
     return (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(date.getFullYear(), 0, 0)) / 24 / 60 / 60 / 1000;
   }
 

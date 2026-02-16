@@ -25,7 +25,7 @@ export class NWScriptEventFactory {
     if(struct instanceof GFFStruct){
       let event: NWScriptEvent | undefined;
 
-      const eType = struct.getFieldByLabel('EventType').getValue();
+      const eType = struct.getNumberByLabel('EventType');
 
       const intList: number[] = [];
       const floatList: number[] = [];
@@ -34,23 +34,23 @@ export class NWScriptEventFactory {
 
       let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        intList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
+        intList[i] = tmpList[i].getNumberByLabel('Parameter');
       }
 
       tmpList = struct.getFieldByLabel('FloatList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        floatList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
+        floatList[i] = tmpList[i].getNumberByLabel('Parameter');
       }
 
       tmpList = struct.getFieldByLabel('StringList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        stringList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
+        stringList[i] = tmpList[i].getStringByLabel('Parameter');
       }
 
       if(struct.hasField('ObjectList')){
         tmpList = struct.getFieldByLabel('ObjectList').getChildStructs();
         for(let i = 0, len = tmpList.length; i < len; i++){
-          objectList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
+          objectList[i] = tmpList[i].getNumberByLabel('Parameter');
         }
       }
 

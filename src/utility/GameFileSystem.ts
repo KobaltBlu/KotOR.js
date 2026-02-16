@@ -129,14 +129,14 @@ export class GameFileSystem {
       return new Promise<Uint8Array>((resolve, _reject) => {
         fs.readFile(path.join(ApplicationProfile.directory, filepath), options, (err, buffer) => {
           if (err) _reject(undefined);
-          resolve(new Uint8Array(buffer));
+          resolve(new Uint8Array(buffer as Buffer));
         })
       });
     } else {
       const file = await this.open(filepath);
-      if (!file) throw new Error('Failed to read file');
+      if (!file || typeof file === 'number') throw new Error('Failed to read file');
 
-      const handle = await file.getFile();
+      const handle = await (file as FileSystemFileHandle).getFile();
       return new Uint8Array(await handle.arrayBuffer());
     }
   }
@@ -159,10 +159,10 @@ export class GameFileSystem {
     if (!newFile) throw new Error('Failed to create file');
     try {
       const stream = await newFile.createWritable();
-      await stream.write(data);
+      await stream.write(data as FileSystemWriteChunkType);
       await stream.close();
       return true;
-    } catch (_e) {
+    } catch {
       return false;
     }
   }
@@ -328,7 +328,7 @@ export class GameFileSystem {
           } else {
             resolve(files);
           }
-        } catch (_e) {
+        } catch {
           resolve(files);
         }
       })();
@@ -354,9 +354,8 @@ export class GameFileSystem {
           if (dirPath.length) {
             const dirs = dirPath.length ? dirPath.split(path.sep) : [];
             const cacheKey = dirs.join('/');
-            if (this.directoryCache.has(cacheKey)) {
-              return this.directoryCache.get(cacheKey)!;
-            }
+            const cached = this.directoryCache.get(cacheKey);
+            if (cached !== undefined) return cached;
             try {
               let currentDirHandle = ApplicationProfile.directoryHandle;
               for (let i = 0, len = dirs.length; i < len; i++) {
@@ -409,7 +408,7 @@ export class GameFileSystem {
                 { recursive: true },
                 callback
               );
-            } catch (_e) {
+            } catch {
               (fs.rmdir as unknown as (a: string, b: { recursive: boolean }, c: (err: NodeJS.ErrnoException | null) => void) => void)(
                 fullPath,
                 { recursive: true },
@@ -512,8 +511,7 @@ export class GameFileSystem {
     } else {
       if (handleOrPath instanceof FileSystemFileHandle) {
         const file = await handleOrPath.getFile();
-        // @ts-expect-error - File.remove() is File System Access API; DOM lib types may not include it yet
-        file.remove();
+        (file as File & { remove?: () => void }).remove?.();
       }
     }
   }
@@ -553,9 +551,8 @@ export class GameFileSystem {
     if (ApplicationProfile.directoryHandle) {
       const dirs = filepath.length ? filepath.split('/') : [];
       const cacheKey = dirs.join('/');
-      if (this.directoryCache.has(cacheKey)) {
-        return this.directoryCache.get(cacheKey)!;
-      }
+      const cachedDir = this.directoryCache.get(cacheKey);
+      if (cachedDir !== undefined) return cachedDir;
       let lastDirectoryHandle = ApplicationProfile.directoryHandle;
       let currentDirHandle = ApplicationProfile.directoryHandle;
       let found = false;
@@ -587,9 +584,8 @@ export class GameFileSystem {
       const dirs = filepath.split('/');
       dirs.pop(); // base name not needed for directory resolution
       const cacheKey = dirs.join('/');
-      if (this.directoryCache.has(cacheKey)) {
-        return this.directoryCache.get(cacheKey)!;
-      }
+      const cachedHandle = this.directoryCache.get(cacheKey);
+      if (cachedHandle !== undefined) return cachedHandle;
       let currentDirHandle = ApplicationProfile.directoryHandle;
       let found = false;
       for (let i = 0, len = dirs.length; i < len; i++) {
@@ -637,7 +633,7 @@ export class GameFileSystem {
 
   static async showRequestDirectoryDialog() {
     const handle = await window.showDirectoryPicker({
-      id: ApplicationProfile.profile?.key,
+      id: typeof ApplicationProfile.profile?.key === 'string' ? ApplicationProfile.profile.key : undefined,
       mode: "readwrite"
     });
     if (handle) {

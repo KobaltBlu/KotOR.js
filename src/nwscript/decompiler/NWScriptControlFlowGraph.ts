@@ -757,9 +757,9 @@ export class NWScriptControlFlowGraph {
   /**
    * Compute dominators for each block, ignoring CALL edges (and optionally RETURN edges)
    * A block A dominates block B if all intra-procedural paths from entry to B go through A
-   * @param excludeReturn Whether to also exclude RETURN edges (default: false)
+   * @param _excludeReturn Whether to also exclude RETURN edges (default: false)
    */
-  private computeDominators(excludeReturn: boolean = false): void {
+  private computeDominators(_excludeReturn: boolean = false): void {
     if (!this.entryBlock) return;
 
     // Initialize: entry block dominates itself
@@ -900,7 +900,8 @@ export class NWScriptControlFlowGraph {
     const queue: NWScriptBasicBlock[] = [this.entryBlock];
 
     while (queue.length > 0) {
-      const current = queue.shift()!;
+      const current = queue.shift();
+      if (current === undefined) break;
       if (visited.has(current)) continue;
       visited.add(current);
 
@@ -916,7 +917,7 @@ export class NWScriptControlFlowGraph {
 
     // Also mark blocks reachable from subroutine entries as reachable
     // (they're reachable via JSR calls)
-    for (const [entryAddress, entryBlock] of this.subroutineEntries) {
+    for (const [_entryAddress, entryBlock] of this.subroutineEntries) {
       if (entryBlock.isUnreachable) {
         // This subroutine might be called, so mark it as reachable
         // We'll do a BFS from this entry point too
@@ -924,7 +925,8 @@ export class NWScriptControlFlowGraph {
         const subQueue: NWScriptBasicBlock[] = [entryBlock];
 
         while (subQueue.length > 0) {
-          const current = subQueue.shift()!;
+          const current = subQueue.shift();
+          if (current === undefined) break;
           if (subVisited.has(current)) continue;
           subVisited.add(current);
 
@@ -1087,11 +1089,12 @@ export class NWScriptControlFlowGraph {
       for (const block of this.blocks.values()) {
         // Recompute to validate cached property
         const visited = new Set<NWScriptBasicBlock>();
-        const queue: NWScriptBasicBlock[] = [this.entryBlock!];
+        const queue: NWScriptBasicBlock[] = [this.entryBlock];
         let computedUnreachable = true;
 
         while (queue.length > 0) {
-          const current = queue.shift()!;
+          const current = queue.shift();
+          if (current === undefined) break;
           if (current === block) {
             computedUnreachable = false;
             break;
@@ -1359,7 +1362,9 @@ export class NWScriptControlFlowGraph {
     const queue: [NWScriptBasicBlock, number][] = [[this.entryBlock, 0]];
 
     while (queue.length > 0) {
-      const [current, depth] = queue.shift()!;
+      const item = queue.shift();
+      if (item === undefined) break;
+      const [current, depth] = item;
       if (visited.has(current)) continue;
       visited.add(current);
 
@@ -1387,7 +1392,8 @@ export class NWScriptControlFlowGraph {
         this.naturalLoops.set(header, new Set());
       }
 
-      const loopBlocks = this.naturalLoops.get(header)!;
+      const loopBlocks = this.naturalLoops.get(header);
+      if (loopBlocks === undefined) throw new Error('naturalLoops entry missing');
       loopBlocks.add(header);
       loopBlocks.add(tail);
 
@@ -1464,7 +1470,8 @@ export class NWScriptControlFlowGraph {
     const queue: NWScriptBasicBlock[] = [from];
 
     while (queue.length > 0) {
-      const current = queue.shift()!;
+      const current = queue.shift();
+      if (current === undefined) break;
       if (current === to) return true;
       if (visited.has(current)) continue;
       visited.add(current);
@@ -1628,7 +1635,9 @@ export class NWScriptControlFlowGraph {
    */
   addEdge(from: NWScriptBasicBlock, to: NWScriptBasicBlock, type: EdgeType = EdgeType.FALLTHROUGH, weight: number = 1.0): NWScriptEdge {
     if (this.hasEdge(from, to)) {
-      return this.getEdge(from, to)!;
+      const existing = this.getEdge(from, to);
+      if (existing === undefined) throw new Error('Edge missing after hasEdge check');
+      return existing;
     }
 
     const edge = new NWScriptEdge(from, to, type, weight);
@@ -1665,7 +1674,8 @@ export class NWScriptControlFlowGraph {
     const queue: NWScriptBasicBlock[] = [start];
 
     while (queue.length > 0) {
-      const current = queue.shift()!;
+      const current = queue.shift();
+      if (current === undefined) break;
       if (reachable.has(current)) continue;
       reachable.add(current);
 
@@ -1744,11 +1754,14 @@ export class NWScriptControlFlowGraph {
       visited.add(block);
 
       for (const successor of block.successors) {
+        const blockLow = lowlink.get(block);
         if (!index.has(successor)) {
           strongConnect(successor);
-          lowlink.set(block, Math.min(lowlink.get(block)!, lowlink.get(successor)!));
+          const succLow = lowlink.get(successor);
+          if (blockLow !== undefined && succLow !== undefined) lowlink.set(block, Math.min(blockLow, succLow));
         } else if (stack.includes(successor)) {
-          lowlink.set(block, Math.min(lowlink.get(block)!, index.get(successor)!));
+          const succIdx = index.get(successor);
+          if (blockLow !== undefined && succIdx !== undefined) lowlink.set(block, Math.min(blockLow, succIdx));
         }
       }
 
@@ -1756,7 +1769,9 @@ export class NWScriptControlFlowGraph {
         const component = new Set<NWScriptBasicBlock>();
         let w: NWScriptBasicBlock;
         do {
-          w = stack.pop()!;
+          const next = stack.pop();
+          if (next === undefined) throw new Error('SCC stack underflow');
+          w = next;
           component.add(w);
           finished.add(w);
         } while (w !== block);
@@ -1962,7 +1977,7 @@ export class NWScriptControlFlowGraph {
       }
 
       return null;
-    } catch (_e) {
+    } catch {
       return { _error: "Could not serialize condition expression", _type: typeof expr };
     }
   }
@@ -2212,7 +2227,8 @@ export class NWScriptControlFlowGraph {
         // Walk up the dominator tree until we reach block's immediate dominator
         while (runner !== block && runner !== this.getImmediateDominator(block)) {
           if (runner) {
-            this.dominanceFrontiers.get(runner)!.add(block);
+            const frontier = this.dominanceFrontiers.get(runner);
+            if (frontier !== undefined) frontier.add(block);
           }
           runner = this.getImmediateDominator(runner);
         }
@@ -2275,13 +2291,15 @@ export class NWScriptControlFlowGraph {
         const worklist: NWScriptBasicBlock[] = [succ];
 
         while (worklist.length > 0) {
-          const current = worklist.shift()!;
+          const current = worklist.shift();
+          if (current === undefined) break;
           if (visited.has(current)) continue;
           visited.add(current);
 
           // If current is not post-dominated by block, it's control-dependent
           if (!this.postDominates(block, current) && current !== block) {
-            this.controlDependences.get(block)!.add(current);
+            const deps = this.controlDependences.get(block);
+            if (deps !== undefined) deps.add(current);
           }
 
           // Continue if current is post-dominated by block
@@ -2397,7 +2415,7 @@ export class NWScriptControlFlowGraph {
   getChildLoops(header: NWScriptBasicBlock): Set<NWScriptBasicBlock> {
     const children = new Set<NWScriptBasicBlock>();
     
-    for (const [otherHeader, loopBlocks] of this.naturalLoops) {
+    for (const [otherHeader, _loopBlocks] of this.naturalLoops) {
       if (otherHeader === header) continue;
       
       // Check if otherHeader's loop is nested within header's loop
@@ -2473,7 +2491,8 @@ export class NWScriptControlFlowGraph {
       if (!callGraph.has(edge.from)) {
         callGraph.set(edge.from, new Set());
       }
-      callGraph.get(edge.from)!.add(edge.to);
+      const set = callGraph.get(edge.from);
+      if (set !== undefined) set.add(edge.to);
     }
 
     return callGraph;
@@ -2531,7 +2550,8 @@ export class NWScriptControlFlowGraph {
       if (!byDepth.has(depth)) {
         byDepth.set(depth, []);
       }
-      byDepth.get(depth)!.push(block);
+      const list = byDepth.get(depth);
+      if (list !== undefined) list.push(block);
     }
 
     return byDepth;
@@ -2642,7 +2662,8 @@ export class NWScriptControlFlowGraph {
     parent.set(from, null);
 
     while (queue.length > 0) {
-      const current = queue.shift()!;
+      const current = queue.shift();
+      if (current === undefined) break;
       if (visited.has(current)) continue;
       visited.add(current);
 

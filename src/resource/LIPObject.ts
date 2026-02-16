@@ -10,6 +10,7 @@ import { OdysseyModel3D } from "@/three/odyssey";
 import type { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
@@ -330,6 +331,28 @@ export class LIPObject {
         });
     });
   }
+
+  toJSON(): { fileType: string; fileVersion: string; duration: number; keyframes: Array<{ uuid?: string; time: number; shape: number }> } {
+    return {
+      fileType: LIPObject.FILE_TYPE,
+      fileVersion: LIPObject.FILE_VER,
+      duration: this.duration ?? 1,
+      keyframes: (this.keyframes ?? []).map(k => ({ uuid: k.uuid, time: k.time, shape: k.shape }))
+    };
+  }
+
+  fromJSON(json: string | ReturnType<LIPObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<LIPObject['toJSON']>) : json;
+    this.duration = obj.duration ?? 1;
+    this.keyframes = (obj.keyframes ?? []).map(k => ({ uuid: k.uuid ?? crypto.randomUUID(), time: k.time ?? 0, shape: k.shape ?? 0 } as ILIPKeyFrame));
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<LIPObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<LIPObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<LIPObject['toJSON']>); }
 
   static GetLIPShapeLabels(): string[] {
     return [

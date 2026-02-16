@@ -110,6 +110,22 @@ export const WebviewApp: React.FC = () => {
     bridge.on('undo', () => { log.trace('undo message received (host drives undo)'); });
     bridge.on('redo', () => { log.trace('redo message received (host drives redo)'); });
 
+    bridge.on('revert', (data: unknown) => {
+      const msg = data as { content?: number[] };
+      const content = msg?.content;
+      if (!Array.isArray(content)) return;
+      log.info('revert message received, applying to current tab');
+      const manager = adapter.getTabManager();
+      const tab = manager.currentTab as TabState | undefined;
+      if (tab?.file) {
+        tab.file.buffer = new Uint8Array(content);
+        tab.file.unsaved_changes = false;
+        if (typeof (tab as TabState & { openFile?: () => Promise<void> }).openFile === 'function') {
+          void (tab as TabState & { openFile: () => Promise<void> }).openFile();
+        }
+      }
+    });
+
     log.info('Bridge handlers registered, calling notifyReady()');
     bridge.notifyReady();
   }, [adapter]);

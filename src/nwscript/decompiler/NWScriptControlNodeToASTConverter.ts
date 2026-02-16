@@ -264,8 +264,9 @@ export class NWScriptControlNodeToASTConverter {
                 this.functionVariableStackPositions.set(functionContext, new Map());
               }
 
-              // Get the variable stack positions map for this function
-              const variableStackPositions = this.functionVariableStackPositions.get(functionContext)!;
+              // Get the variable stack positions map for this function (just ensured above)
+              const variableStackPositions = this.functionVariableStackPositions.get(functionContext);
+              if (!variableStackPositions) throw new Error('Missing variable stack positions for function context');
 
               const preConditionStatements: NWScriptASTNode[] = [];
 
@@ -427,8 +428,9 @@ export class NWScriptControlNodeToASTConverter {
     const block = blockNode.block;
 
     // Check if we've already processed this block
-    if (this.blockStatements.has(block)) {
-      statements.push(...this.blockStatements.get(block)!);
+    const existingBlockStatements = this.blockStatements.get(block);
+    if (existingBlockStatements !== undefined) {
+      statements.push(...existingBlockStatements);
       return;
     }
 
@@ -465,8 +467,9 @@ export class NWScriptControlNodeToASTConverter {
       this.functionVariableStackPositions.set(functionContext, new Map());
     }
 
-    // Get the variable stack positions map for this function
-    const variableStackPositions = this.functionVariableStackPositions.get(functionContext)!;
+    // Get the variable stack positions map for this function (just ensured above)
+    const variableStackPositions = this.functionVariableStackPositions.get(functionContext);
+    if (!variableStackPositions) throw new Error('Missing variable stack positions for function context');
 
     // Update the stack simulator's variable position map for stack-aware CPTOPSP resolution
     // This must be done at the start of each block to ensure accurate variable resolution

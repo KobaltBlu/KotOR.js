@@ -26,25 +26,25 @@ export class ForgeMGGunBullet {
 
     // Load basic properties
     if(struct.hasField('Bullet_Model')){
-      this.bulletModel = struct.getFieldByLabel('Bullet_Model').getValue();
+      this.bulletModel = struct.getStringByLabel('Bullet_Model');
     }
     if(struct.hasField('Collision_Sound')){
-      this.collisionSound = struct.getFieldByLabel('Collision_Sound').getValue();
+      this.collisionSound = struct.getStringByLabel('Collision_Sound');
     }
     if(struct.hasField('Damage')){
-      this.damage = struct.getFieldByLabel('Damage').getValue();
+      this.damage = struct.getNumberByLabel('Damage');
     }
     if(struct.hasField('Lifespan')){
-      this.lifespan = struct.getFieldByLabel('Lifespan').getValue();
+      this.lifespan = struct.getNumberByLabel('Lifespan');
     }
     if(struct.hasField('Rate_Of_Fire')){
-      this.rateOfFire = struct.getFieldByLabel('Rate_Of_Fire').getValue();
+      this.rateOfFire = struct.getNumberByLabel('Rate_Of_Fire');
     }
     if(struct.hasField('Speed')){
-      this.speed = struct.getFieldByLabel('Speed').getValue();
+      this.speed = struct.getNumberByLabel('Speed');
     }
     if(struct.hasField('Target_Type')){
-      this.targetType = struct.getFieldByLabel('Target_Type').getValue();
+      this.targetType = struct.getNumberByLabel('Target_Type');
     }
   }
 

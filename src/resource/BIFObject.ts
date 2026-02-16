@@ -4,6 +4,7 @@ import { IResourceDiskInfo } from "@/interface/resource/IResourceDiskInfo";
 import { KEYManager } from "@/managers/KEYManager";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
@@ -220,6 +221,32 @@ export class BIFObject {
 
     return await this.getResourceBuffer(resource);
   }
+
+  toJSON(): { fileType: string; fileVersion: string; variableResourceCount: number; fixedResourceCount: number; resources: Array<{ Id: number; offset: number; size: number; resType: number }> } {
+    return {
+      fileType: this.fileType ?? 'BIFF',
+      fileVersion: this.fileVersion ?? 'V1  ',
+      variableResourceCount: this.variableResourceCount ?? 0,
+      fixedResourceCount: this.fixedResourceCount ?? 0,
+      resources: (this.resources ?? []).map(r => ({ Id: r.Id, offset: r.offset, size: r.size, resType: r.resType }))
+    };
+  }
+
+  fromJSON(json: string | ReturnType<BIFObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<BIFObject['toJSON']>) : json;
+    this.fileType = (String(obj.fileType ?? 'BIFF').padEnd(4, ' ')).slice(0, 4);
+    this.fileVersion = (String(obj.fileVersion ?? 'V1  ').padEnd(4, ' ')).slice(0, 4);
+    this.variableResourceCount = obj.variableResourceCount ?? 0;
+    this.fixedResourceCount = obj.fixedResourceCount ?? 0;
+    this.resources = (obj.resources ?? []).map(r => ({ Id: r.Id, offset: r.offset, size: r.size, resType: r.resType } as IBIFResource));
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<BIFObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<BIFObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<BIFObject['toJSON']>); }
 
   /*load( path: string, onLoad?: Function, onError?: Function ){
 

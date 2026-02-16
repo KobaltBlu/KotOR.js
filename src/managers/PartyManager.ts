@@ -58,9 +58,9 @@ export interface PartyPuppetList {
 
 /**
  * PartyManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file PartyManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -150,7 +150,7 @@ export class PartyManager {
 
     PartyManager.MaxPartyCount = GameState.GameKey == GameEngineType.TSL ? 12 : 9;
     PartyManager.MaxPuppetCount = GameState.GameKey == GameEngineType.TSL ? 3 : 0;
-    
+
     for(let i = 0; i < PartyManager.MaxPartyCount; i++){
       GameState.PartyManager.InfluenceMap.set(i, -1);
       GameState.PartyManager.NPCS[i] = {
@@ -169,10 +169,10 @@ export class PartyManager {
 
     if(gff.RootNode.hasField('GlxyMap')){
       const GlxyMap = gff.getFieldByLabel('GlxyMap').getChildStructs()[0];
-      
-      const planetCount = GlxyMap.getFieldByLabel('GlxyMapNumPnts').getValue();
-      const planetBits = GlxyMap.getFieldByLabel('GlxyMapPlntMsk').getValue(); //Max 32?
-      const currentPlanet = GlxyMap.getFieldByLabel('GlxyMapSelPnt').getValue();
+
+      const planetCount = GlxyMap.getNumberByLabel('GlxyMapNumPnts');
+      const planetBits = GlxyMap.getNumberByLabel('GlxyMapPlntMsk'); //Max 32?
+      const currentPlanet = GlxyMap.getNumberByLabel('GlxyMapSelPnt');
 
       for(let i = 0; i < planetCount; i++){
         GameState.Planetary.SetPlanetAvailable(i,  !!((planetBits>>i) & 0x01));
@@ -181,7 +181,7 @@ export class PartyManager {
       GameState.Planetary.SetSelectedPlanet(currentPlanet);
     }
 
-    //Init the TutorialWindowTracker      
+    //Init the TutorialWindowTracker
     const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
     let bitCount = 0;
     if(tutorial2DA){
@@ -201,43 +201,43 @@ export class PartyManager {
         }
       }
     }
-  
+
     if(gff.RootNode.hasField('PT_AVAIL_NPCS')){
       const avail = gff.getFieldByLabel('PT_AVAIL_NPCS').getChildStructs();
       for(let i = 0; i < avail.length; i++){
         //log.debug(PartyManager.NPCS[i]);
-        GameState.PartyManager.NPCS[i].available = avail[i].getFieldByLabel('PT_NPC_AVAIL').getValue();
-        GameState.PartyManager.NPCS[i].canSelect = avail[i].getFieldByLabel('PT_NPC_SELECT').getValue();
+        GameState.PartyManager.NPCS[i].available = !!avail[i].getNumberByLabel('PT_NPC_AVAIL');
+        GameState.PartyManager.NPCS[i].canSelect = !!avail[i].getNumberByLabel('PT_NPC_SELECT');
       }
     }
-  
+
     //TSL: PT_AVAIL_PUPS
     if(gff.RootNode.hasField('PT_AVAIL_PUPS')){
       const avail = gff.getFieldByLabel('PT_AVAIL_PUPS').getChildStructs();
       for(let i = 0; i < avail.length; i++){
-        GameState.PartyManager.Puppets[i].available = !!avail[i].getFieldByLabel('PT_PUP_AVAIL').getValue();
-        GameState.PartyManager.Puppets[i].select = !!avail[i].getFieldByLabel('PT_PUP_SELECT').getValue();
+        GameState.PartyManager.Puppets[i].available = !!avail[i].getNumberByLabel('PT_PUP_AVAIL');
+        GameState.PartyManager.Puppets[i].select = !!avail[i].getNumberByLabel('PT_PUP_SELECT');
       }
     }
 
     //TSL: PT_ITEM_CHEMICAL
     if(gff.RootNode.hasField('PT_ITEM_CHEMICAL')){
-      GameState.PartyManager.ChemicalCount = gff.RootNode.getFieldByLabel('PT_ITEM_CHEMICAL').getValue();
+      GameState.PartyManager.ChemicalCount = gff.RootNode.getNumberByLabel('PT_ITEM_CHEMICAL');
     }
 
     //TSL: PT_ITEM_COMPONEN
     if(gff.RootNode.hasField('PT_ITEM_COMPONEN')){
-      GameState.PartyManager.ComponentCount = gff.RootNode.getFieldByLabel('PT_ITEM_COMPONEN').getValue();
+      GameState.PartyManager.ComponentCount = gff.RootNode.getNumberByLabel('PT_ITEM_COMPONEN');
     }
-  
+
     //TSL: PT_AVAIL_PUPS
     if(gff.RootNode.hasField('PT_INFLUENCE')){
       const list = gff.getFieldByLabel('PT_INFLUENCE').getChildStructs();
       for(let i = 0; i < list.length; i++){
-        GameState.PartyManager.InfluenceMap.set(i, list[i].getFieldByLabel('PT_NPC_INFLUENCE').getValue());
+        GameState.PartyManager.InfluenceMap.set(i, list[i].getNumberByLabel('PT_NPC_INFLUENCE'));
       }
     }
-  
+
     //TSL: PT_AVAIL_PUPS
     if(gff.RootNode.hasField('PT_PUPPETS')){
       const list = gff.getFieldByLabel('PT_PUPPETS').getChildStructs();
@@ -246,10 +246,10 @@ export class PartyManager {
       }
     }
 
-    GameState.PartyManager.Gold = gff.RootNode.getFieldByLabel('PT_GOLD').getValue();
+    GameState.PartyManager.Gold = gff.RootNode.getNumberByLabel('PT_GOLD');
 
     if(gff.RootNode.hasField('PT_CONTROLLED_NP')){
-      log.debug('PT_CONTROLLED_NP', gff.RootNode.getFieldByLabel('PT_CONTROLLED_NP').getValue());
+      log.debug('PT_CONTROLLED_NP', gff.RootNode.getNumberByLabel('PT_CONTROLLED_NP'));
     }
 
     if(gff.RootNode.hasField('PT_MEMBERS')){
@@ -258,8 +258,8 @@ export class PartyManager {
       GameState.PartyManager.CurrentMembers = [];
       for(let i = 0; i < pms.length; i++){
         GameState.PartyManager.CurrentMembers.push({
-          isLeader: pms[i].getFieldByLabel('PT_IS_LEADER').getValue() ? true : false,
-          memberID: pms[i].getFieldByLabel('PT_MEMBER_ID').getValue()
+          isLeader: pms[i].getNumberByLabel('PT_IS_LEADER') ? true : false,
+          memberID: pms[i].getNumberByLabel('PT_MEMBER_ID')
         })
       }
     }
@@ -312,7 +312,7 @@ export class PartyManager {
       for(let i = 0; i < list.length; i++){
         GameState.PazaakManager.Cards.set(i, {
           card: i,
-          count: list[i].getFieldByLabel('PT_PAZAAKCOUNT').getValue()
+          count: list[i].getNumberByLabel('PT_PAZAAKCOUNT')
         });
       }
     }
@@ -327,10 +327,10 @@ export class PartyManager {
     if(gff.RootNode.hasField('PT_PAZSIDELIST')){
       const list = gff.RootNode.getFieldByLabel('PT_PAZSIDELIST').getChildStructs();
       for(let i = 0; i < list.length; i++){
-        GameState.PazaakManager.PlayerSideDeck.set(i, list[i].getFieldByLabel('PT_PAZSIDECARD').getValue());
+        GameState.PazaakManager.PlayerSideDeck.set(i, list[i].getNumberByLabel('PT_PAZSIDECARD') as PazaakCards);
       }
     }
-    
+
   }
 
   /**
@@ -479,7 +479,7 @@ export class PartyManager {
   static AddGold(amount: number){
     if(!amount) return;
     this.Gold += amount;
-    
+
     if(this.Gold < 0){
       this.Gold = 0;
     }
@@ -560,7 +560,7 @@ export class PartyManager {
       GameState.group.creatures.add(partyMember.container);
       GameState.module.area.attachObject(partyMember);
     }
-    
+
     PartyManager.RemoveCurrentMemberByNPCId(npcId);
   }
 
@@ -616,8 +616,8 @@ export class PartyManager {
     if(PartyManager.NPCS[nID].template instanceof GFFObject){
       const pm = PartyManager.NPCS[nID].template;
       if(pm.RootNode.hasField('PortraitId')){
-        portraitId = pm.RootNode.getFieldByLabel('PortraitId').getValue();
-        goodEvil = pm.RootNode.getFieldByLabel('GoodEvil').getValue();
+        portraitId = pm.RootNode.getNumberByLabel('PortraitId');
+        goodEvil = pm.RootNode.getNumberByLabel('GoodEvil');
       }
     }
 
@@ -654,7 +654,7 @@ export class PartyManager {
       if(portrait2DA[i].baseresref.toLowerCase() != resref.toLowerCase()){
         continue;
       }
-      return portrait2DA[i];    
+      return portrait2DA[i];
     }
     return null;
   }
@@ -687,7 +687,7 @@ export class PartyManager {
   static IsSelectable(nID = 0){
     return PartyManager.NPCS[nID]?.canSelect ? true : false;
   }
-  
+
   /**
    * Check if the NPC is available
    * @param nID - The ID of the NPC to check if it is available
@@ -720,7 +720,6 @@ export class PartyManager {
   static RemoveAvailableNPC(npcId = 0){
     PartyManager.NPCS[npcId].available = false;
     PartyManager.NPCS[npcId].canSelect = false;
-    PartyManager.NPCS[npcId].template;
   }
 
 
@@ -804,7 +803,7 @@ export class PartyManager {
     }else{
       partyMember = new ModuleCreature(PartyManager.NPCS[npcId].template);
     }
-     
+
     const oldPC = PartyManager.Player;
     PartyManager.Player = partyMember;
 
@@ -827,12 +826,12 @@ export class PartyManager {
       partyMember.loadScripts();
       partyMember.loadModel().then( (model: OdysseyModel3D) => {
         PartyManager.party[0] = partyMember;
-        
+
         model.userData.moduleObject = partyMember;
         partyMember.position.copy(spawn);
         partyMember.quaternion.copy(quaternion);
         model.hasCollision = true;
-        
+
         GameState.group.party.add( partyMember.container );
         oldPC.destroy();
         partyMember.onSpawn();
@@ -979,14 +978,14 @@ export class PartyManager {
         const spawn = PartyManager.GetSpawnLocation(partyMember);
         partyMember.position.copy(spawn.position);
         partyMember.setFacing(spawn.getFacing(), true);
-        
+
         const model = await partyMember.loadModel();
         model.userData.moduleObject = partyMember;
 
         partyMember.position.copy(spawn.position);
         partyMember.setFacing(spawn.getFacing(), true);
         //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
-  
+
         model.hasCollision = true;
         GameState.group.party.add( partyMember.container );
 
@@ -1023,7 +1022,7 @@ export class PartyManager {
 
       return;
     }
-    
+
     const partyMember = new ModuleCreature(npc.template);
     partyMember.npcId = npcId;
     partyMember.isPM = true;
@@ -1036,7 +1035,7 @@ export class PartyManager {
         onLoad(partyMember);
 
     });
-    
+
   }
 
   /**
@@ -1048,11 +1047,11 @@ export class PartyManager {
     if( BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature) ){
       if( GameState.isLoadingSave ){
         return new EngineLocation(
-          creature.position.x, 
-          creature.position.y, 
+          creature.position.x,
+          creature.position.y,
           creature.position.z,
-          creature.getXOrientation(), 
-          creature.getYOrientation(), 
+          creature.getXOrientation(),
+          creature.getYOrientation(),
           creature.getZOrientation()
         );
       }else if( GameState.module.area.transWP ){
@@ -1066,28 +1065,28 @@ export class PartyManager {
           case 0:
             return new EngineLocation(
               spawnLoc.position.x,
-              spawnLoc.position.y, 
+              spawnLoc.position.y,
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z
             );
           case 1:
             return new EngineLocation(
-              spawnLoc.position.x + 1.5 * Math.cos(facing), 
-              spawnLoc.position.y + 1.5 * Math.sin(facing), 
+              spawnLoc.position.x + 1.5 * Math.cos(facing),
+              spawnLoc.position.y + 1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z
             );
           case 2:
             return new EngineLocation(
-              spawnLoc.position.x + -1.5 * Math.cos(facing), 
-              spawnLoc.position.y + -1.5 * Math.sin(facing), 
+              spawnLoc.position.x + -1.5 * Math.cos(facing),
+              spawnLoc.position.y + -1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z
             );
         }
@@ -1099,34 +1098,34 @@ export class PartyManager {
           case 0:
             return new EngineLocation(
               spawnLoc.position.x,
-              spawnLoc.position.y, 
+              spawnLoc.position.y,
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z,
             );
           case 1:
             return new EngineLocation(
-              spawnLoc.position.x + 1.5 * Math.cos(facing), 
-              spawnLoc.position.y + 1.5 * Math.sin(facing), 
+              spawnLoc.position.x + 1.5 * Math.cos(facing),
+              spawnLoc.position.y + 1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z,
             );
           case 2:
             return new EngineLocation(
-              spawnLoc.position.x + -1.5 * Math.cos(facing), 
-              spawnLoc.position.y + -1.5 * Math.sin(facing), 
+              spawnLoc.position.x + -1.5 * Math.cos(facing),
+              spawnLoc.position.y + -1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z,
             );
         }
       }
     }
-    
+
     return GameState.module.area.getSpawnLocation();
 
   }
@@ -1157,8 +1156,8 @@ export class PartyManager {
     const targetOffset = (idx == 2) ? -1.5 :1.5;
 
     this.#tmpFollowPositionTarget.set(
-      targetOffset * Math.cos(leader.rotation.z), 
-      targetOffset * Math.sin(leader.rotation.z), 
+      targetOffset * Math.cos(leader.rotation.z),
+      targetOffset * Math.sin(leader.rotation.z),
       0
     );
     this.#tmpFollowPosition.copy(leader.position).sub(this.#tmpFollowPositionTarget);

@@ -117,9 +117,9 @@ export class AreaMap {
   loadDataStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
       this.data = struct.getFieldByLabel('AreaMapData').getVoid();
-      this.dataSize = struct.getFieldByLabel('AreaMapDataSize').getValue() as number;
-      this.mapResX = struct.getFieldByLabel('AreaMapResX').getValue() as number;
-      this.mapResY = struct.getFieldByLabel('AreaMapResY').getValue() as number;
+      this.dataSize = struct.getNumberByLabel('AreaMapDataSize');
+      this.mapResX = struct.getNumberByLabel('AreaMapResX');
+      this.mapResY = struct.getNumberByLabel('AreaMapResY');
       this.generateAlphaTexture();      
     }
   }
@@ -162,25 +162,25 @@ export class AreaMap {
           this._mapCoordinates.y = ((( x - this.worldPt1X) * scaleX) + this.mapPt1X);
           this._mapCoordinates.x = (((-y - this.worldPt1Y) * scaleY) + this.mapPt1Y);
         }
-      break;
+        break;
       case MapNorthAxis.EAST:
         {
           scaleX = (this.mapPt1Y - this.mapPt2Y) / (this.worldPt1X - this.worldPt2X);
-			    scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
+          scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
 
           this._mapCoordinates.x = (((y - this.worldPt1Y) * scaleY) + this.mapPt1X);
           this._mapCoordinates.y = (((x - this.worldPt1X) * scaleX) + this.mapPt1Y);
         }
-      break;
+        break;
       case MapNorthAxis.WEST: //end_m01ab
         {
           scaleX = (this.mapPt1Y - this.mapPt2Y) / (this.worldPt1X - this.worldPt2X);
-			    scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
+          scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
 
           this._mapCoordinates.x = (((y - this.worldPt1Y) * scaleY) + this.mapPt1X);
           this._mapCoordinates.y = 1 - (((x - this.worldPt1X) * scaleX) + this.mapPt1Y);
         }
-      break;
+        break;
     }
     return this._mapCoordinates;
   }
@@ -390,17 +390,17 @@ export class AreaMap {
     if(struct instanceof GFFStruct){
       const areaMap = new AreaMap();
 
-      areaMap.mapPt1X = struct.getFieldByLabel('MapPt1X').getValue() as number;
-      areaMap.mapPt1Y = struct.getFieldByLabel('MapPt1Y').getValue() as number;
-      areaMap.mapPt2X = struct.getFieldByLabel('MapPt2X').getValue() as number;
-      areaMap.mapPt2Y = struct.getFieldByLabel('MapPt2Y').getValue() as number;
-      areaMap.mapResX = struct.getFieldByLabel('MapResX').getValue() as number;
-      areaMap.mapZoom = struct.getFieldByLabel('MapZoom').getValue() as number;
-      areaMap.northAxis = struct.getFieldByLabel('NorthAxis').getValue() as number;
-      areaMap.worldPt1X = struct.getFieldByLabel('WorldPt1X').getValue() as number;
-      areaMap.worldPt1Y = struct.getFieldByLabel('WorldPt1Y').getValue() as number;
-      areaMap.worldPt2X = struct.getFieldByLabel('WorldPt2X').getValue() as number;
-      areaMap.worldPt2Y = struct.getFieldByLabel('WorldPt2Y').getValue() as number;
+      areaMap.mapPt1X = struct.getNumberByLabel('MapPt1X');
+      areaMap.mapPt1Y = struct.getNumberByLabel('MapPt1Y');
+      areaMap.mapPt2X = struct.getNumberByLabel('MapPt2X');
+      areaMap.mapPt2Y = struct.getNumberByLabel('MapPt2Y');
+      areaMap.mapResX = struct.getNumberByLabel('MapResX');
+      areaMap.mapZoom = struct.getNumberByLabel('MapZoom');
+      areaMap.northAxis = struct.getNumberByLabel('NorthAxis');
+      areaMap.worldPt1X = struct.getNumberByLabel('WorldPt1X');
+      areaMap.worldPt1Y = struct.getNumberByLabel('WorldPt1Y');
+      areaMap.worldPt2X = struct.getNumberByLabel('WorldPt2X');
+      areaMap.worldPt2Y = struct.getNumberByLabel('WorldPt2Y');
 
       areaMap.init();
 

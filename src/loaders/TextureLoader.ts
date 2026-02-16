@@ -131,7 +131,7 @@ export class TextureLoader {
   static async LoadLightmap(resRef: string, noCache: boolean = false){
     log.trace("LoadLightmap", resRef, noCache);
     resRef = resRef.toLowerCase();
-    if(Object.prototype.hasOwnProperty.call(TextureLoader.lightmaps, resRef) && !noCache){
+    if(Object.hasOwn(TextureLoader.lightmaps, resRef) && !noCache){
       log.trace("LoadLightmap cache hit", resRef);
       return TextureLoader.lightmaps[resRef];
     }
@@ -342,7 +342,7 @@ export class TextureLoader {
           }else{
             (tex.material as OdysseyMaterialLike).lightMap = lightmap;
             (tex.material as OdysseyMaterialLike).defines = (tex.material as OdysseyMaterialLike).defines || {};
-            if(Object.prototype.hasOwnProperty.call((tex.material as OdysseyMaterialLike).defines, 'IGNORE_LIGHTING')){
+            if(Object.hasOwn((tex.material as OdysseyMaterialLike).defines, 'IGNORE_LIGHTING')){
               delete (tex.material as OdysseyMaterialLike).defines.IGNORE_LIGHTING;
             }
           }
@@ -376,7 +376,7 @@ export class TextureLoader {
         }
 
         if(typeof tex.onLoad == 'function')
-          tex.onLoad(texture, tex)
+          tex.onLoad(particle_texture, tex)
       }
       break;
       default:
@@ -427,7 +427,7 @@ export class TextureLoader {
             tex.material.needsUpdate = true;
 
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-              if(Object.prototype.hasOwnProperty.call(tex.material.defines, 'HOLOGRAM')){
+              if(Object.hasOwn(tex.material.defines, 'HOLOGRAM')){
                 //tex.material.alphaTest = 1;
                 (tex.material as OdysseyMaterialLike).combine = THREE.AddOperation;
                 tex.material.blending = THREE['NormalBlending'];

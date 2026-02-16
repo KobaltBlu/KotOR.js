@@ -22,9 +22,6 @@ const log = createScopedLogger(LogScope.Loader);
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class AudioLoader {
-
-  constructor () { }
-
   static toArrayBuffer(buffer: Uint8Array) {
     const ab = new ArrayBuffer(buffer.length);
     const view = new Uint8Array(ab);
@@ -36,7 +33,7 @@ export class AudioLoader {
 
   static async LoadSound (resRef: string){
 
-    if(AudioLoader.cache.hasOwnProperty(resRef)){
+    if (Object.hasOwn(AudioLoader.cache, resRef)) {
       return AudioLoader.cache[resRef];
     }else{
       const visKey = KEYManager.Key.getFileKey(resRef, ResourceTypes['wav']);

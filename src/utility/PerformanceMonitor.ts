@@ -1,7 +1,7 @@
 
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-const log = createScopedLogger(LogScope.Manager);
+const _log = createScopedLogger(LogScope.Manager);
 
 /**
  * Represents a single performance monitoring event with timing data.

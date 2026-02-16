@@ -83,49 +83,49 @@ export class ModuleStore extends ModuleObject {
 
     if(!this.initialized){
       if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+        this.id = this.template.getNumberByLabel('ObjectId');
       }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
+        this.id = this.template.getNumberByLabel('ID');
       }
 
       GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('BuySellFlag'))
-      this.buySellFlag = this.template.getFieldByLabel('BuySellFlag').getValue()
+      this.buySellFlag = this.template.getNumberByLabel('BuySellFlag');
 
     if(this.template.RootNode.hasField('LocName'))
       this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
 
     if(this.template.RootNode.hasField('MarkDown'))
-      this.markDown = this.template.getFieldByLabel('MarkDown').getValue();
+      this.markDown = this.template.getNumberByLabel('MarkDown');
 
     if(this.template.RootNode.hasField('MarkUp'))
-      this.markUp = this.template.getFieldByLabel('MarkUp').getValue();
+      this.markUp = this.template.getNumberByLabel('MarkUp');
 
     if(this.template.RootNode.hasField('OnOpenStore'))
-      this.onOpenStore = this.template.getFieldByLabel('OnOpenStore').getValue();
+      this.onOpenStore = this.template.getStringByLabel('OnOpenStore');
 
     if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue();
+      this.tag = this.template.getStringByLabel('Tag');
 
     if(this.template.RootNode.hasField('XPosition'))
-      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
+      this.position.x = this.template.RootNode.getNumberByLabel('XPosition');
 
     if(this.template.RootNode.hasField('YPosition'))
-      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
+      this.position.y = this.template.RootNode.getNumberByLabel('YPosition');
 
     if(this.template.RootNode.hasField('ZPosition'))
-      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
+      this.position.z = this.template.RootNode.getNumberByLabel('ZPosition');
 
     if(this.template.RootNode.hasField('XOrientation'))
-      this.rotation.x = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
+      this.rotation.x = this.template.RootNode.getNumberByLabel('XOrientation');
 
     if(this.template.RootNode.hasField('YOrientation'))
-      this.rotation.y = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
+      this.rotation.y = this.template.RootNode.getNumberByLabel('YOrientation');
 
     if(this.template.RootNode.hasField('ZOrientation'))
-      this.rotation.z = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
+      this.rotation.z = this.template.RootNode.getNumberByLabel('ZOrientation');
 
     if(this.template.RootNode.hasField('SWVarTable')){
       const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
@@ -133,7 +133,7 @@ export class ModuleStore extends ModuleObject {
         if(swVarTableStruct.hasField('BitArray')){
           const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
           for(let i = 0; i < localBools.length; i++){
-            const data = localBools[i].getFieldByLabel('Variable').getValue();
+            const data = localBools[i].getNumberByLabel('Variable');
             for(let bit = 0; bit < 32; bit++){
               this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
             }
@@ -143,7 +143,7 @@ export class ModuleStore extends ModuleObject {
         if(swVarTableStruct.hasField('ByteArray')){
           const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
           for(let i = 0; i < localNumbers.length; i++){
-            const data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            const data = localNumbers[i].getNumberByLabel('Variable');
             this.setLocalNumber(i, data);
           }
         }

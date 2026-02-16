@@ -1,6 +1,7 @@
 import { TLKManager } from "@/managers/TLKManager";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 
 /**
  * SSFObject class.
@@ -85,5 +86,37 @@ export class SSFObject {
     }
     return bw.buffer;
   }
+
+  toJSON(): { fileType: string; fileVersion: string; sound_refs: number[] } {
+    return {
+      fileType: this.FileType ?? 'SSF ',
+      fileVersion: this.FileVersion ?? 'V1.1',
+      sound_refs: [...(this.sound_refs ?? [])]
+    };
+  }
+
+  fromJSON(json: string | ReturnType<SSFObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<SSFObject['toJSON']>) : json;
+    this.FileType = (String(obj.fileType ?? 'SSF ').padEnd(4, ' ')).slice(0, 4);
+    this.FileVersion = (String(obj.fileVersion ?? 'V1.1').padEnd(4, ' ')).slice(0, 4);
+    this.sound_refs = Array.isArray(obj.sound_refs) ? [...obj.sound_refs] : [];
+    while (this.sound_refs.length < 28) this.sound_refs.push(-1);
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<SSFObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<SSFObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<SSFObject['toJSON']>); }
+
+  static fromJSON(json: string | ReturnType<SSFObject['toJSON']>): SSFObject {
+    const ssf = new SSFObject(new Uint8Array(0));
+    ssf.fromJSON(json);
+    return ssf;
+  }
+  static fromXML(xml: string): SSFObject { return SSFObject.fromJSON(xmlToObject(xml) as ReturnType<SSFObject['toJSON']>); }
+  static fromYAML(yaml: string): SSFObject { return SSFObject.fromJSON(yamlToObject(yaml) as ReturnType<SSFObject['toJSON']>); }
+  static fromTOML(toml: string): SSFObject { return SSFObject.fromJSON(tomlToObject(toml) as ReturnType<SSFObject['toJSON']>); }
 
 }

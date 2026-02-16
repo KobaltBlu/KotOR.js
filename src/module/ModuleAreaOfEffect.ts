@@ -72,82 +72,82 @@ export class ModuleAreaOfEffect extends ModuleObject {
 
   initProperties(): void {
     if(this.template.RootNode.hasField('AreaEffectId'))
-      this.areaEffectId = this.template.getFieldByLabel('AreaEffectId').getValue();
+      this.areaEffectId = this.template.getNumberByLabel('AreaEffectId');
 
     if(this.template.RootNode.hasField('CreatorId'))
-      this.creatorId = this.template.getFieldByLabel('CreatorId').getValue();
+      this.creatorId = this.template.getNumberByLabel('CreatorId');
 
     if(this.template.RootNode.hasField('Commandable'))
-      this.commandable = this.template.getFieldByLabel('Commandable').getValue();
+      this.commandable = this.template.getBooleanByLabel('Commandable');
 
     if(this.template.RootNode.hasField('Duration'))
-      this.duration = this.template.getFieldByLabel('Duration').getValue();
+      this.duration = this.template.getNumberByLabel('Duration');
 
     if(this.template.RootNode.hasField('DurationType'))
-      this.durationType = this.template.getFieldByLabel('DurationType').getValue();
-  
+      this.durationType = this.template.getNumberByLabel('DurationType');
+
     if(this.template.RootNode.hasField('LastEntered'))
-      this.lastEnteredId = this.template.getFieldByLabel('LastEntered').getValue();
+      this.lastEnteredId = this.template.getNumberByLabel('LastEntered');
 
     if(this.template.RootNode.hasField('LastLeft'))
-      this.lastLeftId = this.template.getFieldByLabel('LastLeft').getValue();
+      this.lastLeftId = this.template.getNumberByLabel('LastLeft');
 
     if(this.template.RootNode.hasField('LastHrtbtDay'))
-      this.lastHeartBeatDay = this.template.getFieldByLabel('LastHrtbtDay').getValue();
+      this.lastHeartBeatDay = this.template.getNumberByLabel('LastHrtbtDay');
 
     if(this.template.RootNode.hasField('LastHrtbtTime'))
-      this.lastHeartbeatTime = this.template.getFieldByLabel('LastHrtbtTime').getValue();
+      this.lastHeartbeatTime = this.template.getNumberByLabel('LastHrtbtTime');
 
     if(this.template.RootNode.hasField('LinkedToObject'))
-      this.linkedToObjectId = this.template.getFieldByLabel('LinkedToObject').getValue();
-  
+      this.linkedToObjectId = this.template.getNumberByLabel('LinkedToObject');
+
     if(this.template.RootNode.hasField('MetaMagicType'))
-      this.metaMagicType = this.template.getFieldByLabel('MetaMagicType').getValue();
+      this.metaMagicType = this.template.getNumberByLabel('MetaMagicType');
 
     if(this.template.RootNode.hasField('Shape'))
-      this.shape = this.template.getFieldByLabel('Shape').getValue();
+      this.shape = this.template.getNumberByLabel('Shape');
 
     //RECT
     if(this.shape == AreaOfEffectShape.RECTANGLE){
       if(this.template.RootNode.hasField('Length'))
-        this.length = this.template.getFieldByLabel('Length').getValue();
+        this.length = this.template.getNumberByLabel('Length');
 
       if(this.template.RootNode.hasField('Width'))
-        this.width = this.template.getFieldByLabel('Width').getValue();
+        this.width = this.template.getNumberByLabel('Width');
     }
     //CIRCLE
     else
     {
       if(this.template.RootNode.hasField('Radius'))
-        this.radius = this.template.getFieldByLabel('Radius').getValue();
+        this.radius = this.template.getNumberByLabel('Radius');
     }
-  
+
     if(this.template.RootNode.hasField('SpellId'))
-      this.spellId = this.template.getFieldByLabel('SpellId').getValue();
-  
+      this.spellId = this.template.getNumberByLabel('SpellId');
+
     if(this.template.RootNode.hasField('SpellLevel'))
-      this.spellLevel = this.template.getFieldByLabel('SpellLevel').getValue();
-  
+      this.spellLevel = this.template.getNumberByLabel('SpellLevel');
+
     if(this.template.RootNode.hasField('SpellSaveDC'))
-      this.spellSaveDC = this.template.getFieldByLabel('SpellSaveDC').getValue();
+      this.spellSaveDC = this.template.getNumberByLabel('SpellSaveDC');
 
     if(this.template.RootNode.hasField('OrientationX'))
-      this.xOrientation = this.template.getFieldByLabel('OrientationX').getValue();
-    
+      this.xOrientation = this.template.getNumberByLabel('OrientationX');
+
     if(this.template.RootNode.hasField('OrientationY'))
-      this.yOrientation = this.template.getFieldByLabel('OrientationY').getValue();
-    
+      this.yOrientation = this.template.getNumberByLabel('OrientationY');
+
     if(this.template.RootNode.hasField('OrientationZ'))
-      this.zOrientation = this.template.getFieldByLabel('OrientationZ').getValue();
-      
+      this.zOrientation = this.template.getNumberByLabel('OrientationZ');
+
     if(this.template.RootNode.hasField('PositionX'))
-      this.position.x = this.template.getFieldByLabel('PositionX').getValue();
-    
+      this.position.x = this.template.getNumberByLabel('PositionX');
+
     if(this.template.RootNode.hasField('PositionY'))
-      this.position.y = this.template.getFieldByLabel('PositionY').getValue();
-    
+      this.position.y = this.template.getNumberByLabel('PositionY');
+
     if(this.template.RootNode.hasField('PositionZ'))
-      this.position.z = this.template.getFieldByLabel('PositionZ').getValue();
+      this.position.z = this.template.getNumberByLabel('PositionZ');
 
     //ActionList
     try{
@@ -168,14 +168,14 @@ export class ModuleAreaOfEffect extends ModuleObject {
     if(this.template.RootNode.hasField('SWVarTable')){
       const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0, len = localBools.length; i < len; i++){
-        const data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getNumberByLabel('Variable');
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
       }
       const localNumbers = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('ByteArray').getChildStructs();
       for(let i = 0, len = localNumbers.length; i < len; i++){
-        const data = localNumbers[i].getFieldByLabel('Variable').getValue();
+        const data = localNumbers[i].getNumberByLabel('Variable');
         this.setLocalNumber(i, data);
       }
     }

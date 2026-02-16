@@ -25,17 +25,17 @@ export class ForgeMiniGame {
   tracks: ForgeMGTrack[] = [];
 
   constructor(struct: KotOR.GFFStruct){
-    this.bumpPlane = struct.getFieldByLabel('Bump_Plane').getValue();
-    this.cameraViewAngle = struct.getFieldByLabel('CameraViewAngle').getValue();
-    this.dof = struct.getFieldByLabel('DOF').getValue();
-    this.doBumping = struct.getFieldByLabel('DoBumping').getValue();
-    this.farClip = struct.getFieldByLabel('Far_Clip').getValue();
-    this.lateralAccel = struct.getFieldByLabel('LateralAccel').getValue();
-    this.movementPerSec = struct.getFieldByLabel('MovementPerSec').getValue();
-    this.music = struct.getFieldByLabel('Music').getValue();
-    this.nearClip = struct.getFieldByLabel('Near_Clip').getValue();
-    this.type = struct.getFieldByLabel('Type').getValue();
-    this.useInertia = struct.getFieldByLabel('UseInertia').getValue();
+    this.bumpPlane = struct.getNumberByLabel('Bump_Plane');
+    this.cameraViewAngle = struct.getNumberByLabel('CameraViewAngle');
+    this.dof = struct.getNumberByLabel('DOF');
+    this.doBumping = struct.getNumberByLabel('DoBumping');
+    this.farClip = struct.getNumberByLabel('Far_Clip');
+    this.lateralAccel = struct.getNumberByLabel('LateralAccel');
+    this.movementPerSec = struct.getNumberByLabel('MovementPerSec');
+    this.music = struct.getNumberByLabel('Music');
+    this.nearClip = struct.getNumberByLabel('Near_Clip');
+    this.type = struct.getNumberByLabel('Type') as KotOR.MiniGameType;
+    this.useInertia = struct.getNumberByLabel('UseInertia');
     
 
     this.player = new ForgeMGPlayer(

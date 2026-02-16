@@ -17,11 +17,7 @@ export class FeedbackMessageEntry {
   message: string = '';
   type: number = 0;
 
-  constructor(){
-    
-  }
-
-  toStruct(){
+  toStruct(): GFFStruct {
     const struct = new GFFStruct(0);
     struct.addField(new GFFField(GFFDataType.BYTE, 'PT_FB_MSG_COLOR', this.color));
     struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'PT_FB_MSG_MSG', this.message));

@@ -5,6 +5,7 @@ import { ResourceTypes } from '@/resource/ResourceTypes';
 import { BinaryReader } from '@/utility/binary/BinaryReader';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 import { GameFileSystem } from '@/utility/GameFileSystem';
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
@@ -139,7 +140,7 @@ export class RIMObject {
     }
   }
 
-  async readHeaderFromFileDecriptor(fd: FileSystemFileHandle) {
+  async readHeaderFromFileDecriptor(fd: FileSystemFileHandle | number) {
     let header = new Uint8Array(RIM_HEADER_LENGTH);
     await GameFileSystem.read(fd, header, 0, RIM_HEADER_LENGTH, 0);
     this.reader = new BinaryReader(header);
@@ -249,6 +250,32 @@ export class RIMObject {
 
     return await this.getResourceBuffer(resource);
   }
+
+  toJSON(): { header: { fileType: string; fileVersion: string; resourceCount: number }; resources: Array<{ resRef: string; resType: number; resId: number; offset: number; size: number }> } {
+    return {
+      header: {
+        fileType: this.header?.fileType ?? 'RIM ',
+        fileVersion: this.header?.fileVersion ?? 'V1.0',
+        resourceCount: this.resources?.length ?? 0
+      },
+      resources: (this.resources ?? []).map(r => ({ resRef: r.resRef, resType: r.resType, resId: r.resId, offset: r.offset, size: r.size }))
+    };
+  }
+
+  fromJSON(json: string | ReturnType<RIMObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<RIMObject['toJSON']>) : json;
+    this.header = { ...this.header, ...obj.header } as IRIMHeader;
+    this.resources = (obj.resources ?? []).map((r: { resRef: string; resType: number; resId: number; offset: number; size: number }) => ({
+      resRef: r.resRef ?? '', resType: r.resType ?? 0, unused: 0, resId: r.resId ?? 0, offset: r.offset ?? 0, size: r.size ?? 0
+    })) as IRIMResource[];
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<RIMObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<RIMObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<RIMObject['toJSON']>); }
 
   /**
    * Serialize RIM to binary (PyKotor bytes_rim parity). Only valid when loaded from buffer (in memory).

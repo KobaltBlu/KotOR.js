@@ -10,7 +10,7 @@ export interface StoreItemEntry {
 
 export class ForgeStore extends ForgeGameObject {
   //GIT Instance Properties
-  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utm;
+  templateResType: number = KotOR.ResourceTypes.utm;
   resref: string = '';
 
   //Blueprint Properties
@@ -60,22 +60,22 @@ export class ForgeStore extends ForgeGameObject {
     if(!root) return;
 
     if(root.hasField('BuySellFlag')){
-      this.buySellFlag = root.getFieldByLabel('BuySellFlag').getValue() || 0;
+      this.buySellFlag = root.getNumberByLabel('BuySellFlag');
     }
     if(root.hasField('Comment')){
-      this.comment = root.getFieldByLabel('Comment').getValue() || '';
+      this.comment = root.getStringByLabel('Comment');
     }
     if(root.hasField('ID')){
-      this.id = root.getFieldByLabel('ID').getValue() || 0;
+      this.id = root.getNumberByLabel('ID');
     }
     if(root.hasField('ItemList')){
       const itemListField = root.getFieldByLabel('ItemList');
       const structs = itemListField.getChildStructs() || [];
       this.itemList = structs.map((struct: KotOR.GFFStruct) => {
         return {
-          inventoryRes: struct.hasField('InventoryRes') ? struct.getFieldByLabel('InventoryRes').getValue() || '' : '',
-          reposPosX: struct.hasField('Repos_PosX') ? struct.getFieldByLabel('Repos_PosX').getValue() || 0 : 0,
-          reposPosY: struct.hasField('Repos_Posy') ? struct.getFieldByLabel('Repos_Posy').getValue() || 0 : 0,
+          inventoryRes: struct.hasField('InventoryRes') ? struct.getStringByLabel('InventoryRes') : '',
+          reposPosX: struct.hasField('Repos_PosX') ? struct.getNumberByLabel('Repos_PosX') : 0,
+          reposPosY: struct.hasField('Repos_Posy') ? struct.getNumberByLabel('Repos_Posy') : 0,
         } as StoreItemEntry;
       });
     }
@@ -83,20 +83,20 @@ export class ForgeStore extends ForgeGameObject {
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('MarkDown')){
-      this.markDown = root.getFieldByLabel('MarkDown').getValue() || 0;
+      this.markDown = root.getNumberByLabel('MarkDown');
     }
     if(root.hasField('MarkUp')){
-      this.markUp = root.getFieldByLabel('MarkUp').getValue() || 0;
+      this.markUp = root.getNumberByLabel('MarkUp');
     }
     if(root.hasField('OnOpenStore')){
-      this.onOpenStore = root.getFieldByLabel('OnOpenStore').getValue() || '';
+      this.onOpenStore = root.getStringByLabel('OnOpenStore');
     }
     if(root.hasField('ResRef')){
-      this.templateResRef = root.getFieldByLabel('ResRef').getValue() || '';
+      this.templateResRef = root.getStringByLabel('ResRef');
       this.resref = this.templateResRef;
     }
     if(root.hasField('Tag')){
-      this.tag = root.getFieldByLabel('Tag').getValue() || '';
+      this.tag = root.getStringByLabel('Tag');
     }
   }
 
@@ -149,12 +149,12 @@ export class ForgeStore extends ForgeGameObject {
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
-    this.resref = strt.getFieldByLabel('ResRef').getValue() as string;
-    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
-    this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
-    this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
-    this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
+    this.resref = strt.getStringByLabel('ResRef');
+    this.rotation.z = strt.getNumberByLabel('XOrientation');
+    this.position.x = strt.getNumberByLabel('XPosition');
+    this.rotation.z = strt.getNumberByLabel('YOrientation');
+    this.position.y = strt.getNumberByLabel('YPosition');
+    this.position.z = strt.getNumberByLabel('ZPosition');
   }
 
 }

@@ -155,7 +155,12 @@ export class GamePad {
           GamePad.CurrentGamePad = undefined;
         }
 
-        delete GamePad.GamePads[gamepad.index];
+        const next: Record<number, GamePad> = {};
+        for (const [idxStr, pad] of Object.entries(GamePad.GamePads)) {
+          const idx = Number(idxStr);
+          if (idx !== gamepad.index) next[idx] = pad;
+        }
+        GamePad.GamePads = next;
       }
     }
 

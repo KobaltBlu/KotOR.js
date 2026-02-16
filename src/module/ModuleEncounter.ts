@@ -279,7 +279,7 @@ export class ModuleEncounter extends ModuleObject {
     if(!scriptsNode){ return; }
     for(const scriptKey of scriptKeys){
       if(scriptsNode.hasField(scriptKey)){
-        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+        const resRef = scriptsNode.getStringByLabel(scriptKey);
         if(!resRef){ continue; }
         const nwscript = GameState.NWScript.Load(resRef);
         if(!nwscript){ 
@@ -296,9 +296,9 @@ export class ModuleEncounter extends ModuleObject {
     
     if(!this.initialized){
       if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+        this.id = this.template.getNumberByLabel('ObjectId');
       }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
+        this.id = this.template.getNumberByLabel('ID');
       }
       
       GameState.ModuleObjectManager.AddObjectById(this);
@@ -310,9 +310,9 @@ export class ModuleEncounter extends ModuleObject {
         for(let i = 0; i < this.geometry.length; i++){
           const tgv = this.geometry[i];
           this.vertices[i] = new THREE.Vector3( 
-            tgv.getFieldByLabel('X').getValue(),
-            tgv.getFieldByLabel('Y').getValue(),
-            tgv.getFieldByLabel('Z').getValue()
+            tgv.getNumberByLabel('X'),
+            tgv.getNumberByLabel('Y'),
+            tgv.getNumberByLabel('Z')
           );
         }
       }
@@ -321,7 +321,7 @@ export class ModuleEncounter extends ModuleObject {
         const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
         //log.info(localBools);
         for(let i = 0; i < localBools.length; i++){
-          const data = localBools[i].getFieldByLabel('Variable').getValue();
+          const data = localBools[i].getNumberByLabel('Variable');
           for(let bit = 0; bit < 32; bit++){
             this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
           }
@@ -362,19 +362,19 @@ export class ModuleEncounter extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('Active'))
-        this.active = this.template.getFieldByLabel('Active').getValue();
+        this.active = this.template.getBooleanByLabel('Active');
 
       if(this.template.RootNode.hasField('AreaPoints'))
-        this.areaPoints = this.template.getFieldByLabel('AreaPoints').getValue();
+        this.areaPoints = this.template.getNumberByLabel('AreaPoints');
 
       if(this.template.RootNode.hasField('Difficulty'))
-        this.difficulty = this.template.getFieldByLabel('Difficulty').getValue();
+        this.difficulty = this.template.getNumberByLabel('Difficulty');
 
       if(this.template.RootNode.hasField('DifficultyIndex'))
-        this.difficultyIndex = this.template.getFieldByLabel('DifficultyIndex').getValue();
+        this.difficultyIndex = this.template.getNumberByLabel('DifficultyIndex');
 
       if(this.template.RootNode.hasField('Faction')){
-        this.factionId = this.template.getFieldByLabel('Faction').getValue();
+        this.factionId = this.template.getNumberByLabel('Faction');
         if((this.factionId & 0xFFFFFFFF) == -1){
           this.factionId = 0;
         }
@@ -382,88 +382,88 @@ export class ModuleEncounter extends ModuleObject {
       this.faction = GameState.FactionManager.factions.get(this.factionId);
 
       if(this.template.RootNode.hasField('LocalizedName'))
-        this.localizedName = this.template.getFieldByLabel('LocalizedName').getValue();
+        this.localizedName = this.template.getNumberByLabel('LocalizedName');
 
       if(this.template.RootNode.hasField('MaxCreatures'))
-        this.maxCreatures = this.template.getFieldByLabel('MaxCreatures').getValue();
+        this.maxCreatures = this.template.getNumberByLabel('MaxCreatures');
 
       if(this.template.RootNode.hasField('PaletteID'))
-        this.paletteId = this.template.getFieldByLabel('PaletteID').getValue();
+        this.paletteId = this.template.getNumberByLabel('PaletteID');
 
       if(this.template.RootNode.hasField('PlayerOnly'))
-        this.playerOnly = this.template.getFieldByLabel('PlayerOnly').getValue();
+        this.playerOnly = this.template.getBooleanByLabel('PlayerOnly');
 
       if(this.template.RootNode.hasField('RecCreatures'))
-        this.recCreatures = this.template.getFieldByLabel('RecCreatures').getValue();
+        this.recCreatures = this.template.getNumberByLabel('RecCreatures');
 
       if(this.template.RootNode.hasField('Reset'))
-        this.reset = this.template.getFieldByLabel('Reset').getValue();
+        this.reset = this.template.getNumberByLabel('Reset');
 
       if(this.template.RootNode.hasField('ResetTime'))
-        this.resetTime = this.template.getFieldByLabel('ResetTime').getValue();
+        this.resetTime = this.template.getNumberByLabel('ResetTime');
 
       if(this.template.RootNode.hasField('Respawns'))
-        this.respawns = this.template.getFieldByLabel('Respawns').getValue();
+        this.respawns = this.template.getNumberByLabel('Respawns');
 
       if(this.template.RootNode.hasField('SpawnOption'))
-        this.spawnOption = this.template.getFieldByLabel('SpawnOption').getValue();
+        this.spawnOption = this.template.getNumberByLabel('SpawnOption');
 
       if(this.template.RootNode.hasField('Tag'))
-        this.tag = this.template.getFieldByLabel('Tag').getValue();
-  
+        this.tag = this.template.getStringByLabel('Tag');
+
       if(this.template.RootNode.hasField('TemplateResRef'))
-        this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
+        this.templateResRef = this.template.getStringByLabel('TemplateResRef');
 
       if(this.template.RootNode.hasField('XPosition'))
-        this.position.x = this.template.getFieldByLabel('XPosition').getValue();
+        this.position.x = this.template.getNumberByLabel('XPosition');
 
       if(this.template.RootNode.hasField('YPosition'))
-        this.position.y = this.template.getFieldByLabel('YPosition').getValue();
-  
+        this.position.y = this.template.getNumberByLabel('YPosition');
+
       if(this.template.RootNode.hasField('ZPosition'))
-        this.position.z = this.template.getFieldByLabel('ZPosition').getValue();
+        this.position.z = this.template.getNumberByLabel('ZPosition');
 
       if(this.template.RootNode.hasField('Commandable'))
-        this.commandable = this.template.getFieldByLabel('Commandable').getValue();
+        this.commandable = this.template.getBooleanByLabel('Commandable');
 
       if(this.template.RootNode.hasField('NumberSpawned'))
-        this.numberSpawned = this.template.getFieldByLabel('NumberSpawned').getValue();
+        this.numberSpawned = this.template.getNumberByLabel('NumberSpawned');
 
       if(this.template.RootNode.hasField('HeartbeatDay'))
-        this.heartbeatDay = this.template.getFieldByLabel('HeartbeatDay').getValue();
+        this.heartbeatDay = this.template.getNumberByLabel('HeartbeatDay');
 
       if(this.template.RootNode.hasField('HeartbeatTime'))
-        this.heartbeatTime = this.template.getFieldByLabel('HeartbeatTime').getValue();
+        this.heartbeatTime = this.template.getNumberByLabel('HeartbeatTime');
 
       if(this.template.RootNode.hasField('LastSpawnDay'))
-        this.lastSpawnDay = this.template.getFieldByLabel('LastSpawnDay').getValue();
+        this.lastSpawnDay = this.template.getNumberByLabel('LastSpawnDay');
 
       if(this.template.RootNode.hasField('LastSpawnTime'))
-        this.lastSpawnTime = this.template.getFieldByLabel('LastSpawnTime').getValue();
+        this.lastSpawnTime = this.template.getNumberByLabel('LastSpawnTime');
 
       if(this.template.RootNode.hasField('LastEntered'))
-        this.lastEntered = this.template.getFieldByLabel('LastEntered').getValue();
+        this.lastEntered = this.template.getNumberByLabel('LastEntered');
 
       if(this.template.RootNode.hasField('LastLeft'))
-        this.lastLeft = this.template.getFieldByLabel('LastLeft').getValue();
+        this.lastLeft = this.template.getNumberByLabel('LastLeft');
 
       if(this.template.RootNode.hasField('Started'))
-        this.started = this.template.getFieldByLabel('Started').getValue();
+        this.started = this.template.getBooleanByLabel('Started');
 
       if(this.template.RootNode.hasField('Exhausted'))
-        this.exhausted = this.template.getFieldByLabel('Exhausted').getValue();
-        
+        this.exhausted = this.template.getBooleanByLabel('Exhausted');
+
       if(this.template.RootNode.hasField('CurrentSpawns'))
-        this.currentSpawns = this.template.getFieldByLabel('CurrentSpawns').getValue();
-    
+        this.currentSpawns = this.template.getNumberByLabel('CurrentSpawns');
+
       if(this.template.RootNode.hasField('CustomScriptId'))
-        this.customScriptId = this.template.getFieldByLabel('CustomScriptId').getValue();
+        this.customScriptId = this.template.getNumberByLabel('CustomScriptId');
 
       if(this.template.RootNode.hasField('AreaListMaxSize'))
-        this.areaListMaxSize = this.template.getFieldByLabel('AreaListMaxSize').getValue();
+        this.areaListMaxSize = this.template.getNumberByLabel('AreaListMaxSize');
 
       if(this.template.RootNode.hasField('SpawnPoolActive'))
-        this.spawnPoolActive = this.template.getFieldByLabel('SpawnPoolActive').getValue();
+        this.spawnPoolActive = this.template.getBooleanByLabel('SpawnPoolActive');
 
       this.initialized = true;
     }

@@ -80,17 +80,17 @@ export class ModuleMiniGame {
   lastAnimEventModelName: string = '';
 
   constructor(struct: GFFStruct) {
-    if (struct.hasField('Bump_Plane')) this.bumpPlane = struct.getFieldByLabel('Bump_Plane').getValue();
-    if (struct.hasField('CameraViewAngle')) this.cameraViewAngle = struct.getFieldByLabel('CameraViewAngle').getValue();
-    if (struct.hasField('DOF')) this.dof = struct.getFieldByLabel('DOF').getValue();
-    if (struct.hasField('DoBumping')) this.doBumping = struct.getFieldByLabel('DoBumping').getValue();
-    if (struct.hasField('Far_Clip')) this.farClip = struct.getFieldByLabel('Far_Clip').getValue();
-    if (struct.hasField('LateralAccel')) this.lateralAccel = struct.getFieldByLabel('LateralAccel').getValue();
-    if (struct.hasField('MovementPerSec')) this.movementPerSec = struct.getFieldByLabel('MovementPerSec').getValue();
-    if (struct.hasField('Music')) this.music = typeof struct.getFieldByLabel('Music').getValue() === 'string' ? struct.getFieldByLabel('Music').getValue() : '';
-    if (struct.hasField('Near_Clip')) this.nearClip = struct.getFieldByLabel('Near_Clip').getValue();
-    if (struct.hasField('Type')) this.type = struct.getFieldByLabel('Type').getValue();
-    if (struct.hasField('UseInertia')) this.useInertia = struct.getFieldByLabel('UseInertia').getValue();
+    if (struct.hasField('Bump_Plane')) this.bumpPlane = struct.getNumberByLabel('Bump_Plane');
+    if (struct.hasField('CameraViewAngle')) this.cameraViewAngle = struct.getNumberByLabel('CameraViewAngle');
+    if (struct.hasField('DOF')) this.dof = struct.getNumberByLabel('DOF');
+    if (struct.hasField('DoBumping')) this.doBumping = struct.getBooleanByLabel('DoBumping');
+    if (struct.hasField('Far_Clip')) this.farClip = struct.getNumberByLabel('Far_Clip');
+    if (struct.hasField('LateralAccel')) this.lateralAccel = struct.getNumberByLabel('LateralAccel');
+    if (struct.hasField('MovementPerSec')) this.movementPerSec = struct.getNumberByLabel('MovementPerSec');
+    if (struct.hasField('Music')) this.music = struct.getStringByLabel('Music');
+    if (struct.hasField('Near_Clip')) this.nearClip = struct.getNumberByLabel('Near_Clip');
+    if (struct.hasField('Type')) this.type = struct.getNumberByLabel('Type');
+    if (struct.hasField('UseInertia')) this.useInertia = struct.getBooleanByLabel('UseInertia');
 
     if (struct.hasField('Player')) {
       const playerStructs = struct.getFieldByLabel('Player').getChildStructs();

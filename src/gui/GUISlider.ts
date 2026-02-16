@@ -16,16 +16,16 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * GUISlider class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUISlider.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUISlider extends GUIControl{
 
-  onValueChanged: Function;
+  onValueChanged: () => void;
 
   thumbStruct: GFFStruct;
   scrollPos: number;
@@ -85,7 +85,7 @@ export class GUISlider extends GUIControl{
       )
 
       if(this.thumbStruct.hasField('IMAGE')){
-        TextureLoader.enQueue(this.thumbStruct.getFieldByLabel('IMAGE').getValue(), this.thumb.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+        TextureLoader.enQueue(this.thumbStruct.getStringByLabel('IMAGE'), this.thumb.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           this.thumb.material.transparent = false;
           this.thumb.material.alphaTest = 0.5;
           this.thumb.material.needsUpdate = true;
@@ -186,11 +186,11 @@ export class GUISlider extends GUIControl{
         mouseY = maxY
       }
 
-      const scrollY = ((mouseY - minY) / (maxY - minY));
+      const thumbScrollRatio = ((mouseY - minY) / (maxY - minY));
       this.thumb.mesh.position.x = 0;
-      this.thumb.mesh.position.y = maxHeight * (scrollY - 0.5);
-      valueChanged = (scrollY != this.value);
-      value = scrollY;
+      this.thumb.mesh.position.y = maxHeight * (thumbScrollRatio - 0.5);
+      valueChanged = (thumbScrollRatio != this.value);
+      value = thumbScrollRatio;
     }
 
     this.value = value;
@@ -227,7 +227,7 @@ export class GUISlider extends GUIControl{
     if(this.iniProperty){
       GameState.iniConfig.setProperty(this.iniProperty, (this.value * 100) | 0);
     }
-    
+
     if(typeof this.onValueChanged === 'function')
       this.onValueChanged(this.value);
 

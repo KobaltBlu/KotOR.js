@@ -379,7 +379,7 @@ export class ModuleMGEnemy extends ModuleObject {
     if (scriptsNode) {
       for (const scriptKey of scriptKeys) {
         if (!scriptsNode.hasField(scriptKey)) { continue; }
-        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+        const resRef = scriptsNode.getStringByLabel(scriptKey);
         if (!resRef) { continue; }
         const nwscript = GameState.NWScript.Load(resRef);
         if (!nwscript) {
@@ -394,40 +394,40 @@ export class ModuleMGEnemy extends ModuleObject {
 
   initProperties() {
     if (this.template.RootNode.hasField('Accel_Secs'))
-      this.accel_secs = this.template.getFieldByLabel('Accel_Secs').getValue();
+      this.accel_secs = this.template.getNumberByLabel('Accel_Secs');
 
     if (this.template.RootNode.hasField('Bump_Damage'))
-      this.bump_damage = this.template.getFieldByLabel('Bump_Damage').getValue();
+      this.bump_damage = this.template.getNumberByLabel('Bump_Damage');
 
     if (this.template.RootNode.hasField('Camera'))
-      this.cameraName = this.template.getFieldByLabel('Camera').getValue();
+      this.cameraName = this.template.getStringByLabel('Camera');
 
     if (this.template.RootNode.hasField('CameraRotate'))
-      this.cameraRotate = this.template.getFieldByLabel('CameraRotate').getValue();
+      this.cameraRotate = this.template.getNumberByLabel('CameraRotate');
 
     if (this.template.RootNode.hasField('Hit_Points'))
-      this.hit_points = this.template.getFieldByLabel('Hit_Points').getValue();
+      this.hit_points = this.template.getNumberByLabel('Hit_Points');
 
     if (this.template.RootNode.hasField('Invince_Period'))
-      this.invince_period = this.template.getFieldByLabel('Invince_Period').getValue();
+      this.invince_period = this.template.getNumberByLabel('Invince_Period');
 
     if (this.template.RootNode.hasField('Max_HPs'))
-      this.max_hps = this.template.getFieldByLabel('Max_HPs').getValue();
+      this.max_hps = this.template.getNumberByLabel('Max_HPs');
 
     if (this.template.RootNode.hasField('Maximum_Speed'))
-      this.maximum_speed = this.template.getFieldByLabel('Maximum_Speed').getValue();
+      this.maximum_speed = this.template.getNumberByLabel('Maximum_Speed');
 
     if (this.template.RootNode.hasField('Minimum_Speed'))
-      this.minimum_speed = this.template.getFieldByLabel('Minimum_Speed').getValue();
+      this.minimum_speed = this.template.getNumberByLabel('Minimum_Speed');
 
     if (this.template.RootNode.hasField('Num_Loops'))
-      this.num_loops = this.template.getFieldByLabel('Num_Loops').getValue();
+      this.num_loops = this.template.getNumberByLabel('Num_Loops');
 
     if (this.template.RootNode.hasField('Sphere_Radius'))
-      this.sphere_radius = this.template.getFieldByLabel('Sphere_Radius').getValue();
+      this.sphere_radius = this.template.getNumberByLabel('Sphere_Radius');
 
     if (this.template.RootNode.hasField('Track'))
-      this.trackName = this.template.getFieldByLabel('Track').getValue();
+      this.trackName = this.template.getStringByLabel('Track');
 
 
     if (this.template.RootNode.hasField('Models')) {
@@ -435,8 +435,8 @@ export class ModuleMGEnemy extends ModuleObject {
       for (let i = 0; i < models.length; i++) {
         const modelStruct = models[i];
         this.modelProps.push({
-          model: modelStruct.getFieldByLabel('Model').getValue(),
-          rotating: modelStruct.getFieldByLabel('RotatingModel').getValue() ? true : false
+          model: modelStruct.getStringByLabel('Model'),
+          rotating: modelStruct.getBooleanByLabel('RotatingModel')
         });
       }
     }

@@ -14,6 +14,7 @@ import { DLGNode } from "@/resource/DLGNode";
 import { GFFObject } from "@/resource/GFFObject";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { OdysseyModel3D } from "@/three/odyssey";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { BitWise } from "@/utility/BitWise";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
@@ -477,6 +478,15 @@ export class DLGObject {
     dlg.init();
     return dlg;
   }
+
+  toJSON(): unknown { return this.gff?.toJSON?.() ?? {}; }
+  fromJSON(json: string | unknown): void { if (this.gff) this.gff.fromJSON(json); }
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml)); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml)); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml)); }
 
   static FromResRef(resref: string): DLGObject {
     if (resref) {

@@ -89,7 +89,7 @@ export class SWFootStep {
   }
 
 
-  static From2DA(row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWFootStep {
+  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWFootStep {
     const footStep = new SWFootStep();
     footStep.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     footStep.label = TwoDAObject.normalizeValue(row.label, 'string', '');

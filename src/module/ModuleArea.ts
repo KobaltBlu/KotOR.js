@@ -607,11 +607,12 @@ export class ModuleArea extends ModuleObject {
   updateMusic(delta: number = 0){
     const audioEngine = AudioEngine.GetAudioEngine();
     const oPC = GameState.getCurrentPlayer();
-    if(oPC.excitedDuration > 0 && audioEngine.bgmMode == BackgroundMusicMode.AREA && audioEngine.battleMusicLoaded){
+    const excitedDuration = (oPC && 'excitedDuration' in oPC) ? (oPC as ModuleCreature).excitedDuration : 0;
+    if(excitedDuration > 0 && audioEngine.bgmMode == BackgroundMusicMode.AREA && audioEngine.battleMusicLoaded){
       audioEngine.bgmMode = BackgroundMusicMode.BATTLE;
       audioEngine.areaMusicDayAudioEmitter.stop();
       audioEngine.battleMusicAudioEmitter.play(true);
-    }else if(oPC.excitedDuration <= 0 && audioEngine.bgmMode == BackgroundMusicMode.BATTLE && audioEngine.battleMusicLoaded){
+    }else if(excitedDuration <= 0 && audioEngine.bgmMode == BackgroundMusicMode.BATTLE && audioEngine.battleMusicLoaded){
       audioEngine.bgmMode = audioEngine.battleStingerLoaded ? BackgroundMusicMode.BATTLE_STINGER : BackgroundMusicMode.AREA;
       audioEngine.battleMusicAudioEmitter.stop();
     }
@@ -639,10 +640,11 @@ export class ModuleArea extends ModuleObject {
     const bgMusic = ambientmusic2DA.rows[index];
     this.audio.music.day = index;
     try{
-      if(bgMusic.resource != '****'){
-        log.debug('Loading Background Music', bgMusic.resource);
-        const data = await AudioLoader.LoadMusic(bgMusic.resource);
-        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, bgMusic.resource);
+      const dayRes = String(bgMusic.resource ?? '');
+      if(dayRes !== '****'){
+        log.debug('Loading Background Music', dayRes);
+        const data = await AudioLoader.LoadMusic(dayRes);
+        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, dayRes);
       }
     }catch(e){
       log.warn('Background Music not found', bgMusic);
@@ -657,10 +659,11 @@ export class ModuleArea extends ModuleObject {
     const bgMusic = ambientmusic2DA.rows[index];
     this.audio.music.night = index;
     try{
-      if(bgMusic.resource != '****'){
-        log.debug('Loading Background Music', bgMusic.resource);
-        const data = await AudioLoader.LoadMusic(bgMusic.resource);
-        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_NIGHT', data.buffer as ArrayBuffer, bgMusic.resource);
+      const nightRes = String(bgMusic.resource ?? '');
+      if(nightRes !== '****'){
+        log.debug('Loading Background Music', nightRes);
+        const data = await AudioLoader.LoadMusic(nightRes);
+        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_NIGHT', data.buffer as ArrayBuffer, nightRes);
       }
     }catch(e){
       log.warn('Background Music not found', bgMusic);
@@ -685,24 +688,26 @@ export class ModuleArea extends ModuleObject {
     const battleMusic = ambientmusic2DA.rows[index];
     this.audio.music.battle = index;
     try{
-      if(battleMusic.resource != '****'){
-        log.info('Loading Battle Music', battleMusic.resource);
-        const data = await AudioLoader.LoadMusic(battleMusic.resource);
-        audioEngine.setAudioBuffer('BATTLE', data.buffer as ArrayBuffer, battleMusic.resource);
+      const battleRes = String(battleMusic.resource ?? '');
+      if(battleRes !== '****'){
+        log.info('Loading Battle Music', battleRes);
+        const data = await AudioLoader.LoadMusic(battleRes);
+        audioEngine.setAudioBuffer('BATTLE', data.buffer as ArrayBuffer, battleRes);
       }
       //Load the battle stinger
       try{
-        if(battleMusic.stinger1 != '****'){
-          log.debug('Loading Battle Stinger', battleMusic.stinger1);
-          const data = await AudioLoader.LoadStreamSound(battleMusic.stinger1);
-          audioEngine.setAudioBuffer('BATTLE_STINGER', data.buffer as ArrayBuffer, battleMusic.stinger1);
+        const stinger1 = String(battleMusic.stinger1 ?? '');
+        if(stinger1 !== '****'){
+          log.debug('Loading Battle Stinger', stinger1);
+          const data = await AudioLoader.LoadStreamSound(stinger1);
+          audioEngine.setAudioBuffer('BATTLE_STINGER', data.buffer as ArrayBuffer, stinger1);
         }
       }catch(e){
-        log.warn('Battle Stinger not found', battleMusic.stinger1);
+        log.warn('Battle Stinger not found', String(battleMusic.stinger1 ?? ''));
         log.error(e instanceof Error ? e : String(e));
       }
     }catch(e){
-      log.warn('Background Music not found', battleMusic);
+      log.warn('Background Music not found', battleMusic?.resource ?? '');
       log.error(e instanceof Error ? e : String(e));
     }
   }
@@ -725,13 +730,14 @@ export class ModuleArea extends ModuleObject {
     if(ambientsound2DA){
       //Load the ambient day sound
       const ambientDay = ambientsound2DA.rows[this.audio.ambient.day];
-      if(!ambientDay || ambientDay.resource == '****'){
+      const dayRes = ambientDay ? String(ambientDay.resource ?? '') : '';
+      if(!ambientDay || dayRes === '****'){
         return;
       }
-      log.debug('Loading Ambient Day Sound', ambientDay.resource);
+      log.debug('Loading Ambient Day Sound', dayRes);
       try{
-        const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
-        audioEngine.setAudioBuffer('AMBIENT_DAY', data.buffer as ArrayBuffer, ambientDay.resource);
+        const data = await AudioLoader.LoadAmbientSound(dayRes);
+        audioEngine.setAudioBuffer('AMBIENT_DAY', data.buffer as ArrayBuffer, dayRes);
         audioEngine.ambientAudioDayEmitter.play(true);
       }catch(e){
         log.error('Ambient Audio not found', ambientDay);
@@ -746,17 +752,18 @@ export class ModuleArea extends ModuleObject {
     const ambientsound2DA = GameState.TwoDAManager.datatables.get('ambientsound');
     if(ambientsound2DA){
       //Load the ambient day sound
-      const ambientDay = ambientsound2DA.rows[this.audio.ambient.night];
-      if(!ambientDay || ambientDay.resource == '****'){
+      const ambientNight = ambientsound2DA.rows[this.audio.ambient.night];
+      const nightAmbRes = ambientNight ? String(ambientNight.resource ?? '') : '';
+      if(!ambientNight || nightAmbRes === '****'){
         return;
       }
-      log.debug('Loading Ambient Day Sound', ambientDay.resource);
+      log.debug('Loading Ambient Night Sound', nightAmbRes);
       try{
-        const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
-        audioEngine.setAudioBuffer('AMBIENT_NIGHT', data.buffer as ArrayBuffer, ambientDay.resource);
+        const data = await AudioLoader.LoadAmbientSound(nightAmbRes);
+        audioEngine.setAudioBuffer('AMBIENT_NIGHT', data.buffer as ArrayBuffer, nightAmbRes);
         audioEngine.ambientAudioNightEmitter.play(true);
       }catch(e){
-        log.error('Ambient Audio not found', ambientDay);
+        log.error('Ambient Audio not found', ambientNight);
       }
     }
   }
@@ -893,41 +900,41 @@ export class ModuleArea extends ModuleObject {
     //BEGIN AREA LOAD
 
     if(this.are.RootNode.hasField('ObjectId'))
-      this.id = this.are.getFieldByLabel('ObjectId').getValue();
+      this.id = this.are.getNumberByLabel('ObjectId');
 
     const rooms = this.are.getFieldByLabel('Rooms');
 
-    this.alphaTest = this.are.getFieldByLabel('AlphaTest').getValue();
-    this.cameraStyle = this.are.getFieldByLabel('CameraStyle').getValue();
-    this.weather.chanceLightning = this.are.getFieldByLabel('ChanceLightning').getValue();
-    this.weather.chanceRain = this.are.getFieldByLabel('ChanceRain').getValue();
-    this.weather.chanceSnow = this.are.getFieldByLabel('ChanceSnow').getValue();
-    this.comments = this.are.getFieldByLabel('Comments').getValue();
-    this.creatorId = this.are.getFieldByLabel('Creator_ID').getValue();
-    this.dayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
-    this.defaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
-    this.dynamicAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
+    this.alphaTest = this.are.getNumberByLabel('AlphaTest');
+    this.cameraStyle = this.are.getNumberByLabel('CameraStyle');
+    this.weather.chanceLightning = this.are.getNumberByLabel('ChanceLightning');
+    this.weather.chanceRain = this.are.getNumberByLabel('ChanceRain');
+    this.weather.chanceSnow = this.are.getNumberByLabel('ChanceSnow');
+    this.comments = this.are.getStringByLabel('Comments');
+    this.creatorId = this.are.getNumberByLabel('Creator_ID');
+    this.dayNightCycle = this.are.getBooleanByLabel('DayNightCycle');
+    this.defaultEnvMap = this.are.getStringByLabel('DefaultEnvMap');
+    this.dynamicAmbientColor = this.are.getNumberByLabel('DynAmbientColor');
     this.expansionList = [];
 
-    this.flags = this.are.getFieldByLabel('Flags').getValue();
+    this.flags = this.are.getNumberByLabel('Flags');
     this.grass = {
-      ambient: this.are.getFieldByLabel('Grass_Ambient').getValue(),
-      density: this.are.getFieldByLabel('Grass_Density').getValue(),
-      diffuse: this.are.getFieldByLabel('Grass_Diffuse').getValue(),
+      ambient: this.are.getNumberByLabel('Grass_Ambient'),
+      density: this.are.getNumberByLabel('Grass_Density'),
+      diffuse: this.are.getNumberByLabel('Grass_Diffuse'),
       probability: {
-        lowerLeft: this.are.getFieldByLabel('Grass_Prob_LL').getValue(),
-        lowerRight: this.are.getFieldByLabel('Grass_Prob_LR').getValue(),
-        upperLeft: this.are.getFieldByLabel('Grass_Prob_UL').getValue(),
-        upperRight: this.are.getFieldByLabel('Grass_Prob_UR').getValue()
+        lowerLeft: this.are.getNumberByLabel('Grass_Prob_LL'),
+        lowerRight: this.are.getNumberByLabel('Grass_Prob_LR'),
+        upperLeft: this.are.getNumberByLabel('Grass_Prob_UL'),
+        upperRight: this.are.getNumberByLabel('Grass_Prob_UR')
       },
-      quadSize: this.are.getFieldByLabel('Grass_QuadSize').getValue(),
-      textureName: this.are.getFieldByLabel('Grass_TexName').getValue()
+      quadSize: this.are.getNumberByLabel('Grass_QuadSize'),
+      textureName: this.are.getStringByLabel('Grass_TexName')
     };
 
-    this.id = this.are.getFieldByLabel('ID').getValue();
-    this.isNight = this.are.getFieldByLabel('IsNight').getValue();
-    this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
-    this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
+    this.id = this.are.getNumberByLabel('ID');
+    this.isNight = this.are.getBooleanByLabel('IsNight');
+    this.lightingScheme = this.are.getNumberByLabel('LightingScheme');
+    this.loadScreenId = this.are.getNumberByLabel('LoadScreenID');
 
     const map = this.are.getFieldByLabel('Map').getChildStructs()[0];
     if(map){
@@ -940,45 +947,45 @@ export class ModuleArea extends ModuleObject {
       );
     }
 
-    this.modListenCheck = this.are.getFieldByLabel('ModListenCheck').getValue();
-    this.modSpotCheck = this.are.getFieldByLabel('ModSpotCheck').getValue();
-    this.moon.ambientColor = this.are.getFieldByLabel('MoonAmbientColor').getValue();
-    this.moon.diffuseColor = this.are.getFieldByLabel('MoonDiffuseColor').getValue();
-    this.moon.fogColor = this.are.getFieldByLabel('MoonFogColor').getValue();
-    this.moon.fogFar = this.are.getFieldByLabel('MoonFogFar').getValue();
-    this.moon.fogFar = this.are.getFieldByLabel('MoonFogNear').getValue();
-    this.moon.fogOn = !!this.are.getFieldByLabel('MoonFogOn').getValue();
-    this.moon.shadows = !!this.are.getFieldByLabel('MoonShadows').getValue();
+    this.modListenCheck = this.are.getNumberByLabel('ModListenCheck');
+    this.modSpotCheck = this.are.getNumberByLabel('ModSpotCheck');
+    this.moon.ambientColor = this.are.getNumberByLabel('MoonAmbientColor');
+    this.moon.diffuseColor = this.are.getNumberByLabel('MoonDiffuseColor');
+    this.moon.fogColor = this.are.getNumberByLabel('MoonFogColor');
+    this.moon.fogFar = this.are.getNumberByLabel('MoonFogFar');
+    this.moon.fogFar = this.are.getNumberByLabel('MoonFogNear');
+    this.moon.fogOn = this.are.getBooleanByLabel('MoonFogOn');
+    this.moon.shadows = this.are.getBooleanByLabel('MoonShadows');
     this.areaName = this.are.getFieldByLabel('Name').getCExoLocString();
 
-    this.noHangBack = !!this.are.getFieldByLabel('NoHangBack').getValue();
-    this.noRest = !!this.are.getFieldByLabel('NoRest').getValue();
+    this.noHangBack = this.are.getBooleanByLabel('NoHangBack');
+    this.noRest = this.are.getBooleanByLabel('NoRest');
 
     if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnEnter)){
-      this.scriptResRefs.set(ModuleObjectScript.AreaOnEnter, this.are.getFieldByLabel(ModuleObjectScript.AreaOnEnter).getValue());
+      this.scriptResRefs.set(ModuleObjectScript.AreaOnEnter, this.are.getStringByLabel(ModuleObjectScript.AreaOnEnter));
     }
 
     if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnExit)){
-      this.scriptResRefs.set(ModuleObjectScript.AreaOnExit, this.are.getFieldByLabel(ModuleObjectScript.AreaOnExit).getValue());
+      this.scriptResRefs.set(ModuleObjectScript.AreaOnExit, this.are.getStringByLabel(ModuleObjectScript.AreaOnExit));
     }
 
     if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnHeartbeat)){
-      this.scriptResRefs.set(ModuleObjectScript.AreaOnHeartbeat, this.are.getFieldByLabel(ModuleObjectScript.AreaOnHeartbeat).getValue());
+      this.scriptResRefs.set(ModuleObjectScript.AreaOnHeartbeat, this.are.getStringByLabel(ModuleObjectScript.AreaOnHeartbeat));
     }
 
     if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnUserDefined)){
-      this.scriptResRefs.set(ModuleObjectScript.AreaOnUserDefined, this.are.getFieldByLabel(ModuleObjectScript.AreaOnUserDefined).getValue());
+      this.scriptResRefs.set(ModuleObjectScript.AreaOnUserDefined, this.are.getStringByLabel(ModuleObjectScript.AreaOnUserDefined));
     }
 
-    this.playerOnly = !!this.are.getFieldByLabel('PlayerOnly').getValue();
-    this.playerVsPlayer = this.are.getFieldByLabel('PlayerVsPlayer').getValue();
+    this.playerOnly = this.are.getBooleanByLabel('PlayerOnly');
+    this.playerVsPlayer = this.are.getBooleanByLabel('PlayerVsPlayer');
 
     //Rooms
     for(let i = 0; i < rooms.childStructs.length; i++ ){
       const strt = rooms.childStructs[i];
-      const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
-      const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
-      const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
+      const roomName = strt.getStringByLabel('RoomName').toLowerCase();
+      const envAudio = strt.getNumberByLabel('EnvAudio');
+      const ambientScale = strt.getNumberByLabel('AmbientScale');
       const room = new ModuleRoom(roomName, this);
       room.area = this;
       room.setAmbientScale(ambientScale);
@@ -986,23 +993,23 @@ export class ModuleArea extends ModuleObject {
       this.rooms.push(room);
     }
 
-    this.shadowOpacity = this.are.getFieldByLabel('ShadowOpacity').getValue();
+    this.shadowOpacity = this.are.getNumberByLabel('ShadowOpacity');
 
-    this.stealthXPEnabled = this.are.getFieldByLabel('StealthXPEnabled').getValue();
-    this.stealthXPLoss = this.are.getFieldByLabel('StealthXPLoss').getValue();
-    this.stealthXPMax = this.are.getFieldByLabel('StealthXPMax').getValue();
+    this.stealthXPEnabled = this.are.getNumberByLabel('StealthXPEnabled');
+    this.stealthXPLoss = this.are.getNumberByLabel('StealthXPLoss');
+    this.stealthXPMax = this.are.getNumberByLabel('StealthXPMax');
 
-    this.sun.ambientColor = this.are.getFieldByLabel('SunAmbientColor').getValue();
-    this.sun.diffuseColor = this.are.getFieldByLabel('SunDiffuseColor').getValue();
-    this.sun.fogColor = this.are.getFieldByLabel('SunFogColor').getValue();
-    this.sun.fogFar = this.are.getFieldByLabel('SunFogFar').getValue();
-    this.sun.fogNear = this.are.getFieldByLabel('SunFogNear').getValue();
-    this.sun.fogOn = this.are.getFieldByLabel('SunFogOn').getValue();
-    this.sun.shadows = this.are.getFieldByLabel('SunShadows').getValue();
-    this.tag = this.are.getFieldByLabel('Tag').getValue();
-    this.unescapable = this.are.getFieldByLabel('Unescapable').getValue() ? true : false;
-    this.version = this.are.getFieldByLabel('Version').getValue();
-    this.windPower = this.are.getFieldByLabel('WindPower').getValue();
+    this.sun.ambientColor = this.are.getNumberByLabel('SunAmbientColor');
+    this.sun.diffuseColor = this.are.getNumberByLabel('SunDiffuseColor');
+    this.sun.fogColor = this.are.getNumberByLabel('SunFogColor');
+    this.sun.fogFar = this.are.getNumberByLabel('SunFogFar');
+    this.sun.fogNear = this.are.getNumberByLabel('SunFogNear');
+    this.sun.fogOn = this.are.getBooleanByLabel('SunFogOn');
+    this.sun.shadows = this.are.getBooleanByLabel('SunShadows');
+    this.tag = this.are.getStringByLabel('Tag');
+    this.unescapable = this.are.getBooleanByLabel('Unescapable');
+    this.version = this.are.getNumberByLabel('Version');
+    this.windPower = this.are.getNumberByLabel('WindPower');
 
     this.fog = undefined;
 
@@ -1032,21 +1039,21 @@ export class ModuleArea extends ModuleObject {
     const triggers = this.git.getFieldByLabel('TriggerList');
     const waypoints = this.git.getFieldByLabel('WaypointList');
 
-    const areaPropsField = areaProps.getChildStructs()[0].getFields();
-    this.audio.ambient.day = this.git.getFieldByLabel('AmbientSndDay', areaPropsField).getValue();
-    this.audio.ambient.dayVolume = this.git.getFieldByLabel('AmbientSndDayVol', areaPropsField).getValue();
-    this.audio.ambient.night = this.git.getFieldByLabel('AmbientSndNight', areaPropsField).getValue();
-    this.audio.ambient.nightVolume = this.git.getFieldByLabel('AmbientSndNitVol', areaPropsField).getValue();
-    if(areaProps.getChildStructs()[0].hasField('EnvAudio')){
-      this.audio.environmentAudio = this.git.getFieldByLabel('EnvAudio', areaPropsField).getValue();
+    const areaPropsStruct = areaProps.getChildStructs()[0];
+    this.audio.ambient.day = areaPropsStruct.getNumberByLabel('AmbientSndDay');
+    this.audio.ambient.dayVolume = areaPropsStruct.getNumberByLabel('AmbientSndDayVol');
+    this.audio.ambient.night = areaPropsStruct.getNumberByLabel('AmbientSndNight');
+    this.audio.ambient.nightVolume = areaPropsStruct.getNumberByLabel('AmbientSndNitVol');
+    if(areaPropsStruct.hasField('EnvAudio')){
+      this.audio.environmentAudio = areaPropsStruct.getNumberByLabel('EnvAudio');
     }else{
       this.audio.environmentAudio = -1;
     }
 
-    this.audio.music.battle = this.git.getFieldByLabel('MusicBattle', areaPropsField).getValue();
-    this.audio.music.day = this.git.getFieldByLabel('MusicDay', areaPropsField).getValue();
-    this.audio.music.delay = this.git.getFieldByLabel('MusicDelay', areaPropsField).getValue();
-    this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
+    this.audio.music.battle = areaPropsStruct.getNumberByLabel('MusicBattle');
+    this.audio.music.day = areaPropsStruct.getNumberByLabel('MusicDay');
+    this.audio.music.delay = areaPropsStruct.getNumberByLabel('MusicDelay');
+    this.audio.music.night = areaPropsStruct.getNumberByLabel('MusicNight');
     AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
 
     //Cameras
@@ -1129,11 +1136,11 @@ export class ModuleArea extends ModuleObject {
 
         if(this.transWP){
           if(typeof this.transWP === 'string'){
-            if(this.transWP.toLowerCase() == strt.getFieldByLabel('Tag').getValue().toLowerCase()){
+            if(this.transWP.toLowerCase() == strt.getStringByLabel('Tag').toLowerCase()){
               this.transWP = GFFObject.FromStruct(strt);
             }
           }else if(this.transWP instanceof GFFObject){
-            if(this.transWP.getFieldByLabel('Tag').getValue().toLowerCase() == strt.getFieldByLabel('Tag').getValue().toLowerCase()){
+            if(this.transWP.getStringByLabel('Tag').toLowerCase() == strt.getStringByLabel('Tag').toLowerCase()){
               this.transWP = GFFObject.FromStruct(strt);
             }
           }
@@ -1160,7 +1167,7 @@ export class ModuleArea extends ModuleObject {
       const localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       //log.info(localBools);
       for(let i = 0; i < localBools.length; i++){
-        const data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getNumberByLabel('Variable');
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
@@ -1185,12 +1192,11 @@ export class ModuleArea extends ModuleObject {
 
   }
 
-  getCameraStyle(){
+  getCameraStyle(): { pitch?: string | number; height?: string | number; distance?: string | number } {
     const cameraStyle2DA = GameState.TwoDAManager.datatables.get('camerastyle');
-    if(cameraStyle2DA){
-      return cameraStyle2DA.rows[this.cameraStyle];
-    }
-    return cameraStyle2DA.rows[0];
+    if (!cameraStyle2DA) return {};
+    const row = cameraStyle2DA.rows[this.cameraStyle];
+    return (row ?? cameraStyle2DA.rows[0] ?? {}) as { pitch?: string | number; height?: string | number; distance?: string | number };
   }
 
   async loadPath(){
@@ -1402,21 +1408,21 @@ export class ModuleArea extends ModuleObject {
   getSpawnLocation(): EngineLocation {
     if(GameState.isLoadingSave){
       return new EngineLocation(
-        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('XPosition').getValue(),
-        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('YPosition').getValue(),
-        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('ZPosition').getValue(),
-        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('XOrientation').getValue(),
-        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('YOrientation').getValue(),
+        GameState.PartyManager.PlayerTemplate.RootNode.getNumberByLabel('XPosition'),
+        GameState.PartyManager.PlayerTemplate.RootNode.getNumberByLabel('YPosition'),
+        GameState.PartyManager.PlayerTemplate.RootNode.getNumberByLabel('ZPosition'),
+        GameState.PartyManager.PlayerTemplate.RootNode.getNumberByLabel('XOrientation'),
+        GameState.PartyManager.PlayerTemplate.RootNode.getNumberByLabel('YOrientation'),
         0
       );
     }else if(this.transWP instanceof GFFObject){
       log.info('TransWP', this.transWP);
       return new EngineLocation(
-        this.transWP.RootNode.getFieldByLabel('XPosition').getValue(),
-        this.transWP.RootNode.getFieldByLabel('YPosition').getValue(),
-        this.transWP.RootNode.getFieldByLabel('ZPosition').getValue(),
-        this.transWP.RootNode.getFieldByLabel('XOrientation').getValue(),
-        this.transWP.RootNode.getFieldByLabel('YOrientation').getValue(),
+        this.transWP.RootNode.getNumberByLabel('XPosition'),
+        this.transWP.RootNode.getNumberByLabel('YPosition'),
+        this.transWP.RootNode.getNumberByLabel('ZPosition'),
+        this.transWP.RootNode.getNumberByLabel('XOrientation'),
+        this.transWP.RootNode.getNumberByLabel('YOrientation'),
         0
       );
     }else{
@@ -2202,7 +2208,7 @@ export class ModuleArea extends ModuleObject {
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(0);
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(0);
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPending') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.BYTE, 'Unescapable') ).setValue(this.unescapable);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'Unescapable') ).setValue(this.unescapable ? 1 : 0);
     return struct;
   }
 

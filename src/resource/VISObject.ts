@@ -4,6 +4,7 @@ import type { ModuleArea, ModuleRoom } from "@/module";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { BitWise } from "@/utility/BitWise";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);
@@ -337,6 +338,27 @@ export class VISObject {
     }
     return this.area.rooms.find(room => room.roomName.toLocaleLowerCase() === name.toLocaleLowerCase()) || null;
   }
+
+  toJSON(): { rooms: Array<{ name: string; count: number; rooms: string[] }> } {
+    return {
+      rooms: Array.from(this.rooms.values()).map(r => ({ name: r.name, count: r.count, rooms: [...(r.rooms ?? [])] }))
+    };
+  }
+
+  fromJSON(json: string | ReturnType<VISObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<VISObject['toJSON']>) : json;
+    this.rooms.clear();
+    for (const r of obj.rooms ?? []) {
+      this.rooms.set(r.name.toLowerCase(), { name: r.name.toLowerCase(), count: r.count ?? r.rooms?.length ?? 0, rooms: r.rooms ?? [] });
+    }
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<VISObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<VISObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<VISObject['toJSON']>); }
 
   /**
    * Serialize VIS to binary (ASCII format). Use for saving without writing to file.

@@ -23,7 +23,7 @@ import { Utility } from "@/utility/Utility";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectVisualEffect extends GameEffect {
-  visualEffect: import("../resource/TwoDAObject").ITwoDARowData | undefined;
+  visualEffect: import("@/resource/TwoDAObject").ITwoDARowData | undefined;
   model: OdysseyModel3D;
   impact_model: OdysseyModel3D;
   impact_root_model: OdysseyModel3D;

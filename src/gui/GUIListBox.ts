@@ -513,7 +513,7 @@ export class GUIListBox extends GUIControl {
 
   isScrollBarLeft(){
     if(this.control.hasField('LEFTSCROLLBAR')){
-      return this.control.getFieldByLabel('LEFTSCROLLBAR').getValue() == 1;
+      return this.control.getNumberByLabel('LEFTSCROLLBAR') === 1;
     }
     return false;
   }
@@ -524,12 +524,12 @@ export class GUIListBox extends GUIControl {
     if(!node){
       if(this.hasProtoItem && this.protoItem.control.hasField('EXTENT')){
         const extent = this.protoItem.control.getFieldByLabel('EXTENT').getChildStructs()[0];
-        height += extent.getFieldByLabel('HEIGHT').getValue() || 0;
+        height += extent.getNumberByLabel('HEIGHT') || 0;
       }
 
       if(this.hasProtoItem && this.protoItem.control.hasField('BORDER')){
         const border = this.protoItem.control.getFieldByLabel('BORDER').getChildStructs()[0];
-        height += (border.getFieldByLabel('DIMENSION').getValue() || 0) / 2;
+        height += (border.getNumberByLabel('DIMENSION') || 0) / 2;
       }
 
       if(!this.hasProtoItem){
