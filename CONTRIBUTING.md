@@ -153,23 +153,24 @@ The project includes several npm scripts for common development tasks:
 
 #### Build Scripts
 
-- `npm run webpack:dev` - Build once in development mode
-- `npm run webpack:dev-watch` - Build in watch mode (auto-rebuild on changes)
-- `npm run webpack:prod` - Build for production
-- `npm run electron:compile` - Compile Electron TypeScript files
-- `npm run electron:build` - Build complete Electron application
+- `npm run build` - Full production build (webpack + Electron)
+- `npm run build:dev` - Full development build (faster)
+- `npm run build:web` - Production webpack bundle only
+- `npm run build:web:dev` - Development webpack bundle (one-off)
+- `npm run build:electron` - Compile Electron main process only
+- `npm run pack` - Build and package Electron app (electron-builder)
 
 #### Development Scripts
 
-- `npm start` - Compile and start Electron application
-- `npm run start-watch` - Start with auto-reload on changes
-- `npm run electron:watch` - Watch Electron files for changes
+- `npm start` - Compile main process and start Electron application
+- `npm run dev` - Watch main process and auto-restart Electron on changes
+- `npm run watch` - Build web bundle in watch mode (auto-rebuild on changes)
 
 #### Testing Scripts
 
 - `npm test` - Run all tests with coverage
 - `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Generate coverage report
+- `npm run test:quick` - Run tests without coverage (faster)
 
 #### Documentation Scripts
 
@@ -178,19 +179,16 @@ The project includes several npm scripts for common development tasks:
 #### Code Quality Scripts
 
 - `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint issues automatically
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
 
 ### Typical Development Session
 
 1. **Start the development build** (in one terminal):
 
 ```bash
-npm run webpack:dev-watch
+npm run watch
 ```
 
-This will watch for file changes and automatically rebuild the project.
+This will watch for file changes and automatically rebuild the web bundle.
 
 1. **Start the Electron application** (in another terminal):
 
@@ -198,10 +196,10 @@ This will watch for file changes and automatically rebuild the project.
 npm start
 ```
 
-Or use the watch mode for automatic restarts:
+Or use dev mode for automatic restarts when the main process changes:
 
 ```bash
-npm run start-watch
+npm run dev
 ```
 
 1. **Make your changes** in the `src/` directory
@@ -218,7 +216,6 @@ npm test
 
 ```bash
 npm run lint
-npm run format:check
 ```
 
 ## Coding Standards
@@ -336,8 +333,8 @@ npm test
 # Run tests in watch mode
 npm run test:watch
 
-# Run tests with coverage
-npm run test:coverage
+# Run tests with coverage (default for npm test)
+npm test
 ```
 
 ### Test Structure
@@ -423,14 +420,6 @@ npm test
 
 ```bash
 npm run lint
-npm run format:check
-```
-
-1. **Fix any issues**:
-
-```bash
-npm run lint:fix
-npm run format
 ```
 
 1. **Commit your changes**:

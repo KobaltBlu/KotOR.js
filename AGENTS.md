@@ -49,8 +49,8 @@ When adding or changing an editor: (1) implement or reuse a TabState and its Rea
 
 - **Root (library + Forge Electron)**  
   - Install: `npm install`  
-  - Build: `npm run build` (webpack + electron compile) or `npm run webpack:dev` then `npm run electron:compile`  
-  - Run Forge (Electron): `npm run start:electron` or `npm run start`  
+  - Build: `npm run build` (production: webpack + electron) or `npm run build:dev` (development build); `npm run build:web` / `npm run build:electron` for individual steps.  
+  - Run Forge (Electron): `npm start` (compile main + launch) or `npm run dev` (watch main process + auto-restart).  
   - Test: `npm test` or `npm run test:quick` (Jest: `./src/tests`, `./src/resource`, `./src/apps/forge`)  
   - Lint: `npm run lint` (ESLint)
 

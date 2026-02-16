@@ -222,9 +222,6 @@ Verify linting and formatting tools:
 ```bash
 # Check linting
 npm run lint
-
-# Check formatting
-npm run format:check
 ```
 
 ### Build the Project
@@ -232,11 +229,11 @@ npm run format:check
 Test the build process:
 
 ```bash
-# Development build
-npm run webpack:dev
+# Development build (one-off)
+npm run build:web:dev
 
 # Production build (takes longer)
-npm run webpack:prod
+npm run build
 ```
 
 The build output will be in the `dist/` directory.
@@ -246,7 +243,7 @@ The build output will be in the `dist/` directory.
 1. **Start the development build** (in one terminal):
 
    ```bash
-   npm run webpack:dev-watch
+   npm run watch
    ```
 
    This will watch for file changes and automatically rebuild.
@@ -322,7 +319,7 @@ npm install
 **Solution**:
 
 1. Clear webpack cache: `rm -rf node_modules/.cache`
-2. Rebuild: `npm run webpack:dev`
+2. Rebuild: `npm run build:web:dev`
 3. Check for circular dependencies (webpack will warn)
 4. Verify all dependencies are installed: `npm install`
 
@@ -335,7 +332,7 @@ npm install
 1. Check that webpack build completed successfully
 2. Verify `dist/` directory exists and contains files
 3. Check terminal for error messages
-4. Try rebuilding: `npm run webpack:dev && npm start`
+4. Try rebuilding: `npm run build:dev && npm start`
 5. On Linux, you may need additional dependencies:
 
    ```bash
@@ -389,7 +386,7 @@ Once setup is complete:
    - Look at `src/module/Module.ts` - Module system
 
 3. **Run the application**:
-   - Use `npm run webpack:dev-watch` and `npm start`
+   - Use `npm run watch` and `npm start`
    - Explore the launcher, game, and forge applications
 
 4. **Start contributing**:

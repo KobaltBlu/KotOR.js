@@ -9,7 +9,7 @@ A quick reference guide for common development tasks and commands.
 npm install
 
 # Start development (Terminal 1)
-npm run webpack:dev-watch
+npm run watch
 
 # Start application (Terminal 2)
 npm start
@@ -21,34 +21,32 @@ npm start
 
 ```bash
 npm start                    # Start Electron app
-npm run start-watch          # Start with auto-reload
-npm run webpack:dev-watch    # Build in watch mode
-npm run webpack:dev          # Build once (dev)
-npm run webpack:prod         # Build for production
-```
-
-### Testing
-
-```bash
-npm test                     # Run all tests
-npm run test:watch           # Watch mode
-npm run test:coverage        # Coverage report
-```
-
-### Code Quality
-
-```bash
-npm run lint                 # Check code
-npm run lint:fix             # Auto-fix issues
-npm run format               # Format code
-npm run format:check         # Check formatting
+npm run dev                  # Watch main process + auto-restart
+npm run watch                # Build web bundle in watch mode
+npm run build:web:dev        # Build web bundle once (dev)
 ```
 
 ### Building
 
 ```bash
-npm run electron:compile     # Compile Electron
-npm run electron:build       # Full Electron build
+npm run build                # Full production build
+npm run build:dev            # Full development build
+npm run build:electron       # Compile Electron main only
+npm run pack                 # Build and package Electron app
+```
+
+### Testing
+
+```bash
+npm test                     # Run all tests (with coverage)
+npm run test:watch           # Watch mode
+npm run test:quick           # Fast run (no coverage)
+```
+
+### Code Quality
+
+```bash
+npm run lint                 # Run ESLint
 ```
 
 ### Documentation
@@ -146,8 +144,7 @@ describe('Module', () => {
 |-------|----------|
 | Build fails | `rm -rf node_modules && npm install` |
 | Type errors | `npx tsc --noEmit` |
-| Lint errors | `npm run lint:fix` |
-| Format issues | `npm run format` |
+| Lint errors | Fix manually or run `npm run lint` for report |
 
 ## Resources
 

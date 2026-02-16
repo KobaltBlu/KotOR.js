@@ -59,17 +59,15 @@ Handles binary file format parsing:
 ### Development Setup
 ```bash
 npm install
-npm run webpack:dev-watch     # Terminal 1: Watch mode build
-npm start                     # Terminal 2: Launch Electron app with hot-reload
+npm run watch                 # Terminal 1: Watch mode build
+npm start                     # Terminal 2: Launch Electron app
 ```
 
 ### Testing & Quality
 ```bash
 npm test                      # Run Jest tests (testMatch: **/*.test.ts)
-npm run test:coverage         # Generate coverage report
+npm test                      # Includes coverage; use test:quick for fast run
 npm run lint                  # ESLint check
-npm run lint:fix              # Auto-fix lint issues
-npm run format                # Prettier formatting
 npm run typedoc               # Generate API docs in wiki/
 ```
 
