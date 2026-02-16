@@ -69,10 +69,10 @@ function idct_col(dest: Int32Array, src: Int32Array, dOff: number, sOff: number)
   dest[dOff + 56] = a0 + a2 - b0;
 }
 
-function mungeRow(x: number): number { return (x + 0x7F) >> 8; }
+// Inline: (x+0x7F)>>8 then clamp to 0..255 via &0xFF
+const MUNGE = (x: number) => ((x + 0x7F) >> 8) & 0xFF;
 
 function idct_row_put(dest: Uint8Array, destStride: number, src: Int32Array, sOff: number, row: number): void {
-  // Compute 8 outputs for a row and clamp to 0..255
   const s0 = src[sOff + 0];
   const s1 = src[sOff + 1];
   const s2 = src[sOff + 2];
@@ -97,14 +97,14 @@ function idct_row_put(dest: Uint8Array, destStride: number, src: Int32Array, sOf
   const b4 = MUL(A2, a7) + b3 - b1;
 
   const base = row * destStride;
-  dest[base + 0] = (mungeRow(a0 + a2 + b0)) & 0xFF;
-  dest[base + 1] = (mungeRow(a1 + a3 - a2 + b2)) & 0xFF;
-  dest[base + 2] = (mungeRow(a1 - a3 + a2 + b3)) & 0xFF;
-  dest[base + 3] = (mungeRow(a0 - a2 - b4)) & 0xFF;
-  dest[base + 4] = (mungeRow(a0 - a2 + b4)) & 0xFF;
-  dest[base + 5] = (mungeRow(a1 - a3 + a2 - b3)) & 0xFF;
-  dest[base + 6] = (mungeRow(a1 + a3 - a2 - b2)) & 0xFF;
-  dest[base + 7] = (mungeRow(a0 + a2 - b0)) & 0xFF;
+  dest[base + 0] = MUNGE(a0 + a2 + b0);
+  dest[base + 1] = MUNGE(a1 + a3 - a2 + b2);
+  dest[base + 2] = MUNGE(a1 - a3 + a2 + b3);
+  dest[base + 3] = MUNGE(a0 - a2 - b4);
+  dest[base + 4] = MUNGE(a0 - a2 + b4);
+  dest[base + 5] = MUNGE(a1 - a3 + a2 - b3);
+  dest[base + 6] = MUNGE(a1 + a3 - a2 - b2);
+  dest[base + 7] = MUNGE(a0 + a2 - b0);
 }
 
 function clamp8(x: number): number { return x < 0 ? 0 : x > 255 ? 255 : x; }
@@ -131,15 +131,15 @@ export function idctPut(dest: Uint8Array, destStride: number, block: Int32Array)
   }
 }
 
-export function idctAdd(dest: Uint8Array, destStride: number, block: Int32Array): void {
-  // Full IDCT then add to dest
+export function idctAdd(dest: Uint8Array, destStride: number, block: Int32Array, destOff = 0): void {
+  // Full IDCT then add to dest (destOff avoids caller subarray allocation)
   const temp = IDCTBuffers.getTemp();
   const out = IDCTBuffers.getOut();
 
   for (let i = 0; i < 8; i++) idct_col(temp, block, i, i);
 
   for (let r = 0; r < 8; r++) {
-    const base = r * destStride;
+    const base = destOff + r * destStride;
     const sOff = r * 8;
     // compute row outputs with munge
     {
@@ -164,14 +164,14 @@ export function idctAdd(dest: Uint8Array, destStride: number, block: Int32Array)
       const b2 = MUL(A4, a5) - b0 + b1;
       const b3 = MUL(A1, a6 - a4) - b2;
       const b4 = MUL(A2, a7) + b3 - b1;
-      out[0] = mungeRow(a0 + a2 + b0);
-      out[1] = mungeRow(a1 + a3 - a2 + b2);
-      out[2] = mungeRow(a1 - a3 + a2 + b3);
-      out[3] = mungeRow(a0 - a2 - b4);
-      out[4] = mungeRow(a0 - a2 + b4);
-      out[5] = mungeRow(a1 - a3 + a2 - b3);
-      out[6] = mungeRow(a1 + a3 - a2 - b2);
-      out[7] = mungeRow(a0 + a2 - b0);
+      out[0] = MUNGE(a0 + a2 + b0);
+      out[1] = MUNGE(a1 + a3 - a2 + b2);
+      out[2] = MUNGE(a1 - a3 + a2 + b3);
+      out[3] = MUNGE(a0 - a2 - b4);
+      out[4] = MUNGE(a0 - a2 + b4);
+      out[5] = MUNGE(a1 - a3 + a2 - b3);
+      out[6] = MUNGE(a1 + a3 - a2 - b2);
+      out[7] = MUNGE(a0 + a2 - b0);
     }
     for (let c = 0; c < 8; c++) {
       const v = (dest[base + c] + out[c]) | 0;
@@ -181,24 +181,23 @@ export function idctAdd(dest: Uint8Array, destStride: number, block: Int32Array)
 }
 
 export function scaleBlock(src: Uint8Array, dst: Uint8Array, dstStride: number): void {
-  // Expand 8x8 into 16x16 with pixel replication (each pixel -> 2x2)
-  let srcOff = 0;
+  // Expand 8x8 into 16x16 with pixel replication (each pixel -> 2x2), no subarray
   for (let j = 0; j < 8; j++) {
-    const row = src.subarray(srcOff, srcOff + 8);
+    const srcOff = j * 8;
     for (let repRow = 0; repRow < 2; repRow++) {
       const base = (j * 2 + repRow) * dstStride;
       for (let i = 0; i < 8; i++) {
-        const v = row[i];
-        dst[base + i * 2 + 0] = v;
+        const v = src[srcOff + i];
+        dst[base + i * 2] = v;
         dst[base + i * 2 + 1] = v;
       }
     }
-    srcOff += 8;
   }
 }
 
-export function addPixels8(pixels: Uint8Array, block: Int16Array, lineSize: number): void {
-  let p = 0; let b = 0;
+export function addPixels8(pixels: Uint8Array, pixelOff: number, block: Int16Array, lineSize: number): void {
+  let p = pixelOff;
+  let b = 0;
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
       const idx = p + j;

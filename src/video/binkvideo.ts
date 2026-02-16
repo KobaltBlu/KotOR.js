@@ -47,6 +47,18 @@ export class BinkVideoDecoder {
     private static readonly scaledBlk = new Uint8Array(64);
     private static readonly scaledTmp = new Uint8Array(256); // 16*16
 
+    // Double-buffered YUV: we decode into one set while last frame (motion ref) uses the other.
+    // Reusing a single buffer would overwrite the reference during decode and cause artifacts.
+    private reuseY0: Uint8Array | null = null;
+    private reuseU0: Uint8Array | null = null;
+    private reuseV0: Uint8Array | null = null;
+    private reuseY1: Uint8Array | null = null;
+    private reuseU1: Uint8Array | null = null;
+    private reuseV1: Uint8Array | null = null;
+    private frame0: YUVFrame | null = null;
+    private frame1: YUVFrame | null = null;
+    private writeIndex = 0; // 0 or 1: which buffer set we write to this decode
+
     constructor(width: number, height: number, versionChar: string, hasAlpha = false) {
         this.width = width;
         this.height = height;
@@ -59,15 +71,25 @@ export class BinkVideoDecoder {
         try {
             const w = this.width, h = this.height;
             const yStride = w, cStride = (w + 1) >> 1;
-            // Allocate block-aligned buffers: luma bh*8 rows, chroma bh_chroma*8 rows.
-            // This matches FFmpeg's padded allocation and prevents out-of-bounds writes
-            // when the block grid extends beyond the visible area.
-            const yBh = ((h + 7) >> 3) << 3;           // ceil to 8px rows for luma
-            const cBh = ((h + 15) >> 4) << 3;           // ceil to 16px then *8 for chroma block rows
-            const y = new Uint8Array(yStride * yBh);
-            const u = new Uint8Array(cStride * cBh);
-            const v = new Uint8Array(cStride * cBh);
-            const frame: YUVFrame = { width: w, height: h, y, u, v, linesizeY: yStride, linesizeU: cStride, linesizeV: cStride };
+            const yBh = ((h + 7) >> 3) << 3;
+            const cBh = ((h + 15) >> 4) << 3;
+            const yLen = yStride * yBh;
+            const cLen = cStride * cBh;
+
+            const needInit = !this.reuseY0 || this.reuseY0.length !== yLen || !this.reuseU0 || this.reuseU0.length !== cLen;
+            if (needInit) {
+                this.reuseY0 = new Uint8Array(yLen);
+                this.reuseU0 = new Uint8Array(cLen);
+                this.reuseV0 = new Uint8Array(cLen);
+                this.reuseY1 = new Uint8Array(yLen);
+                this.reuseU1 = new Uint8Array(cLen);
+                this.reuseV1 = new Uint8Array(cLen);
+                this.frame0 = { width: w, height: h, y: this.reuseY0, u: this.reuseU0, v: this.reuseV0, linesizeY: yStride, linesizeU: cStride, linesizeV: cStride };
+                this.frame1 = { width: w, height: h, y: this.reuseY1, u: this.reuseU1, v: this.reuseV1, linesizeY: yStride, linesizeU: cStride, linesizeV: cStride };
+                this.writeIndex = 0;
+            }
+
+            const frame = this.writeIndex === 0 ? this.frame0! : this.frame1!;
 
             const br = new BitReaderLE(pkt);
             const bitsCount = pkt.length << 3;
@@ -96,6 +118,7 @@ export class BinkVideoDecoder {
             }
 
             this.last = frame;
+            this.writeIndex = 1 - this.writeIndex; // next decode writes into the other buffer
             this.frameNum++;
             return frame;
         } catch (e) {
@@ -145,13 +168,8 @@ export class BinkVideoDecoder {
                 switch (blk) {
                     case BlockType.SKIP_BLOCK: {
                         const ref = c.getRefPtr(dstOff, stride);
-                        if (!ref) {
-                            for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-                        } else {
-                            for (let i = 0; i < 8; i++) {
-                                base.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-                            }
-                        }
+                        if (!ref) this.fillBlock8Zero(base, dstOff, stride);
+                        else this.copyBlock8(ref, base, dstOff, stride);
                         break;
                     }
                     case BlockType.SCALED_BLOCK:
@@ -161,32 +179,21 @@ export class BinkVideoDecoder {
                     case BlockType.MOTION_BLOCK: {
                         const { xoff, yoff } = c.getMotion();
                         const ref = c.getRefPtr(dstOff + xoff + yoff * stride, stride);
-                        if (!ref) {
-                            for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-                        } else {
-                            for (let i = 0; i < 8; i++) {
-                                base.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-                            }
-                        }
+                        if (!ref) this.fillBlock8Zero(base, dstOff, stride);
+                        else this.copyBlock8(ref, base, dstOff, stride);
                         break;
                     }
                     case BlockType.RUN_BLOCK:
                         this.decodeRunBlock(c, base, dstOff, stride);
                         break;
-                    case BlockType.RESIDUE_BLOCK:
-                        {
-                            const { xoff, yoff } = c.getMotion();
-                            const ref = c.getRefPtr(dstOff + xoff + yoff * stride, stride);
-                            if (!ref) {
-                                for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-                            } else {
-                                for (let i = 0; i < 8; i++) {
-                                    base.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-                                }
-                            }
-                        }
+                    case BlockType.RESIDUE_BLOCK: {
+                        const { xoff, yoff } = c.getMotion();
+                        const ref = c.getRefPtr(dstOff + xoff + yoff * stride, stride);
+                        if (!ref) this.fillBlock8Zero(base, dstOff, stride);
+                        else this.copyBlock8(ref, base, dstOff, stride);
                         this.decodeResidueAdd(c, base, dstOff, stride);
                         break;
+                    }
                     case BlockType.INTRA_BLOCK:
                         this.decodeIntra(c, base, dstOff, stride);
                         break;
@@ -195,20 +202,14 @@ export class BinkVideoDecoder {
                         for (let i = 0; i < 8; i++) base.fill(v, dstOff + i * stride, dstOff + i * stride + 8);
                         break;
                     }
-                    case BlockType.INTER_BLOCK:
-                        {
-                            const { xoff, yoff } = c.getMotion();
-                            const ref = c.getRefPtr(dstOff + xoff + yoff * stride, stride);
-                            if (!ref) {
-                                for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-                            } else {
-                                for (let i = 0; i < 8; i++) {
-                                    base.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-                                }
-                            }
-                        }
+                    case BlockType.INTER_BLOCK: {
+                        const { xoff, yoff } = c.getMotion();
+                        const ref = c.getRefPtr(dstOff + xoff + yoff * stride, stride);
+                        if (!ref) this.fillBlock8Zero(base, dstOff, stride);
+                        else this.copyBlock8(ref, base, dstOff, stride);
                         this.decodeInterAdd(c, base, dstOff, stride);
                         break;
+                    }
                     case BlockType.PATTERN_BLOCK:
                         this.decodePattern(c, base, dstOff, stride);
                         break;
@@ -217,13 +218,8 @@ export class BinkVideoDecoder {
                         break;
                     default: {
                         const ref = c.getRefPtr(dstOff, stride);
-                        if (!ref) {
-                            for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-                        } else {
-                            for (let i = 0; i < 8; i++) {
-                                base.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-                            }
-                        }
+                        if (!ref) this.fillBlock8Zero(base, dstOff, stride);
+                        else this.copyBlock8(ref, base, dstOff, stride);
                         break;
                     }
                 }
@@ -241,38 +237,53 @@ export class BinkVideoDecoder {
         return { data: this.last.v, stride: this.last.linesizeV };
     }
 
+    /** Copy 8x8 block from ref to dst without allocating (avoids subarray). */
+    private copyBlock8(ref: { buf: Uint8Array; off: number; stride: number }, dst: Uint8Array, dstOff: number, stride: number): void {
+        const rbuf = ref.buf;
+        const roff = ref.off;
+        const rstride = ref.stride;
+        for (let i = 0; i < 8; i++) {
+            const so = roff + i * rstride;
+            const di = dstOff + i * stride;
+            dst[di] = rbuf[so]; dst[di + 1] = rbuf[so + 1]; dst[di + 2] = rbuf[so + 2]; dst[di + 3] = rbuf[so + 3];
+            dst[di + 4] = rbuf[so + 4]; dst[di + 5] = rbuf[so + 5]; dst[di + 6] = rbuf[so + 6]; dst[di + 7] = rbuf[so + 7];
+        }
+    }
+
+    private fillBlock8Zero(dst: Uint8Array, dstOff: number, stride: number): void {
+        for (let i = 0; i < 8; i++) dst.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
+    }
+
     private blitFromPrev(c: PlaneContext, dst: Uint8Array, dstOff: number, stride: number) {
         const ref = c.getRefPtr(dstOff, stride);
         if (!ref) {
-            // Inline fillBlock8
-            for (let i = 0; i < 8; i++) dst.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
+            this.fillBlock8Zero(dst, dstOff, stride);
             return;
         }
-        // Inline copyBlock8
-        for (let i = 0; i < 8; i++) {
-            dst.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-        }
+        this.copyBlock8(ref, dst, dstOff, stride);
     }
 
     private blitFromPrevWithMV(c: PlaneContext, dst: Uint8Array, dstOff: number, stride: number) {
         const { xoff, yoff } = c.getMotion();
         const ref = c.getRefPtr(dstOff + xoff + yoff * stride, stride);
-        if (!ref) {
-            // Inline fillBlock8
-            for (let i = 0; i < 8; i++) dst.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-            return;
+        if (!ref) this.fillBlock8Zero(dst, dstOff, stride);
+        else this.copyBlock8(ref, dst, dstOff, stride);
+    }
+
+    private static coordCache = new Map<number, number[]>();
+    private getCoordForStride(stride: number): number[] {
+        let coord = BinkVideoDecoder.coordCache.get(stride);
+        if (!coord) {
+            coord = new Array<number>(64);
+            for (let ci = 0; ci < 64; ci++) coord[ci] = (ci & 7) + (ci >> 3) * stride;
+            BinkVideoDecoder.coordCache.set(stride, coord);
         }
-        // Inline copyBlock8
-        for (let i = 0; i < 8; i++) {
-            dst.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-        }
+        return coord;
     }
 
     private decodeRunBlock(c: PlaneContext, dst: Uint8Array, dstOff: number, stride: number) {
         const scan = bink_patterns[c.br.readBits(4) & 0xF];
-        // Inline makeCoordMap
-        const coord = new Array<number>(64);
-        for (let ci = 0; ci < 64; ci++) coord[ci] = (ci & 7) + (ci >> 3) * stride;
+        const coord = this.getCoordForStride(stride);
         let i = 0, scanIdx = 0;
         do {
             const run = c.getRun() + 1;
@@ -308,7 +319,7 @@ export class BinkVideoDecoder {
         block.fill(0);
         const masks = c.br.readBits(7);
         readResidue(c.br, block, masks);
-        addPixels8(dst.subarray(dstOff), block, stride);
+        addPixels8(dst, dstOff, block, stride);
     }
 
     private decodeIntra(c: PlaneContext, dst: Uint8Array, dstOff: number, stride: number) {
@@ -329,7 +340,7 @@ export class BinkVideoDecoder {
         dct[0] = c.getInterDC();
         const { quantIdx, coefIdx, coefCount } = readDctCoeffs(c, c.br, dct, -1);
         unquantize(dct, bink_inter_quant, quantIdx, coefIdx, coefCount);
-        idctAdd(dst.subarray(dstOff), stride, dct);
+        idctAdd(dst, stride, dct, dstOff);
     }
 
     private decodeScaledBlock(c: PlaneContext, dst: Uint8Array, dstOff: number, stride: number, blockRow: number, planeHeight: number) {
@@ -380,8 +391,9 @@ export class BinkVideoDecoder {
         scaleBlock(ublk, tmp, 16);
         const rowsToWrite = Math.min(16, planeHeight - blockRow * 8);
         for (let j = 0; j < rowsToWrite; j++) {
-            const s = j * 16; const d = dstOff + j * stride;
-            dst.set(tmp.subarray(s, s + 16), d);
+            const s = j * 16;
+            const d = dstOff + j * stride;
+            for (let k = 0; k < 16; k++) dst[d + k] = tmp[s + k];
         }
     }
 }
@@ -415,6 +427,7 @@ class PlaneContext {
     bundle: Bundle[] = Array.from({ length: 9 }, () => new Bundle());
     col_high: Tree[] = Array.from({ length: 16 }, () => ({ vlc_num: 0, syms: Array.from({ length: 16 }, (_, i) => i) }));
     col_lastval = 0;
+    private motionOut = { xoff: 0, yoff: 0 };
 
     constructor(br: BitReaderLE, version: string, width: number, bw: number, base: Uint8Array, stride: number, prev?: { data: Uint8Array, stride: number }) {
         this.br = br; this.version = version; this.width = Math.max(width, 8); this.bw = bw; this.base = base; this.stride = stride; this.ref = prev;
@@ -615,7 +628,11 @@ class PlaneContext {
         this.bundle[BundleId.INTER_DC].cur_ptr += 2;
         return (v << 16) >> 16;
     }
-    getMotion(): { xoff: number, yoff: number } { const x = (this.bundle[BundleId.X_OFF].data[this.bundle[BundleId.X_OFF].cur_ptr++] << 24) >> 24; const y = (this.bundle[BundleId.Y_OFF].data[this.bundle[BundleId.Y_OFF].cur_ptr++] << 24) >> 24; return { xoff: x, yoff: y }; }
+    getMotion(): { xoff: number, yoff: number } {
+        this.motionOut.xoff = (this.bundle[BundleId.X_OFF].data[this.bundle[BundleId.X_OFF].cur_ptr++] << 24) >> 24;
+        this.motionOut.yoff = (this.bundle[BundleId.Y_OFF].data[this.bundle[BundleId.Y_OFF].cur_ptr++] << 24) >> 24;
+        return this.motionOut;
+    }
 
     getRefPtr(dstOff: number, stride: number): { buf: Uint8Array, off: number, stride: number } | undefined {
         if (!this.ref) return undefined;
@@ -635,12 +652,19 @@ function av_log2_ts(x: number) {
     return r;
 }
 
+const DCT_COEF_LIST = new Int32Array(128);
+const DCT_MODE_LIST = new Int32Array(128);
+const DCT_COEF_IDX: number[] = [];
+
 function readDctCoeffs(c: PlaneContext, br: BitReaderLE, block: Int32Array, q: number): { quantIdx: number, coefIdx: number[], coefCount: number } {
-    const coef_list = new Int32Array(128);
-    const mode_list = new Int32Array(128);
+    DCT_COEF_LIST.fill(0);
+    DCT_MODE_LIST.fill(0);
+    DCT_COEF_IDX.length = 0;
+    const coef_list = DCT_COEF_LIST;
+    const mode_list = DCT_MODE_LIST;
     let list_start = 64, list_end = 64;
     let coefCount = 0;
-    const coefIdx: number[] = [];
+    const coefIdx = DCT_COEF_IDX;
     const scan = bink_scan;
 
     function pushCoef(idx: number, val: number) {
@@ -694,15 +718,26 @@ function readDctCoeffs(c: PlaneContext, br: BitReaderLE, block: Int32Array, q: n
 function unquantize(block: Int32Array, qtables: number[][], qindex: number, coefIdx: number[], coefCount: number) {
     const qi = Math.min(qindex, qtables.length - 1);
     const qt = qtables[qi];
+    const scan = bink_scan;
     block[0] = (block[0] * qt[0]) >> 11;
-    for (let i = 0; i < coefCount; i++) { const idx = coefIdx[i]; const si = bink_scan[idx]; block[si] = (block[si] * qt[idx]) >> 11; }
+    for (let i = 0; i < coefCount; i++) {
+        const idx = coefIdx[i];
+        block[scan[idx]] = (block[scan[idx]] * qt[idx]) >> 11;
+    }
 }
 
+const RESIDUE_COEF_LIST = new Int32Array(128);
+const RESIDUE_MODE_LIST = new Int32Array(128);
+const RESIDUE_NZ_COEFF: number[] = [];
+
 function readResidue(br: BitReaderLE, block: Int16Array, masksCount: number) {
-    const coef_list = new Int32Array(128);
-    const mode_list = new Int32Array(128);
+    RESIDUE_COEF_LIST.fill(0);
+    RESIDUE_MODE_LIST.fill(0);
+    RESIDUE_NZ_COEFF.length = 0;
+    const coef_list = RESIDUE_COEF_LIST;
+    const mode_list = RESIDUE_MODE_LIST;
     let list_start = 64, list_end = 64;
-    const nz_coeff: number[] = [];
+    const nz_coeff = RESIDUE_NZ_COEFF;
 
     coef_list[list_end] = 4; mode_list[list_end++] = 0;
     coef_list[list_end] = 24; mode_list[list_end++] = 0;

@@ -8,6 +8,9 @@
  * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+const READBITS_MASKS = new Uint32Array(33);
+for (let i = 0; i <= 32; i++) READBITS_MASKS[i] = i === 32 ? 0xFFFFFFFF : ((1 << i) - 1) >>> 0;
+
 export class BitReaderLE {
   private buf: Uint8Array;
   private bitPos: number; // absolute bit position into buffer
@@ -36,71 +39,68 @@ export class BitReaderLE {
     this.bitPos += n >>> 0;
   }
 
-  /** Read a single bit (convenience wrapper) */
+  /** Read a single bit (hot path – inlined to avoid readBits loop) */
   readBit(): number {
-    return this.readBits(1);
+    if (this.bitPos >= this.bitSize) throw new RangeError('readBits beyond end');
+    const byteIndex = this.bitPos >>> 3;
+    const bitInByte = this.bitPos & 7;
+    this.bitPos++;
+    return (this.buf[byteIndex] >>> bitInByte) & 1;
   }
 
-  // Read n bits (n <= 32) little-endian order - optimized version
-  readBits(n: number): number {
+  /** Read n bits (n <= 32) LE. When advance is false, position is unchanged (for peek). */
+  readBits(n: number, advance = true): number {
     if (n === 0) return 0;
     if (n < 0 || n > 32) throw new RangeError('readBits n out of range');
-    if (this.bitPos + n > this.bitSize) throw new RangeError('readBits beyond end');
-
     const pos = this.bitPos;
+    if (pos + n > this.bitSize) throw new RangeError('readBits beyond end');
+
     const byteIndex = pos >>> 3;
     const bitInByte = pos & 7;
+    const nextPos = pos + n;
 
-    // Fast path for aligned 32-bit reads
+    let result: number;
+
     if (bitInByte === 0 && n === 32 && (byteIndex & 3) === 0) {
+      result = this.buf32[byteIndex >>> 2] >>> 0;
+    } else if (bitInByte === 0 && n === 16 && (byteIndex & 1) === 0) {
       const wordIndex = byteIndex >>> 2;
-      this.bitPos += 32;
-      return this.buf32[wordIndex] >>> 0;
+      const shift = (byteIndex & 2) << 3;
+      result = (this.buf32[wordIndex] >>> shift) & 0xFFFF;
+    } else if (bitInByte === 0 && n === 8) {
+      result = this.buf[byteIndex];
+    } else if (bitInByte + n <= 8) {
+      result = ((this.buf[byteIndex] >>> bitInByte) & READBITS_MASKS[n]) >>> 0;
+    } else if (bitInByte + n <= 16) {
+      const lo = this.buf[byteIndex] >>> bitInByte;
+      const hi = this.buf[byteIndex + 1] << (8 - bitInByte);
+      result = ((lo | hi) & READBITS_MASKS[n]) >>> 0;
+    } else {
+      let out = 0;
+      let bitsRead = 0;
+      let currentPos = pos;
+      while (bitsRead < n) {
+        const currentByteIndex = currentPos >>> 3;
+        const currentBitInByte = currentPos & 7;
+        const bitsThisRound = Math.min(8 - currentBitInByte, n - bitsRead);
+        const b = this.buf[currentByteIndex];
+        const mask = ((1 << bitsThisRound) - 1) << currentBitInByte;
+        out |= ((b & mask) >>> currentBitInByte) << bitsRead;
+        bitsRead += bitsThisRound;
+        currentPos += bitsThisRound;
+      }
+      result = out >>> 0;
+      if (advance) this.bitPos = currentPos;
+      return result;
     }
 
-    // Fast path for aligned 16-bit reads
-    if (bitInByte === 0 && n === 16 && (byteIndex & 1) === 0) {
-      const wordIndex = byteIndex >>> 2;
-      const shift = (byteIndex & 2) << 3; // 0 or 16
-      this.bitPos += 16;
-      return (this.buf32[wordIndex] >>> shift) & 0xFFFF;
-    }
-
-    // Fast path for aligned 8-bit reads
-    if (bitInByte === 0 && n === 8) {
-      this.bitPos += 8;
-      return this.buf[byteIndex];
-    }
-
-    // General case - read bits across byte boundaries
-    let out = 0;
-    let bitsRead = 0;
-    let currentPos = pos;
-
-    while (bitsRead < n) {
-      const currentByteIndex = currentPos >>> 3;
-      const currentBitInByte = currentPos & 7;
-      const bitsThisRound = Math.min(8 - currentBitInByte, n - bitsRead);
-
-      const b = this.buf[currentByteIndex];
-      const mask = ((1 << bitsThisRound) - 1) << currentBitInByte;
-      const v = (b & mask) >>> currentBitInByte;
-
-      out |= v << bitsRead;
-      bitsRead += bitsThisRound;
-      currentPos += bitsThisRound;
-    }
-
-    this.bitPos = currentPos;
-    return out >>> 0;
+    if (advance) this.bitPos = nextPos;
+    return result;
   }
 
-  /** Peek at the next n bits without advancing the read position */
+  /** Peek at the next n bits without advancing (no position save/restore). */
   peekBits(n: number): number {
-    const save = this.bitPos;
-    const v = this.readBits(n);
-    this.bitPos = save;
-    return v;
+    return this.readBits(n, false);
   }
 
   /** Return the current absolute bit position (for debugging / alignment checks) */

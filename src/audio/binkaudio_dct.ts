@@ -41,6 +41,10 @@ export class BinkAudioDCTDecoder {
 
   private first = true;
   private previous: Float32Array[]; // [ch][overlapLen]
+  private outBuffers: Float32Array[] = [];
+  private coeffs!: Float32Array;
+  private quant!: Float32Array;
+  private idctOut!: Float32Array;
 
   constructor(private cfg: BinkAudioDCTConfig) {
     const { sampleRate, channels } = cfg;
@@ -78,25 +82,25 @@ export class BinkAudioDCTDecoder {
 
     this.previous = new Array(channels);
     for (let ch = 0; ch < channels; ch++) this.previous[ch] = new Float32Array(this.overlapLen);
+    const frameLen = this.frameLen;
+    for (let ch = 0; ch < channels; ch++) this.outBuffers.push(new Float32Array(frameLen));
+    this.coeffs = new Float32Array(frameLen);
+    this.quant = new Float32Array(25);
+    this.idctOut = new Float32Array(frameLen);
   }
 
   // Decode one Bink Audio DCT packet payload (including leading reported size field)
   // Returns per-channel Float32 samples (length frameLen)
   decodePacket(pkt: Uint8Array): Float32Array[] {
     const { channels } = this.cfg;
-    const out: Float32Array[] = new Array(channels);
-    for (let ch = 0; ch < channels; ch++) out[ch] = new Float32Array(this.frameLen);
+    const out = this.outBuffers;
+    const coeffs = this.coeffs;
+    const quant = this.quant;
 
     const br = new BitReaderLE(pkt);
-    // skip reported decompressed byte size (32 bits)
     br.skipBits(32);
 
-    // Bink 'i' -> not version_b
     const version_b = false;
-
-    // Local buffer for frequency coefficients per channel
-    const coeffs = new Float32Array(this.frameLen);
-    const quant = new Float32Array(25);
 
     // Per FFmpeg: if (use_dct) skip 2 bits ONCE per block (before channel loop)
     if (br.bitsLeft() < 2) throw new RangeError('bitstream underrun: dct header');
@@ -160,10 +164,9 @@ export class BinkAudioDCTDecoder {
         }
       }
 
-      // Transform to time domain (DCT-based inverse). FFmpeg uses av_tx DCT with coeffs[0] scaled.
-      coeffs[0] /= 0.5; // multiply by 2 (undo 0.5 factor for k=0)
-      const td = this.idctIII(coeffs); // returns frameLen samples
-      out[ch].set(td);
+      coeffs[0] /= 0.5;
+      this.idctIIIInto(coeffs, this.idctOut);
+      out[ch].set(this.idctOut);
     }
 
     // Align to 32 bits after finishing the block (all channels decoded)
@@ -183,7 +186,10 @@ export class BinkAudioDCTDecoder {
     }
 
     this.first = false;
-    return out;
+    // Return copies so playback queue is not overwritten by the next decode
+    const result: Float32Array[] = new Array(channels);
+    for (let ch = 0; ch < channels; ch++) result[ch] = out[ch].slice(0);
+    return result;
   }
 
   // Read float as in FFmpeg get_float(): 5-bit power and 23-bit mantissa, with sign bit afterwards.
@@ -196,14 +202,11 @@ export class BinkAudioDCTDecoder {
     return f;
   }
 
-  // Naive IDCT-III (inverse of DCT-II) of length N=this.frameLen (O(N^2)).
-  // We expect coeffs[0] to have been pre-doubled (coeffs[0] /= 0.5) before calling.
-  // x[n] = (1/N) * sum_{k=0..N-1} X[k] * cos(pi/N * k * (n + 0.5))
-  private _cosTable?: Float32Array; // stores cos(pi/N * k * (n+0.5)) laid out as [n*N + k]
-  private idctIII(X: Float32Array): Float32Array {
+  // IDCT-III into reusable buffer to avoid per-packet allocation.
+  private _cosTable?: Float32Array;
+  private idctIIIInto(X: Float32Array, out: Float32Array): void {
     const N = this.frameLen;
     if (!this._cosTable) {
-      // Precompute cos((pi/N) * k * (n + 0.5))
       const tab = new Float32Array(N * N);
       const piOverN = Math.PI / N;
       for (let n = 0; n < N; n++) {
@@ -212,18 +215,15 @@ export class BinkAudioDCTDecoder {
       }
       this._cosTable = tab;
     }
-    const out = new Float32Array(N);
     const tab = this._cosTable!;
-    const scale = 1 / N; // FFmpeg uses 1/N for the DCT path
+    const scale = 1 / N;
     for (let n = 0; n < N; n++) {
       let sum = 0;
       const base = n * N;
       for (let k = 0; k < N; k++) sum += X[k] * tab[base + k];
       let v = sum * scale;
-      // Safety: clamp to [-1, 1] to avoid clipping artifacts in WebAudio
       if (v > 1) v = 1; else if (v < -1) v = -1;
       out[n] = v;
     }
-    return out;
   }
 }

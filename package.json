@@ -13,7 +13,8 @@
     "electron:compile": "tsc --project tsconfig.electron.json",
     "electron:build": "npm run webpack:prod && electron:compile && electron-builder build --publish=never",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
-    "test": "jest --verbose --coverage --no-cache ./src/tests"
+    "test": "jest --verbose --coverage --no-cache ./src/tests",
+    "perf:bink": "ts-node --project tsconfig.perf.json scripts/perf-bink.ts"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",
@@ -67,6 +68,7 @@
     "stream-browserify": "^3.0.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.4",
+    "ts-node": "^10.9.2",
     "tsc-watch": "^7.2.0",
     "typedoc": "^0.28.15",
     "typedoc-github-wiki-theme": "^2.1.0",
