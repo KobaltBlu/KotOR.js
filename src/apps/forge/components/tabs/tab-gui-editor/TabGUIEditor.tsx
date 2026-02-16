@@ -30,12 +30,14 @@ export const TabGUIEditor = function(props: BaseTabProps){
     rerender(!render);
   };
 
-  const onNodeAdded = function(arg: any){
-    //todo
+  const onNodeAdded = function(_arg: any){
+    setSelectedNode(null);
+    rerender(!render);
   };
 
-  const onNodeRemoved = function(arg: any){
-    //todo
+  const onNodeRemoved = function(_arg: any){
+    setSelectedNode(null);
+    rerender(!render);
   };
 
   const onMouseWheel = function(e: WheelEvent){

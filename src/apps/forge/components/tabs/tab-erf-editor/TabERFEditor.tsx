@@ -69,7 +69,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
     event.stopPropagation();
     if(!node.data.resource){ return; }
     setSelectedEntry(node);
-    
+
     const contextMenuItems = createERFContextMenuItems({
       archive: node.data.archive,
       resource: node.data.resource

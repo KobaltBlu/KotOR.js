@@ -6,7 +6,10 @@ import { EditorFile } from '../../../EditorFile';
 const exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
 
 import * as fs from "fs";
-declare const dialog: any;
+declare const dialog: {
+  showSaveDialog: (options?: { title?: string; defaultPath?: string; properties?: string[] }) => Promise<{ cancelled?: boolean; filePath?: string }>;
+  showOpenDialog: (options?: { title?: string; properties?: string[] }) => Promise<{ canceled?: boolean; filePaths?: string[] }>;
+};
 
 export interface ERFContextMenuProps {
   archive: KotOR.ERFObject;
@@ -18,6 +21,7 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
     archive, resource
   } = props;
 
+  const resref = resource?.resRef ?? '';
   const exportItems: ContextMenuItem[] = [
     {
       id: 'open-file',
@@ -45,6 +49,16 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
       }
     },
     {
+      id: 'copy-resref',
+      label: 'Copy ResRef',
+      disabled: !resref.length,
+      onClick: async () => {
+        if (resref && navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(resref);
+        }
+      }
+    },
+    {
       id: 'export-file',
       label: 'Export File',
       onClick: async () => {
@@ -57,12 +71,12 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
               title: 'Save File As',
               defaultPath: newFile.getFilename(),
             });
-            if(savePath && !savePath.cancelled){
+            if(savePath && !savePath.cancelled && savePath.filePath){
               console.log('savePath', savePath.filePath);
               try{
                 const saveBuffer = new Uint8Array(newFile.buffer)
                 fs.writeFile(savePath.filePath, saveBuffer, () => {
-                  newFile.setPath(savePath.filePath);
+                  newFile.setPath(savePath.filePath!);
                   newFile.archive_path = undefined;
                   newFile.archive_path2 = undefined;
                   newFile.buffer = saveBuffer;
@@ -94,7 +108,7 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
               console.error('save handle invalid');
             }
           }
-        }catch(e: any){
+        }catch(e: unknown){
           console.error(e);
         }
       }
@@ -122,8 +136,8 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
                 return;
               }
               console.log('savePath', savePath.filePath);
-              const resources = (erf as any).keyList ? (erf as any).keyList : (erf as any).resources;
-              for(const key of resources){
+              const keyList = (erf as KotOR.ERFObject).keyList ?? [];
+              for(const key of keyList){
                 const exportBuffer = await erf.getResourceBufferByResRef(key.resRef, key.resType);
                 fs.writeFile(savePath.filePath + '/' + key.resRef+'.'+KotOR.ResourceTypes.getKeyByValue(key.resType), exportBuffer, () => {
                   console.log('exported file', key.resRef+'.'+KotOR.ResourceTypes.getKeyByValue(key.resType));
@@ -131,15 +145,14 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
               }
             }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
               const directoryHandle = await window.showDirectoryPicker({
-                writable: true,
                 mode: 'readwrite',
               });
               if(!directoryHandle){
                 console.error('directory handle invalid');
                 return;
               }
-              const resources = (erf as any).keyList ? (erf as any).keyList : (erf as any).resources;
-              for(const key of resources){
+              const keyList = (erf as KotOR.ERFObject).keyList ?? [];
+              for(const key of keyList){
                 const exportBuffer = await erf.getResourceBufferByResRef(key.resRef, key.resType);
                 const fileHandle = await directoryHandle.getFileHandle(key.resRef+'.'+KotOR.ResourceTypes.getKeyByValue(key.resType), { create: true });
                 if(!fileHandle){
@@ -147,7 +160,7 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
                   continue;
                 }
                 const ws: FileSystemWritableFileStream = await fileHandle.createWritable();
-                await ws.write(exportBuffer as any);
+                await ws.write(exportBuffer as FileSystemWriteChunkType);
                 await ws.close();
               }
             }

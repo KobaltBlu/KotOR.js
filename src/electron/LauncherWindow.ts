@@ -57,8 +57,7 @@ export class LauncherWindow {
       // this.browserWindow = undefined;
     });
   
-    this.browserWindow.on('minimize',(event) => {
-      event.preventDefault();
+    this.browserWindow.on('minimize', () => {
       if(this.browserWindow) this.browserWindow.hide();
     });
   

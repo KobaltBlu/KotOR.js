@@ -9,7 +9,7 @@ import { ForgeStore, StoreItemEntry } from "../../module-editor/ForgeStore";
 export class TabUTMEditorState extends TabState {
   tabName: string = `UTM`;
   store: ForgeStore = new ForgeStore();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.store.blueprint;
   }
@@ -42,12 +42,12 @@ export class TabUTMEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
+
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-  
+
         file.readFile().then( (response) => {
           this.store = new ForgeStore(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
@@ -66,7 +66,7 @@ export class TabUTMEditorState extends TabState {
   }
 
   animate(delta: number = 0){
-    //todo
+    // Store editor has no continuous animation; override for future 3D preview if needed.
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
@@ -78,7 +78,7 @@ export class TabUTMEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-  
+
   updateFile(){
     this.store.exportToBlueprint();
     if(this.file){

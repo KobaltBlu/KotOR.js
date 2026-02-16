@@ -1,0 +1,261 @@
+.forge-tlk-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0f1116;
+  color: #d8e0ef;
+
+  &__loading {
+    padding: 2rem;
+    text-align: center;
+    color: #b8c2d8;
+  }
+
+  &__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 1rem;
+  }
+}
+
+.tlk-header {
+  margin-bottom: 1rem;
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    color: #8aa4ff;
+  }
+
+  .tlk-stats {
+    display: flex;
+    gap: 2rem;
+    font-size: 0.85rem;
+    color: #b8c2d8;
+
+    span {
+      padding: 0.4rem 0.8rem;
+      background: #181c25;
+      border: 1px solid #2a3142;
+      border-radius: 4px;
+    }
+  }
+}
+
+.tlk-controls {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  .search-input {
+    flex: 1;
+    padding: 0.6rem;
+    background: #181c25;
+    border: 1px solid #2a3142;
+    border-radius: 4px;
+    color: #d8e0ef;
+    font-size: 0.9rem;
+
+    &:focus {
+      outline: none;
+      border-color: #8aa4ff;
+    }
+
+    &::placeholder {
+      color: #b8c2d8;
+    }
+  }
+
+  .clear-button {
+    padding: 0.6rem 1.2rem;
+    background: #20283a;
+    border: 1px solid #2a3142;
+    border-radius: 4px;
+    color: #d8e0ef;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #293550;
+      border-color: #8aa4ff;
+    }
+  }
+}
+
+.tlk-table {
+  flex: 1;
+  overflow-y: auto;
+  background: #181c25;
+  border: 1px solid #2a3142;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+    background: #20283a;
+    z-index: 10;
+
+    th {
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      color: #8aa4ff;
+      border-bottom: 2px solid #2a3142;
+      font-size: 0.9rem;
+    }
+  }
+
+  tbody {
+    tr {
+      cursor: pointer;
+      transition: background 0.2s;
+      border-bottom: 1px solid #2a3142;
+
+      &:hover {
+        background: #20283a;
+      }
+
+      &.selected {
+        background: #2a4070;
+      }
+
+      td {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.85rem;
+      }
+
+      .strref-cell {
+        font-family: 'Courier New', monospace;
+        color: #8aa4ff;
+        font-weight: 600;
+        width: 80px;
+      }
+
+      .text-cell {
+        max-width: 600px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .sound-cell {
+        font-family: 'Courier New', monospace;
+        color: #b8c2d8;
+        font-size: 0.8rem;
+        width: 180px;
+      }
+    }
+  }
+}
+
+.tlk-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #181c25;
+  border: 1px solid #2a3142;
+  border-radius: 4px;
+
+  button {
+    padding: 0.5rem 1rem;
+    background: #20283a;
+    border: 1px solid #2a3142;
+    border-radius: 4px;
+    color: #d8e0ef;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+
+    &:hover:not(:disabled) {
+      background: #293550;
+      border-color: #8aa4ff;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .page-info {
+    font-size: 0.9rem;
+    color: #b8c2d8;
+  }
+}
+
+.tlk-string-editor {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #181c25;
+  border: 1px solid #2a3142;
+  border-radius: 4px;
+
+  h4 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    color: #8aa4ff;
+  }
+
+  .string-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .property-group {
+    label {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.85rem;
+      color: #b8c2d8;
+      font-weight: 500;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 0.5rem;
+      background: #0f1116;
+      border: 1px solid #2a3142;
+      border-radius: 4px;
+      color: #d8e0ef;
+      font-family: inherit;
+      font-size: 0.9rem;
+
+      &:focus {
+        outline: none;
+        border-color: #8aa4ff;
+      }
+
+      &:read-only {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+      line-height: 1.4;
+    }
+  }
+
+  .property-row {
+    display: flex;
+    gap: 1rem;
+
+    .property-group {
+      flex: 1;
+    }
+  }
+}

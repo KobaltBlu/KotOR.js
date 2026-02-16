@@ -251,15 +251,18 @@ export class GameFileSystem {
   }
 
   private static async isFSDirectory(resource_path: string = ''): Promise<boolean> {
-    return new Promise<boolean>( (resolve, reject) => {
+    return new Promise<boolean>( (resolve) => {
       fs.stat(path.join(ApplicationProfile.directory, resource_path), (err, stats) => {
         if(err){
-          console.error(err);
-          reject();
+          // ENOENT = path does not exist (e.g. optional game folders like StreamVoice in K1)
+          if (err.code !== 'ENOENT') {
+            console.error(err);
+          }
+          resolve(false);
           return;
         }
-        resolve((stats.mode & fs.constants.S_IFDIR) == fs.constants.S_IFDIR)
-      })
+        resolve((stats.mode & fs.constants.S_IFDIR) === fs.constants.S_IFDIR);
+      });
     });
   }
 
@@ -274,8 +277,13 @@ export class GameFileSystem {
     }
     return new Promise<string[]>( async (resolve, reject) => {
       try{
+        const exists = await this.exists(resource_path);
+        if (!exists) {
+          resolve(files);
+          return;
+        }
         let dir_path = path.join(ApplicationProfile.directory, resource_path);
-        
+
         if(!(await this.isFSDirectory(resource_path))){
           if(!opts.list_dirs){
             files.push(resource_path);

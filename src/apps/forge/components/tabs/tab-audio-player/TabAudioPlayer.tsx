@@ -10,10 +10,10 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
   
   // Use useRef for mutable variables that we want to persist
   // without triggering a re-render on their change
-  const requestRef = useRef<number>();
-  const previousTimeRef = useRef<number>();
-  const canvasRef = useRef<HTMLCanvasElement>(null as any);
-  const contextRef = useRef<CanvasRenderingContext2D>(null as any);
+  const requestRef = useRef<number | undefined>(undefined);
+  const previousTimeRef = useRef<number | undefined>(undefined);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   
   const [isReady, setIsReady] = useState<boolean>(false);
   const [isDisposed, setIsDisposed] = useState<boolean>(false);

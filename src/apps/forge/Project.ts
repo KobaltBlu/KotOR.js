@@ -48,7 +48,7 @@ export class Project {
     this.files = [];
     this.settings = DeepObject.Merge(defaults, {});
   }
-  
+
   static OpenByDirectory() {
     ForgeFileSystem.OpenDirectory().then( async (response) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
@@ -196,7 +196,7 @@ export class Project {
       }
 
       ForgeState.project = this;
-      
+
       // Add to recent projects
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         if(ProjectFileSystem.rootDirectoryPath){
@@ -234,9 +234,11 @@ export class Project {
 
   }
 
-  //Exports the finished project to a .mod file
+  /** Exports the finished project to a .mod file. Override or extend for full build. */
   export(){
-
+    if (this.moduleEditor?.module) {
+      // Module editor holds the built module; full export would serialize to .mod here.
+    }
   }
 
   /**
@@ -301,7 +303,7 @@ export class Project {
   async buildModuleAndArea(name: string, areaName: string = 'm01aa', rooms: { roomName: string, envAudio: number, ambientScale: number }[] = []){
     const mod = new ForgeModule();
     mod.name.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
-    
+
     /**
      * Build the entry area
      */

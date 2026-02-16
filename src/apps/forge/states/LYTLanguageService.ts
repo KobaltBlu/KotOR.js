@@ -193,9 +193,9 @@ export class LYTLanguageService {
         }
       }
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Parse error occurred
-      const message = error?.message || 'Parse error';
+      const message = (error instanceof Error ? error.message : 'Parse error');
       
       // Try to extract line number from error message
       const lineMatch = message.match(/line (\d+)/i);

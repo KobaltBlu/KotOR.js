@@ -290,7 +290,7 @@ export class UI3DRenderer extends EventListenerModel {
   buildTransformControls() {
     if(this.transformControls){
       this.transformControls.dispose();
-      this.transformControls.removeFromParent();
+      (this.transformControls as unknown as THREE.Object3D).removeFromParent();
     }
     if(this.canvas){
       if(this.orbitControls){
@@ -303,14 +303,15 @@ export class UI3DRenderer extends EventListenerModel {
       this.orbitControls.enableRotate = true;
       this.orbitControls.panSpeed = 2;
       this.transformControls = new TransformControls(this.currentCamera, this.canvas);
-      this.transformControls.visible = false;
-      this.unselectable.add(this.transformControls);
-      this.transformControls.userData.uuids = [];
-      this.transformControls.traverse( (obj) => {
-        this.transformControls.userData.uuids.push(obj.uuid);
+      const tcObj = this.transformControls as unknown as THREE.Object3D;
+      tcObj.visible = false;
+      this.unselectable.add(tcObj);
+      tcObj.userData.uuids = [];
+      tcObj.traverse( (obj: THREE.Object3D) => {
+        tcObj.userData.uuids.push(obj.uuid);
       });
 
-      this.transformControls.addEventListener('dragging-changed', (event: any) => {
+      this.transformControls.addEventListener('dragging-changed', (event: { value: unknown }) => {
         this.transformControlsDragging = event.value === true;  
         if (this.orbitControls) {
           this.orbitControls.enabled = !this.transformControlsDragging;
@@ -1180,8 +1181,8 @@ export class UI3DRenderer extends EventListenerModel {
             hiddenHelpers.push(camera.cameraHelper);
           }
         }
-        const wasTransformControlsVisible = this.transformControls.visible;
-        this.transformControls.visible = false;
+        const wasTransformControlsVisible = (this.transformControls as unknown as THREE.Object3D).visible;
+        (this.transformControls as unknown as THREE.Object3D).visible = false;
         // Update preview camera aspect ratio (square preview)
         this.previewCamera.aspect = 1.0;
         this.previewCamera.updateProjectionMatrix();
@@ -1204,7 +1205,7 @@ export class UI3DRenderer extends EventListenerModel {
         for(const helper of hiddenHelpers){
           helper.visible = true;
         }
-        this.transformControls.visible = wasTransformControlsVisible;
+        (this.transformControls as unknown as THREE.Object3D).visible = wasTransformControlsVisible;
         // Restore viewport and scissor
         this.renderer.setViewport(currentViewport);
         this.renderer.setScissor(currentScissor);

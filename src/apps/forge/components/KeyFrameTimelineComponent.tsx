@@ -13,8 +13,8 @@ export const KeyFrameTimelineComponent = function(props: any){
   const [scrollHeight, setScrollHeight] = useState<number>(0);
   const [panelHeight, setPanelHeight] = useState<number>(0);
   const [seekPositionLeft, setSeekPositionLeft] = useState<number>(0);
-  const waveformCanvasRef = useRef<HTMLCanvasElement>();
-  const keyframeWindowRef = useRef<HTMLDivElement>();
+  const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
+  const keyframeWindowRef = useRef<HTMLDivElement>(null);
 
   const [animations, setAnimations] = useState<KotOR.OdysseyModelAnimation[]>([]);
   const [timelineZoom, setTimelineZoom] = useState<number>(tab.timelineZoom);
@@ -88,7 +88,7 @@ export const KeyFrameTimelineComponent = function(props: any){
     if(keyframeWindowRef?.current) panelObserver.observe(keyframeWindowRef?.current);
   }, [keyframeWindowRef.current]);
 
-  const timestamps: JSX.Element[] = [];
+  const timestamps: React.ReactElement[] = [];
 
   const onBtnZoomIn = function(){
     tab.keyframeTrackZoomIn();

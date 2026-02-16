@@ -1,0 +1,55 @@
+.forge-binary-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0f1116;
+  color: #d8e0ef;
+}
+
+.forge-binary-viewer__header {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  background: #161a22;
+}
+
+.forge-binary-viewer__header .label {
+  color: #8aa4ff;
+  margin-right: 6px;
+}
+
+.forge-binary-viewer__table {
+  flex: 1;
+  overflow: auto;
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  font-size: 12px;
+}
+
+.forge-binary-viewer__row {
+  display: grid;
+  grid-template-columns: 120px 1fr 200px;
+  gap: 12px;
+  padding: 4px 12px;
+}
+
+.forge-binary-viewer__row--header {
+  position: sticky;
+  top: 0;
+  background: #1b202b;
+  font-weight: 600;
+  z-index: 2;
+}
+
+.forge-binary-viewer__row:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.forge-binary-viewer__row .cell.hex {
+  letter-spacing: 0.08em;
+}
+
+.forge-binary-viewer__row .cell.ascii {
+  color: #b7c3d9;
+}

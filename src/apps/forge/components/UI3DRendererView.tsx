@@ -8,19 +8,19 @@ export type { MenuItem };
 
 export interface UI3DRendererViewProps {
   context: UI3DRenderer;
-  children?: any;
-  onMouseWheel?: Function;
+  children?: React.ReactNode;
+  onMouseWheel?: () => void;
   menuItems?: MenuItem[];
   showMenuBar?: boolean;
 }
 
 export const UI3DRendererView = function(props: UI3DRendererViewProps){
-  const canvasRef: React.RefObject<HTMLCanvasElement> = useRef<HTMLCanvasElement>() as any;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const context = props.context;
 
   useEffectOnce(() => {
     if(!(props.context instanceof UI3DRenderer)){
-      props.context = new UI3DRenderer(canvasRef.current as any);
+      props.context = new UI3DRenderer(canvasRef.current as HTMLCanvasElement);
     }
     return () => {
       if(props.context){
@@ -30,7 +30,7 @@ export const UI3DRendererView = function(props: UI3DRendererViewProps){
   });
 
   useEffect( () => {
-    props.context.setCanvas(canvasRef.current as any);
+    props.context.setCanvas(canvasRef.current as HTMLCanvasElement);
     if(canvasRef.current){
       canvasRef.current.dataset.uuid = crypto.randomUUID();
     }

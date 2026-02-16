@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 export const useEffectOnce = ( effect: Function ) => {
 
-  const destroyFunc = useRef<Function>();
+  const destroyFunc = useRef<Function | undefined>(undefined);
   const calledOnce = useRef(false);
   const renderAfterCalled = useRef(false);
 
