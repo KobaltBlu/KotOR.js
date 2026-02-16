@@ -209,11 +209,11 @@ export class AppState {
     KotOR.OdysseyWalkMesh.Init();
     KotOR.GameState.setDOMElement(document.getElementById('renderer-container') as HTMLElement);
 
-    window.addEventListener('blur', (e) => {
+    window.addEventListener('blur', () => {
       KotOR.AudioEngine.OnWindowFocusChange(false);
     });
 
-    window.addEventListener('focus', (e) => {
+    window.addEventListener('focus', () => {
       KotOR.AudioEngine.OnWindowFocusChange(true);
     });
 
