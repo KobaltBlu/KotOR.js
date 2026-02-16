@@ -221,7 +221,7 @@ export class AppState {
 
     AppState.loaderMessage('GameState: Initializing...');
     await KotOR.GameState.Init();
-    document.body.append(KotOR.GameState.stats.domElement);
+    document.body.append((KotOR.GameState.stats as unknown as { domElement: HTMLElement }).domElement);
     log.info('init complete');
     AppState.loaderHide();
   }
@@ -349,8 +349,8 @@ export class AppState {
   }
 
   static processEventListener<T>(type: T, args: (string | number | boolean | object | null)[] = []): void {
-    if(Array.isArray(this.#eventListeners[type])){
-      const ev = this.#eventListeners[type];
+    if(Array.isArray(this.#eventListeners[type as string])){
+      const ev = this.#eventListeners[type as string];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
