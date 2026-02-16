@@ -259,7 +259,7 @@ export class AppState {
       return;
     }
     KotOR.ApplicationProfile.directoryHandle = handle;
-    KotOR.ConfigClient.set(`Profiles.${profileKey}.directory_handle`, handle);
+    KotOR.ConfigClient.set(`Profiles.${profileKey}.directory_handle`, handle as unknown as KotOR.ConfigValue);
     AppState.directoryLocated = true;
     AppState.loadGameDirectory();
   }
