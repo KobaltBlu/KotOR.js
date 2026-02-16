@@ -46,6 +46,8 @@ export class ModuleTrigger extends ModuleObject {
   trapTriggered: boolean;
   trapResRef: string;
   trapDetected: boolean = false;
+  /** Trap creator object id (for auto-disarm when disarmer placed the trap or party trap). */
+  creatorId: number = 0x7f000000; // OBJECT_INVALID
   declare type: ModuleTriggerType;
 
   constructor ( gff = new GFFObject() ) {
@@ -581,6 +583,12 @@ export class ModuleTrigger extends ModuleObject {
     if(this.template.RootNode.hasField('TrapDetectDC'))
       this.trapDetectDC = this.template.getFieldByLabel('TrapDetectDC').getValue();
 
+    if(this.template.RootNode.hasField('TrapDisarmDC'))
+      this.trapDisarmDC = this.template.getFieldByLabel('TrapDisarmDC').getValue();
+
+    if(this.template.RootNode.hasField('CreatorId'))
+      this.creatorId = this.template.getFieldByLabel('CreatorId').getValue();
+
     if(this.template.RootNode.hasField('TrapFlag'))
       this.trapFlag = this.template.getFieldByLabel('TrapFlag').getValue();
 
@@ -651,7 +659,7 @@ export class ModuleTrigger extends ModuleObject {
     let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue( this.commandable );
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).setValue(2130706432);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).setValue(this.creatorId ?? 0x7f000000);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Cursor') ).setValue(this.cursor);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Faction') ).setValue(this.faction ? this.faction.id : this.factionId);
 
@@ -695,6 +703,7 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'TransitionDestin') ).setValue(this.transitionDestin);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmDC') ).setValue(this.trapDisarmDC ?? 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapFlag') ).setValue(this.trapFlag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot);

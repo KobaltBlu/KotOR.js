@@ -90,11 +90,30 @@ export class ActionCombat extends Action {
         spellAction.setParameter(9, ActionParameterType.INT, combatAction.projectilePath); //ProjectilePath
         spellAction.setParameter(10, ActionParameterType.INT, -1);
         spellAction.setParameter(11, ActionParameterType.INT, combatAction.overrideSpell ? combatAction.overrideSpell.id : -1);
-        attackAction.isUserAction = combatAction.isUserAction;
+        spellAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(spellAction);
       break;
-      case CombatActionType.ITEM_CAST_SPELL:
-        //TODO
+      case CombatActionType.ITEM_CAST_SPELL: {
+        const itemCastSpellAction = new GameState.ActionFactory.ActionItemCastSpell();
+        const target = combatAction.target;
+        const targetId = target?.id ?? ModuleObjectConstant.OBJECT_INVALID;
+        const targetPos = target?.position ?? { x: 0, y: 0, z: 0 };
+        const areaId = target?.area?.id ?? this.owner?.area?.id ?? ModuleObjectConstant.OBJECT_INVALID;
+        itemCastSpellAction.setParameter(0, ActionParameterType.DWORD, targetId);
+        itemCastSpellAction.setParameter(1, ActionParameterType.DWORD, areaId);
+        itemCastSpellAction.setParameter(2, ActionParameterType.FLOAT, targetPos.x);
+        itemCastSpellAction.setParameter(3, ActionParameterType.FLOAT, targetPos.y);
+        itemCastSpellAction.setParameter(4, ActionParameterType.FLOAT, targetPos.z);
+        itemCastSpellAction.setParameter(5, ActionParameterType.INT, combatAction.spell ? combatAction.spell.id : -1);
+        itemCastSpellAction.setParameter(6, ActionParameterType.INT, 1);
+        itemCastSpellAction.setParameter(7, ActionParameterType.FLOAT, 1.0);
+        itemCastSpellAction.setParameter(8, ActionParameterType.INT, combatAction.projectilePath ?? -1);
+        itemCastSpellAction.setParameter(9, ActionParameterType.INT, combatAction.overrideSpell ? combatAction.overrideSpell.id : -1);
+        itemCastSpellAction.setParameter(10, ActionParameterType.DWORD, combatAction.item?.id ?? ModuleObjectConstant.OBJECT_INVALID);
+        itemCastSpellAction.setParameter(11, ActionParameterType.STRING, '');
+        itemCastSpellAction.isUserAction = combatAction.isUserAction;
+        this.owner.actionQueue.unshift(itemCastSpellAction);
+      }
       break;
       case CombatActionType.ITEM_EQUIP:
         const equipAction = new GameState.ActionFactory.ActionEquipItem();
