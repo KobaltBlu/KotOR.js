@@ -81,7 +81,7 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
   return (
     <div className={`app-loader ${visible ? 'active' : ''} ${fadeIn ? 'fade-in' : ''} ${fadeOut ? 'fade-out' : ''}`}>
       <div className="background" style={{backgroundImage: (backgroundURL) ? `url(${backgroundURL})` : 'initial'}}></div>
-      <div className="logo-wrapper"><img src={logoURL} style={{display: (logoURL) ? 'block' : 'none'}} /></div>
+      <div className="logo-wrapper">{logoURL ? <img src={logoURL} alt="" /> : null}</div>
       <div className="loading-container">
         <div className="spinner-wrapper">
           <div className="ball"></div>

@@ -86,18 +86,18 @@ export const AppProvider = (props: AppProviderProps) => {
 
   const onLoadingScreenInit = (backgroundURL: string, logoURL: string, message?: string) => {
     setLoadingScreenMessage(message || 'Loading...');
-    setLoadingScreenBackgroundURL(backgroundURL);
-    setLoadingScreenLogoURL(logoURL);
-  }
+    setLoadingScreenBackgroundURL(backgroundURL ?? '');
+    setLoadingScreenLogoURL(logoURL ?? '');
+  };
 
   const onLoadingScreenMessage = (message: string) => {
     setLoadingScreenMessage(message);
   }
 
-  useEffect(() => { 
+  useEffect(() => {
     window.addEventListener('keypress', onKeyPress);
     AppState.addEventListener('on-preload', onPreload);
-    AppState.addEventListener('on-ready', onAppReady);  
+    AppState.addEventListener('on-ready', onAppReady);
     AppState.addEventListener('on-game-loaded', onGameLoaded);
     AppState.addEventListener('on-loader-show', onLoadingScreenShow);
     AppState.addEventListener('on-loader-hide', onLoadingScreenHide);
@@ -116,7 +116,7 @@ export const AppProvider = (props: AppProviderProps) => {
     }
   }, []);
 
-  useEffect(() => { 
+  useEffect(() => {
     window.addEventListener('keypress', onKeyPress);
     return () => {
       window.removeEventListener('keypress', onKeyPress);

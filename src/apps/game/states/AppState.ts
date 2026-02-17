@@ -31,13 +31,42 @@ export class AppState {
   static env: ApplicationEnvironment;
   static statsMode: number|undefined = undefined;
 
+  /** Default profiles when game is opened directly (e.g. launch config) and launcher never ran. */
+  private static getDefaultProfileForKey(key: string | null): GameAppProfile | undefined {
+    if (!key) return undefined;
+    const defaults: Record<string, GameAppProfile> = {
+      kotor: {
+        key: 'kotor',
+        full_name: 'Star Wars: Knights of the Old Republic',
+        launch: { args: { gameChoice: 1 } },
+      },
+      tsl: {
+        key: 'tsl',
+        full_name: 'Star Wars Knights of the Old Republic II: The Sith Lords',
+        launch: { args: { gameChoice: 2 } },
+      },
+    };
+    return defaults[key] ?? undefined;
+  }
+
   /**
    * getProfile
+   * - Loads from ConfigClient. If missing (e.g. game opened directly), uses default for kotor/tsl and persists it.
    */
-  static async getProfile(){
+  static async getProfile(): Promise<GameAppProfile | undefined> {
     const query = new URLSearchParams(window.location.search);
+    const key = query.get('key');
     await KotOR.ConfigClient.Init();
-    return KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
+    let profile = KotOR.ConfigClient.get(`Profiles.${key}`) as GameAppProfile | undefined;
+    if (profile == null && key) {
+      const fallback = AppState.getDefaultProfileForKey(key);
+      if (fallback) {
+        log.debug('No profile in config for key=%s; using default and persisting', key);
+        profile = { ...fallback };
+        KotOR.ConfigClient.set(`Profiles.${key}`, profile as unknown as KotOR.ConfigValue);
+      }
+    }
+    return profile;
   }
 
   /**
@@ -187,7 +216,7 @@ export class AppState {
       KotOR.ApplicationProfile.directoryHandle = AppState.appProfile.directory_handle;
     }
     log.info('loading game...');
-    AppState.loaderInit(AppState.appProfile.background, AppState.appProfile.logo);
+    AppState.loaderInit(AppState.appProfile?.background ?? '', AppState.appProfile?.logo ?? '');
     AppState.loaderShow();
     KotOR.GameState.GameKey = AppState.gameKey;
     KotOR.TextureLoader.GameKey = KotOR.GameState.GameKey;
