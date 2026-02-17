@@ -255,7 +255,10 @@ export class BIKObject {
 
     // Create audio buffer from PCM data
     const audioCtx = AudioEngine.GetAudioEngine().audioCtx;
-    const buffer = audioCtx.createBuffer(audio.channels, audio.frameLen, audio.sampleRate);
+    const buffer = audioCtx.createBuffer(audio.channels, audio.frameLen - audio.overlapLen, audio.sampleRate);
+
+    
+    const pcmData = new Float32Array(audio.frameLen);
 
     // Copy channel data
     for (let channel = 0; channel < audio.channels; channel++) {
@@ -344,34 +347,35 @@ export class BIKObject {
 
   processAudioQueue(){
     //Process audio buffer queue
-    if(this.audio_array.length){
-
-      let buffered = this.audio_array.shift();
-
-      while(this.audio_array.length){
-        const nextBuffer = this.audio_array.shift();
-        buffered = this.appendBuffer(buffered, nextBuffer);
-      }
-
-      const bufferedNode = this.audioCtx.createBufferSource();
-      bufferedNode.buffer = buffered;
-      bufferedNode.loop = false;
-      bufferedNode.connect( AudioEngine.movieChannel.getGainNode() );
-      bufferedNode.onended = () => {
-        bufferedNode.buffer = undefined;
-        bufferedNode.disconnect();
-        const i = this.audio_nodes.indexOf(bufferedNode);
-        if (i >= 0) this.audio_nodes.splice(i, 1);
-      };
-
-      const current_time = this.audioCtx.currentTime;
-      if (!this.nextAudioTime)
-        this.nextAudioTime = current_time;
-
-      bufferedNode.start( this.nextAudioTime, 0 );
-      this.nextAudioTime = this.nextAudioTime + bufferedNode.buffer.duration;
-      this.audio_nodes.push(bufferedNode);
+    if(!this.audio_array.length) {
+      return;
     }
+
+    let buffered = this.audio_array.shift();
+
+    while(this.audio_array.length){
+      const nextBuffer = this.audio_array.shift();
+      buffered = this.appendBuffer(buffered, nextBuffer);
+    }
+
+    const bufferedNode = this.audioCtx.createBufferSource();
+    bufferedNode.buffer = buffered;
+    bufferedNode.loop = false;
+    bufferedNode.connect( AudioEngine.movieChannel.getGainNode() );
+    bufferedNode.onended = () => {
+      bufferedNode.buffer = undefined;
+      bufferedNode.disconnect();
+      const i = this.audio_nodes.indexOf(bufferedNode);
+      if (i >= 0) this.audio_nodes.splice(i, 1);
+    };
+
+    const current_time = this.audioCtx.currentTime;
+    if (!this.nextAudioTime)
+      this.nextAudioTime = current_time;
+
+    bufferedNode.start( this.nextAudioTime, 0 );
+    this.nextAudioTime = this.nextAudioTime + bufferedNode.buffer.duration;
+    this.audio_nodes.push(bufferedNode);
   }
 
   //https://stackoverflow.com/questions/14143652/web-audio-api-append-concatenate-different-audiobuffers-and-play-them-as-one-son

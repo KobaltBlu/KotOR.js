@@ -57,7 +57,6 @@ export type WorkerResponse =
 let demuxer: BinkDemuxer | null = null;
 let videoDec: BinkVideoDecoder | null = null;
 let audioDec: BinkAudioDCTDecoder | null = null;
-let lastYUV: YUVFrame | null = null;
 let audioIsFirst = true;
 let audioTrackIndex = 0;
 let audioSampleRate = 0;
@@ -179,6 +178,7 @@ function yuvToRGBA(yuv: YUVFrame): ArrayBuffer {
 
 self.onmessage = (e: MessageEvent<WorkerRequest>) => {
   const msg = e.data;
+  const worker = self as unknown as Worker;
 
   try {
     switch (msg.type) {
@@ -189,7 +189,6 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         const v = h.video;
 
         videoDec = new BinkVideoDecoder(v.width, v.height, v.versionChar, v.hasAlpha);
-        lastYUV = null;
         audioIsFirst = true;
 
         // Set up audio decoder for the first DCT audio track (if any)
@@ -222,7 +221,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
           })),
         };
 
-        (self as unknown as Worker).postMessage({ type: 'ready', header } satisfies WorkerResponse);
+        worker.postMessage({ type: 'ready', header } satisfies WorkerResponse);
         break;
       }
 
@@ -230,121 +229,64 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         if (!demuxer || !videoDec) throw new Error('Worker not initialized');
         const { frameIndex, outputFormat = 'rgba' } = msg;
 
+        // console.log(`Decode frame ${frameIndex}`);
+        // const startTime = performance.now();
+
+        // let lTime = performance.now();
         // Demux
         let frame;
         try {
           frame = demuxer.getFrame(frameIndex);
         } catch {
-          try { frame = demuxer.getFrame(frameIndex, { forceVideoFirst: true }); } catch {
+          try { 
+            frame = demuxer.getFrame(frameIndex, { forceVideoFirst: true }); 
+          } catch {
             // Can't demux — send null video, reuse last
-            (self as unknown as Worker).postMessage({ type: 'frame', frameIndex, video: null, audio: null } satisfies WorkerResponse);
+            worker.postMessage({ type: 'frame', frameIndex, video: null, audio: null } satisfies WorkerResponse);
             break;
           }
         }
 
+        // console.log(`Demux time: ${performance.now() - lTime}ms`);
+
+        // lTime = performance.now();
         // ── Video ──────────────────────────────────────────────────────
         let videoPayload: ({ rgba: ArrayBuffer; width: number; height: number } | { yuv: YUVFrame }) | null = null;
         const transfers: ArrayBuffer[] = [];
 
         if (frame.video && frame.video.size > 0 && frame.video.data.byteLength > 0) {
-          try {
-            const yuv = videoDec.decodePacketToFrame(frame.video.data);
-            lastYUV = yuv;
+          const yuv = videoDec.decodePacketToFrame(frame.video.data);
 
-            if (outputFormat === 'rgba') {
-                const rgba = yuvToRGBA(yuv);
+          if (outputFormat === 'rgba') {
+            const rgba = yuvToRGBA(yuv);
             videoPayload = { rgba, width: yuv.width, height: yuv.height };
             transfers.push(rgba as ArrayBuffer);
-            } else { // 'yuv'
-              // Create a copy of the YUV frame for transfer
-              const yCopy = new Uint8Array(yuv.y.length);
-              const uCopy = new Uint8Array(yuv.u.length);
-              const vCopy = new Uint8Array(yuv.v.length);
-              yCopy.set(yuv.y);
-              uCopy.set(yuv.u);
-              vCopy.set(yuv.v);
-
-              const yuvCopy: YUVFrame = {
-                width: yuv.width,
-                height: yuv.height,
-                y: yCopy,
-                u: uCopy,
-                v: vCopy,
-                linesizeY: yuv.linesizeY,
-                linesizeU: yuv.linesizeU,
-                linesizeV: yuv.linesizeV
-              };
-              videoPayload = { yuv: yuvCopy };
-              transfers.push(yCopy.buffer as ArrayBuffer, uCopy.buffer as ArrayBuffer, vCopy.buffer as ArrayBuffer);
-            }
-          } catch {
-            // Retry alternate layout
-            try {
-              const f2 = demuxer.getFrame(frameIndex, { forceVideoFirst: true });
-              if (f2.video && f2.video.size > 0) {
-                const yuv2 = videoDec.decodePacketToFrame(f2.video.data);
-                lastYUV = yuv2;
-
-                if (outputFormat === 'rgba') {
-                const rgba = yuvToRGBA(yuv2);
-                videoPayload = { rgba, width: yuv2.width, height: yuv2.height };
-                transfers.push(rgba as ArrayBuffer);
-                } else { // 'yuv'
-                  const yCopy = new Uint8Array(yuv2.y.length);
-                const uCopy = new Uint8Array(yuv2.u.length);
-                const vCopy = new Uint8Array(yuv2.v.length);
-                yCopy.set(yuv2.y);
-                uCopy.set(yuv2.u);
-                vCopy.set(yuv2.v);
-
-                const yuvCopy: YUVFrame = {
-                    width: yuv2.width,
-                    height: yuv2.height,
-                    y: yCopy,
-                    u: uCopy,
-                    v: vCopy,
-                    linesizeY: yuv2.linesizeY,
-                    linesizeU: yuv2.linesizeU,
-                    linesizeV: yuv2.linesizeV
-                  };
-                  videoPayload = { yuv: yuvCopy };
-                  transfers.push(yCopy.buffer as ArrayBuffer, uCopy.buffer as ArrayBuffer, vCopy.buffer as ArrayBuffer);
-                }
-              }
-            } catch { /* give up, videoPayload stays null */ }
-          }
-        }
-
-        // If no decoded frame, send last frame in requested format
-        if (!videoPayload && lastYUV) {
-          if (outputFormat === 'rgba') {
-            const rgba = yuvToRGBA(lastYUV);
-          videoPayload = { rgba, width: lastYUV.width, height: lastYUV.height };
-          transfers.push(rgba as ArrayBuffer);
           } else { // 'yuv'
-            // Create a copy of the last YUV frame for transfer
-            const yCopy = new Uint8Array(lastYUV.y.length);
-            const uCopy = new Uint8Array(lastYUV.u.length);
-            const vCopy = new Uint8Array(lastYUV.v.length);
-            yCopy.set(lastYUV.y);
-            uCopy.set(lastYUV.u);
-            vCopy.set(lastYUV.v);
+            // Create a copy of the YUV frame for transfer
+            const yCopy = new Uint8Array(yuv.y.length);
+            const uCopy = new Uint8Array(yuv.u.length);
+            const vCopy = new Uint8Array(yuv.v.length);
+            yCopy.set(yuv.y);
+            uCopy.set(yuv.u);
+            vCopy.set(yuv.v);
 
             const yuvCopy: YUVFrame = {
-              width: lastYUV.width,
-              height: lastYUV.height,
+              width: yuv.width,
+              height: yuv.height,
               y: yCopy,
               u: uCopy,
               v: vCopy,
-              linesizeY: lastYUV.linesizeY,
-              linesizeU: lastYUV.linesizeU,
-              linesizeV: lastYUV.linesizeV
+              linesizeY: yuv.linesizeY,
+              linesizeU: yuv.linesizeU,
+              linesizeV: yuv.linesizeV
             };
             videoPayload = { yuv: yuvCopy };
             transfers.push(yCopy.buffer as ArrayBuffer, uCopy.buffer as ArrayBuffer, vCopy.buffer as ArrayBuffer);
           }
+          // console.log(`Video decode time: ${performance.now() - lTime}ms`);
         }
 
+        // lTime = performance.now();
         // ── Audio ──────────────────────────────────────────────────────
         let audioPayload: { pcm: ArrayBuffer[]; sampleRate: number; channels: number; frameLen: number; overlapLen: number; isFirst: boolean } | null = null;
 
@@ -367,10 +309,12 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
               audioIsFirst = false;
             } catch { /* skip audio for this frame */ }
           }
+          // console.log(`Audio decode time: ${performance.now() - lTime}ms`);
         }
 
         const resp: WorkerResponse = { type: 'frame', frameIndex, video: videoPayload, audio: audioPayload };
-        (self as unknown as Worker).postMessage(resp, transfers);
+        worker.postMessage(resp, transfers);
+        // console.log(`Decode frame ${frameIndex} time: ${performance.now() - startTime}ms`);
         break;
       }
 
@@ -378,13 +322,12 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         demuxer = null;
         videoDec = null;
         audioDec = null;
-        lastYUV = null;
         audioIsFirst = true;
         break;
       }
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    (self as unknown as Worker).postMessage({ type: 'error', message } satisfies WorkerResponse);
+    worker.postMessage({ type: 'error', message } satisfies WorkerResponse);
   }
 };
