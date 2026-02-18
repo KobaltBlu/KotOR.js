@@ -95,6 +95,12 @@ const libraryConfig = (name, color) => ({
     warnings: false,
     publicPath: false
   },
+  devServer: {
+    port: 8081,
+    hot: true,
+    open: ['/launcher/'],
+    historyApiFallback: false,
+  },
   devtool: !isProd ? 'eval-source-map' : 'source-map',
   module: {
     rules: [
@@ -170,6 +176,7 @@ const libraryConfig = (name, color) => ({
     library: 'KotOR',
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist'),
+    publicPath: '/',
     pathinfo: false,
   },
 });

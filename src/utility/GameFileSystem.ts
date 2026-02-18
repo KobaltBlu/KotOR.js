@@ -45,14 +45,18 @@ export class GameFileSystem {
 
   private static normalizePath(filepath: string) {
     filepath = filepath.trim();
-    filepath = filepath.replace(/^[/\\]+/, '').replace(/[/\\]+$/, '');
+    filepath = filepath.replace(/\\/g, '/');
+    filepath = filepath.replace(/^\/+/, '').replace(/\/+$/, '');
     return filepath;
   }
 
-  /** Returns true if name is valid for getFileHandle/getDirectoryHandle (no empty, ".", "..", or path separators). */
+  /** Returns true if name is valid for getFileHandle/getDirectoryHandle (no empty, ".", "..", path separators, or OS-invalid chars). */
   private static isSafeHandleName(name: string): boolean {
-    if (name === '' || name === '.' || name === '..') return false;
+    if (typeof name !== 'string') return false;
+    const trimmed = name.trim();
+    if (trimmed === '' || trimmed === '.' || trimmed === '..') return false;
     if (/[/\\]/.test(name)) return false;
+    if (/[:*?"<>|]/.test(name)) return false;
     return true;
   }
 
@@ -78,7 +82,11 @@ export class GameFileSystem {
       }
       const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
       if (dirHandle) {
-        const file = await dirHandle.getFileHandle(filename, {
+        const safeName = filename.trim();
+        if (!safeName || !this.isSafeHandleName(safeName)) {
+          throw new Error(`Invalid file name for path: ${filepath}`);
+        }
+        const file = await dirHandle.getFileHandle(safeName, {
           create: false
         });
         if (file) {
@@ -167,7 +175,11 @@ export class GameFileSystem {
     }
     const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
     if (!dirHandle) throw new Error('Failed to locate file directory');
-    const newFile = await dirHandle.getFileHandle(filename, { create: true });
+    const safeName = filename.trim();
+    if (!safeName || !this.isSafeHandleName(safeName)) {
+      throw new Error(`Invalid file name for path: ${filepath}`);
+    }
+    const newFile = await dirHandle.getFileHandle(safeName, { create: true });
     if (!newFile) throw new Error('Failed to create file');
     try {
       const stream = await newFile.createWritable();
@@ -600,6 +612,7 @@ export class GameFileSystem {
 
   private static async resolveFilePathDirectoryHandle(filepath: string): Promise<FileSystemDirectoryHandle> {
     if (ApplicationProfile.directoryHandle) {
+      filepath = this.normalizePath(filepath);
       const dirs = filepath.split('/').filter((s) => this.isSafeHandleName(s));
       dirs.pop(); // base name not needed for directory resolution
       const cacheKey = dirs.join('/');

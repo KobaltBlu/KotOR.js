@@ -9,6 +9,7 @@
   "scripts": {
     "start": "tsc --project tsconfig.electron.json && node scripts/write-electron-launcher.js",
     "start-watch": "tsc-watch --project tsconfig.electron.json --onSuccess \"node scripts/write-electron-launcher.js\"",
+    "dev": "cross-env NODE_ENV=development webpack serve",
     "webpack:dev": "cross-env NODE_ENV=development webpack",
     "webpack:dev-watch": "cross-env NODE_ENV=development webpack --watch",
     "webpack:prod": "cross-env NODE_ENV=production webpack",
@@ -84,6 +85,7 @@
     "user-agent-data-types": "^0.4.2",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.3",
     "webpackbar": "^7.0.0"
   },
   "dependencies": {
@@ -99,8 +101,8 @@
     "jest": "^30.2.0",
     "monaco-editor": "^0.52.0",
     "three": "^0.149.0",
-    "tsconfig-paths": "^4.2.0",
     "ts-jest": "^29.4.6",
+    "tsconfig-paths": "^4.2.0",
     "yaml": "^2.8.2"
   }
 }
