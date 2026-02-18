@@ -4,7 +4,7 @@ import { EditorFileOptions } from "./interfaces/EditorFileOptions";
 import { AudioPlayerState } from "./states/AudioPlayerState";
 import { ForgeState } from "./states/ForgeState";
 import { 
-  TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabPTHEditorState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState, 
+  TabBIKPlayerState, TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabPTHEditorState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState, 
   TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState 
 } from "./states/tabs";
 import { ResourceTypes } from "../../KotOR";
@@ -125,8 +125,8 @@ export class FileTypeManager {
       case 'fac': 
         ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
       break;
-      case 'bik': 
-        // ForgeState.tabManager.addTab(new TabMovieViewerState({editorFile: res}));
+      case 'bik':
+        ForgeState.tabManager.addTab(new TabBIKPlayerState({editorFile: res}));
       break;
       case 'wav':
       case 'mp3':

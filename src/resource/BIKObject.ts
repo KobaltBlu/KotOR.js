@@ -225,6 +225,43 @@ export class BIKObject {
   }
 
   /**
+   * Plays a BIK movie from an in-memory buffer (e.g. Forge editor). Same as play() but skips loading from filesystem.
+   * @param buffer - Full BIK file contents (ArrayBuffer).
+   */
+  async playFromBuffer(buffer: ArrayBuffer, onComplete?: Function, onReady?: (width: number, height: number) => void): Promise<void> {
+    if (!buffer || this.disposed) return;
+
+    this.onReady = onReady;
+    this.stop();
+    this.onComplete = onComplete;
+
+    AudioEngine.Mute(AudioEngineChannel.ALL);
+    AudioEngine.Unmute(AudioEngineChannel.MOVIE);
+
+    try {
+      await this.initializeWorker(buffer);
+      this.audioCtx = AudioEngine.GetAudioEngine().audioCtx;
+      this.audio_nodes = [];
+      this.audioStartTime = 0;
+      this.playbackPosition = 0;
+      this.frameBuffer.clear();
+      this.nextFrameToRequest = 0;
+      this.decodeInFlight = 0;
+      this.lastDisplayedFrameIndex = -1;
+      this.lastDisplayedYuv = null;
+      this.isPlaying = true;
+      const frameCount = this.header?.frameCount ?? 0;
+      for (let i = 0; i < Math.min(BIKObject.MAX_DECODE_IN_FLIGHT, frameCount); i++) {
+        this.requestDecode(this.nextFrameToRequest);
+        this.nextFrameToRequest++;
+      }
+    } catch (error) {
+      console.error('Failed to play BIK from buffer:', error);
+      if (this.onComplete) this.onComplete();
+    }
+  }
+
+  /**
    * Stops playback: unmutes other channels, mutes MOVIE, sets isPlaying false, terminates the worker, clears frame buffer and decode state, and stops/disconnects all scheduled audio nodes.
    */
   stop(){
