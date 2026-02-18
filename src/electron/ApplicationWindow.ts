@@ -1,7 +1,7 @@
 import * as path from "path";
+import { pathToFileURL } from "url";
 
 import { BrowserWindow } from "electron";
-
 
 import Main from "@/electron/Main";
 import { WindowManager } from "@/electron/WindowManager";
@@ -69,8 +69,10 @@ export class ApplicationWindow {
 
     if(profile.key != null) queryString.set('key', profile.key);
 
-    // and load the index.html of the app.
-    this.browserWindow.loadURL(`file://${Main.ApplicationPath}/dist/${profile.launch?.path ?? ''}?${queryString.toString()}`);
+    const htmlPath = path.join(Main.ApplicationPath, 'dist', profile.launch?.path ?? '', 'index.html');
+    const loadUrl = `${pathToFileURL(htmlPath).href}?${queryString.toString()}`;
+    log.info('ApplicationWindow loadURL', { htmlPath, loadUrl });
+    this.browserWindow.loadURL(loadUrl);
     this.browserWindow.setMenuBarVisibility(false);
 
     // Emitted when the window is closed.

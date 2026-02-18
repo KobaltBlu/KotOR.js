@@ -9,7 +9,7 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 //exec & execFile are used for launching the original games from the launcher
 
 
-const log = createScopedLogger(LogScope.Extension);
+const log = createScopedLogger(LogScope.Electron);
 import { execFile, exec } from "child_process";
 
 export class WindowManager {
@@ -18,13 +18,18 @@ export class WindowManager {
   static windows: ApplicationWindow[] = [];
 
   static createLauncherWindow() {
+    log.trace('createLauncherWindow enter');
     if (!WindowManager.launcherWindow) {
+      log.debug('creating new LauncherWindow');
       WindowManager.launcherWindow = new LauncherWindow();
     }
+    log.trace('createLauncherWindow show');
     WindowManager.launcherWindow.show();
+    log.trace('createLauncherWindow exit');
   }
 
   static toggleLauncherWindow() {
+    log.trace('toggleLauncherWindow');
     if (!WindowManager.launcherWindow) {
       this.createLauncherWindow();
     } else {
