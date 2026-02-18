@@ -404,12 +404,12 @@ export class AudioEmitter {
       log.error('AudioEmitter.addSound: No audio data present');
       throw new Error('No audio data present');
     }
-    const rawBuffer = data instanceof Uint8Array
-      ? data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
-      : data.slice(0);
-    const arrayBuffer: ArrayBuffer = rawBuffer instanceof SharedArrayBuffer
-      ? new Uint8Array(rawBuffer).slice(0).buffer
-      : rawBuffer;
+    // Always decode from a fresh, non-detached ArrayBuffer and avoid referencing
+    // SharedArrayBuffer in environments where it isn't available.
+    const arrayBuffer: ArrayBuffer =
+      data instanceof Uint8Array
+        ? data.slice(0).buffer
+        : data.slice(0);
     try{
       const buffer: AudioBuffer = await this.engine.audioCtx.decodeAudioData(arrayBuffer);
       this.buffers.set(resRef, buffer);

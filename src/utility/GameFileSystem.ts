@@ -86,13 +86,18 @@ export class GameFileSystem {
         if (!safeName || !this.isSafeHandleName(safeName)) {
           throw new Error(`Invalid file name for path: ${filepath}`);
         }
-        const file = await dirHandle.getFileHandle(safeName, {
-          create: false
-        });
-        if (file) {
-          return file;
-        } else {
-          throw new Error('Failed to read file');
+        try {
+          return await dirHandle.getFileHandle(safeName, { create: false });
+        } catch (e) {
+          // Some environments can behave case-sensitively even on Windows-like filesystems.
+          // Fall back to a case-insensitive scan of the directory entries.
+          const targetLower = safeName.toLowerCase();
+          for await (const entry of dirHandle.values()) {
+            if (entry.kind === 'file' && entry.name.toLowerCase() === targetLower) {
+              return await dirHandle.getFileHandle(entry.name, { create: false });
+            }
+          }
+          throw e;
         }
       } else {
         throw new Error('Failed to locate file directory');
@@ -145,7 +150,10 @@ export class GameFileSystem {
     if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
       return new Promise<Uint8Array>((resolve, _reject) => {
         fs.readFile(path.join(ApplicationProfile.directory, filepath), options, (err, buffer) => {
-          if (err) _reject(undefined);
+          if (err) {
+            _reject(err);
+            return;
+          }
           resolve(new Uint8Array(buffer as Buffer));
         })
       });

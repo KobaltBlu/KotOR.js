@@ -100,16 +100,25 @@ export class AudioLoader {
   }
 
   static async LoadAmbientSound (resRef: string): Promise<Uint8Array> {
-    try{
-      const file = path.join('streammusic', resRef+'.wav');
-      const buffer = await GameFileSystem.readFile(file);
-      const af = new AudioFile(buffer);
-      return await af.getPlayableByteStream();
-    }catch(e){
-      log.debug('AudioLoader.LoadAmbientSound : read');
-      log.error(e instanceof Error ? e : new Error(String(e)));
-      throw e;
+    let lastErr: unknown;
+    const candidates = [
+      `streammusic/${resRef}.wav`,
+      `streammusic/${resRef}.mp3`,
+    ];
+
+    for (const file of candidates) {
+      try {
+        const buffer = await GameFileSystem.readFile(file);
+        const af = new AudioFile(buffer);
+        return await af.getPlayableByteStream();
+      } catch (e) {
+        lastErr = e;
+      }
     }
+
+    log.debug('AudioLoader.LoadAmbientSound : read');
+    log.error(lastErr instanceof Error ? lastErr : new Error(String(lastErr)));
+    throw lastErr;
   }
 
   static cache: Record<string, ArrayBuffer | Uint8Array> = {};

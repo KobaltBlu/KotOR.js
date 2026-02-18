@@ -39,8 +39,25 @@ export class GUIFont {
   getChar(code: number): GUIFontChar {
     if (this.charCount <= 0) return (this.chars[0] ?? new GUIFontChar(this, ' ')) as GUIFontChar;
     const index = (code >= 0 && code < this.charCount) ? code : this.getFallbackCharIndex();
-    const c = this.chars[index];
-    return (c ?? this.chars[this.getFallbackCharIndex()] ?? this.chars[0]) as GUIFontChar;
+    const fallbackIndex = this.getFallbackCharIndex();
+    const c = (this.chars[index] ?? this.chars[fallbackIndex] ?? this.chars[0]) as GUIFontChar;
+
+    // Many KotOR GUI fonts only ship uppercase glyphs. If the lowercase glyph is missing
+    // (0-sized due to missing TXI coords), fall back to the uppercase equivalent.
+    if (c && c.width === 0 && c.height === 0 && code >= 97 && code <= 122) { // a-z
+      const upper = code - 32; // A-Z
+      if (upper >= 0 && upper < this.charCount) {
+        const uc = this.chars[upper];
+        if (uc && (uc.width > 0 || uc.height > 0)) return uc;
+      }
+    }
+
+    // If still 0-sized, fall back to the configured fallback glyph (usually space).
+    if (c && c.width === 0 && c.height === 0) {
+      return (this.chars[fallbackIndex] ?? this.chars[0] ?? c) as GUIFontChar;
+    }
+
+    return c;
   }
 
   constructor(texture: OdysseyTexture){
@@ -150,13 +167,9 @@ export class GUIFont {
       }
 
       let char: GUIFontChar;
-      let halfWidth = 0;
-      let halfHeight = 0;
       let stride = 0;
       for(let c = 0; c < line.chars.length; c++){
         char = line.chars[c];
-        halfWidth = char.width/2;
-        halfHeight = char.height/2;
         stride = (charIndex * 8);
 
         // Remove the incorrect first character offset
@@ -221,8 +234,8 @@ export class GUIFontChar {
   constructor(font: GUIFont, letter: string){
     this.font = font;
     this.char = letter.charCodeAt(0);
-    const ul = font.txi.upperleftcoords?.[this.char];
-    const lr = font.txi.lowerrightcoords?.[this.char];
+    const ul = font.txi?.upperleftcoords?.[this.char];
+    const lr = font.txi?.lowerrightcoords?.[this.char];
     this.ul = ul ?? { x: 0, y: 0, z: 0 };
     this.lr = lr ?? { x: 0, y: 0, z: 0 };
     const w = (this.lr.x - this.ul.x) * ((font.texture?.image as HTMLImageElement)?.width ?? 1);

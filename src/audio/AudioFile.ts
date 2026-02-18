@@ -228,9 +228,9 @@ export class AudioFile {
       log.trace('getPlayableByteStream WAVE branch');
       if(this.header.format == AudioFileWaveEncoding.ADPCM){
         log.trace('getPlayableByteStream ADPCM decode');
-        const RAW_PCM_DATA_OFFSET = 60;
-        this.reader.seek(RAW_PCM_DATA_OFFSET);
-        const dataADPCM = this.reader.readBytes(this.reader.length() - (RAW_PCM_DATA_OFFSET));
+        const dataOffset = typeof this.header.dataOffset === 'number' ? this.header.dataOffset : 60;
+        this.reader.seek(dataOffset);
+        const dataADPCM = this.reader.readBytes(this.reader.length() - dataOffset);
         log.trace('getPlayableByteStream ADPCM data length', dataADPCM?.length);
         const adpcm = new ADPCMDecoder({
           sampleRate: this.header.sampleRate,
@@ -271,45 +271,66 @@ export class AudioFile {
 
   waveSubChunkParser (header: IAudioFileHeader, reader: BinaryReader) {
     const chunkID = reader.readChars(4);
-    log.trace('waveSubChunkParser chunk', chunkID);
-    switch(chunkID){
-      case 'fmt ':
+    const chunkSize = reader.readUInt32();
+    const chunkDataStart = reader.tell();
+    const chunkEnd = chunkDataStart + chunkSize;
+    const pad = (chunkSize & 1) ? 1 : 0; // RIFF chunks are word-aligned
+
+    log.trace('waveSubChunkParser chunk', { chunkID, chunkSize, at: chunkDataStart });
+
+    switch (chunkID) {
+      case 'fmt ': {
         log.trace('waveSubChunkParser fmt');
         header.fmt = chunkID;
-        header.chunkSize = reader.readUInt32();
+        header.chunkSize = chunkSize;
+
+        // WAVEFORMAT (16 bytes) minimum
         header.format = reader.readUInt16();
         header.channels = reader.readUInt16();
         header.sampleRate = reader.readUInt32();
         header.bytesPerSec = reader.readUInt32();
         header.frameSize = reader.readUInt16();
         header.bits = reader.readUInt16();
+
         log.trace('waveSubChunkParser fmt values', { format: header.format, channels: header.channels, sampleRate: header.sampleRate });
 
-        if(header.format == AudioFileWaveEncoding.ADPCM){
+        // If the fmt chunk contains extra bytes, keep alignment by skipping to chunkEnd.
+        // For KotOR ADPCM, extra data begins with a 16-bit blob size followed by blob bytes.
+        if (header.format === AudioFileWaveEncoding.ADPCM && reader.tell() + 2 <= chunkEnd) {
           header.blobSize = reader.readUInt16();
-          header.blobData = reader.readBytes(header.blobSize);
+          const remaining = Math.max(0, chunkEnd - reader.tell());
+          const toRead = Math.min(header.blobSize ?? 0, remaining);
+          header.blobData = reader.readBytes(toRead);
           log.trace('waveSubChunkParser ADPCM blobSize', header.blobSize);
         }
+
+        reader.seek(chunkEnd + pad);
         return true;
-      break;
-      case 'fact':
+      }
+      case 'fact': {
         log.trace('waveSubChunkParser fact');
         header.fact = chunkID;
-        header.factSize = reader.readUInt32();
-        header.factBOH = reader.readUInt32();
+        header.factSize = chunkSize;
+        if (chunkSize >= 4 && reader.tell() + 4 <= chunkEnd) {
+          header.factBOH = reader.readUInt32();
+        }
+        reader.seek(chunkEnd + pad);
         return true;
-      break;
-      case 'data':
+      }
+      case 'data': {
         log.trace('waveSubChunkParser data');
         header.data = chunkID;
-        header.dataSize = reader.readUInt32();
+        header.dataSize = chunkSize;
         header.dataOffset = reader.tell();
-        return false;
-      break;
-      default:
-        log.warn('waveSubChunkParser: unknown WAVE chunk', chunkID);
-        throw new Error('Unknown WAVE chunk');
-      break;
+        return false; // stop scanning; payload starts at dataOffset
+      }
+      default: {
+        // Many WAVs contain metadata/aux chunks (LIST, JUNK, bext, iXML, etc.).
+        // We skip them so we can still reach the 'data' chunk.
+        log.debug('waveSubChunkParser: skipping unknown WAVE chunk', { chunkID, chunkSize });
+        reader.seek(chunkEnd + pad);
+        return true;
+      }
     }
 
   }
