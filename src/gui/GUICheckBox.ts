@@ -7,7 +7,7 @@ import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
 import type { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
 import { TextureLoader } from "@/loaders";
-import type { GFFStruct } from "@/resource/GFFStruct";
+import { GFFStruct } from "@/resource/GFFStruct";
 import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
@@ -16,9 +16,9 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * GUICheckBox class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUICheckBox.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -69,7 +69,7 @@ export class GUICheckBox extends GUIControl{
     };
 
     this.borderSelected.geometry = new THREE.BufferGeometry();
-    
+
     this.borderSelected.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -102,7 +102,7 @@ export class GUICheckBox extends GUIControl{
     //---------------//
     // Selected Fill
     //---------------//
-    
+
     this.borderSelected.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -146,7 +146,7 @@ export class GUICheckBox extends GUIControl{
     };
 
     this.highlightSelected.geometry = new THREE.BufferGeometry();
-    
+
     this.highlightSelected.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -179,7 +179,7 @@ export class GUICheckBox extends GUIControl{
     //-------------------------//
     // Highlight Selected Fill
     //-------------------------//
-    
+
     this.highlightSelected.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -198,7 +198,7 @@ export class GUICheckBox extends GUIControl{
     this.widget.userData.highlightSelected.add( this.highlightSelected.fill.mesh );
 
     if(this.control instanceof GFFStruct){
-      
+
       //Selected
       this.hasSelected = control.hasField('SELECTED');
       if(this.hasSelected){
@@ -225,7 +225,7 @@ export class GUICheckBox extends GUIControl{
 
         this.borderSelected.pulsing = selected.getNumberByLabel('PULSING') || 0;
       }
-      
+
       //Highlight Selected
       this.hashighlightSelected = control.hasField('HILIGHTSELECTED');
       if(this.hashighlightSelected){
@@ -367,7 +367,7 @@ export class GUICheckBox extends GUIControl{
     this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
-    
+
     this.borderSelected.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
     this.highlightSelected.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
 
@@ -461,7 +461,7 @@ export class GUICheckBox extends GUIControl{
     if(this.isClickable()){
       GameState.guiAudioEmitter.playSoundFireAndForget('gui_scroll');
     }
-    
+
     this.processEventListener('hover');
     this.processEventListener('mouseIn');
   }
@@ -477,7 +477,7 @@ export class GUICheckBox extends GUIControl{
     if(this.iniProperty){
       GameState.iniConfig.setProperty(this.iniProperty, this.value);
     }
-    
+
     if(typeof this.onValueChanged === 'function')
       this.onValueChanged(this.value);
 

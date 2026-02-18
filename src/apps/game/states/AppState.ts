@@ -66,6 +66,11 @@ export class AppState {
         KotOR.ConfigClient.set(`Profiles.${key}`, profile as unknown as KotOR.ConfigValue);
       }
     }
+    // Ensure profile has .key when URL has key (e.g. stale config entry without key)
+    if (profile && !profile.key && key) {
+      profile = { ...profile, key };
+      KotOR.ConfigClient.set(`Profiles.${key}`, profile as unknown as KotOR.ConfigValue);
+    }
     return profile;
   }
 
@@ -80,6 +85,16 @@ export class AppState {
     }
 
     AppState.appProfile = (await AppState.getProfile()) as GameAppProfile | undefined;
+    // If URL has ?key= but profile missing/key missing, ensure we have a usable profile (e.g. direct open)
+    const urlKey = new URLSearchParams(window.location.search).get('key');
+    if (!AppState.appProfile?.key && urlKey) {
+      const fallback = AppState.getDefaultProfileForKey(urlKey);
+      if (fallback) {
+        log.debug('Ensuring appProfile from URL key=%s', urlKey);
+        AppState.appProfile = { ...fallback };
+        KotOR.ConfigClient.set(`Profiles.${urlKey}`, AppState.appProfile as unknown as KotOR.ConfigValue);
+      }
+    }
     KotOR.ApplicationProfile.InitEnvironment(AppState.appProfile as Record<string, unknown>);
 
     document.title = `${AppState.appProfile?.full_name ? AppState.appProfile?.full_name : 'N/A' }`;

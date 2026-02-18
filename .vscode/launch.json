@@ -15,63 +15,103 @@
   "configurations": [
     {
       "name": "KotOR Launcher",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "dist", "-l", "8080"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Build web for serve (root)",
+      "serverReadyAction": {
+        "pattern": "Serving!|Local:.*http://|localhost:8080",
+        "uriFormat": "http://localhost:8080/launcher/index.html",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}/dist"
+      },
       "presentation": {
         "group": "2-browser",
         "order": 1
-      },
-      "request": "launch",
-      "type": "chrome",
-      "url": "http://localhost:8080/launcher/index.html",
-      "webRoot": "${workspaceFolder}/dist",
-      "preLaunchTask": "Prepare KotOR Launcher (build + serve)"
+      }
     },
     {
       "name": "KotOR Launcher (watch)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "dist", "-l", "8080"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Watch web verbose (root)",
+      "serverReadyAction": {
+        "pattern": "Serving!|Local:.*http://|localhost:8080",
+        "uriFormat": "http://localhost:8080/launcher/index.html",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}/dist"
+      },
       "presentation": {
         "group": "2-browser",
         "order": 2
-      },
-      "request": "launch",
-      "type": "chrome",
-      "url": "http://localhost:8080/launcher/index.html",
-      "webRoot": "${workspaceFolder}/dist",
-      "preLaunchTask": "Prepare KotOR Launcher (watch + serve)"
+      }
     },
     {
       "name": "KotOR Launcher (clean build)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "dist", "-l", "8080"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Clean and build web (root)",
+      "serverReadyAction": {
+        "pattern": "Serving!|Local:.*http://|localhost:8080",
+        "uriFormat": "http://localhost:8080/launcher/index.html",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}/dist"
+      },
       "presentation": {
         "group": "2-browser",
         "order": 3
-      },
-      "request": "launch",
-      "type": "chrome",
-      "url": "http://localhost:8080/launcher/index.html",
-      "webRoot": "${workspaceFolder}/dist",
-      "preLaunchTask": "Prepare KotOR Launcher (clean + serve)"
+      }
     },
     {
       "name": "KotOR",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "dist", "-l", "8080"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Build web for serve (root)",
+      "serverReadyAction": {
+        "pattern": "Serving!|Local:.*http://|localhost:8080",
+        "uriFormat": "http://localhost:8080/game/index.html?key=kotor",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}/dist"
+      },
       "presentation": {
         "group": "2-browser",
         "order": 4
-      },
-      "request": "launch",
-      "type": "chrome",
-      "url": "http://localhost:8080/game/index.html?key=kotor",
-      "webRoot": "${workspaceFolder}/dist",
-      "preLaunchTask": "Prepare KotOR Launcher (build + serve)"
+      }
     },
     {
       "name": "TSL",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "dist", "-l", "8080"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Build web for serve (root)",
+      "serverReadyAction": {
+        "pattern": "Serving!|Local:.*http://|localhost:8080",
+        "uriFormat": "http://localhost:8080/game/index.html?key=tsl",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}/dist"
+      },
       "presentation": {
         "group": "2-browser",
         "order": 5
-      },
-      "request": "launch",
-      "type": "chrome",
-      "url": "http://localhost:8080/game/index.html?key=tsl",
-      "webRoot": "${workspaceFolder}/dist",
-      "preLaunchTask": "Prepare KotOR Launcher (build + serve)"
+      }
     },
     {
       "name": "Attach to Extension Host",

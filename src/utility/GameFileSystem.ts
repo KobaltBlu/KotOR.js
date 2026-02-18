@@ -45,9 +45,15 @@ export class GameFileSystem {
 
   private static normalizePath(filepath: string) {
     filepath = filepath.trim();
-    filepath.replace(/^\/+/, '').replace(/\/+$/, '');
-    filepath.replace(/^\\+/, '').replace(/\\+$/, '');
+    filepath = filepath.replace(/^[/\\]+/, '').replace(/[/\\]+$/, '');
     return filepath;
+  }
+
+  /** Returns true if name is valid for getFileHandle/getDirectoryHandle (no empty, ".", "..", or path separators). */
+  private static isSafeHandleName(name: string): boolean {
+    if (name === '' || name === '.' || name === '..') return false;
+    if (/[/\\]/.test(name)) return false;
+    return true;
   }
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
@@ -65,8 +71,11 @@ export class GameFileSystem {
     } else {
       // log.info('open', filepath);
       filepath = this.normalizePath(filepath);
-      const dirs = filepath.split('/');
+      const dirs = filepath.split('/').filter(Boolean);
       const filename = dirs.pop();
+      if (!filename || !this.isSafeHandleName(filename)) {
+        throw new Error(`Invalid file name for path: ${filepath}`);
+      }
       const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
       if (dirHandle) {
         const file = await dirHandle.getFileHandle(filename, {
@@ -151,8 +160,11 @@ export class GameFileSystem {
       });
     }
     filepath = this.normalizePath(filepath);
-    const dirs = filepath.split('/');
+    const dirs = filepath.split('/').filter(Boolean);
     const filename = dirs.pop();
+    if (!filename || !this.isSafeHandleName(filename)) {
+      throw new Error(`Invalid file name for path: ${filepath}`);
+    }
     const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
     if (!dirHandle) throw new Error('Failed to locate file directory');
     const newFile = await dirHandle.getFileHandle(filename, { create: true });
@@ -465,6 +477,10 @@ export class GameFileSystem {
           const details = path.parse(dirOrFilePath);
           try {
             if (details.ext) {
+              if (!this.isSafeHandleName(details.base)) {
+                resolve(false);
+                return;
+              }
               const handle = await this.resolveFilePathDirectoryHandle(dirOrFilePath);
               if (handle) {
                 const fileHandle = await handle.getFileHandle(details.base);
@@ -485,8 +501,11 @@ export class GameFileSystem {
             }
             resolve(false);
           } catch (e) {
-            log.trace(dirOrFilePath);
-            log.error(String(e), e);
+            const isNotFound = e instanceof DOMException && e.name === 'NotFoundError';
+            if (!isNotFound) {
+              log.trace(dirOrFilePath);
+              log.error(String(e), e);
+            }
             resolve(false);
           }
         })();
@@ -549,7 +568,7 @@ export class GameFileSystem {
 
   private static async resolvePathDirectoryHandle(filepath: string, parent = false): Promise<FileSystemDirectoryHandle> {
     if (ApplicationProfile.directoryHandle) {
-      const dirs = filepath.length ? filepath.split('/') : [];
+      const dirs = filepath.length ? filepath.split('/').filter((s) => this.isSafeHandleName(s)) : [];
       const cacheKey = dirs.join('/');
       const cachedDir = this.directoryCache.get(cacheKey);
       if (cachedDir !== undefined) return cachedDir;
@@ -581,7 +600,7 @@ export class GameFileSystem {
 
   private static async resolveFilePathDirectoryHandle(filepath: string): Promise<FileSystemDirectoryHandle> {
     if (ApplicationProfile.directoryHandle) {
-      const dirs = filepath.split('/');
+      const dirs = filepath.split('/').filter((s) => this.isSafeHandleName(s));
       dirs.pop(); // base name not needed for directory resolution
       const cacheKey = dirs.join('/');
       const cachedHandle = this.directoryCache.get(cacheKey);

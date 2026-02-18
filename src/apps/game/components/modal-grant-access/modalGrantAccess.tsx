@@ -1,9 +1,11 @@
 import React from "react";
 
+import * as KotOR from "@/apps/game/KotOR";
 import { KotORModal } from "@/apps/game/components/modal/modal";
 import { useApp } from "@/apps/game/context/AppContext";
-import { ApplicationEnvironment } from "@/apps/game/KotOR";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const ApplicationEnvironment = KotOR.ApplicationEnvironment;
 
 const log = createScopedLogger(LogScope.Game);
 
@@ -60,10 +62,16 @@ export const ModalGrantAccess = () => {
 
     // Browser
     if (appState.env === ApplicationEnvironment.BROWSER) {
-      if (!appState.appProfile?.key) {
-        log.error("No app profile key; cannot attach directory handle");
-        alert("Game profile is not loaded. Open the game from the launcher with a valid profile.");
+      const urlKey = new URLSearchParams(window.location.search).get("key");
+      const profileKey = appState.appProfile?.key ?? urlKey;
+      if (!profileKey) {
+        log.error("No app profile key and no ?key= in URL; cannot attach directory handle");
+        alert("Game profile is not loaded. Open the game from the launcher or use a URL with ?key=kotor or ?key=tsl");
         return;
+      }
+      if (!appState.appProfile?.key && urlKey) {
+        appState.appProfile = { ...(appState.appProfile ?? {}), key: urlKey };
+        KotOR.ConfigClient.set(`Profiles.${urlKey}`, appState.appProfile as unknown as KotOR.ConfigValue);
       }
       const handle = await showBrowserDirectoryPicker();
       if (!handle) {

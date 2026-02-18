@@ -3,9 +3,6 @@ import * as THREE from "three";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
 import { TXI } from "@/resource/TXI";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
 import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
 
 interface Line {
@@ -31,6 +28,21 @@ export class GUIFont {
 
   builtLines: Line[] = [];
 
+  /** Fallback char index when a character code is out of range (e.g. space or first char). */
+  private getFallbackCharIndex(): number {
+    if (this.charCount <= 0) return 0;
+    if (32 < this.charCount) return 32; // space
+    return 0;
+  }
+
+  /** Safe lookup: returns a valid GUIFontChar for any code, using fallback when out of range. */
+  getChar(code: number): GUIFontChar {
+    if (this.charCount <= 0) return (this.chars[0] ?? new GUIFontChar(this, ' ')) as GUIFontChar;
+    const index = (code >= 0 && code < this.charCount) ? code : this.getFallbackCharIndex();
+    const c = this.chars[index];
+    return (c ?? this.chars[this.getFallbackCharIndex()] ?? this.chars[0]) as GUIFontChar;
+  }
+
   constructor(texture: OdysseyTexture){
     if(!texture){ return }
     this.texture = texture;
@@ -39,7 +51,7 @@ export class GUIFont {
       this.txi = this.texture.txi;
       this.scale = 1;
 
-      this.ratio = texture.image.width / texture.image.height;
+      this.ratio = ((texture.image as HTMLImageElement)?.width ?? 1) / ((texture.image as HTMLImageElement)?.height ?? 1);
 
       this.height = this.txi.fontheight     * 100;
       this.bsline = this.txi.baselineheight * 100;
@@ -58,20 +70,20 @@ export class GUIFont {
 
     const chars = word.split('');
     for(let i = 0; i < chars.length; i++){
-      width += this.chars[word.charCodeAt(i)].width;
+      width += this.getChar(word.charCodeAt(i)).width;
     }
 
     return width;
   }
 
   getWordChars(word: string): GUIFontChar[] {
-    return word.split('').map( (char) => this.chars[char.charCodeAt(0)] );
+    return word.split('').map( (char) => this.getChar(char.charCodeAt(0)) );
   }
 
   buildGeometry(geometry: THREE.BufferGeometry, text: string, alignment: GUIControlAlignment, maxWidth: number = 0): void {
     const lines: string[] = text.split('\n');
     const lineCount: number = lines.length;
-    const spaceChar = this.chars[32];
+    const spaceChar = this.getChar(32);
     const lines2: Line[] = [];
 
     let lineY = 0
@@ -103,10 +115,7 @@ export class GUIFont {
       lineY -= this.height;
     }
 
-    // log.info(text, lines2);
     this.builtLines = lines2;
-
-    const maxHeight = lines2.length * this.height;
 
     let textCharCount: number = 0;
     for(let l = 0; l < lines2.length; l++){
@@ -117,11 +126,14 @@ export class GUIFont {
     const uvs = new Float32Array(textCharCount * 8);
     const horizontal = alignment & GUIControlAlignment.HorizontalMask;
 
-    const indices = createIndicies({
-      clockwise: true,
-      type: 'uint16',
-      count: textCharCount
-    });
+    const indices = createIndicies(
+      new Uint16Array(textCharCount),
+      {
+        clockwise: true,
+        type: 'uint16',
+        count: textCharCount
+      }
+    );
 
     let charIndex = 0;
     for(let l = 0; l < lines2.length; l++){
@@ -209,13 +221,13 @@ export class GUIFontChar {
   constructor(font: GUIFont, letter: string){
     this.font = font;
     this.char = letter.charCodeAt(0);
-    this.ul = font.txi.upperleftcoords[this.char];
-    this.lr = font.txi.lowerrightcoords[this.char];
-    // this.ul.x = Math.min(Math.max(this.ul.x, 0), 1);
-    // this.ul.y = Math.min(Math.max(this.ul.y, 0), 1);
-    // this.lr.x = Math.min(Math.max(this.lr.x, 0), 1);
-    // this.lr.y = Math.min(Math.max(this.lr.y, 0), 1);
-    this.width = ((this.lr.x - this.ul.x) * font.texture.image.width) * this.font.scale;
-    this.height = ((this.ul.y - this.lr.y) * font.texture.image.height) * this.font.scale;
+    const ul = font.txi.upperleftcoords?.[this.char];
+    const lr = font.txi.lowerrightcoords?.[this.char];
+    this.ul = ul ?? { x: 0, y: 0, z: 0 };
+    this.lr = lr ?? { x: 0, y: 0, z: 0 };
+    const w = (this.lr.x - this.ul.x) * ((font.texture?.image as HTMLImageElement)?.width ?? 1);
+    const h = (this.ul.y - this.lr.y) * ((font.texture?.image as HTMLImageElement)?.height ?? 1);
+    this.width = (isFinite(w) ? w : 0) * this.font.scale;
+    this.height = (isFinite(h) ? h : 0) * this.font.scale;
   }
 }
