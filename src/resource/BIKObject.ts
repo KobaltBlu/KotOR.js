@@ -14,30 +14,21 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class BIKObject {
-  abs_path: any;
-  frames: YUVFrame[];
-  frameIndex: number;
+  file: string;
   width: number;
   height: number;
   fps: number;
-  frame_array: YUVFrame[];
-  file: string;
   audioCtx: AudioContext;
   onComplete: Function;
   /** Called when BIK header is ready (width, height known); VideoManager uses this to init textures. */
   onReady: ((width: number, height: number) => void) | undefined;
-  decode_complete: boolean;
-  hasAudio: boolean;
-  audio: { playback_rate: any; channels: any; };
-  audio_array: AudioBuffer[];
-  audio_nodes: AudioBufferSourceNode[];
-  nextAudioTime: number;
-  playbackPosition: number;
-  timer: number;
-  needsRenderUpdate: boolean;
+  hasAudio: boolean = true;
+  audio_nodes: AudioBufferSourceNode[] = [];
+  /** Stream time 0 in audio context time; set from first buffer PTS so video and audio share the same clock. */
+  audioStartTime: number = 0;
+  playbackPosition: number = 0;
   isPlaying: boolean;
   disposed: boolean;
-
   worker: Worker | null;
   workerReady: boolean;
   header: BinkWorkerHeader | null;
@@ -51,23 +42,16 @@ export class BIKObject {
   private static readonly FRAME_BUFFER_MAX = 8;
   private static readonly MAX_DECODE_IN_FLIGHT = 4;
 
-  constructor(args: any = {}){
-
-    args = Object.assign({
-      abs_path: false
-    }, args);
-
-    this.abs_path = args.abs_path;
-
-    this.frames = [];
-    this.frameIndex = 0;
+  /**
+   * Creates a BIKObject. Initializes frame/audio state and worker-related fields; actual worker is created in play().
+   */
+  constructor(){
 
     this.width = 640;
     this.height = 480;
     this.fps = 29.97;
-    this.audio_array = [];
     this.audio_nodes = [];
-    this.frame_array = [];
+    this.audioStartTime = 0;
     this.worker = null;
     this.workerReady = false;
     this.header = null;
@@ -78,16 +62,27 @@ export class BIKObject {
     this.lastDisplayedYuv = null;
   }
 
-  /** Returns the last displayed YUV frame for VideoManager to upload to textures. */
+  /**
+   * Returns the last displayed YUV frame for VideoManager to upload to textures.
+   * Called each frame by VideoManager; may be null if no frame is ready yet.
+   */
   getCurrentFrame(): YUVFrame | null {
     return this.lastDisplayedYuv;
   }
 
+  /**
+   * Loads a BIK file from the game filesystem (Movies/{file}.bik) and returns its ArrayBuffer.
+   * @param file - Resource name without extension (e.g. "logo" for logo.bik).
+   */
   private async loadBikFile(file: string): Promise<ArrayBuffer> {
     const buffer = await GameFileSystem.readFile(`Movies/${file}.bik`);
     return buffer.buffer as ArrayBuffer;
   }
 
+  /**
+   * Spawns the Bink worker, transfers the file buffer, and waits for a 'ready' response with header.
+   * Sets up onmessage/onerror and clears frame buffer state. Resolves when workerReady and header are set.
+   */
   private initializeWorker(buffer: ArrayBuffer): Promise<void> {
     return new Promise((resolve, reject) => {
       this.worker = new Worker('/bink-worker.js', { type: 'module' });
@@ -122,6 +117,10 @@ export class BIKObject {
     });
   }
 
+  /**
+   * Handles all messages from the Bink worker: 'ready' (apply header, dimensions, fps), 'frame' (push video YUV, schedule audio by PTS), 'error' (log and decrement decodeInFlight).
+   * No-op if this.disposed.
+   */
   private handleWorkerMessage(message: WorkerResponse): void {
     if (this.disposed) return;
 
@@ -132,6 +131,7 @@ export class BIKObject {
         this.width = message.header.width;
         this.height = message.header.height;
         this.fps = message.header.fpsNum / message.header.fpsDen;
+        this.hasAudio = message.header.audioTracks.length > 0;
         this.onReady?.(this.width, this.height);
         break;
 
@@ -142,8 +142,9 @@ export class BIKObject {
           this.pushFrameToBuffer(message.frameIndex, message.video.yuv);
         }
         if (message.audio) {
-          this.handleAudioData(message.audio);
+          this.handleAudioData(message.frameIndex, message.audio);
         }
+
         break;
 
       case 'error':
@@ -154,8 +155,8 @@ export class BIKObject {
   }
 
   /**
-   * Add a decoded frame to the buffer. Prunes frames we've already displayed
-   * and enforces a max buffer size.
+   * Adds a decoded YUV frame to the frame buffer by index.
+   * Prunes frames already displayed and enforces FRAME_BUFFER_MAX by dropping the oldest displayed frame when over capacity.
    */
   private pushFrameToBuffer(frameIndex: number, yuv: YUVFrame): void {
     const frameCount = this.header?.frameCount ?? 0;
@@ -176,6 +177,11 @@ export class BIKObject {
     }
   }
 
+  /**
+   * Loads and plays a BIK movie: loads file, initializes worker, mutes other channels and unmutes MOVIE, resets playback state, and kicks off initial decode requests.
+   * Calls onReady when header is available; calls onComplete when playback reaches the end or on error.
+   * @param file - BIK resource name without extension.
+   */
   async play(file: string = '', onComplete?: Function, onReady?: (width: number, height: number) => void) {
     if (!file || this.disposed) return;
 
@@ -192,10 +198,8 @@ export class BIKObject {
       await this.initializeWorker(buffer);
 
       this.audioCtx = AudioEngine.GetAudioEngine().audioCtx;
-      this.audio_array = [];
       this.audio_nodes = [];
-      this.frame_array = [];
-      this.nextAudioTime = 0;
+      this.audioStartTime = 0;
       this.playbackPosition = 0;
       this.frameBuffer.clear();
       this.nextFrameToRequest = 0;
@@ -220,12 +224,14 @@ export class BIKObject {
     }
   }
 
+  /**
+   * Stops playback: unmutes other channels, mutes MOVIE, sets isPlaying false, terminates the worker, clears frame buffer and decode state, and stops/disconnects all scheduled audio nodes.
+   */
   stop(){
     AudioEngine.Unmute(AudioEngineChannel.ALL);
     AudioEngine.Mute(AudioEngineChannel.MOVIE);
 
     this.isPlaying = false;
-    this.timer = 0;
 
     // Stop worker
     if (this.worker) {
@@ -247,31 +253,47 @@ export class BIKObject {
       node.disconnect();
       node.buffer = undefined;
     }
-    this.audio_array = [];
-  }
-
-  private handleAudioData(audio: { pcm: ArrayBuffer[]; sampleRate: number; channels: number; frameLen: number; overlapLen: number; isFirst: boolean }): void {
-    if (audio.pcm.length === 0) return;
-
-    // Create audio buffer from PCM data
-    const audioCtx = AudioEngine.GetAudioEngine().audioCtx;
-    const buffer = audioCtx.createBuffer(audio.channels, audio.frameLen - audio.overlapLen, audio.sampleRate);
-
-    
-    const pcmData = new Float32Array(audio.frameLen);
-
-    // Copy channel data
-    for (let channel = 0; channel < audio.channels; channel++) {
-      const pcmData = new Float32Array(audio.pcm[channel]);
-      buffer.copyToChannel(pcmData, channel, 0);
-    }
-
-    this.audio_array.push(buffer);
   }
 
   /**
-   * Request a single frame from the worker. Fire-and-forget; the frame
-   * will appear in frameBuffer when the worker replies.
+   * Schedules one decoded audio buffer at its PTS-derived time (demuxer PTS in samples).
+   * On the first buffer, sets audioStartTime so stream time 0 aligns with the demuxer timeline; video uses the same clock.
+   * Skips scheduling if start time is more than 1ms in the past to avoid overlap. Creates a BufferSource, connects to movie channel, and starts at startTime.
+   */
+  private handleAudioData(_frameIndex: number, audio: { pcm: ArrayBuffer[]; sampleRate: number; channels: number; frameLen: number; overlapLen: number; isFirst: boolean; ptsSamples: number }): void {
+    if (audio.pcm.length === 0 || audio.sampleRate <= 0) return;
+
+    const audioCtx = AudioEngine.GetAudioEngine().audioCtx;
+    const buffer = audioCtx.createBuffer(audio.channels, audio.frameLen - audio.overlapLen, audio.sampleRate);
+    for (let channel = 0; channel < audio.channels; channel++) {
+      buffer.copyToChannel(new Float32Array(audio.pcm[channel]), channel, 0);
+    }
+
+    const currentTime = audioCtx.currentTime;
+    if (!this.audioStartTime) {
+      this.audioStartTime = currentTime - audio.ptsSamples / audio.sampleRate;
+    }
+    const startTime = this.audioStartTime + audio.ptsSamples / audio.sampleRate;
+    const pastTolerance = 0.001;
+    if (startTime < currentTime - pastTolerance) return;
+
+    const node = audioCtx.createBufferSource();
+    node.buffer = buffer;
+    node.loop = false;
+    node.connect(AudioEngine.movieChannel.getGainNode());
+    node.onended = () => {
+      node.buffer = undefined;
+      node.disconnect();
+      const i = this.audio_nodes.indexOf(node);
+      if (i >= 0) this.audio_nodes.splice(i, 1);
+    };
+    node.start(startTime, 0);
+    this.audio_nodes.push(node);
+  }
+
+  /**
+   * Requests a single frame decode from the worker (fire-and-forget). The decoded frame will appear in frameBuffer when the worker replies with a 'frame' message.
+   * Increments decodeInFlight; worker response decrements it. No-op if worker not ready or frameIndex out of range.
    */
   private requestDecode(frameIndex: number): void {
     if (!this.worker || !this.workerReady || !this.header) return;
@@ -285,17 +307,25 @@ export class BIKObject {
     } as WorkerRequest);
   }
 
+  /**
+   * Per-frame update: advances playback position from audio clock (when audio has started) or delta (no-audio / pre-audio), mutes/unmutes channels, picks display frame from frameBuffer by playback time, prunes passed frames, requests more decodes to keep buffer fed, and stops + calls onComplete when past the last frame.
+   * @param delta - Time in seconds since last update; used only when there is no audio or before the first audio buffer.
+   */
   update(delta = 0): void {
     if (this.disposed) return;
 
-    this.playbackPosition += delta;
+    // Use same clock as audio when we've started streaming so video and audio stay in sync
+    if (this.audioStartTime > 0 && this.audioCtx && this.hasAudio) {
+      this.playbackPosition = this.audioCtx.currentTime - this.audioStartTime;
+    } else if (!this.hasAudio) {
+      this.playbackPosition += delta;
+    }
+
     const frameCount = this.header?.frameCount ?? 0;
     const fps = this.fps;
 
     AudioEngine.Mute(AudioEngineChannel.ALL);
     AudioEngine.Unmute(AudioEngineChannel.MOVIE);
-
-    this.processAudioQueue();
 
     if (frameCount === 0) return;
 
@@ -345,67 +375,9 @@ export class BIKObject {
     }
   }
 
-  processAudioQueue(){
-    //Process audio buffer queue
-    if(!this.audio_array.length) {
-      return;
-    }
-
-    let buffered = this.audio_array.shift();
-
-    while(this.audio_array.length){
-      const nextBuffer = this.audio_array.shift();
-      buffered = this.appendBuffer(buffered, nextBuffer);
-    }
-
-    const bufferedNode = this.audioCtx.createBufferSource();
-    bufferedNode.buffer = buffered;
-    bufferedNode.loop = false;
-    bufferedNode.connect( AudioEngine.movieChannel.getGainNode() );
-    bufferedNode.onended = () => {
-      bufferedNode.buffer = undefined;
-      bufferedNode.disconnect();
-      const i = this.audio_nodes.indexOf(bufferedNode);
-      if (i >= 0) this.audio_nodes.splice(i, 1);
-    };
-
-    const current_time = this.audioCtx.currentTime;
-    if (!this.nextAudioTime)
-      this.nextAudioTime = current_time;
-
-    bufferedNode.start( this.nextAudioTime, 0 );
-    this.nextAudioTime = this.nextAudioTime + bufferedNode.buffer.duration;
-    this.audio_nodes.push(bufferedNode);
-  }
-
-  //https://stackoverflow.com/questions/14143652/web-audio-api-append-concatenate-different-audiobuffers-and-play-them-as-one-son
-  appendBuffer(buffer1: AudioBuffer, buffer2: AudioBuffer) {
-    const numberOfChannels = Math.min( buffer1.numberOfChannels, buffer2.numberOfChannels );
-    const tmp = this.audioCtx.createBuffer( numberOfChannels, (buffer1.length + buffer2.length), buffer1.sampleRate );
-    for (let i=0; i < numberOfChannels; i++) {
-      const channel = tmp.getChannelData(i);
-      channel.set( buffer1.getChannelData(i), 0);
-      channel.set( buffer2.getChannelData(i), buffer1.length);
-    }
-    return tmp;
-  }
-
-
-  toFloat32Array(channel: Uint8Array){
-    if(channel instanceof Uint8Array){
-      let i, l = channel.length/4;
-      const buffer = new Buffer(channel);
-      const float32 = new Float32Array(l);
-
-      for(i = 0; i < l; i++){
-        float32[i] = buffer.readFloatLE(i*4);
-      }
-      return float32;
-    }
-    throw 'toFloat32Array missing Uint8Array';
-  }
-
-
+  /**
+   * Disposes the BIKObject: sets disposed, stops and terminates the worker, clears header and frame buffer, and stops/disconnects all audio nodes. VideoManager is responsible for removing planes/textures.
+   */
   dispose(){
 
     this.disposed = true;
@@ -432,8 +404,6 @@ export class BIKObject {
       node.disconnect();
       node.buffer = undefined;
     }
-    this.audio_array = [];
-    this.frame_array = [];
 
   }
 
