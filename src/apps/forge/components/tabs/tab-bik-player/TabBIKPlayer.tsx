@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { TabBIKPlayerState } from "../../../states/tabs/TabBIKPlayerState";
-import type { YUVFrame } from "../../../../../video/binkvideo";
+import { ensureYUVWebGL, drawYUVFrame, type YUVWebGLState } from "./yuvWebGL";
 
 /** Format seconds as M:SS or H:MM:SS. */
 function formatTime(seconds: number): string {
@@ -13,33 +13,6 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-/** Convert YUV (4:2:0) frame to RGBA and draw into ImageData. */
-function yuvToImageData(yuv: YUVFrame, imageData: ImageData): void {
-  const { width, height, y, u, v, linesizeY, linesizeU, linesizeV } = yuv;
-  const data = imageData.data;
-  for (let j = 0; j < height; j++) {
-    const uvj = j >>> 1;
-    const yRow = j * linesizeY;
-    const uRow = uvj * linesizeU;
-    const vRow = uvj * linesizeV;
-    for (let i = 0; i < width; i++) {
-      const yy = y[yRow + i];
-      const uu = u[uRow + (i >>> 1)];
-      const vv = v[vRow + (i >>> 1)];
-      const d = uu - 128;
-      const e = vv - 128;
-      const r = Math.max(0, Math.min(255, (298 * yy + 409 * e + 128) >>> 8));
-      const g = Math.max(0, Math.min(255, (298 * yy - 100 * d - 208 * e + 128) >>> 8));
-      const b = Math.max(0, Math.min(255, (298 * yy + 516 * d + 128) >>> 8));
-      const off = (j * width + i) << 2;
-      data[off] = r;
-      data[off + 1] = g;
-      data[off + 2] = b;
-      data[off + 3] = 255;
-    }
-  }
-}
-
 export const TabBIKPlayer = function (props: BaseTabProps) {
   const tab = props.tab as TabBIKPlayerState;
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,6 +21,7 @@ export const TabBIKPlayer = function (props: BaseTabProps) {
   const sizeSetRef = useRef<boolean>(false);
   const totalTimeSetRef = useRef<boolean>(false);
   const lastPlaybackSecondRef = useRef<number>(-1);
+  const webglRef = useRef<YUVWebGLState | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoSize, setVideoSize] = useState<{ w: number; h: number } | null>(null);
   const [playbackTime, setPlaybackTime] = useState<number>(0);
@@ -58,11 +32,10 @@ export const TabBIKPlayer = function (props: BaseTabProps) {
     if (!bik || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
     sizeSetRef.current = false;
     totalTimeSetRef.current = false;
     lastPlaybackSecondRef.current = -1;
+    webglRef.current = null;
 
     const tick = (time: number) => {
       const delta = lastTimeRef.current ? (time - lastTimeRef.current) / 1000 : 0;
@@ -78,6 +51,7 @@ export const TabBIKPlayer = function (props: BaseTabProps) {
             canvas.height = frame.height;
             setVideoSize({ w: frame.width, h: frame.height });
             setIsPlaying(true);
+            webglRef.current = ensureYUVWebGL(canvas, frame, null);
           }
           if (!totalTimeSetRef.current && bik.header && bik.fps > 0) {
             const frameCount = bik.header.frameCount ?? 0;
@@ -86,10 +60,13 @@ export const TabBIKPlayer = function (props: BaseTabProps) {
               setTotalTime(frameCount / bik.fps);
             }
           }
-          if (canvas.width === frame.width && canvas.height === frame.height) {
-            const imageData = ctx.getImageData(0, 0, frame.width, frame.height);
-            yuvToImageData(frame, imageData);
-            ctx.putImageData(imageData, 0, 0);
+          const webgl = webglRef.current;
+          if (webgl && canvas.width === frame.width && canvas.height === frame.height) {
+            const state = ensureYUVWebGL(canvas, frame, webgl);
+            if (state) {
+              webglRef.current = state;
+              drawYUVFrame(state, frame);
+            }
           }
         }
         const t = bik.playbackPosition;
