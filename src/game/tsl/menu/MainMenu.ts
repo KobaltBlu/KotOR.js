@@ -1,3 +1,4 @@
+import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { LBL_3DView } from "../../../gui";
@@ -5,6 +6,7 @@ import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MDLLoader, TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
+import { ApplicationProfile } from "../../../utility/ApplicationProfile";
 import { MainMenu as K1_MainMenu } from "../../kotor/KOTOR";
 
 /**
@@ -78,7 +80,15 @@ export class MainMenu extends K1_MainMenu {
 
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
-        window.close();
+        if (ApplicationProfile.ENV === ApplicationEnvironment.ELECTRON) {
+          window.close();
+        }else{
+          if(window.opener){
+            window.close();
+            return;
+          }
+          alert('To exit the game in your browser, close this tab or window. For the best experience, open the game from the KotOR.js launcher so Exit Game works from the menu.');
+        }
       });
       
       (this.tGuiPanel.widget.userData.fill as any).visible = false;
