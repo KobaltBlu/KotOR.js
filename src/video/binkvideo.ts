@@ -46,6 +46,8 @@ export class BinkVideoDecoder {
     private static readonly intraBlk = new Uint8Array(64);
     private static readonly scaledBlk = new Uint8Array(64);
     private static readonly scaledTmp = new Uint8Array(256); // 16*16
+    private static readonly residueBlock = new Int16Array(64);
+    private static readonly runCoordMap = new Int32Array(64);
 
     constructor(width: number, height: number, versionChar: string, hasAlpha = false) {
         this.width = width;
@@ -148,9 +150,7 @@ export class BinkVideoDecoder {
                         if (!ref) {
                             for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
                         } else {
-                            for (let i = 0; i < 8; i++) {
-                                base.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-                            }
+                            this.copyBlock8(base, dstOff, stride, ref.buf, ref.off, ref.stride);
                         }
                         break;
                     }
@@ -164,9 +164,7 @@ export class BinkVideoDecoder {
                         if (!ref) {
                             for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
                         } else {
-                            for (let i = 0; i < 8; i++) {
-                                base.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-                            }
+                            this.copyBlock8(base, dstOff, stride, ref.buf, ref.off, ref.stride);
                         }
                         break;
                     }
@@ -180,9 +178,7 @@ export class BinkVideoDecoder {
                             if (!ref) {
                                 for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
                             } else {
-                                for (let i = 0; i < 8; i++) {
-                                    base.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-                                }
+                                this.copyBlock8(base, dstOff, stride, ref.buf, ref.off, ref.stride);
                             }
                         }
                         this.decodeResidueAdd(c, base, dstOff, stride);
@@ -202,9 +198,7 @@ export class BinkVideoDecoder {
                             if (!ref) {
                                 for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
                             } else {
-                                for (let i = 0; i < 8; i++) {
-                                    base.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-                                }
+                                this.copyBlock8(base, dstOff, stride, ref.buf, ref.off, ref.stride);
                             }
                         }
                         this.decodeInterAdd(c, base, dstOff, stride);
@@ -220,9 +214,7 @@ export class BinkVideoDecoder {
                         if (!ref) {
                             for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
                         } else {
-                            for (let i = 0; i < 8; i++) {
-                                base.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-                            }
+                            this.copyBlock8(base, dstOff, stride, ref.buf, ref.off, ref.stride);
                         }
                         break;
                     }
@@ -234,6 +226,15 @@ export class BinkVideoDecoder {
         if (br.getBitPos() & 31) br.skipBits(32 - (br.getBitPos() & 31));
     }
 
+    /** Copy 8x8 block from src to dest without allocating subarray views. */
+    private copyBlock8(dest: Uint8Array, dstOff: number, stride: number, src: Uint8Array, srcOff: number, srcStride: number): void {
+        for (let i = 0; i < 8; i++) {
+            const s = srcOff + i * srcStride;
+            const d = dstOff + i * stride;
+            dest.set(src.subarray(s, s + 8), d);
+        }
+    }
+
     private getPrevPlane(plane_idx: number): { data: Uint8Array, stride: number } | undefined {
         if (!this.last) return undefined;
         if (plane_idx === 0) return { data: this.last.y, stride: this.last.linesizeY };
@@ -241,37 +242,9 @@ export class BinkVideoDecoder {
         return { data: this.last.v, stride: this.last.linesizeV };
     }
 
-    private blitFromPrev(c: PlaneContext, dst: Uint8Array, dstOff: number, stride: number) {
-        const ref = c.getRefPtr(dstOff, stride);
-        if (!ref) {
-            // Inline fillBlock8
-            for (let i = 0; i < 8; i++) dst.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-            return;
-        }
-        // Inline copyBlock8
-        for (let i = 0; i < 8; i++) {
-            dst.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-        }
-    }
-
-    private blitFromPrevWithMV(c: PlaneContext, dst: Uint8Array, dstOff: number, stride: number) {
-        const { xoff, yoff } = c.getMotion();
-        const ref = c.getRefPtr(dstOff + xoff + yoff * stride, stride);
-        if (!ref) {
-            // Inline fillBlock8
-            for (let i = 0; i < 8; i++) dst.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-            return;
-        }
-        // Inline copyBlock8
-        for (let i = 0; i < 8; i++) {
-            dst.set(ref.buf.subarray(ref.off + i * ref.stride, ref.off + i * ref.stride + 8), dstOff + i * stride);
-        }
-    }
-
     private decodeRunBlock(c: PlaneContext, dst: Uint8Array, dstOff: number, stride: number) {
         const scan = bink_patterns[c.br.readBits(4) & 0xF];
-        // Inline makeCoordMap
-        const coord = new Array<number>(64);
+        const coord = BinkVideoDecoder.runCoordMap;
         for (let ci = 0; ci < 64; ci++) coord[ci] = (ci & 7) + (ci >> 3) * stride;
         let i = 0, scanIdx = 0;
         do {
@@ -304,7 +277,7 @@ export class BinkVideoDecoder {
     }
 
     private decodeResidueAdd(c: PlaneContext, dst: Uint8Array, dstOff: number, stride: number) {
-        const block = new Int16Array(64);
+        const block = BinkVideoDecoder.residueBlock;
         block.fill(0);
         const masks = c.br.readBits(7);
         readResidue(c.br, block, masks);
@@ -411,6 +384,7 @@ class PlaneContext {
     private base: Uint8Array;
     private stride: number;
     private ref?: { data: Uint8Array, stride: number };
+    private readonly _motion = { xoff: 0, yoff: 0 };
 
     bundle: Bundle[] = Array.from({ length: 9 }, () => new Bundle());
     col_high: Tree[] = Array.from({ length: 16 }, () => ({ vlc_num: 0, syms: Array.from({ length: 16 }, (_, i) => i) }));
@@ -615,7 +589,11 @@ class PlaneContext {
         this.bundle[BundleId.INTER_DC].cur_ptr += 2;
         return (v << 16) >> 16;
     }
-    getMotion(): { xoff: number, yoff: number } { const x = (this.bundle[BundleId.X_OFF].data[this.bundle[BundleId.X_OFF].cur_ptr++] << 24) >> 24; const y = (this.bundle[BundleId.Y_OFF].data[this.bundle[BundleId.Y_OFF].cur_ptr++] << 24) >> 24; return { xoff: x, yoff: y }; }
+    getMotion(): { xoff: number, yoff: number } {
+        this._motion.xoff = (this.bundle[BundleId.X_OFF].data[this.bundle[BundleId.X_OFF].cur_ptr++] << 24) >> 24;
+        this._motion.yoff = (this.bundle[BundleId.Y_OFF].data[this.bundle[BundleId.Y_OFF].cur_ptr++] << 24) >> 24;
+        return this._motion;
+    }
 
     getRefPtr(dstOff: number, stride: number): { buf: Uint8Array, off: number, stride: number } | undefined {
         if (!this.ref) return undefined;
@@ -635,16 +613,23 @@ function av_log2_ts(x: number) {
     return r;
 }
 
-function readDctCoeffs(c: PlaneContext, br: BitReaderLE, block: Int32Array, q: number): { quantIdx: number, coefIdx: number[], coefCount: number } {
-    const coef_list = new Int32Array(128);
-    const mode_list = new Int32Array(128);
+// Reusable buffers for readDctCoeffs / readResidue (never called concurrently)
+const _coefList128 = new Int32Array(128);
+const _modeList128 = new Int32Array(128);
+const _dctCoefIdx64 = new Int32Array(64);
+const _residueNzCoeff64 = new Int32Array(64);
+let _residueNzCount = 0;
+
+function readDctCoeffs(c: PlaneContext, br: BitReaderLE, block: Int32Array, q: number): { quantIdx: number, coefIdx: Int32Array, coefCount: number } {
+    const coef_list = _coefList128;
+    const mode_list = _modeList128;
+    const coefIdx = _dctCoefIdx64;
     let list_start = 64, list_end = 64;
     let coefCount = 0;
-    const coefIdx: number[] = [];
     const scan = bink_scan;
 
     function pushCoef(idx: number, val: number) {
-        block[scan[idx]] = val | 0; coefIdx.push(idx); coefCount++;
+        block[scan[idx]] = val | 0; coefIdx[coefCount++] = idx;
     }
 
     coef_list[list_end] = 4; mode_list[list_end++] = 0;
@@ -691,7 +676,7 @@ function readDctCoeffs(c: PlaneContext, br: BitReaderLE, block: Int32Array, q: n
     return { quantIdx, coefIdx, coefCount };
 }
 
-function unquantize(block: Int32Array, qtables: number[][], qindex: number, coefIdx: number[], coefCount: number) {
+function unquantize(block: Int32Array, qtables: number[][], qindex: number, coefIdx: ArrayLike<number>, coefCount: number) {
     const qi = Math.min(qindex, qtables.length - 1);
     const qt = qtables[qi];
     block[0] = (block[0] * qt[0]) >> 11;
@@ -699,10 +684,11 @@ function unquantize(block: Int32Array, qtables: number[][], qindex: number, coef
 }
 
 function readResidue(br: BitReaderLE, block: Int16Array, masksCount: number) {
-    const coef_list = new Int32Array(128);
-    const mode_list = new Int32Array(128);
+    const coef_list = _coefList128;
+    const mode_list = _modeList128;
+    const nz_coeff = _residueNzCoeff64;
+    _residueNzCount = 0;
     let list_start = 64, list_end = 64;
-    const nz_coeff: number[] = [];
 
     coef_list[list_end] = 4; mode_list[list_end++] = 0;
     coef_list[list_end] = 24; mode_list[list_end++] = 0;
@@ -710,7 +696,7 @@ function readResidue(br: BitReaderLE, block: Int16Array, masksCount: number) {
     coef_list[list_end] = 0; mode_list[list_end++] = 2;
 
     for (let mask = 1 << br.readBits(3); mask; mask >>= 1) {
-        for (let i = 0; i < nz_coeff.length; i++) {
+        for (let i = 0; i < _residueNzCount; i++) {
             if (!br.readBit()) continue; const idx = nz_coeff[i];
             if (block[idx] < 0) block[idx] -= mask; else block[idx] += mask;
             if (--masksCount < 0) return;
@@ -729,7 +715,7 @@ function readResidue(br: BitReaderLE, block: Int16Array, masksCount: number) {
                     for (let i = 0; i < 4; i++, ccoef++) {
                         if (br.readBit()) { coef_list[--list_start] = ccoef; mode_list[list_start] = 3; }
                         else {
-                            const idx = bink_scan[ccoef]; const sign = br.readBit() ? -1 : 0; block[idx] = (mask ^ sign) - sign; nz_coeff.push(idx); if (--masksCount < 0) return;
+                            const idx = bink_scan[ccoef]; const sign = br.readBit() ? -1 : 0; block[idx] = (mask ^ sign) - sign; nz_coeff[_residueNzCount++] = idx; if (--masksCount < 0) return;
                         }
                     }
                     break;
@@ -739,7 +725,7 @@ function readResidue(br: BitReaderLE, block: Int16Array, masksCount: number) {
                     break;
                 case 3:
                     {
-                        const idx = bink_scan[ccoef]; nz_coeff.push(idx); const sign = br.readBit() ? -1 : 0; block[idx] = (mask ^ sign) - sign; coef_list[list_pos] = 0; mode_list[list_pos++] = 0; if (--masksCount < 0) return; break;
+                        const idx = bink_scan[ccoef]; nz_coeff[_residueNzCount++] = idx; const sign = br.readBit() ? -1 : 0; block[idx] = (mask ^ sign) - sign; coef_list[list_pos] = 0; mode_list[list_pos++] = 0; if (--masksCount < 0) return; break;
                     }
             }
         }

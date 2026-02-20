@@ -1,8 +1,8 @@
 /**
  * BinkIDCT class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BinkIDCT.ts
  * @see https://github.com/FFmpeg/FFmpeg/blob/release/3.4/libavcodec/binkdsp.c
  * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
@@ -17,10 +17,7 @@ const A2 = 2217;
 const A3 = 3784;
 const A4 = -5352;
 
-// Inline multiplication macro - faster than function call
-// ((unsigned)X * Y) >> 11 in C; in JS, use 32-bit math via imul
-const MUL = (X: number, Y: number): number => (Math.imul(X >>> 0, Y | 0) >> 11) | 0;
-
+// Inline: ((unsigned)X * Y) >> 11 — no function call
 function idct_col(dest: Int32Array, src: Int32Array, dOff: number, sOff: number): void {
   // Check if AC terms in this column are zero
   if ((src[sOff + 8] | src[sOff + 16] | src[sOff + 24] | src[sOff + 32] | src[sOff + 40] | src[sOff + 56] | src[sOff + 48]) === 0) {
@@ -48,16 +45,16 @@ function idct_col(dest: Int32Array, src: Int32Array, dOff: number, sOff: number)
   const a0 = s0 + s4;
   const a1 = s0 - s4;
   const a2 = s2 + s6;
-  const a3 = MUL(A1, s2 - s6);
+  const a3 = ((Math.imul(A1 >>> 0, (s2 - s6) | 0) >> 11) | 0);
   const a4 = s5 + s3;
   const a5 = s5 - s3;
   const a6 = s1 + s7;
   const a7 = s1 - s7;
   const b0 = a4 + a6;
-  const b1 = MUL(A3, a5 + a7);
-  const b2 = MUL(A4, a5) - b0 + b1;
-  const b3 = MUL(A1, a6 - a4) - b2;
-  const b4 = MUL(A2, a7) + b3 - b1;
+  const b1 = ((Math.imul(A3 >>> 0, (a5 + a7) | 0) >> 11) | 0);
+  const b2 = ((Math.imul(A4 >>> 0, a5 | 0) >> 11) | 0) - b0 + b1;
+  const b3 = ((Math.imul(A1 >>> 0, (a6 - a4) | 0) >> 11) | 0) - b2;
+  const b4 = ((Math.imul(A2 >>> 0, a7 | 0) >> 11) | 0) + b3 - b1;
 
   dest[dOff + 0]  = a0 + a2 + b0;
   dest[dOff + 8]  = a1 + a3 - a2 + b2;
@@ -69,10 +66,8 @@ function idct_col(dest: Int32Array, src: Int32Array, dOff: number, sOff: number)
   dest[dOff + 56] = a0 + a2 - b0;
 }
 
-function mungeRow(x: number): number { return (x + 0x7F) >> 8; }
-
 function idct_row_put(dest: Uint8Array, destStride: number, src: Int32Array, sOff: number, row: number): void {
-  // Compute 8 outputs for a row and clamp to 0..255
+  // Compute 8 outputs for a row and clamp to 0..255; munge inlined: (x + 0x7F) >> 8
   const s0 = src[sOff + 0];
   const s1 = src[sOff + 1];
   const s2 = src[sOff + 2];
@@ -85,26 +80,26 @@ function idct_row_put(dest: Uint8Array, destStride: number, src: Int32Array, sOf
   const a0 = s0 + s4;
   const a1 = s0 - s4;
   const a2 = s2 + s6;
-  const a3 = MUL(A1, s2 - s6);
+  const a3 = ((Math.imul(A1 >>> 0, (s2 - s6) | 0) >> 11) | 0);
   const a4 = s5 + s3;
   const a5 = s5 - s3;
   const a6 = s1 + s7;
   const a7 = s1 - s7;
   const b0 = a4 + a6;
-  const b1 = MUL(A3, a5 + a7);
-  const b2 = MUL(A4, a5) - b0 + b1;
-  const b3 = MUL(A1, a6 - a4) - b2;
-  const b4 = MUL(A2, a7) + b3 - b1;
+  const b1 = ((Math.imul(A3 >>> 0, (a5 + a7) | 0) >> 11) | 0);
+  const b2 = ((Math.imul(A4 >>> 0, a5 | 0) >> 11) | 0) - b0 + b1;
+  const b3 = ((Math.imul(A1 >>> 0, (a6 - a4) | 0) >> 11) | 0) - b2;
+  const b4 = ((Math.imul(A2 >>> 0, a7 | 0) >> 11) | 0) + b3 - b1;
 
   const base = row * destStride;
-  dest[base + 0] = (mungeRow(a0 + a2 + b0)) & 0xFF;
-  dest[base + 1] = (mungeRow(a1 + a3 - a2 + b2)) & 0xFF;
-  dest[base + 2] = (mungeRow(a1 - a3 + a2 + b3)) & 0xFF;
-  dest[base + 3] = (mungeRow(a0 - a2 - b4)) & 0xFF;
-  dest[base + 4] = (mungeRow(a0 - a2 + b4)) & 0xFF;
-  dest[base + 5] = (mungeRow(a1 - a3 + a2 - b3)) & 0xFF;
-  dest[base + 6] = (mungeRow(a1 + a3 - a2 - b2)) & 0xFF;
-  dest[base + 7] = (mungeRow(a0 + a2 - b0)) & 0xFF;
+  dest[base + 0] = ((a0 + a2 + b0 + 0x7F) >> 8) & 0xFF;
+  dest[base + 1] = ((a1 + a3 - a2 + b2 + 0x7F) >> 8) & 0xFF;
+  dest[base + 2] = ((a1 - a3 + a2 + b3 + 0x7F) >> 8) & 0xFF;
+  dest[base + 3] = ((a0 - a2 - b4 + 0x7F) >> 8) & 0xFF;
+  dest[base + 4] = ((a0 - a2 + b4 + 0x7F) >> 8) & 0xFF;
+  dest[base + 5] = ((a1 - a3 + a2 - b3 + 0x7F) >> 8) & 0xFF;
+  dest[base + 6] = ((a1 + a3 - a2 - b2 + 0x7F) >> 8) & 0xFF;
+  dest[base + 7] = ((a0 + a2 - b0 + 0x7F) >> 8) & 0xFF;
 }
 
 function clamp8(x: number): number { return x < 0 ? 0 : x > 255 ? 255 : x; }
@@ -141,59 +136,54 @@ export function idctAdd(dest: Uint8Array, destStride: number, block: Int32Array)
   for (let r = 0; r < 8; r++) {
     const base = r * destStride;
     const sOff = r * 8;
-    // compute row outputs with munge
-    {
-      const s0 = temp[sOff + 0];
-      const s1 = temp[sOff + 1];
-      const s2 = temp[sOff + 2];
-      const s3 = temp[sOff + 3];
-      const s4 = temp[sOff + 4];
-      const s5 = temp[sOff + 5];
-      const s6 = temp[sOff + 6];
-      const s7 = temp[sOff + 7];
-      const a0 = s0 + s4;
-      const a1 = s0 - s4;
-      const a2 = s2 + s6;
-      const a3 = MUL(A1, s2 - s6);
-      const a4 = s5 + s3;
-      const a5 = s5 - s3;
-      const a6 = s1 + s7;
-      const a7 = s1 - s7;
-      const b0 = a4 + a6;
-      const b1 = MUL(A3, a5 + a7);
-      const b2 = MUL(A4, a5) - b0 + b1;
-      const b3 = MUL(A1, a6 - a4) - b2;
-      const b4 = MUL(A2, a7) + b3 - b1;
-      out[0] = mungeRow(a0 + a2 + b0);
-      out[1] = mungeRow(a1 + a3 - a2 + b2);
-      out[2] = mungeRow(a1 - a3 + a2 + b3);
-      out[3] = mungeRow(a0 - a2 - b4);
-      out[4] = mungeRow(a0 - a2 + b4);
-      out[5] = mungeRow(a1 - a3 + a2 - b3);
-      out[6] = mungeRow(a1 + a3 - a2 - b2);
-      out[7] = mungeRow(a0 + a2 - b0);
-    }
+    const s0 = temp[sOff + 0];
+    const s1 = temp[sOff + 1];
+    const s2 = temp[sOff + 2];
+    const s3 = temp[sOff + 3];
+    const s4 = temp[sOff + 4];
+    const s5 = temp[sOff + 5];
+    const s6 = temp[sOff + 6];
+    const s7 = temp[sOff + 7];
+    const a0 = s0 + s4;
+    const a1 = s0 - s4;
+    const a2 = s2 + s6;
+    const a3 = ((Math.imul(A1 >>> 0, (s2 - s6) | 0) >> 11) | 0);
+    const a4 = s5 + s3;
+    const a5 = s5 - s3;
+    const a6 = s1 + s7;
+    const a7 = s1 - s7;
+    const b0 = a4 + a6;
+    const b1 = ((Math.imul(A3 >>> 0, (a5 + a7) | 0) >> 11) | 0);
+    const b2 = ((Math.imul(A4 >>> 0, a5 | 0) >> 11) | 0) - b0 + b1;
+    const b3 = ((Math.imul(A1 >>> 0, (a6 - a4) | 0) >> 11) | 0) - b2;
+    const b4 = ((Math.imul(A2 >>> 0, a7 | 0) >> 11) | 0) + b3 - b1;
+    out[0] = (a0 + a2 + b0 + 0x7F) >> 8;
+    out[1] = (a1 + a3 - a2 + b2 + 0x7F) >> 8;
+    out[2] = (a1 - a3 + a2 + b3 + 0x7F) >> 8;
+    out[3] = (a0 - a2 - b4 + 0x7F) >> 8;
+    out[4] = (a0 - a2 + b4 + 0x7F) >> 8;
+    out[5] = (a1 - a3 + a2 - b3 + 0x7F) >> 8;
+    out[6] = (a1 + a3 - a2 - b2 + 0x7F) >> 8;
+    out[7] = (a0 + a2 - b0 + 0x7F) >> 8;
     for (let c = 0; c < 8; c++) {
       const v = (dest[base + c] + out[c]) | 0;
-      dest[base + c] = v & 0xFF;
+      dest[base + c] = Math.max(0, Math.min(255, v));
     }
   }
 }
 
 export function scaleBlock(src: Uint8Array, dst: Uint8Array, dstStride: number): void {
-  // Expand 8x8 into 16x16 with pixel replication (each pixel -> 2x2)
-  let srcOff = 0;
+  // Expand 8x8 into 16x16 with pixel replication (each pixel -> 2x2); no subarray
   for (let j = 0; j < 8; j++) {
-    const row = src.subarray(srcOff, srcOff + 8);
+    const srcOff = j * 8;
     for (let repRow = 0; repRow < 2; repRow++) {
       const base = (j * 2 + repRow) * dstStride;
       for (let i = 0; i < 8; i++) {
-        const v = row[i];
+        const v = src[srcOff + i];
         dst[base + i * 2 + 0] = v;
         dst[base + i * 2 + 1] = v;
       }
     }
-    srcOff += 8;
   }
 }
 
@@ -203,7 +193,7 @@ export function addPixels8(pixels: Uint8Array, block: Int16Array, lineSize: numb
     for (let j = 0; j < 8; j++) {
       const idx = p + j;
       const v = (pixels[idx] + block[b++]) | 0;
-      pixels[idx] = v < 0 ? 0 : v > 255 ? 255 : v;
+      pixels[idx] = Math.max(0, Math.min(255, v));
     }
     p += lineSize;
   }
