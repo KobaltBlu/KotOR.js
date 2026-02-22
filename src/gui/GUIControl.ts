@@ -2037,7 +2037,7 @@ export class GUIControl {
       return;
 
     if(this.guiFont){
-      this.guiFont.buildGeometry(this.text.geometry, this.text.text, this.text.alignment, this.getOuterSize().width);
+      this.guiFont.buildGeometry(this.text.geometry, this.text.text, this.text.alignment, this.getInnerSize().width);
       this.alignText();
     }
     
