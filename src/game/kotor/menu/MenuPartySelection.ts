@@ -301,11 +301,9 @@ export class MenuPartySelection extends GameMenu {
     for (let i = 0; i < GameState.PartyManager.MaxPartyCount; i++) {
       const btn = this.getControlByName('BTN_NPC' + i);
       if (GameState.PartyManager.IsNPCInParty(i)) {
-        btn.highlight.edge_material.uniforms.diffuse.value.setRGB(0, 1, 0);
-        btn.highlight.corner_material.uniforms.diffuse.value.setRGB(0, 1, 0);
+        btn.setHighlightColor(0, 1, 0);
       } else {
-        btn.highlight.edge_material.uniforms.diffuse.value.setRGB(1, 1, 0);
-        btn.highlight.corner_material.uniforms.diffuse.value.setRGB(1, 1, 0);
+        btn.setHighlightColor(1, 1, 0);
       }
       btn.disableBorder();
       btn.disableHighlight();
