@@ -57,12 +57,11 @@ export class LauncherWindow {
       // this.browserWindow = undefined;
     });
   
-    this.browserWindow.on('minimize',(event) => {
-      event.preventDefault();
+    this.browserWindow.on('minimize',() => {
       if(this.browserWindow) this.browserWindow.hide();
     });
   
-    this.browserWindow.on('close', (event) => {
+    this.browserWindow.on('close', () => {
       /*if(!app.isQuiting){
         event.preventDefault();
         winLauncher.hide();
