@@ -82,7 +82,7 @@ export class MainMovies extends K1_MainMovies {
     return new Promise<void>((resolve, reject) => {
       // this.LB_MOVIES.GUIProtoItemClass = GUIMovieItem;
       this.LB_MOVIES.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
-      this.LB_MOVIES.onSelected = (movie: GUIMovieItemTsl, control: any, index: number) => {
+      this.LB_MOVIES.onClicked = (movie: GUIMovieItemTsl, control: any, index: number) => {
         console.log(movie);
         this.selected = movie;
         this.selectedIndex = this.movieList.indexOf(movie);
