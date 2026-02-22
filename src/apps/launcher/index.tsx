@@ -12,7 +12,6 @@ import { Launcher } from "./context/Launcher";
 import { CommunityTabContent } from "./components/CommunityTabContent";
 import { GOGWidget } from "./components/GOGWidget";
 import DiscordWidget from "./components/DiscordWidget";
-import '../../types/global.d.ts';
 
 (window as any).Launcher = Launcher;
 
