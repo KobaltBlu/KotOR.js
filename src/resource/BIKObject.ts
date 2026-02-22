@@ -361,8 +361,8 @@ export class BIKObject {
     const frameCount = this.header?.frameCount ?? 0;
     const fps = this.fps;
 
-    AudioEngine.Mute(AudioEngineChannel.ALL);
-    AudioEngine.Unmute(AudioEngineChannel.MOVIE);
+    // AudioEngine.Mute(AudioEngineChannel.ALL);
+    // AudioEngine.Unmute(AudioEngineChannel.MOVIE);
 
     if (frameCount === 0) return;
 

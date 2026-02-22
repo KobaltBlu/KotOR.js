@@ -40,6 +40,8 @@ export class VideoManager {
   private static videoWidth: number = 640;
   private static videoHeight: number = 480;
 
+  private static onQueueComplete?: Function;
+
   /**
    * Create or reuse Three.js planes and material. Call before adding to scene.
    */
@@ -206,6 +208,7 @@ export class VideoManager {
    * @returns Promise that resolves when video starts playing
    */
   static async playMovie(movieName: string, skipable: boolean = false, onComplete?: Function): Promise<void> {
+    console.log('VideoManager.playMovie: Playing movie:', movieName);
     if (this.isPlaying) {
       console.warn('VideoManager.playMovie: A video is already playing');
       return;
@@ -230,15 +233,16 @@ export class VideoManager {
         GameState.SetEngineMode(EngineMode.MOVIE);
       }
 
+
+      this.currentMovie = { name: movieName, skippable: skipable };
+      this.isPlaying = true;
       await this.bikObject.play(movieName, () => {
+        this.isPlaying = false;
         this.onMovieComplete();
         if (typeof onComplete === 'function') {
           onComplete();
         }
       }, onReady);
-
-      this.currentMovie = { name: movieName, skippable: skipable };
-      this.isPlaying = true;
 
       VideoManager.videoPlane!.visible = true;
       VideoManager.backPlane!.visible = true;
@@ -280,7 +284,16 @@ export class VideoManager {
   }
 
   static async playNextMovie(): Promise<boolean> {
-    if (this.movieQueue.length === 0) return false;
+    if (this.movieQueue.length === 0){
+      this.isPlaying = false;
+      if(typeof this.onQueueComplete === 'function'){
+        console.log('VideoManager.playNextMovie: Queue complete');
+        const onComplete = this.onQueueComplete;
+        this.onQueueComplete = undefined;
+        onComplete();
+      }
+      return false;
+    };
     const movie = this.movieQueue.shift()!;
     console.log('VideoManager.playNextMovie: Playing movie:', movie);
     try {
@@ -288,15 +301,23 @@ export class VideoManager {
         console.log('VideoManager.playNextMovie: Movie completed:', movie);
         this.playNextMovie();
       });
-      return true;
     } catch (error) {
       console.error('VideoManager.playNextMovie: Failed to play movie:', error);
       return await this.playNextMovie();
     }
+    return true;
   }
 
-  static async playMovieQueue(allowSeparateSkips: boolean = true): Promise<void> {
-    if (this.movieQueue.length === 0) return;
+  static async playMovieQueue( onComplete?: Function ): Promise<void> {
+    this.onQueueComplete = onComplete;
+    if (this.movieQueue.length === 0){
+      if(typeof this.onQueueComplete === 'function'){
+        console.log('VideoManager.playNextMovie: Queue complete');
+        this.onQueueComplete();
+        this.onQueueComplete = undefined;
+      }
+      return;
+    }
     await this.playNextMovie();
   }
 

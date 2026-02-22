@@ -29,7 +29,8 @@ export class AppState {
     }
 
     AppState.appProfile = await AppState.getProfile();
-    KotOR.ApplicationProfile.InitEnvironment(AppState.appProfile);
+    KotOR.ApplicationProfile.SetProfile(AppState.appProfile);
+    KotOR.ApplicationProfile.InitEnvironment();
 
     document.title = `${AppState.appProfile?.full_name ? AppState.appProfile?.full_name : 'N/A' }`;
     
@@ -181,7 +182,6 @@ export class AppState {
     await KotOR.GameInitializer.Init(AppState.gameKey);
 
     console.log('loaded')
-    KotOR.GameState.OpeningMoviesComplete = true;
     KotOR.GUIListBox.InitTextures();
     KotOR.OdysseyWalkMesh.Init();
     KotOR.GameState.setDOMElement(document.getElementById('renderer-container') as HTMLElement);

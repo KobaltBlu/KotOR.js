@@ -39,7 +39,8 @@ const loadReactApplication = () => {
     return KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
   }
   
-  KotOR.ApplicationProfile.InitEnvironment(getProfile());
+  KotOR.ApplicationProfile.SetProfile(getProfile());
+  KotOR.ApplicationProfile.InitEnvironment();
 
   document.body.classList.add(KotOR.ApplicationProfile.GameKey);
   loadReactApplication();

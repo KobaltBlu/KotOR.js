@@ -144,7 +144,6 @@ export class GameState implements EngineContext {
   static GameKey: GameEngineType = GameEngineType.KOTOR;
   static iniConfig: INIConfig;
   
-  static OpeningMoviesComplete = false;
   static Ready = false;
   
   static CameraDebugZoom = 1;
@@ -845,9 +844,7 @@ export class GameState implements EngineContext {
       }
 
       GameState.Ready = true;
-      if(GameState.OpeningMoviesComplete){
-        GameState.Start();
-      }
+      GameState.Start();
       console.log(PerformanceMonitor.toString());
     }catch(e){
       console.error(e);
@@ -855,13 +852,27 @@ export class GameState implements EngineContext {
   }
 
   static Start(){
+
     if(GameState.Ready && !GameState.OnReadyCalled){
       GameState.OnReadyCalled = true;
       GameState.processEventListener('ready');
-      GameState.VideoManager.playMovieQueue();
-      GameState.MenuManager.MainMenu.Start();
       window.dispatchEvent(new Event('resize'));
-
+      GameState.VideoManager.playMovieQueue( () => {
+        window.dispatchEvent(new Event('resize'));
+        GameState.MenuManager.MainMenu.Start();
+        GameState.SetEngineMode(EngineMode.GUI);
+        GameState.State = EngineState.RUNNING;
+        AudioEngine.Unmute(AudioEngineChannel.ALL);
+        AudioEngine.Mute(AudioEngineChannel.MOVIE);
+      }).catch((e) => {
+        console.error(e);
+        window.dispatchEvent(new Event('resize'));
+        GameState.MenuManager.MainMenu.Start();
+        GameState.SetEngineMode(EngineMode.GUI);
+        GameState.State = EngineState.RUNNING;
+        AudioEngine.Unmute(AudioEngineChannel.ALL);
+        AudioEngine.Mute(AudioEngineChannel.MOVIE);
+      });
       //Start the game update loop
       GameState.Update();
     }
