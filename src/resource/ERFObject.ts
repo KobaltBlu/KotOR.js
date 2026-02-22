@@ -151,7 +151,7 @@ export class ERFObject {
     header = new Uint8Array(0);
   }
 
-  getResource(resRef: string, resType: number): IERFResource{
+  getResourceInfo(resRef: string, resType: number): IERFResource{
     resRef = resRef.toLowerCase();
     for(let i = 0; i < this.keyList.length; i++){
       let key = this.keyList[i];
@@ -185,8 +185,12 @@ export class ERFObject {
     return buffer;
   }
 
+  hasResource(resRef: string, resType: number): boolean {
+    return this.getResourceInfo(resRef, resType) !== undefined;
+  }
+
   async getResourceBufferByResRef(resRef: string, resType: number): Promise<Uint8Array> {
-    const resource = this.getResource(resRef, resType);
+    const resource = this.getResourceInfo(resRef, resType);
     if (typeof resource === 'undefined') {
       console.error('getResourceBufferByResRef', resRef, resType, resource);
       return new Uint8Array(0);
@@ -211,7 +215,7 @@ export class ERFObject {
       return new Uint8Array(0);
     }
 
-    const resource = this.getResource(resref, restype);
+    const resource = this.getResourceInfo(resref, restype);
     if(!resource){
       return new Uint8Array(0);
     }
