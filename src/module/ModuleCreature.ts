@@ -71,6 +71,9 @@ import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 * @memberof KotOR
 */
 export class ModuleCreature extends ModuleObject {
+  /** Radians per second when turning to face a new direction (non-instant). ~180° in ~0.67s. */
+  static readonly FACING_ANGULAR_SPEED = Math.PI * 1.5;
+
   debugLabel: TextSprite3D;
   pm_IsDisguised: boolean; //polymorphIsDisguised
   pm_Appearance: number; //polymorphAppearance
@@ -668,22 +671,38 @@ export class ModuleCreature extends ModuleObject {
       }
 
       this.turning = 0;
-      if(this.facingAnim){//this.facing != this.rotation.z){
-        this.facingTweenTime += 10*delta;
-        if(this.facingTweenTime >= 1){
-          this.rotation.z = this.facing;
+      if(this.facingAnim){
+        const current = Utility.NormalizeRadian(this.rotation.z);
+        const target = this.facing;
+        const remaining = Utility.NormalizeRadian(target - current);
+        const step = ModuleCreature.FACING_ANGULAR_SPEED * delta;
+        if(Math.abs(remaining) <= step){
+          this.rotation.z = target;
+          this.wasFacing = target;
           this.facingAnim = false;
         }else{
-          let oldFacing = Utility.NormalizeRadian(this.rotation.z);
-          this.rotation.z = Utility.interpolateAngle(this.wasFacing, this.facing, this.facingTweenTime);
-          let diff = oldFacing - Utility.NormalizeRadian(this.rotation.z);
-          this.turning = Math.sign(Utility.NormalizeRadian(oldFacing - Utility.NormalizeRadian(this.rotation.z)));
-          if(diff < 0.0000001 || diff > -0.0000001){
-              this.facingAnim = false;
-              this.rotation.z = Utility.interpolateAngle(this.wasFacing, this.facing, 1);
-              this.wasFacing = this.facing;
-          }
+          this.rotation.z = Utility.NormalizeRadian(current + Math.sign(remaining) * step);
+          this.turning = Math.sign(remaining);
         }
+      }
+
+      // Stationary turn animations (body turn when idle/pause/ready; not head look)
+      const stationaryTurnStates = [
+        ModuleCreatureAnimState.IDLE,
+        ModuleCreatureAnimState.PAUSE,
+        ModuleCreatureAnimState.READY,
+        ModuleCreatureAnimState.TURN_LEFT,
+        ModuleCreatureAnimState.TURN_RIGHT
+      ];
+      if(this.turning !== 0 && stationaryTurnStates.includes(this.animationState.index)){
+        const wantTurnLeft = this.turning < 0;
+        if(wantTurnLeft && this.animationState.index !== ModuleCreatureAnimState.TURN_LEFT){
+          this.setAnimationState(ModuleCreatureAnimState.TURN_LEFT);
+        }else if(!wantTurnLeft && this.animationState.index !== ModuleCreatureAnimState.TURN_RIGHT){
+          this.setAnimationState(ModuleCreatureAnimState.TURN_RIGHT);
+        }
+      }else if(this.turning === 0 && (this.animationState.index === ModuleCreatureAnimState.TURN_LEFT || this.animationState.index === ModuleCreatureAnimState.TURN_RIGHT)){
+        this.setAnimationState(this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE);
       }
 
       //Update equipment

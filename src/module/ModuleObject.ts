@@ -104,7 +104,6 @@ export class ModuleObject {
 
   facing: number;
   wasFacing: number;
-  facingTweenTime: number;
   force: number;
   speed: number;
   movementSpeed: number;
@@ -283,7 +282,6 @@ export class ModuleObject {
     this.sphere = new THREE.Sphere();
     this.facing = 0;
     this.wasFacing = 0;
-    this.facingTweenTime = 0;
     this.force = 0;
     this.speed = 0;
     this.movementSpeed = 1;
@@ -1212,6 +1210,20 @@ export class ModuleObject {
             return animations2DA.rows[10];
           }
         break;
+        case ModuleCreatureAnimState.TURN_LEFT:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[253];
+          }else{
+            return animations2DA.rows[290];
+          }
+        break;
+        case ModuleCreatureAnimState.TURN_RIGHT:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[253];
+          }else{
+            return animations2DA.rows[291];
+          }
+        break;
         case ModuleCreatureAnimState.GET_LOW:
           return animations2DA.rows[40];
         break;
@@ -1472,15 +1484,12 @@ export class ModuleObject {
    * @param instant 
    */
   setFacing(facing = 0, instant = false){
-    let diff = this.rotation.z - facing;
     this.wasFacing = Utility.NormalizeRadian(this.rotation.z);
-    this.facing = Utility.NormalizeRadian(facing);//Utility.NormalizeRadian(this.rotation.z - diff);
-    this.facingTweenTime = 0;
-    this.facingAnim = true;
+    this.facing = Utility.NormalizeRadian(facing);
+    this.facingAnim = !instant;
 
     if(instant){
-      this.rotation.z = this.wasFacing = Utility.NormalizeRadian(this.facing);
-      this.facingAnim = false;
+      this.rotation.z = this.wasFacing = this.facing;
     }
   }
 
