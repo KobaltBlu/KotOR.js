@@ -1553,11 +1553,8 @@ export class GUIControl {
   }
 
   getInnerSize(){
-    let width = this.extent.width - this.border.dimension;
-    if(width < this.border.dimension) width = this.border.dimension;
-
-    let height = this.extent.height - this.border.dimension;
-    if(height < this.border.dimension) height = this.border.dimension;
+    let width = Math.max(0, this.extent.width - this.border.dimension);
+    let height = Math.max(0, this.extent.height - this.border.dimension);
 
     return {
       width: width,
@@ -1584,21 +1581,11 @@ export class GUIControl {
 
   getFillExtent(){
     let extent = this.getControlExtent();
-    let inner = this.getInnerSize();
-    //console.log('size', extent, inner);
-
     let shrinkWidth = this.getShrinkWidth();
 
-    let width = inner.width - this.border.dimension - shrinkWidth;
-    let height = inner.height - this.border.dimension;
-
-    if(width < 0){
-      width = 0.00001;
-    }
-
-    if(height < 0){
-      height = 0.00001;
-    }
+    const borderSize = Math.min(this.getBorderSize(), this.extent.width / 2, this.extent.height / 2);
+    let width = Math.max(0.00001, this.extent.width - 2 * borderSize - shrinkWidth);
+    let height = Math.max(0.00001, this.extent.height - 2 * borderSize);
 
     return {
       top: extent.top, 
@@ -1633,80 +1620,76 @@ export class GUIControl {
   }
 
   getBorderExtent(side: string){
-    // let extent = this.getControlExtent();
-    let inner = this.getInnerSize();
+    const shrinkWidth = this.getShrinkWidth();
+    const borderSize = Math.min(this.getBorderSize(), this.extent.width / 2, this.extent.height / 2);
+
+    let innerW = Math.max(0, this.extent.width - borderSize);
+    let innerH = Math.max(0, this.extent.height - borderSize);
 
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
-      inner.width += this.parent.border.inneroffset * 2;
-      inner.width = Math.min(this.extent.width, inner.width);
+      innerW += this.parent.border.inneroffset * 2;
+      innerW = Math.min(this.extent.width, innerW);
     }
 
     let top = 0, left = 0, width = 0, height = 0;
 
-    let shrinkWidth = this.getShrinkWidth();
-
     switch(side){
       case 'top':
-        top = -(inner.height/2); 
-        left =  -shrinkWidth/2; 
-        width = inner.width - (this.getBorderSize()) - shrinkWidth;
-        height = this.getBorderSize();
+        top = -(innerH / 2);
+        left = -shrinkWidth / 2;
+        width = innerW - borderSize - shrinkWidth;
+        height = borderSize;
       break;
       case 'bottom':
-        top = (inner.height/2); 
-        left = -shrinkWidth/2; 
-        width = inner.width - (this.getBorderSize()) - shrinkWidth;
-        height = this.getBorderSize();
+        top = (innerH / 2);
+        left = -shrinkWidth / 2;
+        width = innerW - borderSize - shrinkWidth;
+        height = borderSize;
       break;
       case 'left':
-        top = 0
-        left = -(inner.width/2); 
-        width = inner.height - (this.getBorderSize()) < 0 ? 0.000001 : inner.height - (this.getBorderSize());
-        height = this.getBorderSize();
+        top = 0;
+        left = -(innerW / 2);
+        width = innerH - borderSize;
+        height = borderSize;
       break;
       case 'right':
-        top = 0; 
-        left = (inner.width/2) - shrinkWidth; 
-        width = inner.height - (this.getBorderSize()) < 0 ? 0.000001 : inner.height - (this.getBorderSize());
-        height = this.getBorderSize();
+        top = 0;
+        left = (innerW / 2) - shrinkWidth;
+        width = innerH - borderSize;
+        height = borderSize;
       break;
       case 'topLeft':
-        top = ((inner.height/2)); 
-        left = -((inner.width/2)); 
-        width = this.getBorderSize();
-        height = this.getBorderSize();
+        top = (innerH / 2);
+        left = -(innerW / 2);
+        width = borderSize;
+        height = borderSize;
       break;
       case 'topRight':
-        top = (inner.height/2); 
-        left = (inner.width/2) - shrinkWidth; 
-        width = this.getBorderSize();
-        height = this.getBorderSize();
+        top = (innerH / 2);
+        left = (innerW / 2) - shrinkWidth;
+        width = borderSize;
+        height = borderSize;
       break;
       case 'bottomLeft':
-        top = -((inner.height/2)); 
-        left = -((inner.width/2)); 
-        width = this.getBorderSize();
-        height = this.getBorderSize();
+        top = -(innerH / 2);
+        left = -(innerW / 2);
+        width = borderSize;
+        height = borderSize;
       break;
       case 'bottomRight':
-        top = -((inner.height/2)); 
-        left = ((inner.width / 2)) - shrinkWidth; 
-        width = this.getBorderSize();
-        height = this.getBorderSize();
+        top = -(innerH / 2);
+        left = (innerW / 2) - shrinkWidth;
+        width = borderSize;
+        height = borderSize;
       break;
     }
 
-    if(width < 0){
-      width = 0.00001;
-    }
-
-    if(height < 0){
-      height = 0.00001;
-    }
+    if(width < 0) width = 0.00001;
+    if(height < 0) height = 0.00001;
 
     return {
-      top: top, 
-      left: left + (this.flipLeft() ? shrinkWidth : 0), 
+      top: top,
+      left: left + (this.flipLeft() ? shrinkWidth : 0),
       width: width,
       height: height
     };
@@ -1714,80 +1697,76 @@ export class GUIControl {
   }
 
   getHighlightExtent(side: string){
-    let extent = this.getControlExtent();
-    let inner = this.getInnerSize();
+    const shrinkWidth = this.getShrinkWidth();
+    const highlightSize = Math.min(this.getHightlightSize(), this.extent.width / 2, this.extent.height / 2);
+
+    let innerW = Math.max(0, this.extent.width - highlightSize);
+    let innerH = Math.max(0, this.extent.height - highlightSize);
+
+    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
+      innerW += this.parent.border.inneroffset * 2;
+      innerW = Math.min(this.extent.width, innerW);
+    }
 
     let top = 0, left = 0, width = 0, height = 0;
 
-    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
-      inner.width += this.parent.border.inneroffset * 2;
-      inner.width = Math.min(this.extent.width, inner.width);
-    }
-
-    let shrinkWidth = this.getShrinkWidth();
-
     switch(side){
       case 'top':
-        top = -( (inner.height/2) );
-        left = -shrinkWidth/2;
-        width = inner.width - (this.getHightlightSize()) - shrinkWidth;
-        height = this.getHightlightSize();
+        top = -(innerH / 2);
+        left = -shrinkWidth / 2;
+        width = innerW - highlightSize - shrinkWidth;
+        height = highlightSize;
       break;
       case 'bottom':
-        top = (inner.height/2); 
-        left = -shrinkWidth/2; 
-        width = inner.width - (this.getHightlightSize()) - shrinkWidth;
-        height = this.getHightlightSize();
+        top = (innerH / 2);
+        left = -shrinkWidth / 2;
+        width = innerW - highlightSize - shrinkWidth;
+        height = highlightSize;
       break;
       case 'left':
-        top = 0; 
-        left = -(inner.width/2); 
-        width = inner.height - (this.getHightlightSize());
-        height = this.getHightlightSize();
+        top = 0;
+        left = -(innerW / 2);
+        width = innerH - highlightSize;
+        height = highlightSize;
       break;
       case 'right':
-        top = 0; 
-        left = (inner.width/2); 
-        width = inner.height - (this.getHightlightSize());
-        height = this.getHightlightSize();
+        top = 0;
+        left = (innerW / 2) - shrinkWidth;
+        width = innerH - highlightSize;
+        height = highlightSize;
       break;
       case 'topLeft':
-        top = ((inner.height/2)); 
-        left = -((inner.width/2)); 
-        width = this.getHightlightSize();
-        height = this.getHightlightSize();
+        top = (innerH / 2);
+        left = -(innerW / 2);
+        width = highlightSize;
+        height = highlightSize;
       break;
       case 'topRight':
-        top = (inner.height/2); 
-        left = (inner.width/2) - shrinkWidth; 
-        width = this.getHightlightSize();
-        height = this.getHightlightSize();
+        top = (innerH / 2);
+        left = (innerW / 2) - shrinkWidth;
+        width = highlightSize;
+        height = highlightSize;
       break;
       case 'bottomLeft':
-        top = -((inner.height/2)); 
-        left = -((inner.width/2)); 
-        width = this.getHightlightSize();
-        height = this.getHightlightSize();
+        top = -(innerH / 2);
+        left = -(innerW / 2);
+        width = highlightSize;
+        height = highlightSize;
       break;
       case 'bottomRight':
-        top = -((inner.height/2)); 
-        left = ((inner.width / 2)) - shrinkWidth; 
-        width = this.getHightlightSize();
-        height = this.getHightlightSize();
+        top = -(innerH / 2);
+        left = (innerW / 2) - shrinkWidth;
+        width = highlightSize;
+        height = highlightSize;
       break;
     }
 
-    if(width < 0){
-      width = 0.00001;
-    }
-
-    if(height < 0){
-      height = 0.00001;
-    }
+    if(width < 0) width = 0.00001;
+    if(height < 0) height = 0.00001;
 
     return {
-      top: top, 
-      left: left + (this.flipLeft() ? shrinkWidth : 0), 
+      top: top,
+      left: left + (this.flipLeft() ? shrinkWidth : 0),
       width: width,
       height: height
     };
