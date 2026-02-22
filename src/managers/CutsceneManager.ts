@@ -144,7 +144,7 @@ export class CutsceneManager {
       this.listener = this.dialog.listener = GameState.PartyManager.party[0];
     }
 
-    if(this.dialog.getConversationType() == DLGConversationType.CONVERSATION){
+    if(this.dialog.getConversationType() != DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameDialog.canLetterbox = true;
     }
 
