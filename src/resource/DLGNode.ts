@@ -6,7 +6,7 @@ import { IDLGNodeScriptParams } from "../interface/dialog/IDLGNodeScriptParams";
 // import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "../managers";
 import type { ModuleCreature, ModuleObject } from "../module";
 // import { NWScript } from "../nwscript/NWScript";
-import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { LIPObject } from "./LIPObject";
 import { GFFStruct } from "./GFFStruct";
 import { DialogMessageEntry } from "../engine/DialogMessageEntry";
@@ -14,6 +14,13 @@ import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
 import type { DLGObject } from "./DLGObject";
+
+class DummyScriptInstance extends NWScriptInstance {
+  name: string = 'SWG_DUMMY_SCRIPT';
+  run(caller?: any, scriptVar?: number): false | 0 | 1 {
+    return false;
+  }
+}
 
 /**
  * DLGNode class.
@@ -48,9 +55,9 @@ export class DLGNode {
   scriptParams: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
   script2: NWScriptInstance;
   script2Params: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
-  isActive: NWScriptInstance;
+  isActive: NWScriptInstance | DummyScriptInstance;
   isActiveParams: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
-  isActive2: NWScriptInstance;
+  isActive2: NWScriptInstance | DummyScriptInstance;
   isActive2Params: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
   Logic: boolean;
   index: number;
@@ -372,7 +379,7 @@ export class DLGNode {
   }
 
   getVideoEffect(): number {
-    return this.camVidEffect == -1 ? -1 : this.camVidEffect;
+    return this.camVidEffect == -1 || this.cameraAngle != DLGCameraAngle.ANGLE_PLACEABLE_CAMERA ? -1 : this.camVidEffect;
   }
 
   resetChecklist(){
@@ -603,7 +610,7 @@ export class DLGNode {
         if(replyStruct.hasField('Active')){
           const resref = replyStruct.getFieldByLabel('Active').getValue();
           if(resref){
-            linkNode.isActive = GameState.NWScript.Load(resref);
+            linkNode.isActive = GameState.NWScript.Load(resref) || new DummyScriptInstance(null);
             if(linkNode.isActive){
               linkNode.isActive.name = resref;
             }
@@ -613,7 +620,7 @@ export class DLGNode {
         if(replyStruct.hasField('Active2')){
           const resref = replyStruct.getFieldByLabel('Active2').getValue();
           if(resref){
-            linkNode.isActive2 = GameState.NWScript.Load(resref);
+            linkNode.isActive2 = GameState.NWScript.Load(resref) || new DummyScriptInstance(null);
             if(linkNode.isActive2){
               linkNode.isActive2.name = resref;
             }
@@ -699,7 +706,7 @@ export class DLGNode {
         if(entryStruct.hasField('Active')){
           const resref = entryStruct.getFieldByLabel('Active').getValue();
           if(resref){
-            linkNode.isActive = GameState.NWScript.Load(resref);
+            linkNode.isActive = GameState.NWScript.Load(resref) || new DummyScriptInstance(null);
             if(linkNode.isActive){
               linkNode.isActive.name = resref;
             }
@@ -709,7 +716,7 @@ export class DLGNode {
         if(entryStruct.hasField('Active2')){
           const resref = entryStruct.getFieldByLabel('Active2').getValue();
           if(resref){
-            linkNode.isActive2 = GameState.NWScript.Load(resref);
+            linkNode.isActive2 = GameState.NWScript.Load(resref) || new DummyScriptInstance(null);
             if(linkNode.isActive2){
               linkNode.isActive2.name = resref;
             }
