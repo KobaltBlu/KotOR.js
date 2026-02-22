@@ -28,6 +28,7 @@ export class ApplicationProfile {
   static SetProfile(profile: any){
     if(typeof profile === 'object'){
       ApplicationProfile.profile = profile;
+      ApplicationProfile.InitEnvironment();
     }
     if(ApplicationProfile.profile){
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
