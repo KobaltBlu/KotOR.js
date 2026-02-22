@@ -30,3 +30,4 @@ export * from "./VideoManager";
 export * from "./PazaakManager";
 export * from "./UINotificationManager";
 export * from "./CutsceneManager";
+export * from "./LegalScreenManager";

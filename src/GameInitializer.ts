@@ -11,7 +11,8 @@ import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager, KEYManager, RIMManager, ERFManager, VideoEffectManager, PazaakManager, UINotificationManager, CutsceneManager,
-  VideoManager
+  VideoManager,
+  LegalScreenManager
 } from "./managers";
 import { SWRuleSet } from "./engine/rules/SWRuleSet";
 import { ResourceLoader } from "./loaders";
@@ -153,6 +154,7 @@ export class GameInitializer {
     GameState.UINotificationManager = UINotificationManager;
     GameState.CutsceneManager = CutsceneManager;   
     GameState.VideoManager = VideoManager;
+    GameState.LegalScreenManager = LegalScreenManager;
 
     GameState.SWRuleSet = SWRuleSet;
 

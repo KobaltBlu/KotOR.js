@@ -3,7 +3,7 @@ import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
-  VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, CutsceneManager
+  VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, CutsceneManager, LegalScreenManager
 } from "./managers";
 
 import type { SWRuleSet } from "./engine/rules/SWRuleSet";
@@ -115,6 +115,7 @@ export class GameState implements EngineContext {
   static PazaakManager: typeof PazaakManager;
   static UINotificationManager: typeof UINotificationManager;
   static CutsceneManager: typeof CutsceneManager;
+  static LegalScreenManager: typeof LegalScreenManager;
   static lastGameplayThumb?: OffscreenCanvas;
   static lastGameplayThumbCtx?: OffscreenCanvasRenderingContext2D;
   static lastGameplayThumbRT?: THREE.WebGLRenderTarget;
@@ -827,6 +828,13 @@ export class GameState implements EngineContext {
       PerformanceMonitor.stop('MenuManager.LoadMainGameMenus');
 
       /**
+       * Preload the legal screen texture
+       */
+      if(GameState.GameKey == GameEngineType.TSL){
+        await GameState.LegalScreenManager.Initialize();
+      }
+
+      /**
        * Preload fx textures
        */
       TextureLoader.enQueue(GameState.preloadTextures,
@@ -857,6 +865,14 @@ export class GameState implements EngineContext {
       GameState.OnReadyCalled = true;
       GameState.processEventListener('ready');
       window.dispatchEvent(new Event('resize'));
+      
+      if(GameState.GameKey == GameEngineType.TSL){
+        GameState.SetEngineMode(EngineMode.LEGAL);
+        GameState.State = EngineState.RUNNING;
+        GameState.Update();
+        return;
+      }
+
       GameState.VideoManager.playMovieQueue( () => {
         window.dispatchEvent(new Event('resize'));
         GameState.MenuManager.MainMenu.Start();
@@ -1269,11 +1285,16 @@ export class GameState implements EngineContext {
     }
 
     GameState.controls.Update(delta);
-    GameState.scene_cursor_holder.visible = GameState.Mode != EngineMode.MOVIE;
+    GameState.scene_cursor_holder.visible = GameState.Mode != EngineMode.MOVIE && GameState.Mode != EngineMode.LEGAL;
     if(GameState.Mode == EngineMode.MOVIE || GameState.VideoManager.isMoviePlaying()){
       GameState.Mode = EngineMode.MOVIE;
       GameState.VideoManager.update(delta);
       GameState.renderer.render(GameState.scene_movie, GameState.camera_gui);
+      return;
+    }
+
+    if(GameState.Mode == EngineMode.LEGAL){
+      GameState.LegalScreenManager.Update(delta);
       return;
     }
 

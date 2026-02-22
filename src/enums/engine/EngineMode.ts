@@ -16,4 +16,5 @@ export enum EngineMode {
   DIALOG    =  3,
   FREELOOK  =  4,
   MOVIE     =  5,
+  LEGAL     =  6,
 }
