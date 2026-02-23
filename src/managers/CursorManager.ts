@@ -198,7 +198,7 @@ export class CursorManager {
 	 * @param cursor Cursor material key (e.g., "default", "select", "attack")
 	 */
 	static setCursor(cursor = 'default'){
-		const cursorName = !Mouse.MouseDown ? cursor : cursor+'D';
+		const cursorName = !Mouse.leftDown ? cursor : cursor+'D';
     const cursorMaterial = CursorManager.cursorMaterials.get(cursorName);
     if(CursorManager.cursor.material != cursorMaterial){
       CursorManager.cursor.material = cursorMaterial;
@@ -256,6 +256,7 @@ export class CursorManager {
 	 * @param object The module object to mark as selected
 	 */
 	public static setReticleSelectedObject( object: ModuleObject ){
+		GameState.getCurrentPlayer().lookAt(object);
 		if(object){
 			CursorManager.selected = object.getReticleNode();
 			if(CursorManager.selected){
