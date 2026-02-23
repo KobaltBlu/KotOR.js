@@ -4,16 +4,13 @@ import type { GUIControl, GUIListBox, GUIScrollBar } from "../gui";
 import { Utility } from "../utility/Utility";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { EngineState } from "../enums/engine/EngineState";
-import type { ModuleObject } from "../module";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { FollowerCamera } from "../engine/FollowerCamera";
-// import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "../managers";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { GUIControlEventFactory } from "../gui/GUIControlEventFactory";
-import { MouseState } from "../enums/controls/MouseState";
 import { Keyboard } from "./Keyboard";
 import { GamePad } from "./GamePad";
 import { Mouse } from "./Mouse";
@@ -21,6 +18,8 @@ import { KeyMapper } from "./KeyMapper";
 import { AnalogInput } from "./AnalogInput";
 import { TGAObject } from "../resource/TGAObject";
 import { GameFileSystem } from "../utility/GameFileSystem";
+
+const PLAYER_TURN_SPEED = Math.PI * 3;
 
 /**
  * IngameControls class.
@@ -394,7 +393,7 @@ export class IngameControls {
 
       followee.clearAllActions(true);
       followee.force = 1;
-      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI/2), false, Math.PI * 1.5);
+      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI/2), false, PLAYER_TURN_SPEED);
       followee.controlled = true;
       GameState.scene_cursor_holder.visible = true;
     });
@@ -410,7 +409,7 @@ export class IngameControls {
       
       followee.clearAllActions(true);
       followee.force = 1;
-      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing - Math.PI/2), false, Math.PI * 1.5);
+      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing - Math.PI/2), false, PLAYER_TURN_SPEED);
       followee.controlled = true;
       GameState.scene_cursor_holder.visible = true;
     });
@@ -853,7 +852,7 @@ export class IngameControls {
             if( this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value ){
               followee.clearAllActions(true);
               followee.force = 1;
-              followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + FollowerCamera.facing + Math.PI/2 ) , false, Math.PI * 1.5);
+              followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + FollowerCamera.facing + Math.PI/2 ) , false, PLAYER_TURN_SPEED);
               followee.controlled = true;
               GameState.scene_cursor_holder.visible = false;
               this.gamePadMovement = true;
