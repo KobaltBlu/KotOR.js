@@ -2063,8 +2063,11 @@ export class ModuleCreature extends ModuleObject {
       const reticle = this.lookAtObject.getReticleNode();
       if(reticle){
         this.lookAtPosition.copy(reticle.getWorldPosition(this.lookAtPosition));
-      }else{
+      }else if(this.lookAtObject.position){
         this.lookAtPosition.copy(this.lookAtObject.position);
+      }else{
+        this.lookAtObject = undefined;
+        return;
       }
       const dx = this.lookAtPosition.x - this.position.x;
       const dy = this.lookAtPosition.y - this.position.y;
