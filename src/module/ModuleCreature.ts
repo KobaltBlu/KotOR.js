@@ -71,9 +71,6 @@ import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 * @memberof KotOR
 */
 export class ModuleCreature extends ModuleObject {
-  /** Radians per second when turning to face a new direction (non-instant). ~180° in ~0.67s. */
-  static readonly FACING_ANGULAR_SPEED = Math.PI * 1.5;
-
   debugLabel: TextSprite3D;
   pm_IsDisguised: boolean; //polymorphIsDisguised
   pm_Appearance: number; //polymorphAppearance
@@ -675,7 +672,7 @@ export class ModuleCreature extends ModuleObject {
         const current = Utility.NormalizeRadian(this.rotation.z);
         const target = this.facing;
         const remaining = Utility.NormalizeRadian(target - current);
-        const step = ModuleCreature.FACING_ANGULAR_SPEED * delta;
+        const step = this.facingSpeed * delta;
         if(Math.abs(remaining) <= step){
           this.rotation.z = target;
           this.wasFacing = target;
@@ -809,18 +806,22 @@ export class ModuleCreature extends ModuleObject {
     this.actionQueue.process( delta );
     this.action = this.actionQueue[0];
     if(!(this.action)){
+      const currentPlayer = GameState.getCurrentPlayer();
       if(
         !this.combatData.combatState && 
         this.isPartyMember() && 
-        this != GameState.getCurrentPlayer()
+        this != currentPlayer && 
+        !this.facingAnim
       ){
-        this.setFacing(
-          Math.atan2(
-            this.position.y - GameState.getCurrentPlayer().position.y,
-            this.position.x - GameState.getCurrentPlayer().position.x
-          ) + Math.PI/2,
-          false
-        );
+        const targetFacing = Math.atan2(
+          this.position.y - currentPlayer.position.y,
+          this.position.x - currentPlayer.position.x
+        ) + Math.PI/2;
+        const diff = Math.abs(Utility.NormalizeRadian(targetFacing - this.rotation.z));
+        if(diff > Math.PI / 6){
+          console.log('Turning to face player', this.id, this.getName(), targetFacing, this.rotation.z, diff);
+          this.setFacing(targetFacing, false);
+        }
       }
     }
 
