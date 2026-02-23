@@ -64,7 +64,7 @@ export class CharGenPortCust extends GameMenu {
       }else{
         creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[--idx];
       }
-      creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+      creature.setAppearance(creature.appearance);
 
       for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
         const port = GameState.SWRuleSet.portraits[i];
@@ -109,7 +109,7 @@ export class CharGenPortCust extends GameMenu {
       }else{
         creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[++idx];
       }
-      creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+      creature.setAppearance(creature.appearance);
 
       for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
         const port = GameState.SWRuleSet.portraits[i];
@@ -149,7 +149,7 @@ export class CharGenPortCust extends GameMenu {
         //Restore previous appearance
         creature.appearance = this.appearance;
         creature.portraitId = this.portraitId;
-        creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+        creature.setAppearance(creature.appearance);
         creature.loadModel().then( (model: OdysseyModel3D) => {
           model.rotation.z = -Math.PI/2;
           this.exiting = false;

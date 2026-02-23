@@ -226,6 +226,16 @@ export class CutsceneManager {
       GameState.MenuManager.InGameDialog.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
     }
 
+    if(BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature)){
+      const creature = this.currentEntry.speaker as ModuleCreature;
+      creature.lookAt(this.currentEntry.listener);
+    }
+    
+    if(BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature)){
+      const creature = this.currentEntry.listener as ModuleCreature;
+      creature.lookAt(this.currentEntry.speaker);
+    }
+
     entry.updateJournal();
 
     //participant animations

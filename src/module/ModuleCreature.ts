@@ -175,6 +175,27 @@ export class ModuleCreature extends ModuleObject {
   selectedNPC: number;
   creatureAppearance: SWCreatureAppearance;
 
+  /**
+   * Head tracking enabled
+   */
+  headTrackingEnabled: boolean = true;
+  /**
+   * Head tracking angle
+   */
+  headTrackingAngle: number = 0;
+  /**
+   * Head tracking pitch
+   */
+  headTrackingPitch: number = 0;
+  /**
+   * Head max horizontal angle
+   */
+  headMaxHorizontalAngle: number = Math.PI / 6;
+  /**
+   * Head max vertical angle
+   */
+  headMaxVerticalAngle: number = Math.PI / 3;
+
   constructor ( gff = new GFFObject() ) {
     super(gff);
     this.objectType |= ModuleObjectType.ModuleCreature;
@@ -646,6 +667,8 @@ export class ModuleCreature extends ModuleObject {
             }
           }
         }
+
+        this.updateHeadTracking(delta);
       }
 
       if(this.collisionManager.blockingObject != this.collisionManager.lastBlockingObject){
@@ -813,13 +836,13 @@ export class ModuleCreature extends ModuleObject {
         this != currentPlayer && 
         !this.facingAnim
       ){
+        this.lookAtObject = currentPlayer;
         const targetFacing = Math.atan2(
           this.position.y - currentPlayer.position.y,
           this.position.x - currentPlayer.position.x
         ) + Math.PI/2;
         const diff = Math.abs(Utility.NormalizeRadian(targetFacing - this.rotation.z));
         if(diff > Math.PI / 6){
-          console.log('Turning to face player', this.id, this.getName(), targetFacing, this.rotation.z, diff);
           this.setFacing(targetFacing, false);
         }
       }
@@ -2020,6 +2043,64 @@ export class ModuleCreature extends ModuleObject {
         false
       );
     }
+  }
+
+  lookAt(oObject: ModuleObject){
+    this.lookAtObject = oObject;
+  }
+
+  static readonly HEAD_TRACKING_H_SPEED = Math.PI * 2;
+  static readonly HEAD_TRACKING_V_SPEED = Math.PI ;
+  lookAtPosition: THREE.Vector3 = new THREE.Vector3();
+
+  updateHeadTracking(delta: number){
+    if(!(this.model instanceof OdysseyModel3D) || !this.model.hturn_g || !this.headTrackingEnabled) return;
+
+    let targetYaw = 0;
+    let targetPitch = 0;
+
+    if(this.lookAtObject && !this.lookAtObject.isDead() && this.lookAtObject !== this){
+      const reticle = this.lookAtObject.getReticleNode();
+      if(reticle){
+        this.lookAtPosition.copy(reticle.getWorldPosition(this.lookAtPosition));
+      }else{
+        this.lookAtPosition.copy(this.lookAtObject.position);
+      }
+      const dx = this.lookAtPosition.x - this.position.x;
+      const dy = this.lookAtPosition.y - this.position.y;
+      const dz = this.lookAtPosition.z - (this.position.z + this.getCameraHeight());
+      const horizontalDist = Math.sqrt(dx * dx + dy * dy);
+
+      const worldAngleToTarget = Math.atan2(dy, dx);
+      const bodyFacing = this.rotation.z + Math.PI / 2;
+      const relativeYaw = Utility.NormalizeRadian(worldAngleToTarget - bodyFacing);
+      const relativePitch = Math.atan2(dz, horizontalDist);
+
+      if(Math.abs(relativeYaw) <= this.headMaxHorizontalAngle){
+        targetYaw = relativeYaw;
+        targetPitch = THREE.MathUtils.clamp(relativePitch, -this.headMaxVerticalAngle, this.headMaxVerticalAngle);
+      }
+    }
+
+    const stepH = ModuleCreature.HEAD_TRACKING_H_SPEED * delta;
+    const stepV = ModuleCreature.HEAD_TRACKING_V_SPEED * delta;
+
+    const yawDiff = Utility.NormalizeRadian(targetYaw - this.headTrackingAngle);
+    if(Math.abs(yawDiff) <= stepH){
+      this.headTrackingAngle = targetYaw;
+    }else{
+      this.headTrackingAngle += Math.sign(yawDiff) * stepH;
+    }
+
+    const pitchDiff = targetPitch - this.headTrackingPitch;
+    if(Math.abs(pitchDiff) <= stepV){
+      this.headTrackingPitch = targetPitch;
+    }else{
+      this.headTrackingPitch += Math.sign(pitchDiff) * stepV;
+    }
+
+    this.model.hturn_g.rotation.z = Math.abs(this.headTrackingAngle) > 0.001 ? this.headTrackingAngle : 0;
+    this.model.hturn_g.rotation.x = Math.abs(this.headTrackingPitch) > 0.001 ? this.headTrackingPitch : 0;
   }
 
   onClick(callee: ModuleObject){
@@ -3470,6 +3551,16 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
+  setAppearance(appearance: number){
+    this.appearance = appearance;
+    this.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(this.appearance);
+    if(!this.creatureAppearance) return;
+
+    this.headTrackingEnabled = this.creatureAppearance.headtrack !== 0;
+    this.headMaxHorizontalAngle = (this.creatureAppearance.head_arc_h * Math.PI) / 180;
+    this.headMaxVerticalAngle = (this.creatureAppearance.head_arc_v * Math.PI) / 180;
+  }
+
   initProperties(){
     try{
       this.classes = [];
@@ -3491,8 +3582,7 @@ export class ModuleCreature extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('Appearance_Type')){
-        this.appearance = this.template.getFieldByLabel('Appearance_Type').getValue();
-        this.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(this.appearance);
+        this.setAppearance(this.template.getFieldByLabel('Appearance_Type').getValue());
       }
 
       if(this.template.RootNode.hasField('BodyBag'))

@@ -62,7 +62,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       }else{
         creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[--idx];
       }
-      creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+      creature.setAppearance(creature.appearance);
 
       for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
         let port = GameState.SWRuleSet.portraits[i];
@@ -107,7 +107,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       }else{
         creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[++idx];
       }
-      creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+      creature.setAppearance(creature.appearance);
 
       for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
         let port = GameState.SWRuleSet.portraits[i];
@@ -146,7 +146,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         //Restore previous appearance
         creature.appearance = this.appearance;
         creature.portraitId = this.portraitId;
-        creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+        creature.setAppearance(creature.appearance);
         const model = await creature.loadModel();
         this.exiting = false;
         this.close();
