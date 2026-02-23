@@ -2050,39 +2050,42 @@ export class ModuleCreature extends ModuleObject {
   }
 
   static readonly HEAD_TRACKING_H_SPEED = Math.PI * 2;
-  static readonly HEAD_TRACKING_V_SPEED = Math.PI ;
+  static readonly HEAD_TRACKING_V_SPEED = Math.PI * 0.25;
   lookAtPosition: THREE.Vector3 = new THREE.Vector3();
 
   updateHeadTracking(delta: number){
+    if(!this.lookAtObject) return;
+    if(this.lookAtObject === this || this.lookAtObject.isDead()){
+      this.lookAtObject = undefined;
+      return;
+    }
     if(!(this.model instanceof OdysseyModel3D) || !this.model.hturn_g || !this.headTrackingEnabled) return;
 
     let targetYaw = 0;
     let targetPitch = 0;
 
-    if(this.lookAtObject && !this.lookAtObject.isDead() && this.lookAtObject !== this){
-      const reticle = this.lookAtObject.getReticleNode();
-      if(reticle){
-        this.lookAtPosition.copy(reticle.getWorldPosition(this.lookAtPosition));
-      }else if(this.lookAtObject.position){
-        this.lookAtPosition.copy(this.lookAtObject.position);
-      }else{
-        this.lookAtObject = undefined;
-        return;
-      }
-      const dx = this.lookAtPosition.x - this.position.x;
-      const dy = this.lookAtPosition.y - this.position.y;
-      const dz = this.lookAtPosition.z - (this.position.z + this.getCameraHeight());
-      const horizontalDist = Math.sqrt(dx * dx + dy * dy);
+    const reticle = this.lookAtObject.getReticleNode();
+    if(reticle){
+      this.lookAtPosition.copy(reticle.getWorldPosition(this.lookAtPosition));
+    }else if(this.lookAtObject.position){
+      this.lookAtPosition.copy(this.lookAtObject.position);
+    }else{
+      this.lookAtObject = undefined;
+      return;
+    }
+    const dx = this.lookAtPosition.x - this.position.x;
+    const dy = this.lookAtPosition.y - this.position.y;
+    const dz = this.lookAtPosition.z - (this.position.z + this.getCameraHeight());
+    const horizontalDist = Math.sqrt(dx * dx + dy * dy);
 
-      const worldAngleToTarget = Math.atan2(dy, dx);
-      const bodyFacing = this.rotation.z + Math.PI / 2;
-      const relativeYaw = Utility.NormalizeRadian(worldAngleToTarget - bodyFacing);
-      const relativePitch = Math.atan2(dz, horizontalDist);
+    const worldAngleToTarget = Math.atan2(dy, dx);
+    const bodyFacing = this.rotation.z + Math.PI / 2;
+    const relativeYaw = Utility.NormalizeRadian(worldAngleToTarget - bodyFacing);
+    const relativePitch = Math.atan2(dz, horizontalDist);
 
-      if(Math.abs(relativeYaw) <= this.headMaxHorizontalAngle){
-        targetYaw = relativeYaw;
-        targetPitch = THREE.MathUtils.clamp(relativePitch, -this.headMaxVerticalAngle, this.headMaxVerticalAngle);
-      }
+    if(Math.abs(relativeYaw) <= this.headMaxHorizontalAngle){
+      targetYaw = relativeYaw;
+      targetPitch = THREE.MathUtils.clamp(relativePitch, -this.headMaxVerticalAngle, this.headMaxVerticalAngle);
     }
 
     const stepH = ModuleCreature.HEAD_TRACKING_H_SPEED * delta;
