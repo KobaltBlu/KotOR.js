@@ -3213,6 +3213,10 @@ export class ModuleObject {
     }
   }
 
+  #tmpPositionA = new THREE.Vector3();
+  #tmpPositionB = new THREE.Vector3();
+  #tmpDirection = new THREE.Vector3();
+
   /**
    * Check if the object has line of sight to another object
    * @param oTarget 
@@ -3227,59 +3231,69 @@ export class ModuleObject {
       return false;
     }
 
-    let position_a = this.position.clone();
-    let position_b = oTarget.position.clone();
-    position_a.z += 1;
-    position_b.z += 1;
-    let direction = position_b.clone().sub(position_a).normalize();
-    let distance = position_a.distanceTo(position_b);
+    this.#tmpPositionA.copy(this.position);
+    this.#tmpPositionB.copy(oTarget.position);
+    this.#tmpPositionA.z += 1;
+    this.#tmpPositionB.z += 1;
+    const distance = this.#tmpPositionA.distanceTo(this.#tmpPositionB);
 
     if(this.perceptionRange){
-      if(distance > this.getPerceptionRangePrimary()){
-        return;
+      const primaryRange = this.getPerceptionRangePrimary();
+      if(distance > primaryRange){
+        return false;
       }
-      max_distance = this.getPerceptionRangePrimary();
+      max_distance = primaryRange;
     }else{
-      if(distance > 50)
-        return;
-    }
-
-    GameState.raycaster.ray.origin.copy(position_a);
-    GameState.raycaster.ray.direction.copy(direction);
-    GameState.raycaster.far = max_distance;
-
-    let aabbFaces = [];
-    let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
-
-    for(let j = 0, jl = this.area.rooms.length; j < jl; j++){
-      let room = this.area.rooms[j];
-      if(room && room.collisionManager.walkmesh && room.collisionManager.walkmesh.aabbNodes.length){
-        aabbFaces.push({
-          object: room, 
-          faces: room.collisionManager.walkmesh.faces
-        });
+      if(distance > max_distance){
+        return false;
       }
     }
+
+    this.#tmpDirection.copy(this.#tmpPositionB).sub(this.#tmpPositionA).normalize();
+    GameState.raycaster.ray.origin.copy(this.#tmpPositionA);
+    GameState.raycaster.ray.direction.copy(this.#tmpDirection);
+    GameState.raycaster.far = distance;
 
     for(let j = 0, jl = this.area.doors.length; j < jl; j++){
-      let door = this.area.doors[j];
-      if(door && door != (this as any) && !door.isOpen()){
-        let box3 = door.box;
-        if(box3){
-          if(GameState.raycaster.ray.intersectsBox(box3) || box3.containsPoint(position_a)){
+      const door = this.area.doors[j];
+      if(!door || door == (this as any) || door.isOpen()) continue;
+      const box3 = door.box;
+      if(!box3) continue;
+      if(GameState.raycaster.ray.intersectsBox(box3) || box3.containsPoint(this.#tmpPositionA)){
+        const intersects = door.collisionManager.walkmesh.raycast(GameState.raycaster, door.collisionManager.walkmesh.faces);
+        if(intersects){
+          for(let k = 0; k < intersects.length; k++){
+            if(intersects[k].distance < distance){
+              return false;
+            }
+          }
+        }
+      }
+    }
+
+    if(!this.room) return true;
+
+    //Check the current room walkmesh
+    if(this.room && this.room.collisionManager.walkmesh && this.room.collisionManager.walkmesh.aabbNodes.length){
+      const intersects = this.room.collisionManager.walkmesh.raycast(GameState.raycaster, this.room.collisionManager.walkmesh.faces);
+      if(intersects){
+        for(let k = 0; k < intersects.length; k++){
+          if(intersects[k].distance < distance){
             return false;
           }
         }
       }
     }
 
-
-    for(let i = 0, il = aabbFaces.length; i < il; i++){
-      let castableFaces = aabbFaces[i];
-      intersects = castableFaces.object.collisionManager.walkmesh.raycast(GameState.raycaster, castableFaces.faces);
-      if (intersects && intersects.length > 0 ) {
-        for(let j = 0; j < intersects.length; j++){
-          if(intersects[j].distance < distance){
+    //Check the linked rooms walkmeshes
+    const linkedRooms = this.room.linkedRoomsArray;
+    for(let j = 0, jl = linkedRooms.length; j < jl; j++){
+      const room = linkedRooms[j];
+      if(!room || !room.collisionManager.walkmesh || !room.collisionManager.walkmesh.aabbNodes.length) continue;
+      const intersects = room.collisionManager.walkmesh.raycast(GameState.raycaster, room.collisionManager.walkmesh.faces);
+      if(intersects){
+        for(let k = 0; k < intersects.length; k++){
+          if(intersects[k].distance < distance){
             return false;
           }
         }

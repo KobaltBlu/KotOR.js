@@ -188,6 +188,7 @@ export class GameState implements EngineContext {
   static AlphaTest = 0.5;
   static noClickTimer = 0;
   static maxSelectableDistance = 20;
+  static maxSelectableDistanceSquared = GameState.maxSelectableDistance * GameState.maxSelectableDistance;
 
   static delta: number = 0;
   static clampedDelta: number = 0;

@@ -715,90 +715,79 @@ export class ModuleObjectManager {
     return this.#currentVisibleObject;
   }
 
+  static #tmpPlayerPosition = new THREE.Vector3();
+  static #tmpTargetPosition = new THREE.Vector3();
+  static #losZOffset = 1;
+
   static GetSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
 
     const objects = [
+      ...GameState.PartyManager.party,
       ...GameState.module.area.placeables, 
       ...GameState.module.area.doors, 
       ...GameState.module.area.creatures,
       ...GameState.module.area.triggers.filter((trig) => trig.type == ModuleTriggerType.TRAP)
     ];
 
-    for(let i = 0; i < GameState.PartyManager.party.length; i++){
-      if(!i){ continue; }
-      objects.push(GameState.PartyManager.party[i]);
-    }
-
-    const selectableObjects: ModuleObject[] = [];
+    this.playerSelectableObjects = [];
 
     const objCount = objects.length;
-    let obj: ModuleObject;
-    let dir = new THREE.Vector3();
-    const losZ = 1;
-    const playerPosition = player.position.clone();
-    playerPosition.z += losZ;
+    this.#tmpPlayerPosition.copy(player.position);
+    this.#tmpPlayerPosition.z += this.#losZOffset;
 
-    const targetPosition = new THREE.Vector3();
+    this.#tmpTargetPosition.set(0, 0, 0);
     
-    let distance = 0;
     for(let i = 0; i < objCount; i++){
-      obj = objects[i];
+      const obj = objects[i];
 
+      //Ignore the player
+      if(obj == player){ continue; }
+
+      //Ignore objects that are not useable
       if(!obj.isUseable()){ continue; }
 
+      //Ignore doors that are open
       const isDoor = BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor);
       if(isDoor){
         if((obj as ModuleDoor).isOpen()){ continue; };
       }
 
-      targetPosition.copy(obj.position);
+      this.#tmpTargetPosition.copy(obj.position);
       if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
-        targetPosition.z += losZ;
+        this.#tmpTargetPosition.z += this.#losZOffset;
       }else{
-        targetPosition.z += 0.1;
+        this.#tmpTargetPosition.z += this.#losZOffset;//0.1;
       }
 
-      distance = targetPosition.distanceTo(playerPosition);
-      if(distance > GameState.maxSelectableDistance){
+      const distance = this.#tmpTargetPosition.distanceToSquared(this.#tmpPlayerPosition);
+      if(distance > GameState.maxSelectableDistanceSquared){
         continue;
       }
 
-      // dir.copy(targetPosition);
-      // dir.sub(playerPosition);
-      // // dir.negate();
-      // dir.normalize();
+      //Ignore objects that have no area
+      if(!obj.area){
+        continue;
+      }
 
-      // if(obj.model){
-      //   GameState.raycaster.set(playerPosition, dir);
+      //Ignore objects that we don't have line of sight to
+      const hasLineOfSight = obj.hasLineOfSight(player, GameState.maxSelectableDistance);
+      if(!hasLineOfSight){
+        continue;
+      }
 
-      //   //Check that we can see the object
-      //   let los = GameState.raycaster.intersectObjects([...GameState.group.room_walkmeshes.children, obj.model], true);
-
-      //   //If the object a door ignore it's walkmesh
-      //   if(isDoor && los.length){
-      //     los = los.filter( (intersect) => {
-      //       intersect.object.uuid != obj.collisionManager.walkmesh.mesh.uuid
-      //     });
-      //   }
-
-      //   const intersect = los[0];
-      //   if(intersect && Array.isArray(obj.model.userData.uuids) && obj.model.userData.uuids.indexOf(intersect.object.uuid) == -1){
-      //     continue;
-      //   }
-      // }
-      
-      selectableObjects.push(obj);
+      //Add the object to the selectable objects list
+      this.playerSelectableObjects.push(obj);
     }
 
-    this.SetPlayerVisibleObjects(selectableObjects);
+    this.SetPlayerVisibleObjects(this.playerSelectableObjects);
 
     if(player.force > 0){
       //get closest object to player
-      const closestObject = selectableObjects.sort((a, b) => {
+      const closestObject = this.playerSelectableObjects.sort((a, b) => {
         return a.position.distanceTo(player.position) - b.position.distanceTo(player.position);
       })[0];
       this.#currentVisibleObject = closestObject;
-      this.#currentVisibleObjectIndex = selectableObjects.indexOf(closestObject);
+      this.#currentVisibleObjectIndex = this.playerSelectableObjects.indexOf(closestObject);
       GameState.CursorManager.setReticleSelectedObject(closestObject);
     }
 
@@ -810,7 +799,7 @@ export class ModuleObjectManager {
       GameState.CursorManager.setReticleSelectedObject(this.#currentVisibleObject);
     }
 
-    return selectableObjects;
+    return this.playerSelectableObjects;
   }
 
   static tUpdateSelectable = 0;
