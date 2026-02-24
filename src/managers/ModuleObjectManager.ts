@@ -7,8 +7,12 @@ import { ReputationType } from "../enums/nwscript/ReputationType";
 import { BitWise } from "../utility/BitWise";
 import { PartyManager } from "./PartyManager";
 import * as THREE from "three";
-import type { Module, ModuleCreature, ModuleObject } from "../module";
+import type { Module, ModuleCreature, ModuleDoor, ModuleObject } from "../module";
 import { PerceptionMask } from "../enums/engine/PerceptionMask";
+import { GameState } from "../GameState";
+import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
+
+const UPDATE_SELECTABLE_OBJECTS_INTERVAL = 0.5;
 
 /**
  * ModuleObjectManager class.
@@ -665,9 +669,7 @@ export class ModuleObjectManager {
   }
 
   public static GetAttackerByIndex(oTarget: ModuleObject, index: number = 0): ModuleObject {
-    let object_pool: ModuleObject[] = [];
-    
-    object_pool.concat(
+    return [].concat(
       this.module.area.creatures.filter( 
         (
           creature => 
@@ -679,9 +681,151 @@ export class ModuleObjectManager {
           }
         )
       )
-    );
+    )[index];
+  }
 
-    return object_pool[index];
+  static playerSelectableObjects: ModuleObject[] = [];
+  static #currentVisibleObject: ModuleObject;
+  static #currentVisibleObjectIndex: number = 0;
+
+  static SetPlayerVisibleObjects(objects: ModuleObject[]){
+    this.playerSelectableObjects = objects;
+    this.#currentVisibleObjectIndex = this.playerSelectableObjects.indexOf(this.#currentVisibleObject);
+    if(this.#currentVisibleObjectIndex == -1){
+      this.#currentVisibleObjectIndex = 0;
+      this.#currentVisibleObject = this.playerSelectableObjects[0];
+    }
+  }
+
+  static GetNextPlayerVisibleObject(){
+    this.#currentVisibleObjectIndex++;
+    if(this.#currentVisibleObjectIndex >= this.playerSelectableObjects.length){
+      this.#currentVisibleObjectIndex = 0;
+    }
+    this.#currentVisibleObject = this.playerSelectableObjects[this.#currentVisibleObjectIndex];
+    return this.#currentVisibleObject;
+  }
+
+  static GetPreviousPlayerVisibleObject(){
+    this.#currentVisibleObjectIndex--;
+    if(this.#currentVisibleObjectIndex < 0){
+      this.#currentVisibleObjectIndex = this.playerSelectableObjects.length - 1;
+    }
+    this.#currentVisibleObject = this.playerSelectableObjects[this.#currentVisibleObjectIndex];
+    return this.#currentVisibleObject;
+  }
+
+  static GetSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
+
+    const objects = [
+      ...GameState.module.area.placeables, 
+      ...GameState.module.area.doors, 
+      ...GameState.module.area.creatures,
+      ...GameState.module.area.triggers.filter((trig) => trig.type == ModuleTriggerType.TRAP)
+    ];
+
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      if(!i){ continue; }
+      objects.push(GameState.PartyManager.party[i]);
+    }
+
+    const selectableObjects: ModuleObject[] = [];
+
+    const objCount = objects.length;
+    let obj: ModuleObject;
+    let dir = new THREE.Vector3();
+    const losZ = 1;
+    const playerPosition = player.position.clone();
+    playerPosition.z += losZ;
+
+    const targetPosition = new THREE.Vector3();
+    
+    let distance = 0;
+    for(let i = 0; i < objCount; i++){
+      obj = objects[i];
+
+      if(!obj.isUseable()){ continue; }
+
+      const isDoor = BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor);
+      if(isDoor){
+        if((obj as ModuleDoor).isOpen()){ continue; };
+      }
+
+      targetPosition.copy(obj.position);
+      if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        targetPosition.z += losZ;
+      }else{
+        targetPosition.z += 0.1;
+      }
+
+      distance = targetPosition.distanceTo(playerPosition);
+      if(distance > GameState.maxSelectableDistance){
+        continue;
+      }
+
+      // dir.copy(targetPosition);
+      // dir.sub(playerPosition);
+      // // dir.negate();
+      // dir.normalize();
+
+      // if(obj.model){
+      //   GameState.raycaster.set(playerPosition, dir);
+
+      //   //Check that we can see the object
+      //   let los = GameState.raycaster.intersectObjects([...GameState.group.room_walkmeshes.children, obj.model], true);
+
+      //   //If the object a door ignore it's walkmesh
+      //   if(isDoor && los.length){
+      //     los = los.filter( (intersect) => {
+      //       intersect.object.uuid != obj.collisionManager.walkmesh.mesh.uuid
+      //     });
+      //   }
+
+      //   const intersect = los[0];
+      //   if(intersect && Array.isArray(obj.model.userData.uuids) && obj.model.userData.uuids.indexOf(intersect.object.uuid) == -1){
+      //     continue;
+      //   }
+      // }
+      
+      selectableObjects.push(obj);
+    }
+
+    this.SetPlayerVisibleObjects(selectableObjects);
+
+    if(player.force > 0){
+      //get closest object to player
+      const closestObject = selectableObjects.sort((a, b) => {
+        return a.position.distanceTo(player.position) - b.position.distanceTo(player.position);
+      })[0];
+      this.#currentVisibleObject = closestObject;
+      this.#currentVisibleObjectIndex = selectableObjects.indexOf(closestObject);
+      GameState.CursorManager.setReticleSelectedObject(closestObject);
+    }
+
+    if(this.playerSelectableObjects.indexOf(GameState.CursorManager.selectedObject) == -1){
+      GameState.CursorManager.selectedObject = undefined;
+      GameState.CursorManager.selected = undefined;
+      this.#currentVisibleObject = undefined;
+      this.#currentVisibleObjectIndex = -1;
+      GameState.CursorManager.setReticleSelectedObject(this.#currentVisibleObject);
+    }
+
+    return selectableObjects;
+  }
+
+  static tUpdateSelectable = 0;
+
+  /**
+   * Updates the cache of selectable objects
+   * @param delta - The delta time
+   */
+  static TickSelectableObjects(delta: number = 0){
+    this.tUpdateSelectable -= delta;
+    if(this.tUpdateSelectable <= 0){
+      //Update the cache of selectable objects
+      GameState.ModuleObjectManager.GetSelectableObjectsInRange(PartyManager.party[0]);
+      this.tUpdateSelectable = UPDATE_SELECTABLE_OBJECTS_INTERVAL;
+    }
   }
 
 }

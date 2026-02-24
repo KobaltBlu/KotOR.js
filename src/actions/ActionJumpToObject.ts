@@ -4,6 +4,7 @@ import { ActionType } from "../enums/actions/ActionType";
 import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
 import { Action } from "./Action";
+import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
 
 /**
  * ActionJumpToObject class.
@@ -35,7 +36,7 @@ export class ActionJumpToObject extends Action {
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       this.owner.setPosition(this.target.position);
-      this.owner.setFacing(this.target.rotation.z, false);
+      this.owner.setFacing(this.target.rotation.z, false, TURN_SPEED_FAST);
       this.owner.collisionManager.groundFace = undefined;
       this.owner.collisionManager.lastGroundFace = undefined;
       //this.getCurrentRoom();

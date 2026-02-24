@@ -957,96 +957,6 @@ export class GameState implements EngineContext {
     return p ? p : GameState.PartyManager.Player;
   }
 
-  static tUpdateSelectable = 0;
-
-  public static getSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
-
-    const objects = [
-      ...GameState.module.area.placeables, 
-      ...GameState.module.area.doors, 
-      ...GameState.module.area.creatures,
-      ...GameState.module.area.triggers.filter((trig) => trig.type == ModuleTriggerType.TRAP)
-    ];
-
-    for(let i = 0; i < GameState.PartyManager.party.length; i++){
-      if(!i){ continue; }
-      objects.push(GameState.PartyManager.party[i]);
-    }
-
-    const selectableObjects: ModuleObject[] = [];
-
-    const objCount = objects.length;
-    let obj: ModuleObject;
-    let dir = new THREE.Vector3();
-    const losZ = 1;
-    const playerPosition = player.position.clone();
-    playerPosition.z += losZ;
-
-    const targetPosition = new THREE.Vector3();
-    
-    let distance = 0;
-    for(let i = 0; i < objCount; i++){
-      obj = objects[i];
-
-      if(!obj.isUseable()){ continue; }
-
-      const isDoor = BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor);
-      if(isDoor){
-        if((obj as ModuleDoor).isOpen()){ continue; };
-      }
-
-      targetPosition.copy(obj.position);
-      if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
-        targetPosition.z += losZ;
-      }else{
-        targetPosition.z += 0.1;
-      }
-
-      distance = targetPosition.distanceTo(playerPosition);
-      if(distance > GameState.maxSelectableDistance){
-        continue;
-      }
-
-      dir.copy(targetPosition);
-      dir.sub(playerPosition);
-      // dir.negate();
-      dir.normalize();
-
-      if(obj.model){
-        GameState.raycaster.set(playerPosition, dir);
-
-        //Check that we can see the object
-        let los = GameState.raycaster.intersectObjects([...GameState.group.room_walkmeshes.children, obj.model], true);
-
-        //If the object a door ignore it's walkmesh
-        if(isDoor && los.length){
-          los = los.filter( (intersect) => {
-            intersect.object.uuid != obj.collisionManager.walkmesh.mesh.uuid
-          });
-        }
-
-        const intersect = los[0];
-        if(intersect && Array.isArray(obj.model.userData.uuids) && obj.model.userData.uuids.indexOf(intersect.object.uuid) == -1){
-          continue;
-        }
-      }
-      
-      selectableObjects.push(obj);
-    }
-
-    if(selectableObjects.indexOf(GameState.CursorManager.selectedObject) == -1){
-      GameState.CursorManager.selectedObject = undefined;
-      GameState.CursorManager.selected = undefined;
-    }
-
-    if(selectableObjects.indexOf(GameState.CursorManager.hoveredObject) == -1){
-      GameState.CursorManager.hoveredObject = undefined;
-      GameState.CursorManager.hovered = undefined;
-    }
-
-    return selectableObjects;
-  }
-
   static ResetModuleAudio(){                        
     GameState.CutsceneManager.audioEmitter = 
     this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
@@ -1084,7 +994,7 @@ export class GameState implements EngineContext {
     await GameState.MenuManager.LoadInGameMenus();
     
     GameState.VideoEffectManager.SetVideoEffect(-1);
-    CursorManager.selectableObjects = [];
+    GameState.ModuleObjectManager.playerSelectableObjects = [];
     GameState.VideoManager.queueMovie(sMovie1);
     GameState.VideoManager.queueMovie(sMovie2);
     GameState.VideoManager.queueMovie(sMovie3);
@@ -1323,12 +1233,7 @@ export class GameState implements EngineContext {
 
       //Get Selectable Objects In Range
       if(GameState.Mode == EngineMode.INGAME){
-        GameState.tUpdateSelectable -= delta || 0;
-        if(GameState.tUpdateSelectable <= 0){
-          //Update the cache of selectable objects
-          CursorManager.selectableObjects = GameState.getSelectableObjectsInRange(PartyManager.party[0]);
-          GameState.tUpdateSelectable = 0.5;
-        }
+        GameState.ModuleObjectManager.TickSelectableObjects(delta);
       }
 
       //Update Mode Camera

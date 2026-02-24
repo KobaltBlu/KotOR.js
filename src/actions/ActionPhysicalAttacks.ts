@@ -11,6 +11,7 @@ import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 import * as THREE from 'three';
+import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
 
 /**
  * ActionPhysicalAttacks class.
@@ -136,7 +137,8 @@ export class ActionPhysicalAttacks extends Action {
                 owner.position.y - target.position.y,
                 owner.position.x - target.position.x
               ) + Math.PI/2,
-              false
+              false,
+              TURN_SPEED_FAST
             );
 
             const attack_sound = THREE.MathUtils.randInt(0, 2);

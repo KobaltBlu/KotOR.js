@@ -18,8 +18,7 @@ import { KeyMapper } from "./KeyMapper";
 import { AnalogInput } from "./AnalogInput";
 import { TGAObject } from "../resource/TGAObject";
 import { GameFileSystem } from "../utility/GameFileSystem";
-
-const PLAYER_TURN_SPEED = Math.PI * 3;
+import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
 
 /**
  * IngameControls class.
@@ -393,7 +392,7 @@ export class IngameControls {
 
       followee.clearAllActions(true);
       followee.force = 1;
-      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI/2), false, PLAYER_TURN_SPEED);
+      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI/2), false, TURN_SPEED_FAST);
       followee.controlled = true;
       GameState.scene_cursor_holder.visible = true;
     });
@@ -409,7 +408,7 @@ export class IngameControls {
       
       followee.clearAllActions(true);
       followee.force = 1;
-      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing - Math.PI/2), false, PLAYER_TURN_SPEED);
+      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing - Math.PI/2), false, TURN_SPEED_FAST);
       followee.controlled = true;
       GameState.scene_cursor_holder.visible = true;
     });
@@ -564,6 +563,22 @@ export class IngameControls {
         GameState.CutsceneManager.endConversation(true);
       }
     })
+
+    KeyMapper.Actions[KeyMapAction.SelectNext].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      const nextObject = GameState.ModuleObjectManager.GetNextPlayerVisibleObject();
+      if(nextObject){
+        GameState.CursorManager.setReticleSelectedObject(nextObject);
+      }
+    });
+
+    KeyMapper.Actions[KeyMapAction.SelectPrev].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      const previousObject = GameState.ModuleObjectManager.GetPreviousPlayerVisibleObject();
+      if(previousObject){
+        GameState.CursorManager.setReticleSelectedObject(previousObject);
+      }
+    });
 
     KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
@@ -852,7 +867,7 @@ export class IngameControls {
             if( this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value ){
               followee.clearAllActions(true);
               followee.force = 1;
-              followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + FollowerCamera.facing + Math.PI/2 ) , false, PLAYER_TURN_SPEED);
+              followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + FollowerCamera.facing + Math.PI/2 ) , false, TURN_SPEED_FAST);
               followee.controlled = true;
               GameState.scene_cursor_holder.visible = false;
               this.gamePadMovement = true;

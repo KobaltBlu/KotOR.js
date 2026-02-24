@@ -76,20 +76,6 @@ export class CursorManager {
 	/** Debug sphere mesh (optional visualization) */
 	static sphere: THREE.Mesh;
 	
-	/** Collection of interactable objects currently considered for ray hits */
-	static selectableObjects: ModuleObject[] = [];
-	
-	/**
-	 * Update the internal selectable object list.
-	 *
-	 * @param objects Array of module objects that can be interacted with
-	 */
-	static updateSelectable( objects: ModuleObject[] = [] ){
-
-
-
-	}
-	
 	/**
 	 * Initializes cursor/reticle materials and sprites, and loads textures.
 	 *
@@ -221,9 +207,9 @@ export class CursorManager {
 		if(CursorManager.hoveredObject == object){
 			CursorManager.hoveredObject = undefined;
 		}
-		const idx = CursorManager.selectableObjects.indexOf(object);
+		const idx = GameState.ModuleObjectManager.playerSelectableObjects.indexOf(object);
 		if(idx >= 0){
-			CursorManager.selectableObjects.splice(idx, 1);
+			GameState.ModuleObjectManager.playerSelectableObjects.splice(idx, 1);
 		}
 	}
 
@@ -451,7 +437,7 @@ export class CursorManager {
 				}else{
 					if(!CursorManager.selectedObject){
 						let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
-						CursorManager.setReticleSelectedObject(closest);
+						// CursorManager.setReticleSelectedObject(closest);
 						CursorManager.setReticleHoveredObject(closest);
 					}
 				}
@@ -511,7 +497,7 @@ export class CursorManager {
 	 */
 	public static onMouseHitInteractive(){
 		
-		const objects = CursorManager.selectableObjects;
+		const objects = GameState.ModuleObjectManager.playerSelectableObjects;
 		const objCount = objects.length;
 		
 		const points: number[] = [];

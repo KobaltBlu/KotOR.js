@@ -10,6 +10,7 @@ import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModuleObject } from "../module/ModuleObject";
 import type { ComputedPath } from "../engine/pathfinding/ComputedPath";
+import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
 
 /**
  * ActionMoveToPoint class.
@@ -92,7 +93,7 @@ export class ActionMoveToPoint extends Action {
         if(pointDistance > (this.computedPath.points.length > 1 ? 0.5 : range)){
           const tangent = point.vector.clone().sub(this.owner.position.clone());
           const atan = Math.atan2(-tangent.y, -tangent.x);
-          this.owner.setFacing(atan + Math.PI/2, false);
+          this.owner.setFacing(atan + Math.PI/2, false, TURN_SPEED_FAST);
           this.owner.forceVector.x = Math.cos(atan);
           this.owner.forceVector.y = Math.sin(atan);
     

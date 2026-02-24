@@ -888,9 +888,6 @@ export class ModuleCreature extends ModuleObject {
 
     this.perceptionTimer = 0;
 
-    //if(!Engine.Flags.CombatEnabled)
-    //  return;
-
     //Check modules creatures
     let creatureLen = GameState.module.area.creatures.length;
     for(let i = 0; i < creatureLen; i++ ){

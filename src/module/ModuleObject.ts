@@ -51,6 +51,8 @@ import { CombatActionType, EngineDebugType, ModuleObjectScript, ModuleTriggerTyp
 import type { SWPortrait } from "../engine/rules/SWPortrait";
 import type { IHeardString } from "../interface/dialog/IHeardString";
 import type { SWRange } from "../engine/rules/SWRange";
+import { TURN_SPEED_SLOW } from "../engine/TurnSpeeds";
+
 
 /**
 * ModuleObject class.
@@ -65,10 +67,7 @@ import type { SWRange } from "../engine/rules/SWRange";
 * @memberof KotOR
 */
 export class ModuleObject {
-  /** Radians per second when turning to face a new direction (non-instant). ~180° in ~0.67s. */
-  static readonly FACING_ANGULAR_SPEED = Math.PI * 1.5;
-  static readonly FACING_ANGULAR_SPEED_SLOW = Math.PI;
-  facingSpeed: number = ModuleObject.FACING_ANGULAR_SPEED;
+  facingSpeed: number = TURN_SPEED_SLOW;
   helperColor: THREE.Color = new THREE.Color(0xFFFFFF);
 
   combatOrder: number;
@@ -1487,7 +1486,7 @@ export class ModuleObject {
    * @param facing 
    * @param instant 
    */
-  setFacing(facing = 0, instant = false, speed = ModuleObject.FACING_ANGULAR_SPEED_SLOW){
+  setFacing(facing = 0, instant = false, speed = TURN_SPEED_SLOW){
     this.wasFacing = Utility.NormalizeRadian(this.rotation.z);
     this.facing = Utility.NormalizeRadian(facing);
     this.facingAnim = !instant;
