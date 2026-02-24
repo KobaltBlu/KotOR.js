@@ -12,6 +12,7 @@ import { EngineState } from "../../../enums/engine/EngineState";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
 import { BitWise } from "../../../utility/BitWise";
 import { KeyMapAction, ModuleObjectType } from "../../../enums";
+import type { ModuleObject } from "../../../module/ModuleObject";
 
 const TLK_TOOLTIP_FULL_HEALTH = 42498;
 
@@ -32,6 +33,15 @@ const TLK_TOOLTIP_FRIENDLY_POWER = 48486;
 const TLK_TOOLTIP_FRIENDLY_ITEM = 48291;
 const TLK_TOOLTIP_FRIENDLY_NON_MEDICAL_ITEM = 48299;
 const TLK_TOOLTIP_FRIENDLY_MINE = 48295;
+
+const preloadTextures = ['enemy_bar', 'hostilearrow', 'friend_bar', 'friendlyarrow'];
+const preloadTexturesMap = new Map<string, OdysseyTexture>();
+
+const ARROW_SCALE = 32;
+const ARROW_SCALE_HALF = ARROW_SCALE / 2;
+const ARROW_DIR_LEFT = 0;
+const ARROW_DIR_DOWN = Math.PI/2;
+const ARROW_DIR_RIGHT = Math.PI;
 
 /**
  * InGameOverlay class.
@@ -155,6 +165,9 @@ export class InGameOverlay extends GameMenu {
   LBL_TARGET2: GUIButton;
   miniMap: LBL_MapView;
 
+  namePlateArrow: THREE.Mesh;
+  namePlateArrowMaterial: THREE.MeshBasicMaterial;
+
   constructor(){
     super();
     this.gui_resref = 'mipc28x6';
@@ -167,7 +180,7 @@ export class InGameOverlay extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>(async (resolve, reject) => {
       this.tGuiPanel.widget.userData.fill.visible = false;
       //this.TB_STEALTH.hideBorder();
       //this.TB_PAUSE.hideBorder();
@@ -435,6 +448,22 @@ export class InGameOverlay extends GameMenu {
         GameState.TLKManager.TLKStrings[TLK_TOOLTIP_MAP].Value
       );
 
+      for(const texture of preloadTextures){
+        const tex = await TextureLoader.Load(texture);
+        preloadTexturesMap.set(texture, tex);
+      }
+
+      const arrowGeometry = new THREE.PlaneGeometry( 1, 1, 1 );
+      const arrowMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, transparent: false, blending: THREE.AdditiveBlending } );
+      arrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
+      this.namePlateArrow = new THREE.Mesh( arrowGeometry, arrowMaterial );
+      this.namePlateArrow.scale.x = 32;
+      this.namePlateArrow.scale.y = 32;
+      this.namePlateArrow.position.z = 5;
+      this.namePlateArrow.renderOrder = 5;
+      this.namePlateArrow.visible = true;
+      this.tGuiPanel.widget.add(this.namePlateArrow);
+
       // this.LBL_COMBATBG2.visible = false;
       resolve();
     });
@@ -593,6 +622,47 @@ export class InGameOverlay extends GameMenu {
     }
   }
 
+  targetScreenPosition: THREE.Vector3 = new THREE.Vector3();
+  reticlePosition: THREE.Vector3 = new THREE.Vector3();
+  reticleScreenPosition: THREE.Vector3 = new THREE.Vector3();
+  updateArrow(selectedObject: ModuleObject) {
+    this.namePlateArrow.visible = !!selectedObject;
+    if(!selectedObject) return;
+    
+    const viewportXMin = -GameState.ResolutionManager.getViewportWidth()/2 + ARROW_SCALE_HALF;
+    const viewportXMax = GameState.ResolutionManager.getViewportWidth()/2 - ARROW_SCALE_HALF;
+    const viewportYMin2 = -GameState.ResolutionManager.getViewportHeight()/2 + ARROW_SCALE_HALF;
+    const viewportYMax2 = GameState.ResolutionManager.getViewportHeight()/2 - ARROW_SCALE_HALF;
+    const viewportYMin = -240/2 + ARROW_SCALE_HALF;
+    const viewportYMax = 240/2 - ARROW_SCALE_HALF;
+    const offLeft = this.reticleScreenPosition.x <= viewportXMin;
+    const offRight = this.reticleScreenPosition.x >= viewportXMax;
+    const offTop = this.reticleScreenPosition.y <= viewportYMin2;
+    const offBottom = this.reticleScreenPosition.y >= viewportYMax2;
+    const offScreen = offLeft || offRight || offTop || offBottom;
+
+    const isOnScreen = GameState.viewportFrustum.containsPoint(this.reticlePosition);
+    if(isOnScreen){
+      this.namePlateArrow.visible = false;
+      return;
+    }
+
+    this.namePlateArrow.position.x = Math.min(Math.max(this.reticleScreenPosition.x, viewportXMin), viewportXMax);
+    this.namePlateArrow.position.y = -Math.min(Math.max(this.reticleScreenPosition.y, viewportYMin), viewportYMax);
+    this.namePlateArrow.position.y += 50;
+    if(offLeft){
+      this.namePlateArrow.rotation.z = ARROW_DIR_LEFT;
+    }else if(offRight){
+      this.namePlateArrow.rotation.z = ARROW_DIR_RIGHT;
+    }else{
+      this.namePlateArrow.rotation.z = ARROW_DIR_DOWN;
+    }
+    this.namePlateArrow.scale.x = 32;
+    this.namePlateArrow.scale.y = 32;
+    this.namePlateArrow.position.z = 5;
+    this.namePlateArrow.renderOrder = 5;
+  }
+
   UpdateTargetUIPanels() {
     if (!this._canShowTargetUI()) {
       GameState.ActionMenuManager.SetTarget(undefined);
@@ -606,27 +676,25 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('BTN_TARGETUP' + i)?.hide();
         this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
       }
+      this.updateArrow(undefined);
       return;
     }
 
     if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
       if (GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar') {
         this.PB_HEALTH.setFillTextureName('enemy_bar');
-        TextureLoader.Load('enemy_bar').then((map: OdysseyTexture) => {
-          this.PB_HEALTH.setFillTexture(map);
-        });
+        this.PB_HEALTH.setFillTexture(preloadTexturesMap.get('enemy_bar'));
+        this.namePlateArrowMaterial.map = preloadTexturesMap.get('hostilearrow');
       } else if (!GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar') {
         this.PB_HEALTH.setFillTextureName('friend_bar');
-        TextureLoader.Load('friend_bar').then((map: OdysseyTexture) => {
-          this.PB_HEALTH.setFillTexture(map);
-        });
+        this.PB_HEALTH.setFillTexture(preloadTexturesMap.get('friend_bar'));
+        this.namePlateArrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
       }
     } else {
       if (this.PB_HEALTH.getFillTextureName() != 'friend_bar') {
         this.PB_HEALTH.setFillTextureName('friend_bar');
-        TextureLoader.Load('friend_bar').then((map: OdysseyTexture) => {
-          this.PB_HEALTH.setFillTexture(map);
-        });
+        this.PB_HEALTH.setFillTexture(preloadTexturesMap.get('friend_bar'));
+        this.namePlateArrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
       }
     }
     if (this.manager.InGameOverlay.LBL_NAME.text.text != GameState.CursorManager.selectedObject.getName()) {
@@ -636,52 +704,55 @@ export class InGameOverlay extends GameMenu {
     if (health > 100)
       health = 100;
     this.PB_HEALTH.setProgress(health);
-    let maxBoundsX = GameState.ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
-    let maxBoundsX2 = GameState.ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
-    let targetScreenPosition = new THREE.Vector3(640 / 2, 480 / 2, 0);
-    let pos = new THREE.Vector3();
+    const maxBoundsX = GameState.ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
+    const maxBoundsX2 = GameState.ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
+    this.targetScreenPosition.set(640 / 2, 480 / 2, 0);
     if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
-      pos.copy(GameState.CursorManager.selectedObject.position);
-      pos.z += 2;
+      this.reticlePosition.copy(GameState.CursorManager.selectedObject.position);
+      this.reticlePosition.z += 2;
     } else {
-      pos = pos.setFromMatrixPosition(GameState.CursorManager.reticle2.matrixWorld);
+      this.reticlePosition.setFromMatrixPosition(GameState.CursorManager.reticle2.matrixWorld);
     }
-    pos.project(GameState.currentCamera);
+    this.reticleScreenPosition.copy(this.reticlePosition);
+    this.reticleScreenPosition.project(GameState.currentCamera);
+
     const widthHalf = GameState.ResolutionManager.getViewportWidth() / 2;
     const heightHalf = GameState.ResolutionManager.getViewportHeight() / 2;
-    pos.x = pos.x * widthHalf;
-    pos.y = -(pos.y * heightHalf);
-    pos.z = 0;
-    targetScreenPosition.add(pos);
-    if (targetScreenPosition.x > maxBoundsX) {
-      targetScreenPosition.x = maxBoundsX;
+    this.reticleScreenPosition.x = this.reticleScreenPosition.x * widthHalf;
+    this.reticleScreenPosition.y = -(this.reticleScreenPosition.y * heightHalf);
+    this.reticleScreenPosition.z = 0;
+    this.updateArrow(GameState.CursorManager.selectedObject);
+    
+    this.targetScreenPosition.add(this.reticleScreenPosition);
+    if (this.targetScreenPosition.x > maxBoundsX) {
+      this.targetScreenPosition.x = maxBoundsX;
     }
-    if (targetScreenPosition.x < -maxBoundsX2) {
-      targetScreenPosition.x = -maxBoundsX2;
+    if (this.targetScreenPosition.x < -maxBoundsX2) {
+      this.targetScreenPosition.x = -maxBoundsX2;
     }
-    if (targetScreenPosition.y > 640 / 2) {
-      targetScreenPosition.y = 640 / 2;
+    if (this.targetScreenPosition.y > 640 / 2) {
+      this.targetScreenPosition.y = 640 / 2;
     }
-    if (targetScreenPosition.y < 100) {
-      targetScreenPosition.y = 100;
+    if (this.targetScreenPosition.y < 100) {
+      this.targetScreenPosition.y = 100;
     }
     this.LBL_NAME.scale = this.LBL_NAMEBG.scale = this.PB_HEALTH.scale = this.LBL_HEALTHBG.scale = false;
     this.LBL_NAME?.show();
     this.LBL_NAMEBG?.show();
     this.PB_HEALTH?.show();
     this.LBL_HEALTHBG?.show();
-    this.LBL_NAME.extent.left = targetScreenPosition.x - 20;
+    this.LBL_NAME.extent.left = this.targetScreenPosition.x - 20;
     this.LBL_NAME.anchor = Anchor.User;
-    this.LBL_NAMEBG.extent.left = targetScreenPosition.x - 20;
+    this.LBL_NAMEBG.extent.left = this.targetScreenPosition.x - 20;
     this.LBL_NAMEBG.anchor = Anchor.User;
-    this.PB_HEALTH.extent.left = targetScreenPosition.x - 20;
+    this.PB_HEALTH.extent.left = this.targetScreenPosition.x - 20;
     this.PB_HEALTH.anchor = Anchor.User;
-    this.LBL_HEALTHBG.extent.left = targetScreenPosition.x - 20;
+    this.LBL_HEALTHBG.extent.left = this.targetScreenPosition.x - 20;
     this.LBL_HEALTHBG.anchor = Anchor.User;
-    this.LBL_NAME.extent.top = targetScreenPosition.y - 38;
-    this.LBL_NAMEBG.extent.top = targetScreenPosition.y - 38;
-    this.PB_HEALTH.extent.top = targetScreenPosition.y - 12;
-    this.LBL_HEALTHBG.extent.top = targetScreenPosition.y - 12;
+    this.LBL_NAME.extent.top = this.targetScreenPosition.y - 38;
+    this.LBL_NAMEBG.extent.top = this.targetScreenPosition.y - 38;
+    this.PB_HEALTH.extent.top = this.targetScreenPosition.y - 12;
+    this.LBL_HEALTHBG.extent.top = this.targetScreenPosition.y - 12;
     this.LBL_NAME.recalculate();
     this.LBL_NAMEBG.recalculate();
     this.PB_HEALTH.recalculate();
@@ -690,20 +761,20 @@ export class InGameOverlay extends GameMenu {
       for (let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++) {
         let xPos = (this.getControlByName('BTN_TARGET' + i).extent.width + 5) * i + 20;
         this.getControlByName('BTN_TARGET' + i).scale = false;
-        this.getControlByName('BTN_TARGET' + i).extent.left = targetScreenPosition.x + xPos;
-        this.getControlByName('BTN_TARGET' + i).extent.top = targetScreenPosition.y;
+        this.getControlByName('BTN_TARGET' + i).extent.left = this.targetScreenPosition.x + xPos;
+        this.getControlByName('BTN_TARGET' + i).extent.top = this.targetScreenPosition.y;
         this.getControlByName('BTN_TARGET' + i).anchor = Anchor.User;
         this.getControlByName('LBL_TARGET' + i).scale = false;
-        this.getControlByName('LBL_TARGET' + i).extent.left = targetScreenPosition.x + xPos + 3;
-        this.getControlByName('LBL_TARGET' + i).extent.top = targetScreenPosition.y + 14;
+        this.getControlByName('LBL_TARGET' + i).extent.left = this.targetScreenPosition.x + xPos + 3;
+        this.getControlByName('LBL_TARGET' + i).extent.top = this.targetScreenPosition.y + 14;
         this.getControlByName('LBL_TARGET' + i).anchor = Anchor.User;
         this.getControlByName('BTN_TARGETUP' + i).scale = false;
-        this.getControlByName('BTN_TARGETUP' + i).extent.left = targetScreenPosition.x + xPos;
-        this.getControlByName('BTN_TARGETUP' + i).extent.top = targetScreenPosition.y + 5;
+        this.getControlByName('BTN_TARGETUP' + i).extent.left = this.targetScreenPosition.x + xPos;
+        this.getControlByName('BTN_TARGETUP' + i).extent.top = this.targetScreenPosition.y + 5;
         this.getControlByName('BTN_TARGETUP' + i).anchor = Anchor.User;
         this.getControlByName('BTN_TARGETDOWN' + i).scale = false;
-        this.getControlByName('BTN_TARGETDOWN' + i).extent.left = targetScreenPosition.x + xPos;
-        this.getControlByName('BTN_TARGETDOWN' + i).extent.top = targetScreenPosition.y + (this.getControlByName('BTN_TARGET' + i).extent.height / 2 + 12);
+        this.getControlByName('BTN_TARGETDOWN' + i).extent.left = this.targetScreenPosition.x + xPos;
+        this.getControlByName('BTN_TARGETDOWN' + i).extent.top = this.targetScreenPosition.y + (this.getControlByName('BTN_TARGET' + i).extent.height / 2 + 12);
         this.getControlByName('BTN_TARGETDOWN' + i).widget.rotation.z = Math.PI;
         this.getControlByName('BTN_TARGETDOWN' + i).anchor = Anchor.User;
         this.UpdateTargetUIIcon(i);
