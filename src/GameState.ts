@@ -120,6 +120,8 @@ export class GameState implements EngineContext {
   static lastGameplayThumbCtx?: OffscreenCanvasRenderingContext2D;
   static lastGameplayThumbRT?: THREE.WebGLRenderTarget;
 
+  static FollowerCamera: typeof FollowerCamera = FollowerCamera;
+
 
   static SWRuleSet: typeof SWRuleSet;
 

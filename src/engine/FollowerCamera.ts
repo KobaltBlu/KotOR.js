@@ -2,11 +2,15 @@ import * as THREE from "three";
 import { GameState } from "../GameState";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { Utility } from "../utility/Utility";
-import type { ModuleArea, ModuleMGPlayer } from "../module";
+import type { ModuleArea, ModuleMGPlayer, ModuleObject } from "../module";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ResolutionManager } from "../managers/ResolutionManager";
+
+const HALF_PI = Math.PI / 2;
+const EASE_THRESHOLD = Math.PI/2;
+const FOCUS_DEAD_ZONE = 0.16;
 
 /**
  * FollowerCamera class.
@@ -18,6 +22,8 @@ import { ResolutionManager } from "../managers/ResolutionManager";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class FollowerCamera {
+
+  static DEBUG_OFFSET = 0;
 
   static DEFAULT_FOV = 55;
 
@@ -37,11 +43,14 @@ export class FollowerCamera {
   static fov: number = 55;
 
   static speed: number = 0;
-  static maxSpeed: number = 2.5;
+  static maxSpeed: number = 3;
   static minSpeed: number = 0;
-  static rampSpeed: number = 10;
+  static rampSpeed: number = 20;
 
   static cameraStyle: any = {};
+
+  static focusObject: ModuleObject | undefined = undefined;
+  static focusTurnSpeed: number = 6.0;
 
   static raycaster: THREE.Raycaster = new THREE.Raycaster();
 
@@ -81,24 +90,48 @@ export class FollowerCamera {
     let followee = GameState.getCurrentPlayer();
     if(!followee) return;
 
+    if(FollowerCamera.focusObject){
+      if(FollowerCamera.focusObject.destroyed || FollowerCamera.focusObject.willDestroy){
+        FollowerCamera.focusObject = undefined;
+      }else{
+        const dx = FollowerCamera.focusObject.position.x - followee.position.x;
+        const dy = FollowerCamera.focusObject.position.y - followee.position.y;
+        const targetFacing = Utility.NormalizeRadian(Math.atan2(dy, dx) + Math.PI);
+        let angleDiff = targetFacing - FollowerCamera.facing;
+        angleDiff = ((angleDiff + Math.PI) % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI) - Math.PI;
+        const absDiff = Math.abs(angleDiff);
+        if(absDiff > FOCUS_DEAD_ZONE){
+          const easeFactor = Math.min(1, absDiff / EASE_THRESHOLD);
+          const speed = FollowerCamera.focusTurnSpeed * easeFactor;
+          const step = speed * delta;
+          if(absDiff > step){
+            FollowerCamera.facing = Utility.NormalizeRadian(FollowerCamera.facing + Math.sign(angleDiff) * step);
+          }
+        }
+      }
+    }
+
+    const appearance = followee.creatureAppearance;
+    const followeeHeight = appearance.height + FollowerCamera.DEBUG_OFFSET;
+
     let offsetHeight = 0;
 
     if(GameState.Mode == EngineMode.MINIGAME){
       offsetHeight = 1;
     }else{
-      if( followee.getAppearance().cameraheightoffset >= 0 ){
+      if(followee.getAppearance().cameraheightoffset > 0 || followee.getAppearance().cameraheightoffset < 0){
         offsetHeight = followee.getAppearance().cameraheightoffset;
       }
     }
     
-    let camHeight = (1.35 + FollowerCamera.height)-offsetHeight;
+    const camHeight = (followeeHeight + FollowerCamera.height) - offsetHeight;
     let distance = FollowerCamera.maxDistance * GameState.CameraDebugZoom;
 
     FollowerCamera.raycaster.far = 10;
     FollowerCamera.raycaster.ray.direction.set(Math.cos(FollowerCamera.facing), Math.sin(FollowerCamera.facing), 0).normalize();
     FollowerCamera.raycaster.ray.origin.set(followee.position.x, followee.position.y, followee.position.z + camHeight);
 
-    let aabbFaces = [];
+    const aabbFaces = [];
     let intersects;
 
     FollowerCamera.box.min.copy(FollowerCamera.raycaster.ray.origin);
@@ -176,10 +209,18 @@ export class FollowerCamera {
       FollowerCamera.distance = distance;
     
       FollowerCamera.camera.rotation.order = 'YZX';
-      FollowerCamera.camera.rotation.set(FollowerCamera.pitch, 0, FollowerCamera.facing+Math.PI/2);
+      FollowerCamera.camera.rotation.set(FollowerCamera.pitch, 0, FollowerCamera.facing + HALF_PI);
     }
     
     FollowerCamera.camera.updateProjectionMatrix();
+  }
+
+  static setFocusObject(object: ModuleObject | undefined){
+    FollowerCamera.focusObject = object;
+  }
+
+  static clearFocusObject(){
+    FollowerCamera.focusObject = undefined;
   }
 
   static resize(){

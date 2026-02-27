@@ -395,6 +395,7 @@ export class IngameControls {
       followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI/2), false, TURN_SPEED_FAST);
       followee.controlled = true;
       GameState.scene_cursor_holder.visible = true;
+      FollowerCamera.clearFocusObject();
     });
 
     //S
@@ -411,6 +412,7 @@ export class IngameControls {
       followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing - Math.PI/2), false, TURN_SPEED_FAST);
       followee.controlled = true;
       GameState.scene_cursor_holder.visible = true;
+      FollowerCamera.clearFocusObject();
     });
 
     //Z
@@ -439,6 +441,7 @@ export class IngameControls {
         (keymap.keyboardInput.down || 
         (keymap.gamepadInput as AnalogInput).value < 0)
       ){
+        FollowerCamera.clearFocusObject();
         FollowerCamera.turning = true;
         if(this.gamePad.stick_r_x.value){
           GameState.scene_cursor_holder.visible = false;
@@ -458,6 +461,7 @@ export class IngameControls {
         (keymap.keyboardInput.down || 
         (keymap.gamepadInput as AnalogInput).value > 0)
       ){
+        FollowerCamera.clearFocusObject();
         FollowerCamera.turning = true;
         if(this.gamePad.stick_r_x.value){
           GameState.scene_cursor_holder.visible = false;
@@ -569,6 +573,7 @@ export class IngameControls {
       const nextObject = GameState.ModuleObjectManager.GetNextPlayerVisibleObject();
       if(nextObject){
         GameState.CursorManager.setReticleSelectedObject(nextObject);
+        FollowerCamera.setFocusObject(nextObject);
       }
     });
 
@@ -577,6 +582,7 @@ export class IngameControls {
       const previousObject = GameState.ModuleObjectManager.GetPreviousPlayerVisibleObject();
       if(previousObject){
         GameState.CursorManager.setReticleSelectedObject(previousObject);
+        FollowerCamera.setFocusObject(previousObject);
       }
     });
 
