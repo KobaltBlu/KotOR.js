@@ -1,18 +1,66 @@
+# Dependencies
 node_modules/
-release/
-settings.json
-crash.log
-npm-debug.log
-*.gypi
-backup/
+package-lock.json
 
+# Build outputs
+dist/
+release/
+build/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+crash.log
+debug.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output
+
+# Documentation
+docs/
+wiki/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
 .ds_store
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Project specific
+settings.json
 projects/
 Saves/
 tests/
-# src/**/*.js
-dist/
-debug.log
-docs/
-coverage/
+backup/
 scratch/
+*.gypi
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.history/

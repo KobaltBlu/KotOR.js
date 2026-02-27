@@ -12,7 +12,7 @@
     "listFiles": false,
     "newLine": "LF",
     "noEmitOnError": true,
-    "strictNullChecks": false,
+    "strictNullChecks": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "jsx": "react",

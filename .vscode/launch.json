@@ -6,7 +6,7 @@
       "request": "launch",
       "name": "KotOR Launcher",
       "url": "http://localhost:8080/launcher/index.html",
-      "webRoot": "${workspaceFolder}/dist",
+      "webRoot": "${workspaceFolder}/dist"
     },
     {
       "type": "chrome",
@@ -21,6 +21,12 @@
       "name": "TSL",
       "url": "http://localhost:8080/game/index.html?key=tsl",
       "webRoot": "${workspaceFolder}/dist"
+    },
+    {
+      "type": "chrome",
+      "name": "http://127.0.0.1:3000/dist/launcher/index.html",
+      "request": "launch",
+      "url": "http://127.0.0.1:3000/dist/launcher/index.html"
     }
   ]
 }
