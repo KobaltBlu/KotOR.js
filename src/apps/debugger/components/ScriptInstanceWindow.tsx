@@ -3,6 +3,7 @@ import { useApp } from "../context/AppContext";
 import * as KotOR from "../KotOR";
 import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "../../../nwscript/NWScriptOPCodes";
 import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
+import { IPCMessageTypeDebug } from "../../../enums/server/ipc/IPCMessageTypeDebug";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {} from "@fortawesome/free-solid-svg-icons";
 
@@ -17,7 +18,7 @@ const InstructionType = (props: {type: number}) => {
     switch(props.type){
       case 0x00:
         setTypeName('VOID');
-        break;  
+        break;
       case 0x03:
         setTypeName('INTEGER');
         break;
@@ -67,7 +68,7 @@ const InstructionValue = (props: {instruction: KotOR.NWScriptInstruction}) => {
       case 0x00:
         setVal('');
         setType('void');
-        break;  
+        break;
       case 0x03:
         setVal(instruction.integer?.toString() || '');
         setType('integer');
@@ -176,22 +177,22 @@ const InstructionNode = (props: {instance: KotOR.NWScriptInstance, instruction: 
       </>) : <></>}
       {instruction.type != undefined ? (<>
         {(
-        instruction.code == OP_CONST || 
+        instruction.code == OP_CONST ||
         instruction.code == OP_RSADD
       ) ? <InstructionType type={instruction.type} /> : <></>}&nbsp;
         {!instruction.action ? <InstructionValue instruction={instruction} /> : <></>}
       </>) : <></>}
       {/* Display the offset if the instruction is a jump */}
       {(
-        instruction.code == OP_JSR || 
-        instruction.code == OP_JMP || 
-        instruction.code == OP_JNZ || 
+        instruction.code == OP_JSR ||
+        instruction.code == OP_JMP ||
+        instruction.code == OP_JNZ ||
         instruction.code == OP_JZ
       ) ? <InstructionOffset instance={instance} instruction={instruction} /> : <></>}
       {(
-        instruction.code == OP_CPDOWNBP || 
-        instruction.code == OP_CPDOWNSP || 
-        instruction.code == OP_CPTOPBP || 
+        instruction.code == OP_CPDOWNBP ||
+        instruction.code == OP_CPDOWNSP ||
+        instruction.code == OP_CPTOPBP ||
         instruction.code == OP_CPTOPSP ||
         instruction.code == OP_MOVSP
       ) ? <InstructionPointer pointer={instruction.offset} /> : <></>}
@@ -210,7 +211,7 @@ export const ScriptInstanceWindow = () => {
   const [render, rerender] = useState<boolean>(false);
 
   useEffect(() => {
-    console.log("Instance changed", instance?.uuid);  
+    console.log("Instance changed", instance?.uuid);
     rerender(!render);
   }, [breakpointMap]);
 
@@ -258,31 +259,33 @@ export const ScriptInstanceWindow = () => {
   }
 
   const btnStepIn = () => {
-    console.log("todo: Step In");
+    const message = new KotOR.GameState.Debugger.IPCMessage(IPCMessageType.Debug, IPCMessageTypeDebug.ScriptStepIntoInstruction);
+    sendMessageHelper(message.toBuffer());
   }
 
   const btnStepOut = () => {
-    console.log("todo: Step Out");
+    const message = new KotOR.GameState.Debugger.IPCMessage(IPCMessageType.Debug, IPCMessageTypeDebug.ScriptStepOutInstruction);
+    sendMessageHelper(message.toBuffer());
   }
 
   const btnClearBreakpoints = () => {
-    console.log("todo: Clear Breakpoints");
+    if (!instance) return;
+
+    // Send IPC messages to remove all breakpoints
+    for (const address of instance.breakPoints.keys()) {
+      const message = new KotOR.GameState.Debugger.IPCMessage(IPCMessageType.RemoveScriptBreakpoint);
+      message.addParam(new KotOR.GameState.Debugger.IPCMessageParam(instance.uuid));
+      message.addParam(new KotOR.GameState.Debugger.IPCMessageParam(address));
+      sendMessageHelper(message.toBuffer());
+    }
+
+    // Clear breakpoints from instance
+    instance.breakPoints.clear();
+
+    // Update local state to trigger re-render
+    setBreakpointMap(new Map());
   }
 
-  // const unusedButtons = (
-  //   <button className="btn btn-primary debugger-button" onClick={btnStepIn} title="Step Into Instruction">
-  //     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
-  //       {/* <!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--> */}
-  //       <path d="M2 334.5c-3.8 8.8-2 19 4.6 26l136 144c4.5 4.8 10.8 7.5 17.4 7.5s12.9-2.7 17.4-7.5l136-144c6.6-7 8.4-17.2 4.6-26s-12.5-14.5-22-14.5l-72 0 0-288c0-17.7-14.3-32-32-32L128 0C110.3 0 96 14.3 96 32l0 288-72 0c-9.6 0-18.2 5.7-22 14.5z"/>
-  //     </svg>
-  //   </button>
-  //   <button className="btn btn-primary debugger-button" onClick={btnStepOut} title="Step Out of Instruction">
-  //     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
-  //       {/* <!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--> */}
-  //       <path d="M318 177.5c3.8-8.8 2-19-4.6-26l-136-144C172.9 2.7 166.6 0 160 0s-12.9 2.7-17.4 7.5l-136 144c-6.6 7-8.4 17.2-4.6 26S14.4 192 24 192l72 0 0 288c0 17.7 14.3 32 32 32l64 0c17.7 0 32-14.3 32-32l0-288 72 0c9.6 0 18.2-5.7 22-14.5z"/>
-  //     </svg>
-  //   </button>
-  // );
 
   return (
     <div className="script-debugger-instance">
@@ -310,6 +313,18 @@ export const ScriptInstanceWindow = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
                   {/* <!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--> */}
                   <path d="M386.3 160L336 160c-17.7 0-32 14.3-32 32s14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-128c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 51.2L414.4 97.6c-87.5-87.5-229.3-87.5-316.8 0s-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3s163.8-62.5 226.3 0L386.3 160z"/>
+                </svg>
+              </button>
+              <button className="btn btn-primary debugger-button" onClick={btnStepIn} title="Step Into Instruction">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
+                  {/* <!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--> */}
+                  <path d="M2 334.5c-3.8 8.8-2 19 4.6 26l136 144c4.5 4.8 10.8 7.5 17.4 7.5s12.9-2.7 17.4-7.5l136-144c6.6-7 8.4-17.2 4.6-26s-12.5-14.5-22-14.5l-72 0 0-288c0-17.7-14.3-32-32-32L128 0C110.3 0 96 14.3 96 32l0 288-72 0c-9.6 0-18.2 5.7-22 14.5z"/>
+                </svg>
+              </button>
+              <button className="btn btn-primary debugger-button" onClick={btnStepOut} title="Step Out of Instruction">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512">
+                  {/* <!--!Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--> */}
+                  <path d="M318 177.5c3.8-8.8 2-19-4.6-26l-136-144C172.9 2.7 166.6 0 160 0s-12.9 2.7-17.4 7.5l-136 144c-6.6 7-8.4 17.2-4.6 26S14.4 192 24 192l72 0 0 288c0 17.7 14.3 32 32 32l64 0c17.7 0 32-14.3 32-32l0-288 72 0c9.6 0 18.2-5.7 22-14.5z"/>
                 </svg>
               </button>
               <button className="btn btn-primary debugger-button" onClick={btnClearBreakpoints} title="Clear Breakpoints">
