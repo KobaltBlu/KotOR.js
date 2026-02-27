@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
 import { ApplicationProfile } from "../../../utility/ApplicationProfile";
 import { ConfigClient } from "../../../utility/ConfigClient";
+import { RuntimeConfig } from "../../../utility/RuntimeConfig";
 import { useApp } from "../context/AppContext";
 
 export interface ProfileLaunchButtonsProps {
@@ -80,7 +81,9 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
         clean_profile.key = clean_game_profile.key;
         window.electron.launchProfile(clean_profile);
       }else{
-        window.open(`/${clean_profile.launch.path}?key=${clean_game_profile.key}`);
+        const url = new URL(RuntimeConfig.toPublicUrl(`/${clean_profile.launch.path}`), window.location.origin);
+        url.searchParams.set('key', String(clean_game_profile.key));
+        window.open(url.toString());
       }
     }else{
       if(hasExecutableSupport && selectValue == 'executable'){
@@ -89,7 +92,9 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
         if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
           window.electron.launchProfile(clean_profile);
         }else{
-          window.open(`/${clean_profile.launch.path}?key=${clean_profile.key}`);
+          const url = new URL(RuntimeConfig.toPublicUrl(`/${clean_profile.launch.path}`), window.location.origin);
+          url.searchParams.set('key', String(clean_profile.key));
+          window.open(url.toString());
         }
       }
     }
@@ -129,7 +134,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
         <div className="launch-btns">
           <a href="#" className="btn-launch" key="launch-btn-launch" onClick={onLaunchClick}>{launchLabel}</a>
         </div>
-      </>  
+      </>
     );
   }
 };

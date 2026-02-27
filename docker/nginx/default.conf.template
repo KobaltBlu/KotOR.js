@@ -1,0 +1,83 @@
+server {
+  listen       ${NGINX_LISTEN_PORT};
+  server_name  _;
+
+  root   /usr/share/nginx/html;
+  index  index.html;
+
+  # Optional runtime snippets (e.g. base-path rewrites) written by entrypoint scripts.
+  include /etc/nginx/conf.d/snippets/*.conf;
+
+  # Basic health endpoint for container orchestrators.
+  location = /healthz {
+    access_log off;
+    add_header Content-Type text/plain;
+    return 200 "ok\n";
+  }
+
+  # Security headers (safe defaults for a static app).
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header Referrer-Policy "no-referrer" always;
+  add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+  # Disable caching for runtime-config so it can be changed at deploy time.
+  location = /runtime-config.js {
+    add_header Cache-Control "no-store" always;
+    try_files $uri =404;
+  }
+
+  # Default entrypoint.
+  location = / {
+    return 302 /launcher/;
+  }
+
+  location = /launcher {
+    return 301 /launcher/;
+  }
+  location = /game {
+    return 301 /game/;
+  }
+  location = /forge {
+    return 301 /forge/;
+  }
+  location = /debugger {
+    return 301 /debugger/;
+  }
+
+  # Static asset caching.
+  location ~* \.(?:js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|otf)$ {
+    expires 7d;
+    add_header Cache-Control "public, max-age=604800, immutable" always;
+    try_files $uri =404;
+  }
+
+  # Forge Monaco assets: served from /monaco in dist but loaded under /forge/monaco/.
+  location ^~ /forge/monaco/ {
+    alias /usr/share/nginx/html/monaco/;
+    expires 7d;
+    add_header Cache-Control "public, max-age=604800, immutable" always;
+    try_files $uri =404;
+  }
+
+  # App routes (SPA fallback per app).
+  location ^~ /launcher/ {
+    try_files $uri $uri/ /launcher/index.html;
+  }
+  location ^~ /game/ {
+    try_files $uri $uri/ /game/index.html;
+  }
+  location ^~ /forge/ {
+    try_files $uri $uri/ /forge/index.html;
+  }
+  location ^~ /debugger/ {
+    try_files $uri $uri/ /debugger/index.html;
+  }
+
+  # Everything else must exist as a file.
+  location / {
+    try_files $uri $uri/ =404;
+  }
+}
+
+
