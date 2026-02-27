@@ -409,6 +409,10 @@ export class ModuleCreature extends ModuleObject {
     
     super.update(delta);
 
+    if(this.willDestroy || this.destroyed){
+      return;
+    }
+
     if(this.audioEmitter){
       this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z + 1.0);
       this.footstepEmitter.setPosition(this.position.x, this.position.y, this.position.z);
@@ -819,7 +823,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateActionQueue(delta = 0){
-    if(this.isDebilitated())
+    if(this.isDebilitated() && this.area.module.readyToProcessEvents)
       return;
 
     if(!GameState.module.readyToProcessEvents)
@@ -4046,11 +4050,25 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  updateDestroyFade(delta: number = 0): void {
+    super.updateDestroyFade(delta);
+    if(this.noFadeOnDestroy || this.destroyed) return;
+    if(this.timeSinceDestroyStarted >= this.delayUntilFade){
+      const fadeElapsed = this.timeSinceDestroyStarted - this.delayUntilFade;
+      const opacity = Math.max(0, 1 - (fadeElapsed / ModuleObject.FADE_TIME));
+      Object.values(this.equipment).forEach(item => {
+        if(item && item.model instanceof OdysseyModel3D){
+          item.model.setOpacity(opacity);
+        }
+      });
+    }
+  }
+
   destroy(): void {
     super.destroy();
     if(this.head instanceof OdysseyModel3D){
       if(this.head.parent instanceof THREE.Object3D){
-        this.head.parent.remove(this.model);
+        this.head.removeFromParent();
       }
       this.head.dispose();
       this.head = undefined;

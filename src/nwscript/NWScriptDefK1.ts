@@ -3021,8 +3021,15 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))
-        args[0].destroy();
+      console.log("DestroyObject", args[0], args[1], args[2], args[3]);
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        args[0].setWillDestroy(true);
+        args[0].setDelayUntilDestroy(args[1]);
+        args[0].setDelayUntilFade(args[3]);
+        args[0].setNoFadeOnDestroy(args[2] ? true : false);
+        return;
+      }
+      args[0].destroy();
     }
   },
   242:{
@@ -7685,6 +7692,8 @@ NWScriptDefK1.Actions = {
         partyMember.box = new THREE.Box3().setFromObject(partyMember.container);
         model.hasCollision = true;
         GameState.group.creatures.add( partyMember.container );
+        partyMember.getCurrentRoom();
+        partyMember.onSpawn();
       });
       return partyMember;
     }

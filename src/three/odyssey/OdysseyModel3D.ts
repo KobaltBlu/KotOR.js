@@ -146,6 +146,21 @@ export class OdysseyModel3D extends OdysseyObject3D {
   animLoops: OdysseyModelAnimation[] = [];
   hasCollision: boolean;
   animLoop: any;
+  opacity: number = 1;
+
+  setOpacity(opacity: number){
+    this.opacity = opacity;
+    if(!this.materials.length) return;
+    for(let i = 0; i < this.materials.length; i++){
+      this.materials[i].opacity = opacity;
+      this.materials[i].needsUpdate = true;
+      this.materials[i].transparent = opacity < 1;
+      if(this.materials[i] instanceof THREE.ShaderMaterial){
+        (this.materials[i] as THREE.ShaderMaterial).uniforms.opacity.value = opacity;
+        (this.materials[i] as THREE.ShaderMaterial).uniformsNeedUpdate = true;
+      }
+    }
+  }
 
   attachHead(head: OdysseyModel3D){
 
@@ -191,6 +206,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
       //fix skins
       this.buildSkeleton();
+
+      for(let i = 0; i < head.materials.length; i++){
+        this.materials.push(head.materials[i]);
+      }
     }
 
   }

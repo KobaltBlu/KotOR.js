@@ -263,8 +263,6 @@ export class ModuleObject {
 
   notBlastable: boolean = false;
 
-  fadeOnDestory: boolean = false;
-  fadeOutTimer: number = 3000;
   linkedToObject: ModuleObject;
 
   constructor (gff = new GFFObject) {
@@ -468,6 +466,14 @@ export class ModuleObject {
    * @param delta 
    */
   update(delta = 0){
+
+    this.updateDestroy(delta);
+    if(this.willDestroy || this.destroyed){
+      if(this.actionQueue && this.actionQueue.length > 0){
+        this.actionQueue.clear();
+      }
+      return;
+    }
     
     //Process the heartbeat timer
     if(this._heartbeatTimeout <= 0){
@@ -498,6 +504,26 @@ export class ModuleObject {
     this.sphere.center.copy(this.position);
     this.sphere.radius = this.getHitDistance() * 2;
 
+  }
+
+  updateDestroy(delta: number = 0){
+    if(this.willDestroy && !this.destroyed){
+      this.timeSinceDestroyStarted += delta;
+      this.updateDestroyFade(delta);
+      const fadeEndTime = this.noFadeOnDestroy ? 0 : (this.delayUntilFade + ModuleObject.FADE_TIME);
+      const destroyTime = Math.max(this.delayUntilDestroy, fadeEndTime);
+      if(this.timeSinceDestroyStarted >= destroyTime){
+        this.destroy();
+      }
+    }
+  }
+
+  updateDestroyFade(delta: number = 0){
+    if(this.noFadeOnDestroy || this.destroyed) return;
+    if(this.timeSinceDestroyStarted >= this.delayUntilFade){
+      const fadeElapsed = this.timeSinceDestroyStarted - this.delayUntilFade;
+      this.setOpacity(Math.max(0, 1 - (fadeElapsed / ModuleObject.FADE_TIME)));
+    }
   }
 
   /**
@@ -3632,10 +3658,75 @@ export class ModuleObject {
     return actionList;
   }
 
+  setOpacity(opacity: number){
+    if(this.model instanceof OdysseyModel3D){
+      this.model.setOpacity(opacity);
+    }
+  }
+
+  /**
+   * Destroyed
+   */
+  destroyed: boolean = false;
+
+  /**
+   * Will destroy
+   */
+  willDestroy: boolean = false;
+
+  /**
+   * Time since destroy started in seconds
+   */
+  timeSinceDestroyStarted: number = 0;
+
+  /**
+   * Delay until destroy in seconds
+   */
+  delayUntilDestroy: number = 0;
+
+  /**
+   * Delay until fade in seconds
+   */
+  delayUntilFade: number = 0;
+
+  /**
+   * No fade on destroy
+   */
+  noFadeOnDestroy: boolean = false;
+
+  static FADE_TIME: number = 10.0;
+
+  setWillDestroy(willDestroy: boolean){
+    this.willDestroy = willDestroy;
+    this.timeSinceDestroyStarted = 0;
+  }
+
+  setDelayUntilDestroy(delay: number = ModuleObject.FADE_TIME){
+    this.delayUntilDestroy = delay;
+    this.timeSinceDestroyStarted = 0;
+  }
+
+  setDelayUntilFade(delay: number){
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+      this.delayUntilFade = delay;
+      return;
+    }
+    this.delayUntilFade = 0;
+  }
+
+  setNoFadeOnDestroy(noFade: boolean){
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+      this.noFadeOnDestroy = noFade;
+      return;
+    }
+    this.noFadeOnDestroy = false;
+  }
+
   /**
    * Destroy the object
    */
   destroy(){
+    this.destroyed = true;
     try{ console.log('destroy', this.getTag(), this);}catch(e: any){}
     try{
       this.container.removeFromParent();
