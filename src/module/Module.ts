@@ -436,11 +436,11 @@ export class Module {
       
       GameState.ModuleObjectManager.ResetPlayerId();
 
-      if(this.area.sun.fogOn && this.area.sun.fogColor){
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.sun.fogColor.toString(16)));
-      }else{
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.dynamicAmbientColor.toString(16)));
-      }
+      GameState.globalLight.color.setRGB(
+        (this.area.dynamicAmbientColor & 0xFF) / 255,
+        (this.area.dynamicAmbientColor >> 8 & 0xFF) / 255,
+        (this.area.dynamicAmbientColor >> 16 & 0xFF) / 255
+      );
       
       GameState.globalLight.color.setRGB(
         THREE.MathUtils.clamp(GameState.globalLight.color.r, 0.2, 1),
