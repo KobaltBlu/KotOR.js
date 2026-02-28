@@ -102,7 +102,7 @@ export class EffectSetState extends GameEffect {
     this.elapsed += delta;
   }
 
-  updateForcePush(delta: number = 0) {
+  updateForcePush(_delta: number = 0) {
     if (!this.object)
       return;
     const v1 = new THREE.Vector3(

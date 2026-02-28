@@ -263,7 +263,7 @@ export class ModuleObjectManager {
           const distanceA = a.getModel().position.distanceTo(oObject.getModel().position);
           const distanceB = b.getModel().position.distanceTo(oObject.getModel().position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
+        }catch(_e){
           return 0;
         }
       }
@@ -291,7 +291,7 @@ export class ModuleObjectManager {
           const distanceA = a.position.distanceTo(oObject.position);
           const distanceB = b.position.distanceTo(oObject.position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
+        }catch(_e){
           return 0;
         }
       }
@@ -354,7 +354,7 @@ export class ModuleObjectManager {
           const distanceA = a.position.distanceTo(oObject.position);
           const distanceB = b.position.distanceTo(oObject.position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
+        }catch(_e){
           return 0;
         }
       }
@@ -596,7 +596,7 @@ export class ModuleObjectManager {
     return undefined;
   }
 
-  public static GetObjectsInShape(shape = -1, size = 1, target: EngineLocation, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){
+  public static GetObjectsInShape(_shape = -1, size = 1, target: EngineLocation, _lineOfSight = false, oType = -1, _origin = new THREE.Vector3, idx = -1){
 
     let object_pool: ModuleObject[] = [];
     const results: ModuleObject[] = [];

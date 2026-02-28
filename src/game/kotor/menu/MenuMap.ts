@@ -15,9 +15,9 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * MenuMap class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuMap.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -52,11 +52,11 @@ export class MenuMap extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
-    return new Promise<void>( async (resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LBL_MapNote.setText('');
       this.LBL_Map.addEventListener('click', (e) => {
         e.stopPropagation();
-        const mapNote: ModuleWaypoint = this.miniMap.onClick();
+        const mapNote = this.miniMap.onClick() as ModuleWaypoint | undefined;
         if(mapNote && mapNote.mapNote instanceof CExoLocString){
           this.LBL_MapNote.setText(mapNote.mapNote.getValue())
         }
@@ -151,5 +151,5 @@ export class MenuMap extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_OPT.click();
   }
-  
+
 }

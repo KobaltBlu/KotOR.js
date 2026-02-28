@@ -46,7 +46,7 @@ export class MenuAutoPause extends K1_MenuAutoPause {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       this.CB_ENDROUND.attachINIProperty('Autopause Options.End Of Combat Round');
       this.CB_ENEMYSIGHTED.attachINIProperty('Autopause Options.Enemy Sighted');
@@ -153,3 +153,4 @@ export class MenuAutoPause extends K1_MenuAutoPause {
   }
   
 }
+

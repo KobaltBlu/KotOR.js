@@ -39,7 +39,7 @@ export class TabUTTEditorState extends TabState {
 
   public openFile(file?: EditorFile){
     log.trace('TabUTTEditorState openFile entry', !!file);
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
+    return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
@@ -71,7 +71,7 @@ export class TabUTTEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-  
+
   updateFile(){
     log.trace('TabUTTEditorState updateFile');
     this.trigger.exportToBlueprint();

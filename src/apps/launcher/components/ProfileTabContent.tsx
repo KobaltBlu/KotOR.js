@@ -3,7 +3,6 @@ import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef,
 import { LightboxComponent } from '@/apps/launcher/components/LightboxComponenet';
 import { ProfileLaunchButtons } from '@/apps/launcher/components/ProfileLaunchButtons';
 import { ProfilePromoItems } from '@/apps/launcher/components/ProfilePromoItems';
-import { useApp } from '@/apps/launcher/context/AppContext';
 import { ProfileProvider } from '@/apps/launcher/context/ProfileContext';
 import type { LauncherProfile } from '@/apps/launcher/types';
 import { createScopedLogger, LogScope } from '@/utility/Logger';
@@ -22,7 +21,6 @@ export interface ProfileTabContentProps {
 
 export const ProfileTabContent = forwardRef<ProfileTabContentHandle, ProfileTabContentProps>(function ProfileTabContentInner(props, ref) {
   log.trace('ProfileTabContent render profile=%s', props.profile?.name ?? 'unknown');
-  const appContext = useApp();
   const profile = props.profile;
   const active = props.active;
   const tabRef = useRef<HTMLDivElement>(null);
@@ -42,7 +40,7 @@ export const ProfileTabContent = forwardRef<ProfileTabContentHandle, ProfileTabC
     },
   }));
 
-  
+
 
   const onComponentResize = () => {
     // updateScroll();

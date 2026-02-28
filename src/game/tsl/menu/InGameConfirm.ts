@@ -1,14 +1,14 @@
-import type { GUIListBox, GUIButton } from "@/gui";
+import { InGameConfirm as K1_InGameConfirm } from "@/game/kotor/KOTOR";
+import type { GUIButton, GUIListBox } from "@/gui";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { InGameConfirm as K1_InGameConfirm } from "@/game/kotor/KOTOR";
 
 /**
  * InGameConfirm class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameConfirm.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -30,7 +30,7 @@ export class InGameConfirm extends K1_InGameConfirm {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.defaultExtent.width = this.tGuiPanel.extent.width;
       this.defaultExtent.height = this.tGuiPanel.extent.height;
       this.defaultExtent.top = this.tGuiPanel.extent.top;
@@ -65,5 +65,6 @@ export class InGameConfirm extends K1_InGameConfirm {
   update(delta: number) {
     super.update(delta);
   }
-  
+
 }
+

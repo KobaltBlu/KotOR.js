@@ -1,15 +1,15 @@
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 /**
  * CharGenSkills class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenSkills.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -71,8 +71,8 @@ export class CharGenSkills extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      
+    return new Promise<void>((resolve, _reject) => {
+
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -92,12 +92,12 @@ export class CharGenSkills extends GameMenu {
         this.close();
       });
 
-      this.BTN_RECOMMENDED.addEventListener('click', (e) => {
+      this.BTN_RECOMMENDED.addEventListener('click', (_e) => {
 
         GameState.CharGenManager.resetSkillPoints();
         GameState.CharGenManager.availSkillPoints = GameState.CharGenManager.getMaxSkillPoints();
         const skillOrder = GameState.CharGenManager.getRecommendedOrder();
-        
+
         while(GameState.CharGenManager.availSkillPoints > 0){
           for(let i = 0; i < 8; i++){
             const skillIndex = skillOrder[i];
@@ -131,7 +131,7 @@ export class CharGenSkills extends GameMenu {
                 GameState.CharGenManager.treatInjury++;
               break;
             }
-            
+
             if(skillIndex >= 0){
               GameState.CharGenManager.availSkillPoints -= 1;
             }
@@ -166,5 +166,5 @@ export class CharGenSkills extends GameMenu {
     GameState.CharGenManager.availSkillPoints = GameState.CharGenManager.getMaxSkillPoints();
     GameState.CharGenManager.resetSkillPoints();
   }
-  
+
 }

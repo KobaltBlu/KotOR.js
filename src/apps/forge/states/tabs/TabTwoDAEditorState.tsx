@@ -38,7 +38,7 @@ export class TabTwoDAEditorState extends TabState {
 
   openFile(file?: EditorFile){
     log.trace('TabTwoDAEditorState openFile entry', !!file);
-    return new Promise<KotOR.TwoDAObject>( (resolve, reject) => {
+    return new Promise<KotOR.TwoDAObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
         log.trace('TabTwoDAEditorState openFile use this.file');

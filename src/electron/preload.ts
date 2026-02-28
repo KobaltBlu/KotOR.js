@@ -12,8 +12,6 @@ interface LaunchProfile {
 
 const log = createScopedLogger(LogScope.Default);
 
-const query = new URLSearchParams(window.location.search);
-
 contextBridge.exposeInMainWorld(
   'dialog', {
   locateDirectoryDialog: (profile) => {
@@ -109,7 +107,7 @@ contextBridge.exposeInMainWorld(
         });
       });
     },
-    openExternal: (src, options) => {
+    openExternal: (src: string, options?: Electron.OpenExternalOptions) => {
       return new Promise((resolve, reject) => {
         shell.openExternal(src, options).then((response) => {
           resolve(response);

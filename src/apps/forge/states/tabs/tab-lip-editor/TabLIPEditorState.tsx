@@ -3,10 +3,9 @@ import * as THREE from 'three';
 
 
 import { TabLIPEditor } from "@/apps/forge/components/tabs/tab-lip-editor/TabLIPEditor";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
 import { EditorFile } from "@/apps/forge/EditorFile";
-import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
+import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
 import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
@@ -108,7 +107,7 @@ export class TabLIPEditorState extends TabState {
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.scene.add(this.head_hook);
-    this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    this.ui3DRenderer.addEventListener('onBeforeRender', (delta: number) => this.animate(delta));
 
     this.ui3DRenderer.sceneGraphManager.parentNodes.push(this.keyframesSceneGraphNode);
 
@@ -146,7 +145,7 @@ export class TabLIPEditorState extends TabState {
   }
 
   openFile(file?: EditorFile){
-    return new Promise<KotOR.LIPObject>( (resolve, reject) => {
+    return new Promise<KotOR.LIPObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
@@ -179,7 +178,7 @@ export class TabLIPEditorState extends TabState {
   }
 
   loadHead(model_name = DEFAULT_HEAD){
-    return new Promise<void>( (resolve, reject) => {
+    return new Promise<void>( (resolve, _reject) => {
       KotOR.MDLLoader.loader.load(model_name)
       .then((mdl: KotOR.OdysseyModel) => {
         this.current_head = model_name;
@@ -213,7 +212,7 @@ export class TabLIPEditorState extends TabState {
   }
 
   loadSound(sound = 'nm35aabast06217_'){
-    return new Promise<void>( (resolve, reject) => {
+    return new Promise<void>( (resolve, _reject) => {
       KotOR.AudioLoader.LoadStreamWave(sound).then((data: Uint8Array | ArrayBuffer) => {
         this.audio_name = sound;
         const arrayBuffer = data instanceof ArrayBuffer ? data : (data as Uint8Array).buffer.slice(0) as ArrayBuffer;
@@ -286,7 +285,9 @@ export class TabLIPEditorState extends TabState {
     try{
       this.source.disconnect();
       this.source.stop(0);
-    }catch(e){ }
+    }catch{
+      return;
+    }
   }
 
   play(duration: number|undefined = undefined){
@@ -306,7 +307,9 @@ export class TabLIPEditorState extends TabState {
       }else{
         this.source.start(0, 0, duration);
       }
-    }catch(e){}
+    }catch{
+      return;
+    }
 
     this.poseFrame = true;
     this.playing = true;

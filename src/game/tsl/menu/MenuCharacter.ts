@@ -86,7 +86,10 @@ export class MenuCharacter extends K1_MenuCharacter {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
+      const btnChange1 = this.BTN_CHANGE1 as GUIButton | undefined;
+      const btnChange2 = this.BTN_CHANGE2 as GUIButton | undefined;
+
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -95,14 +98,15 @@ export class MenuCharacter extends K1_MenuCharacter {
 
       this.BTN_AUTO.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.getCurrentPlayer().canLevelUp()){
-          GameState.getCurrentPlayer().autoLevelUp();
-          this.updateCharacterStats(GameState.getCurrentPlayer());
+        const currentPlayer = GameState.PartyManager.party[0];
+        if(currentPlayer?.canLevelUp()){
+          currentPlayer.autoLevelUp();
+          this.updateCharacterStats(currentPlayer);
         }
       });
       this._button_y = this.BTN_AUTO;
 
-      this.BTN_CHANGE1?.addEventListener('click', (e) => {
+      btnChange1?.addEventListener('click', (e) => {
         e.stopPropagation();
         if (GameState.PartyManager.party.length > 1) {
           GameState.PartyManager.SwitchLeaderAtIndex(1);
@@ -111,7 +115,7 @@ export class MenuCharacter extends K1_MenuCharacter {
           this.updatePartyMemberPortraitButtons();
         }
       });
-      this.BTN_CHANGE2?.addEventListener('click', (e) => {
+      btnChange2?.addEventListener('click', (e) => {
         e.stopPropagation();
         if (GameState.PartyManager.party.length > 2) {
           GameState.PartyManager.SwitchLeaderAtIndex(2);
@@ -138,10 +142,7 @@ export class MenuCharacter extends K1_MenuCharacter {
             this._3dView.visible = true;
             this._3dView.camera.aspect = this.LBL_3DCHAR.extent.width / this.LBL_3DCHAR.extent.height;
             this._3dView.camera.updateProjectionMatrix();
-            (this.LBL_3DCHAR.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).uniforms.map.value = this._3dView.texture.texture;
-            (this.LBL_3DCHAR.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).transparent = false;
             this._3dView.setControl(this.LBL_3DCHAR);
-            (this.LBL_3DCHAR.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).visible = true;
 
             this._3dViewModel = model;
             this._3dView.addModel(this._3dViewModel);
@@ -177,8 +178,9 @@ export class MenuCharacter extends K1_MenuCharacter {
       this.char.update(delta);
     try {
       this._3dView.render(delta);
-      (this.LBL_3DCHAR.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).needsUpdate = true;
-    } catch (_e: unknown) { }
+    } catch {
+      return;
+    }
   }
 
   show() {
@@ -194,3 +196,4 @@ export class MenuCharacter extends K1_MenuCharacter {
   }
 
 }
+

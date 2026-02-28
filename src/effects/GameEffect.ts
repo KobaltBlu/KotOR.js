@@ -229,7 +229,7 @@ export class GameEffect {
   ///////////////
 
   //Called when the effect is applied ingame
-  onApply(object?: ModuleObject){
+  onApply(_object?: ModuleObject){
     if(this.applied)
       return;
 

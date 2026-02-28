@@ -1,5 +1,4 @@
 import React from "react";
-import * as THREE from 'three';
 
 import { TabUTWEditor } from "@/apps/forge/components/tabs/tab-utw-editor/TabUTWEditor";
 import { EditorFile } from "@/apps/forge/EditorFile";
@@ -40,7 +39,7 @@ export class TabUTWEditorState extends TabState {
 
   public openFile(file?: EditorFile){
     log.trace('TabUTWEditorState openFile entry', !!file);
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
+    return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
@@ -73,7 +72,7 @@ export class TabUTWEditorState extends TabState {
     super.hide();
   }
 
-  animate(delta: number = 0){
+  animate(_delta: number = 0){
     // Waypoint editor has no continuous animation; override is for future 3D preview if needed.
   }
 

@@ -1,18 +1,15 @@
 import { AudioEngine } from "@/audio/AudioEngine";
+import { MenuSound as K1_MenuSound } from "@/game/kotor/KOTOR";
 import { GameState } from "@/GameState";
 import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "@/gui";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
-import { MenuSound as K1_MenuSound } from "@/game/kotor/KOTOR";
 
 const DEFAULT_GAIN = 0.75;
 
 /**
  * MenuSound class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuSound.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -47,7 +44,7 @@ export class MenuSound extends K1_MenuSound {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    this.BTN_ADVANCED.addEventListener('click', (e) => {
+    this.BTN_ADVANCED.addEventListener('click', (_e) => {
       this.manager.MenuSoundAdvanced.open();
     });
 
@@ -137,5 +134,5 @@ export class MenuSound extends K1_MenuSound {
       this.LB_DESC.addItem(this.LBL_MOVIE.getHintText())
     });
   }
-  
+
 }

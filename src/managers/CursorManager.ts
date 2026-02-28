@@ -11,10 +11,6 @@ import type { ModuleObject } from "@/module";
 import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Manager);
 
 /**
  * Manages the in-game cursor, reticles, and selection/hover logic.
@@ -36,10 +32,10 @@ const log = createScopedLogger(LogScope.Manager);
 export class CursorManager {
 	/** Reference to the active `MenuManager` type for UI state checks */
 	static MenuManager: typeof MenuManager;
-	
+
 	/** Map of named cursor sprite materials (e.g., "default", "attack") */
 	static cursorMaterials: Map<string, THREE.SpriteMaterial> = new Map();
-	
+
 	/** Main cursor sprite shown in the UI layer */
 	static cursor: THREE.Sprite;
 	/** Primary reticle shown over hovered objects */
@@ -48,7 +44,7 @@ export class CursorManager {
 	static reticle2: THREE.Sprite;
 	/** Directional arrow sprite (friendly/hostile) */
 	static arrow: THREE.Sprite;
-	
+
 	/** Three.js node for the currently selected object (reticle anchor) */
 	static selected: THREE.Object3D;
 	/** Game module object currently selected */
@@ -57,10 +53,10 @@ export class CursorManager {
 	static hovered: THREE.Object3D;
 	/** Game module object currently hovered */
 	static hoveredObject: ModuleObject;
-	
+
 	/** Subset of module objects considered for selection/hover */
 	static visibleObjects: ModuleObject[];
-	
+
 	/** Dynamic geometry used as point proxies for interactable ray tests */
 	static pointGeomerty = new THREE.BufferGeometry();
 	/** Material for point proxy cloud used for raycasting */
@@ -70,31 +66,31 @@ export class CursorManager {
 		fog: false,
 		visible: false
 	});
-	
+
 	/** Points instance used as a single occlusion/raycast target for interactables */
 	static testPoints: THREE.Points;
-	
+
 	/** Debug sphere geometry (optional visualization) */
-	static sphereGeometry = new THREE.SphereGeometry( 1, 16, 8 ); 
+	static sphereGeometry = new THREE.SphereGeometry( 1, 16, 8 );
 	/** Debug sphere material (optional visualization) */
-	static sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } ); 
+	static sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
 	/** Debug sphere mesh (optional visualization) */
 	static sphere: THREE.Mesh;
-	
+
 	/** Collection of interactable objects currently considered for ray hits */
 	static selectableObjects: ModuleObject[] = [];
-	
+
 	/**
 	 * Update the internal selectable object list.
 	 *
 	 * @param objects Array of module objects that can be interacted with
 	 */
-	static updateSelectable( objects: ModuleObject[] = [] ){
+	static updateSelectable( _objects: ModuleObject[] = [] ){
 
 
 
 	}
-	
+
 	/**
 	 * Initializes cursor/reticle materials and sprites, and loads textures.
 	 *
@@ -162,7 +158,7 @@ export class CursorManager {
 		CursorManager.reticle = new THREE.Sprite( CursorManager.cursorMaterials.get('reticleF') );
 		CursorManager.reticle2 = new THREE.Sprite( CursorManager.cursorMaterials.get('reticleF2') );
 		CursorManager.arrow = new THREE.Sprite( CursorManager.cursorMaterials.get('arrowF') );
-		
+
 		CursorManager.reticle.scale.set( 0.5, 0.5, 0.5 );
 		CursorManager.reticle.name = 'reticle';
 		CursorManager.reticle.renderOrder = 1;
@@ -208,7 +204,7 @@ export class CursorManager {
     if(CursorManager.cursor.material != cursorMaterial){
       CursorManager.cursor.material = cursorMaterial;
     }
-		
+
 	}
 
 	/**
@@ -268,12 +264,12 @@ export class CursorManager {
 				CursorManager.selectedObject = object;
 			}
 
-			if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){		
+			if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
 				CursorManager.setReticle2('reticleF2');
 			}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
 				if(!object.isUseable()){
 					return;
-				}		
+				}
 				CursorManager.setReticle2('reticleF2');
 			}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
 				if(object.isHostile(GameState.getCurrentPlayer())){
@@ -472,17 +468,17 @@ export class CursorManager {
 		if(GameState.Mode == EngineMode.INGAME && CursorManager.selected instanceof OdysseyObject3D && !CursorManager.MenuManager.MenuContainer.bVisible){
 			CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
 			CursorManager.reticle2.visible = true;
-			if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleDoor)){		
+			if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleDoor)){
 				CursorManager.setReticle2('reticleF2');
 			}else if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModulePlaceable)){
 				if(!CursorManager.selectedObject.isUseable()){
 					return;
-				}		
+				}
 				CursorManager.setReticle2('reticleF2');
 			}else if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleTrigger)){
 				if(!CursorManager.selectedObject.isUseable()){
 					return;
-				}		
+				}
 				CursorManager.setReticle2('reticleF2');
 			}else if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleCreature)){
 				if(CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
@@ -514,39 +510,39 @@ export class CursorManager {
 	 * @returns The hovered `ModuleObject`, or `undefined` if none hit
 	 */
 	public static onMouseHitInteractive(){
-		
+
 		const objects = CursorManager.selectableObjects;
 		const objCount = objects.length;
-		
+
 		const points: number[] = [];
 		const sizes: number[] = [];
 		let obj;
 		const targetPosition = new THREE.Vector3();
 		const losZ = 1;
-		
+
 		for(let i = 0; i < objCount; i++){
 			obj = objects[i];
-			
+
 			targetPosition.copy(obj.position);
 			targetPosition.z += losZ;
 			if(obj.highlightHeight){
 				// targetPosition.z += obj.highlightHeight;
 			}
-			
+
 			points.push(...targetPosition.toArray());
 			sizes.push(CursorManager.pointSize);
 		}
-		
+
 		CursorManager.pointGeomerty.attributes.position = new THREE.Float32BufferAttribute(points, 3);
 		CursorManager.pointGeomerty.attributes.size = new THREE.Float32BufferAttribute(sizes, 1);
 		CursorManager.pointGeomerty.computeBoundingBox();
 		CursorManager.pointGeomerty.computeBoundingSphere();
-		
+
 		const occluders = [
 			CursorManager.testPoints,
 			GameState.module.area.roomWalkmeshes.map( (r) => r.mesh),
 		].flat();
-		
+
 		const farCache = CursorManager.raycaster.far;
 		const pThresholdCache = CursorManager.raycaster.params.Points.threshold;
 		CursorManager.raycaster.far = GameState.maxSelectableDistance;

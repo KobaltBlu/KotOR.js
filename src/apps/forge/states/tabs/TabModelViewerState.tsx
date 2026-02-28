@@ -101,7 +101,7 @@ export class TabModelViewerState extends TabState {
 
     log.trace("TabModelViewerState constructor UI3DRenderer");
     this.ui3DRenderer = new UI3DRenderer();
-    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', (delta: number) => this.animate(delta));
     this.ui3DRenderer.scene.add(this.groundMesh);
     this.ui3DRenderer.scene.add(this.layout_group);
     log.debug("TabModelViewerState constructor scene nodes added");
@@ -120,7 +120,7 @@ export class TabModelViewerState extends TabState {
 
   public openFile(file?: EditorFile){
     log.trace("openFile entry", "file=%s", file?.getFilename?.() ?? String(file));
-    return new Promise<KotOR.OdysseyModel3D>( (resolve, reject) => {
+    return new Promise<KotOR.OdysseyModel3D>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
         log.trace("openFile using this.file");
@@ -386,7 +386,8 @@ export class TabModelViewerState extends TabState {
     log.trace("loadLayout entry", "key=%s", key?.resref ?? String(key));
     this.disposeLayout();
     if(key) {
-      return new Promise<void>( async (resolve, reject) => {
+      return new Promise<void>((resolve) => {
+        void (async () => {
         log.trace("loadLayout getFileBuffer");
         const data = await KotOR.KEYManager.Key.getFileBuffer(key);
         log.debug("loadLayout buffer length", data?.length);
@@ -429,12 +430,13 @@ export class TabModelViewerState extends TabState {
               if(texObj.material.uniforms.map.value){
                 log.trace('Initializing texture', texObj.name);
                 if(this.ui3DRenderer.renderer)
-                  this.ui3DRenderer.renderer.initTexture(texObj.material.uniforms.map.value);
+                  this.ui3DRenderer.renderer.initTexture(texObj.material.uniforms.map.value as THREE.Texture);
               }
             }
           }
         });
         log.trace("loadLayout LoadQueue registered");
+        })();
       });
     }
     log.trace("loadLayout no key exit");

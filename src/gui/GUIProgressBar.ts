@@ -1,5 +1,7 @@
 import * as THREE from "three";
 
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { TextureType } from "@/enums/loaders/TextureType";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
 import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
@@ -9,16 +11,15 @@ import type { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 
 const log = createScopedLogger(LogScope.Game);
-import { TextureType } from "@/enums/loaders/TextureType";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 
 /**
  * GUIProgressBar class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIProgressBar.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -68,7 +69,7 @@ export class GUIProgressBar extends GUIControl {
     };
 
     this.progress.geometry = new THREE.BufferGeometry();
-    
+
     const odysseyGuiU = ShaderManager.Shaders.get('odyssey-gui').getUniforms();
     const odysseyGuiUniforms = Array.isArray(odysseyGuiU)
       ? THREE.UniformsUtils.merge(odysseyGuiU)
@@ -101,7 +102,7 @@ export class GUIProgressBar extends GUIControl {
     //---------------//
     // Progress Fill
     //---------------//
-    
+
     this.progress.fill.material = new THREE.ShaderMaterial({
       uniforms: odysseyGuiUniforms,
       vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
@@ -119,7 +120,7 @@ export class GUIProgressBar extends GUIControl {
     this.widget.userData.progress.add( this.progress.fill.mesh );
 
     if(this.control){
-      
+
       //Progress
       this.hasProgress = control.hasField('PROGRESS');
       if(this.hasProgress){
@@ -196,7 +197,7 @@ export class GUIProgressBar extends GUIControl {
 
     this.curValue = val < 0 ? 0 : val;
     this.curValue = !this.curValue ? 0.000000000000001 : this.curValue;
-    
+
     const value = Math.min(this.curValue / this.maxValue, 1);
 
     const extent = this.getFillExtent();
@@ -220,7 +221,7 @@ export class GUIProgressBar extends GUIControl {
 
     (this.progress.fill.geometry.attributes.uv as THREE.BufferAttribute).setY(1, value);
     this.progress.fill.geometry.attributes.uv.needsUpdate = true;
-    
+
     (sprite.material as THREE.ShaderMaterial).uniforms.opacity.value = 1;
     (sprite.material as THREE.Material & { transparent?: boolean }).transparent = true;
 

@@ -12,9 +12,9 @@ const NEW_TARGET_DESC = 48214;
 
 /**
  * MenuAutoPause class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuAutoPause.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -42,7 +42,7 @@ export class MenuAutoPause extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       this.CB_ENDROUND.attachINIProperty('Autopause Options.End Of Combat Round');
       this.CB_ENEMYSIGHTED.attachINIProperty('Autopause Options.Enemy Sighted');
@@ -71,7 +71,7 @@ export class MenuAutoPause extends GameMenu {
           GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
         }
       };
-      
+
       this.CB_ENEMYSIGHTED.addEventListener('hover', () => {
         this.LB_DETAILS.clearItems();
         this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(ENEMY_SIGHTED_DESC)?.Value);
@@ -84,7 +84,7 @@ export class MenuAutoPause extends GameMenu {
           GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
         }
       };
-      
+
       this.CB_MINESIGHTED.addEventListener('hover', () => {
         this.LB_DETAILS.clearItems();
         this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(MINE_SIGHTED_DESC)?.Value);
@@ -97,7 +97,7 @@ export class MenuAutoPause extends GameMenu {
           GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
         }
       };
-      
+
       this.CB_PARTYKILLED.addEventListener('hover', () => {
         this.LB_DETAILS.clearItems();
         this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(PARTY_KILLED_DESC)?.Value);
@@ -110,7 +110,7 @@ export class MenuAutoPause extends GameMenu {
           GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
         }
       };
-      
+
       this.CB_ACTIONMENU.addEventListener('hover', () => {
         this.LB_DETAILS.clearItems();
         this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(ACTION_MENU_DESC)?.Value);
@@ -123,7 +123,7 @@ export class MenuAutoPause extends GameMenu {
           GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.NewTargetSelected, false);
         }
       };
-      
+
       this.CB_TRIGGERS.addEventListener('hover', () => {
         this.LB_DETAILS.clearItems();
         this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(NEW_TARGET_DESC)?.Value);
@@ -137,5 +137,5 @@ export class MenuAutoPause extends GameMenu {
       resolve();
     });
 }
-  
+
 }

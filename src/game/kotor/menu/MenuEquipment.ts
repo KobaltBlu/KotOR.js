@@ -8,15 +8,12 @@ import { GUIItemNone } from "@/gui/protoitem/GUIItemNone";
 import { TextureLoader } from "@/loaders";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { ModuleItem } from "@/module/ModuleItem";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * MenuEquipment class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuEquipment.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -81,32 +78,28 @@ export class MenuEquipment extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.defaultControl = this.BTN_INV_BODY;
 
       // this.LB_ITEMS.offset.x = 0;
-      
+
       this.LB_DESC.hide();
       this.LBL_CANTEQUIP.hide();
 
-      this.LBL_INV_IMPLANT.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_IMPLANT.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HEAD.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HEAD.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HANDS.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_HANDS.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_L.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_L.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BODY.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BODY.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_R.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_ARM_R.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_L.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_L.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BELT.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_BELT.highlight.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_R.border.fill.material.alphaTest = 0.5;
-      this.LBL_INV_WEAP_R.highlight.fill.material.alphaTest = 0.5;
+      const setAlphaTest = (control: GUILabel) => {
+        (control.border.fill.material as { alphaTest: number }).alphaTest = 0.5;
+        (control.highlight.fill.material as { alphaTest: number }).alphaTest = 0.5;
+      };
+
+      setAlphaTest(this.LBL_INV_IMPLANT);
+      setAlphaTest(this.LBL_INV_HEAD);
+      setAlphaTest(this.LBL_INV_HANDS);
+      setAlphaTest(this.LBL_INV_ARM_L);
+      setAlphaTest(this.LBL_INV_BODY);
+      setAlphaTest(this.LBL_INV_ARM_R);
+      setAlphaTest(this.LBL_INV_WEAP_L);
+      setAlphaTest(this.LBL_INV_BELT);
+      setAlphaTest(this.LBL_INV_WEAP_R);
 
       this.BTN_BACK = this.getControlByName('BTN_BACK');
       this.BTN_BACK.addEventListener('click', (e) => {
@@ -126,7 +119,7 @@ export class MenuEquipment extends GameMenu {
         this.slot = ModuleCreatureArmorSlot.IMPLANT;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (e) => {
+      }).addEventListener('hover', (_e) => {
         this.updateListHover(ModuleCreatureArmorSlot.IMPLANT);
       });
 
@@ -135,7 +128,7 @@ export class MenuEquipment extends GameMenu {
         this.slot = ModuleCreatureArmorSlot.HEAD;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (e) => {
+      }).addEventListener('hover', (_e) => {
         this.updateListHover(ModuleCreatureArmorSlot.HEAD);
       });
 
@@ -144,7 +137,7 @@ export class MenuEquipment extends GameMenu {
         this.slot = ModuleCreatureArmorSlot.ARMS;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (e) => {
+      }).addEventListener('hover', (_e) => {
         this.updateListHover(ModuleCreatureArmorSlot.ARMS);
       });
 
@@ -153,7 +146,7 @@ export class MenuEquipment extends GameMenu {
         this.slot = ModuleCreatureArmorSlot.LEFTARMBAND;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (e) => {
+      }).addEventListener('hover', (_e) => {
         this.updateListHover(ModuleCreatureArmorSlot.LEFTARMBAND);
       });
 
@@ -162,7 +155,7 @@ export class MenuEquipment extends GameMenu {
         this.slot = ModuleCreatureArmorSlot.ARMOR;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (e) => {
+      }).addEventListener('hover', (_e) => {
         this.updateListHover(ModuleCreatureArmorSlot.ARMOR);
       });
 
@@ -171,7 +164,7 @@ export class MenuEquipment extends GameMenu {
         this.slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (e) => {
+      }).addEventListener('hover', (_e) => {
         this.updateListHover(ModuleCreatureArmorSlot.RIGHTARMBAND);
       });
 
@@ -180,7 +173,7 @@ export class MenuEquipment extends GameMenu {
         this.slot = ModuleCreatureArmorSlot.LEFTHAND;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (e) => {
+      }).addEventListener('hover', (_e) => {
         this.updateListHover(ModuleCreatureArmorSlot.LEFTHAND);
       });
 
@@ -189,7 +182,7 @@ export class MenuEquipment extends GameMenu {
         this.slot = ModuleCreatureArmorSlot.BELT;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (e) => {
+      }).addEventListener('hover', (_e) => {
         this.updateListHover(ModuleCreatureArmorSlot.BELT);
       });
 
@@ -198,7 +191,7 @@ export class MenuEquipment extends GameMenu {
         this.slot = ModuleCreatureArmorSlot.RIGHTHAND;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (e) => {
+      }).addEventListener('hover', (_e) => {
         this.updateListHover(ModuleCreatureArmorSlot.RIGHTHAND);
       });
 
@@ -240,7 +233,7 @@ export class MenuEquipment extends GameMenu {
         }
       });
 
-      GameState.PartyManager.AddEventListener('change', (pm: ModuleCreature) => {
+      GameState.PartyManager.AddEventListener('change', (_pm: ModuleCreature) => {
         if(!this.isVisible()) return;
         this.updateCharacterStats();
       });
@@ -451,7 +444,7 @@ export class MenuEquipment extends GameMenu {
         this.LBL_INV_WEAP_R.setFillTextureName('iweap_r');
       }
     } else {
-
+      return;
     }
   }
 
@@ -484,7 +477,7 @@ export class MenuEquipment extends GameMenu {
     this.BTN_CHANGE2?.hide();
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
       if (i == 0) { continue; }
-      
+
       const btn_change = this.getControlByName('BTN_CHANGE' + i);
       if(!btn_change){ continue; }
 
@@ -541,8 +534,11 @@ export class MenuEquipment extends GameMenu {
       this.BTN_INV_BELT.onHoverOut();
       this.BTN_INV_WEAP_R.onHoverOut();
       if (this.selectedControl == this.BTN_INV_IMPLANT) {
+        void 0;
       } else if (this.selectedControl == this.BTN_INV_HEAD) {
+        void 0;
       } else if (this.selectedControl == this.BTN_INV_HANDS) {
+        void 0;
       } else if (this.selectedControl == this.BTN_INV_ARM_L) {
         this.selectedControl = this.BTN_INV_IMPLANT;
       } else if (this.selectedControl == this.BTN_INV_BODY) {
@@ -588,8 +584,11 @@ export class MenuEquipment extends GameMenu {
       } else if (this.selectedControl == this.BTN_INV_ARM_R) {
         this.selectedControl = this.BTN_INV_WEAP_R;
       } else if (this.selectedControl == this.BTN_INV_WEAP_L) {
+        void 0;
       } else if (this.selectedControl == this.BTN_INV_BELT) {
+        void 0;
       } else if (this.selectedControl == this.BTN_INV_WEAP_R) {
+        void 0;
       }
       if (this.selectedControl) {
         this.selectedControl.onHoverIn();
@@ -599,6 +598,7 @@ export class MenuEquipment extends GameMenu {
 
   triggerControllerDLeftPress() {
     if (this.equipmentSelectionActive) {
+      return;
     } else {
       this.BTN_INV_IMPLANT.onHoverOut();
       this.BTN_INV_HEAD.onHoverOut();
@@ -610,16 +610,19 @@ export class MenuEquipment extends GameMenu {
       this.BTN_INV_BELT.onHoverOut();
       this.BTN_INV_WEAP_R.onHoverOut();
       if (this.selectedControl == this.BTN_INV_IMPLANT) {
+        void 0;
       } else if (this.selectedControl == this.BTN_INV_HEAD) {
         this.selectedControl = this.BTN_INV_IMPLANT;
       } else if (this.selectedControl == this.BTN_INV_HANDS) {
         this.selectedControl = this.BTN_INV_HEAD;
       } else if (this.selectedControl == this.BTN_INV_ARM_L) {
+        void 0;
       } else if (this.selectedControl == this.BTN_INV_BODY) {
         this.selectedControl = this.BTN_INV_ARM_L;
       } else if (this.selectedControl == this.BTN_INV_ARM_R) {
         this.selectedControl = this.BTN_INV_BODY;
       } else if (this.selectedControl == this.BTN_INV_WEAP_L) {
+        void 0;
       } else if (this.selectedControl == this.BTN_INV_BELT) {
         this.selectedControl = this.BTN_INV_WEAP_L;
       } else if (this.selectedControl == this.BTN_INV_WEAP_R) {
@@ -633,6 +636,7 @@ export class MenuEquipment extends GameMenu {
 
   triggerControllerDRightPress() {
     if (this.equipmentSelectionActive) {
+      return;
     } else {
       this.BTN_INV_IMPLANT.onHoverOut();
       this.BTN_INV_HEAD.onHoverOut();
@@ -648,16 +652,19 @@ export class MenuEquipment extends GameMenu {
       } else if (this.selectedControl == this.BTN_INV_HEAD) {
         this.selectedControl = this.BTN_INV_HANDS;
       } else if (this.selectedControl == this.BTN_INV_HANDS) {
+        void 0;
       } else if (this.selectedControl == this.BTN_INV_ARM_L) {
         this.selectedControl = this.BTN_INV_BODY;
       } else if (this.selectedControl == this.BTN_INV_BODY) {
         this.selectedControl = this.BTN_INV_ARM_R;
       } else if (this.selectedControl == this.BTN_INV_ARM_R) {
+        void 0;
       } else if (this.selectedControl == this.BTN_INV_WEAP_L) {
         this.selectedControl = this.BTN_INV_BELT;
       } else if (this.selectedControl == this.BTN_INV_BELT) {
         this.selectedControl = this.BTN_INV_WEAP_R;
       } else if (this.selectedControl == this.BTN_INV_WEAP_R) {
+        void 0;
       }
       if (this.selectedControl) {
         this.selectedControl.onHoverIn();
@@ -672,5 +679,5 @@ export class MenuEquipment extends GameMenu {
       this.LB_DESC.scrollDown();
     }
   }
-  
+
 }

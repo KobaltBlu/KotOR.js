@@ -4,9 +4,9 @@ import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "@/
 
 /**
  * MenuGraphics class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuGraphics.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -34,8 +34,8 @@ export class MenuGraphics extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      
+    return new Promise<void>((resolve, _reject) => {
+
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         /*this.Hide();
@@ -48,7 +48,7 @@ export class MenuGraphics extends GameMenu {
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_ADVANCED.addEventListener('click', (e) => {
+      this.BTN_ADVANCED.addEventListener('click', (_e) => {
         this.manager.MenuGraphicsAdvanced.open();
       });
 
@@ -59,7 +59,7 @@ export class MenuGraphics extends GameMenu {
         GameState.canvas.style.filter = 'contrast('+(100 + contrast)+'%)';
       };
 
-      this.BTN_RESOLUTION.addEventListener('click', (e) => {
+      this.BTN_RESOLUTION.addEventListener('click', (_e) => {
         this.manager.MenuResolutions.open();
       });
 
@@ -85,5 +85,5 @@ export class MenuGraphics extends GameMenu {
     super.close();
     GameState.iniConfig.save();
   }
-  
+
 }

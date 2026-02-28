@@ -19,9 +19,9 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
 
-const blacklist = ['(Row Label)', '__index', 'label'];
+const _blacklist = ['(Row Label)', '__index', 'label'];
 
-const REPUTATION_STATUS = {
+const _REPUTATION_STATUS = {
   HOSTILE: 0,
   NEUTRAL: 1,
   FRIENDLY: 2,
@@ -29,9 +29,9 @@ const REPUTATION_STATUS = {
 
 /**
  * FactionManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file FactionManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -179,7 +179,7 @@ export class FactionManager {
           faction.initReputations(ReputationConstant.FRIENDLY);
         }
       }
-    
+
 
       //Set all faction reputations to their default values
       FactionManager.factions.forEach( (faction1, faction1_id) => {
@@ -320,7 +320,7 @@ export class FactionManager {
 
   static Export( filename = '' ){
     log.info('FactionManager.Export', filename);
-    return new Promise<void>( (resolve, reject) => {
+    return new Promise<void>( (resolve, _reject) => {
       const fac = FactionManager.Save();
       if(fac instanceof GFFObject){
         fac.export( filename, () => {

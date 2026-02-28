@@ -37,10 +37,9 @@ export class LoadScreen extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LBL_HINT.visible = false;
       this.defaultTex = this.tGuiPanel.getFill().material as THREE.ShaderMaterial;
-      (function ref(_u: unknown) { return _u; })(this.defaultTex.uniforms.map.value);
       resolve();
     });
   }
@@ -49,30 +48,22 @@ export class LoadScreen extends GameMenu {
     this.PB_PROGRESS.setProgress(val);
   }
 
-  setLoadBackground(resref: string): Promise<boolean> {
-    return new Promise<boolean>( async (resolve, reject) => {
-      if (resref) {
-        const texture = await this.loadTexture(resref);
-        if (texture) {
-          (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = texture;
-          resolve(true);
-          return;
-        } else {
-          const default_texture = await this.loadTexture('load_default');
-          if(default_texture){
-            (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex = default_texture;
-            resolve(true);
-            return;
-          }else{
-            resolve(true);
-            return;
-          }
-        }
-      } else {
-        resolve(false);
-        return;
-      }
-    });
+  async setLoadBackground(resref: string): Promise<boolean> {
+    if (!resref) {
+      return false;
+    }
+
+    const texture = await this.loadTexture(resref);
+    if (texture) {
+      (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = texture;
+      return true;
+    }
+
+    const default_texture = await this.loadTexture('load_default');
+    if (default_texture) {
+      (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex = default_texture;
+    }
+    return true;
   }
 
   showRandomHint() {

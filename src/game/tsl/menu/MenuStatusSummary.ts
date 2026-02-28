@@ -50,9 +50,10 @@ export class MenuStatusSummary extends K1_MenuStatusSummary {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
   
 }
+

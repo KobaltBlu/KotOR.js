@@ -10,9 +10,9 @@ import { createScopedLogger } from "@/utility/Logger";
 
 /**
  * CharGenFeats class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenFeats.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -46,7 +46,7 @@ export class CharGenFeats extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
@@ -132,5 +132,5 @@ export class CharGenFeats extends GameMenu {
     groups.sort((groupa, groupb) => groupa[0].toolsCategories > groupb[0].toolsCategories ? 1 : -1);
     CharGenFeats.log.info('feat groups', groups);
   }
-  
+
 }

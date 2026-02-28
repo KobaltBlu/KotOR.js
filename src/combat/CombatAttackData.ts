@@ -167,7 +167,7 @@ export class CombatAttackData {
    * @param isCritial - Whether the attack is a critical hit
    * @param feat - The feat that is being used for the attack
    */
-  calculateDamage(creature: ModuleCreature, isCritial: boolean = false, feat?: TalentFeat){
+  calculateDamage(creature: ModuleCreature, isCritial: boolean = false, _feat?: TalentFeat){
     /**
      * Unarmed Strike
      */

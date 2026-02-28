@@ -391,10 +391,10 @@ export class NWScriptASTBuilder {
       if (this.ignoreComments) {
         this.skipComments();
       }
-      
+
       // Stop if we encounter closing brace
       if (this.is("punct", "}")) break;
-      
+
       const st = this.parseDeclOrStatement();
       if (st) statements.push(st);
     }
@@ -419,7 +419,7 @@ export class NWScriptASTBuilder {
         this.skipComments();
       }
       if (!this.is("keyword", "ELSEIF")) break;
-      
+
       const e = this.expect("keyword", "ELSEIF");
       // Skip comments if ignoreComments is enabled (e.g., elseif//comment)
       if (this.ignoreComments) {
@@ -701,7 +701,7 @@ export class NWScriptASTBuilder {
     if (this.ignoreComments) {
       this.skipComments();
     }
-    
+
     let left = this.nud();
 
     while (true) {
@@ -709,7 +709,7 @@ export class NWScriptASTBuilder {
       if (this.ignoreComments) {
         this.skipComments();
       }
-      
+
       // postfix call / index handled in led as well
       if (this.is("punct", "(") || this.is("punct", "[")) {
         left = this.ledPostfix(left);
@@ -725,7 +725,7 @@ export class NWScriptASTBuilder {
       // consume operator
       const opTok = this.tok;
       this.next();
-      
+
       // Skip comments if ignoreComments is enabled (comments can appear after operators)
       if (this.ignoreComments) {
         this.skipComments();
@@ -742,7 +742,7 @@ export class NWScriptASTBuilder {
     if (this.ignoreComments) {
       this.skipComments();
     }
-    
+
     // prefix ops
     if (this.is("op", "++")) {
       const t = this.tok; this.next();

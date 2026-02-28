@@ -45,7 +45,7 @@ export class TabUTIEditorState extends TabState {
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
-    this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    this.ui3DRenderer.addEventListener('onBeforeRender', (delta: number) => this.animate(delta));
     this.setContentView(<TabUTIEditor tab={this}></TabUTIEditor>);
     this.openFile();
     this.saveTypes = [
@@ -57,7 +57,7 @@ export class TabUTIEditorState extends TabState {
       }
     ];
 
-    this.item.addEventListener('onPropertyChange', (property: string, newValue: string | number | boolean | object | undefined, oldValue: string | number | boolean | object | undefined) => {
+    this.item.addEventListener('onPropertyChange', (property: string, _newValue: string | number | boolean | object | undefined, _oldValue: string | number | boolean | object | undefined) => {
       if(property === 'baseItem' || property === 'modelVariation'){
         this.processEventListener('onModelChange', [this]);
       }
@@ -67,7 +67,7 @@ export class TabUTIEditorState extends TabState {
 
   public openFile(file?: EditorFile){
     log.trace('TabUTIEditorState openFile entry', !!file);
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
+    return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }

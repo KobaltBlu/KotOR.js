@@ -22,11 +22,11 @@ enum AudioEmitterState {
 
 /**
  * AudioEmitter class.
- * 
+ *
  * The AudioEmitter class is used in conjunction with AudioEngine class manage global and positional audio emitters in the game.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AudioEmitter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -191,10 +191,10 @@ export class AudioEmitter {
       const data = await AudioLoader.LoadSound(resRef);
       try{
         await this.addSound(resRef, data);
-      }catch(e){
+      }catch{
         log.error('AudioEmitter', 'Sound not added to emitter', resRef);
       }
-    }catch(e){
+    }catch{
       log.error('AudioEmitter', 'Sound not found', resRef);
     }
   }
@@ -250,7 +250,7 @@ export class AudioEmitter {
       this.currentSound.start(this.engine.audioCtx.currentTime);
       return this.currentSound;
     }
-    
+
     //load from disk
     try{
       const data = await AudioLoader.LoadSound(resRef);
@@ -267,7 +267,7 @@ export class AudioEmitter {
         log.info('AudioEmitter', 'Sound not added to emitter', resRef);
         log.error(e as Error);
       }
-    }catch(e){
+    }catch{
       log.info('AudioEmitter', 'Sound not found', resRef);
     }
   }
@@ -286,7 +286,7 @@ export class AudioEmitter {
       this.currentSound.connect(this.mainNode);
       return this.currentSound;
     }
-    
+
     //load from disk
     try{
       const data = await AudioLoader.LoadStreamWave(resRef);
@@ -360,7 +360,7 @@ export class AudioEmitter {
   playNextSound(): void {
     if(this.isDestroyed || this.state == AudioEmitterState.FADING_OUT)
       return;
-    
+
     this.disposeCurrentSound();
 
     if(!this.sounds.length){
@@ -416,7 +416,7 @@ export class AudioEmitter {
       return buffer;
     }catch(e){
       log.error('AudioEmitter.addSound: Failed to decodeAudioData');
-      if (e.name === 'DataCloneError') {
+      if (e instanceof Error && e.name === 'DataCloneError') {
         log.error('AudioEmitter.addSound: ArrayBuffer is detached. This usually happens when the buffer was transferred to another context.');
       }
       log.error(e as Error);
@@ -448,7 +448,7 @@ export class AudioEmitter {
 
     if(this.isDestroyed)
       return;
-    
+
     if(!this.currentSound){
       return;
     }
@@ -464,7 +464,7 @@ export class AudioEmitter {
     const fadeEndTime = now + fadeTime;
     this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
     this.gainNode.gain.linearRampToValueAtTime(0, fadeEndTime);
-      
+
     if(this.currentSound){
       this.currentSound.onended = () => {
         this.state = AudioEmitterState.STOPPED;

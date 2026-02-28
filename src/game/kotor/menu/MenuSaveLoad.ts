@@ -46,7 +46,7 @@ export class MenuSaveLoad extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if (skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       this._button_y = this.BTN_DELETE;
 
@@ -71,7 +71,7 @@ export class MenuSaveLoad extends GameMenu {
             };
             this.manager.MenuSaveName.open();
           } else {
-
+            return;
           }
         }
       });
@@ -143,23 +143,23 @@ export class MenuSaveLoad extends GameMenu {
     if (this.selected instanceof SaveGame) {
       this.LB_GAMES.selectItem(this.selected);
       if (this.selected instanceof NewSaveItem) {
-
+        void 0;
       } else {
         this.selected.getThumbnail().then((texture: OdysseyTexture) => {
           this.LBL_SCREENSHOT.setFillTexture(texture);
-          (this.LBL_SCREENSHOT.getFill().material as THREE.ShaderMaterial).transparent = false;
+          ((this.LBL_SCREENSHOT.getFill().material as unknown) as { transparent: boolean }).transparent = false;
         });
         this.selected.getPortrait(0).then((texture: OdysseyTexture) => {
           this.LBL_PM1.setFillTexture(texture);
-          (this.LBL_PM1.getFill().material as THREE.ShaderMaterial).transparent = false;
+          ((this.LBL_PM1.getFill().material as unknown) as { transparent: boolean }).transparent = false;
         });
         this.selected.getPortrait(1).then((texture: OdysseyTexture) => {
           this.LBL_PM2.setFillTexture(texture);
-          (this.LBL_PM2.getFill().material as THREE.ShaderMaterial).transparent = false;
+          ((this.LBL_PM2.getFill().material as unknown) as { transparent: boolean }).transparent = false;
         });
         this.selected.getPortrait(2).then((texture: OdysseyTexture) => {
           this.LBL_PM3.setFillTexture(texture);
-          (this.LBL_PM3.getFill().material as THREE.ShaderMaterial).transparent = false;
+          ((this.LBL_PM3.getFill().material as unknown) as { transparent: boolean }).transparent = false;
         });
         const areaNames = this.selected.getAreaName().split(' - ');
         if (areaNames.length == 2) {

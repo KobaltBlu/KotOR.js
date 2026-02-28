@@ -11,8 +11,6 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { DLGTreeNode } from '@/apps/forge/interfaces/DLGTreeNode';
-import { DLGTreeModel } from '@/apps/forge/utils/DLGTreeModel';
 import { DLGNodeType } from '@/enums/dialog/DLGNodeType';
 import { DLGNode } from '@/resource/DLGNode';
 import { DLGObject } from '@/resource/DLGObject';

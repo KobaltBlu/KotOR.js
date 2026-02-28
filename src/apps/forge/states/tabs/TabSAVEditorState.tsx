@@ -44,7 +44,7 @@ export class TabSAVEditorState extends TabState {
     log.trace("TabSAVEditorState openFile entry");
     if(this.file){
       log.trace("TabSAVEditorState openFile readFile");
-      const response = await this.file.readFile();
+      await this.file.readFile();
       log.debug("TabSAVEditorState openFile path", this.file.path);
       this.erf = new KotOR.ERFObject(this.file.path);
       log.trace("TabSAVEditorState openFile ERFObject created, load");

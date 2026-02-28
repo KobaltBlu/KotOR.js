@@ -4,7 +4,7 @@ import { GameState } from "@/GameState";
 import { GameMenu, GUILabel, GUIListBox, GUIButton } from "@/gui";
 import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import { TextureLoader } from "@/loaders";
-import type { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "@/module";
+import type { ModuleItem, ModuleObject } from "@/module";
 
 const STR_SWITCH_TO = 47884;
 const STR_GET_ITEMS = 38542;
@@ -12,9 +12,9 @@ const STR_GIVE_ITEMS = 38543;
 
 /**
  * MenuContainer class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuContainer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -41,7 +41,7 @@ export class MenuContainer extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -66,7 +66,7 @@ export class MenuContainer extends GameMenu {
           }
           this.close();
         }else{
-
+          return;
         }
       });
       this._button_a = this.BTN_OK;
@@ -85,11 +85,11 @@ export class MenuContainer extends GameMenu {
       });
       this._button_x = this.BTN_GIVEITEMS;
 
-      this.LB_ITEMS.onSelected = (item: ModuleItem) => {
+      this.LB_ITEMS.onSelected = (_item: ModuleItem) => {
         if(this.mode == MenuContainerMode.TAKE_ITEMS){
-
+          return;
         }else{
-          
+          return;
         }
       }
 
@@ -102,8 +102,8 @@ export class MenuContainer extends GameMenu {
     if (onClosed && this.container instanceof GameState.Module.ModuleArea.ModulePlaceable) {
       try {
         this.container.close(GameState.getCurrentPlayer());
-      } catch (e: unknown) {
-
+      } catch {
+        return;
       }
     }
   }
@@ -154,5 +154,5 @@ export class MenuContainer extends GameMenu {
     }
 
   }
-  
+
 }

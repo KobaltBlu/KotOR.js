@@ -260,7 +260,7 @@ export class DLGDragDropManager {
   /**
    * Move a starting node
    */
-  private moveStartingNode(dragNode: DLGTreeNode, targetNode: DLGTreeNode, before: boolean): void {
+  private moveStartingNode(dragNode: DLGTreeNode, targetNode: DLGTreeNode, _before: boolean): void {
     if (dragNode.nodeType !== DLGNodeType.STARTING || targetNode.nodeType !== DLGNodeType.STARTING) {
       throw new Error('Both nodes must be starting nodes');
     }

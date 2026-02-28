@@ -11,9 +11,9 @@ import type { ITwoDARowData } from "@/resource/TwoDAObject";
 
 /**
  * Faction class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file Faction.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -85,7 +85,7 @@ export class Faction {
     return undefined;
   }
 
-  getWeakestMember(bMustBeVisible = false){
+  getWeakestMember(_bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let lowerCR = Infinity;
       let cLowestCR = 0;
@@ -100,12 +100,12 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+      return currentCreature;
     // }
     return undefined;
   }
 
-  getStrongestMember(bMustBeVisible = false){
+  getStrongestMember(_bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let highestCR = -Infinity;
       let cHighestCR = 0;
@@ -120,12 +120,12 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+      return currentCreature;
     // }
     return undefined;
   }
 
-  getMostDamagedMember(bMustBeVisible = false){
+  getMostDamagedMember(_bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let lowestHP = Infinity;
       let cLowestHP = 0;
@@ -140,12 +140,12 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+      return currentCreature;
     // }
     return undefined;
   }
 
-  getLeastDamagedMember(bMustBeVisible = false){
+  getLeastDamagedMember(_bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let highestHP = -Infinity;
       let cHighestHP = 0;
@@ -160,12 +160,12 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+      return currentCreature;
     // }
     return undefined;
   }
 
-  getWorstACMember(bMustBeVisible = false){
+  getWorstACMember(_bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let ac = Infinity;
       let cAC = 0;
@@ -180,12 +180,12 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+      return currentCreature;
     // }
     return undefined;
   }
 
-  getBestACMember(bMustBeVisible = false){
+  getBestACMember(_bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let ac = -Infinity;
       let cAC = 0;
@@ -200,7 +200,7 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+      return currentCreature;
     // }
     return undefined;
   }
@@ -228,7 +228,7 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalRep / totalCreatures); 
+      return Math.floor(totalRep / totalCreatures);
     }
     return -1;
   }
@@ -244,7 +244,7 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalGoodEvil / totalCreatures); 
+      return Math.floor(totalGoodEvil / totalCreatures);
     // }
     return -1;
   }
@@ -260,7 +260,7 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalLevel / totalCreatures); 
+      return Math.floor(totalLevel / totalCreatures);
     // }
     return -1;
   }
@@ -276,7 +276,7 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalExp / totalCreatures); 
+      return Math.floor(totalExp / totalCreatures);
     // }
     return -1;
   }
@@ -296,13 +296,15 @@ export class Faction {
       if(classCount.size){
         let bestClass = undefined;
         let count = -Infinity;
-        for(const c of classCount.entries()){
-          if(c[1] > count){
-            bestClass = c[0];
-            count = c[1];
+        for(const entry of classCount.entries()){
+          const classId = entry[0] as number;
+          const classCountValue = entry[1] as number;
+          if(classCountValue > count){
+            bestClass = classId;
+            count = classCountValue;
           }
         }
-        return typeof bestClass == 'number' ? bestClass : -1; 
+        return typeof bestClass == 'number' ? bestClass : -1;
       }else{
         return -1;
       }

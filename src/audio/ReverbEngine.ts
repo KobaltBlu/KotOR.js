@@ -8,9 +8,9 @@ const log = createScopedLogger(LogScope.Audio);
 
 /**
  * ReverbEngine class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ReverbEngine.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -55,7 +55,7 @@ export class ReverbEngine {
   private decayHFRatio: number = 1.0;
   private decayLFRatio: number = 1.0;
   private cachedWetGain: number = 0;
-  
+
   // Missing EAX features
   private reflectionsPan: [number, number, number] = [0, 0, 0];
   private lateReverbPan: [number, number, number] = [0, 0, 0];
@@ -375,15 +375,9 @@ export class ReverbEngine {
       return 1.0;
     }
 
-    const orientX = this.listenerOrientation[0];
-    const orientY = this.listenerOrientation[1];
-    const orientZ = this.listenerOrientation[2];
     const relativeX = relativePos[0] / distance;
     const relativeY = relativePos[1] / distance;
     const relativeZ = relativePos[2] / distance;
-
-    const dotProduct = relativeX * orientX + relativeY * orientY + relativeZ * orientZ;
-    const angle = Math.acos(Math.max(-1, Math.min(1, dotProduct / distance)));
 
     const azimuth = Math.atan2(relativeX, relativeZ);
     const elevation = Math.asin(relativeY / distance);
@@ -422,7 +416,6 @@ export class ReverbEngine {
 
   calculateDistanceAttenuation(distance: number) {
     const minDistance = 1.0;
-    const maxDistance = 100.0;
     const rolloffFactor = 1.0;
 
     if (distance <= minDistance) {

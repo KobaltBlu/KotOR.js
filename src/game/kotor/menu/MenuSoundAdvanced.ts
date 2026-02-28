@@ -1,16 +1,16 @@
 import { AudioEngine } from "@/audio/AudioEngine";
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 /**
  * MenuSoundAdvanced class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuSoundAdvanced.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -37,7 +37,7 @@ export class MenuSoundAdvanced extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<void>((resolve, _reject) => {
     this.CB_FORCESOFTWARE.attachINIProperty('Sound Options.Force Software');
     this.CB_FORCESOFTWARE.onValueChanged = () => {
       log.info('CB_FORCESOFTWARE', 'onValueChanged');
@@ -60,5 +60,6 @@ export class MenuSoundAdvanced extends GameMenu {
 show() {
   super.show();
 }
-  
+
 }
+

@@ -11,9 +11,9 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * MainMusic class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMusic.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -58,10 +58,10 @@ export class MainMusic extends GameMenu {
     log.trace('menuControlInitializer entered', { skipInit });
     await super.menuControlInitializer(true);
     if(skipInit) { log.trace('menuControlInitializer skipInit, returning'); return; }
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       log.debug('MainMusic initializing LB_MUSIC and audio');
       this.LB_MUSIC.GUIProtoItemClass = GUIMusicItem;
-      
+
       const AudioContextCtor = (typeof globalThis !== 'undefined' && (globalThis as { AudioContext?: typeof AudioContext }).AudioContext) ||
         (typeof globalThis !== 'undefined' && (globalThis as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
       this.audioCtx = new (AudioContextCtor || AudioContext)();
@@ -119,11 +119,11 @@ export class MainMusic extends GameMenu {
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_LOOP.addEventListener('click', (e) => {
+      this.BTN_LOOP.addEventListener('click', (_e) => {
         this.loop = !this.loop;
         this.BTN_LOOP.pulsing = this.loop;
       });
-      
+
       this.SLI_VOLUME.onValueChanged = (value: number) => {
         value = Math.min(1, Math.max(0, value));
         this.musicVolume = value;
@@ -181,5 +181,6 @@ export class MainMusic extends GameMenu {
       log.warn('stopBackgroundMusic error', e);
     }
   }
-  
+
 }
+

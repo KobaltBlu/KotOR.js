@@ -45,7 +45,7 @@ export class TabGUIEditorState extends TabState {
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.guiMode = true;
-    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', (delta: number) => this.animate(delta));
 
     this.openFile();
     this.saveTypes = [
@@ -79,7 +79,7 @@ export class TabGUIEditorState extends TabState {
 
   public openFile(file?: EditorFile){
     log.trace('TabGUIEditorState openFile entry', !!file);
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
+    return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }

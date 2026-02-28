@@ -258,7 +258,7 @@ export class TabResourceExplorerState extends TabState {
 	}
 
   static LoadModules() {
-		return new Promise<FileBrowserNode>( (resolve, reject) => {
+    return new Promise<FileBrowserNode>( (resolve, _reject) => {
       let modules: (KotOR.RIMObject | KotOR.ERFObject)[] = [];
 
       KotOR.RIMManager.RIMs.forEach( (rim: KotOR.RIMObject) => {
@@ -345,7 +345,7 @@ export class TabResourceExplorerState extends TabState {
   }
 
   static LoadLips() {
-		return new Promise<FileBrowserNode>( (resolve, reject) => {
+    return new Promise<FileBrowserNode>( (resolve, _reject) => {
 			let modules: (KotOR.RIMObject | KotOR.ERFObject)[] = [];
 
 			KotOR.RIMManager.RIMs.forEach( (rim: KotOR.RIMObject) => {
@@ -431,7 +431,7 @@ export class TabResourceExplorerState extends TabState {
   }
 
   static LoadTextures() {
-    return new Promise<FileBrowserNode>( (resolve, reject) => {
+    return new Promise<FileBrowserNode>( (resolve, _reject) => {
       const texture_packs: KotOR.ERFObject[] = [];
 
       KotOR.ERFManager.ERFs.forEach( (erf: KotOR.ERFObject) => {

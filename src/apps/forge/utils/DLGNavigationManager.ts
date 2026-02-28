@@ -10,8 +10,6 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { DLGTreeNode } from '@/apps/forge/interfaces/DLGTreeNode';
-
 export interface NavigationEntry {
   nodeId: string;
   timestamp: number;

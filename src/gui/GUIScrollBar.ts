@@ -14,14 +14,16 @@ import type { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unused-vars */
+
 
 const log = createScopedLogger(LogScope.Game);
 
 /**
  * GUIScrollBar class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIScrollBar.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -64,7 +66,7 @@ export class GUIScrollBar extends GUIControl{
       if(this._dir?.hasField('IMAGE')){
         TextureLoader.tpcLoader.fetch(this._dir.getStringByLabel('IMAGE')).then((texture: OdysseyTexture) => {
           this.arrowTex = texture;
-          
+
           //Up Arrow
           this.upArrowGeometry = new THREE.PlaneGeometry( 1, 1, 1 );
           this.upArrowMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), map: this.arrowTex, side: THREE.DoubleSide} );
@@ -256,7 +258,7 @@ export class GUIScrollBar extends GUIControl{
     });
 
   }
-  
+
   scrollUp() {
     // throw new Error("Method not implemented.");
   }
@@ -368,7 +370,7 @@ export class GUIScrollBar extends GUIControl{
         this.anchorOffset.set(-(this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset/2), 0);
       }else{
         this.anchorOffset.set((this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset/2), 0);
-      }      
+      }
     }else{
       this.anchorOffset.set(0, 0);
     }

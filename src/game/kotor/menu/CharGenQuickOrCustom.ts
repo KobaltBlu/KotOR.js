@@ -1,16 +1,16 @@
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { TalentFeat } from "@/talents";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { TalentFeat } from "@/talents";
 
 /**
  * CharGenQuickOrCustom class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenQuickOrCustom.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -34,7 +34,7 @@ export class CharGenQuickOrCustom extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.QUICK_CHAR_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         try{
@@ -51,9 +51,9 @@ export class CharGenQuickOrCustom extends GameMenu {
           GameState.CharGenManager.selectedCreature.cha = class_data.cha;
           GameState.CharGenManager.selectedCreature.str = class_data.str;
 
-          GameState.CharGenManager.selectedCreature.fortbonus = parseInt(saving_throw_data.fortsave);
-          GameState.CharGenManager.selectedCreature.willbonus = parseInt(saving_throw_data.willsave);
-          GameState.CharGenManager.selectedCreature.refbonus = parseInt(saving_throw_data.refsave);
+          GameState.CharGenManager.selectedCreature.fortbonus = Number.parseInt(String(saving_throw_data.fortsave), 10);
+          GameState.CharGenManager.selectedCreature.willbonus = Number.parseInt(String(saving_throw_data.willsave), 10);
+          GameState.CharGenManager.selectedCreature.refbonus = Number.parseInt(String(saving_throw_data.refsave), 10);
 
           for(let i = 0, len = feats_table.length; i < len; i++){
             const feat_data = feats_table[i];
@@ -61,14 +61,14 @@ export class CharGenQuickOrCustom extends GameMenu {
               GameState.CharGenManager.selectedCreature.feats.push(new TalentFeat(i));
             }
           }
-          
+
           this.manager.CharGenMain.close();
           this.manager.CharGenMain.childMenu = this.manager.CharGenQuickPanel;
           this.manager.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;
           this.manager.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
           this.manager.CharGenMain.open();
         }catch(e){
-          log.info(e);
+          log.info(String(e));
         }
       });
 
@@ -95,7 +95,9 @@ export class CharGenQuickOrCustom extends GameMenu {
 
         try{
           GameState.CharGenManager.selectedCreature.model.parent.remove(GameState.CharGenManager.selectedCreature.model);
-        }catch(e){}
+        }catch {
+          return;
+        }
 
         // this.manager.CharGenClass.getControlByName('_3D_MODEL'+(GameState.CharGenManager.selectedClass+1))
         //  .userData._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
@@ -112,5 +114,5 @@ export class CharGenQuickOrCustom extends GameMenu {
       resolve();
     });
   }
-  
+
 }

@@ -1,12 +1,10 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
-import { useApp } from "@/apps/launcher/context/AppContext";
+import { ProfilePromoItem } from "@/apps/launcher/components/ProfilePromoItem";
+import type { LauncherProfile, LauncherProfileElement } from "@/apps/launcher/types";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-
 const log = createScopedLogger(LogScope.Launcher);
-import type { LauncherProfile, LauncherProfileElement } from "@/apps/launcher/types";
-import { ProfilePromoItem } from "@/apps/launcher/components/ProfilePromoItem";
 
 export type ProfilePromoItemsProfile = LauncherProfile | { name: string; elements?: LauncherProfileElement[] };
 
@@ -23,7 +21,6 @@ export interface ProfilePromoItemsRef {
 }
 
 export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoItemsProps>(function(props, ref){
-  const appContext = useApp();
   const profile = props.profile;
   const tabRef = props.tabRef;
   const promoElementsRef = useRef<HTMLDivElement>(null);
@@ -45,7 +42,7 @@ export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoIt
     if(!tabRef.current || !promoElementsRef.current){
       return;
     }
-    
+
     const max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
     canScroll.current = max < 0;
   }, [tabRef, promoElementsRef]);
@@ -61,7 +58,7 @@ export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoIt
     const max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
     scrollLeftVisable.current = false;
     scrollRightVisable.current = false;
-    
+
     if(canScroll.current){
       if(scrollOffset.current < 0){
         scrollLeftVisable.current = true;
@@ -70,7 +67,7 @@ export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoIt
         scrollRightVisable.current = true;
       }
     }
-    
+
     setScrollL(scrollLeftVisable.current);
     setScrollR(scrollRightVisable.current);
     setMarginLeft(scrollOffset.current);
@@ -128,7 +125,7 @@ export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoIt
 
     // Create new ResizeObserver
     let debounceTimeout: NodeJS.Timeout | null = null;
-    resizeObserverRef.current = new ResizeObserver((entries) => {
+    resizeObserverRef.current = new ResizeObserver((_entries) => {
       // Debounce the updates to avoid excessive recalculations
       if (debounceTimeout) {
         clearTimeout(debounceTimeout);

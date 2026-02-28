@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "..";
 
 import { GameEngineType } from "@/enums/engine";
@@ -7,16 +9,17 @@ import { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
+
 
 
 const log = createScopedLogger(LogScope.Game);
-import * as THREE from "three";
 
 /**
  * GUIInventoryItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIInventoryItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -37,9 +40,9 @@ export class GUIInventoryItem extends GUIProtoItem {
       super.createControl();
       //Create the actual control elements below
 
-      const spacing = 5;
+      const _spacing = 5;
       const protoWidth = this.extent.width;
-      const protoHeight = this.extent.height;
+      const _protoHeight = this.extent.height;
       const iconWidth = this.extent.height;
       const iconHeight = this.extent.height;
 
@@ -99,7 +102,7 @@ export class GUIInventoryItem extends GUIProtoItem {
           this.widget.userData.iconMaterial.needsUpdate = true;
         }
       });
-      
+
       this.widget.userData.spriteGroup = new THREE.Group();
       //this.widget.spriteGroup.position.x = -(protoWidth/2)-(52/2); //HACK
       //this.widget.spriteGroup.position.y -= 4;
@@ -110,11 +113,11 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.widget.userData.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
       this.widget.userData.hexMaterial.transparent = true;
       this.widget.userData.hexSprite = new THREE.Sprite( this.widget.userData.hexMaterial );
-      this.widget.userData.hexSprite.scale.x = 
+      this.widget.userData.hexSprite.scale.x =
         this.widget.userData.hexSprite.scale.y = iconWidth;
       this.widget.userData.hexSprite.position.z = 1;
 
-      this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);  
+      this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);
       this.widget.userData.spriteGroup.add(this.widget.userData.iconSprite);
 
       if(this.node.getStackSize() >= 100){
@@ -136,7 +139,7 @@ export class GUIInventoryItem extends GUIProtoItem {
           this.text.color.setRGB(1, 1, 0);
           this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
-  
+
           buttonLabel.showHighlight();
           buttonLabel.hideBorder();
           this.widget.userData.hexMaterial.color.setRGB(1, 1, 0);
@@ -154,7 +157,7 @@ export class GUIInventoryItem extends GUIProtoItem {
           this.text.color.setRGB(0, 0.658824, 0.980392);
           this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
-  
+
           buttonLabel.hideHighlight();
           buttonLabel.showBorder();
           this.widget.userData.hexMaterial.color.setRGB(0, 0.658823549747467, 0.9803921580314636);

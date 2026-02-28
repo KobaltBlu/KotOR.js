@@ -1,7 +1,6 @@
 import React, { useRef } from "react";
 
-import { useApp } from "@/apps/launcher/context/AppContext";
-import type { LauncherProfileElement } from "@/apps/types";
+import type { LauncherProfileElement } from "@/apps/launcher/types";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Launcher);
@@ -14,8 +13,6 @@ export interface VideoPromoItemProps {
 
 export const VideoPromoItem = function(props: VideoPromoItemProps){
   const element = props.element;
-
-  const appContext = useApp();
 
   const videoElement = useRef(null) as React.RefObject<HTMLVideoElement>;
   const onVideoClick: React.MouseEventHandler<HTMLDivElement> = (e: React.MouseEvent<HTMLDivElement>) => {

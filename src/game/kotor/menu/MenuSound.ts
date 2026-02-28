@@ -1,18 +1,15 @@
 import { AudioEngine } from "@/audio/AudioEngine";
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
 import type { GUIListBox, GUILabel, GUIButton, GUISlider } from "@/gui";
 
 const DEFAULT_GAIN = 0.75;
 
 /**
  * MenuSound class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuSound.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -142,5 +139,5 @@ export class MenuSound extends GameMenu {
     this.SLI_FX.setValue(AudioEngine.GAIN_SFX);
     this.SLI_MOVIE.setValue(AudioEngine.GAIN_MOVIE);
   }
-  
+
 }

@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 import { GUIButton, GUIListBox, GUIProtoItem } from "..";
 
 import { GameEngineType } from "@/enums/engine";
@@ -8,18 +10,14 @@ import { GUIControl } from "@/gui/GUIControl";
 import { TextureLoader } from "@/loaders";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-
-
-const log = createScopedLogger(LogScope.Game);
-import * as THREE from "three";
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 
 /**
  * GUIEquipmentItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIEquipmentItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -85,10 +83,10 @@ export class GUIEquipmentItem extends GUIProtoItem {
       this.widget.userData.iconMaterial.visible = false;
       this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
       //log.info(this.node.getIcon());
-      TextureLoader.enQueue(this.node.getIcon(), this.widget.userData.iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+      TextureLoader.enQueue(this.node.getIcon(), this.widget.userData.iconMaterial, TextureType.TEXTURE, (_texture: OdysseyTexture) => {
         this.widget.userData.iconMaterial.visible = true;
       });
-      
+
       this.widget.userData.spriteGroup = new THREE.Group();
       //this.widget.spriteGroup.position.x = -(this.extent.width/2)-(52/2); //HACK
       //this.widget.spriteGroup.position.y -= 4;
@@ -104,7 +102,7 @@ export class GUIEquipmentItem extends GUIProtoItem {
 
       if(GameState.GameKey != GameEngineType.TSL)
         this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);
-        
+
       this.widget.userData.spriteGroup.add(this.widget.userData.iconSprite);
 
       if(this.node.getStackSize() >= 100){
@@ -126,7 +124,7 @@ export class GUIEquipmentItem extends GUIProtoItem {
           this.text.color.setRGB(1, 1, 0);
           this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
-  
+
           button.showHighlight();
           button.hideBorder();
           this.widget.userData.hexMaterial.color.setRGB(1, 1, 0);
@@ -144,7 +142,7 @@ export class GUIEquipmentItem extends GUIProtoItem {
           this.text.color.setRGB(0, 0.658824, 0.980392);
           this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
-  
+
           button.hideHighlight();
           button.showBorder();
           this.widget.userData.hexMaterial.color.setRGB(0, 0.658823549747467, 0.9803921580314636);

@@ -1,15 +1,15 @@
 import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
 import type { INIConfig } from "@/engine/INIConfig";
+import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
-import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 
 /**
  * FeedbackMessageManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file FeedbackMessageManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -28,7 +28,7 @@ export class FeedbackMessageManager {
     HideQuickMenuButtons: false,
     EnableToolTips: true,
   }
-  
+
   static Entries: FeedbackMessageEntry[] = [];
 
   static Init(){

@@ -43,7 +43,7 @@ export class MainMovies extends K1_MainMovies {
     log.trace('menuControlInitializer entered', { skipInit });
     await super.menuControlInitializer(true);
     if(skipInit) { log.trace('menuControlInitializer skipInit, returning'); return; }
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       log.debug('MainMovies initializing LB_MOVIES');
       this.LB_MOVIES.GUIProtoItemClass = GUIMovieItem;
       
@@ -75,3 +75,4 @@ export class MainMovies extends K1_MainMovies {
   }
   
 }
+

@@ -11,9 +11,7 @@ import { EditorFile } from "@/apps/forge/EditorFile";
 import { findAllReferencesInText, getWordAtIndex, createKeyResources, findScriptReferences, findStrRefReferences, findConversationReferences } from "@/apps/forge/helpers/ReferenceFinder";
 import type { ReferenceSearchResult } from "@/apps/forge/helpers/ReferenceFinderCore";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-
 // import { NWScriptCompiler } from "@/nwscript/NWScriptCompiler";
-
 import * as KotOR from "@/apps/forge/KotOR";
 import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
@@ -27,7 +25,6 @@ import type { CompilerProgramNode } from "@/nwscript/compiler/CompilerNodeTypes"
 import { NWScriptCompiler } from "@/nwscript/compiler/NWScriptCompiler";
 import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
-
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -393,11 +390,15 @@ export class TabTextEditorState extends TabState {
     const raw = window.localStorage.getItem(key);
     if(raw){
       try{
-        const parsed = JSON.parse(raw);
+        const parsed: unknown = JSON.parse(raw);
         if(Array.isArray(parsed)){
           this.bookmarks = parsed
-            .filter((b) => typeof b?.line === 'number')
-            .map((b) => ({ line: b.line, description: String(b.description || '') }));
+            .filter((bookmark): bookmark is { line: number; description?: string } => {
+              if (typeof bookmark !== 'object' || bookmark === null) return false;
+              const candidate = bookmark as { line?: unknown };
+              return typeof candidate.line === 'number';
+            })
+            .map((bookmark) => ({ line: bookmark.line, description: String(bookmark.description || '') }));
         }
       }catch{
         this.bookmarks = [];
@@ -469,11 +470,15 @@ export class TabTextEditorState extends TabState {
     const raw = window.localStorage.getItem('forge.textEditor.snippets');
     if(raw){
       try{
-        const parsed = JSON.parse(raw);
+        const parsed: unknown = JSON.parse(raw);
         if(Array.isArray(parsed)){
           this.snippets = parsed
-            .filter((s) => typeof s?.name === 'string')
-            .map((s) => ({ name: String(s.name || ''), content: String(s.content || '') }));
+            .filter((snippet): snippet is { name: string; content?: string } => {
+              if (typeof snippet !== 'object' || snippet === null) return false;
+              const candidate = snippet as { name?: unknown };
+              return typeof candidate.name === 'string';
+            })
+            .map((snippet) => ({ name: String(snippet.name || ''), content: String(snippet.content || '') }));
         }
       }catch{
         this.snippets = [];
@@ -576,13 +581,19 @@ export class TabTextEditorState extends TabState {
           const markers: monacoEditor.editor.IMarkerData[] = [ ];
           for(let i = 0; i < this.nwScriptParser.errors.length; i++){
             const error = this.nwScriptParser.errors[i];
-            if(error && error.offender && error.offender.source){
+            const source = error?.offender?.source as {
+              first_line: number;
+              first_column: number;
+              last_line: number;
+              last_column: number;
+            } | undefined;
+            if(error && source){
               markers.push({
                 severity: this.monaco.MarkerSeverity.Error,
-                startLineNumber: error.offender.source.first_line,
-                startColumn: error.offender.source.first_column + 1,
-                endLineNumber: error.offender.source.last_line,
-                endColumn: error.offender.source.last_column + 1,
+                startLineNumber: source.first_line,
+                startColumn: source.first_column + 1,
+                endLineNumber: source.last_line,
+                endColumn: source.last_column + 1,
                 message: error.message
               });
             }else{
@@ -724,7 +735,8 @@ export class TabTextEditorState extends TabState {
     log.error(`compile Failed with (${ForgeState.nwScriptParser.errors.length}) error!`);
     for(let i = 0; i < ForgeState.nwScriptParser.errors.length; i++){
       const error = ForgeState.nwScriptParser.errors[i];
-      log.error(`Error ${i}:`, error.message, error.offender?.source?.first_line, error.offender?.source?.first_column);
+      const source = error?.offender?.source as { first_line?: number; first_column?: number } | undefined;
+      log.error(`Error ${i}:`, error.message, source?.first_line, source?.first_column);
     }
     return false;
 

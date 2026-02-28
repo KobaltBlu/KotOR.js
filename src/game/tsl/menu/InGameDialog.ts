@@ -3,7 +3,6 @@ import * as THREE from "three";
 import { InGameDialog as K1_InGameDialog } from "@/game/kotor/KOTOR";
 import { GameState } from "@/GameState";
 import type { GUIControl, GUILabel, GUIListBox } from "@/gui";
-import { ITwoDAAnimation } from "@/interface";
 import { DLGNode } from "@/resource/DLGNode";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
@@ -11,9 +10,9 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * InGameDialog class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameDialog.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -37,7 +36,7 @@ export class InGameDialog extends K1_InGameDialog {
       log.debug('InGameDialog.menuControlInitializer: skipInit true, returning early');
       return;
     }
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LBL_MESSAGE.setText('');
       this.LBL_MESSAGE.setTextColor(this.LBL_MESSAGE.defaultColor.r, this.LBL_MESSAGE.defaultColor.g, this.LBL_MESSAGE.defaultColor.b);
 
@@ -64,5 +63,6 @@ export class InGameDialog extends K1_InGameDialog {
       resolve();
     });
   }
-  
+
 }
+

@@ -5,9 +5,9 @@ import { ModuleCreature, ModulePlaceable } from "@/module";
 
 /**
  * MenuContainer class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuContainer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -30,7 +30,7 @@ export class MenuContainer extends K1_MenuContainer {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
         this.LB_ITEMS.clearItems();
@@ -63,7 +63,8 @@ export class MenuContainer extends K1_MenuContainer {
     if (onClosed && this.container instanceof ModulePlaceable) {
       try {
         this.container.close(GameState.getCurrentPlayer() as ModuleCreature);
-      } catch (e: unknown) {
+      } catch {
+        return;
       }
     }
     this.container = undefined;
@@ -77,5 +78,6 @@ export class MenuContainer extends K1_MenuContainer {
   show() {
     super.show();
   }
-  
+
 }
+

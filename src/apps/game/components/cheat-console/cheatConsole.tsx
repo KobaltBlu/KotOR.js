@@ -1,16 +1,15 @@
 import React, { useState } from "react";
 
 import { useApp } from "@/apps/game/context/AppContext";
+import * as KotOR from "@/apps/game/KotOR";
 import { EngineDebugType } from "@/enums/engine/EngineDebugType";
 import "@/apps/game/components/cheat-console/cheat-console.scss";
-import * as KotOR from "@/apps/game/KotOR";
 
 export const CheatConsole = () => {
   const appContext = useApp();
   const [appState] = appContext.appState;
   const [gameKey] = appContext.gameKey;
-  const [showCheatConsole, setShowCheatConsole] = appContext.showCheatConsole;
-  const [showPerformanceMonitor] = appContext.showPerformanceMonitor;
+  const [, setShowCheatConsole] = appContext.showCheatConsole;
   const [consoleInput, setConsoleInput] = useState('');
   const [debugTick, setDebugTick] = useState(0);
   const [showDebugMenu, setShowDebugMenu] = useState(false);

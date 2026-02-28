@@ -6,8 +6,7 @@ import * as KotOR from '@/apps/forge/KotOR';
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import type { TabState } from "@/apps/forge/states/tabs/TabState";
 import type { TabTextEditorState } from "@/apps/forge/states/tabs/TabTextEditorState";
-import { FunctionNode, StructNode, VariableListNode, VariableNode } from "@/nwscript/compiler/ASTTypes";
-import { NWScriptASTBuilder } from "@/nwscript/compiler/NWScriptASTBuilder";
+import { FunctionNode, StructNode, VariableListNode, VariableNode, ExpressionNode } from "@/nwscript/compiler/ASTTypes";
 import { NWScriptASTCodeGen } from "@/nwscript/compiler/NWScriptASTCodeGen";
 import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
@@ -58,8 +57,60 @@ export class NWScriptLanguageService {
 
   static initNWScriptLanguage() {
     log.trace('initNWScriptLanguage entry');
-    type ArgValue = { x?: number; y?: number; z?: number; type?: string; value?: ArgValue; datatype?: { value?: string } };
-    const arg_value_parser = function( value: ArgValue | string | number | undefined ): string | number | undefined {
+    type DataTypeLike = { value: string };
+    type SourceLike = { first_line?: number; first_column?: number; last_line?: number; last_column?: number };
+    type ArgValue = { x?: number; y?: number; z?: number; type?: string; value?: ArgInput; datatype?: { value?: string } };
+    type ArgInput = ArgValue | ExpressionNode | string | number | null | undefined;
+    type EngineTypeDef = { index: number; name: string };
+    type EngineConstantDef = { index: number; name: string; datatype: DataTypeLike; value?: ArgInput; source?: SourceLike };
+    type EngineArgumentDef = { name: string; datatype: DataTypeLike; value?: ArgInput };
+    type EngineActionDef = { index: number; name: string; returntype: DataTypeLike; arguments: EngineArgumentDef[]; comment?: string; source?: SourceLike };
+    type StructPropertyDef = { name: string; datatype: DataTypeLike; source?: SourceLike };
+    type LocalVariableDef = {
+      name: string;
+      datatype: DataTypeLike;
+      is_const?: boolean;
+      type?: string;
+      struct_reference?: { properties: StructPropertyDef[] };
+      properties?: StructPropertyDef[];
+      source?: SourceLike;
+    };
+    type LocalFunctionDef = { name: string; returntype: DataTypeLike; arguments: EngineArgumentDef[]; source?: SourceLike; comment?: string };
+    type ParserLike = NWScriptParser & {
+      local_variables?: LocalVariableDef[];
+      local_functions?: LocalFunctionDef[];
+      program?: NWScriptParser['program'] & {
+        scope?: { variables?: LocalVariableDef[] };
+        functions?: LocalFunctionDef[];
+      };
+    };
+
+    const normalizeArgInput = (value: ArgInput): ArgValue | string | number | undefined => {
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'undefined' || value === null) {
+        return value ?? undefined;
+      }
+      if (typeof value === 'object' && 'type' in value) {
+        const expr = value as ExpressionNode;
+        if (expr.type === 'literal') {
+          return expr.value;
+        }
+        if (expr.type === 'neg') {
+          return { type: 'neg', value: expr.value as ArgInput };
+        }
+      }
+      return value as ArgValue;
+    };
+
+    const getParserLocals = (parser: NWScriptParser): { variables: LocalVariableDef[]; functions: LocalFunctionDef[] } => {
+      const parserLike = parser as ParserLike;
+      return {
+        variables: parserLike.local_variables ?? parserLike.program?.scope?.variables ?? [],
+        functions: parserLike.local_functions ?? parserLike.program?.functions ?? []
+      };
+    };
+
+    const arg_value_parser = function( input: ArgInput ): string | number | undefined {
+      const value = normalizeArgInput(input);
       log.trace('arg_value_parser', { valueType: typeof value });
       if(typeof value === 'undefined') {
         log.trace('arg_value_parser undefined -> NULL');
@@ -95,27 +146,33 @@ export class NWScriptLanguageService {
     log.trace('initNWScriptLanguage register language id nwscript');
     monacoEditor.languages.register({ id: 'nwscript' });
 
-    const tokenConfig: monacoEditor.languages.IMonarchLanguage = {
-      keywords: [
-        'int', 'float', 'object', 'vector', 'string', 'void', 'action', 
+    const tokenKeywords: string[] = [
+        'int', 'float', 'object', 'vector', 'string', 'void', 'action',
         'default', 'const', 'if', 'else', 'switch', 'case',
         'while', 'do', 'for', 'break', 'continue', 'return', 'struct', 'OBJECT_SELF', 'OBJECT_INVALID',
-      ],
+      ];
+    const tokenFunctions: string[] = [
+      //'GN_SetListeningPatterns'
+    ];
+    const tokenEngineActions: string[] = [];
+    const tokenEngineConstants: string[] = [];
+    const tokenLocalFunctions: string[] = [];
 
-      functions: [
-        //'GN_SetListeningPatterns'
-      ],
+    const tokenConfig: monacoEditor.languages.IMonarchLanguage = {
+      keywords: tokenKeywords,
 
-      engineActions: [] as string[],
+      functions: tokenFunctions,
 
-      engineConstants: [] as string[],
+      engineActions: tokenEngineActions,
 
-      localFunctions: [] as string[],
+      engineConstants: tokenEngineConstants,
+
+      localFunctions: tokenLocalFunctions,
 
       parenFollows: [
         'if', 'for', 'while', 'switch',
       ],
-    
+
       operators: [
         '=', '??', '||', '&&', '|', '^', '&', '==', '!=', '<=', '>=', '<<',
         '+', '-', '*', '/', '%', '!', '~', '++', '--', '+=',
@@ -130,11 +187,11 @@ export class NWScriptLanguageService {
           // numbers - MUST come before identifiers! Order matters - more specific patterns first
           [/0[xX][0-9a-fA-F_]+/, 'number.hex'],
           [/0[bB][01_]+/, 'number.hex'], // binary: use same theme style as hex
-          [/[0-9]+\.[0-9]+([eE][\-+]?[0-9]+)?[fFdD]?/, 'number.float'],
+          [/[0-9]+\.[0-9]+([eE][-+]?[0-9]+)?[fFdD]?/, 'number.float'],
           [/[0-9]+/, 'number'],
 
           // identifiers and keywords
-          [/\@?[a-zA-Z_][a-zA-Z0-9_]*/, {
+          [/@?[a-zA-Z_][a-zA-Z0-9_]*/, {
             cases: {
               //'@namespaceFollows': { token: 'keyword.$0', next: '@namespace' },
               '@keywords': { token: 'keyword.$0', next: '@qualified' },
@@ -172,13 +229,13 @@ export class NWScriptLanguageService {
           }],
           [/\./, 'delimiter'],
           ['', '', '@pop'],
-        ],          
-        
+        ],
+
         comment: [
-          [/[^\/*]+/, 'comment'],
+          [/[^/*]+/, 'comment'],
           // [/\/\*/,    'comment', '@push' ],    // no nested comments :-(
-          ['\\*/', 'comment', '@pop'],
-          [/[\/*]/, 'comment']
+          ['*/', 'comment', '@pop'],
+          [/[/*]/, 'comment']
         ],
 
         whitespace: [
@@ -195,13 +252,13 @@ export class NWScriptLanguageService {
           [/\\./, 'string.escape.invalid'],
           [/"/, { token: 'string.quote', next: '@pop' }]
         ],
-    
+
         litstring: [
           [/[^"]+/, 'string'],
           [/""/, 'string.escape'],
           [/"/, { token: 'string.quote', next: '@pop' }]
         ],
-    
+
         litinterpstring: [
           [/[^"{]+/, 'string'],
           [/""/, 'string.escape'],
@@ -210,7 +267,7 @@ export class NWScriptLanguageService {
           [/{/, { token: 'string.quote', next: 'root.litinterpstring' }],
           [/"/, { token: 'string.quote', next: '@pop' }]
         ],
-    
+
         interpolatedstring: [
           [/[^\\"{]+/, 'string'],
           //[/@escapes/, 'string.escape'],
@@ -224,32 +281,42 @@ export class NWScriptLanguageService {
     };
 
     log.trace('initNWScriptLanguage building token config');
-    const _nw_types = ForgeState.nwScriptParser.engine_types.slice(0);
+    const _nw_types = (ForgeState.nwScriptParser.engine_types as EngineTypeDef[]).slice(0);
     log.trace('initNWScriptLanguage engine_types count', _nw_types.length);
-    for(let i = 0; i < _nw_types.length; i++){
+    for (let i = 0; i < _nw_types.length; i++) {
       const nw_type = _nw_types[i];
-      tokenConfig.keywords.push(nw_type.name);
-      log.trace('initNWScriptLanguage keyword', nw_type.name);
+      if (nw_type?.name) {
+        tokenKeywords.push(nw_type.name);
+        log.trace('initNWScriptLanguage keyword', nw_type.name);
+      }
     }
 
-    const _nw_actions = ForgeState.nwScriptParser.engine_actions.slice(0);
+    const _nw_actions = (ForgeState.nwScriptParser.engine_actions as EngineActionDef[]).slice(0);
     log.trace('initNWScriptLanguage engine_actions count', _nw_actions.length);
-    for(let i = 0; i < _nw_actions.length; i++){
+    for (let i = 0; i < _nw_actions.length; i++) {
       const nw_action = _nw_actions[i];
-      tokenConfig.engineActions.push(nw_action.name);
-      log.trace('initNWScriptLanguage engineAction', nw_action.name);
+      if (nw_action?.name) {
+        tokenEngineActions.push(nw_action.name);
+        log.trace('initNWScriptLanguage engineAction', nw_action.name);
+      }
     }
 
-    const _nw_constants = ForgeState.nwScriptParser.engine_constants.slice(0);
+    const _nw_constants = (ForgeState.nwScriptParser.engine_constants as EngineConstantDef[]).slice(0);
     log.trace('initNWScriptLanguage engine_constants count', _nw_constants.length);
-    for(let i = 0; i < _nw_constants.length; i++){
+    for (let i = 0; i < _nw_constants.length; i++) {
       const nw_constant = _nw_constants[i];
-      tokenConfig.engineConstants.push(nw_constant.name);
-      log.trace('initNWScriptLanguage engineConstant', nw_constant.name);
+      if (nw_constant?.name) {
+        tokenEngineConstants.push(nw_constant.name);
+        log.trace('initNWScriptLanguage engineConstant', nw_constant.name);
+      }
     }
 
     NWScriptLanguageService.nwScriptTokenConfig = tokenConfig;
-    log.debug('initNWScriptLanguage token config stored', { keywords: tokenConfig.keywords.length, engineActions: tokenConfig.engineActions.length, engineConstants: tokenConfig.engineConstants.length });
+    log.debug('initNWScriptLanguage token config stored', {
+      keywords: tokenKeywords.length,
+      engineActions: tokenEngineActions.length,
+      engineConstants: tokenEngineConstants.length
+    });
 
     log.trace('initNWScriptLanguage setMonarchTokensProvider');
     monacoEditor.languages.setMonarchTokensProvider( 'nwscript', tokenConfig);
@@ -361,7 +428,7 @@ export class NWScriptLanguageService {
       });
     }
 
-    const nw_types = ForgeState.nwScriptParser.engine_types.slice(0);
+    const nw_types = (ForgeState.nwScriptParser.engine_types as EngineTypeDef[]).slice(0);
     log.trace('initNWScriptLanguage type suggestions count', nw_types.length);
     for(let i = 0; i < nw_types.length; i++){
       const nw_type = nw_types[i];
@@ -376,7 +443,7 @@ export class NWScriptLanguageService {
       });
     }
 
-    const nw_constants = ForgeState.nwScriptParser.engine_constants.slice(0);
+    const nw_constants = (ForgeState.nwScriptParser.engine_constants as EngineConstantDef[]).slice(0);
     log.trace('initNWScriptLanguage constant suggestions count', nw_constants.length);
     for(let i = 0; i < nw_constants.length; i++){
       const nw_constant = nw_constants[i];
@@ -393,11 +460,11 @@ export class NWScriptLanguageService {
 
     //Engine Routines
     // const nw_actions = Object.entries(
-    //   KotOR.ApplicationProfile.GameKey == KotOR.GameEngineType.KOTOR ? 
-    //   KotOR.NWScriptDefK1.Actions : 
+    //   KotOR.ApplicationProfile.GameKey == KotOR.GameEngineType.KOTOR ?
+    //   KotOR.NWScriptDefK1.Actions :
     //   KotOR.NWScriptDefK2.Actions
     // );
-    const nw_actions = ForgeState.nwScriptParser.engine_actions.slice(0);
+    const nw_actions = (ForgeState.nwScriptParser.engine_actions as EngineActionDef[]).slice(0);
     log.trace('initNWScriptLanguage engine action suggestions count', nw_actions.length);
     nw_actions.forEach( (action) =>{
       log.trace('initNWScriptLanguage action suggestion', action.name);
@@ -409,9 +476,9 @@ export class NWScriptLanguageService {
           args.push(`\${${(i+1)}:${arg.datatype.value} ${arg.name} = ${arg_value_parser(arg.value)}}`);
         }else{
           args.push(`\${${(i+1)}:${arg.datatype.value} ${arg.name}}`);
-        } 
+        }
       }
-      
+
       nw_suggestions.push({
         label: action.name,
         kind: monacoEditor.languages.CompletionItemKind.Function,
@@ -509,7 +576,8 @@ export class NWScriptLanguageService {
           log.trace('provideCompletionItems parser', !!parser);
           if(parser){
             try {
-              const l_variables = parser.local_variables || (parser.program?.scope?.variables || []);
+              const locals = getParserLocals(parser);
+              const l_variables = locals.variables;
               log.trace('provideCompletionItems local_variables count', Array.isArray(l_variables) ? l_variables.length : 0);
               if (Array.isArray(l_variables)) {
                 for(let i = 0; i < l_variables.length; i++){
@@ -530,8 +598,9 @@ export class NWScriptLanguageService {
                   });
                 }
               }
-            } catch (e) {
-              log.warn('Error accessing parser variables:', e);
+            } catch (e: unknown) {
+              const err = e as Error | { name?: string; type?: string };
+              log.warn('Error accessing parser variables:', err);
             }
           }
           const total = local_suggestions.length + nw_suggestions.length;
@@ -541,13 +610,14 @@ export class NWScriptLanguageService {
             incomplete: true,
             suggestions: [...local_suggestions, ...nw_suggestions] as monacoEditor.languages.CompletionItem[],
           };
-        }catch(e){
+        } catch (e: unknown) {
           log.trace('provideCompletionItems catch');
-          log.error('Autocomplete error:', e as Error);
+          const err = e as Error | { name?: string; type?: string };
+          log.error('Autocomplete error:', err);
           // Always return at least the engine suggestions even on error
-          return { 
-            incomplete: true, 
-            suggestions: nw_suggestions 
+          return {
+            incomplete: true,
+            suggestions: nw_suggestions
           };
         }
       }
@@ -555,7 +625,7 @@ export class NWScriptLanguageService {
 
     log.info('initNWScriptLanguage registering document formatter');
     monacoEditor.languages.registerDocumentFormattingEditProvider('nwscript', {
-      provideDocumentFormattingEdits: (model: monacoEditor.editor.ITextModel, options: monacoEditor.languages.FormattingOptions, token: monacoEditor.CancellationToken) => {
+      provideDocumentFormattingEdits: (model: monacoEditor.editor.ITextModel, _options: monacoEditor.languages.FormattingOptions, _token: monacoEditor.CancellationToken) => {
         log.trace('provideDocumentFormattingEdits entry', { uri: model.uri.toString() });
         const text = model.getValue();
         log.trace('provideDocumentFormattingEdits text length', text.length);
@@ -586,13 +656,13 @@ export class NWScriptLanguageService {
 
     log.info('initNWScriptLanguage registering hover provider');
     monacoEditor.languages.registerHoverProvider('nwscript', {
-      provideHover: function (model: monacoEditor.editor.ITextModel, position: monacoEditor.Position, token: monacoEditor.CancellationToken) {
+      provideHover: function (model: monacoEditor.editor.ITextModel, position: monacoEditor.Position, _token: monacoEditor.CancellationToken) {
         log.trace('provideHover entry', { line: position.lineNumber, column: position.column });
         const wordObject = model.getWordAtPosition(position);
         if(wordObject){
           log.trace('provideHover word', wordObject.word);
 
-          const nw_constant = ForgeState.nwScriptParser.engine_constants.find( (obj) => obj.name == wordObject.word );
+          const nw_constant = (ForgeState.nwScriptParser.engine_constants as EngineConstantDef[]).find((obj) => obj.name == wordObject.word);
           if(nw_constant){
             log.trace('provideHover match engine constant', nw_constant.name);
             return {
@@ -603,11 +673,11 @@ export class NWScriptLanguageService {
             };
           }
 
-          const action = nw_actions.find( (obj: { name: string }) => obj.name == wordObject.word );
+          const action = nw_actions.find((obj) => obj.name == wordObject.word);
           if(action){
             log.trace('provideHover match engine action', action.name);
             let args = '';
-            const function_definition = ForgeState.nwScriptParser.engine_actions.find((a) =>
+            const function_definition = (ForgeState.nwScriptParser.engine_actions as EngineActionDef[]).find((a) =>
               a.name === wordObject.word || a.name === action.name
             );
             if(!function_definition) {
@@ -650,7 +720,7 @@ export class NWScriptLanguageService {
             } else if (action.comment && action.comment.trim()) {
               hoverContent += `\n\n**Documentation:**\n\`\`\`\n${action.comment.trim()}\n\`\`\``;
             }
-            
+
             return {
               contents: [
                 { value: `**nwscript.nss**` },
@@ -663,23 +733,25 @@ export class NWScriptLanguageService {
           log.trace('provideHover parser', !!parser);
           if(parser){
 
-            const structPropertyMatches = model.getValue().matchAll(
-              new RegExp("(?:[A-Za-z_]|[A-Za-z_][A-Za-z0-9_]+)\\b[\\s|\\t+]?\\.[\\s|\\t+]?"+wordObject.word+"\\b", 'g')
+            const structPropertyRegex = new RegExp(
+              "(?:[A-Za-z_]|[A-Za-z_][A-Za-z0-9_]+)\\b[\\s|\\t+]?\\.[\\s|\\t+]?" + wordObject.word + "\\b",
+              'g'
             );
-            const structProperty = structPropertyMatches?.next()?.value;
+            const structProperty = structPropertyRegex.exec(model.getValue())?.[0];
             if(structProperty){
               log.trace('provideHover structProperty match', structProperty);
-              const parts = structProperty["0"].split('.');
+              const parts = structProperty.split('.');
               const structName = parts[0];
               const structPropertyName = parts[1];
               log.trace('provideHover struct parts', { structName, structPropertyName });
               if(structName){
-                const l_struct = (parser.local_variables || []).find( (obj: { name: string }) => obj.name == structName );
+                const l_struct = getParserLocals(parser).variables.find((obj) => obj.name == structName);
                 log.trace('provideHover l_struct', l_struct?.name, l_struct?.datatype?.value);
                 if(l_struct?.datatype?.value == 'struct'){
-                  const struct_ref = (l_struct.type == 'variable') ? l_struct.struct_reference : l_struct ;
-                  for(let i = 0; i < struct_ref.properties.length; i++){
-                    const prop = struct_ref.properties[i];
+                  const struct_ref = (l_struct.type == 'variable') ? l_struct.struct_reference : l_struct;
+                  const properties = struct_ref?.properties ?? [];
+                  for(let i = 0; i < properties.length; i++){
+                    const prop = properties[i];
                     if(prop && prop.name == wordObject.word){
                       log.trace('provideHover match struct property', prop.name);
                       return {
@@ -694,7 +766,7 @@ export class NWScriptLanguageService {
               }
             }
 
-            const l_variable = (parser.local_variables || []).find( (obj: { name: string }) => obj.name == wordObject.word );
+            const l_variable = getParserLocals(parser).variables.find((obj) => obj.name == wordObject.word);
             if(l_variable){
               log.trace('provideHover match local variable', l_variable.name);
               return {
@@ -706,11 +778,11 @@ export class NWScriptLanguageService {
             }
 
             //Local Function - check both local_functions (if exists) and program.functions
-            let l_function = (parser.local_functions || []).find( (obj: { name: string }) => obj.name == wordObject.word );
+            let l_function = getParserLocals(parser).functions.find((obj) => obj.name == wordObject.word);
             if(!l_function && parser.program && parser.program.functions) {
-              l_function = parser.program.functions.find( (obj: { name: string }) => obj.name == wordObject.word );
+              l_function = (parser.program.functions as LocalFunctionDef[]).find((obj) => obj.name == wordObject.word);
             }
-            
+
             if(l_function){
               log.trace('provideHover match local function', l_function.name);
               let functionComment = '';
@@ -718,16 +790,16 @@ export class NWScriptLanguageService {
                 const scriptText = model.getValue();
                 const lines = scriptText.split('\n');
                 const funcLine = l_function.source.first_line - 1; // Convert to 0-based index
-                
+
                 // Look backwards for comment blocks (similar to engine actions)
                 const commentLines: string[] = [];
                 let inBlockComment = false;
-                
+
                 for (let i = funcLine - 1; i >= 0; i--) {
                   const line = lines[i];
                   if (!line) continue; // Skip if line doesn't exist
                   const trimmed = line.trim();
-                  
+
                   if (trimmed === '') {
                     if (commentLines.length > 0 && !inBlockComment) {
                       break;
@@ -737,7 +809,7 @@ export class NWScriptLanguageService {
                     }
                     continue;
                   }
-                  
+
                   // Check for block comment end */
                   if (trimmed.includes('*/') && !trimmed.includes('/*')) {
                     inBlockComment = true;
@@ -747,7 +819,7 @@ export class NWScriptLanguageService {
                     }
                     continue;
                   }
-                  
+
                   // Check for block comment start /*
                   if (trimmed.includes('/*')) {
                     const startMatch = trimmed.match(/\/\*(.*?)(\*\/)?/);
@@ -765,26 +837,26 @@ export class NWScriptLanguageService {
                     }
                     continue;
                   }
-                  
+
                   // If we're in a block comment, collect the line
                   if (inBlockComment) {
                     commentLines.unshift(trimmed);
                     continue;
                   }
-                  
+
                   // Handle single-line comments
                   if (trimmed.startsWith('//')) {
                     commentLines.unshift(trimmed.replace(/^\/\/\s*/, ''));
                     continue;
                   }
-                  
+
                   // Stop at non-comment code
                   break;
                 }
-                
+
                 functionComment = commentLines.join('\n').trim();
               }
-              
+
               const args: string[] = [];
               for(let i = 0; i < l_function.arguments.length; i++){
                 const def_arg = l_function.arguments[i];
@@ -799,14 +871,14 @@ export class NWScriptLanguageService {
                   log.warn('invalid argument', i, l_function);
                 }
               }
-              
+
               // Build hover content with comment
               let hoverContent = `\`\`\`nwscript\n${l_function.returntype.value} ${l_function.name}(${args.join(', ')})\n\`\`\``;
-              
+
               if (functionComment) {
                 hoverContent += `\n\n**Documentation:**\n\`\`\`\n${functionComment}\n\`\`\``;
               }
-              
+
               return {
                 contents: [
                   { value: '**SOURCE**' },
@@ -819,6 +891,7 @@ export class NWScriptLanguageService {
         }
         log.trace('provideHover no match');
         return {
+          contents: [],
           range: new monacoEditor.Range(
             1,
             1,
@@ -831,7 +904,7 @@ export class NWScriptLanguageService {
 
     log.info('initNWScriptLanguage registering document symbol provider');
     monacoEditor.languages.registerDocumentSymbolProvider('nwscript', {
-      provideDocumentSymbols: function (model: monacoEditor.editor.ITextModel, token: monacoEditor.CancellationToken) {
+      provideDocumentSymbols: function (model: monacoEditor.editor.ITextModel, _token: monacoEditor.CancellationToken) {
         log.trace('provideDocumentSymbols entry', { uri: model.uri.toString() });
         const symbols: monacoEditor.languages.DocumentSymbol[] = [];
         try {
@@ -863,7 +936,7 @@ export class NWScriptLanguageService {
               log.trace('provideDocumentSymbols function', func.name);
               const args = func.arguments.map((arg) => `${arg.datatype.value} ${arg.name}`).join(', ');
               const detail = `${func.returntype.value} ${func.name}(${args})`;
-              
+
               symbols.push({
                 name: func.name,
                 detail: detail,
@@ -947,7 +1020,7 @@ export class NWScriptLanguageService {
             } else if (statement.type === 'variable') {
               const variable = statement as VariableNode;
               // const names = statement.type === 'variableList' ? variable.names : [{ name: variable.name, source: variable.source }];
-              
+
               symbols.push({
                 name: variable.name,
                 detail: `${variable.datatype.value} ${variable.name}${variable.is_const ? ' (const)' : ''}`,
@@ -966,14 +1039,15 @@ export class NWScriptLanguageService {
                 },
                 tags: []
               });
-                
+
             }
           }
 
           log.debug('provideDocumentSymbols returning symbols', symbols.length);
           return symbols;
-        } catch (e) {
-          log.error('Error providing document symbols:', e as Error);
+        } catch (e: unknown) {
+          const err = e as Error | { name?: string; type?: string };
+          log.error('Error providing document symbols:', err);
           return [];
         }
       }
@@ -981,7 +1055,7 @@ export class NWScriptLanguageService {
 
     log.info('initNWScriptLanguage registering definition provider');
     monacoEditor.languages.registerDefinitionProvider('nwscript', {
-      provideDefinition: function (model: monacoEditor.editor.ITextModel, position: monacoEditor.Position, token: monacoEditor.CancellationToken) {
+      provideDefinition: function (model: monacoEditor.editor.ITextModel, position: monacoEditor.Position, _token: monacoEditor.CancellationToken) {
         log.trace('provideDefinition entry', { line: position.lineNumber, column: position.column });
         try {
           const wordObject = model.getWordAtPosition(position);
@@ -1009,7 +1083,7 @@ export class NWScriptLanguageService {
             // Calculate line offsets for each included file
             const includeOrder = Array.from(currentTab.resolvedIncludes.keys()) as string[];
             let currentOffset = 0;
-            
+
             for (const resref of includeOrder) {
               const source = currentTab.resolvedIncludes.get(resref);
               if (source) {
@@ -1031,10 +1105,10 @@ export class NWScriptLanguageService {
               // Definition is in an included file
               // Check if file is already open
               let targetTab: TabState | undefined = undefined;
-              
+
               // Find tab by file resref
               for (const tab of ForgeState.tabManager.tabs) {
-                if (tab.file && tab.file.resref === resref && tab.file.ext === KotOR.ResourceTypes.nss) {
+                if (tab.file && tab.file.resref === resref && tab.file.reskey === KotOR.ResourceTypes.nss) {
                   targetTab = tab;
                   break;
                 }
@@ -1058,21 +1132,21 @@ export class NWScriptLanguageService {
                   KotOR.KEYManager.Key.getFileBuffer(key).then((buffer: Uint8Array) => {
                     if (buffer) {
                       // Create EditorFile with the buffer already loaded
-                      const editorFile = new EditorFile({ 
-                        resref, 
+                      const editorFile = new EditorFile({
+                        resref,
                         reskey: KotOR.ResourceTypes.nss,
                         buffer: buffer
                       });
-                      
+
                       // Use FileTypeManager to open the file - this will create the tab
                       FileTypeManager.onOpenResource(editorFile);
-                  
+
                       // Find the newly opened tab and wait for file to load, then scroll
                       const findAndScroll = () => {
                         const newTab = ForgeState.tabManager.tabs.find((tab) =>
-                          tab.file && tab.file.resref === resref && tab.file.ext === KotOR.ResourceTypes.nss
+                          tab.file && tab.file.resref === resref && tab.file.reskey === KotOR.ResourceTypes.nss
                         ) as TabTextEditorState | undefined;
-                        
+
                         if (newTab) {
                           // Set up a one-time listener for when the file loads
                           const onFileLoad = () => {
@@ -1085,9 +1159,9 @@ export class NWScriptLanguageService {
                               }
                             }, 200);
                           };
-                          
+
                           newTab.addEventListener('onEditorFileLoad', onFileLoad);
-                          
+
                           // If file is already loaded, trigger scroll immediately
                           if (newTab.code && newTab.code.length > 0) {
                             setTimeout(() => {
@@ -1099,7 +1173,7 @@ export class NWScriptLanguageService {
                           setTimeout(findAndScroll, 50);
                         }
                       };
-                      
+
                       // Start looking for the tab after a short delay
                       setTimeout(findAndScroll, 50);
                     }
@@ -1117,17 +1191,17 @@ export class NWScriptLanguageService {
             }
           };
 
-          const nw_constant = ForgeState.nwScriptParser.engine_constants.find((obj) => obj.name === word);
+          const nw_constant = (ForgeState.nwScriptParser.engine_constants as EngineConstantDef[]).find((obj) => obj.name === word);
           if (nw_constant && nw_constant.source) {
             log.trace('provideDefinition match engine constant', word);
             const lineNumber = nw_constant.source.first_line || 1;
             const column = nw_constant.source.first_column || 1;
-            
+
             // Check if nwscript.nss is already open
-            const nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
-              tab.file && tab.file.resref === 'nwscript' && tab.file.ext === KotOR.ResourceTypes.nss
+            const nwscriptTab = ForgeState.tabManager.tabs.find((tab) =>
+              tab.file && tab.file.resref === 'nwscript' && tab.file.reskey === KotOR.ResourceTypes.nss
             ) as TabTextEditorState | undefined;
-            
+
             if (nwscriptTab) {
               // File is already open - focus it and scroll
               nwscriptTab.show();
@@ -1140,22 +1214,20 @@ export class NWScriptLanguageService {
             } else {
               // File is not open - create EditorFile with the buffer and open it
               if (ForgeState.nwscript_nss) {
-                const textDecoder = new TextDecoder();
-                const nwscriptSource = textDecoder.decode(ForgeState.nwscript_nss);
-                const editorFile = new EditorFile({ 
-                  resref: 'nwscript', 
+                const editorFile = new EditorFile({
+                  resref: 'nwscript',
                   reskey: KotOR.ResourceTypes.nss,
                   buffer: ForgeState.nwscript_nss
                 });
-                
+
                 FileTypeManager.onOpenResource(editorFile);
-                
+
                 // Find the newly opened tab and scroll
                 const findAndScroll = () => {
-                  const newTab = ForgeState.tabManager.tabs.find((tab) => 
-                    tab.file && tab.file.resref === 'nwscript' && tab.file.ext === KotOR.ResourceTypes.nss
+                  const newTab = ForgeState.tabManager.tabs.find((tab) =>
+                    tab.file && tab.file.resref === 'nwscript' && tab.file.reskey === KotOR.ResourceTypes.nss
                   ) as TabTextEditorState | undefined;
-                  
+
                   if (newTab) {
                     const onFileLoad = () => {
                       newTab.removeEventListener('onEditorFileLoad', onFileLoad);
@@ -1166,9 +1238,9 @@ export class NWScriptLanguageService {
                         }
                       }, 200);
                     };
-                    
+
                     newTab.addEventListener('onEditorFileLoad', onFileLoad);
-                    
+
                     if (newTab.code && newTab.code.length > 0) {
                       setTimeout(() => {
                         onFileLoad();
@@ -1178,11 +1250,11 @@ export class NWScriptLanguageService {
                     setTimeout(findAndScroll, 50);
                   }
                 };
-                
+
                 setTimeout(findAndScroll, 50);
               }
             }
-            
+
             // Return definition location
             return [{
               uri: model.uri,
@@ -1195,17 +1267,17 @@ export class NWScriptLanguageService {
             }];
           }
 
-          const nw_action = ForgeState.nwScriptParser.engine_actions.find((obj) => obj.name === word);
+          const nw_action = (ForgeState.nwScriptParser.engine_actions as EngineActionDef[]).find((obj) => obj.name === word);
           if (nw_action && nw_action.source) {
             log.trace('provideDefinition match engine action', word);
             const lineNumber = nw_action.source.first_line || 1;
             const column = nw_action.source.first_column || 1;
-            
+
             // Check if nwscript.nss is already open
-            const nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
-              tab.file && tab.file.resref === 'nwscript' && tab.file.ext === KotOR.ResourceTypes.nss
+            const nwscriptTab = ForgeState.tabManager.tabs.find((tab) =>
+              tab.file && tab.file.resref === 'nwscript' && tab.file.reskey === KotOR.ResourceTypes.nss
             ) as TabTextEditorState | undefined;
-            
+
             if (nwscriptTab) {
               // File is already open - focus it and scroll
               nwscriptTab.show();
@@ -1218,20 +1290,20 @@ export class NWScriptLanguageService {
             } else {
               // File is not open - create EditorFile with the buffer and open it
               if (ForgeState.nwscript_nss) {
-                const editorFile = new EditorFile({ 
-                  resref: 'nwscript', 
+                const editorFile = new EditorFile({
+                  resref: 'nwscript',
                   reskey: KotOR.ResourceTypes.nss,
                   buffer: ForgeState.nwscript_nss
                 });
-                
+
                 FileTypeManager.onOpenResource(editorFile);
-                
+
                 // Find the newly opened tab and scroll
                 const findAndScroll = () => {
                   const newTab = ForgeState.tabManager.tabs.find((tab: TabState) =>
-                    tab.file && tab.file.resref === 'nwscript' && tab.file.ext === KotOR.ResourceTypes.nss
+                    tab.file && tab.file.resref === 'nwscript' && tab.file.reskey === KotOR.ResourceTypes.nss
                   ) as TabTextEditorState | undefined;
-                  
+
                   if (newTab) {
                     const onFileLoad = () => {
                       newTab.removeEventListener('onEditorFileLoad', onFileLoad);
@@ -1242,9 +1314,9 @@ export class NWScriptLanguageService {
                         }
                       }, 200);
                     };
-                    
+
                     newTab.addEventListener('onEditorFileLoad', onFileLoad);
-                    
+
                     if (newTab.code && newTab.code.length > 0) {
                       setTimeout(() => {
                         onFileLoad();
@@ -1254,11 +1326,11 @@ export class NWScriptLanguageService {
                     setTimeout(findAndScroll, 50);
                   }
                 };
-                
+
                 setTimeout(findAndScroll, 50);
               }
             }
-            
+
             // Return definition location
             return [{
               uri: model.uri,
@@ -1271,7 +1343,7 @@ export class NWScriptLanguageService {
             }];
           }
 
-          const l_variable = (parser.local_variables || []).find((obj: { name: string }) => obj.name === word);
+          const l_variable = getParserLocals(parser).variables.find((obj) => obj.name === word);
           if (l_variable && l_variable.source) {
             log.trace('provideDefinition match local variable', word);
             const fileInfo = getFileForLine(l_variable.source.first_line);
@@ -1301,9 +1373,9 @@ export class NWScriptLanguageService {
             }
           }
 
-          let l_function = (parser.local_functions || []).find((obj: { name: string }) => obj.name === word);
+          let l_function = getParserLocals(parser).functions.find((obj) => obj.name === word);
           if (!l_function && parser.program && parser.program.functions) {
-            l_function = parser.program.functions.find((obj: { name: string }) => obj.name === word);
+            l_function = (parser.program.functions as LocalFunctionDef[]).find((obj) => obj.name === word);
           }
           log.trace('provideDefinition l_function', l_function?.name);
 
@@ -1336,8 +1408,9 @@ export class NWScriptLanguageService {
 
           log.trace('provideDefinition no match');
           return [];
-        } catch (e) {
-          log.error('Error providing definition:', e as Error);
+        } catch (e: unknown) {
+          const err = e as Error | { name?: string; type?: string };
+          log.error('Error providing definition:', err);
           return [];
         }
       }

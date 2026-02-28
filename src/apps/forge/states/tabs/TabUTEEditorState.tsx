@@ -14,7 +14,7 @@ const log = createScopedLogger(LogScope.Forge);
 export class TabUTEEditorState extends TabState {
   tabName: string = `UTE`;
   encounter: ForgeEncounter = new ForgeEncounter();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.encounter.blueprint;
   }
@@ -58,7 +58,7 @@ export class TabUTEEditorState extends TabState {
 
   public openFile(file?: EditorFile){
     log.trace('TabUTEEditorState openFile entry', !!file);
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
+    return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
@@ -90,7 +90,7 @@ export class TabUTEEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-  
+
   updateFile(){
     log.trace('TabUTEEditorState updateFile');
     this.encounter.exportToBlueprint();

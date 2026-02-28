@@ -48,7 +48,7 @@ export class MenuGameplay extends K1_MenuGameplay {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       const difficultyTable = GameState.SWRuleSet.difficulty;
 
@@ -186,3 +186,4 @@ export class MenuGameplay extends K1_MenuGameplay {
   }
   
 }
+

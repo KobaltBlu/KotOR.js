@@ -11,8 +11,17 @@ import { GFFStruct } from "@/resource/GFFStruct";
 import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 
 const log = createScopedLogger(LogScope.Game);
+
+type GUIShaderMaterial = THREE.ShaderMaterial & {
+  defines: Record<string, string>;
+  uniforms: {
+    diffuse: { value: THREE.Color };
+    opacity: { value: number };
+  };
+};
 
 /**
  * GUICheckBox class.
@@ -38,10 +47,12 @@ export class GUICheckBox extends GUIControl{
 
     this.value = 0;
 
-    this.widget.userData.selected = new THREE.Group();
-    this.widget.userData.highlightSelected = new THREE.Group();
-    this.widget.add(this.widget.userData.selected);
-    this.widget.add(this.widget.userData.highlightSelected);
+    const selectedGroup = new THREE.Group();
+    const highlightSelectedGroup = new THREE.Group();
+    this.widget.userData.selected = selectedGroup;
+    this.widget.userData.highlightSelected = highlightSelectedGroup;
+    this.widget.add(selectedGroup);
+    this.widget.add(highlightSelectedGroup);
 
     //----------//
     // Selected
@@ -70,7 +81,7 @@ export class GUICheckBox extends GUIControl{
 
     this.borderSelected.geometry = new THREE.BufferGeometry();
 
-    this.borderSelected.edge_material = new THREE.ShaderMaterial({
+    const borderEdgeMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
@@ -79,11 +90,12 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    });
-    this.borderSelected.edge_material.defines.USE_MAP = '';
-    this.borderSelected.edge_material.uniforms.diffuse.value = this.borderSelected.color;
+    }) as GUIShaderMaterial;
+    this.borderSelected.edge_material = borderEdgeMaterial;
+    borderEdgeMaterial.defines.USE_MAP = '';
+    borderEdgeMaterial.uniforms.diffuse.value = this.borderSelected.color;
 
-    this.borderSelected.corner_material = new THREE.ShaderMaterial({
+    const borderCornerMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
@@ -92,18 +104,19 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    });
+    }) as GUIShaderMaterial;
+    this.borderSelected.corner_material = borderCornerMaterial;
     //this.borderSelected.corner_material.defines.USE_MAP = '';
-    this.borderSelected.corner_material.uniforms.diffuse.value = this.borderSelected.color;
+    borderCornerMaterial.uniforms.diffuse.value = this.borderSelected.color;
 
     this.borderSelected.mesh = new THREE.Mesh( this.borderSelected.geometry, [this.borderSelected.edge_material, this.borderSelected.corner_material] );
-    this.widget.userData.selected.add(this.borderSelected.mesh);
+    selectedGroup.add(this.borderSelected.mesh);
 
     //---------------//
     // Selected Fill
     //---------------//
 
-    this.borderSelected.fill.material = new THREE.ShaderMaterial({
+    const borderFillMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
@@ -112,13 +125,14 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    });
+    }) as GUIShaderMaterial;
+    this.borderSelected.fill.material = borderFillMaterial;
     //this.borderSelected.fill.material.defines.USE_MAP = '';
-    this.borderSelected.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
+    borderFillMaterial.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
     this.borderSelected.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
     this.borderSelected.fill.mesh = new THREE.Mesh( this.borderSelected.fill.geometry, this.borderSelected.fill.material );
 
-    this.widget.userData.selected.add( this.borderSelected.fill.mesh );
+    selectedGroup.add( this.borderSelected.fill.mesh );
 
     //--------------------//
     // Highlight Selected
@@ -147,7 +161,7 @@ export class GUICheckBox extends GUIControl{
 
     this.highlightSelected.geometry = new THREE.BufferGeometry();
 
-    this.highlightSelected.edge_material = new THREE.ShaderMaterial({
+    const highlightEdgeMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
@@ -156,11 +170,12 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    });
-    this.highlightSelected.edge_material.defines.USE_MAP = '';
-    this.highlightSelected.edge_material.uniforms.diffuse.value = this.highlightSelected.color;
+    }) as GUIShaderMaterial;
+    this.highlightSelected.edge_material = highlightEdgeMaterial;
+    highlightEdgeMaterial.defines.USE_MAP = '';
+    highlightEdgeMaterial.uniforms.diffuse.value = this.highlightSelected.color;
 
-    this.highlightSelected.corner_material = new THREE.ShaderMaterial({
+    const highlightCornerMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
@@ -169,18 +184,19 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    });
+    }) as GUIShaderMaterial;
+    this.highlightSelected.corner_material = highlightCornerMaterial;
     //this.highlightSelected.corner_material.defines.USE_MAP = '';
-    this.highlightSelected.corner_material.uniforms.diffuse.value = this.highlightSelected.color;
+    highlightCornerMaterial.uniforms.diffuse.value = this.highlightSelected.color;
 
     this.highlightSelected.mesh = new THREE.Mesh( this.highlightSelected.geometry, [this.highlightSelected.edge_material, this.highlightSelected.corner_material] );
-    this.widget.userData.highlightSelected.add(this.highlightSelected.mesh);
+    highlightSelectedGroup.add(this.highlightSelected.mesh);
 
     //-------------------------//
     // Highlight Selected Fill
     //-------------------------//
 
-    this.highlightSelected.fill.material = new THREE.ShaderMaterial({
+    const highlightFillMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
@@ -189,13 +205,14 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    });
+    }) as GUIShaderMaterial;
+    this.highlightSelected.fill.material = highlightFillMaterial;
     //this.highlightSelected.fill.material.defines.USE_MAP = '';
-    this.highlightSelected.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
+    highlightFillMaterial.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
     this.highlightSelected.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
     this.highlightSelected.fill.mesh = new THREE.Mesh( this.highlightSelected.fill.geometry, this.highlightSelected.fill.material );
 
-    this.widget.userData.highlightSelected.add( this.highlightSelected.fill.mesh );
+    highlightSelectedGroup.add( this.highlightSelected.fill.mesh );
 
     if(this.control instanceof GFFStruct){
 
@@ -205,7 +222,7 @@ export class GUICheckBox extends GUIControl{
         const selected = control.getFieldByLabel('SELECTED').getChildStructs()[0];
 
         if(selected.hasField('COLOR')){
-          const color = selected.getFieldByLabel('COLOR').getVector();
+          const color = selected.getFieldByLabel('COLOR').getVector() as { x: number; y: number; z: number };
           this.borderSelected.color.setRGB(color.x, color.y, color.z)
         }
 
@@ -232,7 +249,7 @@ export class GUICheckBox extends GUIControl{
         const highlightSelected = control.getFieldByLabel('HILIGHTSELECTED').getChildStructs()[0];
 
         if(highlightSelected.hasField('COLOR')){
-          const color = highlightSelected.getFieldByLabel('COLOR').getVector();
+          const color = highlightSelected.getFieldByLabel('COLOR').getVector() as { x: number; y: number; z: number };
           this.highlightSelected.color.setRGB(color.x, color.y, color.z)
         }
 
@@ -404,28 +421,33 @@ export class GUICheckBox extends GUIControl{
   hideHighlightFill(){}
 
   updateCBVisualState(){
-    this.border.fill.mesh.visible = false;
-    this.borderSelected.fill.mesh.visible = false;
-    this.highlight.fill.mesh.visible = false;
-    this.highlightSelected.fill.mesh.visible = false;
+    const borderFillMesh = this.border.fill.mesh as THREE.Mesh;
+    const borderSelectedFillMesh = this.borderSelected.fill.mesh as THREE.Mesh;
+    const highlightFillMesh = this.highlight.fill.mesh as THREE.Mesh;
+    const highlightSelectedFillMesh = this.highlightSelected.fill.mesh as THREE.Mesh;
+
+    borderFillMesh.visible = false;
+    borderSelectedFillMesh.visible = false;
+    highlightFillMesh.visible = false;
+    highlightSelectedFillMesh.visible = false;
 
     const cbSize = this.getCBScale();
-    this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
-    this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
-    this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
-    this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
+    borderFillMesh.scale.set(cbSize, cbSize, 1);
+    borderSelectedFillMesh.scale.set(cbSize, cbSize, 1);
+    highlightFillMesh.scale.set(cbSize, cbSize, 1);
+    highlightSelectedFillMesh.scale.set(cbSize, cbSize, 1);
 
     if(this.hover){
       if(this.value){
-        this.highlightSelected.fill.mesh.visible = true;
+        highlightSelectedFillMesh.visible = true;
       }else{
-        this.highlight.fill.mesh.visible = true;
+        highlightFillMesh.visible = true;
       }
     }else{
       if(this.value){
-        this.borderSelected.fill.mesh.visible = true;
+        borderSelectedFillMesh.visible = true;
       }else{
-        this.border.fill.mesh.visible = true;
+        borderFillMesh.visible = true;
       }
     }
 
@@ -435,7 +457,8 @@ export class GUICheckBox extends GUIControl{
     this.hover = false;
     this.pulsing = false;
 
-    this.text.material.uniforms.diffuse.value.set(this.defaultColor);
+    const textMaterial = this.text.material as THREE.ShaderMaterial & { uniforms: { diffuse: { value: THREE.Color } } };
+    textMaterial.uniforms.diffuse.value.set(this.defaultColor);
 
     if(typeof this.onMouseOut === 'function')
       this.onMouseOut();
@@ -451,7 +474,8 @@ export class GUICheckBox extends GUIControl{
     this.hover = true;
     this.pulsing = true;
 
-    this.text.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
+    const textMaterial = this.text.material as THREE.ShaderMaterial & { uniforms: { diffuse: { value: THREE.Color } } };
+    textMaterial.uniforms.diffuse.value.set(this.defaultHighlightColor);
 
     if(typeof this.onMouseIn === 'function')
       this.onMouseIn();

@@ -5,9 +5,9 @@ import { TextureLoaderState } from "@/loaders/TextureLoaderState";
 
 /**
  * MenuGraphicsAdvanced class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuGraphicsAdvanced.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -46,7 +46,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       const texPacks = GameState.TwoDAManager.datatables.get('texpacks') || ({} as Record<string, import("@/resource/TwoDAObject").ITwoDARowData>);
 
@@ -70,7 +70,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_TEXQUALRIGHT.addEventListener('click', (e) => {
+      this.BTN_TEXQUALRIGHT.addEventListener('click', (_e) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality++;
         if(quality >= texPacks.RowCount) quality = texPacks.RowCount-1;
@@ -78,7 +78,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
         this.updateTextureQualityLabel();
       });
 
-      this.BTN_TEXQUALLEFT.addEventListener('click', (e) => {
+      this.BTN_TEXQUALLEFT.addEventListener('click', (_e) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality--;
         if(quality < 0) quality = 0;
@@ -87,7 +87,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
       });
 
       // this.CB_FRAMEBUFF.onValueChanged = (value) => {
-      // 
+      //
       // };
       // this.CB_FRAMEBUFF.attachINIProperty('Graphics Options.Grass');
       resolve();
@@ -121,9 +121,12 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
   updateTextureQualityLabel() {
     const texPacks = GameState.TwoDAManager.datatables.get('texpacks') || ({} as Record<string, import("@/resource/TwoDAObject").ITwoDARowData>);
     const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
-    const _2darow = texPacks.rows[quality];
-    if (_2darow) {
-      this.BTN_TEXQUAL.setText(GameState.TLKManager.GetStringById(_2darow.strrefname).Value);
+    const row = texPacks.rows[quality] as { strrefname?: number | string } | undefined;
+    if (row?.strrefname !== undefined) {
+      const strRef = Number(row.strrefname);
+      if (!Number.isNaN(strRef)) {
+        this.BTN_TEXQUAL.setText(GameState.TLKManager.GetStringById(strRef).Value);
+      }
     }
     if (quality <= 0) {
       this.BTN_TEXQUALLEFT.hide();
@@ -136,5 +139,6 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
       this.BTN_TEXQUALRIGHT.show();
     }
   }
-  
+
 }
+

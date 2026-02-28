@@ -6,9 +6,9 @@ import type { ModuleCreature } from "@/module";
 
 /**
  * CharGenAbilities class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenAbilities.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -65,7 +65,7 @@ export class CharGenAbilities extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       //this.lbl_hint = this.getControlByName('LBL_HINT');
 
       this.BTN_BACK.addEventListener('click', (e) => {
@@ -90,7 +90,7 @@ export class CharGenAbilities extends GameMenu {
         this.close();
       });
 
-      this.BTN_RECOMMENDED.addEventListener('click', (e) => {
+      this.BTN_RECOMMENDED.addEventListener('click', (_e) => {
         GameState.CharGenManager.availPoints = 0;
         if(this.creature){
           const c = this.creature.classes[0];
@@ -128,7 +128,7 @@ export class CharGenAbilities extends GameMenu {
         }
         this.updateButtonStates();
       });
-      
+
       this.CON_MINUS_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.creature && GameState.CharGenManager.con > this.creature.con && GameState.CharGenManager.con > 8){
@@ -168,7 +168,7 @@ export class CharGenAbilities extends GameMenu {
         }
         this.updateButtonStates();
       });
-      
+
       //PLUS Buttons
       this.STR_PLUS_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -346,5 +346,5 @@ export class CharGenAbilities extends GameMenu {
       this.creature.cha = 8;
     }
   }
-  
+
 }

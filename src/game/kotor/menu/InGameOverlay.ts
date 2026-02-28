@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { KeyMapAction, ModuleObjectType } from "@/enums";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { EngineState } from "@/enums/engine/EngineState";
@@ -10,15 +11,11 @@ import { GameMenu, LBL_MapView } from "@/gui";
 import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import { ResolutionManager } from "@/managers/ResolutionManager";
-import { TalentObject } from "@/talents";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { BitWise } from "@/utility/BitWise";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { KeyMapAction, ModuleObjectType } from "@/enums";
-
-const TLK_TOOLTIP_FULL_HEALTH = 42498;
 
 const TLK_TOOLTIP_SOLOMODE = 48035;
 const TLK_TOOLTIP_STEALTH = 247;
@@ -190,8 +187,11 @@ export class InGameOverlay extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if (skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      this.tGuiPanel.widget.userData.fill.visible = false;
+    return new Promise<void>((resolve, _reject) => {
+      const panelUserData = this.tGuiPanel.widget.userData as { fill?: { visible: boolean } };
+      if(panelUserData.fill){
+        panelUserData.fill.visible = false;
+      }
       //this.TB_STEALTH.hideBorder();
       //this.TB_PAUSE.hideBorder();
       //this.TB_SOLO.hideBorder();
@@ -331,7 +331,7 @@ export class InGameOverlay extends GameMenu {
         GameState.TLKManager.TLKStrings[TLK_TOOLTIP_STEALTH].Value
       );
 
-      this.BTN_CHAR1.addEventListener('click', (e) => {
+      this.BTN_CHAR1.addEventListener('click', (_e) => {
         if (GameState.PartyManager.party[0].canLevelUp()) {
           this.manager.MenuCharacter.open();
         } else {
@@ -339,7 +339,7 @@ export class InGameOverlay extends GameMenu {
         }
       });
 
-      this.BTN_CHAR2.addEventListener('click', (e) => {
+      this.BTN_CHAR2.addEventListener('click', (_e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
         switch (Math.floor(Math.random() * (4 - 1) + 1)) {
           case 2:
@@ -354,7 +354,7 @@ export class InGameOverlay extends GameMenu {
         }
       });
 
-      this.BTN_CHAR3.addEventListener('click', (e) => {
+      this.BTN_CHAR3.addEventListener('click', (_e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
         switch (Math.floor(Math.random() * (4 - 1) + 1)) {
           case 2:
@@ -371,9 +371,14 @@ export class InGameOverlay extends GameMenu {
 
       this.BTN_CLEARALL.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearAllActions();
-        GameState.getCurrentPlayer().combatData.combatState = false;
-        GameState.getCurrentPlayer().cancelCombat();
+        const currentPlayer = GameState.getCurrentPlayer() as {
+          clearAllActions: () => void;
+          combatData: { combatState: boolean };
+          cancelCombat: () => void;
+        };
+        currentPlayer.clearAllActions();
+        currentPlayer.combatData.combatState = false;
+        currentPlayer.cancelCombat();
       });
 
       this.LBL_QUEUE0.addEventListener('click', (e) => {
@@ -398,7 +403,8 @@ export class InGameOverlay extends GameMenu {
 
       for (let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++) {
 
-        this.getControlByName('LBL_TARGET' + i).addEventListener('click', (e) => {
+        const targetLabel = this.getControlByName('LBL_TARGET' + i) as GUIButton;
+        targetLabel.addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.onTargetMenuAction(i);
         });
@@ -562,17 +568,19 @@ export class InGameOverlay extends GameMenu {
 
   UpdateTargetUIIcon(index = 0) {
     const guiControl = this.getControlByName('LBL_TARGET' + index);
+    const borderMaterial = guiControl.border.fill.material as THREE.ShaderMaterial;
+    const highlightMaterial = guiControl.highlight.fill.material as THREE.ShaderMaterial;
     if (!GameState.ActionMenuManager.ActionPanels.targetPanels[index].actions.length) {
-      guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-      guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      guiControl.setMaterialTexture(borderMaterial, undefined);
+      guiControl.setMaterialTexture(highlightMaterial, undefined);
       guiControl.setFillTextureName('');
       return;
     }
 
     const action = GameState.ActionMenuManager.ActionPanels.targetPanels[index].getSelectedAction();
     if (!action) {
-      guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-      guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      guiControl.setMaterialTexture(borderMaterial, undefined);
+      guiControl.setMaterialTexture(highlightMaterial, undefined);
       guiControl.setFillTextureName('');
       return;
     }
@@ -581,10 +589,10 @@ export class InGameOverlay extends GameMenu {
       guiControl.setFillTextureName(action.icon);
       guiControl.setHighlightFillTexture(action.icon);
       TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
-        guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
-        guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
-        guiControl.border.fill.material.transparent = true;
-        guiControl.highlight.fill.material.transparent = true;
+        guiControl.setMaterialTexture(borderMaterial, texture);
+        guiControl.setMaterialTexture(highlightMaterial, texture);
+        borderMaterial.transparent = true;
+        highlightMaterial.transparent = true;
         guiControl.widget.position.z = 5;
       });
     }
@@ -592,26 +600,28 @@ export class InGameOverlay extends GameMenu {
 
   UpdateSelfUIIcon(index = 0) {
     const guiControl = this.getControlByName('LBL_ACTION' + index);
+    const borderMaterial = guiControl.border.fill.material as THREE.ShaderMaterial;
+    const highlightMaterial = guiControl.highlight.fill.material as THREE.ShaderMaterial;
     if (GameState.ActionMenuManager.ActionPanels.selfPanels[index].actions.length) {
       const action = GameState.ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
       if (action && guiControl.getFillTextureName() != action.icon) {
         guiControl.setFillTextureName(action.icon);
         guiControl.setHighlightFillTexture(action.icon);
         TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
-          guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
-          guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
-          guiControl.border.fill.material.transparent = true;
-          guiControl.highlight.fill.material.transparent = true;
+          guiControl.setMaterialTexture(borderMaterial, texture);
+          guiControl.setMaterialTexture(highlightMaterial, texture);
+          borderMaterial.transparent = true;
+          highlightMaterial.transparent = true;
           guiControl.widget.position.z = 5;
         });
       } else if (!action) {
-        guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-        guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+        guiControl.setMaterialTexture(borderMaterial, undefined);
+        guiControl.setMaterialTexture(highlightMaterial, undefined);
         guiControl.setFillTextureName('');
       }
     } else {
-      guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-      guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      guiControl.setMaterialTexture(borderMaterial, undefined);
+      guiControl.setMaterialTexture(highlightMaterial, undefined);
       guiControl.setFillTextureName('');
     }
   }
@@ -755,7 +765,7 @@ export class InGameOverlay extends GameMenu {
     }
   }
 
-  UpdateSelfUIPanels(delta = 0) {
+  UpdateSelfUIPanels(_delta = 0) {
     for (let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++) {
       this.UpdateSelfUIIcon(i);
       this.getControlByName('BTN_ACTIONUP' + i).recalculate();
@@ -941,7 +951,7 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE0.setFillTextureName(action0.iconResRef);
           TextureLoader.tpcLoader.fetch(action0.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE0.setFillTexture(texture);
-            this.LBL_QUEUE0.border.fill.material.transparent = true;
+            (this.LBL_QUEUE0.border.fill.material as THREE.ShaderMaterial).transparent = true;
           });
         }
       } else {
@@ -953,7 +963,7 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE1.setFillTextureName(action1.iconResRef);
           TextureLoader.tpcLoader.fetch(action1.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE1.setFillTexture(texture);
-            this.LBL_QUEUE1.border.fill.material.transparent = true;
+            (this.LBL_QUEUE1.border.fill.material as THREE.ShaderMaterial).transparent = true;
           });
         }
       } else {
@@ -965,7 +975,7 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE2.setFillTextureName(action2.iconResRef);
           TextureLoader.tpcLoader.fetch(action2.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE2.setFillTexture(texture);
-            this.LBL_QUEUE2.border.fill.material.transparent = true;
+            (this.LBL_QUEUE2.border.fill.material as THREE.ShaderMaterial).transparent = true;
           });
         }
       } else {
@@ -977,7 +987,7 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE3.setFillTextureName(action3.iconResRef);
           TextureLoader.tpcLoader.fetch(action3.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE3.setFillTexture(texture);
-            this.LBL_QUEUE3.border.fill.material.transparent = true;
+            (this.LBL_QUEUE3.border.fill.material as THREE.ShaderMaterial).transparent = true;
           });
         }
       } else {

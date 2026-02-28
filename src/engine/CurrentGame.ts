@@ -8,13 +8,12 @@ import { GameFileSystem } from "@/utility/GameFileSystem";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
 
 /**
  * CurrentGame class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CurrentGame.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -22,45 +21,28 @@ import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
 export class CurrentGame {
   static gameinprogress_dir = 'gameinprogress';
 
-  static IsModuleSaved( name = '' ){
-    return new Promise( (resolve, reject) => {
-        GameFileSystem.readdir(CurrentGame.gameinprogress_dir).then( (files) => {
-          for(let i = 0, len = files.length; i < len; i++){
-            const file = files[i];
-            const file_path = path.join( CurrentGame.gameinprogress_dir, file );
-            const file_info = path.parse(file);
-            const ext = file_info.ext.split('.').pop();
-            if(file_info.name.toLowerCase() == name.toLowerCase()){
-              resolve(true);
-              return;
-            }
-          }
-          resolve(false);
-        }).catch( (e) => {
-          resolve(false);
-        });
-    });  
+  static async IsModuleSaved( name = '' ){
+    try {
+      const files = await GameFileSystem.readdir(CurrentGame.gameinprogress_dir);
+      for(let i = 0, len = files.length; i < len; i++){
+        const file = files[i];
+        const file_info = path.parse(file);
+        if(file_info.name.toLowerCase() == name.toLowerCase()){
+          return true;
+        }
+      }
+      return false;
+    } catch {
+      return false;
+    }
   }
 
-  static GetModuleRim( name = ''){
-
-    return new Promise( async (resolve, reject) => {
-
-      try{
-        const buffer = await GameFileSystem.readFile( 
-          path.join( CurrentGame.gameinprogress_dir, name.toLowerCase()+'.sav') 
-        );
-        const erf = new ERFObject(buffer);
-        erf.load().then( (rim: ERFObject) => {
-          // log.info('CurrentGame', 'GetModuleRim', name, rim);
-          resolve(rim);
-        });
-      }catch(err){
-        // log.error('CurrentGame', 'GetModuleRim', name, e);
-        reject(err);
-      }
-      
-    });
+  static async GetModuleRim( name = ''): Promise<ERFObject>{
+    const buffer = await GameFileSystem.readFile(
+      path.join( CurrentGame.gameinprogress_dir, name.toLowerCase()+'.sav')
+    );
+    const erf = new ERFObject(buffer);
+    return erf.load();
   }
 
   static async CleanGameInProgressFolder(create: boolean = true): Promise<boolean> {
@@ -72,15 +54,15 @@ export class CurrentGame {
         if(await GameFileSystem.exists(CurrentGame.gameinprogress_dir)){
           rm_response = await GameFileSystem.rmdir(CurrentGame.gameinprogress_dir, { recursive: true });
           log.info(
-            `CurrentGame.CleanGameInProgressFolder`, 
+            `CurrentGame.CleanGameInProgressFolder`,
             `rmdir ${CurrentGame.gameinprogress_dir} - [${rm_response ? 'success' : 'fail'}]`
           );
         }
-        
+
         if(create){
           const mkdir_response = await GameFileSystem.mkdir(CurrentGame.gameinprogress_dir);
           log.info(
-            `CurrentGame.CleanGameInProgressFolder`, 
+            `CurrentGame.CleanGameInProgressFolder`,
             `mkdir ${CurrentGame.gameinprogress_dir} - [${mkdir_response ? 'success' : 'fail'}]`
           );
           return rm_response && mkdir_response;
@@ -117,8 +99,8 @@ export class CurrentGame {
   }
 
   static async InitGameInProgressFolder(create: boolean = false): Promise<boolean> {
-    try{ 
-      await CurrentGame.CleanGameInProgressFolder(create); 
+    try{
+      await CurrentGame.CleanGameInProgressFolder(create);
       return true;
     }catch(e){
       log.error(e);

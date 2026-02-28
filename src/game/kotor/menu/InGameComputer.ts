@@ -1,8 +1,4 @@
-import { AudioEngine } from "@/audio/AudioEngine";
-import { AudioLoader } from "@/audio/AudioLoader";
 import { ConversationState } from "@/enums/dialog/ConversationState";
-import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
-import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
@@ -13,9 +9,9 @@ import { DLGObject } from "@/resource/DLGObject";
 
 /**
  * InGameComputer class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameComputer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -44,7 +40,7 @@ export class InGameComputer extends GameMenu {
 
   owner: ModuleObject;
   listener: ModuleObject;
-  
+
   ended: boolean = false;
 
   dialog: DLGObject;
@@ -66,7 +62,7 @@ export class InGameComputer extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
       this.LB_REPLIES.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
       this.LB_REPLIES.onSelected = (_entry: DLGNode, _control: GUIControl, index: number) => {
@@ -102,7 +98,7 @@ export class InGameComputer extends GameMenu {
     this.LB_MESSAGE.show();
   }
 
-  setDialogMode(state: ConversationState) {
+  setDialogMode(_state: ConversationState) {
     // if(state == ConversationState.LISTENING_TO_SPEAKER){
     //   this.LB_MESSAGE.show();
     //   this.LB_MESSAGE.clearItems();
@@ -116,5 +112,5 @@ export class InGameComputer extends GameMenu {
     //   this.LB_MESSAGE.updateList();
     // }
   }
-  
+
 }

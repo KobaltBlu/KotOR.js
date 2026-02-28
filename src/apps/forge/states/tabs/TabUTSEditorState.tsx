@@ -1,5 +1,4 @@
 import React from "react";
-import * as THREE from 'three';
 
 import { TabUTSEditor } from "@/apps/forge/components/tabs/tab-uts-editor/TabUTSEditor";
 import { EditorFile } from "@/apps/forge/EditorFile";
@@ -40,7 +39,7 @@ export class TabUTSEditorState extends TabState {
       }
     ];
 
-    this.addEventListener('onTabRemoved', (tab: TabState) => {
+    this.addEventListener('onTabRemoved', (_tab: TabState) => {
       this.stopEmitter();
     });
     log.trace('TabUTSEditorState constructor exit');
@@ -48,7 +47,7 @@ export class TabUTSEditorState extends TabState {
 
   public openFile(file?: EditorFile){
     log.trace('TabUTSEditorState openFile entry', !!file);
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
+    return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
@@ -149,7 +148,7 @@ export class TabUTSEditorState extends TabState {
     super.hide();
   }
 
-  animate(delta: number = 0){
+  animate(_delta: number = 0){
     // Sound editor has no continuous animation; override for future audio preview if needed.
   }
 

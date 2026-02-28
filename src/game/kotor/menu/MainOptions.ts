@@ -3,9 +3,9 @@ import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 /**
  * MainOptions class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainOptions.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -31,7 +31,7 @@ export class MainOptions extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -65,5 +65,5 @@ export class MainOptions extends GameMenu {
       resolve();
     });
   }
-  
+
 }

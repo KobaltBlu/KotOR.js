@@ -2,7 +2,7 @@ import React from "react";
 
 import { ModalCloneModule } from "@/apps/forge/components/modal/ModalCloneModule";
 import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
-import { cloneModuleFromBuffer, type CloneModuleOptions } from "@/apps/forge/helpers/CloneModule";
+import { cloneModuleFromBuffer } from "@/apps/forge/helpers/CloneModule";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
 

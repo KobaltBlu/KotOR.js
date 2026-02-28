@@ -7,10 +7,10 @@ import type { GUIControl , GUILabel, GUIButton } from "@/gui";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-const MSG_CONFIRM_SIDE_DECK = 32322;
-const MSG_YOU_WIN = 32334;
-const MSG_TIED = 32338;
-const MSG_YOU_LOSE = 32335;
+const _MSG_CONFIRM_SIDE_DECK = 32322;
+const _MSG_YOU_WIN = 32334;
+const _MSG_TIED = 32338;
+const _MSG_YOU_LOSE = 32335;
 
 /**
  * MenuPazaakSetup class.
@@ -118,7 +118,7 @@ export class MenuPazaakSetup extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       /**
        * Begin the game
        */

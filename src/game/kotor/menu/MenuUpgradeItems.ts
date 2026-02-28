@@ -42,7 +42,7 @@ export class MenuUpgradeItems extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.setSelected(item);
@@ -103,3 +103,4 @@ export class MenuUpgradeItems extends GameMenu {
   }
   
 }
+

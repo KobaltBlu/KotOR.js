@@ -26,7 +26,7 @@ export class MenuToolTip extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.addEventListener('resize', () => {
         this.width = GameState.ResolutionManager.getViewportWidth();
         this.height = GameState.ResolutionManager.getViewportHeight();
@@ -82,3 +82,4 @@ export class MenuToolTip extends GameMenu {
   }
   
 }
+

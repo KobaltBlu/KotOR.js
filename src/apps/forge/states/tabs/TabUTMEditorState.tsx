@@ -45,7 +45,7 @@ export class TabUTMEditorState extends TabState {
 
   public openFile(file?: EditorFile){
     log.trace('TabUTMEditorState openFile entry', !!file);
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
+    return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
@@ -78,7 +78,7 @@ export class TabUTMEditorState extends TabState {
     super.hide();
   }
 
-  animate(delta: number = 0){
+  animate(_delta: number = 0){
     // Store editor has no continuous animation; override for future 3D preview if needed.
   }
 

@@ -16,9 +16,9 @@ const log = createScopedLogger(LogScope.Manager);
 
 /**
  * InventoryManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InventoryManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -94,12 +94,12 @@ export class InventoryManager {
       // return false;
 
     const droidorhuman = item.baseItem.droidOrHuman;
-    
+
     return !droidorhuman || (
       (droidorhuman == 1 && creature.getRace() == 6) ||
       (droidorhuman == 2 && creature.getRace() == 5)
     );
-    
+
   }
 
   static isItemUsableInSlot(item: ModuleItem, slot: number): boolean {
@@ -213,7 +213,7 @@ export class InventoryManager {
   }
 
   static Save(){
-    return new Promise( async (resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       //log.info('InventoryManager.Save()', 'Exporting...');
       const gff = new GFFObject();
       gff.FileType = 'INV ';
@@ -223,8 +223,9 @@ export class InventoryManager {
         itemList.addChildStruct( InventoryManager.inventory[i].save() );
       }
 
-      await gff.export( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res') );
-      resolve(gff);
+      gff.export( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res') ).then(() => {
+        resolve(gff);
+      });
     });
   }
 

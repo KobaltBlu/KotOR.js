@@ -5,20 +5,24 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUILabel } from "@/gui";
-import { ResourceLoader } from "@/loaders";
 import { DLGNode } from "@/resource/DLGNode";
 import { LIPObject } from "@/resource/LIPObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
 import { BitWise } from "@/utility/BitWise";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
 
+interface BarkEntry {
+  text: string;
+  speaker?: unknown;
+  getVoiceResRef?: () => string;
+}
+
 /**
  * InGameBark class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameBark.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -46,7 +50,7 @@ export class InGameBark extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LBL_BARKTEXT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.bHasAudio = false;
@@ -57,8 +61,8 @@ export class InGameBark extends GameMenu {
       resolve();
     });
   }
-  
-  bark(entry: { text: string }) {
+
+  bark(entry: BarkEntry) {
 
     const outText = this.gameStringParse(entry.text);
     log.info('bark', entry, outText);
@@ -83,22 +87,23 @@ export class InGameBark extends GameMenu {
     this.tGuiPanel.widget.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
     this.LBL_BARKTEXT.setText(entry.text);
 
-    if (entry.getVoiceResRef()?.length) {
+    const voiceResRef = entry.getVoiceResRef?.();
+    if (voiceResRef?.length) {
       this.bHasAudio = true;
       this.bAudioPlayed = false;
-      log.info('lip', entry.getVoiceResRef());
-      LIPObject.Load(entry.getVoiceResRef()).then((lip: LIPObject) => {
+      log.info('lip', voiceResRef);
+      LIPObject.Load(voiceResRef).then((lip: LIPObject) => {
         if (BitWise.InstanceOfObject(entry.speaker, ModuleObjectType.ModuleCreature)) {
-          entry.speaker.setLIP(lip);
+          (entry.speaker as { setLIP: (lipObject: LIPObject) => void }).setLIP(lip);
         }
       });
-      GameState.CutsceneManager.audioEmitter.playStreamWave(entry.getVoiceResRef()).then((audioNode) => {
+      GameState.CutsceneManager.audioEmitter.playStreamWave(voiceResRef).then((audioNode) => {
         this.audioNode = audioNode;
         this.bHasAudio = true;
         audioNode.onended = () => {
           this.bAudioPlayed = true;
         };
-      }).catch((e) => {
+      }).catch((_e) => {
         this.bHasAudio = false;
         this.bAudioPlayed = true;
       });
@@ -134,7 +139,7 @@ export class InGameBark extends GameMenu {
     }else{
       this.barkTimer -= delta;
       if(this.barkTimer < 0){ this.barkTimer = 0; }
-      if(!this.barkTimer){ 
+      if(!this.barkTimer){
         this.close();
       }else{
         this.show();
@@ -149,5 +154,5 @@ export class InGameBark extends GameMenu {
       this.audioNode = undefined;
     }
   }
-  
+
 }

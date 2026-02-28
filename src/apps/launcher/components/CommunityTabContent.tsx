@@ -1,15 +1,14 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-import { useApp } from "@/apps/launcher/context/AppContext";
-
-const log = createScopedLogger(LogScope.Launcher);
-
 import { LightboxComponent } from "@/apps/launcher/components/LightboxComponenet";
 import { ProfilePromoItems, ProfilePromoItemsRef } from "@/apps/launcher/components/ProfilePromoItems";
-import { CommunityProvider, useCommunity } from "@/apps/launcher/context/CommunityContext";
+import { useApp } from "@/apps/launcher/context/AppContext";
+import { CommunityProvider } from "@/apps/launcher/context/CommunityContext";
 import type { CommunityVideoItem } from "@/apps/launcher/context/CommunityContext";
 import type { LauncherProfileElement } from "@/apps/launcher/types";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Launcher);
 
 /** Props for CommunityTabContent; no props are used but forwardRef requires a props type. */
 export type CommunityTabContentProps = Record<string, never>;
@@ -20,7 +19,6 @@ export type CommunityTabContentRef = {
 
 export const CommunityTabContent = forwardRef<CommunityTabContentRef, CommunityTabContentProps>(function(props, ref){
   const appContext = useApp();
-  const communityContext = useCommunity();
   const tabRef = useRef<HTMLDivElement>(null);
   const promoRef = useRef<ProfilePromoItemsRef | null>(null);
 
@@ -32,7 +30,7 @@ export const CommunityTabContent = forwardRef<CommunityTabContentRef, CommunityT
     name: 'Community',
     elements: [],
   });
-  const [videos, setVideos] = appContext.videos;
+  const [videos] = appContext.videos;
 
   useImperativeHandle(ref, () => ({
     showTab() {
@@ -40,7 +38,7 @@ export const CommunityTabContent = forwardRef<CommunityTabContentRef, CommunityT
       if(promoRef.current) promoRef.current.recalculate();
     }
   }));
-  
+
   useEffect(() => {
     setCommunityProfile({
       name: 'Community',
@@ -94,7 +92,7 @@ export const CommunityTabContent = forwardRef<CommunityTabContentRef, CommunityT
             <ProfilePromoItems ref={promoRef} profile={communityProfile} tabRef={tabRef} promoElementWidth={456.5} onClick={onPromoItemClick}></ProfilePromoItems>
           </div>
         </div>
-        <LightboxComponent 
+        <LightboxComponent
           active={lightboxActiveValue}
           onClose={onLightboxClose}
           type={lightboxType}

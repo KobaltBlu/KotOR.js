@@ -9,9 +9,9 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * EventFeedbackMessage class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventFeedbackMessage.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -38,12 +38,12 @@ export class EventFeedbackMessage extends GameEvent {
 
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
-      
+      return;
     }
   }
 
   execute(){
-    
+
   }
 
   saveMessageData(){
@@ -89,7 +89,7 @@ export class EventFeedbackMessage extends GameEvent {
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( BitWise.InstanceOfObject(this.script.caller, ModuleObjectType.ModuleObject) ? this.script.caller.id : 2130706432 );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
-    const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    const _eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
       // eventData.addChildStruct( this.script.saveMessageData() );
     struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
     struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( BitWise.InstanceOfObject(this.script.object, ModuleObjectType.ModuleObject) ? this.script.caller.id : 2130706432 );

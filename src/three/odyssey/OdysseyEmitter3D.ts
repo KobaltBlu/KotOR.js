@@ -310,9 +310,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.maxParticleCount = this.birthRate * (this.lifeExp >= 0 ? this.lifeExp : 1);
       this.material.uniforms.tDepth.value = this.context?.depthTarget?.depthTexture;
       this.material.uniforms.maxAge.value = (this.lifeExp >= 0 ? this.lifeExp : -1);
-      (this.material.uniforms.colorStart.value as THREE.Vector3).copy(this.colorStart);
-      (this.material.uniforms.colorMid.value as THREE.Vector3).copy(this.colorMid);
-      (this.material.uniforms.colorEnd.value as THREE.Vector3).copy(this.colorEnd);
+      (this.material.uniforms.colorStart.value as THREE.Vector3).set(this.colorStart.r, this.colorStart.g, this.colorStart.b);
+      (this.material.uniforms.colorMid.value as THREE.Vector3).set(this.colorMid.r, this.colorMid.g, this.colorMid.b);
+      (this.material.uniforms.colorEnd.value as THREE.Vector3).set(this.colorEnd.r, this.colorEnd.g, this.colorEnd.b);
       (this.material.uniforms.opacity.value as THREE.Vector4).fromArray(this.opacity);
       (this.material.uniforms.scale.value as THREE.Vector3).fromArray(this.sizes);
       this.material.uniforms.rotate.value = this.angle;

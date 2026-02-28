@@ -3,9 +3,9 @@ import { LBL_3DView, type GUILabel } from "@/gui";
 
 /**
  * CharGenMain class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenMain.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -57,7 +57,7 @@ export class CharGenMain extends K1_CharGenMain {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.tGuiPanel.getFill().position.z = -0.5;
 
       this._3dView = new LBL_3DView();
@@ -65,12 +65,13 @@ export class CharGenMain extends K1_CharGenMain {
       this._3dView.camera.aspect = this.MODEL_LBL.extent.width / this.MODEL_LBL.extent.height;
       this._3dView.camera.updateProjectionMatrix();
       this.MODEL_LBL.setFillTexture(this._3dView.texture.texture);
-      (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).transparent = true;
-      (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
+      const modelFillMaterial = (this.MODEL_LBL.getFill().material as unknown) as { transparent: boolean; blending: number };
+      modelFillMaterial.transparent = true;
+      modelFillMaterial.blending = 1;
 
       this.Init3D();
-      resolve(); 
+      resolve();
     });
   }
-  
+
 }

@@ -5,7 +5,6 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameEvent } from "@/events/GameEvent";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
-import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { BitWise } from "@/utility/BitWise";
@@ -16,9 +15,9 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * EventSignalEvent class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventSignalEvent.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

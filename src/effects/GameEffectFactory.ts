@@ -1,10 +1,3 @@
-import { GameEffectType } from "@/enums/effects/GameEffectType";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { createScopedLogger , LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
 import { EffectAbilityDecrease } from "@/effects/EffectAbilityDecrease";
 import { EffectAbilityIncrease } from "@/effects/EffectAbilityIncrease";
 import { EffectACDecrease } from "@/effects/EffectACDecrease";
@@ -64,12 +57,18 @@ import { EffectTemporaryForce } from "@/effects/EffectTemporaryForce";
 import { EffectTemporaryHitPoints } from "@/effects/EffectTemporaryHitPoints";
 import { EffectVisualEffect } from "@/effects/EffectVisualEffect";
 import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger , LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * GameEffectFactory class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GameEffectFactory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -167,7 +166,7 @@ export class GameEffectFactory {
   static EffectForceShield: typeof EffectForceShield = EffectForceShield;
   // static EffectPureGoodPowers: typeof EffectPureGoodPowers = EffectPureGoodPowers;
   // static EfffectPureEvilPowers: typeof EfffectPureEvilPowers = EfffectPureEvilPowers;
-  
+
   static EffectFromStruct( struct: GFFStruct ): GameEffect | undefined {
     if(!struct){ return undefined; }
 

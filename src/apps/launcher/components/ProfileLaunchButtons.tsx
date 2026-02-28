@@ -16,7 +16,7 @@ export interface ProfileLaunchButtonsProps {
 export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   const profile = props.profile;
   const appContext = useApp();
-  const [profileCategoriesValue, setProfileCategories] = appContext.profileCategories;
+  const [profileCategoriesValue] = appContext.profileCategories;
 
   const [render, rerender] = useState(false);
   const [selectValue, setSelectValue] = useState<string>("js");
@@ -121,7 +121,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
                 {(
                   profileCategoriesValue?.game?.profiles || [])
                   .filter( (p: LauncherProfile) => p.isForgeCompatible )
-                  .map((p: LauncherProfile, index: number) => {
+                  .map((p: LauncherProfile) => {
                     return (
                       <option key={p.name} value={p.key}>{p.name}</option>
                     )
@@ -134,7 +134,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
         <div className="launch-btns">
           <a href="#" className="btn-launch" key="launch-btn-launch" onClick={onLaunchClick}>{launchLabel}</a>
         </div>
-      </>  
+      </>
     );
   }
 };

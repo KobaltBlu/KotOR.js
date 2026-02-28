@@ -1,4 +1,3 @@
-import { exists } from "fs";
 import * as path from "path";
 
 import { CurrentGame } from "@/engine/CurrentGame";
@@ -336,7 +335,7 @@ export class SaveGame {
 
     try {
       GameState.time = this.TIMEPLAYED;
-    } catch (e) { }
+    } catch { return; }
 
     GameState.SaveGame = this;
 
@@ -752,7 +751,7 @@ export class SaveGame {
       log.error(e as Error);
       try {
         this.thumbnail = await TextureLoader.Load('load_' + this.getLastModule());
-      } catch (e) {
+      } catch {
         try {
           this.thumbnail = await TextureLoader.Load('whitefill');
         } catch (e) {
@@ -1011,7 +1010,7 @@ export class SaveGame {
     const catBooleanList = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
     const boolBuffer = new Uint8Array((GameState.GlobalVariableManager.Globals.Boolean.size / 8));
     let i = 0;
-    GameState.GlobalVariableManager.Globals.Boolean.forEach((globBool, key: string) => {
+    GameState.GlobalVariableManager.Globals.Boolean.forEach((globBool, _key: string) => {
       const boolean = globBool;
       const byte_offset = Math.floor(i / 8);
       const bit_index = (i % 8);
@@ -1032,7 +1031,7 @@ export class SaveGame {
     const locationDataView = new DataView(locationBuffer.buffer);
 
     i = 0;
-    GameState.GlobalVariableManager.Globals.Location.forEach((location, key: string) => {
+    GameState.GlobalVariableManager.Globals.Location.forEach((location, _key: string) => {
       locationDataView.setFloat32((24 * i) + 0, location.value.position.x, true);
       locationDataView.setFloat32((24 * i) + 4, location.value.position.y, true);
       locationDataView.setFloat32((24 * i) + 8, location.value.position.z, true);
@@ -1051,7 +1050,7 @@ export class SaveGame {
     const numberBuffer = new Uint8Array(GameState.GlobalVariableManager.Globals.Number.size);
 
     i = 0;
-    GameState.GlobalVariableManager.Globals.Number.forEach((numberObj, key: string) => {
+    GameState.GlobalVariableManager.Globals.Number.forEach((numberObj, _key: string) => {
       numberBuffer[i] = (numberObj.value & 0xFF);
 
       const numberStruct = new GFFStruct();
@@ -1069,7 +1068,7 @@ export class SaveGame {
 
     const valStringList = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'ValString'));
     i = 0;
-    GameState.GlobalVariableManager.Globals.String.forEach((stringObj, key: string) => {
+    GameState.GlobalVariableManager.Globals.String.forEach((stringObj, _key: string) => {
       const stringCatStruct = new GFFStruct();
       stringCatStruct.addField(new GFFField(GFFDataType.CEXOSTRING, 'Name')).setValue(stringObj.name);
       catStringList.addChildStruct(stringCatStruct);
@@ -1112,7 +1111,7 @@ export class SaveGame {
         const saveFolder = savegames[i].replace(path.sep + 'SAVEGAME.sav', '');
         SaveGame.AddSaveGame(new SaveGame(saveFolder));
       }
-    } catch (e) {
+    } catch {
       try {
         //Make the default savegame directory
         await GameFileSystem.mkdir(SaveGame.base_directory);

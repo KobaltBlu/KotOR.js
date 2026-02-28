@@ -4,7 +4,6 @@ import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "@/game/kotor/KOTOR
 import { GUISaveGameItem } from "@/game/tsl/gui/GUISaveGameItem";
 import { GameState } from "@/GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
 
 /**
  * MenuSaveLoad class.
@@ -49,7 +48,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if (skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_SAVELOAD.setText('Load');
       this.BTN_SAVELOAD.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -71,7 +70,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
             };
             this.manager.MenuSaveName.open();
           } else {
-
+            return;
           }
         }
       });
@@ -83,7 +82,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_FILTER.addEventListener('click', (e) => {
+      this.BTN_FILTER.addEventListener('click', (_e) => {
         if (this.filters.length) {
           this.cFilterIndex++;
           if (this.cFilterIndex >= this.filters.length) {
@@ -105,7 +104,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
         this.LBL_TIMEPLAYED.setText('');
         if (this.selected instanceof SaveGame) {
           if (this.selected instanceof NewSaveItem) {
-
+            return;
           } else {
             this.LBL_PCNAME.setText(this.selected.PCNAME);
             this.LBL_TIMEPLAYED.setText(`Time: ${this.selected.getHoursPlayed()}H ${this.selected.getMinutesPlayed()}M`);
@@ -157,3 +156,4 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
   }
 
 }
+

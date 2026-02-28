@@ -22,7 +22,7 @@ import { Project } from "@/apps/forge/Project";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { ModalBlueprintBrowserState, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
 import { TabState } from "@/apps/forge/states/tabs";
-import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "@/apps/forge/UI3DRenderer";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
@@ -100,13 +100,13 @@ export class TabModuleEditorState extends TabState {
     this.ghostPreviewMesh = new THREE.Mesh(ghostGeometry, ghostMaterial);
     this.ghostPreviewMesh.visible = false;
 
-    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
-    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseDown', this.onMouseDown.bind(this));
-    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseMove', this.onMouseMove.bind(this));
-    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', (delta: number) => this.animate(delta));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseDown', (event: MouseEvent) => this.onMouseDown(event));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseMove', (event: MouseEvent) => this.onMouseMove(event));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', (gameObject: ForgeGameObject | THREE.Object3D | undefined) => this.onSelect(gameObject));
 
     // Listen for keyboard events (Delete key to remove selected object)
-    this.addEventListener('onKeyDown', this.onKeyDown.bind(this));
+    this.addEventListener('onKeyDown', (event: KeyboardEvent, tab: TabState) => this.onKeyDown(event, tab));
 
     // Add ground mesh and ghost preview to scene when scene is available
     // The scene is initialized in UI3DRenderer, but buildScene() is called when canvas is attached
@@ -127,18 +127,18 @@ export class TabModuleEditorState extends TabState {
     }
 
     // Also listen for when canvas is attached (which calls buildScene and ensures scene is ready)
-    this.ui3DRenderer.addEventListener('onCanvasAttached', addMeshesToScene);
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => addMeshesToScene());
     this.setContentView(<TabModuleEditor tab={this}></TabModuleEditor>);
 
     // Listen to transform controls changes to update point positions
     // Add listener immediately if transform controls exist, otherwise wait for canvas attachment
     if(this.ui3DRenderer.transformControls){
-      this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
+      this.ui3DRenderer.transformControls.addEventListener('change', () => this.onTransformControlsChange());
     } else {
       // Wait for canvas to be attached so transform controls are built
       this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => {
         if(this.ui3DRenderer.transformControls){
-          this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
+          this.ui3DRenderer.transformControls.addEventListener('change', () => this.onTransformControlsChange());
         }
       });
     }
@@ -231,7 +231,7 @@ export class TabModuleEditorState extends TabState {
     this.updateFile();
   }
 
-  onMouseMove(event: MouseEvent){
+  onMouseMove(_event: MouseEvent){
     // Update ghost preview only when mouse moves
     if(this.controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT){
       this.updateGhostPreview();
@@ -396,7 +396,7 @@ export class TabModuleEditorState extends TabState {
     }
   }
 
-  onKeyDown(event: KeyboardEvent, tab: TabState){
+  onKeyDown(event: KeyboardEvent, _tab: TabState){
     // Handle Delete or Backspace key to remove selected object
     if((event.key === 'Delete') && this.selectedGameObject && this.module?.area){
       // Prevent default browser behavior (e.g., going back in history)

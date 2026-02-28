@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 import { Planet, Planetary } from "@/engine/Planetary";
 import { GameState } from "@/GameState";
 import { GameMenu, LBL_3DView } from "@/gui";
@@ -5,7 +7,6 @@ import type { GUILabel, GUIButton } from "@/gui";
 import { MDLLoader, TextureLoader } from "@/loaders";
 import { NWScript } from "@/nwscript/NWScript";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { OdysseyModel } from "@/odyssey";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
@@ -21,9 +22,9 @@ interface PlanetAnimStateInfo {
 
 /**
  * MenuGalaxyMap class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuGalaxyMap.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -110,12 +111,15 @@ export class MenuGalaxyMap extends GameMenu {
     GameState.PerformanceMonitor.start('MenuGalaxyMap.loadGalaxyModel');
     const mdl = await MDLLoader.loader.load('galaxy');
     GameState.PerformanceMonitor.stop('MenuGalaxyMap.loadGalaxyModel');
-    this.tGuiPanel.widget.userData.fill.visible = false;
+    const panelUserData = this.tGuiPanel.widget.userData as { fill?: { visible: boolean } };
+    if(panelUserData.fill){
+      panelUserData.fill.visible = false;
+    }
 
     this._3dView = new LBL_3DView();
     this._3dView.visible = true;
     this._3dView.setControl(this._3D_PlanetDisplay);
-    
+
     GameState.PerformanceMonitor.start('MenuGalaxyMap.loadGalaxyModel.FromMDL');
     const model = await OdysseyModel3D.FromMDL(mdl, {
       context: this._3dView
@@ -124,7 +128,7 @@ export class MenuGalaxyMap extends GameMenu {
     GameState.PerformanceMonitor.stop('MenuGalaxyMap.loadGalaxyModel.FromMDL');
     //log.info('Model Loaded', model);
     this._3dViewModel = model;
-    
+
     this._3dView.camera.position.copy(model.camerahook.position);
     this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
@@ -220,7 +224,7 @@ export class MenuGalaxyMap extends GameMenu {
         context: this._3dView
       }).then((model: OdysseyModel3D) => {
         this._3dViewPlanetModel = model;
-        
+
         this._3dViewPlanet.camera.position.copy(model.camerahook.position);
         this._3dViewPlanet.camera.quaternion.copy(model.camerahook.quaternion);
 
@@ -271,5 +275,5 @@ export class MenuGalaxyMap extends GameMenu {
       });
     }
   }
-  
+
 }

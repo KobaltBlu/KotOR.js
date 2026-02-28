@@ -1,16 +1,15 @@
 import React from "react";
 import * as THREE from 'three';
 
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 import { TabWOKEditor } from "@/apps/forge/components/tabs/tab-wok-editor/TabWOKEditor";
-
-const log = createScopedLogger(LogScope.Forge);
-
 import { EditorFile } from "@/apps/forge/EditorFile";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
 import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export enum TabWOKEditorControlMode {
   FACE = 0,
@@ -104,13 +103,13 @@ export class TabWOKEditorState extends TabState {
 
     log.trace("TabWOKEditorState constructor UI3DRenderer");
     this.ui3DRenderer = new UI3DRenderer();
-    this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    this.ui3DRenderer.addEventListener('onBeforeRender', (delta: number) => this.animate(delta));
     this.ui3DRenderer.scene.add(grid1);
     this.ui3DRenderer.scene.add(grid2);
     this.ui3DRenderer.scene.add(this.faceHelperMesh);
     this.ui3DRenderer.group.light_helpers.visible = false;
     this.ui3DRenderer.setCameraFocusMode(CameraFocusMode.SELECTABLE);
-    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', (intersect: THREE.Intersection) => this.onSelect(intersect));
     log.debug("TabWOKEditorState constructor scene configured");
 
     this.setContentView(<TabWOKEditor tab={this}></TabWOKEditor>);
@@ -139,14 +138,14 @@ export class TabWOKEditorState extends TabState {
       }
     ];
 
-    this.addEventListener('onKeyUp', (e: KeyboardEvent) => {
+    this.addEventListener('onKeyUp', (_e: KeyboardEvent) => {
 
     });
   }
 
   public openFile(file?: EditorFile){
     log.trace("TabWOKEditorState openFile entry", file?.getFilename?.() ?? String(file));
-    return new Promise<KotOR.OdysseyWalkMesh>( (resolve, reject) => {
+    return new Promise<KotOR.OdysseyWalkMesh>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
         log.trace("TabWOKEditorState openFile using this.file");
@@ -190,7 +189,7 @@ export class TabWOKEditorState extends TabState {
 
           log.trace("TabWOKEditorState openFile building edge arrows");
           const arrowPosition = new THREE.Vector3();
-          this.wok.edges.forEach( (edge, index) => {
+          this.wok.edges.forEach( (edge) => {
             arrowPosition.copy(edge.center_point).sub(this.center);
             const arrowHelper = new THREE.ArrowHelper( edge.normal, arrowPosition, 0.5, getComplementaryColor(edge.face.color.getHex()) );
             arrowHelper.layers.set(2);
@@ -301,7 +300,7 @@ export class TabWOKEditorState extends TabState {
         log.trace("TabWOKEditorState animate FACE");
         this.selectVertex(-1);
       break;
-      case TabWOKEditorControlMode.VERTEX:
+      case TabWOKEditorControlMode.VERTEX: {
         log.trace("TabWOKEditorState animate VERTEX");
         this.selectFace(undefined);
         this.vertexHelpersGroup.visible = true;
@@ -350,6 +349,7 @@ export class TabWOKEditorState extends TabState {
         }
 
       break;
+      }
       case TabWOKEditorControlMode.EDGE:
         log.trace("TabWOKEditorState animate EDGE (no-op)");
       break;

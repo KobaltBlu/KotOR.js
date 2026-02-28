@@ -10,12 +10,14 @@ import { TextureLoader } from "@/loaders";
 import { AreaMap, ModuleWaypoint } from "@/module";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
+
 
 
 // import { ShaderManager, MenuManager, PartyManager } from "@/managers";
 
 const FOG_SIZE = 64;
-const FOG_SIZE_HALF = FOG_SIZE/2;
+const _FOG_SIZE_HALF = FOG_SIZE/2;
 
 const planeGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
 
@@ -311,7 +313,7 @@ export class LBL_MapView {
     if(!this.areaMap) return;
   }
 
-  render(delta: number = 0){
+  render(_delta: number = 0){
     if(!this.visible || !this.control)
       return;
 

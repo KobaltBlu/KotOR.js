@@ -250,7 +250,6 @@ export class SWRuleSet {
         const feat = SWRuleSet.feats[i];
         const isLevel3 = feat.prereqFeat2 >=  0 && feat.prereqFeat1 >=  0;
         const isLevel2 = feat.prereqFeat2 == -1 && feat.prereqFeat1 >=  0;
-        const isLevel1 = feat.prereqFeat2 == -1 && feat.prereqFeat1 == -1;
         const parentFeatId = isLevel3 ? feat.prereqFeat2 : isLevel2 ? feat.prereqFeat1 : -1;
         if(parentFeatId >= 0){
           const parentFeat = SWRuleSet.feats[parentFeatId];

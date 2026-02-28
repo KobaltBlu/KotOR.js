@@ -15,9 +15,9 @@ const LETTERBOX_HEIGHT = 100;
 
 /**
  * InGameDialog class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameDialog.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -47,7 +47,7 @@ export class InGameDialog extends GameMenu {
       log.debug('InGameDialog.menuControlInitializer: skipInit true');
       return;
     }
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LBL_MESSAGE.setText('');
       this.LBL_MESSAGE.setTextColor(this.LBL_MESSAGE.defaultColor.r, this.LBL_MESSAGE.defaultColor.g, this.LBL_MESSAGE.defaultColor.b);
 
@@ -109,7 +109,7 @@ export class InGameDialog extends GameMenu {
     this.updateLetterBox(delta);
   }
 
-  updateLetterBox(delta: number = 0){
+  updateLetterBox(_delta: number = 0){
     if(!this.canLetterbox || this.letterBoxed) return;
 
     if (GameState.CutsceneManager.cutsceneMode == CutsceneMode.ANIMATED) {
@@ -119,7 +119,7 @@ export class InGameDialog extends GameMenu {
       this.LBL_MESSAGE.show();
       return;
     }
-    
+
     if (this.bottomBar.position.y < -(GameState.ResolutionManager.getViewportHeight() / 2) + LETTERBOX_HEIGHT / 2) {
       this.bottomBar.position.y += 5;
       this.topBar.position.y -= 5;
@@ -189,5 +189,5 @@ export class InGameDialog extends GameMenu {
     if(!this.LB_REPLIES.isVisible()) return;
     this.LB_REPLIES.directionalNavigate('down');
   }
-  
+
 }

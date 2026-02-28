@@ -43,7 +43,7 @@ export class TabGFFEditorState extends TabState {
 
   public openFile(file?: EditorFile){
     log.trace('TabGFFEditorState openFile entry', !!file);
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
+    return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
         log.trace('TabGFFEditorState openFile use this.file');

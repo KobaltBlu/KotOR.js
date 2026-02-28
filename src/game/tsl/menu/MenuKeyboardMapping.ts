@@ -44,7 +44,7 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       this.BTN_Cancel.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -134,3 +134,4 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
   }
   
 }
+

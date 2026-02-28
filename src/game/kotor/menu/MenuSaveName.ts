@@ -29,7 +29,7 @@ export class MenuSaveName extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if (skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.EDITBOX.setEditable(true);
 
       this.BTN_OK.addEventListener('click', () => {
@@ -63,3 +63,4 @@ export class MenuSaveName extends GameMenu {
   }
 
 }
+

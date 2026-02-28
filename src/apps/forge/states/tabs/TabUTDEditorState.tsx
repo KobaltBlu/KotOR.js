@@ -2,7 +2,6 @@ import React from "react";
 import * as THREE from 'three';
 
 import { TabUTDEditor } from "@/apps/forge/components/tabs/tab-utd-editor/TabUTDEditor";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
@@ -29,7 +28,7 @@ export class TabUTDEditorState extends TabState {
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
-    this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    this.ui3DRenderer.addEventListener('onBeforeRender', (delta: number) => this.animate(delta));
 
     this.setContentView(<TabUTDEditor tab={this}></TabUTDEditor>);
     this.openFile();
@@ -46,7 +45,7 @@ export class TabUTDEditorState extends TabState {
 
   public openFile(file?: EditorFile){
     log.trace('TabUTDEditorState openFile entry', !!file);
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
+    return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }

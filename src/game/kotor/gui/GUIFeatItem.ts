@@ -14,9 +14,9 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /**
  * GUIFeatItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIFeatItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -46,7 +46,6 @@ export class GUIFeatItem extends GUIProtoItem {
 
       const node = this.node;
       const featList: FeatRowLike[] = Array.isArray(node) ? node as FeatRowLike[] : (node && typeof node === 'object' && 'length' in node ? Array.from(node as ArrayLike<FeatRowLike>) : []);
-      const spacing = 5;
       const player = GameState.getCurrentPlayer();
       const creature = player && BitWise.InstanceOfObject(player, ModuleObjectType.ModuleCreature) ? (player as ModuleCreature) : null;
       for(let i = 0; i < featList.length; i++){
@@ -90,11 +89,13 @@ export class GUIFeatItem extends GUIProtoItem {
 
         this.widget.add(_buttonIconWidget);
 
-        TextureLoader.enQueue('lbl_indent', this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          buttonIcon.setMaterialTexture( buttonIcon.border.fill.material, texture);
-          buttonIcon.border.fill.material.transparent = true;
-          buttonIcon.setMaterialTexture( buttonIcon.highlight.fill.material, texture);
-          buttonIcon.highlight.fill.material.transparent = true;
+        TextureLoader.enQueue('lbl_indent', this.border.fill.material as THREE.Material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+          const buttonBorderMaterial = buttonIcon.border.fill.material as THREE.ShaderMaterial;
+          const buttonHighlightMaterial = buttonIcon.highlight.fill.material as THREE.ShaderMaterial;
+          buttonIcon.setMaterialTexture(buttonBorderMaterial, texture);
+          buttonBorderMaterial.transparent = true;
+          buttonIcon.setMaterialTexture(buttonHighlightMaterial, texture);
+          buttonHighlightMaterial.transparent = true;
           if(locked){
             (buttonIcon.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 0.00;
           }
@@ -106,32 +107,32 @@ export class GUIFeatItem extends GUIProtoItem {
 
         /* FEAT ICON */
 
-        this.widget.userData.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
-        this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
+        const iconMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
+        const iconSprite = new THREE.Sprite(iconMaterial);
 
-        this.widget.userData.iconSprite.scale.x = 32;
-        this.widget.userData.iconSprite.scale.y = 32;
-        this.widget.userData.iconSprite.position.z = 5;
-        this.widget.userData.iconSprite.renderOrder = 5;
-        TextureLoader.enQueue(feat.icon, this.widget.userData.iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+        iconSprite.scale.x = 32;
+        iconSprite.scale.y = 32;
+        iconSprite.position.z = 5;
+        iconSprite.renderOrder = 5;
+        TextureLoader.enQueue(feat.icon, iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           const img = (texture as { image?: { width: number; height: number } }).image;
           if (img) {
-            this.widget.userData.iconSprite.scale.x = img.width;
-            this.widget.userData.iconSprite.scale.y = img.height;
+            iconSprite.scale.x = img.width;
+            iconSprite.scale.y = img.height;
           }
           if(locked){
-            this.widget.userData.iconMaterial.opacity = 0.00;
+            iconMaterial.opacity = 0.00;
           }
-          this.widget.userData.iconMaterial.transparent = true;
-          this.widget.userData.iconMaterial.needsUpdate = true;
+          iconMaterial.transparent = true;
+          iconMaterial.needsUpdate = true;
         });
 
-        _buttonIconWidget.add(this.widget.userData.iconSprite);
+        _buttonIconWidget.add(iconSprite);
 
         /*
         * BLUE ARROW
         */
-        
+
         const arrowOffset = (this.extent.width/2 - buttonIcon.extent.width/2)/2;
         if(i > 0){
           const arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
@@ -163,14 +164,16 @@ export class GUIFeatItem extends GUIProtoItem {
 
           this.widget.add(_arrowIconWidget);
 
-          TextureLoader.enQueue('lbl_skarr', this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-            arrowIcon.setMaterialTexture( arrowIcon.border.fill.material, texture);
-            arrowIcon.border.fill.material.transparent = true;
-            arrowIcon.setMaterialTexture( arrowIcon.highlight.fill.material, texture);
-            arrowIcon.highlight.fill.material.transparent = true;
+          TextureLoader.enQueue('lbl_skarr', this.border.fill.material as THREE.Material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+            const arrowBorderMaterial = arrowIcon.border.fill.material as THREE.ShaderMaterial;
+            const arrowHighlightMaterial = arrowIcon.highlight.fill.material as THREE.ShaderMaterial;
+            arrowIcon.setMaterialTexture(arrowBorderMaterial, texture);
+            arrowBorderMaterial.transparent = true;
+            arrowIcon.setMaterialTexture(arrowHighlightMaterial, texture);
+            arrowHighlightMaterial.transparent = true;
             if(locked){
-              arrowIcon.border.fill.material.uniforms.opacity.value = 0.25;
-              arrowIcon.highlight.fill.material.uniforms.opacity.value = 0.25;
+              arrowBorderMaterial.uniforms.opacity.value = 0.25;
+              arrowHighlightMaterial.uniforms.opacity.value = 0.25;
             }
           });
 

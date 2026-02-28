@@ -58,7 +58,7 @@ export class GUISlider extends GUIControl{
     this.thumb.mesh = new THREE.Sprite( this.thumb.material );
     this.widget.add(this.thumb.mesh);
 
-    this.thumb.mesh.addEventListener('click', (e) => {
+    this.thumb.mesh.addEventListener('click', (_e) => {
       log.info('hello');
       this.mouseInside();
     });
@@ -144,9 +144,9 @@ export class GUISlider extends GUIControl{
     if(this.disableSelection) return;
 
     // const mouseX = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidthScaled() / 2);
-    const mouseY = -(Mouse.positionViewport.y - (GameState.ResolutionManager.getViewportHeightScaled() / 2));
-    const scrollBarWidth = this.extent.width;
-    const scrollBarHeight = this.extent.height;
+    const _mouseY = -(Mouse.positionViewport.y - (GameState.ResolutionManager.getViewportHeightScaled() / 2));
+    const _scrollBarWidth = this.extent.width;
+    const _scrollBarHeight = this.extent.height;
 
     let value = this.value;
     let valueChanged = false;

@@ -254,7 +254,6 @@ export class PartyManager {
 
     if(gff.RootNode.hasField('PT_MEMBERS')){
       const pms = gff.getFieldByLabel('PT_MEMBERS').getChildStructs();
-      const currentPartyInfo = [];
       GameState.PartyManager.CurrentMembers = [];
       for(let i = 0; i < pms.length; i++){
         GameState.PartyManager.CurrentMembers.push({
@@ -1193,24 +1192,26 @@ export class PartyManager {
    * @returns void
    */
   static async ExportPartyMemberTemplates(){
-    return new Promise<void>( async (resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       const maxPartyMembers = (GameState.GameKey == GameEngineType.KOTOR) ? 9 : 12;
-      for(let i = 0; i < maxPartyMembers; i++){
-        const pm = PartyManager.NPCS[i];
-        if(!pm){
-          log.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. pm was undefined.`);
-          continue;
-        }
+      (async () => {
+        for(let i = 0; i < maxPartyMembers; i++){
+          const pm = PartyManager.NPCS[i];
+          if(!pm){
+            log.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. pm was undefined.`);
+            continue;
+          }
 
-        if(!(pm.template instanceof GFFObject)){
-          log.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. template was not an instance of GFFObject`);
-          continue;
-        }
+          if(!(pm.template instanceof GFFObject)){
+            log.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. template was not an instance of GFFObject`);
+            continue;
+          }
 
-        await PartyManager.ExportPartyMemberTemplate(i, pm.template);
-      }
-      await PartyManager.ExportPlayerCharacter();
-      resolve();
+          await PartyManager.ExportPartyMemberTemplate(i, pm.template);
+        }
+        await PartyManager.ExportPlayerCharacter();
+        resolve();
+      })();
     });
   }
 

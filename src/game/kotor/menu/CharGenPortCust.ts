@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { CharGenClasses } from "@/game/CharGenClasses";
+import { GameState } from "@/GameState";
 import { GameMenu, LBL_3DView } from "@/gui";
 import type { GUILabel, GUIButton } from "@/gui";
 import { TextureLoader } from "@/loaders";
@@ -9,13 +10,12 @@ import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { GameState } from "@/GameState";
 
 /**
  * CharGenPortCust class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenPortCust.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -60,7 +60,7 @@ export class CharGenPortCust extends GameMenu {
       if(this.isCharLoading) return;
       this.isCharLoading = true;
       const creature = GameState.CharGenManager.selectedCreature;
-    
+
       let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
       const arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
       if(idx <= 0){
@@ -165,7 +165,7 @@ export class CharGenPortCust extends GameMenu {
     this.BTN_ACCEPT.addEventListener('click', (e) => {
       e.stopPropagation();
       const creature = GameState.CharGenManager.selectedCreature;
-      
+
       //Save appearance choice
       creature.template.getFieldByLabel('Appearance_Type').setValue(creature.appearance);
       creature.template.getFieldByLabel('PortraitId').setValue(creature.portraitId);
@@ -174,7 +174,10 @@ export class CharGenPortCust extends GameMenu {
       this.close();
     });
 
-    this.tGuiPanel.widget.userData.fill.position.z = -0.5
+    const panelUserData = this.tGuiPanel.widget.userData as { fill?: { position: THREE.Vector3 } };
+    if(panelUserData.fill){
+      panelUserData.fill.position.z = -0.5;
+    }
 
     this._3dView.visible = true;
     this._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
@@ -270,5 +273,5 @@ export class CharGenPortCust extends GameMenu {
     creature.model.camerahook.getWorldPosition(v3)
     this._3dView.camera.position.z = v3.z;
   }
-    
+
 }

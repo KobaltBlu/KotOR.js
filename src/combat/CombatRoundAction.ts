@@ -93,13 +93,6 @@ export class CombatRoundAction {
     let attackKey = owner.getCombatAnimationAttackType();
     const weaponWield = owner.getCombatAnimationWeaponType();
     let attackType = 1;
-    let isMelee = true;
-    let isRanged = false;
-
-    if(attackKey == 'b'){
-      isMelee = false;
-      isRanged = true;
-    }
 
     if(this.feat){
       if(attackKey == 'm'){
@@ -150,7 +143,7 @@ export class CombatRoundAction {
         attackType = Math.round(Math.random()*4)+1;
       }
     }
-    
+
     let animation = attackKey+weaponWield+'a'+attackType;
     if(this.isCutsceneAttack){
       animation = this.animationName;

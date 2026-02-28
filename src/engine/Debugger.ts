@@ -1,18 +1,18 @@
 import { DebuggerState } from "@/enums/server/DebuggerState";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { NWScriptStack } from "@/nwscript/NWScriptStack";
 import { IPCMessage } from "@/server/ipc/IPCMessage";
 import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { NWScriptStack } from "@/nwscript/NWScriptStack";
 
 /**
  * Debugger class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file Debugger.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -79,7 +79,7 @@ export class Debugger {
    * Opens the debugger window.
    */
   static open() {
-    if(this.window) { 
+    if(this.window) {
       this.window.focus();
       return;
     }
@@ -95,8 +95,8 @@ export class Debugger {
           }
           return;
         }
-        
-        if(event.data?.constructor == Uint8Array){
+
+        if(event.data instanceof Uint8Array){
           const msg = IPCMessage.fromBuffer(event.data);
           this.dispatchEvent('message', msg);
         }

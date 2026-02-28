@@ -8,9 +8,9 @@ import { OdysseyModel3D } from "@/three/odyssey";
 
 /**
  * CharGenClass class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenClass.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -47,7 +47,7 @@ export class CharGenClass extends K1_CharGenClass {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MainMenu.Start();
@@ -61,7 +61,7 @@ export class CharGenClass extends K1_CharGenClass {
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
+        GameState.CharGenManager.selectedCreature.loadModel().then((_model: OdysseyModel3D) => {
           TextureLoader.LoadQueue().then(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
@@ -78,7 +78,7 @@ export class CharGenClass extends K1_CharGenClass {
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
+        GameState.CharGenManager.selectedCreature.loadModel().then((_model: OdysseyModel3D) => {
           TextureLoader.LoadQueue().then(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
@@ -95,7 +95,7 @@ export class CharGenClass extends K1_CharGenClass {
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
+        GameState.CharGenManager.selectedCreature.loadModel().then((_model: OdysseyModel3D) => {
           TextureLoader.LoadQueue().then(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
@@ -112,7 +112,7 @@ export class CharGenClass extends K1_CharGenClass {
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
+        GameState.CharGenManager.selectedCreature.loadModel().then((_model: OdysseyModel3D) => {
           TextureLoader.LoadQueue().then(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
@@ -129,7 +129,7 @@ export class CharGenClass extends K1_CharGenClass {
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
+        GameState.CharGenManager.selectedCreature.loadModel().then((_model: OdysseyModel3D) => {
           TextureLoader.LoadQueue().then(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
@@ -146,7 +146,7 @@ export class CharGenClass extends K1_CharGenClass {
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
+        GameState.CharGenManager.selectedCreature.loadModel().then((_model: OdysseyModel3D) => {
           TextureLoader.LoadQueue().then(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
@@ -166,12 +166,13 @@ export class CharGenClass extends K1_CharGenClass {
           _3dView.camera.updateProjectionMatrix();
           control.setFillTexture(_3dView.texture.texture);
         }
-        (control.getFill().material as THREE.ShaderMaterial).transparent = true;
-        (control.getFill().material as THREE.ShaderMaterial).blending = 1;
+        const controlFillMaterial = (control.getFill().material as unknown) as { transparent: boolean; blending: number };
+        controlFillMaterial.transparent = true;
+        controlFillMaterial.blending = 1;
       }
 
-      resolve();  
+      resolve();
     });
   }
-  
+
 }

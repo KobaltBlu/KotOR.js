@@ -60,11 +60,19 @@ export class INIConfig {
           this.options[section[1]] = {};
         } else if (property.length) {
           const name = property.shift();
-          let value = property.join('=');
+          let value: IniValue = property.join('=');
 
           try {
-            value = JSON.parse(value.toString());
-          } catch (e) {
+            const parsed: unknown = JSON.parse(value.toString());
+            if (
+              typeof parsed === 'string' ||
+              typeof parsed === 'number' ||
+              typeof parsed === 'boolean' ||
+              (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed))
+            ) {
+              value = parsed as IniValue;
+            }
+          } catch {
             value = value.toString();
           }
 

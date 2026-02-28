@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 import { AudioEngine } from "@/audio/AudioEngine";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { CurrentGame } from "@/engine/CurrentGame";
@@ -14,9 +16,9 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * MainMenu class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMenu.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -52,7 +54,7 @@ export class MainMenu extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.selectedControl = this.BTN_NEWGAME;
 
       this.LB_MODULES.hide();
@@ -92,22 +94,26 @@ export class MainMenu extends GameMenu {
       });
 
       MDLLoader.loader.load('mainmenu').then((mdl: OdysseyModel) => {
-        this.tGuiPanel.widget.userData.fill.visible = false;
+        const panelUserData = this.tGuiPanel.widget.userData as { fill?: { visible: boolean } };
+        if(panelUserData.fill){
+          panelUserData.fill.visible = false;
+        }
         this._3dView = new LBL_3DView();
         this._3dView.setControl(this.LBL_3DVIEW);
         this._3dView.visible = true;
-        (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
-        (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
+        const viewFill = this.LBL_3DVIEW.getFill() as { material: THREE.ShaderMaterial };
+        viewFill.material.uniforms.map.value = this._3dView.texture.texture;
+        viewFill.material.transparent = false;
         this._3dView.setControl(this.LBL_3DVIEW);
         (this.LBL_3DVIEW.getFill().material as { visible?: boolean }).visible = true;
-        
-        OdysseyModel3D.FromMDL(mdl, { 
+
+        OdysseyModel3D.FromMDL(mdl, {
           // manageLighting: false,
           context: this._3dView
         }).then( (model: OdysseyModel3D) => {
           log.debug('Model Loaded', model);
           this._3dViewModel = model;
-          
+
           this._3dView.camera.position.copy(model.camerahook.position);
           this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
@@ -116,7 +122,7 @@ export class MainMenu extends GameMenu {
             this._3dViewModel.playAnimation(0, true);
             resolve();
           });
-        }).catch((e: unknown) => {
+        }).catch((_e: unknown) => {
 
         });
       });
@@ -124,8 +130,8 @@ export class MainMenu extends GameMenu {
   }
 
   Start(){
-    return new Promise<void>( (resolve, reject) => {
-      this.manager.ClearMenus(); 
+    return new Promise<void>( (resolve, _reject) => {
+      this.manager.ClearMenus();
       AudioLoader.LoadMusic(this.bgMusicResRef).then((data: Uint8Array) => {
         AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, this.bgMusicResRef);
         AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
@@ -215,5 +221,5 @@ export class MainMenu extends GameMenu {
   triggerControllerBPress() {
     this.BTN_EXIT.click();
   }
-  
+
 }

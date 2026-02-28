@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import ReactDOM, { type Root } from "react-dom/client";
 
 import "@/apps/launcher/app.scss";
@@ -12,7 +12,7 @@ import type { ProfileTabContentHandle } from "@/apps/launcher/components/Profile
 import { ProfileTabContent } from "@/apps/launcher/components/ProfileTabContent";
 import { AppProvider, useApp } from "@/apps/launcher/context/AppContext";
 import { Launcher } from "@/apps/launcher/context/Launcher";
-import type { LauncherProfile, ProfileCategory } from "@/apps/launcher/types";
+import type { ProfileCategory } from "@/apps/launcher/types";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { ConfigClient } from "@/utility/ConfigClient";
@@ -40,7 +40,7 @@ const App = function() {
 
   const [selectedProfileValue, setSelectedProfile] = appContext.selectedProfile;
   const [profileCategoriesValue, setProfilesCategories] = appContext.profileCategories;
-  const [backgroundImageValue, setBackgroundImage] = appContext.backgroundImage;
+  const [backgroundImageValue] = appContext.backgroundImage;
   const [discordWidgetOpen, setDiscordWidgetOpen] = appContext.discordWidgetOpen;
 
   const [selectedTab, setSelectedTab] = useState('apps');
@@ -136,7 +136,7 @@ const App = function() {
     log.trace('profileCategories changed', Object.keys(appContext.profileCategories).length);
   }, [appContext.profileCategories]);
 
-  const onBtnMinimize = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onBtnMinimize = (_e: React.MouseEvent<HTMLDivElement>) => {
     // e.preventDefault();
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       window.electron.minimize();
@@ -200,9 +200,9 @@ const App = function() {
               })}
             </div>
             <div className="launcher-contents">
-              {Object.values(profileCategoriesValue).map((category: ProfileCategory, index: number) => {
+              {Object.values(profileCategoriesValue).map((category: ProfileCategory, _index: number) => {
                 return (
-                  category.profiles.map((profile, index: number) => {
+                  category.profiles.map((profile, _index: number) => {
                     return (
                       <ProfileTabContent ref={tabRefs[profile.id]} profile={profile} active={selectedProfileValue == profile ? true : false} key={`profile-content-item-${profile.id}`}></ProfileTabContent>
                     )

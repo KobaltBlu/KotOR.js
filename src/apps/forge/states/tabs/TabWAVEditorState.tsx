@@ -2,8 +2,8 @@ import React from "react";
 
 import { TabWAVEditor } from "@/apps/forge/components/tabs/tab-wav-editor/TabWAVEditor";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { WAVObject } from "@/resource/WAVObject";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
@@ -18,7 +18,7 @@ export class TabWAVEditorState extends TabState {
       }
     }
   ];
-  wavObject?: KotOR.WAVObject;
+  wavObject?: WAVObject;
 
   constructor(options: BaseTabStateOptions = {}) {
     log.trace('TabWAVEditorState constructor entry');
@@ -41,7 +41,7 @@ export class TabWAVEditorState extends TabState {
       return;
     }
     const response = await this.file.readFile();
-    this.wavObject = new KotOR.WAVObject(response.buffer);
+    this.wavObject = new WAVObject(response.buffer);
     this.processEventListener('onEditorFileLoad', [this]);
     log.trace('TabWAVEditorState openFile loaded');
   }

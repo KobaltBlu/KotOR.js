@@ -27,7 +27,7 @@ export class TabUTCEditorState extends TabState {
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
-    this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    this.ui3DRenderer.addEventListener('onBeforeRender', (delta: number) => this.animate(delta));
 
     this.setContentView(<TabUTCEditor tab={this}></TabUTCEditor>);
     this.openFile();
@@ -44,7 +44,7 @@ export class TabUTCEditorState extends TabState {
 
   public openFile(file?: EditorFile){
     log.trace('TabUTCEditorState openFile entry', !!file);
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
+    return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }

@@ -38,6 +38,14 @@ export interface ClipboardData {
   isCut: boolean;
 }
 
+interface ClipboardImportData {
+  type: string;
+  node: DLGNodeSerialized;
+  nodeType: DLGNodeType;
+  listIndex: number;
+  isCut?: boolean;
+}
+
 export class DLGClipboardManager {
   private clipboard: ClipboardData | null = null;
   private changeListeners: (() => void)[] = [];
@@ -217,17 +225,21 @@ export class DLGClipboardManager {
   public async importFromSystemClipboard(): Promise<boolean> {
     try {
       const text = await navigator.clipboard.readText();
-      const data = JSON.parse(text);
+      const parsed: unknown = JSON.parse(text);
+      if (typeof parsed !== 'object' || parsed === null) {
+        return false;
+      }
+      const data = parsed as Partial<ClipboardImportData>;
 
-      if (data.type !== 'kotor-dlg-node') {
+      if (data.type !== 'kotor-dlg-node' || data.node == null || data.nodeType == null || data.listIndex == null) {
         return false;
       }
 
       const node = this.deserializeNode(data.node);
       this.clipboard = {
         node,
-        nodeType: data.nodeType,
-        listIndex: data.listIndex,
+        nodeType: data.nodeType as DLGNodeType,
+        listIndex: data.listIndex as number,
         timestamp: Date.now(),
         isCut: data.isCut || false
       };

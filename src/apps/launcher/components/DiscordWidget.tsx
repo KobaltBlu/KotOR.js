@@ -62,7 +62,8 @@ const DiscordWidget: React.FC<DiscordWidgetProps> = ({
           throw new Error('Failed to fetch Discord data');
         }
 
-        const data: DiscordServer = await response.json();
+        const json: unknown = await response.json();
+        const data = json as DiscordServer;
         setServerData(data);
       } catch (err) {
         log.error('Error fetching Discord data:', err);

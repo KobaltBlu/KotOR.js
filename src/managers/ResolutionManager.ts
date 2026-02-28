@@ -13,6 +13,7 @@ const log = createScopedLogger(LogScope.Manager);
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 /* eslint-disable @typescript-eslint/no-extraneous-class -- static manager pattern */
+/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unused-vars */
 export class ResolutionManager {
 
   public static vpScaleFactor: number = 1;

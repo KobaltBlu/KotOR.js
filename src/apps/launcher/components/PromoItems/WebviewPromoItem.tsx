@@ -1,7 +1,6 @@
 import React from "react";
 
-import { useApp } from "@/apps/launcher/context/AppContext";
-import type { LauncherProfileElement } from "@/apps/types";
+import type { LauncherProfileElement } from "@/apps/launcher/types";
 
 export interface WebviewPromoItemProps {
   element: LauncherProfileElement;
@@ -11,7 +10,6 @@ export interface WebviewPromoItemProps {
 
 export const WebviewPromoItem = function(props: WebviewPromoItemProps) {
   const element = props.element;
-  const appContext = useApp();
 
   return (
     <div className="promo-element webview">

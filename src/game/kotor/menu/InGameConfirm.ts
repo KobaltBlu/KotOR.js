@@ -2,16 +2,16 @@ import { GameEngineType } from "@/enums/engine";
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUIButton } from "@/gui";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
  * InGameConfirm class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameConfirm.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -47,7 +47,7 @@ export class InGameConfirm extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.defaultExtent.width = this.tGuiPanel.extent.width;
       this.defaultExtent.height = this.tGuiPanel.extent.height;
       this.defaultExtent.top = this.tGuiPanel.extent.top;
@@ -101,7 +101,7 @@ export class InGameConfirm extends GameMenu {
     if(!row){
       return;
     }
-    
+
     const strRef = TwoDAObject.normalizeValue(row[(GameState.GameKey == GameEngineType.KOTOR ? 'message' : 'message_pc') + nth], 'number', 0);
     if(strRef <= 0){
       return;
@@ -121,7 +121,7 @@ export class InGameConfirm extends GameMenu {
 
     this.onOk = () => {};
     this.onCancel = () => {};
-    
+
     this.open();
   }
 
@@ -146,7 +146,7 @@ export class InGameConfirm extends GameMenu {
     this.onOk = typeof onOk === 'function' ? onOk : (() => {});
 
     this.resizeModal();
-    
+
     this.open();
   }
 
@@ -165,14 +165,14 @@ export class InGameConfirm extends GameMenu {
 
     this.onOk = () => {};
     this.onCancel = () => {};
-    
+
     this.open();
   }
 
   resizeModal(){
     this.BTN_CANCEL.hide();
     this.BTN_OK.hide();
-    
+
     let buttonHeight = 0;
     if(this.showCancel){
       buttonHeight += 35;
@@ -201,5 +201,5 @@ export class InGameConfirm extends GameMenu {
     }
     this.tGuiPanel.resizeControl();
   }
-  
+
 }

@@ -57,7 +57,7 @@ export class TabPTHEditorState extends TabState {
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.setCameraFocusMode(CameraFocusMode.SELECTABLE);
-    this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', (delta: number) => this.animate(delta));
 
     // Create a group to hold all path visualization elements
     this.pathHelperGroup = new THREE.Group();
@@ -73,17 +73,17 @@ export class TabPTHEditorState extends TabState {
         }
       }
     ];
-    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', (intersect: THREE.Intersection) => this.onSelect(intersect));
 
     // Listen to transform controls changes to update point positions
     // Add listener immediately if transform controls exist, otherwise wait for canvas attachment
     if(this.ui3DRenderer.transformControls){
-      this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
+      this.ui3DRenderer.transformControls.addEventListener('change', () => this.onTransformControlsChange());
     } else {
       // Wait for canvas to be attached so transform controls are built
       this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => {
         if(this.ui3DRenderer.transformControls){
-          this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
+          this.ui3DRenderer.transformControls.addEventListener('change', () => this.onTransformControlsChange());
         }
       });
     }
@@ -223,7 +223,8 @@ export class TabPTHEditorState extends TabState {
     if(this.controlMode === TabPTHEditorControlMode.SELECT){
       // SELECT mode: select points for transform controls
       if(intersect && intersect.object){
-        const pointIndex = (intersect.object as THREE.Mesh).userData.pointIndex;
+        const userData = intersect.object.userData as { pointIndex?: unknown };
+        const pointIndex = typeof userData.pointIndex === 'number' ? userData.pointIndex : undefined;
         if(pointIndex !== undefined){
           this.selectPoint(pointIndex);
           return;
@@ -252,7 +253,8 @@ export class TabPTHEditorState extends TabState {
       return;
     }
 
-    const pointIndex = (intersect.object as THREE.Mesh).userData.pointIndex;
+    const userData = intersect.object.userData as { pointIndex?: unknown };
+    const pointIndex = typeof userData.pointIndex === 'number' ? userData.pointIndex : undefined;
     if(pointIndex !== undefined && pointIndex >= 0 && pointIndex < this.points.length){
       const clickedPoint = this.points[pointIndex];
 

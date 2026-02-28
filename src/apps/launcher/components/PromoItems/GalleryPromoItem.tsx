@@ -1,8 +1,6 @@
-import React, { createRef, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
-import { useApp } from "@/apps/launcher/context/AppContext";
-import { useProfile } from "@/apps/launcher/context/ProfileContext";
-import type { LauncherProfileElement } from "@/apps/types";
+import type { LauncherProfileElement } from "@/apps/launcher/types";
 
 export interface GalleryPromoItemProps {
   element: LauncherProfileElement;
@@ -15,11 +13,11 @@ export const GalleryPromoItem = function(props: GalleryPromoItemProps) {
 
   const [index, setIndex] = useState(0);
 
-  const onBtnLeftClick: React.MouseEventHandler<HTMLDivElement> = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onBtnLeftClick: React.MouseEventHandler<HTMLDivElement> = () => {
     galleryPreviousImage();
   };
 
-  const onBtnRightClick: React.MouseEventHandler<HTMLDivElement> = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onBtnRightClick: React.MouseEventHandler<HTMLDivElement> = () => {
     galleryNextImage();
   };
 

@@ -14,6 +14,7 @@ import {
   type ReferenceSearchOptionsStateValues,
 } from "@/apps/forge/states/modal/ModalReferenceSearchOptionsState";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TLKString } from "@/resource/TLKString";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
@@ -59,7 +60,7 @@ export class TabTLKEditorState extends TabState {
     }
     const response = await this.file.readFile();
     log.debug('TabTLKEditorState openFile readFile done', response.buffer?.length ?? 0);
-    await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve, _reject) => {
       this.tlk = new KotOR.TLKObject(response.buffer, () => resolve(), undefined);
     });
     this.selectedStringIndex = -1;
@@ -124,7 +125,7 @@ export class TabTLKEditorState extends TabState {
   insertEntry() {
     log.trace('TabTLKEditorState insertEntry');
     if (!this.tlk) return;
-    const entry = new KotOR.TLKString(0, '', 0, 0, 0, 0, 0, '');
+    const entry = new TLKString(0, '', 0, 0, 0, 0, 0, '');
     this.tlk.TLKStrings.push(entry);
     this.tlk.StringCount = this.tlk.TLKStrings.length;
     const index = this.tlk.TLKStrings.length - 1;

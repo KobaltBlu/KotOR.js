@@ -1,7 +1,9 @@
+import { execFile, exec } from "child_process";
 import * as path from "path";
 
 import { BrowserWindow, dialog } from "electron";
 
+import type { ApplicationWindowProfile } from "@/electron/ApplicationWindow";
 import { ApplicationWindow } from "@/electron/ApplicationWindow";
 import { LauncherWindow } from "@/electron/LauncherWindow";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
@@ -10,7 +12,6 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 const log = createScopedLogger(LogScope.Electron);
-import { execFile, exec } from "child_process";
 
 export class WindowManager {
 
@@ -66,7 +67,7 @@ export class WindowManager {
   }
 
   static initIPC(ipcMain: Electron.IpcMain) {
-    ipcMain.on('config-changed', (event, data) => {
+    ipcMain.on('config-changed', (_event: Electron.IpcMainEvent, data: string | number | boolean | object) => {
       for (let i = 0, len = WindowManager.windows.length; i < len; i++) {
         WindowManager.windows[i].send('config-changed', data);
       }
@@ -75,7 +76,7 @@ export class WindowManager {
       }
     });
 
-    ipcMain.handle('win-minimize', (event, data) => {
+    ipcMain.handle('win-minimize', (_event: Electron.IpcMainInvokeEvent, _data: unknown) => {
       const win = BrowserWindow.getFocusedWindow();
       if (win) {
         win.minimize();
@@ -84,7 +85,7 @@ export class WindowManager {
       return false;
     });
 
-    ipcMain.handle('win-maximize', (event, data) => {
+    ipcMain.handle('win-maximize', (_event: Electron.IpcMainInvokeEvent, _data: unknown) => {
       const win = BrowserWindow.getFocusedWindow();
       if (win) {
         log.debug('win-maximize isMaximized=%s', String(win.isMaximized()));
@@ -99,7 +100,7 @@ export class WindowManager {
       return false;
     });
 
-    ipcMain.handle('locate-game-directory', (event, data) => {
+    ipcMain.handle('locate-game-directory', (_event: Electron.IpcMainInvokeEvent, _data: unknown) => {
       return new Promise((resolve, reject) => {
         dialog.showOpenDialog({ title: 'KotOR Game Install Folder', properties: ['openDirectory', 'createDirectory'] }).then(result => {
           if (result.filePaths.length && !result.canceled) {
@@ -111,7 +112,7 @@ export class WindowManager {
       });
     });
 
-    ipcMain.handle('open-file-dialog', (event, data: Electron.OpenDialogOptions) => {
+    ipcMain.handle('open-file-dialog', (_event: Electron.IpcMainInvokeEvent, data: Electron.OpenDialogOptions) => {
       return new Promise((resolve, reject) => {
         dialog.showOpenDialog(data).then(result => {
           resolve(result);
@@ -121,10 +122,11 @@ export class WindowManager {
       });
     });
 
-    ipcMain.handle('save-file-dialog', (event, data: Electron.SaveDialogOptions) => {
+    ipcMain.handle('save-file-dialog', (_event: Electron.IpcMainInvokeEvent, data: Electron.SaveDialogOptions[]) => {
       return new Promise((resolve, reject) => {
-        log.info('save-file-dialog2', event, data[0]);
-        dialog.showSaveDialog(data[0]).then(result => {
+        const options = data[0] ?? {};
+        log.info('save-file-dialog2', options);
+        dialog.showSaveDialog(options).then(result => {
           resolve(result);
         }).catch(err => {
           reject(err)
@@ -132,7 +134,7 @@ export class WindowManager {
       });
     });
 
-    ipcMain.on('launch_profile', (event, profile) => {
+    ipcMain.on('launch_profile', (_event: Electron.IpcMainEvent, profile: ApplicationWindowProfile) => {
       const window = new ApplicationWindow(profile);
       WindowManager.addWindow(window);
       WindowManager.hideLauncher();
@@ -153,7 +155,7 @@ export class WindowManager {
       win.close();
     });
 
-    ipcMain.on('launch_executable', (event, exe_path) => {
+    ipcMain.on('launch_executable', (_event: Electron.IpcMainEvent, exe_path: string) => {
       WindowManager.hideLauncher();
       const cwd = path.parse(exe_path);
       if (process.platform == 'linux') {

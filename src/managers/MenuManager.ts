@@ -6,9 +6,11 @@ import * as TSL from "@/game/tsl/TSL";
 import { GameState } from "@/GameState";
 import type { GUIControl, GameMenu } from "@/gui";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
+
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 
 const log = createScopedLogger(LogScope.Manager);
-import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 
 /**
  * MenuManager class.

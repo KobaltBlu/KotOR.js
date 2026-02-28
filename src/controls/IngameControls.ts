@@ -16,7 +16,6 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { GUIControl, GUIListBox, GUIScrollBar } from "@/gui";
 import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
-import type { ModuleObject } from "@/module";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { TGAObject } from "@/resource/TGAObject";
 import { BitWise } from "@/utility/BitWise";
@@ -166,9 +165,7 @@ export class IngameControls {
         Mouse.MouseDownX = event.pageX - this.element.offsetLeft;
         Mouse.MouseDownY = event.pageY - this.element.offsetTop;
 
-        if(Mouse.ButtonState == MouseState.LEFT){
-
-        }else{
+        if(Mouse.ButtonState != MouseState.LEFT){
           // Ask the browser to lock the pointer
           this.element.requestPointerLock();
         }
@@ -184,8 +181,6 @@ export class IngameControls {
 
       GameState.raycaster.setFromCamera( GameState.mouse, GameState.camera_gui );
 
-      let clickCaptured = false;
-
       const customEvent = GUIControlEventFactory.generateEventObject();
 
       Mouse.downItem = null;
@@ -198,7 +193,6 @@ export class IngameControls {
 
         const control = uiControls[i];
         if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
-          clickCaptured = true;
           if(GameState.debug.CONTROLS)
             log.debug('uiControls', control)
           try{
@@ -216,8 +210,8 @@ export class IngameControls {
             //GameState.guiAudioEmitter.playSound('gui_click');
             if(GameState.debug.CONTROLS)
               log.debug('MouseDown', control, Mouse.downItem, Mouse.clickItem, typeof control.onClick);
-          }catch(e){
-
+          }catch{
+            continue;
           }
         }
       }
@@ -710,21 +704,21 @@ export class IngameControls {
       followee.position.z -= 5 * delta;
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleUp].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleUp].setProcessor( (keymap, _delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
        GameState.rendererUpscaleFactor += 0.25;
       if(GameState.rendererUpscaleFactor >= 4) GameState.rendererUpscaleFactor = 4;
       GameState.updateRendererUpscaleFactor();
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleDown].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleDown].setProcessor( (keymap, _delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       GameState.rendererUpscaleFactor -= 0.25;
       if(GameState.rendererUpscaleFactor <= 0.25) GameState.rendererUpscaleFactor = 0.25;
       GameState.updateRendererUpscaleFactor();
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleReset].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleReset].setProcessor( (keymap, _delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       GameState.rendererUpscaleFactor = 1.0;
       GameState.updateRendererUpscaleFactor();
@@ -809,9 +803,6 @@ export class IngameControls {
   }
 
   Update(delta: number = 0){
-
-    let xoffset = 0;
-    let yoffset = 0;
     const currentMenu = GameState.MenuManager.GetCurrentMenu();
 
     this.gamePadMovement = false;
@@ -825,8 +816,6 @@ export class IngameControls {
     this.gamePad.updateState(delta);
 
     if(Mouse.Dragging){
-      xoffset = Mouse.OffsetX || 0;
-      yoffset = Mouse.OffsetY || 0;
       //Reset the offset value to fix the lingering drag effect
       Mouse.OffsetX = Mouse.OffsetY = 0;
     }
@@ -898,7 +887,7 @@ export class IngameControls {
     Mouse.OldMouseY = Mouse.MouseY;
   }
 
-  plChangeCallback(e: Event){
+  plChangeCallback(_e: Event){
     if(document.pointerLockElement === this.element) {
       this.element.addEventListener("mousemove", this.plMoveEvent = (e: MouseEvent) => { this.plMouseMove(e); }, true);
       Mouse.Dragging = true;

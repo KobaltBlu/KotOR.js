@@ -1,7 +1,7 @@
+import { ADPCMBlock } from "@/audio/ADPCMBlock";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Game);
-import { ADPCMBlock } from "@/audio/ADPCMBlock";
 
 interface ADPCMHeader {
 	sampleRate: number;

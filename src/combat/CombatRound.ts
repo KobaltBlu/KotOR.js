@@ -432,7 +432,7 @@ export class CombatRound {
     this.calculateRoundAnimations(creature, combatAction);
 
     const attackAnimation = creature.model.odysseyAnimationMap.get(combatAction.animationName.toLowerCase().trim());
-    const attackDamageDelay = attackAnimation?.getDamageDelay() || 0;
+    const _attackDamageDelay = attackAnimation?.getDamageDelay() || 0;
 
     if(combatAction.isCutsceneAttack){
       const attack = this.attackList[0];

@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 
 import { KotORModal } from "@/apps/game/components/modal/modal";
 import { useApp } from "@/apps/game/context/AppContext";
-import { EULA_VERSION, EULA_DATE, EULA } from "@/apps/game/eula";
+import { EULA_VERSION, EULA } from "@/apps/game/eula";
 import * as KotOR from "@/apps/KotOR";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
@@ -12,10 +12,10 @@ export const ModalEULA = () => {
   const appContext = useApp();
   const [appState] = appContext.appState;
   const [gameKey] = appContext.gameKey;
-  const [showEULAModal, setShowEULAModal] = appContext.showEULAModal;
+  const [showEULAModal] = appContext.showEULAModal;
 
   useEffect(() => {
-    
+
   }, []);
 
   const onCancel = () => {
@@ -42,10 +42,10 @@ export const ModalEULA = () => {
   }
 
   return (
-    <KotORModal 
-      title="EULA" 
-      show={showEULAModal} 
-      onCancel={onCancel} 
+    <KotORModal
+      title="EULA"
+      show={showEULAModal}
+      onCancel={onCancel}
       onOk={onOk}
     >
       {<EULA />}

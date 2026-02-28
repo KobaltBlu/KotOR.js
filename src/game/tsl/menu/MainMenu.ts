@@ -12,9 +12,9 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * MainMenu class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMenu.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -48,7 +48,7 @@ export class MainMenu extends K1_MainMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LB_MODULES.hide();
       this.LBL_NEWCONTENT.hide();
       this.BTN_WARP.hide();
@@ -83,16 +83,13 @@ export class MainMenu extends K1_MainMenu {
         e.stopPropagation();
         window.close();
       });
-      
+
       (this.tGuiPanel.widget.userData.fill as { visible?: boolean }).visible = false;
 
       this._3dView = new LBL_3DView();
       this._3dView.visible = true;
-      (this.LBL_3DVIEW.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).uniforms.map.value = this._3dView.texture.texture;
-      (this.LBL_3DVIEW.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).transparent = false;
       this._3dView.setControl(this.LBL_3DVIEW);
-      (this.LBL_3DVIEW.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).visible = true;
-      
+
       MDLLoader.loader.load('mainmenu01')
       .then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
@@ -101,7 +98,7 @@ export class MainMenu extends K1_MainMenu {
         }).then((model: OdysseyModel3D) => {
           log.debug('Model Loaded', model);
           this._3dViewModel = model;
-          
+
           this._3dView.camera.position.copy(model.camerahook.position);
           this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
@@ -123,5 +120,6 @@ export class MainMenu extends K1_MainMenu {
     super.show();
     GameState.AlphaTest = 0.5;
   }
-    
+
 }
+

@@ -13,7 +13,6 @@
 
 import { DLGNode } from '@/resource/DLGNode';
 import { DLGObject } from '@/resource/DLGObject';
-import { GFFObject } from '@/resource/GFFObject';
 
 export interface UndoAction {
   type: string;

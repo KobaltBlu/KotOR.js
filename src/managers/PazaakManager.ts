@@ -1,4 +1,3 @@
-import type { PazaakDeck } from "@/engine/minigames/PazaakDeck";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { PazaakCards } from "@/enums/minigames/PazaakCards";
@@ -19,7 +18,7 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
 
-const MSG_CONFIRM_SIDE_DECK = 32322;
+const _MSG_CONFIRM_SIDE_DECK = 32322;
 const MSG_YOU_WIN = 32334;
 const MSG_TIED = 32338;
 const MSG_YOU_LOSE = 32335;
@@ -589,8 +588,8 @@ export class PazaakManager {
       /**
        * Find the best card to play next
        */
-      let bestCardIndex = -1;
-      let bestCardFlipped = false;
+      let _bestCardIndex = -1;
+      let _bestCardFlipped = false;
       let scoreAfterBestCard = table.points;
       for(let i = 0; i < PazaakHandSlots.MAX_SLOTS; i++){
         const sdCardIndex = table.handCards.get(i);
@@ -608,13 +607,13 @@ export class PazaakManager {
         const bestIndex = findBestIndex(scores, this.TargetPoints);
 
         if(bestIndex == 2){
-          bestCardIndex = i;
+          _bestCardIndex = i;
           scoreAfterBestCard = table.points + card.modifier[0];
-          bestCardFlipped = false;
+          _bestCardFlipped = false;
         }else if(bestIndex == 3){
-          bestCardIndex = i;
+          _bestCardIndex = i;
           scoreAfterBestCard = table.points + card.modifier[1];
-          bestCardFlipped = true;
+          _bestCardFlipped = true;
         }
       }
 
@@ -702,7 +701,7 @@ export class PazaakManager {
       log.info(`PazaakManager: AI determining move...`);
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       const aiTable = this.Tables[tableIndex];
-      const playerTable = this.Tables[PazaakTurnMode.PLAYER];
+      const _playerTable = this.Tables[PazaakTurnMode.PLAYER];
 
       /**
        * Find the best card to play next

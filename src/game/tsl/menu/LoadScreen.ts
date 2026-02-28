@@ -31,7 +31,7 @@ export class LoadScreen extends K1_LoadScreen {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LBL_HINT.visible = false;
       const mat = this.tGuiPanel.getFill().material;
       this.defaultTex = (mat as THREE.ShaderMaterial & { uniforms: { map: { value: THREE.Texture } } }).uniforms.map.value;
@@ -40,3 +40,4 @@ export class LoadScreen extends K1_LoadScreen {
   }
   
 }
+
