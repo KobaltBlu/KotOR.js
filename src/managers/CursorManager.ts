@@ -518,6 +518,15 @@ export class CursorManager {
 		if(objCount != CursorManager.pointGeomerty.attributes.size.count){
 			CursorManager.pointGeomerty.attributes.position = new THREE.Float32BufferAttribute(points, 3);
 			CursorManager.pointGeomerty.attributes.size = new THREE.Float32BufferAttribute(sizes, 1);
+		}else{
+			const positionAttribute = CursorManager.pointGeomerty.attributes.position as THREE.BufferAttribute;
+			const sizeAttribute = CursorManager.pointGeomerty.attributes.size as THREE.BufferAttribute;
+			for(let i = 0; i < objCount; i++){
+				positionAttribute.setX(i*3, objects[i].position.x);
+				positionAttribute.setY(i*3, objects[i].position.y);
+				positionAttribute.setZ(i*3, objects[i].position.z + losZ);
+				sizeAttribute.setX(i, CursorManager.pointSize);
+			}
 		}
 
 		CursorManager.pointGeomerty.computeBoundingBox();
@@ -530,11 +539,11 @@ export class CursorManager {
 		CursorManager.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
 		const intersectsT = CursorManager.raycaster.intersectObject( CursorManager.testPoints, false );
 		const intersect = intersectsT[0];
+		CursorManager.raycaster.params.Points.threshold = pThresholdCache;
+		CursorManager.raycaster.far = farCache;
 		if(intersect && intersect.object == CursorManager.testPoints){
 			return objects[intersect.index];
 		}
-		CursorManager.raycaster.params.Points.threshold = pThresholdCache;
-		CursorManager.raycaster.far = farCache;
 		return undefined;
 	}
 
