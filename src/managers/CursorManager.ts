@@ -211,6 +211,10 @@ export class CursorManager {
 		if(idx >= 0){
 			GameState.ModuleObjectManager.playerSelectableObjects.splice(idx, 1);
 		}
+		const idx2 = GameState.ModuleObjectManager.playerHoverableObjects.indexOf(object);
+		if(idx2 >= 0){
+			GameState.ModuleObjectManager.playerHoverableObjects.splice(idx2, 1);
+		}
 	}
 
 	/**
@@ -499,7 +503,7 @@ export class CursorManager {
 	 */
 	public static onMouseHitInteractive(): ModuleObject | undefined {
 		
-		const objects = GameState.ModuleObjectManager.playerSelectableObjects;
+		const objects = GameState.ModuleObjectManager.playerHoverableObjects;
 		const objCount = objects.length;
 		
 		const points: number[] = [];

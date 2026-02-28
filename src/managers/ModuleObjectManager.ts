@@ -75,7 +75,8 @@ export class ModuleObjectManager {
 
   static RemoveObject(object: ModuleObject){
     if(!object) return;
-    this.RemoveObjectById(object?.id);
+    this.RemoveObjectById(object.id);
+    GameState.CursorManager.notifyObjectDestroyed(object);
   }
 
   static RemoveObjectById(id: number): boolean {
@@ -685,6 +686,7 @@ export class ModuleObjectManager {
   }
 
   static playerSelectableObjects: ModuleObject[] = [];
+  static playerHoverableObjects: ModuleObject[] = [];
   static #currentVisibleObject: ModuleObject;
   static #currentVisibleObjectIndex: number = 0;
 
@@ -773,6 +775,10 @@ export class ModuleObjectManager {
       const hasLineOfSight = obj.hasLineOfSight(player, GameState.maxSelectableDistance);
       if(!hasLineOfSight){
         continue;
+      }
+
+      if(GameState.viewportFrustum.containsPoint(obj.position)){
+        this.playerHoverableObjects.push(obj);
       }
 
       //Add the object to the selectable objects list
