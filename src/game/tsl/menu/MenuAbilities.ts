@@ -1,11 +1,14 @@
-import { GameState } from "../../../GameState";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import type { ModuleCreature } from "../../../module/ModuleCreature";
-import { MenuAbilities as K1_MenuAbilities } from "../../kotor/KOTOR";
-import { GUICreatureSkill } from "../gui/GUICreatureSkill";
-import { GUISpellItem } from "../gui/GUISpellItem";
-import { GUIFeatItem } from "../gui/GUIFeatItem";
-import { type TalentFeat } from "../../../talents/TalentFeat";
+import { MenuAbilities as K1_MenuAbilities } from "@/game/kotor/KOTOR";
+import { GUICreatureSkill } from "@/game/tsl/gui/GUICreatureSkill";
+import { GUIFeatItem } from "@/game/tsl/gui/GUIFeatItem";
+import { GUISpellItem } from "@/game/tsl/gui/GUISpellItem";
+import { GameState } from "@/GameState";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { type TalentFeat } from "@/talents/TalentFeat";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 enum AbilityFilter {
   SKILLS = 1,
@@ -15,9 +18,9 @@ enum AbilityFilter {
 
 /**
  * MenuAbilities class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuAbilities.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -60,7 +63,7 @@ export class MenuAbilities extends K1_MenuAbilities {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -180,8 +183,8 @@ export class MenuAbilities extends K1_MenuAbilities {
         return prereqs[0] == id && GameState.PartyManager.party[0].getHasSpell(curSpell.__index);
       });
 
-      if(midSpell){ 
-        group[parseInt(midSpell.forcepriority)] = midSpell; 
+      if(midSpell){
+        group[parseInt(midSpell.forcepriority)] = midSpell;
       }
 
       //END SPELL
@@ -213,7 +216,7 @@ export class MenuAbilities extends K1_MenuAbilities {
     this.LB_DESC.clearItems();
     this.LB_DESC_FEATS.clearItems();
     this.LB_ABILITY.clearItems();
-    let items = this.getFilteredItems();
+    const items = this.getFilteredItems();
 
     switch(this.filter){
       case AbilityFilter.SKILLS:
@@ -263,5 +266,5 @@ export class MenuAbilities extends K1_MenuAbilities {
     this.LB_ABILITY.updateList();
 
   }
-  
+
 }

@@ -1,6 +1,6 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIControl, GUILabel } from "../../../gui";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIControl, GUILabel } from "@/gui";
 
 /**
  * MenuToolTip class.

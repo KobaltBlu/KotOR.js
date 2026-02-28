@@ -1,5 +1,8 @@
-import { GFFObject } from "../resource/GFFObject";
-import { ResourceLoader } from "./ResourceLoader";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import { GFFObject } from "@/resource/GFFObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Loader);
 
 /**
  * TemplateLoader class.
@@ -60,7 +63,7 @@ export class TemplateLoader {
 
     //   let resKey = GameState.module.rim_s.getResource(args.ResRef.toLowerCase(), args.ResType);
     //   if(resKey != null){
-    //     //console.log('Template Resource found');
+    //     //log.info('Template Resource found');
     //     GameState.module.rim_s.getResourceBuffer(resKey, (buffer) => {
     //       if(args.onLoad != null)
     //         args.onLoad(buffer);
@@ -71,7 +74,7 @@ export class TemplateLoader {
 
     //   resKey = BIFManager.GetBIFByName('templates').getResource(args.ResRef.toLowerCase(), args.ResType);
     //   if(resKey != null){
-    //     //console.log('Template Resource found');
+    //     //log.info('Template Resource found');
     //     BIFManager.GetBIFByName('templates').getResourceBuffer(resKey, (buffer) => {
     //       if(args.onLoad != null)
     //         args.onLoad(buffer);

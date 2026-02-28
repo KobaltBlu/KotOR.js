@@ -230,7 +230,7 @@ export class GameFileSystem {
 
           // Process all subdirectories in parallel
           const subdirResults = await Promise.all(subdirPromises);
-          
+
           // Flatten results
           for (const subdirFiles of subdirResults) {
             files.push(...subdirFiles);

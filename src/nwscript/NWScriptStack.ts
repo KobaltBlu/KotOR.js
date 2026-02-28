@@ -178,9 +178,9 @@ export class NWScriptStack {
 
   storeState(bpO: number = 0, spO: number = 0){
 
-    let stack = [];
+    const stack = [];
     for(let i = 0; i < spO; i++){
-      let tmpPointer = (this.pointer - i);
+      const tmpPointer = (this.pointer - i);
       stack.push(this.stack[tmpPointer])
     }
 
@@ -220,14 +220,14 @@ export class NWScriptStack {
   }
 
   saveForEventSituation(){
-    let struct = new GFFStruct();
+    const struct = new GFFStruct();
 
     struct.addField( new GFFField(GFFDataType.INT, 'BasePointer') ).setValue(this.basePointer);
 
-    let stack = struct.addField( new GFFField(GFFDataType.LIST, 'Stack') ).setValue(this.pointer);
+    const stack = struct.addField( new GFFField(GFFDataType.LIST, 'Stack') ).setValue(this.pointer);
     for(let i = 0; i < this.stack.length; i++){
-      let element = this.stack[i];
-      let elementStruct = new GFFStruct(i);
+      const element = this.stack[i];
+      const elementStruct = new GFFStruct(i);
 
       elementStruct.addField( new GFFField(GFFDataType.CHAR, 'Type') ).setValue( element.type );
       switch(element.type){
@@ -244,7 +244,7 @@ export class NWScriptStack {
           elementStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Value') ).setValue( element.value );
         break;
         case NWScriptDataType.EFFECT:
-          let gameDefinedStruct = new GFFStruct(0);
+          const gameDefinedStruct = new GFFStruct(0);
         break;
       }
       stack.addChildStruct(elementStruct);
@@ -427,7 +427,7 @@ export class NWScriptStack {
 
     let stringCount = 0;
     let stringDataSize = 0;
-    let stringPacker = [];
+    const stringPacker = [];
     for(let i = 0; i < this.stack.length; i++){
       if(this.stack[i].type != NWScriptDataType.STRING){ continue; }
       stringCount++;

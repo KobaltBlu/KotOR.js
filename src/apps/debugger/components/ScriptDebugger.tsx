@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react"
-import { useApp } from "../context/AppContext";
-import { ScriptBrowserWindow } from "./ScriptBrowserWindow";
-import { ScriptInstanceWindow } from "./ScriptInstanceWindow";
-import { LayoutContainer } from "./LayoutContainer";
-import { MenuTop } from "./MenuTop";
+import React from "react";
+
+import { LayoutContainer } from "@/apps/debugger/components/LayoutContainer";
+import { MenuTop } from "@/apps/debugger/components/MenuTop";
+import { ScriptBrowserWindow } from "@/apps/debugger/components/ScriptBrowserWindow";
+import { ScriptInstanceWindow } from "@/apps/debugger/components/ScriptInstanceWindow";
 
 
 export const ScriptDebugger = () => {

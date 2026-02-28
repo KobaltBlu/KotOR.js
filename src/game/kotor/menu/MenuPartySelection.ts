@@ -1,10 +1,13 @@
-import { GameState } from "../../../GameState";
-import { GameMenu, GUIControl } from "../../../gui";
-import type { GUILabel, GUIButton, GUICheckBox } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+import { GameState } from "@/GameState";
+import { GameMenu, GUIControl } from "@/gui";
+import type { GUILabel, GUIButton, GUICheckBox } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 const TLK_REMOVE = 38456;
 const TLK_ADD = 38455;
@@ -179,7 +182,7 @@ export class MenuPartySelection extends GameMenu {
         e.stopPropagation();
 
         if(this.canRemove(this.selectedNPC)){
-          console.warn(`MenuPartySelection:RemoveNPC`, `Cannot remove a required party member ${this.selectedNPC}`);
+          log.warn(`MenuPartySelection:RemoveNPC`, `Cannot remove a required party member ${this.selectedNPC}`);
           return false;
         }
 
@@ -286,7 +289,7 @@ export class MenuPartySelection extends GameMenu {
    */
   indexOfSelectedNPC(npcId: number) {
     for (let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++) {
-      let cpm = GameState.PartyManager.CurrentMembers[i];
+      const cpm = GameState.PartyManager.CurrentMembers[i];
       if (cpm.memberID == npcId) {
         return i;
       }
@@ -361,7 +364,7 @@ export class MenuPartySelection extends GameMenu {
         continue;
       }
       LBL_NA.hide();
-      let portrait = GameState.PartyManager.GetPortraitByIndex(i);
+      const portrait = GameState.PartyManager.GetPortraitByIndex(i);
       if (LBL_NA.getFillTextureName() != portrait && !!portrait) {
         LBL_CHAR.setFillTextureName(portrait);
         const texture = await TextureLoader.Load(portrait);

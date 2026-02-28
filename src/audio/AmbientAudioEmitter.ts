@@ -1,5 +1,9 @@
-import type { AudioEngine } from "./AudioEngine";
-import { EventListener } from "../utility/EventListener";
+import type { AudioEngine } from "@/audio/AudioEngine";
+import { EventListener } from "@/utility/EventListener";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Audio);
 
 /**
  * AmbientAudioEmitter class.

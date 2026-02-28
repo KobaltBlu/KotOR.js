@@ -1,19 +1,25 @@
-import { ModuleObject } from "./ModuleObject";
-import { GFFObject } from "../resource/GFFObject";
+import { ModuleObject } from "@/module/ModuleObject";
+import { GFFObject } from "@/resource/GFFObject";
+
 import * as THREE from "three";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { GameState } from "../GameState";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import { ConfigClient } from "../utility/ConfigClient";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleDoorAnimState, SignalEventType } from "../enums";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleDoorAnimState, SignalEventType } from "@/enums";
+import { EngineMode } from "@/enums/engine/EngineMode";
+
+
+const log = createScopedLogger(LogScope.Module);
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { ConfigClient } from "@/utility/ConfigClient";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 const OBJECTS_INSIDE_UPDATE_THRESHOLD = 15; // 15 frame ticks
@@ -115,13 +121,13 @@ export class ModuleTrigger extends ModuleObject {
   getCurrentRoom(){
     let _distance = 1000000000;
     for(let i = 0; i < GameState.module.area.rooms.length; i++){
-      let room = GameState.module.area.rooms[i];
-      let model = room.model;
+      const room = GameState.module.area.rooms[i];
+      const model = room.model;
       if(model instanceof OdysseyModel3D){
-        let pos = this.position.clone();
+        const pos = this.position.clone();
         if(model.box.containsPoint(pos)){
-          let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
-          let distance = pos.distanceTo(roomCenter);
+          const roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
+          const distance = pos.distanceTo(roomCenter);
           if(distance < _distance){
             _distance = distance;
             this.attachToRoom(room);
@@ -141,7 +147,7 @@ export class ModuleTrigger extends ModuleObject {
       trigGeom.setIndex(triangles.flat());
       trigGeom.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices.map( (v: THREE.Vector3) => v.toArray() ).flat(), 3 ) );
     }catch(e){
-      console.error('ModuleTrigger', 'Failed to generate faces', {
+      log.error('ModuleTrigger', 'Failed to generate faces', {
         trigger: this,
         error: e
       })
@@ -167,7 +173,7 @@ export class ModuleTrigger extends ModuleObject {
         this.initObjectsInside();
         this.loadTrap();
       }else{
-        console.error('Failed to load ModuleTrigger template');
+        log.error('Failed to load ModuleTrigger template');
         if(this.template instanceof GFFObject){
           this.initProperties();
           this.loadScripts();
@@ -209,9 +215,9 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   buildGeometry(){
-    let trigGeom = this.getGeometry();
+    const trigGeom = this.getGeometry();
 
-    let material = new THREE.MeshBasicMaterial({
+    const material = new THREE.MeshBasicMaterial({
       color: new THREE.Color( 0xFFFFFF ),
       side: THREE.DoubleSide
     });
@@ -416,11 +422,11 @@ export class ModuleTrigger extends ModuleObject {
 
   onEnter(object?: ModuleObject){
     if(!object){ return; }
-    console.log('ModuleTrigger.onEnter', this.type,  this.getTag());
+    log.info('ModuleTrigger.onEnter', this.type,  this.getTag());
     if(this.type == ModuleTriggerType.TRAP && !this.trapTriggered){
       if(object.isHostile(this)){
         this.trapTriggered = true;
-        console.log('ModuleTrigger.onEnter', 'Trap Triggered')
+        log.info('ModuleTrigger.onEnter', 'Trap Triggered')
         const event = new GameState.GameEventFactory.EventSignalEvent();
         event.setCaller(object);
         event.setObject(this);
@@ -436,7 +442,7 @@ export class ModuleTrigger extends ModuleObject {
       return;
     }
 
-    console.log('ModuleTrigger', this.getTag(), 'enter 1')
+    log.info('ModuleTrigger', this.getTag(), 'enter 1')
     const event = new GameState.GameEventFactory.EventSignalEvent();
     event.setCaller(object);
     event.setObject(this);
@@ -448,7 +454,7 @@ export class ModuleTrigger extends ModuleObject {
 
   onExit(object?: ModuleObject){
     if(!object){ return; }
-    console.log('ModuleTrigger', this.getTag(), 'exit')
+    log.info('ModuleTrigger', this.getTag(), 'exit')
     const event = new GameState.GameEventFactory.EventSignalEvent();
     event.setCaller(object);
     event.setObject(this);
@@ -681,7 +687,7 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Scripts

@@ -1,22 +1,23 @@
 import * as THREE from "three";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { Action } from "./Action";
-import { Utility } from "../utility/Utility";
-import { GameState } from "../GameState";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleObject } from "../module/ModuleObject";
-import type { ComputedPath } from "../engine/pathfinding/ComputedPath";
-import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
+
+import { Action } from "@/actions/Action";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
+
 
 /**
  * ActionMoveToPoint class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionMoveToPoint.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -107,7 +108,7 @@ export class ActionMoveToPoint extends Action {
           this.computedPath.pop();
         }
       }
-  
+
       if(this.computedPath.timer < 0){
         if(this.computedPath.realtime){
           this.setComputedPath(undefined);

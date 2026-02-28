@@ -1,11 +1,16 @@
 import * as THREE from "three";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import type { OdysseyModelAnimation } from "./OdysseyModelAnimation";
-import type { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
-import { OdysseyController } from "./controllers/OdysseyController";
-import { IOdysseyControllerFrameGeneric } from "../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelAnimationManagerState } from "../enums/odyssey/OdysseyModelAnimationManagerState";
+
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Loader);
+import { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyModelAnimationManagerState";
 
 /**
  * OdysseyModelAnimationManager class.
@@ -148,9 +153,9 @@ export class OdysseyModelAnimationManager {
   }
 
   setCurrentAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
-    // if(anim) console.log(this.model?.name, anim.name);
+    // if(anim) log.info(this.model?.name, anim.name);
     if(typeof state == 'undefined'){
-      console.warn('setCurrentAnimation: state is undefined');
+      log.warn('setCurrentAnimation: state is undefined');
       state = this.createAnimationState();
     }
     if(this.currentAnimation){
@@ -162,7 +167,7 @@ export class OdysseyModelAnimationManager {
 
   setLastAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
     if(typeof state == 'undefined'){
-      // console.warn('setLastAnimation: state is undefined');
+      // log.warn('setLastAnimation: state is undefined');
       state = this.createAnimationState();
     }
     this.transElapsed = 0;
@@ -179,7 +184,7 @@ export class OdysseyModelAnimationManager {
 
   setOverlayAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
     if(typeof state == 'undefined'){
-      console.warn('setOverlayAnimation: state is undefined');
+      log.warn('setOverlayAnimation: state is undefined');
       state = this.createAnimationState();
     }
     this.overlayAnimation = anim;
@@ -188,7 +193,7 @@ export class OdysseyModelAnimationManager {
 
   updateAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState, delta: number = 0){
     if(typeof state == 'undefined'){
-      console.warn('updateAnimation: state is undefined');
+      log.warn('updateAnimation: state is undefined');
       state = this.createAnimationState();
     }
     state.delta = delta;
@@ -252,7 +257,7 @@ export class OdysseyModelAnimationManager {
 
   updateOverlayAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState, delta: number = 0){
     if(typeof state == 'undefined'){
-      console.warn('updateOverlayAnimation: state is undefined');
+      log.warn('updateOverlayAnimation: state is undefined');
       state = this.createAnimationState();
     }
     state.delta = delta;
@@ -316,7 +321,7 @@ export class OdysseyModelAnimationManager {
 
   updateAnimationEvents(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
     if(typeof state == 'undefined'){
-      console.warn('updateAnimationEvents: state is undefined');
+      log.warn('updateAnimationEvents: state is undefined');
       state = this.createAnimationState();
     }
     if(!anim.events.length)
@@ -353,7 +358,7 @@ export class OdysseyModelAnimationManager {
 
   updateAnimationNode(anim: OdysseyModelAnimation, node: OdysseyModelAnimationNode, state: OdysseyModelAnimationManagerState, canTween: boolean = false){
     if(typeof state == 'undefined'){
-      console.warn('updateAnimationNode: state is undefined');
+      log.warn('updateAnimationNode: state is undefined');
       state = this.createAnimationState();
     }
     if(!node) return;
@@ -372,7 +377,7 @@ export class OdysseyModelAnimationManager {
     
     //Loop through and animate all the controllers for the current node
     let controller: OdysseyController;
-    for(let c of node.controllers){
+    for(const c of node.controllers){
       controller = c[1];
 
       if(controller.frameCount == 1 && !canTween){
@@ -381,7 +386,7 @@ export class OdysseyModelAnimationManager {
       }
 
       if(controller.data.length != controller.frameCount){
-        console.log('Missing Controller Data', controller);
+        log.info('Missing Controller Data', controller);
         continue;
       }
 
@@ -431,13 +436,13 @@ export class OdysseyModelAnimationManager {
       }
 
       if( controller.type == OdysseyModelControllerType.Position ){
-        let tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
+        const tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
         this._animPosition.copy(this.modelNode.position);
         controller.animate(this, anim, last, next, fl);
         this._animPosition2.copy(this.modelNode.position);
         this.modelNode.position.copy(this._animPosition).lerp(this._animPosition2, tweenFL);
       }else if( controller.type == OdysseyModelControllerType.Orientation ){
-        let tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
+        const tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
         this._animQuaternion.copy(this.modelNode.quaternion);
         controller.animate(this, anim, last, next, fl);
         this._animQuaternion2.copy(this.modelNode.quaternion);

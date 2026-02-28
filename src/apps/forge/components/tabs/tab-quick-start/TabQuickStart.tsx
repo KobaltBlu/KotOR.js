@@ -1,17 +1,21 @@
 import React, { useState, useCallback, memo } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { Project } from "../../../Project";
-import { ProjectFileSystem } from "../../../ProjectFileSystem";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { ForgeState } from "../../../states/ForgeState";
-import { EditorFile } from "../../../EditorFile";
-import { RecentProject } from "../../../RecentProject";
-import { FileTypeManager } from "../../../FileTypeManager";
-import * as KotOR from "../../../KotOR";
-import "./TabQuickStart.scss";
-import { ModalNewProjectState } from "../../../states/modal/ModalNewProjectState";
 
-export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { Project } from "@/apps/forge/Project";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { RecentProject } from "@/apps/forge/RecentProject";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import "@/apps/forge/components/tabs/tab-quick-start/TabQuickStart.scss";
+
+const log = createScopedLogger(LogScope.Forge);
+
+export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
   const [files, setFiles] = useState<EditorFile[]>(ForgeState.recentFiles);
   const [projects, setProjects] = useState<RecentProject[]>(ForgeState.recentProjects);
 
@@ -51,13 +55,13 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
 
   const onClickRecentProject = useCallback(async (e: React.MouseEvent, recentProject: RecentProject) => {
     e.preventDefault();
-    
+
     if(!recentProject) return;
-    
+
     try{
       // Show loading state
       ForgeState.loaderShow();
-      
+
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         // For Electron, use the stored path
         const projectPath = recentProject.path;
@@ -78,7 +82,7 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
       } else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
         // For browser, try to restore the handle from storage
         let handle = recentProject.handle;
-        
+
         // If handle is not in memory, try to restore from IndexedDB
         if(!handle && recentProject.name){
           const handleKey = `project_handle_${recentProject.getIdentifier()}`;
@@ -86,10 +90,10 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
             const { get } = await import('idb-keyval');
             handle = await get(handleKey);
           } catch(e) {
-            console.warn('Failed to restore handle from IndexedDB:', e);
+            log.warn('Failed to restore handle from IndexedDB:', e);
           }
         }
-        
+
         if(handle instanceof FileSystemDirectoryHandle){
           // Verify handle is still valid
           try{
@@ -107,7 +111,7 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
             }
           } catch(permError){
             // Handle permission denied or invalid - request new access
-            console.warn('Handle permission denied or invalid, requesting new access:', permError);
+            log.warn('Handle permission denied or invalid, requesting new access:', permError);
             Project.OpenByDirectory();
           }
         } else {

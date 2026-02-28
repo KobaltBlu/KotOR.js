@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import * as KotOR from "../../KotOR";
-import "./TLKSearchModal.scss";
+
+import * as KotOR from "@/apps/forge/KotOR";
+import "@/apps/forge/components/TLKSearchModal/TLKSearchModal.scss";
 
 export interface TLKSearchModalProps {
   isOpen: boolean;
@@ -38,10 +39,10 @@ export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
     if (searchQuery.trim().length < 2) {
       return;
     }
-    
+
     setIsSearching(true);
     setHasSearched(true);
-    
+
     // Use setTimeout to allow UI to update before heavy search operation
     setTimeout(() => {
       const results = KotOR.TLKManager.Search(searchQuery);
@@ -70,7 +71,7 @@ export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
       <div className="tlk-search-modal" onClick={(e) => e.stopPropagation()}>
         <div className="tlk-search-modal-header">
           <h3>Search TLK Strings</h3>
-          <button 
+          <button
             type="button"
             onClick={onClose}
             className="tlk-search-modal-close"
@@ -82,8 +83,8 @@ export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
 
         <div className="tlk-search-modal-body">
           <div className="tlk-search-controls">
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -91,7 +92,7 @@ export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
               placeholder="Search for text in TLK strings (min 2 characters)..."
               autoFocus
             />
-            <button 
+            <button
               type="button"
               onClick={handleSearch}
               className="tlk-search-button"
@@ -103,7 +104,7 @@ export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
 
           {currentResref !== undefined && currentResref > -1 && (
             <div className="tlk-current-selection">
-              <strong>Current Selection:</strong> [{currentResref}] 
+              <strong>Current Selection:</strong> [{currentResref}]
               {KotOR.TLKManager.TLKStrings[currentResref] && (
                 <span> {KotOR.TLKManager.TLKStrings[currentResref].Value}</span>
               )}
@@ -137,12 +138,12 @@ export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
             {!isSearching && searchResults.length > 0 && (
               <>
                 <div className="tlk-search-results-header">
-                  Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} 
+                  Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
                   {searchResults.length === 100 && ' (showing first 100)'}
                 </div>
                 <div className="tlk-search-results-list">
                   {searchResults.map((result) => (
-                    <div 
+                    <div
                       key={result.index}
                       className={`tlk-search-result-item ${result.index === currentResref ? 'active' : ''}`}
                       onClick={() => handleSelectResult(result.index)}
@@ -158,7 +159,7 @@ export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
         </div>
 
         <div className="tlk-search-modal-footer">
-          <button 
+          <button
             type="button"
             onClick={onClose}
             className="tlk-cancel-button"

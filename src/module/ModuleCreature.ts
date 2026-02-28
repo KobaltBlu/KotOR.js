@@ -249,7 +249,7 @@ export class ModuleCreature extends ModuleObject {
 
     this.cha = 0;
     this.con = 0;
-    this.dex = 0; 
+    this.dex = 0;
     this.int = 0;
     this.str = 0;
     this.wis = 0;
@@ -288,11 +288,11 @@ export class ModuleCreature extends ModuleObject {
       RIGHTARMBAND: undefined,
       IMPLANT: undefined,
       BELT: undefined,
-    
+
       CLAW1: undefined,
       CLAW2: undefined,
       CLAW3: undefined,
-      HIDE:  undefined,
+      HIDE: undefined,
     };
 
     this.experience = 0;
@@ -301,7 +301,7 @@ export class ModuleCreature extends ModuleObject {
     this.forcePoints = 0;
     this.gender = 0;
     this.goodEvil = 50;
-    this.hitPoints = 0; //Base Maximum Hit Points, not considering any bonuses. See Section 3.4 for more details.   
+    this.hitPoints = 0; //Base Maximum Hit Points, not considering any bonuses. See Section 3.4 for more details.
     this.interruptable = 1;
     this.isPC = 0;
     this.lastName = '';
@@ -352,7 +352,7 @@ export class ModuleCreature extends ModuleObject {
     this.perceptionList = [];
 
     this.setAnimationState(ModuleCreatureAnimState.IDLE);
-    this.combatData.combatActionTimer = 3; 
+    this.combatData.combatActionTimer = 3;
     this.combatData.combatState = false;
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
     this.collisionManager.blockingTimer = 0;

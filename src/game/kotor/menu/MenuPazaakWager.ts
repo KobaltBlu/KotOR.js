@@ -41,22 +41,23 @@ export class MenuPazaakWager extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+
       /**
-       * BTN_QUIT: Show "Quit Pazaak?" confirmation.
+       * BTN_QUIT: Shows "Quit Pazaak?" confirmation. If confirmed, cancels Pazaak (HandleQuitDialog).
        */
       this.BTN_QUIT.addEventListener('click', () => {
         this.handleQuitClicked();
       });
 
       /**
-       * BTN_WAGER: Confirm the wager
+       * BTN_WAGER: Confirms wager, closes popup, stays on setup (HandleWagerExit).
        */
       this.BTN_WAGER.addEventListener('click', () => {
         this.handleWagerClicked();
       });
 
       /**
-       * BTN_LESS: Decrease the wager
+       * BTN_LESS: OnMinusButtonPushed decreases
        */
       this.BTN_LESS.addEventListener('click', () => {
         GameState.PazaakManager.DecreaseWager();
@@ -64,7 +65,7 @@ export class MenuPazaakWager extends GameMenu {
       });
 
       /**
-       * BTN_MORE: Increase the wager
+       * BTN_MORE: OnPlusButtonPushed increases
        */
       this.BTN_MORE.addEventListener('click', () => {
         GameState.PazaakManager.IncreaseWager();
@@ -77,6 +78,7 @@ export class MenuPazaakWager extends GameMenu {
 
   /**
    * Handle BTN_QUIT - show confirmation then cancel if confirmed.
+   * Quit confirmation leads to HandleQuitDialog.
    */
   private handleQuitClicked(){
     GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
@@ -108,7 +110,7 @@ export class MenuPazaakWager extends GameMenu {
   }
 
   /**
-   * Update the wager text and maximum text.
+   * Update wager label: "Max wager" + maxWager, "Your credits" + playerGold.
    */
   rebuild(){
     const pm = GameState.PazaakManager;

@@ -1,17 +1,21 @@
-import { MDLLoader } from "../loaders/MDLLoader";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { OdysseyModel } from "../odyssey";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { TwoDAObject } from "../resource/TwoDAObject";
-import { GameState } from "../GameState";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { MDLLoader } from "@/loaders/MDLLoader";
+import { OdysseyModel } from "@/odyssey";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { TwoDAObject, type ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger , LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 
 /**
  * Planetary class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file Planetary.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -29,7 +33,7 @@ export class Planetary {
     Planetary.selectedIndex = -1;
     const planetary2DA = GameState.TwoDAManager.datatables.get('planetary');
     Planetary.selected = undefined;
-    let planetList = planetary2DA.rows;
+    const planetList = planetary2DA.rows;
     for(let i = 0; i < planetary2DA.RowCount; i++){
       const planet = new Planet(planetList[i]);
       Planetary.planets.push(planet);
@@ -40,7 +44,7 @@ export class Planetary {
             Planetary.models.set(planet.model, mdl);
           }
         }catch(e){
-          console.error(e);
+          log.error(e);
         }
       }
     }
@@ -70,19 +74,19 @@ export class Planetary {
 
     return;
   }
-  
+
   static GetPlanetByIndex(index: number = 0): Planet {
     return Planetary.planets[index];
   }
 
   static SaveStruct(){
-    let struct = new GFFStruct();
+    const struct = new GFFStruct();
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'GlxyMapNumPnts') ).setValue(Planetary.planets.length);
 
     let planetMask = 0
     for(let i = 0; i < Planetary.planets.length; i++){
-      let planet = Planetary.planets[i];
+      const planet = Planetary.planets[i];
       if(planet.enabled){
         planetMask |= 1 << planet.id;
       }

@@ -1,10 +1,10 @@
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import type { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "../../../module";
-import { MenuContainerMode } from "../../../enums/gui/MenuContainerMode";
-import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { MenuContainerMode } from "@/enums/gui/MenuContainerMode";
+import { GameState } from "@/GameState";
+import { GameMenu, GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import { TextureLoader } from "@/loaders";
+import type { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "@/module";
 
 const STR_SWITCH_TO = 47884;
 const STR_GET_ITEMS = 38542;
@@ -102,7 +102,7 @@ export class MenuContainer extends GameMenu {
     if (onClosed && this.container instanceof GameState.Module.ModuleArea.ModulePlaceable) {
       try {
         this.container.close(GameState.getCurrentPlayer());
-      } catch (e: any) {
+      } catch (e: unknown) {
 
       }
     }
@@ -145,9 +145,9 @@ export class MenuContainer extends GameMenu {
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
     if (this.container instanceof GameState.Module.ModuleArea.ModuleCreature || this.container instanceof GameState.Module.ModuleArea.ModulePlaceable) {
-      let inventory = this.container.getInventory();
+      const inventory = this.container.getInventory();
       for (let i = 0; i < inventory.length; i++) {
-        let item = inventory[i];
+        const item = inventory[i];
         this.LB_ITEMS.addItem(item);
       }
       TextureLoader.LoadQueue();

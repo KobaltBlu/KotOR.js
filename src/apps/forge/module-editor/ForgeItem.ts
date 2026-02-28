@@ -142,7 +142,7 @@ export class ForgeItem extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'AddCost', this.addCost) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'BaseItem', this.baseItem) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Charges', this.charges) );
@@ -181,7 +181,7 @@ export class ForgeItem extends ForgeGameObject {
   }
 
   loadBaseItem(){
-    if(!this.baseItem){ 
+    if(!this.baseItem){
       this.kBaseItem = {};
       return this.kBaseItem;
     }
@@ -195,7 +195,7 @@ export class ForgeItem extends ForgeGameObject {
   }
 
   nthStringConverter(name = '', nth = 1){
-    let value = nth.toString();
+    const value = nth.toString();
     name = name.substr(0, name.length - value.length);
     return name + value;
   }

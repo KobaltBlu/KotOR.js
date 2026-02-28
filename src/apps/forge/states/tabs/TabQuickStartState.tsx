@@ -1,7 +1,11 @@
 import React from "react";
-import {TabQuickStart} from "../../components/tabs/tab-quick-start/TabQuickStart";
-import { TabState } from "./";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
+import {TabQuickStart} from "@/apps/forge/components/tabs/tab-quick-start/TabQuickStart";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabQuickStartState extends TabState {
 

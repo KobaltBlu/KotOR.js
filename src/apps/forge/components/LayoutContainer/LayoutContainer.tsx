@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Draggable from 'react-draggable';
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import './LayoutContainer.scss';
+
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import "@/apps/forge/components/LayoutContainer/LayoutContainer.scss";
 
 // Types for better type safety
 interface LayoutBounds {

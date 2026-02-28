@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from "react"
-import "./forge-checkbox.scss"
-import { InfoBubble } from "../info-bubble/info-bubble";
+
+import "@/apps/forge/components/forge-checkbox/forge-checkbox.scss"
+import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
 
 export const ForgeCheckbox = function(props: { label: string, info?: string, value: boolean, onChange: (value: boolean) => void }) {
   const [value, setValue] = useState<boolean>(props.value);
   const [info, setInfo] = useState<string>(props.info || '');
 
-  const onChange = useCallback((e: React.MouseEvent<HTMLLabelElement>) => {
+  const onChange = useCallback((_e: React.MouseEvent<HTMLLabelElement>) => {
     setValue(!value);
     props.onChange(!value);
   }, [value, props.onChange]);

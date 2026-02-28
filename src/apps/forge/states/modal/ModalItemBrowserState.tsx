@@ -1,7 +1,11 @@
 import React from "react";
-import { ModalItemBrowser } from "../../components/modal/ModalItemBrowser";
-import { ModalState } from "./ModalState";
-import * as KotOR from "../../KotOR";
+
+import { ModalItemBrowser } from "@/apps/forge/components/modal/ModalItemBrowser";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import * as KotOR from "@/apps/forge/KotOR";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface UTIItem {
   resref: string;
@@ -103,7 +107,7 @@ export class ModalItemBrowserState extends ModalState {
             gff
           });
         } catch (error) {
-          console.error(`Failed to load UTI: ${key.resRef}`, error);
+          log.error(`Failed to load UTI: ${key.resRef}`, error);
         }
       }
 
@@ -113,7 +117,7 @@ export class ModalItemBrowserState extends ModalState {
       ModalItemBrowserState.cacheLoaded = true;
       this.processEventListener('onItemsLoaded', [this]);
     } catch (error) {
-      console.error('Failed to load items', error);
+      log.error('Failed to load items', error);
     }
   }
 

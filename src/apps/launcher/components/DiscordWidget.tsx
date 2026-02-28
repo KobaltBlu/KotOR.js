@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/DiscordWidget.scss';
+
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Default);
+import "@/apps/launcher/styles/DiscordWidget.scss";
 
 interface DiscordMember {
   id: string;
@@ -37,9 +41,9 @@ const base64ToImage = (base64: string) => {
   return `data:image/png;base64,${base64}`;
 }
 
-const DiscordWidget: React.FC<DiscordWidgetProps> = ({ 
-  serverId = "", 
-  className = "" 
+const DiscordWidget: React.FC<DiscordWidgetProps> = ({
+  serverId = "",
+  className = ""
 }) => {
   const [serverData, setServerData] = useState<DiscordServer | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,18 +54,18 @@ const DiscordWidget: React.FC<DiscordWidgetProps> = ({
       try {
         setLoading(true);
         setError(null);
-        
+
         // For now, we'll use the local discord.json file
         // In a real implementation, you'd fetch from Discord's widget API
         const response = await fetch(`https://discord.com/api/guilds/${serverId}/widget.json`);
         if (!response.ok) {
           throw new Error('Failed to fetch Discord data');
         }
-        
+
         const data: DiscordServer = await response.json();
         setServerData(data);
       } catch (err) {
-        console.error('Error fetching Discord data:', err);
+        log.error('Error fetching Discord data:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
@@ -112,8 +116,8 @@ const DiscordWidget: React.FC<DiscordWidgetProps> = ({
       <div className={`discord-widget ${className}`}>
         <div className="discord-widget-header">
           <div className="discord-widget-server-info">
-            <img 
-              src={base64ToImage(imageBase64)} 
+            <img
+              src={base64ToImage(imageBase64)}
               alt="Discord server icon"
               className="discord-widget-server-icon"
               onError={(e) => {
@@ -138,7 +142,7 @@ const DiscordWidget: React.FC<DiscordWidgetProps> = ({
       <div className={`discord-widget ${className}`}>
         <div className="discord-widget-header">
           <div className="discord-widget-server-info">
-            <img 
+            <img
               src={base64ToImage(imageBase64)}
               alt="Discord server icon"
               className="discord-widget-server-icon"
@@ -165,7 +169,7 @@ const DiscordWidget: React.FC<DiscordWidgetProps> = ({
     <div className={`discord-widget ${className}`}>
       <div className="discord-widget-header">
         <div className="discord-widget-server-info">
-          <img 
+          <img
             src={base64ToImage(imageBase64)}
             alt={`${serverData.name} server icon`}
             className="discord-widget-server-icon"
@@ -182,21 +186,21 @@ const DiscordWidget: React.FC<DiscordWidgetProps> = ({
           </div>
         </div>
       </div>
-      
+
       <div className="discord-widget-content">
         <div className="discord-members-list">
           {serverData.members.map((member) => (
             <div key={member.id} className="discord-member">
               <div className="discord-member-avatar">
-                <img 
-                  src={member.avatar_url} 
+                <img
+                  src={member.avatar_url}
                   alt={member.username}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = `https://cdn.discordapp.com/embed/avatars/${parseInt(member.discriminator) % 5}.png`;
                   }}
                 />
-                <div 
+                <div
                   className="discord-member-status"
                   style={{ backgroundColor: getStatusColor(member.status) }}
                 >
@@ -217,9 +221,9 @@ const DiscordWidget: React.FC<DiscordWidgetProps> = ({
           ))}
         </div>
       </div>
-      
+
       <div className="discord-widget-footer">
-        <button 
+        <button
           className="discord-open-button"
           onClick={handleOpenDiscord}
         >

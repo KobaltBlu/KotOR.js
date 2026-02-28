@@ -1,9 +1,13 @@
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { ModuleObjectType } from "../enums";
-import type { ModuleArea, ModuleRoom } from "../module";
-import { BitWise } from "../utility/BitWise";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import type { IVISRoom } from "../interface/module/IVISRoom";
+import { ModuleObjectType } from "@/enums";
+import type { IVISRoom } from "@/interface/module/IVISRoom";
+import type { ModuleArea, ModuleRoom } from "@/module";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { BitWise } from "@/utility/BitWise";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Resource);
 
 enum VISReadMode {
   ROOM = 0,
@@ -18,14 +22,14 @@ interface IReadContext {
 
 /**
  * VISObject class.
- * 
+ *
  * Class representing a Extra Texture Information file in memory.
- * 
- * CHILD_ROOMS are rooms that are visible from the parent room. The engine will not 
+ *
+ * CHILD_ROOMS are rooms that are visible from the parent room. The engine will not
  * render rooms that are not present in this list when you are standing in a parent room
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file VISObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -64,16 +68,16 @@ export class VISObject {
     const lines = text.split('\n');
     const lineCount = lines.length;
 
-    // console.log(`VISObject.read: ${lineCount} lines found`);
+    // log.info(`VISObject.read: ${lineCount} lines found`);
 
     this.resetReadContext();
 
     /**
      * VIS Object File Format
-     * [Parent Room] 
+     * [Parent Room]
      *  - room_name number_of_child_rooms
      *  - regex: ^([^\s]+)[\s|\t](\d+)\n
-     * [Child Room] 
+     * [Child Room]
      *  - child_room_name
      *  - regex: ^\s{2}([^\s]+)\n
      */
@@ -93,7 +97,7 @@ export class VISObject {
        * Child Room parse logic
        */
       if(isChildRoom){
-        // console.log(`VISObject.read: Child Room: ${line}`);
+        // log.info(`VISObject.read: Child Room: ${line}`);
         this.readContext.mode = VISReadMode.CHILD_ROOMS;
         //CHILD_ROOMS
         this.readContext.currentRoom.rooms.push(line);
@@ -163,7 +167,7 @@ export class VISObject {
     }
 
     if(!this.area){
-      console.warn('VISObject.attachArea: No area to process');
+      log.warn('VISObject.attachArea: No area to process');
       return;
     }
 

@@ -215,7 +215,7 @@ export class DLGNode {
         return bSuccess ? true : false;
       }
     }
-    
+
     return true;
   }
 
@@ -234,7 +234,7 @@ export class DLGNode {
         return (bSuccess ? true : false);
       }
     }
-    
+
     return true;
   }
 
@@ -243,10 +243,10 @@ export class DLGNode {
   }
 
   getActiveReplies(): number[] {
-    let totalReplies = this.replies.length;
-    let replyIds: number[] = [];
+    const totalReplies = this.replies.length;
+    const replyIds: number[] = [];
     for(let i = 0; i < totalReplies; i++){
-      let replyLink = this.replies[i];
+      const replyLink = this.replies[i];
       if(replyLink.runActiveScripts()){
         replyIds.push(replyLink.index);
       }

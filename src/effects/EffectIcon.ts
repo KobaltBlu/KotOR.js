@@ -1,12 +1,13 @@
-import { GameEffect } from "./GameEffect";
-import { GameState } from "../GameState";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { IEffectIconListItem } from "../interface/module/IEffectIconListItem";
-import { TextureLoader } from "../loaders";
-// import { TwoDAManager } from "../managers";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { BitWise } from "../utility/BitWise";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { IEffectIconListItem } from "@/interface/module/IEffectIconListItem";
+import { TextureLoader } from "@/loaders";
+// import { TwoDAManager } from "@/managers";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BitWise } from "@/utility/BitWise";
+
 
 /**
  * EffectIcon class.

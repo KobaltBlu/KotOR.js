@@ -1,12 +1,16 @@
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject, ModuleRoom } from "../module";
-import { OdysseyWalkMesh, WalkmeshEdge } from "../odyssey";
 import * as THREE from "three";
-import { Utility } from "../utility/Utility";
-import { OdysseyFace3 } from "../three/odyssey";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { EngineDebugType } from "../enums/engine/EngineDebugType";
+
+import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleObject, ModulePlaceable, ModuleRoom } from "@/module";
+import { OdysseyWalkMesh, WalkmeshEdge } from "@/odyssey";
+import { OdysseyFace3 } from "@/three/odyssey";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
+
+const log = createScopedLogger(LogScope.Game);
 
 // =============================================
 // TYPE DEFINITIONS
@@ -145,9 +149,9 @@ class CollisionState {
 
 /**
  * CollisionManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CollisionManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -253,7 +257,7 @@ export class CollisionManager {
     }
 
     // Small separation along averaged normals if still penetrating
-    let sepNormal = new THREE.Vector3(0, 0, 0);
+    const sepNormal = new THREE.Vector3(0, 0, 0);
     let sepCount = 0;
     let totalPenetration = 0;
     for (const collision of collisions) {
@@ -271,7 +275,7 @@ export class CollisionManager {
 
     this.object.forceVector.copy(finalVelocity);
   }
-  
+
   // =============================================
   // MAIN COLLISION UPDATE METHOD
   // =============================================
@@ -352,17 +356,17 @@ export class CollisionManager {
 
   private validatePrerequisites(): boolean {
     if (!this.object?.model) {
-      console.warn('CollisionManager: No valid object for collision detection');
+      log.warn('CollisionManager: No valid object for collision detection');
       return false;
     }
 
     if (!this.object.room?.collisionManager?.walkmesh) {
-      console.warn('CollisionManager: Object not in valid room with walkmesh');
+      log.warn('CollisionManager: Object not in valid room with walkmesh');
       return false;
     }
 
     if (!GameState.module || !this.object.area) {
-      console.warn('CollisionManager: Missing module or area context');
+      log.warn('CollisionManager: Missing module or area context');
       return false;
     }
 
@@ -410,7 +414,7 @@ export class CollisionManager {
     this.handleObjectGroupCollisions(GameState.PartyManager.party, CollisionType.CREATURE, delta);
   }
 
-  private handleObjectGroupCollisions(objects: ModuleCreature[], type: CollisionType, delta: number): void {
+  private handleObjectGroupCollisions(objects: ModuleCreature[], type: CollisionType, _delta: number): void {
     for (const creature of objects) {
       if (!creature || creature === this.object || creature.isDead()) {
         continue;
@@ -466,7 +470,7 @@ export class CollisionManager {
 
     return collision;
   }
-    
+
   private handlePlaceableCollisions(): void {
     const placeables = this.object.room.placeables;
     for (const placeable of placeables) {
@@ -880,7 +884,7 @@ export class CollisionManager {
     if (this.object.forceVector.length() === 0) return;
 
     // Check for room transition edges
-    for (const [index, edge] of this.object.room.collisionManager.walkmesh.edges) {
+    for (const [_index, edge] of this.object.room.collisionManager.walkmesh.edges) {
       if (!edge || edge.transition === -1) continue;
 
       if (Utility.LineLineIntersection(

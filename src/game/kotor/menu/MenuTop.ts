@@ -1,5 +1,5 @@
-import { GameMenu } from "../../../gui";
-import type { GUIControl, GUIButton } from "../../../gui";
+import { GameMenu } from "@/gui";
+import type { GUIControl, GUIButton } from "@/gui";
 
 /**
  * MenuTop class.
@@ -107,7 +107,7 @@ export class MenuTop extends GameMenu {
   }
 
   CloseAllOtherMenus() {
-    let currentMenu = this.manager.GetCurrentMenu();
+    const currentMenu = this.manager.GetCurrentMenu();
     if (currentMenu == this.manager.MenuAbilities || currentMenu == this.manager.MenuInventory || currentMenu == this.manager.MenuJournal || currentMenu == this.manager.MenuMap || currentMenu == this.manager.MenuMessages || currentMenu == this.manager.MenuOptions || currentMenu == this.manager.MenuCharacter || currentMenu == this.manager.MenuEquipment) {
       currentMenu.close();
     }

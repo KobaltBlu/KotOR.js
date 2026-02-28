@@ -224,7 +224,7 @@ export class ForgeFileSystem {
       }
     }else{
       if(ext.length){
-        // return supportedFilePickerTypes.filter( (element: any) => {
+        // return supportedFilePickerTypes.filter( (element: { name: string }) => {
         //   return element.accept['application/*'].some( (extension: string)=> ext.includes(extension.substring(1)) )
         // });
         return [

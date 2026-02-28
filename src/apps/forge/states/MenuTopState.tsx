@@ -442,7 +442,7 @@ export class MenuTopState {
 //   title: 'KotOR Forge',
 //   items: [
 //     {name: 'File', items: [
-      
+
 //     ]},
 //     {name: 'Project', items: [
 //       {name: 'Open Module Editor', onClick: () => {

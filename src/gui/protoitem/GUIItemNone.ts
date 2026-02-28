@@ -1,4 +1,4 @@
-import { GameState } from "../../GameState";
+import { GameState } from "@/GameState";
 
 const STR_NONE = 363;
 

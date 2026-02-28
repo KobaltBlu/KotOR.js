@@ -1,7 +1,14 @@
-import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
-import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
-import { AudioEngine } from "./AudioEngine";
-import { AudioLoader } from "./AudioLoader";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
+
+/** AudioBufferSourceNode with optional custom .name (resRef) for tracking. */
+type AudioBufferSourceWithName = AudioBufferSourceNode & { name?: string };
 
 const GAIN_RAMP_TIME = 0.25;
 const PRIORITY_GROUP_DEFAULT = 23;
@@ -185,10 +192,10 @@ export class AudioEmitter {
       try{
         await this.addSound(resRef, data);
       }catch(e){
-        console.error('AudioEmitter', 'Sound not added to emitter', resRef);
+        log.error('AudioEmitter', 'Sound not added to emitter', resRef);
       }
     }catch(e){
-      console.error('AudioEmitter', 'Sound not found', resRef);
+      log.error('AudioEmitter', 'Sound not found', resRef);
     }
   }
 
@@ -420,8 +427,8 @@ export class AudioEmitter {
       this.currentSound.onended = undefined;
       this.currentSound.disconnect();
       this.currentSound.stop(0);
-    }catch(e: any) { 
-      console.error('Failed to disconnect sound', e);
+    }catch(e) {
+      log.error('Failed to disconnect sound', e instanceof Error ? e : new Error(String(e)));
     }
     this.currentSound = null;
   }

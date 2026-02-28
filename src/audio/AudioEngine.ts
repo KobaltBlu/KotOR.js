@@ -66,11 +66,11 @@ type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | '
 
 /**
  * AudioEngine class.
- * 
+ *
  * The AudioEngine class manages audio levels and the AudioEmitters that are added to it.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AudioEngine.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -78,9 +78,9 @@ type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | '
 export class AudioEngine {
 
   static focused: boolean = true;
-  
+
   static engines: AudioEngine[] = [];
-  
+
   static loopBGM = true;
 
   static sfxChannel: AudioChannel;
@@ -443,7 +443,7 @@ export class AudioEngine {
   }
 
   static ToggleMute(){
-    console.warn('ToggleMute is unimplemented');
+    log.warn('ToggleMute is unimplemented');
   }
 
   static Mute(channel: AudioEngineChannel = AudioEngineChannel.ALL) {

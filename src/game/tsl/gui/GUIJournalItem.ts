@@ -1,9 +1,12 @@
-import type { SaveGame } from "../../../engine/SaveGame";
-import { JournalCategory } from "../../../engine/JournalCategory";
-import { JournalEntry } from "../../../engine/JournalEntry";
-import { GUIProtoItem } from "../../../gui";
-import type { GameMenu, GUIControl } from "../../../gui";
-import { GFFStruct } from "../../../resource/GFFStruct";
+import { JournalCategory } from "@/engine/JournalCategory";
+import { JournalEntry } from "@/engine/JournalEntry";
+import type { SaveGame } from "@/engine/SaveGame";
+import { GUIProtoItem } from "@/gui";
+import type { GameMenu, GUIControl } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { GFFStruct } from "@/resource/GFFStruct";
 
 const toPaddedDigit = (num: number, len = 2) => {
   return new String(num).padStart(len, '0');
@@ -32,7 +35,7 @@ export class GUIJournalItem extends GUIProtoItem {
       this.setText(this.node.category.name.getTLKValue());
       super.createControl();
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
     return this.widget;
   }

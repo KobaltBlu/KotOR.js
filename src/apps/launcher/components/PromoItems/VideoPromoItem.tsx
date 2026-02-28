@@ -36,9 +36,9 @@ export const VideoPromoItem = function(props: ProfilePromoItemProps){
   };
 
   const onVideoDoubleClick: React.MouseEventHandler<HTMLVideoElement> = (e: React.MouseEvent<HTMLVideoElement>) => {
-    console.log('onVideoDoubleClick', videoElement.current, e);
+    log.trace('onVideoDoubleClick', videoElement.current, e);
     if(videoElement.current){
-      let elem: HTMLVideoElement = videoElement.current;
+      const elem: HTMLVideoElement = videoElement.current;
       if(elem === document.fullscreenElement){
         document.exitFullscreen()
       }

@@ -80,14 +80,14 @@ export class GUIListBox extends GUIControl {
     //ProtoItem
     this.hasProtoItem = control.hasField('PROTOITEM');
     if(this.hasProtoItem){
-      //console.log(control.getFieldByLabel('PROTOITEM'))
+      //log.info(control.getFieldByLabel('PROTOITEM'))
       this.protoItem = this.menu.factory.FromStruct(control.getFieldByLabel('PROTOITEM').getChildStructs()[0], this.menu, this, this.scale);
     }
 
     //ScrollBar
     this.hasScrollBar = control.hasField('SCROLLBAR');
     if(this.hasScrollBar){
-      //console.log(control.getFieldByLabel('SCROLLBAR'))
+      //log.info(control.getFieldByLabel('SCROLLBAR'))
       this._scrollbar = control.getFieldByLabel('SCROLLBAR').getChildStructs()[0];
     }
 
@@ -107,7 +107,7 @@ export class GUIListBox extends GUIControl {
     const shrinkWidth = this.scrollbar ? this.scrollbar.extent.width/2 : 0;
     this.itemGroup.position.x += this.isScrollBarLeft() ? shrinkWidth : shrinkWidth * -1;
 
-    let extent = this.getOuterSize();
+    const extent = this.getOuterSize();
     this.width = extent.width;
     this.height = extent.height;
 
@@ -210,7 +210,7 @@ export class GUIListBox extends GUIControl {
 
   removeItemByIndex(index = -1){
     if(index >= 0 && this.children.length > index){
-      let node = this.children.splice(index, 1)[0];
+      const node = this.children.splice(index, 1)[0];
       node.widget.parent.remove(node.widget);
 
       //Select a new item if the one removed was selected
@@ -472,7 +472,7 @@ export class GUIListBox extends GUIControl {
     }
 
     // Position items consistently
-    let currentY = visibleTop - this.listMarginTop;
+    const currentY = visibleTop - this.listMarginTop;
     
     for (let i = 0; i < this.children.length; i++) {
       const node = this.children[i];
@@ -558,7 +558,7 @@ export class GUIListBox extends GUIControl {
   getContentHeight(){
     let height = this.border.inneroffsety * 2;//this.padding * 2;
     for(let i = 0; i < this.children.length; i++){
-      let control = this.children[i];
+      const control = this.children[i];
       // let node = this.listItems[i];
 
       // let cHeight = (control.extent.height + (control.getBorderSize()/2));
@@ -601,7 +601,7 @@ export class GUIListBox extends GUIControl {
 
     let controls: GUIControl[] = [];
     for(let i = 0; i < this.children.length; i++){
-      let control = this.children[i];
+      const control = this.children[i];
       //Check to see if the control is onscreen
       if(control.widget.visible){
         //check to see if the mouse is inside the control
@@ -637,8 +637,8 @@ export class GUIListBox extends GUIControl {
   }
 
   calculateBox(){
-    let worldPosition = this.parent.widget.position.clone();
-    //console.log('worldPos', worldPosition);
+    const worldPosition = this.parent.widget.position.clone();
+    //log.info('worldPos', worldPosition);
 
     this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
     this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
@@ -679,7 +679,7 @@ export class GUIListBox extends GUIControl {
   }
 
   directionalNavigate(direction = ''){
-    let maxItems = this.children.length;
+    const maxItems = this.children.length;
     let index = this.children.indexOf(this.selectedItem);
     switch(direction){
       case 'up':

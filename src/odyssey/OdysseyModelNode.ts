@@ -1,14 +1,19 @@
 import * as THREE from "three";
-import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyModel } from "./OdysseyModel";
-import { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
-import { type OdysseyController } from "./controllers/OdysseyController";
-import { OdysseyControllerFactory } from "./controllers/OdysseyControllerFactory";
-import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
-import { OdysseyModelUtility } from "./OdysseyModelUtility";
-import { IOdysseyControllerGeneric } from "../interface/odyssey/controller/IOdysseyControllerGeneric";
-import { IOdysseyControllerFrameGeneric } from "../interface";
+
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { IOdysseyControllerFrameGeneric } from "@/interface";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
+import { type OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import { OdysseyControllerFactory } from "@/odyssey/controllers/OdysseyControllerFactory";
+import { OdysseyModel } from "@/odyssey/OdysseyModel";
+import { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
+import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Loader);
       
 // Constants for quaternion decompression
 const QUAT_X_MASK = 0x07ff;        // 11 bits for X component
@@ -152,7 +157,7 @@ export class OdysseyModelNode {
       controller.columnCount = this.odysseyModel.mdlReader.readByte();//Number of columns excluding the time key column
       this.odysseyModel.mdlReader.skip(3); //Skip unused padding
       
-      let tmpQuat = new THREE.Quaternion();
+      const tmpQuat = new THREE.Quaternion();
 
       if(this.odysseyModel.nodes.has(this.name)){
         controller.nodeType = this.nodeType = this.odysseyModel.nodes.get(this.name).nodeType;
@@ -185,8 +190,8 @@ export class OdysseyModelNode {
                   //This is a bezier curve this controller contains 3 vector3's packed end to end:
                   //pointA: x1,y1,z1 | pointB: x2,y2,z2 | pointC: x3,y3,z3
                   //pointB and pointC are relative to pointA
-                  //console.log('bezier', this.name, controller);
-                  let rowOffset = controller.dataValueIndex + (r * 9);
+                  //log.info('bezier', this.name, controller);
+                  const rowOffset = controller.dataValueIndex + (r * 9);
 
                   frame.a = new THREE.Vector3(
                     data[rowOffset + 0] || 0.0,

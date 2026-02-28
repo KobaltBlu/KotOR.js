@@ -1,4 +1,4 @@
-import type {INWScriptDefAction} from "../interface/nwscript/INWScriptDefAction";
+import type {INWScriptDefAction} from "@/interface/nwscript/INWScriptDefAction";
 
 /**
  * NWScriptDef class.

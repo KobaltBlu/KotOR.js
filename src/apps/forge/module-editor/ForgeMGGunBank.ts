@@ -1,5 +1,5 @@
-import * as KotOR from "../KotOR";
-import { ForgeMGGunBullet } from "./ForgeMGGunBullet";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeMGGunBullet } from "@/apps/forge/module-editor/ForgeMGGunBullet";
 
 export class ForgeMGGunBank {
   // Basic properties

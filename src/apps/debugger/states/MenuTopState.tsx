@@ -20,7 +20,7 @@ export class MenuTopState {
     this.optionsItemExample = new MenuTopItem({
       name: `Options`
     });
-    
+
     this.optionDebugPathFinding = new MenuTopItem({
       name: `Debug: Path Finding`,
       onClick: () => {

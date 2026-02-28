@@ -1,7 +1,11 @@
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { NWScriptExpression } from "./NWScriptExpression";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
+import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+
+
+const log = createScopedLogger(LogScope.NWScript);
 import {
   OP_CONST, OP_ACTION, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII,
   OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ,
@@ -22,7 +26,7 @@ interface StackItem {
 }
 
 /**
- * Simulates the NWScript stack during decompilation.
+ * Simulates the NWScript stack during conversion.
  * Tracks stack pointer (SP) and stack contents accurately.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -577,7 +581,7 @@ export class NWScriptStackSimulator {
     const itemsToSave = Math.floor(sizeOfElementToSave / 4);
     
     if (totalItemsToRemove === 0 || this.stack.length === 0) {
-      console.warn('DESTRUCT', sizeToDestroy, offsetToSaveElement, sizeOfElementToSave, this.stack.length);
+      log.warn('DESTRUCT', sizeToDestroy, offsetToSaveElement, sizeOfElementToSave, this.stack.length);
       // Nothing to remove, but still update stack pointer
       return;
     }

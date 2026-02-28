@@ -1,6 +1,7 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
 import * as THREE from "three";
+
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 export class ForgeCamera extends ForgeGameObject {
   aspectRatio: number = 1;
@@ -17,7 +18,7 @@ export class ForgeCamera extends ForgeGameObject {
     super();
     this.aspectRatio = 1920 / 1080;
   }
-  
+
   getEditorName(): string {
     return `Camera ${this.cameraID}`;
   }

@@ -161,7 +161,7 @@ export class ModuleDoor extends ModuleObject {
       this.audioEmitter.type = AudioEmitterType.POSITIONAL;
       this.audioEmitter.load();
     }catch(e){
-      console.error('AudioEmitter failed to create on object', e);
+      log.error('AudioEmitter failed to create on object', e);
     }
 
   }
@@ -230,7 +230,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   getObjectSounds(){
-    let result = {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
+    const result = {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
     const appearance = this.getDoorAppearance();
     if(!appearance) return result;
 
@@ -361,7 +361,7 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  onClick(callee: ModuleObject){
+  onClick(_callee: ModuleObject){
     GameState.getCurrentPlayer().actionOpenDoor( this );
   }
 
@@ -371,7 +371,7 @@ export class ModuleDoor extends ModuleObject {
 
     // If the door is already open, do nothing
     if(this.openState){
-      console.log('ModuleDoor', this.getTag(), this.getName(), 'already open');
+      log.debug('ModuleDoor', this.getTag(), this.getName(), 'already open');
       return;
     }
 
@@ -408,25 +408,25 @@ export class ModuleDoor extends ModuleObject {
       this.playObjectSound(ModulePlaceableObjectSound.LOCKED);
       return;
     }
-    
+
     this.openDoor(object);
 
   }
 
-  lock(object: ModuleObject){
+  lock(_object: ModuleObject){
     if(this.locked){ return; }
     this.locked = true;
-    
+
     const onLock = this.scripts[ModuleObjectScript.DoorOnLock];
     if(onLock){
       onLock.run(this);
     }
   }
 
-  unlock(object: ModuleObject){
+  unlock(_object: ModuleObject){
     if(!this.locked){ return; }
     this.locked = false;
-    
+
     const onUnlock = this.scripts[ModuleObjectScript.DoorOnUnlock];
     if(onUnlock){
       onUnlock.run(this);
@@ -437,11 +437,11 @@ export class ModuleDoor extends ModuleObject {
     if(!BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject)){
       return false;
     }
-    
+
     const nSecuritySkill = object.getSkillLevel(SkillType.SECURITY);
     if(this.isLocked() && !this.keyRequired && nSecuritySkill >= 1){
-      let d20 = 20;//d20 rolls are auto 20's outside of combat
-      let skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
+      const d20 = 20;//d20 rolls are auto 20's outside of combat
+      const skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
       if(skillCheck >= 1 && nSecuritySkill >= 1){
         this.unlock(object);
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
@@ -453,7 +453,7 @@ export class ModuleDoor extends ModuleObject {
         }
       }
     }
-        
+
     this.use(object);
     return true;
   }
@@ -482,7 +482,7 @@ export class ModuleDoor extends ModuleObject {
     // if(GameState.selectedObject == this){
     //   GameState.selectedObject = GameState.selected = undefined;
     // }
-    
+
     //TODO: detect the correct side that the creature interacted from
     switch(this.objectInteractSide){
       case ModuleDoorInteractSide.SIDE_1:
@@ -500,8 +500,8 @@ export class ModuleDoor extends ModuleObject {
     //Notice all creatures within range that someone opened this door
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-        let creature = GameState.module.area.creatures[i];
-        let distance = creature.position.distanceTo(this.position);
+        const creature = GameState.module.area.creatures[i];
+        const distance = creature.position.distanceTo(this.position);
         if(distance <= creature.getPerceptionRangePrimary()){
           creature.notifyPerceptionHeardObject(object, true);
         }
@@ -520,13 +520,13 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  destroyDoor(object: ModuleObject){
+  destroyDoor(_object: ModuleObject){
 
     const onDeath = this.scripts[ModuleObjectScript.DoorOnDeath];
     if(onDeath){
       onDeath.run(this);
     }
-    
+
     //TODO: detect the correct side that the creature interacted from
     switch(this.objectInteractSide){
       case ModuleDoorInteractSide.SIDE_1:
@@ -567,9 +567,9 @@ export class ModuleDoor extends ModuleObject {
     //Check to see if this trigger is linked to another module
     if(this.linkedToModule && this.type == 1){
       //Check Party Members
-      let partyLen = GameState.PartyManager.party.length;
+      const partyLen = GameState.PartyManager.party.length;
       for(let i = 0; i < partyLen; i++){
-        let partymember = GameState.PartyManager.party[i];
+        const partymember = GameState.PartyManager.party[i];
         if(this.box.containsPoint(partymember.position)){
           if(this.objectsInside.indexOf(partymember) == -1){
             this.objectsInside.push(partymember);
@@ -581,9 +581,9 @@ export class ModuleDoor extends ModuleObject {
       }
     }else{
       //Check Creatures
-      let creatureLen = GameState.module.area.creatures.length;
+      const creatureLen = GameState.module.area.creatures.length;
       for(let i = 0; i < creatureLen; i++){
-        let creature = GameState.module.area.creatures[i];
+        const creature = GameState.module.area.creatures[i];
         if(this.box.containsPoint(creature.position)){
           if(this.objectsInside.indexOf(creature) == -1){
             this.objectsInside.push(creature);
@@ -629,7 +629,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   update(delta = 0){
-    
+
     super.update(delta);
     if(this.model instanceof OdysseyModel3D){
       this.model.update(delta);
@@ -698,19 +698,19 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  updateAnimationState(delta: number = 0){
+  updateAnimationState(_delta: number = 0){
     if(!(this.model instanceof OdysseyModel3D))
       return;
 
-    let currentAnimation = this.model.getAnimationName();
+    const currentAnimation = this.model.getAnimationName();
     if(!this.animStateInfo.currentAnimState) this.setAnimationState(ModuleDoorAnimState.DEFAULT);
     if(this.animStateInfo.currentAnimState){
-      let animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
+      const animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
       if(animation){
         if(currentAnimation != animation.name?.toLowerCase()){
           if(!this.animStateInfo.started){
             if(
-              this.animStateInfo.currentAnimState == ModuleDoorAnimState.CLOSING1 || 
+              this.animStateInfo.currentAnimState == ModuleDoorAnimState.CLOSING1 ||
               this.animStateInfo.currentAnimState == ModuleDoorAnimState.CLOSING2
             ){
               this.collisionDelay = 0.75;
@@ -750,7 +750,7 @@ export class ModuleDoor extends ModuleObject {
           }
         }
       }else{
-        console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
+        log.error('Animation Missing', this.getTag(), this.getName(), this.animState);
         this.setAnimationState(ModuleDoorAnimState.DEFAULT);
       }
     }
@@ -769,7 +769,7 @@ export class ModuleDoor extends ModuleObject {
 
   detachFromRoom(room: ModuleRoom): void {
     if(!room) return;
-    let index = room.doors.indexOf(this);
+    const index = room.doors.indexOf(this);
     if(index >= 0){
       room.doors.splice(index, 1);
     }
@@ -777,13 +777,13 @@ export class ModuleDoor extends ModuleObject {
 
   getCurrentRoom(): void {
     this.room = undefined;
-    let aabbFaces = [];
+    const aabbFaces = [];
     let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
-    let box = this.box.clone();
+    const box = this.box.clone();
 
     this.rooms = [];
     for(let i = 0; i < GameState.module.area.rooms.length; i++){
-      let room = GameState.module.area.rooms[i];
+      const room = GameState.module.area.rooms[i];
       if(room.box.containsPoint(this.position)){
         this.roomIds.push(i);
       }
@@ -791,25 +791,25 @@ export class ModuleDoor extends ModuleObject {
 
     if(box){
       for(let j = 0, jl = this.roomIds.length; j < jl; j++){
-        let room = GameState.module.area.rooms[this.roomIds[j]];
+        const room = GameState.module.area.rooms[this.roomIds[j]];
         if(room && room.collisionManager.walkmesh && room.collisionManager.walkmesh.aabbNodes.length){
           aabbFaces.push({
-            object: room, 
+            object: room,
             faces: room.collisionManager.walkmesh.getAABBCollisionFaces(box)
           });
         }
       }
     }
-    
-    let scratchVec3 = new THREE.Vector3(0, 0, 2);
-    let playerFeetRay = this.position.clone().add(scratchVec3);
+
+    const scratchVec3 = new THREE.Vector3(0, 0, 2);
+    const playerFeetRay = this.position.clone().add(scratchVec3);
     GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
     GameState.raycaster.ray.direction.set(0, 0,-1);
-    
+
     for(let j = 0, jl = aabbFaces.length; j < jl; j++){
-      let castableFaces = aabbFaces[j];
+      const castableFaces = aabbFaces[j];
       intersects = castableFaces.object.collisionManager.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
-      
+
       if(intersects.length){
         if(intersects[0].object.userData.moduleObject){
           this.attachToRoom(intersects[0].object.userData.moduleObject);
@@ -906,8 +906,8 @@ export class ModuleDoor extends ModuleObject {
   }
 
   loadModel(): Promise<OdysseyModel3D> {
-    let modelName = this.getDoorAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
-    return new Promise<OdysseyModel3D>( (resolve, reject) => {
+    const modelName = this.getDoorAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    return new Promise<OdysseyModel3D>( (resolve, _reject) => {
       MDLLoader.loader.load(modelName).then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           context: this.context,
@@ -937,7 +937,7 @@ export class ModuleDoor extends ModuleObject {
           }
 
           this.generateTransitionLine();
-          
+
           this.model.disableMatrixUpdate();
 
           switch(this.openState){
@@ -1169,9 +1169,9 @@ export class ModuleDoor extends ModuleObject {
     }
 
     if(this.template.RootNode.hasField('EffectList')){
-      let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
+      const effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
       for(let i = 0; i < effects.length; i++){
-        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
+        const effect = GameEffectFactory.EffectFromStruct(effects[i]);
         if(effect){
           effect.setAttachedObject(this);
           effect.loadModel();
@@ -1234,7 +1234,7 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).setValue(this.disarmDC);
 
     //Effects
-    let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
+    const effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
     for(let i = 0; i < this.effects.length; i++){
       effectList.addChildStruct( this.effects[i].save() );
     }

@@ -118,7 +118,7 @@ export interface Procedure {
 }
 
 /**
- * Represents a control structure in the decompiled code.
+ * Represents a control structure in the reconstructed script.
  */
 export enum ControlStructureType {
   IF = 'if',
@@ -1439,20 +1439,20 @@ export class NWScriptControlStructureBuilder {
       // Add intra-procedural successors (exclude CALL edges)
       const intraSuccs = this.cfg.getIntraProceduralSuccessors(current, false);
       const allSuccs = Array.from(current.successors);
-      console.log(`[identifyProcedure] Block ${current.id} has ${allSuccs.length} total successors:`, allSuccs.map(s => `block ${s.id} (exitType: ${s.exitType})`).join(', '));
-      console.log(`[identifyProcedure] Block ${current.id} has ${intraSuccs.length} intra-procedural successors:`, intraSuccs.map(s => `block ${s.id}`).join(', '));
+      log.info(`[identifyProcedure] Block ${current.id} has ${allSuccs.length} total successors:`, allSuccs.map(s => `block ${s.id} (exitType: ${s.exitType})`).join(', '));
+      log.info(`[identifyProcedure] Block ${current.id} has ${intraSuccs.length} intra-procedural successors:`, intraSuccs.map(s => `block ${s.id}`).join(', '));
       for (const succ of intraSuccs) {
         if (!visited.has(succ)) {
-          console.log(`[identifyProcedure] Adding block ${succ.id} to queue`);
+          log.info(`[identifyProcedure] Adding block ${succ.id} to queue`);
           queue.push(succ);
         } else {
-          console.log(`[identifyProcedure] Block ${succ.id} already visited, skipping`);
+          log.info(`[identifyProcedure] Block ${succ.id} already visited, skipping`);
         }
       }
     }
     
-    console.log(`[identifyProcedure] Found ${blocks.size} blocks total:`, Array.from(blocks).map(b => `block ${b.id}`).join(', '));
-    console.log(`[identifyProcedure] Found ${exitBlocks.size} exit blocks:`, Array.from(exitBlocks).map(b => `block ${b.id}`).join(', '));
+    log.info(`[identifyProcedure] Found ${blocks.size} blocks total:`, Array.from(blocks).map(b => `block ${b.id}`).join(', '));
+    log.info(`[identifyProcedure] Found ${exitBlocks.size} exit blocks:`, Array.from(exitBlocks).map(b => `block ${b.id}`).join(', '));
 
     return {
       entry,
@@ -1472,18 +1472,18 @@ export class NWScriptControlStructureBuilder {
     const orderedBlocks = this.cfg.getTopologicalOrder()
       .filter(block => procedure.blocks.has(block));
 
-    console.log(`[buildControlNodeTree] Ordered blocks: ${orderedBlocks.length}`, orderedBlocks.map(b => `block ${b.id}`).join(', '));
+    log.info(`[buildControlNodeTree] Ordered blocks: ${orderedBlocks.length}`, orderedBlocks.map(b => `block ${b.id}`).join(', '));
 
     // Build control nodes starting from entry
     // Start with the entry block and build recursively
     const rootNode = this.buildNodeFromBlock(procedure.entry, procedure, processed);
     
-    console.log(`[buildControlNodeTree] After buildNodeFromBlock(entry), processed: ${processed.size} blocks`);
-    console.log(`[buildControlNodeTree] Processed blocks:`, Array.from(processed).map(b => `block ${b.id}`).join(', '));
+    log.info(`[buildControlNodeTree] After buildNodeFromBlock(entry), processed: ${processed.size} blocks`);
+    log.info(`[buildControlNodeTree] Processed blocks:`, Array.from(processed).map(b => `block ${b.id}`).join(', '));
     
     // If we have remaining unprocessed blocks, create a sequence
     const remainingBlocks = orderedBlocks.filter(b => !processed.has(b));
-    console.log(`[buildControlNodeTree] Remaining blocks: ${remainingBlocks.length}`, remainingBlocks.map(b => `block ${b.id}`).join(', '));
+    log.info(`[buildControlNodeTree] Remaining blocks: ${remainingBlocks.length}`, remainingBlocks.map(b => `block ${b.id}`).join(', '));
     
     if (remainingBlocks.length > 0) {
       const remainingNodes = remainingBlocks.map(b => 
@@ -1491,13 +1491,13 @@ export class NWScriptControlStructureBuilder {
       );
       
       if (rootNode) {
-        console.log(`[buildControlNodeTree] Creating sequence with root + ${remainingNodes.length} remaining nodes`);
+        log.info(`[buildControlNodeTree] Creating sequence with root + ${remainingNodes.length} remaining nodes`);
         return {
           type: 'sequence',
           nodes: [rootNode, ...remainingNodes]
         };
       } else {
-        console.log(`[buildControlNodeTree] No root node, returning ${remainingNodes.length} remaining nodes`);
+        log.info(`[buildControlNodeTree] No root node, returning ${remainingNodes.length} remaining nodes`);
         return remainingNodes.length === 1 
           ? remainingNodes[0]
           : { type: 'sequence', nodes: remainingNodes };
@@ -1506,11 +1506,11 @@ export class NWScriptControlStructureBuilder {
 
     // If no structure found, return a sequence of basic blocks
     if (!rootNode) {
-      console.log(`[buildControlNodeTree] No root node, building sequence from all ordered blocks`);
+      log.info(`[buildControlNodeTree] No root node, building sequence from all ordered blocks`);
       return this.buildSequenceNode(orderedBlocks, procedure, processed);
     }
 
-    console.log(`[buildControlNodeTree] Returning root node only (type: ${rootNode.type})`);
+    log.info(`[buildControlNodeTree] Returning root node only (type: ${rootNode.type})`);
     return rootNode;
   }
 
@@ -1523,17 +1523,17 @@ export class NWScriptControlStructureBuilder {
     processed: Set<NWScriptBasicBlock>
   ): ControlNode | null {
     if (processed.has(block)) {
-      console.log(`[buildNodeFromBlock] Block ${block.id} already processed, skipping`);
+      log.info(`[buildNodeFromBlock] Block ${block.id} already processed, skipping`);
       return null;
     }
 
     // Check if block is in procedure
     if (!procedure.blocks.has(block)) {
-      console.log(`[buildNodeFromBlock] Block ${block.id} not in procedure, skipping`);
+      log.info(`[buildNodeFromBlock] Block ${block.id} not in procedure, skipping`);
       return null;
     }
     
-    console.log(`[buildNodeFromBlock] Processing block ${block.id} (${block.instructions.length} instructions)`);
+    log.info(`[buildNodeFromBlock] Processing block ${block.id} (${block.instructions.length} instructions)`);
 
     // Try to identify control structures
     const ifElse = this.identifyIfElse(block);

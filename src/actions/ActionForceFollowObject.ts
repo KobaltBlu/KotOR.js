@@ -1,10 +1,11 @@
-import { GameState } from "../GameState";
-import { ActionParameterType, ModuleObjectType } from "../enums";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import type { ModuleObject } from "../module/ModuleObject";
-import { BitWise } from "../utility/BitWise";
-import { Action } from "./Action";
+import { Action } from "@/actions/Action";
+import { ActionParameterType, ModuleObjectType } from "@/enums";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { GameState } from "@/GameState";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
+
 
 /**
  * ActionForceFollowObject class.
@@ -27,7 +28,7 @@ export class ActionForceFollowObject extends Action {
 
   }
 
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
     const fDistance = this.getParameter<number>(1) || 0.00;
 

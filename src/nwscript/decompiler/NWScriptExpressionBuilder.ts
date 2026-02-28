@@ -1,7 +1,11 @@
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
+import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+
+
+const log = createScopedLogger(LogScope.NWScript);
 import {
   OP_CONST, OP_ACTION, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII,
   OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ,
@@ -293,7 +297,7 @@ export class NWScriptExpressionBuilder {
       case OP_USHRIGHTII: operator = '>>>'; break;
       default: operator = '?';
     }
-    
+
     const expr = NWScriptExpression.binaryOp(operator, left, right, NWScriptDataType.INTEGER);
     this.expressionStack.push(expr);
     return expr;
@@ -399,13 +403,13 @@ export class NWScriptExpressionBuilder {
       
       // First, try to resolve using the dynamic stack position map (stack-aware)
       const varIndex = this.variableStackPositions.get(sourceStackPos);
-      console.log(`[ExpressionBuilder.handleVariableRead] CPTOPSP: SP=${this.stackPointer}, offset=${offsetSigned}, sourcePos=${sourceStackPos}, varIndex=${varIndex}`);
+      log.info(`[ExpressionBuilder.handleVariableRead] CPTOPSP: SP=${this.stackPointer}, offset=${offsetSigned}, sourcePos=${sourceStackPos}, varIndex=${varIndex}`);
       if (varIndex !== undefined && this.localVariableInits[varIndex]) {
         // Found variable using stack-aware resolution
         const init = this.localVariableInits[varIndex];
         varName = `localVar_${varIndex}`;
         dataType = init.dataType;
-        console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using stack-aware resolution`);
+        log.info(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using stack-aware resolution`);
       } else {
         // Stack-aware fallback: Check all variable positions with tolerance
         // The stack may have grown between RSADD and CPTOPSP, so check all recorded positions

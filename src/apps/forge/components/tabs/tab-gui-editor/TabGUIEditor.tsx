@@ -1,23 +1,22 @@
-import React, { ChangeEvent, useEffect, useState } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import React, { useState } from "react"
 
-import { TabGUIEditorState, TabGUIEditorStateEventListenerTypes } from "../../../states/tabs";
-
-import * as KotOR from "../../../KotOR";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabGUIEditorState, TabGUIEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
 // import { Form, InputGroup } from "react-bootstrap";
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { UI3DRendererEventListenerTypes } from "../../../UI3DRenderer";
-// import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
+import { UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
+// import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
 
 export const TabGUIEditor = function(props: BaseTabProps){
 
   const tab: TabGUIEditorState = props.tab as TabGUIEditorState;
-  const [gff, setGFF] = useState<KotOR.GFFObject>();
+  const [_gff, setGFF] = useState<KotOR.GFFObject>();
   const [menu, setMenu] = useState<KotOR.GameMenu>();
-  const [selectedNode, setSelectedNode] = useState<KotOR.GFFField|KotOR.GFFStruct>();
+  const [_selectedNode, setSelectedNode] = useState<KotOR.GFFField|KotOR.GFFStruct>();
   const [render, rerender] = useState<boolean>(true);
 
   const onEditorFileLoad = function(tab: TabGUIEditorState){

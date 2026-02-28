@@ -1,9 +1,9 @@
-import type { AttackResult } from "../../enums/combat/AttackResult";
-import type { ActionType } from "../../enums/actions/ActionType";
-import type { ModuleObject } from "../../module";
-import type { TalentFeat, TalentSpell } from "../../talents";
-import type { Action } from "../../actions";
-import type { ITwoDAAnimation } from "../twoDA/ITwoDAAnimation";
+import type { Action } from "@/actions";
+import type { ActionType } from "@/enums/actions/ActionType";
+import type { AttackResult } from "@/enums/combat/AttackResult";
+import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { ModuleObject } from "@/module";
+import type { TalentFeat, TalentSpell } from "@/talents";
 
 /**
  * ICombatAction interface.

@@ -1,6 +1,7 @@
-import { KeyInput } from "./KeyInput";
-import { KeyboardAction } from "../enums/controls/KeyboardAction";
-import { KeyboardKeyActions } from "../interface/input/KeyboardKeyActions";
+import { KeyInput } from "@/controls/KeyInput";
+import { KeyboardAction } from "@/enums/controls/KeyboardAction";
+import { KeyboardKeyActions } from "@/interface/input/KeyboardKeyActions";
+
 
 /**
  * Keyboard class.

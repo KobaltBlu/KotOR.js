@@ -121,7 +121,7 @@ export const TabTextEditor = function(props: any){
     }
 
     tab.setDiffEditor(diffEditor);
-    
+
     // Apply tab size to the diff editor
     tab.updateTabSize();
 
@@ -135,14 +135,14 @@ export const TabTextEditor = function(props: any){
   useEffectOnce( () => {
     tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
     tab.addEventListener('onDiffModeChanged', onDiffModeChanged);
-    
+
     // Create diff editor if already in diff mode
     if(tab.isDiffMode && tab.monaco) {
       setTimeout(() => {
         createDiffEditor();
       }, 100);
     }
-    
+
     return () => {
       tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
       tab.removeEventListener('onDiffModeChanged', onDiffModeChanged);
@@ -167,9 +167,9 @@ export const TabTextEditor = function(props: any){
   }, [tab.tabSize]);
 
   // Handle keyboard shortcuts using TabState's keybinding system
-  const onKeyDown = (event: KeyboardEvent, tabState: TabTextEditorState) => {
+  const onKeyDown = (event: KeyboardEvent, _tabState: TabTextEditorState) => {
     const isCtrlOrCmd = event.ctrlKey || event.metaKey;
-    
+
     // Ctrl+S / Cmd+S - Save
     if (isCtrlOrCmd && event.key === 's' && !event.shiftKey) {
       event.preventDefault();

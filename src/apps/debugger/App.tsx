@@ -1,10 +1,11 @@
 import React from "react"
-import { useApp } from "./context/AppContext";
-import { ScriptDebugger } from "./components/ScriptDebugger";
+
+import { ScriptDebugger } from "@/apps/debugger/components/ScriptDebugger";
+import { useApp } from "@/apps/debugger/context/AppContext";
 
 
 export const App = () => {
-  const appContext = useApp();
+  const _appContext = useApp();
   
 
   return (

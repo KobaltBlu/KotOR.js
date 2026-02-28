@@ -1,8 +1,11 @@
-import { IPCDataType } from "../../../enums/server/ipc/IPCDataType";
-import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
-import { IPCMessage } from "../../../server/ipc/IPCMessage";
-import { IPCMessageParam } from "../../../server/ipc/IPCMessageParam";
-import * as KotOR from "../KotOR";
+import * as KotOR from "@/apps/debugger/KotOR";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { IPCMessage } from "@/server/ipc/IPCMessage";
+import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Debug);
 
 export class DebuggerState {
 

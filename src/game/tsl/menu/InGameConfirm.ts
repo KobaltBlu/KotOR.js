@@ -1,5 +1,8 @@
-import type { GUIListBox, GUIButton } from "../../../gui";
-import { InGameConfirm as K1_InGameConfirm } from "../../kotor/KOTOR";
+import type { GUIListBox, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { InGameConfirm as K1_InGameConfirm } from "@/game/kotor/KOTOR";
 
 /**
  * InGameConfirm class.
@@ -35,7 +38,7 @@ export class InGameConfirm extends K1_InGameConfirm {
 
       this.BTN_OK.addEventListener('click', (e) => {
         e.stopPropagation();
-        console.log('BTN_OK clicked', this.onOk);
+        log.info('BTN_OK clicked', this.onOk);
         if(typeof this.onOk === 'function'){
           this.onOk();
         }
@@ -45,7 +48,7 @@ export class InGameConfirm extends K1_InGameConfirm {
 
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
-        console.log('BTN_CANCEL clicked', this.onCancel);
+        log.info('BTN_CANCEL clicked', this.onCancel);
         if(typeof this.onCancel === 'function'){
           this.onCancel();
         }

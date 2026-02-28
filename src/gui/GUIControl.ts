@@ -88,13 +88,13 @@ export class GUIControl {
   zIndex: number = 0;
 
   eventListeners: IGUIControlEventListeners = {
-    click:      [],
-    mouseIn:    [],
-    mouseOut:   [],
-    mouseDown:  [],
-    mouseMove:  [],
-    mouseUp:    [],
-    hover:      []
+    click: [],
+    mouseIn: [],
+    mouseOut: [],
+    mouseDown: [],
+    mouseMove: [],
+    mouseUp: [],
+    hover: []
   };
 
   defaultColor: THREE.Color;
@@ -255,7 +255,7 @@ export class GUIControl {
     };
 
     this.border.geometry = new THREE.BufferGeometry();
-    
+
     this.border.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -978,7 +978,7 @@ export class GUIControl {
     this.buildHighlightFill();
 
     this.hideHighlight();
-    
+
     this._onCreate();
     //Calculate the widget screen position
     this.calculatePosition();
@@ -2499,15 +2499,15 @@ export class GUIControl {
   }
 
   bounds(positions: number[] = []) {
-    let count = positions.length / itemSize
+    const count = positions.length / itemSize
     box.min[0] = positions[0]
     box.min[1] = positions[1]
     box.max[0] = positions[0]
     box.max[1] = positions[1]
 
     for (let i = 0; i < count; i++) {
-      let x = positions[i * itemSize + 0]
-      let y = positions[i * itemSize + 1]
+      const x = positions[i * itemSize + 0]
+      const y = positions[i * itemSize + 1]
       box.min[0] = Math.min(x, box.min[0])
       box.min[1] = Math.min(y, box.min[1])
       box.max[0] = Math.max(x, box.max[0])

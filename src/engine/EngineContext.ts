@@ -1,4 +1,4 @@
-import type { IGameStateGroups } from "../interface/engine/IGameStateGroups";
+import type { IGameStateGroups } from "@/interface/engine/IGameStateGroups";
 
 /**
  * EngineContext enum.

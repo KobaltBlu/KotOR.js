@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTTEditorState } from "../../../states/tabs";
-import * as KotOR from "../../../KotOR";
-import { FormField } from "../../form-field/FormField";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { SubTab, SubTabHost } from "../../SubTabHost";
-import { ForgeTrigger } from "../../../module-editor/ForgeTrigger";
+
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import { TabUTTEditorState } from "@/apps/forge/states/tabs";
 
 export const TabUTTEditor = function(props: BaseTabProps){
 
@@ -81,7 +82,7 @@ export const TabUTTEditor = function(props: BaseTabProps){
   const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeTrigger) => 
     tab.trigger.createWordFieldHandler(setter, property, tab.trigger, tab);
   
-  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) => 
+  const _onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) => 
     tab.trigger.createBooleanFieldHandler(setter, property, tab.trigger, tab);
   
   const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeTrigger) => 

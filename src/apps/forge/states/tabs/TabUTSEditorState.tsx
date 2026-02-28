@@ -1,16 +1,20 @@
 import React from "react";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTSEditor } from "../../components/tabs/tab-uts-editor/TabUTSEditor";
-import { ForgeSound } from "../../module-editor/ForgeSound";
+
+import { TabUTSEditor } from "@/apps/forge/components/tabs/tab-uts-editor/TabUTSEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabUTSEditorState extends TabState {
   tabName: string = `UTS`;
   sound: ForgeSound = new ForgeSound();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.sound.blueprint;
   }

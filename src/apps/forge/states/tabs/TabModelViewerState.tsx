@@ -40,7 +40,7 @@ export class TabModelViewerState extends TabState {
 
   model: KotOR.OdysseyModel3D;
   odysseyModel: KotOR.OdysseyModel;
-  
+
   mdl: Uint8Array;
   mdx: Uint8Array;
 

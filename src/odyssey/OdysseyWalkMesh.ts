@@ -74,7 +74,7 @@ export class OdysseyWalkMesh {
 
     //Build Face Colors
     for (let i = 0, len = this.faces.length; i < len; i++){
-      let face = this.faces[i];
+      const face = this.faces[i];
       face.materialIndex = this.walkTypes[i];
       face.walkIndex = face.materialIndex;
       face.color = (OdysseyWalkMesh.TILECOLORS[this.walkTypes[i]] || OdysseyWalkMesh.TILECOLORS[0]).color.clone();
@@ -86,7 +86,7 @@ export class OdysseyWalkMesh {
       );
 
       if(face.surfacemat == undefined){
-        console.warn('OdysseyWalkMesh', 'Unknown surfacemat', face, OdysseyModelUtility.SURFACEMATERIALS);
+        log.warn('OdysseyWalkMesh', 'Unknown surfacemat', face, OdysseyModelUtility.SURFACEMATERIALS);
       }
 
       face.blocksLineOfSight = face.surfacemat.lineOfSight;
@@ -95,7 +95,7 @@ export class OdysseyWalkMesh {
 
       //Is this face walkable
       if(face.surfacemat.walk){
-        let walkIdx = this.walkableFaces.push(face) - 1;
+        const walkIdx = this.walkableFaces.push(face) - 1;
         face.adjacent = this.walkableFacesEdgesAdjacencyMatrix[walkIdx];
         face.adjacentDiff = this.walkableFacesEdgesAdjacencyMatrixDiff[walkIdx];
         face.adjacentWalkableFaces.a = this.faces[(face.adjacent || [] )[0]];
@@ -109,9 +109,9 @@ export class OdysseyWalkMesh {
         }
       }
 
-      let edge1 = (i * 3) + 0;
-      let edge2 = (i * 3) + 1;
-      let edge3 = (i * 3) + 2;
+      const edge1 = (i * 3) + 0;
+      const edge2 = (i * 3) + 1;
+      const edge3 = (i * 3) + 2;
 
       if(!face.adjacentWalkableFaces.a && this.edges.has(edge1)){
         face.adjacentWalkableFaces.a = this.edges.get(edge1);
@@ -187,10 +187,7 @@ export class OdysseyWalkMesh {
     this.mesh.add(this.aabbGroup);
     
     for(let i = 0; i < this.aabbNodes.length; i++){
-      let node = this.aabbNodes[i];
-      //node.boxHelper = new THREE.Box3Helper( node.box, 0xffff00 );
-      //this.aabbGroup.add( node.boxHelper );
-
+      const node = this.aabbNodes[i];
       node.face = this.faces[node.faceIdx];
       node.leftNode = this.aabbNodes[node.leftNodeOffset];
       node.rightNode = this.aabbNodes[node.rightNodeOffset];
@@ -350,12 +347,12 @@ export class OdysseyWalkMesh {
         //If the value is -1 then the adjacent face on that side is not walkable, and has a corresponding edge in the edge array.
         //If it is greater or equal to zero then it is an index into the this.faces array, after it is divided by 3 and floored.
 
-        let adj1 = this.wokReader.readInt32();
-        let adj2 = this.wokReader.readInt32();
-        let adj3 = this.wokReader.readInt32();
+        const adj1 = this.wokReader.readInt32();
+        const adj2 = this.wokReader.readInt32();
+        const adj3 = this.wokReader.readInt32();
                     
-        let adj = [-1, -1, -1];
-        let diff = [-1, -1, -1];
+        const adj = [-1, -1, -1];
+        const diff = [-1, -1, -1];
 
         if(adj1 >= 0){
           adj[0] = Math.floor(adj1/3);
@@ -470,7 +467,7 @@ export class OdysseyWalkMesh {
   }
 
   readAABB(){
-    let aabb: IOdysseyModelAABBNode = {
+    const aabb: IOdysseyModelAABBNode = {
       type: '',
       box: new THREE.Box3(
         new THREE.Vector3(this.wokReader.readSingle(), this.wokReader.readSingle(), this.wokReader.readSingle() - 10),
@@ -545,7 +542,7 @@ export class OdysseyWalkMesh {
 
   getNearestWalkablePoint(point: THREE.Vector3){
     let nearest = Infinity;
-    let nearest_point = point.clone();
+    const nearest_point = point.clone();
     let distance = 0;
     const target = new THREE.Vector3();
     for(let i = 0, len = this.walkableFaces.length; i < len; i++){
@@ -658,7 +655,7 @@ export class OdysseyWalkMesh {
     const tilecolor2DA = TwoDAManager.datatables.get('tilecolor');
     if(tilecolor2DA){
       for(let i = 0; i < tilecolor2DA.RowCount; i++){
-        let tileColor = tilecolor2DA.rows[i];
+        const tileColor = tilecolor2DA.rows[i];
         OdysseyWalkMesh.TILECOLORS.push(
           TileColor.From2DA(tileColor)
         );
@@ -777,7 +774,7 @@ export class OdysseyWalkMesh {
 
     const start_perimeter = () => {
       if(edges.length){
-        let edge: WalkmeshEdge = edges.shift();
+        const edge: WalkmeshEdge = edges.shift();
         return {
           closed: false,
           start: edge.vertIdx1,
@@ -789,35 +786,35 @@ export class OdysseyWalkMesh {
     
     while(edges.length){
       if(!current_perimeter){
-        console.log('Walkmesh perimeter start...');
+        log.info('Walkmesh perimeter start...');
         current_perimeter = start_perimeter();
         perimeters.push(current_perimeter);
       }
 
       if(current_perimeter){
         if(current_perimeter.next == current_perimeter.start){
-          console.log('Walkmesh perimeter end found! Closing perimeter...');
+          log.info('Walkmesh perimeter end found! Closing perimeter...');
           current_perimeter.closed = true;
           current_perimeter = undefined;
           continue;
         }
 
         //Find next perimeter edge
-        let next_idx = edges.findIndex( (n_edge) => n_edge.vertIdx1 == current_perimeter.next );
+        const next_idx = edges.findIndex( (n_edge) => n_edge.vertIdx1 == current_perimeter.next );
         if(next_idx >= 0){
-          let n_edge = edges.splice(next_idx, 1)[0];
+          const n_edge = edges.splice(next_idx, 1)[0];
           current_perimeter.edges.push(n_edge);
           current_perimeter.next = n_edge.vertIdx2;
           continue;
         }else{
-          console.warn('Walkmesh edge perimeter open');
+          log.warn('Walkmesh edge perimeter open');
           current_perimeter = undefined;
         }
 
       }
     }
 
-    console.log('perimeters', perimeters);
+    log.info('perimeters', perimeters);
     return perimeters;
   }
 

@@ -1,4 +1,4 @@
-import type { Token } from "./NWScriptToken";
+import type { Token } from "@/nwscript/compiler/NWScriptToken";
 
 export type SourceInfo = Token["source"] | undefined;
 export type DataTypeNode = { type: "datatype"; unary: number; value: string; engine_type?: boolean; struct?: string };

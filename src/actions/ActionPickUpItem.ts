@@ -1,7 +1,8 @@
-import { ActionStatus, ActionType, ModuleObjectType } from "../enums";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import { BitWise } from "../utility/BitWise";
-import { Action } from "./Action";
+import { Action } from "@/actions/Action";
+import { ActionStatus, ActionType, ModuleObjectType } from "@/enums";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { BitWise } from "@/utility/BitWise";
+
 
 /**
  * ActionPickUpItem class.
@@ -21,7 +22,7 @@ export class ActionPickUpItem extends Action {
     //PARAMS
   }
 
-  update(delta?: number): ActionStatus {
+  update(_delta?: number): ActionStatus {
     if(!this.owner){
       return ActionStatus.FAILED;
     }
@@ -30,7 +31,7 @@ export class ActionPickUpItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner: ModuleCreature = this.owner as ModuleCreature;
+    const _owner: ModuleCreature = this.owner as ModuleCreature;
 
     return ActionStatus.COMPLETE;
   }

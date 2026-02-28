@@ -106,11 +106,11 @@ export class DxtUtil {
 						break;
 				}
 
-				let px = (x << 2) + blockX;
-				let py = (y << 2) + blockY;
+				const px = (x << 2) + blockX;
+				const py = (y << 2) + blockY;
 				if ((px < width) && (py < height))
 				{
-					let offset = ((py * width) + px) << 2;
+					const offset = ((py * width) + px) << 2;
 					imageData[offset] = r;
 					imageData[offset + 1] = g;
 					imageData[offset + 2] = b;

@@ -1,44 +1,44 @@
-import { GameState } from "../../GameState";
-import type { INIConfig } from "../../engine/INIConfig";
-import { CreatureClass } from "../../combat/CreatureClass";
-import { TalentFeat } from "../../talents/TalentFeat";
-import { TalentSpell } from "../../talents/TalentSpell";
-import { TalentSkill } from "../../talents/TalentSkill";
-import { SWRace } from "./SWRace";
-import { SWEffectIcon } from "./SWEffectIcon";
-import { SWItemPropsDef } from "./SWItemPropsDef";
-import { PazaakDeck } from "../minigames/PazaakDeck";
-import { SWXPTableEntry } from "./SWXPTableEntry";
-import { SWPortrait } from "./SWPortrait";
-import { SWFeatGain } from "./SWFeatGain";
-import { SWSpellGain } from "./SWSpellGain";
-import { SWEXPTable } from "./SWEXPTable";
-import { SWDifficulty } from "./SWDifficulty";
-import { SWBodyBag } from "./SWBodyBag";
-import { SWHead } from "./SWHead";
-import { SWPriorityGroup } from "./SWPriorityGroup";
-import { SWEncounterDifficulty } from "./SWEncounterDifficulty";
-import { SWGender } from "./SWGender";
-import { SWPhenotype } from "./SWPhenotype";
-import { SWSubRace } from "./SWSubRace";
-import { SWSoundSet } from "./SWSoundSet";
-import { SWCreatureSize } from "./SWCreatureSize";
-import { SWCreatureSpeed } from "./SWCreatureSpeed";
-import { SWRange } from "./SWRange";
-import { SWFaction } from "./SWFaction";
-import { SWBaseItem } from "./SWBaseItem";
-import { SWCreatureAppearance } from "./SWCreatureAppearance";
-import { SWDoorAppearance } from "./SWDoorAppearance";
-import { SWPlaceableAppearance } from "./SWPlaceableAppearance";
-import { SWCostTable } from "./SWCostTable";
-import { SWFootStep } from "./SWFootStep";
-import { SWWeaponSound } from "./SWWeaponSound";
+import { CreatureClass } from "@/combat/CreatureClass";
+import type { INIConfig } from "@/engine/INIConfig";
+import { PazaakDeck } from "@/engine/minigames/PazaakDeck";
+import { SWBaseItem } from "@/engine/rules/SWBaseItem";
+import { SWBodyBag } from "@/engine/rules/SWBodyBag";
+import { SWCostTable } from "@/engine/rules/SWCostTable";
+import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
+import { SWCreatureSize } from "@/engine/rules/SWCreatureSize";
+import { SWCreatureSpeed } from "@/engine/rules/SWCreatureSpeed";
+import { SWDifficulty } from "@/engine/rules/SWDifficulty";
+import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
+import { SWEffectIcon } from "@/engine/rules/SWEffectIcon";
+import { SWEncounterDifficulty } from "@/engine/rules/SWEncounterDifficulty";
+import { SWEXPTable } from "@/engine/rules/SWEXPTable";
+import { SWFaction } from "@/engine/rules/SWFaction";
+import { SWFeatGain } from "@/engine/rules/SWFeatGain";
+import { SWFootStep } from "@/engine/rules/SWFootStep";
+import { SWGender } from "@/engine/rules/SWGender";
+import { SWHead } from "@/engine/rules/SWHead";
+import { SWItemPropsDef } from "@/engine/rules/SWItemPropsDef";
+import { SWPhenotype } from "@/engine/rules/SWPhenotype";
+import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
+import { SWPortrait } from "@/engine/rules/SWPortrait";
+import { SWPriorityGroup } from "@/engine/rules/SWPriorityGroup";
+import { SWRace } from "@/engine/rules/SWRace";
+import { SWRange } from "@/engine/rules/SWRange";
+import { SWSoundSet } from "@/engine/rules/SWSoundSet";
+import { SWSpellGain } from "@/engine/rules/SWSpellGain";
+import { SWSubRace } from "@/engine/rules/SWSubRace";
+import { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
+import { SWXPTableEntry } from "@/engine/rules/SWXPTableEntry";
+import { GameState } from "@/GameState";
+import { TalentFeat } from "@/talents/TalentFeat";
+import { TalentSkill } from "@/talents/TalentSkill";
+import { TalentSpell } from "@/talents/TalentSpell";
 
 /**
  * SWRuleSet class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SWRuleSet.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

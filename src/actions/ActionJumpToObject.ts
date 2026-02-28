@@ -1,10 +1,10 @@
-import { ModuleObjectType } from "../enums";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import type { ModuleObject } from "../module/ModuleObject";
-import { BitWise } from "../utility/BitWise";
-import { Action } from "./Action";
-import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
+import { Action } from "@/actions/Action";
+import { ModuleObjectType } from "@/enums";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
+
 
 /**
  * ActionJumpToObject class.
@@ -27,7 +27,7 @@ export class ActionJumpToObject extends Action {
     
   }
 
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
 
     this.target = this.getParameter<ModuleObject>(0);
 

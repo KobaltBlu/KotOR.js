@@ -1,8 +1,12 @@
 import * as THREE from "three";
-import { PathPoint } from "./PathPoint";
-import type { ModuleObject } from "../../module/ModuleObject";
-import { GameState } from "../../GameState";
-import { BinaryHeap } from "./BinaryHeap";
+
+import { BinaryHeap } from "@/engine/pathfinding/BinaryHeap";
+import { PathPoint } from "@/engine/pathfinding/PathPoint";
+import { GameState } from "@/GameState";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 export class ComputedPath {
   owner: ModuleObject;
@@ -132,7 +136,7 @@ export class ComputedPath {
         pruneRest = true;
         continue;
       }
-      
+
       if(cPoint == this.origin)
         continue;
 
@@ -163,11 +167,11 @@ export class ComputedPath {
   }
 
   reIndex(): void {
-    let parent: PathPoint;
+    let _parent: PathPoint;
     for(let i = 0; i < this.points.length; i++){
       const p = this.points[i];
       p.parent = p;
-      parent = p;
+      _parent = p;
     }
   }
 
@@ -203,7 +207,7 @@ export class ComputedPath {
       this.helperPositions.setX(idx, point.vector.x);
       this.helperPositions.setY(idx, point.vector.y);
       this.helperPositions.setZ(idx, point.vector.z);
-      
+
       this.helperPositions.setX(idx2, point.vector.x);
       this.helperPositions.setY(idx2, point.vector.y);
       this.helperPositions.setZ(idx2, point.vector.z + 0.75);
@@ -229,7 +233,7 @@ export class ComputedPath {
       this.helperPositions.setX(idx3, point.vector.x);
       this.helperPositions.setY(idx3, point.vector.y);
       this.helperPositions.setZ(idx3, point.vector.z + 0.75);
-      
+
       this.helperPositions.setX(idx4, cPoint.vector.x);
       this.helperPositions.setY(idx4, cPoint.vector.y);
       this.helperPositions.setZ(idx4, cPoint.vector.z + 0.75);
@@ -251,7 +255,7 @@ export class ComputedPath {
 
     this.helperMesh.geometry = this.helperGeometry;
     this.helperMesh.material = this.helperMaterial;
-    
+
     if(!this.helperMesh.parent){
       GameState.scene.add( this.helperMesh );
     }
@@ -266,7 +270,7 @@ export class ComputedPath {
     const pointCount = this.points.length;
     let connectionIndexStart = (pointCount * 2);
     for(let i = 0; i < pointCount; i++){
-      const point = this.points[i];
+      const _point = this.points[i];
 
       const idx = i * 2;
       const idx2 = idx + 1;
@@ -285,7 +289,7 @@ export class ComputedPath {
         continue;
       }
 
-      const cPoint = this.points[i + 1];
+      const _cPoint = this.points[i + 1];
       const idx3 = connectionIndexStart;
       const idx4 = idx3 + 1;
 

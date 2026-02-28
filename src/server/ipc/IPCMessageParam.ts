@@ -1,5 +1,4 @@
-import { BinaryReader } from "../../utility/binary/BinaryReader";
-import { IPCDataType } from "../../enums/server/ipc/IPCDataType";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
 
 /**
  * Represents an IPCMessageParam.
@@ -33,18 +32,18 @@ export class IPCMessageParam {
       this.value = new TextEncoder().encode(value ? value : '');
     }else if(typeof value == 'number' && type == IPCDataType.INTEGER){
       this.value = new Uint8Array(4);
-      const view = new DataView(this.value.buffer); 
+      const view = new DataView(this.value.buffer);
       view.setInt32(0, value, true);
     }else if(typeof value == 'number' && type == IPCDataType.FLOAT){
       this.value = new Uint8Array(4);
-      const view = new DataView(this.value.buffer); 
+      const view = new DataView(this.value.buffer);
       view.setFloat32(0, value, true);
     }else{
       return;
     }
     this.size = IPCMessageParam.HeaderSize + this.value.length;
   }
-  
+
   /**
    * Returns the value as a string.
    * @returns The decoded string.

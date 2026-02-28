@@ -70,7 +70,7 @@ export class TwoDAObject {
     this.FileType = br.readChars(4);
     this.FileVersion = br.readChars(4);
 
-    br.position += 1; //0x0A = Newline (Skip)
+    br.position += 1; // Newline (skip)
 
     let str = "";
     let ch;
@@ -88,7 +88,7 @@ export class TwoDAObject {
     this.RowCount = br.readUInt32();
 
     //Get the row index numbers
-    let RowIndexes = [];
+    const RowIndexes = [];
     for (let i = 0; i < this.RowCount; i++){
       let rowIndex = "";
       let c;
@@ -234,7 +234,7 @@ export class TwoDAObject {
    * @returns The row
    */
   getRowByIndex(index = -1){
-    for (let key of Object.keys(this.rows)) {
+    for (const key of Object.keys(this.rows)) {
       if(this.rows[key]['__index'] == index){
         return this.rows[key];
       }

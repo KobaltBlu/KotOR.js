@@ -1,4 +1,4 @@
-import type { PixelFormat } from '../../enums/graphics/tpc/PixelFormat';
+import type { PixelFormat } from '@/enums/graphics/tpc/PixelFormat';
 
 /**
  * ITPCHeader interface.

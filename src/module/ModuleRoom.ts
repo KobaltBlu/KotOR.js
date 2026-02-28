@@ -1,24 +1,32 @@
-import { ModuleObject } from "./ModuleObject";
-import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from ".";
+import { ModuleObject } from "@/module/ModuleObject";
+
+
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import { OdysseyFace3, OdysseyModel3D } from "../three/odyssey";
-import { Utility } from "../utility/Utility";
-import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { MDLLoader, ResourceLoader, TextureLoader } from "../loaders";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GFFStruct } from "../resource/GFFStruct";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
-// import { ShaderManager } from "../managers";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { BitWise } from "../utility/BitWise";
-import { VISObject } from "../resource/VISObject";
-import { IVISRoom } from "../interface";
-import { EngineMode } from "../enums/engine/EngineMode";
+
+import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from ".";
+
+// import { ShaderManager } from "@/managers";
+
+
+const log = createScopedLogger(LogScope.Module);
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { IVISRoom } from "@/interface";
+import { MDLLoader, ResourceLoader, TextureLoader } from "@/loaders";
+import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "@/odyssey";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { VISObject } from "@/resource/VISObject";
+import { OdysseyFace3, OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
 
 /**
 * ModuleRoom class.
@@ -342,7 +350,7 @@ export class ModuleRoom extends ModuleObject {
         }
       }
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
 
     //Disable matrix update for static objects
@@ -351,7 +359,7 @@ export class ModuleRoom extends ModuleObject {
     try{
       this.buildGrass();
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
 
     return this.model;
@@ -366,31 +374,31 @@ export class ModuleRoom extends ModuleObject {
       this.model.wok = wok;
       return wok;
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
   }
 
   buildGrass(){
     if(!this.area.grass.textureName){
-      // console.warn('ModuleRoom.buildGrass: No grass texture found for room', this.roomName);
+      // log.warn('ModuleRoom.buildGrass: No grass texture found for room', this.roomName);
       return;
     }
 
     const density = this.area.grass.density;
     const quadOffsetZ = this.area.grass.quadSize/2;
     if(!this.model){
-      // console.warn('ModuleRoom.buildGrass: No model found for room', this.roomName);
+      // log.warn('ModuleRoom.buildGrass: No model found for room', this.roomName);
       return;
     }
 
     const aabb = this.model.aabb;
     if(!(aabb instanceof OdysseyModelNodeAABB)){
-      // console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
+      // log.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
       return;
     }
 
     if(!aabb.grassFaces.length){
-      // console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
+      // log.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
       return;
     }
 
@@ -448,7 +456,7 @@ export class ModuleRoom extends ModuleObject {
     const totalGrassCount = faceData.totalGrassCount;
     
     if(totalGrassCount === 0){
-      // console.warn('ModuleRoom.buildGrass: No grass instances to create for room', this.roomName);
+      // log.warn('ModuleRoom.buildGrass: No grass instances to create for room', this.roomName);
       return;
     }
 
@@ -617,7 +625,7 @@ export class ModuleRoom extends ModuleObject {
 
       const triangle = new THREE.Triangle(FA, FB, FC);
       const tArea = triangle.getArea();
-      let grassCount = Math.max(1, Math.floor((tArea * density) * 0.50));
+      const grassCount = Math.max(1, Math.floor((tArea * density) * 0.50));
 
       totalGrassCount += grassCount;
       faceGrassCounts.push(grassCount);
@@ -707,7 +715,7 @@ export class ModuleRoom extends ModuleObject {
       grass_material.needsUpdate = true;
       
       if(!lm_texture){
-        // console.warn('ModuleRoom.buildGrass: No grass lightmap found for room ' + this.roomName);
+        // log.warn('ModuleRoom.buildGrass: No grass lightmap found for room ' + this.roomName);
         return;
       }
       
@@ -773,10 +781,10 @@ export class ModuleRoom extends ModuleObject {
       this.collisionManager.walkmesh.dispose();
 
     try{
-      let wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
+      const wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
       GameState.walkmeshList.splice(wmIdx, 1);
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
 
     try{
@@ -786,7 +794,7 @@ export class ModuleRoom extends ModuleObject {
         this.grass.removeFromParent();
       }
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
   }
 

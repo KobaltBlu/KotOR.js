@@ -1,15 +1,21 @@
-import type { GFFStruct } from "../resource/GFFStruct";
 
 import * as THREE from "three";
-import { TextureLoader } from "../loaders";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { TextureType } from "../enums/loaders/TextureType";
-import { Mouse } from "../controls/Mouse";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import { GUIControl } from "./GUIControl";
-import type { GUIListBox } from "./GUIListBox";
-import type { GameMenu } from "./GameMenu";
+
+import { Mouse } from "@/controls/Mouse";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { TextureType } from "@/enums/loaders/TextureType";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import type { GUIControlEvent } from "@/gui/GUIControlEvent";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import { TextureLoader } from "@/loaders";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * GUIScrollBar class.
@@ -143,10 +149,6 @@ export class GUIScrollBar extends GUIControl{
 
     if(this.control.hasField('THUMB')){
       this._thumb = this.control.getFieldByLabel('THUMB').getChildStructs()[0];
-      /*this.thumbMaterial = new THREE.SpriteMaterial( { map: null, color: new THREE.Color(0xFFFFFF) } );
-      this.thumbMaterial.transparent = true;
-      this.thumb = new THREE.Sprite( this.thumbMaterial );*/
-
       this.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
       this.thumbMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), side: THREE.DoubleSide} );
       this.thumb = new THREE.Mesh( this.geometry, this.thumbMaterial );
@@ -157,7 +159,7 @@ export class GUIScrollBar extends GUIControl{
       this.thumb.scale.y = this.extent.height/2;
       this.thumb.position.z = 5;
 
-      let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
+      const parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
 
       this.thumb.userData.box = new THREE.Box2(
         new THREE.Vector2(
@@ -264,14 +266,14 @@ export class GUIScrollBar extends GUIControl{
 
   mouseInside(){
 
-    let mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
-    let mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
-    //console.log(mouseY);
+    const mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
+    const mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
+    //log.info(mouseY);
     //if(this.inner_box.containsPoint({x: mouseX, y: mouseY})){
 
-      let centerPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
+      const centerPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
 
-      let scrollBarHeight = this.extent.height;
+      const scrollBarHeight = this.extent.height;
 
       this.thumb.position.y = -(mouseY) || 0;
 
@@ -302,7 +304,7 @@ export class GUIScrollBar extends GUIControl{
 
     if(this.list){
 
-      let contentHeight = this.list.getContentHeight();
+      const contentHeight = this.list.getContentHeight();
 
       let scaleY = this.list.extent.height / contentHeight;
       if(scaleY > 1){
@@ -315,13 +317,13 @@ export class GUIScrollBar extends GUIControl{
       }
 
       let offsetY = contentHeight*this.scrollPos;
-      let offsetYMax = contentHeight - this.extent.height;
-      let nodeHeight = this.list.getNodeHeight();
+      const offsetYMax = contentHeight - this.extent.height;
+      const nodeHeight = this.list.getNodeHeight();
       if(offsetY > offsetYMax){
         offsetY = offsetYMax;//Math.floor(offsetYMax / nodeHeight) * nodeHeight;
       }
 
-      //console.log((Math.floor(offsetY / nodeHeight)) * nodeHeight);
+      //log.info((Math.floor(offsetY / nodeHeight)) * nodeHeight);
       /*offsetY = (Math.ceil(offsetY / nodeHeight)) * nodeHeight;
 
       for(let i = 0; i < this.list.itemGroup.children.length; i++){
@@ -336,7 +338,7 @@ export class GUIScrollBar extends GUIControl{
       this.list.scroll = Math.floor(this.list.maxScroll * this.scrollPos) || 0;
       this.list.updateList();
 
-      let scrollThumbOffset = (this.extent.height - this.thumb.scale.y) - (this.border.dimension*2);
+      const scrollThumbOffset = (this.extent.height - this.thumb.scale.y) - (this.border.dimension*2);
       this.thumb.position.y = scrollThumbOffset/2 - (scrollThumbOffset * this.list.scroll / this.list.maxScroll) || 0;
 
     }
@@ -348,7 +350,7 @@ export class GUIScrollBar extends GUIControl{
     let parentOffsetX, parentOffsetY;
     if(!(this.parent.widget instanceof THREE.Scene)){
       parentExtent = this.menu.tGuiPanel.extent;
-      //console.log(this.parent)
+      //log.info(this.parent)
       //parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x + this.offset.x;
       //parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y + this.offset.y;
       parentOffsetX = this.menu.tGuiPanel.worldPosition.x + this.offset.x;
@@ -378,10 +380,10 @@ export class GUIScrollBar extends GUIControl{
     try{
       worldPosition = this.parent.widget.position.clone();
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
-    let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
-    //console.log('worldPos', worldPosition);
+    const parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
+    //log.info('worldPos', worldPosition);
     this.box = new THREE.Box2(
       new THREE.Vector2(
         this.anchorOffset.x - this.extent.width/2 + worldPosition.x,

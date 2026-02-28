@@ -1,11 +1,15 @@
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton, GUISlider, GUIControl } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import type { ModuleCreature, ModuleItem } from "../../../module";
-import { OdysseyModel3D } from "../../../three/odyssey";
 import * as THREE from "three";
-import { OdysseyModel } from "../../../odyssey";
+
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUILabel, GUIButton, GUISlider, GUIControl } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import type { ModuleCreature, ModuleItem } from "@/module";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { OdysseyModel } from "@/odyssey";
 
 /**
  * MenuCharacter class.
@@ -170,7 +174,7 @@ export class MenuCharacter extends GameMenu {
           // manageLighting: false,
           context: this._3dView
         }).then((model: OdysseyModel3D) => {
-          //console.log('Model Loaded', model);
+          //log.info('Model Loaded', model);
           this._3dViewModel = model;
           this._3dView.addModel(this._3dViewModel);
 
@@ -205,7 +209,7 @@ export class MenuCharacter extends GameMenu {
       this.char.update(delta);
     try {
       this._3dView.render(delta);
-    } catch (e: any) {
+    } catch (e: unknown) {
     }
   }
 

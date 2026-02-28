@@ -1,10 +1,10 @@
 
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { ModuleItem } from "../../../module";
-import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
-import { GameState } from "../../../GameState";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import { TextureLoader } from "@/loaders";
+import { ModuleItem } from "@/module";
 
 /**
  * MenuInventory class.
@@ -92,7 +92,7 @@ export class MenuInventory extends GameMenu {
 
   filterInventory(){
     this.LB_ITEMS.clearItems();
-    let inv = GameState.InventoryManager.getNonQuestInventory();
+    const inv = GameState.InventoryManager.getNonQuestInventory();
     for (let i = 0; i < inv.length; i++) {
       this.LB_ITEMS.addItem(inv[i]);
     }

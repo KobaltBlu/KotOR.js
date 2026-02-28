@@ -1,14 +1,18 @@
-import { GameEvent } from "./GameEvent";
-import { GameEventType } from "../enums/events/GameEventType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import type { NWScriptEvent } from "../nwscript/events/NWScriptEvent";
-import { NWScriptEventFactory } from "../nwscript/events/NWScriptEventFactory";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleObject } from "../module/ModuleObject";
-import { ModuleObjectScript, SignalEventType } from "../enums";
+import { ModuleObjectScript, SignalEventType } from "@/enums";
+import { GameEventType } from "@/enums/events/GameEventType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameEvent } from "@/events/GameEvent";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
+import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * EventSignalEvent class.
@@ -215,13 +219,13 @@ export class EventSignalEvent extends GameEvent {
   }
 
   export(){
-    let struct = new GFFStruct( 0xABCD );
+    const struct = new GFFStruct( 0xABCD );
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject) ? this.caller.id : 2130706432 );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
-    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
     if(this.event){
-      let eStruct = this.event.save();
+      const eStruct = this.event.save();
       eStruct.setType(0x4444);
       eventData.addChildStruct( eStruct );
     }

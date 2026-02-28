@@ -1,19 +1,23 @@
-import { ModuleObjectScript, ModuleObjectType } from "../enums";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject } from "../module";
-import { BitWise } from "../utility/BitWise";
-import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
-import { NWScriptDef } from "./NWScriptDef";
-import { NWScriptDefK1 } from "./NWScriptDefK1";
-import { NWScriptInstance } from "./NWScriptInstance";
+import { ModuleObjectScript, ModuleObjectType } from "@/enums";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleObject } from "@/module";
+import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
+import { NWScriptDef } from "@/nwscript/NWScriptDef";
+import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
+
+
+const log = createScopedLogger(LogScope.NWScript);
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /**
  * NWScriptDefK2 class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptDefK2.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -1456,11 +1460,11 @@ NWScriptDefK2.Actions = {
     /**
      * TSL made some modifications to this function.
      * 4 additional arguments were added
-     * int bUseLeader = FALSE, 
-     * int nBarkX = -1, 
-     * int nBarkY = -1, 
+     * int bUseLeader = FALSE,
+     * int nBarkX = -1,
+     * int nBarkY = -1,
      * int bDontClearAllActions = 0
-     * nBarkX, and nBarkY override the left, top corner position for the bark string if the conversation starting is a bark string. 
+     * nBarkX, and nBarkY override the left, top corner position for the bark string if the conversation starting is a bark string.
      * They only happen on a conversation by conversation basis and don't stay in effect in subsequent conversations.
      * @param this NWScriptInstance
      * @param args [oObjectToConverse: ModuleObject, sDialogResRef: string = "", bPrivateConversation: boolean = FALSE, nConversationType: number = CONVERSATION_TYPE_CINEMATIC, bIgnoreStartRange: boolean = FALSE, sNameObjectToIgnore1: string = "", sNameObjectToIgnore2: string = "", sNameObjectToIgnore3: string = "", sNameObjectToIgnore4: string = "", sNameObjectToIgnore5: string = "", sNameObjectToIgnore6: string = "", bUseLeader: boolean = FALSE, nBarkX: number = -1, nBarkY: number = -1, bDontClearAllActions: boolean = 0]
@@ -1471,7 +1475,7 @@ NWScriptDefK2.Actions = {
         //even in ones that have nothing to do with the PC. Perhaps it was always meant to work this way?
         this.caller.actionDialogObject( args[0], args[1], true, args[2], args[3] );
       }else{
-        console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
+        log.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
       }
     }
   },
@@ -5434,7 +5438,7 @@ NWScriptDefK2.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       GameState.FadeOverlayManager.holdForScript = true;
-    }	
+    }
   },
   770: {
     comment: 'DJS-OEI 12/15/2003\n770: Create a Force Body effect\n- nLevel: The level of the Force Body effect.\n   0 = Force Body\n   1 = Improved Force Body\n   2 = Master Force Body',
@@ -5535,7 +5539,7 @@ NWScriptDefK2.Actions = {
           return GameState.PartyManager.SwoopUpgrade3;
       }
       return -1;
-    }	
+    }
   },
   783: {
     comment: 'DJS-OEI 1/12/2004\n783: Returns whether or not the target has access to a feat,\neven if they can\'t use it right now due to daily limits or\nother restrictions.',
@@ -5753,7 +5757,7 @@ NWScriptDefK2.Actions = {
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       return 0;
-    }	
+    }
   },
   812: {
     comment: '812\nDJS-OEI 3/16/2004\nDetermines if the given creature is using the Total Defense\nStance.\n0 = Creature is not in Total Defense.\n1 = Creature is in Total Defense.\nThis function will return 0 for any non-creature.',
@@ -5771,7 +5775,7 @@ NWScriptDefK2.Actions = {
       if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleObject)){
         this.healTarget = args[1];
       }
-    }	
+    }
   },
   814: {
     comment: '814\nRWT-OEI 03/19/04\nRetrieves the Heal Target for the Healer AI script. Should probably\nnot be used outside of the Healer AI script.',
@@ -5780,7 +5784,7 @@ NWScriptDefK2.Actions = {
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleCreature]){
       return this.healTarget;
-    }	
+    }
   },
   815: {
     comment: '815\nRWT-OEI 03/23/04\nReturns a vector containing a random destination that the\ngiven creature can walk to that\'s within the range of the\npassed parameter.',
@@ -5912,7 +5916,7 @@ NWScriptDefK2.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       return this.paramString;
-    }	
+    }
   },
   832: {
     comment: '832\nAWD-OEI 6/29/2004\nThis function returns the personal space value of an object',
@@ -5925,7 +5929,7 @@ NWScriptDefK2.Actions = {
       }else{
         return 0.0;
       }
-    }	
+    }
   },
   833: {
     comment: '833\nAWD-OEI 7/06/2004\nThis function adjusts a creatures stats.\noObject is the creature that will have it\'s attribute adjusted\nThe following constants are acceptable for the nAttribute parameter:\nABILITY_STRENGTH\nABILITY_DEXTERITY\nABILITY_CONSTITUTION\nABILITY_INTELLIGENCE\nABILITY_WISDOM\nABILITY_CHARISMA\nnAmount is the integer vlaue to adjust the stat by (negative values will work).',
@@ -6019,7 +6023,7 @@ NWScriptDefK2.Actions = {
       }else{
         return 0;
       }
-    }	
+    }
   },
   845: {
     comment: '845\nRWT-OEI 07/21/04\nReturns the object ID of the character that the player\nis actively controlling. This is the \'Party Leader\'.\nReturns object Invalid on error\nNote that this function is *NOT* able to return correct\ninformation during Area Loading since the player is not\nactively controlling anyone at that point.',
@@ -6028,7 +6032,7 @@ NWScriptDefK2.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       return GameState.PartyManager.party[0];
-    }	
+    }
   },
   846: {
     comment: '846\nJAB-OEI 07/22/04\nWill remove the CNPC from the 3 person party, and remove\nhim/her from the area, effectively sending the CNPC back\nto the base. The CNPC data is still stored in the\nparty table, and calling this function will not destroy\nthe CNPC in any way.\nReturns TRUE for success.',
@@ -6038,7 +6042,7 @@ NWScriptDefK2.Actions = {
     action: function(this: NWScriptInstance, args: [number]){
       GameState.PartyManager.RemoveNPCById(args[0], true);
       return 1;
-    }	
+    }
   },
   847: {
     comment: '847\nAWD-OEI 7/22/2004\nThis causes a creature to flourish with it\'s currently equipped weapon.',
@@ -6049,7 +6053,7 @@ NWScriptDefK2.Actions = {
       if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleCreature)){
         (args[0] as ModuleCreature).flourish();
       }
-    }	
+    }
   },
   848: {
     comment: '848\nCreate a Mind Trick effect',
@@ -6079,7 +6083,7 @@ NWScriptDefK2.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       return 0;
-    }	
+    }
   },
   852: {
     comment: '852\nCreate a Droid Scramble effect',
@@ -6104,7 +6108,7 @@ NWScriptDefK2.Actions = {
       if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleCreature)){
         (args[0] as ModuleCreature).playOverlayAnimation(args[1]);
       }
-    }	
+    }
   },
   855: {
     comment: '855\nRWT-OEI 08/30/04\nUnlockAllSongs\nCalling this will set all songs as having been unlocked.\nIt is INTENDED to be used in the end-game scripts to unlock\nany end-game songs as well as the KotOR1 sound track.',
@@ -6192,7 +6196,7 @@ NWScriptDefK2.Actions = {
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
         args[0].scripts[ModuleObjectScript.PlaceableOnHeartbeat] = undefined;
       }
-    }	
+    }
   },
   867: {
     comment: '//867\nJF-OEI 10-07-2004\nRemove an effect by ID',

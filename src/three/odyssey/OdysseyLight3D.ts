@@ -1,6 +1,7 @@
-import { OdysseyObject3D } from "./OdysseyObject3D";
 import * as THREE from "three";
-import type { OdysseyModelNodeLight } from "../../odyssey";
+
+import type { OdysseyModelNodeLight } from "@/odyssey";
+import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 
 /**
  * OdysseyLight3D class.

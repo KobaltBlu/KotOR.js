@@ -1,5 +1,5 @@
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUIButton } from "../../../gui";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUIButton } from "@/gui";
 
 /**
  * MenuDatapad class.

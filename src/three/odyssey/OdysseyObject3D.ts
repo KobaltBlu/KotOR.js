@@ -1,9 +1,10 @@
 import * as THREE from "three";
-import type { OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
-import type { OdysseyController } from "../../odyssey/controllers/OdysseyController";
-import type { OdysseyEmitter3D } from "./OdysseyEmitter3D";
-import type { OdysseyLight3D } from "./OdysseyLight3D";
-import type { OdysseyModel3D } from "./OdysseyModel3D";
+
+import type { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import type { OdysseyEmitter3D } from "@/three/odyssey/OdysseyEmitter3D";
+import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
+import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 
 /**
  * OdysseyObject3D class.

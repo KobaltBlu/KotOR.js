@@ -1,14 +1,16 @@
-import type { ModuleCreature, ModuleItem, ModuleObject } from "../module";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { TalentFeat, TalentSpell } from "../talents";
-import { AttackResult } from "../enums/combat/AttackResult";
-import { ProjectilePath } from "../enums/combat/ProjectilePath";
-import { OdysseyModelAnimation } from "../odyssey";
-import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { SpellCastInstance } from "./SpellCastInstance";
-import { CombatFeatType } from "../enums/combat/CombatFeatType";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums";
+import { SpellCastInstance } from "@/combat/SpellCastInstance";
+import { ModuleObjectType } from "@/enums";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
+import { ProjectilePath } from "@/enums/combat/ProjectilePath";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import { OdysseyModelAnimation } from "@/odyssey";
+import { TalentFeat, TalentSpell } from "@/talents";
+import { BitWise } from "@/utility/BitWise";
+
+
 
 export class CombatRoundAction {
   owner: ModuleObject;

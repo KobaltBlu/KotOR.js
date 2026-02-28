@@ -23,8 +23,8 @@ export const TabImageViewer = function(props: BaseTabProps){
     if(canvasRef.current){
       const canvas = canvasRef.current;
       tab.getPixelData().then( (pixelData) => {
-        console.log('pixel data', pixelData);
-        let ctx = canvas.getContext('2d');
+        log.trace('pixel data', pixelData);
+        const ctx = canvas.getContext('2d');
         if(ctx){
           // let data = pixelData;
           tab.workingData = pixelData;
@@ -51,7 +51,7 @@ export const TabImageViewer = function(props: BaseTabProps){
           canvas.width = width;
           canvas.height = height;
 
-          let imageData = ctx.getImageData(0, 0, width, height);
+          const imageData = ctx.getImageData(0, 0, width, height);
           if(image instanceof KotOR.TPCObject){
 
             if(tab.bitsPerPixel == 24)
@@ -127,7 +127,7 @@ export const TabImageViewer = function(props: BaseTabProps){
   });
 
   useEffect(() => {
-    console.log('containerRef', containerRef);
+    log.trace('containerRef', containerRef);
     if(containerRef.current){
       containerRef.current.addEventListener('wheel', onMouseWheel);
     }

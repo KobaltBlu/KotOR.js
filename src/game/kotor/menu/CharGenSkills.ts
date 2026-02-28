@@ -1,6 +1,9 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 /**
  * CharGenSkills class.
@@ -77,7 +80,7 @@ export class CharGenSkills extends GameMenu {
 
       this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
-        console.log('CharGenSkills', 'Assigning skillpoints')
+        log.info('CharGenSkills', 'Assigning skillpoints')
         GameState.CharGenManager.selectedCreature.skills[0].rank = GameState.CharGenManager.computerUse;
         GameState.CharGenManager.selectedCreature.skills[1].rank = GameState.CharGenManager.demolitions;
         GameState.CharGenManager.selectedCreature.skills[2].rank = GameState.CharGenManager.stealth;
@@ -93,11 +96,11 @@ export class CharGenSkills extends GameMenu {
 
         GameState.CharGenManager.resetSkillPoints();
         GameState.CharGenManager.availSkillPoints = GameState.CharGenManager.getMaxSkillPoints();
-        let skillOrder = GameState.CharGenManager.getRecommendedOrder();
+        const skillOrder = GameState.CharGenManager.getRecommendedOrder();
         
         while(GameState.CharGenManager.availSkillPoints > 0){
           for(let i = 0; i < 8; i++){
-            let skillIndex = skillOrder[i];
+            const skillIndex = skillOrder[i];
 
             if(!GameState.CharGenManager.availSkillPoints)
               break;
