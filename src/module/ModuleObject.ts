@@ -3863,8 +3863,7 @@ export class ModuleObject {
       this.conversation = undefined;
       this.linkedToObject = undefined;
 
-      GameState.ModuleObjectManager.RemoveObject(this);
-      GameState.CursorManager.notifyObjectDestroyed(this);
+      GameState.ModuleObjectManager.RemoveObject(this); 
     }catch(e){
       console.error('ModuleObject.destroy', e);
     }
