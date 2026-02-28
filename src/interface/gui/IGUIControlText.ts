@@ -2,9 +2,9 @@ import type {
   BufferGeometry,
   Color,
   Mesh,
-  ShaderMaterial,
 } from "three";
 
+import type { IGUIShaderMaterial } from "@/interface/gui/IGUIShaderMaterial";
 import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 /**
@@ -25,7 +25,7 @@ export interface IGUIControlText {
   alignment: number;
   pulsing: number;
   geometry: BufferGeometry;
-  material: ShaderMaterial;
+  material: IGUIShaderMaterial;
   mesh: Mesh;
   texture: OdysseyTexture;
 }

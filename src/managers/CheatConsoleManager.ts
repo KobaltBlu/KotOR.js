@@ -7,7 +7,18 @@ import { ModuleItem } from "@/module";
 import { GFFObject } from "@/resource/GFFObject";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 
-/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unused-vars, no-empty */
+interface ICheatPlayer {
+  goodEvil: number;
+  addXP(points: number, type: ExperienceType): void;
+}
+
+const isCheatPlayer = (player: unknown): player is ICheatPlayer => {
+  if (player == null || typeof player !== 'object') {
+    return false;
+  }
+  const cheatPlayer = player as ICheatPlayer;
+  return typeof cheatPlayer.goodEvil === 'number' && typeof cheatPlayer.addXP === 'function';
+};
 
 
 /**
@@ -35,17 +46,16 @@ export class CheatConsoleManager {
   static addEXP(points: number = 0){
     points = Math.abs(points);
     const player = GameState.getCurrentPlayer();
-    if(player){
+    if(isCheatPlayer(player)){
       player.addXP(points, ExperienceType.PLOT);
     }
   }
 
   //Increases your character's level to the number you want
-  static addLevel(points: number = 0){
-    points = Math.abs(points);
+  static addLevel(_points: number = 0){
     const player = GameState.getCurrentPlayer();
     if(player){
-
+      return;
     }
   }
 
@@ -65,14 +75,12 @@ export class CheatConsoleManager {
   }
 
   //Receive (n) computer spikes
-  static giveComputerSpikes (amount: number = 100){
-    amount = Math.abs(amount);
+  static giveComputerSpikes (_amount: number = 100){
 
   }
 
   //Receive the amount of credits you want
-  static giveCredits (amount: number = 0){
-    amount = Math.abs(amount);
+  static giveCredits (_amount: number = 0){
 
   }
 
@@ -90,8 +98,7 @@ export class CheatConsoleManager {
   }
 
   //Receive (n) medkits
-  static giveMedPacks (amount: number = 100){
-    amount = Math.abs(amount);
+  static giveMedPacks (_amount: number = 100){
 
   }
 
@@ -99,7 +106,7 @@ export class CheatConsoleManager {
   static heal (){
     const player = GameState.getCurrentPlayer();
     if(player){
-
+      return;
     }
   }
 

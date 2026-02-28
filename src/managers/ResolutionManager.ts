@@ -2,6 +2,9 @@ import { IScreenResolution } from "@/interface/graphics/IScreenResolution";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Manager);
+const getResolutionName = function(this: IScreenResolution): string {
+  return this.label;
+};
 
 /**
  * ResolutionManager class.
@@ -13,7 +16,6 @@ const log = createScopedLogger(LogScope.Manager);
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 /* eslint-disable @typescript-eslint/no-extraneous-class -- static manager pattern */
-/* eslint-disable @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unused-vars */
 export class ResolutionManager {
 
   public static vpScaleFactor: number = 1;
@@ -31,7 +33,7 @@ export class ResolutionManager {
     height: 1,
     ratio: 1.33,
     isDynamicRes: true,
-    getName: function(){ return this.label }
+    getName: getResolutionName
   };
   static availableResolutions: IScreenResolution[] = [];
 
@@ -122,9 +124,6 @@ export class ResolutionManager {
     const scaleX = window.innerWidth / this.getViewportWidth();
     const scaleY = window.innerHeight / this.getViewportHeight();
 
-    const xExceeds = (this.getViewportWidth() * scaleX) > window.innerWidth;
-    const yExceeds = (this.getViewportHeight() * scaleY) > window.innerHeight;
-
     this.vpScaleFactor = 1.0;
     this.hpScaleFactor = 1.0;
 
@@ -145,7 +144,7 @@ export class ResolutionManager {
         height: 1,
         ratio: 1,
         isDynamicRes: true,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       //4:3
@@ -155,7 +154,7 @@ export class ResolutionManager {
         height: 480,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -164,7 +163,7 @@ export class ResolutionManager {
         height: 600,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -173,7 +172,7 @@ export class ResolutionManager {
         height: 720,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -182,7 +181,7 @@ export class ResolutionManager {
         height: 768,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -191,7 +190,7 @@ export class ResolutionManager {
         height: 1024,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -200,7 +199,7 @@ export class ResolutionManager {
         height: 1200,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       //16:9
@@ -210,7 +209,7 @@ export class ResolutionManager {
         height: 720,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -219,7 +218,7 @@ export class ResolutionManager {
         height: 900,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -228,7 +227,7 @@ export class ResolutionManager {
         height: 1080,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -237,7 +236,7 @@ export class ResolutionManager {
         height: 1152,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -246,7 +245,7 @@ export class ResolutionManager {
         height: 1620,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -255,7 +254,7 @@ export class ResolutionManager {
         height: 1728,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -264,7 +263,7 @@ export class ResolutionManager {
         height: 2160,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -273,7 +272,7 @@ export class ResolutionManager {
         height: 2304,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
 
       this.availableResolutions.push({
@@ -282,7 +281,7 @@ export class ResolutionManager {
         height: 1440,
         ratio: 2.39,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: getResolutionName
       });
       this.resolutionsGenerated = true;
       log.info('ResolutionManager.getSupportedResolutions() generated count=%s', String(this.availableResolutions.length));

@@ -19,11 +19,25 @@ import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { BitWise } from "@/utility/BitWise";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unused-vars */
-
 
 
 const log = createScopedLogger(LogScope.Game);
+
+type MenuVoidShaderMaterial = THREE.ShaderMaterial & {
+  uniforms: {
+    u_color: { value: THREE.Color };
+    u_time: { value: number };
+    u_resolution: { value: THREE.Vector2 };
+  };
+};
+
+type MenuBackgroundShaderMaterial = THREE.ShaderMaterial & {
+  uniforms: {
+    map: { value: OdysseyTexture | THREE.Texture | null };
+    u_time: { value: number };
+    u_resolution: { value: THREE.Vector2 };
+  };
+};
 
 /**
  * GameMenu class.
@@ -123,7 +137,7 @@ export class GameMenu {
     this.width = extent.width;
     this.height = extent.height;
 
-    const panelControl = this.tGuiPanel.createControl();
+    this.tGuiPanel.createControl();
 
     if (this.voidFill) {
       this.tGuiPanel.widget.add(this.backgroundVoidSprite);
@@ -182,7 +196,8 @@ export class GameMenu {
       this.backgroundVoidSprite.renderOrder = -6;
 
       // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.0, 0.658824, 0.980392);
-      this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.10196078568697, 0.69803923368454, 0.549019634723663);
+      const backgroundVoidMaterial = this.backgroundVoidMaterial as MenuVoidShaderMaterial;
+      backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.10196078568697, 0.69803923368454, 0.549019634723663);
       // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(1.0, 1.0, 1.0);
     }
 
@@ -203,7 +218,8 @@ export class GameMenu {
       this.backgroundSprite = new THREE.Mesh(geometry, this.backgroundMaterial);
       this.backgroundSprite.position.z = -5;
       this.backgroundSprite.renderOrder = -5;
-      this.backgroundMaterial.uniforms.map.value = texture;
+      const backgroundMaterial = this.backgroundMaterial as MenuBackgroundShaderMaterial;
+      backgroundMaterial.uniforms.map.value = texture;
     }
   }
 
@@ -288,14 +304,16 @@ export class GameMenu {
       return;
 
     if (this.voidFill) {
-      this.backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
-      this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
+      const backgroundVoidMaterial = this.backgroundVoidMaterial as MenuVoidShaderMaterial;
+      backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
+      backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
       this.backgroundVoidSprite.scale.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), 1);
     }
 
     if (this.background) {
-      this.backgroundMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
-      this.backgroundMaterial.uniforms.u_resolution.value.set(1600, 1200);
+      const backgroundMaterial = this.backgroundMaterial as MenuBackgroundShaderMaterial;
+      backgroundMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
+      backgroundMaterial.uniforms.u_resolution.value.set(1600, 1200);
     }
 
     if (this.activeControls.length) {
@@ -445,19 +463,19 @@ export class GameMenu {
     }
   }
 
-  triggerControllerLStickXPress(positive = false) {
+  triggerControllerLStickXPress(_positive = false) {
 
   }
 
-  triggerControllerLStickYPress(positive = false) {
+  triggerControllerLStickYPress(_positive = false) {
 
   }
 
-  triggerControllerRStickXPress(positive = false) {
+  triggerControllerRStickXPress(_positive = false) {
 
   }
 
-  triggerControllerRStickYPress(positive = false) {
+  triggerControllerRStickYPress(_positive = false) {
 
   }
 
@@ -505,7 +523,7 @@ export class GameMenu {
       text = text.replace(keymap.tokenRegEx, keymap.character);
     });
 
-    text = text.replace(/<CUSTOM(\d+)>/gm, function (match, p1, offset, string) {
+    text = text.replace(/<CUSTOM(\d+)>/gm, function (_match: string, p1: string) {
       return GameState.module.getCustomToken(parseInt(p1));
     });
 

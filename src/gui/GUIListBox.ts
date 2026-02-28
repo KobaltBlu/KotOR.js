@@ -15,8 +15,6 @@ import type { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
-
 
 const log = createScopedLogger(LogScope.Game);
 
@@ -325,7 +323,8 @@ export class GUIListBox extends GUIControl {
             ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
 
             widget = ctrl.createControl();
-            ctrl.setText(node.getName());
+            const nodeName = typeof node === 'string' ? node : node.getName();
+            ctrl.setText(nodeName);
 
             this.itemGroup.add(widget);
 
@@ -493,23 +492,6 @@ export class GUIListBox extends GUIControl {
 
   cullOffscreen(){
     return;
-    const parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3())
-    this.minY = parentPos.y + this.extent.height/2;
-    this.maxY = parentPos.y - this.extent.height/2;
-
-    const nodePadding = 0;//(this.getNodeHeight()/2);
-
-    const nodes = this.itemGroup.children;
-    for(let i = 0; i < nodes.length; i++){
-      const control = nodes[i].userData.control;
-      const nodePos = control.updateWorldPosition(); //getWorldPosition(nodes[i].control.worldPosition);
-      const nodeTop = nodePos.y + control.extent.height/2 - nodePadding;
-      const nodeBottom = nodePos.y - control.extent.height/2 + nodePadding;
-      const height = nodeBottom - nodeTop;
-      const nodeCenter = nodeTop + height/2;
-      const inside = ( (nodeTop < this.minY && nodeBottom > this.maxY) || (nodeCenter < this.minY && nodeCenter > this.maxY) );
-      nodes[i].visible = inside;
-    }
   }
 
   isScrollBarLeft(){
@@ -620,12 +602,14 @@ export class GUIListBox extends GUIControl {
       //controls = controls.concat( this.scrollbar.getActiveControls() );
     }
 
-    if(this.scrollbar.upArrow.userData.box.containsPoint(Mouse.positionUI)){
+    const upArrowBox = (this.scrollbar.upArrow.userData as { box?: THREE.Box2 }).box;
+    if(upArrowBox?.containsPoint(Mouse.positionUI)){
       controls.push(this.scrollbar);
       //controls = controls.concat( this.scrollbar.getActiveControls() );
     }
 
-    if(this.scrollbar.downArrow.userData.box.containsPoint(Mouse.positionUI)){
+    const downArrowBox = (this.scrollbar.downArrow.userData as { box?: THREE.Box2 }).box;
+    if(downArrowBox?.containsPoint(Mouse.positionUI)){
       controls.push(this.scrollbar);
       //controls = controls.concat( this.scrollbar.getActiveControls() );
     }

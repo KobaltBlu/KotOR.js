@@ -2,7 +2,10 @@ import EngineLocation from "@/engine/EngineLocation";
 import { IEngineGlobals } from "@/interface/engine/IEngineGlobals";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 
-/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-call */
+interface IGlobalCategoryRow {
+  type: 'Boolean' | 'Location' | 'Number' | 'String' | string;
+  name: string;
+}
 
 /**
  * GlobalVariableManager class.
@@ -23,10 +26,14 @@ export class GlobalVariableManager {
   };
 
   public static Init(){
-    const _initGlobals = TwoDAManager.datatables.get('globalcat').rows;
-    for (const key in _initGlobals) {
-      if (Object.hasOwn(_initGlobals, key)) {
-        const globItem = _initGlobals[key];
+    const globalCategoryTable = TwoDAManager.datatables.get('globalcat');
+    if(!globalCategoryTable){
+      return;
+    }
+    const initGlobals = globalCategoryTable.rows as Record<string, IGlobalCategoryRow>;
+    for (const key in initGlobals) {
+      if (Object.hasOwn(initGlobals, key)) {
+        const globItem = initGlobals[key];
 
         switch(globItem.type){
           case 'Boolean':

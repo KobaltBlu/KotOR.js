@@ -2,10 +2,9 @@ import * as THREE from "three";
 
 import { GameState } from "@/GameState";
 import type { GUIControl } from "@/gui/GUIControl";
+import type { IGUIShaderMaterial } from "@/interface/gui/IGUIShaderMaterial";
 import type { LightManager } from "@/managers";
 import { OdysseyModel3D } from "@/three/odyssey";
-
-/* eslint-disable @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 
 
 /**
@@ -93,7 +92,7 @@ export class LBL_3DView {
     // this.control.getFill().material.uniforms.map.value = this.texture.texture;
     const material = this.control.getFill().material;
     if (material instanceof THREE.ShaderMaterial) {
-      material.uniforms.diffuse.value.setHex(0xFFFFFF);
+      (material as IGUIShaderMaterial).uniforms.diffuse.value.setHex(0xFFFFFF);
     }
   }
 

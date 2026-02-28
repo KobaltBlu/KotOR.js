@@ -23,17 +23,20 @@ import { IGUIControlExtent } from "@/interface/gui/IGUIControlExtent";
 import type { IGUIControlListNode } from "@/interface/gui/IGUIControlListNode";
 import { IGUIControlMoveTo } from "@/interface/gui/IGUIControlMoveTo";
 import { IGUIControlText } from "@/interface/gui/IGUIControlText";
+import type { IGUIShaderMaterial } from "@/interface/gui/IGUIShaderMaterial";
 import { TextureLoader } from "@/loaders";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { BitWise } from "@/utility/BitWise";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-this-alias, @typescript-eslint/no-unused-vars */
-
 
 
 const log = createScopedLogger(LogScope.Game);
+const mergeBufferGeometries = BufferGeometryUtils.mergeBufferGeometries as (
+  geometries: THREE.BufferGeometry[],
+  useGroups?: boolean
+) => THREE.BufferGeometry | null;
 
 /** Duck-typed source for control init (GFFStruct or plain object with same shape). */
 interface IGUIControlInitSource {
@@ -44,6 +47,17 @@ interface IGUIControlInitSource {
 interface IGUIControlFieldLike { getValue(): unknown }
 interface IGUIControlVectorLike { getVector(): THREE.Vector3 }
 interface IGUIControlStructLike { hasField?(label: string): boolean; getFieldByLabel?(label: string): unknown; getChildStructs?(): unknown[] }
+interface IGUIColorVectorLike { x: number; y: number; z: number }
+interface IGUIWidgetUserData {
+  control?: GUIControl;
+  border?: THREE.Group;
+  highlight?: THREE.Group;
+  fill?: THREE.Group;
+  text?: THREE.Group;
+  selected?: THREE.Group;
+  highlightSelected?: THREE.Group;
+  [key: string]: unknown;
+}
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -181,6 +195,27 @@ export class GUIControl {
 
   userData: Record<string, unknown> = {};
 
+  private getWidgetUserData(): IGUIWidgetUserData {
+    return this.widget.userData as IGUIWidgetUserData;
+  }
+
+  private getWidgetGroup(groupName: 'border' | 'highlight' | 'fill' | 'text'): THREE.Group {
+    const widgetUserData = this.getWidgetUserData();
+    const existingGroup = widgetUserData[groupName];
+    if (existingGroup instanceof THREE.Group) {
+      return existingGroup;
+    }
+
+    const createdGroup = new THREE.Group();
+    widgetUserData[groupName] = createdGroup;
+    this.widget.add(createdGroup);
+    return createdGroup;
+  }
+
+  private getBorderChild(index: number): THREE.Object3D | undefined {
+    return this.getWidgetGroup('border').children[index];
+  }
+
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl | undefined, scale: boolean = false) {
 
     this.menu = menu;
@@ -191,7 +226,8 @@ export class GUIControl {
     this.offset = new THREE.Vector2();
 
     this.widget = new THREE.Group();
-    this.widget.userData.control = this;
+    const widgetUserData = this.getWidgetUserData();
+    widgetUserData.control = this;
 
     this.worldPosition = new THREE.Vector3();
     this.box = new THREE.Box2(
@@ -220,15 +256,15 @@ export class GUIControl {
     this.opacity = 1;
     this.hover = false;
 
-    this.widget.userData.border = new THREE.Group();
-    this.widget.userData.highlight = new THREE.Group();
-    this.widget.userData.fill = new THREE.Group();
-    this.widget.userData.text = new THREE.Group();
+    widgetUserData.border = new THREE.Group();
+    widgetUserData.highlight = new THREE.Group();
+    widgetUserData.fill = new THREE.Group();
+    widgetUserData.text = new THREE.Group();
 
-    this.widget.add(this.widget.userData.border);
-    this.widget.add(this.widget.userData.highlight);
-    this.widget.add(this.widget.userData.fill);
-    this.widget.add(this.widget.userData.text);
+    this.widget.add(widgetUserData.border);
+    this.widget.add(widgetUserData.highlight);
+    this.widget.add(widgetUserData.fill);
+    this.widget.add(widgetUserData.text);
 
     this.initObjects();
     this.initInputListeners();
@@ -305,7 +341,7 @@ export class GUIControl {
     this.border.corner_material.uniforms.diffuse.value = this.border.color;
 
     this.border.mesh = new THREE.Mesh(this.border.geometry, [this.border.edge_material, this.border.corner_material]);
-    this.widget.userData.border.add(this.border.mesh);
+    this.getWidgetGroup('border').add(this.border.mesh);
 
     //-------------//
     // Border Fill
@@ -327,7 +363,7 @@ export class GUIControl {
     this.border.fill.geometry = new THREE.PlaneGeometry(1, 1, 1) as THREE.BufferGeometry;
     this.border.fill.mesh = new THREE.Mesh(this.border.fill.geometry, this.border.fill.material);
 
-    this.widget.userData.border.add(this.border.fill.mesh);
+    this.getWidgetGroup('border').add(this.border.fill.mesh);
 
     //-----------//
     // Highlight
@@ -383,7 +419,7 @@ export class GUIControl {
     this.highlight.corner_material.uniforms.diffuse.value = this.highlight.color;
 
     this.highlight.mesh = new THREE.Mesh(this.highlight.geometry, [this.highlight.edge_material, this.highlight.corner_material]);
-    this.widget.userData.highlight.add(this.highlight.mesh);
+    this.getWidgetGroup('highlight').add(this.highlight.mesh);
 
     //----------------//
     // Highlight Fill
@@ -404,7 +440,7 @@ export class GUIControl {
     this.highlight.fill.geometry = new THREE.PlaneGeometry(1, 1, 1);
     this.highlight.fill.mesh = new THREE.Mesh(this.highlight.fill.geometry, this.highlight.fill.material);
 
-    this.widget.userData.highlight.add(this.highlight.fill.mesh);
+    this.getWidgetGroup('highlight').add(this.highlight.fill.mesh);
 
     //------//
     // Text
@@ -690,7 +726,20 @@ export class GUIControl {
       const has = (label: string) => (typeof c.hasField === 'function' ? c.hasField(label) : label in c);
       const get = (label: string) => (typeof c.getFieldByLabel === 'function' ? c.getFieldByLabel(label) : (c as Record<string, unknown>)[label]);
       const val = (f: IGUIControlFieldLike | unknown) => (f != null && typeof (f as IGUIControlFieldLike).getValue === 'function' ? (f as IGUIControlFieldLike).getValue() : f);
-      const vec = (f: IGUIControlVectorLike | undefined) => (f != null && typeof (f as IGUIControlVectorLike).getVector === 'function' ? (f as IGUIControlVectorLike).getVector() : f);
+      const vec = (f: IGUIControlVectorLike | unknown): IGUIColorVectorLike | undefined => {
+        const raw = f != null && typeof (f as IGUIControlVectorLike).getVector === 'function'
+          ? (f as IGUIControlVectorLike).getVector()
+          : f;
+        if (
+          raw != null
+          && typeof (raw as IGUIColorVectorLike).x === 'number'
+          && typeof (raw as IGUIColorVectorLike).y === 'number'
+          && typeof (raw as IGUIColorVectorLike).z === 'number'
+        ) {
+          return raw as IGUIColorVectorLike;
+        }
+        return undefined;
+      };
       const child = (f: IGUIControlStructLike | null | undefined): IGUIControlStructLike | undefined => {
         if (f == null) return undefined;
         if (typeof (f as IGUIControlStructLike).getChildStructs === 'function') {
@@ -1091,7 +1140,7 @@ export class GUIControl {
       if (this.hasHighlight) {
         this.buildHighlight();
       }
-    } catch (_e: unknown) {
+    } catch {
       //Must not have a border
     }
 
@@ -1394,7 +1443,7 @@ export class GUIControl {
   setFillColor(r = 1, g = 1, b = 1) {
     //0.0, 0.658824, 0.980392
     if (typeof this.getFill() != 'undefined') {
-      (this.getFill().material as THREE.ShaderMaterial).uniforms.diffuse.value.setRGB(r, g, b);
+      (this.getFill().material as IGUIShaderMaterial).uniforms.diffuse.value.setRGB(r, g, b);
     }
   }
 
@@ -1447,7 +1496,7 @@ export class GUIControl {
     return;
   }
 
-  setMaterialTexture(material: THREE.ShaderMaterial, texture: THREE.Texture | null) {
+  setMaterialTexture(material: IGUIShaderMaterial, texture: THREE.Texture | null) {
     if (!(material instanceof THREE.ShaderMaterial))
       return false;
 
@@ -1460,8 +1509,9 @@ export class GUIControl {
     if (texture instanceof THREE.Texture) {
       material.visible = true;
       material.uniforms.opacity.value = 1;
-      material.uniforms.uvTransform.value = material.uniforms.map.value.matrix;
-      material.uniforms.map.value.updateMatrix();
+      const mapValue = material.uniforms.map.value;
+      material.uniforms.uvTransform.value = mapValue.matrix;
+      mapValue.updateMatrix();
       material.defines.USE_UV = '';
       material.defines.USE_MAP = '';
     } else {
@@ -1947,7 +1997,7 @@ export class GUIControl {
   }
 
   getHighlightExtent(side: string) {
-    const extent = this.getControlExtent();
+    this.getControlExtent();
     const inner = this.getInnerSize();
 
     let top = 0, left = 0, width = 0, height = 0;
@@ -2103,7 +2153,11 @@ export class GUIControl {
     if (this.border.geometry instanceof THREE.BufferGeometry)
       this.border.geometry.dispose();
 
-    this.border.geometry = BufferGeometryUtils.mergeBufferGeometries(planes, false);
+    const mergedBorderGeometry = mergeBufferGeometries(planes, false);
+    if (!mergedBorderGeometry) {
+      return;
+    }
+    this.border.geometry = mergedBorderGeometry;
     this.border.geometry.computeBoundingBox();
 
     //Edge Group
@@ -2188,7 +2242,11 @@ export class GUIControl {
     if (this.highlight.geometry instanceof THREE.BufferGeometry)
       this.highlight.geometry.dispose();
 
-    this.highlight.geometry = BufferGeometryUtils.mergeBufferGeometries(planes, false);
+    const mergedHighlightGeometry = mergeBufferGeometries(planes, false);
+    if (!mergedHighlightGeometry) {
+      return;
+    }
+    this.highlight.geometry = mergedHighlightGeometry;
     this.highlight.geometry.computeBoundingBox();
 
     //Edge Group
@@ -2227,7 +2285,7 @@ export class GUIControl {
     if (this.text.mesh.parent)
       this.text.mesh.parent.remove(this.text.mesh);
 
-    this.widget.userData.text.add(this.text.mesh);
+    this.getWidgetGroup('text').add(this.text.mesh);
 
     const texture = this.text.texture;
     texture.flipY = false;
@@ -2239,13 +2297,14 @@ export class GUIControl {
     if (this.text.text != '' || (this.text.strref != 0 && typeof GameState.TLKManager.TLKStrings[this.text.strref] != 'undefined'))
       this.updateTextGeometry(this.text.text != '' ? this.menu.gameStringParse(this.text.text) : this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref].Value));
 
-    this.text.geometry.computeBoundingSphere = function () {
+    this.text.geometry.computeBoundingSphere = function (this: THREE.BufferGeometry) {
       if (this.boundingSphere === null) {
         this.boundingSphere = new THREE.Sphere()
       }
 
-      const positions = this.attributes.position.array
-      const itemSize = this.attributes.position.itemSize
+      const positionAttribute = this.attributes.position;
+      const positions = positionAttribute?.array as Float32Array | undefined;
+      const itemSize = positionAttribute?.itemSize;
       if (!positions || !itemSize || positions.length < 2) {
         this.boundingSphere.radius = 0
         this.boundingSphere.center.set(0, 0, 0)
@@ -2257,19 +2316,24 @@ export class GUIControl {
       }
     };
 
-    const ctrl = this;
+    const computeBox = (positions: ArrayLike<number>, output: THREE.Box3) => this.computeBox(positions, output);
     this.text.geometry.computeBoundingBox = function (this: THREE.BufferGeometry) {
       if (this.boundingBox === null) {
         this.boundingBox = new THREE.Box3();
       }
       const bbox = this.boundingBox;
-      const positions = this.attributes.position.array;
-      const itemSize = this.attributes.position.itemSize;
+      const positionAttribute = this.getAttribute('position');
+      if (!(positionAttribute instanceof THREE.BufferAttribute)) {
+        bbox.makeEmpty();
+        return;
+      }
+      const positions = positionAttribute.array;
+      const itemSize = positionAttribute.itemSize;
       if (!positions || !itemSize || positions.length < 2) {
         bbox.makeEmpty();
         return;
       }
-      ctrl.computeBox(positions, bbox);
+      computeBox(positions, bbox);
     };
   }
 
@@ -2287,7 +2351,7 @@ export class GUIControl {
       return;
 
     if (this.guiFont) {
-      this.guiFont.buildGeometry(this.text.geometry, this.text.text, this.text.alignment, this.getOuterSize().width);
+      this.guiFont.buildGeometry(this.text.geometry, text, this.text.alignment, this.getOuterSize().width);
       this.alignText();
     }
 
@@ -2303,24 +2367,25 @@ export class GUIControl {
     if (this.text.geometry && this.text.geometry.boundingBox) {
       this.text.geometry.boundingBox.getSize(this.textSize);
     }
-    this.widget.userData.text.position.z = this.zOffset;
+    const textGroup = this.getWidgetGroup('text');
+    textGroup.position.z = this.zOffset;
 
     const innerSize = this.getInnerSize()
 
     //Horizontal Alignment moved to GUIFont
     // const horizontal = this.text.alignment & GUIControlAlignment.HorizontalMask;
-    this.widget.userData.text.position.x = -(innerSize.width / 2 - this.textSize.x / 2) - this.textSize.x / 2;
+    textGroup.position.x = -(innerSize.width / 2 - this.textSize.x / 2) - this.textSize.x / 2;
 
     const vertical = this.text.alignment & GUIControlAlignment.VerticalMask;
     switch (vertical) {
       case GUIControlAlignment.VerticalTop:
-        this.widget.userData.text.position.y = (innerSize.height / 2 - this.textSize.y / 2) + this.textSize.y / 2;
+        textGroup.position.y = (innerSize.height / 2 - this.textSize.y / 2) + this.textSize.y / 2;
         break;
       case GUIControlAlignment.VerticalCenter:
-        this.widget.userData.text.position.y = this.textSize.y / 2;
+        textGroup.position.y = this.textSize.y / 2;
         break;
       case GUIControlAlignment.VerticalBottom:
-        this.widget.userData.text.position.y = -(innerSize.height / 2 - this.textSize.y / 2) + this.textSize.y / 2;
+        textGroup.position.y = -(innerSize.height / 2 - this.textSize.y / 2) + this.textSize.y / 2;
         break;
     }
 
@@ -2404,19 +2469,17 @@ export class GUIControl {
   }
 
   setText(str: string | { toString(): string } = '', renderOrder = 5) {
-    if (typeof str !== 'string')
-      str = str.toString();
-
-    str = str.trim();
+    const normalizedText = typeof str === 'string' ? str : str.toString();
+    const trimmedText = normalizedText.trim();
 
     const oldText = this.text.text;
-    this.text.text = this.menu.gameStringParse(str);
+    this.text.text = this.menu.gameStringParse(trimmedText) as string;
 
     if (typeof this.text.geometry !== 'object')
       this.buildText();
 
     if (this.text.mesh) {
-      this.text.mesh.renderOrder = undefined;//renderOrder;
+      this.text.mesh.renderOrder = renderOrder;
     }
 
     if (oldText != this.text.text && typeof this.text.geometry === 'object') {
@@ -2471,28 +2534,41 @@ export class GUIControl {
   resizeBorder(side: string) {
 
     const extent = this.getBorderExtent(side);
+    const borderChildren = this.getWidgetGroup('border').children;
 
     switch (side) {
-      case 'top':
-        this.widget.userData.border.children[0].position.set(extent.left, extent.top, 1); // top
-        this.widget.userData.border.children[0].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[0].scale.y = extent.height || 0.000001;
+      case 'top': {
+        const topChild = borderChildren[0];
+        if (!topChild) break;
+        topChild.position.set(extent.left, extent.top, 1);
+        topChild.scale.x = extent.width || 0.000001;
+        topChild.scale.y = extent.height || 0.000001;
         break;
-      case 'left':
-        this.widget.userData.border.children[1].position.set(extent.left, extent.top, 1); // left
-        this.widget.userData.border.children[1].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[1].scale.y = extent.height || 0.000001;
+      }
+      case 'left': {
+        const leftChild = borderChildren[1];
+        if (!leftChild) break;
+        leftChild.position.set(extent.left, extent.top, 1);
+        leftChild.scale.x = extent.width || 0.000001;
+        leftChild.scale.y = extent.height || 0.000001;
         break;
-      case 'right':
-        this.widget.userData.border.children[2].position.set(extent.left, extent.top, 1); // right
-        this.widget.userData.border.children[2].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[2].scale.y = extent.height || 0.000001;
+      }
+      case 'right': {
+        const rightChild = borderChildren[2];
+        if (!rightChild) break;
+        rightChild.position.set(extent.left, extent.top, 1);
+        rightChild.scale.x = extent.width || 0.000001;
+        rightChild.scale.y = extent.height || 0.000001;
         break;
-      case 'bottom':
-        this.widget.userData.border.children[3].position.set(extent.left, extent.top, 1); // bottom
-        this.widget.userData.border.children[3].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[3].scale.y = extent.height || 0.000001;
+      }
+      case 'bottom': {
+        const bottomChild = borderChildren[3];
+        if (!bottomChild) break;
+        bottomChild.position.set(extent.left, extent.top, 1);
+        bottomChild.scale.x = extent.width || 0.000001;
+        bottomChild.scale.y = extent.height || 0.000001;
         break;
+      }
     }
 
   }
@@ -2500,33 +2576,46 @@ export class GUIControl {
   resizeCorner(side: string) {
 
     const extent = this.getBorderExtent(side);
+    const borderChildren = this.getWidgetGroup('border').children;
 
     switch (side) {
-      case 'topLeft':
-        this.widget.userData.border.children[4].position.set(extent.left, extent.top, 1); // top
-        this.widget.userData.border.children[4].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[4].scale.y = extent.height || 0.000001;
+      case 'topLeft': {
+        const topLeftChild = borderChildren[4];
+        if (!topLeftChild) break;
+        topLeftChild.position.set(extent.left, extent.top, 1);
+        topLeftChild.scale.x = extent.width || 0.000001;
+        topLeftChild.scale.y = extent.height || 0.000001;
         break;
-      case 'topRight':
-        this.widget.userData.border.children[5].position.set(extent.left, extent.top, 1); // left
-        this.widget.userData.border.children[5].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[5].scale.y = extent.height || 0.000001;
+      }
+      case 'topRight': {
+        const topRightChild = borderChildren[5];
+        if (!topRightChild) break;
+        topRightChild.position.set(extent.left, extent.top, 1);
+        topRightChild.scale.x = extent.width || 0.000001;
+        topRightChild.scale.y = extent.height || 0.000001;
         break;
-      case 'bottomLeft':
-        this.widget.userData.border.children[6].position.set(extent.left, extent.top, 1); // right
-        this.widget.userData.border.children[6].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[6].scale.y = extent.height || 0.000001;
+      }
+      case 'bottomLeft': {
+        const bottomLeftChild = borderChildren[6];
+        if (!bottomLeftChild) break;
+        bottomLeftChild.position.set(extent.left, extent.top, 1);
+        bottomLeftChild.scale.x = extent.width || 0.000001;
+        bottomLeftChild.scale.y = extent.height || 0.000001;
         break;
-      case 'bottomRight':
-        this.widget.userData.border.children[7].position.set(extent.left, extent.top, 1); // bottom
-        this.widget.userData.border.children[7].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[7].scale.y = extent.height || 0.000001;
+      }
+      case 'bottomRight': {
+        const bottomRightChild = borderChildren[7];
+        if (!bottomRightChild) break;
+        bottomRightChild.position.set(extent.left, extent.top, 1);
+        bottomRightChild.scale.x = extent.width || 0.000001;
+        bottomRightChild.scale.y = extent.height || 0.000001;
         break;
+      }
     }
 
   }
 
-  resizeHighlight(side: string) {
+  resizeHighlight(_side: string) {
 
     /*let extent = this.getHighlightExtent(side);
 
@@ -2591,7 +2680,7 @@ export class GUIControl {
 
   }
 
-  resizeHighlightCorner(side: string) {
+  resizeHighlightCorner(_side: string) {
 
     /*let extent = this.getHighlightExtent(side);
 
@@ -2749,7 +2838,7 @@ export class GUIControl {
 
   }
 
-  bounds(positions: number[] = []) {
+  bounds(positions: ArrayLike<number> = []) {
     const count = positions.length / itemSize
     box.min[0] = positions[0]
     box.min[1] = positions[1]
@@ -2766,13 +2855,13 @@ export class GUIControl {
     }
   }
 
-  computeBox(positions: number[] = [], output: THREE.Box3) {
+  computeBox(positions: ArrayLike<number> = [], output: THREE.Box3) {
     this.bounds(positions)
     output.min.set(box.min[0], box.min[1], 0)
     output.max.set(box.max[0], box.max[1], 0)
   }
 
-  computeSphere(positions: number[] = [], output: THREE.Sphere) {
+  computeSphere(positions: ArrayLike<number> = [], output: THREE.Sphere) {
     this.bounds(positions)
     const minX = box.min[0]
     const minY = box.min[1]

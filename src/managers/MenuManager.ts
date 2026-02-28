@@ -8,7 +8,6 @@ import type { GUIControl, GameMenu } from "@/gui";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 
 const log = createScopedLogger(LogScope.Manager);
 

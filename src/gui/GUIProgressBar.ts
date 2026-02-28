@@ -11,7 +11,6 @@ import type { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
 
 const log = createScopedLogger(LogScope.Game);
 
@@ -40,8 +39,10 @@ export class GUIProgressBar extends GUIControl {
     this.curValue = control.hasField('CURVALUE') ? control.getNumberByLabel('CURVALUE') : 0;
     this.maxValue = control.hasField('MAXVALUE') ? control.getNumberByLabel('MAXVALUE') : 0;
 
-    this.widget.userData.progress = new THREE.Group();
-    this.widget.add(this.widget.userData.progress);
+    const widgetUserData = this.widget.userData as { progress?: THREE.Group };
+    const progressGroup = new THREE.Group();
+    widgetUserData.progress = progressGroup;
+    this.widget.add(progressGroup);
 
     //----------//
     // Progress
@@ -97,7 +98,7 @@ export class GUIProgressBar extends GUIControl {
     this.progress.corner_material.uniforms.diffuse.value = this.progress.color;
 
     this.progress.mesh = new THREE.Mesh( this.progress.geometry, [this.progress.edge_material, this.progress.corner_material] );
-    this.widget.userData.progress.add(this.progress.mesh);
+    progressGroup.add(this.progress.mesh);
 
     //---------------//
     // Progress Fill
@@ -117,7 +118,7 @@ export class GUIProgressBar extends GUIControl {
     this.progress.fill.mesh = new THREE.Mesh( this.progress.fill.geometry, this.progress.fill.material );
     this.progress.fill.mesh.position.z = this.zOffset + 1;
 
-    this.widget.userData.progress.add( this.progress.fill.mesh );
+    progressGroup.add( this.progress.fill.mesh );
 
     if(this.control){
 

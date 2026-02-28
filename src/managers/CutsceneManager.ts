@@ -20,8 +20,6 @@ import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 import { BitWise } from "@/utility/BitWise";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-
 const log = createScopedLogger(LogScope.Game);
 
 const ENTRY_DELAY = 3000;

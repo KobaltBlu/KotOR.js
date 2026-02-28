@@ -6,22 +6,13 @@ import { GameState } from "@/GameState";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
 import type { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
+import type { IGUIShaderMaterial } from "@/interface/gui/IGUIShaderMaterial";
 import { TextureLoader } from "@/loaders";
 import { GFFStruct } from "@/resource/GFFStruct";
 import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
-
 const log = createScopedLogger(LogScope.Game);
-
-type GUIShaderMaterial = THREE.ShaderMaterial & {
-  defines: Record<string, string>;
-  uniforms: {
-    diffuse: { value: THREE.Color };
-    opacity: { value: number };
-  };
-};
 
 /**
  * GUICheckBox class.
@@ -90,7 +81,7 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    }) as GUIShaderMaterial;
+    }) as IGUIShaderMaterial;
     this.borderSelected.edge_material = borderEdgeMaterial;
     borderEdgeMaterial.defines.USE_MAP = '';
     borderEdgeMaterial.uniforms.diffuse.value = this.borderSelected.color;
@@ -104,7 +95,7 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    }) as GUIShaderMaterial;
+    }) as IGUIShaderMaterial;
     this.borderSelected.corner_material = borderCornerMaterial;
     //this.borderSelected.corner_material.defines.USE_MAP = '';
     borderCornerMaterial.uniforms.diffuse.value = this.borderSelected.color;
@@ -125,7 +116,7 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    }) as GUIShaderMaterial;
+    }) as IGUIShaderMaterial;
     this.borderSelected.fill.material = borderFillMaterial;
     //this.borderSelected.fill.material.defines.USE_MAP = '';
     borderFillMaterial.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
@@ -170,7 +161,7 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    }) as GUIShaderMaterial;
+    }) as IGUIShaderMaterial;
     this.highlightSelected.edge_material = highlightEdgeMaterial;
     highlightEdgeMaterial.defines.USE_MAP = '';
     highlightEdgeMaterial.uniforms.diffuse.value = this.highlightSelected.color;
@@ -184,7 +175,7 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    }) as GUIShaderMaterial;
+    }) as IGUIShaderMaterial;
     this.highlightSelected.corner_material = highlightCornerMaterial;
     //this.highlightSelected.corner_material.defines.USE_MAP = '';
     highlightCornerMaterial.uniforms.diffuse.value = this.highlightSelected.color;
@@ -205,7 +196,7 @@ export class GUICheckBox extends GUIControl{
       side: THREE.FrontSide,
       fog: false,
       visible: true
-    }) as GUIShaderMaterial;
+    }) as IGUIShaderMaterial;
     this.highlightSelected.fill.material = highlightFillMaterial;
     //this.highlightSelected.fill.material.defines.USE_MAP = '';
     highlightFillMaterial.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
@@ -388,8 +379,10 @@ export class GUICheckBox extends GUIControl{
     this.borderSelected.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
     this.highlightSelected.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
 
-    this.borderSelected.fill.material.uniforms.diffuse.value.set(this.defaultColor);
-    this.highlightSelected.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
+    const borderSelectedFillMaterial = this.borderSelected.fill.material as IGUIShaderMaterial;
+    const highlightSelectedFillMaterial = this.highlightSelected.fill.material as IGUIShaderMaterial;
+    borderSelectedFillMaterial.uniforms.diffuse.value.set(this.defaultColor);
+    highlightSelectedFillMaterial.uniforms.diffuse.value.set(this.defaultHighlightColor);
 
     this.updateCBVisualState();
   }
@@ -404,7 +397,8 @@ export class GUICheckBox extends GUIControl{
     const cbSize = this.getCBScale();
     this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.border.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
-    this.border.fill.material.uniforms.diffuse.value.set(this.defaultColor);
+    const borderFillMaterial = this.border.fill.material as IGUIShaderMaterial;
+    borderFillMaterial.uniforms.diffuse.value.set(this.defaultColor);
   }
 
   buildHighlightFill(){
@@ -412,7 +406,8 @@ export class GUICheckBox extends GUIControl{
     const cbSize = this.getCBScale();
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
-    this.highlight.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
+    const highlightFillMaterial = this.highlight.fill.material as IGUIShaderMaterial;
+    highlightFillMaterial.uniforms.diffuse.value.set(this.defaultHighlightColor);
   }
 
   hideHighlight(){}

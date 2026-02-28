@@ -263,7 +263,7 @@ export class ModuleObjectManager {
           const distanceA = a.getModel().position.distanceTo(oObject.getModel().position);
           const distanceB = b.getModel().position.distanceTo(oObject.getModel().position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(_e){
+        }catch{
           return 0;
         }
       }
@@ -291,7 +291,7 @@ export class ModuleObjectManager {
           const distanceA = a.position.distanceTo(oObject.position);
           const distanceB = b.position.distanceTo(oObject.position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(_e){
+        }catch{
           return 0;
         }
       }
@@ -354,7 +354,7 @@ export class ModuleObjectManager {
           const distanceA = a.position.distanceTo(oObject.position);
           const distanceB = b.position.distanceTo(oObject.position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(_e){
+        }catch{
           return 0;
         }
       }

@@ -3,8 +3,6 @@ import * as THREE from "three";
 import type { ModuleObject } from "@/module";
 import { OdysseyLight3D } from "@/three/odyssey";
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument */
-
 interface IOdysseyAnimatedLightUniformStruct {
   position: THREE.Vector3;
   color: THREE.Color;

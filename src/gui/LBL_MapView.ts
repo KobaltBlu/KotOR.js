@@ -6,11 +6,10 @@ import { GameEngineType } from "@/enums/engine";
 import { MapMode } from "@/enums/engine/MapMode";
 import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
 import { GameState } from "@/GameState";
+import type { IGUIShaderMaterial } from "@/interface/gui/IGUIShaderMaterial";
 import { TextureLoader } from "@/loaders";
 import { AreaMap, ModuleWaypoint } from "@/module";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
 
 
 
@@ -20,6 +19,21 @@ const FOG_SIZE = 64;
 const _FOG_SIZE_HALF = FOG_SIZE/2;
 
 const planeGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
+
+type MapFogShaderMaterial = THREE.ShaderMaterial & {
+  uniforms: {
+    map: { value: THREE.Texture | null };
+    alphaMap: { value: THREE.Texture | null };
+    mapRes: { value: THREE.Vector2 };
+  };
+  defines: Record<string, string>;
+};
+
+type MapNoteMesh = THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> & {
+  userData: {
+    moduleObject: ModuleWaypoint;
+  };
+};
 
 /**
  * LBL_MapView class.
@@ -192,7 +206,7 @@ export class LBL_MapView {
 
     const material = this.control.getFill().material;
     if(material instanceof THREE.ShaderMaterial){
-      material.uniforms.diffuse.value.setHex(0xFFFFFF);
+      (material as IGUIShaderMaterial).uniforms.diffuse.value.setHex(0xFFFFFF);
     }
   }
 
@@ -247,8 +261,9 @@ export class LBL_MapView {
     this.areaMap = areaMap;
     if(!this.areaMap) return;
 
-    (this.fogPlane.material as THREE.ShaderMaterial).uniforms.alphaMap.value = this.areaMap.fogAlphaTexture;
-    (this.fogPlane.material as THREE.ShaderMaterial).uniforms.mapRes.value.set(this.areaMap.mapResX+1, this.areaMap.mapResY+1);
+    const fogMaterial = this.fogPlane.material as MapFogShaderMaterial;
+    fogMaterial.uniforms.alphaMap.value = this.areaMap.fogAlphaTexture;
+    fogMaterial.uniforms.mapRes.value.set(this.areaMap.mapResX+1, this.areaMap.mapResY+1);
 
     if(this.mode == MapMode.FULLMAP){
       this.areaMap.addEventListener('mapNoteAdded', (note: ModuleWaypoint) => {
@@ -297,7 +312,7 @@ export class LBL_MapView {
   onClick(){
     for(let i = 0, len = this.mapNotes.length; i < len; i++){
       const mesh = this.mapNotes[i];
-      const note = mesh.userData.moduleObject;
+      const note = (mesh as MapNoteMesh).userData.moduleObject;
       if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
         this.bounds.min.set(mesh.position.x - (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y - (this.mapNoteDefaultScale*this.mapNoteSize/2));
         this.bounds.max.set(mesh.position.x + (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y + (this.mapNoteDefaultScale*this.mapNoteSize/2));
@@ -367,7 +382,7 @@ export class LBL_MapView {
     }
 
     for(let i = 0; i < 2; i++){
-      const pm = GameState.PartyManager.party[i+1];
+      const pm = GameState.PartyManager.party[i+1] as { position: THREE.Vector3 } | undefined;
       const mesh = this.partyGroup.children[i];
       if(this.mode == MapMode.MINIMAP){
         mesh.visible = false;
@@ -391,7 +406,7 @@ export class LBL_MapView {
       for(let i = 0, len = this.mapNotes.length; i < len; i++){
         const mesh = this.mapNotes[i];
         const material = mesh.material as THREE.MeshBasicMaterial;
-        const note = mesh.userData.moduleObject;
+        const note = (mesh as MapNoteMesh).userData.moduleObject;
         mesh.visible = note.mapNoteEnabled;
         if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
           this.bounds.min.set(mesh.position.x - (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y - (this.mapNoteDefaultScale*this.mapNoteSize/2));
@@ -454,12 +469,16 @@ export class LBL_MapView {
     let texWidth = 512;
     let texHeight = 256;
 
-    if(this.mapTexture.mipmaps.length){
-      texWidth = this.mapTexture.mipmaps[0].width;
-      texHeight = this.mapTexture.mipmaps[0].height;
-    }else if(this.mapTexture.source.data){
-      texWidth = this.mapTexture.source.data.width;
-      texHeight = this.mapTexture.source.data.height;
+    const firstMipmap = this.mapTexture.mipmaps[0] as { width: number; height: number } | undefined;
+    if(firstMipmap){
+      texWidth = firstMipmap.width;
+      texHeight = firstMipmap.height;
+    }else{
+      const sourceData = this.mapTexture.source.data as { width: number; height: number } | undefined;
+      if(sourceData){
+        texWidth = sourceData.width;
+        texHeight = sourceData.height;
+      }
     }
 
     return { width: texWidth, height: texHeight };

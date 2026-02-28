@@ -1,5 +1,4 @@
 import * as THREE from "three";
-
 import {shadertoy_perlin} from "@/shaders/chunks/ShaderToyPerlin";
 THREE.ShaderChunk.shadertoy_perlin = shadertoy_perlin;
 
@@ -12,12 +11,11 @@ import { ShaderGUIVoid } from "@/shaders/ShaderGUIVoid";
 import { ShaderOdysseyEmitter } from "@/shaders/ShaderOdysseyEmitter";
 import { ShaderOdysseyModel } from "@/shaders/ShaderOdysseyModel";
 
-
 /**
  * ShaderManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ShaderManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -36,7 +34,7 @@ export class ShaderManager {
   }
 
   static Init(){
-    
+
   }
 
 }
