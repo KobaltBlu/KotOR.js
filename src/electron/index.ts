@@ -1,5 +1,5 @@
-import { createScopedLogger, LogScope, setLogLevel, LogLevel } from "@/utility/Logger";
 import Main from "@/electron/Main";
+import { createScopedLogger, LogScope, setLogLevel, LogLevel } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Extension);
 

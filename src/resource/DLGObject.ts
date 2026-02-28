@@ -14,8 +14,8 @@ import { DLGNode } from "@/resource/DLGNode";
 import { GFFObject } from "@/resource/GFFObject";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { OdysseyModel3D } from "@/three/odyssey";
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { BitWise } from "@/utility/BitWise";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 

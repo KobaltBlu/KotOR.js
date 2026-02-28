@@ -5,8 +5,8 @@ import { EditorFile } from "@/apps/forge/EditorFile";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabState } from "@/apps/forge/states/tabs";
-import { PixelManager } from "@/utility/PixelManager";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { PixelManager } from "@/utility/PixelManager";
 
 const log = createScopedLogger(LogScope.Forge);
 

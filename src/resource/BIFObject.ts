@@ -3,8 +3,8 @@ import * as path from 'path';
 import { IResourceDiskInfo } from "@/interface/resource/IResourceDiskInfo";
 import { KEYManager } from "@/managers/KEYManager";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { GameFileSystem } from "@/utility/GameFileSystem";
 import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);

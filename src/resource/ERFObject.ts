@@ -7,8 +7,8 @@ import { IERFResource } from "@/interface/resource/IERFResource";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { GameFileSystem } from "@/utility/GameFileSystem";
 import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 

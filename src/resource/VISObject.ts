@@ -3,8 +3,8 @@ import type { IVISRoom } from "@/interface/module/IVISRoom";
 import type { ModuleArea, ModuleRoom } from "@/module";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { BitWise } from "@/utility/BitWise";
-import { GameFileSystem } from "@/utility/GameFileSystem";
 import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Resource);

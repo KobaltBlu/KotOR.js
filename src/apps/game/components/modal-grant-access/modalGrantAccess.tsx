@@ -1,8 +1,8 @@
 import React from "react";
 
-import * as KotOR from "@/apps/game/KotOR";
 import { KotORModal } from "@/apps/game/components/modal/modal";
 import { useApp } from "@/apps/game/context/AppContext";
+import * as KotOR from "@/apps/game/KotOR";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const ApplicationEnvironment = KotOR.ApplicationEnvironment;

@@ -4,8 +4,8 @@ import { EditorFile } from "@/apps/forge/EditorFile";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 import type { AudioEngine } from "@/audio/AudioEngine";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /** Typed access to audio engine to satisfy no-unsafe-call (KotOR re-export may be loosely typed). */
 function getAudioEngine(): AudioEngine {

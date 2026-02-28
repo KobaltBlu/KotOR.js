@@ -1,9 +1,9 @@
 import React from "react";
 
 import { ModalItemBrowser } from "@/apps/forge/components/modal/ModalItemBrowser";
+import * as KotOR from "@/apps/forge/KotOR";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
-import * as KotOR from "@/apps/forge/KotOR";
 
 const log = createScopedLogger(LogScope.Forge);
 

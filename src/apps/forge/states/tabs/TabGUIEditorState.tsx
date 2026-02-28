@@ -6,8 +6,8 @@ import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import { createScopedLogger, LogScope, type IScopedLogger } from "@/utility/Logger";
 import type { GameState } from "@/GameState";
+import { createScopedLogger, LogScope, type IScopedLogger } from "@/utility/Logger";
 
 const log: IScopedLogger = createScopedLogger(LogScope.Forge);
 

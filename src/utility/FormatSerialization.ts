@@ -3,7 +3,7 @@
  * Used by resource *Object classes for toJSON/fromJSON/toXML/fromXML/toYAML/fromYAML/toTOML/fromTOML.
  */
 
-import TOML from '@ltd/j-toml';
+import { parse as tomlParse, stringify as tomlStringify } from '@ltd/j-toml';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import YAML from 'yaml';
 
@@ -62,13 +62,13 @@ export function yamlToObject(yaml: string): unknown {
  * Convert a plain object to TOML string.
  * TOML has limitations with nested structures; complex objects are wrapped in a [data] section.
  */
-type TomlStringifyTable = Parameters<typeof TOML.stringify>[0];
+type TomlStringifyTable = Parameters<typeof tomlStringify>[0];
 
 export function objectToTOML(obj: unknown): string {
   try {
-    return TOML.stringify(obj as TomlStringifyTable, { newline: '\n' });
+    return tomlStringify(obj as TomlStringifyTable, { newline: '\n' });
   } catch {
-    return TOML.stringify({ data: obj } as TomlStringifyTable, { newline: '\n' });
+    return tomlStringify({ data: obj } as TomlStringifyTable, { newline: '\n' });
   }
 }
 
@@ -77,7 +77,7 @@ export function objectToTOML(obj: unknown): string {
  * If the result has a single "data" key (from objectToTOML fallback), unwrap it.
  */
 export function tomlToObject(toml: string): unknown {
-  const parsed = TOML.parse(toml) as Record<string, unknown> | undefined;
+  const parsed = tomlParse(toml) as Record<string, unknown> | undefined;
   if (parsed && typeof parsed === 'object' && Object.keys(parsed).length === 1 && 'data' in parsed) {
     return parsed.data;
   }

@@ -19,7 +19,7 @@ export interface RemoteUpdateInfo {
   [key: string]: unknown;
 }
 
-/** Parse response body as JSON; returns unknown to satisfy no-unsafe-* (fetch/JSON are typed as any). */
+/** Parse response body as JSON; returns unknown to satisfy no-unsafe-* */
 async function fetchJsonAsUnknown(res: Response): Promise<unknown> {
   const text: string = await res.text();
   return parseJsonAsUnknown(text);
