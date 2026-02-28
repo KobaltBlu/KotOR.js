@@ -211,6 +211,10 @@ export class TextureLoader {
     log.trace("UpdateMaterial", tex.name, tex.type);
     switch(tex.type){
       case TextureType.TEXTURE: {
+        if (tex.material == null) {
+          if (typeof tex.onLoad === 'function') tex.onLoad(undefined, tex);
+          return;
+        }
         const texture: OdysseyTexture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
         if(!!texture && tex.material instanceof THREE.Material){
 
@@ -241,17 +245,17 @@ export class TextureLoader {
 
           //Check to see if alpha value is set in the TPC Header
           //I think this has to do with alphaTesting... Not sure...
-          if(typeof texture.header === 'object'){
-            if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
-              if(texture.txi.blending != TXIBlending.PUNCHTHROUGH){
+          if(texture.header != null && typeof texture.header === 'object'){
+            if(texture.header.alphaTest != 1 && texture.txi?.envMapTexture == null){
+              if(texture.txi?.blending != TXIBlending.PUNCHTHROUGH){
                 tex.material.transparent = true;
               }
               
-              if(texture.txi.blending == TXIBlending.ADDITIVE){
+              if(texture.txi?.blending == TXIBlending.ADDITIVE){
                 //tex.material.alphaTest = 0;
               }
 
-              if( (texture.header.alphaTest && texture.header.format != PixelFormat.DXT5) || texture.txi.blending == TXIBlending.PUNCHTHROUGH){
+              if( (texture.header.alphaTest && texture.header.format != PixelFormat.DXT5) || texture.txi?.blending == TXIBlending.PUNCHTHROUGH){
                 if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
                   tex.material.alphaTest = texture.header.alphaTest;
                   if(tex.material.uniforms?.alphaTest){
@@ -300,12 +304,12 @@ export class TextureLoader {
 
             //Check to see if alpha value is set in the TPC Header
             //I think this has to do with alphaTesting... Not sure...
-            if(typeof fallback.header === 'object'){
-              if(fallback.header.alphaTest != 1 && fallback.txi.envMapTexture == null){
-                if(fallback.txi.blending != TXIBlending.PUNCHTHROUGH){
+            if(fallback.header != null && typeof fallback.header === 'object'){
+              if(fallback.header.alphaTest != 1 && fallback.txi?.envMapTexture == null){
+                if(fallback.txi?.blending != TXIBlending.PUNCHTHROUGH){
                   tex.material.transparent = true;
                 }
-                if(fallback.txi.blending == TXIBlending.ADDITIVE){
+                if(fallback.txi?.blending == TXIBlending.ADDITIVE){
                   //tex.material.alphaTest = 0;
                 }
                 //tex.material.alphaTest = fallback.header.alphaTest;

@@ -35,12 +35,17 @@ export class ActionQueue extends Array<Action> {
   constructor(...items: Action[]) {
     super();
     log.trace("ActionQueue constructor", items.length);
-    for (let i = 0; i < items.length; i++) {
-      this.push(items[i]);
-    }
     this.nextGroupId = 1;
     this.lastGroupId = 0;
     this.owner = undefined;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item != null && typeof item === 'object' && 'type' in item) {
+        this.push(item as Action);
+      } else if (item !== undefined) {
+        log.warn('ActionQueue constructor: skipping non-Action item', typeof item, item);
+      }
+    }
   }
 
   /**
@@ -65,7 +70,10 @@ export class ActionQueue extends Array<Action> {
    */
   add( actionNode: Action ){
     log.trace('ActionQueue add', actionNode?.type);
-    if(!actionNode){ return; }
+    if (actionNode == null || typeof actionNode !== 'object' || !('type' in actionNode)) {
+      if (actionNode !== undefined) log.warn('ActionQueue.add: skipping non-Action', typeof actionNode);
+      return;
+    }
     actionNode.owner = this.owner;
     super.push( actionNode );
     log.trace('ActionQueue add done', this.length);
@@ -80,7 +88,10 @@ export class ActionQueue extends Array<Action> {
    */
   addFront( actionNode: Action ){
     log.trace('ActionQueue addFront', actionNode?.type);
-    if(!actionNode){ return; }
+    if (actionNode == null || typeof actionNode !== 'object' || !('type' in actionNode)) {
+      if (actionNode !== undefined) log.warn('ActionQueue.addFront: skipping non-Action', typeof actionNode);
+      return;
+    }
     actionNode.owner = this.owner;
     super.unshift( actionNode );
     log.trace('ActionQueue addFront done', this.length);
@@ -133,6 +144,10 @@ export class ActionQueue extends Array<Action> {
   // @ts-expect-error - Array.push returns number; we override to not return to match legacy action queue API
   push( actionNode: Action ){
     log.trace('ActionQueue push', actionNode?.type);
+    if (actionNode == null || typeof actionNode !== 'object' || !('type' in actionNode)) {
+      if (actionNode !== undefined) log.warn('ActionQueue.push: skipping non-Action', typeof actionNode);
+      return;
+    }
     actionNode.owner = this.owner;
     actionNode.queue = this;
     this.#processGroupId(actionNode);
@@ -150,6 +165,10 @@ export class ActionQueue extends Array<Action> {
   // @ts-expect-error - Array.unshift returns number; we override to not return to match legacy action queue API
   unshift( actionNode: Action ){
     log.trace('ActionQueue unshift', actionNode?.type);
+    if (actionNode == null || typeof actionNode !== 'object' || !('type' in actionNode)) {
+      if (actionNode !== undefined) log.warn('ActionQueue.unshift: skipping non-Action', typeof actionNode);
+      return;
+    }
     actionNode.owner = this.owner;
     actionNode.queue = undefined;
     this.#processGroupId(actionNode);
