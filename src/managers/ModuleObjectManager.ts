@@ -732,6 +732,7 @@ export class ModuleObjectManager {
     ];
 
     this.playerSelectableObjects = [];
+    this.playerHoverableObjects = [];
 
     const objCount = objects.length;
     this.#tmpPlayerPosition.copy(player.position);
