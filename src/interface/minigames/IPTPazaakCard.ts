@@ -1,4 +1,4 @@
-import { PazaakCards } from "../../enums/minigames/PazaakCards";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
 
 /**
  * Pazaak Cards interface.

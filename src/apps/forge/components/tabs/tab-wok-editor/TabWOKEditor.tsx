@@ -91,7 +91,7 @@ const WOKSidebarComponent = function(props: any){
   });
 
   useEffect( () => {
-    console.log('update', selectedFace);
+    log.trace('update', selectedFace);
     rerender(!render);
   }, [selectedFace]);
 

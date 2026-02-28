@@ -13,14 +13,15 @@
 
 KotOR.js is a TypeScript-based reimplementation of the Odyssey Game Engine that powered the original Star Wars: Knights of the Old Republic (KotOR) and its sequel, KotOR II: The Sith Lords (TSL). The project aims to support the complete feature set of the original engine. While still in the early stages of development, many systems are already online in some form or fashion.
 
-In addition to the game engine, the project includes an early attempt at a modding suite called KotOR Forge. 
+In addition to the game engine, the project includes an early attempt at a modding suite called KotOR Forge.
 
 ## Technologies
-- The code has been re-written in TypeScript and compiles down into JavaScript. 
-- THREE.js is used for the base of the rendering engine. 
-- Electron is used to package and publish a desktop application. 
 
-[Discussion Thread](https://deadlystream.com/topic/6608-wip-kotor-js-a-game-engine-for-k1-k2-written-in-javascript/)  
+- The code has been re-written in TypeScript and compiles down into JavaScript.
+- THREE.js is used for the base of the rendering engine.
+- Electron is used to package and publish a desktop application.
+
+[Discussion Thread](https://deadlystream.com/topic/6608-wip-kotor-js-a-game-engine-for-k1-k2-written-in-javascript/)
 [KotOR.js Youtube Channel](https://www.youtube.com/channel/UC7b4RL2mj0WJ7fEvbJePDbA)
 
 [![OpenKotOR Discord](https://discordapp.com/api/guilds/739590575359262792/widget.png?style=banner2)](https://discord.gg/QxjqVAuN8T)

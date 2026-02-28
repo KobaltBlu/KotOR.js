@@ -1,5 +1,5 @@
 import React, { useState, useCallback, memo } from "react";
-import "./ForgeTreeView.scss";
+import "@/apps/forge/components/treeview/ForgeTreeView.scss";
 
 export interface ListItemNodeProps {
   // Core node data
@@ -79,11 +79,11 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
     if (icon) {
       return icon;
     }
-    
+
     if (iconType === 'folder') {
       return isExpanded ? 'fa-folder-open' : 'fa-folder';
     }
-    
+
     if (!name) return 'fa-file';
     const ext = getFileExtension(name);
     switch (ext) {
@@ -167,12 +167,12 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
   const iconClass = getIcon();
 
   return (
-    <li 
+    <li
       className={`tree-item ${fileTypeClass} ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''}`}
       {...dataAttributes}
     >
       {/* Node content wrapper - arrow, icon, and label */}
-      <div 
+      <div
         className="tree-node-content"
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
@@ -183,7 +183,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
       >
         {/* Expand/Collapse Arrow for folders */}
         {hasChildren && (
-          <span 
+          <span
             className={`tree-arrow ${isExpanded ? 'expanded' : ''}`}
             onClick={handleToggle}
             role="button"

@@ -1,10 +1,15 @@
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUILabel } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { CharGenClasses } from "../../CharGenClasses";
-import { GameState } from "../../../GameState";
+import * as THREE from "three";
+
+import { CharGenClasses } from "@/game/CharGenClasses";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUILabel } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * CharGenMain class.
@@ -130,7 +135,7 @@ export class CharGenMain extends GameMenu {
     this.NEW_LBL?.hide();
     try {
       GameState.CharGenManager.selectedCreature.model.parent.remove(GameState.CharGenManager.selectedCreature.model);
-    } catch (e: any) {
+    } catch (e: unknown) {
     }
     this._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
     GameState.CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;

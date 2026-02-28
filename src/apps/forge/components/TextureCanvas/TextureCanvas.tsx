@@ -26,7 +26,7 @@ const getPixelData = async (image: KotOR.TPCObject | KotOR.TGAObject): Promise<U
 
       const width = tpc.header.width;
       const height = tpc.header.height;
-      const mipmapCount = 1;
+      const _mipmapCount = 1;
 
       if (!tpc.txi.procedureType) {
         if (tpc.header.faces > 1) {
@@ -80,7 +80,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
   onClick
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [textureLoaded, setTextureLoaded] = useState<boolean>(false);
+  const [_textureLoaded, setTextureLoaded] = useState<boolean>(false);
 
   const [cWidth, setCanvasWidth] = useState<number>(width || 0);
   const [cHeight, setCanvasHeight] = useState<number>(height || 0);
@@ -156,7 +156,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
         TabImageViewerState.FlipY(processedData, textureWidth, textureHeight);
 
         // Create ImageData and draw to canvas
-        let imageData = ctx.createImageData(textureWidth, textureHeight);
+        const imageData = ctx.createImageData(textureWidth, textureHeight);
         imageData.data.set(processedData);
 
         // If scaling is needed, draw to a temporary canvas first, then scale
@@ -180,7 +180,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
 
         setTextureLoaded(true);
       } catch (error) {
-        console.error(`Failed to load texture: ${texture}`, error);
+        log.error(`Failed to load texture: ${texture}`, error);
       }
     };
 

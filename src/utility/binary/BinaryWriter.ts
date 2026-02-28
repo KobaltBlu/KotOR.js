@@ -1,4 +1,4 @@
-import { Endians } from "../../enums/resource/Endians";
+import { Endians } from "@/enums/resource/Endians";
 
 /**
  * BinaryWriter class.
@@ -179,7 +179,7 @@ export class BinaryWriter {
    * @param char - The character to write.
    * @param encoding - The encoding of the character.
    */
-  writeChar(char: string, encoding='ascii'){
+  writeChar(char: string, _encoding='ascii'){
     if(!char.length){ return; }
 
     this.tmp8[0] = char.charCodeAt(0) & 0xFF;

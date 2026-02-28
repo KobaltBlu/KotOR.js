@@ -63,7 +63,7 @@ export const ScriptInstanceProvider = (props: {children: any; instance: KotOR.NW
     if(props.instance) {
       setBreakpointMap(new Map(props.instance.breakPoints));
       setSeekAddress(props.instance.seek);
-      console.log("Adding breakpoint listener", props.instance.uuid);
+      log.debug("Adding breakpoint listener", props.instance.uuid);
       props.instance.addEventListener('breakpoint', breakPointUpdateHandler);
       props.instance.addEventListener('seek', seekHandler);
     }

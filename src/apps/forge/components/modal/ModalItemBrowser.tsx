@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Button, Modal } from "react-bootstrap";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { ModalItemBrowserState } from "../../states/modal/ModalItemBrowserState";
-import { LazyTextureCanvas } from "../LazyTextureCanvas/LazyTextureCanvas";
-import "./ModalItemBrowser.scss";
+
+import { LazyTextureCanvas } from "@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
+import "@/apps/forge/components/modal/ModalItemBrowser.scss";
 
 export const ModalItemBrowser = (props: BaseModalProps) => {
   const modal = props.modal as ModalItemBrowserState;
@@ -23,7 +27,7 @@ export const ModalItemBrowser = (props: BaseModalProps) => {
     if (modal.items.length === 0) {
       setLoading(true);
       modal.loadItems().catch((error) => {
-        console.error('Failed to load items:', error);
+        log.error('Failed to load items:', error);
         setLoading(false);
       });
     }
@@ -44,7 +48,7 @@ export const ModalItemBrowser = (props: BaseModalProps) => {
     modal.addEventListener('onShow', onShow);
     modal.addEventListener('onItemsLoaded', onItemsLoaded);
     modal.addEventListener('onSearchChanged', onSearchChanged);
-    
+
     return () => {
       modal.removeEventListener('onHide', onHide);
       modal.removeEventListener('onShow', onShow);
@@ -58,7 +62,7 @@ export const ModalItemBrowser = (props: BaseModalProps) => {
     if (modal.visible && modal.items.length === 0) {
       setLoading(true);
       modal.loadItems().catch((error) => {
-        console.error('Failed to load items:', error);
+        log.error('Failed to load items:', error);
         setLoading(false);
       });
     }
@@ -68,7 +72,7 @@ export const ModalItemBrowser = (props: BaseModalProps) => {
     modal.close();
   };
 
-  const handleClose = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClose = (_e: React.MouseEvent<HTMLButtonElement>) => {
     modal.close();
   };
 

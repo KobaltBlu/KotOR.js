@@ -1,9 +1,15 @@
 import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "..";
-import { GameEngineType } from "../../enums/engine";
-import { GameState } from "../../GameState";
-import { TextureLoader } from "../../loaders";
-import { GFFStruct } from "../../resource/GFFStruct";
-import { OdysseyTexture } from "../../three/odyssey/OdysseyTexture";
+
+import { GameEngineType } from "@/enums/engine";
+import { GameState } from "@/GameState";
+import { TextureLoader } from "@/loaders";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+
+const log = createScopedLogger(LogScope.Game);
 import * as THREE from "three";
 
 /**
@@ -86,7 +92,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.widget.userData.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
       this.widget.userData.iconMaterial.transparent = true;
       this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
-      //console.log(this.node.getIcon());
+      //log.info(this.node.getIcon());
       TextureLoader.Load(this.node.getIcon()).then((texture: OdysseyTexture) => {
         if(texture){
           this.widget.userData.iconMaterial.map = texture;
@@ -167,7 +173,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       _buttonIconWidget.add(this.widget.userData.spriteGroup);
       return this.widget;
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
     return this.widget;
 

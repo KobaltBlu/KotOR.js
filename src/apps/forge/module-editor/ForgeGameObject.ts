@@ -1,9 +1,14 @@
-import { EventListenerModel } from "../EventListenerModel";
-import * as KotOR from "../KotOR";
-import { TabState } from "../states/tabs/TabState";
-import { UI3DRenderer } from "../UI3DRenderer";
 import * as THREE from 'three';
-import type { ForgeArea } from "./ForgeArea";
+
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import type { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class ForgeGameObject extends EventListenerModel {
   context: UI3DRenderer;
@@ -75,9 +80,9 @@ export class ForgeGameObject extends EventListenerModel {
     return this.templateResRef;
   }
 
-  setGITInstance(instance: KotOR.GFFStruct){
+  setGITInstance(_instance: KotOR.GFFStruct){
     // stub method to be overridden by child classes
-    console.error(`setGITInstance not implemented for ${this.constructor.name}`);
+    log.error(`setGITInstance not implemented for ${this.constructor.name}`);
   }
 
   /**

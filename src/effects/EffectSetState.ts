@@ -1,13 +1,17 @@
-import { GameEffect } from "./GameEffect";
-import { GameEffectType } from "../enums/effects/GameEffectType";
 import * as THREE from "three";
-import { GameEffectSetStateType } from "../enums/effects/GameEffectSetStateType";
+
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+
 
 /**
  * EffectSetState class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ * State is applied once on apply; no per-frame switch. Only Force Push has ongoing movement.
+ * State type = GetInteger(effect, 0). If != FORCEPUSH: clear all actions, then apply SetAIState/visual per state.
+ * RecomputeAmbientAnimationState after apply. Only FORCEPUSH uses update() for position lerp.
+ *
  * @file EffectSetState.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

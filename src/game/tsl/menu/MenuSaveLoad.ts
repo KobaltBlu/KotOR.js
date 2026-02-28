@@ -1,16 +1,16 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "../../kotor/KOTOR";
-import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { GUISaveGameItem } from "../../tsl/gui/GUISaveGameItem";
-import { SaveGame } from "../../../engine/SaveGame";
-import { TextureLoader } from "../../../loaders";
+import { SaveGame } from "@/engine/SaveGame";
+import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
+import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "@/game/kotor/KOTOR";
+import { GUISaveGameItem } from "@/game/tsl/gui/GUISaveGameItem";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
 
 /**
  * MenuSaveLoad class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuSaveLoad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -154,5 +154,5 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
 
     return saves;
   }
-  
+
 }

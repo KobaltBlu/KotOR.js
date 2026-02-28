@@ -1,5 +1,5 @@
-import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
-import { CharGenCustomPanel as K1_CharGenCustomPanel } from "../../kotor/KOTOR";
+import { CharGenCustomPanel as K1_CharGenCustomPanel } from "@/game/kotor/KOTOR";
+import type { GUIControl, GUILabel, GUIButton } from "@/gui";
 
 /**
  * CharGenCustomPanel class.

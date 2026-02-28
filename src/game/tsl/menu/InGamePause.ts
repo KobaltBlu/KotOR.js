@@ -1,6 +1,6 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { InGamePause as K1_InGamePause } from "../../kotor/KOTOR";
+import { InGamePause as K1_InGamePause } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * InGamePause class.

@@ -1,4 +1,4 @@
-import type { IOdysseyControllerFrameGeneric } from "./IOdysseyControllerFrameGeneric";
+import type { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 
 /**
  * IOdysseyControllerGeneric interface.

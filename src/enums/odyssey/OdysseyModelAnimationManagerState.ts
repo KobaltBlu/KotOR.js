@@ -1,3 +1,5 @@
+import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+
 /**
  * OdysseyModelAnimationManagerState interface.
  * 

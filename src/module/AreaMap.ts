@@ -1,9 +1,11 @@
 import * as THREE from "three";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
-import type { ModuleWaypoint } from "./ModuleWaypoint";
+
+import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+
 
 /**
 * AreaMap class.
@@ -160,25 +162,25 @@ export class AreaMap {
           this._mapCoordinates.y = ((( x - this.worldPt1X) * scaleX) + this.mapPt1X);
           this._mapCoordinates.x = (((-y - this.worldPt1Y) * scaleY) + this.mapPt1Y);
         }
-      break;
+        break;
       case MapNorthAxis.EAST:
         {
           scaleX = (this.mapPt1Y - this.mapPt2Y) / (this.worldPt1X - this.worldPt2X);
-			    scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
+          scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
 
           this._mapCoordinates.x = (((y - this.worldPt1Y) * scaleY) + this.mapPt1X);
           this._mapCoordinates.y = (((x - this.worldPt1X) * scaleX) + this.mapPt1Y);
         }
-      break;
+        break;
       case MapNorthAxis.WEST: //end_m01ab
         {
           scaleX = (this.mapPt1Y - this.mapPt2Y) / (this.worldPt1X - this.worldPt2X);
-			    scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
+          scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
 
           this._mapCoordinates.x = (((y - this.worldPt1Y) * scaleY) + this.mapPt1X);
           this._mapCoordinates.y = 1 - (((x - this.worldPt1X) * scaleX) + this.mapPt1Y);
         }
-      break;
+        break;
     }
     return this._mapCoordinates;
   }
@@ -315,7 +317,7 @@ export class AreaMap {
   }
 
   export(): GFFStruct {
-    let mapStruct = new GFFStruct(14);
+    const mapStruct = new GFFStruct(14);
 
     mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt1X') ).setValue(this.mapPt1X);
     mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt1Y') ).setValue(this.mapPt1Y);
@@ -333,7 +335,7 @@ export class AreaMap {
   }
 
   exportData(){
-    let dataStruct = new GFFStruct(14);
+    const dataStruct = new GFFStruct(14);
 
     let byteIndex = 0;
     for(let i = 0; i < this.fogAlphaPixelData.length; i++){

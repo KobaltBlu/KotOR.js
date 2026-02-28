@@ -1,20 +1,27 @@
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject } from "../module";
-import { OdysseyModel } from "../odyssey";
-import { OdysseyModel3D } from "../three/odyssey";
-import { DLGNode } from "./DLGNode";
-import { GFFObject } from "./GFFObject";
-import { ResourceTypes } from "./ResourceTypes";
 import * as THREE from "three";
-import { IDLGStuntActor } from "../interface/dialog/IDLGStuntActor";
-import { DLGNodeType } from "../enums/dialog/DLGNodeType";
-import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-// import { NWScript } from "../nwscript/NWScript";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums";
-import { AudioLoader } from "../audio/AudioLoader";
-import { AudioEngine } from "../audio/AudioEngine";
+
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { ModuleObjectType } from "@/enums";
+import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
+import { GameState } from "@/GameState";
+import { IDLGStuntActor } from "@/interface/dialog/IDLGStuntActor";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import type { ModuleCreature, ModuleObject } from "@/module";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel } from "@/odyssey";
+import { DLGNode } from "@/resource/DLGNode";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
+
+// import { NWScript } from "@/nwscript/NWScript";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,
@@ -23,11 +30,11 @@ export interface DLGObjectScripts {
 
 /**
  * DLGObject class.
- * 
+ *
  * Class representing a DLG file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file DLGObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

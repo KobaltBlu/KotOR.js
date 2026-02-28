@@ -290,8 +290,8 @@ export class TPCObject {
   readHeader(): ITPCHeader {
 
     // Parse header
-    let Header: ITPCHeader = {} as ITPCHeader;
-    let Reader = new BinaryReader(this.file.slice(0, TPCHeaderLength));
+    const Header: ITPCHeader = {} as ITPCHeader;
+    const Reader = new BinaryReader(this.file.slice(0, TPCHeaderLength));
     Reader.seek(0);
     Header.dataSize = Reader.readUInt32();
     Header.alphaTest = Reader.readSingle();

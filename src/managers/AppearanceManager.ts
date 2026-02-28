@@ -1,8 +1,8 @@
-import { SWCreatureAppearance } from "../engine/rules/SWCreatureAppearance";
-import { SWDoorAppearance } from "../engine/rules/SWDoorAppearance";
-import { SWPlaceableAppearance } from "../engine/rules/SWPlaceableAppearance";
-import { GameState } from "../GameState";
-import { TwoDAManager } from "./TwoDAManager"
+import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
+import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
+import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
+import { GameState } from "@/GameState";
+import { TwoDAManager } from "@/managers/TwoDAManager"
 
 /**
  * AppearanceManager class.

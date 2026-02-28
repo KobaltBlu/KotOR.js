@@ -1,5 +1,5 @@
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "../../../gui";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "@/gui";
 
 /**
  * MenuMouse class.

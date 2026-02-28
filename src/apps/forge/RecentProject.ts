@@ -1,4 +1,4 @@
-import * as KotOR from "../../KotOR";
+import * as KotOR from "@/KotOR";
 
 export interface RecentProjectOptions {
   path?: string;

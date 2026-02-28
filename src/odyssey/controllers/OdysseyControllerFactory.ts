@@ -1,38 +1,35 @@
-import { OdysseyController } from "./OdysseyController";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
-import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
-import { AlphaController } from "./AlphaController";
-import { AlphaEndController } from "./AlphaEndController";
-import { AlphaMidController } from "./AlphaMidController";
-import { AlphaStartController } from "./AlphaStartController";
-import { BirthRateController } from "./BirthRateController";
-import { ColorController } from "./ColorController";
-import { ColorEndController } from "./ColorEndController";
-import { ColorMidController } from "./ColorMidController";
-import { ColorStartController } from "./ColorStartController";
-import { FrameEndController } from "./FrameEndController";
-import { FrameStartController } from "./FrameStartController";
-import { LifeExpController } from "./LifeExpController";
-import { MassController } from "./MassController";
-import { MultiplierController } from "./MultiplierController";
-import { OrientationController } from "./OrientationController";
-import { PositionController } from "./PositionController";
-import { RadiusController } from "./RadiusController";
-import { ScaleController } from "./ScaleController";
-import { SelfIllumColorController } from "./SelfIllumColorController";
-import { SizeEndController } from "./SizeEndController";
-import { SizeMidController } from "./SizeMidController";
-import { SizeStartController } from "./SizeStartController";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { AlphaController } from "@/odyssey/controllers/AlphaController";
+import { AlphaEndController } from "@/odyssey/controllers/AlphaEndController";
+import { AlphaMidController } from "@/odyssey/controllers/AlphaMidController";
+import { AlphaStartController } from "@/odyssey/controllers/AlphaStartController";
+import { BirthRateController } from "@/odyssey/controllers/BirthRateController";
+import { ColorController } from "@/odyssey/controllers/ColorController";
+import { ColorEndController } from "@/odyssey/controllers/ColorEndController";
+import { ColorMidController } from "@/odyssey/controllers/ColorMidController";
+import { ColorStartController } from "@/odyssey/controllers/ColorStartController";
+import { FrameEndController } from "@/odyssey/controllers/FrameEndController";
+import { FrameStartController } from "@/odyssey/controllers/FrameStartController";
+import { LifeExpController } from "@/odyssey/controllers/LifeExpController";
+import { MassController } from "@/odyssey/controllers/MassController";
+import { MultiplierController } from "@/odyssey/controllers/MultiplierController";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import { OrientationController } from "@/odyssey/controllers/OrientationController";
+import { PositionController } from "@/odyssey/controllers/PositionController";
+import { RadiusController } from "@/odyssey/controllers/RadiusController";
+import { ScaleController } from "@/odyssey/controllers/ScaleController";
+import { SelfIllumColorController } from "@/odyssey/controllers/SelfIllumColorController";
+import { SizeEndController } from "@/odyssey/controllers/SizeEndController";
+import { SizeMidController } from "@/odyssey/controllers/SizeMidController";
+import { SizeStartController } from "@/odyssey/controllers/SizeStartController";
 
 /**
  * OdysseyControllerFactory class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ * Static factory by design; no instance state.
  * @file OdysseyControllerFactory.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+/* eslint-disable @typescript-eslint/no-extraneous-class */
 export class OdysseyControllerFactory {
 
   static From( controller: IOdysseyControllerGeneric ){

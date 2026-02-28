@@ -144,7 +144,7 @@ export class ForgeState {
 
         ForgeState.recentFiles = ForgeState.getRecentFiles();
         ForgeState.recentProjects = ForgeState.getRecentProjects();
-        
+
         // Restore handles from IndexedDB for browser projects
         if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
           const { get } = await import('idb-keyval');
@@ -238,7 +238,7 @@ export class ForgeState {
   }
 
   static initNWScriptParser(){
-    return new Promise<void>( (resolve, reject) => {
+    return new Promise<void>( (resolve, _reject) => {
       KotOR.ResourceLoader.loadResource( KotOR.ResourceTypes.nss, 'nwscript').then(
         (nss: Uint8Array) => {
           this.nwscript_nss = nss;
@@ -368,7 +368,7 @@ export class ForgeState {
           const handleKey = `project_handle_${proj.getIdentifier()}`;
           // Store handle in IndexedDB (idb-keyval handles FileSystemDirectoryHandle)
           set(handleKey, proj.handle).catch((e) => {
-            console.warn('Failed to store handle in IndexedDB:', e);
+            log.warn('Failed to store handle in IndexedDB:', e);
           });
           serialized.handleKey = handleKey;
         }
@@ -504,22 +504,22 @@ export class ForgeState {
             document.title = originalTitle;
 
             FileTypeManager.onOpenFile({
-              path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`, 
-              path2: `${EditorFileProtocol.FILE}//system.dir/${mdxHandle.name}`, 
-              handle: handle, 
-              handle2: mdxHandle, 
-              filename: handle.name, 
-              resref: parsed.name, 
+              path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`,
+              path2: `${EditorFileProtocol.FILE}//system.dir/${mdxHandle.name}`,
+              handle: handle,
+              handle2: mdxHandle,
+              filename: handle.name,
+              resref: parsed.name,
               ext: parsed.ext
             });
 
 
           }else{
             FileTypeManager.onOpenFile({
-              path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`, 
-              handle: handle, 
-              filename: handle.name, 
-              resref: parsed.name, 
+              path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`,
+              handle: handle,
+              filename: handle.name,
+              resref: parsed.name,
               ext: parsed.ext
             });
           }

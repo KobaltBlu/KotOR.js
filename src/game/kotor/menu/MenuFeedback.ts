@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { FeedbackOption } from "../../../enums/engine/FeedbackOption";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "../../../gui";
+import { FeedbackOption } from "@/enums/engine/FeedbackOption";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 const LBL_HIDE_UNEQ = 42279;
 const LBL_TUT_POPUPS = 42280;

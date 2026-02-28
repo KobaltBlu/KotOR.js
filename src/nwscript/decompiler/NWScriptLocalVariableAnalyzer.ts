@@ -1,8 +1,10 @@
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import type { NWScript } from "../NWScript";
-import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_MOVSP, OP_NEG, OP_ACTION } from '../NWScriptOPCodes';
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import type { NWScript } from "@/nwscript/NWScript";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_MOVSP, OP_NEG, OP_ACTION } from '@/nwscript/NWScriptOPCodes';
+
+
 
 /**
  * Represents a detected local variable initialization
@@ -193,8 +195,8 @@ export class NWScriptLocalVariableAnalyzer {
       if (hasWrite && cpdownspInstr) {
         // Work backwards from CPDOWNSP to find what expression was on the stack
         // Look for ACTION (function call) or other expressions before CPDOWNSP
-        let exprStart = rsadd.nextInstr;
-        let exprEnd = cpdownspInstr.prevInstr;
+        const exprStart = rsadd.nextInstr;
+        const exprEnd = cpdownspInstr.prevInstr;
         
         // Check if there's an ACTION call before CPDOWNSP
         let actionInstr: NWScriptInstruction | null = null;

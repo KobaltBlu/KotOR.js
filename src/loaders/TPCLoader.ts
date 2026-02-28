@@ -1,12 +1,16 @@
-import { TPCObject } from "../resource/TPCObject";
 import * as path from "path";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { ERFManager } from "../managers/ERFManager";
-import { KEYManager } from "../managers/KEYManager";
-import { OdysseyCompressedTexture } from "../three/odyssey";
-import { IFindTPCResult } from "../interface/graphics/IFindTPCResult";
-import { TextureLoaderState } from "./TextureLoaderState";
+
+import { IFindTPCResult } from "@/interface/graphics/IFindTPCResult";
+import { TextureLoaderState } from "@/loaders/TextureLoaderState";
+import { ERFManager } from "@/managers/ERFManager";
+import { KEYManager } from "@/managers/KEYManager";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TPCObject } from "@/resource/TPCObject";
+import { OdysseyCompressedTexture } from "@/three/odyssey";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Loader);
 
 /**
  * TPCLoader class.
@@ -114,7 +118,7 @@ export class TPCLoader {
         });
   
         let texture = tpc.toCompressedTexture();
-        //console.log("loaded texture", texName);
+        //log.info("loaded texture", texName);
   
         if ( typeof onLoad === 'function' ) onLoad( texture );
   
@@ -162,12 +166,12 @@ export class TPCLoader {
   
         return tpc;
       }catch(e){
-        console.error(e);
+        log.error(e);
         return undefined;
       }
   
     }else{
-      console.warn('Local files not implemented yet');
+      log.warn('Local files not implemented yet');
     }
     return undefined;
   };*/

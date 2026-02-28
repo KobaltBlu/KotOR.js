@@ -1,8 +1,13 @@
-import { GameState } from "../../../GameState";
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { GameMenu } from "../../../gui/GameMenu";
-import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "../../../gui";
-import { GUIMusicItem } from "../gui/GUIMusicItem";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { GUIMusicItem } from "@/game/tsl/gui/GUIMusicItem";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "@/gui";
+import { GameMenu } from "@/gui/GameMenu";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * MainMusic class.

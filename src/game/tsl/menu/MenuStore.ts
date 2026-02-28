@@ -1,8 +1,8 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { ModuleItem, ModuleStore } from "../../../module";
-import { MenuStore as K1_MenuStore } from "../../kotor/KOTOR";
+import { MenuStore as K1_MenuStore } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { ModuleItem, ModuleStore } from "@/module";
 
 /**
  * MenuStore class.
@@ -67,9 +67,9 @@ export class MenuStore extends K1_MenuStore {
         e.stopPropagation();
         if(!this.sellMode){
           if(this.LB_SHOPITEMS.selectedItem.node instanceof ModuleItem){
-            let item = this.LB_SHOPITEMS.selectedItem.node;
+            const item = this.LB_SHOPITEMS.selectedItem.node;
             //Buy Mode
-            let price = this.getItemBuyPrice(item);
+            const price = this.getItemBuyPrice(item);
             if(GameState.PartyManager.Gold >= price){
               GameState.PartyManager.AddGold(-price);
               this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
@@ -79,7 +79,7 @@ export class MenuStore extends K1_MenuStore {
 
                 if(item.getStackSize() <= 0){
                   //Remove this item from the store if there are no more of them in stock
-                  let idx = this.storeObject.getInventory().indexOf(item);
+                  const idx = this.storeObject.getInventory().indexOf(item);
                   if(idx >= 0){
                     this.storeObject.getInventory().splice(idx, 1);
                     this.LB_SHOPITEMS.removeItemByIndex(idx);

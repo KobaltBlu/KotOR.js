@@ -1,30 +1,38 @@
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import type { GUIControl, GUIListBox, GUIScrollBar } from "../gui";
-import { Utility } from "../utility/Utility";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { EngineState } from "../enums/engine/EngineState";
-import { KeyMapAction } from "../enums/controls/KeyMapAction";
-import { MiniGameType } from "../enums/engine/MiniGameType";
-import { FollowerCamera } from "../engine/FollowerCamera";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GUIControlEventFactory } from "../gui/GUIControlEventFactory";
-import { Keyboard } from "./Keyboard";
-import { GamePad } from "./GamePad";
-import { Mouse } from "./Mouse";
-import { KeyMapper } from "./KeyMapper";
-import { AnalogInput } from "./AnalogInput";
-import { TGAObject } from "../resource/TGAObject";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
+
+import { AnalogInput } from "@/controls/AnalogInput";
+import { GamePad } from "@/controls/GamePad";
+import { Keyboard } from "@/controls/Keyboard";
+import { KeyMapper } from "@/controls/KeyMapper";
+import { Mouse } from "@/controls/Mouse";
+import { FollowerCamera } from "@/engine/FollowerCamera";
+import { KeyMapAction } from "@/enums/controls/KeyMapAction";
+import { MouseState } from "@/enums/controls/MouseState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { EngineState } from "@/enums/engine/EngineState";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { GUIControl, GUIListBox, GUIScrollBar } from "@/gui";
+import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
+import type { ModuleObject } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { TGAObject } from "@/resource/TGAObject";
+import { BitWise } from "@/utility/BitWise";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
+// import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "@/managers";
+
+
+const log = createScopedLogger(LogScope.Controls);
 
 /**
  * IngameControls class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file IngameControls.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -305,7 +313,7 @@ export class IngameControls {
         }
 
         let selectedObject = clickCaptured;
-  
+
         if(!clickCaptured && (GameState.Mode != EngineMode.DIALOG)){
           if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
             const moduleObject = GameState.CursorManager.onMouseHitInteractive();
@@ -334,10 +342,10 @@ export class IngameControls {
                 GameState.CursorManager.setReticleSelectedObject(moduleObject);
               }
               if(GameState.debug.SELECTED_OBJECT)
-                console.log('Ingame Object', moduleObject);
+                log.debug('Ingame Object', moduleObject);
             }else{
               if(GameState.debug.SELECTED_OBJECT)
-                console.log('Object', moduleObject);
+                log.debug('Object', moduleObject);
             }
 
             if(!selectedObject){
@@ -604,7 +612,7 @@ export class IngameControls {
       if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
         case MiniGameType.SWOOPRACE:
-        
+
         break;
         case MiniGameType.TURRET:
           GameState.module.area.miniGame.player.rotate('x', -1 * delta);
@@ -792,7 +800,7 @@ export class IngameControls {
     for(let i = 0, len = GameState.MenuManager.activeModals.length; i < len; i++){
       const activeMenu = GameState.MenuManager.activeModals[i];
       if(!activeMenu.isVisible()) continue;
-      
+
       elements = elements.concat(activeMenu.getActiveControls());
     }
 
@@ -816,7 +824,7 @@ export class IngameControls {
 
     let xoffset = 0;
     let yoffset = 0;
-    let currentMenu = GameState.MenuManager.GetCurrentMenu();
+    const currentMenu = GameState.MenuManager.GetCurrentMenu();
 
     this.gamePadMovement = false;
 
@@ -863,8 +871,8 @@ export class IngameControls {
     if(GameState.State == EngineState.RUNNING){
 
       if(
-        (GameState.Mode == EngineMode.INGAME) && 
-        currentMenu != GameState.MenuManager.InGameConfirm && 
+        (GameState.Mode == EngineMode.INGAME) &&
+        currentMenu != GameState.MenuManager.InGameConfirm &&
         currentMenu != GameState.MenuManager.MenuContainer
       ){
         const followee = GameState.PartyManager.party[0];
@@ -882,7 +890,7 @@ export class IngameControls {
         }
       }
     }
-    
+
     KeyMapper.ProcessMappings(GameState.Mode, delta);
 
     //Keyboard: onFrameEnd

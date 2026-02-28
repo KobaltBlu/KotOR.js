@@ -29,7 +29,7 @@ const getComplementaryColor = (hexColor: number) => {
   const invertedG = 255 - g;
   const invertedB = 255 - b;
 
-  // Combine back into a 0xRRGGBB number
+  // Combine back into packed RGB number
   const complementary = (invertedR << 16) | (invertedG << 8) | invertedB;
 
   return complementary;
@@ -85,7 +85,7 @@ export class TabWOKEditorState extends TabState {
       // Emulate GL_POLYGON_OFFSET_LINE
       shader.vertexShader = shader.vertexShader.replace( '<worldpos_vertex>', '<worldpos_vertex>\ngl_Position.z -= 0.0001;' );
     };
-    
+
 
     this.faceHelperGeometry = new THREE.BufferGeometry();
     this.faceHelperGeometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0, 0, 0, 0], 3));
@@ -361,11 +361,11 @@ export class TabWOKEditorState extends TabState {
       color.setX(index, this.selectColor.r);
       color.setY(index, this.selectColor.g);
       color.setZ(index, this.selectColor.b);
-      
+
       color.setX(index + 1, this.selectColor.r);
       color.setY(index + 1, this.selectColor.g);
       color.setZ(index + 1, this.selectColor.b);
-      
+
       color.setX(index + 2, this.selectColor.r);
       color.setY(index + 2, this.selectColor.g);
       color.setZ(index + 2, this.selectColor.b);

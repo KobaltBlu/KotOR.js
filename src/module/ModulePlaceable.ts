@@ -48,11 +48,11 @@ enum ModulePlaceableEvent {
 
 /**
 * ModulePlaceable class.
-* 
+*
 * Class representing placeable objects found in modules areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModulePlaceable.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -180,7 +180,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   update(delta = 0){
-    
+
     super.update(delta);
 
     if(this.collisionManager.walkmesh && this.model){
@@ -221,10 +221,10 @@ export class ModulePlaceable extends ModuleObject {
     if(!(this.model instanceof OdysseyModel3D))
       return;
 
-    let currentAnimation = this.model.getAnimationName();
+    const currentAnimation = this.model.getAnimationName();
     if(!this.animStateInfo.currentAnimState) this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
     if(this.animStateInfo.currentAnimState){
-      let animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
+      const animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
       if(animation){
         if(currentAnimation != animation.name?.toLowerCase()){
           if(!this.animStateInfo.started){
@@ -249,7 +249,7 @@ export class ModulePlaceable extends ModuleObject {
           }
         }
       }else{
-        console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
+        log.error('Animation Missing', this.getTag(), this.getName(), this.animState);
         this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
       }
     }
@@ -439,7 +439,7 @@ export class ModulePlaceable extends ModuleObject {
           GameState.MenuManager.MenuContainer.AttachContainer(this);
           GameState.MenuManager.MenuContainer.open();
         }
-    
+
         this.scripts[ModuleObjectScript.PlaceableOnOpen]?.run(this)
       break;
       case ModulePlaceableEvent.CLOSE_START:
@@ -469,7 +469,7 @@ export class ModulePlaceable extends ModuleObject {
         this.triggerEvent(ModulePlaceableEvent.OPEN_END);
       }
     }
-  
+
     const instance = this.scripts[ModuleObjectScript.PlaceableOnUsed];
     if(!instance){ return; }
     instance.run(this);
@@ -492,19 +492,19 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  lock(object: ModuleObject){
+  lock(_object: ModuleObject){
     if(!this.locked){ return; }
     this.locked = true;
-    
+
     const instance = this.scripts[ModuleObjectScript.PlaceableOnLock];
     if(!instance){ return; }
     instance.run(this);
   }
 
-  unlock(object: ModuleObject){
+  unlock(_object: ModuleObject){
     if(!this.locked){ return; }
     this.locked = false;
-    
+
     const instance = this.scripts[ModuleObjectScript.PlaceableOnUnlock];
     if(!instance){ return; }
     instance.run(this);
@@ -517,8 +517,8 @@ export class ModulePlaceable extends ModuleObject {
 
     const nSecuritySkill = object.getSkillLevel(SkillType.SECURITY);
     if(this.isLocked() && !this.keyRequired && nSecuritySkill >= 1){
-      let d20 = 20;//d20 rolls are auto 20's outside of combat
-      let skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
+      const d20 = 20;//d20 rolls are auto 20's outside of combat
+      const skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
       if(skillCheck >= 1 && nSecuritySkill >= 1){
         this.unlock(object);
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
@@ -535,7 +535,7 @@ export class ModulePlaceable extends ModuleObject {
     return true;
   }
 
-  close(object: ModuleObject){
+  close(_object: ModuleObject){
     if(this.isOpen() && this.state == ModulePlaceableState.OPEN){
       this.setAnimationState(ModulePlaceableAnimState.OPEN_CLOSE);
       this.triggerEvent(ModulePlaceableEvent.CLOSE_START);
@@ -556,7 +556,7 @@ export class ModulePlaceable extends ModuleObject {
         this.loadInventory();
         this.loadScripts();
       }else{
-        console.error('Failed to load ModulePlaceable template');
+        log.error('Failed to load ModulePlaceable template');
         if(this.template instanceof GFFObject){
           this.initProperties();
           this.loadInventory();
@@ -642,17 +642,17 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   loadInventory(){
-    let inventory = this.getItemList();
+    const inventory = this.getItemList();
     for(let i = 0; i < inventory.length; i++){
       this.loadItem( GFFObject.FromStruct( inventory[i] ) );
     }
   }
 
   loadItem( template: GFFObject){
-    let item = new GameState.Module.ModuleArea.ModuleItem(template);
+    const item = new GameState.Module.ModuleArea.ModuleItem(template);
     item.initProperties();
     item.load();
-    let hasItem = this.getItemByTag(item.getTag());
+    const hasItem = this.getItemByTag(item.getTag());
     if(hasItem){
       hasItem.setStackSize(hasItem.getStackSize() + 1);
       return hasItem;
@@ -894,7 +894,7 @@ export class ModulePlaceable extends ModuleObject {
         }
       }
     }
-    
+
     this.initialized = true;
 
   }

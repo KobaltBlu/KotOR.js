@@ -1,15 +1,19 @@
 import React from "react";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTMEditor } from "../../components/tabs/tab-utm-editor/TabUTMEditor";
-import { ForgeStore, StoreItemEntry } from "../../module-editor/ForgeStore";
+
+import { TabUTMEditor } from "@/apps/forge/components/tabs/tab-utm-editor/TabUTMEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeStore, StoreItemEntry } from "@/apps/forge/module-editor/ForgeStore";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabUTMEditorState extends TabState {
   tabName: string = `UTM`;
   store: ForgeStore = new ForgeStore();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.store.blueprint;
   }

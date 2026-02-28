@@ -1,5 +1,5 @@
-import { GameMenu } from "../../../gui";
-import type { GUIListBox } from "../../../gui";
+import { GameMenu } from "@/gui";
+import type { GUIListBox } from "@/gui";
 
 /**
  * MenuCredits class.

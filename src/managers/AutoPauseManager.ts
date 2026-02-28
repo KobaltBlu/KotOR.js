@@ -1,17 +1,21 @@
-import { GameState } from "../GameState";
-import type { INIConfig } from "../engine/INIConfig";
-import { AutoPauseState } from "../enums/engine/AutoPauseState";
-import { EngineState } from "../enums/engine/EngineState";
+import type { INIConfig } from "@/engine/INIConfig";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { EngineState } from "@/enums/engine/EngineState";
+import { GameState } from "@/GameState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Manager);
 
 /**
  * AutoPauseManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AutoPauseManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+/* eslint-disable @typescript-eslint/no-extraneous-class -- Manager is a static namespace by design */
 export class AutoPauseManager {
 
   static INIConfig: INIConfig;

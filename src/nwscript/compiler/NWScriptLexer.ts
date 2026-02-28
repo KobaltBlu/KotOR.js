@@ -1,4 +1,4 @@
-import type { Token, SourceSpan } from "./NWScriptToken";
+import type { Token, SourceSpan } from "@/nwscript/compiler/NWScriptToken";
 
 const KEYWORDS = new Map<string, string>([
   ["switch", "SWITCH"],

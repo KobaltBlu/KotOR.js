@@ -1,36 +1,42 @@
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { GameState } from "../GameState";
-import { ICombatAction } from "../interface/combat/ICombatAction";
-// import { ModuleObjectManager, PartyManager } from "../managers";
-import { type ModuleCreature, type ModuleObject } from "../module";
-// import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFStruct } from "../resource/GFFStruct";
-import { BitWise } from "../utility/BitWise";
-import { ActionParameter } from "./ActionParameter";
-import { ActionQueue } from "./ActionQueue";
 import * as THREE from "three";
-import { ComputedPath } from "../engine/pathfinding/ComputedPath";
+
+import { ACTION_QUEUE_AUTO_INCREMENT_GROUP_ID } from "@/actions/ActionConstants";
+import { ActionParameter } from "@/actions/ActionParameter";
+import { ActionQueue } from "@/actions/ActionQueue";
+import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { ICombatAction } from "@/interface/combat/ICombatAction";
+import { type ModuleCreature, type ModuleObject } from "@/module";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+
+
+
 
 /**
  * Base class for all game actions in the engine.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @remarks
  * Actions represent discrete behaviors that game objects can perform. They are managed
  * by the ActionQueue system and can be chained together to create complex behaviors.
  * Each action type extends this base class and implements its own update logic.
- * 
+ *
  * @file Action.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class Action {
-  
+
   /** Reference to the ActionQueue class */
   static ActionQueue: typeof ActionQueue = ActionQueue;
 
@@ -354,7 +360,7 @@ export class Action {
       const direction = obstacle.forceVector.clone().normalize();
       const perpendicular = new THREE.Vector3(-direction.y, direction.x, 0).normalize();
       const safeRadius = obstacle.getHitDistance() * 1.5;
-      
+
       const alternateDetour = owner.area.getNearestWalkablePoint(
         obstacle.position.clone().sub(perpendicular.clone().multiplyScalar(safeRadius)),
         obstacle.getHitDistance()

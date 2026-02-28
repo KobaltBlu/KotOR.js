@@ -1,4 +1,7 @@
-import { Endians } from "../../enums/resource/Endians";
+import { Endians } from "@/enums/resource/Endians";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Resource);
 
 /**
  * BinaryReader class.
@@ -198,7 +201,7 @@ export class BinaryReader {
     const textDecoder = new TextDecoder(encoding);
     this._value = textDecoder.decode(this.buffer.slice(this.position, this.position + num));
     this.position += num;
-    //console.log(num, this._value);
+    //log.info(num, this._value);
     return this._value;
   }
 

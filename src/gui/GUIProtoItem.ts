@@ -1,12 +1,18 @@
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import type { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
-import { Anchor } from "../enums/gui/Anchor";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import type { GUIListBox } from "./GUIListBox";
-import { Mouse } from "../controls/Mouse";
+
+import { Anchor } from "@/enums/gui/Anchor";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+
+const log = createScopedLogger(LogScope.Game);
+import { Mouse } from "@/controls/Mouse";
 
 /**
  * GUIProtoItem class.
@@ -94,7 +100,7 @@ export class GUIProtoItem extends GUIControl{
 
     if(this.text.geometry){
       this.text.geometry.computeBoundingBox();
-      let tSize = this.text.geometry.boundingBox.getSize(new THREE.Vector3);
+      const tSize = this.text.geometry.boundingBox.getSize(new THREE.Vector3);
       if(tSize.y > height){
         height = tSize.y/2;
       }
@@ -104,8 +110,8 @@ export class GUIProtoItem extends GUIControl{
   }
 
   calculateBox(){
-    let worldPosition = this.parent.widget.position.clone();
-    //console.log('worldPos', worldPosition);
+    const worldPosition = this.parent.widget.position.clone();
+    //log.info('worldPos', worldPosition);
     this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
     this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
     this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;

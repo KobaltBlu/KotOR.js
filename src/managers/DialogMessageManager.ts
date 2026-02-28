@@ -1,4 +1,4 @@
-import { DialogMessageEntry } from "../engine/DialogMessageEntry";
+import { DialogMessageEntry } from "@/engine/DialogMessageEntry";
 
 /**
  * DialogMessageManager class.

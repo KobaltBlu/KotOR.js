@@ -1,6 +1,9 @@
+import { Menu, Tray, globalShortcut, ipcMain } from 'electron';
 
-import {  Menu, Tray, globalShortcut, ipcMain } from 'electron';
-import { WindowManager } from './WindowManager';
+import { WindowManager } from '@/electron/WindowManager';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
+
+const log = createScopedLogger(LogScope.Electron);
 
 export default class Main {
 

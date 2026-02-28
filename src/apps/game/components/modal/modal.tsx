@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
-import "./modal.scss";
-import { useApp } from "../../context/AppContext";
+
+import "@/apps/game/components/modal/modal.scss";
+import { useApp } from "@/apps/game/context/AppContext";
 
 export interface KotORModalProps {
   children: React.ReactNode;
   show: boolean;
   title: string;
   enableCancel?: boolean;
-  enableOk?: boolean; 
+  enableOk?: boolean;
   cancelText?: string;
   okText?: string;
   onCancel?: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -15,15 +16,15 @@ export interface KotORModalProps {
   gameKey?: string;
 }
 
-export const KotORModal = ({ 
-  children, 
-  show, 
-  title, 
-  enableCancel = true, 
-  enableOk = true, 
+export const KotORModal = ({
+  children,
+  show,
+  title,
+  enableCancel = true,
+  enableOk = true,
   cancelText = "CANCEL",
   okText = "OK",
-  onCancel, 
+  onCancel,
   onOk
 }: KotORModalProps) => {
   const appContext = useApp();
@@ -52,7 +53,7 @@ export const KotORModal = ({
 
   return (
     isVisible && <div className={`kotor-modal-backdrop ${gameKey} ${isVisible ? "visible" : ""}`}>
-      <div className="kotor-modal"> 
+      <div className="kotor-modal">
         <h2 className="modal-heading">{title}</h2>
         <div className="modal-content">{children}</div>
         <div className="modal-actions">

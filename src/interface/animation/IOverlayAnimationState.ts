@@ -1,4 +1,4 @@
-import { ITwoDAAnimation } from "../twoDA/ITwoDAAnimation";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 
 /**
  * IOverlayAnimationState interface.

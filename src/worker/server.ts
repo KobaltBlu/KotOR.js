@@ -3,7 +3,10 @@
  * This is a stub for the eventual server worker that will be used to handle the game server logic.
  */
 
-import { IPCMessage } from "../server/ipc/IPCMessage";
+import { IPCMessage } from "@/server/ipc/IPCMessage";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Manager);
 
 /**
  * Odyssey Server
@@ -15,8 +18,8 @@ class OdysseyServer {
    * Handle Message From Client
    * This is the message handler for the server worker.
    */
-  static HandleMessageFromClient(msg: IPCMessage){
-    console.log('Odyssey Server: IPC Message Received');
+  static HandleMessageFromClient(_msg: IPCMessage){
+    log.info('Odyssey Server: IPC Message Received');
   }
 
   /**
@@ -24,7 +27,7 @@ class OdysseyServer {
    * This method sends a message to the client.
    */
   static SendMessageToClient(msg: IPCMessage){
-    console.log('Odyssey Server: IPC Message Sent');
+    log.info('Odyssey Server: IPC Message Sent');
     postMessage(msg.toBuffer());
   }
 

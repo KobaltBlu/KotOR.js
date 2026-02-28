@@ -1,13 +1,18 @@
 import * as THREE from "three";
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import { TextureType } from "../enums/loaders/TextureType";
-import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
-import { TextureLoader } from "../loaders";
-import { ShaderManager } from "../managers/ShaderManager";
-import type { GFFStruct } from "../resource/GFFStruct";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
+import { TextureLoader } from "@/loaders";
+import { ShaderManager } from "@/managers/ShaderManager";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 
 /**
  * GUIProgressBar class.
@@ -120,10 +125,10 @@ export class GUIProgressBar extends GUIControl {
       //Progress
       this.hasProgress = control.hasField('PROGRESS');
       if(this.hasProgress){
-        let progress = control.getFieldByLabel('PROGRESS')?.getChildStructs()[0];
+        const progress = control.getFieldByLabel('PROGRESS')?.getChildStructs()[0];
         if(progress){
           if(progress.hasField('COLOR')){
-            let color = progress.getFieldByLabel('COLOR')?.getVector();
+            const color = progress.getFieldByLabel('COLOR')?.getVector();
             if(color){
               this.progress.color.setRGB(color.x, color.y, color.z)
             }
@@ -156,7 +161,7 @@ export class GUIProgressBar extends GUIControl {
     if(this.progress.edge != ''){
       TextureLoader.enQueue(this.progress.edge, this.progress.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture)
-          console.log('initTextures', this.progress.edge, texture);
+          log.debug('initTextures', this.progress.edge, texture);
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -166,7 +171,7 @@ export class GUIProgressBar extends GUIControl {
     if(this.progress.corner != ''){
       TextureLoader.enQueue(this.progress.corner, this.progress.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture)
-          console.log('initTextures', this.progress.corner, texture);
+          log.debug('initTextures', this.progress.corner, texture);
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -191,21 +196,21 @@ export class GUIProgressBar extends GUIControl {
     this.curValue = val < 0 ? 0 : val;
     this.curValue = !this.curValue ? 0.000000000000001 : this.curValue;
     
-    let value = Math.min(this.curValue / this.maxValue, 1);
+    const value = Math.min(this.curValue / this.maxValue, 1);
 
-    let extent = this.getFillExtent();
-    let sprite = this.progress.fill.mesh;
+    const extent = this.getFillExtent();
+    const sprite = this.progress.fill.mesh;
 
     if(extent.width > extent.height){
       sprite.scale.set( extent.width * value, extent.height, 1.0 );
-      let offsetX = (extent.width -(extent.width * value))/2;
+      const offsetX = (extent.width -(extent.width * value))/2;
       if(this.startFromLeft)
         sprite.position.x = -offsetX;
       else
         sprite.position.x = +offsetX;
     }else{
       sprite.scale.set( extent.width, extent.height * value, 1.0 );
-      let offsetY = (extent.height -(extent.height * value))/2;
+      const offsetY = (extent.height -(extent.height * value))/2;
       if(this.startFromLeft)
         sprite.position.y = +offsetY;
       else
@@ -226,7 +231,7 @@ export class GUIProgressBar extends GUIControl {
 
   setFillTextureName(name = ''){
     this.progress.fill.texture = name;
-    return new Promise<OdysseyTexture>( (resolve, reject) => {
+    return new Promise<OdysseyTexture>( (resolve, _reject) => {
       TextureLoader.enQueue(this.progress.fill.texture, this.progress.fill.material, TextureType.TEXTURE, resolve);
     })
   }

@@ -1,18 +1,20 @@
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
-import type { NWScriptControlStructure } from "./NWScriptControlStructureBuilder";
-import { NWScriptStackSimulator } from "./NWScriptStackSimulator";
-import { NWScriptExpressionBuilder } from "./NWScriptExpressionBuilder";
-import { NWScriptORChainDetector } from "./NWScriptORChainDetector";
-import { NWScriptANDChainDetector } from "./NWScriptANDChainDetector";
-import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
-import { OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_RETN, OP_ACTION, OP_JZ, OP_JNZ, OP_CPDOWNSP, OP_RSADD, OP_MOVSP } from '../NWScriptOPCodes';
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { NWScriptANDChainDetector } from "@/nwscript/decompiler/NWScriptANDChainDetector";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import type { NWScriptControlStructure } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
+import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
+import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
+import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import { NWScriptORChainDetector } from "@/nwscript/decompiler/NWScriptORChainDetector";
+import { NWScriptStackSimulator } from "@/nwscript/decompiler/NWScriptStackSimulator";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_RETN, OP_ACTION, OP_JZ, OP_JNZ, OP_CPDOWNSP, OP_RSADD, OP_MOVSP } from '@/nwscript/NWScriptOPCodes';
+
+
 
 /**
- * Represents a high-level statement in the decompiled code
+ * Represents a high-level statement in the reconstructed script
  */
 export interface NWScriptStatement {
   type: 'expression' | 'assignment' | 'return' | 'if' | 'while' | 'doWhile' | 'for' | 'block';
@@ -136,7 +138,7 @@ export class NWScriptStatementBuilder {
    */
   /**
    * @deprecated This method uses non-stack-aware heuristics and hardcoded offset patterns.
-   * The current decompiler pipeline uses stack-aware variable resolution via variableStackPositions maps.
+   * The current conversion pipeline uses stack-aware variable resolution via variableStackPositions maps.
    * This method is kept for backward compatibility but should not be used in new code.
    * 
    * NOTE: This class (NWScriptStatementBuilder) is not used in the current ControlNode-first pipeline.
@@ -145,7 +147,7 @@ export class NWScriptStatementBuilder {
    */
   private setupLocalVariableMapping(): void {
     // WARNING: This method uses hardcoded offset patterns and heuristics, not stack-aware tracking.
-    // It should not be used in the current decompiler pipeline.
+    // It should not be used in the current conversion pipeline.
     // Create mapping from SP offset to local variable info
     const localVarMap = new Map<number, { name: string, dataType: NWScriptDataType }>();
     

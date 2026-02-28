@@ -1,12 +1,16 @@
 import React from "react";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTIEditor } from "../../components/tabs/tab-uti-editor/TabUTIEditor";
-import { UI3DRenderer } from "../../UI3DRenderer";
 import * as THREE from "three";
-import { ForgeItem } from "../../module-editor/ForgeItem";
+
+import { TabUTIEditor } from "@/apps/forge/components/tabs/tab-uti-editor/TabUTIEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface ItemPropertyEntry {
   chanceAppear: number;
@@ -21,7 +25,7 @@ export interface ItemPropertyEntry {
 export class TabUTIEditorState extends TabState {
   tabName: string = `UTI`;
   item: ForgeItem = new ForgeItem();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.item.blueprint;
   }
@@ -131,7 +135,7 @@ export class TabUTIEditorState extends TabState {
     super.hide();
     this.ui3DRenderer.enabled = false;
   }
-  
+
   updateFile(){
     this.item.exportToBlueprint();
   }

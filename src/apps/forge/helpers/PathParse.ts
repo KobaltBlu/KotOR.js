@@ -26,7 +26,7 @@ export const pathParse = (filepath: string): ParsedPath => {
   // Normalize the path to use forward slashes
   const normalizedPath = pathWithoutProtocol.replace(/\\/g, '/');
   
-  let parsed: ParsedPath = { 
+  const parsed: ParsedPath = { 
     root: '', 
     dir: '', 
     base: '', 

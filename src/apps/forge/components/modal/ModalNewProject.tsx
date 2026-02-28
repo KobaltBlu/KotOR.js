@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Button, FormControl, FormSelect, InputGroup, Modal } from "react-bootstrap";
-import * as KotOR from "../../KotOR";
-import { ProjectType } from "../../enum/ProjectType";
-import { ForgeFileSystem, ForgeFileSystemResponseType } from "../../ForgeFileSystem";
-import { ForgeState } from "../../states/ForgeState";
-import { ProjectFileSystem } from "../../ProjectFileSystem";
-import { Project } from "../../Project";
-import path from "path";
+
+import { ProjectType } from "@/apps/forge/enum/ProjectType";
+import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { Project } from "@/apps/forge/Project";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 type GameModule = {
   moduleName: string;
@@ -86,7 +90,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
     project.settings.open_files = [];
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
       if(!projectDirectory.path){
-        console.error('Project directory path is required');
+        log.error('Project directory path is required');
         return;
       }
       ProjectFileSystem.rootDirectoryPath = projectDirectory.path;
@@ -96,9 +100,9 @@ export const ModalNewProject = (props: BaseModalProps) => {
       if(projectType === ProjectType.MODULE){
         const gameModule = gameModules[selectedGameModule];
         if(gameModule){
-          console.log('selectedGameModule', gameModule.entryArea);
+          log.debug('selectedGameModule', gameModule.entryArea);
           const lyt = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, gameModule.entryArea);
-          if(lyt){  
+          if(lyt){
             await ProjectFileSystem.writeFile(areaName + '.lyt', lyt);
           }
           const vis = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.vis, gameModule.entryArea);
@@ -158,14 +162,14 @@ export const ModalNewProject = (props: BaseModalProps) => {
           return;
         }
         if(response.type === ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE){
-          setProjectDirectory({ 
+          setProjectDirectory({
             name: response.handle?.name,
             path: response.handle?.name as string,
             handle: response.handle as FileSystemDirectoryHandle,
           });
         }
         if(response.type === ForgeFileSystemResponseType.FILE_PATH_STRING){
-          setProjectDirectory({ 
+          setProjectDirectory({
             name: response.path?.split('/').pop(),
             path: response.path as string,
             handle: undefined,
@@ -176,14 +180,14 @@ export const ModalNewProject = (props: BaseModalProps) => {
 
   const onModuleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedGameModule(parseInt(e.target.value));
-    console.log('selectedGameModule', e.target.value);
+    log.trace('selectedGameModule', e.target.value);
   };
 
   return (
-    <Modal 
-      show={show} 
-      onHide={handleHide} 
-      backdrop="static" 
+    <Modal
+      show={show}
+      onHide={handleHide}
+      backdrop="static"
       keyboard={false}
     >
       <Modal.Header closeButton>

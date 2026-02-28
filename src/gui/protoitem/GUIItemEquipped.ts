@@ -1,5 +1,5 @@
-import { GameState } from "../../GameState";
-import type { ModuleItem } from "../../module";
+import { GameState } from "@/GameState";
+import type { ModuleItem } from "@/module";
 
 const STR_EQUIPPED = 32346;
 

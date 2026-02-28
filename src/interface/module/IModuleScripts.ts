@@ -1,4 +1,4 @@
-import type { NWScriptInstance } from "../../nwscript/NWScriptInstance"
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance"
 
 /**
  * IModuleScripts interface.

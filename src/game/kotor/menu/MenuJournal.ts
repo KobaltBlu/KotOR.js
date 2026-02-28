@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { JournalEntry } from "../../../engine/JournalEntry";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { JournalEntry } from "@/engine/JournalEntry";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 enum JournalSort {
   RECIEVED = 0,
@@ -140,11 +140,11 @@ export class MenuJournal extends GameMenu {
   }
 
   GetMenuTitle(): string {
-    let questModeLabel = (
+    const questModeLabel = (
       this.mode == JournalQuestMode.ACTIVE ? GameState.TLKManager.GetStringById(STRREF_MODE_ACTIVE).Value :
       this.mode == JournalQuestMode.COMPLETED ? GameState.TLKManager.GetStringById(STRREF_MODE_COMPLETED).Value : ''
     );
-    let sortModeLabel = (
+    const sortModeLabel = (
       this.sort == JournalSort.RECIEVED ? GameState.TLKManager.GetStringById(STRREF_BY_RECIEVED).Value :
       this.sort == JournalSort.NAME ? GameState.TLKManager.GetStringById(STRREF_BY_NAME).Value :
       this.sort == JournalSort.PRIORITY ? GameState.TLKManager.GetStringById(STRREF_BY_PRIORITY).Value :
@@ -182,8 +182,8 @@ export class MenuJournal extends GameMenu {
 
     return entries.sort( (a, b) => {
       if(this.sort == JournalSort.NAME){
-        let nameA = a.category.name.getTLKValue().toLocaleLowerCase();
-        let nameB = b.category.name.getTLKValue().toLocaleLowerCase();
+        const nameA = a.category.name.getTLKValue().toLocaleLowerCase();
+        const nameB = b.category.name.getTLKValue().toLocaleLowerCase();
         if (nameA < nameB) {
           return -1;
         }

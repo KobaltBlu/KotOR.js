@@ -1,16 +1,22 @@
-import type { NWScript } from "../NWScript";
-import { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import { NWScriptControlStructureBuilder } from "./NWScriptControlStructureBuilder";
-import { NWScriptFunctionAnalyzer } from "./NWScriptFunctionAnalyzer";
-import { NWScriptASTCodeGenerator } from "./NWScriptASTCodeGenerator";
-import { NWScriptGlobalVariableAnalyzer } from "./NWScriptGlobalVariableAnalyzer";
-import { NWScriptLocalVariableAnalyzer } from "./NWScriptLocalVariableAnalyzer";
-import { NWScriptControlNodeToASTConverter } from "./NWScriptControlNodeToASTConverter";
-import { NWScriptAST } from "./NWScriptAST";
+
+
+import { NWScriptAST } from "@/nwscript/decompiler/NWScriptAST";
+import { NWScriptASTCodeGenerator } from "@/nwscript/decompiler/NWScriptASTCodeGenerator";
+import { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import { NWScriptControlNodeToASTConverter } from "@/nwscript/decompiler/NWScriptControlNodeToASTConverter";
+import { NWScriptControlStructureBuilder } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
+import { NWScriptFunctionAnalyzer } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import { NWScriptGlobalVariableAnalyzer } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import { NWScriptLocalVariableAnalyzer } from "@/nwscript/decompiler/NWScriptLocalVariableAnalyzer";
+import type { NWScript } from "@/nwscript/NWScript";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.NWScript);
 
 /**
- * Main decompiler orchestrator.
- * Coordinates all decompilation phases to convert NCS bytecode to NSS source.
+ * NCS-to-NSS conversion orchestrator.
+ * Coordinates analysis phases to convert NCS bytecode to NSS source.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
@@ -46,58 +52,58 @@ export class NWScriptDecompiler {
         return '// Error: No instructions found';
       }
 
-      console.log('Building control flow graph...');
+      log.info('Building control flow graph...');
       this.cfg = new NWScriptControlFlowGraph(this.script);
       this.cfg.build();
-      console.log('CFG built successfully');
+      log.info('CFG built successfully');
 
       if (!this.cfg.entryBlock) {
         return '// Error: No entry block found';
       }
 
-      // console.log(JSON.stringify(this.cfg.toJSON(), null, 2));
+      // log.info(JSON.stringify(this.cfg.toJSON(), null, 2));
 
       // Phase 2: Analyze global variable initializations
-      console.log('Analyzing global variables...');
+      log.info('Analyzing global variables...');
       this.globalVarAnalyzer = new NWScriptGlobalVariableAnalyzer(this.script, this.cfg);
       const globalInits = this.globalVarAnalyzer.analyze();
-      // console.log(`Found ${globalInits.length} global variables`);
-      // console.log(JSON.stringify(globalInits, null, 2));
+      // log.info(`Found ${globalInits.length} global variables`);
+      // log.info(JSON.stringify(globalInits, null, 2));
 
       // Phase 3: Analyze local variable initializations
-      console.log('Analyzing local variables...');
+      log.info('Analyzing local variables...');
       this.localVarAnalyzer = new NWScriptLocalVariableAnalyzer(this.script, globalInits);
       const localInits = this.localVarAnalyzer.analyze();
-      // console.log(`Found ${localInits.length} local variables`);
-      // console.log(JSON.stringify(localInits, null, 2));
+      // log.info(`Found ${localInits.length} local variables`);
+      // log.info(JSON.stringify(localInits, null, 2));
 
       // Phase 4: Analyze Functions
-      console.log('Analyzing functions...');
+      log.info('Analyzing functions...');
       this.functionAnalyzer = new NWScriptFunctionAnalyzer(this.cfg, globalInits);
       const functions = this.functionAnalyzer.analyze();
-      // console.log(`Found ${functions.length} functions`);
-      // console.log(JSON.stringify(functions, null, 2));
+      // log.info(`Found ${functions.length} functions`);
+      // log.info(JSON.stringify(functions, null, 2));
 
       // Phase 5: Build Control Structures and ControlNode Tree
-      console.log('Building control structures...');
+      log.info('Building control structures...');
       this.structureBuilder = new NWScriptControlStructureBuilder(this.cfg);
       this.structureBuilder.analyze();
-      // console.log(JSON.stringify(this.structureBuilder.toJSON(), null, 2));
+      // log.info(JSON.stringify(this.structureBuilder.toJSON(), null, 2));
       
       // Use the main function's entry block, not the CFG entry block
       // The CFG entry block is the JSR caller, but we need the actual function entry block
       const mainFunction = functions.find(f => f.isMain);
       const functionEntryBlock = mainFunction?.entryBlock || this.cfg.entryBlock;
-      console.log(`[Decompiler] Building ControlNode tree from function entry block ${functionEntryBlock.id} (CFG entry block is ${this.cfg.entryBlock.id})`);
+      log.info(`[Decompiler] Building ControlNode tree from function entry block ${functionEntryBlock.id} (CFG entry block is ${this.cfg.entryBlock.id})`);
       
       const controlNodeTree = this.structureBuilder.buildProcedure(functionEntryBlock);
-      console.log('ControlNode tree built successfully');
-      console.log(`[Decompiler] CFG has ${this.cfg.blocks.size} blocks`);
-      console.log(`[Decompiler] Main function has ${mainFunction?.bodyBlocks.length || 0} body blocks`);
-      console.log(`[Decompiler] ControlNode tree type: ${controlNodeTree.type}`);
+      log.info('ControlNode tree built successfully');
+      log.info(`[Decompiler] CFG has ${this.cfg.blocks.size} blocks`);
+      log.info(`[Decompiler] Main function has ${mainFunction?.bodyBlocks.length || 0} body blocks`);
+      log.info(`[Decompiler] ControlNode tree type: ${controlNodeTree.type}`);
 
       // Phase 6: Convert ControlNode Tree to AST
-      console.log('Converting ControlNode tree to AST...');
+      log.info('Converting ControlNode tree to AST...');
       this.astConverter = new NWScriptControlNodeToASTConverter(
         this.cfg,
         functions,
@@ -105,11 +111,11 @@ export class NWScriptDecompiler {
         localInits
       );
       const ast = this.astConverter.convertToAST(controlNodeTree, this.structureBuilder);
-      console.log('AST built successfully');
-      console.log('AST JSON:', JSON.stringify(NWScriptAST.toJSON(ast), null, 2));
+      log.info('AST built successfully');
+      log.info('AST JSON:', JSON.stringify(NWScriptAST.toJSON(ast), null, 2));
 
       // Phase 7: Generate NSS Code from AST
-      console.log('Generating NSS source code...');
+      log.info('Generating NSS source code...');
       this.codeGenerator = new NWScriptASTCodeGenerator();
       const nssSource = this.codeGenerator.generate(ast);
 
@@ -117,55 +123,55 @@ export class NWScriptDecompiler {
       const header = this.generateHeader();
       return header + '\n\n' + nssSource;
     } catch (error) {
-      console.error('Decompilation error:', error);
-      return `// Error during decompilation: ${error instanceof Error ? error.message : String(error)}`;
+      log.error('Decompilation error:', error);
+      return `// Error during conversion: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
 
   /**
-   * Generate header comment for decompiled code
+   * Generate header comment for reconstructed script output
    */
   private generateHeader(): string {
     const lines: string[] = [];
-    lines.push('// Decompiled NSS source');
+    lines.push('// Reconstructed NSS source');
     lines.push(`// Original script: ${this.script.name || 'unknown'}`);
     lines.push('//');
-    lines.push('// NOTE: This is decompiled code. Variable names and structure');
+    lines.push('// NOTE: This is reconstructed script output. Variable names and structure');
     lines.push('// may not match the original source exactly.');
     lines.push('//');
     return lines.join('\n');
   }
 
   /**
-   * Get the control flow graph (after decompilation)
+   * Get the control flow graph (after analysis)
    */
   getControlFlowGraph(): NWScriptControlFlowGraph | null {
     return this.cfg;
   }
 
   /**
-   * Get control structures (after decompilation)
+   * Get control structures (after analysis)
    */
   getControlStructures() {
     return this.structureBuilder?.getStructures() || [];
   }
 
   /**
-   * Get functions (after decompilation)
+   * Get functions (after analysis)
    */
   getFunctions() {
     return this.functionAnalyzer?.getFunctions() || [];
   }
 
   /**
-   * Get global variable analyzer (after decompilation)
+   * Get global variable analyzer (after analysis)
    */
   getGlobalVariableAnalyzer(): NWScriptGlobalVariableAnalyzer | null {
     return this.globalVarAnalyzer;
   }
 
   /**
-   * Get local variable analyzer (after decompilation)
+   * Get local variable analyzer (after analysis)
    */
   getLocalVariableAnalyzer(): NWScriptLocalVariableAnalyzer | null {
     return this.localVarAnalyzer;

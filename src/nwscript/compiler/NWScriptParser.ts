@@ -177,15 +177,15 @@ export class NWScriptParser {
         if (statement.source && statement.source.first_line > 1) {
           const lines = this.nwscript_source.split('\n');
           const funcLine = statement.source.first_line - 1; // Convert to 0-based index
-          
+
           // Look backwards for comment blocks
-          let commentLines: string[] = [];
+          const commentLines: string[] = [];
           let inBlockComment = false;
-          
+
           for (let i = funcLine - 1; i >= 0; i--) {
             const line = lines[i];
             const trimmed = line.trim();
-            
+
             if (trimmed === '') {
               if (commentLines.length > 0 && !inBlockComment) {
                 break; // Stop at blank line if we found comments (unless in block comment)
@@ -195,7 +195,7 @@ export class NWScriptParser {
               }
               continue;
             }
-            
+
             // Check for block comment end */
             if (trimmed.includes('*/') && !trimmed.includes('/*')) {
               inBlockComment = true;
@@ -207,7 +207,7 @@ export class NWScriptParser {
               // Continue collecting until we find /*
               continue;
             }
-            
+
             // Check for block comment start /*
             if (trimmed.includes('/*')) {
               const startMatch = trimmed.match(/\/\*(.*?)(\*\/)?/);
@@ -227,26 +227,26 @@ export class NWScriptParser {
               }
               continue;
             }
-            
+
             // If we're in a block comment, collect the line
             if (inBlockComment) {
               commentLines.unshift(trimmed);
               continue;
             }
-            
+
             // Handle single-line comments
             if (trimmed.startsWith('//')) {
               commentLines.unshift(trimmed.replace(/^\/\/\s*/, ''));
               continue;
             }
-            
+
             // Stop at non-comment code
             break;
           }
-          
+
           comment = commentLines.join('\n').trim();
         }
-        
+
         this.engine_actions.push({
           index: this.engine_actions.length,
           returntype: statement.returntype,
@@ -286,11 +286,11 @@ export class NWScriptParser {
       }
     }
 
-    console.log(` `);
-    console.log(` `);
-    console.log(` `);
-    console.log(`Found (${this.engine_constants.length}) Engine Constants`);
-    console.log(`Found (${this.engine_actions.length}) Engine Actions`);
+    log.info(` `);
+    log.info(` `);
+    log.info(` `);
+    log.info(`Found (${this.engine_constants.length}) Engine Constants`);
+    log.info(`Found (${this.engine_actions.length}) Engine Actions`);
   }
 
   parseAST(script: string): ProgramNode | undefined {
@@ -748,7 +748,7 @@ export class NWScriptParser {
       let arg = typeof args[i] == 'object' ? this.parseASTStatement(args[i]) as SemanticExpressionNode : args[i];
       const arg_ref = ref_args[i] as SemanticArgumentNode;
 
-      //Check to see if an argument was not supplied and the function reference 
+      //Check to see if an argument was not supplied and the function reference
       //has a default argument value to use in place of unsupplied arguments
       if(!arg && (typeof arg_ref.value !== 'undefined') ){
         //generate a default argument if one is not supplied
@@ -808,7 +808,7 @@ export class NWScriptParser {
       semanticNode.property_reference = this.getVariableByName(`${semanticNode.left.name}.${semanticNode.name}`) as SemanticStructPropertyNode;
       // // semanticNode.datatype = semanticNode.left?.variable_reference?.datatype;
       // semanticNode.is_global = semanticNode.left.is_global;
-      // console.log('property', semanticNode, `${semanticNode.left.name}.${semanticNode.name}`, semanticNode.variable_reference);
+      // log.info('property', semanticNode, `${semanticNode.left.name}.${semanticNode.name}`, semanticNode.variable_reference);
     }
 
     if(semanticNode.right && typeof semanticNode.right == 'object'){
@@ -824,14 +824,14 @@ export class NWScriptParser {
     const semanticNode = Object.assign({}, statement) as SemanticVariableListNode;
     semanticNode.variables = [];
     for(let i = 0; i < statement.names.length; i++){
-      const _var = { 
-        type: 'variable', 
-        is_const: statement.is_const, 
-        declare: statement.declare, 
-        datatype: statement.datatype, 
-        name: statement.names[i].name, 
-        value: statement.value, 
-        source: statement.names[i].source 
+      const _var = {
+        type: 'variable',
+        is_const: statement.is_const,
+        declare: statement.declare,
+        datatype: statement.datatype,
+        name: statement.names[i].name,
+        value: statement.value,
+        source: statement.names[i].source
       } as VariableNode;
       semanticNode.variables[i] = this.parseVariableNode(_var) as SemanticVariableNode;
     }
@@ -1035,7 +1035,7 @@ export class NWScriptParser {
 
     return semanticNode;
   }
-  
+
   parseElseIfNode( statement: ElseIfNode ): SemanticElseIfNode {
     if(!statement || (typeof statement !== 'object') || statement.type !== 'elseif'){
       this.throwError("Invalid elseif node", statement, statement);
@@ -1045,7 +1045,7 @@ export class NWScriptParser {
     if(!!semanticNode.condition && typeof semanticNode.condition == 'object'){
       semanticNode.condition = this.parseASTStatement(semanticNode.condition);
     }
-    
+
     semanticNode.statements = statement.statements?.map(s => this.parseASTStatement(s)) || [];
     this.endScope();
 
@@ -1189,8 +1189,8 @@ export class NWScriptParser {
       this.throwError("Invalid compare node", statement, statement);
     }
     const semanticNode = Object.assign({}, statement) as SemanticCompareNode;
-    if(!!semanticNode.left && typeof semanticNode.left == 'object'){ 
-      semanticNode.left = this.parseASTStatement(semanticNode.left); 
+    if(!!semanticNode.left && typeof semanticNode.left == 'object'){
+      semanticNode.left = this.parseASTStatement(semanticNode.left);
     }
     if(!!semanticNode.right && typeof semanticNode.right == 'object'){
       semanticNode.right = this.parseASTStatement(semanticNode.right);
@@ -1385,7 +1385,7 @@ export class NWScriptParser {
           && !(left_type == 'float'  && right_type == 'int')
           && !(left_type == 'float'  && right_type == 'float')
           && !(left_type == 'string' && right_type == 'string')
-          && !(left_type == 'vector' && right_type == 'vector') 
+          && !(left_type == 'vector' && right_type == 'vector')
         )
       {
         this.throwError(`Can't add types of [${left_type}] and [${right_type}] together`, semanticNode, semanticNode.right);
@@ -1395,7 +1395,7 @@ export class NWScriptParser {
           && !(left_type == 'int'    && right_type == 'float')
           && !(left_type == 'float'  && right_type == 'int')
           && !(left_type == 'float'  && right_type == 'float')
-          && !(left_type == 'vector' && right_type == 'vector') 
+          && !(left_type == 'vector' && right_type == 'vector')
         )
       {
         this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, semanticNode, semanticNode.right);
@@ -1405,7 +1405,7 @@ export class NWScriptParser {
           && !(left_type == 'int'    && right_type == 'float')
           && !(left_type == 'float'  && right_type == 'int')
           && !(left_type == 'float'  && right_type == 'float')
-          && !(left_type == 'vector' && right_type == 'vector') 
+          && !(left_type == 'vector' && right_type == 'vector')
         )
       {
         this.throwError(`Can't multiply types of [${left_type}] and [${right_type}] together`, semanticNode, semanticNode.right);
@@ -1415,7 +1415,7 @@ export class NWScriptParser {
           && !(left_type == 'int'    && right_type == 'float')
           && !(left_type == 'float'  && right_type == 'int')
           && !(left_type == 'float'  && right_type == 'float')
-          && !(left_type == 'vector' && right_type == 'vector') 
+          && !(left_type == 'vector' && right_type == 'vector')
         )
       {
         this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, semanticNode, semanticNode.right);
@@ -1439,8 +1439,8 @@ export class NWScriptParser {
       semanticNode.value = this.parseASTStatement(semanticNode.value);
     }
 
-    let value_type = this.getValueDataType(semanticNode.value);
-    let value_type_unary = this.getValueDataTypeUnary(semanticNode.value);
+    const value_type = this.getValueDataType(semanticNode.value);
+    const value_type_unary = this.getValueDataTypeUnary(semanticNode.value);
     semanticNode.datatype = { type: 'datatype', unary: value_type_unary, value: value_type };
     if(semanticNode.type == 'neg'){
       if(    !(value_type == 'int')
@@ -1649,7 +1649,7 @@ class NWScriptScope {
 
   getVariable(name = ''){
     if(!name || typeof name != 'string'){
-      console.error('getVariable: name is not a string');
+      log.error('getVariable: name is not a string');
     }
     const isStructProperty = name?.includes('.');
     if(isStructProperty){

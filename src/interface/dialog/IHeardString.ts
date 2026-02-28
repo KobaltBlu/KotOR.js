@@ -1,5 +1,5 @@
-import type { TalkVolume } from "../../enums/engine/TalkVolume";
-import type { ModuleObject } from "../../module/ModuleObject";
+import type { TalkVolume } from "@/enums/engine/TalkVolume";
+import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
  * IHeardString interface.

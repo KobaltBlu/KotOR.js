@@ -1,17 +1,20 @@
-import * as KOTOR from "../game/kotor/KOTOR";
-import * as TSL from "../game/tsl/TSL";
-import { GameState } from "../GameState";
-import { EngineMode, GameEngineType } from "../enums/engine";
-import type { GUIControl, GameMenu } from "../gui";
-import { ActionMenuManager } from "../engine/menu/ActionMenuManager";
-import { EngineState } from "../enums/engine/EngineState";
-import { PerformanceMonitor } from "../utility/PerformanceMonitor";
+import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
+import { EngineMode, GameEngineType } from "@/enums/engine";
+import { EngineState } from "@/enums/engine/EngineState";
+import * as KOTOR from "@/game/kotor/KOTOR";
+import * as TSL from "@/game/tsl/TSL";
+import { GameState } from "@/GameState";
+import type { GUIControl, GameMenu } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Manager);
+import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 
 /**
  * MenuManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

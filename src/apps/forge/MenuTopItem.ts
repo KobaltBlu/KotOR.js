@@ -1,4 +1,4 @@
-import { EventListenerModel } from "./EventListenerModel";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
 
 
 export type MenuTopItemOnClickType = (menuItem: MenuTopItem) => void;

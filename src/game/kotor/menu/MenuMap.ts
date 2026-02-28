@@ -1,14 +1,17 @@
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_MapView } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { MapMode } from "../../../enums/engine/MapMode";
-import { Mouse } from "../../../controls";
-import type { ModuleWaypoint } from "../../../module";
-import { CExoLocString } from "../../../resource/CExoLocString";
+import { Mouse } from "@/controls";
+import { MapMode } from "@/enums/engine/MapMode";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_MapView } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { ModuleWaypoint } from "@/module";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * MenuMap class.
@@ -120,8 +123,8 @@ export class MenuMap extends GameMenu {
       TextureLoader.Load(sTexture).then((texture: OdysseyTexture) => {
         this.miniMap.setTexture(texture);
       });
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e);
     }
   }
 

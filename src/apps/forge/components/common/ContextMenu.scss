@@ -176,7 +176,7 @@
   // High contrast mode support
   @media (prefers-contrast: high) {
     border-width: 2px;
-    
+
     .context-menu-item {
       &:hover {
         background: $primary-blue;

@@ -1,15 +1,19 @@
-import { GameState } from "../GameState";
-import { ModuleCreatureAnimState, ModuleItemProperty } from "../enums";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { SignalEventType } from "../enums/events/SignalEventType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleItem } from "../module/ModuleItem";
-import type { ModuleObject } from "../module/ModuleObject";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
+import { Action } from "@/actions/Action";
+import { ModuleCreatureAnimState, ModuleItemProperty } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { SignalEventType } from "@/enums/events/SignalEventType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * ActionSetMine class.
@@ -39,7 +43,7 @@ export class ActionSetMine extends Action {
     //4 - FLOAT: z
   }
 
-  update(delta?: number): ActionStatus {
+  update(_delta?: number): ActionStatus {
 
     this.oItem = this.getParameter<ModuleItem>(0);
     this.target = this.getParameter<ModuleObject>(1);
@@ -60,7 +64,7 @@ export class ActionSetMine extends Action {
         actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
         this.owner.actionQueue.addFront(actionMoveToTarget);
 
-        console.log('ActionSetMine', 'MOVE_TO_TARGET');
+        log.debug('ActionSetMine', 'MOVE_TO_TARGET');
         return ActionStatus.IN_PROGRESS;
       }
 
@@ -71,13 +75,13 @@ export class ActionSetMine extends Action {
         action.setParameter(1, ActionParameterType.FLOAT, 1);
         action.setParameter(2, ActionParameterType.FLOAT, 1.5);
         this.owner.actionQueue.addFront(action);
-        console.log('ActionSetMine', 'ANIMATION_QUEUED');
+        log.debug('ActionSetMine', 'ANIMATION_QUEUED');
         return ActionStatus.IN_PROGRESS;
       }
 
       if(this.oItem && !this.usedItem){
         for(let i = 0, len = this.oItem.properties.length; i < len; i++){
-          let property = this.oItem.properties[i];
+          const property = this.oItem.properties[i];
           // if(!property.isUseable()){ continue; }
     
           if(property.is(ModuleItemProperty.Trap)){
@@ -88,7 +92,7 @@ export class ActionSetMine extends Action {
         }
 
         this.usedItem = true;
-        console.log('ActionSetMine', 'ITEM_USED');
+        log.debug('ActionSetMine', 'ITEM_USED');
 
         const futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(3);
 
@@ -111,11 +115,11 @@ export class ActionSetMine extends Action {
         }
       }
       
-      console.log('ActionSetMine', 'COMPLETE');
+      log.debug('ActionSetMine', 'COMPLETE');
       return ActionStatus.COMPLETE;
     }
-    
-    console.log('ActionSetMine', 'FAILED');
+
+    log.debug('ActionSetMine', 'FAILED');
     return ActionStatus.FAILED;
   }
 

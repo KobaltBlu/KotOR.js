@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "../../../gui";;
-import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 const END_ROUND_DESC = 42445;
 const ENEMY_SIGHTED_DESC = 42446;

@@ -1,11 +1,15 @@
-import { GUIProtoItem, GUIButton } from "../../../gui";
-import type { GUIControl, GameMenu } from "../../../gui";
 import * as THREE from "three";
-import { TextureType } from "../../../enums/loaders/TextureType";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import type { GFFStruct } from "../../../resource/GFFStruct";
-import { GameState } from "../../../GameState";
-import { TextureLoader } from "../../../loaders";
+
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GameState } from "@/GameState";
+import { GUIProtoItem, GUIButton } from "@/gui";
+import type { GUIControl, GameMenu } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * GUIFeatItem class.
@@ -64,7 +68,7 @@ export class GUIFeatItem extends GUIProtoItem {
         buttonIcon.autoCalculatePosition = false;
         this.children.push(buttonIcon);
 
-        let _buttonIconWidget = buttonIcon.createControl();
+        const _buttonIconWidget = buttonIcon.createControl();
         switch(i){
           case 2:
             _buttonIconWidget.position.x = (this.extent.width/2 - buttonIcon.extent.width/2);
@@ -122,9 +126,9 @@ export class GUIFeatItem extends GUIProtoItem {
          * BLUE ARROW
          */
         
-        let arrowOffset = (this.extent.width/2 - buttonIcon.extent.width/2)/2;
+        const arrowOffset = (this.extent.width/2 - buttonIcon.extent.width/2)/2;
         if(i > 0){
-          let arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
+          const arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
           arrowIcon.name = 'ARROW';
           arrowIcon.setText('');
           arrowIcon.disableTextAlignment();
@@ -140,7 +144,7 @@ export class GUIFeatItem extends GUIProtoItem {
           arrowIcon.autoCalculatePosition = false;
           this.children.push(arrowIcon);
 
-          let _arrowIconWidget = arrowIcon.createControl();
+          const _arrowIconWidget = arrowIcon.createControl();
           switch(i){
             case 2:
               _arrowIconWidget.position.x = arrowOffset;

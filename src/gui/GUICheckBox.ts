@@ -65,7 +65,7 @@ export class GUICheckBox extends GUIControl{
     };
 
     this.borderSelected.geometry = new THREE.BufferGeometry();
-    
+
     this.borderSelected.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -98,7 +98,7 @@ export class GUICheckBox extends GUIControl{
     //---------------//
     // Selected Fill
     //---------------//
-    
+
     this.borderSelected.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -142,7 +142,7 @@ export class GUICheckBox extends GUIControl{
     };
 
     this.highlightSelected.geometry = new THREE.BufferGeometry();
-    
+
     this.highlightSelected.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -175,7 +175,7 @@ export class GUICheckBox extends GUIControl{
     //-------------------------//
     // Highlight Selected Fill
     //-------------------------//
-    
+
     this.highlightSelected.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -194,14 +194,14 @@ export class GUICheckBox extends GUIControl{
     this.widget.userData.highlightSelected.add( this.highlightSelected.fill.mesh );
 
     if(this.control instanceof GFFStruct){
-      
+
       //Selected
       this.hasSelected = control.hasField('SELECTED');
       if(this.hasSelected){
-        let selected = control.getFieldByLabel('SELECTED').getChildStructs()[0];
+        const selected = control.getFieldByLabel('SELECTED').getChildStructs()[0];
 
         if(selected.hasField('COLOR')){
-          let color = selected.getFieldByLabel('COLOR').getVector();
+          const color = selected.getFieldByLabel('COLOR').getVector();
           this.borderSelected.color.setRGB(color.x, color.y, color.z)
         }
 
@@ -260,13 +260,13 @@ export class GUICheckBox extends GUIControl{
     if(this.borderSelected.edge != ''){
       TextureLoader.enQueue(this.borderSelected.edge, this.borderSelected.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
-          console.log('initTextures', this.borderSelected.edge, texture);
+          log.debug('initTextures', this.borderSelected.edge, texture);
           return;
         }
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
-        let cbSize = this.getCBScale();
+        const cbSize = this.getCBScale();
         this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
         this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
       });
@@ -275,7 +275,7 @@ export class GUICheckBox extends GUIControl{
     if(this.borderSelected.corner != ''){
       TextureLoader.enQueue(this.borderSelected.corner, this.borderSelected.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
-          console.log('initTextures', this.borderSelected.corner, texture);
+          log.debug('initTextures', this.borderSelected.corner, texture);
           return;
         }
 
@@ -302,7 +302,7 @@ export class GUICheckBox extends GUIControl{
     if(this.highlightSelected.edge != ''){
       TextureLoader.enQueue(this.highlightSelected.edge, this.highlightSelected.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
-          console.log('initTextures', this.highlightSelected.edge, texture);
+          log.debug('initTextures', this.highlightSelected.edge, texture);
           return;
         }
 
@@ -314,7 +314,7 @@ export class GUICheckBox extends GUIControl{
     if(this.highlightSelected.corner != ''){
       TextureLoader.enQueue(this.highlightSelected.corner, this.highlightSelected.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
-          console.log('initTextures', this.highlightSelected.corner, texture);
+          log.debug('initTextures', this.highlightSelected.corner, texture);
           return;
         }
 
@@ -329,7 +329,7 @@ export class GUICheckBox extends GUIControl{
         if(texture == null){
           this.highlightSelected.fill.material.uniforms.opacity.value = 0.01;
         }
-        let cbSize = this.getCBScale();
+        const cbSize = this.getCBScale();
         this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
         this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
       });
@@ -380,7 +380,7 @@ export class GUICheckBox extends GUIControl{
 
   buildFill(){
     super.buildFill();
-    let cbSize = this.getCBScale();
+    const cbSize = this.getCBScale();
     this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.border.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
     this.border.fill.material.uniforms.diffuse.value.set(this.defaultColor);
@@ -388,7 +388,7 @@ export class GUICheckBox extends GUIControl{
 
   buildHighlightFill(){
     super.buildHighlightFill();
-    let cbSize = this.getCBScale();
+    const cbSize = this.getCBScale();
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
     this.highlight.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
@@ -405,7 +405,7 @@ export class GUICheckBox extends GUIControl{
     this.highlight.fill.mesh.visible = false;
     this.highlightSelected.fill.mesh.visible = false;
 
-    let cbSize = this.getCBScale();
+    const cbSize = this.getCBScale();
     this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
@@ -457,7 +457,7 @@ export class GUICheckBox extends GUIControl{
     if(this.isClickable()){
       GameState.guiAudioEmitter.playSoundFireAndForget('gui_scroll');
     }
-    
+
     this.processEventListener('hover');
     this.processEventListener('mouseIn');
   }
@@ -473,7 +473,7 @@ export class GUICheckBox extends GUIControl{
     if(this.iniProperty){
       GameState.iniConfig.setProperty(this.iniProperty, this.value);
     }
-    
+
     if(typeof this.onValueChanged === 'function')
       this.onValueChanged(this.value);
 

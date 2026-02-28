@@ -78,7 +78,7 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
             });
             if(newHandle){
               newFile.handle = newHandle;
-              console.log('handle', newHandle.name, newHandle);
+              log.debug('handle', newHandle.name, newHandle);
               try{
                 newFile.setPath(`file://system.dir/${newHandle.name}`);
                 const saveBuffer = new Uint8Array(newFile.buffer)

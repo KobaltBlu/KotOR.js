@@ -1,14 +1,19 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { TLKString } from "./TLKString";
-import { GameFileSystem } from "../utility/GameFileSystem";
+import { TLKString } from "@/resource/TLKString";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Resource);
 
 /**
  * TLKObject class.
- * 
+ *
  * Class representing a Talk Table file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TLKObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -71,16 +76,16 @@ export class TLKObject {
             null
           );
 
-          let pos = this.reader.tell();
+          const pos = this.reader.tell();
           this.reader.seek(this.TLKStrings[i].StringOffset);
-          //console.log(this.TLKStrings[i].StringOffset);
+          //log.info(this.TLKStrings[i].StringOffset);
           this.TLKStrings[i].Value = this.reader.readChars(this.TLKStrings[i].StringLength).replace(/\0[\s\S]*$/g,'');
           this.reader.seek(pos);
 
           if(typeof onProgress == 'function')
             onProgress(i+1, this.StringCount);
         }
-        console.log('TLKObject', 'Done');
+        log.info('TLKObject', 'Done');
         resolve();
       }catch(e){
         reject(e);

@@ -1,9 +1,12 @@
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { NWScriptInstruction } from "../nwscript/NWScriptInstruction";
-import { IPCMessage } from "../server/ipc/IPCMessage";
-import { IPCMessageParam } from "../server/ipc/IPCMessageParam";
-import { DebuggerState } from "../enums/server/DebuggerState";
-import { NWScriptStack } from "../nwscript/NWScriptStack";
+import { DebuggerState } from "@/enums/server/DebuggerState";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { IPCMessage } from "@/server/ipc/IPCMessage";
+import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { NWScriptStack } from "@/nwscript/NWScriptStack";
 
 /**
  * Debugger class.
@@ -83,7 +86,7 @@ export class Debugger {
 
     this.window = window.open(`../debugger/index.html?uuid=${this.uuid}`, '_blank', 'width=1600,height=1200');
     if(this.window) {
-      console.log(`Debugger window opened: ${this.uuid}`);
+      log.info(`Debugger window opened: ${this.uuid}`);
       this.broadcastChannel = new BroadcastChannel(`debugger-${this.uuid}`);
       this.broadcastChannel.onmessage = (event: MessageEvent) => {
         if(typeof event.data == 'string') {
@@ -99,7 +102,7 @@ export class Debugger {
         }
       };
       this.window.addEventListener('close', () => {
-        console.log(`Debugger window closed: ${this.uuid}`);
+        log.info(`Debugger window closed: ${this.uuid}`);
       });
       this.dispatchEvent('open');
     }

@@ -13,7 +13,7 @@ export const TabScriptInspector = function(props: any){
   const offset = 13;
 
   const onCompile = () => {
-    // console.log('onCompile');
+    // log.info('onCompile');
     const script = new KotOR.NWScript(parentTab.ncs);
     setInstructions([...script.instructions.values()]);
   };
@@ -23,7 +23,7 @@ export const TabScriptInspector = function(props: any){
       const assemblyText = instructions
         .map(instruction => instruction.toAssemblyString())
         .join('\n');
-      
+
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(assemblyText);
       } else {
@@ -65,7 +65,7 @@ export const TabScriptInspector = function(props: any){
   return (
     <div className="tab-pane-content scroll-y log-list bg-dark" style={{ position: 'relative', width: '100%', height: '100%' }}>
       <MenuBar items={menuItems} />
-      <div style={{ 
+      <div style={{
         position: 'absolute',
         top: '24px',
         left: 0,
