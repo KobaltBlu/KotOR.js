@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "outDir": "out",
+    "sourceMap": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@kotor/*": ["../../src/*"],
+      "@forge/*": ["../../src/apps/forge/*"]
+    }
+  },
+  "include": [
+    "src/webview/**/*.ts",
+    "src/webview/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
