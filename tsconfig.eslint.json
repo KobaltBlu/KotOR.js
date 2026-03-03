@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "types": ["node", "jest", "offscreencanvas", "@types/wicg-file-system-access"],
+    "lib": ["ESNext", "dom", "WebWorker"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.js",
+    "src/**/*.jsx"
+  ],
+  "exclude": ["node_modules", "dist", "coverage", "release", "vendor"]
+}

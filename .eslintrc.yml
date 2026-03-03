@@ -1,11 +1,118 @@
 extends:
   - eslint:recommended
+  - plugin:@typescript-eslint/strict
   - plugin:import/recommended
-# the following lines do the trick
   - plugin:import/typescript
+parser: '@typescript-eslint/parser'
+parserOptions:
+  ecmaVersion: 2022
+  sourceType: module
+  ecmaFeatures:
+    jsx: true
+  project: ./tsconfig.eslint.json
+plugins:
+  - '@typescript-eslint'
+  - import
+env:
+  node: true
+  browser: true
+  es2022: true
+globals:
+  FileSystemFileHandle: readonly
+  FileSystemDirectoryHandle: readonly
+  FileSystemWritableFileStream: readonly
+  NodeJS: readonly
+  BufferEncoding: readonly
+  Electron: readonly
 settings:
-  import/resolver:
-    # You will also need to install and configure the TypeScript resolver
-    # See also https://github.com/import-js/eslint-import-resolver-typescript#configuration
-    typescript: true
-    node: true
+  import/resolver: node
+rules:
+  '@typescript-eslint/no-unused-vars':
+    - warn
+    - argsIgnorePattern: '^_'
+      varsIgnorePattern: '^_'
+  '@typescript-eslint/explicit-function-return-type': off
+  '@typescript-eslint/no-extraneous-class': off
+  '@typescript-eslint/no-explicit-any': warn
+  '@typescript-eslint/no-unsafe-argument': warn
+  '@typescript-eslint/no-unsafe-assignment': warn
+  '@typescript-eslint/no-unsafe-call': warn
+  '@typescript-eslint/no-unsafe-member-access': warn
+  '@typescript-eslint/no-unsafe-return': warn
+  '@typescript-eslint/no-unsafe-function-type': warn
+
+  no-console: error
+  no-debugger: warn
+  no-unused-vars: off
+  no-case-declarations: warn
+  no-async-promise-executor: warn
+  no-extra-semi: warn
+  no-empty: warn
+  no-constant-condition: warn
+  no-prototype-builtins: warn
+  no-fallthrough: warn
+  no-useless-escape: warn
+  no-cond-assign: warn
+  no-inner-declarations: warn
+  no-redeclare: warn
+  no-unsafe-finally: warn
+  no-control-regex: warn
+  no-misleading-character-class: warn
+  prefer-const: warn
+  no-var: warn
+
+  no-restricted-imports:
+    - error
+    - patterns:
+        - group:
+            - './*'
+            - './**'
+            - '../*'
+            - '../**'
+          message: Use @/ path alias instead of relative imports
+
+  import/order:
+    - warn
+    - groups:
+        - builtin
+        - external
+        - internal
+        - parent
+        - sibling
+        - index
+      newlines-between: always
+      alphabetize:
+        order: asc
+        caseInsensitive: true
+  import/no-unresolved:
+    - warn
+    - ignore:
+        - '^@/'
+  import/no-duplicates: warn
+
+  '@typescript-eslint/no-non-null-assertion': error
+  '@typescript-eslint/no-require-imports': error
+  '@typescript-eslint/no-empty-object-type': error
+  '@typescript-eslint/no-invalid-void-type': error
+  '@typescript-eslint/no-useless-constructor': error
+  '@typescript-eslint/no-dynamic-delete': error
+  '@typescript-eslint/prefer-literal-enum-member': error
+  '@typescript-eslint/no-unused-expressions': error
+  '@typescript-eslint/prefer-as-const': error
+  '@typescript-eslint/no-duplicate-enum-values': error
+  '@typescript-eslint/unified-signatures': warn
+  '@typescript-eslint/no-this-alias': warn
+  '@typescript-eslint/triple-slash-reference': warn
+  no-mixed-spaces-and-tabs: error
+  no-unexpected-multiline: error
+  no-global-assign: error
+  no-duplicate-case: error
+
+overrides:
+  - files: ['src/utility/Logger.ts']
+    rules:
+      no-console: off
+
+  - files: ['**/*.test.ts', '**/*.spec.ts']
+    env:
+      jest: true

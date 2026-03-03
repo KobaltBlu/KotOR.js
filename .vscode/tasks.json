@@ -1,0 +1,258 @@
+{
+  "options": {
+    "cwd": "${workspaceFolder}",
+    "env": {}
+  },
+  "tasks": [
+    {
+      "label": "Compile KotOR Forge extension",
+      "detail": "Build extension and LSP server (webpack + tsc). Used as preLaunchTask for extension debugging.",
+      "command": "cmd",
+      "args": ["/c", "npm run compile || exit /b 0"],
+      "group": {
+        "isDefault": true,
+        "kind": "build"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "clear": false,
+        "close": false,
+        "panel": "shared",
+        "reveal": "silent",
+        "showReuseMessage": false
+      },
+      "problemMatcher": [{ "base": "$tsc", "severity": "warning" }],
+      "type": "shell"
+    },
+    {
+      "label": "Watch KotOR Forge extension",
+      "detail": "Run webpack in watch mode. Use with 'Launch Extension (watch mode)' for live reload.",
+      "command": "npm run watch",
+      "group": "build",
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "clear": true,
+        "panel": "dedicated",
+        "reveal": "silent",
+        "showReuseMessage": false
+      },
+      "problemMatcher": {
+        "owner": "webpack",
+        "severity": "warning",
+        "pattern": {
+          "regexp": "(.)^",
+          "file": 0,
+          "line": 0,
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "webpack\\s+\\d+\\.\\d+\\.\\d+\\s+compiled|compiled\\s+with|Compiled\\s+successfully|compiled\\s+successfully"
+        }
+      },
+      "type": "shell"
+    },
+    {
+      "label": "Dev: Prepare KotOR Forge extension (server only + watch)",
+      "detail": "Dev prep: compile LSP server (best-effort) then start webpack watch (waits for first compile).",
+      "type": "shell",
+      "command": "cmd",
+      "args": ["/c", "echo Dev prep"],
+      "dependsOn": [
+        "Compile extension server only",
+        "Watch KotOR Forge extension"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "Compile KotOR Forge extension server only",
+      "detail": "Compile only the NWScript LSP server (extensions/kotor-forge-vscode/server).",
+      "command": "cmd",
+      "args": ["/c", "npm run compile:server || exit /b 0"],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "silent"
+      },
+      "problemMatcher": [
+        { "base": "$tsc", "severity": "warning" }
+      ],
+      "type": "shell"
+    },
+    {
+      "label": "Clean KotOR Forge extension",
+      "detail": "Remove dist/, server/out/, and output/ in the extension folder.",
+      "command": "npm run clean",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "silent"
+      },
+      "problemMatcher": [],
+      "type": "shell"
+    },
+    {
+      "label": "Lint KotOR Forge extension",
+      "detail": "Run ESLint on extension src.",
+      "command": "cmd",
+      "args": ["/c", "npm run lint || exit /b 0"],
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "always"
+      },
+      "problemMatcher": [
+        { "base": "$eslint-stylish", "severity": "warning" }
+      ],
+      "type": "shell"
+    },
+    {
+      "command": "npm run package",
+      "dependsOn": [
+        "Compile KotOR Forge extension"
+      ],
+      "label": "Package KotOR Forge extension",
+      "detail": "Compile then run vsce package to produce .vsix.",
+      "dependsOrder": "sequence",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "always"
+      },
+      "problemMatcher": [],
+      "type": "shell"
+    },
+    {
+      "label": "Install extension dependencies",
+      "detail": "Install extension and server node_modules.",
+      "command": "npm install",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "always"
+      },
+      "problemMatcher": [],
+      "type": "shell"
+    },
+    {
+      "label": "Install root dependencies",
+      "detail": "Install root package dependencies.",
+      "command": "npm install",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "always"
+      },
+      "problemMatcher": [],
+      "type": "shell"
+    },
+    {
+      "label": "Watch web (root)",
+      "detail": "Root: webpack dev watch (KotOR.js / Forge Electron bundle). Background task: use terminal dropdown to Terminate or Rerun.",
+      "command": "npm run watch",
+      "group": "build",
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {}
+      },
+      "presentation": {
+        "clear": true,
+        "panel": "dedicated",
+        "reveal": "silent",
+        "showReuseMessage": true
+      },
+      "problemMatcher": {
+        "owner": "webpack",
+        "severity": "warning",
+        "pattern": { "regexp": "(.)^", "file": 0, "line": 0, "message": 1 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "(webpack\\s+\\d+\\.\\d+\\.\\d+\\s+compiled|compiled\\s+with|Compiled\\s+successfully|compiled\\s+successfully|Build\\s+completed|done\\s+in|built\\s+in)"
+        }
+      },
+      "type": "shell"
+    },
+    {
+      "command": "npm run watch:verbose",
+      "detail": "Root: webpack dev watch with verbose progress/stats. Background task: use terminal dropdown to Terminate or Rerun.",
+      "group": "build",
+      "isBackground": true,
+      "label": "Watch web verbose (root)",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {}
+      },
+      "presentation": {
+        "clear": true,
+        "panel": "dedicated",
+        "reveal": "always",
+        "showReuseMessage": true
+      },
+      "problemMatcher": {
+        "owner": "webpack",
+        "severity": "warning",
+        "pattern": { "regexp": "(.)^", "file": 0, "line": 0, "message": 1 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "(webpack\\s+\\d+\\.\\d+\\.\\d+\\s+compiled|compiled\\s+with|Compiled\\s+successfully|compiled\\s+successfully|Build\\s+completed|done\\s+in|built\\s+in)"
+        }
+      },
+      "type": "shell"
+    },
+    {
+      "label": "Build web for serve (root)",
+      "type": "shell",
+      "command": "npm run build:web:dev",
+      "options": { "cwd": "${workspaceFolder}", "env": {} },
+      "group": "build",
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": ["$tsc", { "owner": "webpack", "severity": "warning", "pattern": { "regexp": "(.)^", "file": 0, "line": 0, "message": 1 } }]
+    },
+    {
+      "label": "Clean and build web (root)",
+      "type": "shell",
+      "command": "npm run clean && npm run build:web:dev",
+      "options": { "cwd": "${workspaceFolder}", "env": {} },
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": ["$tsc", { "owner": "webpack", "severity": "warning", "pattern": { "regexp": "(.)^", "file": 0, "line": 0, "message": 1 } }]
+    }
+  ],
+  "version": "2.0.0"
+}
