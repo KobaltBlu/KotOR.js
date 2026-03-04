@@ -1,12 +1,12 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { CExoLocString } from "./CExoLocString";
-import { CExoLocSubString } from "./CExoLocSubString";
-import { GFFField } from "./GFFField";
-import { GFFStruct } from "./GFFStruct";
+﻿import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { CExoLocSubString } from "@/resource/CExoLocSubString";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 import * as path from "path";
-import { GameFileSystem } from "../utility/GameFileSystem";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 export type GFFObjectOnCompleteCallback = (gff: GFFObject) => void;
 
@@ -882,3 +882,4 @@ export class GFFObject {
   }
 
 }
+

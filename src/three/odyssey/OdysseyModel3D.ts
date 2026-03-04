@@ -1,34 +1,34 @@
-import * as THREE from "three";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
-import { OdysseyTexture } from "./OdysseyTexture";
-import { MDLLoader, TextureLoader } from "../../loaders";
-import { TextureType } from "../../enums/loaders/TextureType";
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyModelMDXFlag } from "../../enums/odyssey/OdysseyModelMDXFlag";
-import { OdysseyModelClass } from "../../enums/odyssey/OdysseyModelClass";
+﻿import * as THREE from "three";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { OdysseyModelMDXFlag } from "@/enums/odyssey/OdysseyModelMDXFlag";
+import { OdysseyModelClass } from "@/enums/odyssey/OdysseyModelClass";
 import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
-import { OdysseyController } from "../../odyssey/controllers";
-import { IOdysseyModelHeader } from "../../interface/odyssey/IOdysseyModelHeader";
+import { OdysseyController } from "@/odyssey/controllers";
+import { IOdysseyModelHeader } from "@/interface/odyssey/IOdysseyModelHeader";
 import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
-import { ITwoDAAnimation } from "../../interface/twoDA/ITwoDAAnimation";
-import { TwoDAManager } from "../../managers/TwoDAManager";
-import { IOdysseyModelLoaderOptions } from "../../interface/odyssey";
-import { OdysseyModelAnimation } from "../../odyssey/OdysseyModelAnimation";
-import { OdysseyModelAnimationManager } from "../../odyssey/OdysseyModelAnimationManager";
-import { type OdysseyWalkMesh } from "../../odyssey/OdysseyWalkMesh";
-import { type OdysseyModelNodeLight } from "../../odyssey/OdysseyModelNodeLight";
-import { type OdysseyModel } from "../../odyssey/OdysseyModel";
-import { type OdysseyModelNodeMesh } from "../../odyssey/OdysseyModelNodeMesh";
-import { type OdysseyModelNodeDangly } from "../../odyssey/OdysseyModelNodeDangly";
-import { type OdysseyModelNodeSkin } from "../../odyssey/OdysseyModelNodeSkin";
-import { type OdysseyModelNodeAABB } from "../../odyssey/OdysseyModelNodeAABB";
-import { type OdysseyModelNodeSaber } from "../../odyssey/OdysseyModelNodeSaber";
-import { type OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
-import { OdysseyObject3D } from "./OdysseyObject3D";
-import { OdysseyEmitter3D } from "./OdysseyEmitter3D";
-import { OdysseyLight3D } from "./OdysseyLight3D";
-import { type IGameContext } from "../../interface/engine/IGameContext";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import { IOdysseyModelLoaderOptions } from "@/interface/odyssey";
+import { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import { type OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
+import { type OdysseyModelNodeLight } from "@/odyssey/OdysseyModelNodeLight";
+import { type OdysseyModel } from "@/odyssey/OdysseyModel";
+import { type OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
+import { type OdysseyModelNodeDangly } from "@/odyssey/OdysseyModelNodeDangly";
+import { type OdysseyModelNodeSkin } from "@/odyssey/OdysseyModelNodeSkin";
+import { type OdysseyModelNodeAABB } from "@/odyssey/OdysseyModelNodeAABB";
+import { type OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
+import { type OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
+import { OdysseyEmitter3D } from "@/three/odyssey/OdysseyEmitter3D";
+import { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
+import { type IGameContext } from "@/interface/engine/IGameContext";
 
 function odysseyOnBeforeCompile(this: THREE.ShaderMaterial, shader: any) {
   const lightCount = this.uniforms.animPointLights.value.length;
@@ -1630,3 +1630,4 @@ export class OdysseyModel3D extends OdysseyObject3D {
   }
 
 };
+

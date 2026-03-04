@@ -1,4 +1,4 @@
-import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
+﻿import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useCallback, useEffect, useState } from "react"
 
@@ -14,7 +14,7 @@ import * as KotOR from "@/apps/forge/KotOR";
 import type{ CreatureClassEntry, ForgeCreature, KnownSpellEntry, SpecialAbilityEntry } from "@/apps/forge/module-editor/ForgeCreature";
 import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
 import { TabUTCEditorState } from "@/apps/forge/states/tabs";
-import './TabUTCEditor.scss';
+import '@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor.scss';
 
 export const TabUTCEditor = function(props: BaseTabProps){
 

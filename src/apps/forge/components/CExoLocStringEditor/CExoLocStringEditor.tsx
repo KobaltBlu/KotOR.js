@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 
 import { TLKSearchModal } from "@/apps/forge/components/TLKSearchModal";
 import * as KotOR from "@/apps/forge/KotOR";
-import "./CExoLocStringEditor.scss";
+import "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor.scss";
 
 export interface CExoLocStringEditorProps {
   value: KotOR.CExoLocString;
@@ -210,7 +210,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
               
               <small className="cexoloc-resref-hint">
                 {resref > -1 
-                  ? 'Using TLK reference (substrings disabled). Click search to find a different string or × to use custom strings.' 
+                  ? 'Using TLK reference (substrings disabled). Click search to find a different string or Ã— to use custom strings.' 
                   : 'Using custom strings. Add substrings below for different languages, or click search to use a TLK reference.'}
               </small>
             </div>
@@ -280,7 +280,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
                         className="cexoloc-remove-button"
                         title="Remove SubString"
                       >
-                        ×
+                        Ã—
                       </button>
                     </div>
                   </div>
@@ -316,4 +316,5 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
     </div>
   );
 };
+
 

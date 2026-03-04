@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Combat message TLK string IDs and fallbacks.
  *
  * Reva: CSWGuiMainInterface::SetCombatMessage @ 0x00687700 (k1_win_gog_swkotor.exe)
@@ -7,7 +7,7 @@
  *
  * KotOR 1 dialog.tlk combat strings - IDs may vary; fallbacks used when TLK returns empty.
  */
-import { AttackResult } from "../enums/combat/AttackResult";
+import { AttackResult } from "@/enums/combat/AttackResult";
 
 /** Duration to show combat message before auto-hiding (ms). Matches round feedback timing. */
 export const COMBAT_MESSAGE_DURATION_MS = 2500;
@@ -43,3 +43,4 @@ export function getCombatMessageText(
   }
   return entry.fallback;
 }
+

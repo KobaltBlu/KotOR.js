@@ -1,24 +1,24 @@
-import { ModuleObjectScript, ModuleObjectType } from "../enums";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject } from "../module";
-import { TalentSpell } from "../talents";
-import { BitWise } from "../utility/BitWise";
-import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
-import { NWScriptDef } from "./NWScriptDef";
-import { NWScriptDefK1 } from "./NWScriptDefK1";
-import { NWScriptInstance } from "./NWScriptInstance";
+﻿import { ModuleObjectScript, ModuleObjectType } from "@/enums";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleObject } from "@/module";
+import { TalentSpell } from "@/talents";
+import { BitWise } from "@/utility/BitWise";
+import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
+import { NWScriptDef } from "@/nwscript/NWScriptDef";
+import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 
 /**
- * NWScriptDefK2 — KotOR II (TSL) NWScript engine command table (1:1 with swkotor2.exe).
+ * NWScriptDefK2 â€” KotOR II (TSL) NWScript engine command table (1:1 with swkotor2.exe).
  *
  * PURPOSE
  * --------
  * This map is the canonical NWScript engine command table for Star Wars: KotOR II
  * (The Sith Lords). Action IDs 0..771 are shared with KotOR I (NWScriptDefK1);
  * indices 772..876 are TSL-only. The VM uses the same dispatch: OP_ACTION + UInt16
- * action ID → actionsMap[instruction.action]. Behavior must match the original
+ * action ID â†’ actionsMap[instruction.action]. Behavior must match the original
  * engine for script compatibility.
  *
  * REVA / Ghidra TARGET (prefix k2_ in Reva)
@@ -28,7 +28,7 @@ import { NWScriptInstance } from "./NWScriptInstance";
  * /k2_win_gog_legacypc_swkotor2.exe (use k2_ prefix when referring to the K2
  * binary in Reva). CSWVirtualMachineCommands::InitializeCommands (0x0077b530)
  * allocates a table of 0x36d (877) function pointers; table[action_id] =
- * *(base + action_id * 4). Action ID = byte_offset / 4 (e.g. offset 0xcd8 →
+ * *(base + action_id * 4). Action ID = byte_offset / 4 (e.g. offset 0xcd8 â†’
  * action 822 = ExecuteCommandForceHeartbeat). K2-only IDs 772..876 map to
  * offsets 0xC10..0xDB0. Named ExecuteCommand* and FUN_* in Ghidra implement
  * each command; comments below document canonical, reversed behavior for 1:1 parity.
@@ -43,7 +43,7 @@ import { NWScriptInstance } from "./NWScriptInstance";
  * COMPLETENESS (1:1 with swkotor2.exe)
  * ------------------------------------
  * A second loop stubs any remaining 772..876 with action === undefined using
- * type-appropriate return values (VOID→no-op, INT→0, OBJECT→undefined, etc.).
+ * type-appropriate return values (VOIDâ†’no-op, INTâ†’0, OBJECTâ†’undefined, etc.).
  * At runtime every action ID 0..876 has a callable handler; the VM never
  * invokes undefined. K1 (NWScriptDefK1) has all 0..771 implemented.
  *
@@ -1484,7 +1484,7 @@ NWScriptDefK2.Actions = {
     action: undefined
   },
   204: {
-    comment: 'AMF: APRIL 28, 2003 - I HAVE CHANGED THIS FUNCTION AS PER DAN\'S REQUEST\n204: Starts a conversation with oObjectToConverseWith - this will cause their\nOnDialog event to fire.\n- oObjectToConverseWith\n- sDialogResRef: If this is blank, the creature\'s own dialogue file will be used\n- bPrivateConversation: If this is blank, the default is FALSE.\n- nConversationType - If this is blank the default will be Cinematic, ie. a normal conversation type\n                                 other choices inclue: CONVERSATION_TYPE_COMPUTER\n  UPDATE:  nConversationType actually has no meaning anymore.  This has been replaced by a flag in the dialog editor.  However\n               for backwards compatability it has been left here.  So when using this command place CONVERSATION_TYPE_CINEMATIC in here. - DJF\n- bIgnoreStartRange - If this is blank the default will be FALSE, ie. Start conversation ranges are in effect\n                                                                     Setting this to TRUE will cause creatures to start a conversation without requiring to close\n                                                                     the distance between the two object in dialog.\n- sNameObjectToIgnore1-6 - Normally objects in the animation list of the dialog editor have to be available for animations on that node to work\n                                       these 6 strings are to indicate 6 objects that don�t need to be available for things to proceed.  The string should be EXACTLY\n                                       the same as the string that it represents in the dialog editor.\n- nBarkX and nBarkY - These override the left, top corner position for the bark string if the conversation starting is a bark string.\n                      They only happen on a conversation by conversation basis and don\'t stay in effect in subsequent conversations.',
+    comment: 'AMF: APRIL 28, 2003 - I HAVE CHANGED THIS FUNCTION AS PER DAN\'S REQUEST\n204: Starts a conversation with oObjectToConverseWith - this will cause their\nOnDialog event to fire.\n- oObjectToConverseWith\n- sDialogResRef: If this is blank, the creature\'s own dialogue file will be used\n- bPrivateConversation: If this is blank, the default is FALSE.\n- nConversationType - If this is blank the default will be Cinematic, ie. a normal conversation type\n                                 other choices inclue: CONVERSATION_TYPE_COMPUTER\n  UPDATE:  nConversationType actually has no meaning anymore.  This has been replaced by a flag in the dialog editor.  However\n               for backwards compatability it has been left here.  So when using this command place CONVERSATION_TYPE_CINEMATIC in here. - DJF\n- bIgnoreStartRange - If this is blank the default will be FALSE, ie. Start conversation ranges are in effect\n                                                                     Setting this to TRUE will cause creatures to start a conversation without requiring to close\n                                                                     the distance between the two object in dialog.\n- sNameObjectToIgnore1-6 - Normally objects in the animation list of the dialog editor have to be available for animations on that node to work\n                                       these 6 strings are to indicate 6 objects that donï¿½t need to be available for things to proceed.  The string should be EXACTLY\n                                       the same as the string that it represents in the dialog editor.\n- nBarkX and nBarkY - These override the left, top corner position for the bark string if the conversation starting is a bark string.\n                      They only happen on a conversation by conversation basis and don\'t stay in effect in subsequent conversations.',
     name: 'ActionStartConversation',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
@@ -6345,7 +6345,7 @@ NWScriptDefK2.Actions = {
     args: [],
     action: undefined
   }
-} as unknown as { [key: number]: import("../interface/nwscript/INWScriptDefAction").INWScriptDefAction };
+} as unknown as { [key: number]: import("@/interface/nwscript/INWScriptDefAction").INWScriptDefAction };
 
 /**
  * Inherit K1 implementations for shared action IDs (0..771).
@@ -6387,3 +6387,4 @@ for (let id = 772; id <= 876; id++) {
       : (function(this: NWScriptInstance) { });
   }
 }
+

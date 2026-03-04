@@ -1,4 +1,4 @@
-import React, { useEffect, useState, ChangeEvent, useCallback } from "react";
+﻿import React, { useEffect, useState, ChangeEvent, useCallback } from "react";
 import * as THREE from 'three';
 
 import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
@@ -17,7 +17,7 @@ import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { ModalBlueprintBrowserState, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
 import { TabModuleEditorState } from "@/apps/forge/states/tabs";
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import "./ModuleEditorSidebarComponent.scss";
+import "@/apps/forge/components/ModuleEditorSidebarComponent.scss";
 
 export const ModuleEditorSidebarComponent = function(props: any){
   const tab: TabModuleEditorState = props.tab as TabModuleEditorState;

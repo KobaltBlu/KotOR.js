@@ -1,22 +1,22 @@
-import { ModuleObject } from "./ModuleObject";
-import { GFFObject } from "../resource/GFFObject";
+﻿import { ModuleObject } from "@/module/ModuleObject";
+import { GFFObject } from "@/resource/GFFObject";
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { Utility } from "../utility/Utility";
-import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-// import { NWScript } from "../nwscript/NWScript";
-import { IModelListItem } from "../interface/module/minigame/IModelListItem";
-import { MiniGameType } from "../enums/engine/MiniGameType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { MDLLoader } from "../loaders";
-import type { ModuleRoom } from "./ModuleRoom";
-import { ModuleMGGunBank } from "./ModuleMGGunBank";
-import type { ModuleMGGunBullet } from "./ModuleMGGunBullet";
-import type { ModuleMGEnemy } from "./ModuleMGEnemy";
-import type { ModuleMGObstacle } from "./ModuleMGObstacle";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { GameState } from "@/GameState";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { Utility } from "@/utility/Utility";
+import { OdysseyModel, OdysseyModelAnimationManager } from "@/odyssey";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+// import { NWScript } from "@/nwscript/NWScript";
+import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { MDLLoader } from "@/loaders";
+import type { ModuleRoom } from "@/module/ModuleRoom";
+import { ModuleMGGunBank } from "@/module/ModuleMGGunBank";
+import type { ModuleMGGunBullet } from "@/module/ModuleMGGunBullet";
+import type { ModuleMGEnemy } from "@/module/ModuleMGEnemy";
+import type { ModuleMGObstacle } from "@/module/ModuleMGObstacle";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 /**
 * ModuleMGPlayer class.
@@ -982,3 +982,4 @@ export class ModuleMGPlayer extends ModuleObject {
 
 
 }
+

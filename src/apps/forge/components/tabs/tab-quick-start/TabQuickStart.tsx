@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from "react";
+﻿import React, { useState, useCallback, memo } from "react";
 
 import { EditorFile } from "@/apps/forge/EditorFile";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
@@ -9,7 +9,7 @@ import { Project } from "@/apps/forge/Project";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { RecentProject } from "@/apps/forge/RecentProject";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
-import "./TabQuickStart.scss";
+import "@/apps/forge/components/tabs/tab-quick-start/TabQuickStart.scss";
 import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
 
 export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
@@ -240,4 +240,5 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
     </div>
   );
 });
+
 

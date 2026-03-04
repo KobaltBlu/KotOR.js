@@ -1,10 +1,10 @@
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
+﻿import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 (window as any).monaco = monaco;
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 
 import 'bootstrap';
-import './app.scss';
+import '@/apps/forge/app.scss';
 import { App } from '@/apps/forge/App';
 import { AppProvider, useApp } from '@/apps/forge/context/AppContext';
 import * as KotOR from "@/apps/forge/KotOR";
@@ -80,3 +80,4 @@ document.addEventListener('pointerlockchange', plChangeCallback, true);
 document.addEventListener('pointerlockerror', (e) => {
   console.error(e);
 }, true);
+

@@ -1,7 +1,7 @@
-import { DeepObject } from "../utility/DeepObject";
-import * as swKotOR from "../game/kotor/swkotor-config";
-import * as swKotOR2 from "../game/tsl/swkotor2-config";
-import { GameFileSystem } from "../utility/GameFileSystem";
+﻿import { DeepObject } from "@/utility/DeepObject";
+import * as swKotOR from "@/game/kotor/swkotor-config";
+import * as swKotOR2 from "@/game/tsl/swkotor2-config";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * INIConfig class.
@@ -148,3 +148,4 @@ export class INIConfig {
   }
 
 }
+

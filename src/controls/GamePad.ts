@@ -1,5 +1,5 @@
-import { AnalogInput } from "./AnalogInput";
-import { KeyInput } from "./KeyInput";
+﻿import { AnalogInput } from "@/controls/AnalogInput";
+import { KeyInput } from "@/controls/KeyInput";
 
 /**
  * GamePad class.
@@ -83,11 +83,11 @@ export class GamePad {
   }
 
   mapKeys(){
-    //A B X Y | X O ◻ △
+    //A B X Y | X O â—» â–³
     this.button_a.buttonIndex = 0; //A | X == 0
     this.button_b.buttonIndex = 1; //B | O == 1
-    this.button_x.buttonIndex = 2; //X | ◻ == 2
-    this.button_y.buttonIndex = 3; //Y | △ == 3
+    this.button_x.buttonIndex = 2; //X | â—» == 2
+    this.button_y.buttonIndex = 3; //Y | â–³ == 3
 
     //Bumpers
     this.button_bumper_l.buttonIndex = 4; //bumper_l == 4

@@ -1,16 +1,16 @@
-import { GameMenu } from "../../../gui";
-import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import type { ModulePlayer } from "../../../module";
-import { OdysseyModel3D } from "../../../three/odyssey";
+﻿import { GameMenu } from "@/gui";
+import type { GUIControl, GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { ModulePlayer } from "@/module";
+import { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
-import { CharGenClasses } from "../../CharGenClasses";
-import { GameState } from "../../../GameState";
+import { CharGenClasses } from "@/game/CharGenClasses";
+import { GameState } from "@/GameState";
 
 /**
  * CharGenClass class.
  * Character generation "CHOOSE YOUR CLASS" screen; displays six class portrait slots
- * (_3D_MODEL1–6) with hover animation. Corresponds to CSWGuiClassSelection in the
+ * (_3D_MODEL1â€“6) with hover animation. Corresponds to CSWGuiClassSelection in the
  * original game (swkotor.exe); layout from ClassSel / classsel.gui.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -323,3 +323,4 @@ export class CharGenClass extends GameMenu {
   }
 
 }
+

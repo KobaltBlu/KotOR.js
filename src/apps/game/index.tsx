@@ -1,10 +1,10 @@
-import ReactDOM from "react-dom/client";
+﻿import ReactDOM from "react-dom/client";
 import React from "react";
-import * as KotOR from "./KotOR";
-import { AppProvider } from "./context/AppContext";
-import { LoadingConsoleProvider } from "./context/LoadingConsoleProvider";
-import { GameApp } from "./app";
-import './app.scss';
+import * as KotOR from "@/apps/game/KotOR";
+import { AppProvider } from "@/apps/game/context/AppContext";
+import { LoadingConsoleProvider } from "@/apps/game/context/LoadingConsoleProvider";
+import { GameApp } from "@/apps/game/app";
+import '@/apps/game/app.scss';
 
 window.addEventListener('beforeunload', (e) => {
   try{
@@ -31,3 +31,5 @@ window.addEventListener('DOMContentLoaded', () => {
     );
   })();
 });
+
+

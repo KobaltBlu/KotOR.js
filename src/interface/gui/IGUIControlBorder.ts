@@ -1,5 +1,5 @@
-import * as THREE from "three";
-import type { IGUIControlBorderFill } from "./IGUIControlBorderFill";
+﻿import * as THREE from "three";
+import type { IGUIControlBorderFill } from "@/interface/gui/IGUIControlBorderFill";
 
 /**
  * IGUIControlBorder interface.

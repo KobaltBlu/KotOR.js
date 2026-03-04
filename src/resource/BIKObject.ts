@@ -1,6 +1,6 @@
-import * as THREE from "three";
-import { AudioEngine } from "../audio/AudioEngine";
-import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
+﻿import * as THREE from "three";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
 
 /**
  * BIKObject class.
@@ -496,3 +496,4 @@ export class BIKObject {
   }
 
 }
+

@@ -1,21 +1,21 @@
-import * as THREE from "three";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameState } from "../GameState";
-import { EngineMode } from "../enums/engine/EngineMode";
-import type { MenuManager } from "../managers/MenuManager";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import { ShaderManager } from "../managers/ShaderManager"
-import { ResourceLoader, TextureLoader } from "../loaders";
-import { GUIControl } from "./GUIControl";
-import { GUIControlFactory } from "./GUIControlFactory";
-import { BitWise } from "../utility/BitWise";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { Mouse } from "../controls/Mouse";
-import { KeyMapper } from "../controls";
-import type { GUIProtoItem } from "./GUIProtoItem";
-import { GUIControlType } from "../enums/gui/GUIControlType";
+﻿import * as THREE from "three";
+import { GFFObject } from "@/resource/GFFObject";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { GameState } from "@/GameState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import type { MenuManager } from "@/managers/MenuManager";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import { ShaderManager } from "@/managers/ShaderManager"
+import { ResourceLoader, TextureLoader } from "@/loaders";
+import { GUIControl } from "@/gui/GUIControl";
+import { GUIControlFactory } from "@/gui/GUIControlFactory";
+import { BitWise } from "@/utility/BitWise";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { Mouse } from "@/controls/Mouse";
+import { KeyMapper } from "@/controls";
+import type { GUIProtoItem } from "@/gui/GUIProtoItem";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
 
 /**
  * GameMenu class.
@@ -488,3 +488,4 @@ export class GameMenu {
   }
 
 }
+

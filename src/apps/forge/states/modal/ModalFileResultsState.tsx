@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 
 import { ModalFileResults } from "@/apps/forge/components/modal/ModalFileResults";
 import type { EditorFile } from "@/apps/forge/EditorFile";
@@ -81,16 +81,17 @@ export class ModalFileResultsState extends ModalState {
   async createEditorFile(result: ReferenceSearchResult): Promise<EditorFile> {
     // Dynamic import to avoid circular dependency; runtime requires relative path (path alias not resolved in import())
     // eslint-disable-next-line no-restricted-imports -- dynamic import string not resolved by path alias
-    const mod = await import("../../EditorFile") as { EditorFile: new (opts: EditorFileOptions) => EditorFile };
+    const mod = await import("@/apps/forge/EditorFile") as { EditorFile: new (opts: EditorFileOptions) => EditorFile };
     return new mod.EditorFile(this.getEditorFileOptions(result));
   }
 
   async openResult(result: ReferenceSearchResult): Promise<void> {
     const editorFile = await this.createEditorFile(result);
     // eslint-disable-next-line no-restricted-imports -- dynamic import string not resolved by path alias
-    const { FileTypeManager } = await import("../../FileTypeManager") as {
+    const { FileTypeManager } = await import("@/apps/forge/FileTypeManager") as {
       FileTypeManager: { onOpenResource: (f: EditorFile) => void };
     };
     FileTypeManager.onOpenResource(editorFile);
   }
 }
+

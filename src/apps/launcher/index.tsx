@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
 
-import './app.scss';
+import '@/apps/launcher/app.scss';
 import { CategoryMenuItem } from "@/apps/launcher/components/CategoryMenuItem";
 import { CommunityTabContent } from "@/apps/launcher/components/CommunityTabContent";
 import DiscordWidget from "@/apps/launcher/components/DiscordWidget";
@@ -255,3 +255,4 @@ const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement)
     </React.StrictMode>
   );
 })();
+

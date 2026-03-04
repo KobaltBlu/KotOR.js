@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+﻿import React, { useEffect, useState, useCallback } from "react";
 
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
@@ -7,7 +7,7 @@ import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { CreatureListEntry } from "@/apps/forge/interfaces/CreatureListEntry";
 import { EncounterDifficulty } from "@/apps/forge/interfaces/EncounterDifficulty";
 import * as KotOR from "@/apps/forge/KotOR";
-import "../../../styles/tabs/tab-ute-editor.scss";
+import "@/apps/forge/styles/tabs/tab-ute-editor.scss";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost/SubTabHost";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
 import { TabUTEEditorState } from "@/apps/forge/states/tabs/TabUTEEditorState";

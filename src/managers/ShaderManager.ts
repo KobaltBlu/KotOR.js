@@ -1,16 +1,16 @@
-import * as THREE from "three";
+﻿import * as THREE from "three";
 
-import {shadertoy_perlin} from "../shaders/chunks/ShaderToyPerlin";
+import {shadertoy_perlin} from "@/shaders/chunks/ShaderToyPerlin";
 (THREE.ShaderChunk as Record<string, string>).shadertoy_perlin = shadertoy_perlin;
 
-import { Shader } from "../shaders/Shader";
-import { ShaderOdysseyEmitter } from "../shaders/ShaderOdysseyEmitter";
-import { ShaderAuroraGUI } from "../shaders/ShaderAuroraGUI";
-import { ShaderOdysseyModel } from "../shaders/ShaderOdysseyModel";
-import { ShaderGrass } from "../shaders/ShaderGrass";
-import { ShaderGUIVoid } from "../shaders/ShaderGUIVoid";
-import { ShaderGUIBackground } from "../shaders/ShaderGUIBackground";
-import { ShaderFogOfWar } from "../shaders/ShaderFogOfWar";
+import { Shader } from "@/shaders/Shader";
+import { ShaderOdysseyEmitter } from "@/shaders/ShaderOdysseyEmitter";
+import { ShaderAuroraGUI } from "@/shaders/ShaderAuroraGUI";
+import { ShaderOdysseyModel } from "@/shaders/ShaderOdysseyModel";
+import { ShaderGrass } from "@/shaders/ShaderGrass";
+import { ShaderGUIVoid } from "@/shaders/ShaderGUIVoid";
+import { ShaderGUIBackground } from "@/shaders/ShaderGUIBackground";
+import { ShaderFogOfWar } from "@/shaders/ShaderFogOfWar";
 
 
 /**
@@ -48,3 +48,4 @@ ShaderManager.AddShader(new ShaderAuroraGUI());
 ShaderManager.AddShader(new ShaderGUIVoid());
 ShaderManager.AddShader(new ShaderGUIBackground());
 ShaderManager.AddShader(new ShaderFogOfWar());
+

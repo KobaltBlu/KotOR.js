@@ -1,11 +1,11 @@
-import { ModuleObject } from "./ModuleObject";
-import { GameState } from "../GameState";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { MDLLoader } from "../loaders";
-import { OdysseyModel } from "../odyssey";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyModel3D } from "../three/odyssey";
-import { ModuleMGGunBullet } from "./ModuleMGGunBullet";
+﻿import { ModuleObject } from "@/module/ModuleObject";
+import { GameState } from "@/GameState";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { MDLLoader } from "@/loaders";
+import { OdysseyModel } from "@/odyssey";
+import { GFFObject } from "@/resource/GFFObject";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { ModuleMGGunBullet } from "@/module/ModuleMGGunBullet";
 
 /**
 * ModuleMGGunBank class.
@@ -166,3 +166,4 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
 }
+

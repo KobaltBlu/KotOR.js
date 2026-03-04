@@ -1,15 +1,15 @@
-import * as THREE from "three";
-import type { ModuleArea, ModuleObject } from "../module";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { IGUIControlText } from "../interface/gui/IGUIControlText";
-import { ShaderManager } from "../managers/ShaderManager";
-import { createQuadElements as createIndicies } from "../utility/QuadIndices";
-import { TLKManager } from "../managers/TLKManager";
-import { TextureLoader } from "../loaders/TextureLoader";
-import { TextureType } from "../enums/loaders/TextureType";
-import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
-import { GUIFont } from "../gui/GUIFont";
-import { GUIControlAlignment } from "../enums";
+﻿import * as THREE from "three";
+import type { ModuleArea, ModuleObject } from "@/module";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { IGUIControlText } from "@/interface/gui/IGUIControlText";
+import { ShaderManager } from "@/managers/ShaderManager";
+import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
+import { TLKManager } from "@/managers/TLKManager";
+import { TextureLoader } from "@/loaders/TextureLoader";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { TextSprite3DType } from "@/enums/engine/TextSprite3DType";
+import { GUIFont } from "@/gui/GUIFont";
+import { GUIControlAlignment } from "@/enums";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }

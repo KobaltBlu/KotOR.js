@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useLoadingConsole } from "../../context/LoadingConsoleContext";
-import type { LoadingConsoleEntry } from "../../context/LoadingConsoleContext";
-import './LoadingScreen.scss';
+﻿import React, { useEffect, useRef, useState } from "react";
+import { useLoadingConsole } from "@/apps/common/context/LoadingConsoleContext";
+import type { LoadingConsoleEntry } from "@/apps/common/context/LoadingConsoleContext";
+import '@/apps/common/components/loadingScreen/LoadingScreen.scss';
 
 export interface ILoadingScreenProps {
   active?: boolean;
@@ -113,3 +113,5 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
   );
 
 };
+
+

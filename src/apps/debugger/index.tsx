@@ -1,7 +1,7 @@
-import React from "react";
+﻿import React from "react";
 import ReactDOM from "react-dom/client";
 
-import './app.scss';
+import '@/apps/debugger/app.scss';
 import { App } from "@/apps/debugger/App";
 import { AppProvider } from "@/apps/debugger/context/AppContext";
 import { DebugApp } from "@/apps/debugger/DebugApp";
@@ -32,3 +32,4 @@ const loadReactApplication = () => {
 ( async () => {
   loadReactApplication();
 })();
+

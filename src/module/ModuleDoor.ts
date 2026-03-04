@@ -1,37 +1,37 @@
-import { ModuleObject } from "./ModuleObject";
-import type { ModuleRoom } from "./ModuleRoom";
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { GameState } from "../GameState";
-import { SSFType } from "../enums/resource/SSFType";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { CExoLocString } from "../resource/CExoLocString";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyModel3D } from "../three/odyssey";
+﻿import { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleRoom } from "@/module/ModuleRoom";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { GameState } from "@/GameState";
+import { SSFType } from "@/enums/resource/SSFType";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { GFFObject } from "@/resource/GFFObject";
+import { OdysseyModel3D } from "@/three/odyssey";
 
 import * as THREE from "three";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
-import { NWScript } from "../nwscript/NWScript";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ModuleDoorAnimState } from "../enums/module/ModuleDoorAnimState";
-import { ModuleDoorOpenState } from "../enums/module/ModuleDoorOpenState";
-import { ModuleDoorInteractSide } from "../enums/module/ModuleDoorInteractSide";
-// import { AppearanceManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "../managers";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { DLGObject } from "../resource/DLGObject";
-import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { SWDoorAppearance } from "../engine/rules/SWDoorAppearance";
-import { AudioEngine } from "../audio/AudioEngine";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { BitWise } from "../utility/BitWise";
-import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
-import { GameEffectFactory } from "../effects/GameEffectFactory";
-import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "../enums";.3
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel, OdysseyWalkMesh } from "@/odyssey";
+import { NWScript } from "@/nwscript/NWScript";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ModuleDoorAnimState } from "@/enums/module/ModuleDoorAnimState";
+import { ModuleDoorOpenState } from "@/enums/module/ModuleDoorOpenState";
+import { ModuleDoorInteractSide } from "@/enums/module/ModuleDoorInteractSide";
+// import { AppearanceManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "@/managers";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { DLGObject } from "@/resource/DLGObject";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { BitWise } from "@/utility/BitWise";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums";.3
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
@@ -467,14 +467,14 @@ export class ModuleDoor extends ModuleObject {
    *   pCVar1 = CServerExoApp::GetGameObject(AppManager->server, param_1);
    *   if (pCVar1 != 0) {
    *     pCVar2 = (*pCVar1->vtable->AsSWSObject)(pCVar1);
-   *     // Dot product: (creature_pos - door_pos) · door_orientation
+   *     // Dot product: (creature_pos - door_pos) Â· door_orientation
    *     if (0 < (pos.x - door.x)*orient.x + (pos.y - door.y)*orient.y + (pos.z - door.z)*orient.z)
    *       bVar5 = 1;  // SIDE_1
    *   }
    *   SetOpenState(this, bVar5, 1);
    *
    * CSWSObject has Vector orientation at +0x9C (GFF Orientation / facing direction).
-   * KotOR.js uses getRotationFromBearing() for the 2D forward vector (cos θ, sin θ, 0).
+   * KotOR.js uses getRotationFromBearing() for the 2D forward vector (cos Î¸, sin Î¸, 0).
    *
    * @param object - The ModuleObject that interacted (opener, damager). If null/this, uses combatData.lastDamager.
    * @returns SIDE_1 if object is in the positive orientation direction, SIDE_2 otherwise.
@@ -1428,3 +1428,4 @@ export class ModuleDoor extends ModuleObject {
   }
 
 }
+

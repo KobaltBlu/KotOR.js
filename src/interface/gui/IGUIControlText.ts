@@ -1,5 +1,5 @@
-import * as THREE from "three";
-import { OdysseyTexture } from "../../three/odyssey/OdysseyTexture";
+﻿import * as THREE from "three";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 /**
  * IGUIControlText interface.

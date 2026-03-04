@@ -1,13 +1,13 @@
-import * as THREE from "three";
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyModel } from "../../../odyssey";
-import { Planet, Planetary } from "../../../engine/Planetary";
-import { OdysseyModel3D } from "../../../three/odyssey";
+﻿import * as THREE from "three";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel } from "@/odyssey";
+import { Planet, Planetary } from "@/engine/Planetary";
+import { OdysseyModel3D } from "@/three/odyssey";
 
 const STR_ALREADY_AT_THAT_LOCATION = 125629;
 
@@ -271,3 +271,4 @@ export class MenuGalaxyMap extends GameMenu {
   }
   
 }
+

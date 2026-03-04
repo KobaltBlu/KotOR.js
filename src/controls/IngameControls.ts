@@ -1,28 +1,28 @@
-import * as THREE from "three";
-import { GameState } from "../GameState";
-import type { GUIControl, GUIListBox, GUIScrollBar } from "../gui";
-import { Utility } from "../utility/Utility";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { EngineState } from "../enums/engine/EngineState";
-import type { ModuleObject } from "../module";
-import { Module } from "../module";
-import { KeyMapAction } from "../enums/controls/KeyMapAction";
-import { MiniGameType } from "../enums/engine/MiniGameType";
-import { FollowerCamera } from "../engine/FollowerCamera";
-// import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "../managers";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GUIControlEventFactory } from "../gui/GUIControlEventFactory";
-import { MouseState } from "../enums/controls/MouseState";
-import { Keyboard } from "./Keyboard";
-import { GamePad } from "./GamePad";
-import { Mouse } from "./Mouse";
-import { KeyMapper } from "./KeyMapper";
-import { AnalogInput } from "./AnalogInput";
-import { TGAObject } from "../resource/TGAObject";
-import { SaveGame } from "../engine/SaveGame";
-import { GameFileSystem } from "../utility/GameFileSystem";
+﻿import * as THREE from "three";
+import { GameState } from "@/GameState";
+import type { GUIControl, GUIListBox, GUIScrollBar } from "@/gui";
+import { Utility } from "@/utility/Utility";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { EngineState } from "@/enums/engine/EngineState";
+import type { ModuleObject } from "@/module";
+import { Module } from "@/module";
+import { KeyMapAction } from "@/enums/controls/KeyMapAction";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { FollowerCamera } from "@/engine/FollowerCamera";
+// import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "@/managers";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
+import { MouseState } from "@/enums/controls/MouseState";
+import { Keyboard } from "@/controls/Keyboard";
+import { GamePad } from "@/controls/GamePad";
+import { Mouse } from "@/controls/Mouse";
+import { KeyMapper } from "@/controls/KeyMapper";
+import { AnalogInput } from "@/controls/AnalogInput";
+import { TGAObject } from "@/resource/TGAObject";
+import { SaveGame } from "@/engine/SaveGame";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * IngameControls class.
@@ -1000,3 +1000,4 @@ export class IngameControls {
   }
 
 }
+

@@ -1,5 +1,5 @@
-import * as THREE from "three";
-import { OdysseyTexture } from "./OdysseyTexture";
+﻿import * as THREE from "three";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 /**
  * OdysseyCompressedTexture class.

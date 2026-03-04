@@ -1,9 +1,9 @@
-import * as path from 'path';
-import { BinaryReader } from '../utility/binary/BinaryReader';
-import { GameFileSystem } from '../utility/GameFileSystem';
-import { ResourceTypes } from './ResourceTypes';
-import { IRIMResource } from '../interface/resource/IRIMResource';
-import { IRIMHeader } from '../interface/resource/IRIMHeader';
+﻿import * as path from 'path';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { IRIMResource } from '@/interface/resource/IRIMResource';
+import { IRIMHeader } from '@/interface/resource/IRIMHeader';
 
 const RIM_HEADER_LENGTH = 160;
 
@@ -237,3 +237,4 @@ export class RIMObject {
   }
 
 }
+

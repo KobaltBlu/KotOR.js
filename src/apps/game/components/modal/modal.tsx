@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 
-import "./modal.scss";
+import "@/apps/game/components/modal/modal.scss";
 import { useApp } from "@/apps/game/context/AppContext";
 
 export interface KotORModalProps {
@@ -64,3 +64,4 @@ export const KotORModal = ({
     </div>
   );
 };
+

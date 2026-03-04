@@ -1,14 +1,14 @@
-import * as THREE from "three";
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { CurrentGame } from "../../../engine/CurrentGame";
-import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { AudioEngine } from "../../../audio/AudioEngine";
+﻿import * as THREE from "three";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { CurrentGame } from "@/engine/CurrentGame";
+import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { AudioEngine } from "@/audio/AudioEngine";
 
 /**
  * MainMenu class.
@@ -225,3 +225,4 @@ export class MainMenu extends GameMenu {
   }
 
 }
+

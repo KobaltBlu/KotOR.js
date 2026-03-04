@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react"
+﻿import React, { useCallback, useEffect, useState } from "react"
 
-import "./forge-checkbox.scss"
+import "@/apps/forge/components/forge-checkbox/forge-checkbox.scss"
 import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
 
 export const ForgeCheckbox = function(props: { label: string, info?: string, value: boolean, onChange: (value: boolean) => void }) {

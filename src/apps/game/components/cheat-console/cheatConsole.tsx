@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useApp } from "../../context/AppContext";
-import './cheat-console.scss';
+﻿import React, { useEffect, useRef, useState } from "react";
+import { useApp } from "@/apps/game/context/AppContext";
+import '@/apps/game/components/cheat-console/cheat-console.scss';
 
 export const CheatConsole = () => {
   const appContext = useApp();
@@ -70,3 +70,5 @@ export const CheatConsole = () => {
     </div>
   );
 };
+
+

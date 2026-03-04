@@ -1,4 +1,4 @@
-import { BinaryReader } from "./binary/BinaryReader";
+﻿import { BinaryReader } from "@/utility/binary/BinaryReader";
 
 /**
  * DxtUtil class.
@@ -134,3 +134,4 @@ export class DxtUtil {
 
 	}
 }
+

@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   LoadingConsoleContext,
   LoadingConsoleContextValue,
   LoadingConsoleEntry,
   LoadingConsoleSeverity,
-} from "../../common/context/LoadingConsoleContext";
+} from "@/apps/common/context/LoadingConsoleContext";
 
 const MAX_ENTRIES = 500;
 const BATCH_MS = 150;
@@ -148,3 +148,4 @@ export function LoadingConsoleProvider(props: { children: React.ReactNode }) {
     </LoadingConsoleContext.Provider>
   );
 }
+

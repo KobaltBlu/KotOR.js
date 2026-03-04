@@ -1,8 +1,8 @@
-import * as THREE from "three";
-import type { GUIControl } from "../gui";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import { MouseState } from "../enums/controls/MouseState";
-import { MouseAxis } from "../enums/controls/MouseAxis";
+﻿import * as THREE from "three";
+import type { GUIControl } from "@/gui";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import { MouseState } from "@/enums/controls/MouseState";
+import { MouseAxis } from "@/enums/controls/MouseAxis";
 
 /**
  * Mouse class.
@@ -103,3 +103,4 @@ export class Mouse {
   }
 
 }
+

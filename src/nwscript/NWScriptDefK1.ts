@@ -1,48 +1,48 @@
-import * as THREE from "three";
-import EngineLocation from "../engine/EngineLocation";
-import { AttackResult } from "../enums/combat/AttackResult";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionType } from "../enums/actions/ActionType";
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { NWModuleObjectType } from "../enums/nwscript/NWModuleObjectType";
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject, ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "../module";
-import type { TalentObject } from "../talents/TalentObject";
-import type { GameEffect } from "../effects/GameEffect";
-import type { GameEvent } from "../events/GameEvent";
-import type { NWScriptInstance } from "./NWScriptInstance";
-import { NWScriptSubroutine } from "./NWScriptSubroutine";
-import type { OdysseyWalkMesh } from "../odyssey/OdysseyWalkMesh";
-import { Planetary } from "../engine/Planetary";
-import { GFFObject } from "../resource/GFFObject";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import type { OdysseyModel3D } from "../three/odyssey";
-import { Dice } from "../utility/Dice";
-import { Utility } from "../utility/Utility";
-import { EventConversation, EventSpellCastAt, EventUserDefined, NWScriptEvent } from "./events";
-import { NWScriptDef } from "./NWScriptDef";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { WeaponWield } from "../enums/combat/WeaponWield";
-import { PerceptionMask } from "../enums/engine/PerceptionMask";
-import { TalentObjectType } from "../enums/engine/TalentObjectType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { DLGObject } from "../resource/DLGObject";
-import { ResourceLoader } from "../loaders";
-import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
-import { CombatRound } from "../combat/CombatRound";
-import { BitWise } from "../utility/BitWise";
-import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
-import { ExperienceType } from "../enums/engine/ExperienceType";
-import { AudioEngine } from "../audio/AudioEngine";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import { CreatureClassType } from "../enums/nwscript/CreatureClassType";
-import { TalkVolume } from "../enums/engine/TalkVolume";
+﻿import * as THREE from "three";
+import EngineLocation from "@/engine/EngineLocation";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionType } from "@/enums/actions/ActionType";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleObject, ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "@/module";
+import type { TalentObject } from "@/talents/TalentObject";
+import type { GameEffect } from "@/effects/GameEffect";
+import type { GameEvent } from "@/events/GameEvent";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
+import type { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
+import { Planetary } from "@/engine/Planetary";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import type { OdysseyModel3D } from "@/three/odyssey";
+import { Dice } from "@/utility/Dice";
+import { Utility } from "@/utility/Utility";
+import { EventConversation, EventSpellCastAt, EventUserDefined, NWScriptEvent } from "@/nwscript/events";
+import { NWScriptDef } from "@/nwscript/NWScriptDef";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { PerceptionMask } from "@/enums/engine/PerceptionMask";
+import { TalentObjectType } from "@/enums/engine/TalentObjectType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { DLGObject } from "@/resource/DLGObject";
+import { ResourceLoader } from "@/loaders";
+import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
+import { CombatRound } from "@/combat/CombatRound";
+import { BitWise } from "@/utility/BitWise";
+import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { ExperienceType } from "@/enums/engine/ExperienceType";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { CreatureClassType } from "@/enums/nwscript/CreatureClassType";
+import { TalkVolume } from "@/enums/engine/TalkVolume";
 
 /**
- * NWScriptDefK1 — KotOR I NWScript engine command table (1:1 with swkotor.exe).
+ * NWScriptDefK1 â€” KotOR I NWScript engine command table (1:1 with swkotor.exe).
  *
  * PURPOSE
  * --------
@@ -2601,7 +2601,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING]
   },
   204:{
-    comment: "AMF: APRIL 28, 2003 - I HAVE CHANGED THIS FUNCTION AS PER DAN'S REQUEST\n204: Starts a conversation with oObjectToConverseWith - this will cause their\nOnDialog event to fire.\n- oObjectToConverseWith\n- sDialogResRef: If this is blank, the creature's own dialogue file will be used\n- bPrivateConversation: If this is blank, the default is FALSE.\n- nConversationType - If this is blank the default will be Cinematic, ie. a normal conversation type\nother choices inclue: CONVERSATION_TYPE_COMPUTER\nUPDATE:  nConversationType actually has no meaning anymore.  This has been replaced by a flag in the dialog editor.  However\nfor backwards compatability it has been left here.  So when using this command place CONVERSATION_TYPE_CINEMATIC in here. - DJF\n- bIgnoreStartRange - If this is blank the default will be FALSE, ie. Start conversation ranges are in effect\nSetting this to TRUE will cause creatures to start a conversation without requiring to close\nthe distance between the two object in dialog.\n- sNameObjectToIgnore1-6 - Normally objects in the animation list of the dialog editor have to be available for animations on that node to work\nthese 6 strings are to indicate 6 objects that don�t need to be available for things to proceed.  The string should be EXACTLY\nthe same as the string that it represents in the dialog editor.\n",
+    comment: "AMF: APRIL 28, 2003 - I HAVE CHANGED THIS FUNCTION AS PER DAN'S REQUEST\n204: Starts a conversation with oObjectToConverseWith - this will cause their\nOnDialog event to fire.\n- oObjectToConverseWith\n- sDialogResRef: If this is blank, the creature's own dialogue file will be used\n- bPrivateConversation: If this is blank, the default is FALSE.\n- nConversationType - If this is blank the default will be Cinematic, ie. a normal conversation type\nother choices inclue: CONVERSATION_TYPE_COMPUTER\nUPDATE:  nConversationType actually has no meaning anymore.  This has been replaced by a flag in the dialog editor.  However\nfor backwards compatability it has been left here.  So when using this command place CONVERSATION_TYPE_CINEMATIC in here. - DJF\n- bIgnoreStartRange - If this is blank the default will be FALSE, ie. Start conversation ranges are in effect\nSetting this to TRUE will cause creatures to start a conversation without requiring to close\nthe distance between the two object in dialog.\n- sNameObjectToIgnore1-6 - Normally objects in the animation list of the dialog editor have to be available for animations on that node to work\nthese 6 strings are to indicate 6 objects that donï¿½t need to be available for things to proceed.  The string should be EXACTLY\nthe same as the string that it represents in the dialog editor.\n",
     name: "ActionStartConversation",
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING],
@@ -8797,7 +8797,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT]
   }
-} as unknown as { [key: number]: import("../interface/nwscript/INWScriptDefAction").INWScriptDefAction };
+} as unknown as { [key: number]: import("@/interface/nwscript/INWScriptDefAction").INWScriptDefAction };
 
 // for (let property in NWScriptDef.Actions) {
 //   if (NWScriptDef.Actions.hasOwnProperty(property)) {
@@ -8808,3 +8808,4 @@ NWScriptDefK1.Actions = {
 //     }
 //   }
 // }
+

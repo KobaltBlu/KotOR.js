@@ -1,9 +1,9 @@
-import React, { useRef, useState, useEffect, useCallback } from "react"
+﻿import React, { useRef, useState, useEffect, useCallback } from "react"
 
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
 import * as KotOR from "@/apps/forge/KotOR";
 
-import "../../../styles/tabs/tab-uts-editor.scss";
+import "@/apps/forge/styles/tabs/tab-uts-editor.scss";
 import { Button, Modal } from "react-bootstrap";
 
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";

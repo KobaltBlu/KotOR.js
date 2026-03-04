@@ -1,9 +1,9 @@
-import { GameState } from "../../../GameState";
-import { KeyInput } from "../../../controls/KeyInput";
-import { KeyCodeToLanguage0, KeyMapper, Keymap, language0ToKeyCode } from "../../../controls/KeyMapper";
-import type { GUILabel, GUIListBox, GUIButton, GUIControl } from "../../../gui";
-import { MenuKeyboardMapping as K1_MenuKeyboardMapping } from "../../kotor/KOTOR";
-import { GUIKeyMapItem } from "../gui/GUIKeyMapItem";
+﻿import { GameState } from "@/GameState";
+import { KeyInput } from "@/controls/KeyInput";
+import { KeyCodeToLanguage0, KeyMapper, Keymap, language0ToKeyCode } from "@/controls/KeyMapper";
+import type { GUILabel, GUIListBox, GUIButton, GUIControl } from "@/gui";
+import { MenuKeyboardMapping as K1_MenuKeyboardMapping } from "@/game/kotor/KOTOR";
+import { GUIKeyMapItem } from "@/game/tsl/gui/GUIKeyMapItem";
 
 /**
  * MenuKeyboardMapping class.
@@ -132,3 +132,4 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
   }
   
 }
+

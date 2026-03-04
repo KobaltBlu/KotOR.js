@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Binary MDL/MDX reader for KotOR.
  * Parses binary MDL (and optional MDX) into MDL data structures.
  *
@@ -484,8 +484,8 @@ function readAABBTree(reader: BufferReader, buffer: Uint8Array, offset: number):
   return nodes;
 }
 
-function readSkinHeader(reader: BufferReader, buffer: Uint8Array): import('./MDLData').MDLSkin {
-  const mesh = readTrimeshHeader(reader, buffer, null) as import('./MDLData').MDLSkin;
+function readSkinHeader(reader: BufferReader, buffer: Uint8Array): import('@/resource/MDLData').MDLSkin {
+  const mesh = readTrimeshHeader(reader, buffer, null) as import('@/resource/MDLData').MDLSkin;
   mesh.qbones = [];
   mesh.tbones = [];
   mesh.boneIndices = [];
@@ -593,13 +593,13 @@ function readReferenceHeader(reader: BufferReader, buffer: Uint8Array): MDLRefer
   return { modelName, reattachable };
 }
 
-function readDanglyHeader(reader: BufferReader, buffer: Uint8Array): import('./MDLData').MDLDangly {
+function readDanglyHeader(reader: BufferReader, buffer: Uint8Array): import('@/resource/MDLData').MDLDangly {
   const displacement = reader.readFloat32();
   const tightness = reader.readFloat32();
   const period = reader.readFloat32();
   reader.readVector3();
   const constraintCount = reader.readInt32();
-  const constraints: import('./MDLData').MDLConstraint[] = [];
+  const constraints: import('@/resource/MDLData').MDLConstraint[] = [];
   for (let i = 0; i < constraintCount; i++) {
     constraints.push({
       stiffness: reader.readFloat32(),
@@ -681,3 +681,4 @@ function loadAnimation(reader: BufferReader, buffer: Uint8Array, offset: number,
     root: rootNode
   };
 }
+

@@ -1,11 +1,11 @@
-import * as THREE from "three";
-import { GameState } from "../../../GameState";
-import { GameMenu, GUIControl } from "../../../gui";
-import type { GUILabel, GUIButton, GUICheckBox } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+﻿import * as THREE from "three";
+import { GameState } from "@/GameState";
+import { GameMenu, GUIControl } from "@/gui";
+import type { GUILabel, GUIButton, GUICheckBox } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 const TLK_REMOVE = 38456;
 const TLK_ADD = 38455;
@@ -450,3 +450,4 @@ export class MenuPartySelection extends GameMenu {
   }
   
 }
+
