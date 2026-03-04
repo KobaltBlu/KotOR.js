@@ -3,24 +3,13 @@ import EngineLocation from "@/engine/EngineLocation";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
-import type { ModuleObject } from "@/module";
+// import { ModuleObjectManager } from "@/managers";
+// import { ModuleObject } from "@/module";
 import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
-import type { NWScriptStackValue } from "@/nwscript/NWScriptStackVariable";
 import { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.NWScript);
-
-/** Stored state for stack save/restore (local/global stack snapshot and pointers). */
-export interface INWScriptStackStoreState {
-  localStack: NWScriptStackVariable[];
-  globalStack: NWScriptStackVariable[];
-  pointer: number;
-  basePointer: number;
-}
+// import { TalentFeat, TalentSkill, TalentSpell } from "@/talents";
 
 const STACK_PACKET_CONSTANTS = {
   STACK_ELEMENT_SIZE: 8,
@@ -40,7 +29,11 @@ export class NWScriptStack {
   stack: NWScriptStackVariable[];
   pointer: number;
   basePointer: number;
-  _storeState: INWScriptStackStoreState;
+  _storeState: {
+    localStack: any; //stack.reverse(),
+    globalStack: any; //globalStack.reverse(),
+    pointer: any; basePointer: any;
+  };
   oldBP: number;
   stackSize: number;
 
@@ -49,33 +42,25 @@ export class NWScriptStack {
     this.stack = [];
     this.pointer = 0;
     this.basePointer = 0;
-    this._storeState = {
-      localStack: [],
-      globalStack: [],
-      pointer: 0,
-      basePointer: 0
-    };
-    this.oldBP = 0;
-    this.stackSize = 0;
   }
 
   //Data pushed to the stack must be no longer and no shorter than 4 bytes
-  push(data: NWScriptStackVariable | NWScriptStackValue, type?: NWScriptDataType): void {
+  push(data: any, type?: any){
     if(data instanceof NWScriptStackVariable){
       this.stack.push( data );
     }else{
       if(type === null)
-        log.warn('NWScriptStack.push: type is NULL', data);
+        console.warn('NWScriptStack', data, type);
+        //throw 'Cannot push data to the stack with a type of NULL';
 
-      if(type === undefined && type !== NWScriptDataType.OBJECT)
-        log.warn('NWScriptStack.push: type undefined (and not OBJECT)', data);
+      if(type === undefined && type != NWScriptDataType.OBJECT)
+        console.warn('NWScriptStack', data, type);
 
-      if(type === NWScriptDataType.VECTOR){
-        if(typeof data === 'object' && data !== null && 'x' in (data as Record<string, number>)){
-          const v = data as { x?: number; y?: number; z?: number };
-          this.stack.push( new NWScriptStackVariable({ value: v.z ?? 0.0, type: NWScriptDataType.FLOAT }) );
-          this.stack.push( new NWScriptStackVariable({ value: v.y ?? 0.0, type: NWScriptDataType.FLOAT }) );
-          this.stack.push( new NWScriptStackVariable({ value: v.x ?? 0.0, type: NWScriptDataType.FLOAT }) );
+      if(type == NWScriptDataType.VECTOR){
+        if(typeof data == 'object'){
+          this.stack.push( new NWScriptStackVariable({ value: data.z || 0.0, type: NWScriptDataType.FLOAT }) );
+          this.stack.push( new NWScriptStackVariable({ value: data.y || 0.0, type: NWScriptDataType.FLOAT }) );
+          this.stack.push( new NWScriptStackVariable({ value: data.x || 0.0, type: NWScriptDataType.FLOAT }) );
           //Increase the pointer by 8 to account for Y and X
           this.pointer += 8;
         }else{
@@ -86,7 +71,7 @@ export class NWScriptStack {
           this.pointer += 8;
         }
       }else{
-        this.stack.push( new NWScriptStackVariable({ value: data as NWScriptStackValue, type: type ?? NWScriptDataType.INTEGER }) );
+        this.stack.push( new NWScriptStackVariable({ value: data, type: type }) );
       }
     }
     this.pointer += 4;
@@ -126,7 +111,7 @@ export class NWScriptStack {
     return this.stack.slice((this.pointer + index) / 4, ((this.pointer + index) / 4) + (copyLength / 4));
   }
 
-  replace(index = -4, data?: NWScriptStackVariable): void {
+  replace(index = -4, data?: any){
 
     /*if(!(data instanceof Uint8Array))
       throw 'Data is not of type Uint8Array';
@@ -139,7 +124,7 @@ export class NWScriptStack {
     if(index > -1)
       throw 'Index cannot be greater than -1.';
 
-    log.debug('STACK_LEN', this.stack.length, index, (this.stack.length*4) + index);
+    console.log('STACK_LEN', this.stack.length, index, (this.stack.length*4) + index)
 
     this.stack[this.stack.length + index] = data;*/
 
@@ -152,7 +137,7 @@ export class NWScriptStack {
 
   }
 
-  replaceBP(index = -4, data?: NWScriptStackVariable): void {
+  replaceBP(index = -4, data?: any){
     
     /*if(!(data instanceof Uint8Array))
       throw 'Data is not of type Uint8Array';
@@ -271,13 +256,13 @@ export class NWScriptStack {
     return struct;
   }
 
-  static FromActionStruct = function( struct: GFFStruct, _object_self?: ModuleObject ): NWScriptStack {
+  static FromActionStruct = function( struct: GFFStruct, object_self?: any ){
 
     const stack = new NWScriptStack();
-
-    stack.basePointer = struct.getNumberByLabel('BasePointer') * 4;
-    stack.pointer = struct.getNumberByLabel('StackPointer') * 4;
-    const stackSize = struct.getNumberByLabel('TotalSize');
+  
+    stack.basePointer = struct.getFieldByLabel('BasePointer').getValue() * 4;
+    stack.pointer = struct.getFieldByLabel('StackPointer').getValue() * 4;
+    const stackSize = struct.getFieldByLabel('TotalSize').getValue();
   
     if(stackSize){
       const stackStructs = struct.getFieldByLabel('Stack').getChildStructs();
@@ -287,12 +272,13 @@ export class NWScriptStack {
         const stackElement = stackStructs[i];
         if(stackElement.hasField('Value')){
           const type = stackElement.getFieldByLabel('Value').getType();
-          const value = stackElement.getFieldByLabel('Value').getValue() as number | string;
+          const value = stackElement.getFieldByLabel('Value').getValue();
           switch(type){
             case 4: //Object
               let obj = GameState.ModuleObjectManager.GetObjectById(value);
               
-              if(value == 0x7f000000) // OBJECT_INVALID per Aurora spec
+              //0x7f000000 is 2130706432
+              if(value == 0x7f000000) //I can confirm that this is INVALID_OBJECT_ID or OBJECT_INVALID as stated in the Bioware_Aurora_Store_Format.pdf on the old nwn.bioware.com site
                 obj = undefined;
   
               stack.stack.push( new NWScriptStackVariable({ value: obj, type: NWScriptDataType.OBJECT }) );
@@ -307,7 +293,7 @@ export class NWScriptStack {
               stack.stack.push( new NWScriptStackVariable({ value: value, type: NWScriptDataType.STRING }) );
             break;
             default:
-              log.error('Unknown stack element type', stackElement);
+              console.error('Unknown stack element', stackElement);
             break;
           }
         }else if(stackElement.hasField('GameDefinedStrct')){
@@ -338,42 +324,42 @@ export class NWScriptStack {
   };
   
   static TalentFromStruct = function( struct: GFFStruct ){
-    const talentType = struct.getNumberByLabel('Type');
+    const talentType = struct.getFieldByLabel('Type').getValue();
     let talent = undefined;
     switch(talentType){
       case 0:
-        talent = new GameState.TalentSpell(struct.getNumberByLabel('ID'));
+        talent = new GameState.TalentSpell(struct.getFieldByLabel('ID').getValue());
       break;
       case 1:
-        talent = new GameState.TalentFeat(struct.getNumberByLabel('ID'));
+        talent = new GameState.TalentFeat(struct.getFieldByLabel('ID').getValue());
       break;
       case 2:
-        talent = new GameState.TalentSkill(struct.getNumberByLabel('ID'));
+        talent = new GameState.TalentSkill(struct.getFieldByLabel('ID').getValue());
       break;
     }
-
-    talent.setItem( GameState.ModuleObjectManager.GetObjectById( struct.getNumberByLabel('Item') ) );
-    talent.setItemPropertyIndex( struct.getNumberByLabel('ItemPropertyIndex') );
-    talent.setCasterLevel( struct.getNumberByLabel('CasterLevel') );
-    talent.setMetaType( struct.getNumberByLabel('MetaType') );
+  
+    talent.setItem( GameState.ModuleObjectManager.GetObjectById( struct.getFieldByLabel('Item').getValue() ) );
+    talent.setItemPropertyIndex( struct.getFieldByLabel('ItemPropertyIndex').getValue() );
+    talent.setCasterLevel( struct.getFieldByLabel('CasterLevel').getValue() );
+    talent.setMetaType( struct.getFieldByLabel('MetaType').getValue() );
   
     return talent;
   }
   
   static LocationFromStruct = function( struct: GFFStruct ){
     return new EngineLocation(
-      struct.getNumberByLabel('PositionX'),
-      struct.getNumberByLabel('PositionY'),
-      struct.getNumberByLabel('PositionZ'),
-      struct.getNumberByLabel('OrientationX'),
-      struct.getNumberByLabel('OrientationY'),
-      struct.getNumberByLabel('OrientationZ'),
+      struct.getFieldByLabel('PositionX').getValue(),
+      struct.getFieldByLabel('PositionY').getValue(),
+      struct.getFieldByLabel('PositionZ').getValue(),
+      struct.getFieldByLabel('OrientationX').getValue(),
+      struct.getFieldByLabel('OrientationY').getValue(),
+      struct.getFieldByLabel('OrientationZ').getValue(),
     );
   }
   
   static EventFromStruct = function( struct: GFFStruct ){
     const event = NWScriptEventFactory.EventFromStruct(struct);
-    log.debug('EventFromStruct', event, struct);
+    console.log('EventFromStruct', event, struct);
     return event;
   }
   
@@ -388,19 +374,19 @@ export class NWScriptStack {
   
     const stack = new NWScriptStack();
   
-    stack.basePointer = struct.getNumberByLabel('BasePointer') * 4;
-    stack.pointer = struct.getNumberByLabel('StackPointer') * 4;
-    const stackSize = struct.getNumberByLabel('TotalSize');
-
+    stack.basePointer = struct.getFieldByLabel('BasePointer').getValue() * 4;
+    stack.pointer = struct.getFieldByLabel('StackPointer').getValue() * 4;
+    const stackSize = struct.getFieldByLabel('TotalSize').getValue();
+  
     if(stackSize){
       if(struct.hasField('Stack')){
         const stackStructs = struct.getFieldByLabel('Stack').getChildStructs();
-
+  
         for(let i = 0, len = stackStructs.length; i < len; i++){
-
+  
           const stackElement = stackStructs[i];
-          const type = stackElement.getNumberByLabel('Type');
-          const value = stackElement.getFieldByLabel('Value').getValue() as number | string;
+          const type = stackElement.getFieldByLabel('Type').getValue();
+          const value = stackElement.getFieldByLabel('Value').getValue();
           switch(type){
             case NWScriptDataType.OBJECT: //Object
               let obj = GameState.ModuleObjectManager.GetObjectById(value);
@@ -420,7 +406,7 @@ export class NWScriptStack {
               stack.stack.push( new NWScriptStackVariable({ value: value, type: NWScriptDataType.STRING }) );
             break;
             default:
-              log.error('Unknown stack element in FromEventQueueStruct', stackElement);
+              console.error('Unknown stack ele', stackElement);
             break;
           }
   

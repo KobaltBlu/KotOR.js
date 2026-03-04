@@ -1,23 +1,24 @@
-import React, { useEffect, useState } from "react";
+import React, { createRef, useEffect, useState } from "react";
 
-import type { LauncherProfileElement } from "@/apps/launcher/types";
+import { useApp } from "@/apps/launcher/context/AppContext";
+import { useProfile } from "@/apps/launcher/context/ProfileContext";
 
-export interface GalleryPromoItemProps {
-  element: LauncherProfileElement;
-  onClick?: (element: LauncherProfileElement) => void;
-  onDoubleClick?: (element: LauncherProfileElement) => void;
+export interface ProfilePromoItemProps {
+  element: any;
+  onClick?: (element: any) => void;
+  onDoubleClick?: (element: any) => void;
 }
 
-export const GalleryPromoItem = function(props: GalleryPromoItemProps) {
-  const element = props.element;
+export const GalleryPromoItem = function(props: ProfilePromoItemProps){
+  const element: any = props.element;
 
   const [index, setIndex] = useState(0);
 
-  const onBtnLeftClick: React.MouseEventHandler<HTMLDivElement> = () => {
+  const onBtnLeftClick: React.MouseEventHandler<HTMLDivElement> = (e: React.MouseEvent<HTMLDivElement>) => {
     galleryPreviousImage();
   };
 
-  const onBtnRightClick: React.MouseEventHandler<HTMLDivElement> = () => {
+  const onBtnRightClick: React.MouseEventHandler<HTMLDivElement> = (e: React.MouseEvent<HTMLDivElement>) => {
     galleryNextImage();
   };
 
@@ -51,7 +52,7 @@ export const GalleryPromoItem = function(props: GalleryPromoItemProps) {
       <div className="gallery-left" onClick={onBtnLeftClick}><i className="fas fa-chevron-left"></i></div>
       <div className="gallery-images">
         {
-          (element.images ?? []).map((image, i: number) => {
+          element.images.map((image: any, i: number) => {
             return (
               <div key={`gallery-image-${i}`} className={`gallery-image ${i == index ? 'active' : ''}`} data-full={image.path_full} style={{backgroundImage: `url(${image.path_thumbnail})`}} onClick={() => {
                 if(typeof props.onClick === 'function'){

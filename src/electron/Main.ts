@@ -1,9 +1,7 @@
-import { Menu, Tray, globalShortcut, ipcMain } from 'electron';
+
+import {  Menu, Tray, globalShortcut, ipcMain } from 'electron';
 
 import { WindowManager } from '@/electron/WindowManager';
-import { createScopedLogger, LogScope } from '@/utility/Logger';
-
-const log = createScopedLogger(LogScope.Electron);
 
 export default class Main {
 
@@ -11,71 +9,71 @@ export default class Main {
   static tray: Electron.Tray;
   static WindowManager: typeof WindowManager;
   static ApplicationPath: string;
-
-  static setApplicationPath(path: string) {
-    log.trace('setApplicationPath', path);
+  
+  static setApplicationPath(path: string){
     Main.ApplicationPath = path;
   }
-
+  
   private static onWindowAllClosed() {
-    log.trace('onWindowAllClosed', process.platform);
+    // On OS X it is common for applications and their menu bar
+    // to stay active until the user quits explicitly with Cmd + Q
     if (process.platform !== 'darwin') {
       Main.application.quit();
     }
   }
 
   private static onReady() {
-    log.trace('onReady enter');
-    try {
+    try{
       Main.tray = new Tray('dist/assets/icons/icon.png');
-      log.debug('tray created');
       const contextMenu = Menu.buildFromTemplate([{
-        label: 'Exit',
-        type: 'normal',
-        click: () => {
-          log.trace('tray Exit clicked');
+        label: 'Exit', 
+        type: 'normal', 
+        click: (menuItem, browserWindow, event) => {
           Main.application.quit();
         }
       }]);
       Main.tray.setToolTip('KotOR Launcher');
       Main.tray.setContextMenu(contextMenu);
 
-      log.debug('creating launcher window');
       WindowManager.createLauncherWindow();
 
       Main.tray.on('click', () => {
-        log.trace('tray click');
         WindowManager.toggleLauncherWindow();
       });
-      log.trace('onReady tray path OK');
-    } catch (e) {
-      log.warn('tray icon failed, creating launcher only', e);
+    }catch(e){
       WindowManager.createLauncherWindow();
     }
 
     globalShortcut.register('Alt+`', () => {
-      log.trace('Alt+` shortcut');
       WindowManager.createLauncherWindow();
     });
-    log.trace('onReady exit');
   }
 
-  private static onActivate() {
-    log.trace('onActivate');
+  private static onActivate(){
+    // On OS X it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
     WindowManager.createLauncherWindow();
   }
 
   static main(app: Electron.App) {
-    log.trace('main() enter');
+    // we pass the Electron.App object and the  
+    // Electron.BrowserWindow into this function 
+    // so this class has no dependencies. This 
+    // makes the code easier to write tests for 
     Main.WindowManager = WindowManager;
     Main.application = app;
 
+    // This method will be called when Electron has finished
+    // initialization and is ready to create browser windows.
+    // Some APIs can only be used after this event occurs.
     Main.application.on('ready', Main.onReady);
-    log.debug('registered ready handler');
 
+
+    // Quit when all windows are closed.
     Main.application.on('window-all-closed', Main.onWindowAllClosed);
+
     Main.application.on('activate', Main.onActivate);
     Main.WindowManager.initIPC(ipcMain);
-    log.trace('main() exit');
   }
+
 }

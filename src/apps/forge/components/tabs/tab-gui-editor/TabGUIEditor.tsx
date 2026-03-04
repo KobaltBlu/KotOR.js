@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { ChangeEvent, useEffect, useState } from "react"
 
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
@@ -7,6 +7,7 @@ import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabGUIEditorState, TabGUIEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
+
 // import { Form, InputGroup } from "react-bootstrap";
 import { UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
 // import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
@@ -14,9 +15,9 @@ import { UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
 export const TabGUIEditor = function(props: BaseTabProps){
 
   const tab: TabGUIEditorState = props.tab as TabGUIEditorState;
-  const [_gff, setGFF] = useState<KotOR.GFFObject>();
+  const [gff, setGFF] = useState<KotOR.GFFObject>();
   const [menu, setMenu] = useState<KotOR.GameMenu>();
-  const [_selectedNode, setSelectedNode] = useState<KotOR.GFFField|KotOR.GFFStruct>();
+  const [selectedNode, setSelectedNode] = useState<KotOR.GFFField|KotOR.GFFStruct>();
   const [render, rerender] = useState<boolean>(true);
 
   const onEditorFileLoad = function(tab: TabGUIEditorState){
@@ -29,14 +30,12 @@ export const TabGUIEditor = function(props: BaseTabProps){
     rerender(!render);
   };
 
-  const onNodeAdded = function(_arg: KotOR.GFFField | KotOR.GFFStruct){
-    setSelectedNode(null);
-    rerender(!render);
+  const onNodeAdded = function(arg: any){
+    //todo
   };
 
-  const onNodeRemoved = function(_arg: KotOR.GFFField | KotOR.GFFStruct){
-    setSelectedNode(null);
-    rerender(!render);
+  const onNodeRemoved = function(arg: any){
+    //todo
   };
 
   const onMouseWheel = function(e: WheelEvent){
@@ -56,11 +55,7 @@ export const TabGUIEditor = function(props: BaseTabProps){
     tab.addEventListener<TabGUIEditorStateEventListenerTypes>('onNodeAdded', onNodeAdded);
     tab.addEventListener<TabGUIEditorStateEventListenerTypes>('onNodeRemoved', onNodeRemoved);
     tab.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseWheel', onMouseWheel);
-    // Sync initial state if load completed before mount (e.g. webview buffer resolves immediately)
-    if (tab.gff) {
-      setGFF(tab.gff);
-      setMenu(tab.menu);
-    }
+
     return () => { //destructor
       tab.removeEventListener<TabGUIEditorStateEventListenerTypes>('onEditorFileLoad', onEditorFileLoad);
       tab.removeEventListener<TabGUIEditorStateEventListenerTypes>('onNodeSelected', onNodeSelected);

@@ -9,7 +9,6 @@ import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
 import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 
-
 /**
  * RadiusController class.
  * 
@@ -23,7 +22,6 @@ export class RadiusController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Radius;
 
-  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }

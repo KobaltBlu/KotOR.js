@@ -1,77 +1,21 @@
 import * as KotOR from "@/apps/game/KotOR";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
-
-/** Profile shape from ConfigClient.get - used by game app. */
-export interface GameAppProfile {
-  key?: string;
-  full_name?: string;
-  directory?: string;
-  directory_handle?: FileSystemDirectoryHandle;
-  background?: string;
-  logo?: string;
-  launch?: { args?: { gameChoice?: number } };
-}
-
-/** EULA config stored in localStorage. */
-interface EULAConfig {
-  key: KotOR.GameEngineType;
-  version: string | null;
-  date: string | null;
-  accepted: boolean;
-}
 
 export class AppState {
   static eulaAccepted: boolean = false;
   static directoryLocated: boolean = false;
   static gameKey: KotOR.GameEngineType = KotOR.GameEngineType.KOTOR;
-  static appProfile: GameAppProfile | undefined;
+  static appProfile: any;
   static env: ApplicationEnvironment;
   static statsMode: number|undefined = undefined;
 
-  /** Default profiles when game is opened directly (e.g. launch config) and launcher never ran. */
-  private static getDefaultProfileForKey(key: string | null): GameAppProfile | undefined {
-    if (!key) return undefined;
-    const defaults: Record<string, GameAppProfile> = {
-      kotor: {
-        key: 'kotor',
-        full_name: 'Star Wars: Knights of the Old Republic',
-        launch: { args: { gameChoice: 1 } },
-      },
-      tsl: {
-        key: 'tsl',
-        full_name: 'Star Wars Knights of the Old Republic II: The Sith Lords',
-        launch: { args: { gameChoice: 2 } },
-      },
-    };
-    return defaults[key] ?? undefined;
-  }
-
   /**
    * getProfile
-   * - Loads from ConfigClient. If missing (e.g. game opened directly), uses default for kotor/tsl and persists it.
    */
-  static async getProfile(): Promise<GameAppProfile | undefined> {
+  static async getProfile(){
     const query = new URLSearchParams(window.location.search);
-    const key = query.get('key');
     await KotOR.ConfigClient.Init();
-    let profile = KotOR.ConfigClient.get(`Profiles.${key}`) as GameAppProfile | undefined;
-    if (profile == null && key) {
-      const fallback = AppState.getDefaultProfileForKey(key);
-      if (fallback) {
-        log.debug('No profile in config for key=%s; using default and persisting', key);
-        profile = { ...fallback };
-        KotOR.ConfigClient.set(`Profiles.${key}`, profile as unknown as KotOR.ConfigValue);
-      }
-    }
-    // Ensure profile has .key when URL has key (e.g. stale config entry without key)
-    if (profile && !profile.key && key) {
-      profile = { ...profile, key };
-      KotOR.ConfigClient.set(`Profiles.${key}`, profile as unknown as KotOR.ConfigValue);
-    }
-    return profile;
+    return KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
   }
 
   /**
@@ -84,22 +28,13 @@ export class AppState {
       AppState.env = ApplicationEnvironment.BROWSER;
     }
 
-    AppState.appProfile = (await AppState.getProfile()) as GameAppProfile | undefined;
-    // If URL has ?key= but profile missing/key missing, ensure we have a usable profile (e.g. direct open)
-    const urlKey = new URLSearchParams(window.location.search).get('key');
-    if (!AppState.appProfile?.key && urlKey) {
-      const fallback = AppState.getDefaultProfileForKey(urlKey);
-      if (fallback) {
-        log.debug('Ensuring appProfile from URL key=%s', urlKey);
-        AppState.appProfile = { ...fallback };
-        KotOR.ConfigClient.set(`Profiles.${urlKey}`, AppState.appProfile as unknown as KotOR.ConfigValue);
-      }
-    }
-    KotOR.ApplicationProfile.InitEnvironment(AppState.appProfile as Record<string, unknown>);
+    AppState.appProfile = await AppState.getProfile();
+    KotOR.ApplicationProfile.SetProfile(AppState.appProfile);
+    KotOR.ApplicationProfile.InitEnvironment();
 
     document.title = `${AppState.appProfile?.full_name ? AppState.appProfile?.full_name : 'N/A' }`;
-
-    switch(AppState.appProfile?.launch?.args?.gameChoice){
+    
+    switch(AppState.appProfile.launch.args.gameChoice){
       case 2:
         AppState.gameKey = KotOR.GameEngineType.TSL;
       break;
@@ -108,8 +43,7 @@ export class AppState {
       break;
     }
 
-    const raw = window.localStorage.getItem('acceptEULA');
-    const eulaState: Record<string, EULAConfig> = Object.assign({}, raw ? (JSON.parse(raw) as Record<string, EULAConfig>) : {});
+    const eulaState: any = Object.assign({}, JSON.parse(window.localStorage.getItem('acceptEULA') as string));
     const gameEULAConfig = Object.assign({
       key: AppState.gameKey,
       version: null,
@@ -122,8 +56,8 @@ export class AppState {
 
     AppState.loaderShow();
 
-    log.debug('gameEULAConfig', gameEULAConfig);
-    log.debug('eulaState', eulaState);
+    console.log('gameEULAConfig', gameEULAConfig);
+    console.log('eulaState', eulaState);
     AppState.directoryLocated = await AppState.checkGameDirectory();
     if(AppState.eulaAccepted){
       await AppState.loadGameDirectory();
@@ -147,7 +81,7 @@ export class AppState {
   static async loadGameDirectory(){
     AppState.loaderShow();
     KotOR.GameInitializer.SetLoadingMessage('Locating Game Directory...');
-
+  
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       if(await KotOR.GameFileSystem.exists('chitin.key')){
         AppState.directoryLocated = true;
@@ -230,8 +164,8 @@ export class AppState {
     }else{
       KotOR.ApplicationProfile.directoryHandle = AppState.appProfile.directory_handle;
     }
-    log.info('loading game...');
-    AppState.loaderInit(AppState.appProfile?.background ?? '', AppState.appProfile?.logo ?? '');
+    console.log('loading game...');
+    AppState.loaderInit(AppState.appProfile.background, AppState.appProfile.logo);
     AppState.loaderShow();
     KotOR.GameState.GameKey = AppState.gameKey;
     KotOR.TextureLoader.GameKey = KotOR.GameState.GameKey;
@@ -252,20 +186,20 @@ export class AppState {
     KotOR.OdysseyWalkMesh.Init();
     KotOR.GameState.setDOMElement(document.getElementById('renderer-container') as HTMLElement);
 
-    window.addEventListener('blur', () => {
+    window.addEventListener('blur', (e) => {
       KotOR.AudioEngine.OnWindowFocusChange(false);
     });
 
-    window.addEventListener('focus', () => {
+    window.addEventListener('focus', (e) => {
       KotOR.AudioEngine.OnWindowFocusChange(true);
     });
 
     AppState.processEventListener('on-game-loaded', []);
-
+    
     AppState.loaderMessage('GameState: Initializing...');
     await KotOR.GameState.Init();
-    document.body.append((KotOR.GameState.stats as unknown as { domElement: HTMLElement }).domElement);
-    log.info('init complete');
+    document.body.append(KotOR.GameState.stats.domElement);
+    console.log('init complete');
     AppState.loaderHide();
   }
 
@@ -273,11 +207,7 @@ export class AppState {
    * attachDirectoryPath
    * - Used for Electron
    */
-  static attachDirectoryPath(path: string): void {
-    if (!AppState.appProfile) {
-      log.error("attachDirectoryPath: appProfile is missing; cannot persist directory path");
-      return;
-    }
+  static attachDirectoryPath(path: string){
     KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory`, path);
     AppState.appProfile.directory = path;
     AppState.directoryLocated = true;
@@ -288,21 +218,9 @@ export class AppState {
    * attachDirectoryHandle
    * - Used for Browser
    */
-  static async attachDirectoryHandle(handle: FileSystemDirectoryHandle | undefined | null): Promise<void> {
-    if (!handle) {
-      log.warn("attachDirectoryHandle called with no handle");
-      return;
-    }
-    const profileKey = AppState.appProfile?.key;
-    if (!profileKey) {
-      log.error("attachDirectoryHandle: appProfile is missing or has no key; cannot persist directory handle");
-      KotOR.ApplicationProfile.directoryHandle = handle;
-      AppState.directoryLocated = true;
-      AppState.loadGameDirectory();
-      return;
-    }
+  static async attachDirectoryHandle(handle: FileSystemDirectoryHandle){
     KotOR.ApplicationProfile.directoryHandle = handle;
-    KotOR.ConfigClient.set(`Profiles.${profileKey}.directory_handle`, handle as unknown as KotOR.ConfigValue);
+    KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory_handle`, handle);
     AppState.directoryLocated = true;
     AppState.loadGameDirectory();
   }
@@ -318,13 +236,13 @@ export class AppState {
       }
       return false;
     }catch(e){
-      log.error('validateDirectoryHandle failed', e);
+      console.error(e);
       return false;
     }
   }
 
   static consoleCommand(command: string){
-    log.debug('consoleCommand', command);
+    console.log('consoleCommand', command);
     KotOR.GameState.CheatConsoleManager.processCommand(command);
   }
 
@@ -339,7 +257,7 @@ export class AppState {
       mode = undefined;
     }
     AppState.statsMode = mode;
-    KotOR.GameState.stats.showPanel(mode ?? undefined);
+    KotOR.GameState.stats.showPanel(mode as any);
   }
 
   static toggleDebugger(){
@@ -358,9 +276,9 @@ export class AppState {
    * Event Listeners
    */
 
-  static #eventListeners: Record<string, ((...args: unknown[]) => void)[]> = {};
+  static #eventListeners: any = {};
 
-  static addEventListener<T extends string>(type: T, cb: (...args: unknown[]) => void): void {
+  static addEventListener<T>(type: T, cb: Function): void {
     if(!Array.isArray(this.#eventListeners[type])){
       this.#eventListeners[type] = [];
     }
@@ -370,30 +288,30 @@ export class AppState {
       if(index == -1){
         ev.push(cb);
       }else{
-        log.warn('Event Listener: Already added', type);
+        console.warn('Event Listener: Already added', type);
       }
     }else{
-      log.warn('Event Listener: Unsupported', type);
+      console.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static removeEventListener<T extends string>(type: T, cb: (...args: unknown[]) => void): void {
+  static removeEventListener<T>(type: T, cb: Function): void {
     if(Array.isArray(this.#eventListeners[type])){
       const ev = this.#eventListeners[type];
       const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
-        log.warn('Event Listener: Already removed', type);
+        console.warn('Event Listener: Already removed', type);
       }
     }else{
-      log.warn('Event Listener: Unsupported', type);
+      console.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static processEventListener<T>(type: T, args: (string | number | boolean | object | null)[] = []): void {
-    if(Array.isArray(this.#eventListeners[type as string])){
-      const ev = this.#eventListeners[type as string];
+  static processEventListener<T>(type: T, args: any[] = []): void {
+    if(Array.isArray(this.#eventListeners[type])){
+      const ev = this.#eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
@@ -401,7 +319,7 @@ export class AppState {
         }
       }
     }else{
-      log.warn('Event Listener: Unsupported', type);
+      console.warn('Event Listener: Unsupported', type);
     }
   }
 

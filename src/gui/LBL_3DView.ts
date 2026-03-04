@@ -2,16 +2,14 @@ import * as THREE from "three";
 
 import { GameState } from "@/GameState";
 import type { GUIControl } from "@/gui/GUIControl";
-import type { IGUIShaderMaterial } from "@/interface/gui/IGUIShaderMaterial";
 import type { LightManager } from "@/managers";
 import { OdysseyModel3D } from "@/three/odyssey";
 
-
 /**
  * LBL_3DView class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file LBL_3DView.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -28,16 +26,16 @@ export class LBL_3DView {
   currentCamera: THREE.Camera;
   globalLight: THREE.AmbientLight;
   lightManager: LightManager = new GameState.LightManager();
-  emitters: Record<string, { tick: (delta: number) => void }> = {};
-  _emitters: Record<string, { tick: (delta: number) => void }> = {};
-  group: {
-    emitters: THREE.Group;
-    lights: THREE.Group;
-    light_helpers: THREE.Group;
-    shadow_lights: THREE.Group;
-    creatures: THREE.Group;
+  emitters: any = {};
+  _emitters: any = {};
+  group: { 
+    emitters: THREE.Group; 
+    lights: THREE.Group; 
+    light_helpers: THREE.Group; 
+    shadow_lights: THREE.Group; 
+    creatures: THREE.Group; 
   };
-  control: GUIControl | undefined;
+  control: any;
   frustumMat4: THREE.Matrix4;
   viewportFrustum: THREE.Frustum;
 
@@ -87,13 +85,10 @@ export class LBL_3DView {
 
   setControl(control: GUIControl){
     this.control = control;
-
+    
     this.control.setFillTexture(this.texture.texture);
     // this.control.getFill().material.uniforms.map.value = this.texture.texture;
-    const material = this.control.getFill().material;
-    if (material instanceof THREE.ShaderMaterial) {
-      (material as IGUIShaderMaterial).uniforms.diffuse.value.setHex(0xFFFFFF);
-    }
+    this.control.getFill().material.uniforms.diffuse.value.setHex(0xFFFFFF);
   }
 
   getCamera(){
@@ -161,7 +156,7 @@ export class LBL_3DView {
     GameState.renderer.setRenderTarget(this.texture);
     GameState.renderer.clear();
     GameState.renderer.render(this.scene, this.currentCamera);
-    (this.texture as THREE.WebGLRenderTarget & { needsUpdate?: boolean }).needsUpdate = true;
+    (this.texture as any).needsUpdate = true;
     GameState.renderer.setRenderTarget(null);
     //GameState.renderer.setClearColor(oldClearColor, 1);
 

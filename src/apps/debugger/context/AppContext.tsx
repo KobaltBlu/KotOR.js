@@ -2,30 +2,27 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
 
 import * as KotOR from "@/apps/debugger/KotOR";
 import { DebuggerState } from "@/apps/debugger/states/DebuggerState";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { IPCMessage } from "@/server/ipc/IPCMessage";
+import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
 
 export interface AppProviderValues {
   stateRef: React.MutableRefObject<DebuggerState>;
   scriptMap: [Map<string, KotOR.NWScript>, React.Dispatch<Map<string, KotOR.NWScript>>];
   instanceMap: [Map<string, KotOR.NWScriptInstance>, React.Dispatch<Map<string, KotOR.NWScriptInstance>>];
   parentMap: [Map<string, Set<string>>, React.Dispatch<Map<string, Set<string>>>];
-  selectedInstance: [KotOR.NWScriptInstance | undefined, React.Dispatch<KotOR.NWScriptInstance | undefined>];
-  setSelectedInstanceHelper: (instance: KotOR.NWScriptInstance) => void;
-  sendMessageHelper: (data: ArrayBuffer | ArrayBufferView) => void;
+  selectedInstance: [KotOR.NWScriptInstance, React.Dispatch<KotOR.NWScriptInstance>];
+  setSelectedInstanceHelper: Function;
+  sendMessageHelper: Function;
 }
-const defaultAppContextValue: AppProviderValues = null as unknown as AppProviderValues;
-export const AppContext = createContext<AppProviderValues>(defaultAppContextValue);
+export const AppContext = createContext<AppProviderValues>({} as any);
 
 export function useApp(){
   return useContext(AppContext);
 }
 
-export interface AppProviderProps {
-  children: React.ReactNode;
-  appState: DebuggerState;
-}
-
-export const AppProvider = (props: AppProviderProps) => {
+export const AppProvider = (props: {children: any; appState: DebuggerState}) => {
   const [scriptMap, setScriptMap] = useState<Map<string, KotOR.NWScript>>(new Map());
   const [instanceMap, setInstanceMap] = useState<Map<string, KotOR.NWScriptInstance>>(new Map());
   const [parentMap, setParentMap] = useState<Map<string, Set<string>>>(new Map());
@@ -38,7 +35,7 @@ export const AppProvider = (props: AppProviderProps) => {
     stateRef.current?.setSelectedInstance(instance);
   }
 
-  const sendMessageHelper = (data: ArrayBuffer | ArrayBufferView) => {
+  const sendMessageHelper = (data: any) => {
     stateRef.current?.sendMessage(data);
   }
 
@@ -48,7 +45,7 @@ export const AppProvider = (props: AppProviderProps) => {
     setParentMap(new Map(state.parentMap));
   }
 
-  const onMessage = (_message: IPCMessage) => {
+  const onMessage = (message: any) => {
     onUpdateState(stateRef.current);
   }
 
@@ -77,6 +74,7 @@ export const AppProvider = (props: AppProviderProps) => {
     scriptMap: [scriptMap, setScriptMap],
     instanceMap: [instanceMap, setInstanceMap],
     parentMap: [parentMap, setParentMap],
+    //@ts-ignore
     selectedInstance: [selectedInstance, setSelectedInstance],
     setSelectedInstanceHelper: setSelectedInstanceHelper,
     sendMessageHelper: sendMessageHelper

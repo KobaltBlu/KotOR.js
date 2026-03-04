@@ -1,15 +1,16 @@
 import React from "react";
 
-import type { LauncherProfileElement } from "@/apps/launcher/types";
+import { useApp } from "@/apps/launcher/context/AppContext";
 
-export interface WebviewPromoItemProps {
-  element: LauncherProfileElement;
-  onClick?: (element: LauncherProfileElement) => void;
-  onDoubleClick?: (element: LauncherProfileElement) => void;
+export interface ProfilePromoItemProps {
+  element: any;
+  onClick?: (element: any) => void;
+  onDoubleClick?: (element: any) => void;
 }
 
-export const WebviewPromoItem = function(props: WebviewPromoItemProps) {
-  const element = props.element;
+export const WebviewPromoItem = function(props: ProfilePromoItemProps){
+  const element: any = props.element;
+  const appContext = useApp();
 
   return (
     <div className="promo-element webview">

@@ -1,14 +1,13 @@
-import type { ITwoDARowData } from "@/resource/TwoDAObject";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 
 export class SWPortrait {
-  static portraits: ITwoDARowData[] = [];
+  static portraits: any[] = [];
   id: number;
   appearancenumber: number;
   baseresref: string;
   sex: number;
   race: number;
-  inanimatetype: string | number;
+  inanimatetype: any;
   plot: number;
   lowgore: number;
   appearance_s: number;
@@ -34,56 +33,56 @@ export class SWPortrait {
       case 4:
         return this.baseresref;
       default:
-        return this.baseresref;
+        return this.baseresref; 
     }
   }
 
-  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}): SWPortrait {
+  static From2DA(row: any = {}){
     const portrait = new SWPortrait();
 
-    if(Object.hasOwn(row,'__index'))
+    if(row.hasOwnProperty('__index'))
       portrait.id = TwoDAObject.normalizeValue(row.__index, 'number', 0);
 
-    if(Object.hasOwn(row,'appearancenumber'))
+    if(row.hasOwnProperty('appearancenumber'))
       portrait.appearancenumber = TwoDAObject.normalizeValue(row.appearancenumber, 'number', 0);
 
-    if(Object.hasOwn(row,'baseresref'))
+    if(row.hasOwnProperty('baseresref'))
       portrait.baseresref = TwoDAObject.normalizeValue(row.baseresref, 'string', '');
 
-    if(Object.hasOwn(row,'sex'))
+    if(row.hasOwnProperty('sex'))
       portrait.sex = TwoDAObject.normalizeValue(row.sex, 'number', 0);
 
-    if(Object.hasOwn(row,'race'))
+    if(row.hasOwnProperty('race'))
       portrait.race = TwoDAObject.normalizeValue(row.race, 'number', 0);
 
-    if(Object.hasOwn(row,'inanimatetype'))
+    if(row.hasOwnProperty('inanimatetype'))
       portrait.inanimatetype = TwoDAObject.normalizeValue(row.inanimatetype, 'number', 0);
 
-    if(Object.hasOwn(row,'plot'))
+    if(row.hasOwnProperty('plot'))
       portrait.plot = TwoDAObject.normalizeValue(row.plot, 'number', 0);
 
-    if(Object.hasOwn(row,'lowgore'))
+    if(row.hasOwnProperty('lowgore'))
       portrait.lowgore = TwoDAObject.normalizeValue(row.lowgore, 'number', 0);
 
-    if(Object.hasOwn(row,'appearance_s'))
+    if(row.hasOwnProperty('appearance_s'))
       portrait.appearance_s = TwoDAObject.normalizeValue(row.appearance_s, 'number', 0);
 
-    if(Object.hasOwn(row,'appearance_l'))
+    if(row.hasOwnProperty('appearance_l'))
       portrait.appearance_l = TwoDAObject.normalizeValue(row.appearance_l, 'number', 0);
 
-    if(Object.hasOwn(row,'forpc'))
+    if(row.hasOwnProperty('forpc'))
       portrait.forpc = TwoDAObject.normalizeValue(row.forpc, 'number', 0);
 
-    if(Object.hasOwn(row,'baseresrefe'))
+    if(row.hasOwnProperty('baseresrefe'))
       portrait.baseresrefe = TwoDAObject.normalizeValue(row.baseresrefe, 'string', '');
 
-    if(Object.hasOwn(row,'baseresrefve'))
+    if(row.hasOwnProperty('baseresrefve'))
       portrait.baseresrefve = TwoDAObject.normalizeValue(row.baseresrefve, 'string', '');
 
-    if(Object.hasOwn(row,'baseresrefvve'))
+    if(row.hasOwnProperty('baseresrefvve'))
       portrait.baseresrefvve = TwoDAObject.normalizeValue(row.baseresrefvve, 'string', '');
 
-    if(Object.hasOwn(row,'baseresrefvvve'))
+    if(row.hasOwnProperty('baseresrefvvve'))
       portrait.baseresrefvvve = TwoDAObject.normalizeValue(row.baseresrefvvve, 'string', '');
 
     return portrait;

@@ -5,8 +5,6 @@ import { BIFManager } from "@/managers/BIFManager";
 import { BIFObject } from "@/resource/BIFObject";
 import { KEYObject } from "@/resource/KEYObject";
 
-
-
 /**
  * KEYManager class.
  * 

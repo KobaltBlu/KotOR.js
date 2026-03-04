@@ -16,11 +16,11 @@ export class ERFManager {
 
   static ERFs: Map<string, ERFObject> = new Map();
 
-  static Load(keyPaths: { filename: string; name: string }[], onComplete?: () => void): void {
+  static Load( keyPaths: any[], onComplete?: Function  ){
     const data_dir = 'modules';
     new AsyncLoop({
       array: keyPaths,
-      onLoop: (erf_obj: { filename: string; name: string }, asyncLoop: AsyncLoop) => {
+      onLoop: (erf_obj: any, asyncLoop: AsyncLoop) => {
         const erf = new ERFObject(path.join(data_dir, erf_obj.filename));
         erf.load().then((erf: ERFObject) => {
           if(erf instanceof ERFObject){

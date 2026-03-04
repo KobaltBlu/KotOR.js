@@ -1,8 +1,8 @@
 import type { Action } from "@/actions/Action";
-import { ActionCastSpell } from "@/actions/ActionCastSpell";
-import { ActionCloseDoor } from "@/actions/ActionCloseDoor";
-import { ActionCombat } from "@/actions/ActionCombat";
-import { ActionDialogObject } from "@/actions/ActionDialogObject";
+import { ActionCastSpell } from "@/actions/ActionCastSpell"; 
+import { ActionCloseDoor } from "@/actions/ActionCloseDoor"; 
+import { ActionCombat } from "@/actions/ActionCombat"; 
+import { ActionDialogObject } from "@/actions/ActionDialogObject"; 
 import { ActionDisarmMine } from "@/actions/ActionDisarmMine";
 import { ActionDoCommand } from "@/actions/ActionDoCommand";
 import { ActionDropItem } from "@/actions/ActionDropItem";
@@ -10,7 +10,6 @@ import { ActionEquipItem } from "@/actions/ActionEquipItem";
 import { ActionExamineMine } from "@/actions/ActionExamineMine";
 import { ActionFlagMine } from "@/actions/ActionFlagMine";
 import { ActionFollowLeader } from "@/actions/ActionFollowLeader";
-import { ActionForceFollowObject } from "@/actions/ActionForceFollowObject";
 import { ActionGiveItem } from "@/actions/ActionGiveItem";
 import { ActionItemCastSpell } from "@/actions/ActionItemCastSpell";
 import { ActionJumpToObject } from "@/actions/ActionJumpToObject";
@@ -20,80 +19,79 @@ import { ActionMoveToPoint } from "@/actions/ActionMoveToPoint";
 import { ActionOpenDoor } from "@/actions/ActionOpenDoor";
 import { ActionPauseDialog } from "@/actions/ActionPauseDialog";
 import { ActionPhysicalAttacks } from "@/actions/ActionPhysicalAttacks";
-import { ActionPickUpItem } from "@/actions/ActionPickUpItem";
 import { ActionPlayAnimation } from "@/actions/ActionPlayAnimation";
-import { ActionRandomWalk } from "@/actions/ActionRandomWalk";
-import { ActionRecoverMine } from "@/actions/ActionRecoverMine";
 import { ActionResumeDialog } from "@/actions/ActionResumeDialog";
 import { ActionSetCommandable } from "@/actions/ActionSetCommandable";
-import { ActionSetMine } from "@/actions/ActionSetMine";
-import { ActionSpeak } from "@/actions/ActionSpeak";
-import { ActionSpeakStrRef } from "@/actions/ActionSpeakStrRef";
 import { ActionTakeItem } from "@/actions/ActionTakeItem";
-import { ActionUnequipItem } from "@/actions/ActionUnequipItem";
 import { ActionUnlockObject } from "@/actions/ActionUnlockObject";
+import { ActionUnequipItem } from "@/actions/ActionUnequipItem";
 import { ActionUseObject } from "@/actions/ActionUseObject";
 import { ActionWait } from "@/actions/ActionWait";
+import { ActionRandomWalk } from "@/actions/ActionRandomWalk";
+import { ActionPickUpItem } from "@/actions/ActionPickUpItem";
+import { ActionForceFollowObject } from "@/actions/ActionForceFollowObject";
+import { ActionSpeakStrRef } from "@/actions/ActionSpeakStrRef";
+import { ActionSetMine } from "@/actions/ActionSetMine";
+import { ActionRecoverMine } from "@/actions/ActionRecoverMine";
+import { ActionSpeak } from "@/actions/ActionSpeak";
 import { ActionType } from "@/enums/actions/ActionType";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
- * ActionFactory – static-only registry of action constructors.
- *
+ * ActionFactory class.
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file ActionFactory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const ActionFactory = {
-  ActionCombat,
-  ActionCastSpell,
-  ActionCloseDoor,
-  ActionDialogObject,
-  ActionDoCommand,
-  ActionDropItem,
-  ActionEquipItem,
-  ActionFollowLeader,
-  ActionGiveItem,
-  ActionItemCastSpell,
-  ActionJumpToObject,
-  ActionJumpToPoint,
-  ActionLockObject,
-  ActionMoveToPoint,
-  ActionOpenDoor,
-  ActionPauseDialog,
-  ActionPhysicalAttacks,
-  ActionPickUpItem,
-  ActionPlayAnimation,
-  ActionResumeDialog,
-  ActionSetCommandable,
-  ActionTakeItem,
-  ActionUnlockObject,
-  ActionUnequipItem,
-  ActionUseObject,
-  ActionWait,
-  ActionRandomWalk,
-  ActionForceFollowObject,
-  ActionSpeakStrRef,
-  ActionSetMine,
-  ActionRecoverMine,
-  ActionDisarmMine,
-  ActionExamineMine,
-  ActionFlagMine,
-  ActionSpeak,
+export class ActionFactory {
 
-  FromStruct(struct: GFFStruct): Action {
-    let action: Action | undefined;
-    const actionId: number = struct.getNumberByLabel('ActionId');
-    const groupId: number = struct.getNumberByLabel('GroupActionId');
-    const paramCount: number = struct.getNumberByLabel('NumParams');
+  static ActionCombat: typeof ActionCombat = ActionCombat;
+  static ActionCastSpell: typeof ActionCastSpell = ActionCastSpell;
+  static ActionCloseDoor: typeof ActionCloseDoor = ActionCloseDoor;
+  static ActionDialogObject: typeof ActionDialogObject = ActionDialogObject;
+  static ActionDoCommand: typeof ActionDoCommand = ActionDoCommand;
+  static ActionDropItem: typeof ActionDropItem = ActionDropItem;
+  static ActionEquipItem: typeof ActionEquipItem = ActionEquipItem;
+  static ActionFollowLeader: typeof ActionFollowLeader = ActionFollowLeader;
+  static ActionGiveItem: typeof ActionGiveItem = ActionGiveItem;
+  static ActionItemCastSpell: typeof ActionItemCastSpell = ActionItemCastSpell;
+  static ActionJumpToObject: typeof ActionJumpToObject = ActionJumpToObject;
+  static ActionJumpToPoint: typeof ActionJumpToPoint = ActionJumpToPoint;
+  static ActionLockObject: typeof ActionLockObject = ActionLockObject;
+  static ActionMoveToPoint: typeof ActionMoveToPoint = ActionMoveToPoint;
+  static ActionOpenDoor: typeof ActionOpenDoor = ActionOpenDoor;
+  static ActionPauseDialog: typeof ActionPauseDialog = ActionPauseDialog;
+  static ActionPhysicalAttacks: typeof ActionPhysicalAttacks = ActionPhysicalAttacks;
+  static ActionPickUpItem: typeof ActionPickUpItem = ActionPickUpItem;
+  static ActionPlayAnimation: typeof ActionPlayAnimation = ActionPlayAnimation;
+  static ActionResumeDialog: typeof ActionResumeDialog = ActionResumeDialog;
+  static ActionSetCommandable: typeof ActionSetCommandable = ActionSetCommandable;
+  static ActionTakeItem: typeof ActionTakeItem = ActionTakeItem;
+  static ActionUnlockObject: typeof ActionUnlockObject = ActionUnlockObject;
+  static ActionUnequipItem: typeof ActionUnequipItem = ActionUnequipItem;
+  static ActionUseObject: typeof ActionUseObject = ActionUseObject;
+  static ActionWait: typeof ActionWait = ActionWait;
+  static ActionRandomWalk: typeof ActionRandomWalk = ActionRandomWalk;
+  static ActionForceFollowObject: typeof ActionForceFollowObject = ActionForceFollowObject;
+  static ActionSpeakStrRef: typeof ActionSpeakStrRef = ActionSpeakStrRef;
+  static ActionSetMine: typeof ActionSetMine = ActionSetMine;
+  static ActionRecoverMine: typeof ActionRecoverMine = ActionRecoverMine;
+  static ActionDisarmMine: typeof ActionDisarmMine = ActionDisarmMine;
+  static ActionExamineMine: typeof ActionExamineMine = ActionExamineMine;
+  static ActionFlagMine: typeof ActionFlagMine = ActionFlagMine;
+  static ActionSpeak: typeof ActionSpeak = ActionSpeak;
 
-    const paramStructs: GFFStruct[] = (struct.hasField('Paramaters')) ?
-      (struct.getFieldByLabel('Paramaters')?.getChildStructs() ?? []) : [];
+  static FromStruct( struct: GFFStruct ): Action {
+    let action: Action = undefined as any;
+    const actionId = struct.getFieldByLabel('ActionId').getValue();
+    const groupId = struct.getFieldByLabel('GroupActionId').getValue();
+    const paramCount = struct.getFieldByLabel('NumParams').getValue();
+
+    const paramStructs: GFFStruct[] = (struct.hasField('Paramaters')) ? 
+      struct.getFieldByLabel('Paramaters').getChildStructs() : [];
 
     switch(actionId){
       case ActionType.ActionCombat:
@@ -187,31 +185,31 @@ export const ActionFactory = {
         action = new ActionExamineMine(actionId, groupId);
       break;
       default:
-        log.debug('ActionList Unhandled Action', '0x' + (actionId.toString(16).toUpperCase()), paramCount);
-        for (let i = 0; i < paramCount; i++) {
-          const paramStruct = paramStructs[i];
-          if (!paramStruct) continue;
-          const type = paramStruct.getFieldByLabel('Type')?.getNumber() ?? 0;
-          const valueField = paramStruct.getFieldByLabel('Value');
-          if (type === 1) {
-            log.debug('INT', valueField?.getNumber());
-          } else if (type === 2) {
-            log.debug('FLOAT', valueField?.getNumber());
-          } else if (type === 3) {
-            log.debug('DWORD', valueField?.getNumber());
-          } else if (type === 4) {
-            log.debug('STRING', valueField?.getString());
-          } else if (type === 5) {
-            log.debug('SCRIPT', valueField);
+        console.log('ActionList Unhandled Action', '0x' + (actionId.toString(16).toUpperCase()), paramCount);
+        for(let i = 0; i < paramCount; i++){
+          const struct = paramStructs[i];
+          const type = struct.getFieldByLabel('Type').getValue();
+          
+          if(type == 1){
+            console.log('INT', struct.getFieldByLabel('Value').getValue());
+          }else if(type == 2){
+            console.log('FLOAT', struct.getFieldByLabel('Value').getValue());
+          }else if(type == 3){
+            console.log('DWORD', struct.getFieldByLabel('Value').getValue());
+          }else if(type == 4){
+            console.log('STRING', struct.getFieldByLabel('Value').getValue());
+          }else if(type == 5){
+            console.log('SCRIPT', struct.getFieldByLabel('Value'));
           }
         }
-        break;
+      break;
     }
 
-    if (action) {
+    if(action){
       action.setParameters(paramStructs, paramCount);
     }
 
-    return action as Action;
-  },
-};
+    return action;
+  }
+
+}

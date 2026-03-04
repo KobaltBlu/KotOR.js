@@ -1,14 +1,11 @@
 import { InGameConfirm as K1_InGameConfirm } from "@/game/kotor/KOTOR";
-import type { GUIButton, GUIListBox } from "@/gui";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
+import type { GUIListBox, GUIButton } from "@/gui";
 
 /**
  * InGameConfirm class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file InGameConfirm.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -30,7 +27,7 @@ export class InGameConfirm extends K1_InGameConfirm {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.defaultExtent.width = this.tGuiPanel.extent.width;
       this.defaultExtent.height = this.tGuiPanel.extent.height;
       this.defaultExtent.top = this.tGuiPanel.extent.top;
@@ -38,7 +35,7 @@ export class InGameConfirm extends K1_InGameConfirm {
 
       this.BTN_OK.addEventListener('click', (e) => {
         e.stopPropagation();
-        log.info('BTN_OK clicked', this.onOk);
+        console.log('BTN_OK clicked', this.onOk);
         if(typeof this.onOk === 'function'){
           this.onOk();
         }
@@ -48,7 +45,7 @@ export class InGameConfirm extends K1_InGameConfirm {
 
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
-        log.info('BTN_CANCEL clicked', this.onCancel);
+        console.log('BTN_CANCEL clicked', this.onCancel);
         if(typeof this.onCancel === 'function'){
           this.onCancel();
         }
@@ -65,6 +62,5 @@ export class InGameConfirm extends K1_InGameConfirm {
   update(delta: number) {
     super.update(delta);
   }
-
+  
 }
-

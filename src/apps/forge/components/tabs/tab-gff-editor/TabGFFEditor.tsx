@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useState, useCallback, memo, useMemo } from "react";
+import React, { ChangeEvent, useEffect, useState, useCallback, memo, useMemo } from "react"
 import { Form, InputGroup } from "react-bootstrap";
 
 import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
@@ -6,35 +6,9 @@ import { createGFFContextMenuItems } from "@/apps/forge/components/tabs/tab-gff-
 import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
 import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Forge);
-
-interface GFFStructElementProps {
-  struct: KotOR.GFFStruct;
-  tab: TabGFFEditorState;
-  open?: boolean;
-  depth?: number;
-}
-
-interface GFFFieldElementProps {
-  field: KotOR.GFFField;
-  tab: TabGFFEditorState;
-  open?: boolean;
-  depth?: number;
-}
-
-interface GFFStructPropertiesProps {
-  node: KotOR.GFFStruct;
-}
-
-interface GFFFieldPropertiesProps {
-  node: KotOR.GFFField;
-}
 
 export const TabGFFEditor = function(props: BaseTabProps){
 
@@ -55,10 +29,7 @@ export const TabGFFEditor = function(props: BaseTabProps){
   useEffectOnce( () => { //constructor
     tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onEditorFileLoad', onEditorFileLoad);
     tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onNodeSelected', onNodeSelected);
-    // Sync initial state if load completed before mount (e.g. webview buffer resolves immediately)
-    if (tab.gff) {
-      setGFF(tab.gff);
-    }
+
     return () => { //destructor
       tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onEditorFileLoad', onEditorFileLoad);
       tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onNodeSelected', onNodeSelected);
@@ -79,12 +50,12 @@ export const TabGFFEditor = function(props: BaseTabProps){
   <div id="gffProperties" className="container" style={{position: 'relative', overflow: 'auto', height: '100%', width:'50%', padding:'10px', float: 'left'}}>
     {(
       selectedNode ? (
-        selectedNode instanceof KotOR.GFFField ?
+        selectedNode instanceof KotOR.GFFField ? 
           <GFFFieldProperties node={selectedNode} /> :
-        selectedNode instanceof KotOR.GFFStruct ?
-          <GFFStructProperties node={selectedNode} /> :
+        selectedNode instanceof KotOR.GFFStruct ? 
+          <GFFStructProperties node={selectedNode} /> : 
         <></>
-      ) :
+      ) : 
       <></>
     )}
   </div>
@@ -92,7 +63,7 @@ export const TabGFFEditor = function(props: BaseTabProps){
 
 };
 
-const GFFStructElement = memo(function GFFStructElement(props: GFFStructElementProps){
+const GFFStructElement = memo(function GFFStructElement(props: any){
   const tab: TabGFFEditorState = props.tab as TabGFFEditorState;
   const [openState, setOpenState] = useState<boolean>(!!props.open);
   const struct: KotOR.GFFStruct = props.struct;
@@ -115,23 +86,23 @@ const GFFStructElement = memo(function GFFStructElement(props: GFFStructElementP
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
+    
     const contextMenuItems = createGFFContextMenuItems({
       struct,
       onFieldAdded: () => rerender(!render),
-      onStructCut: () => log.debug('Cut STRUCT'),
-      onStructCopy: () => log.debug('Copy STRUCT'),
-      onFieldPaste: () => log.debug('Paste FIELD'),
-      onStructDelete: () => log.debug('Delete Struct'),
-      onNew: () => log.debug('New'),
-      onOpen: () => log.debug('Open'),
-      onClose: () => log.debug('Close')
+      onStructCut: () => console.log('Cut STRUCT'),
+      onStructCopy: () => console.log('Copy STRUCT'),
+      onFieldPaste: () => console.log('Paste FIELD'),
+      onStructDelete: () => console.log('Delete Struct'),
+      onNew: () => console.log('New'),
+      onOpen: () => console.log('Open'),
+      onClose: () => console.log('Close')
     });
 
     showContextMenu(e.clientX, e.clientY, contextMenuItems);
   }, [struct, render, showContextMenu]);
 
-  const handleSelect = useCallback((_nodeId: string) => {
+  const handleSelect = useCallback((nodeId: string) => {
     tab.setSelectedField(struct);
   }, [tab, struct]);
 
@@ -143,11 +114,11 @@ const GFFStructElement = memo(function GFFStructElement(props: GFFStructElementP
   // Memoize child nodes to prevent unnecessary re-renders
   const childNodes = useMemo(() => {
     if (!openState || !struct) return null;
-
+    
     const fieldNodes = struct.getFields().map((field: KotOR.GFFField) => (
-      <GFFFieldElement
-        field={field}
-        key={field.uuid}
+      <GFFFieldElement 
+        field={field} 
+        key={field.uuid} 
         tab={props.tab}
         depth={depth + 1}
       />
@@ -200,7 +171,7 @@ const GFFStructElement = memo(function GFFStructElement(props: GFFStructElementP
   );
 });
 
-const GFFFieldElement = memo(function GFFFieldElement(props: GFFFieldElementProps){
+const GFFFieldElement = memo(function GFFFieldElement(props: any){
   const tab: TabGFFEditorState = props.tab as TabGFFEditorState;
   const [openState, setOpenState] = useState<boolean>(!!props.open);
   const [render, rerender] = useState<boolean>(true);
@@ -219,11 +190,11 @@ const GFFFieldElement = memo(function GFFFieldElement(props: GFFFieldElementProp
     // Add double-click logic if needed
   }, []);
 
-  const handleContextMenu = useCallback((_e: React.MouseEvent) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
     // Add context menu logic if needed
   }, []);
 
-  const handleSelect = useCallback((_nodeId: string) => {
+  const handleSelect = useCallback((nodeId: string) => {
     tab.setSelectedField(field);
   }, [tab, field]);
 
@@ -269,11 +240,11 @@ const GFFFieldElement = memo(function GFFFieldElement(props: GFFFieldElementProp
   // Memoize child nodes to prevent unnecessary re-renders
   const childNodes = useMemo(() => {
     if (!openState || !field) return null;
-
+    
     const structNodes = field.getChildStructs().map((struct: KotOR.GFFStruct) => (
-      <GFFStructElement
-        struct={struct}
-        key={struct.uuid}
+      <GFFStructElement 
+        struct={struct} 
+        key={struct.uuid} 
         tab={props.tab}
         depth={depth + 1}
       />
@@ -322,33 +293,32 @@ const GFFFieldElement = memo(function GFFFieldElement(props: GFFFieldElementProp
   );
 });
 
-const GFFStructProperties = function(props: GFFStructPropertiesProps){
-  const _node = props.node;
+const GFFStructProperties = function(props: any){
+  const node: KotOR.GFFStruct = props.node;
 
   return <></>;
 }
 
-const GFFFieldProperties = function(props: GFFFieldPropertiesProps){
-  const node = props.node;
+const GFFFieldProperties = function(props: any){
+  const node: KotOR.GFFField = props.node;
 
-  const [value, setValue] = useState<string | number>( '' );
-  const [valueX, setValueX] = useState<number>( 0 );
-  const [valueY, setValueY] = useState<number>( 0 );
-  const [valueZ, setValueZ] = useState<number>( 0 );
-  const [valueW, setValueW] = useState<number>( 0 );
+  const [value, setValue] = useState<any>( '' );
+  const [valueX, setValueX] = useState<any>( 0 );
+  const [valueY, setValueY] = useState<any>( 0 );
+  const [valueZ, setValueZ] = useState<any>( 0 );
+  const [valueW, setValueW] = useState<any>( 0 );
 
-  const [valueStrRef, setValueStrRef] = useState<number>( -1 );
+  const [valueStrRef, setValueStrRef] = useState<any>( -1 );
 
   useEffect( () => {
     if(node instanceof KotOR.GFFField){
-      const v = node.getValue();
-      setValue(typeof v === 'string' || typeof v === 'number' ? v : String(v));
+      setValue(node.getValue());
       if(node.getType() == KotOR.GFFDataType.VECTOR){
         setValueX(node.getVector().x);
         setValueY(node.getVector().y);
         setValueZ(node.getVector().z);
       }
-
+      
       if(node.getType() == KotOR.GFFDataType.ORIENTATION){
         setValueX(node.getOrientation().x);
         setValueY(node.getOrientation().y);
@@ -363,58 +333,57 @@ const GFFFieldProperties = function(props: GFFFieldPropertiesProps){
   });
 
   const onSimpleValueChange = function(e: ChangeEvent<HTMLInputElement>){
-    let val: string | number = e.target.value;
+    let value: any = e.target.value;
     if(node.getType() == KotOR.GFFDataType.RESREF){
-      val = typeof val === 'string' ? val.substring(0, 16) : val;
+      value = value.substring(0, 16);
     }
 
     if(node.getType() == KotOR.GFFDataType.CEXOSTRING){
-      val = new String(val).toString();
+      value = new String(value);
     }
 
     if(node.getType() == KotOR.GFFDataType.FLOAT){
-      val = parseFloat(String(val));
+      value = parseFloat(value);
     }
 
     if(node.getType() == KotOR.GFFDataType.DOUBLE){
-      val = parseFloat(String(val));
+      value = parseFloat(value);
     }
 
     if(node.getType() == KotOR.GFFDataType.BYTE){
-      val = parseInt(String(val), 10) & 0xFF;
+      value = parseInt(value) & 0xFF;
     }
 
     if(node.getType() == KotOR.GFFDataType.CHAR){
-      val = parseInt(String(val), 10) << 24 >> 24;
+      value = parseInt(value) << 24 >> 24;
     }
 
     if(node.getType() == KotOR.GFFDataType.WORD){
-      val = parseInt(String(val), 10) & 0xFFFF;
+      value = parseInt(value) & 0xFFFF;
     }
 
     if(node.getType() == KotOR.GFFDataType.SHORT){
-      val = parseInt(String(val), 10) << 16 >> 16;
+      value = parseInt(value) << 16 >> 16;
     }
 
     if(node.getType() == KotOR.GFFDataType.DWORD){
-      val = parseInt(String(val), 10) >>> 0;
+      value = parseInt(value) & 0xFFFFFFFF;
     }
 
     if(node.getType() == KotOR.GFFDataType.INT){
-      val = parseInt(String(val), 10) << 0 >> 0;
+      value = parseInt(value) << 0 >> 0;
     }
 
     if(node.getType() == KotOR.GFFDataType.DWORD64){
-      void 0; /* val unchanged */
+      value = value;
     }
 
     if(node.getType() == KotOR.GFFDataType.INT64){
-      void 0; /* val unchanged */
+      value = value;
     }
 
-    node.setValue(val);
-    const v = node.getValue();
-    setValue(typeof v === 'string' || typeof v === 'number' ? v : String(v));
+    node.setValue(value);
+    setValue(node.getValue());
   }
 
   const onVectorValueChange = function(e: ChangeEvent<HTMLInputElement>, mode: 'x'|'y'|'z'){
@@ -599,7 +568,7 @@ const GFFFieldProperties = function(props: GFFFieldPropertiesProps){
                 aria-describedby="basic-addon1"
                 type="number"
                 value={valueStrRef}
-                onChange={ (e: ChangeEvent<HTMLInputElement>) => setValueStrRef(Number((e.target as HTMLInputElement).value)) }
+                onChange={ (e: ChangeEvent<HTMLInputElement>) => console.log(e) }
               />
             </InputGroup>
             <InputGroup>

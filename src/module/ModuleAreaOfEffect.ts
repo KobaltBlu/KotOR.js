@@ -8,10 +8,6 @@ import { ModuleObject } from "@/module/ModuleObject";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * ModuleAreaOfEffect class.
@@ -72,82 +68,82 @@ export class ModuleAreaOfEffect extends ModuleObject {
 
   initProperties(): void {
     if(this.template.RootNode.hasField('AreaEffectId'))
-      this.areaEffectId = this.template.getNumberByLabel('AreaEffectId');
+      this.areaEffectId = this.template.getFieldByLabel('AreaEffectId').getValue();
 
     if(this.template.RootNode.hasField('CreatorId'))
-      this.creatorId = this.template.getNumberByLabel('CreatorId');
+      this.creatorId = this.template.getFieldByLabel('CreatorId').getValue();
 
     if(this.template.RootNode.hasField('Commandable'))
-      this.commandable = this.template.getBooleanByLabel('Commandable');
+      this.commandable = this.template.getFieldByLabel('Commandable').getValue();
 
     if(this.template.RootNode.hasField('Duration'))
-      this.duration = this.template.getNumberByLabel('Duration');
+      this.duration = this.template.getFieldByLabel('Duration').getValue();
 
     if(this.template.RootNode.hasField('DurationType'))
-      this.durationType = this.template.getNumberByLabel('DurationType');
-
+      this.durationType = this.template.getFieldByLabel('DurationType').getValue();
+  
     if(this.template.RootNode.hasField('LastEntered'))
-      this.lastEnteredId = this.template.getNumberByLabel('LastEntered');
+      this.lastEnteredId = this.template.getFieldByLabel('LastEntered').getValue();
 
     if(this.template.RootNode.hasField('LastLeft'))
-      this.lastLeftId = this.template.getNumberByLabel('LastLeft');
+      this.lastLeftId = this.template.getFieldByLabel('LastLeft').getValue();
 
     if(this.template.RootNode.hasField('LastHrtbtDay'))
-      this.lastHeartBeatDay = this.template.getNumberByLabel('LastHrtbtDay');
+      this.lastHeartBeatDay = this.template.getFieldByLabel('LastHrtbtDay').getValue();
 
     if(this.template.RootNode.hasField('LastHrtbtTime'))
-      this.lastHeartbeatTime = this.template.getNumberByLabel('LastHrtbtTime');
+      this.lastHeartbeatTime = this.template.getFieldByLabel('LastHrtbtTime').getValue();
 
     if(this.template.RootNode.hasField('LinkedToObject'))
-      this.linkedToObjectId = this.template.getNumberByLabel('LinkedToObject');
-
+      this.linkedToObjectId = this.template.getFieldByLabel('LinkedToObject').getValue();
+  
     if(this.template.RootNode.hasField('MetaMagicType'))
-      this.metaMagicType = this.template.getNumberByLabel('MetaMagicType');
+      this.metaMagicType = this.template.getFieldByLabel('MetaMagicType').getValue();
 
     if(this.template.RootNode.hasField('Shape'))
-      this.shape = this.template.getNumberByLabel('Shape');
+      this.shape = this.template.getFieldByLabel('Shape').getValue();
 
     //RECT
     if(this.shape == AreaOfEffectShape.RECTANGLE){
       if(this.template.RootNode.hasField('Length'))
-        this.length = this.template.getNumberByLabel('Length');
+        this.length = this.template.getFieldByLabel('Length').getValue();
 
       if(this.template.RootNode.hasField('Width'))
-        this.width = this.template.getNumberByLabel('Width');
+        this.width = this.template.getFieldByLabel('Width').getValue();
     }
     //CIRCLE
     else
     {
       if(this.template.RootNode.hasField('Radius'))
-        this.radius = this.template.getNumberByLabel('Radius');
+        this.radius = this.template.getFieldByLabel('Radius').getValue();
     }
-
+  
     if(this.template.RootNode.hasField('SpellId'))
-      this.spellId = this.template.getNumberByLabel('SpellId');
-
+      this.spellId = this.template.getFieldByLabel('SpellId').getValue();
+  
     if(this.template.RootNode.hasField('SpellLevel'))
-      this.spellLevel = this.template.getNumberByLabel('SpellLevel');
-
+      this.spellLevel = this.template.getFieldByLabel('SpellLevel').getValue();
+  
     if(this.template.RootNode.hasField('SpellSaveDC'))
-      this.spellSaveDC = this.template.getNumberByLabel('SpellSaveDC');
+      this.spellSaveDC = this.template.getFieldByLabel('SpellSaveDC').getValue();
 
     if(this.template.RootNode.hasField('OrientationX'))
-      this.xOrientation = this.template.getNumberByLabel('OrientationX');
-
+      this.xOrientation = this.template.getFieldByLabel('OrientationX').getValue();
+    
     if(this.template.RootNode.hasField('OrientationY'))
-      this.yOrientation = this.template.getNumberByLabel('OrientationY');
-
+      this.yOrientation = this.template.getFieldByLabel('OrientationY').getValue();
+    
     if(this.template.RootNode.hasField('OrientationZ'))
-      this.zOrientation = this.template.getNumberByLabel('OrientationZ');
-
+      this.zOrientation = this.template.getFieldByLabel('OrientationZ').getValue();
+      
     if(this.template.RootNode.hasField('PositionX'))
-      this.position.x = this.template.getNumberByLabel('PositionX');
-
+      this.position.x = this.template.getFieldByLabel('PositionX').getValue();
+    
     if(this.template.RootNode.hasField('PositionY'))
-      this.position.y = this.template.getNumberByLabel('PositionY');
-
+      this.position.y = this.template.getFieldByLabel('PositionY').getValue();
+    
     if(this.template.RootNode.hasField('PositionZ'))
-      this.position.z = this.template.getNumberByLabel('PositionZ');
+      this.position.z = this.template.getFieldByLabel('PositionZ').getValue();
 
     //ActionList
     try{
@@ -160,22 +156,22 @@ export class ModuleAreaOfEffect extends ModuleObject {
           }
         }
       }
-    } catch (e: unknown) {
-      log.error(e instanceof Error ? e : String(e));
+    }catch(e: any){
+      console.error(e);
     }
 
     //SWVarTable
     if(this.template.RootNode.hasField('SWVarTable')){
       const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0, len = localBools.length; i < len; i++){
-        const data = localBools[i].getNumberByLabel('Variable');
+        const data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
       }
       const localNumbers = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('ByteArray').getChildStructs();
       for(let i = 0, len = localNumbers.length; i < len; i++){
-        const data = localNumbers[i].getNumberByLabel('Variable');
+        const data = localNumbers[i].getFieldByLabel('Variable').getValue();
         this.setLocalNumber(i, data);
       }
     }

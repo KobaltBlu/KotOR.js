@@ -8,9 +8,6 @@ import { ResourceTypes } from "@/resource/ResourceTypes";
 import { TPCObject } from "@/resource/TPCObject";
 import { OdysseyCompressedTexture } from "@/three/odyssey";
 import { GameFileSystem } from "@/utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Loader);
 
 /**
  * TPCLoader class.
@@ -26,7 +23,6 @@ const log = createScopedLogger(LogScope.Loader);
 export class TPCLoader {
   
   async findTPC( resRef: string ): Promise<IFindTPCResult> {
-    log.trace("findTPC", resRef);
     resRef = resRef.toLocaleLowerCase();
   
     let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResourceInfo(resRef, ResourceTypes['tpc']);
@@ -68,7 +64,6 @@ export class TPCLoader {
   }
   
   async fetch(resRef: string = ''): Promise<OdysseyCompressedTexture>{
-    log.trace("fetch", resRef);
     try{
       const result = await this.findTPC(resRef);
       const tpc = new TPCObject({
@@ -78,10 +73,11 @@ export class TPCLoader {
       });
 
       const texture = tpc.toCompressedTexture();
-      //log.info("loaded texture", resRef);
+      //console.log("loaded texture", resRef);
 
       return texture;
-    }catch{
+    }catch(e){
+      // console.error(e);
       return undefined;
     }
   }
@@ -103,8 +99,8 @@ export class TPCLoader {
       const texture = tpc.toCompressedTexture();
 
       return texture;
-    }catch{
-      return undefined;
+    }catch(e){
+
     }
   }
   
@@ -119,7 +115,7 @@ export class TPCLoader {
         });
   
         let texture = tpc.toCompressedTexture();
-        //log.info("loaded texture", texName);
+        //console.log("loaded texture", texName);
   
         if ( typeof onLoad === 'function' ) onLoad( texture );
   
@@ -132,7 +128,7 @@ export class TPCLoader {
   
   };
 
-  loadFromArchive( archive: string, tex: string, onComplete?: (tpc: TPCObject) => void, onError?: (message: string) => void ){
+  loadFromArchive( archive: string, tex: string, onComplete?: Function, onError?: Function ){
     let resKey = ERFManager.ERFs.get(archive).getResource(tex, ResourceTypes['tpc']);
     if(resKey instanceof Object){
   
@@ -167,12 +163,12 @@ export class TPCLoader {
   
         return tpc;
       }catch(e){
-        log.error(e);
+        console.error(e);
         return undefined;
       }
   
     }else{
-      log.warn('Local files not implemented yet');
+      console.warn('Local files not implemented yet');
     }
     return undefined;
   };*/

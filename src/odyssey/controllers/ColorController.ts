@@ -1,9 +1,8 @@
-import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
-
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
 import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
@@ -19,7 +18,6 @@ export class ColorController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Color;
 
-  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }

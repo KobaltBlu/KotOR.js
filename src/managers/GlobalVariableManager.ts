@@ -2,16 +2,11 @@ import EngineLocation from "@/engine/EngineLocation";
 import { IEngineGlobals } from "@/interface/engine/IEngineGlobals";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 
-interface IGlobalCategoryRow {
-  type: 'Boolean' | 'Location' | 'Number' | 'String' | string;
-  name: string;
-}
-
 /**
  * GlobalVariableManager class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GlobalVariableManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -19,21 +14,17 @@ interface IGlobalCategoryRow {
 export class GlobalVariableManager {
 
   static Globals: IEngineGlobals = {
-    Boolean   : new Map(),
-    Number    : new Map(),
-    String    : new Map(),
-    Location  : new Map(),
+    Boolean   : new Map(), 
+    Number    : new Map(), 
+    String    : new Map(), 
+    Location  : new Map(), 
   };
-
+  
   public static Init(){
-    const globalCategoryTable = TwoDAManager.datatables.get('globalcat');
-    if(!globalCategoryTable){
-      return;
-    }
-    const initGlobals = globalCategoryTable.rows as Record<string, IGlobalCategoryRow>;
-    for (const key in initGlobals) {
-      if (Object.hasOwn(initGlobals, key)) {
-        const globItem = initGlobals[key];
+    const _initGlobals = TwoDAManager.datatables.get('globalcat').rows;
+    for (const key in _initGlobals) {
+      if (_initGlobals.hasOwnProperty(key)) {
+        const globItem = _initGlobals[key];
 
         switch(globItem.type){
           case 'Boolean':
@@ -52,7 +43,7 @@ export class GlobalVariableManager {
       }
     }
   }
-
+  
   public static SetGlobalBoolean(name = '', value = false){
     const key = GlobalVariableManager.Globals.Boolean.get(name.toLocaleLowerCase());
     if(key){

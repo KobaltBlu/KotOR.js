@@ -4,13 +4,12 @@ import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIControl , GUILabel, GUIButton } from "@/gui";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-const log = createScopedLogger(LogScope.Game);
-const _MSG_CONFIRM_SIDE_DECK = 32322;
-const _MSG_YOU_WIN = 32334;
-const _MSG_TIED = 32338;
-const _MSG_YOU_LOSE = 32335;
+
+const MSG_CONFIRM_SIDE_DECK = 32322;
+const MSG_YOU_WIN = 32334;
+const MSG_TIED = 32338;
+const MSG_YOU_LOSE = 32335;
 
 /**
  * MenuPazaakSetup class.
@@ -118,12 +117,12 @@ export class MenuPazaakSetup extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       /**
        * Begin the game
        */
       this.BTN_ATEXT.addEventListener('click', () => {
-        log.debug('PazaakSetup: Begin Game');
+        console.log('PazaakSetup: Begin Game');
         this.close();
         GameState.MenuManager.MenuPazaakGame.open();
       });
@@ -132,7 +131,7 @@ export class MenuPazaakSetup extends GameMenu {
        * Add card to the side deck
        */
       this.BTN_YTEXT.addEventListener('click', () => {
-        log.trace('BTN_YTEXT clicked');
+        console.log('BTN_YTEXT');
       });
       this.BTN_YTEXT.hide();
 
@@ -149,7 +148,7 @@ export class MenuPazaakSetup extends GameMenu {
           button.swapBorderAndHighliteOnHover = false;
           button.addEventListener('click', () => {
             this.selectedCard = i;
-            log.debug(`PazaakSetup: Selected card ${i}, count: ${card.count}`);
+            console.log(`PazaakSetup: Selected card ${i}, count: ${card.count}`);
             if(card.count <= 0){
               return;
             }
@@ -178,7 +177,7 @@ export class MenuPazaakSetup extends GameMenu {
         button.addEventListener('click', () => {
           const card = GameState.PazaakManager.PlayerSideDeck.get(i);
           this.selectedSideCard = i;
-          log.debug(`PazaakSetup: Side card ${i} - ${card}`);
+          console.log(`PazaakSetup: Side card ${i} - ${card}`);
           if(card != PazaakCards.INVALID){
             GameState.PazaakManager.MoveSideDeckCardToMainDeck(i);
             this.rebuild();
@@ -217,40 +216,40 @@ export class MenuPazaakSetup extends GameMenu {
     const rowIndex = Math.floor(cardIndex / 6);
     const columnIndex = cardIndex % 6;
     const buttonTag = `BTN_AVAIL${rowIndex}${columnIndex}`;
-    return (this as unknown as Record<string, GUIButton | undefined>)[buttonTag] as GUIButton;
+    return (this as any)[buttonTag] as GUIButton;
   }
 
   getCardLabel(cardIndex: PazaakCards){
     const rowIndex = Math.floor(cardIndex / 6);
     const columnIndex = cardIndex % 6;
     const labelTag = `LBL_AVAIL${rowIndex}${columnIndex}`;
-    return (this as unknown as Record<string, GUIControl | undefined>)[labelTag] as GUIControl;
+    return (this as any)[labelTag] as GUIControl;
   }
 
   getCardCountLabel(cardIndex: PazaakCards){
     const rowIndex = Math.floor(cardIndex / 6);
     const columnIndex = cardIndex % 6;
     const labelTag = `LBL_AVAILNUM${rowIndex}${columnIndex}`;
-    return (this as unknown as Record<string, GUIControl | undefined>)[labelTag] as GUIControl;
+    return (this as any)[labelTag] as GUIControl;
   }
 
   getSideCardButton(cardIndex: PazaakCards){
     const buttonTag = `BTN_CHOSEN${cardIndex}`;
-    return (this as unknown as Record<string, GUIButton | undefined>)[buttonTag] as GUIButton;
+    return (this as any)[buttonTag] as GUIButton;
   }
 
   getSideCardLabel(cardIndex: PazaakCards){
     const labelTag = `LBL_CHOSEN${cardIndex}`;
-    return (this as unknown as Record<string, GUIControl | undefined>)[labelTag] as GUIControl;
+    return (this as any)[labelTag] as GUIControl;
   }
 
   setCardCount(cardIndex: PazaakCards, count: number){
     const rowIndex = Math.floor(cardIndex / 6);
     const columnIndex = cardIndex % 6;
     const labelTag = `LBL_AVAILNUM${rowIndex}${columnIndex}`;
-    const label = (this as unknown as Record<string, GUIControl | undefined>)[labelTag] as GUIControl;
+    const label = (this as any)[labelTag] as GUIControl;
     if(!label){
-      log.error(`Label ${labelTag} - ${cardIndex} not found`);
+      console.error(`Label ${labelTag} - ${cardIndex} not found`);
       return;
     }
     label.setText(count.toString());
@@ -270,15 +269,15 @@ export class MenuPazaakSetup extends GameMenu {
       if(button){
         button.swapBorderAndHighliteOnHover = false;
         button.disableSelection = !bCardAvailable;
-        if (bCardAvailable || bCardKnown) button.show(); else button.hide();
+        bCardAvailable || bCardKnown ? button.show() : button.hide();
       }
       const label = this.getCardCountLabel(i);
       if(label){
-        if (bCardAvailable || bCardKnown) label.show(); else label.hide();
+        bCardAvailable || bCardKnown ? label.show() : label.hide();
       }
       const label2 = this.getCardLabel(i);
       if(label2){
-        if (bCardAvailable || bCardKnown) label2.show(); else label2.hide();
+        bCardAvailable || bCardKnown ? label2.show() : label2.hide();
       }
     }
 

@@ -6,14 +6,10 @@ import { useEffectOnce } from "@/apps/debugger/helpers/UseEffectOnce";
 import { MenuTopItem } from "@/apps/debugger/MenuTopItem";
 import { MenuTopState } from "@/apps/debugger/states/MenuTopState";
 
-
-/** MenuTop manages its own state from MenuTopState; no required props. */
-export type MenuTopProps = Record<string, never>;
-
-export const MenuTop = function(_props: MenuTopProps) {
+export const MenuTop = function(props: any) {
 
   const [items, setItems] = useState<MenuTopItem[]>([]);
-  const [_render, _setRerender] = useState<boolean>(false);
+  const [render, rerender] = useState<boolean>(false);
 
   useEffectOnce( () => { //constructor
     setItems([...MenuTopState.items]);
@@ -31,7 +27,7 @@ export const MenuTop = function(_props: MenuTopProps) {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            {items.map((item, _i: number) =>
+            {items.map((item, i: any) => 
               (
                 <MenuItem key={(`menu-item-${item.uuid}`)} item={item}></MenuItem>
               )

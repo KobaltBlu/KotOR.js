@@ -1,29 +1,21 @@
-import * as THREE from 'three';
-
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { ILIPHeader } from "@/interface/resource/ILIPHeader";
 import { ILIPKeyFrame } from "@/interface/resource/ILIPKeyFrame";
 import { ResourceLoader } from "@/loaders";
 import { OdysseyModelAnimation } from "@/odyssey";
-import type { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { OdysseyModel3D } from "@/three/odyssey";
-import type { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import { GameFileSystem } from "@/utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Resource);
 
 /**
  * LIPObject class.
- *
+ * 
  * Class representing a Lip Sync file in memory.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file LIPObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -44,7 +36,7 @@ export class LIPObject {
 
   static readonly MAX_LIP_SHAPES = 16;
 
-  constructor(file: string|Uint8Array, onComplete?: (lip: LIPObject) => void){
+  constructor(file: string|Uint8Array, onComplete?: Function){
     this.file = file;
     this.HeaderSize = 16;
 
@@ -56,7 +48,7 @@ export class LIPObject {
     this.lastTime = 0;
     this.elapsed = 0;
     this.anim = null;
-
+    
 
     if(this.file != null){
       this.readFile( (lip: LIPObject) => {
@@ -67,8 +59,8 @@ export class LIPObject {
 
   }
 
-  readFile(onComplete?: (lip: LIPObject) => void){
-
+  readFile(onComplete?: Function){
+    
     try{
 
       if(this.file instanceof Uint8Array){
@@ -94,23 +86,23 @@ export class LIPObject {
         GameFileSystem.readFile(this.file as string).then( (buffer) => {
           this.readBinary(buffer, onComplete);
         }).catch( (err) => {
-          log.error('LIPObject', 'LIP Header Read', err);
+          console.error('LIPObject', 'LIP Header Read', err);
         });
       }
     }catch(e){
-      log.error('LIPObject', 'LIP Open Error', e);
+      console.error('LIPObject', 'LIP Open Error', e);
       if(typeof onComplete == 'function')
         onComplete(this);
     }
   }
 
-  readBinary(buffer: Uint8Array, onComplete?: (lip: LIPObject) => void){
+  readBinary(buffer: Uint8Array, onComplete?: Function){
     if(buffer instanceof Uint8Array){
 
       const reader = new BinaryReader(buffer);
 
-      const _fileType = reader.readChars(4);
-      const _fileVersion = reader.readChars(4);
+      const fileType = reader.readChars(4);
+      const fileVersion = reader.readChars(4);
       this.duration = reader.readSingle();
       const entryCount = reader.readUInt32();
 
@@ -175,54 +167,52 @@ export class LIPObject {
 
       if(fl == Infinity) fl = 1;
       if(isNaN(fl)) fl = 0;
-
+      
       if(fl > 1){
         fl = 1;
       }
-
+      
       if(this.anim == null){
         this.anim = model.odysseyAnimationMap.get('talk');
       }
-
+      
       if(this.anim){
 
         for(let i = 0; i < this.anim.nodes.length; i++){
 
           const node = this.anim.nodes[i];
           const modelNode = model.nodes.get(node.name);
-
+      
           if(typeof modelNode != 'undefined'){
-
+            
             this.anim._position.x = this.anim._position.y = this.anim._position.z = 0;
             this.anim._quaternion.x = this.anim._quaternion.y = this.anim._quaternion.z = 0;
             this.anim._quaternion.w = 1;
-            //log.info(fl);
-            node.controllers.forEach((controller: OdysseyController) => {
+            //console.log(fl);
+            node.controllers.forEach( (controller: any) => {
               modelNode.lipping = true;
               let last_frame = controller.data[last.shape];
               let next_frame = controller.data[next.shape];
-              if (!last_frame) {
+              if(!last_frame){
                 last_frame = controller.data[0];
               }
-              if (!next_frame) {
+              if(!next_frame){
                 next_frame = controller.data[0];
               }
 
               //Only interpolate keyframes if there is a previos frame and it isn't the same shape as the current
-              if (last_frame) {
-                switch (controller.type) {
-                  case OdysseyModelControllerType.Position: {
-                    const posController = modelNode.controllers.get(OdysseyModelControllerType.Position);
-                    if (posController?.data[0]) {
-                      this.anim._position.copy(posController.data[0] as unknown as THREE.Vector3);
+              if(last_frame){
+                switch(controller.type){
+                  case OdysseyModelControllerType.Position:
+                    if(modelNode.controllers.get(OdysseyModelControllerType.Position)){
+                      this.anim._position.copy(modelNode.controllers.get(OdysseyModelControllerType.Position).data[0] as any);
                     }
-                    modelNode.position.copy(last_frame as unknown as THREE.Vector3).add(this.anim._position);
-                    modelNode.position.lerp(this.anim._position.clone().add(next_frame as unknown as THREE.Vector3), fl);
-                    break;
-                  }
+                    modelNode.position.copy(last_frame).add(this.anim._position);
+                    modelNode.position.lerp(this.anim._position.add(next_frame), fl);
+                  break;
                   case OdysseyModelControllerType.Orientation:
-                    modelNode.quaternion.copy(last_frame as unknown as THREE.Quaternion);
-                    modelNode.quaternion.slerp(this.anim._quaternion.copy(next_frame as unknown as THREE.Quaternion), fl);
+                    modelNode.quaternion.copy(last_frame);
+                    modelNode.quaternion.slerp(this.anim._quaternion.copy(next_frame), fl);
                   break;
                 }
                 modelNode.updateMatrix();
@@ -237,17 +227,18 @@ export class LIPObject {
       }
 
       if(this.elapsed >= this.duration){
-        const mo = model.userData.moduleObject as { lipObject?: LIPObject } | undefined;
-        if (mo) mo.lipObject = undefined;
+        
+        if(model.userData.moduleObject)
+          model.userData.moduleObject.lipObject = undefined;
 
         if(this.anim){
           for(let i = 0; i < this.anim.nodes.length; i++){
-
-            const modelNode: OdysseyObject3D | undefined = model.animNodeCache[this.anim.nodes[i].name];
+  
+            const modelNode: any = model.animNodeCache[this.anim.nodes[i].name];
             if(typeof modelNode != 'undefined'){
               modelNode.lipping = false;
             }
-
+            
           }
         }
 
@@ -259,7 +250,7 @@ export class LIPObject {
   }
 
   reIndexKeyframes(){
-    this.keyframes.sort((a,b) => (a.time > b.time) ? 1 : ((b.time > a.time) ? -1 : 0));
+    this.keyframes.sort((a,b) => (a.time > b.time) ? 1 : ((b.time > a.time) ? -1 : 0)); 
   }
 
   toExportBuffer(): Uint8Array {
@@ -280,26 +271,26 @@ export class LIPObject {
     return writer.buffer;
   }
 
-  export( onComplete?: (err?: unknown) => void ){
+  export( onComplete?: Function ){
 
     //this.reIndexKeyframes();
 
-    log.info('Exporting LIP file to ', this.file);
+    console.log('Exporting LIP file to ', this.file);
 
     if(typeof this.file == 'string'){
       GameFileSystem.writeFile(this.file, this.toExportBuffer()).then( () => {
-        log.info('LIP file exported to ', this.file);
+        console.log('LIP file exported to ', this.file);
         if(typeof onComplete === 'function')
           onComplete();
       }).catch( (err) => {
-        log.error(err);
+        console.error(err);
         if(typeof onComplete === 'function')
           onComplete(err);
       });
     }
   }
 
-  async exportAs( _onComplete?: (err?: unknown) => void ){
+  async exportAs( onComplete?: Function ){
 
     // let payload = await dialog.showSaveDialog({
     //   title: 'Export LIP',
@@ -314,45 +305,23 @@ export class LIPObject {
     //   this.file = payload.filePath;
     //   this.export(onComplete);
     // }else{
-    //   log.warn('LIP export aborted');
+    //   console.warn('LIP export aborted');
     //   if(typeof onComplete === 'function')
     //     onComplete();
     // }
 
   }
 
-  static async Load(resref: string = ''): Promise<LIPObject | undefined> {
-    return new Promise<LIPObject | undefined>((resolve) => {
-      ResourceLoader.loadResource(ResourceTypes['lip'] as number, resref)
-        .then((buffer: Uint8Array) => resolve(new LIPObject(buffer)))
-        .catch((e: unknown) => {
-          log.error(e);
-          resolve(undefined);
-        });
+  static async Load(resref: string = ''): Promise<LIPObject>{
+    return new Promise<LIPObject|any>( (resolve, reject) => {
+      ResourceLoader.loadResource(ResourceTypes['lip'], resref).then((buffer: Uint8Array) => {
+        resolve(new LIPObject(buffer));
+      }).catch( (e) => {
+        console.error(e);
+        resolve(undefined);
+      });
     });
   }
-
-  toJSON(): { fileType: string; fileVersion: string; duration: number; keyframes: Array<{ uuid?: string; time: number; shape: number }> } {
-    return {
-      fileType: LIPObject.FILE_TYPE,
-      fileVersion: LIPObject.FILE_VER,
-      duration: this.duration ?? 1,
-      keyframes: (this.keyframes ?? []).map(k => ({ uuid: k.uuid, time: k.time, shape: k.shape }))
-    };
-  }
-
-  fromJSON(json: string | ReturnType<LIPObject['toJSON']>): void {
-    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<LIPObject['toJSON']>) : json;
-    this.duration = obj.duration ?? 1;
-    this.keyframes = (obj.keyframes ?? []).map(k => ({ uuid: k.uuid ?? crypto.randomUUID(), time: k.time ?? 0, shape: k.shape ?? 0 } as ILIPKeyFrame));
-  }
-
-  toXML(): string { return objectToXML(this.toJSON()); }
-  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<LIPObject['toJSON']>); }
-  toYAML(): string { return objectToYAML(this.toJSON()); }
-  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<LIPObject['toJSON']>); }
-  toTOML(): string { return objectToTOML(this.toJSON()); }
-  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<LIPObject['toJSON']>); }
 
   static GetLIPShapeLabels(): string[] {
     return [

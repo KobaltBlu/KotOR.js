@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
@@ -9,13 +9,12 @@ import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ItemPropertyEntry, TabUTIEditorState } from "@/apps/forge/states/tabs";
-
+import { TabUTIEditorState, ItemPropertyEntry } from "@/apps/forge/states/tabs";
 
 export const TabUTIEditor = function(props: BaseTabProps){
 
   const tab: TabUTIEditorState = props.tab as TabUTIEditorState;
-  const [_selectedSubTab] = useState<string>('basic');
+  const [selectedTab, setSelectedTab] = useState<string>('basic');
 
   const [locName, setLocName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
   const [description, setDescription] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
@@ -70,26 +69,28 @@ export const TabUTIEditor = function(props: BaseTabProps){
   }, [tab, onItemChange]);
 
   // Helper functions using ForgeItem methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeItem, parser: (value: number) => number = (v) => v) =>
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeItem, parser: (value: number) => number = (v) => v) => 
     tab.item.createNumberFieldHandler(setter, property, tab.item, tab, parser);
-
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeItem) =>
+  
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeItem) => 
     tab.item.createByteFieldHandler(setter, property, tab.item, tab);
-
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeItem) =>
+  
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeItem) => 
     tab.item.createWordFieldHandler(setter, property, tab.item, tab);
-
-
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeItem) =>
+  
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeItem) => 
+    tab.item.createBooleanFieldHandler(setter, property, tab.item, tab);
+  
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeItem) => 
     tab.item.createResRefFieldHandler(setter, property, tab.item, tab);
-
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeItem) =>
+  
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeItem) => 
     tab.item.createCExoStringFieldHandler(setter, property, tab.item, tab);
-
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeItem) =>
+  
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeItem) => 
     tab.item.createCExoLocStringFieldHandler(setter, property, tab.item, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeItem) =>
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeItem) => 
     tab.item.createForgeCheckboxFieldHandler(setter, property, tab.item, tab);
 
   const updateProperties = (next: ItemPropertyEntry[]) => {

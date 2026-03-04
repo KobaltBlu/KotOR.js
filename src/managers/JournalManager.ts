@@ -1,21 +1,21 @@
 import { JournalCategory } from "@/engine/JournalCategory";
 import { JournalEntry } from "@/engine/JournalEntry";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
 import { ResourceLoader } from "@/loaders";
 import { TwoDAManager } from "@/managers/TwoDAManager";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
 import { ResourceTypes } from "@/resource/ResourceTypes";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Manager);
 
 /**
  * JournalManager class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file JournalManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -108,7 +108,7 @@ export class JournalManager {
   }
 
   static LoadJournal(){
-    return new Promise<void>( (resolve, _reject) => {
+    return new Promise<void>( (resolve, reject) => {
       ResourceLoader.loadResource(ResourceTypes.jrl, 'global').then((buffer: Uint8Array) => {
         JournalManager.gff = new GFFObject(buffer);
         if(JournalManager.gff.RootNode.hasField('Categories')){
@@ -121,8 +121,8 @@ export class JournalManager {
         }
         resolve();
       }).catch( (e) => {
-        log.warn(`Failed to load global.jrl`);
-        log.error(e);
+        console.warn(`Failed to load global.jrl`);
+        console.error(e);
         resolve();
       });
     });

@@ -1,14 +1,13 @@
 import React from "react";
 
-import { useApp } from "@/apps/launcher/context/AppContext";
-import type { LauncherProfile } from "@/apps/launcher/types";
+import { AppProvider, AppProviderValues, useApp } from "@/apps/launcher/context/AppContext";
 
 export interface ProfileMenuItemProps {
-  profile: LauncherProfile;
+  profile: any
 }
 
 export const ProfileMenuItem = function(props: ProfileMenuItemProps){
-  const profile: LauncherProfile = props.profile;
+  const profile: any = props.profile;
 
   const appContext = useApp();
   const [selectedProfileValue, setSelectedProfile] = appContext.selectedProfile;

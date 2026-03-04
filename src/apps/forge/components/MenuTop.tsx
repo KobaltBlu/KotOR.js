@@ -1,5 +1,8 @@
-import { useState, useCallback, memo } from "react";
+import React, { useState, useCallback, useMemo, memo } from "react";
+import { Container, Nav, Navbar } from 'react-bootstrap';
 
+import { AudioPlayer } from "@/apps/forge/components/AudioPlayer";
+import { MenuItem } from "@/apps/forge/components/MenuItem";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { MenuTopItem } from "@/apps/forge/MenuTopItem";
@@ -10,25 +13,26 @@ export interface MenuTopProps {
   className?: string;
 }
 
-export const MenuTop = memo(function MenuTop(_props: MenuTopProps = {}) {
+export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
+  const { className = '' } = props;
 
-  const [, setItems] = useState<MenuTopItem[]>([]);
+  const [items, setItems] = useState<MenuTopItem[]>([]);
 
   // Memoize the recent files update logic
   const updateRecentFilesMenuItem = useCallback(() => {
     MenuTopState.menuItemRecentFiles.items = [];
-
+    
     ForgeState.recentFiles.forEach((file) => {
       MenuTopState.menuItemRecentFiles.items.push(
         new MenuTopItem({
           name: `${file.getFilename()} ${file.getPrettyPath()}`,
-          onClick: (_menuItem: MenuTopItem) => {
+          onClick: (menuItem: MenuTopItem) => {
             FileTypeManager.onOpenResource(file);
           }
         })
       );
     });
-
+    
     MenuTopState.menuItemRecentFiles.rebuild();
   }, []);
 
@@ -55,7 +59,29 @@ export const MenuTop = memo(function MenuTop(_props: MenuTopProps = {}) {
   });
 
   // Memoize menu items rendering
+  const menuItems = useMemo(() => (
+    items.map((item) => (
+      <MenuItem 
+        key={`menu-item-${item.uuid}`} 
+        item={item}
+      />
+    ))
+  ), [items]);
 
-  // Top menu removed: render nothing to hide File/Save menus
-  return null;
+  return (
+    <Navbar className={`top-menu ${className}`.trim()} expand="lg">
+      <div className="menu-accent">
+        <span className="inner" />
+      </div>
+      <Container fluid>
+        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        <Navbar.Collapse id="basic-navbar-nav">
+          <Nav className="me-auto">
+            {menuItems}
+            <AudioPlayer />
+          </Nav>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
+  );
 });

@@ -4,18 +4,7 @@ import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControll
 import { TextureLoader } from "@/loaders/TextureLoader";
 import { OdysseyModelNode, OdysseyModelNodeEmitter } from "@/odyssey";
 import type { OdysseyController } from "@/odyssey/controllers";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Loader);
 import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
-
-/** Context passed to emitter for depth/camera (e.g. currentCamera, depthTarget). currentCamera may be omitted when context provides camera. */
-export interface IOdysseyEmitterContext {
-  currentCamera?: THREE.Camera;
-  camera?: THREE.Camera;
-  depthTarget?: { depthTexture?: THREE.DepthTexture | unknown };
-}
 
 /**
  * OdysseyEmitter3D class.
@@ -35,7 +24,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   static BirthTime: number = 1;
   static PlaneGeometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
   updateType: string;
-  _birthTimer: number = 0;
+  _birthTimer: any;
   maxParticleCount: number;
 
   //Geometry BufferAttributes
@@ -46,16 +35,16 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   particleCount: number;
   referenceNode: OdysseyObject3D = new OdysseyObject3D();
-  _lightningDelay: number = 0;
+  _lightningDelay: any;
   lightningZigZag: number;
   lightningScale: number;
-  lightningDelay: number = 0;
-  d: number = 0;
-  vx: number = 0;
-  vy: number = 0;
-  vz: number = 0;
-  d2: number = 0;
-  context: IOdysseyEmitterContext | undefined = undefined;
+  lightningDelay: any;
+  d: any;
+  vx: any;
+  vy: any;
+  vz: any;
+  d2: any;
+  context: any;
   lifeExp: number = 0;
 
   birthRate: number = 0;
@@ -80,20 +69,20 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   colorMid: THREE.Color = new THREE.Color(1, 1, 1);
   colorEnd: THREE.Color = new THREE.Color(1, 1, 1);
 
-  threshold: number = 0;
-  gravity: number = 0;
-  sizes: [number, number, number] = [0, 0, 0];
-  opacity: [number, number, number] = [0, 0, 0];
-  angle: number = 0;
-  _detonate: number = 0;
-  fps: number = 0;
-  lightningSubDiv: number = 0;
+  threshold: any;
+  gravity: any;
+  sizes: any;
+  opacity: any;
+  angle: any;
+  _detonate: any;
+  fps: any;
+  lightningSubDiv: any;
   speed_min: number;
   speed_max: number;
   xangle: number;
   zangle: number;
   mesh: THREE.Points|THREE.Mesh;
-  attributes: Record<string, unknown> = {};
+  attributes: any = {};
   targetSize: number = 0;
   controlPTCount: number = 0;
   controlPTDelay: number = 0;
@@ -102,10 +91,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   controlPTRadius: number = 0;
   speed: number;
 
-  override type = 'OdysseyEmitter' as const;
-
   constructor(odysseyNode: OdysseyModelNode){
     super();
+    this.type = 'OdysseyEmitter';
 
     this.isDetonated = false;
     this.particleIndex = 0;
@@ -141,16 +129,16 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   
     //Properties
     this.size = new THREE.Vector3();
-    this.sizes = [0, 0, 0] as [number, number, number];
+    this.sizes = [0, 0, 0];
     this.spread = 0;
-    this.opacity = [0, 0, 0];
+    this.opacity = [];
     this.lifeExp = -1;
     this._detonate = 0;
     this.birthRate = 0;
 
     
 
-    this.addEventListener( 'added', ( _event ) => {
+    this.addEventListener( 'added', ( event ) => {
       this.material.uniforms.matrix.value.copy(this.parent.matrix);
       this.material.uniforms.matrix.value.setPosition(0, 0, 0);
 
@@ -310,11 +298,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.maxParticleCount = this.birthRate * (this.lifeExp >= 0 ? this.lifeExp : 1);
       this.material.uniforms.tDepth.value = this.context?.depthTarget?.depthTexture;
       this.material.uniforms.maxAge.value = (this.lifeExp >= 0 ? this.lifeExp : -1);
-      (this.material.uniforms.colorStart.value as THREE.Vector3).set(this.colorStart.r, this.colorStart.g, this.colorStart.b);
-      (this.material.uniforms.colorMid.value as THREE.Vector3).set(this.colorMid.r, this.colorMid.g, this.colorMid.b);
-      (this.material.uniforms.colorEnd.value as THREE.Vector3).set(this.colorEnd.r, this.colorEnd.g, this.colorEnd.b);
-      (this.material.uniforms.opacity.value as THREE.Vector4).fromArray(this.opacity);
-      (this.material.uniforms.scale.value as THREE.Vector3).fromArray(this.sizes);
+      this.material.uniforms.colorStart.value.copy(this.colorStart);
+      this.material.uniforms.colorMid.value.copy(this.colorMid);
+      this.material.uniforms.colorEnd.value.copy(this.colorEnd);
+      this.material.uniforms.opacity.value.fromArray(this.opacity);
+      this.material.uniforms.scale.value.fromArray(this.sizes);
       this.material.uniforms.rotate.value = this.angle;
       this.material.uniforms.drag.value = this.drag;
       this.material.uniforms.velocity.value = this.velocity;
@@ -569,7 +557,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     let birthCount = 0;
     let spawnableParticleCount = this.offsets.count;
-    let _quaternion: THREE.Quaternion | undefined;
+    let quaternion;
 
     let attrPerVertex = 1;
     if(this.node.renderMode == 'Linked'){
@@ -584,7 +572,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     let birthed = false;
 
     let firstLink = undefined;
-    let _lastLink = undefined;
+    let lastLink = undefined;
     let finalLink = undefined;
 
     for(let i = 0; i < spawnableParticleCount; i++){
@@ -598,7 +586,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         if(i < spawnableParticleCount){
 
           if(alive){
-            _lastLink = i;
+            lastLink = i;
             if(!firstLink){
               firstLink = i;
             }
@@ -751,8 +739,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
 
     if(this.node.renderMode == "Aligned_to_Particle_Dir"){
-      (this.material.uniforms.matrix.value as THREE.Matrix4).copy(this.parent.matrix);
-      (this.material.uniforms.matrix.value as THREE.Matrix4).setPosition(0, 0, 0);
+      this.material.uniforms.matrix.value.copy(this.parent.matrix);
+      this.material.uniforms.matrix.value.setPosition(0, 0, 0);
       this.material.uniformsNeedUpdate = true;
     }
 
@@ -954,7 +942,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         newIndices.push( index.getX( newI ) );
       }
     }
-    //log.info(newIndices);
+    //console.log(newIndices);
     this.geometry.setIndex(newIndices);
     this.geometry.clearGroups();
   }
@@ -969,17 +957,16 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }else{
 
       if(this.node.name == 'omenemitter05'){
-        //log.info(this.node.name, i);
+        //console.log(this.node.name, i);
       }
 
       //These will be scaled inside the shader
-      const _linked_verts = [
+      const linked_verts = [
         [-1, 1, 0],
         [1, 1, 0],
         [-1, -1, 0],
         [1, -1, 0]
       ];
-      void _linked_verts;
 
       //BEGIN TEST FIX
       this.setLinkedVertexPosition(i, newPosition);
@@ -1016,7 +1003,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
     }
 
-    const _maxAge = this.getRandomMaxAge();
+    const maxAge = this.getRandomMaxAge();
     if(this.node.renderMode != 'Linked'){
       this.velocities.setW(i, this.mass);
 
@@ -1048,18 +1035,20 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(this.node.renderMode == 'Linked')
       return;
 
-    if(!this.context)
-      return;
-
-    const camera = this.context.currentCamera ?? this.context.camera;
-    if(!camera) return;
+    if(!this.context){
+      // if(!Game){
+      //   return;
+      // }else{
+      //   this.context = Game;
+      // }
+    }
 
     const vector = new THREE.Vector3();
 
     // Model View Projection matrix
 
     const matrix = new THREE.Matrix4();
-    matrix.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse );
+    matrix.multiplyMatrices( this.context.currentCamera.projectionMatrix, this.context.currentCamera.matrixWorldInverse );
     matrix.multiply( this.mesh.matrixWorld );
 
     //
@@ -1083,13 +1072,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       sortArray.push( [ vector.z, i ] );
     }
 
-    function numericalSort( a: [number, number], b: [number, number] ) {
+    function numericalSort( a: any, b: any ) {
       return b[ 0 ] - a[ 0 ];
     }
 
     sortArray.sort( numericalSort );
-    const indices = index.array as number[] | Uint16Array;
+    const indices = index.array;
     for ( let i = 0; i < length; i ++ ) {
+      // @ts-expect-error
       indices[ i ] = sortArray[ i ][ 1 ];
     }
     
@@ -1118,20 +1108,20 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   }
 
-  attributeChanged(attr: string){
+  attributeChanged(attr: any){
     const quat = new THREE.Quaternion();
     switch(attr){
       case 'mass':
         this.parent.getWorldQuaternion(quat);
         this.vec3.set(0, 0, this.mass).applyQuaternion(this.quaternion);
-        (this.material.uniforms.mass.value as THREE.Vector3).copy(this.vec3);
+        this.material.uniforms.mass.value.copy(this.vec3);
         this.material.uniformsNeedUpdate = true;
       break;
     }
 
   }
 
-  setLinkedVertexPositionOLD(_i = 0, _newPosition = new THREE.Vector3()){
+  setLinkedVertexPositionOLD(i = 0, newPosition = new THREE.Vector3){
     /*for(let vi = 0; vi < 3; vi++){
 
       const offset = [
@@ -1280,7 +1270,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         newIndices.push( index.getX( newI ) );
       }
     }
-    //log.info(newIndices);
+    //console.log(newIndices);
     this.geometry.setIndex(newIndices);
     this.geometry.clearGroups();*/
   }

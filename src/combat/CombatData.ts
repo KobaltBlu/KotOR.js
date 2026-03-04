@@ -63,7 +63,7 @@ export class CombatData {
 
   getEquippedWeaponType(){
     if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
-      const owner = this.object as ModuleCreature;
+      const owner: ModuleCreature = this.object as any;
       const lWeapon = owner.equipment.LEFTHAND;
       const rWeapon = owner.equipment.RIGHTHAND;
       const claw1 = owner.equipment.CLAW1;

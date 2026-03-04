@@ -1,63 +1,7 @@
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
 import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
 import { EdgeType } from "@/nwscript/decompiler/NWScriptEdge";
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-
-
-const log = createScopedLogger(LogScope.NWScript);
 import { OP_JZ, OP_JNZ, OP_JMP, OP_INCISP, OP_DECIBP, OP_INCIBP, OP_DECISP, OP_CPTOPSP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPDOWNBP, OP_EQUAL, OP_CONST } from '@/nwscript/NWScriptOPCodes';
-
-/** JSON-serializable debug info for control structure analysis. */
-export interface ControlStructureDebugInfo {
-  totalBlocks: number;
-  conditionalBlocks: number;
-  loopHeaders: number;
-  blocksWithTwoSuccessors: number;
-  conditionalWithTwoSuccessors: number;
-  conditionalWithConditionInstr: number;
-  structuresFound: number;
-  conditionalBlockDetails: Array<{ id: number; exitType: string; hasConditionInstr: boolean; conditionCode?: number; successors: number; successorIds: number[]; intraProceduralSuccessors: number; intraProceduralSuccessorIds: number[] }>;
-  nonConditionalWithTwoSuccessors: Array<{ id: number; exitType: string; startAddress: number; successors: number; successorIds: number[]; edgeTypes: string[]; intraProceduralSuccessors: number; intraProceduralSuccessorIds: number[] }>;
-}
-
-/** JSON-serializable control structure (for toJSON). Nested structures use the same shape. */
-export interface SerializedControlStructure {
-  index: number;
-  type: ControlStructureType;
-  headerBlockId: number;
-  headerBlockAddress: number;
-  exitBlockId: number;
-  exitBlockAddress: number;
-  bodyBlockIds: number[];
-  bodyBlockAddresses: number[];
-  elseBlockIds?: number[];
-  elseBlockAddresses?: number[];
-  conditionBlockId?: number;
-  conditionBlockAddress?: number;
-  incrementBlockId?: number;
-  incrementBlockAddress?: number;
-  initBlockId?: number;
-  initBlockAddress?: number;
-  switchCases?: Array<{ value: number; blockId: number; blockAddress: number; hasFallThrough: boolean }>;
-  defaultBlockId?: number;
-  defaultBlockAddress?: number;
-  switchCaseFallThrough?: Array<{ value: number; hasFallThrough: boolean }>;
-  elseIfBlocks?: Array<{ blockId: number; blockAddress: number; conditionBlockId: number; conditionBlockAddress: number }>;
-  breakBlockIds?: number[];
-  breakBlockAddresses?: number[];
-  continueBlockIds?: number[];
-  continueBlockAddresses?: number[];
-  nestedStructures?: SerializedControlStructure[];
-  blocks?: Record<string, Array<{ id: number; startAddress: number; endAddress: number; exitType: string; isUnreachable?: boolean; isLoopHeader?: boolean; isLoopBody?: boolean; isExit?: boolean; instructionCount: number }>>;
-}
-
-/** Return type of toJSON() for control structure builder. */
-export interface ControlStructureBuilderJSON {
-  script: { name: string; totalStructures: number };
-  structures: SerializedControlStructure[];
-  statistics: ControlStructureDebugInfo;
-}
 
 /**
  * ControlNode represents a node in the control flow tree.
@@ -174,7 +118,7 @@ export interface Procedure {
 }
 
 /**
- * Represents a control structure in the reconstructed script.
+ * Represents a control structure in the decompiled code.
  */
 export enum ControlStructureType {
   IF = 'if',
@@ -738,8 +682,8 @@ export class NWScriptControlStructureBuilder {
     }
 
     // Find all JNZ instructions that might be case comparisons
-    const caseJNZs: Array<{ instr: NWScriptInstruction; caseValue: number | null; caseBlock: NWScriptBasicBlock | null }> = [];
-    let defaultJMP: NWScriptInstruction | null = null;
+    const caseJNZs: Array<{ instr: any; caseValue: number | null; caseBlock: NWScriptBasicBlock | null }> = [];
+    let defaultJMP: any | null = null;
     let defaultTarget: NWScriptBasicBlock | null = null;
 
     // Scan instructions for switch pattern
@@ -1235,8 +1179,8 @@ export class NWScriptControlStructureBuilder {
 
     // Use BFS instead of DFS for more predictable ordering
     while (queue.length > 0) {
-      const current = queue.shift();
-      if (current === undefined) break;
+      const current = queue.shift()!;
+      
       if (current === end || visited.has(current)) {
         continue;
       }
@@ -1331,8 +1275,7 @@ export class NWScriptControlStructureBuilder {
 
       // Process path1
       if (queue1.length > 0) {
-        const current = queue1.shift();
-        if (current === undefined) break;
+        const current = queue1.shift()!;
         if (visited2.has(current)) {
           return current; // Found merge point
         }
@@ -1350,8 +1293,7 @@ export class NWScriptControlStructureBuilder {
 
       // Process path2
       if (queue2.length > 0) {
-        const current = queue2.shift();
-        if (current === undefined) break;
+        const current = queue2.shift()!;
         if (visited1.has(current)) {
           return current; // Found merge point
         }
@@ -1471,26 +1413,25 @@ export class NWScriptControlStructureBuilder {
    */
   private identifyProcedure(entry: NWScriptBasicBlock): Procedure {
     const blocks = new Set<NWScriptBasicBlock>();
-    log.info(`[identifyProcedure] Starting from entry block ${entry.id}`);
+    console.log(`[identifyProcedure] Starting from entry block ${entry.id}`);
     const exitBlocks = new Set<NWScriptBasicBlock>();
     const visited = new Set<NWScriptBasicBlock>();
     const queue: NWScriptBasicBlock[] = [entry];
 
     // BFS to collect all reachable blocks
     while (queue.length > 0) {
-      const current = queue.shift();
-      if (current === undefined) break;
+      const current = queue.shift()!;
       if (visited.has(current)) {
         continue;
       }
       visited.add(current);
       blocks.add(current);
       
-      log.info(`[identifyProcedure] Processing block ${current.id} (${current.instructions.length} instructions), isExit: ${current.isExit}, exitType: ${current.exitType}`);
+      console.log(`[identifyProcedure] Processing block ${current.id} (${current.instructions.length} instructions), isExit: ${current.isExit}, exitType: ${current.exitType}`);
 
       // Check if this is an exit block
       if (current.isExit || current.exitType === 'return') {
-        log.info(`[identifyProcedure] Block ${current.id} is an exit block, stopping traversal`);
+        console.log(`[identifyProcedure] Block ${current.id} is an exit block, stopping traversal`);
         exitBlocks.add(current);
         continue; // Don't follow successors of exit blocks
       }
@@ -1498,20 +1439,20 @@ export class NWScriptControlStructureBuilder {
       // Add intra-procedural successors (exclude CALL edges)
       const intraSuccs = this.cfg.getIntraProceduralSuccessors(current, false);
       const allSuccs = Array.from(current.successors);
-      log.info(`[identifyProcedure] Block ${current.id} has ${allSuccs.length} total successors:`, allSuccs.map(s => `block ${s.id} (exitType: ${s.exitType})`).join(', '));
-      log.info(`[identifyProcedure] Block ${current.id} has ${intraSuccs.length} intra-procedural successors:`, intraSuccs.map(s => `block ${s.id}`).join(', '));
+      console.log(`[identifyProcedure] Block ${current.id} has ${allSuccs.length} total successors:`, allSuccs.map(s => `block ${s.id} (exitType: ${s.exitType})`).join(', '));
+      console.log(`[identifyProcedure] Block ${current.id} has ${intraSuccs.length} intra-procedural successors:`, intraSuccs.map(s => `block ${s.id}`).join(', '));
       for (const succ of intraSuccs) {
         if (!visited.has(succ)) {
-          log.info(`[identifyProcedure] Adding block ${succ.id} to queue`);
+          console.log(`[identifyProcedure] Adding block ${succ.id} to queue`);
           queue.push(succ);
         } else {
-          log.info(`[identifyProcedure] Block ${succ.id} already visited, skipping`);
+          console.log(`[identifyProcedure] Block ${succ.id} already visited, skipping`);
         }
       }
     }
     
-    log.info(`[identifyProcedure] Found ${blocks.size} blocks total:`, Array.from(blocks).map(b => `block ${b.id}`).join(', '));
-    log.info(`[identifyProcedure] Found ${exitBlocks.size} exit blocks:`, Array.from(exitBlocks).map(b => `block ${b.id}`).join(', '));
+    console.log(`[identifyProcedure] Found ${blocks.size} blocks total:`, Array.from(blocks).map(b => `block ${b.id}`).join(', '));
+    console.log(`[identifyProcedure] Found ${exitBlocks.size} exit blocks:`, Array.from(exitBlocks).map(b => `block ${b.id}`).join(', '));
 
     return {
       entry,
@@ -1531,18 +1472,18 @@ export class NWScriptControlStructureBuilder {
     const orderedBlocks = this.cfg.getTopologicalOrder()
       .filter(block => procedure.blocks.has(block));
 
-    log.info(`[buildControlNodeTree] Ordered blocks: ${orderedBlocks.length}`, orderedBlocks.map(b => `block ${b.id}`).join(', '));
+    console.log(`[buildControlNodeTree] Ordered blocks: ${orderedBlocks.length}`, orderedBlocks.map(b => `block ${b.id}`).join(', '));
 
     // Build control nodes starting from entry
     // Start with the entry block and build recursively
     const rootNode = this.buildNodeFromBlock(procedure.entry, procedure, processed);
     
-    log.info(`[buildControlNodeTree] After buildNodeFromBlock(entry), processed: ${processed.size} blocks`);
-    log.info(`[buildControlNodeTree] Processed blocks:`, Array.from(processed).map(b => `block ${b.id}`).join(', '));
+    console.log(`[buildControlNodeTree] After buildNodeFromBlock(entry), processed: ${processed.size} blocks`);
+    console.log(`[buildControlNodeTree] Processed blocks:`, Array.from(processed).map(b => `block ${b.id}`).join(', '));
     
     // If we have remaining unprocessed blocks, create a sequence
     const remainingBlocks = orderedBlocks.filter(b => !processed.has(b));
-    log.info(`[buildControlNodeTree] Remaining blocks: ${remainingBlocks.length}`, remainingBlocks.map(b => `block ${b.id}`).join(', '));
+    console.log(`[buildControlNodeTree] Remaining blocks: ${remainingBlocks.length}`, remainingBlocks.map(b => `block ${b.id}`).join(', '));
     
     if (remainingBlocks.length > 0) {
       const remainingNodes = remainingBlocks.map(b => 
@@ -1550,13 +1491,13 @@ export class NWScriptControlStructureBuilder {
       );
       
       if (rootNode) {
-        log.info(`[buildControlNodeTree] Creating sequence with root + ${remainingNodes.length} remaining nodes`);
+        console.log(`[buildControlNodeTree] Creating sequence with root + ${remainingNodes.length} remaining nodes`);
         return {
           type: 'sequence',
           nodes: [rootNode, ...remainingNodes]
         };
       } else {
-        log.info(`[buildControlNodeTree] No root node, returning ${remainingNodes.length} remaining nodes`);
+        console.log(`[buildControlNodeTree] No root node, returning ${remainingNodes.length} remaining nodes`);
         return remainingNodes.length === 1 
           ? remainingNodes[0]
           : { type: 'sequence', nodes: remainingNodes };
@@ -1565,11 +1506,11 @@ export class NWScriptControlStructureBuilder {
 
     // If no structure found, return a sequence of basic blocks
     if (!rootNode) {
-      log.info(`[buildControlNodeTree] No root node, building sequence from all ordered blocks`);
+      console.log(`[buildControlNodeTree] No root node, building sequence from all ordered blocks`);
       return this.buildSequenceNode(orderedBlocks, procedure, processed);
     }
 
-    log.info(`[buildControlNodeTree] Returning root node only (type: ${rootNode.type})`);
+    console.log(`[buildControlNodeTree] Returning root node only (type: ${rootNode.type})`);
     return rootNode;
   }
 
@@ -1582,17 +1523,17 @@ export class NWScriptControlStructureBuilder {
     processed: Set<NWScriptBasicBlock>
   ): ControlNode | null {
     if (processed.has(block)) {
-      log.info(`[buildNodeFromBlock] Block ${block.id} already processed, skipping`);
+      console.log(`[buildNodeFromBlock] Block ${block.id} already processed, skipping`);
       return null;
     }
 
     // Check if block is in procedure
     if (!procedure.blocks.has(block)) {
-      log.info(`[buildNodeFromBlock] Block ${block.id} not in procedure, skipping`);
+      console.log(`[buildNodeFromBlock] Block ${block.id} not in procedure, skipping`);
       return null;
     }
     
-    log.info(`[buildNodeFromBlock] Processing block ${block.id} (${block.instructions.length} instructions)`);
+    console.log(`[buildNodeFromBlock] Processing block ${block.id} (${block.instructions.length} instructions)`);
 
     // Try to identify control structures
     const ifElse = this.identifyIfElse(block);
@@ -1852,7 +1793,7 @@ export class NWScriptControlStructureBuilder {
    * 
    * Note: This method will automatically call analyze() if structures haven't been identified yet
    */
-  toJSON(): ControlStructureBuilderJSON {
+  toJSON(): any {
     // Ensure structures have been analyzed
     if (this.structures.length === 0 && this.cfg.entryBlock) {
       this.analyze();
@@ -1871,8 +1812,8 @@ export class NWScriptControlStructureBuilder {
   /**
    * Serialize a control structure to JSON (avoiding circular references)
    */
-  private serializeStructure(structure: NWScriptControlStructure, index: number): SerializedControlStructure {
-    const result: SerializedControlStructure = {
+  private serializeStructure(structure: NWScriptControlStructure, index: number): any {
+    const result: any = {
       index: index,
       type: structure.type,
       headerBlockId: structure.headerBlock.id,
@@ -1995,7 +1936,7 @@ export class NWScriptControlStructureBuilder {
   /**
    * Debug method: Get statistics about blocks and why structures might not be found
    */
-  getDebugInfo(): ControlStructureDebugInfo {
+  getDebugInfo(): any {
     const blocks = Array.from(this.cfg.blocks.values());
     const conditionalBlocks = blocks.filter(b => b.exitType === 'conditional');
     const loopHeaders = blocks.filter(b => b.isLoopHeader);

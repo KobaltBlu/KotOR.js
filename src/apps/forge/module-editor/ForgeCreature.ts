@@ -1,11 +1,6 @@
-import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import type { IGameContext } from "@/interface/engine/IGameContext";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Forge);
+import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 
 interface EngineItem {
   baseItem: KotOR.SWBaseItem | undefined;
@@ -26,9 +21,9 @@ export interface SpecialAbilityEntry {
    */
   spellCasterLevel: number;
   /**
-   * Bit 0 = readied
-   * Bit 1 = spontaneous
-   * Bit 2 = unlimited use
+   * 0x01 = readied
+   * 0x02 = spontaneous
+   * 0x04 = unlimited use
    */
   spellFlags: number;
 }
@@ -40,14 +35,20 @@ export interface KnownSpellEntry {
   spell: number;
 
   /**
-   * None, Empower, Extend, Maximize, Quicken, Silent, Still (bit flags)
+   * 0x00 - None
+   * 0x01 - Empower
+   * 0x02 - Extend
+   * 0x04 - Maximize
+   * 0x08 - Quicken
+   * 0x10 - Silent
+   * 0x20 - Still
    */
   spellMetaMagic: number;
 
   /**
-   * Bit 0 = readied
-   * Bit 1 = spontaneous
-   * Bit 2 = unlimited use
+   * 0x01 = readied
+   * 0x02 = spontaneous
+   * 0x04 = unlimited use
    */
   spellFlags: number;
 }
@@ -63,8 +64,8 @@ export class ForgeCreature extends ForgeGameObject {
 
   //GIT Instance Properties
   templateResRef: string = '';
-  templateResType: number = KotOR.ResourceTypes.utc;
-
+  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utc;
+  
   //Blueprint Properties
   appearanceType: number = 0;
   bodyBag: number = 0;
@@ -186,17 +187,10 @@ export class ForgeCreature extends ForgeGameObject {
     } else {
       this.blueprint = new KotOR.GFFObject();
     }
-    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
-      this.onPropertyChange(
-        args[0] as keyof ForgeCreature,
-        args[1] as string | number | boolean,
-        args[2] as string | number | boolean
-      );
-    };
-    this.addEventListener('onPropertyChange', onPropChange);
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: keyof ForgeCreature, newValue: string | number | boolean, oldValue: string | number | boolean){
+  onPropertyChange(property: keyof ForgeCreature, newValue: any, oldValue: any){
     if(property === 'appearanceType'){
       if(newValue !== oldValue){
         this.loadAppearance();
@@ -353,21 +347,21 @@ export class ForgeCreature extends ForgeGameObject {
       if(slotKey){
         this.templateSlots[slotKey] = undefined;
       }
-
+      
       if(itemTemplate && typeof slotKey === 'string'){
         const root = itemTemplate.RootNode;
         if(root.hasField('BaseItem')){
-          baseItemId = root.getNumberByLabel('BaseItem');
+          baseItemId = itemTemplate.getFieldByLabel('BaseItem').getValue() || 0;
           baseItem = KotOR.SWRuleSet.baseItems[baseItemId];
         }
         if(root.hasField('ModelVariation')){
-          modelVariation = root.getNumberByLabel('ModelVariation');
+          modelVariation = root.getFieldByLabel('ModelVariation').getValue() || 0;
         }
         if(root.hasField('TextureVar')){
-          textureVariation = root.getNumberByLabel('TextureVar');
+          textureVariation = root.getFieldByLabel('TextureVar').getValue() || 0;
         }
         if(root.hasField('BodyVariation')){
-          bodyVariation = root.getNumberByLabel('BodyVariation');
+          bodyVariation = root.getFieldByLabel('BodyVariation').getValue() || '';
         }
         this.templateSlots[slotKey] = {
           baseItem: baseItem,
@@ -377,7 +371,7 @@ export class ForgeCreature extends ForgeGameObject {
         };
       }
     }catch(e){
-      log.error(String(e), e);
+      console.error(e);
     }
   }
 
@@ -389,8 +383,8 @@ export class ForgeCreature extends ForgeGameObject {
       await this.loadBody();
       await this.loadHead();
     }catch(e){
-      log.error(String(e), e);
-    }
+      console.error(e);
+    } 
     this.modelLoading = false;
   }
 
@@ -398,7 +392,7 @@ export class ForgeCreature extends ForgeGameObject {
 
     if(this.model){
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch{ /* ignore */ }
+      try{ this.model.dispose(); }catch(e){}
     }
 
     const appearance = this.creatureAppearance;
@@ -413,9 +407,9 @@ export class ForgeCreature extends ForgeGameObject {
         receiveShadow: true,
         textureVar: bodyTexture,
         isHologram: false,
-        context: this.context as unknown as IGameContext,
+        context: this.context,
       });
-    }catch{
+    }catch(e){
       this.model = new KotOR.OdysseyModel3D();
     }
     this.container.add(this.model);
@@ -442,7 +436,7 @@ export class ForgeCreature extends ForgeGameObject {
       const headTexture = headDetails.getTextureGoodEvil(this.goodEvil);
       const mdl = await KotOR.MDLLoader.loader.load(headDetails.head);
       const head = await KotOR.OdysseyModel3D.FromMDL(mdl, {
-        context: this.context as unknown as IGameContext,
+        context: this.context,
         castShadow: true,
         receiveShadow: true,
         isHologram: false,
@@ -454,7 +448,7 @@ export class ForgeCreature extends ForgeGameObject {
     }
     catch(e)
     {
-      log.error(String(e), e);
+      console.error(e);
     }
   }
 
@@ -467,34 +461,34 @@ export class ForgeCreature extends ForgeGameObject {
     if(!this.blueprint) return;
     const root = this.blueprint.RootNode;
     if(!root) return;
-
+    
     if(root.hasField('Appearance_Type')){
-      this.appearanceType = root.getNumberByLabel('Appearance_Type');
+      this.appearanceType = root.getFieldByLabel('Appearance_Type').getValue() || 0;
     }
     if(root.hasField('BodyBag')){
-      this.bodyBag = root.getNumberByLabel('BodyBag');
+      this.bodyBag = root.getFieldByLabel('BodyBag').getValue() || 0;
     }
     if(root.hasField('BodyVariation')){
-      this.bodyVariation = root.getNumberByLabel('BodyVariation');
+      this.bodyVariation = root.getFieldByLabel('BodyVariation').getValue() || 0;
     }
     if(root.hasField('Cha')){
-      this.cha = root.getNumberByLabel('Cha');
+      this.cha = root.getFieldByLabel('Cha').getValue() || 10;
     }
     if(root.hasField('ChallengeRating')){
-      this.challengeRating = root.getNumberByLabel('ChallengeRating');
+      this.challengeRating = root.getFieldByLabel('ChallengeRating').getValue() || 0;
     }
     if(root.hasField('ClassList')){
       this.classList = root.getFieldByLabel('ClassList').getChildStructs().map( (struct) => {
         const classEntry: CreatureClassEntry = {
-          class: struct.getNumberByLabel('Class'),
-          level: struct.getNumberByLabel('ClassLevel'),
+          class: struct.getFieldByLabel('Class').getValue() || 0,
+          level: struct.getFieldByLabel('ClassLevel').getValue() || 1,
           knownList0: [],
         };
         const knownList0 = struct.getFieldByLabel('KnownList0').getChildStructs().map( (struct) => {
           const knownSpellEntry: KnownSpellEntry = {
-            spell: struct.getNumberByLabel('Spell'),
-            spellMetaMagic: struct.getNumberByLabel('SpellMetaMagic'),
-            spellFlags: struct.getNumberByLabel('SpellFlags'),
+            spell: struct.getFieldByLabel('Spell').getValue() || 0,
+            spellMetaMagic: struct.getFieldByLabel('SpellMetaMagic').getValue() || 0,
+            spellFlags: struct.getFieldByLabel('SpellFlags').getValue() || 0,
           };
           return knownSpellEntry;
         });
@@ -503,38 +497,38 @@ export class ForgeCreature extends ForgeGameObject {
       }) || [];
     }
     if(root.hasField('Comment')){
-      this.comment = root.getStringByLabel('Comment');
+      this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
     if(root.hasField('Con')){
-      this.con = root.getNumberByLabel('Con');
+      this.con = root.getFieldByLabel('Con').getValue() || 10;
     }
     if(root.hasField('Conversation')){
-      this.conversation = root.getStringByLabel('Conversation');
+      this.conversation = root.getFieldByLabel('Conversation').getValue() || '';
     }
     if(root.hasField('CurrentForce')){
-      this.currentForce = root.getNumberByLabel('CurrentForce');
+      this.currentForce = root.getFieldByLabel('CurrentForce').getValue() || 0;
     }
     if(root.hasField('CurrentHitPoints')){
-      this.currentHitPoints = root.getNumberByLabel('CurrentHitPoints');
+      this.currentHitPoints = root.getFieldByLabel('CurrentHitPoints').getValue() || 0;
     }
     if(root.hasField('Deity')){
-      this.deity = root.getStringByLabel('Deity');
+      this.deity = root.getFieldByLabel('Deity').getValue() || '';
     }
     if(root.hasField('Description')){
       this.description = root.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('Dex')){
-      this.dex = root.getNumberByLabel('Dex');
+      this.dex = root.getFieldByLabel('Dex').getValue() || 10;
     }
     if(root.hasField('Disarmable')){
-      this.disarmable = root.getBooleanByLabel('Disarmable');
+      this.disarmable = root.getFieldByLabel('Disarmable').getValue() || false;
     }
     if(root.hasField('Equip_ItemList')){
       const equipItemList = root.getFieldByLabel('Equip_ItemList').getChildStructs();
       for(let i = 0; i < equipItemList.length; i++){
         const struct = equipItemList[i];
         const slot = struct.type;
-        const item = struct.getStringByLabel('EquippedRes');
+        const item = struct.getFieldByLabel('EquippedRes').getValue() || '';
         switch(slot){
           case KotOR.ModuleCreatureArmorSlot.ARMOR:
             this.slotArmor = item;
@@ -585,155 +579,155 @@ export class ForgeCreature extends ForgeGameObject {
       }
     }
     if(root.hasField('FactionID')){
-      this.factionID = root.getNumberByLabel('FactionID');
+      this.factionID = root.getFieldByLabel('FactionID').getValue() || 0;
     }
     if(root.hasField('FeatList')){
       this.featList = root.getFieldByLabel('FeatList').getChildStructs().map( (struct) => {
-        return struct.getNumberByLabel('Feat');
+        return struct.getFieldByLabel('Feat').getValue() || 0;
       }) || [];
     }
     if(root.hasField('FirstName')){
       this.firstName = root.getFieldByLabel('FirstName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('ForcePoints')){
-      this.forcePoints = root.getNumberByLabel('ForcePoints');
+      this.forcePoints = root.getFieldByLabel('ForcePoints').getValue() || 0;
     }
     if(root.hasField('Gender')){
-      this.gender = root.getNumberByLabel('Gender');
+      this.gender = root.getFieldByLabel('Gender').getValue() || 0;
     }
     if(root.hasField('GoodEvil')){
-      this.goodEvil = root.getNumberByLabel('GoodEvil');
+      this.goodEvil = root.getFieldByLabel('GoodEvil').getValue() || 0;
     }
     if(root.hasField('HitPoints')){
-      this.hitPoints = root.getNumberByLabel('HitPoints');
+      this.hitPoints = root.getFieldByLabel('HitPoints').getValue() || 0;
     }
     if(root.hasField('Int')){
-      this.int = root.getNumberByLabel('Int');
+      this.int = root.getFieldByLabel('Int').getValue() || 10;
     }
     if(root.hasField('Interruptable')){
-      this.interruptable = root.getBooleanByLabel('Interruptable');
+      this.interruptable = root.getFieldByLabel('Interruptable').getValue() || false;
     }
     if(root.hasField('IsPC')){
-      this.isPC = root.getBooleanByLabel('IsPC');
+      this.isPC = root.getFieldByLabel('IsPC').getValue() || false;
     }
     if(root.hasField('ItemList')){
       this.itemList = root.getFieldByLabel('ItemList').getChildStructs().map( (struct) => {
-        return struct.getStringByLabel('InventoryRes');
+        return struct.getFieldByLabel('InventoryRes').getValue() || '';
       }) || [];
     }
     if(root.hasField('LastName')){
       this.lastName = root.getFieldByLabel('LastName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('LawfulChaotic')){
-      this.lawfulChaotic = root.getNumberByLabel('LawfulChaotic');
+      this.lawfulChaotic = root.getFieldByLabel('LawfulChaotic').getValue() || 0;
     }
     if(root.hasField('MaxHitPoints')){
-      this.maxHitPoints = root.getNumberByLabel('MaxHitPoints');
+      this.maxHitPoints = root.getFieldByLabel('MaxHitPoints').getValue() || 0;
     }
     if(root.hasField('Min1HP')){
-      this.min1HP = root.getBooleanByLabel('Min1HP');
+      this.min1HP = root.getFieldByLabel('Min1HP').getValue() || false;
     }
     if(root.hasField('NaturalAC')){
-      this.naturalAC = root.getNumberByLabel('NaturalAC');
+      this.naturalAC = root.getFieldByLabel('NaturalAC').getValue() || 0;
     }
     if(root.hasField('NoPermDeath')){
-      this.noPermDeath = root.getBooleanByLabel('NoPermDeath');
+      this.noPermDeath = root.getFieldByLabel('NoPermDeath').getValue() || false;
     }
     if(root.hasField('NotReorienting')){
-      this.notReorienting = root.getBooleanByLabel('NotReorienting');
+      this.notReorienting = root.getFieldByLabel('NotReorienting').getValue() || false;
     }
     if(root.hasField('PartyInteract')){
-      this.partyInteract = root.getBooleanByLabel('PartyInteract');
+      this.partyInteract = root.getFieldByLabel('PartyInteract').getValue() || false;
     }
     if(root.hasField('PerceptionRange')){
-      this.perceptionRange = root.getNumberByLabel('PerceptionRange');
+      this.perceptionRange = root.getFieldByLabel('PerceptionRange').getValue() || 0;
     }
     if(root.hasField('Phenotype')){
-      this.phenotype = root.getNumberByLabel('Phenotype');
+      this.phenotype = root.getFieldByLabel('Phenotype').getValue() || 0;
     }
     if(root.hasField('Plot')){
-      this.plot = root.getBooleanByLabel('Plot');
+      this.plot = root.getFieldByLabel('Plot').getValue() || false;
     }
     if(root.hasField('PalletID')){
-      this.palletID = root.getNumberByLabel('PalletID');
+      this.palletID = root.getFieldByLabel('PalletID').getValue() || 0;
     }
     if(root.hasField('PortraitId')){
-      this.portraitId = root.getNumberByLabel('PortraitId');
+      this.portraitId = root.getFieldByLabel('PortraitId').getValue() || 0;
     }
     if(root.hasField('Race')){
-      this.race = root.getNumberByLabel('Race');
+      this.race = root.getFieldByLabel('Race').getValue() || 0;
     }
     if(root.hasField('ScriptAttacked')){
-      this.scriptAttacked = root.getStringByLabel('ScriptAttacked');
+      this.scriptAttacked = root.getFieldByLabel('ScriptAttacked').getValue() || '';
     }
     if(root.hasField('ScriptDamaged')){
-      this.scriptDamaged = root.getStringByLabel('ScriptDamaged');
+      this.scriptDamaged = root.getFieldByLabel('ScriptDamaged').getValue() || '';
     }
     if(root.hasField('ScriptDeath')){
-      this.scriptDeath = root.getStringByLabel('ScriptDeath');
+      this.scriptDeath = root.getFieldByLabel('ScriptDeath').getValue() || '';
     }
     if(root.hasField('ScriptDialogu')){
-      this.scriptDialogu = root.getStringByLabel('ScriptDialogu');
+      this.scriptDialogu = root.getFieldByLabel('ScriptDialogu').getValue() || '';
     }
     if(root.hasField('ScriptDisturbed')){
-      this.scriptDisturbed = root.getStringByLabel('ScriptDisturbed');
+      this.scriptDisturbed = root.getFieldByLabel('ScriptDisturbed').getValue() || '';
     }
     if(root.hasField('ScriptEndDialogue')){
-      this.scriptEndDialogue = root.getStringByLabel('ScriptEndDialogue');
+      this.scriptEndDialogue = root.getFieldByLabel('ScriptEndDialogue').getValue() || '';
     }
     if(root.hasField('ScriptEndRound')){
-      this.scriptEndRound = root.getStringByLabel('ScriptEndRound');
+      this.scriptEndRound = root.getFieldByLabel('ScriptEndRound').getValue() || '';
     }
     if(root.hasField('ScriptHeartbeat')){
-      this.scriptHeartbeat = root.getStringByLabel('ScriptHeartbeat');
+      this.scriptHeartbeat = root.getFieldByLabel('ScriptHeartbeat').getValue() || '';
     }
     if(root.hasField('ScriptOnBlocked')){
-      this.scriptOnBlocked = root.getStringByLabel('ScriptOnBlocked');
+      this.scriptOnBlocked = root.getFieldByLabel('ScriptOnBlocked').getValue() || '';
     }
     if(root.hasField('ScriptOnNotice')){
-      this.scriptOnNotice = root.getStringByLabel('ScriptOnNotice');
+      this.scriptOnNotice = root.getFieldByLabel('ScriptOnNotice').getValue() || '';
     }
     if(root.hasField('ScriptRested')){
-      this.scriptRested = root.getStringByLabel('ScriptRested');
+      this.scriptRested = root.getFieldByLabel('ScriptRested').getValue() || '';
     }
     if(root.hasField('ScriptSpawn')){
-      this.scriptSpawn = root.getStringByLabel('ScriptSpawn');
+      this.scriptSpawn = root.getFieldByLabel('ScriptSpawn').getValue() || '';
     }
     if(root.hasField('ScriptSpellAt')){
-      this.scriptSpellAt = root.getStringByLabel('ScriptSpellAt');
+      this.scriptSpellAt = root.getFieldByLabel('ScriptSpellAt').getValue() || '';
     }
     if(root.hasField('ScriptUserDefine')){
-      this.scriptUserDefined = root.getStringByLabel('ScriptUserDefine');
+      this.scriptUserDefined = root.getFieldByLabel('ScriptUserDefine').getValue() || '';
     }
     if(root.hasField('SkillList')){
       this.skillList = root.getFieldByLabel('SkillList').getChildStructs().map( (struct) => {
-        return struct.getNumberByLabel('Rank');
+        return struct.getFieldByLabel('Rank').getValue() || 0;
       }) || [0, 0, 0, 0, 0, 0, 0, 0];
     }
     if(root.hasField('SoundSetFile')){
-      this.soundSetFile = root.getNumberByLabel('SoundSetFile');
+      this.soundSetFile = root.getFieldByLabel('SoundSetFile').getValue() || 0;
     }
     if(root.hasField('SpecAbilityList')){
       this.specAbilityList = root.getFieldByLabel('SpecAbilityList').getChildStructs().map( (struct) => {
         const KnownListEntry: SpecialAbilityEntry = {
-          spell: struct.getNumberByLabel('Spell'),
-          spellCasterLevel: struct.getNumberByLabel('SpellCasterLevel'),
-          spellFlags: struct.getNumberByLabel('SpellFlags'),
+          spell: struct.getFieldByLabel('Spell').getValue() || 0,
+          spellCasterLevel: struct.getFieldByLabel('SpellCasterLevel').getValue() || 0,
+          spellFlags: struct.getFieldByLabel('SpellFlags').getValue() || 0,
         };
         return KnownListEntry;
       }) || [];
     }
     if(root.hasField('Str')){
-      this.str = root.getNumberByLabel('Str');
+      this.str = root.getFieldByLabel('Str').getValue() || 10;
     }
     if(root.hasField('Subrace')){
-      this.subrace = root.getStringByLabel('Subrace');
+      this.subrace = root.getFieldByLabel('Subrace').getValue() || '';
     }
     if(root.hasField('SubraceIndex')){
-      this.subraceIndex = root.getNumberByLabel('SubraceIndex');
+      this.subraceIndex = root.getFieldByLabel('SubraceIndex').getValue() || 0;
     }
     if(root.hasField('Tag')){
-      this.tag = root.getStringByLabel('Tag');
+      this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
     if(root.hasField('TemplateList')){
       // this.templateList = root.getFieldByLabel('TemplateList').getChildStructs().map( (struct) => {
@@ -741,25 +735,25 @@ export class ForgeCreature extends ForgeGameObject {
       // }) || [];
     }
     if(root.hasField('TemplateResRef')){
-      this.templateResRef = root.getStringByLabel('TemplateResRef');
+      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
     }
     if(root.hasField('TextureVar')){
-      this.textureVar = root.getNumberByLabel('TextureVar');
+      this.textureVar = root.getFieldByLabel('TextureVar').getValue() || 1;
     }
     if(root.hasField('WalkRate')){
-      this.walkRate = root.getNumberByLabel('WalkRate');
+      this.walkRate = root.getFieldByLabel('WalkRate').getValue() || 7;
     }
     if(root.hasField('Wis')){
-      this.wis = root.getNumberByLabel('Wis');
+      this.wis = root.getFieldByLabel('Wis').getValue() || 10;
     }
     if(root.hasField('fortbonus')){
-      this.fortbonus = root.getNumberByLabel('fortbonus');
+      this.fortbonus = root.getFieldByLabel('fortbonus').getValue() || 0;
     }
     if(root.hasField('refbonus')){
-      this.refbonus = root.getNumberByLabel('refbonus');
+      this.refbonus = root.getFieldByLabel('refbonus').getValue() || 0;
     }
     if(root.hasField('willbonus')){
-      this.willbonus = root.getNumberByLabel('willbonus');
+      this.willbonus = root.getFieldByLabel('willbonus').getValue() || 0;
     }
   }
 
@@ -769,7 +763,7 @@ export class ForgeCreature extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-
+    
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Appearance_Type', this.appearanceType) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BodyBag', this.bodyBag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BodyVariation', this.bodyVariation) );
@@ -802,7 +796,7 @@ export class ForgeCreature extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Deity', this.deity) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Dex', this.dex) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Disarmable', this.disarmable ? 1 : 0) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Disarmable', this.disarmable) );
     const equipItemList = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Equip_ItemList');
     if(this.slotArmor){
       const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.ARMOR);
@@ -879,7 +873,7 @@ export class ForgeCreature extends ForgeGameObject {
       equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotArms) );
       equipItemList.addChildStruct(equipItem);
     }
-    root.addField(equipItemList);
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Equip_ItemList', equipItemList) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'FactionID', this.factionID) );
     const featList = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'FeatList');
     if(featList){
@@ -974,13 +968,13 @@ export class ForgeCreature extends ForgeGameObject {
   }
 
   setGITInstance(instance: KotOR.GFFStruct){
-    this.templateResRef = instance.getStringByLabel('TemplateResRef');
-    const xOrientation = instance.getNumberByLabel('XOrientation');
-    const yOrientation = instance.getNumberByLabel('YOrientation');
+    this.templateResRef = instance.getFieldByLabel('TemplateResRef').getValue() as string;
+    const xOrientation = instance.getFieldByLabel('XOrientation').getValue() as number;
+    const yOrientation = instance.getFieldByLabel('YOrientation').getValue() as number;
     this.container.rotation.z = -Math.atan2(yOrientation, xOrientation);
-    this.container.position.x = instance.getNumberByLabel('XPosition');
-    this.container.position.y = instance.getNumberByLabel('YPosition');
-    this.container.position.z = instance.getNumberByLabel('ZPosition');
+    this.container.position.x = instance.getFieldByLabel('XPosition').getValue() as number;
+    this.container.position.y = instance.getFieldByLabel('YPosition').getValue() as number;
+    this.container.position.z = instance.getFieldByLabel('ZPosition').getValue() as number;
   }
 
   getGITInstance(): KotOR.GFFStruct {

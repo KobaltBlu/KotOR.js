@@ -9,13 +9,10 @@ import { Project } from "@/apps/forge/Project";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { RecentProject } from "@/apps/forge/RecentProject";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
+import "./TabQuickStart.scss";
 import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-import "@/apps/forge/components/tabs/tab-quick-start/TabQuickStart.scss";
 
-const log = createScopedLogger(LogScope.Forge);
-
-export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
+export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
   const [files, setFiles] = useState<EditorFile[]>(ForgeState.recentFiles);
   const [projects, setProjects] = useState<RecentProject[]>(ForgeState.recentProjects);
 
@@ -55,13 +52,13 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
 
   const onClickRecentProject = useCallback(async (e: React.MouseEvent, recentProject: RecentProject) => {
     e.preventDefault();
-
+    
     if(!recentProject) return;
-
+    
     try{
       // Show loading state
       ForgeState.loaderShow();
-
+      
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         // For Electron, use the stored path
         const projectPath = recentProject.path;
@@ -82,7 +79,7 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
       } else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
         // For browser, try to restore the handle from storage
         let handle = recentProject.handle;
-
+        
         // If handle is not in memory, try to restore from IndexedDB
         if(!handle && recentProject.name){
           const handleKey = `project_handle_${recentProject.getIdentifier()}`;
@@ -90,10 +87,10 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
             const { get } = await import('idb-keyval');
             handle = await get(handleKey);
           } catch(e) {
-            log.warn('Failed to restore handle from IndexedDB:', e);
+            console.warn('Failed to restore handle from IndexedDB:', e);
           }
         }
-
+        
         if(handle instanceof FileSystemDirectoryHandle){
           // Verify handle is still valid
           try{
@@ -111,7 +108,7 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
             }
           } catch(permError){
             // Handle permission denied or invalid - request new access
-            log.warn('Handle permission denied or invalid, requesting new access:', permError);
+            console.warn('Handle permission denied or invalid, requesting new access:', permError);
             Project.OpenByDirectory();
           }
         } else {
@@ -119,10 +116,10 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
           Project.OpenByDirectory();
         }
       }
-
+      
       ForgeState.loaderHide();
     } catch(e){
-      log.error('Error opening recent project:', e as Error);
+      console.error('Error opening recent project:', e);
       ForgeState.loaderHide();
       // Remove invalid project from recent list
       await ForgeState.removeRecentProject(recentProject);
@@ -139,12 +136,6 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
     e.stopPropagation();
     e.preventDefault();
     ForgeState.removeRecentFile(file);
-  }, []);
-
-  const onClickRemoveRecentProject = useCallback(async (e: React.MouseEvent, project: RecentProject) => {
-    e.stopPropagation();
-    e.preventDefault();
-    await ForgeState.removeRecentProject(project);
   }, []);
 
   return (
@@ -181,24 +172,9 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
 
         {/* Recent Projects */}
         <div className="quick-start-card">
-          <h2 className="quick-start-card-title d-flex align-items-center justify-content-between">
-            <span>
-              <i className="fa-solid fa-clock-rotate-left" />
-              <span>Recent Projects</span>
-            </span>
-            {projects.length > 0 && (
-              <button
-                type="button"
-                className="btn btn-link btn-sm p-0 text-muted"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  await ForgeState.clearRecentProjects();
-                }}
-                title="Clear recent projects"
-              >
-                Clear
-              </button>
-            )}
+          <h2 className="quick-start-card-title">
+            <i className="fa-solid fa-clock-rotate-left" />
+            <span>Recent Projects</span>
           </h2>
           {projects.length > 0 ? (
             <ul className="recent-items-list">
@@ -212,14 +188,6 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
                   <div className="item-content">
                     <div className="item-name">{project.getDisplayName()}</div>
                   </div>
-                  <button
-                    className="remove-button"
-                    onClick={(e) => onClickRemoveRecentProject(e, project)}
-                    title="Remove from history"
-                    aria-label="Remove from history"
-                  >
-                    <i className="fa-solid fa-xmark" />
-                  </button>
                 </li>
               ))}
             </ul>

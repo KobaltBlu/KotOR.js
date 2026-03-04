@@ -6,7 +6,6 @@ import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 
-
 /**
  * ActionForceFollowObject class.
  * 
@@ -28,7 +27,7 @@ export class ActionForceFollowObject extends Action {
 
   }
 
-  update(_delta: number = 0): ActionStatus {
+  update(delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
     const fDistance = this.getParameter<number>(1) || 0.00;
 

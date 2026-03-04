@@ -1,18 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState } from "react"
 import * as THREE from 'three';
 
-import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
-import type { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
-import { createScopedLogger, LogScope } from '@/utility/Logger';
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce"
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 
-const log = createScopedLogger(LogScope.Forge);
+export const UI3DOverlayComponent = function(props: any){
 
-export interface UI3DOverlayComponentProps {
-  context: UI3DRenderer;
-}
-
-export const UI3DOverlayComponent: React.FC<UI3DOverlayComponentProps> = (props) => {
-  const ui3DRenderer = props.context;
+  const ui3DRenderer: UI3DRenderer = props.context;
   const [camera, setCamera] = useState<THREE.PerspectiveCamera>(ui3DRenderer?.currentCamera);
 
   const [cameraPositionX, setCameraPositionX] = useState<number>(0);
@@ -36,13 +30,11 @@ export const UI3DOverlayComponent: React.FC<UI3DOverlayComponentProps> = (props)
     setCameraRotationW(ui3DRenderer.currentCamera.quaternion.w);
   };
 
-  useEffectOnce( () => {
-    log.trace('UI3DOverlayComponent mount, adding onAfterRender listener');
+  useEffectOnce( () => { //constructor
     ui3DRenderer.addEventListener('onAfterRender', onAfterRender);
-    return () => {
-      log.trace('UI3DOverlayComponent unmount, removing onAfterRender listener');
-      ui3DRenderer.removeEventListener('onAfterRender', onAfterRender);
-    };
+    return () => { //destructor
+      ui3DRenderer.removeEventListener('onAfterRender', onAfterRender)
+    }
   });
 
   return (

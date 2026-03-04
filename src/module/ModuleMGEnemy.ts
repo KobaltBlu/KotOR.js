@@ -12,18 +12,14 @@ import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { OdysseyModel, OdysseyModelAnimationManager } from "@/odyssey";
 import { GFFObject } from "@/resource/GFFObject";
 import { OdysseyModel3D } from "@/three/odyssey";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
 * ModuleMGEnemy class.
-*
+* 
 * Class representing an enemy object found in minigame modules.
-*
+* 
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*
+* 
 * @file ModuleMGEnemy.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -47,21 +43,21 @@ export class ModuleMGEnemy extends ModuleObject {
   sphere_geom: THREE.Mesh;
   sphere_radius: number;
   hit_points: number;
-  died: boolean;
+  died: any;
   invince_period: number;
-  accel_secs: number;
-  bump_damage: number;
-  cameraName: string;
-  cameraRotate: number;
-  max_hps: number;
-  maximum_speed: number;
-  minimum_speed: number;
-  num_loops: number;
-  trackName: string;
+  accel_secs: any;
+  bump_damage: any;
+  cameraName: any;
+  cameraRotate: any;
+  max_hps: any;
+  maximum_speed: any;
+  minimum_speed: any;
+  num_loops: any;
+  trackName: any;
 
   collided: boolean = false;
 
-  constructor(template: GFFObject) {
+  constructor(template: GFFObject){
     super();
     this.objectType |= ModuleObjectType.ModuleMGEnemy;
     this.template = template;
@@ -78,37 +74,37 @@ export class ModuleMGEnemy extends ModuleObject {
     this.invince = 0;
 
     this.box = new THREE.Box3();
-    this.model = this.container as THREE.Object3D;
+    this.model = this.container as any;
 
     this.alive = true;
 
     //this.model.children[2].rotation.y = .1
 
-    const geometry = new THREE.SphereGeometry(1, 16, 16);
-    const material = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
+    const geometry = new THREE.SphereGeometry( 1, 16, 16 );
+    const material = new THREE.MeshBasicMaterial( { color: 0xFF0000 } );
     material.transparent = true;
     material.opacity = 0.15;
-    this.sphere_geom = new THREE.Mesh(geometry, material);
+    this.sphere_geom = new THREE.Mesh( geometry, material );
     this.sphere_geom.visible = false;
 
   }
 
-  setTrack(model = new THREE.Object3D()) {
+  setTrack(model = new THREE.Object3D()){
     this.track = model;
     this.container.removeFromParent();
 
-    try {
+    try{
       this.track.getObjectByName('modelhook').add(this.container);
-    } catch (e) {
+    }catch(e){
 
     }
 
   }
 
-  update(delta: number = 0) {
+  update(delta: number = 0){
 
     this.invince -= delta;
-    if (this.invince < 0) this.invince = 0;
+    if(this.invince < 0) this.invince = 0;
 
     this.sphere.radius = this.sphere_radius;
     // this.model.getWorldPosition(this.position);
@@ -117,24 +113,24 @@ export class ModuleMGEnemy extends ModuleObject {
     this.sphere_geom.scale.setScalar(this.sphere_radius);
     this.sphere_geom.position.copy(this.sphere.center);
 
-    for (let i = 0; i < this.animationManagers.length; i++) {
+    for(let i = 0; i < this.animationManagers.length; i++){
       const aManager = this.animationManagers[i];
       aManager.updateAnimation(aManager.currentAnimation, aManager.currentAnimationState, delta);
     }
 
-    for (let i = 0; i < this.models.length; i++) {
+    for(let i = 0; i < this.models.length; i++){
       const child_model = this.models[i];
-      if (child_model instanceof OdysseyModel3D && child_model.bonesInitialized && child_model.visible) {
+      if(child_model instanceof OdysseyModel3D && child_model.bonesInitialized && child_model.visible){
 
-        if (this.hit_points > 0) {
-          if (!child_model.animationManager.currentAnimation || (child_model.animationManager.currentAnimation.name != 'Ready_01' && child_model.animationManager.currentAnimation.name != 'damage')) {
+        if(this.hit_points > 0){
+          if(!child_model.animationManager.currentAnimation || (child_model.animationManager.currentAnimation.name != 'Ready_01' && child_model.animationManager.currentAnimation.name != 'damage')){
             child_model.playAnimation('Ready_01', false);
           }
-        } else if (!this.alive && !this.died) {
+        }else if(!this.alive && !this.died){
           child_model.playAnimation('die', false);
           this.died = true;
-        } else {
-          if (!child_model.animationManager.currentAnimation) {
+        }else{
+          if(!child_model.animationManager.currentAnimation){
             //child_model.visible = false;
           }
         }
@@ -143,32 +139,32 @@ export class ModuleMGEnemy extends ModuleObject {
       }
     }
 
-    if (this.hit_points <= 0 && this.alive) {
+    if(this.hit_points <= 0 && this.alive){
       this.alive = false;
-      log.debug('MGEnemy death', this);
+      console.log('MGEnemy death', this);
       const onDeath = this.scripts[ModuleObjectScript.MGEnemyOnDeath];
-      if (onDeath) {
+      if(onDeath){
         onDeath.run(this);
       }
     }
 
     this.box.setFromObject(this.models[0]);
 
-    if (this.track instanceof OdysseyModel3D) {
-      if (!this.track.animationManager.currentAnimation && this.alive) {
+    if(this.track instanceof OdysseyModel3D){
+      if(!this.track.animationManager.currentAnimation && this.alive){
         this.track.playAnimation(0, true);
-      } else if (!this.alive && this.track.animationManager.currentAnimation) {
+      }else if(!this.alive && this.track.animationManager.currentAnimation){
         this.track.stopAnimation();
       }
       this.track.update(delta);
     }
-
-    for (let i = 0; i < this.gunBanks.length; i++) {
+        
+    for(let i = 0; i < this.gunBanks.length; i++){
       this.gunBanks[i].update(delta);
-      if (this.alive) {
+      if(this.alive){
         this.container.getWorldPosition(GameState.raycaster.ray.origin);
         this.container.getWorldDirection(GameState.raycaster.ray.direction);
-        if (GameState.raycaster.ray.intersectsSphere(GameState.module.area.miniGame.player.sphere)) {
+        if(GameState.raycaster.ray.intersectsSphere(GameState.module.area.miniGame.player.sphere)){
           this.gunBanks[i].fire();
         }
       }
@@ -176,18 +172,18 @@ export class ModuleMGEnemy extends ModuleObject {
 
   }
 
-  updatePaused(delta: number = 0) {
-
+  updatePaused(delta: number = 0){
+    
   }
 
-  damage(damage = 0) {
-    if (this.alive) {
+  damage(damage = 0){
+    if(this.alive){
       this.hit_points -= damage;
       let model: OdysseyModel3D
-      for (let i = 0; i < this.models.length; i++) {
+      for(let i = 0; i < this.models.length; i++){
         model = this.models[i];
-        if (model instanceof OdysseyModel3D) {
-          if (model.bonesInitialized && model.visible) {
+        if(model instanceof OdysseyModel3D){
+          if(model.bonesInitialized && model.visible){
             model.playAnimation('damage', false);
           }
         }
@@ -196,49 +192,49 @@ export class ModuleMGEnemy extends ModuleObject {
     }
   }
 
-  adjustHitPoints(nHP = 0, nAbsolute = 0) {
+  adjustHitPoints(nHP = 0, nAbsolute = 0){
     this.hit_points += nHP;
   }
 
-  startInvulnerability() {
+  startInvulnerability(){
     this.invince = this.invince_period || 0;
   }
 
-  playAnimation(name = '', n1 = 0, n2 = 0, n3 = 0) {
+  playAnimation(name = '', n1 = 0, n2 = 0, n3 = 0){
     //I think n3 may be loop
-    for (let i = 0; i < this.models.length; i++) {
+    for(let i = 0; i < this.models.length; i++){
       const model = this.models[i];
       const anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
-      if (anim) {
-        if (n3) {
-          log.trace('playAnimation anim', anim);
+      if(anim){
+        if(n3){
+          console.log(anim);
           const animManager = new OdysseyModelAnimationManager(model);
           const state = animManager.createAnimationState();
           state.loop = true;
           animManager.setCurrentAnimation(anim, state);
           this.animationManagers.push(animManager);
-        } else {
+        }else{
           model.playAnimation(anim, false);
         }
       }
     }
   }
 
-  removeAnimation(name = '') {
+  removeAnimation(name = ''){
 
     let model: OdysseyModel3D
-    for (let i = 0; i < this.models.length; i++) {
+    for(let i = 0; i < this.models.length; i++){
       model = this.models[i];
-      if (model instanceof OdysseyModel3D) {
+      if(model instanceof OdysseyModel3D){
         const anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
 
-        if (anim) {
+        if(anim){
           const animLoopIdx = model.animLoops.indexOf(anim);
-          if (animLoopIdx >= 0) {
+          if(animLoopIdx >= 0){
             model.animLoops.splice(animLoopIdx, 1);
           }
 
-          if (model.animationManager.currentAnimation == anim) {
+          if(model.animationManager.currentAnimation == anim){
             model.stopAnimation();
           }
 
@@ -248,117 +244,108 @@ export class ModuleMGEnemy extends ModuleObject {
 
   }
 
-  updateCollision(delta = 0) {
+  updateCollision(delta = 0){
     this.track.updateMatrixWorld();
   }
 
-  async load() {
+  async load(){
     this.initProperties();
-    this.loadScripts();
     GameState.scene.add(this.sphere_geom);
     return this.template;
   }
 
-  async loadModel() {
-    for (let i = 0; i < this.modelProps.length; i++) {
+  async loadModel (){
+    for(let i = 0; i < this.modelProps.length; i++){
       const item = this.modelProps[i];
-      const resref = item.model.replace(/\0[\s\S]*$/g, '').toLowerCase();
+      const resref = item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
       const mdl = await MDLLoader.loader.load(resref);
       const model = await OdysseyModel3D.FromMDL(mdl, {
         context: this.context,
         castShadow: true,
         receiveShadow: true
       });
-      try {
+      try{
         this.models.push(model);
-        this.container.add(model);
+        this.container.add(model);  
         model.name = item.model;
 
-        (model as unknown as { addEventListener: (t: string, fn: (e: { event?: string }) => void) => void }).addEventListener?.('playEvent', (e: { event?: string }) => {
-          const mg = GameState.module?.area?.miniGame;
-          if (mg) {
-            mg.lastAnimEvent = e.event ?? '';
-            mg.lastAnimEventModelName = model.name ?? '';
-          }
-          this.onAnimEvent();
-        });
-      } catch (e) {
-        log.error(e instanceof Error ? e : String(e));
+      }catch(e){
+        console.error(e);
       }
     }
   }
 
-  async loadGunBanks() {
-    for (let i = 0; i < this.gunBanks.length; i++) {
+  async loadGunBanks(){
+    for(let i = 0; i < this.gunBanks.length; i++){
       const gunbank = this.gunBanks[i];
       await gunbank.load();
       this.gun_hook = this.getGunHook(gunbank.bankID);
-      if (this.gun_hook instanceof THREE.Object3D) {
+      if(this.gun_hook instanceof THREE.Object3D){
         this.gun_hook.add(gunbank.model);
       }
     }
   }
 
   getGunHook(bankID: number): THREE.Object3D | undefined {
-    return this.container.getObjectByName('gunbank' + bankID) as THREE.Object3D;
+    return this.container.getObjectByName('gunbank'+bankID) as THREE.Object3D;
   }
 
-  onAnimEvent() {
+  onAnimEvent(){
     const onAnimEvent = this.scripts[ModuleObjectScript.MGEnemyOnAnimEvent];
-    if (!onAnimEvent) { return; }
+    if(!onAnimEvent){ return; }
     onAnimEvent.run(this, 0);
   }
 
-  onCreate() {
+  onCreate(){
     const onCreate = this.scripts[ModuleObjectScript.MGEnemyOnCreate];
-    if (!onCreate) { return; }
+    if(!onCreate){ return; }
     onCreate.run(this, 0);
   }
 
-  onDamaged() {
+  onDamaged(){
     const onDamage = this.scripts[ModuleObjectScript.MGEnemyOnDamage];
-    if (!onDamage) { return true; }
+    if(!onDamage){ return true; }
     onDamage.run(this, 0);
     return true;
   }
 
-  onFire() {
+  onFire(){
     const onFire = this.scripts[ModuleObjectScript.MGEnemyOnFire];
-    if (!onFire) { return; }
+    if(!onFire){ return; }
     onFire.run(this, 0);
   }
 
-  onAccelerate() {
+  onAccelerate(){
     const onAccelerate = this.scripts[ModuleObjectScript.MGEnemyOnAccelerate];
-    if (!onAccelerate) { return; }
+    if(!onAccelerate){ return; }
     onAccelerate.run(this, 0);
   }
 
-  onHitBullet() {
+  onHitBullet(){
     const onHitBullet = this.scripts[ModuleObjectScript.MGEnemyOnHitBullet];
-    if (!onHitBullet) { return; }
+    if(!onHitBullet){ return; }
     onHitBullet.run(this, 0);
   }
 
-  onHitFollower() {
+  onHitFollower(){
     const onHitFollower = this.scripts[ModuleObjectScript.MGEnemyOnHitFollower];
-    if (!onHitFollower) { return; }
+    if(!onHitFollower){ return; }
     onHitFollower.run(this, 0);
   }
 
-  onHitObstacle() {
+  onHitObstacle(){
     const onHitObstacle = this.scripts[ModuleObjectScript.MGEnemyOnHitObstacle];
-    if (!onHitObstacle) { return; }
+    if(!onHitObstacle){ return; }
     onHitObstacle.run(this, 0);
   }
 
-  onTrackLoop() {
+  onTrackLoop(){
     const onTrackLoop = this.scripts[ModuleObjectScript.MGEnemyOnTrackLoop];
-    if (!onTrackLoop) { return; }
+    if(!onTrackLoop){ return; }
     onTrackLoop.run(this, 0);
   }
 
-  loadScripts() {
+  loadScripts (){
     const scriptKeys = [
       ModuleObjectScript.MGEnemyOnAccelerate,
       ModuleObjectScript.MGEnemyOnAnimEvent,
@@ -376,15 +363,15 @@ export class ModuleMGEnemy extends ModuleObject {
     ];
 
     const scriptsNode = this.template.getFieldByLabel('Scripts')?.getFieldStruct();
-    if (scriptsNode) {
-      for (const scriptKey of scriptKeys) {
-        if (!scriptsNode.hasField(scriptKey)) { continue; }
-        const resRef = scriptsNode.getStringByLabel(scriptKey);
-        if (!resRef) { continue; }
+    if(scriptsNode){
+      for(const scriptKey of scriptKeys){
+        if(!scriptsNode.hasField(scriptKey)){ continue; }
+        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+        if(!resRef){ continue; }
         const nwscript = GameState.NWScript.Load(resRef);
-        if (!nwscript) {
-          log.warn(`loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-          continue;
+        if(!nwscript){ 
+          console.warn(`ModuleMGEnemy.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+          continue; 
         }
         nwscript.caller = this;
         this.scripts[scriptKey] = nwscript;
@@ -392,58 +379,58 @@ export class ModuleMGEnemy extends ModuleObject {
     }
   }
 
-  initProperties() {
-    if (this.template.RootNode.hasField('Accel_Secs'))
-      this.accel_secs = this.template.getNumberByLabel('Accel_Secs');
+  initProperties(){
+    if(this.template.RootNode.hasField('Accel_Secs'))
+      this.accel_secs = this.template.getFieldByLabel('Accel_Secs').getValue();
 
-    if (this.template.RootNode.hasField('Bump_Damage'))
-      this.bump_damage = this.template.getNumberByLabel('Bump_Damage');
+    if(this.template.RootNode.hasField('Bump_Damage'))
+      this.bump_damage = this.template.getFieldByLabel('Bump_Damage').getValue();
 
-    if (this.template.RootNode.hasField('Camera'))
-      this.cameraName = this.template.getStringByLabel('Camera');
+    if(this.template.RootNode.hasField('Camera'))
+      this.cameraName = this.template.getFieldByLabel('Camera').getValue();
 
-    if (this.template.RootNode.hasField('CameraRotate'))
-      this.cameraRotate = this.template.getNumberByLabel('CameraRotate');
+    if(this.template.RootNode.hasField('CameraRotate'))
+      this.cameraRotate = this.template.getFieldByLabel('CameraRotate').getValue();
 
-    if (this.template.RootNode.hasField('Hit_Points'))
-      this.hit_points = this.template.getNumberByLabel('Hit_Points');
+    if(this.template.RootNode.hasField('Hit_Points'))
+      this.hit_points = this.template.getFieldByLabel('Hit_Points').getValue();
 
-    if (this.template.RootNode.hasField('Invince_Period'))
-      this.invince_period = this.template.getNumberByLabel('Invince_Period');
+    if(this.template.RootNode.hasField('Invince_Period'))
+      this.invince_period = this.template.getFieldByLabel('Invince_Period').getValue();
 
-    if (this.template.RootNode.hasField('Max_HPs'))
-      this.max_hps = this.template.getNumberByLabel('Max_HPs');
+    if(this.template.RootNode.hasField('Max_HPs'))
+      this.max_hps = this.template.getFieldByLabel('Max_HPs').getValue();
 
-    if (this.template.RootNode.hasField('Maximum_Speed'))
-      this.maximum_speed = this.template.getNumberByLabel('Maximum_Speed');
+    if(this.template.RootNode.hasField('Maximum_Speed'))
+      this.maximum_speed = this.template.getFieldByLabel('Maximum_Speed').getValue();
 
-    if (this.template.RootNode.hasField('Minimum_Speed'))
-      this.minimum_speed = this.template.getNumberByLabel('Minimum_Speed');
+    if(this.template.RootNode.hasField('Minimum_Speed'))
+      this.minimum_speed = this.template.getFieldByLabel('Minimum_Speed').getValue();
 
-    if (this.template.RootNode.hasField('Num_Loops'))
-      this.num_loops = this.template.getNumberByLabel('Num_Loops');
+    if(this.template.RootNode.hasField('Num_Loops'))
+      this.num_loops = this.template.getFieldByLabel('Num_Loops').getValue();
 
-    if (this.template.RootNode.hasField('Sphere_Radius'))
-      this.sphere_radius = this.template.getNumberByLabel('Sphere_Radius');
+    if(this.template.RootNode.hasField('Sphere_Radius'))
+      this.sphere_radius = this.template.getFieldByLabel('Sphere_Radius').getValue();
 
-    if (this.template.RootNode.hasField('Track'))
-      this.trackName = this.template.getStringByLabel('Track');
+    if(this.template.RootNode.hasField('Track'))
+      this.trackName = this.template.getFieldByLabel('Track').getValue();
 
 
-    if (this.template.RootNode.hasField('Models')) {
+    if(this.template.RootNode.hasField('Models')){
       const models = this.template.getFieldByLabel('Models').getChildStructs();
-      for (let i = 0; i < models.length; i++) {
+      for(let i = 0; i < models.length; i++){
         const modelStruct = models[i];
         this.modelProps.push({
-          model: modelStruct.getStringByLabel('Model'),
-          rotating: modelStruct.getBooleanByLabel('RotatingModel')
+          model: modelStruct.getFieldByLabel('Model').getValue(),
+          rotating: modelStruct.getFieldByLabel('RotatingModel').getValue() ? true : false
         });
       }
     }
 
-    if (this.template.RootNode.hasField('Gun_Banks')) {
+    if(this.template.RootNode.hasField('Gun_Banks')){
       const gun_banks = this.template.getFieldByLabel('Gun_Banks').getChildStructs();
-      for (let i = 0; i < gun_banks.length; i++) {
+      for(let i = 0; i < gun_banks.length; i++){
         this.gunBanks.push(
           new ModuleMGGunBank(
             GFFObject.FromStruct(gun_banks[i]),

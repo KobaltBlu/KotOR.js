@@ -1,10 +1,9 @@
-import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 export class ForgeWaypoint extends ForgeGameObject {
   //GIT Instance Properties
-  templateResType: number = KotOR.ResourceTypes.utw;
+  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utw;
 
   //Blueprint Properties
   appearance: number = 0;
@@ -23,17 +22,10 @@ export class ForgeWaypoint extends ForgeGameObject {
     if(buffer){
       this.loadFromBuffer(buffer);
     }
-    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
-      this.onPropertyChange(
-        args[0] as string,
-        args[1] as string | number | boolean | object | undefined,
-        args[2] as string | number | boolean | object | undefined
-      );
-    };
-    this.addEventListener('onPropertyChange', onPropChange);
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: string | number | boolean | object | undefined, oldValue: string | number | boolean | object | undefined): void {
+  onPropertyChange(property: string, newValue: any, oldValue: any){
     if(property === 'templateResRef'){
       if(newValue !== oldValue){
         this.loadBlueprint().then(() => {
@@ -54,19 +46,19 @@ export class ForgeWaypoint extends ForgeGameObject {
     if(!root) return;
 
     if(root.hasField('Appearance')){
-      this.appearance = root.getNumberByLabel('Appearance');
+      this.appearance = root.getFieldByLabel('Appearance').getValue() || 0;
     }
     if(root.hasField('Comment')){
-      this.comment = root.getStringByLabel('Comment');
+      this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
     if(root.hasField('Description')){
       this.description = root.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('HasMapNote')){
-      this.hasMapNote = root.getBooleanByLabel('HasMapNote');
+      this.hasMapNote = root.getFieldByLabel('HasMapNote').getValue() || false;
     }
     if(root.hasField('LinkedTo')){
-      this.linkedTo = root.getStringByLabel('LinkedTo');
+      this.linkedTo = root.getFieldByLabel('LinkedTo').getValue() || '';
     }
     if(root.hasField('LocalizedName')){
       this.localizedName = root.getFieldByLabel('LocalizedName').getCExoLocString() || new KotOR.CExoLocString();
@@ -75,16 +67,16 @@ export class ForgeWaypoint extends ForgeGameObject {
       this.mapNote = root.getFieldByLabel('MapNote').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('MapNoteEnabled')){
-      this.mapNoteEnabled = root.getBooleanByLabel('MapNoteEnabled');
+      this.mapNoteEnabled = root.getFieldByLabel('MapNoteEnabled').getValue() || false;
     }
     if(root.hasField('PaletteID')){
-      this.paletteID = root.getNumberByLabel('PaletteID');
+      this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
     if(root.hasField('Tag')){
-      this.tag = root.getStringByLabel('Tag');
+      this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
     if(root.hasField('TemplateResRef')){
-      this.templateResRef = root.getStringByLabel('TemplateResRef');
+      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
     }
   }
 
@@ -94,7 +86,7 @@ export class ForgeWaypoint extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-
+    
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Appearance', this.appearance) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description) );
@@ -133,17 +125,17 @@ export class ForgeWaypoint extends ForgeGameObject {
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
-    this.appearance = strt.getNumberByLabel('Appearance');
+    this.appearance = strt.getFieldByLabel('Appearance').getValue() as number;
     this.description = strt.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
-    this.hasMapNote = strt.getBooleanByLabel('HasMapNote');
-    this.linkedTo = strt.getStringByLabel('LinkedTo');
+    this.hasMapNote = strt.getFieldByLabel('HasMapNote').getValue() as boolean;
+    this.linkedTo = strt.getFieldByLabel('LinkedTo').getValue() as string;
     this.mapNote = strt.getFieldByLabel('MapNote').getCExoLocString() || new KotOR.CExoLocString();
-    this.mapNoteEnabled = strt.getBooleanByLabel('MapNoteEnabled');
-    this.tag = strt.getStringByLabel('Tag');
-    this.templateResRef = strt.getStringByLabel('TemplateResRef');
-    this.rotation.z = strt.getNumberByLabel('XOrientation');
-    this.position.x = strt.getNumberByLabel('XPosition');
-    this.position.y = strt.getNumberByLabel('YPosition');
-    this.position.z = strt.getNumberByLabel('ZPosition');
+    this.mapNoteEnabled = strt.getFieldByLabel('MapNoteEnabled').getValue() as boolean;
+    this.tag = strt.getFieldByLabel('Tag').getValue() as string;
+    this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
+    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
+    this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
+    this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
+    this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
   }
 }

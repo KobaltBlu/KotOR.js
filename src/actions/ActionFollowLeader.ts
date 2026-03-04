@@ -6,16 +6,14 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 
-
 /**
  * ActionFollowLeader class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file ActionFollowLeader.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -32,7 +30,7 @@ export class ActionFollowLeader extends Action {
 
   }
 
-  update(_delta: number = 0): ActionStatus {
+  update(delta: number = 0): ActionStatus {
     if((BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))){
       if(GameState.Mode == EngineMode.DIALOG){
         this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
@@ -41,11 +39,11 @@ export class ActionFollowLeader extends Action {
 
       this.target = GameState.PartyManager.party[0];
 
-      const follow_destination = GameState.PartyManager.GetFollowPosition(this.owner as ModuleCreature);
+      const follow_destination = GameState.PartyManager.GetFollowPosition(this.owner as any);
       const distance = Utility.Distance2D(this.owner.position, this.target.position.clone());
       if(distance > 5){
         this.path_realtime = true;
-        this.owner.openSpot = undefined;
+        // (this.owner as any).openSpot = undefined;
         const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, follow_destination.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, follow_destination.y);

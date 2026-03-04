@@ -1,7 +1,6 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 
-
 /**
  * EffectBlasterDeflectionIncrease class.
  * 

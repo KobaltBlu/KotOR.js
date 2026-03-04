@@ -1,6 +1,5 @@
 import { TLKManager } from "@/managers/TLKManager";
 import { TwoDAObject } from "@/resource/TwoDAObject";
-import type { ITwoDARowData } from "@/resource/TwoDAObject";
 
 /**
  * SWRace class.
@@ -41,75 +40,75 @@ export class SWRace {
     return this.name != -1 ? TLKManager.GetStringById(this.name).Value : this.label;
   }
 
-  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}){
+  static From2DA(row: any = {}){
     const race = new SWRace();
 
     race.id = parseInt(row.__index);
 
-    if(Object.hasOwn(row,'label'))
+    if(row.hasOwnProperty('label'))
       race.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
     
-    if(Object.hasOwn(row,'abrev'))
+    if(row.hasOwnProperty('abrev'))
       race.abrev = TwoDAObject.normalizeValue(row.abrev, 'string', '') as string;
     
-    if(Object.hasOwn(row,'name'))
+    if(row.hasOwnProperty('name'))
       race.name = TwoDAObject.normalizeValue(row.name, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'convername'))
+    if(row.hasOwnProperty('convername'))
       race.converName = TwoDAObject.normalizeValue(row.convername, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'convernamelower'))
+    if(row.hasOwnProperty('convernamelower'))
       race.converNameLower = TwoDAObject.normalizeValue(row.convernamelower, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'nameplural'))
+    if(row.hasOwnProperty('nameplural'))
       race.namePlural = TwoDAObject.normalizeValue(row.nameplural, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'description'))
+    if(row.hasOwnProperty('description'))
       race.description = TwoDAObject.normalizeValue(row.description, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'appearance'))
+    if(row.hasOwnProperty('appearance'))
       race.appearance = TwoDAObject.normalizeValue(row.appearance, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'stradjust'))
+    if(row.hasOwnProperty('stradjust'))
       race.strAdjust = TwoDAObject.normalizeValue(row.stradjust, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'dexadjust'))
+    if(row.hasOwnProperty('dexadjust'))
       race.dexAdjust = TwoDAObject.normalizeValue(row.dexadjust, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'intadjust'))
+    if(row.hasOwnProperty('intadjust'))
       race.intAdjust = TwoDAObject.normalizeValue(row.intadjust, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'chaadjust'))
+    if(row.hasOwnProperty('chaadjust'))
       race.chaAdjust = TwoDAObject.normalizeValue(row.chaadjust, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'wisadjust'))
+    if(row.hasOwnProperty('wisadjust'))
       race.wisAdjust = TwoDAObject.normalizeValue(row.wisadjust, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'conadjust'))
+    if(row.hasOwnProperty('conadjust'))
       race.conAdjust = TwoDAObject.normalizeValue(row.conadjust, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'endurance'))
+    if(row.hasOwnProperty('endurance'))
       race.endurance = TwoDAObject.normalizeValue(row.endurance, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'favored'))
+    if(row.hasOwnProperty('favored'))
       race.favored = TwoDAObject.normalizeValue(row.favored, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'featstable'))
+    if(row.hasOwnProperty('featstable'))
       race.featsTable = TwoDAObject.normalizeValue(row.featstable, 'string', '') as string;
     
-    if(Object.hasOwn(row,'biography'))
-      race.biography = TwoDAObject.normalizeValue(row.biography, 'number', -1) as number;
+    if(row.hasOwnProperty('biography'))
+      race.biography = TwoDAObject.normalizeValue(row.biography, 'string', '') as number;
     
-    if(Object.hasOwn(row,'playerrace'))
+    if(row.hasOwnProperty('playerrace'))
       race.playerRace = TwoDAObject.normalizeValue(row.playerrace, 'boolean', false) as boolean;
     
-    if(Object.hasOwn(row,'constant'))
+    if(row.hasOwnProperty('constant'))
       race.constant = TwoDAObject.normalizeValue(row.constant, 'string', '') as string;
     
-    if(Object.hasOwn(row,'age'))
+    if(row.hasOwnProperty('age'))
       race.age = TwoDAObject.normalizeValue(row.age, 'number', 18) as number;
     
-    if(Object.hasOwn(row,'toolsetdefaultclass'))
+    if(row.hasOwnProperty('toolsetdefaultclass'))
       race.toolsetDefaultClass = TwoDAObject.normalizeValue(row.toolsetdefaultclass, 'number', -1) as number;
 
     return race;

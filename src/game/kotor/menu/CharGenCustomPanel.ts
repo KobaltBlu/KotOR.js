@@ -1,16 +1,13 @@
 import { CurrentGame } from "@/engine/CurrentGame";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIControl, GUILabel, GUIButton } from "@/gui";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { BitWise } from "@/utility/BitWise";
 
 /**
  * CharGenCustomPanel class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file CharGenCustomPanel.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -49,7 +46,7 @@ export class CharGenCustomPanel extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenMain.close();
@@ -64,10 +61,7 @@ export class CharGenCustomPanel extends GameMenu {
 
       this.BTN_STEPNAME2.addEventListener('click', (e) => {
         e.stopPropagation();
-        const pc = GameState.getCurrentPlayer();
-        if (pc && BitWise.InstanceOfObject(pc, ModuleObjectType.ModuleCreature)) {
-          this.manager.CharGenAbilities.setCreature(pc as ModuleCreature);
-        }
+        this.manager.CharGenAbilities.setCreature(GameState.getCurrentPlayer());
         this.manager.CharGenAbilities.open();
       });
 
@@ -105,5 +99,5 @@ export class CharGenCustomPanel extends GameMenu {
       resolve();
     });
   }
-
+  
 }

@@ -1,9 +1,5 @@
-import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Forge);
 
 export class ForgeRoom extends ForgeGameObject {
 
@@ -21,17 +17,10 @@ export class ForgeRoom extends ForgeGameObject {
   constructor(roomName: string){
     super();
     this.roomName = roomName;
-    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
-      this.onPropertyChange(
-        args[0] as string,
-        args[1] as string | number | boolean | object,
-        args[2] as string | number | boolean | object
-      );
-    };
-    this.addEventListener('onPropertyChange', onPropChange);
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: string | number | boolean | object, oldValue: string | number | boolean | object){
+  onPropertyChange(property: string, newValue: any, oldValue: any){
     if(property === 'roomName'){
       if(newValue !== oldValue){
         this.load();
@@ -79,7 +68,7 @@ export class ForgeRoom extends ForgeGameObject {
     this.updateBoundingBox();
   }
 
-  async loadModel(_resRef = ''): Promise<KotOR.OdysseyModel3D | undefined> {
+  async loadModel(resRef = ''): Promise<KotOR.OdysseyModel3D | undefined> {
     //Check if the room name is NULL
     if(KotOR.Utility.is2daNULL(this.roomName)){
       return this.model;
@@ -97,7 +86,7 @@ export class ForgeRoom extends ForgeGameObject {
     //Remove the old model
     if(this.model instanceof KotOR.OdysseyModel3D){
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch{ /* ignore */ }
+      try{ this.model.dispose(); }catch(e){}
     }
 
     this.model = room;
@@ -127,7 +116,7 @@ export class ForgeRoom extends ForgeGameObject {
       }
       return this.walkmesh;
     }catch(e){
-      log.error(e as Error);
+      console.error(e);
     }
     return undefined;
   }

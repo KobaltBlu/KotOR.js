@@ -3,9 +3,6 @@ import * as path from 'path';
 import * as THREE from 'three';
 
 import { GameFileSystem } from '@/utility/GameFileSystem';
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const _log = createScopedLogger(LogScope.Manager);
 
 const PI: number = Math.PI;
 const TWO_PI: number = Math.PI * 2;
@@ -44,7 +41,7 @@ export interface OdysseyFileInfo {
  */
 export class Utility {
 
-  static bytesToSize(bytes: number) {
+  static bytesToSize(bytes: any) {
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     if (bytes == 0) return '0 Byte';
     const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)).toString());
@@ -104,7 +101,7 @@ export class Utility {
 
   }
 
-  static FileExists(file: string, onComplete?: (exists: boolean) => void){
+  static FileExists(file: string, onComplete?: Function){
     if(file != null){
       GameFileSystem.exists(file).then( (exists) => {
         if(onComplete != null)
@@ -147,8 +144,8 @@ export class Utility {
 
       const filePathInfo = path.parse(filePath);
 
-      let _fileInfo = filePath.split('\\');
-      _fileInfo = _fileInfo[_fileInfo.length - 1].split('.');
+      let fileInfo = filePath.split('\\');
+      fileInfo = fileInfo[fileInfo.length - 1].split('.');
 
       if(filePathInfo.ext.indexOf('.') == 0)
         filePathInfo.ext = filePathInfo.ext.substr(1, filePathInfo.ext.length - 1);
@@ -190,14 +187,14 @@ export class Utility {
 
     //possible relative filePath
     else{
-      // fallthrough to return empty path info
+
     }
 
     return {} as OdysseyPathInfo;
 
   }
 
-  static isPOW2(_n: number): boolean{
+  static isPOW2(n: number): boolean{
     return false;
   }
 
@@ -214,7 +211,7 @@ export class Utility {
 
     let mipmaps = 1;
     while(size > 1){
-      //log.info(size);
+      //console.log(size);
       mipmaps++;
       size = size >> 1;
     }
@@ -231,27 +228,31 @@ export class Utility {
   }
 
   static LineLineIntersection (x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number) {
-    const det = (x2 - x1) * (y4 - y3) - (x4 - x3) * (y2 - y1);
+    let det, gamma, lambda;
+    det = (x2 - x1) * (y4 - y3) - (x4 - x3) * (y2 - y1);
     if (det === 0)
       return false;
 
-    const lambda = ((y4 - y3) * (x4 - x1) + (x3 - x4) * (y4 - y1)) / det;
-    const gamma = ((y1 - y2) * (x4 - x1) + (x2 - x1) * (y4 - y1)) / det;
+    lambda = ((y4 - y3) * (x4 - x1) + (x3 - x4) * (y4 - y1)) / det;
+    gamma = ((y1 - y2) * (x4 - x1) + (x2 - x1) * (y4 - y1)) / det;
     return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
   }
 
   static THREELineLineIntersection (a: THREE.Line3, b: THREE.Line3) {
-    const det = (a.end.x - a.start.x) * (b.end.y - b.start.y) - (b.end.x - b.start.x) * (a.end.y - a.start.y);
+    let det, gamma, lambda;
+    det = (a.end.x - a.start.x) * (b.end.y - b.start.y) - (b.end.x - b.start.x) * (a.end.y - a.start.y);
     if (det === 0)
       return false;
 
-    const lambda = ((b.end.y - b.start.y) * (b.end.x - a.start.x) + (b.start.x - b.end.x) * (b.end.y - a.start.y)) / det;
-    const gamma = ((a.start.y - a.end.y) * (b.end.x - a.start.x) + (a.end.x - a.start.x) * (b.end.y - a.start.y)) / det;
+    lambda = ((b.end.y - b.start.y) * (b.end.x - a.start.x) + (b.start.x - b.end.x) * (b.end.y - a.start.y)) / det;
+    gamma = ((a.start.y - a.end.y) * (b.end.x - a.start.x) + (a.end.x - a.start.x) * (b.end.y - a.start.y)) / det;
     return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
   }
 
-  static ArrayMatch(array1: number[] | Uint8Array, array2: number[] | Uint8Array): boolean {
-    return array1.length === array2.length && array1.every((element, index) => element === array2[index]);
+  static ArrayMatch(array1: any[]|Uint8Array, array2: any[]|Uint8Array){
+    return (array1.length == array2.length) && array1.every(function(element, index) {
+      return element === array2[index];
+    });
   }
   
   static TWO_PI = 2 * Math.PI;

@@ -7,7 +7,6 @@ import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import type { ITwoDARowData } from "@/resource/TwoDAObject";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 import { TalentObject } from "@/talents/TalentObject";
 
@@ -143,7 +142,7 @@ export class TalentSkill extends TalentObject {
     return skill;
   }
 
-  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}){
+  static From2DA(row: any = {}){
     const skill = new TalentSkill();
     skill.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     skill.label = TwoDAObject.normalizeValue(row.label, 'string', '');

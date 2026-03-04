@@ -7,7 +7,6 @@ import type { OdysseyModel } from '@/odyssey/OdysseyModel';
 import { OdysseyModelAnimationNode } from '@/odyssey/OdysseyModelAnimationNode';
 import { OdysseyModelUtility } from '@/odyssey/OdysseyModelUtility';
 
-
 /**
  * OdysseyModelAnimation class.
  * 
@@ -109,24 +108,15 @@ export class OdysseyModelAnimation {
     return node;
   }
 
-  /** Shape accepted by From() for cloning an animation (e.g. from another OdysseyModelAnimation). */
-  static From(original: {
-    rootNode: OdysseyModelAnimationNode;
-    nodes: OdysseyModelAnimationNode[];
-    ModelName?: string;
-    events?: IOdysseyAnimationEvent[];
-    name?: string;
-    length?: number;
-    transition?: number;
-  }): OdysseyModelAnimation {
+  static From(original: any){
     const anim = new OdysseyModelAnimation();
     anim.rootNode = original.rootNode;
-    anim.nodes = original.nodes ?? [];
-    anim.modelName = original.ModelName ?? '';
-    anim.events = original.events ?? [];
-    anim.name = (original.name ?? '').toLowerCase().trim() || '';
-    anim.length = original.length ?? 0;
-    anim.transition = original.transition ?? 0;
+    anim.nodes = original.nodes;
+    anim.modelName = original.ModelName;
+    anim.events = original.events;
+    anim.name = original.name?.toLowerCase().trim() || '';
+    anim.length = original.length;
+    anim.transition = original.transition;
 
     return anim;
   }
@@ -140,30 +130,12 @@ export class OdysseyModelAnimation {
     return 0.5;
   }
 
-  static GetAnimation2DA(name = ''): ITwoDAAnimation | undefined {
+  static GetAnimation2DA(name = ''): ITwoDAAnimation {
     const animations2DA = TwoDAManager.datatables.get('animations');
-    if (animations2DA) {
-      const key = name.toLowerCase();
-      for (let i = 0, len = animations2DA.RowCount; i < len; i++) {
-        const row = animations2DA.getRow(i);
-        if (row && row.getString('name').toLowerCase() === key) {
-          return {
-            name: row.getString('name'),
-            stationary: row.getString('stationary'),
-            pause: row.getString('pause'),
-            walking: row.getString('walking'),
-            looping: row.getString('looping'),
-            running: row.getString('running'),
-            fireforget: row.getString('fireforget'),
-            overlay: row.getString('overlay'),
-            playoutofplace: row.getString('playoutofplace'),
-            dialog: row.getString('dialog'),
-            damage: row.getString('damage'),
-            parry: row.getString('parry'),
-            dodge: row.getString('dodge'),
-            attack: row.getString('attack'),
-            hideequippeditems: row.getString('hideequippeditems'),
-          };
+    if(animations2DA){
+      for(let i = 0, len = animations2DA.RowCount; i < len; i++){
+        if(animations2DA.rows[i].name.toLowerCase() == name.toLowerCase()){
+          return animations2DA.rows[i];
         }
       }
     }

@@ -1,13 +1,12 @@
 import * as THREE from "three";
 
-import type { ITPCHeader } from "@/interface/resource/ITPCHeader";
 import { TXI } from "@/resource/TXI";
 
 /**
  * OdysseyTexture class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file OdysseyTexture.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -15,7 +14,7 @@ import { TXI } from "@/resource/TXI";
 export class OdysseyTexture extends THREE.Texture {
 
   txi: TXI = new TXI('');
-  header: ITPCHeader | null = null;
+  header: any;
   pack: number = 0;
   bumpMapType: string;
 
@@ -29,9 +28,9 @@ export class OdysseyTexture extends THREE.Texture {
     format?: THREE.PixelFormat|THREE.CompressedPixelFormat,
     type?: THREE.TextureDataType,
     anisotropy?: number,
-    encoding?: unknown,
+    encoding?: THREE.TextureEncoding,
   ){
-    super(image, mapping, wrapS, wrapT, magFilter as THREE.MagnificationTextureFilter, minFilter as THREE.MinificationTextureFilter, format as THREE.PixelFormat, type, anisotropy, encoding as never);
+    super(image, mapping, wrapS, wrapT, magFilter, minFilter, format as THREE.PixelFormat, type, anisotropy, encoding);
     this.txi = new TXI();
   }
 }

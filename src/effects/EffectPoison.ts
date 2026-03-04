@@ -2,7 +2,6 @@ import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameState } from "@/GameState";
 
-
 /**
  * EffectPoison class.
  * 
@@ -14,7 +13,7 @@ import { GameState } from "@/GameState";
  */
 export class EffectPoison extends GameEffect {
   time: number;
-  poison: import("@/resource/TwoDAObject").ITwoDARowData | undefined;
+  poison: any;
   constructor(){
     super();
     this.type = GameEffectType.EffectPoison;

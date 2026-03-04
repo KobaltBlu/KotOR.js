@@ -7,8 +7,6 @@ import type { INIConfig } from "@/engine/INIConfig";
 import { KeyMapAction } from "@/enums/controls/KeyMapAction";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { TwoDAManager } from "@/managers/TwoDAManager";
-import type { ITwoDARowData } from "@/resource/TwoDAObject";
-
 
 type KeymapProcessorCallback = (map: Keymap, delta: number) => void;
 
@@ -59,7 +57,7 @@ export class Keymap {
     this.processCallback = callback;
   }
 
-  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}){
+  static From2DA(row: any = {}){
     const keymap = new Keymap();
 
     if(typeof row.disabled !== 'undefined')     keymap.disabled     = row.disabled      == '****' ? false : parseInt(row.disabled) ? true : false;
@@ -304,10 +302,10 @@ export class KeyMapper {
       KeyMapper.ACTIONS_FREELOOK = [];
       KeyMapper.ACTIONS_MOVIE = [];
       const rows = Object.values(keymap_table.rows);
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i] as ITwoDARowData;
+      for(let i = 0; i < rows.length; i++){
+        const row: any = rows[i];
         const map = Keymap.From2DA(row);
-        (KeyMapper.Actions as Record<string, Keymap>)[row.__rowlabel.toLowerCase()] = map;
+        (KeyMapper.Actions as any)[row.__rowlabel.toLowerCase()] = map;
                             KeyMapper.ACTIONS_ALL.push(map);
         if(map.icpc)        KeyMapper.ACTIONS_INGAME.push(map);
         if(map.icminigame)  KeyMapper.ACTIONS_MINIGAME.push(map);
@@ -376,7 +374,7 @@ export class KeyMapper {
     }
   }
 
-  static CreateCustomAction(action: KeyMapAction, props: Record<string, string | number | boolean> = {}){
+  static CreateCustomAction(action: KeyMapAction, props: any = {}){
     KeyMapper.Actions[action] = Keymap.From2DA(props);
     if(KeyMapper.Actions[action].icpc)        KeyMapper.ACTIONS_INGAME.push(KeyMapper.Actions[action]);
     if(KeyMapper.Actions[action].icminigame)  KeyMapper.ACTIONS_MINIGAME.push(KeyMapper.Actions[action]);
@@ -444,7 +442,7 @@ export class KeyMapper {
         keyMap.language0 = remappedKeys[keyMap.label] as number;
       }
 
-      const action: KeyInput = (keyboard.action as Record<string, KeyInput>)[language0ToKeyCode(keyMap.language0)];
+      const action: KeyInput = (keyboard.action as any)[language0ToKeyCode(keyMap.language0)];
       if(action){
         keyMap.keyboardInput = action;
       }
@@ -765,14 +763,14 @@ export function language0ToKeyCode(language0: number): string {
 }
 
 export enum KeyCodeToLanguage0 {
-  Backquote =       -1, //UNUSED
-  AltLeft =         -1, //UNUSED
-  AltRight =        -1, //UNUSED
-  NumLock =         -1, //UNUSED
-  MetaLeft =        -1, //UNUSED
-  BracketLeft =     -1,
-  Quote =           -1,
-  Equal =           -1,
+  Backquote =       undefined, //UNUSED
+  AltLeft =         undefined, //UNUSED
+  AltRight =        undefined, //UNUSED
+  NumLock =         undefined, //UNUSED
+  MetaLeft =        undefined, //UNUSED
+  BracketLeft =     undefined, 
+  Quote =           undefined, 
+  Equal =           undefined,
   UpArrow =         9,  //Up
   LeftArrow =       7, //Left
   RightArrow =      8, //Right

@@ -7,12 +7,11 @@ import { MDLLoader } from "@/loaders";
 import { OdysseyModel } from "@/odyssey";
 import { OdysseyModel3D } from "@/three/odyssey";
 
-
 /**
  * EffectBeam class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file EffectBeam.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -20,7 +19,7 @@ import { OdysseyModel3D } from "@/three/odyssey";
 export class EffectBeam extends GameEffect {
   modelName: string;
   model: OdysseyModel3D;
-  visualEffect: import("@/resource/TwoDAObject").ITwoDARowData | undefined;
+  visualEffect: any;
 
   constructor(){
     super();
@@ -40,7 +39,7 @@ export class EffectBeam extends GameEffect {
   initialize() {
     if(this.initialized)
       return this;
-
+      
     const visualeffects2DA = GameState.TwoDAManager.datatables.get('visualeffects');
     if(visualeffects2DA){
       this.visualEffect = visualeffects2DA.getByID(this.getInt(0));
@@ -52,10 +51,10 @@ export class EffectBeam extends GameEffect {
       case 616:
         this.modelName = 'v_coldray_dur';
       break;
-      case 612:
+      case 612: 
         this.modelName = 'v_deathfld_dur';
       break;
-      case 613:
+      case 613: 
         this.modelName = 'v_drain_dur';
       break;
       case 611:
@@ -64,7 +63,7 @@ export class EffectBeam extends GameEffect {
       case 610:
         this.modelName = 'v_drddisab_dur';
       break;
-      case 620:
+      case 620: 
         this.modelName = 'v_drdstun_dur';
       break;
       case 614:
@@ -99,7 +98,7 @@ export class EffectBeam extends GameEffect {
   }
 
   loadModel(): Promise<void> {
-    return new Promise<void>( ( resolve, _reject) => {
+    return new Promise<void>( ( resolve, reject) => {
       MDLLoader.loader.load(this.modelName)
       .then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
@@ -118,9 +117,9 @@ export class EffectBeam extends GameEffect {
   onApply(){
     if(this.applied)
       return;
-
+      
     super.onApply();
-
+    
     if(this.model instanceof OdysseyModel3D){
       if(this.getCaster().model instanceof OdysseyModel3D){
         //Add the effect to the casters model

@@ -17,7 +17,6 @@ import { LTRObject } from "@/resource/LTRObject";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { OdysseyModel3D } from "@/three/odyssey";
 
-
 /**
  * CharGenManager class.
  * 
@@ -282,7 +281,7 @@ export class CharGenManager {
   
 
   static getMaxSkillPoints() {
-    return 10 + parseInt(String(CharGenManager.selectedCreature.classes[0].skillpointbase), 10);
+    return 10 + parseInt(CharGenManager.selectedCreature.classes[0].skillpointbase as any);
   }
 
   static getSkillTableColumn() {
@@ -293,8 +292,8 @@ export class CharGenManager {
     return CharGenManager.selectedCreature.classes[0].skillstable.toLowerCase() + '_reco';
   }
 
-  static getRecommendedOrder(): Record<string, number> {
-    const skillOrder: Record<string, number> = {
+  static getRecommendedOrder() {
+    const skillOrder: any = {
       '0': -1,
       '1': -1,
       '2': -1,

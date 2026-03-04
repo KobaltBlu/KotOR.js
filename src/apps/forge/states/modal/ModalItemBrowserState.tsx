@@ -3,9 +3,6 @@ import React from "react";
 import { ModalItemBrowser } from "@/apps/forge/components/modal/ModalItemBrowser";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Forge);
 
 export interface UTIItem {
   resref: string;
@@ -65,11 +62,11 @@ export class ModalItemBrowserState extends ModalState {
           let modelVariation = 1;
 
           if (root.hasField('BaseItem')) {
-            baseItem = root.getNumberByLabel('BaseItem') || 0;
+            baseItem = root.getFieldByLabel('BaseItem').getValue() || 0;
           }
 
           if (root.hasField('ModelVariation')) {
-            modelVariation = root.getNumberByLabel('ModelVariation') || 1;
+            modelVariation = root.getFieldByLabel('ModelVariation').getValue() || 1;
           }
 
           if (root.hasField('LocalizedName')) {
@@ -88,7 +85,7 @@ export class ModalItemBrowserState extends ModalState {
             if (baseitems2DA) {
               const baseItemRow = baseitems2DA.getRowByIndex(baseItem);
               if (baseItemRow) {
-                iconResRef = String(baseItemRow['itemclass'] ?? '').toLowerCase();
+                iconResRef = (baseItemRow['itemclass'] || '').toLowerCase();
                 iconResRef = `i${iconResRef}_${("000" + modelVariation).slice(-3)}`;
               }
             }
@@ -107,7 +104,7 @@ export class ModalItemBrowserState extends ModalState {
             gff
           });
         } catch (error) {
-          log.error(`Failed to load UTI: ${key.resRef}`, error);
+          console.error(`Failed to load UTI: ${key.resRef}`, error);
         }
       }
 
@@ -117,7 +114,7 @@ export class ModalItemBrowserState extends ModalState {
       ModalItemBrowserState.cacheLoaded = true;
       this.processEventListener('onItemsLoaded', [this]);
     } catch (error) {
-      log.error('Failed to load items', error);
+      console.error('Failed to load items', error);
     }
   }
 

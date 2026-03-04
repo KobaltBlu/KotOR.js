@@ -3,36 +3,29 @@ import React, { useState } from "react";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-const log = createScopedLogger(LogScope.Forge);
-
-export interface ModalManagerProps {
-  manager: ModalManagerState;
-}
-
-export const ModalManager = function(props: ModalManagerProps){
+export const ModalManager = function(props: any){
   const manager: ModalManagerState = props.manager;
 
   const [modals, setModals] = useState<ModalState[]>([]);
 
   const onModalAdded = () => {
-    log.debug('onModalAdded', manager.modals);
+    console.log('onModalAdded', manager.modals);
     setModals([...manager.modals]);
   };
 
   const onModalRemoved = () => {
-    log.debug('onModalRemoved', manager.modals);
+    console.log('onModalRemoved', manager.modals);
     setModals([...manager.modals]);
   };
 
   const onModalShow = () => {
-    log.debug('onModalShow', manager.modals);
+    console.log('onModalShow', manager.modals);
     setModals([...manager.modals]);
   };
 
   const onModalHide = () => {
-    log.debug('onModalHide', manager.modals);
+    console.log('onModalHide', manager.modals);
     setModals([...manager.modals]);
   };
 

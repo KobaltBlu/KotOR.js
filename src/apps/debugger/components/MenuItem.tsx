@@ -1,15 +1,9 @@
-import React, { useState } from "react";
-import { Dropdown, Nav, NavDropdown } from 'react-bootstrap';
+import React, { ComponentProps, ReactEventHandler, useState } from "react";
+import { Container, Dropdown, Nav, NavDropdown, Navbar } from 'react-bootstrap';
 
 import { useEffectOnce } from "@/apps/debugger/helpers/UseEffectOnce";
-import type { MenuTopItem } from "@/apps/debugger/MenuTopItem";
 
-export interface MenuItemProps {
-  item: MenuTopItem;
-  parent?: MenuTopItem;
-}
-
-export const MenuItem = function(props: MenuItemProps){
+export const MenuItem = function(props: any){
   const item = props.item;
   const parent = props.parent;
 
@@ -40,7 +34,7 @@ export const MenuItem = function(props: MenuItemProps){
   }else if(item.items.length){
     return (
       <NavDropdown title={item.name}>
-        {item.items.map((child: MenuTopItem, _i: number) => 
+        {item.items.map((child: any, i: any) => 
           (
             <MenuItem key={(`menu-item-${child.uuid}`)} item={child} parent={item}></MenuItem>
           )

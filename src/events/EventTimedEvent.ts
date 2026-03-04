@@ -8,7 +8,6 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { BitWise } from "@/utility/BitWise";
 
-
 /**
  * EventTimedEvent class.
  * 
@@ -46,10 +45,10 @@ export class EventTimedEvent extends GameEvent {
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
       const nwscript = new GameState.NWScript();
-      nwscript.name = struct.getStringByLabel('Name');
+      nwscript.name = struct.getFieldByLabel('Name').getValue();
       nwscript.init(
         struct.getFieldByLabel('Code').getVoid(),
-        struct.getNumberByLabel('CodeSize')
+        struct.getFieldByLabel('CodeSize').getValue()
       );
 
       this.script = nwscript.newInstance();
@@ -57,7 +56,7 @@ export class EventTimedEvent extends GameEvent {
 
       const stackStruct = struct.getFieldByLabel('Stack').getChildStructs()[0];
       this.script.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
-      this.offset = struct.getNumberByLabel('InstructionPtr');
+      this.offset = struct.getFieldByLabel('InstructionPtr').getValue();
     }
   }
 

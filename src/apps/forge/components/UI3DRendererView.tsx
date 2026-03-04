@@ -4,25 +4,24 @@ import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { CameraView, UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 
-
 // Re-export MenuItem for backward compatibility
 export type { MenuItem };
 
 export interface UI3DRendererViewProps {
   context: UI3DRenderer;
-  children?: React.ReactNode;
-  onMouseWheel?: () => void;
+  children?: any;
+  onMouseWheel?: Function;
   menuItems?: MenuItem[];
   showMenuBar?: boolean;
 }
 
 export const UI3DRendererView = function(props: UI3DRendererViewProps){
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef: React.RefObject<HTMLCanvasElement> = useRef<HTMLCanvasElement>() as any;
   const context = props.context;
 
   useEffectOnce(() => {
     if(!(props.context instanceof UI3DRenderer)){
-      props.context = new UI3DRenderer(canvasRef.current as HTMLCanvasElement);
+      props.context = new UI3DRenderer(canvasRef.current as any);
     }
     return () => {
       if(props.context){
@@ -32,7 +31,7 @@ export const UI3DRendererView = function(props: UI3DRendererViewProps){
   });
 
   useEffect( () => {
-    props.context.setCanvas(canvasRef.current as HTMLCanvasElement);
+    props.context.setCanvas(canvasRef.current as any);
     if(canvasRef.current){
       canvasRef.current.dataset.uuid = crypto.randomUUID();
     }

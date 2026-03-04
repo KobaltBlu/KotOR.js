@@ -1,15 +1,11 @@
-
 import { AnalogInput } from "@/controls/AnalogInput";
 import { KeyInput } from "@/controls/KeyInput";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * GamePad class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GamePad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -79,7 +75,7 @@ export class GamePad {
       this.stick_l.update(this.gamePad, delta);
       this.stick_l_x.update(this.gamePad, delta);
       this.stick_l_y.update(this.gamePad, delta);
-
+      
       this.stick_r.update(this.gamePad, delta);
       this.stick_r_x.update(this.gamePad, delta);
       this.stick_r_y.update(this.gamePad, delta);
@@ -139,11 +135,11 @@ export class GamePad {
   static Init(){
     GamePad.GamePads = {};
 
-    function gamepadHandler(e: GamepadEvent, connecting: boolean = false): void {
+    function gamepadHandler(e: any, connecting: boolean = false) {
       const gamepad = e.gamepad;
       // Note:
       // gamepad === navigator.getGamepads()[gamepad.index]
-      log.trace('gamepadHandler connecting=%s index=%s', String(connecting), String(e.gamepad?.index));
+      console.log('gamepadHandler', e, connecting);
       if (connecting) {
         GamePad.GamePads[gamepad.index] = gamepad;
         if(GamePad.CurrentGamePadIndex == -1){
@@ -154,13 +150,8 @@ export class GamePad {
           GamePad.CurrentGamePadIndex = -1;
           GamePad.CurrentGamePad = undefined;
         }
-
-        const next: Record<number, GamePad> = {};
-        for (const [idxStr, pad] of Object.entries(GamePad.GamePads)) {
-          const idx = Number(idxStr);
-          if (idx !== gamepad.index) next[idx] = pad;
-        }
-        GamePad.GamePads = next;
+        
+        delete GamePad.GamePads[gamepad.index];
       }
     }
 
@@ -171,6 +162,6 @@ export class GamePad {
 
   static CurrentGamePad: GamePad;
   static CurrentGamePadIndex: number = -1;
-  static GamePads: Record<number, GamePad> = {};
+  static GamePads: any = {};
 
 }

@@ -10,8 +10,6 @@ import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimati
 import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 
 
-
-
 /**
  * MultiplierController class.
  * 
@@ -25,7 +23,6 @@ export class MultiplierController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Multiplier;
 
-  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }

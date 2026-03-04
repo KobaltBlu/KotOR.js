@@ -3,9 +3,6 @@ import React from "react";
 import { ModalBlueprintBrowser } from "@/apps/forge/components/modal/ModalBlueprintBrowser";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Forge);
 
 export type BlueprintType = 'utc' | 'utd' | 'ute' | 'uti' | 'utp' | 'utm' | 'uts' | 'utt' | 'utw';
 
@@ -49,7 +46,7 @@ export class ModalBlueprintBrowserState extends ModalState {
 
   async loadBlueprints() {
     const type = this.selectedBlueprintType;
-
+    
     if (ModalBlueprintBrowserState.cacheLoaded.get(type)) {
       const cached = ModalBlueprintBrowserState.blueprintCache.get(type) || [];
       this.items = cached.slice(0);
@@ -63,9 +60,9 @@ export class ModalBlueprintBrowserState extends ModalState {
     try {
       const items: BlueprintItem[] = [];
       const resType = KotOR.ResourceTypes[type];
-
+      
       if (!resType) {
-        log.error(`Unknown blueprint type: ${type}`);
+        console.error(`Unknown blueprint type: ${type}`);
         return;
       }
 
@@ -109,7 +106,7 @@ export class ModalBlueprintBrowserState extends ModalState {
           }
 
           if (!localizedName && root.hasField('Tag')) {
-            localizedName = root.getStringByLabel('Tag') || '';
+            localizedName = root.getFieldByLabel('Tag').getValue() || '';
           }
 
           // Use resref as fallback
@@ -123,7 +120,7 @@ export class ModalBlueprintBrowserState extends ModalState {
             gff
           });
         } catch (error) {
-          log.error(`Failed to load ${type}: ${key.resRef}`, error);
+          console.error(`Failed to load ${type}: ${key.resRef}`, error);
         }
       }
 
@@ -133,13 +130,13 @@ export class ModalBlueprintBrowserState extends ModalState {
       ModalBlueprintBrowserState.cacheLoaded.set(type, true);
       this.processEventListener('onBlueprintsLoaded', [this]);
     } catch (error) {
-      log.error(`Failed to load ${type} blueprints`, error);
+      console.error(`Failed to load ${type} blueprints`, error);
     }
   }
 
   setSearchQuery(query: string) {
     this.searchQuery = query.toLowerCase();
-    this.filteredItems = this.items.filter(item =>
+    this.filteredItems = this.items.filter(item => 
       item.resref.toLowerCase().includes(this.searchQuery) ||
       item.localizedName.toLowerCase().includes(this.searchQuery)
     );

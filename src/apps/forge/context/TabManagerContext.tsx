@@ -1,51 +1,38 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from "react";
 
-import type { EditorTabManager } from '@/apps/forge/managers/EditorTabManager';
-import type { TabState } from '@/apps/forge/states/tabs';
-import { createScopedLogger, LogScope } from '@/utility/Logger';
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { TabState } from "@/apps/forge/states/tabs";
 
-const log = createScopedLogger(LogScope.Forge);
 
 export interface TabManagerProviderValues {
-  manager: [EditorTabManager, React.Dispatch<React.SetStateAction<EditorTabManager>>];
-  tabs: [TabState[], React.Dispatch<React.SetStateAction<TabState[]>>];
-  selectedTab: [TabState | undefined, React.Dispatch<React.SetStateAction<TabState | undefined>>];
+  manager: [EditorTabManager, React.Dispatch<any>];
+  tabs: [TabState[], React.Dispatch<any>];
+  selectedTab: [TabState|undefined, React.Dispatch<any>];
 }
+export const TabManagerContext = createContext<TabManagerProviderValues>({} as any);
 
-function noopTabManagerDispatch(): void {
-  log.warn('TabManager setState called outside TabManagerProvider');
-}
-
-const defaultTabManagerValue: TabManagerProviderValues = {
-  manager: [null as unknown as EditorTabManager, noopTabManagerDispatch],
-  tabs: [[], noopTabManagerDispatch],
-  selectedTab: [undefined, noopTabManagerDispatch],
-};
-
-export const TabManagerContext = createContext<TabManagerProviderValues>(defaultTabManagerValue);
-
-export function useTabManager(): TabManagerProviderValues {
+export function useTabManager(){
   return useContext(TabManagerContext);
 }
 
 export interface TabManagerProviderProps {
   manager: EditorTabManager;
-  children: React.ReactNode;
+  children: any;
 }
 
-export const TabManagerProvider: React.FC<TabManagerProviderProps> = (props) => {
-  log.trace('TabManagerProvider render');
-  const managerPrime = props.manager;
+export const TabManagerProvider = (props: TabManagerProviderProps) => {
+  const managerPrime = props.manager as EditorTabManager;
   const [manager, setManager] = useState<EditorTabManager>(managerPrime);
   const [tabs, setTabs] = useState<TabState[]>(managerPrime.tabs);
-  const [selectedTab, setSelectedTab] = useState<TabState | undefined>(managerPrime.currentTab);
+  const [selectedTab, setSelectedTab] = useState<TabState|undefined>(managerPrime.currentTab);
 
   useEffect(() => {
-    log.trace('TabManagerProvider mount');
   }, []);
 
   useEffect(() => {
-    log.trace('TabManagerProvider selectedTab changed id=%s', selectedTab?.id ?? 'none');
+    // if(selectedTab){
+    //   selectedTab.show();
+    // }
   }, [selectedTab]);
 
   const providerValue: TabManagerProviderValues = {

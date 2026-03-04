@@ -1,15 +1,11 @@
-import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
 import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import { OdysseyModelNodeType, OdysseyObject3D } from "@/apps/forge/KotOR";
+import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from "@/apps/forge/KotOR";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
 import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
 import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
 import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Forge);
 
 export interface IModuleGroupNode {
   key: GroupType;
@@ -32,47 +28,38 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
 
   constructor(){
     super();
-    log.trace('SceneGraphTreeViewManager constructor');
     this.sceneNode.addChildNode(this.camerasNode);
     this.sceneNode.addChildNode(this.lightingNode);
     this.sceneNode.addChildNode(this.objectsNode);
     this.parentNodes.push(this.sceneNode);
     this.sceneNode.expandNode();
-    log.debug('SceneGraphTreeViewManager constructor done');
   }
 
   attachUI3DRenderer(context: UI3DRenderer){
-    log.trace('SceneGraphTreeViewManager.attachUI3DRenderer');
     this.context = context;
-    const onModuleSet: EventListenerCallback = () => { this.rebuild(); };
-    this.context.addEventListener('onModuleSet', onModuleSet);
+    this.context.addEventListener('onModuleSet', this.rebuild.bind(this));
     this.rebuild();
-    log.trace('SceneGraphTreeViewManager.attachUI3DRenderer rebuild done');
   }
 
   rebuild(){
-    log.trace('SceneGraphTreeViewManager.rebuild');
+
     this.camerasNode.setNodes([]);
     this.lightingNode.setNodes([]);
     this.objectsNode.setNodes([]);
 
     if(!this.context){
-      log.trace('SceneGraphTreeViewManager.rebuild no context');
       return;
     }
 
     if(this.context.module){
-      log.trace('SceneGraphTreeViewManager.rebuild buildModuleSceneGraph');
       this.buildModuleSceneGraph();
       return;
     }
-
-    log.trace('SceneGraphTreeViewManager.rebuild buildGenericSceneGraph');
+    
     this.buildGenericSceneGraph();
   }
 
   buildModuleSceneGraph(){
-    log.trace('SceneGraphTreeViewManager.buildModuleSceneGraph');
     this.sceneNode.name = 'Module: ' + this.context.module.entryArea;
     const groups: IModuleGroupNode[] = [
       {
@@ -142,7 +129,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
         objects: this.context.module.area.waypoints,
       }
     ];
-
+    
     for(let i = 0; i < groups.length; i++){
       const group = groups[i];
 
@@ -154,8 +141,8 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
           data: undefined,
           icon: group.icon,
           nodes: [],
-          onClick: (_node) => {
-
+          onClick: (node) => {
+            
           },
         });
         this.sceneNode.addChildNode(groupNode);
@@ -182,7 +169,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
             this.context.selectObject(node.data.container);
           },
         });
-
+        
         if(group.key == GroupType.ROOMS){
           const room = child as ForgeRoom;
           if(room.walkmesh){
@@ -208,7 +195,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
               name: 'Vertex',
               icon: 'fa-solid fa-circle',
               data: vertex,
-              onClick: (_node) => {
+              onClick: (node) => {
                 // this.context.selectObject(node.data);
               },
             });
@@ -219,12 +206,10 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
         groupNode.addChildNode(nodeNode);
       }
     }
-    log.trace('SceneGraphTreeViewManager.buildModuleSceneGraph done', groups.length);
     this.processEventListener('onBuild', [this.parentNodes]);
   }
 
   buildGenericSceneGraph(){
-    log.trace('SceneGraphTreeViewManager.buildGenericSceneGraph');
     this.sceneNode.name = 'Scene';
     if(this.context.camera){
       this.camerasNode.addChildNode(
@@ -259,7 +244,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
           uuid: this.context.globalLight.uuid,
           name: 'Ambient Light',
           data: this.context.globalLight,
-          onClick: (_node) => {
+          onClick: (node) => {
 
           },
         })
@@ -273,7 +258,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
 
         let icon = '';
 
-        const odysseyNode = node.odysseyModelNode || (node as { odysseyNode?: typeof node.odysseyModelNode }).odysseyNode;
+        const odysseyNode = node.odysseyModelNode || (node as any).odysseyNode;
         if(!odysseyNode){
           return;
         }
@@ -281,38 +266,38 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Header) == OdysseyModelNodeType.Header){
           icon = 'fa-regular fa-square';
         }
-
+  
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference) {
           icon = 'fa-solid fa-circle-nodes';
         }
-
+  
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
           icon = 'fa-solid fa-lightbulb';
         }
-
+  
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
           icon = 'fa-solid fa-vector-square';
         }
-
+  
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
           icon = 'fa-solid fa-shirt';
         }
-
+  
         if ((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) {
           icon = 'fa-solid fa-person-walking-dashed-line-arrow-right';
         }
-
+  
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly) {
           icon = 'fa-solid fa-flag';
         }
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber) {
           icon = 'fa-solid fa-wand-magic';
         }
-
+  
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
           icon = 'fa-solid fa-burst';
         }
-
+        
         const nodeNode =  new SceneGraphNode({
           uuid: node.uuid,
           name: node.name,
@@ -341,7 +326,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
         uuid: model.uuid,
         name: model.name,
         data: model,
-        onClick: (_node) => {
+        onClick: (node) => {
 
         },
       });

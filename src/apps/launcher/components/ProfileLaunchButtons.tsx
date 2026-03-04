@@ -1,26 +1,22 @@
 import React, { useState } from "react";
 
 import { useApp } from "@/apps/launcher/context/AppContext";
-import type { LauncherProfile } from "@/apps/launcher/types";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { ConfigClient } from "@/utility/ConfigClient";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Launcher);
 
 export interface ProfileLaunchButtonsProps {
-  profile: LauncherProfile;
+  profile: any
 }
 
 export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   const profile = props.profile;
   const appContext = useApp();
-  const [profileCategoriesValue] = appContext.profileCategories;
+  const [profileCategoriesValue, setProfileCategories] = appContext.profileCategories;
 
   const [render, rerender] = useState(false);
-  const [selectValue, setSelectValue] = useState<string>("js");
-  const [forgeSelectValue, setForgeSelectValue] = useState<string | undefined>(undefined);
+  const [selectValue, setSelectValue] = useState<any>("js");
+  const [forgeSelectValue, setForgeSelectValue] = useState<any>();
   const isLocateRequired = (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON && !!profile.locate_required) && !profile.directory
 
   const launchLabel = profile.category == 'game' ? 'PLAY' : 'OPEN';
@@ -34,7 +30,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   }
 
   const onForgeSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    log.trace('onForgeSelectChange', e.target.value);
+    console.log(e.target.value)
     setForgeSelectValue(e.target.value);
   }
 
@@ -51,14 +47,14 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   const btnLocate = () => {
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       window.electron.locate_game_directory(profile).then( (directory: string) => {
-        log.debug('locate_game_directory result', directory);
+        console.log('directory', directory);
         if(directory){
           ConfigClient.set(`Profiles.${profile.key}.directory`, directory);
           profile.directory = directory;
           rerender(!render);
         }
-      }).catch( (e: Error) => {
-        log.error('locate_game_directory failed', e);
+      }).catch( (e: any) => {
+        console.error(e);
       });
     }else{
       // let handle = await window.showDirectoryPicker({
@@ -77,10 +73,10 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   const btnLaunch = () => {
     const clean_profile = Object.assign({}, profile);
     if(isForge){
-      const clean_game_profile = Object.assign({}, profileCategoriesValue?.game?.profiles.find( (p: LauncherProfile) => {
+      const clean_game_profile = Object.assign({}, profileCategoriesValue?.game?.profiles.find( (p: any) => {
         return p.key == forgeSelectValue;
       }));
-      log.debug('forge select', forgeSelectValue, clean_game_profile?.key);
+      console.log('s', forgeSelectValue, clean_game_profile);
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         clean_profile.key = clean_game_profile.key;
         window.electron.launchProfile(clean_profile);
@@ -120,8 +116,8 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
               <select className="select" onChange={onForgeSelectChange} value={forgeSelectValue}>
                 {(
                   profileCategoriesValue?.game?.profiles || [])
-                  .filter( (p: LauncherProfile) => p.isForgeCompatible )
-                  .map((p: LauncherProfile) => {
+                  .filter( (p: any) => p.isForgeCompatible )
+                  .map((p: any, index: number) => {
                     return (
                       <option key={p.name} value={p.key}>{p.name}</option>
                     )
@@ -134,7 +130,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
         <div className="launch-btns">
           <a href="#" className="btn-launch" key="launch-btn-launch" onClick={onLaunchClick}>{launchLabel}</a>
         </div>
-      </>
+      </>  
     );
   }
 };

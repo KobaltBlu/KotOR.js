@@ -4,15 +4,13 @@ import type { NWScript } from "@/nwscript/NWScript";
 import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_MOVSP, OP_NEG, OP_ACTION } from '@/nwscript/NWScriptOPCodes';
 
-
-
 /**
  * Represents a detected local variable initialization
  */
 export interface NWScriptLocalInit {
   offset: number; // SP offset for the local variable
   dataType: NWScriptDataType;
-  initialValue: number | string | boolean;
+  initialValue: any;
   hasInitializer: boolean; // Whether this variable has an explicit initializer
   instructionAddress: number; // Address of the RSADD instruction
 }
@@ -324,7 +322,7 @@ export class NWScriptLocalVariableAnalyzer {
     }
 
     // Extract value from CONST instruction
-    let initialValue: number | string | undefined;
+    let initialValue: any;
     let hasInitializer = true;
     
     switch (constInstr.type) {

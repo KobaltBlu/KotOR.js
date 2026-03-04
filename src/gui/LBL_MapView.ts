@@ -1,45 +1,27 @@
 import * as THREE from "three";
 
-import type { GUIControl, GUILabel } from ".";
-
 import { GameEngineType } from "@/enums/engine";
 import { MapMode } from "@/enums/engine/MapMode";
 import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
 import { GameState } from "@/GameState";
-import type { IGUIShaderMaterial } from "@/interface/gui/IGUIShaderMaterial";
+import type { GUIControl, GUILabel } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import { AreaMap, ModuleWaypoint } from "@/module";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 
-
 // import { ShaderManager, MenuManager, PartyManager } from "@/managers";
 
 const FOG_SIZE = 64;
-const _FOG_SIZE_HALF = FOG_SIZE/2;
+const FOG_SIZE_HALF = FOG_SIZE/2;
 
 const planeGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
 
-type MapFogShaderMaterial = THREE.ShaderMaterial & {
-  uniforms: {
-    map: { value: THREE.Texture | null };
-    alphaMap: { value: THREE.Texture | null };
-    mapRes: { value: THREE.Vector2 };
-  };
-  defines: Record<string, string>;
-};
-
-type MapNoteMesh = THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> & {
-  userData: {
-    moduleObject: ModuleWaypoint;
-  };
-};
-
 /**
  * LBL_MapView class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file LBL_MapView.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -105,7 +87,7 @@ export class LBL_MapView {
     this.viewportFrustum = new THREE.Frustum();
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.OrthographicCamera(
+    this.camera = new THREE.OrthographicCamera( 
       this.width / -2,
       this.width / 2,
       this.height / 2,
@@ -206,7 +188,7 @@ export class LBL_MapView {
 
     const material = this.control.getFill().material;
     if(material instanceof THREE.ShaderMaterial){
-      (material as IGUIShaderMaterial).uniforms.diffuse.value.setHex(0xFFFFFF);
+      material.uniforms.diffuse.value.setHex(0xFFFFFF);
     }
   }
 
@@ -261,9 +243,8 @@ export class LBL_MapView {
     this.areaMap = areaMap;
     if(!this.areaMap) return;
 
-    const fogMaterial = this.fogPlane.material as MapFogShaderMaterial;
-    fogMaterial.uniforms.alphaMap.value = this.areaMap.fogAlphaTexture;
-    fogMaterial.uniforms.mapRes.value.set(this.areaMap.mapResX+1, this.areaMap.mapResY+1);
+    (this.fogPlane.material as THREE.ShaderMaterial).uniforms.alphaMap.value = this.areaMap.fogAlphaTexture;
+    (this.fogPlane.material as THREE.ShaderMaterial).uniforms.mapRes.value.set(this.areaMap.mapResX+1, this.areaMap.mapResY+1);
 
     if(this.mode == MapMode.FULLMAP){
       this.areaMap.addEventListener('mapNoteAdded', (note: ModuleWaypoint) => {
@@ -282,7 +263,7 @@ export class LBL_MapView {
         const mapPos = this.areaMap.toMapCoordinates(note.position.x, note.position.y);
         noteMesh.position.set(
           (scaleSize.width * mapPos.x) + 4,
-          (scaleSize.height * mapPos.y) + 4,
+          (scaleSize.height * mapPos.y) + 4, 
           10
         );
         noteMesh.scale.set(this.mapNoteSize * this.mapNoteDefaultScale, this.mapNoteSize * this.mapNoteDefaultScale, 1);
@@ -312,7 +293,7 @@ export class LBL_MapView {
   onClick(){
     for(let i = 0, len = this.mapNotes.length; i < len; i++){
       const mesh = this.mapNotes[i];
-      const note = (mesh as MapNoteMesh).userData.moduleObject;
+      const note = mesh.userData.moduleObject;
       if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
         this.bounds.min.set(mesh.position.x - (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y - (this.mapNoteDefaultScale*this.mapNoteSize/2));
         this.bounds.max.set(mesh.position.x + (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y + (this.mapNoteDefaultScale*this.mapNoteSize/2));
@@ -328,7 +309,7 @@ export class LBL_MapView {
     if(!this.areaMap) return;
   }
 
-  render(_delta: number = 0){
+  render(delta: number = 0){
     if(!this.visible || !this.control)
       return;
 
@@ -342,7 +323,7 @@ export class LBL_MapView {
     this.updateFog();
 
     const scaleSize = this.getMapTextureScaleSize();
-
+    
     this.areaMap.revealPosition(this.position.x, this.position.y);
     const mapPos = this.areaMap.toMapCoordinates(this.position.x, this.position.y);
     this.currentCamera.position.x = (scaleSize.width * mapPos.x);
@@ -372,7 +353,7 @@ export class LBL_MapView {
     if(this.arrowPlane){
       this.arrowPlane.position.set(
         (scaleSize.width * mapPos.x) + 4,
-        (scaleSize.height * mapPos.y) + 4,
+        (scaleSize.height * mapPos.y) + 4, 
         10
       );
       this.arrowPlane.rotation.set(0, 0, this.arrowAngle);
@@ -382,7 +363,7 @@ export class LBL_MapView {
     }
 
     for(let i = 0; i < 2; i++){
-      const pm = GameState.PartyManager.party[i+1] as { position: THREE.Vector3 } | undefined;
+      const pm = GameState.PartyManager.party[i+1];
       const mesh = this.partyGroup.children[i];
       if(this.mode == MapMode.MINIMAP){
         mesh.visible = false;
@@ -394,7 +375,7 @@ export class LBL_MapView {
         const pos = this.areaMap.toMapCoordinates(pm.position.x, pm.position.y);
         mesh.position.set(
           (scaleSize.width * pos.x) + 4,
-          (scaleSize.height * pos.y) + 4,
+          (scaleSize.height * pos.y) + 4, 
           9
         );
       }else{
@@ -406,7 +387,7 @@ export class LBL_MapView {
       for(let i = 0, len = this.mapNotes.length; i < len; i++){
         const mesh = this.mapNotes[i];
         const material = mesh.material as THREE.MeshBasicMaterial;
-        const note = (mesh as MapNoteMesh).userData.moduleObject;
+        const note = mesh.userData.moduleObject;
         mesh.visible = note.mapNoteEnabled;
         if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
           this.bounds.min.set(mesh.position.x - (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y - (this.mapNoteDefaultScale*this.mapNoteSize/2));
@@ -434,7 +415,7 @@ export class LBL_MapView {
     GameState.renderer.setRenderTarget(this.texture);
     GameState.renderer.clear();
     GameState.renderer.render(this.scene, this.currentCamera);
-    (this.texture as unknown as THREE.WebGLRenderTarget & { needsUpdate?: boolean }).needsUpdate = true;
+    (this.texture as any).needsUpdate = true;
     GameState.renderer.setRenderTarget(null);
     GameState.renderer.setClearColor(oldClearColor, 1);
 
@@ -469,16 +450,12 @@ export class LBL_MapView {
     let texWidth = 512;
     let texHeight = 256;
 
-    const firstMipmap = this.mapTexture.mipmaps[0] as { width: number; height: number } | undefined;
-    if(firstMipmap){
-      texWidth = firstMipmap.width;
-      texHeight = firstMipmap.height;
-    }else{
-      const sourceData = this.mapTexture.source.data as { width: number; height: number } | undefined;
-      if(sourceData){
-        texWidth = sourceData.width;
-        texHeight = sourceData.height;
-      }
+    if(this.mapTexture.mipmaps.length){
+      texWidth = this.mapTexture.mipmaps[0].width;
+      texHeight = this.mapTexture.mipmaps[0].height;
+    }else if(this.mapTexture.source.data){
+      texWidth = this.mapTexture.source.data.width;
+      texHeight = this.mapTexture.source.data.height;
     }
 
     return { width: texWidth, height: texHeight };

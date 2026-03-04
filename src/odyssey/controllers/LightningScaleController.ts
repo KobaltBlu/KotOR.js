@@ -1,10 +1,8 @@
-import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
-
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
 import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
-
 
 /**
  * LightningScaleController class.
@@ -19,16 +17,15 @@ export class LightningScaleController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.LightningScale;
 
-  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric ){
     super(controller);
   }
 
-  setFrame(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, _data: IOdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     
   }
 
-  animate(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     
   }
 

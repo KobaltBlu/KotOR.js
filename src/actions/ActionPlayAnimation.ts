@@ -1,10 +1,6 @@
 import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
 
 enum ActionPlayAnimationType
 {
@@ -23,7 +19,7 @@ enum ActionPlayAnimationType
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionPlayAnimation extends Action {
-  overlayAnimation: { stop?: () => void } | undefined;
+  overlayAnimation: any;
   animation: number;
   speed: number;
   time: number;
@@ -61,7 +57,7 @@ export class ActionPlayAnimation extends Action {
       this.owner.setAnimationState(this.animation);
       this.animationLength = this.owner.getAnimationLength(this.animation);
     }else{
-      log.error('ActionPlayAnimation Invalid animation owner=%s animation=%s', this.owner.getName(), String(this.animation));
+      console.error('ActionPlayAnimation Invalid animation', this.owner.getName(), this.animation, this);
       return ActionStatus.FAILED;
     }
     

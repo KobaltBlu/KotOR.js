@@ -1,6 +1,4 @@
-import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/apps/forge/KotOR";
-import { CExoLocString, ResourceTypes } from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 const PRIORITY_LOOPING_AREAWIDE_AMBIENTS = 4;
@@ -10,7 +8,7 @@ const PRIORITY_SINGLE_SHOT_POSITIONAL = 22;
 
 export class ForgeSound extends ForgeGameObject {
   //GIT Instance Properties
-  templateResType: number = ResourceTypes.uts;
+  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.uts;
   generatedType: number = 0;
 
   //Blueprint Properties
@@ -21,7 +19,7 @@ export class ForgeSound extends ForgeGameObject {
   hours: number = 0;
   interval: number = 0;
   intervalVariation: number = 0;
-  locName: KotOR.CExoLocString = new CExoLocString();
+  locName: KotOR.CExoLocString = new KotOR.CExoLocString();
   looping: boolean = false;
   maxDistance: number = 0;
   minDistance: number = 0;
@@ -44,13 +42,10 @@ export class ForgeSound extends ForgeGameObject {
     if(buffer){
       this.loadFromBuffer(buffer);
     }
-    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
-      this.onPropertyChange(args[0] as string, args[1] as unknown, args[2] as unknown);
-    };
-    this.addEventListener('onPropertyChange', onPropChange);
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: unknown, oldValue: unknown){
+  onPropertyChange(property: string, newValue: any, oldValue: any){
     if(property === 'looping' || property === 'positional'){
       this.calculatePriority();
     }
@@ -74,83 +69,83 @@ export class ForgeSound extends ForgeGameObject {
     if(!root) return;
 
     if(root.hasField('Active')){
-      this.active = root.getBooleanByLabel('Active');
+      this.active = root.getFieldByLabel('Active').getValue() || false;
     }
     if(root.hasField('Comment')){
-      this.comment = root.getStringByLabel('Comment');
+      this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
     if(root.hasField('Continuous')){
-      this.continuous = root.getBooleanByLabel('Continuous');
+      this.continuous = root.getFieldByLabel('Continuous').getValue() || false;
     }
     if(root.hasField('Elevation')){
-      this.elevation = root.getNumberByLabel('Elevation');
+      this.elevation = root.getFieldByLabel('Elevation').getValue() || 0;
     }
     if(root.hasField('Hours')){
-      this.hours = root.getNumberByLabel('Hours');
+      this.hours = root.getFieldByLabel('Hours').getValue() || 0;
     }
     if(root.hasField('Interval')){
-      this.interval = root.getNumberByLabel('Interval');
+      this.interval = root.getFieldByLabel('Interval').getValue() || 0;
     }
     if(root.hasField('IntervalVrtn')){
-      this.intervalVariation = root.getNumberByLabel('IntervalVrtn');
+      this.intervalVariation = root.getFieldByLabel('IntervalVrtn').getValue() || 0;
     }
     if(root.hasField('LocName')){
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('Looping')){
-      this.looping = root.getBooleanByLabel('Looping');
+      this.looping = root.getFieldByLabel('Looping').getValue() || false;
     }
     if(root.hasField('MaxDistance')){
-      this.maxDistance = root.getNumberByLabel('MaxDistance');
+      this.maxDistance = root.getFieldByLabel('MaxDistance').getValue() || 0;
     }
     if(root.hasField('MinDistance')){
-      this.minDistance = root.getNumberByLabel('MinDistance');
+      this.minDistance = root.getFieldByLabel('MinDistance').getValue() || 0;
     }
     if(root.hasField('PaletteID')){
-      this.paletteID = root.getNumberByLabel('PaletteID');
+      this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
     if(root.hasField('PitchVariation')){
-      this.pitchVariation = root.getNumberByLabel('PitchVariation');
+      this.pitchVariation = root.getFieldByLabel('PitchVariation').getValue() || 0;
     }
     if(root.hasField('Positional')){
-      this.positional = root.getBooleanByLabel('Positional');
+      this.positional = root.getFieldByLabel('Positional').getValue() || false;
     }
     if(root.hasField('Priority')){
-      this.priority = root.getNumberByLabel('Priority');
+      this.priority = root.getFieldByLabel('Priority').getValue() || 0;
     }
     if(root.hasField('Random')){
-      this.random = root.getBooleanByLabel('Random');
+      this.random = root.getFieldByLabel('Random').getValue() || false;
     }
     if(root.hasField('RandomPosition')){
-      this.randomPosition = root.getBooleanByLabel('RandomPosition');
+      this.randomPosition = root.getFieldByLabel('RandomPosition').getValue() || false;
     }
     if(root.hasField('RandomRangeX')){
-      this.randomRangeX = root.getNumberByLabel('RandomRangeX');
+      this.randomRangeX = root.getFieldByLabel('RandomRangeX').getValue() || 0;
     }
     if(root.hasField('RandomRangeY')){
-      this.randomRangeY = root.getNumberByLabel('RandomRangeY');
+      this.randomRangeY = root.getFieldByLabel('RandomRangeY').getValue() || 0;
     }
     if(root.hasField('Sounds')){
       const sounds = root.getFieldByLabel('Sounds').getChildStructs();
       this.soundResRefs = [];
       for(let i = 0; i < sounds.length; i++){
-        this.soundResRefs.push(sounds[i].getStringByLabel('Sound'));
+        this.soundResRefs.push(sounds[i].getFieldByLabel('Sound').getValue());
       }
     }
     if(root.hasField('Tag')){
-      this.tag = root.getStringByLabel('Tag');
+      this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
     if(root.hasField('TemplateResRef')){
-      this.templateResRef = root.getStringByLabel('TemplateResRef');
+      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
     }
     if(root.hasField('Times')){
-      this.times = root.getNumberByLabel('Times');
+      this.times = root.getFieldByLabel('Times').getValue() || 0;
     }
     if(root.hasField('Volume')){
-      this.volume = root.getNumberByLabel('Volume');
+      this.volume = root.getFieldByLabel('Volume').getValue() || 0;
     }
     if(root.hasField('VolumeVrtn')){
-      this.volumeVariation = root.getNumberByLabel('VolumeVrtn');
+      this.volumeVariation = root.getFieldByLabel('VolumeVrtn').getValue() || 0;
     }
   }
 
@@ -161,7 +156,7 @@ export class ForgeSound extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-
+    
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Active', this.active ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Continuous', this.continuous ? 1 : 0) );
@@ -201,7 +196,7 @@ export class ForgeSound extends ForgeGameObject {
   calculatePriority(){
     const isLooping = this.looping ? 1 : 0;
     const isPositional = this.positional ? 1 : 0;
-
+    
     // Row 4: Looping area-wide ambients (looping=1, positional=0)
     if (isLooping === 1 && isPositional === 0) {
       this.priority = PRIORITY_LOOPING_AREAWIDE_AMBIENTS;
@@ -239,11 +234,11 @@ export class ForgeSound extends ForgeGameObject {
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
-    this.generatedType = strt.getNumberByLabel('GeneratedType');
-    this.templateResRef = strt.getStringByLabel('TemplateResRef');
-    this.position.x = strt.getNumberByLabel('X');
-    this.position.y = strt.getNumberByLabel('Y');
-    this.position.z = strt.getNumberByLabel('Z');
+    this.generatedType = strt.getFieldByLabel('GeneratedType').getValue() as number;
+    this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
+    this.position.x = strt.getFieldByLabel('X').getValue() as number;
+    this.position.y = strt.getFieldByLabel('Y').getValue() as number;
+    this.position.z = strt.getFieldByLabel('Z').getValue() as number;
   }
 
 }

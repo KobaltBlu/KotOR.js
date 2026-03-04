@@ -29,20 +29,20 @@ export class EncounterCreatureEntry {
     return struct;
   }
 
-  static FromStruct(struct: GFFStruct): EncounterCreatureEntry | undefined {
-    if (struct instanceof GFFStruct) {
+  static FromStruct( struct: GFFStruct ){
+    if(struct instanceof GFFStruct){
       const entry = new EncounterCreatureEntry();
       if(struct.hasField('Appearance'))
-        entry.appearance = struct.getNumberByLabel('Appearance');
+        entry.appearance = struct.getFieldByLabel('Appearance').getValue();
 
       if(struct.hasField('ResRef'))
-        entry.resref = struct.getStringByLabel('ResRef');
+        entry.resref = struct.getFieldByLabel('ResRef').getValue();
 
       if(struct.hasField('CR'))
-        entry.cr = struct.getNumberByLabel('CR');
-
+        entry.cr = struct.getFieldByLabel('CR').getValue();
+  
       if(struct.hasField('SingleSpawn'))
-        entry.singleSpawn = struct.getNumberByLabel('SingleSpawn');
+        entry.singleSpawn = struct.getFieldByLabel('SingleSpawn').getValue();
 
       return entry;
     }

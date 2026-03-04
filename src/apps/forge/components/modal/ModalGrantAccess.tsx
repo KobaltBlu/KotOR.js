@@ -1,16 +1,14 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 import { useApp } from "@/apps/forge/context/AppContext";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-const log = createScopedLogger(LogScope.Forge);
 
 export interface ModalGrantAccessProps {
-  onUserGrant: () => void;
-  onUserCancel: () => void;
+  onUserGrant: Function,
+  onUserCancel: Function
 }
 
 export const ModalGrantAccess = function(props: ModalGrantAccessProps){
@@ -21,32 +19,32 @@ export const ModalGrantAccess = function(props: ModalGrantAccessProps){
   useEffect(() => {
   }, []);
 
-
+  
 
   useEffectOnce( () => {
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
       // KotOR.GameFileSystem.
       setShowGrantModal(true);
     }
-
+    
     return () => {
       //Deconstructor
     }
   });
 
-  const onBtnGrant = async (_e: React.MouseEvent<HTMLButtonElement>) => {
+  const onBtnGrant = async (e: React.MouseEvent<HTMLButtonElement>) => {
     const handle = await KotOR.GameFileSystem.showRequestDirectoryDialog();
     if(handle){
       KotOR.ApplicationProfile.directoryHandle = handle;
       KotOR.ConfigClient.set(`Profiles.${KotOR.ApplicationProfile.profile.key}.directory_handle`, handle);
-
+      
 
       ForgeState.VerifyGameDirectory(() => {
-        log.info('Game Directory verified');
+        console.log('Game Directory', 'verified');
         setShowGrantModal(false);
         props.onUserGrant();
       }, () => {
-        log.warn('Game Directory not found');
+        console.warn('Game Directory', 'not found');
         // setShowGrantModal(true);
       });
     }

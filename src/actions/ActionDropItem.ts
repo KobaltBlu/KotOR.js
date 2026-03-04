@@ -5,7 +5,6 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { BitWise } from "@/utility/BitWise";
 
-
 /**
  * ActionDropItem class.
  * 
@@ -22,7 +21,7 @@ export class ActionDropItem extends Action {
     this.type = ActionType.ActionDropItem;
   }
 
-  update(_delta?: number): ActionStatus {
+  update(delta?: number): ActionStatus {
     if(!this.owner){
       return ActionStatus.FAILED;
     }
@@ -31,7 +30,7 @@ export class ActionDropItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const _owner: ModuleCreature = this.owner as ModuleCreature;
+    const owner: ModuleCreature = this.owner as ModuleCreature;
 
     return ActionStatus.COMPLETE;
   }

@@ -3,7 +3,6 @@ import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { GameState } from "@/GameState";
 
-
 /**
  * ActionPauseDialog class.
  * 
@@ -20,7 +19,7 @@ export class ActionPauseDialog extends Action {
     this.type = ActionType.ActionPauseDialog;
   }
 
-  update(_delta: number = 0): ActionStatus {
+  update(delta: number = 0): ActionStatus {
     GameState.CutsceneManager.paused = true;
     return ActionStatus.COMPLETE;
   }

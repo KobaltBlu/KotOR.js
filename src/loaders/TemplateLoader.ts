@@ -1,8 +1,5 @@
 import { ResourceLoader } from "@/loaders/ResourceLoader";
 import { GFFObject } from "@/resource/GFFObject";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Loader);
 
 /**
  * TemplateLoader class.
@@ -21,44 +18,38 @@ const log = createScopedLogger(LogScope.Loader);
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  * @deprecated
  */
-export interface TemplateLoaderLoadArgs {
-  ResRef?: string | null;
-  ResType?: number | null;
-  onLoad?: ((gff: GFFObject) => void) | null;
-  onFail?: ((e: unknown) => void) | null;
-}
-
-/* eslint-disable @typescript-eslint/no-extraneous-class -- static-only loader API */
 export class TemplateLoader {
 
-  static cache: Record<string, unknown> = {};
+  static cache: any = {};
 
-  static Load(args: TemplateLoaderLoadArgs = {}): void {
-    log.trace("Load", args.ResRef, args.ResType);
-    const opts = Object.assign({
+  static Load(args: any = {}){
+
+    args = Object.assign({
       ResRef: null,
       ResType: null,
       onLoad: null,
       onFail: null
-    }, args) as Required<TemplateLoaderLoadArgs>;
+    }, args);
 
-    log.info('TemplateLoader', opts.ResType, opts.ResRef);
-    const resType = opts.ResType ?? 0;
-    const resRef = opts.ResRef ?? '';
-    ResourceLoader.loadResource(resType, resRef).then((data: Uint8Array) => {
-      log.info('TemplateLoader', opts.ResType, opts.ResRef, data);
-      new GFFObject(data, (gff: GFFObject) => {
-        if (opts.onLoad != null) opts.onLoad(gff);
-      });
-    }).catch((e: unknown) => {
-      log.error(e);
-      if (typeof opts.onFail === 'function') opts.onFail(e);
+    console.log('TemplateLoader', args.ResType, args.ResRef)
+    ResourceLoader.loadResource(args.ResType, args.ResRef).then((data: Uint8Array) => {
+      console.log('TemplateLoader', args.ResType, args.ResRef, data);
+      new GFFObject(data, (gff) => {
+        if(args.onLoad != null)
+          args.onLoad(gff);
+      }); 
+    }).catch( (e) => {
+      console.error(e)
+      if(typeof args.onFail === 'function'){
+        args.onFail(e);
+      }
     });
+
   }
 
-  static LoadFromResources(args: TemplateLoaderLoadArgs = {}): void {
+  static LoadFromResources ( args: any = {} ) {
 
-    const _opts = Object.assign({
+    args = Object.assign({
       ResRef: null,
       ResType: null,
       onLoad: null,
@@ -69,7 +60,7 @@ export class TemplateLoader {
 
     //   let resKey = GameState.module.rim_s.getResource(args.ResRef.toLowerCase(), args.ResType);
     //   if(resKey != null){
-    //     //log.info('Template Resource found');
+    //     //console.log('Template Resource found');
     //     GameState.module.rim_s.getResourceBuffer(resKey, (buffer) => {
     //       if(args.onLoad != null)
     //         args.onLoad(buffer);
@@ -80,7 +71,7 @@ export class TemplateLoader {
 
     //   resKey = BIFManager.GetBIFByName('templates').getResource(args.ResRef.toLowerCase(), args.ResType);
     //   if(resKey != null){
-    //     //log.info('Template Resource found');
+    //     //console.log('Template Resource found');
     //     BIFManager.GetBIFByName('templates').getResourceBuffer(resKey, (buffer) => {
     //       if(args.onLoad != null)
     //         args.onLoad(buffer);

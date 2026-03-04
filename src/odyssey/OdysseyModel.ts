@@ -7,12 +7,8 @@ import { IOdysseyModelHeader } from "@/interface/odyssey/IOdysseyModelHeader";
 import { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import { OdysseyModelFactory } from "@/odyssey/OdysseyModelFactory";
 import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
-
-
-const log = createScopedLogger(LogScope.Loader);
 import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const mdlStringCleaner = (str: string = ''): string => {
   const cleaned = str.replace(/\0[\s\S]*$/g,'').toLowerCase().trim();
@@ -182,7 +178,7 @@ export class OdysseyModel {
   
       return node;
     }else{
-      log.error('OdysseyModel.ReadNode', 'Unhandled Node', node.nodeType);
+      console.error('OdysseyModel.ReadNode', 'Unhandled Node', node.nodeType);
     }
 
     return node;

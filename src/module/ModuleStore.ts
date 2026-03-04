@@ -7,20 +7,17 @@ import { ModuleObject } from "@/module/ModuleObject";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
 import { ResourceTypes } from "@/resource/ResourceTypes";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Module);
 // import { ModuleObjectManager } from "@/managers";
 
 /**
 * ModuleStore class.
-*
+* 
 * Class representing merchant stores found in modules areas.
-*
+* 
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*
+* 
 * @file ModuleStore.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -30,13 +27,13 @@ export class ModuleStore extends ModuleObject {
   buySellFlag: number;
   markDown: number;
   markUp: number;
-  onOpenStore: NWScriptInstance | null;
-  resref: string;
+  onOpenStore: any;
+  resref: any;
 
   constructor( gff = new GFFObject() ){
     super(gff);
     this.objectType |= ModuleObjectType.ModuleStore;
-
+    
     this.template = gff;
     this.buySellFlag = -1;
     this.markDown = 0;
@@ -68,7 +65,7 @@ export class ModuleStore extends ModuleObject {
         this.template.merge(gff);
         this.initProperties();
       }else{
-        log.error('Failed to load ModuleStore template resref=%s', String(this.getTemplateResRef?.() ?? 'unknown'));
+        console.error('Failed to load ModuleStore template');
         if(this.template instanceof GFFObject){
           this.initProperties();
         }
@@ -80,52 +77,52 @@ export class ModuleStore extends ModuleObject {
   }
 
   initProperties(){
-
+    
     if(!this.initialized){
       if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getNumberByLabel('ObjectId');
+        this.id = this.template.getFieldByLabel('ObjectId').getValue();
       }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getNumberByLabel('ID');
+        this.id = this.template.getFieldByLabel('ID').getValue();
       }
-
+      
       GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('BuySellFlag'))
-      this.buySellFlag = this.template.getNumberByLabel('BuySellFlag');
+      this.buySellFlag = this.template.getFieldByLabel('BuySellFlag').getValue()
 
     if(this.template.RootNode.hasField('LocName'))
       this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
 
     if(this.template.RootNode.hasField('MarkDown'))
-      this.markDown = this.template.getNumberByLabel('MarkDown');
+      this.markDown = this.template.getFieldByLabel('MarkDown').getValue();
 
     if(this.template.RootNode.hasField('MarkUp'))
-      this.markUp = this.template.getNumberByLabel('MarkUp');
+      this.markUp = this.template.getFieldByLabel('MarkUp').getValue();
 
     if(this.template.RootNode.hasField('OnOpenStore'))
-      this.onOpenStore = this.template.getStringByLabel('OnOpenStore');
-
+      this.onOpenStore = this.template.getFieldByLabel('OnOpenStore').getValue();
+      
     if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getStringByLabel('Tag');
-
+      this.tag = this.template.getFieldByLabel('Tag').getValue(); 
+    
     if(this.template.RootNode.hasField('XPosition'))
-      this.position.x = this.template.RootNode.getNumberByLabel('XPosition');
+      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
 
     if(this.template.RootNode.hasField('YPosition'))
-      this.position.y = this.template.RootNode.getNumberByLabel('YPosition');
+      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
 
     if(this.template.RootNode.hasField('ZPosition'))
-      this.position.z = this.template.RootNode.getNumberByLabel('ZPosition');
-
+      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
+    
     if(this.template.RootNode.hasField('XOrientation'))
-      this.rotation.x = this.template.RootNode.getNumberByLabel('XOrientation');
+      this.rotation.x = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
 
     if(this.template.RootNode.hasField('YOrientation'))
-      this.rotation.y = this.template.RootNode.getNumberByLabel('YOrientation');
+      this.rotation.y = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
 
     if(this.template.RootNode.hasField('ZOrientation'))
-      this.rotation.z = this.template.RootNode.getNumberByLabel('ZOrientation');
+      this.rotation.z = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
       const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
@@ -133,7 +130,7 @@ export class ModuleStore extends ModuleObject {
         if(swVarTableStruct.hasField('BitArray')){
           const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
           for(let i = 0; i < localBools.length; i++){
-            const data = localBools[i].getNumberByLabel('Variable');
+            const data = localBools[i].getFieldByLabel('Variable').getValue();
             for(let bit = 0; bit < 32; bit++){
               this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
             }
@@ -143,13 +140,13 @@ export class ModuleStore extends ModuleObject {
         if(swVarTableStruct.hasField('ByteArray')){
           const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
           for(let i = 0; i < localNumbers.length; i++){
-            const data = localNumbers[i].getNumberByLabel('Variable');
+            const data = localNumbers[i].getFieldByLabel('Variable').getValue();
             this.setLocalNumber(i, data);
           }
         }
       }
     }
-
+            
     if(this.template.RootNode.hasField('ItemList')){
       const items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
       for(let i = 0; i < items.length; i++){
@@ -158,7 +155,7 @@ export class ModuleStore extends ModuleObject {
         moduleItem.load();
       }
     }
-
+    
     this.initialized = true;
 
   }

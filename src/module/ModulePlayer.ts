@@ -1,9 +1,8 @@
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-// import { PartyManager } from "@/managers/PartyManager";
 import { GameState } from "@/GameState";
 import { ModuleCreature } from "@/module/ModuleCreature";
+// import { PartyManager } from "@/managers/PartyManager";
 import { GFFObject } from "@/resource/GFFObject";
-
 
 /**
 * ModulePlayer class.

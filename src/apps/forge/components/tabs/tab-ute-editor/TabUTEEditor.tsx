@@ -3,12 +3,12 @@ import React, { useEffect, useState, useCallback } from "react";
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
 import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost/SubTabHost";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { CreatureListEntry } from "@/apps/forge/interfaces/CreatureListEntry";
 import { EncounterDifficulty } from "@/apps/forge/interfaces/EncounterDifficulty";
 import * as KotOR from "@/apps/forge/KotOR";
-import "@/apps/forge/styles/tabs/tab-ute-editor.scss";
+import "../../../styles/tabs/tab-ute-editor.scss";
+import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost/SubTabHost";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
 import { TabUTEEditorState } from "@/apps/forge/states/tabs/TabUTEEditorState";
 
@@ -66,7 +66,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
   useEffect(() => {
     if(!tab) return;
     onEncounterChange();
-    tab.addEventListener('onEditorFileChange', onEncounterChange);
+    tab.addEventListener('onEditorFileChange', onEncounterChange);  
     tab.addEventListener('onEditorFileLoad', onEncounterChange);
     return () => {
       tab.removeEventListener('onEditorFileLoad', onEncounterChange);
@@ -79,28 +79,28 @@ export const TabUTEEditor = function(props: BaseTabProps){
   }, [tab.encounterDifficulties]);
 
   // Helper functions using ForgeEncounter methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeEncounter, parser: (value: number) => number = (v) => v) =>
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeEncounter, parser: (value: number) => number = (v) => v) => 
     tab.encounter.createNumberFieldHandler(setter, property, tab.encounter, tab, parser);
-
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeEncounter) =>
+  
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeEncounter) => 
     tab.encounter.createByteFieldHandler(setter, property, tab.encounter, tab);
-
-  const _onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeEncounter) =>
+  
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeEncounter) => 
     tab.encounter.createWordFieldHandler(setter, property, tab.encounter, tab);
-
-  const _onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeEncounter) =>
+  
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeEncounter) => 
     tab.encounter.createBooleanFieldHandler(setter, property, tab.encounter, tab);
-
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeEncounter) =>
+  
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeEncounter) => 
     tab.encounter.createResRefFieldHandler(setter, property, tab.encounter, tab);
-
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeEncounter) =>
+  
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeEncounter) => 
     tab.encounter.createCExoStringFieldHandler(setter, property, tab.encounter, tab);
-
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeEncounter) =>
+  
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeEncounter) => 
     tab.encounter.createCExoLocStringFieldHandler(setter, property, tab.encounter, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeEncounter) =>
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeEncounter) => 
     tab.encounter.createForgeCheckboxFieldHandler(setter, property, tab.encounter, tab);
 
   const onAddCreature = () => {
@@ -125,7 +125,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
     tab.updateFile();
   }
 
-  const onUpdateCreature = (index: number, field: keyof CreatureListEntry, value: CreatureListEntry[keyof CreatureListEntry]) => {
+  const onUpdateCreature = (index: number, field: keyof CreatureListEntry, value: any) => {
     const updated = [...creatureList];
     updated[index] = { ...updated[index], [field]: value };
     setCreatureList(updated);
@@ -144,8 +144,8 @@ export const TabUTEEditor = function(props: BaseTabProps){
         <>
           <table className="tab-ute-editor__table">
             <tbody>
-              <FormField
-                label="Active"
+              <FormField 
+                label="Active" 
                 info="Whether this encounter is currently active."
               >
                 <ForgeCheckbox label="" value={active} onChange={onUpdateForgeCheckboxField(setActive, 'active')} />
@@ -160,7 +160,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="Name"
                 info="The localized display name for this encounter."
               >
-                <CExoLocStringEditor
+                <CExoLocStringEditor 
                   value={localizedName}
                   onChange={onUpdateCExoLocStringField(setLocalizedName, 'localizedName')}
                 />
@@ -191,12 +191,12 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="Max Creatures"
                 info="Maximum number of creatures that can spawn from this encounter at once (1-8)."
               >
-                <input
-                  type="number"
-                  min="1"
-                  max="8"
-                  value={maxCreatures}
-                  onChange={onUpdateNumberField(setMaxCreatures, 'maxCreatures')}
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="8" 
+                  value={maxCreatures} 
+                  onChange={onUpdateNumberField(setMaxCreatures, 'maxCreatures')} 
                   className="tab-ute-editor__input"
                 />
               </FormField>
@@ -204,12 +204,12 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="Recommended Creatures"
                 info="Recommended number of creatures for this encounter (1-8). Maps to 'Min Creatures' in toolset. Must be less than or equal to Max Creatures."
               >
-                <input
-                  type="number"
-                  min="1"
-                  max="8"
-                  value={recCreatures}
-                  onChange={onUpdateNumberField(setRecCreatures, 'recCreatures')}
+                <input 
+                  type="number" 
+                  min="1" 
+                  max="8" 
+                  value={recCreatures} 
+                  onChange={onUpdateNumberField(setRecCreatures, 'recCreatures')} 
                   className="tab-ute-editor__input"
                 />
               </FormField>
@@ -232,12 +232,12 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="Respawns"
                 info="Number of times this encounter can respawn. Use -1 for unlimited respawns. Maximum 32000."
               >
-                <input
-                  type="number"
-                  min="-1"
-                  max="32000"
-                  value={respawns}
-                  onChange={onUpdateNumberField(setRespawns, 'respawns')}
+                <input 
+                  type="number" 
+                  min="-1" 
+                  max="32000" 
+                  value={respawns} 
+                  onChange={onUpdateNumberField(setRespawns, 'respawns')} 
                   className="tab-ute-editor__input"
                 />
               </FormField>
@@ -251,12 +251,12 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="Reset Time"
                 info="Time in seconds before the encounter resets (if Reset is enabled). Maximum 32000 seconds."
               >
-                <input
-                  type="number"
-                  min="0"
-                  max="32000"
-                  value={resetTime}
-                  onChange={onUpdateNumberField(setResetTime, 'resetTime')}
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="32000" 
+                  value={resetTime} 
+                  onChange={onUpdateNumberField(setResetTime, 'resetTime')} 
                   className="tab-ute-editor__input"
                 />
               </FormField>
@@ -270,12 +270,12 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="Template ResRef"
                 info="For blueprints, this should match the filename of the UTE file. Used to reference the blueprint."
               >
-                <input
-                  type="text"
-                  maxLength={16}
-                  value={templateResRef}
+                <input 
+                  type="text" 
+                  maxLength={16} 
+                  value={templateResRef} 
                   disabled={true}
-                  onChange={onUpdateResRefField(setTemplateResRef, 'templateResRef')}
+                  onChange={onUpdateResRefField(setTemplateResRef, 'templateResRef')} 
                   placeholder="Enter ResRef (16 chars max)"
                   className="tab-ute-editor__input-monospace"
                 />
@@ -298,8 +298,8 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 <td colSpan={2}>
                   <div className="tab-ute-editor__creature-list-header">
                     <strong className="tab-ute-editor__creature-list-label">Creature List</strong>
-                    <button
-                      onClick={onAddCreature}
+                    <button 
+                      onClick={onAddCreature} 
                       className="tab-ute-editor__button-add"
                     >
                       Add Creature
@@ -322,41 +322,41 @@ export const TabUTEEditor = function(props: BaseTabProps){
                         {creatureList.map((creature, index) => (
                           <tr key={index}>
                             <td>
-                              <input
-                                type="text"
-                                maxLength={16}
-                                value={creature.resref}
+                              <input 
+                                type="text" 
+                                maxLength={16} 
+                                value={creature.resref} 
                                 onChange={(e) => onUpdateCreature(index, 'resref', e.target.value)}
                                 className="tab-ute-editor__creature-input"
                               />
                             </td>
                             <td>
-                              <input
-                                type="number"
-                                value={creature.appearance}
+                              <input 
+                                type="number" 
+                                value={creature.appearance} 
                                 onChange={(e) => onUpdateCreature(index, 'appearance', parseInt(e.target.value) || 0)}
                                 className="tab-ute-editor__creature-input"
                               />
                             </td>
                             <td>
-                              <input
-                                type="number"
+                              <input 
+                                type="number" 
                                 step="0.1"
-                                value={creature.cr}
+                                value={creature.cr} 
                                 onChange={(e) => onUpdateCreature(index, 'cr', parseFloat(e.target.value) || 0)}
                                 className="tab-ute-editor__creature-input"
                               />
                             </td>
                             <td className="tab-ute-editor__creature-table-cell--center">
-                              <input
-                                type="checkbox"
-                                checked={creature.singleSpawn}
+                              <input 
+                                type="checkbox" 
+                                checked={creature.singleSpawn} 
                                 onChange={(e) => onUpdateCreature(index, 'singleSpawn', e.target.checked)}
                                 className="tab-ute-editor__creature-checkbox"
                               />
                             </td>
                             <td>
-                              <button
+                              <button 
                                 onClick={() => onRemoveCreature(index)}
                                 className="tab-ute-editor__button-remove"
                               >
@@ -388,11 +388,11 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="OnEntered"
                 info="CResRef of script to execute when a creature enters the encounter area (16 characters max)."
               >
-                <input
-                  type="text"
-                  maxLength={16}
-                  value={onEntered}
-                  onChange={onUpdateResRefField(setOnEntered, 'onEntered')}
+                <input 
+                  type="text" 
+                  maxLength={16} 
+                  value={onEntered} 
+                  onChange={onUpdateResRefField(setOnEntered, 'onEntered')} 
                   placeholder="Script ResRef"
                   className="tab-ute-editor__input-monospace"
                 />
@@ -401,11 +401,11 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="OnExhausted"
                 info="CResRef of script to execute when the encounter is exhausted (all creatures defeated) (16 characters max)."
               >
-                <input
-                  type="text"
-                  maxLength={16}
-                  value={onExhausted}
-                  onChange={onUpdateResRefField(setOnExhausted, 'onExhausted')}
+                <input 
+                  type="text" 
+                  maxLength={16} 
+                  value={onExhausted} 
+                  onChange={onUpdateResRefField(setOnExhausted, 'onExhausted')} 
                   placeholder="Script ResRef"
                   className="tab-ute-editor__input-monospace"
                 />
@@ -414,11 +414,11 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="OnExit"
                 info="CResRef of script to execute when a creature exits the encounter area (16 characters max)."
               >
-                <input
-                  type="text"
-                  maxLength={16}
-                  value={onExit}
-                  onChange={onUpdateResRefField(setOnExit, 'onExit')}
+                <input 
+                  type="text" 
+                  maxLength={16} 
+                  value={onExit} 
+                  onChange={onUpdateResRefField(setOnExit, 'onExit')} 
                   placeholder="Script ResRef"
                   className="tab-ute-editor__input-monospace"
                 />
@@ -427,11 +427,11 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="OnHeartbeat"
                 info="CResRef of script to execute on each heartbeat/update cycle (16 characters max)."
               >
-                <input
-                  type="text"
-                  maxLength={16}
-                  value={onHeartbeat}
-                  onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')}
+                <input 
+                  type="text" 
+                  maxLength={16} 
+                  value={onHeartbeat} 
+                  onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} 
                   placeholder="Script ResRef"
                   className="tab-ute-editor__input-monospace"
                 />
@@ -440,11 +440,11 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="OnUserDefined"
                 info="CResRef of script to execute on user-defined events (16 characters max)."
               >
-                <input
-                  type="text"
-                  maxLength={16}
-                  value={onUserDefined}
-                  onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')}
+                <input 
+                  type="text" 
+                  maxLength={16} 
+                  value={onUserDefined} 
+                  onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} 
                   placeholder="Script ResRef"
                   className="tab-ute-editor__input-monospace"
                 />

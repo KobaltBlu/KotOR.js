@@ -10,10 +10,6 @@ import { GameState } from "@/GameState";
 // import { TalentSpell } from "@/talents/TalentSpell";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Action);
 
 /**
  * ActionCastSpell class.
@@ -26,7 +22,7 @@ const log = createScopedLogger(LogScope.Action);
  */
 export class ActionCastSpell extends Action {
   
-  spell: import("@/talents/TalentSpell").TalentSpell | Record<string, never> = {}
+  spell: any = {}
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
@@ -48,15 +44,15 @@ export class ActionCastSpell extends Action {
 
   }
 
-  update(_delta: number = 0): ActionStatus {
-    log.trace('ActionCastSpell.update', { spellId: this.getParameter<number>(0), targetId: this.getParameter<number>(5) });
+  update(delta: number = 0): ActionStatus {
+    //console.log('ActionCastSpell', this);
     this.target = this.getParameter<ModuleObject>(5);
     this.spell = new GameState.TalentSpell( this.getParameter<number>(0));
 
     if(this.spell){
       if(!this.spell.inRange(this.target, this.owner)){
 
-        this.owner.openSpot = undefined;
+        // (this.owner as any).openSpot = undefined;
         const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);

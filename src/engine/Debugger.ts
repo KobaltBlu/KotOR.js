@@ -4,15 +4,12 @@ import { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import { NWScriptStack } from "@/nwscript/NWScriptStack";
 import { IPCMessage } from "@/server/ipc/IPCMessage";
 import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * Debugger class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file Debugger.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -39,7 +36,7 @@ export class Debugger {
    */
   static window: WindowProxy | null;
 
-  static #eventListener: Record<string, ((...args: unknown[]) => void)[]> = {};
+  static #eventListener: any = {};
 
   static state: DebuggerState = DebuggerState.Idle;
 
@@ -79,14 +76,14 @@ export class Debugger {
    * Opens the debugger window.
    */
   static open() {
-    if(this.window) {
+    if(this.window) { 
       this.window.focus();
       return;
     }
 
     this.window = window.open(`../debugger/index.html?uuid=${this.uuid}`, '_blank', 'width=1600,height=1200');
     if(this.window) {
-      log.info(`Debugger window opened: ${this.uuid}`);
+      console.log(`Debugger window opened: ${this.uuid}`);
       this.broadcastChannel = new BroadcastChannel(`debugger-${this.uuid}`);
       this.broadcastChannel.onmessage = (event: MessageEvent) => {
         if(typeof event.data == 'string') {
@@ -95,14 +92,14 @@ export class Debugger {
           }
           return;
         }
-
-        if(event.data instanceof Uint8Array){
+        
+        if(event.data?.constructor == Uint8Array){
           const msg = IPCMessage.fromBuffer(event.data);
           this.dispatchEvent('message', msg);
         }
       };
       this.window.addEventListener('close', () => {
-        log.info(`Debugger window closed: ${this.uuid}`);
+        console.log(`Debugger window closed: ${this.uuid}`);
       });
       this.dispatchEvent('open');
     }
@@ -128,7 +125,7 @@ export class Debugger {
    * @param event The event to listen for.
    * @param listener The listener to add.
    */
-  static addEventListener(event: string, listener: (...args: unknown[]) => void) {
+  static addEventListener(event: string, listener: any) {
     if(!Array.isArray(this.#eventListener[event])) {
       this.#eventListener[event] = [];
     }
@@ -143,7 +140,7 @@ export class Debugger {
    * @param event The event to remove the listener from.
    * @param listener The listener to remove.
    */
-  static removeEventListener(event: string, listener: (...args: unknown[]) => void) {
+  static removeEventListener(event: string, listener: any) {
     if(!Array.isArray(this.#eventListener[event])) {
       this.#eventListener[event] = [];
     }
@@ -158,10 +155,10 @@ export class Debugger {
    * @param event The event to dispatch.
    * @param args The arguments to pass to the event.
    */
-  static dispatchEvent(event: string, ...args: unknown[]) {
+  static dispatchEvent(event: string, ...args: any) {
     if(!Array.isArray(this.#eventListener[event])) {
       return;
     }
-    this.#eventListener[event].forEach((listener: (...args: unknown[]) => void) => listener(...args));
+    this.#eventListener[event].forEach((listener: any) => listener(...args));
   }
 }

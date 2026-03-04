@@ -5,14 +5,9 @@ import { EditorFile } from "@/apps/forge/EditorFile";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabState } from "@/apps/forge/states/tabs";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 import { PixelManager } from "@/utility/PixelManager";
 
-const log = createScopedLogger(LogScope.Forge);
-
-type TypedArrayConstructor = new (length: number) => { set(arr: ArrayLike<number>, offset: number): void; length: number };
-
-const concatenate = (resultConstructor: TypedArrayConstructor, ...arrays: ArrayLike<number>[]) => {
+const concatenate = (resultConstructor: any, ...arrays: any) => {
   let totalLength = 0;
   for (const arr of arrays) {
     totalLength += arr.length;
@@ -35,13 +30,12 @@ export class TabImageViewerState extends TabState {
 
 
   constructor(options: BaseTabStateOptions = {}){
-    log.trace('TabImageViewerState constructor entry');
     super(options);
+    // this.singleInstance = true;
     this.isClosable = true;
 
     if(this.file){
       this.tabName = this.file.getFilename();
-      log.debug('TabImageViewerState constructor tabName', this.tabName);
     }
 
     this.setContentView(<TabImageViewer tab={this}></TabImageViewer>);
@@ -59,61 +53,37 @@ export class TabImageViewerState extends TabState {
         accept: {
           'image/*': ['.tga']
         }
-      },
-      {
-        description: 'BMP Image File',
-        accept: {
-          'image/*': ['.bmp']
-        }
-      },
-      {
-        description: 'DDS Image File',
-        accept: {
-          'image/*': ['.dds']
-        }
       }
     ];
-    log.trace('TabImageViewerState constructor exit');
   }
 
   openFile(file?: EditorFile){
-    log.trace('TabImageViewerState openFile entry', !!file);
-    return new Promise<KotOR.TPCObject|KotOR.TGAObject>( (resolve, _reject) => {
+    return new Promise<KotOR.TPCObject|KotOR.TGAObject>( (resolve, reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         file.readFile().then( (response) => {
-          const ext = file?.ext != null ? String(file.ext) : '';
-          log.debug('TabImageViewerState openFile ext', ext);
-          switch(ext){
+          switch(file?.ext){
             case 'tga':
               this.image = new KotOR.TGAObject({file: response.buffer, filename: file.resref+'.tga' });
             break;
             case 'tpc':
               this.image = new KotOR.TPCObject({file: response.buffer, filename: file.resref+'.tpc' });
             break;
-            case 'bmp':
-              this.image = KotOR.readTPCFromBuffer(response.buffer, file.resref+'.bmp');
-            break;
-            case 'dds':
-              this.image = KotOR.readTPCFromBuffer(response.buffer, file.resref+'.dds');
-            break;
           }
-
+          
           resolve(this.image);
           this.processEventListener('onEditorFileLoad');
-          log.trace('TabImageViewerState openFile loaded');
         });
-      } else {
-        log.trace('TabImageViewerState openFile no file');
       }
     });
+
   }
 
   getPixelData(): Promise<Uint8Array>{
-    return new Promise<Uint8Array>( (resolve, _reject) => {
+    return new Promise<Uint8Array>( (resolve, reject) => {
       if(this.image instanceof KotOR.TPCObject){
         const tpc = this.image;
         const dds = tpc.getDDS(false);
@@ -121,7 +91,7 @@ export class TabImageViewerState extends TabState {
 
         const width = tpc.header.width;
         const height = tpc.header.height;
-        const _mipmapCount = 1;
+        const mipmapCount = 1;
 
         if(!tpc.txi.procedureType){
           if(tpc.header.faces > 1){
@@ -134,7 +104,7 @@ export class TabImageViewerState extends TabState {
                       mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height);
                     break;
                     case 1:
-                      mipmap.data = PixelManager.Rotate90deg(mipmap.data as Uint8Array, 4, width, height);
+                      mipmap.data = PixelManager.Rotate90deg(mipmap.data, 4, width, height);
                     break;
                     case 0:
                       mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height), 4, width, height);
@@ -159,7 +129,7 @@ export class TabImageViewerState extends TabState {
     });
   }
 
-  static FlipY(pixelData: Uint8Array, width = 1, _height = 1){
+  static FlipY(pixelData: Uint8Array, width = 1, height = 1){
     let offset = 0;
     const stride = width * 4;
 
@@ -171,7 +141,7 @@ export class TabImageViewerState extends TabState {
     }
   }
 
-  static FlipX(pixelData: Uint8Array, width = 1, _height = 1){
+  static FlipX(pixelData: Uint8Array, width = 1, height = 1){
     const unFlipped = Uint8Array.from(pixelData);
 
     for (let i = 0; i < pixelData.length; i++) {
@@ -266,26 +236,7 @@ export class TabImageViewerState extends TabState {
       tga.pixelData = TabImageViewerState.TGAColorFix(await this.getPixelData());
       return tga.toExportBuffer();
     }
-    if(ext == 'bmp' && this.image){
-      if(this.image instanceof KotOR.TPCObject){
-        return KotOR.writeTPCToBuffer(this.image, 'bmp');
-      }
-      if(this.image instanceof KotOR.TGAObject){
-        const tgaBuf = this.image.toExportBuffer();
-        const tpc = KotOR.readTPCFromBuffer(await tgaBuf);
-        return KotOR.writeTPCToBuffer(tpc, 'bmp');
-      }
-    }
-    if(ext == 'dds' && this.image){
-      if(this.image instanceof KotOR.TPCObject){
-        return KotOR.writeTPCToBuffer(this.image, 'dds');
-      }
-      if(this.image instanceof KotOR.TGAObject){
-        const tgaBuf = this.image.toExportBuffer();
-        const tpc = KotOR.readTPCFromBuffer(await tgaBuf);
-        return KotOR.writeTPCToBuffer(tpc, 'dds');
-      }
-    }
+    
     return super.getExportBuffer(resref, ext);
   }
 

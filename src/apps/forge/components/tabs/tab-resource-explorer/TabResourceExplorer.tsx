@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, {forwardRef, useImperativeHandle, useState, useMemo, useCallback, memo} from "react";
 import { Form, ProgressBar } from "react-bootstrap";
 
-import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
 import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
 import { ResourceListNode } from "@/apps/forge/components/treeview/ResourceListNode";
 import { EditorFile } from "@/apps/forge/EditorFile";
@@ -9,13 +8,8 @@ import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabResourceExplorerState } from "@/apps/forge/states/tabs";
-import { TabReferenceFinderState } from "@/apps/forge/states/tabs/TabReferenceFinderState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-import "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer.scss";
 
-const log = createScopedLogger(LogScope.Forge);
 
 export interface TabResourceExplorerProps extends BaseTabProps {
   tab: TabResourceExplorerState;
@@ -29,10 +23,8 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
   const [currentPage, setCurrentPage] = useState<number>(0);
   const ITEMS_PER_PAGE = 100; // Virtual scrolling chunk size
   let searchQuery = '';
-  let searchDelay: ReturnType<typeof setTimeout>;
+  let searchDelay: any;
   let currentSearchId = 0;
-
-  const { showContextMenu, ContextMenuComponent } = useContextMenu();
 
   useEffectOnce(() => {
     const tab = props.tab as TabResourceExplorerState;
@@ -55,13 +47,13 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
   const search = useCallback(async (value: string) => {
     // Increment search ID to cancel previous searches
     const searchId = ++currentSearchId;
-
+    
     try {
       if(value.length){
         // Process each root node asynchronously
         const searchPromises = TabResourceExplorerState.Resources.map( n => n.searchFor(value) );
         const searchResults = await Promise.all(searchPromises);
-
+        
         // Only update if this is still the current search
         if(searchId === currentSearchId){
           updateVisibleItems(searchResults.flat());
@@ -72,7 +64,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
         }
       }
     } catch (error) {
-      log.error('Search error:', error);
+      console.error('Search error:', error);
       if(searchId === currentSearchId){
         updateVisibleItems(TabResourceExplorerState.Resources);
       }
@@ -95,7 +87,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
     const startIndex = nextPage * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const newItems = resourceList.slice(startIndex, endIndex);
-
+    
     if (newItems.length > 0) {
       setVisibleItems(prev => [...prev, ...newItems]);
       setCurrentPage(nextPage);
@@ -105,62 +97,22 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
   // Memoize the resource list rendering to prevent unnecessary re-renders
   const resourceListItems = useMemo(() => {
     return visibleItems.map((node: FileBrowserNode) => (
-      <ResourceListNode
-        key={node.id}
-        node={node}
-        depth={0}
-        onContextMenu={(e, n) => {
-          if(n.type !== 'resource') return;
-          e.preventDefault();
-          e.stopPropagation();
-
-          const resref = (n.data?.resref || (n.name || '').split('.')[0] || '').toString();
-          const items: ContextMenuItem[] = [
-            {
-              id: 'open-file',
-              label: 'Open File',
-              onClick: () => {
-                FileTypeManager.onOpenResource(
-                  new EditorFile({
-                    path: n.data.path,
-                    useGameFileSystem: true,
-                  })
-                );
-              }
-            },
-            {
-              id: 'copy-resref',
-              label: 'Copy ResRef',
-              disabled: !resref.length,
-              onClick: async () => {
-                if (resref && navigator.clipboard?.writeText) {
-                  await navigator.clipboard.writeText(resref);
-                }
-              }
-            },
-            { id: 'sep-1', separator: true },
-            {
-              id: 'find-references',
-              label: 'Find References…',
-              disabled: !resref.length,
-              onClick: () => {
-                ForgeState.tabManager.addTab(
-                  new TabReferenceFinderState({ query: resref, scope: 'project' })
-                );
-              }
-            }
-          ];
-
-          showContextMenu(e.clientX, e.clientY, items);
-        }}
-      />
+      <ResourceListNode key={node.id} node={node} depth={0} />
     ));
-  }, [visibleItems, showContextMenu]);
-
+  }, [visibleItems]);
+  
   return (
-    <div className="tab-resource-explorer flex-vertical">
-      <Form className="tab-resource-explorer__form d-flex align-items-start">
-        <span className="tab-resource-explorer__search-icon">
+    <div className="flex-vertical" style={{
+      position: 'absolute',
+      top: '0px',
+      bottom: '0px',
+      left: '0px',
+      right: '0px',
+    }}>
+      <Form className="d-flex align-items-start" style={{
+        padding: '5px 0',
+      }}>
+        <span style={{padding: '5px'}}>
           <i className="fa-solid fa-magnifying-glass"></i>
         </span>
         <Form.Control
@@ -171,23 +123,31 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
           onChange={onSearchInput}
         />
       </Form>
-
-      <div className={`tab-resource-explorer__loading${loading ? '' : ' tab-resource-explorer__loading--hidden'}`}>
-        <ProgressBar
-          className="tab-resource-explorer__progress"
-          striped
-          animated={true}
-          now={100}
-          label="Searching..."
-        />
+      
+      <div style={{
+        display: `${loading ? 'block' : 'none'}`, 
+        padding: '5px',
+        width: '100%', 
+        height: '100px',
+      }}>
+        <div style={{}}>
+          <ProgressBar striped animated={true} now={100} label={`Searching...`} style={{
+            minWidth: '100%',
+            minHeight: '25px',
+          }}/>
+        </div>
       </div>
-      <div className={`scroll-container tab-resource-explorer__scroll${loading ? ' tab-resource-explorer__scroll--hidden' : ''}`}>
+      <div className="scroll-container" style={{ 
+        display: `${!loading ? 'block' : 'none'}`, 
+        width:'100%', 
+        overflow: 'auto',
+      }}>
         <ForgeTreeView>
           {resourceListItems}
         </ForgeTreeView>
         {resourceList.length > visibleItems.length && (
-          <div className="tab-resource-explorer__load-more">
-            <button
+          <div style={{ padding: '10px', textAlign: 'center' }}>
+            <button 
               className="btn btn-sm btn-outline-primary"
               onClick={loadMoreItems}
             >
@@ -196,8 +156,6 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
           </div>
         )}
       </div>
-
-      {ContextMenuComponent}
     </div>
   );
 

@@ -3,7 +3,6 @@ import { MenuGameplay as K1_MenuGameplay } from "@/game/kotor/KOTOR";
 import { GameState } from "@/GameState";
 import type { GUILabel, GUICheckBox, GUIButton, GUIListBox } from "@/gui";
 
-
 /**
  * MenuGameplay class.
  * 
@@ -48,7 +47,7 @@ export class MenuGameplay extends K1_MenuGameplay {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
 
       const difficultyTable = GameState.SWRuleSet.difficulty;
 
@@ -186,4 +185,3 @@ export class MenuGameplay extends K1_MenuGameplay {
   }
   
 }
-

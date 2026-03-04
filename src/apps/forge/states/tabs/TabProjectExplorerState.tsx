@@ -9,52 +9,43 @@ import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabState } from "@/apps/forge/states/tabs";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Forge);
 
 export class TabProjectExplorerState extends TabState {
 
   tabName: string = `Project`;
-  onReload?: () => void;
+  onReload?: Function;
   static Resources: FileBrowserNode[] = [];
   resourceNodes: FileBrowserNode[] = [];
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
-    log.trace('TabProjectExplorerState constructor');
+    // this.singleInstance = true;
     this.isClosable = false;
 
     this.setContentView(<TabProjectExplorer tab={this}></TabProjectExplorer>);
-    log.trace('TabProjectExplorerState constructor done');
   }
 
   reload(){
-    log.trace('TabProjectExplorerState.reload');
     if(typeof this.onReload === 'function'){
       this.onReload();
     }
   }
 
   static async GenerateResourceList( state: TabProjectExplorerState ){
-    log.trace('TabProjectExplorerState.GenerateResourceList');
 
     ForgeState.loaderShow();
     await TabProjectExplorerState.LoadFiles();
 
     state.reload();
     ForgeState.loaderHide();
-    log.debug('TabProjectExplorerState.GenerateResourceList done', TabProjectExplorerState.Resources.length);
     return TabProjectExplorerState.Resources;
   }
 
   static LoadFiles() {
-    log.trace('TabProjectExplorerState.LoadFiles');
-    return new Promise<void>( (resolve, _reject) => {
+    return new Promise<void>( (resolve, reject) => {
       const nodeList = TabProjectExplorerState.Resources;
       ProjectFileSystem.readdir('').then( (files: string[]) => {
-        log.trace('TabProjectExplorerState.LoadFiles readdir count', files?.length);
-        log.debug('TabProjectExplorerState.LoadFiles', files);
+        console.log('TabProjectExplorerState.LoadFiles', files);
         const subTypes: {[key: string]: FileBrowserNode} = {};
         for(let i = 0; i < files.length; i++){
           const file = files[i];

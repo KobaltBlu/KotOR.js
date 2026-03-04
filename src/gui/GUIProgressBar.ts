@@ -9,16 +9,12 @@ import { TextureLoader } from "@/loaders";
 import { ShaderManager } from "@/managers/ShaderManager";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * GUIProgressBar class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GUIProgressBar.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -35,14 +31,12 @@ export class GUIProgressBar extends GUIControl {
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUIProgressBar;
 
-    this.startFromLeft = control.hasField('STARTFROMLEFT') ? (control.getNumberByLabel('STARTFROMLEFT') !== 0) : false;
-    this.curValue = control.hasField('CURVALUE') ? control.getNumberByLabel('CURVALUE') : 0;
-    this.maxValue = control.hasField('MAXVALUE') ? control.getNumberByLabel('MAXVALUE') : 0;
+    this.startFromLeft = ( control.hasField('STARTFROMLEFT') ? control.getFieldByLabel('STARTFROMLEFT')?.getValue() : 0 );
+    this.curValue = ( control.hasField('CURVALUE') ? control.getFieldByLabel('CURVALUE')?.getValue() : 0 );
+    this.maxValue = ( control.hasField('MAXVALUE') ? control.getFieldByLabel('MAXVALUE')?.getValue() : 0 );
 
-    const widgetUserData = this.widget.userData as { progress?: THREE.Group };
-    const progressGroup = new THREE.Group();
-    widgetUserData.progress = progressGroup;
-    this.widget.add(progressGroup);
+    this.widget.userData.progress = new THREE.Group();
+    this.widget.add(this.widget.userData.progress);
 
     //----------//
     // Progress
@@ -70,13 +64,11 @@ export class GUIProgressBar extends GUIControl {
     };
 
     this.progress.geometry = new THREE.BufferGeometry();
-
-    const odysseyGuiU = ShaderManager.Shaders.get('odyssey-gui').getUniforms();
-    const odysseyGuiUniforms = Array.isArray(odysseyGuiU)
-      ? THREE.UniformsUtils.merge(odysseyGuiU)
-      : THREE.UniformsUtils.merge([odysseyGuiU]);
+    
     this.progress.edge_material = new THREE.ShaderMaterial({
-      uniforms: odysseyGuiUniforms,
+      uniforms: THREE.UniformsUtils.merge([
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
+      ]),
       vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
       fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
@@ -87,7 +79,9 @@ export class GUIProgressBar extends GUIControl {
     this.progress.edge_material.uniforms.diffuse.value = this.progress.color;
 
     this.progress.corner_material = new THREE.ShaderMaterial({
-      uniforms: odysseyGuiUniforms,
+      uniforms: THREE.UniformsUtils.merge([
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
+      ]),
       vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
       fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
@@ -98,14 +92,16 @@ export class GUIProgressBar extends GUIControl {
     this.progress.corner_material.uniforms.diffuse.value = this.progress.color;
 
     this.progress.mesh = new THREE.Mesh( this.progress.geometry, [this.progress.edge_material, this.progress.corner_material] );
-    progressGroup.add(this.progress.mesh);
+    this.widget.userData.progress.add(this.progress.mesh);
 
     //---------------//
     // Progress Fill
     //---------------//
-
+    
     this.progress.fill.material = new THREE.ShaderMaterial({
-      uniforms: odysseyGuiUniforms,
+      uniforms: THREE.UniformsUtils.merge([
+        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
+      ]),
       vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
       fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
@@ -118,10 +114,10 @@ export class GUIProgressBar extends GUIControl {
     this.progress.fill.mesh = new THREE.Mesh( this.progress.fill.geometry, this.progress.fill.material );
     this.progress.fill.mesh.position.z = this.zOffset + 1;
 
-    progressGroup.add( this.progress.fill.mesh );
+    this.widget.userData.progress.add( this.progress.fill.mesh );
 
     if(this.control){
-
+      
       //Progress
       this.hasProgress = control.hasField('PROGRESS');
       if(this.hasProgress){
@@ -138,20 +134,17 @@ export class GUIProgressBar extends GUIControl {
             this.progress.color = new THREE.Color(1, 1, 1); //this.defaultColor;
           }
 
-          const gffVal = (v: ReturnType<GFFStruct['getFieldByLabel']>) => (v?.getValue() ?? undefined);
-          const gffNum = (v: ReturnType<GFFStruct['getFieldByLabel']>) => Number(gffVal(v)) || 0;
-          const gffStr = (v: ReturnType<GFFStruct['getFieldByLabel']>) => String(gffVal(v) ?? '');
-          this.progress.dimension = gffNum(progress.getFieldByLabel('DIMENSION'));
-          this.progress.corner = gffStr(progress.getFieldByLabel('CORNER'));
-          this.progress.edge = gffStr(progress.getFieldByLabel('EDGE'));
-          this.progress.fill.texture = gffStr(progress.getFieldByLabel('FILL'));
-          this.progress.fillstyle = gffNum(progress.getFieldByLabel('FILLSTYLE'));
-          this.progress.inneroffset = this.progress.inneroffsety = gffNum(progress.getFieldByLabel('INNEROFFSET'));
+          this.progress.dimension = progress.getFieldByLabel('DIMENSION')?.getValue() || 0;
+          this.progress.corner = progress.getFieldByLabel('CORNER')?.getValue();
+          this.progress.edge = progress.getFieldByLabel('EDGE')?.getValue();
+          this.progress.fill.texture = progress.getFieldByLabel('FILL')?.getValue();
+          this.progress.fillstyle = progress.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
+          this.progress.inneroffset = this.progress.inneroffsety = progress.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
 
           if(progress.hasField('INNEROFFSETY'))
-            this.progress.inneroffsety = gffNum(progress.getFieldByLabel('INNEROFFSETY'));
+            this.progress.inneroffsety = progress.getFieldByLabel('INNEROFFSETY')?.getValue();
 
-          this.progress.pulsing = gffNum(progress.getFieldByLabel('PULSING'));
+          this.progress.pulsing = progress.getFieldByLabel('PULSING')?.getValue() || 0;
         }
       }
 
@@ -164,7 +157,7 @@ export class GUIProgressBar extends GUIControl {
     if(this.progress.edge != ''){
       TextureLoader.enQueue(this.progress.edge, this.progress.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture)
-          log.debug('initTextures', this.progress.edge, texture);
+          console.log('initTextures', this.progress.edge, texture);
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -174,7 +167,7 @@ export class GUIProgressBar extends GUIControl {
     if(this.progress.corner != ''){
       TextureLoader.enQueue(this.progress.corner, this.progress.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture)
-          log.debug('initTextures', this.progress.corner, texture);
+          console.log('initTextures', this.progress.corner, texture);
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -198,7 +191,7 @@ export class GUIProgressBar extends GUIControl {
 
     this.curValue = val < 0 ? 0 : val;
     this.curValue = !this.curValue ? 0.000000000000001 : this.curValue;
-
+    
     const value = Math.min(this.curValue / this.maxValue, 1);
 
     const extent = this.getFillExtent();
@@ -222,9 +215,9 @@ export class GUIProgressBar extends GUIControl {
 
     (this.progress.fill.geometry.attributes.uv as THREE.BufferAttribute).setY(1, value);
     this.progress.fill.geometry.attributes.uv.needsUpdate = true;
-
-    (sprite.material as THREE.ShaderMaterial).uniforms.opacity.value = 1;
-    (sprite.material as THREE.Material & { transparent?: boolean }).transparent = true;
+    
+    (sprite.material as any).uniforms.opacity.value = 1;
+    (sprite.material as any).transparent = true;
 
   }
 
@@ -234,7 +227,7 @@ export class GUIProgressBar extends GUIControl {
 
   setFillTextureName(name = ''){
     this.progress.fill.texture = name;
-    return new Promise<OdysseyTexture>( (resolve, _reject) => {
+    return new Promise<OdysseyTexture>( (resolve, reject) => {
       TextureLoader.enQueue(this.progress.fill.texture, this.progress.fill.material, TextureType.TEXTURE, resolve);
     })
   }
@@ -245,7 +238,7 @@ export class GUIProgressBar extends GUIControl {
     }
 
     this.progress.fill.material.uniforms.map.value = map;
-    (this.progress.fill.material as THREE.ShaderMaterial & { map?: THREE.Texture }).map = map;
+    (this.progress.fill as any).material.map = map;
 
     if(map instanceof THREE.Texture){
       this.progress.fill.material.visible = true;

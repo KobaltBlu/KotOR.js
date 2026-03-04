@@ -1,4 +1,3 @@
-import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
@@ -10,7 +9,7 @@ export interface StoreItemEntry {
 
 export class ForgeStore extends ForgeGameObject {
   //GIT Instance Properties
-  templateResType: number = KotOR.ResourceTypes.utm;
+  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utm;
   resref: string = '';
 
   //Blueprint Properties
@@ -29,17 +28,10 @@ export class ForgeStore extends ForgeGameObject {
     if(buffer){
       this.loadFromBuffer(buffer);
     }
-    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
-      this.onPropertyChange(
-        args[0] as string,
-        args[1] as string | number | boolean | object | undefined,
-        args[2] as string | number | boolean | object | undefined
-      );
-    };
-    this.addEventListener('onPropertyChange', onPropChange);
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: string | number | boolean | object | undefined, oldValue: string | number | boolean | object | undefined): void {
+  onPropertyChange(property: string, newValue: any, oldValue: any){
     if(property === 'templateResRef'){
       if(newValue !== oldValue){
         this.loadBlueprint().then(() => {
@@ -60,22 +52,22 @@ export class ForgeStore extends ForgeGameObject {
     if(!root) return;
 
     if(root.hasField('BuySellFlag')){
-      this.buySellFlag = root.getNumberByLabel('BuySellFlag');
+      this.buySellFlag = root.getFieldByLabel('BuySellFlag').getValue() || 0;
     }
     if(root.hasField('Comment')){
-      this.comment = root.getStringByLabel('Comment');
+      this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
     if(root.hasField('ID')){
-      this.id = root.getNumberByLabel('ID');
+      this.id = root.getFieldByLabel('ID').getValue() || 0;
     }
     if(root.hasField('ItemList')){
       const itemListField = root.getFieldByLabel('ItemList');
       const structs = itemListField.getChildStructs() || [];
       this.itemList = structs.map((struct: KotOR.GFFStruct) => {
         return {
-          inventoryRes: struct.hasField('InventoryRes') ? struct.getStringByLabel('InventoryRes') : '',
-          reposPosX: struct.hasField('Repos_PosX') ? struct.getNumberByLabel('Repos_PosX') : 0,
-          reposPosY: struct.hasField('Repos_Posy') ? struct.getNumberByLabel('Repos_Posy') : 0,
+          inventoryRes: struct.hasField('InventoryRes') ? struct.getFieldByLabel('InventoryRes').getValue() || '' : '',
+          reposPosX: struct.hasField('Repos_PosX') ? struct.getFieldByLabel('Repos_PosX').getValue() || 0 : 0,
+          reposPosY: struct.hasField('Repos_Posy') ? struct.getFieldByLabel('Repos_Posy').getValue() || 0 : 0,
         } as StoreItemEntry;
       });
     }
@@ -83,20 +75,20 @@ export class ForgeStore extends ForgeGameObject {
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('MarkDown')){
-      this.markDown = root.getNumberByLabel('MarkDown');
+      this.markDown = root.getFieldByLabel('MarkDown').getValue() || 0;
     }
     if(root.hasField('MarkUp')){
-      this.markUp = root.getNumberByLabel('MarkUp');
+      this.markUp = root.getFieldByLabel('MarkUp').getValue() || 0;
     }
     if(root.hasField('OnOpenStore')){
-      this.onOpenStore = root.getStringByLabel('OnOpenStore');
+      this.onOpenStore = root.getFieldByLabel('OnOpenStore').getValue() || '';
     }
     if(root.hasField('ResRef')){
-      this.templateResRef = root.getStringByLabel('ResRef');
+      this.templateResRef = root.getFieldByLabel('ResRef').getValue() || '';
       this.resref = this.templateResRef;
     }
     if(root.hasField('Tag')){
-      this.tag = root.getStringByLabel('Tag');
+      this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
   }
 
@@ -106,11 +98,11 @@ export class ForgeStore extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-
+    
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BuySellFlag', this.buySellFlag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'ID', this.id) );
-
+    
     const itemListField = root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.itemList.length; i++){
       if(itemListField){
@@ -122,7 +114,7 @@ export class ForgeStore extends ForgeGameObject {
         itemListField.addChildStruct(itemStruct);
       }
     }
-
+    
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocName', this.locName) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'MarkDown', this.markDown) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'MarkUp', this.markUp) );
@@ -137,7 +129,7 @@ export class ForgeStore extends ForgeGameObject {
     this.updateBoundingBox();
   }
 
-  getGITInstance(): KotOR.GFFStruct {
+  getGITInstance(): KotOR.GFFStruct { 
     const instance = new KotOR.GFFStruct(11);
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ResRef', this.resref));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', this.rotation.z));
@@ -149,12 +141,12 @@ export class ForgeStore extends ForgeGameObject {
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
-    this.resref = strt.getStringByLabel('ResRef');
-    this.rotation.z = strt.getNumberByLabel('XOrientation');
-    this.position.x = strt.getNumberByLabel('XPosition');
-    this.rotation.z = strt.getNumberByLabel('YOrientation');
-    this.position.y = strt.getNumberByLabel('YPosition');
-    this.position.z = strt.getNumberByLabel('ZPosition');
+    this.resref = strt.getFieldByLabel('ResRef').getValue() as string;
+    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
+    this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
+    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
+    this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
+    this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
   }
 
 }

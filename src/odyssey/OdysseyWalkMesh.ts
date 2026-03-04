@@ -1,6 +1,5 @@
 import * as THREE from "three";
 
-import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 import { SurfaceMaterial } from "@/engine/SurfaceMaterial";
 import { TileColor } from "@/engine/TileColor";
 import { OdysseyWalkMeshType } from "@/enums/odyssey/OdysseyWalkMeshType";
@@ -8,38 +7,11 @@ import { IPerimeter } from "@/interface/odyssey";
 import { IOdysseyModelAABBNode } from "@/interface/odyssey/IOdysseyModelAABBNode";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import { ModuleObject } from "@/module";
-
-const log = createScopedLogger(LogScope.Loader);
 import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-/** WOK file header as read by readHeader(). */
-export interface IWokHeader {
-  fileType: string;
-  version: string;
-  walkMeshType: OdysseyWalkMeshType;
-  reserved: Uint8Array;
-  position: THREE.Vector3;
-  verticesCount: number;
-  offsetToVertices: number;
-  facesCount: number;
-  offsetToFaces: number;
-  offsetToWalkTypes: number;
-  offsetToNormalizedInvertedNormals: number;
-  offsetToFacePlanesCoefficien: number;
-  aabbCount: number;
-  offsetToAABBs: number;
-  unknownEntry: number;
-  walkableFacesEdgesAdjacencyMatrixCount: number;
-  offsetToWalkableFacesEdgesAdjacencyMatrix: number;
-  edgesCount: number;
-  offsetToEdges: number;
-  perimetersCount: number;
-  offsetToPerimeters: number;
-}
 
 /**
  * OdysseyWalkMesh class.
@@ -55,11 +27,11 @@ export class OdysseyWalkMesh {
   static TILECOLORS: TileColor[] = [];
   name: string;
   moduleObject: ModuleObject;
-  header: IWokHeader = {} as IWokHeader;
+  header: any = { };
   walkableFaces: OdysseyFace3[] = [];
   walkableFacesWithEdge: OdysseyFace3[] = [];
   grassFaces: OdysseyFace3[] = [];
-  rootNode: IOdysseyModelAABBNode | null;
+  rootNode: any;
   mesh: THREE.Mesh;
   box: THREE.Box3;
   mat4: THREE.Matrix4;
@@ -74,7 +46,7 @@ export class OdysseyWalkMesh {
   walkableFacesEdgesAdjacencyMatrix: number[][] = [];
   edges: Map<number, WalkmeshEdge>;
   perimeters: IPerimeter[] = [];
-  edgeLines: THREE.Object3D[] = [];
+  edgeLines: any[] = [];
   edgeNormalHelpers: THREE.Group;
   wokReader: BinaryReader;
   walkableFacesEdgesAdjacencyMatrixDiff: number[][];
@@ -89,7 +61,7 @@ export class OdysseyWalkMesh {
 
     this.header = {
       walkMeshType: OdysseyWalkMeshType.NONE
-    } as IWokHeader;
+    };
     
     this.rootNode = null;
     this.mesh = new THREE.Mesh();
@@ -115,7 +87,7 @@ export class OdysseyWalkMesh {
       );
 
       if(face.surfacemat == undefined){
-        log.warn('OdysseyWalkMesh', 'Unknown surfacemat', face, OdysseyModelUtility.SURFACEMATERIALS);
+        console.warn('OdysseyWalkMesh', 'Unknown surfacemat', face, OdysseyModelUtility.SURFACEMATERIALS);
       }
 
       face.blocksLineOfSight = face.surfacemat.lineOfSight;
@@ -217,6 +189,9 @@ export class OdysseyWalkMesh {
     
     for(let i = 0; i < this.aabbNodes.length; i++){
       const node = this.aabbNodes[i];
+      //node.boxHelper = new THREE.Box3Helper( node.box, 0xffff00 );
+      //this.aabbGroup.add( node.boxHelper );
+
       node.face = this.faces[node.faceIdx];
       node.leftNode = this.aabbNodes[node.leftNodeOffset];
       node.rightNode = this.aabbNodes[node.rightNodeOffset];
@@ -306,13 +281,9 @@ export class OdysseyWalkMesh {
   buildEdgeNormalHelpers(color: number = 0xff0000, maxLength: number = 0.5){
     if(this.edgeNormalHelpers){
       this.edgeNormalHelpers.removeFromParent();
-      this.edgeNormalHelpers.traverse((obj: THREE.Object3D) => {
-        const mesh = obj as THREE.Mesh;
-        if(mesh.geometry) mesh.geometry.dispose();
-        if(mesh.material) {
-          if(Array.isArray(mesh.material)) mesh.material.forEach((m) => m.dispose());
-          else mesh.material.dispose();
-        }
+      this.edgeNormalHelpers.traverse((obj: any) => {
+        if(obj.geometry) obj.geometry.dispose();
+        if(obj.material) obj.material.dispose();
       });
     }
 
@@ -517,7 +488,7 @@ export class OdysseyWalkMesh {
     return aabb;
   }
 
-  readHeader(): IWokHeader {
+  readHeader(){
 
     return {
       fileType: this.wokReader.readChars(4),
@@ -545,11 +516,11 @@ export class OdysseyWalkMesh {
 
   }
 
-  sign(p1: { x: number; y: number }, p2: { x: number; y: number }, p3: { x: number; y: number }){
+  sign(p1: any, p2: any, p3: any){
     return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
   }
 
-  pointInFace2d(pt: { x: number; y: number }, face: OdysseyFace3){
+  pointInFace2d(pt: any, face: any){
     const v1 = this.vertices[face.a];
     const v2 = this.vertices[face.b];
     const v3 = this.vertices[face.c];
@@ -616,7 +587,7 @@ export class OdysseyWalkMesh {
     return false;
   }
 
-  getAABBCollisionFaces(box = new THREE.Box3, node?: IOdysseyModelAABBNode, collisions: OdysseyFace3[] = []){
+  getAABBCollisionFaces(box = new THREE.Box3, node?: IOdysseyModelAABBNode, collisions: any[] = []){
 
     if(this.header.walkMeshType == OdysseyWalkMeshType.AABB){
 
@@ -670,16 +641,17 @@ export class OdysseyWalkMesh {
     
   }
 
-  raycast(raycaster: THREE.Raycaster, _faces: OdysseyFace3[] = []): THREE.Intersection[] {
-    const _intersects: THREE.Intersection[] = [];
+  raycast(raycaster: THREE.Raycaster, faces: any[] = []): THREE.Intersection[] {
+    let _intersects: THREE.Intersection[] = [];
     this.mesh.raycast(raycaster, _intersects);
-    return _intersects.map((face) => {
+    _intersects = _intersects.map<THREE.Intersection>( (face) => {
       const wokFace = this.faces[face.faceIndex];
-      const out = face as THREE.Intersection & { walkIndex?: number; face?: OdysseyFace3 };
-      out.walkIndex = wokFace.walkIndex;
-      out.face = wokFace;
+      (face as any).walkIndex = wokFace.walkIndex;
+      // (face as any).normal = wokFace.normal;
+      (face as any).face = wokFace;
       return face;
-    });
+    })
+    return _intersects;
   }
 
   static Init(){
@@ -818,14 +790,14 @@ export class OdysseyWalkMesh {
     
     while(edges.length){
       if(!current_perimeter){
-        log.info('Walkmesh perimeter start...');
+        console.log('Walkmesh perimeter start...');
         current_perimeter = start_perimeter();
         perimeters.push(current_perimeter);
       }
 
       if(current_perimeter){
         if(current_perimeter.next == current_perimeter.start){
-          log.info('Walkmesh perimeter end found! Closing perimeter...');
+          console.log('Walkmesh perimeter end found! Closing perimeter...');
           current_perimeter.closed = true;
           current_perimeter = undefined;
           continue;
@@ -839,14 +811,14 @@ export class OdysseyWalkMesh {
           current_perimeter.next = n_edge.vertIdx2;
           continue;
         }else{
-          log.warn('Walkmesh edge perimeter open');
+          console.warn('Walkmesh edge perimeter open');
           current_perimeter = undefined;
         }
 
       }
     }
 
-    log.info('perimeters', perimeters);
+    console.log('perimeters', perimeters);
     return perimeters;
   }
 

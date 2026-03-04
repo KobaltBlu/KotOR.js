@@ -4,18 +4,14 @@ import { MDLLoader } from "@/loaders/MDLLoader";
 import { OdysseyModel } from "@/odyssey";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { TwoDAObject, type ITwoDARowData } from "@/resource/TwoDAObject";
-import { createScopedLogger , LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 
 /**
  * Planetary class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file Planetary.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -44,7 +40,7 @@ export class Planetary {
             Planetary.models.set(planet.model, mdl);
           }
         }catch(e){
-          log.error(e);
+          console.error(e);
         }
       }
     }
@@ -74,7 +70,7 @@ export class Planetary {
 
     return;
   }
-
+  
   static GetPlanetByIndex(index: number = 0): Planet {
     return Planetary.planets[index];
   }
@@ -112,16 +108,15 @@ export class Planet {
   selectable: boolean;
   lockedOutReason: number = -1;
 
-  constructor(_2da: ITwoDARowData | Record<string, string | number> = {}){
-    const row = _2da as Record<string, string | number>;
-    this.id = parseInt(String(TwoDAObject.cellParser(row.__rowlabel ?? row.__index ?? '') ?? ''));
-    this.label = String(TwoDAObject.cellParser(row.label ?? '') ?? '');
-    this.name = parseInt( String(TwoDAObject.cellParser(row.name ?? '') ?? '') );
-    this.description = parseInt( String(TwoDAObject.cellParser(row.description ?? '') ?? '') );
-    this.icon = String(TwoDAObject.cellParser(row.icon ?? '') ?? '');
-    this.model = String(TwoDAObject.cellParser(row.model ?? '') ?? '');
-    this.guitag = String(TwoDAObject.cellParser(row.guitag ?? '') ?? '');
-    this.lockedOutReason = TwoDAObject.normalizeValue(row.lockedoutreason,'number', -1) as number;
+  constructor(_2da: any = {}){
+    this.id = parseInt(TwoDAObject.cellParser(_2da.__rowlabel));
+    this.label = TwoDAObject.cellParser(_2da.label);
+    this.name = parseInt( TwoDAObject.cellParser(_2da.name) );
+    this.description = parseInt( TwoDAObject.cellParser(_2da.description) );
+    this.icon = TwoDAObject.cellParser(_2da.icon);
+    this.model = TwoDAObject.cellParser(_2da.model);
+    this.guitag = TwoDAObject.cellParser(_2da.guitag);
+    this.lockedOutReason = TwoDAObject.normalizeValue(_2da.lockedoutreason,'number', -1);
 
     this.enabled = false;
     this.selectable = false;

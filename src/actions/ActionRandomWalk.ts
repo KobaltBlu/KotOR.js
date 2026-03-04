@@ -6,7 +6,6 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { BitWise } from "@/utility/BitWise";
 
-
 /**
  * ActionRandomWalk class.
  * 
@@ -25,7 +24,7 @@ export class ActionRandomWalk extends Action {
     //PARAMS
   }
 
-  update(_delta?: number): ActionStatus {
+  update(delta?: number): ActionStatus {
     if(!this.owner){
       return ActionStatus.FAILED;
     }

@@ -6,7 +6,6 @@ import { ModalEULA } from "@/apps/game/components/modal-eula/modalEULA";
 import { ModalGrantAccess } from "@/apps/game/components/modal-grant-access/modalGrantAccess";
 import { useApp } from "@/apps/game/context/AppContext";
 
-
 export const GameApp = () => {
   const appContext = useApp();
   const [showEULAModal] = appContext.showEULAModal;

@@ -29,20 +29,20 @@ export class EncounterSpawnPointEntry{
     return struct;
   }
 
-  static FromStruct(struct: GFFStruct): EncounterSpawnPointEntry | undefined {
-    if (struct instanceof GFFStruct) {
+  static FromStruct( struct: GFFStruct ){
+    if(struct instanceof GFFStruct){
       const entry = new EncounterSpawnPointEntry();
       if(struct.hasField('X'))
-        entry.position.x = struct.getNumberByLabel('X');
+        entry.position.x = struct.getFieldByLabel('X').getValue();
 
       if(struct.hasField('Y'))
-        entry.position.y = struct.getNumberByLabel('Y');
+        entry.position.y = struct.getFieldByLabel('Y').getValue();
 
       if(struct.hasField('Z'))
-        entry.position.z = struct.getNumberByLabel('Z');
+        entry.position.z = struct.getFieldByLabel('Z').getValue();
   
       if(struct.hasField('Orientation'))
-        entry.orientation = struct.getNumberByLabel('Orientation');
+        entry.orientation = struct.getFieldByLabel('Orientation').getValue();
 
       return entry;
     }

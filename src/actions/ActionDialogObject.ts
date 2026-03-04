@@ -10,17 +10,13 @@ import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { DLGObject } from "@/resource/DLGObject";
 import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 import { Utility } from "@/utility/Utility";
-
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * ActionDialogObject class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file ActionDialogObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -37,15 +33,14 @@ export class ActionDialogObject extends Action {
     //PARAMS
     // 0 - dword:   speaker object id
     // 1 - string:  conversation resref
-    // 2 - int:     bPrivateConversation
+    // 2 - int:     bPrivateConversation 
     // 3 - int:     (?) nConversationType
     // 4 - int:     ignoreStartRange
     // 5 - dword:   (?) listener - `appears to be object_invalid mostly`
-
+    
   }
 
-  update(_delta: number = 0): ActionStatus {
-    log.trace('ActionDialogObject update()');
+  update(delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
     const conversation_resref: string = this.getParameter<string>(1) || '';
     const ignoreStartRange = this.getParameter<number>(4) || 0;
@@ -58,7 +53,7 @@ export class ActionDialogObject extends Action {
     }
 
     if(GameState.Mode == EngineMode.DIALOG){
-      log.info('ActionDialogObject: Already in dialog owner=%s tag=%s', this.owner.getName(), this.owner.getTag());
+      console.log('ActionDialogObject: Already in dialog', this.owner.getName(), this.owner.getTag());
       return ActionStatus.FAILED;
     }
 
@@ -70,7 +65,7 @@ export class ActionDialogObject extends Action {
 
     const distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 4.5 && !ignoreStartRange){
-      log.debug('ActionDialogObject: moving to target distance=%.2f', distance);
+      // this.owner.openSpot = undefined;
       const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
@@ -99,7 +94,7 @@ export class ActionDialogObject extends Action {
       }
       return ActionStatus.COMPLETE;
     }
-
+    
     return ActionStatus.FAILED;
   }
 

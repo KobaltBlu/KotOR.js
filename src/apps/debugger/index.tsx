@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import "@/apps/debugger/app.scss";
+import './app.scss';
 import { App } from "@/apps/debugger/App";
 import { AppProvider } from "@/apps/debugger/context/AppContext";
 import { DebugApp } from "@/apps/debugger/DebugApp";
@@ -13,7 +13,7 @@ if(!uuid) throw new Error('UUID is required');
 
 const appState = new DebuggerState(uuid);
 DebugApp.appState = appState;
-// @ts-expect-error - Debugger host exposes appState on window for devtools
+//@ts-ignore
 window.appState = DebugApp.appState;
 
 const loadReactApplication = () => {

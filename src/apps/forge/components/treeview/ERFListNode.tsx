@@ -1,10 +1,9 @@
 import React, { useState, useCallback, memo, useMemo } from "react";
 
 import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
+import { EditorFile } from "@/apps/forge/EditorFile";
 import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Forge);
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 
 export interface ERFListNodeProps {
   node: FileBrowserNode;
@@ -39,14 +38,14 @@ export const ERFListNode = memo(function ResourceListNode(props: ERFListNodeProp
   }, [node, onDoubleClick]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    log.debug('Context menu for:', node.name);
+    console.log('Context menu for:', node.name);
     // Add context menu logic here
     if(typeof onContextMenu === 'function'){
       onContextMenu(e, node);
     }
   }, [node, onContextMenu]);
 
-  const handleSelect = useCallback((_nodeId: string) => {
+  const handleSelect = useCallback((nodeId: string) => {
     if (onSelect) {
       onSelect(node);
     }
@@ -56,9 +55,9 @@ export const ERFListNode = memo(function ResourceListNode(props: ERFListNodeProp
   const childNodes = useMemo(() => {
     if (!openState || !hasChildren) return null;
     return node.nodes.map((child: FileBrowserNode) => (
-      <ResourceListNode
-        key={child.id}
-        node={child}
+      <ResourceListNode 
+        key={child.id} 
+        node={child} 
         depth={depth + 1}
         isSelected={false}
         onSelect={onSelect}

@@ -1,9 +1,6 @@
 import { ResourceLoader } from "@/loaders/ResourceLoader";
 import { OdysseyModel } from "@/odyssey";
 import { ResourceTypes } from "@/resource/ResourceTypes";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Loader);
 
 /**
  * Interface defining the structure of the model cache.
@@ -86,7 +83,7 @@ export class MDLLoader {
    * // Load a character model
    * const model = await MDLLoader.loader.load('p_male01');
    * if (model) {
-   *   log.info('Model loaded successfully');
+   *   console.log('Model loaded successfully');
    * }
    * 
    * @example
@@ -97,7 +94,6 @@ export class MDLLoader {
    * }
    */
 	async load (resref: string = ''): Promise<OdysseyModel> {
-    log.trace("load", resref);
     resref = resref?.toLocaleLowerCase();
 
     //Validate the resource reference
@@ -120,9 +116,9 @@ export class MDLLoader {
       const model = OdysseyModel.FromBuffers(mdl_buffer, mdx_buffer);
       ModelCache.models.set(resref, model);
       return model;
-    } catch (e: unknown) {
-      log.warn('MD(L|X) 404', resref);
-      log.error(e);
+    }catch(e: any){
+      console.warn('MD(L|X) 404', resref);
+      console.error(e);
       return undefined;
     }
 	}
@@ -140,7 +136,7 @@ export class MDLLoader {
    * @example
    * // Clear the cache to free up memory
    * MDLLoader.loader.reset();
-   * log.info('Model cache cleared');
+   * console.log('Model cache cleared');
    * 
    * @example
    * // Force reload a model after cache clear

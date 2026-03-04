@@ -1,6 +1,5 @@
 import * as THREE from "three";
 
-import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
@@ -19,7 +18,7 @@ export class ForgeTrigger extends ForgeGameObject {
   ];
 
   //GIT Instance Properties
-  templateResType: number = KotOR.ResourceTypes.utt;
+  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utt;
 
   //Blueprint Properties
   autoRemoveKey: boolean = false;
@@ -64,17 +63,10 @@ export class ForgeTrigger extends ForgeGameObject {
     if(buffer){
       this.loadFromBuffer(buffer);
     }
-    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
-      this.onPropertyChange(
-        args[0] as string,
-        args[1] as string | number | boolean | object | undefined,
-        args[2] as string | number | boolean | object | undefined
-      );
-    };
-    this.addEventListener('onPropertyChange', onPropChange);
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: string | number | boolean | object | undefined, oldValue: string | number | boolean | object | undefined): void {
+  onPropertyChange(property: string, newValue: any, oldValue: any){
     if(property === 'templateResRef'){
       if(newValue !== oldValue){
         this.loadBlueprint().then(() => {
@@ -95,85 +87,85 @@ export class ForgeTrigger extends ForgeGameObject {
     if(!root) return;
 
     if(root.hasField('AutoRemoveKey')){
-      this.autoRemoveKey = root.getBooleanByLabel('AutoRemoveKey');
+      this.autoRemoveKey = root.getFieldByLabel('AutoRemoveKey').getValue() || false;
     }
     if(root.hasField('Comment')){
-      this.comment = root.getStringByLabel('Comment');
+      this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
     if(root.hasField('Cursor')){
-      this.cursor = root.getNumberByLabel('Cursor');
+      this.cursor = root.getFieldByLabel('Cursor').getValue() || 0;
     }
     if(root.hasField('DisarmDC')){
-      this.disarmDC = root.getNumberByLabel('DisarmDC');
+      this.disarmDC = root.getFieldByLabel('DisarmDC').getValue() || 0;
     }
     if(root.hasField('Faction')){
-      this.faction = root.getNumberByLabel('Faction');
+      this.faction = root.getFieldByLabel('Faction').getValue() || 0;
     }
     if(root.hasField('HighlightHeight')){
-      this.highlightHeight = root.getNumberByLabel('HighlightHeight');
+      this.highlightHeight = root.getFieldByLabel('HighlightHeight').getValue() || 0;
     }
     if(root.hasField('KeyName')){
-      this.keyName = root.getStringByLabel('KeyName');
+      this.keyName = root.getFieldByLabel('KeyName').getValue() || '';
     }
     if(root.hasField('LoadScreenID')){
-      this.loadScreenID = root.getNumberByLabel('LoadScreenID');
+      this.loadScreenID = root.getFieldByLabel('LoadScreenID').getValue() || 0;
     }
     if(root.hasField('LocalizedName')){
       this.localizedName = root.getFieldByLabel('LocalizedName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('OnClick')){
-      this.onClick = root.getStringByLabel('OnClick');
+      this.onClick = root.getFieldByLabel('OnClick').getValue() || '';
     }
     if(root.hasField('OnDisarm')){
-      this.onDisarm = root.getStringByLabel('OnDisarm');
+      this.onDisarm = root.getFieldByLabel('OnDisarm').getValue() || '';
     }
     if(root.hasField('OnTrapTriggered')){
-      this.onTrapTriggered = root.getStringByLabel('OnTrapTriggered');
+      this.onTrapTriggered = root.getFieldByLabel('OnTrapTriggered').getValue() || '';
     }
     if(root.hasField('PaletteID')){
-      this.paletteID = root.getNumberByLabel('PaletteID');
+      this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
     if(root.hasField('PortraitId')){
-      this.portraitId = root.getNumberByLabel('PortraitId');
+      this.portraitId = root.getFieldByLabel('PortraitId').getValue() || 0;
     }
     if(root.hasField('ScriptOnHeartbeat')){
-      this.onHeartbeat = root.getStringByLabel('ScriptOnHeartbeat');
+      this.onHeartbeat = root.getFieldByLabel('ScriptOnHeartbeat').getValue() || '';
     }
     if(root.hasField('ScriptOnEnter')){
-      this.onEnter = root.getStringByLabel('ScriptOnEnter');
+      this.onEnter = root.getFieldByLabel('ScriptOnEnter').getValue() || '';
     }
     if(root.hasField('ScriptOnExit')){
-      this.onExit = root.getStringByLabel('ScriptOnExit');
+      this.onExit = root.getFieldByLabel('ScriptOnExit').getValue() || '';
     }
     if(root.hasField('ScriptOnUserDefine')){
-      this.onUserDefined = root.getStringByLabel('ScriptOnUserDefine');
+      this.onUserDefined = root.getFieldByLabel('ScriptOnUserDefine').getValue() || '';
     }
     if(root.hasField('Tag')){
-      this.tag = root.getStringByLabel('Tag');
+      this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
     if(root.hasField('TemplateResRef')){
-      this.templateResRef = root.getStringByLabel('TemplateResRef');
+      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
     }
     if(root.hasField('TrapDetectDC')){
-      this.trapDetectDC = root.getNumberByLabel('TrapDetectDC');
+      this.trapDetectDC = root.getFieldByLabel('TrapDetectDC').getValue() || 0;
     }
     if(root.hasField('TrapDetectable')){
-      this.trapDetectable = root.getBooleanByLabel('TrapDetectable');
+      this.trapDetectable = root.getFieldByLabel('TrapDetectable').getValue() || false;
     }
     if(root.hasField('TrapDisarmable')){
-      this.trapDisarmable = root.getBooleanByLabel('TrapDisarmable');
+      this.trapDisarmable = root.getFieldByLabel('TrapDisarmable').getValue() || false;
     }
     if(root.hasField('TrapFlag')){
-      this.trapFlag = root.getBooleanByLabel('TrapFlag');
+      this.trapFlag = root.getFieldByLabel('TrapFlag').getValue() || false;
     }
     if(root.hasField('TrapOneShot')){
-      this.trapOneShot = root.getBooleanByLabel('TrapOneShot');
+      this.trapOneShot = root.getFieldByLabel('TrapOneShot').getValue() || false;
     }
     if(root.hasField('TrapType')){
-      this.trapType = root.getNumberByLabel('TrapType');
+      this.trapType = root.getFieldByLabel('TrapType').getValue() || 0;
     }
     if(root.hasField('Type')){
-      this.t_type = root.getNumberByLabel('Type');
+      this.t_type = root.getFieldByLabel('Type').getValue() || 0;
     }
   }
 
@@ -183,7 +175,7 @@ export class ForgeTrigger extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-
+    
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AutoRemoveKey', this.autoRemoveKey ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Cursor', this.cursor & 0xFF) );
@@ -235,7 +227,7 @@ export class ForgeTrigger extends ForgeGameObject {
       this.container.add(this.mesh);
     }
     this.mesh.geometry = this.bufferGeometry;
-
+    
     // Initialize vertex helpers group
     this.vertexHelpersGroup.visible = false;
     if(!this.container.children.includes(this.vertexHelpersGroup)){
@@ -253,21 +245,21 @@ export class ForgeTrigger extends ForgeGameObject {
         (helper.material as THREE.Material).dispose();
       }
     }
-
+    
     // Create helpers for each vertex
     for(let i = 0; i < this.vertices.length; i++){
       const vertex = this.vertices[i];
       const helper = new THREE.Mesh(
-        this.vertexHelperGeometry,
+        this.vertexHelperGeometry, 
         new THREE.MeshBasicMaterial({color: 0x000000})
       );
-
+      
       helper.position.copy(vertex);
       helper.scale.setScalar(this.vertexHelperSize);
-
+      
       helper.userData.vertexIndex = i;
       helper.userData.forgeGameObject = this;
-
+      
       this.vertexHelpersGroup.add(helper);
       this.vertexHelpers.push(helper);
     }
@@ -298,7 +290,7 @@ export class ForgeTrigger extends ForgeGameObject {
     if(vertexIndex >= 0 && vertexIndex < this.vertices.length){
       const vertex = this.vertices[vertexIndex];
       const localPos = helper.position.clone();
-
+      
       // Update vertex position if it changed
       if(!vertex.equals(localPos)){
         vertex.copy(localPos);
@@ -311,18 +303,18 @@ export class ForgeTrigger extends ForgeGameObject {
     }
   }
 
-  update(_delta: number = 0){
+  update(delta: number = 0){
     // Update vertex positions from helpers
     if(this.vertexHelpers.length > 0 && this.vertices.length === this.vertexHelpers.length){
       let geometryNeedsUpdate = false;
-
+      
       for(let i = 0; i < this.vertices.length; i++){
         const vertex = this.vertices[i];
         const helper = this.vertexHelpers[i];
-
+        
         if(vertex && helper){
           const localPos = helper.position.clone();
-
+          
           // Update vertex position if it changed
           if(!vertex.equals(localPos)){
             vertex.copy(localPos);
@@ -330,7 +322,7 @@ export class ForgeTrigger extends ForgeGameObject {
           }
         }
       }
-
+      
       // Rebuild geometry if any vertices changed
       if(geometryNeedsUpdate){
         this.buildGeometry();
@@ -369,20 +361,20 @@ export class ForgeTrigger extends ForgeGameObject {
         const geometryStruct = geometryField.getChildStructs()[i];
         this.vertices.push(
           new THREE.Vector3(
-            geometryStruct.getNumberByLabel('PointX'),
-            geometryStruct.getNumberByLabel('PointY'),
-            geometryStruct.getNumberByLabel('PointZ')
+            geometryStruct.getFieldByLabel('PointX').getValue() as number, 
+            geometryStruct.getFieldByLabel('PointY').getValue() as number, 
+            geometryStruct.getFieldByLabel('PointZ').getValue() as number
           )
         );
       }
     }
-    this.templateResRef = strt.getStringByLabel('TemplateResRef');
-    this.rotation.z = strt.getNumberByLabel('XOrientation');
-    this.position.x = strt.getNumberByLabel('XPosition');
-    this.rotation.z = strt.getNumberByLabel('YOrientation');
-    this.position.y = strt.getNumberByLabel('YPosition');
-    this.rotation.z = strt.getNumberByLabel('ZOrientation');
-    this.position.z = strt.getNumberByLabel('ZPosition');
+    this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
+    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
+    this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
+    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
+    this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
+    this.rotation.z = strt.getFieldByLabel('ZOrientation').getValue() as number;
+    this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
   }
 
 }

@@ -1,8 +1,5 @@
 import { TXIBlending } from "@/enums/graphics/txi/TXIBlending";
 import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Resource);
 import { TXITexType } from "@/enums/graphics/txi/TXITexType";
 
 /**
@@ -23,9 +20,9 @@ export class TXI {
   isCompressed: boolean;
   bumpMapScaling: number;
   isbumpmap: boolean;
-  bumpMapTexture: string | null;
-  envMapTexture: string | null;
-  waterAlpha: number | null;
+  bumpMapTexture: any;
+  envMapTexture: any;
+  waterAlpha: any;
   defaultWidth: number;
   defaultHeight: number;
   downSampleMin: number;
@@ -67,8 +64,6 @@ export class TXI {
     this.downSampleMax = 0;
     this.mipMap = 0;
     this.decal = 0;
-    this.defaultWidth = 0;
-    this.defaultHeight = 0;
 
     this.numchars = 0;
     this.fontheight = 0;
@@ -96,7 +91,7 @@ export class TXI {
       this.ParseInfo();
     }
 
-    //log.info('TXI', this.info, typeof info, info instanceof Uint8Array);
+    //console.log('TXI', this.info, typeof info, info instanceof Uint8Array);
 
   }
 
@@ -257,91 +252,5 @@ export class TXI {
     }
   }
 
-  /**
-   * Serialize TXI to binary (UTF-8). Use for saving to file; same as encoding toString().
-   */
-  toBuffer(): Uint8Array {
-    return new TextEncoder().encode(this.toString());
-  }
-
-  /**
-   * Serialize TXI to string (same format as file). Use for saving/writing TXI.
-   */
-  toString(): string {
-    const lines: string[] = [];
-    const append = (cmd: string, value: string | number | boolean) => {
-      if (typeof value === 'boolean') value = value ? 1 : 0;
-      lines.push(`${cmd} ${value}`);
-    };
-    if (this.isbumpmap) append('isbumpmap', 1);
-    if (this.textureType === TXITexType.LIGHTMAP) lines.push('islightmap');
-    if (this.textureType === TXITexType.ENVMAP) append('cube', 1);
-    if (!this.isCompressed) append('compresstexture', 0);
-    if (this.mipMap !== 0) append('mipmap', this.mipMap);
-    if (this.downSampleMin !== 0) append('downsamplemin', this.downSampleMin);
-    if (this.downSampleMax !== 0) append('downsamplemax', this.downSampleMax);
-    if (this.decal !== 0) append('decal', this.decal);
-    if (this.defaultWidth !== 0) append('defaultwidth', this.defaultWidth);
-    if (this.defaultHeight !== 0) append('defaultheight', this.defaultHeight);
-    if (this.filter !== 0) append('filter', this.filter);
-    if (this.blending !== TXIBlending.NONE) {
-      lines.push(this.blending === TXIBlending.ADDITIVE ? 'blending additive' : 'blending punchthrough');
-    }
-    if (this.bumpMapScaling !== 1) append('bumpmapscaling', this.bumpMapScaling);
-    if (this.bumpMapTexture) append('bumpmaptexture', this.bumpMapTexture);
-    if (this.envMapTexture) append('envmaptexture', this.envMapTexture);
-    if (this.waterAlpha != null) append('wateralpha', this.waterAlpha);
-    if (this.procedureType !== TXIPROCEDURETYPE.NONE) {
-      const pt = this.procedureType === TXIPROCEDURETYPE.CYCLE ? 'cycle'
-        : this.procedureType === TXIPROCEDURETYPE.WATER ? 'water'
-        : this.procedureType === TXIPROCEDURETYPE.RANDOM ? 'random'
-        : this.procedureType === TXIPROCEDURETYPE.RINGTEXDISTORT ? 'ringtexdistort' : 'cycle';
-      lines.push(`proceduretype ${pt}`);
-    }
-    if (this.numx !== 0) append('numx', this.numx);
-    if (this.numy !== 0) append('numy', this.numy);
-    if (this.fps !== 0) append('fps', this.fps);
-    if (this.numchars !== 0) append('numchars', this.numchars);
-    if (this.fontheight !== 0) append('fontheight', this.fontheight);
-    if (this.baselineheight !== 0) append('baselineheight', this.baselineheight);
-    if (this.texturewidth !== 0) append('texturewidth', this.texturewidth);
-    if (this.spacingr !== 0) append('spacingr', this.spacingr);
-    if (this.spacingb !== 0) append('spacingb', this.spacingb);
-    if (this.caretindent !== 0) append('caretindent', this.caretindent);
-    if (this.upperleftcoords && this.upperleftcoords.length > 0) {
-      lines.push(`upperleftcoords ${this.upperleftcoords.length}`);
-      for (const c of this.upperleftcoords) {
-        lines.push(`${c.x} ${c.y} ${c.z}`);
-      }
-    }
-    if (this.lowerrightcoords && this.lowerrightcoords.length > 0) {
-      lines.push(`lowerrightcoords ${this.lowerrightcoords.length}`);
-      for (const c of this.lowerrightcoords) {
-        lines.push(`${c.x} ${c.y} ${c.z}`);
-      }
-    }
-    return lines.join('\n');
-  }
-
-  /**
-   * Create TXI from raw buffer (e.g. file bytes). Same as new TXI(buffer).
-   */
-  static fromBuffer(buffer: Uint8Array): TXI {
-    return new TXI(buffer);
-  }
-}
-
-/**
- * Load TXI from buffer (PyKotor read_txi).
- */
-export function readTXIFromBuffer(buffer: Uint8Array): TXI {
-  return TXI.fromBuffer(buffer);
-}
-
-/**
- * Serialize TXI to buffer (PyKotor bytes_txi).
- */
-export function writeTXIToBuffer(txi: TXI): Uint8Array {
-  return txi.toBuffer();
 }
 

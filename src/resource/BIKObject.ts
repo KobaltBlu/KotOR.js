@@ -1,8 +1,8 @@
-import { AudioEngine } from "../audio/AudioEngine";
-import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
-import { BinkWorkerHeader, WorkerRequest, WorkerResponse } from "../worker/bink-worker";
-import { YUVFrame } from "../video/binkvideo";
-import { GameFileSystem } from "../utility/GameFileSystem";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { YUVFrame } from "@/video/binkvideo";
+import { BinkWorkerHeader, WorkerRequest, WorkerResponse } from "@/worker/bink-worker";
 
 /**
  * BIKObject class.

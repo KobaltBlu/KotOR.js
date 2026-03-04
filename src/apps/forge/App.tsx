@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
-
+import React from "react";
 
 import { LoadingScreen } from "@/apps/common/components/loadingScreen/LoadingScreen";
-import { CommandPalette } from "@/apps/forge/components/CommandPalette";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { MenuTop } from "@/apps/forge/components/MenuTop";
 import { ModalChangeGame } from "@/apps/forge/components/modal/ModalChangeGame";
 import ModalGrantAccess from "@/apps/forge/components/modal/ModalGrantAccess";
 import { ModalManager } from "@/apps/forge/components/modal/ModalManager";
@@ -13,25 +12,12 @@ import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerCon
 import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-// MenuTop removed: top menu disabled
-// import { MenuTop } from "@/apps/forge/components/MenuTop";
 
-
-
-
-const log = createScopedLogger(LogScope.Forge);
-
-export interface AppProps {
-  [key: string]: unknown;
-}
-
-export const App = (_props: AppProps) => {
+export const App = (props: any) => {
 
   const appContext = useApp();
   const [appReady, setAppReady] = appContext.appReady;
-  const [_showGrantModal, setShowGrantModal] = appContext.showGrantModal;
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showGrantModal, setShowGrantModal] = appContext.showGrantModal;
   const [showLoadingScreen] = appContext.showLoadingScreen;
   const [loadingScreenMessage] = appContext.loadingScreenMessage;
   const [loadingScreenBackgroundURL] = appContext.loadingScreenBackgroundURL;
@@ -55,7 +41,10 @@ export const App = (_props: AppProps) => {
       dispatchEvent( new Event('resize'));
     }, 100);
 
-    log.trace('Forge init complete');
+    // console.log('start');
+    // TabResourceExplorerState.GenerateResourceList().then( () => {
+    //   console.log('end');
+    // })
   };
 
   const onUserCancel = () => {
@@ -66,11 +55,11 @@ export const App = (_props: AppProps) => {
   useEffectOnce( () => {
 
     ForgeState.VerifyGameDirectory(() => {
-      log.debug('Game Directory', 'verified');
+      console.log('Game Directory', 'verified');
       setShowGrantModal(false);
       beginInit();
     }, () => {
-      log.warn('Game Directory', 'not found');
+      console.warn('Game Directory', 'not found');
       setShowGrantModal(true);
     });
 
@@ -79,19 +68,8 @@ export const App = (_props: AppProps) => {
     }
   });
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
-        e.preventDefault();
-        setShowCommandPalette(true);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
-
   const westContent = (
-    <div id="tabs-explorer">
+    <div id="tabs-explorer" style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}>
       <TabManagerProvider manager={ForgeState.explorerTabManager}>
         <TabManager></TabManager>
       </TabManagerProvider>
@@ -100,8 +78,8 @@ export const App = (_props: AppProps) => {
 
   return (
     <>
-      <div id="app" className={appReady ? 'app-ready' : ''}>
-        {/* Top menu intentionally removed to hide File/Save menus */}
+      <div id="app" style={{ opacity: (appReady) ? '1': '0' }}>
+        <MenuTop />
         <div id="container">
           <LayoutContainerProvider>
             <LayoutContainer westContent={westContent}>
@@ -112,7 +90,6 @@ export const App = (_props: AppProps) => {
           </LayoutContainerProvider>
         </div>
         <ModalChangeGame></ModalChangeGame>
-      <CommandPalette show={showCommandPalette} onHide={() => setShowCommandPalette(false)} />
       </div>
       <ModalManager manager={ForgeState.modalManager}></ModalManager>
       <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>

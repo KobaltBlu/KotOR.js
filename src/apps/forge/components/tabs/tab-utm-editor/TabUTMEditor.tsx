@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
 import { FormField } from "@/apps/forge/components/form-field/FormField";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
@@ -41,7 +42,7 @@ export const TabUTMEditor = function(props: BaseTabProps){
   const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeStore, parser: (value: number) => number = (v) => v) => 
     tab.store.createNumberFieldHandler(setter, property, tab.store, tab, parser);
   
-const _onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeStore) =>
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeStore) => 
     tab.store.createByteFieldHandler(setter, property, tab.store, tab);
   
   const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeStore) => 

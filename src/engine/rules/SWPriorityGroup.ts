@@ -1,5 +1,4 @@
 import { TwoDAObject } from "@/resource/TwoDAObject";
-import type { ITwoDARowData } from "@/resource/TwoDAObject";
 
 /**
  * SWPriorityGroup class.
@@ -42,36 +41,36 @@ export class SWPriorityGroup {
   /** Pitch variance in octaves when playing sounds of this priority. Range is 0 to 1.0. For placed Sound objects instances, the PitchVariance overrides this 2da value. */
   playbackvariance: number = 0;
 
-  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}){
+  static From2DA(row: any = {}){
     const group = new SWPriorityGroup();
 
     group.id = parseInt(row.__index);
 
-    if(Object.hasOwn(row,'label'))
+    if(row.hasOwnProperty('label'))
       group.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
     
-    if(Object.hasOwn(row,'priority'))
+    if(row.hasOwnProperty('priority'))
       group.priority = TwoDAObject.normalizeValue(row.priority, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'volume'))
+    if(row.hasOwnProperty('volume'))
       group.volume = TwoDAObject.normalizeValue(row.volume, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'maxplaying'))
+    if(row.hasOwnProperty('maxplaying'))
       group.maxplaying = TwoDAObject.normalizeValue(row.maxplaying, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'interrpt'))
+    if(row.hasOwnProperty('interrpt'))
       group.interrpt = TwoDAObject.normalizeValue(row.interrpt, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'fadetime'))
+    if(row.hasOwnProperty('fadetime'))
       group.fadetime = TwoDAObject.normalizeValue(row.fadetime, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'maxvolumedist'))
+    if(row.hasOwnProperty('maxvolumedist'))
       group.maxvolumedist = TwoDAObject.normalizeValue(row.maxvolumedist, 'number', 1) as number;
 
-    if(Object.hasOwn(row,'minvolumedist'))
+    if(row.hasOwnProperty('minvolumedist'))
       group.minvolumedist = TwoDAObject.normalizeValue(row.minvolumedist, 'number', 0) as number;
 
-    if(Object.hasOwn(row,'playbackvariance'))
+    if(row.hasOwnProperty('playbackvariance'))
       group.playbackvariance = TwoDAObject.normalizeValue(row.playbackvariance, 'number', 0) as number;
 
     return group;

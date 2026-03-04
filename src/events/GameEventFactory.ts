@@ -67,18 +67,18 @@ export class GameEventFactory {
   static EventAreaTransition: typeof EventAreaTransition = EventAreaTransition;
   static EventControllerRumble: typeof EventControllerRumble = EventControllerRumble;
 
-  static EventFromStruct( struct: GFFStruct ): GameEvent | undefined {
-    if(!struct){ return undefined; }
-    let event: GameEvent | undefined = undefined;
+  static EventFromStruct( struct: GFFStruct ): GameEvent {
+    if(!struct){ return undefined as any; }
+    let event: GameEvent = undefined as any;
 
-    const eType = struct.getNumberByLabel('EventId') as GameEventType;
-    const eObjectId = struct.getNumberByLabel('ObjectId');
-    const eCallerId = struct.getNumberByLabel('CallerId');
-    const eDay = struct.getNumberByLabel('Day');
-    const eTime = struct.getNumberByLabel('Time');
+    const eType: GameEventType = struct.getFieldByLabel('EventId').getValue();
+    const eObjectId = struct.getFieldByLabel('ObjectId').getValue();
+    const eCallerId = struct.getFieldByLabel('CallerId').getValue();
+    const eDay = struct.getFieldByLabel('Day').getValue();
+    const eTime = struct.getFieldByLabel('Time').getValue();
 
     const eventDataField = struct.getFieldByLabel('EventData');
-    let eventData: GFFStruct | undefined = undefined;
+    let eventData: GFFStruct = undefined as any;
     if(eventDataField){
       eventData = eventDataField.getChildStructs()[0];
     }
@@ -167,7 +167,7 @@ export class GameEventFactory {
         event = new EventControllerRumble();
       break;
       default:
-        event = undefined;
+        event = undefined as any;
       break;
     }
 
@@ -182,7 +182,7 @@ export class GameEventFactory {
       }
     }
 
-    return event ?? undefined;
+    return event;
   }
 
 }

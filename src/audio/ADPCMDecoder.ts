@@ -1,7 +1,4 @@
 import { ADPCMBlock } from "@/audio/ADPCMBlock";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
 
 interface ADPCMHeader {
 	sampleRate: number;
@@ -11,11 +8,11 @@ interface ADPCMHeader {
 
 /**
  * ADPCMDecoder class.
- *
+ * 
  * The ADPCMDecoder is used to decode ADPCM wav files in the game.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file ADPCMDecoder.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -28,7 +25,7 @@ export class ADPCMDecoder {
 	previous: number[];
 	predictor: number[];
 	inputStreamIndex: number;
-	blocks: unknown[];
+	blocks: any[];
 
   constructor( header: ADPCMHeader, data: Uint8Array ){
 		this.header = header;
@@ -70,7 +67,7 @@ export class ADPCMDecoder {
 			this.pcm = new Uint8Array(0);
 			const chunks: Uint8Array[] = [];
 
-			log.info('ADPCMDecoder', 'Decode Starting');
+			console.log('ADPCMDecoder', 'Decode Starting');
 			while( count > 0 ) {
 				const inSamples = (count > this.header.frameSize ? this.header.frameSize : count);
 
@@ -85,32 +82,31 @@ export class ADPCMDecoder {
 			}
 
 			this.pcm = this.concatBuffers(chunks);
-			log.info('ADPCMDecoder', 'Decode Complete');
+			console.log('ADPCMDecoder', 'Decode Complete');
     }
 	}
 
   decodeBlock( input: Uint8Array, output: Uint8Array, index: number, count: number ) {
 
-		let inputIdx = index, outputIdx = 0
-		const outputEnd = count;
-		const blockIndex = index / this.header.frameSize;
+		let inputIdx = index, outputIdx = 0, outputEnd = count, blockIndex = index / this.header.frameSize;
+
 		const currentBlock = this.blocks[blockIndex] = new ADPCMBlock({channels: this.header.channels});
 
 		/* Block Header */
-		let byte1, byte2, _dummyByte;
+		let byte1, byte2, dummyByte;
 		for(let i = 0, len = this.header.channels; i < len; i++){
 
 			byte1 = currentBlock.header.samples[i][0] = output[ outputIdx++ ] = input[ inputIdx++ ];
 			byte2 = currentBlock.header.samples[i][1] = output[ outputIdx++ ] = input[ inputIdx++ ];
 
-			this.predictor[i] = byte1 | (byte2 << 8); // high byte and low byte
+			this.predictor[i] = byte1 | (byte2 << 8); //byte2 << 8 | (byte1 & 0xFF)
 
 			if (this.predictor[i] & 0x8000)
 				this.predictor[i] -= 0x10000;
 
 			this.stepIdx[i] = input[ inputIdx++ ] & 0xFF;
 
-			_dummyByte = input[ inputIdx++ ];  //Always Zero
+			dummyByte = input[ inputIdx++ ]; //Always Zero
 
 		}
 		/* END Block Header */
@@ -124,7 +120,7 @@ export class ADPCMDecoder {
 			channel = (sampleIdx & 4) >> 2;
 
 			if(this.header.channels == 1)
-        channel = 0;
+			  channel = 0;
 
 			bytes = this.getNibblesFromByte(input[ inputIdx++ ], channel);
 
@@ -207,17 +203,17 @@ export class ADPCMDecoder {
 
 	}
 
-	static CLAMP(value: string | number, min: number, max: number): number {
-		return Math.min(Math.max(parseInt(String(value), 10), min), max);
+	static CLAMP(value: any, min: number, max: number){
+		return Math.min(Math.max(parseInt(value), min), max);
 	}
 
-	static stepIdxTable: number[] = [
-		-1, -1, -1, -1, /* +0 - +3, decrease the step size */
-		2, 4, 6, 8,     /* +4 - +7, increase the step size */
-		-1, -1, -1, -1, /* -0 - -3, decrease the step size */
-		2, 4, 6, 8,
+	static stepIdxTable: number[] = [ 
+			-1, -1, -1, -1,		/* +0 - +3, decrease the step size */
+			 2,  4,  6,  8,     /* +4 - +7, increase the step size */
+			-1, -1, -1, -1,		/* -0 - -3, decrease the step size */
+			 2,  4,  6,  8,
 	];
-
+	
 	static stepTable: number[] = [
 		7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45,
 		50, 55, 60, 66, 73, 80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230,

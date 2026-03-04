@@ -5,8 +5,6 @@ import { GUIKeyMapItem } from "@/game/tsl/gui/GUIKeyMapItem";
 import { GameState } from "@/GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
 
-
-
 /**
  * MenuKeyboardMapping class.
  * 
@@ -44,7 +42,7 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
 
       this.BTN_Cancel.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -77,21 +75,21 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
       this.LST_EventList.GUIProtoItemClass = GUIKeyMapItem;
       this.LST_EventList.border.inneroffset = 5;
       this.LST_EventList.border.inneroffsety = 5;
-      this.LST_EventList.onSelected = (node: Keymap, control: GUIKeyMapItem) => {
+      this.LST_EventList.onSelected = (node: any, control: GUIKeyMapItem) => {
         this.selectedKey = node;
         this.selectedKeyControl = control;
       }
 
       this.addEventListener('keyup', (e: KeyboardEvent) => {
         if(this.selectedKey){
-          const lang0 = (KeyCodeToLanguage0 as Record<string, number>)[e.code];
+          const lang0 = (KeyCodeToLanguage0 as any)[e.code];
           if(typeof lang0 === 'number' && lang0 != this.selectedKey.language0){
             const key = this.processKeyName(e.key);
             this.selectedKey.character = key;
             this.selectedKey.language0 = lang0;
             this.selectedKeyControl.setKeyText(key);
 
-            const action: KeyInput = (GameState.controls.keyboard.action as Record<string, KeyInput>)[language0ToKeyCode(lang0)];
+            const action: KeyInput = (GameState.controls.keyboard.action as any)[language0ToKeyCode(lang0)];
             if(action){
               this.selectedKey.keyboardInput = action;
             }
@@ -134,4 +132,3 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
   }
   
 }
-

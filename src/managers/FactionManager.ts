@@ -15,13 +15,10 @@ import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { BitWise } from "@/utility/BitWise";
 import { GameFileSystem } from "@/utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-const log = createScopedLogger(LogScope.Manager);
+const blacklist = ['(Row Label)', '__index', 'label'];
 
-const _blacklist = ['(Row Label)', '__index', 'label'];
-
-const _REPUTATION_STATUS = {
+const REPUTATION_STATUS = {
   HOSTILE: 0,
   NEUTRAL: 1,
   FRIENDLY: 2,
@@ -29,9 +26,9 @@ const _REPUTATION_STATUS = {
 
 /**
  * FactionManager class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file FactionManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -163,7 +160,7 @@ export class FactionManager {
   }
 
   static Load2DA(): void {
-    log.info('FactionManager.Load2DA', 'loading...');
+    console.log('FactionManager.Load2DA', 'loading...');
     //Clear the factions list
     FactionManager.Init();
 
@@ -179,7 +176,7 @@ export class FactionManager {
           faction.initReputations(ReputationConstant.FRIENDLY);
         }
       }
-
+    
 
       //Set all faction reputations to their default values
       FactionManager.factions.forEach( (faction1, faction1_id) => {
@@ -222,7 +219,7 @@ export class FactionManager {
   }
 
   static LoadFAC( gff: GFFObject ){
-    log.info('FactionManager.LoadFAC');
+    console.log('FactionManager.LoadFAC');
     if(gff instanceof GFFObject){
       FactionManager.Init();
 
@@ -266,21 +263,21 @@ export class FactionManager {
       if(exists){
         const buffer = await GameFileSystem.readFile( fac_path )
         if(FactionManager.LoadFAC( new GFFObject(buffer) )){
-          log.info('ReputationLoader: loaded', 'CurrentGame .fac');
+          console.log('ReputationLoader: loaded', 'CurrentGame .fac');
         }else{
-          log.error('ReputationLoader: failed', `couldn't load repute.fac`);
+          console.error('ReputationLoader: failed', `couldn't load repute.fac`);
           FactionManager.Load2DA();
-          log.info('ReputationLoader: loaded', 'default faction data');
+          console.log('ReputationLoader: loaded', 'default faction data');
         }
       }else{
-        log.error('ReputationLoader: failed', `couldn't locate repute.fac`);
+        console.error('ReputationLoader: failed', `couldn't locate repute.fac`);
         FactionManager.Load2DA();
-        log.info('ReputationLoader: loaded', 'default faction data');
+        console.log('ReputationLoader: loaded', 'default faction data');
       }
     }catch(e){
-      log.error(e);
+      console.error(e);
       FactionManager.Load2DA();
-      log.info('ReputationLoader: loaded', 'default faction data');
+      console.log('ReputationLoader: loaded', 'default faction data');
     }
   }
 
@@ -307,10 +304,10 @@ export class FactionManager {
           if(repStruct instanceof GFFStruct){
             repList.addChildStruct(repStruct);
           }else{
-            log.info('FactionManager.save', 'invalid struct', id, i, repStruct);
+            console.log('FactionManager.save', 'invalid struct', id, i, repStruct);
           }
         }else{
-          //log.info('FactionManager.save', 'skipping because 100', id, i, reputation.reputation);
+          //console.log('FactionManager.save', 'skipping because 100', id, i, reputation.reputation);
         }
       }
     });
@@ -319,8 +316,8 @@ export class FactionManager {
   }
 
   static Export( filename = '' ){
-    log.info('FactionManager.Export', filename);
-    return new Promise<void>( (resolve, _reject) => {
+    console.log('FactionManager.Export', filename);
+    return new Promise<void>( (resolve, reject) => {
       const fac = FactionManager.Save();
       if(fac instanceof GFFObject){
         fac.export( filename, () => {

@@ -1,16 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import Draggable from "react-draggable";
+import Draggable from 'react-draggable';
 
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Debug);
 
 export interface LayoutContainerProps {
-  northContent?: React.ReactNode;
-  southContent?: React.ReactNode;
-  eastContent?: React.ReactNode;
-  westContent?: React.ReactNode;
+  northContent?: JSX.Element;
+  southContent?: JSX.Element;
+  eastContent?: JSX.Element;
+  westContent?: JSX.Element;
   northSize?: number;
   southSize?: number;
   eastSize?: number;
@@ -22,63 +19,63 @@ export interface LayoutContainerProps {
 }
 
 export const LayoutContainer = function(props: LayoutContainerProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const centerRef = useRef<HTMLDivElement | null>(null);
-  const northRef = useRef<HTMLDivElement | null>(null);
-  const northHandleRef = useRef<HTMLDivElement | null>(null);
-  const northHandleToggleRef = useRef<HTMLDivElement | null>(null);
-  const southRef = useRef<HTMLDivElement | null>(null);
-  const southHandleRef = useRef<HTMLDivElement | null>(null);
-  const southHandleToggleRef = useRef<HTMLDivElement | null>(null);
-  const eastRef = useRef<HTMLDivElement | null>(null);
-  const eastHandleRef = useRef<HTMLDivElement | null>(null);
-  const eastHandleToggleRef = useRef<HTMLDivElement | null>(null);
-  const westRef = useRef<HTMLDivElement | null>(null);
-  const westHandleRef = useRef<HTMLDivElement | null>(null);
-  const westHandleToggleRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const centerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const northRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const northHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const northHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const southRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const southHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const southHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const eastRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const eastHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const eastHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const westRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const westHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const westHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
 
-  const layoutNorthSize = useRef<number>(0);
-  const layoutSouthSize = useRef<number>(0);
-  const layoutEastSize = useRef<number>(0);
-  const layoutWestSize = useRef<number>(0);
+  const layoutNorthSize = useRef<number>() as React.MutableRefObject<number>;
+  const layoutSouthSize = useRef<number>() as React.MutableRefObject<number>;
+  const layoutEastSize = useRef<number>() as React.MutableRefObject<number>;
+  const layoutWestSize = useRef<number>() as React.MutableRefObject<number>;
 
-  const layoutNorthOpen = useRef<boolean>(false);
-  const layoutSouthOpen = useRef<boolean>(false);
-  const layoutEastOpen = useRef<boolean>(false);
-  const layoutWestOpen = useRef<boolean>(false);
+  const layoutNorthOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
+  const layoutSouthOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
+  const layoutEastOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
+  const layoutWestOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
 
-  const layoutBarOpenSize = useRef<number>(0);
-  const layoutBarClosedSize = useRef<number>(0);
+  const layoutBarOpenSize = useRef<number>() as React.MutableRefObject<number>;
+  const layoutBarClosedSize = useRef<number>() as React.MutableRefObject<number>;
 
-  const northContent = props.northContent;
-  const southContent = props.southContent;
-  const eastContent = props.eastContent;
-  const westContent = props.westContent;
+  const northContent: JSX.Element = props.northContent as JSX.Element;
+  const southContent: JSX.Element = props.southContent as JSX.Element;
+  const eastContent: JSX.Element = props.eastContent as JSX.Element;
+  const westContent: JSX.Element = props.westContent as JSX.Element;
 
   const layout_north_enabled: boolean = northContent ? true : false;
   const layout_south_enabled: boolean = southContent ? true : false;
   const layout_east_enabled: boolean = eastContent ? true : false;
   const layout_west_enabled: boolean = westContent ? true : false;
 
-  let centerStyle: React.CSSProperties = { width: '100%', height: '100%' };
-  let eastStyle: React.CSSProperties = {};
-  let westStyle: React.CSSProperties = {};
-  let northStyle: React.CSSProperties = {};
-  let southStyle: React.CSSProperties = {};
-  let northHandleStyle: React.CSSProperties = {};
-  const _northHandleToggleStyle: React.CSSProperties = {};
-  let southHandleStyle: React.CSSProperties = {};
-  const _southHandleToggleStyle: React.CSSProperties = {};
-  let eastHandleStyle: React.CSSProperties = {};
-  const _eastHandleToggleStyle: React.CSSProperties = {};
-  let westHandleStyle: React.CSSProperties = {};
-  const _westHandleToggleStyle: React.CSSProperties = {};
+  let centerStyle: any = {width: `100%`, height: `100%`};//{ position: string; top: number; bottom: number; left: number; right: number; };
+  let eastStyle: any = {};//{ position: string; top: number; bottom: number; right: number; left: number; };
+  let westStyle: any = {};//{ position: string; top: number; bottom: number; right: number; left: number; };
+  let northStyle: any = {};//{ position: string; top: number; bottom: number; right: number; left: number; };
+  let southStyle: any = {};//{ position: string; top: number; bottom: number; right: number; left: number; };
+  let northHandleStyle: any = {};//{ position: string; top: number; left: number; right: number; height: number; display: string; justifyContent: string; alignContent: string; cursor: string; };
+  const northHandleToggleStyle: any = {};//{ width: number; height: string; };
+  let southHandleStyle: any = {};//{ position: string; top: number; left: number; right: number; height: number; display: string; justifyContent: string; alignContent: string; cursor: string; };
+  const southHandleToggleStyle: any = {};//{ width: number; height: string; };
+  let eastHandleStyle: any = {};//{ position: string; bottom: number; top: number; left: number; width: number; display: string; justifyContent: string; alignContent: string; alignItems: string; cursor: string; };
+  const eastHandleToggleStyle: any = {};//{ height: number; width: string; };
+  let westHandleStyle: any = {};//{ position: string; bottom: number; top: number; left: number; width: number; display: string; justifyContent: string; alignContent: string; alignItems: string; cursor: string; };
+  const westHandleToggleStyle: any = {};//{ height: number; width: string; };
 
-  const handleStart = (_e: { clientX: number; clientY: number }, handle: string) => {
-    log.trace('Layout drag start', handle);
+  const handleStart = (e: any, handle: string) => {
+    // console.log('start', handle, e);
   }
 
-  const handleStop = (e: { clientX: number; clientY: number }, handle: string) => {
+  const handleStop = (e: any, handle: string) => {
     let offsetLeft = 0;
     let offsetTop = 0;
 
@@ -122,7 +119,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
     calculateLayout();
   }
 
-  const onPaneToggle = (e: React.MouseEvent, handle: string) => {
+  const onPaneToggle = (e: any, handle: string) => {
     e.preventDefault();
     switch(handle){
       case 'north':
@@ -146,7 +143,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
   }
 
   useEffect(() => {
-    log.trace('Layout container ref changed, recalculating layout');
+    // console.log('containerRef', containerRef);
     calculateLayout();
   }, [containerRef.current]);
 
@@ -182,7 +179,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
     if(typeof layoutBarClosedSize.current === 'undefined'){
       layoutBarClosedSize.current = (typeof props?.barClosedSize === 'number') ? props.barClosedSize : 14;
     }
-
+    
     rerender(!render);
     window.addEventListener('resize', onWindowResize);
     return () => {
@@ -202,16 +199,16 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       return;
     }
 
-    const north_gutter_size =
+    const north_gutter_size = 
       layout_north_enabled ? (layoutNorthOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
-
-    const south_gutter_size =
+      
+    const south_gutter_size = 
       layout_south_enabled ? (layoutSouthOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
-    const east_gutter_size =
+    const east_gutter_size = 
       layout_east_enabled ? (layoutEastOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
-    const west_gutter_size =
+    const west_gutter_size = 
       layout_west_enabled ? (layoutWestOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
     const west_bounds = {

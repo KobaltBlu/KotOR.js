@@ -1,4 +1,3 @@
-
 import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
 import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
 import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
@@ -196,12 +195,9 @@ export class NWScriptORChainDetector {
         if (expr1.operator !== expr2.operator) {
           return false;
         }
-        if (!expr1.left || !expr2.left || !expr1.right || !expr2.right) {
-          return false;
-        }
         // For now, do a simple check - could be improved
-        return this.expressionsEqual(expr1.left, expr2.left) &&
-               this.expressionsEqual(expr1.right, expr2.right);
+        return this.expressionsEqual(expr1.left!, expr2.left!) &&
+               this.expressionsEqual(expr1.right!, expr2.right!);
       
       case NWScriptExpressionType.CONSTANT:
         return expr1.value === expr2.value && expr1.dataType === expr2.dataType;
@@ -214,11 +210,8 @@ export class NWScriptORChainDetector {
         if (expr1.operator !== expr2.operator) {
           return false;
         }
-        if (!expr1.left || !expr2.left || !expr1.right || !expr2.right) {
-          return false;
-        }
-        return this.expressionsEqual(expr1.left, expr2.left) &&
-               this.expressionsEqual(expr1.right, expr2.right);
+        return this.expressionsEqual(expr1.left!, expr2.left!) &&
+               this.expressionsEqual(expr1.right!, expr2.right!);
       
       default:
         // For other types, do a simple comparison

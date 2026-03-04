@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { Action } from "@/actions/Action";
+import type { ComputedPath } from "@/engine/pathfinding/ComputedPath";
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
@@ -8,16 +9,15 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 
 /**
  * ActionMoveToPoint class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file ActionMoveToPoint.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -82,13 +82,12 @@ export class ActionMoveToPoint extends Action {
 
     const distance = Utility.Distance2D(this.owner.position, this.target_position);
     if(distance > (this.computedPath.points.length > 1 ? 0.5 : range)){
-
-      const ownerCreature = this.owner as ModuleCreature;
-      if(ownerCreature.blockingTimer >= 5 || this.owner.collisionTimer >= 1){
-        ownerCreature.blockingTimer = 0;
+  
+      if((this.owner as any).blockingTimer >= 5 || this.owner.collisionTimer >= 1){
+        (this.owner as any).blockingTimer = 0;
         this.owner.collisionTimer = 0;
       }
-
+  
       const point = this.computedPath.points[0];
       if(point){
         const pointDistance = Utility.Distance2D(this.owner.position, point.vector);
@@ -98,7 +97,7 @@ export class ActionMoveToPoint extends Action {
           this.owner.setFacing(atan + Math.PI/2, false, TURN_SPEED_FAST);
           this.owner.forceVector.x = Math.cos(atan);
           this.owner.forceVector.y = Math.sin(atan);
-
+    
           this.runCreatureAvoidance(delta, this.target_position, this.target);
 
           this.owner.forceVector.negate();
@@ -109,7 +108,7 @@ export class ActionMoveToPoint extends Action {
           this.computedPath.pop();
         }
       }
-
+  
       if(this.computedPath.timer < 0){
         if(this.computedPath.realtime){
           this.setComputedPath(undefined);

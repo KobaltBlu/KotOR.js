@@ -1,4 +1,3 @@
-import type { ITwoDARowData } from "@/resource/TwoDAObject";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 
 export class PazaakDeck {
@@ -69,42 +68,42 @@ export class PazaakDeck {
     return -1;
   }
 
-  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}){
+  static From2DA(row: any = {}){
     const deck = new PazaakDeck();
 
     deck.id = parseInt(row.__index);
     
-    if(Object.hasOwn(row,'deckname'))
+    if(row.hasOwnProperty('deckname'))
       deck.deckname = TwoDAObject.normalizeValue(row.deckname, 'string', '') as string;
     
-    if(Object.hasOwn(row,'card0'))
+    if(row.hasOwnProperty('card0'))
       deck.card0 = TwoDAObject.normalizeValue(row.card0, 'string', '') as string;
     
-    if(Object.hasOwn(row,'card1'))
+    if(row.hasOwnProperty('card1'))
       deck.card1 = TwoDAObject.normalizeValue(row.card1, 'string', '') as string;
     
-    if(Object.hasOwn(row,'card2'))
+    if(row.hasOwnProperty('card2'))
       deck.card2 = TwoDAObject.normalizeValue(row.card2, 'string', '') as string;
     
-    if(Object.hasOwn(row,'card3'))
+    if(row.hasOwnProperty('card3'))
       deck.card3 = TwoDAObject.normalizeValue(row.card3, 'string', '') as string;
     
-    if(Object.hasOwn(row,'card4'))
+    if(row.hasOwnProperty('card4'))
       deck.card4 = TwoDAObject.normalizeValue(row.card4, 'string', '') as string;
     
-    if(Object.hasOwn(row,'card5'))
+    if(row.hasOwnProperty('card5'))
       deck.card5 = TwoDAObject.normalizeValue(row.card5, 'string', '') as string;
     
-    if(Object.hasOwn(row,'card6'))
+    if(row.hasOwnProperty('card6'))
       deck.card6 = TwoDAObject.normalizeValue(row.card6, 'string', '') as string;
     
-    if(Object.hasOwn(row,'card7'))
+    if(row.hasOwnProperty('card7'))
       deck.card7 = TwoDAObject.normalizeValue(row.card7, 'string', '') as string;
     
-    if(Object.hasOwn(row,'card8'))
+    if(row.hasOwnProperty('card8'))
       deck.card8 = TwoDAObject.normalizeValue(row.card8, 'string', '') as string;
     
-    if(Object.hasOwn(row,'card9'))
+    if(row.hasOwnProperty('card9'))
       deck.card9 = TwoDAObject.normalizeValue(row.card9, 'string', '') as string;
 
     deck.cards = [

@@ -1,14 +1,11 @@
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 
-/** Constant value held by an expression (number, string, or boolean). */
-export type NWScriptConstantValue = number | string | boolean;
-
 /**
- * Represents an expression during NCS-to-NSS conversion.
+ * Represents an expression in NWScript decompilation.
  * Can be a constant, variable, binary operation, unary operation, or function call.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file NWScriptExpression.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -26,9 +23,9 @@ export enum NWScriptExpressionType {
 export class NWScriptExpression {
   type: NWScriptExpressionType;
   dataType: NWScriptDataType;
-
+  
   // For constants
-  value: NWScriptConstantValue | undefined;
+  value: any; // number, string, etc.
   
   // For variables
   variableName: string;
@@ -54,7 +51,7 @@ export class NWScriptExpression {
   /**
    * Create a constant expression
    */
-  static constant(value: NWScriptConstantValue, dataType: NWScriptDataType): NWScriptExpression {
+  static constant(value: any, dataType: NWScriptDataType): NWScriptExpression {
     const expr = new NWScriptExpression(NWScriptExpressionType.CONSTANT, dataType);
     expr.value = value;
     return expr;

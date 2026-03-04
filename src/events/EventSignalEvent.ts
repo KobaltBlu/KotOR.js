@@ -5,19 +5,16 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameEvent } from "@/events/GameEvent";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
+import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * EventSignalEvent class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file EventSignalEvent.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -43,13 +40,13 @@ export class EventSignalEvent extends GameEvent {
 
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
-      this.eventType = struct.getNumberByLabel('EventType');
+      this.eventType = struct.getFieldByLabel('EventType').getValue();
     }
   }
 
   execute(){
     const obj = this.getObject() as ModuleObject;
-    log.debug('EventSignalEvent', this.eventType, obj, this.getCaller());
+    console.log('EventSignalEvent', this.eventType, obj, this.getCaller());
     if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleObject)){
       return;
     }
@@ -203,13 +200,13 @@ export class EventSignalEvent extends GameEvent {
           obj.onDamaged();
           if(obj.linkedToObject){
             if(obj.linkedToObject.audioEmitter){
-              obj.linkedToObject.audioEmitter.playSound((obj.linkedToObject as { trapExplosionSound?: string }).trapExplosionSound ?? '');
+              obj.linkedToObject.audioEmitter.playSound((obj.linkedToObject as any).trapExplosionSound);
             }
             obj.linkedToObject.destroy();
           }
         }else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
           if(obj.audioEmitter){
-            obj.audioEmitter.playSound((obj as { trapExplosionSound?: string }).trapExplosionSound ?? '');
+            obj.audioEmitter.playSound((obj as any).trapExplosionSound);
           }
           obj.destroy();
         }

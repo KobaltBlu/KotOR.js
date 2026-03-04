@@ -2,20 +2,16 @@ import React, { useEffect } from "react";
 
 import { KotORModal } from "@/apps/game/components/modal/modal";
 import { useApp } from "@/apps/game/context/AppContext";
-import { EULA_VERSION, EULA } from "@/apps/game/eula";
-import * as KotOR from "@/apps/KotOR";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
+import { EULA_VERSION, EULA_DATE, EULA } from "@/apps/game/eula";
 
 export const ModalEULA = () => {
   const appContext = useApp();
   const [appState] = appContext.appState;
   const [gameKey] = appContext.gameKey;
-  const [showEULAModal] = appContext.showEULAModal;
+  const [showEULAModal, setShowEULAModal] = appContext.showEULAModal;
 
   useEffect(() => {
-
+    
   }, []);
 
   const onCancel = () => {
@@ -24,28 +20,24 @@ export const ModalEULA = () => {
   }
 
   const onOk = () => {
-    log.info("onOk EULA accepted");
+    console.log("onOk");
     const gameEULAConfig = {
       key: gameKey,
       accepted: true,
       date: new Date().toISOString(),
       version: EULA_VERSION
     };
-    const raw = window.localStorage.getItem('acceptEULA');
-    const eulaState: Record<string, { key: KotOR.GameEngineType; accepted: boolean; date: string; version: string }> = Object.assign(
-      {},
-      raw ? (JSON.parse(raw) as Record<string, { key: KotOR.GameEngineType; accepted: boolean; date: string; version: string }>) : {}
-    );
+    const eulaState: any = Object.assign({}, JSON.parse(window.localStorage.getItem('acceptEULA') as string));
     eulaState[gameKey] = gameEULAConfig;
     window.localStorage.setItem('acceptEULA', JSON.stringify(eulaState));
     appState.acceptEULA();
   }
 
   return (
-    <KotORModal
-      title="EULA"
-      show={showEULAModal}
-      onCancel={onCancel}
+    <KotORModal 
+      title="EULA" 
+      show={showEULAModal} 
+      onCancel={onCancel} 
       onOk={onOk}
     >
       {<EULA />}

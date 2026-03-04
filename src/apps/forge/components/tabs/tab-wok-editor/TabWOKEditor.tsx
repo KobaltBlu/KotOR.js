@@ -9,20 +9,7 @@ import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabWOKEditorControlMode, TabWOKEditorState } from "@/apps/forge/states/tabs";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-
-
-const log = createScopedLogger(LogScope.Forge);
-
-interface UI3DToolPaletteProps {
-  tab: TabWOKEditorState;
-}
-
-interface WOKSidebarComponentProps {
-  tab: TabWOKEditorState;
-  walkmesh?: KotOR.OdysseyWalkMesh;
-}
 
 export const TabWOKEditor = function(props: BaseTabProps) {
   const tab: TabWOKEditorState = props.tab as TabWOKEditorState;
@@ -34,10 +21,6 @@ export const TabWOKEditor = function(props: BaseTabProps) {
 
   useEffectOnce( () => { //constructor
     tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
-    // Sync initial state if load completed before mount (e.g. webview buffer resolves immediately)
-    if (tab.wok) {
-      setWalkmesh(tab.wok);
-    }
     return () => { //destructor
       tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
     };
@@ -57,8 +40,8 @@ export const TabWOKEditor = function(props: BaseTabProps) {
   )
 }
 
-const UI3DToolPalette = function(props: UI3DToolPaletteProps){
-  const tab = props.tab;
+const UI3DToolPalette = function(props: any){
+  const tab = props.tab as TabWOKEditorState;
   const [controlMode, setControlMode] = useState<TabWOKEditorControlMode>(TabWOKEditorControlMode.FACE);
 
   const onControlModeChange = () => {
@@ -75,18 +58,18 @@ const UI3DToolPalette = function(props: UI3DToolPaletteProps){
   return (
     <div className="UI3DToolPalette" style={{ marginTop: '25px' }}>
       <ul>
-        <li className={`${controlMode == 0 ? 'selected' : ''}`} onClick={(_e) => tab.setControlMode(0)}><a title="Face Mode"><i className="fa-solid fa-cube"></i></a></li>
-        <li className={`${controlMode == 1 ? 'selected' : ''}`} onClick={(_e) => tab.setControlMode(1)}><a title="Vertex Mode"><i className="fa-solid fa-vector-square"></i></a></li>
-        <li className={`${controlMode == 2 ? 'selected' : ''}`} onClick={(_e) => tab.setControlMode(2)}><a title="Edge Mode"><i className="fa-solid fa-circle-nodes"></i></a></li>
+        <li className={`${controlMode == 0 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(0)}><a title="Face Mode"><i className="fa-solid fa-cube"></i></a></li>
+        <li className={`${controlMode == 1 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(1)}><a title="Vertex Mode"><i className="fa-solid fa-vector-square"></i></a></li>
+        <li className={`${controlMode == 2 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(2)}><a title="Edge Mode"><i className="fa-solid fa-circle-nodes"></i></a></li>
       </ul>
     </div>
   );
 }
 
-const WOKSidebarComponent = function(props: WOKSidebarComponentProps){
-  const tab = props.tab;
+const WOKSidebarComponent = function(props: any){
+  const tab: TabWOKEditorState = props.tab as TabWOKEditorState;
 
-  const [walkmesh, _setWalkmesh] = useState<KotOR.OdysseyWalkMesh>(props.walkmesh);
+  const [walkmesh, setWalkmesh] = useState<KotOR.OdysseyWalkMesh>(props.walkmesh);
   const [selectedFace, setSelectedFace] = useState<KotOR.OdysseyFace3>();
   const [render, rerender] = useState<boolean>();
   const [controlMode, setControlMode] = useState<TabWOKEditorControlMode>(TabWOKEditorControlMode.FACE);
@@ -109,7 +92,7 @@ const WOKSidebarComponent = function(props: WOKSidebarComponentProps){
   });
 
   useEffect( () => {
-    log.trace('update', selectedFace);
+    console.log('update', selectedFace);
     rerender(!render);
   }, [selectedFace]);
 
@@ -117,14 +100,14 @@ const WOKSidebarComponent = function(props: WOKSidebarComponentProps){
     <>
       <SectionContainer name="Mode" slim={true}>
         <ButtonGroup aria-label="Basic example">
-          <Button variant="secondary" active={controlMode == 0} onClick={(_e) => tab.setControlMode(0)}>Face</Button>
-          <Button variant="secondary" active={controlMode == 1} onClick={(_e) => tab.setControlMode(1)}>Vertex</Button>
-          <Button variant="secondary" active={controlMode == 2} onClick={(_e) => tab.setControlMode(2)}>Edge</Button>
+          <Button variant="secondary" active={controlMode == 0} onClick={(e) => tab.setControlMode(0)}>Face</Button>
+          <Button variant="secondary" active={controlMode == 1} onClick={(e) => tab.setControlMode(1)}>Vertex</Button>
+          <Button variant="secondary" active={controlMode == 2} onClick={(e) => tab.setControlMode(2)}>Edge</Button>
         </ButtonGroup>
       </SectionContainer>
       <SectionContainer name="Selected Face" slim={true}>
         <div>
-          <b>Face Index:</b> {selectedFace && walkmesh ? walkmesh.faces.indexOf(selectedFace) : -1}
+          <b>Face Index:</b> {walkmesh?.faces.indexOf(selectedFace as any)}
         </div>
         <div>
           <b>Walk Type:</b> { selectedFace ? selectedFace.walkIndex : -1 }

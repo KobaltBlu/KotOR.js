@@ -1,6 +1,5 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-
 // import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 
 /**

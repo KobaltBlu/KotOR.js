@@ -2,38 +2,25 @@ import * as THREE from "three";
 
 import { TextureType } from "@/enums/loaders/TextureType";
 import { GameState } from "@/GameState";
-import { GUIProtoItem, GUIButton } from "@/gui";
 import type { GUIControl, GameMenu } from "@/gui";
+import { GUIProtoItem, GUIButton } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
-
-interface SpellRowLike {
-  __index: number;
-  constant?: string;
-  iconresref?: string;
-}
-
-interface PlayerSpellLike {
-  getHasSpell: (spellId: number) => boolean;
-}
 
 /**
  * GUISpellItem class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GUISpellItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUISpellItem extends GUIProtoItem {
 
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl | null | undefined = undefined, scale = false){
-    super(menu, control, parent ?? undefined, scale);
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl = null as any, scale = false){
+    super(menu, control, parent, scale);
     this.disableSelection = true;
     this.extent.height = 45;
   }
@@ -51,8 +38,7 @@ export class GUISpellItem extends GUIProtoItem {
       const iconHeight = this.extent.height;
       const arrowHeight = iconHeight; //32
 
-      const spellList: SpellRowLike[] = Array.isArray(this.node) ? this.node as SpellRowLike[] : [];
-      const player = GameState.PartyManager.party[0] as PlayerSpellLike;
+      const spellList = this.node;
       for(let i = 0; i < spellList.length; i++){
         const spell = spellList[i];
 
@@ -67,9 +53,9 @@ export class GUISpellItem extends GUIProtoItem {
           }
         }*/
 
-        const hasSpell = player.getHasSpell(spell.__index);
+        const hasSpell = GameState.PartyManager.party[0].getHasSpell(spell.__index);
 
-        log.debug('spell', spell.constant, hasPrereq);
+        console.log(spell.constant, hasPrereq);
 
         const unknownSpells: number[] = [176, 177, 178, 179, 180, 181, 182];
         const isUnknown = unknownSpells.indexOf(spell.__index) >= 0;
@@ -108,13 +94,11 @@ export class GUISpellItem extends GUIProtoItem {
 
         this.widget.add(_buttonIconWidget);
 
-        TextureLoader.enQueue('uibit_abi_back', this.border.fill.material as THREE.Material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          const buttonBorderMaterial = buttonIcon.border.fill.material as THREE.ShaderMaterial;
-          const buttonHighlightMaterial = buttonIcon.highlight.fill.material as THREE.ShaderMaterial;
-          buttonIcon.setMaterialTexture(buttonBorderMaterial, texture);
-          buttonBorderMaterial.transparent = true;
-          buttonIcon.setMaterialTexture(buttonHighlightMaterial, texture);
-          buttonHighlightMaterial.transparent = true;
+        TextureLoader.enQueue('uibit_abi_back', this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+          buttonIcon.setMaterialTexture( buttonIcon.border.fill.material, texture);
+          buttonIcon.border.fill.material.transparent = true;
+          buttonIcon.setMaterialTexture( buttonIcon.highlight.fill.material, texture);
+          buttonIcon.highlight.fill.material.transparent = true;
           if(locked){
             (buttonIcon.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 0.25;
           }
@@ -125,27 +109,26 @@ export class GUISpellItem extends GUIProtoItem {
         });
 
         /**
-         * FEAT ICON
-         */
-        const iconMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
-        const iconSprite = new THREE.Sprite(iconMaterial);
+         * FEAT ICON 
+         */ 
+        this.widget.userData.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+        this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
 
-        iconSprite.scale.x = 32;
-        iconSprite.scale.y = 32;
-        iconSprite.position.z = 5;
-        iconSprite.renderOrder = 5;
-        TextureLoader.enQueue((isUnknown && !hasSpell) ? 'ip_secret' : (spell.iconresref ?? ''), iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          const image = texture.image as { width?: number; height?: number };
-          iconSprite.scale.x = image.width ?? iconSprite.scale.x;
-          iconSprite.scale.y = image.height ?? iconSprite.scale.y;
+        this.widget.userData.iconSprite.scale.x = 32;
+        this.widget.userData.iconSprite.scale.y = 32;
+        this.widget.userData.iconSprite.position.z = 5;
+        this.widget.userData.iconSprite.renderOrder = 5;
+        TextureLoader.enQueue((isUnknown && !hasSpell) ? 'ip_secret' : spell.iconresref, this.widget.userData.iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+          this.widget.userData.iconSprite.scale.x = texture.image.width;
+          this.widget.userData.iconSprite.scale.y = texture.image.height;
           if(locked && !isUnknown){
-            iconMaterial.opacity = 0.25;
+            this.widget.userData.iconMaterial.opacity = 0.25;
           }
-          iconMaterial.transparent = true;
-          iconMaterial.needsUpdate = true;
+          this.widget.userData.iconMaterial.transparent = true;
+          this.widget.userData.iconMaterial.needsUpdate = true;
         });
 
-        _buttonIconWidget.add(iconSprite);
+        _buttonIconWidget.add(this.widget.userData.iconSprite);
 
         /**
          * BLUE ARROW
@@ -182,16 +165,14 @@ export class GUISpellItem extends GUIProtoItem {
 
           this.widget.add(_arrowIconWidget);
 
-          TextureLoader.enQueue('uibit_abi_arrow', this.border.fill.material as THREE.Material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-            const arrowBorderMaterial = arrowIcon.border.fill.material as THREE.ShaderMaterial;
-            const arrowHighlightMaterial = arrowIcon.highlight.fill.material as THREE.ShaderMaterial;
-            arrowIcon.setMaterialTexture(arrowBorderMaterial, texture);
-            arrowBorderMaterial.transparent = true;
-            arrowIcon.setMaterialTexture(arrowHighlightMaterial, texture);
-            arrowHighlightMaterial.transparent = true;
+          TextureLoader.enQueue('uibit_abi_arrow', this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+            arrowIcon.setMaterialTexture( arrowIcon.border.fill.material, texture);
+            arrowIcon.border.fill.material.transparent = true;
+            arrowIcon.setMaterialTexture( arrowIcon.highlight.fill.material, texture);
+            arrowIcon.highlight.fill.material.transparent = true;
             if(locked && !isUnknown){
-              arrowBorderMaterial.uniforms.opacity.value = 0.25;
-              arrowHighlightMaterial.uniforms.opacity.value = 0.25;
+              arrowIcon.border.fill.material.uniforms.opacity.value = 0.25;
+              arrowIcon.highlight.fill.material.uniforms.opacity.value = 0.25;
             }
           });
         }
@@ -199,7 +180,7 @@ export class GUISpellItem extends GUIProtoItem {
       }
       return this.widget;
     }catch(e){
-      log.error('GUISpellItem createControl', e);
+      console.error(e);
     }
     return this.widget;
 

@@ -2,7 +2,7 @@ import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { TalkVolume } from "@/enums/engine/TalkVolume";
-
+import { GameState } from "@/GameState";
 
 /**
  * ActionSpeak class.
@@ -25,7 +25,7 @@ export class ActionSpeak extends Action {
     
   }
 
-  update(_delta: number = 0): ActionStatus {
+  update(delta: number = 0): ActionStatus {
     if(!this.owner){
       return ActionStatus.FAILED;
     }

@@ -3,45 +3,34 @@ import { Button, Modal } from "react-bootstrap";
 
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-
-const log = createScopedLogger(LogScope.Forge);
-
-export interface ForgeCompatibleProfile {
-  key: string;
-  name: string;
-  isForgeCompatible?: boolean;
-}
-
-export const ModalChangeGame = function(_props: Record<string, unknown>){
+export const ModalChangeGame = function(props: any){
   const [show, setShow] = useState(false);
-  const [profiles, setProfiles] = useState<ForgeCompatibleProfile[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
 
-  const chooseProfile = (e: React.MouseEvent<HTMLButtonElement>, profile: ForgeCompatibleProfile | null) => {
+  const chooseProfile = (e: React.MouseEvent<HTMLButtonElement>, profile: any) => {
     setShow(false);
-    if (profile) {
-      ForgeState.switchGame(profile);
+    if(profile){
+      window.location.search = `?key=${profile.key}`;
     }
   }
 
   useEffectOnce( () => {
-    const compatible_profiles: ForgeCompatibleProfile[] = [];
-    const all_profiles = (KotOR.ConfigClient.get(['Profiles']) as Record<string, ForgeCompatibleProfile> | undefined) ?? {};
+    const compatible_profiles: any[] = [];
+    const all_profiles = (KotOR.ConfigClient.get(['Profiles']) || {});
     const all_profile_keys = Object.keys(all_profiles);
-
+    
     for(let i = 0, len = all_profile_keys.length; i < len; i++){
-      log.trace(all_profile_keys[i]);
+      console.log(all_profile_keys[i])
       const profile = all_profiles[all_profile_keys[i]];
-      if(profile?.isForgeCompatible){
+      if(profile.isForgeCompatible){
         compatible_profiles.push(profile);
       }
     }
-    log.trace('profiles', compatible_profiles);
+    console.log('profiles', compatible_profiles);
     setProfiles(compatible_profiles);
     ModalChangeGameState.AddEventListener('onShow', handleShow);
     ModalChangeGameState.AddEventListener('onHide', handleShow);
@@ -52,10 +41,10 @@ export const ModalChangeGame = function(_props: Record<string, unknown>){
   });
 
   return (
-    <Modal
-      show={show}
-      onHide={handleClose}
-      backdrop="static"
+    <Modal 
+      show={show} 
+      onHide={handleClose} 
+      backdrop="static" 
       keyboard={false}
     >
       <Modal.Header closeButton>
@@ -68,9 +57,9 @@ export const ModalChangeGame = function(_props: Record<string, unknown>){
 
       <Modal.Footer>
         {
-          profiles.map( (profile: ForgeCompatibleProfile) => {
+          profiles.map( (profile: any) => {
             return (
-              <Button key={profile.key} variant="primary" onClick={(e: React.MouseEvent<HTMLButtonElement>) => chooseProfile(e, profile)}>{profile.name}</Button>
+              <Button key={profile.key} variant="primary" onClick={(e: any) => chooseProfile(e, profile)}>{profile.name}</Button>
             )
           })
         }
@@ -82,51 +71,47 @@ export const ModalChangeGame = function(_props: Record<string, unknown>){
 
 export type ModalChangeGameEventListenerTypes = 'onShow'|'onHide';
 
-type ModalChangeGameCallback = (...args: unknown[]) => void;
-
 export interface ModalChangeGameEventListeners {
-  onShow: ModalChangeGameCallback[];
-  onHide: ModalChangeGameCallback[];
+  onShow: Function[];
+  onHide: Function[];
 }
 
 export class ModalChangeGameState {
-  /** Instance marker so this class is not treated as extraneous (static-only). */
-  private readonly _instance = true;
 
   static eventListeners: ModalChangeGameEventListeners = {
     onShow: [],
     onHide: [],
   };
 
-  static AddEventListener(type: ModalChangeGameEventListenerTypes, cb: ModalChangeGameCallback){
+  static AddEventListener(type: ModalChangeGameEventListenerTypes, cb: Function){
     if(Array.isArray(ModalChangeGameState.eventListeners[type])){
       const ev = ModalChangeGameState.eventListeners[type];
       const index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
-        log.warn('Event Listener: Already added', type);
+        console.warn('Event Listener: Already added', type);
       }
     }else{
-      log.warn('Event Listener: Unsupported', type);
+      console.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static RemoveEventListener(type: ModalChangeGameEventListenerTypes, cb: ModalChangeGameCallback){
+  static RemoveEventListener(type: ModalChangeGameEventListenerTypes, cb: Function){
     if(Array.isArray(ModalChangeGameState.eventListeners[type])){
       const ev = ModalChangeGameState.eventListeners[type];
       const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
-        log.warn('Event Listener: Already removed', type);
+        console.warn('Event Listener: Already removed', type);
       }
     }else{
-      log.warn('Event Listener: Unsupported', type);
+      console.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static ProcessEventListener(type: ModalChangeGameEventListenerTypes, args: unknown[] = []){
+  static ProcessEventListener(type: ModalChangeGameEventListenerTypes, args: any[] = []){
     if(Array.isArray(ModalChangeGameState.eventListeners[type])){
       const ev = ModalChangeGameState.eventListeners[type];
       for(let i = 0; i < ev.length; i++){
@@ -136,11 +121,11 @@ export class ModalChangeGameState {
         }
       }
     }else{
-      log.warn('Event Listener: Unsupported', type);
+      console.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static TriggerEventListener(type: ModalChangeGameEventListenerTypes, args: unknown[] = []){
+  static TriggerEventListener(type: ModalChangeGameEventListenerTypes, args: any[] = []){
     ModalChangeGameState.ProcessEventListener(type, args);
   }
 

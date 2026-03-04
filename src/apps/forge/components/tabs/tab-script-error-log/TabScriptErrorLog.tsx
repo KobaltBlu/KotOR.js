@@ -1,17 +1,12 @@
-import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
-import React, { useMemo, useState } from 'react';
+import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api"
+import React, { useMemo, useState } from "react"
 
-import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
-import type { TabScriptErrorLogState, TabTextEditorState } from '@/apps/forge/states/tabs';
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce"
+import { TabScriptErrorLogState, TabTextEditorState } from "@/apps/forge/states/tabs";
 
-export interface TabScriptErrorLogProps {
-  tab: TabScriptErrorLogState;
-  parentTab: TabTextEditorState;
-}
-
-export const TabScriptErrorLog: React.FC<TabScriptErrorLogProps> = (props) => {
-  const tab = props.tab;
-  const parentTab = props.parentTab;
+export const TabScriptErrorLog = function(props: any){
+  const tab: TabScriptErrorLogState = props.tab;
+  const parentTab: TabTextEditorState = props.parentTab;
 
   const [errors, setErrors] = useState<monacoEditor.editor.IMarkerData[]>([]);
 

@@ -1,5 +1,3 @@
-import * as THREE from "three";
-
 import { CharGenClasses } from "@/game/CharGenClasses";
 import { GameState } from "@/GameState";
 import { GameMenu, LBL_3DView } from "@/gui";
@@ -7,15 +5,12 @@ import type { GUILabel } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * CharGenMain class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file CharGenMain.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -79,7 +74,7 @@ export class CharGenMain extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.tGuiPanel.getFill().position.z = -0.5;
 
       this._3dView = new LBL_3DView();
@@ -91,7 +86,7 @@ export class CharGenMain extends GameMenu {
       (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
 
       this.Init3D();
-      resolve();
+      resolve(); 
     });
   }
 
@@ -118,8 +113,8 @@ export class CharGenMain extends GameMenu {
       GameState.CharGenManager.selectedCreature.update(delta);
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
-    } catch (e) {
-      log.error(e as Error);
+    } catch (e: any) {
+      console.error(e);
     }
   }
 
@@ -135,8 +130,7 @@ export class CharGenMain extends GameMenu {
     this.NEW_LBL?.hide();
     try {
       GameState.CharGenManager.selectedCreature.model.parent.remove(GameState.CharGenManager.selectedCreature.model);
-    } catch {
-      return;
+    } catch (e: any) {
     }
     this._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
     GameState.CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;
@@ -157,5 +151,5 @@ export class CharGenMain extends GameMenu {
   updateAttributes() {
 
   }
-
+  
 }

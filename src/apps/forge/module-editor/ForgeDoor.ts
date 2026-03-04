@@ -1,10 +1,5 @@
-import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import type { IGameContext } from "@/interface/engine/IGameContext";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Forge);
 
 export class ForgeDoor extends ForgeGameObject {
   linkedTo: string = '';
@@ -31,11 +26,11 @@ export class ForgeDoor extends ForgeGameObject {
   modelLoading: boolean = false;
 
   //GIT Instance Properties
-  templateResType: number = KotOR.ResourceTypes.utd;
+  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utd;
 
   // Appearance data
-  kDoorAppearances: Record<string, string | number>[] = [];
-  kDoorAppearance: Record<string, string | number> = {};
+  kDoorAppearances: any[] = [];
+  kDoorAppearance: any = {};
 
   //Blueprint Properties
   animationState: number = 0;
@@ -95,24 +90,17 @@ export class ForgeDoor extends ForgeGameObject {
     if(buffer){
       this.loadFromBuffer(buffer);
     }
-    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
-      this.onPropertyChange(
-        args[0] as string,
-        args[1] as string | number | boolean | object,
-        args[2] as string | number | boolean | object
-      );
-    };
-    this.addEventListener('onPropertyChange', onPropChange);
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: string | number | boolean | object, oldValue: string | number | boolean | object){
+  onPropertyChange(property: string, newValue: any, oldValue: any){
     if(property === 'genericType'){
       this.loadAppearance();
       if(newValue !== oldValue){
         this.loadModel();
       }
     }
-    if(property === 'hp' && typeof newValue === 'number'){
+    if(property === 'hp'){
       this.currentHP = newValue;
     }
     if(property === 'templateResRef'){
@@ -135,160 +123,160 @@ export class ForgeDoor extends ForgeGameObject {
     if(!root) return;
 
     if(root.hasField('AnimationState')){
-      this.animationState = root.getNumberByLabel('AnimationState');
+      this.animationState = root.getFieldByLabel('AnimationState').getValue() || 0;
     }
     if(root.hasField('Appearance')){
-      this.appearance = root.getNumberByLabel('Appearance');
+      this.appearance = root.getFieldByLabel('Appearance').getValue() || 0;
     }
     if(root.hasField('AutoRemoveKey')){
-      this.autoRemoveKey = root.getBooleanByLabel('AutoRemoveKey');
+      this.autoRemoveKey = root.getFieldByLabel('AutoRemoveKey').getValue() || false;
     }
     if(root.hasField('CloseLockDC')){
-      this.closeLockDC = root.getNumberByLabel('CloseLockDC');
+      this.closeLockDC = root.getFieldByLabel('CloseLockDC').getValue() || 0;
     }
     if(root.hasField('Comment')){
-      this.comment = root.getStringByLabel('Comment');
+      this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
     if(root.hasField('Conversation')){
-      this.conversation = root.getStringByLabel('Conversation');
+      this.conversation = root.getFieldByLabel('Conversation').getValue() || '';
     }
     if(root.hasField('CurrentHP')){
-      this.currentHP = root.getNumberByLabel('CurrentHP');
+      this.currentHP = root.getFieldByLabel('CurrentHP').getValue() || 0;
     }
     if(root.hasField('Description')){
       this.description = root.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('DisarmDC')){
-      this.disarmDC = root.getNumberByLabel('DisarmDC');
+      this.disarmDC = root.getFieldByLabel('DisarmDC').getValue() || 0;
     }
     if(root.hasField('Faction')){
-      this.factionId = root.getNumberByLabel('Faction');
+      this.factionId = root.getFieldByLabel('Faction').getValue() || 0;
     }
     if(root.hasField('Fort')){
-      this.fort = root.getNumberByLabel('Fort');
+      this.fort = root.getFieldByLabel('Fort').getValue() || 0;
     }
     if(root.hasField('GenericType')){
-      this.genericType = root.getNumberByLabel('GenericType');
+      this.genericType = root.getFieldByLabel('GenericType').getValue() || 0;
     }
     if(root.hasField('HP')){
-      this.hp = root.getNumberByLabel('HP');
+      this.hp = root.getFieldByLabel('HP').getValue() || 0;
     }
     if(root.hasField('Hardness')){
-      this.hardness = root.getNumberByLabel('Hardness');
+      this.hardness = root.getFieldByLabel('Hardness').getValue() || 0;
     }
     if(root.hasField('Interruptable')){
-      this.interruptable = root.getBooleanByLabel('Interruptable');
+      this.interruptable = root.getFieldByLabel('Interruptable').getValue() || false;
     }
     if(root.hasField('KeyName')){
-      this.keyName = root.getStringByLabel('KeyName');
+      this.keyName = root.getFieldByLabel('KeyName').getValue() || '';
     }
     if(root.hasField('KeyRequired')){
-      this.keyRequired = root.getBooleanByLabel('KeyRequired');
+      this.keyRequired = root.getFieldByLabel('KeyRequired').getValue() || false;
     }
     if(root.hasField('LoadScreenID')){
-      this.loadScreenID = root.getNumberByLabel('LoadScreenID');
+      this.loadScreenID = root.getFieldByLabel('LoadScreenID').getValue() || 0;
     }
     if(root.hasField('LocName')){
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('Lockable')){
-      this.lockable = root.getBooleanByLabel('Lockable');
+      this.lockable = root.getFieldByLabel('Lockable').getValue() || false;
     }
     if(root.hasField('Locked')){
-      this.locked = root.getBooleanByLabel('Locked');
+      this.locked = root.getFieldByLabel('Locked').getValue() || false;
     }
     if(root.hasField('Min1HP')){
-      this.min1HP = root.getBooleanByLabel('Min1HP');
+      this.min1HP = root.getFieldByLabel('Min1HP').getValue() || false;
     }
     if(root.hasField('OnClick')){
-      this.onClick = root.getStringByLabel('OnClick');
+      this.onClick = root.getFieldByLabel('OnClick').getValue() || '';
     }
     if(root.hasField('OnClosed')){
-      this.onClosed = root.getStringByLabel('OnClosed');
+      this.onClosed = root.getFieldByLabel('OnClosed').getValue() || '';
     }
     if(root.hasField('OnDamaged')){
-      this.onDamaged = root.getStringByLabel('OnDamaged');
+      this.onDamaged = root.getFieldByLabel('OnDamaged').getValue() || '';
     }
     if(root.hasField('OnDeath')){
-      this.onDeath = root.getStringByLabel('OnDeath');
+      this.onDeath = root.getFieldByLabel('OnDeath').getValue() || '';
     }
     if(root.hasField('OnDisarm')){
-      this.onDisarm = root.getStringByLabel('OnDisarm');
+      this.onDisarm = root.getFieldByLabel('OnDisarm').getValue() || '';
     }
     if(root.hasField('OnFailToOpen')){
-      this.onFailToOpen = root.getStringByLabel('OnFailToOpen');
+      this.onFailToOpen = root.getFieldByLabel('OnFailToOpen').getValue() || '';
     }
     if(root.hasField('OnHeartbeat')){
-      this.onHeartbeat = root.getStringByLabel('OnHeartbeat');
+      this.onHeartbeat = root.getFieldByLabel('OnHeartbeat').getValue() || '';
     }
     if(root.hasField('OnLock')){
-      this.onLock = root.getStringByLabel('OnLock');
+      this.onLock = root.getFieldByLabel('OnLock').getValue() || '';
     }
     if(root.hasField('OnMeleeAttacked')){
-      this.onMeleeAttacked = root.getStringByLabel('OnMeleeAttacked');
+      this.onMeleeAttacked = root.getFieldByLabel('OnMeleeAttacked').getValue() || '';
     }
     if(root.hasField('OnOpen')){
-      this.onOpen = root.getStringByLabel('OnOpen');
+      this.onOpen = root.getFieldByLabel('OnOpen').getValue() || '';
     }
     if(root.hasField('OnSpellCastAt')){
-      this.onSpellCastAt = root.getStringByLabel('OnSpellCastAt');
+      this.onSpellCastAt = root.getFieldByLabel('OnSpellCastAt').getValue() || '';
     }
     if(root.hasField('OnTrapTriggered')){
-      this.onTrapTriggered = root.getStringByLabel('OnTrapTriggered');
+      this.onTrapTriggered = root.getFieldByLabel('OnTrapTriggered').getValue() || '';
     }
     if(root.hasField('OnUnlock')){
-      this.onUnlock = root.getStringByLabel('OnUnlock');
+      this.onUnlock = root.getFieldByLabel('OnUnlock').getValue() || '';
     }
     if(root.hasField('OnUserDefined')){
-      this.onUserDefined = root.getStringByLabel('OnUserDefined');
+      this.onUserDefined = root.getFieldByLabel('OnUserDefined').getValue() || '';
     }
     if(root.hasField('OpenLockDC')){
-      this.openLockDC = root.getNumberByLabel('OpenLockDC');
+      this.openLockDC = root.getFieldByLabel('OpenLockDC').getValue() || 0;
     }
     if(root.hasField('OpenState')){
-      this.openState = root.getNumberByLabel('OpenState');
+      this.openState = root.getFieldByLabel('OpenState').getValue() || 0;
     }
     if(root.hasField('PaletteID')){
-      this.paletteID = root.getNumberByLabel('PaletteID');
+      this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
     if(root.hasField('Plot')){
-      this.plot = root.getBooleanByLabel('Plot');
+      this.plot = root.getFieldByLabel('Plot').getValue() || false;
     }
     if(root.hasField('PortraitId')){
-      this.portraitId = root.getNumberByLabel('PortraitId');
+      this.portraitId = root.getFieldByLabel('PortraitId').getValue() || 0;
     }
     if(root.hasField('Ref')){
-      this.ref = root.getNumberByLabel('Ref');
+      this.ref = root.getFieldByLabel('Ref').getValue() || 0;
     }
     if(root.hasField('Static')){
-      this.static = root.getBooleanByLabel('Static');
+      this.static = root.getFieldByLabel('Static').getValue() || false;
     }
     if(root.hasField('Tag')){
-      this.tag = root.getStringByLabel('Tag');
+      this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
     if(root.hasField('TemplateResRef')){
-      this.templateResRef = root.getStringByLabel('TemplateResRef');
+      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
     }
     if(root.hasField('TrapDetectDC')){
-      this.trapDetectDC = root.getNumberByLabel('TrapDetectDC');
+      this.trapDetectDC = root.getFieldByLabel('TrapDetectDC').getValue() || 0;
     }
     if(root.hasField('TrapDetectable')){
-      this.trapDetectable = root.getBooleanByLabel('TrapDetectable');
+      this.trapDetectable = root.getFieldByLabel('TrapDetectable').getValue() || false;
     }
     if(root.hasField('TrapDisarmable')){
-      this.trapDisarmable = root.getBooleanByLabel('TrapDisarmable');
+      this.trapDisarmable = root.getFieldByLabel('TrapDisarmable').getValue() || false;
     }
     if(root.hasField('TrapFlag')){
-      this.trapFlag = root.getBooleanByLabel('TrapFlag');
+      this.trapFlag = root.getFieldByLabel('TrapFlag').getValue() || false;
     }
     if(root.hasField('TrapOneShot')){
-      this.trapOneShot = root.getBooleanByLabel('TrapOneShot');
+      this.trapOneShot = root.getFieldByLabel('TrapOneShot').getValue() || false;
     }
     if(root.hasField('TrapType')){
-      this.trapType = root.getNumberByLabel('TrapType');
+      this.trapType = root.getFieldByLabel('TrapType').getValue() || 0;
     }
     if(root.hasField('Will')){
-      this.will = root.getNumberByLabel('Will');
+      this.will = root.getFieldByLabel('Will').getValue() || 0;
     }
   }
 
@@ -298,7 +286,7 @@ export class ForgeDoor extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-
+    
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AnimationState', this.animationState || 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Appearance', this.appearance) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AutoRemoveKey', this.autoRemoveKey ? 1 : 0) );
@@ -372,7 +360,7 @@ export class ForgeDoor extends ForgeGameObject {
   async loadModel(){
     if(this.model){
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch{ /* ignore */ }
+      try{ this.model.dispose(); }catch(e){}
     }
 
     // Load appearance data first if not already loaded
@@ -388,19 +376,19 @@ export class ForgeDoor extends ForgeGameObject {
       return this.model;
     }
 
-    const modelName = this.stringCleaner(String(this.kDoorAppearance?.modelname ?? '')) || 'plc_invis';
+    const modelName = this.stringCleaner(this.kDoorAppearance?.modelname) || 'plc_invis';
 
     try{
       this.modelLoading = true;
       this.processEventListener('onModelChange', [this]);
       const mdl = await KotOR.MDLLoader.loader.load(modelName);
       const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
-        context: this.context as unknown as IGameContext,
+        context: this.context,
         lighting: true
       });
       this.model = model;
     }catch(e){
-      log.error(e as Error);
+      console.error(e);
       this.model = new KotOR.OdysseyModel3D();
     }
     this.modelLoading = false;
@@ -431,16 +419,16 @@ export class ForgeDoor extends ForgeGameObject {
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
-    this.rotation.z = strt.getNumberByLabel('Bearing');
-    this.linkedTo = strt.getStringByLabel('LinkedTo');
-    this.linkedToFlags = strt.getNumberByLabel('LinkedToFlags');
-    this.linkedToModule = strt.getStringByLabel('LinkedToModule');
-    this.tag = strt.getStringByLabel('Tag');
-    this.templateResRef = strt.getStringByLabel('TemplateResRef');
-    this.transitionDestin = strt.getStringByLabel('TransitionDestin');
-    this.position.x = strt.getNumberByLabel('X');
-    this.position.y = strt.getNumberByLabel('Y');
-    this.position.z = strt.getNumberByLabel('Z');
+    this.rotation.z = strt.getFieldByLabel('Bearing').getValue() as number;
+    this.linkedTo = strt.getFieldByLabel('LinkedTo').getValue() as string;
+    this.linkedToFlags = strt.getFieldByLabel('LinkedToFlags').getValue() as number;
+    this.linkedToModule = strt.getFieldByLabel('LinkedToModule').getValue() as string;
+    this.tag = strt.getFieldByLabel('Tag').getValue() as string;
+    this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
+    this.transitionDestin = strt.getFieldByLabel('TransitionDestin').getValue() as string;
+    this.position.x = strt.getFieldByLabel('X').getValue() as number;
+    this.position.y = strt.getFieldByLabel('Y').getValue() as number;
+    this.position.z = strt.getFieldByLabel('Z').getValue() as number;
   }
 
 }

@@ -6,10 +6,6 @@ import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
 import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { IPCMessage } from "@/server/ipc/IPCMessage";
 import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Debug);
 // import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
 export interface ScriptInstanceProviderValues {
@@ -17,19 +13,13 @@ export interface ScriptInstanceProviderValues {
   breakpointMap: [Map<number, boolean>, React.Dispatch<Map<number, boolean>>];
   seekAddress: [number, React.Dispatch<number>];
 }
-const defaultScriptInstanceValue: ScriptInstanceProviderValues = null as unknown as ScriptInstanceProviderValues;
-export const ScriptInstanceContext = createContext<ScriptInstanceProviderValues>(defaultScriptInstanceValue);
+export const ScriptInstanceContext = createContext<ScriptInstanceProviderValues>({} as any);
 
 export function useScriptInstance(){
   return useContext(ScriptInstanceContext);
 }
 
-export interface ScriptInstanceProviderProps {
-  children: React.ReactNode;
-  instance: KotOR.NWScriptInstance | undefined;
-}
-
-export const ScriptInstanceProvider = (props: ScriptInstanceProviderProps) => {
+export const ScriptInstanceProvider = (props: {children: any; instance: KotOR.NWScriptInstance|undefined}) => {
   const appContext = useApp();
   const sendMessageHelper = appContext.sendMessageHelper;
   // const [channelMessage, sendChanelMessage] = appContext.channelMessage;
@@ -46,7 +36,7 @@ export const ScriptInstanceProvider = (props: ScriptInstanceProviderProps) => {
     seekAddress: [seekAddress, setSeekAddress],
   };
 
-  const breakPointUpdateHandler = (address: number, added: boolean) => {
+  const breakPointUpdateHandler = (address: number, added: false) => {
     if(!instance) return;
     setBreakpointMap(new Map(instance.breakPoints));
     rerender(!render);
@@ -58,14 +48,14 @@ export const ScriptInstanceProvider = (props: ScriptInstanceProviderProps) => {
   }
 
   const seekHandler = (address: number) => {
-    log.debug("Seeking to", address);
+    console.log("Seeking to", address);
     setSeekAddress(address);
   }
 
   useEffect(() => {
-    log.debug("Setting instance", props.instance?.uuid);
+    console.log("Setting instance", props.instance);
     if(instance) {
-      log.debug("Removing breakpoint listener", instance.uuid);
+      console.log("Removing breakpoint listener", instance.uuid);
       instance.removeEventListener('breakpoint', breakPointUpdateHandler);
       instance.removeEventListener('seek', seekHandler);
     }
@@ -74,7 +64,7 @@ export const ScriptInstanceProvider = (props: ScriptInstanceProviderProps) => {
     if(props.instance) {
       setBreakpointMap(new Map(props.instance.breakPoints));
       setSeekAddress(props.instance.seek);
-      log.debug("Adding breakpoint listener", props.instance.uuid);
+      console.log("Adding breakpoint listener", props.instance.uuid);
       props.instance.addEventListener('breakpoint', breakPointUpdateHandler);
       props.instance.addEventListener('seek', seekHandler);
     }

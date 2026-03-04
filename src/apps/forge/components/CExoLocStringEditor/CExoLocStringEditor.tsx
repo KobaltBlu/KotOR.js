@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 
 import { TLKSearchModal } from "@/apps/forge/components/TLKSearchModal";
 import * as KotOR from "@/apps/forge/KotOR";
-import "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor.scss";
+import "./CExoLocStringEditor.scss";
 
 export interface CExoLocStringEditorProps {
   value: KotOR.CExoLocString;
@@ -65,7 +65,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
     handleResrefChange(index);
   };
 
-  const handleSubstringChange = (index: number, field: 'language' | 'gender' | 'str', newValue: number | string) => {
+  const handleSubstringChange = (index: number, field: 'language' | 'gender' | 'str', newValue: any) => {
     const updatedSubstrings = [...substrings];
     const substring = updatedSubstrings[index];
     

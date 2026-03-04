@@ -21,15 +21,8 @@ export class OdysseyObject3D extends THREE.Object3D {
   NodeType: number;
   isWalkmesh: boolean;
   controllers: Map<number, OdysseyController>;
-  controllerCache: Record<number, unknown>;
-  controllerHelpers: {
-    hasOrientation: boolean;
-    hasPosition: boolean;
-    hasScale: boolean;
-    orientation?: OdysseyController;
-    position?: OdysseyController;
-    scale?: OdysseyController;
-  } = {
+  controllerCache: any;
+  controllerHelpers: any = {
     hasOrientation: false,
     hasPosition: false,
     hasScale: false,
@@ -41,8 +34,8 @@ export class OdysseyObject3D extends THREE.Object3D {
     position: THREE.Vector3,
     quaternion: THREE.Quaternion,
   };
-
-  head: THREE.Object3D | null = null;
+  
+  head: any;
   lipping: boolean = false;
   
   emitter: OdysseyEmitter3D;
@@ -73,15 +66,15 @@ export class OdysseyObject3D extends THREE.Object3D {
     throw new Error("Method not implemented.");
   }
 
-  update(_delta: number) {
+  update(delta: number) {
     throw new Error("Method not implemented.");
   }
 
-  playAnimation(_arg0: string | number, _aLooping: boolean, _arg2?: () => void) {
+  playAnimation(arg0: any, aLooping: boolean, arg2?: Function) {
     throw new Error("Method not implemented.");
   }
 
-  traverseIgnore( ignoreName: string = '', callback?: (obj: THREE.Object3D) => void ){
+  traverseIgnore( ignoreName: string = '', callback?: Function ){
 
     if(this.name == ignoreName)
       return;
@@ -92,9 +85,8 @@ export class OdysseyObject3D extends THREE.Object3D {
     const children = this.children;
   
     for ( let i = 0, l = children.length; i < l; i ++ ) {
-      const child = children[ i ] as THREE.Object3D & { traverseIgnore?: (ignoreName: string, callback?: (obj: THREE.Object3D) => void) => void };
-      if(typeof child.traverseIgnore === 'function'){
-        child.traverseIgnore( ignoreName, callback );
+      if(typeof (children[ i ] as any).traverseIgnore === 'function'){
+        (children[ i ] as any).traverseIgnore( ignoreName, callback );
       }
     }
   

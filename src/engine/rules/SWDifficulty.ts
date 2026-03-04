@@ -1,4 +1,3 @@
-import type { ITwoDARowData } from "@/resource/TwoDAObject";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 
 export class SWDifficulty {
@@ -6,13 +5,13 @@ export class SWDifficulty {
   desc: string;
   multiplier: number;
 
-  apply2DA(row: ITwoDARowData | Record<string, string | number>): void {
+  apply2DA(row: any){
     this.name = TwoDAObject.normalizeValue(row.name, 'number', -1);
     this.desc = TwoDAObject.normalizeValue(row.desc, 'string', '');
     this.multiplier = TwoDAObject.normalizeValue(row.multiplier, 'number', 0);
   }
 
-  static From2DA(row: ITwoDARowData | Record<string, string | number>): SWDifficulty {
+  static From2DA(row: any){
     const difficulty = new SWDifficulty();
     difficulty.apply2DA(row);
     return difficulty;

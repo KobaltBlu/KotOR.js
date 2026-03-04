@@ -8,7 +8,6 @@ import { TextureLoader } from "@/loaders";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { BitWise } from "@/utility/BitWise";
 
-
 /**
  * EffectIcon class.
  * 
@@ -43,9 +42,10 @@ export class EffectIcon extends GameEffect {
         if(featIcon2DA){
           const featIconRow = featIcon2DA.rows[featIconId];
           if(featIconRow){
-            const iconResRef: string = String(featIconRow['iconresref'] ?? '');
+            const iconResRef: string = featIconRow['iconresref'];
             const good: boolean = featIconRow['good'] ? true : false;
-            const priority: number = parseInt(String(featIconRow['priority'] ?? 0), 10);
+            // const description: string = featIconRow['description'];
+            const priority: number = parseInt(featIconRow['priority']);
 
             const icon: IEffectIconListItem = {
               id: featIconId,

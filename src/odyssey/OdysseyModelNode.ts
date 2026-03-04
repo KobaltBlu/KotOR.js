@@ -10,10 +10,6 @@ import { OdysseyControllerFactory } from "@/odyssey/controllers/OdysseyControlle
 import { OdysseyModel } from "@/odyssey/OdysseyModel";
 import { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
 import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Loader);
       
 // Constants for quaternion decompression
 const QUAT_X_MASK = 0x07ff;        // 11 bits for X component
@@ -146,13 +142,8 @@ export class OdysseyModelNode {
     const controllers = new Map<OdysseyModelControllerType, OdysseyController>();
     for(let i = 0; i < count; i++){
       const controller: IOdysseyControllerGeneric = {
-        type: 0,
-        frameCount: 0,
-        timeKeyIndex: 0,
-        dataValueIndex: 0,
-        columnCount: 0,
         data: []
-      };
+      } as any;
 
       controller.type = this.odysseyModel.mdlReader.readInt32();
       this.odysseyModel.mdlReader.skip(2); //controller.unk_keyflag = this.odysseyModel.mdlReader.readInt16();
@@ -179,7 +170,7 @@ export class OdysseyModelNode {
                 const frame: IOdysseyControllerFrameGeneric = {
                   isBezier: false,
                   time: data[controller.timeKeyIndex + r]
-                };
+                } as any;
 
                 const vec3 = {x: 0, y: 0, z: 0};
 
@@ -195,7 +186,7 @@ export class OdysseyModelNode {
                   //This is a bezier curve this controller contains 3 vector3's packed end to end:
                   //pointA: x1,y1,z1 | pointB: x2,y2,z2 | pointC: x3,y3,z3
                   //pointB and pointC are relative to pointA
-                  //log.info('bezier', this.name, controller);
+                  //console.log('bezier', this.name, controller);
                   const rowOffset = controller.dataValueIndex + (r * 9);
 
                   frame.a = new THREE.Vector3(
@@ -270,7 +261,8 @@ export class OdysseyModelNode {
             break;
             case OdysseyModelControllerType.Orientation:
               for (let r = 0; r < controller.frameCount; r++) {
-                const frame: IOdysseyControllerFrameGeneric = { time: data[controller.timeKeyIndex + r] };
+                const frame: IOdysseyControllerFrameGeneric = {} as any;
+                frame.time = data[controller.timeKeyIndex + r];
 
                 if(controller.columnCount == 2){
                   let temp = data2[controller.dataValueIndex + r];
@@ -319,10 +311,9 @@ export class OdysseyModelNode {
             break;
             case OdysseyModelControllerType.Scale:
               for (let r = 0; r < controller.frameCount; r++) {
-                const frame: IOdysseyControllerFrameGeneric = {
-                  time: data[controller.timeKeyIndex + r],
-                  value: data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0
-                };
+                const frame: IOdysseyControllerFrameGeneric = {} as any;
+                frame.time = data[controller.timeKeyIndex + r];
+                frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
                 controller.data[r] = frame;
               }
             break;
@@ -333,21 +324,21 @@ export class OdysseyModelNode {
             switch(controller.type){
               case OdysseyModelControllerType.Alpha:
                 for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {
-                    time: data[controller.timeKeyIndex + r],
-                    value: data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0
-                  };
+                  const frame: IOdysseyControllerFrameGeneric = {} as any;
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
                   controller.data[r] = frame;
                 }
               break;
               case OdysseyModelControllerType.SelfIllumColor:
                 for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {
-                    time: data[controller.timeKeyIndex + r],
-                    x: data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0,
-                    y: data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0,
-                    z: data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0
-                  };
+                  const frame: IOdysseyControllerFrameGeneric = {} as any;
+      
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0] || 0.0;
+                  frame.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1] || 0.0;
+                  frame.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2] || 0.0;
+      
                   controller.data[r] = frame;
                 }
               break;
@@ -359,16 +350,17 @@ export class OdysseyModelNode {
             switch(controller.type){
               case OdysseyModelControllerType.Color:
                 for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {
-                    time: data[controller.timeKeyIndex + r],
-                    x: data[controller.dataValueIndex + (r * controller.columnCount) + 0],
-                    y: data[controller.dataValueIndex + (r * controller.columnCount) + 1],
-                    z: data[controller.dataValueIndex + (r * controller.columnCount) + 2]
-                  };
-                  if (frame.x != null && frame.x < 0) frame.x = 1.0 + frame.x;
-                  if (frame.y != null && frame.y < 0) frame.y = 1.0 + frame.y;
-                  if (frame.z != null && frame.z < 0) frame.z = 1.0 + frame.z;
-                  controller.data[r] = frame;
+                  const frame: IOdysseyControllerFrameGeneric = {} as any;
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
+                  frame.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
+                  frame.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
+
+                  if(frame.x < 0) frame.x = 1.0 + frame.x;
+                  if(frame.y < 0) frame.y = 1.0 + frame.y;
+                  if(frame.z < 0) frame.z = 1.0 + frame.z;
+
+                  controller.data[r] = frame
                 }
               break;
               case OdysseyModelControllerType.ShadowRadius:
@@ -376,11 +368,10 @@ export class OdysseyModelNode {
               case OdysseyModelControllerType.VerticalDisplacement:
               case OdysseyModelControllerType.Multiplier:
                 for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {
-                    time: data[controller.timeKeyIndex + r],
-                    value: data[controller.dataValueIndex + (r * controller.columnCount) + 0]
-                  };
-                  controller.data[r] = frame;
+                  const frame: IOdysseyControllerFrameGeneric = {} as any;
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
+                  controller.data[r] = frame
                 }
               break;
             }
@@ -394,13 +385,12 @@ export class OdysseyModelNode {
               case OdysseyModelControllerType.ColorMid:
               case OdysseyModelControllerType.ColorEnd:
                 for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {
-                    time: data[controller.timeKeyIndex + r],
-                    x: data[controller.dataValueIndex + (r * controller.columnCount) + 0],
-                    y: data[controller.dataValueIndex + (r * controller.columnCount) + 1],
-                    z: data[controller.dataValueIndex + (r * controller.columnCount) + 2]
-                  };
-                  controller.data[r] = frame;
+                  const frame: IOdysseyControllerFrameGeneric = {} as any;
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.x = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
+                  frame.y = data[controller.dataValueIndex + (r * controller.columnCount) + 1];
+                  frame.z = data[controller.dataValueIndex + (r * controller.columnCount) + 2];
+                  controller.data[r] = frame
                 }
               break;
               case OdysseyModelControllerType.LifeExp:
@@ -450,11 +440,10 @@ export class OdysseyModelNode {
               case OdysseyModelControllerType.TangentSpread:
               case OdysseyModelControllerType.TangentLength:
                 for (let r = 0; r < controller.frameCount; r++) {
-                  const frame: IOdysseyControllerFrameGeneric = {
-                    time: data[controller.timeKeyIndex + r],
-                    value: data[controller.dataValueIndex + (r * controller.columnCount) + 0]
-                  };
-                  controller.data[r] = frame;
+                  const frame: IOdysseyControllerFrameGeneric = {} as any;
+                  frame.time = data[controller.timeKeyIndex + r];
+                  frame.value = data[controller.dataValueIndex + (r * controller.columnCount) + 0];
+                  controller.data[r] = frame
                 }
               break;
             }

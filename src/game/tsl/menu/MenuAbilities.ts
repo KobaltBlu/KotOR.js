@@ -6,9 +6,6 @@ import { GameState } from "@/GameState";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { type TalentFeat } from "@/talents/TalentFeat";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
 
 enum AbilityFilter {
   SKILLS = 1,
@@ -18,9 +15,9 @@ enum AbilityFilter {
 
 /**
  * MenuAbilities class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file MenuAbilities.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -63,7 +60,7 @@ export class MenuAbilities extends K1_MenuAbilities {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -97,7 +94,7 @@ export class MenuAbilities extends K1_MenuAbilities {
     this.updateFilter();
   }
 
-  getFilteredItems(): unknown[] {
+  getFilteredItems(): any[] {
     switch(this.filter){
       case AbilityFilter.SKILLS:
         return GameState.PartyManager.party[0].skills.slice();
@@ -108,7 +105,7 @@ export class MenuAbilities extends K1_MenuAbilities {
     }
   }
 
-  buildFeatList(creature: ModuleCreature): TalentFeat[][] {
+  buildFeatList(creature: ModuleCreature): any[][] {
     const feats = GameState.SWRuleSet.feats;
     const featCount = feats.length;
     const knownFeats: TalentFeat[] = creature ? creature.feats : [];
@@ -137,25 +134,24 @@ export class MenuAbilities extends K1_MenuAbilities {
       }
     }
     // groups.sort((groupa, groupb) => groupa[0].toolscategories > groupb[0].toolscategories ? 1 : -1);
-    log.debug('feats', groups);
+    console.log('feats', groups);
     return groups;
   }
 
-  buildSpellsList(_creature: ModuleCreature): (import("@/resource/TwoDAObject").ITwoDARowData & { forcepriority?: string; usertype?: string; prerequisites?: string })[][] {
+  buildSpellsList(creature: ModuleCreature): any[][] {
     const spellsTable = GameState.TwoDAManager.datatables.get('spells');
     const spells = spellsTable.rows;
     const spellCount = spellsTable.RowCount;
     const allowedTypes = [1, 6];
-    type SpellRow = import("@/resource/TwoDAObject").ITwoDARowData & { forcepriority?: string; usertype?: string; prerequisites?: string };
-    const _knownSpells: SpellRow[] = [];
+    const knownSpells: any[] = [];
 
     const unknownSpells: number[] = [176, 177, 178, 179, 180, 181, 182];
 
-    const allowedSpells: SpellRow[] = [];
+    const allowedSpells: any[] = [];
     for (let i = 0; i < spellCount; i++) {
       const spell = spells[i];
       const id = spell.__index;
-      const usertype = parseInt(String(spell.usertype), 10);
+      const usertype = parseInt(spell.usertype);
 
       //skip unsupported spells
       if(allowedTypes.indexOf(usertype) == -1){ continue; }
@@ -165,13 +161,13 @@ export class MenuAbilities extends K1_MenuAbilities {
       allowedSpells.push(spell);
     }
 
-    log.debug('allowedSpells', allowedSpells);
+    console.log('allowedSpells', allowedSpells);
 
-    const rootSpells: SpellRow[] = allowedSpells.filter((spell) => parseInt(String(spell.forcepriority)) === 0);
-    const midSpells: SpellRow[] = allowedSpells.filter((spell) => parseInt(String(spell.forcepriority)) === 1);
-    const endSpells: SpellRow[] = allowedSpells.filter((spell) => parseInt(String(spell.forcepriority)) === 2);
+    const rootSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 0; });
+    const midSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 1; });
+    const endSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 2; });
 
-    const mapSpells = new Map<number, SpellRow[]>();
+    const mapSpells = new Map<number, any[]>();
 
     for (let i = 0; i < rootSpells.length; i++) {
       const spell = rootSpells[i];
@@ -184,8 +180,8 @@ export class MenuAbilities extends K1_MenuAbilities {
         return prereqs[0] == id && GameState.PartyManager.party[0].getHasSpell(curSpell.__index);
       });
 
-      if(midSpell){
-        group[parseInt(midSpell.forcepriority)] = midSpell;
+      if(midSpell){ 
+        group[parseInt(midSpell.forcepriority)] = midSpell; 
       }
 
       //END SPELL
@@ -194,20 +190,20 @@ export class MenuAbilities extends K1_MenuAbilities {
         return prereqs[0] == id && GameState.PartyManager.party[0].getHasSpell(curSpell.__index);
       });
 
-      if(endSpell){
-        group[parseInt(endSpell.forcepriority)] = endSpell;
+      if(endSpell){ 
+        group[parseInt(endSpell.forcepriority)] = endSpell; 
       }
 
       mapSpells.set(id, group);
     }
 
-    const groups: SpellRow[][] = Array.from(mapSpells.values());
-    log.debug('spells', groups);
+    const groups: any[] = Array.from(mapSpells.values());
+    console.log('spells', groups);
     return groups;
   }
 
-  updateFilter(): void {
-    log.debug('updateFilter');
+  updateFilter(){
+    console.log('updateFilter');
 
     this.LB_ABILITY.show();
 
@@ -257,9 +253,9 @@ export class MenuAbilities extends K1_MenuAbilities {
         this.LBL_INFOBG.hide();
       break;
     }
-
-    log.debug('filter', this.filter);
-    log.debug('LB_ABILITY.GUIProtoItemClass', this.LB_ABILITY.GUIProtoItemClass);
+    
+    console.log(this.filter);
+    console.log(this.LB_ABILITY.GUIProtoItemClass);
 
     for(let i = 0; i < items.length; i++){
       this.LB_ABILITY.addItem(items[i]);
@@ -267,5 +263,5 @@ export class MenuAbilities extends K1_MenuAbilities {
     this.LB_ABILITY.updateList();
 
   }
-
+  
 }

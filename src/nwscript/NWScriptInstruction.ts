@@ -17,7 +17,6 @@ import {
   OP_SAVEBP, OP_RESTOREBP, OP_STORE_STATE, OP_NOP, OP_T
 } from '@/nwscript/NWScriptOPCodes';
 
-
 const OP_CALL_MAP: Map<number, ( this: NWScriptInstance, instruction: NWScriptInstruction ) => void> = new Map([
   [OP_CPDOWNSP, CALL_CPDOWNSP],
   [OP_RSADD, CALL_RSADD],
@@ -208,7 +207,7 @@ export class NWScriptInstruction {
    * The arguments of the instruction
    * - Used for the ACTION opcode
    */
-  arguments: (number | string | object)[] = [];
+  arguments: any[] = [];
 
   /**
    * The integer value of the instruction

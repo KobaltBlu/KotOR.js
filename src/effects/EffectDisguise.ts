@@ -1,33 +1,28 @@
 import { GameEffect } from "@/effects/GameEffect";
-import type { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { AppearanceManager } from "@/managers/AppearanceManager";
 import type { ModuleCreature } from "@/module";
 import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * EffectDisguise class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file EffectDisguise.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectDisguise extends GameEffect {
-  appearance: SWCreatureAppearance | undefined;
+  appearance: any;
   constructor(){
     super();
     this.type = GameEffectType.EffectDisguise;
 
     //intList[0] : appearance.2da id / disguise id
     this.appearance = AppearanceManager.GetCreatureAppearanceById(this.getInt(0));
-
+    
   }
 
   initialize(){
@@ -41,7 +36,7 @@ export class EffectDisguise extends GameEffect {
   onApply(){
     if(this.applied)
       return;
-
+      
     super.onApply();
 
     const disguise_appearance = AppearanceManager.GetCreatureAppearanceById(this.getInt(0));
@@ -51,9 +46,9 @@ export class EffectDisguise extends GameEffect {
         creature.pm_Appearance = creature.appearance;
         creature.pm_IsDisguised = true;
         creature.setAppearance(this.getInt(0));
-        log.debug('Disguise applying', creature, this);
+        console.log('Disguise applying', creature, this);
         creature.loadModel().then( () => {
-          log.debug('Disguise applied', creature, this);
+          console.log('Disguise applied', creature, this);
         });
       }
     }
@@ -67,9 +62,9 @@ export class EffectDisguise extends GameEffect {
         creature.pm_IsDisguised = false;
         creature.setAppearance(creature.appearance);
       }
-      log.debug('Disguise removing creature=%s', creature.getTag?.() ?? String(creature));
+      console.log('Disguise removing', creature, this);
       creature.loadModel().then( () => {
-        log.debug('Disguise removed creature=%s', creature.getTag?.() ?? String(creature));
+        console.log('Disguise removed', creature, this);
       });
     }
   }

@@ -24,25 +24,17 @@ const mdlStringCleaner = (str: string = ''): string => {
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-/** Tangent/bitangent/normal data for mesh lighting. */
-export interface IOdysseyTangentSet {
-  tangents: number[];
-  bitangents: number[];
-  normals: number[];
-  computed: number[];
-}
-
 export class OdysseyModelNodeMesh extends OdysseyModelNode {
-  vertices: number[];
+  vertices: any[];
   normals: number[];
   colors: number[];
   tvectors: number[][];
-  texCords: number[][][];
-  tangents: number[][];
-  indexArray: number[];
-  uvs: number[];
+  texCords: any[][];
+  tangents: any[][];
+  indexArray: any[];
+  uvs: any[];
   faces: OdysseyFace3[];
-  indices: number[];
+  indices: any[];
   functionPointer0: number;
   functionPointer1: number;
   boundingBox: { min: THREE.Vector3; max: THREE.Vector3; };
@@ -82,10 +74,10 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   _unknown2: number;
   _totalArea: number;
   _unknown4: number;
-  tangent1: IOdysseyTangentSet;
-  tangent2: IOdysseyTangentSet;
-  tangent3: IOdysseyTangentSet;
-  tangent4: IOdysseyTangentSet;
+  tangent1: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
+  tangent2: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
+  tangent3: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
+  tangent4: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
   faceArrayDefinition: IOdysseyArrayDefinition;
   vertexCoordinatesOffset: number;
 
@@ -392,7 +384,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
 
   }
 
-  computeTangent(tangentObject: IOdysseyTangentSet, index: number){
+  computeTangent(tangentObject: any, index: number){
     const n = new THREE.Vector3().fromArray(tangentObject.normals, index * 3);
     const n2 = n.clone();
 

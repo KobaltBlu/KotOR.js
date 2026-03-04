@@ -7,11 +7,7 @@ import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState"
 import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 import { Utility } from "@/utility/Utility";
-
-
-const log = createScopedLogger(LogScope.Action);
 
 /**
  * ActionUseObject class.
@@ -33,7 +29,7 @@ export class ActionUseObject extends Action {
     
   }
 
-  update(_delta: number = 0): ActionStatus {
+  update(delta: number = 0): ActionStatus {
 
     this.target = this.getParameter<ModuleObject>(0);
 
@@ -62,7 +58,7 @@ export class ActionUseObject extends Action {
       this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
       this.owner.force = 0;
       this.owner.speed = 0;
-      log.debug('ActionUseObject: using target', this.target?.id);
+      //console.log(this.target);
 
       this.owner.setFacingObject( this.target );
 

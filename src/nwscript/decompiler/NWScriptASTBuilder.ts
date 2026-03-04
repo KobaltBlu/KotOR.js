@@ -23,7 +23,7 @@ import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBloc
 import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
 import type { NWScriptControlStructure } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
 import { ControlStructureType } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
-import { NWScriptExpression, type NWScriptConstantValue } from "@/nwscript/decompiler/NWScriptExpression";
+import { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
 import type { NWScriptFunction } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
 import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
 import type { NWScriptLocalInit } from "@/nwscript/decompiler/NWScriptLocalVariableAnalyzer";
@@ -974,7 +974,7 @@ export class NWScriptASTBuilder {
   /**
    * Convert a value to an expression
    */
-  private valueToExpression(value: NWScriptConstantValue, dataType: NWScriptDataType): NWScriptExpression {
+  private valueToExpression(value: any, dataType: NWScriptDataType): NWScriptExpression {
     return NWScriptExpression.constant(value, dataType);
   }
 }

@@ -2,40 +2,25 @@ import * as THREE from "three";
 
 import { TextureType } from "@/enums/loaders/TextureType";
 import { GameState } from "@/GameState";
-import { GUIProtoItem, GUIButton } from "@/gui";
 import type { GUIControl, GameMenu } from "@/gui";
+import { GUIProtoItem, GUIButton } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
-
-interface FeatRowLike {
-  __index: string;
-  prereqfeat1?: string;
-  prereqfeat2?: string;
-  constant?: string;
-  icon?: string;
-}
-
-interface PlayerFeatLike {
-  getHasFeat: (featId: string) => boolean;
-}
 
 /**
  * GUIFeatItem class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GUIFeatItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIFeatItem extends GUIProtoItem {
 
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl | null | undefined = undefined, scale = false){
-    super(menu, control, parent ?? undefined, scale);
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl = null as any, scale = false){
+    super(menu, control, parent, scale);
     this.disableSelection = true;
     this.extent.height = 45;
   }
@@ -53,16 +38,15 @@ export class GUIFeatItem extends GUIProtoItem {
       const iconHeight = this.extent.height;
       const arrowHeight = iconHeight/2; //32
 
-      const featList: FeatRowLike[] = Array.isArray(this.node) ? this.node as FeatRowLike[] : [];
-      const player = GameState.getCurrentPlayer() as PlayerFeatLike;
+      const featList = this.node;
       for(let i = 0; i < featList.length; i++){
         const feat = featList[i];
 
-        const hasPrereqfeat1 = (feat.prereqfeat1 == '****' || player.getHasFeat(feat.prereqfeat1 ?? ''));
-        const hasPrereqfeat2 = (feat.prereqfeat2 == '****' || player.getHasFeat(feat.prereqfeat2 ?? ''));
-        const hasFeat = player.getHasFeat(feat.__index);
+        const hasPrereqfeat1 = (feat.prereqfeat1 == '****' || GameState.getCurrentPlayer().getHasFeat(feat.prereqfeat1));
+        const hasPrereqfeat2 = (feat.prereqfeat2 == '****' || GameState.getCurrentPlayer().getHasFeat(feat.prereqfeat2));
+        const hasFeat = GameState.getCurrentPlayer().getHasFeat(feat.__index);
 
-        log.debug('feat', feat.constant, hasPrereqfeat1, hasPrereqfeat2);
+        console.log(feat.constant, hasPrereqfeat1, hasPrereqfeat2);
 
         const locked = !hasFeat || (!hasPrereqfeat1 || !hasPrereqfeat2);
         if(locked){ continue; }
@@ -98,13 +82,11 @@ export class GUIFeatItem extends GUIProtoItem {
 
         this.widget.add(_buttonIconWidget);
 
-        TextureLoader.enQueue('uibit_abi_back', this.border.fill.material as THREE.Material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          const buttonBorderMaterial = buttonIcon.border.fill.material as THREE.ShaderMaterial;
-          const buttonHighlightMaterial = buttonIcon.highlight.fill.material as THREE.ShaderMaterial;
-          buttonIcon.setMaterialTexture(buttonBorderMaterial, texture);
-          buttonBorderMaterial.transparent = true;
-          buttonIcon.setMaterialTexture(buttonHighlightMaterial, texture);
-          buttonHighlightMaterial.transparent = true;
+        TextureLoader.enQueue('uibit_abi_back', this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+          buttonIcon.setMaterialTexture( buttonIcon.border.fill.material, texture);
+          buttonIcon.border.fill.material.transparent = true;
+          buttonIcon.setMaterialTexture( buttonIcon.highlight.fill.material, texture);
+          buttonIcon.highlight.fill.material.transparent = true;
           if(locked){
             (buttonIcon.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 0.25;
           }
@@ -115,33 +97,32 @@ export class GUIFeatItem extends GUIProtoItem {
         });
 
         /**
-         * FEAT ICON
-         */
+         * FEAT ICON 
+         */ 
 
-        const iconMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
-        const iconSprite = new THREE.Sprite(iconMaterial);
+        this.widget.userData.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+        this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
 
-        iconSprite.scale.x = 32;
-        iconSprite.scale.y = 32;
-        iconSprite.position.z = 5;
-        iconSprite.renderOrder = 5;
-        TextureLoader.enQueue(feat.icon ?? '', iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          const image = texture.image as { width?: number; height?: number };
-          iconSprite.scale.x = image.width ?? iconSprite.scale.x;
-          iconSprite.scale.y = image.height ?? iconSprite.scale.y;
+        this.widget.userData.iconSprite.scale.x = 32;
+        this.widget.userData.iconSprite.scale.y = 32;
+        this.widget.userData.iconSprite.position.z = 5;
+        this.widget.userData.iconSprite.renderOrder = 5;
+        TextureLoader.enQueue(feat.icon, this.widget.userData.iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+          this.widget.userData.iconSprite.scale.x = texture.image.width;
+          this.widget.userData.iconSprite.scale.y = texture.image.height;
           if(locked){
-            iconMaterial.opacity = 0.25;
+            this.widget.userData.iconMaterial.opacity = 0.25;
           }
-          iconMaterial.transparent = true;
-          iconMaterial.needsUpdate = true;
+          this.widget.userData.iconMaterial.transparent = true;
+          this.widget.userData.iconMaterial.needsUpdate = true;
         });
 
-        _buttonIconWidget.add(iconSprite);
+        _buttonIconWidget.add(this.widget.userData.iconSprite);
 
         /**
          * BLUE ARROW
          */
-
+        
         const arrowOffset = (this.extent.width/2 - buttonIcon.extent.width/2)/2;
         if(i > 0){
           const arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
@@ -174,16 +155,14 @@ export class GUIFeatItem extends GUIProtoItem {
 
           this.widget.add(_arrowIconWidget);
 
-          TextureLoader.enQueue('uibit_abi_arrow', this.border.fill.material as THREE.Material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-            const arrowBorderMaterial = arrowIcon.border.fill.material as THREE.ShaderMaterial;
-            const arrowHighlightMaterial = arrowIcon.highlight.fill.material as THREE.ShaderMaterial;
-            arrowIcon.setMaterialTexture(arrowBorderMaterial, texture);
-            arrowBorderMaterial.transparent = true;
-            arrowIcon.setMaterialTexture(arrowHighlightMaterial, texture);
-            arrowHighlightMaterial.transparent = true;
+          TextureLoader.enQueue('uibit_abi_arrow', this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+            arrowIcon.setMaterialTexture( arrowIcon.border.fill.material, texture);
+            arrowIcon.border.fill.material.transparent = true;
+            arrowIcon.setMaterialTexture( arrowIcon.highlight.fill.material, texture);
+            arrowIcon.highlight.fill.material.transparent = true;
             if(locked){
-              arrowBorderMaterial.uniforms.opacity.value = 0.25;
-              arrowHighlightMaterial.uniforms.opacity.value = 0.25;
+              arrowIcon.border.fill.material.uniforms.opacity.value = 0.25;
+              arrowIcon.highlight.fill.material.uniforms.opacity.value = 0.25;
             }
           });
         }
@@ -191,7 +170,7 @@ export class GUIFeatItem extends GUIProtoItem {
       }
       return this.widget;
     }catch(e){
-      log.error('GUIFeatItem createControl', e);
+      console.error(e);
     }
     return this.widget;
 

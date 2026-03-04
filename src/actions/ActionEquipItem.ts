@@ -7,7 +7,6 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import { BitWise } from "@/utility/BitWise";
 
-
 /**
  * ActionEquipItem class.
  * 
@@ -24,7 +23,7 @@ export class ActionEquipItem extends Action {
     this.type = ActionType.ActionEquipItem;
   }
 
-  update(_delta?: number): ActionStatus {
+  update(delta?: number): ActionStatus {
     if(
       BitWise.InstanceOfObject(this.getParameter<ModuleItem>(0), ModuleObjectType.ModuleItem) && 
       BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)

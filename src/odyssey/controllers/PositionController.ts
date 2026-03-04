@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
@@ -20,7 +18,6 @@ export class PositionController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Position;
 
-  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }
@@ -32,8 +29,7 @@ export class PositionController extends OdysseyController {
       //   manager.modelNode.transitionState.position.copy(manager.modelNode.position);
       //   anim._position.copy(manager.modelNode.transitionState.position);
       // }else{
-        const d0 = manager.modelNode.controllers.get(OdysseyModelControllerType.Position).data[0];
-        anim._position.set(d0.x ?? 0, d0.y ?? 0, d0.z ?? 0);
+        anim._position.copy(manager.modelNode.controllers.get(OdysseyModelControllerType.Position).data[0] as any);
       // }
 
       if(anim.name.indexOf('cut') > -1 && manager.modelNode.name == 'cutscenedummy'){
@@ -44,7 +40,7 @@ export class PositionController extends OdysseyController {
     //if(manager.trans && this.frameCount > 1){
     //  manager.modelNode.position.lerp(anim._position.add(data), anim.data.delta);
     //}else{
-      manager.modelNode.position.copy(anim._position.clone().add(new THREE.Vector3(data.x ?? 0, data.y ?? 0, data.z ?? 0)));
+      manager.modelNode.position.copy(anim._position.add(data as any));
     //}
     manager.modelNode.updateMatrix();
   }
@@ -66,14 +62,13 @@ export class PositionController extends OdysseyController {
     }
 
     if(manager.modelNode.controllerHelpers.hasPosition){
-      const d0 = manager.modelNode.controllerHelpers.position.data[0];
-      anim._position.set(d0.x ?? 0, d0.y ?? 0, d0.z ?? 0);
+      anim._position.copy(manager.modelNode.controllerHelpers.position.data[0]);
       if(anim.name.indexOf('cut') > -1 && manager.modelNode.name == 'cutscenedummy'){
         anim._position.sub(manager.model.parent.position);
       }
     }
 
-    if(last.isBezier && last.bezier){
+    if(last.isBezier){
       //Last point
       if(last.isLinearBezier){
         manager._vec3.copy(last.bezier.getPoint(0)).add(anim._position);
@@ -84,13 +79,16 @@ export class PositionController extends OdysseyController {
       }
 
       //Next point
-      if(next.bezier){
+      //if(next.isLinearBezier){
         manager._vec3.copy(next.bezier.getPoint( next.lastFrame ? 0 : 0.5 )).add(anim._position);
         manager.modelNode.position.lerp(manager._vec3, fl);
-      }
-    }else if(next.isBezier && next.bezier){
+      //}else{
+      //  manager._vec3.copy(next.bezier.getPoint(0.5 * fl).add(anim._position));
+      //  manager.modelNode.position.lerp(manager._vec3, fl);
+      //}
+    }else if(next.isBezier){
       //Last point
-      manager._vec3.set(last.x ?? 0, last.y ?? 0, last.z ?? 0).add(anim._position);
+      manager._vec3.copy(last as any).add(anim._position);
       manager.modelNode.position.copy(manager._vec3);
       //Next point
       if(next.isLinearBezier){
@@ -105,11 +103,11 @@ export class PositionController extends OdysseyController {
       //if(manager.trans && lastFrame == 0){
       //  manager.modelNode.position.copy(manager.modelNode.transitionState.position);
       //}else{
-        manager._vec3.set(last.x ?? 0, last.y ?? 0, last.z ?? 0).add(anim._position);
+        manager._vec3.copy(last as any).add(anim._position);
         manager.modelNode.position.copy(manager._vec3);
       //}
 
-      manager._vec3.set(next.x ?? 0, next.y ?? 0, next.z ?? 0);
+      manager._vec3.copy(next as any);
       manager._vec3.add(anim._position);
 
       // if(anim.data.elapsed > anim.transition){

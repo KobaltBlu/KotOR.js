@@ -1,10 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-
-import { createScopedLogger, LogScope, type IScopedLogger } from "@/utility/Logger";
-
-import "@/apps/common/components/loadingScreen/LoadingScreen.scss";
-
-const log: IScopedLogger = createScopedLogger(LogScope.Loader);
+import './LoadingScreen.scss';
 
 export interface ILoadingScreenProps {
   active?: boolean;
@@ -30,14 +25,8 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
   const fadeOutTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const onHide = () => {
-    if (fadeOutTimeout.current != null) {
-      clearTimeout(fadeOutTimeout.current);
-      fadeOutTimeout.current = null;
-    }
-    if (fadeInTimeout.current != null) {
-      clearTimeout(fadeInTimeout.current);
-      fadeInTimeout.current = null;
-    }
+    clearTimeout(fadeOutTimeout.current as any);
+    clearTimeout(fadeInTimeout.current as any);
     setFadeIn(false);
     setFadeOut(true);
     fadeOutTimeout.current = setTimeout(() => {
@@ -46,14 +35,8 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
   };
 
   const onShow = () => {
-    if (fadeOutTimeout.current != null) {
-      clearTimeout(fadeOutTimeout.current);
-      fadeOutTimeout.current = null;
-    }
-    if (fadeInTimeout.current != null) {
-      clearTimeout(fadeInTimeout.current);
-      fadeInTimeout.current = null;
-    }
+    clearTimeout(fadeOutTimeout.current as any);
+    clearTimeout(fadeInTimeout.current as any);
     setFadeIn(true);
     setFadeOut(false);
     // fadeInTimeout.current = setTimeout(() => {
@@ -62,7 +45,7 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
   };
 
   useEffect(() => {
-    log.debug('LoadingScreen active changed', active);
+    console.log('active', active);
     setActive(!!props.active);
     if(props.active){
       onShow();
@@ -81,7 +64,7 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
   return (
     <div className={`app-loader ${visible ? 'active' : ''} ${fadeIn ? 'fade-in' : ''} ${fadeOut ? 'fade-out' : ''}`}>
       <div className="background" style={{backgroundImage: (backgroundURL) ? `url(${backgroundURL})` : 'initial'}}></div>
-      <div className="logo-wrapper">{logoURL ? <img src={logoURL} alt="" /> : null}</div>
+      <div className="logo-wrapper"><img src={logoURL} style={{display: (logoURL) ? 'block' : 'none'}} /></div>
       <div className="loading-container">
         <div className="spinner-wrapper">
           <div className="ball"></div>

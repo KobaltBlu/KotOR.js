@@ -7,7 +7,6 @@ import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
 import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
 import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 
-
 /**
  * OdysseyModelNodeAABB class.
  * 

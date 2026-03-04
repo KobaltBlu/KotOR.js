@@ -1,31 +1,26 @@
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { Endians } from "@/enums/resource/Endians";
+
+import {
+  OP_CPDOWNSP, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_EQUAL, OP_NEQUAL, OP_MOVSP, OP_JMP, OP_JSR, OP_JZ, OP_RETN, 
+  OP_DESTRUCT, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP, OP_STORE_STATE, OP_T
+} from '@/nwscript/NWScriptOPCodes';
+
 import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { GameState } from "@/GameState";
 import { INWScriptDefAction } from "@/interface/nwscript/INWScriptDefAction";
 import { ResourceLoader } from "@/loaders";
 import { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
 import { NWScriptDecompiler } from "@/nwscript/decompiler/NWScriptDecompiler";
-import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
 import { NWScriptDefK2 } from "@/nwscript/NWScriptDefK2";
+import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import {
-  OP_CPDOWNSP, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_EQUAL, OP_NEQUAL, OP_MOVSP, OP_JMP, OP_JSR, OP_JZ, OP_RETN, 
-  OP_DESTRUCT, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP, OP_STORE_STATE, OP_T
-} from '@/nwscript/NWScriptOPCodes';
 import { NWScriptStack } from "@/nwscript/NWScriptStack";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { GameFileSystem } from "@/utility/GameFileSystem";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-
-
-
-const log = createScopedLogger(LogScope.NWScript);
 
 /**
  * NWScript class.
@@ -63,7 +58,7 @@ export class NWScript {
   /**
    * The program type of the script
    * 
-   * should always be OP_T
+   * should always be OP_T (0x42)
    */
   prog: number = OP_T;
   
@@ -175,7 +170,7 @@ export class NWScript {
       reader.skip(8);
       this.prog = reader.readByte();
       if(this.prog != OP_T){
-        throw new Error(`Invalid program type, expected OP_T but got ${this.prog}`);
+        throw new Error(`Invalid program type, expected OP_T (0x42) but got ${this.prog}`);
       }
       //This includes the initial 8Bytes of the NCS V1.0 header and the previous byte
       this.progSize = reader.readUInt32();
@@ -224,7 +219,7 @@ export class NWScript {
         instruction.offset = reader.readInt32();
         instruction.size = reader.readInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
         if(instruction.offset == undefined || instruction.size == undefined){
-          log.warn(instruction.codeName, instruction.offset, instruction.size, reader.position);
+          console.warn(instruction.codeName, instruction.offset, instruction.size, reader.position);
         }
       break;
       case OP_CONST:
@@ -425,7 +420,7 @@ export class NWScript {
       this.init(binary);
     }
 
-    // Convert NCS bytecode to NSS source
+    // Use the decompiler to convert NCS to NSS
     const decompiler = new NWScriptDecompiler(this);
     return decompiler.decompile();
   }

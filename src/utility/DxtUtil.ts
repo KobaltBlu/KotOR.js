@@ -1,22 +1,25 @@
-import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryReader } from "@/BinaryReader";
 
 /**
  * DxtUtil class.
- *
+ * 
  * Converted to typescript from https://github.com/FNA-XNA/FNA/blob/master/src/Graphics/DxtUtil.cs
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file DxtUtil.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class DxtUtil {
-	private constructor() {}
 
-	static DecompressDxt5(imageReader: Uint8Array | ArrayBufferLike, width: number, height: number) {
-		const len = imageReader instanceof Uint8Array ? imageReader.length : (imageReader as ArrayBufferLike).byteLength;
-		const imageData = new Uint8Array(len);
+	constructor(){
+
+	}
+
+	static DecompressDxt5(imageReader: any, width: number, height: number) {
+		
+		const imageData = new Uint8Array(imageReader.length);
 		const Reader = new BinaryReader(Buffer.from(imageReader));
 
 		const blockCountX = (width + 3) / 4;
@@ -27,11 +30,11 @@ export class DxtUtil {
 				this.DecompressDxt5Block(Reader, x, y, blockCountX, width, height, imageData);
 			}
 		}
-
+		
 		return imageData;
 	}
 
-	static DecompressDxt5Block(imageReader: BinaryReader, x: number, y: number, blockCountX: number, width: number, height: number, imageData: Uint8Array) {
+	static DecompressDxt5Block(imageReader: any, x: number, y: number, blockCountX: number, width: number, height: number, imageData: Uint8Array) {
 		const alpha0 = imageReader.readByte();
 		const alpha1 = imageReader.readByte();
 
@@ -45,18 +48,18 @@ export class DxtUtil {
 		const c0 = imageReader.readUInt16();
 		const c1 = imageReader.readUInt16();
 
-		let r0: number = 0, g0: number = 0, b0: number = 0;
-		let r1: number = 0, g1: number = 0, b1: number = 0;
+		let r0, g0, b0;
+		let r1, g1, b1;
 		const converted0 = this.ConvertRgb565ToRgb888(c0, r0, g0, b0);
 		const converted1 = this.ConvertRgb565ToRgb888(c1, r1, g1, b1);
 
-		r0 = converted0.r as number;
-		g0 = converted0.g as number;
-		b0 = converted0.b as number;
+		r0 = converted0.r;
+		g0 = converted0.g;
+		b0 = converted0.b;
 
-		r1 = converted1.r as number;
-		g1 = converted1.g as number;
-		b1 = converted1.b as number;
+		r1 = converted1.r;
+		g1 = converted1.g;
+		b1 = converted1.b;
 
 		const lookupTable = imageReader.readUInt32();
 
@@ -118,7 +121,7 @@ export class DxtUtil {
 	}
 
 	static ConvertRgb565ToRgb888(color: number, r: number, g: number, b: number){
-		let temp: number;
+		let temp;
 
 		temp = (color >> 11) * 255 + 16;
 		r = ((temp / 32 + temp) / 32);

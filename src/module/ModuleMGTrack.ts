@@ -1,13 +1,10 @@
-import { ModuleObject } from "@/module/ModuleObject";
-import { OdysseyModel3D } from "@/three/odyssey";
-import { OdysseyModel } from "@/odyssey";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import { ILayoutTrack } from "@/interface/resource/ILayoutTrack";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Module);
 import { MDLLoader } from "@/loaders";
+import { ModuleObject } from "@/module/ModuleObject";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
 
 /**
 * ModuleMGTrack class.
@@ -58,11 +55,11 @@ export class ModuleMGTrack extends ModuleObject {
     });
 
     try{
-      log.info('track', model);
+      console.log('track', model);
       this.model = model;
       model.name = this.track;
     }catch(e){
-      log.error(e);
+      console.error(e);
     }
     return this.model;
   }

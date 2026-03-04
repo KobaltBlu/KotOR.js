@@ -9,9 +9,6 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 // import { ModuleObjectManager } from "@/managers";
 
-/** Object list entries: object id (number) or ModuleObject. */
-export type NWScriptObjectListEntry = number | import('@/module/ModuleObject').ModuleObject;
-
 /**
  * NWScriptEvent class.
  * 
@@ -23,10 +20,10 @@ export type NWScriptObjectListEntry = number | import('@/module/ModuleObject').M
  */
 export class NWScriptEvent {
   type: NWScriptEventType;
-  intList: number[];
-  floatList: number[];
-  stringList: string[];
-  objectList: NWScriptObjectListEntry[];
+  intList: any[];
+  floatList: any[];
+  stringList: any[];
+  objectList: any[];
 
   constructor(){
     this.intList = [];
@@ -35,7 +32,7 @@ export class NWScriptEvent {
     this.objectList = [];
   }
 
-  setIntList(intList: number[] = []){
+  setIntList(intList: any[] = []){
     if(Array.isArray(intList)){
       this.intList = intList;
     }
@@ -49,7 +46,7 @@ export class NWScriptEvent {
     return this.intList[nOffset];
   }
 
-  setFloatList(floatList: number[] = []){
+  setFloatList(floatList: any[] = []){
     if(Array.isArray(floatList)){
       this.floatList = floatList;
     }
@@ -63,7 +60,7 @@ export class NWScriptEvent {
     return this.floatList[nOffset];
   }
 
-  setStringList(stringList: string[] = []){
+  setStringList(stringList: any[] = []){
     if(Array.isArray(stringList)){
       this.stringList = stringList;
     }
@@ -77,13 +74,13 @@ export class NWScriptEvent {
     return this.stringList[nOffset];
   }
 
-  setObjectList(objectList: NWScriptObjectListEntry[] = []){
+  setObjectList(objectList: any[] = []){
     if(Array.isArray(objectList)){
       this.objectList = objectList;
     }
   }
 
-  setObject(nOffset = 0, nValue?: NWScriptObjectListEntry | { id?: number }): void {
+  setObject(nOffset = 0, nValue?: any){
     if(typeof nValue === 'object'){
       nValue = nValue.id;
     }else if(!nValue || (typeof nValue == 'undefined')){

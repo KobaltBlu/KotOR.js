@@ -4,25 +4,24 @@ import { GUIControl } from "@/gui/GUIControl";
 import { GUIControlEvent } from "@/gui/GUIControlEvent";
 import type { GFFStruct } from "@/resource/GFFStruct";
 
-
 /**
  * GUILabel class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GUILabel.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUILabel extends GUIControl {
-
+  
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUILabel;
 
-    this.onKeyDown = (e: KeyboardEvent) => {
+    this.onKeyDown = (e: any) => {
       // e.stopPropagation();
-      // log.info('onKeyDown', e);
+      // console.log('onKeyDown', e);
 
       switch(e.which){
         case 8: //Backspace
@@ -62,7 +61,7 @@ export class GUILabel extends GUIControl {
     }
   }
 
-  setText(str: string | { toString(): string } = '', renderOrder = 5){
+  setText(str: any = '', renderOrder = 5){
 
     if(this.editable){
       super.setText(str+'_', renderOrder);

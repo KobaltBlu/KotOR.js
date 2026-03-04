@@ -12,18 +12,17 @@ import { OdysseyModel3D } from "@/three/odyssey";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 
-
 /**
  * EffectVisualEffect class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file EffectVisualEffect.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectVisualEffect extends GameEffect {
-  visualEffect: import("@/resource/TwoDAObject").ITwoDARowData | undefined;
+  visualEffect: any;
   model: OdysseyModel3D;
   impact_model: OdysseyModel3D;
   impact_root_model: OdysseyModel3D;
@@ -165,6 +164,10 @@ export class EffectVisualEffect extends GameEffect {
         this.progFX_Duration();
       }
 
+      //Beam
+      if(this.visualEffect.type_fd == 'B'){
+      }
+
     }else if(typeof this.object != 'undefined'){
       this.impact();
     }
@@ -294,7 +297,7 @@ export class EffectVisualEffect extends GameEffect {
     //ForceShield progFX_impact
     if(this.visualEffect.progfx_impact > 1400 && this.visualEffect.progfx_impact < 1500){
       const fx_tex = this.getProgFXTexture(this.visualEffect.progfx_impact);
-
+      
       if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
         const creature = this.object as ModuleCreature;
         MDLLoader.loader.load(creature.bodyModel)
@@ -311,7 +314,7 @@ export class EffectVisualEffect extends GameEffect {
               model.rotation.copy(this.object.rotation);
               model.quaternion.copy(this.object.quaternion);
               //model.disableMatrixUpdate();
-
+              
               if(creature.headModel){
                 MDLLoader.loader.load(creature.headModel).then(
                   (mdl: OdysseyModel) => {
@@ -344,7 +347,7 @@ export class EffectVisualEffect extends GameEffect {
     //ForceShield progFX_impact
     if(this.visualEffect.progfx_duration > 1400 && this.visualEffect.progfx_duration < 1500){
       const fx_tex = this.getProgFXTexture(this.visualEffect.progfx_duration);
-
+      
       if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
         const creature = this.object as ModuleCreature;
         MDLLoader.loader.load(creature.bodyModel).then((mdl: OdysseyModel) => {

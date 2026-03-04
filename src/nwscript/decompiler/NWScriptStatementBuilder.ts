@@ -11,10 +11,8 @@ import { NWScriptStackSimulator } from "@/nwscript/decompiler/NWScriptStackSimul
 import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import { OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_RETN, OP_ACTION, OP_JZ, OP_JNZ, OP_CPDOWNSP, OP_RSADD, OP_MOVSP } from '@/nwscript/NWScriptOPCodes';
 
-
-
 /**
- * Represents a high-level statement in the reconstructed script
+ * Represents a high-level statement in the decompiled code
  */
 export interface NWScriptStatement {
   type: 'expression' | 'assignment' | 'return' | 'if' | 'while' | 'doWhile' | 'for' | 'block';
@@ -58,7 +56,7 @@ export class NWScriptStatementBuilder {
   private stackSimulator: NWScriptStackSimulator;
   private expressionBuilder: NWScriptExpressionBuilder;
   private globalInits: NWScriptGlobalInit[] = [];
-  private localInits: import('./NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = [];
+  private localInits: import('@/nwscript/decompiler/NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = [];
   
   /**
    * Map from block to structure that contains it
@@ -73,7 +71,7 @@ export class NWScriptStatementBuilder {
   /**
    * Current function parameters (for condition extraction)
    */
-  private currentFunctionParameters: import('./NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = [];
+  private currentFunctionParameters: import('@/nwscript/decompiler/NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = [];
   
   /**
    * OR chain detector for simplifying OR expressions
@@ -89,7 +87,7 @@ export class NWScriptStatementBuilder {
     cfg: NWScriptControlFlowGraph, 
     structures: NWScriptControlStructure[] = [], 
     globalInits: NWScriptGlobalInit[] = [],
-    localInits: import('./NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = []
+    localInits: import('@/nwscript/decompiler/NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = []
   ) {
     this.cfg = cfg;
     this.structures = structures;
@@ -138,7 +136,7 @@ export class NWScriptStatementBuilder {
    */
   /**
    * @deprecated This method uses non-stack-aware heuristics and hardcoded offset patterns.
-   * The current conversion pipeline uses stack-aware variable resolution via variableStackPositions maps.
+   * The current decompiler pipeline uses stack-aware variable resolution via variableStackPositions maps.
    * This method is kept for backward compatibility but should not be used in new code.
    * 
    * NOTE: This class (NWScriptStatementBuilder) is not used in the current ControlNode-first pipeline.
@@ -147,7 +145,7 @@ export class NWScriptStatementBuilder {
    */
   private setupLocalVariableMapping(): void {
     // WARNING: This method uses hardcoded offset patterns and heuristics, not stack-aware tracking.
-    // It should not be used in the current conversion pipeline.
+    // It should not be used in the current decompiler pipeline.
     // Create mapping from SP offset to local variable info
     const localVarMap = new Map<number, { name: string, dataType: NWScriptDataType }>();
     
@@ -414,7 +412,7 @@ export class NWScriptStatementBuilder {
    * CRITICAL FIX: Process blocks in CFG execution order (topological/dominance order)
    * to ensure predecessors are processed before successors.
    */
-  processBlocksForFunction(functionBlocks: NWScriptBasicBlock[], parameters: import('./NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = []): void {
+  processBlocksForFunction(functionBlocks: NWScriptBasicBlock[], parameters: import('@/nwscript/decompiler/NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = []): void {
     // Clear stack for new function
     this.stackSimulator.clear();
     this.pendingNestedCalls.clear();

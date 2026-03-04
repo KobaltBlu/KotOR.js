@@ -1,4 +1,3 @@
-
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIButton } from "@/gui/GUIButton";
 import { GUICheckBox } from "@/gui/GUICheckBox";
@@ -21,7 +20,6 @@ import type { GFFStruct } from "@/resource/GFFStruct";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIControlFactory {
-  private constructor() {}
 
   static GUIControl: typeof GUIControl = GUIControl;
   static GUILabel: typeof GUILabel = GUILabel;

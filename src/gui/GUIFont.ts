@@ -28,38 +28,6 @@ export class GUIFont {
 
   builtLines: Line[] = [];
 
-  /** Fallback char index when a character code is out of range (e.g. space or first char). */
-  private getFallbackCharIndex(): number {
-    if (this.charCount <= 0) return 0;
-    if (32 < this.charCount) return 32; // space
-    return 0;
-  }
-
-  /** Safe lookup: returns a valid GUIFontChar for any code, using fallback when out of range. */
-  getChar(code: number): GUIFontChar {
-    if (this.charCount <= 0) return (this.chars[0] ?? new GUIFontChar(this, ' ')) as GUIFontChar;
-    const index = (code >= 0 && code < this.charCount) ? code : this.getFallbackCharIndex();
-    const fallbackIndex = this.getFallbackCharIndex();
-    const c = (this.chars[index] ?? this.chars[fallbackIndex] ?? this.chars[0]) as GUIFontChar;
-
-    // Many KotOR GUI fonts only ship uppercase glyphs. If the lowercase glyph is missing
-    // (0-sized due to missing TXI coords), fall back to the uppercase equivalent.
-    if (c && c.width === 0 && c.height === 0 && code >= 97 && code <= 122) { // a-z
-      const upper = code - 32; // A-Z
-      if (upper >= 0 && upper < this.charCount) {
-        const uc = this.chars[upper];
-        if (uc && (uc.width > 0 || uc.height > 0)) return uc;
-      }
-    }
-
-    // If still 0-sized, fall back to the configured fallback glyph (usually space).
-    if (c && c.width === 0 && c.height === 0) {
-      return (this.chars[fallbackIndex] ?? this.chars[0] ?? c) as GUIFontChar;
-    }
-
-    return c;
-  }
-
   constructor(texture: OdysseyTexture){
     if(!texture){ return }
     this.texture = texture;
@@ -67,16 +35,19 @@ export class GUIFont {
     if(this.texture.txi){
       this.txi = this.texture.txi;
       this.scale = 1;
-
-      this.ratio = ((texture.image as HTMLImageElement)?.width ?? 1) / ((texture.image as HTMLImageElement)?.height ?? 1);
-
+  
+      this.ratio = texture.image.width / texture.image.height;
+  
       this.height = this.txi.fontheight     * 100;
       this.bsline = this.txi.baselineheight * 100;
       this.spaceR = this.txi.spacingr       * 100;
       this.spaceB = this.txi.spacingb       * 100;
       this.charCount = this.txi.numchars;
 
-      this.chars = Array.from({ length: this.charCount }, (_, i) => new GUIFontChar(this, String.fromCharCode(i)));
+      this.chars = new Array(this.charCount);
+      for(let i = 0; i < this.charCount; i++){
+        this.chars[i] = new GUIFontChar(this, String.fromCharCode(i));
+      }
     }
   }
 
@@ -87,20 +58,20 @@ export class GUIFont {
 
     const chars = word.split('');
     for(let i = 0; i < chars.length; i++){
-      width += this.getChar(word.charCodeAt(i)).width;
+      width += this.chars[word.charCodeAt(i)].width;
     }
 
     return width;
   }
 
   getWordChars(word: string): GUIFontChar[] {
-    return word.split('').map( (char) => this.getChar(char.charCodeAt(0)) );
+    return word.split('').map( (char) => this.chars[char.charCodeAt(0)] );
   }
 
   buildGeometry(geometry: THREE.BufferGeometry, text: string, alignment: GUIControlAlignment, maxWidth: number = 0): void {
     const lines: string[] = text.split('\n');
     const lineCount: number = lines.length;
-    const spaceChar = this.getChar(32);
+    const spaceChar = this.chars[32];
     const lines2: Line[] = [];
 
     let lineY = 0
@@ -132,7 +103,10 @@ export class GUIFont {
       lineY -= this.height;
     }
 
+    // console.log(text, lines2);
     this.builtLines = lines2;
+
+    const maxHeight = lines2.length * this.height;
 
     let textCharCount: number = 0;
     for(let l = 0; l < lines2.length; l++){
@@ -143,14 +117,11 @@ export class GUIFont {
     const uvs = new Float32Array(textCharCount * 8);
     const horizontal = alignment & GUIControlAlignment.HorizontalMask;
 
-    const indices = createIndicies(
-      new Uint16Array(textCharCount),
-      {
-        clockwise: true,
-        type: 'uint16',
-        count: textCharCount
-      }
-    );
+    const indices = createIndicies({
+      clockwise: true,
+      type: 'uint16',
+      count: textCharCount
+    });
 
     let charIndex = 0;
     for(let l = 0; l < lines2.length; l++){
@@ -167,9 +138,13 @@ export class GUIFont {
       }
 
       let char: GUIFontChar;
+      let halfWidth = 0;
+      let halfHeight = 0;
       let stride = 0;
       for(let c = 0; c < line.chars.length; c++){
         char = line.chars[c];
+        halfWidth = char.width/2;
+        halfHeight = char.height/2;
         stride = (charIndex * 8);
 
         // Remove the incorrect first character offset
@@ -234,13 +209,13 @@ export class GUIFontChar {
   constructor(font: GUIFont, letter: string){
     this.font = font;
     this.char = letter.charCodeAt(0);
-    const ul = font.txi?.upperleftcoords?.[this.char];
-    const lr = font.txi?.lowerrightcoords?.[this.char];
-    this.ul = ul ?? { x: 0, y: 0, z: 0 };
-    this.lr = lr ?? { x: 0, y: 0, z: 0 };
-    const w = (this.lr.x - this.ul.x) * ((font.texture?.image as HTMLImageElement)?.width ?? 1);
-    const h = (this.ul.y - this.lr.y) * ((font.texture?.image as HTMLImageElement)?.height ?? 1);
-    this.width = (isFinite(w) ? w : 0) * this.font.scale;
-    this.height = (isFinite(h) ? h : 0) * this.font.scale;
+    this.ul = font.txi.upperleftcoords[this.char];
+    this.lr = font.txi.lowerrightcoords[this.char];
+    // this.ul.x = Math.min(Math.max(this.ul.x, 0), 1);
+    // this.ul.y = Math.min(Math.max(this.ul.y, 0), 1);
+    // this.lr.x = Math.min(Math.max(this.lr.x, 0), 1);
+    // this.lr.y = Math.min(Math.max(this.lr.y, 0), 1);
+    this.width = ((this.lr.x - this.ul.x) * font.texture.image.width) * this.font.scale;
+    this.height = ((this.ul.y - this.lr.y) * font.texture.image.height) * this.font.scale;
   }
 }

@@ -1,16 +1,12 @@
 import * as THREE from "three";
 
+import { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyModelAnimationManagerState";
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Loader);
-import { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyModelAnimationManagerState";
 
 /**
  * OdysseyModelAnimationManager class.
@@ -153,9 +149,9 @@ export class OdysseyModelAnimationManager {
   }
 
   setCurrentAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
-    // if(anim) log.info(this.model?.name, anim.name);
+    // if(anim) console.log(this.model?.name, anim.name);
     if(typeof state == 'undefined'){
-      log.warn('setCurrentAnimation: state is undefined');
+      console.warn('setCurrentAnimation: state is undefined');
       state = this.createAnimationState();
     }
     if(this.currentAnimation){
@@ -167,7 +163,7 @@ export class OdysseyModelAnimationManager {
 
   setLastAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
     if(typeof state == 'undefined'){
-      // log.warn('setLastAnimation: state is undefined');
+      // console.warn('setLastAnimation: state is undefined');
       state = this.createAnimationState();
     }
     this.transElapsed = 0;
@@ -184,7 +180,7 @@ export class OdysseyModelAnimationManager {
 
   setOverlayAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
     if(typeof state == 'undefined'){
-      log.warn('setOverlayAnimation: state is undefined');
+      console.warn('setOverlayAnimation: state is undefined');
       state = this.createAnimationState();
     }
     this.overlayAnimation = anim;
@@ -193,7 +189,7 @@ export class OdysseyModelAnimationManager {
 
   updateAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState, delta: number = 0){
     if(typeof state == 'undefined'){
-      log.warn('updateAnimation: state is undefined');
+      console.warn('updateAnimation: state is undefined');
       state = this.createAnimationState();
     }
     state.delta = delta;
@@ -257,7 +253,7 @@ export class OdysseyModelAnimationManager {
 
   updateOverlayAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState, delta: number = 0){
     if(typeof state == 'undefined'){
-      log.warn('updateOverlayAnimation: state is undefined');
+      console.warn('updateOverlayAnimation: state is undefined');
       state = this.createAnimationState();
     }
     state.delta = delta;
@@ -321,7 +317,7 @@ export class OdysseyModelAnimationManager {
 
   updateAnimationEvents(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
     if(typeof state == 'undefined'){
-      log.warn('updateAnimationEvents: state is undefined');
+      console.warn('updateAnimationEvents: state is undefined');
       state = this.createAnimationState();
     }
     if(!anim.events.length)
@@ -358,7 +354,7 @@ export class OdysseyModelAnimationManager {
 
   updateAnimationNode(anim: OdysseyModelAnimation, node: OdysseyModelAnimationNode, state: OdysseyModelAnimationManagerState, canTween: boolean = false){
     if(typeof state == 'undefined'){
-      log.warn('updateAnimationNode: state is undefined');
+      console.warn('updateAnimationNode: state is undefined');
       state = this.createAnimationState();
     }
     if(!node) return;
@@ -386,7 +382,7 @@ export class OdysseyModelAnimationManager {
       }
 
       if(controller.data.length != controller.frameCount){
-        log.info('Missing Controller Data', controller);
+        console.log('Missing Controller Data', controller);
         continue;
       }
 

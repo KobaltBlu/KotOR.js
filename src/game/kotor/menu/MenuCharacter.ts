@@ -4,7 +4,7 @@ import { GameState } from "@/GameState";
 import { GameMenu, LBL_3DView } from "@/gui";
 import type { GUILabel, GUIButton, GUISlider, GUIControl } from "@/gui";
 import { MDLLoader, TextureLoader } from "@/loaders";
-import type { ModuleCreature } from "@/module";
+import type { ModuleCreature, ModuleItem } from "@/module";
 import { OdysseyModel } from "@/odyssey";
 import { OdysseyModel3D } from "@/three/odyssey";
 
@@ -100,7 +100,7 @@ export class MenuCharacter extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.SLD_ALIGN.setVertical();
       this.SLD_ALIGN.disableSelection = true;
 
@@ -112,10 +112,9 @@ export class MenuCharacter extends GameMenu {
 
       this.BTN_AUTO.addEventListener('click', (e) => {
         e.stopPropagation();
-        const currentPlayer = GameState.getCurrentPlayer() as ModuleCreature;
-        if(currentPlayer.canLevelUp()){
-          currentPlayer.autoLevelUp();
-          this.updateCharacterStats(currentPlayer);
+        if(GameState.getCurrentPlayer().canLevelUp()){
+          GameState.getCurrentPlayer().autoLevelUp();
+          this.updateCharacterStats(GameState.getCurrentPlayer());
         }
       });
       this._button_y = this.BTN_AUTO;
@@ -172,7 +171,7 @@ export class MenuCharacter extends GameMenu {
           // manageLighting: false,
           context: this._3dView
         }).then((model: OdysseyModel3D) => {
-          //log.info('Model Loaded', model);
+          //console.log('Model Loaded', model);
           this._3dViewModel = model;
           this._3dView.addModel(this._3dViewModel);
 
@@ -185,15 +184,15 @@ export class MenuCharacter extends GameMenu {
           );
 
           TextureLoader.LoadQueue().then(() => {
-            this.LBL_3DCHAR.setFillTexture(this.LBL_3DCHAR.getFillTexture() as THREE.Texture | null);
+            this.LBL_3DCHAR.setFillTexture(this.LBL_3DCHAR.getFillTexture());
             this._3dViewModel.playAnimation(0, true);
             resolve();
           });
 
-        }).catch((_e: unknown) => {
+        }).catch((e: any) => {
           resolve();
         });
-      }).catch((_e: unknown) => {
+      }).catch((e: any) => {
         resolve();
       });
     });
@@ -207,8 +206,7 @@ export class MenuCharacter extends GameMenu {
       this.char.update(delta);
     try {
       this._3dView.render(delta);
-    } catch {
-      return;
+    } catch (e: any) {
     }
   }
 
@@ -250,7 +248,7 @@ export class MenuCharacter extends GameMenu {
     this.LBL_WIS_MOD?.setText(Math.floor((character.getWIS() - 10) / 2));
     this.LBL_CHA_MOD?.setText(Math.floor((character.getCHA() - 10) / 2));
     this.LBL_EXPERIENCE_STAT?.setText(character.experience.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','));
-    this.LBL_NEEDED_XP?.setText(String(GameState.TwoDAManager.datatables.get('exptable').rows[character.getTotalClassLevel()].xp).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+    this.LBL_NEEDED_XP?.setText(GameState.TwoDAManager.datatables.get('exptable').rows[character.getTotalClassLevel()].xp.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
     if (character.canLevelUp()) {
       this.BTN_AUTO?.show();
     } else {
@@ -278,7 +276,6 @@ export class MenuCharacter extends GameMenu {
         }
       }
     }
-
   }
 
   show() {
@@ -301,8 +298,8 @@ export class MenuCharacter extends GameMenu {
     }
     if(creature){
       this._3dView.camera.position.z = 1;
-      let objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
-      let clone = creature;
+      const objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
+      const clone = creature;
       objectCreature.setAppearance(clone.appearance);
       if (clone.equipment.ARMOR) {
         objectCreature.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(clone.equipment.ARMOR.template);

@@ -7,7 +7,6 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import { BitWise } from "@/utility/BitWise";
 
-
 /**
  * EffectForcePushed class.
  * 

@@ -2,7 +2,6 @@ import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 
-
 /**
  * ActionSetCommandable class.
  * 
@@ -23,7 +22,7 @@ export class ActionSetCommandable extends Action {
     
   }
 
-  update(_delta: number = 0): ActionStatus {
+  update(delta: number = 0): ActionStatus {
     if(this.owner){
       this.owner.setCommandable( this.getParameter<number>(0) ? true : false );
       return ActionStatus.COMPLETE;

@@ -13,22 +13,17 @@ import type { NWScript } from "@/nwscript/NWScript";
 import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import { NWScriptStack } from "@/nwscript/NWScriptStack";
 import type { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
+import type { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
 import type { DLGObject } from "@/resource/DLGObject";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import type { TalentObject, TalentSpell } from "@/talents";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-
-const log = createScopedLogger(LogScope.NWScript);
-import type { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
 
 /**
  * NWScriptInstance class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file NWScriptInstance.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -38,12 +33,7 @@ export class NWScriptInstance {
   parentUUID: string;
   name: string;
   instructions: Map<number, NWScriptInstruction> = new Map();
-  globalCache: {
-    enteringObject: ModuleObject;
-    subRoutines: NWScriptSubroutine[];
-    stack: { basePointer: number; pointer: number; stack: NWScriptStackVariable[] };
-    instr: NWScriptInstruction;
-  } | null = null;
+  globalCache: any = null;
   _disposed: boolean = false;
   isStoreState: boolean = false;
   nwscript: NWScript;
@@ -52,9 +42,9 @@ export class NWScriptInstance {
   subRoutines: NWScriptSubroutine[] = [];
   subRoutine: NWScriptSubroutine;
   state: INWScriptStoreState[] = [];
-  var1: number | string | ModuleObject | boolean | null;
-  var2: number | string | ModuleObject | boolean | null;
-  var3: number | string | ModuleObject | boolean | null;
+  var1: any;
+  var2: any;
+  var3: any;
   struct1: NWScriptStackVariable[] = [];
   struct2: NWScriptStackVariable[] = [];
   params: number[];
@@ -64,7 +54,7 @@ export class NWScriptInstance {
   delayCommands: EventTimedEvent[] = [];
   address: number;
   offset: number;
-
+  
   lastPerceived: IPerceptionInfo;
 
   lastSpeaker: ModuleObject;
@@ -109,7 +99,7 @@ export class NWScriptInstance {
 
   breakPoints: Map<number, boolean> = new Map<number, boolean>();
 
-  #eventListener: { [key: string]: ((...args: (number | string | ModuleObject | boolean | null)[]) => void)[] } = {};
+  #eventListener: { [key: string]: Function[] } = {};
 
   constructor( instructions: Map<number, NWScriptInstruction> ){
     this.instructions = instructions;
@@ -129,7 +119,7 @@ export class NWScriptInstance {
    * @param event The event to listen for.
    * @param listener The listener to add.
    */
-  addEventListener(event: string, listener: (...args: (number | string | ModuleObject | boolean | null)[]) => void) {
+  addEventListener(event: string, listener: Function) {
     if(!Array.isArray(this.#eventListener[event])) {
       this.#eventListener[event] = [];
     }
@@ -145,7 +135,7 @@ export class NWScriptInstance {
    * @param event The event to remove the listener from.
    * @param listener The listener to remove.
    */
-  removeEventListener(event: string, listener: (...args: (number | string | ModuleObject | boolean | null)[]) => void) {
+  removeEventListener(event: string, listener: Function) {
     if(!Array.isArray(this.#eventListener[event])) {
       this.#eventListener[event] = [];
     }
@@ -160,11 +150,11 @@ export class NWScriptInstance {
    * @param event The event to dispatch.
    * @param args The arguments to pass to the event.
    */
-  dispatchEvent(event: string, ...args: (number | string | ModuleObject | boolean | null)[]) {
+  dispatchEvent(event: string, ...args: any) {
     if(!Array.isArray(this.#eventListener[event])) {
       return;
     }
-    this.#eventListener[event].forEach((listener: (...a: (number | string | ModuleObject | boolean | null)[]) => void) => listener(...args));
+    this.#eventListener[event].forEach((listener: Function) => listener(...args));
   }
 
   toggleBreakpoint(address: number){
@@ -176,19 +166,19 @@ export class NWScriptInstance {
   }
 
   setBreakpoint(address: number){
-    if(!this.breakPoints.has(address)) {
+    if(!this.breakPoints.has(address)) {  
       this.breakPoints.set(address, true);
       this.dispatchEvent('breakpoint', address, true);
     }
   }
 
   removeBreakpoint(address: number){
-    if(this.breakPoints.has(address)) {
+    if(this.breakPoints.has(address)) {  
       this.breakPoints.delete(address);
       this.dispatchEvent('breakpoint', address, false);
     }
   }
-
+  
   sendToDebugger(type: IPCMessageType){
     if(!GameState.debugMode) return;
     const ipcMessage = new GameState.Debugger.IPCMessage(type);
@@ -264,7 +254,7 @@ export class NWScriptInstance {
 
   }
 
-  setCaller(obj: ModuleObject | null){
+  setCaller(obj: any){
     this.caller = obj;
     if(typeof this.caller == 'number'){
       this.caller = GameState.ModuleObjectManager.GetObjectById(this.caller);
@@ -276,7 +266,7 @@ export class NWScriptInstance {
     return this.talent.id;
   }
 
-  run(caller: ModuleObject | null = null, scriptVar = 0){
+  run(caller: any = null, scriptVar = 0){
     this.caller = caller;
     this.scriptVar = scriptVar;
 
@@ -304,7 +294,7 @@ export class NWScriptInstance {
       this.stack.basePointer = this.globalCache.stack.basePointer;
       this.stack.pointer = this.globalCache.stack.pointer;
       this.stack.stack = this.globalCache.stack.stack.slice();
-
+      
       this.seekTo(this.globalCache.instr.address);
       return this.runScript();
     }else{
@@ -327,7 +317,7 @@ export class NWScriptInstance {
         return false;
       }
     }catch(e){
-      log.error(e, this);
+      console.error(e, this);
     }
   }
 
@@ -349,7 +339,7 @@ export class NWScriptInstance {
     }
 
     this.running = true;
-
+    
     //If the currentInstruction is empty start at the first instruction
     if(!this.currentInstruction){
       this.currentInstruction = this.getInstrAtOffset( 0 );
@@ -391,7 +381,7 @@ export class NWScriptInstance {
       this.currentInstruction.opCall.call(this, this.currentInstruction);
 
       /**
-       * If we are in debug mode and we are in stepOver mode,
+       * If we are in debug mode and we are in stepOver mode, 
        * Pause execution and send the script's state to the debugger
        */
       if(stepOver){
@@ -443,8 +433,8 @@ export class NWScriptInstance {
     return returnValue;
   }
 
-  executeScript(instance: NWScriptInstance, parentInstance: NWScriptInstance, args: (number | string | ModuleObject | boolean | null)[] = []){
-    //log.info('executeScript', args);
+  executeScript(instance: NWScriptInstance, parentInstance: NWScriptInstance, args: any[] = []){
+    //console.log('executeScript', args);
     // instance.name = parentInstance.name;
     instance.parentUUID = parentInstance.uuid;
     instance.lastPerceived = parentInstance.lastPerceived;

@@ -1,7 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
 
-
 import { EditorFile } from "@/apps/forge/EditorFile";
 import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
 import * as KotOR from "@/apps/forge/KotOR";
@@ -9,30 +8,22 @@ import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabProjectExplorerState } from "@/apps/forge/states/tabs";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Forge);
 
 const spleep = (time: number = 0) => {
-  return new Promise( (resolve, _reject) => {
+  return new Promise( (resolve, reject) => {
     setTimeout(resolve, time);
   });
 }
 
 export class ProjectFileSystem {
-  /** Instance marker so this class is not treated as extraneous (static-only). */
-  private readonly _instance = true;
 
   static rootDirectoryHandle: FileSystemDirectoryHandle;
   static rootDirectoryPath: string;
   static directoryCache: Map<string, FileSystemDirectoryHandle> = new Map();
 
   static initializeProjectExplorer() {
-    log.trace('ProjectFileSystem.initializeProjectExplorer()');
-    return new Promise<void>( (resolve, _reject) => {
-      TabProjectExplorerState.GenerateResourceList( ForgeState.projectExplorerTab ).then( (_resourceList) => {
-        log.trace('ProjectFileSystem.initializeProjectExplorer() GenerateResourceList done');
+    return new Promise<void>( (resolve, reject) => {
+      TabProjectExplorerState.GenerateResourceList( ForgeState.projectExplorerTab ).then( (resourceList) => {
         ForgeState.loaderHide();
         resolve();
       });
@@ -40,240 +31,227 @@ export class ProjectFileSystem {
   }
 
   static async openEditorFile(resource: string): Promise<EditorFile> {
-    log.trace('ProjectFileSystem.openEditorFile()', resource);
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-      const ef = new EditorFile({
+      return new EditorFile({
         path: `${EditorFileProtocol.FILE}//project.dir/${resource}`,
         useProjectFileSystem: true,
       });
-      log.trace('ProjectFileSystem.openEditorFile() ELECTRON created');
-      return ef;
     }else{
-      const ef = new EditorFile({
+      // const handle = await this.open(resource, "w") as FileSystemFileHandle;
+      // return new EditorFile({
+      //   handle: handle,
+      //   useProjectFileSystem: true,
+      // });
+      return new EditorFile({
         path: `${EditorFileProtocol.FILE}//project.dir/${resource}`,
         useProjectFileSystem: true,
       });
-      log.trace('ProjectFileSystem.openEditorFile() BROWSER created');
-      return ef;
     }
   }
 
   // Override mkdir to use project directory
-  static mkdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}): Promise<boolean> {
-    log.trace('ProjectFileSystem.mkdir()', dirPath, opts.recursive);
-    return new Promise<boolean>((resolve, _reject) => {
+  static async mkdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}): Promise<boolean> {
+    return new Promise<boolean>( async (resolve, reject) => {
       dirPath = dirPath.trim();
       if(KotOR.ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         if(!this.rootDirectoryPath){
-          log.trace('ProjectFileSystem.mkdir() ELECTRON no root');
           resolve(false);
           return;
         }
-        fs.mkdir(path.join(this.rootDirectoryPath, dirPath), { recursive: !!opts.recursive }, (err) => {
+        fs.mkdir(path.join(this.rootDirectoryPath, dirPath), { recursive: !!opts.recursive }, async (err) => {
           if(err){
-            log.error(err instanceof Error ? err : String(err));
+            console.error(err);
             resolve(false);
             return;
           }
-          void spleep(100).then(() => {
-            log.trace('ProjectFileSystem.mkdir() ELECTRON done');
-            resolve(true);
-          });
-        });
-        return;
-      }
-      if(!this.rootDirectoryHandle){
-        log.trace('ProjectFileSystem.mkdir() BROWSER no handle');
-        resolve(false);
-        return;
-      }
-      if(!dirPath.length){
-        resolve(false);
-        return;
-      }
-      const dirs = dirPath.split(path.sep);
-      const cacheKey = dirs.join('/');
-      const cached = this.directoryCache.get(cacheKey);
-      if(cached){
-        log.trace('ProjectFileSystem.mkdir() BROWSER cached');
-        resolve(true);
-        return;
-      }
-      void (async () => {
-        try{
-          let currentDirHandle = this.rootDirectoryHandle;
-          for(let i = 0, len = dirs.length; i < len; i++){
-            const isTargetDirectory = (i === dirs.length - 1);
-            const canCreate = (isTargetDirectory || !!opts.recursive);
-            currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: canCreate });
-            if(!currentDirHandle && !isTargetDirectory){
-              resolve(false);
-              return;
-            }
-            this.directoryCache.set(cacheKey, currentDirHandle);
-          }
           await spleep(100);
-          log.trace('ProjectFileSystem.mkdir() BROWSER done');
           resolve(true);
-        }catch(e){
-          log.error(e instanceof Error ? e : String(e));
+          return;
+        });
+      }else{
+        if(!this.rootDirectoryHandle){
           resolve(false);
+          return;
         }
-      })();
+        if(dirPath.length){
+          const dirs = dirPath.length ? dirPath.split(path.sep) : [];
+          const cacheKey = dirs.join('/');
+          if(this.directoryCache.has(cacheKey)){
+            return this.directoryCache.get(cacheKey)!;
+          }
+          try{
+            let currentDirHandle = this.rootDirectoryHandle; 
+            for(let i = 0, len = dirs.length; i < len; i++){
+              const isTargetDirectory = (i == dirs.length-1);
+              const canCreate = (isTargetDirectory || !!opts.recursive);
+              currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: canCreate });
+              if(!currentDirHandle && !isTargetDirectory){
+                resolve(false);
+                return;
+              }
+              this.directoryCache.set(cacheKey, currentDirHandle);
+            }
+            await spleep(100);
+            resolve(true);
+          }catch(e){
+            console.error(e);
+            resolve(false);
+            return;
+          }
+        }else{
+          resolve(false);
+          return;
+        }
+      }
     });
   }
 
   // Override readFile to use project directory
-  static async readFile(filepath: string, options: { encoding?: BufferEncoding } = {}): Promise<Uint8Array> {
-    log.trace('ProjectFileSystem.readFile()', filepath);
+  static async readFile(filepath: string, options: any = {}): Promise<Uint8Array> {
     if(KotOR.ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       if(!this.rootDirectoryPath){
         throw new Error('Project root directory not set');
       }
       return new Promise<Uint8Array>( (resolve, reject) => {
-        fs.readFile(path.join(this.rootDirectoryPath, filepath), options, (err: NodeJS.ErrnoException | null, buffer: Buffer | undefined) => {
-          if (err) {
-            log.trace('ProjectFileSystem.readFile() ELECTRON err', err.message);
-            reject(err);
-            return;
-          }
-          const out = new Uint8Array(buffer ?? new ArrayBuffer(0));
-          log.trace('ProjectFileSystem.readFile() ELECTRON size', out.length);
-          resolve(out);
-        });
+        fs.readFile(path.join(this.rootDirectoryPath, filepath), options, (err, buffer) => {
+          if(err) reject(undefined);
+          resolve(new Uint8Array(buffer));
+        })
       });
     }else{
       const file = await this.open(filepath);
       if(!file) throw new Error('Failed to read file');
-      const handle = await (file as FileSystemFileHandle).getFile();
-      const arrBuf = await handle.arrayBuffer();
-      log.trace('ProjectFileSystem.readFile() BROWSER size', arrBuf.byteLength);
-      return new Uint8Array(arrBuf);
+      
+      const handle = await file.getFile();
+      return new Uint8Array( await handle.arrayBuffer() );
     }
   }
 
   // Override writeFile to use project directory
-  static writeFile(filepath: string, data: Uint8Array): Promise<boolean> {
-    log.trace('ProjectFileSystem.writeFile()', filepath, data.length);
-    return new Promise<boolean>((resolve, _reject) => {
+  static async writeFile(filepath: string, data: Uint8Array): Promise<boolean> {
+    return new Promise<boolean>( async (resolve, reject) => {
       if(KotOR.ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         if(!this.rootDirectoryPath){
-          log.trace('ProjectFileSystem.writeFile() ELECTRON no root');
           resolve(false);
           return;
         }
         fs.writeFile(path.join(this.rootDirectoryPath, filepath), data, (err) => {
-          log.trace('ProjectFileSystem.writeFile() ELECTRON done', !err);
           resolve(!err);
+        })
+      }else{
+        if(!this.rootDirectoryHandle){
+          resolve(false);
+          return;
+        }
+        filepath = this.normalizePathProject(filepath);
+        const dirs = filepath.split('/');
+        const filename = dirs.pop();
+        if(!filename){
+          resolve(false);
+          return;
+        }
+        const dirHandle = await this.resolveFilePathDirectoryHandleProject(filepath);
+        
+        if(!dirHandle) throw new Error('Failed to locate file directory');
+        
+        const newFile = await dirHandle.getFileHandle(filename, {
+          create: true
         });
-        return;
-      }
-      if(!this.rootDirectoryHandle){
-        resolve(false);
-        return;
-      }
-      void (async () => {
-        try {
-          const normalizedPath = this.normalizePathProject(filepath);
-          const dirs = normalizedPath.split('/');
-          const filename = dirs.pop();
-          if(!filename){
-            resolve(false);
-            return;
-          }
-          const dirHandle = await this.resolveFilePathDirectoryHandleProject(normalizedPath);
-          if(!dirHandle){
-            resolve(false);
-            return;
-          }
-          const newFile = await dirHandle.getFileHandle(filename, { create: true });
-          if(!newFile){
-            resolve(false);
-            return;
-          }
+
+        if(!newFile) throw new Error('Failed to create file');
+
+        try{
           const stream = await newFile.createWritable();
-          await stream.write(data as BufferSource);
+          await stream.write(data as any);
           await stream.close();
           resolve(true);
+          return;
         }catch(e){
-          log.error(e instanceof Error ? e : String(e));
+          console.error(e);
           resolve(false);
+          return;
         }
-      })();
+      }
     });
   }
 
   // Override readdir to use project directory
   static async readdir(
-    dirpath: string, options: IGameFileSystemReadDirOptions = {}, files: string[] = []
+    dirpath: string, options: IGameFileSystemReadDirOptions = {}, files: any[] = []
   ): Promise<string[]> {
-    log.trace('ProjectFileSystem.readdir()', dirpath);
     if(KotOR.ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      const result = await this.readdir_fs_project(dirpath, options, files);
-      log.trace('ProjectFileSystem.readdir() ELECTRON count', result.length);
-      return result;
+      return await this.readdir_fs_project(dirpath, options, files);
     }else{
-      const result = await this.readdir_web_project(dirpath, options, files);
-      log.trace('ProjectFileSystem.readdir() BROWSER count', result.length);
-      return result;
+      return await this.readdir_web_project(dirpath, options, files);
     }
   }
 
   // Override exists to use project directory
   static exists(dirOrFilePath: string): Promise<boolean> {
-    log.trace('ProjectFileSystem.exists()', dirOrFilePath);
-    return new Promise<boolean>((resolve, _reject) => {
+    return new Promise<boolean>( async (resolve, reject) => {
       if(KotOR.ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         if(!this.rootDirectoryPath){
           resolve(false);
           return;
         }
-        fs.stat(path.join(this.rootDirectoryPath, dirOrFilePath), (err, _stats) => {
+        fs.stat(path.join(this.rootDirectoryPath, dirOrFilePath), (err, stats) => {
           if(err){
-            log.debug('exists() failed for path', dirOrFilePath, err);
+            console.log(dirOrFilePath);
+            console.error(err);
             resolve(false);
             return;
           }
-          log.trace('ProjectFileSystem.exists() ELECTRON true');
           resolve(true);
         });
-        return;
-      }
-      void (async () => {
+      }else{
         const details = path.parse(dirOrFilePath);
         try{
           if(details.ext){
             const handle = await this.resolveFilePathDirectoryHandleProject(dirOrFilePath);
             if(handle){
               const fileHandle = await handle.getFileHandle(details.base);
-              resolve(!!fileHandle);
+              if(fileHandle){
+                resolve(true);
+                return;
+              }else{
+                resolve(false);
+                return;
+              }
+            }else{
+              resolve(false);
               return;
             }
-            resolve(false);
-            return;
+          }else{
+            const handle = await this.resolvePathDirectoryHandleProject(dirOrFilePath);
+            if(handle){
+              resolve(true);
+              return;
+            }else{
+              resolve(false);
+              return;
+            }
           }
-          const handle = await this.resolvePathDirectoryHandleProject(dirOrFilePath);
-          resolve(!!handle);
         }catch(e){
-          log.debug('resolvePathDirectoryHandleProject failed for path', dirOrFilePath);
-          log.error(e instanceof Error ? e : String(e));
+          console.log(dirOrFilePath);
+          console.error(e);
           resolve(false);
+          return;
         }
-      })();
+      }
     });
   }
 
   // Override open to use project directory
-  static async open(filepath: string, _mode: 'r'|'w' = 'r'): Promise<number | FileSystemFileHandle> {
+  static async open(filepath: string, mode: 'r'|'w' = 'r'): Promise<any> {
     if(KotOR.ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       if(!this.rootDirectoryPath){
         throw new Error('Project root directory not set');
       }
-      return new Promise<number>( (resolve, _reject) => {
+      return new Promise<number>( (resolve, reject) => {
         fs.open(path.join(this.rootDirectoryPath, filepath), (err, fd) => {
           if(err){
-            log.error(err instanceof Error ? err : String(err));
-            _reject(err);
+            console.error(err);
+            reject(err);
             return;
           }
           resolve(fd);
@@ -318,9 +296,8 @@ export class ProjectFileSystem {
     if(this.rootDirectoryHandle){
       const dirs = filepath.length ? filepath.split('/') : [];
       const cacheKey = dirs.join('/');
-      const cached = this.directoryCache.get(cacheKey);
-      if(cached){
-        return cached;
+      if(this.directoryCache.has(cacheKey)){
+        return this.directoryCache.get(cacheKey)!;
       }
       let lastDirectoryHandle = this.rootDirectoryHandle;
       let currentDirHandle = this.rootDirectoryHandle;
@@ -349,11 +326,10 @@ export class ProjectFileSystem {
   private static async resolveFilePathDirectoryHandleProject(filepath: string): Promise<FileSystemDirectoryHandle | undefined> {
     if(this.rootDirectoryHandle){
       const dirs = filepath.split('/');
-      dirs.pop(); // filename not needed for cacheKey
+      const filename = dirs.pop();
       const cacheKey = dirs.join('/');
-      const cachedDir = this.directoryCache.get(cacheKey);
-      if(cachedDir){
-        return cachedDir;
+      if(this.directoryCache.has(cacheKey)){
+        return this.directoryCache.get(cacheKey)!;
       }
       let currentDirHandle = this.rootDirectoryHandle;
       let found = false;
@@ -377,7 +353,7 @@ export class ProjectFileSystem {
   }
 
   // Override readdir_fs to use project directory
-  private static async readdir_fs_project(resource_path: string = '', opts: IGameFileSystemReadDirOptions = {},  files: string[] = [], depthState?: { folder: string; depth: number }) {
+  private static async readdir_fs_project(resource_path: string = '', opts: IGameFileSystemReadDirOptions = {},  files: any[] = [], depthState?: any) {
     if(typeof depthState === 'undefined'){
       depthState = {
         'folder': resource_path,
@@ -386,69 +362,68 @@ export class ProjectFileSystem {
     }else{
       depthState.depth++;
     }
-    return new Promise<string[]>((resolve, _reject) => {
-      void (async () => {
-        try{
-          if(!this.rootDirectoryPath){
-            resolve(files);
-            return;
+    return new Promise<string[]>( async (resolve, reject) => {
+      try{
+        if(!this.rootDirectoryPath){
+          resolve(files);
+          return;
+        }
+        const dir_path = path.join(this.rootDirectoryPath, resource_path);
+        
+        if(!(await this.isFSDirectoryProject(resource_path))){
+          if(!opts.list_dirs){
+            files.push(resource_path);
           }
-          const dir_path = path.join(this.rootDirectoryPath, resource_path);
-
-          if(!(await this.isFSDirectoryProject(resource_path))){
-            if(!opts.list_dirs){
-              files.push(resource_path);
-            }
-            resolve(files);
-            return;
-          }
-          if((depthState.depth < 1) || !!opts.recursive){
-            const dirFiles = await new Promise<fs.Dirent[]>((res, rej) => {
-              fs.readdir(dir_path, { withFileTypes: true }, (err, entries) => {
-                if(err){
-                  log.error(err instanceof Error ? err : String(err));
-                  rej(err);
-                  return;
-                }
-                res(entries);
-              });
-            });
-            if(!!opts.list_dirs && depthState.depth){
-              files.push(resource_path);
-            }
-            for(let i = 0, len = dirFiles.length; i < len; i++){
-              const file = dirFiles[i];
-              const file_path = path.join(resource_path, file.name);
-              try{
-                const is_dir = await this.isFSDirectoryProject(file_path);
-                if(is_dir){
-                  if(opts.recursive){
-                    await this.readdir_fs_project(file_path, opts, files, depthState);
-                  }else{
-                    files.push(path.join(file_path));
-                  }
-                }else{
-                  if(!opts.list_dirs){
-                    files.push(path.join(file_path));
-                  }
-                }
-              }catch(err){
-                log.error(err instanceof Error ? err : String(err));
+          resolve(files);
+          return;
+        }else{
+          if((depthState.depth < 1) || !!opts.recursive ){
+            fs.readdir(dir_path, {withFileTypes: true}, async (err, dir_files: fs.Dirent[]) => {
+              if(err){
+                console.error(err);
+                reject(err);
+                return;
               }
-            }
-            resolve(files);
+              let file: fs.Dirent;
+              let file_path = '';
+              let is_dir = false;
+              if(!!opts.list_dirs && depthState.depth){
+                files.push(resource_path);
+              }
+              for(let i = 0, len = dir_files.length; i < len; i++){
+                file = dir_files[i];
+                file_path = path.join(resource_path, file.name);
+                is_dir = (await this.isFSDirectoryProject(file_path));
+                try{
+                  if(is_dir){
+                    if(opts.recursive){
+                      await this.readdir_fs_project(file_path, opts, files, depthState);
+                    }else{
+                      files.push(path.join(file_path));
+                    }
+                  }else{
+                    if(!opts.list_dirs){
+                      files.push(path.join(file_path));
+                    }
+                  }
+                }catch(e){
+                  console.error(e);
+                }
+              }
+              resolve(files);
+            });
           }else{
             resolve(files);
           }
-        }catch{
-          resolve(files);
         }
-      })();
+      }catch(e){
+        resolve(files);
+      }
     });
   }
 
   // Override readdir_web to use project directory handle
-  private static async readdir_web_project(pathOrHandle: string|FileSystemDirectoryHandle = '', opts: IGameFileSystemReadDirOptions = {},  files: string[] = [], dirbase: string = ''): Promise<string[]> {
+  private static async readdir_web_project(pathOrHandle: string|FileSystemDirectoryHandle = '', opts: any = {},  files: any[] = [], dirbase: string = ''): Promise<string[]> {
     try{
       let dirHandle: FileSystemDirectoryHandle | undefined;
       if(typeof pathOrHandle === 'string'){
@@ -496,7 +471,7 @@ export class ProjectFileSystem {
           });
 
           const subdirResults = await Promise.all(subdirPromises);
-
+          
           for (const subdirFiles of subdirResults) {
             files.push(...subdirFiles);
           }
@@ -506,7 +481,7 @@ export class ProjectFileSystem {
       return files;
 
     }catch(e){
-      log.error(e instanceof Error ? e : String(e));
+      console.error(e);
       if(typeof pathOrHandle === 'string'){
         throw new Error('Failed to resolve directory inside project folder: '+pathOrHandle);
       }else{
@@ -520,11 +495,11 @@ export class ProjectFileSystem {
     if(!this.rootDirectoryPath){
       return false;
     }
-    return new Promise<boolean>( (resolve, _reject) => {
+    return new Promise<boolean>( (resolve, reject) => {
       fs.stat(path.join(this.rootDirectoryPath, resource_path), (err, stats) => {
         if(err){
-          log.error(err instanceof Error ? err : String(err));
-          _reject();
+          console.error(err);
+          reject();
           return;
         }
         resolve((stats.mode & fs.constants.S_IFDIR) == fs.constants.S_IFDIR)

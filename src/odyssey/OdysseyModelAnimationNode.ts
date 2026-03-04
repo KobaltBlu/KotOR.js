@@ -1,6 +1,5 @@
 import * as THREE from "three";
 
-
 import type { OdysseyModel } from "@/odyssey/OdysseyModel";
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
@@ -19,7 +18,7 @@ import { OdysseyModel3D } from "@/three/odyssey";
  */
 export class OdysseyModelAnimationNode extends OdysseyModelNode {
   children: OdysseyModelAnimationNode[] = [];
-  modelNodeCache: Record<string, Record<string, OdysseyModelNode | undefined>> = {};
+  modelNodeCache: any = {};
   animation: OdysseyModelAnimation;
 
   constructor(animation?: OdysseyModelAnimation){
@@ -39,13 +38,12 @@ export class OdysseyModelAnimationNode extends OdysseyModelNode {
     if(node && model){
       let cache = this.modelNodeCache[model.uuid] || undefined;
       if(typeof cache == 'undefined'){
-        cache = this.modelNodeCache[model.uuid] = {} as Record<string, OdysseyModelNode | undefined>;
+        cache = this.modelNodeCache[model.uuid] = {};
       }
 
-      let nodeCache = cache[node.name];
+      let nodeCache = cache[node.name] || undefined;
       if(typeof nodeCache == 'undefined'){
-        nodeCache = model.nodes.get(node.name) as unknown as OdysseyModelNode | undefined;
-        this.modelNodeCache[model.uuid][node.name] = nodeCache;
+        nodeCache = this.modelNodeCache[model.uuid][node.name] = model.nodes.get(node.name);
       }
 
       return nodeCache;

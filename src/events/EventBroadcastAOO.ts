@@ -6,7 +6,6 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { BitWise } from "@/utility/BitWise";
 
-
 /**
  * EventBroadcastAOO class.
  * 
@@ -28,7 +27,7 @@ export class EventBroadcastAOO extends GameEvent {
 
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
-      this.value = struct.getNumberByLabel('Value');
+      this.value = struct.getFieldByLabel('Value').getValue();
     }
   }
 

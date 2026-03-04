@@ -1,7 +1,6 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameState } from "@/GameState";
-
 // import { TwoDAManager } from "@/managers";
 
 /**
@@ -14,7 +13,7 @@ import { GameState } from "@/GameState";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectForceShield extends GameEffect {
-  forceShield: import("@/resource/TwoDAObject").ITwoDARowData | undefined;
+  forceShield: any;
   constructor(){
     super();
     this.type = GameEffectType.EffectForceShield;

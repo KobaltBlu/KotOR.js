@@ -4,12 +4,13 @@ import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "@/game/kotor/KOTOR
 import { GUISaveGameItem } from "@/game/tsl/gui/GUISaveGameItem";
 import { GameState } from "@/GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
 
 /**
  * MenuSaveLoad class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file MenuSaveLoad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -38,7 +39,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
   filters: string[] = [];
   cFilterIndex: number = 0;
 
-  constructor() {
+  constructor(){
     super();
     this.gui_resref = 'saveload_p';
     this.background = 'blackfill';
@@ -47,30 +48,29 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if (skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    if(skipInit) return;
+    return new Promise<void>((resolve, reject) => {
       this.BTN_SAVELOAD.setText('Load');
       this.BTN_SAVELOAD.addEventListener('click', (e) => {
         e.stopPropagation();
         const savegame = this.selected;
-        if (this.mode == MenuSaveLoadMode.LOADGAME) {
-          if (savegame) {
+        if(this.mode == MenuSaveLoadMode.LOADGAME){
+          if(savegame){
             this.manager.ClearMenus();
-            if (GameState.module) {
+            if(GameState.module){
               GameState.module.dispose();
               GameState.module = undefined;
             }
             savegame.load()
           }
-        } else {
-          if (savegame instanceof NewSaveItem) {
-            this.manager.MenuSaveName.onSave = async (name = '') => {
-              await SaveGame.SaveCurrentGame(name);
-              this.reloadSaves();
+        }else{
+          if(savegame instanceof NewSaveItem){
+            this.manager.MenuSaveName.show();
+            this.manager.MenuSaveName.onSave = ( name = '' ) => {
+              console.log('SaveGame', name);
             };
-            this.manager.MenuSaveName.open();
-          } else {
-            return;
+          }else{
+
           }
         }
       });
@@ -82,10 +82,10 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_FILTER.addEventListener('click', (_e) => {
-        if (this.filters.length) {
+      this.BTN_FILTER.addEventListener('click', (e) => {
+        if(this.filters.length){
           this.cFilterIndex++;
-          if (this.cFilterIndex >= this.filters.length) {
+          if(this.cFilterIndex >= this.filters.length){
             this.cFilterIndex = 0;
           }
         }
@@ -97,15 +97,15 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       this.LBL_TIMEPLAYED.setText('');
       this.LB_GAMES.border.inneroffsety = 7;
       this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
-      this.LB_GAMES.onSelected = (save: SaveGame | NewSaveItem) => {
+      this.LB_GAMES.onSelected = (save: any) => {
         this.selected = save;
         this.UpdateSelected();
         this.LBL_PCNAME.setText('');
         this.LBL_TIMEPLAYED.setText('');
         if (this.selected instanceof SaveGame) {
           if (this.selected instanceof NewSaveItem) {
-            return;
-          } else {
+    
+          }else{
             this.LBL_PCNAME.setText(this.selected.PCNAME);
             this.LBL_TIMEPLAYED.setText(`Time: ${this.selected.getHoursPlayed()}H ${this.selected.getMinutesPlayed()}M`);
           }
@@ -126,27 +126,27 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       });
       saves = saves.reverse();
       saves.unshift(new NewSaveItem());
-    } else {
+    }else{
       saves = SaveGame.saves.slice();
       const special = saves.filter(save => {
         return save.getIsQuickSave() || save.getIsAutoSave();
       });
-
+      
       saves = saves.filter(save => {
         return !save.getIsQuickSave() && !save.getIsAutoSave();
       }).reverse();
       saves.unshift(...special);
     }
 
-    this.filters = saves.filter((save) => {
+    this.filters = saves.filter( (save) => {
       return !save.getIsQuickSave() && !save.getIsAutoSave() && !save.isNewSave;
-    }).map((save) => {
+    }).map( (save) => {
       return save.PCNAME;
-    }).filter((pcname, index, array) => {
+    }).filter( (pcname, index, array) => {
       return array.indexOf(pcname) === index;
     });
 
-    if (this.filters.length) {
+    if(this.filters.length){
       saves = saves.filter((save) => {
         return save.PCNAME == this.filters[this.cFilterIndex];
       });
@@ -154,6 +154,5 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
 
     return saves;
   }
-
+  
 }
-

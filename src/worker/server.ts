@@ -4,9 +4,6 @@
  */
 
 import { IPCMessage } from "@/server/ipc/IPCMessage";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Manager);
 
 /**
  * Odyssey Server
@@ -18,8 +15,8 @@ class OdysseyServer {
    * Handle Message From Client
    * This is the message handler for the server worker.
    */
-  static HandleMessageFromClient(_msg: IPCMessage){
-    log.info('Odyssey Server: IPC Message Received');
+  static HandleMessageFromClient(msg: IPCMessage){
+    console.log('Odyssey Server: IPC Message Received');
   }
 
   /**
@@ -27,7 +24,7 @@ class OdysseyServer {
    * This method sends a message to the client.
    */
   static SendMessageToClient(msg: IPCMessage){
-    log.info('Odyssey Server: IPC Message Sent');
+    console.log('Odyssey Server: IPC Message Sent');
     postMessage(msg.toBuffer());
   }
 
@@ -38,23 +35,22 @@ class OdysseyServer {
  * This is the message handler for the server worker.
  */
 onmessage = function (e: MessageEvent){
-  const data = e.data as unknown;
-  if(data instanceof Uint8Array){
-    const msg = IPCMessage.fromBuffer(data);
+  if(e.data?.constructor === Uint8Array ){
+    const msg = IPCMessage.fromBuffer(e.data);
     OdysseyServer.HandleMessageFromClient(msg);
     return;
   }
 
   if(typeof e.data === 'string'){
-    log.info('Odyssey Server: Debug Message Received', e.data);
+    console.log('Odyssey Server: Debug Message Received', e.data);
     return;
   }
 
-  log.info('Odyssey Server: Unknown Message Received', e.data);
+  console.log('Odyssey Server: Unknown Message Received', e.data);
 }
 
 /**
  * Debug Message
  * This is a debug message for the server worker.
  */
-log.info('Odyssey Server: ONLINE');
+console.log('Odyssey Server: ONLINE');

@@ -3,14 +3,11 @@ import * as THREE from "three";
 import { EngineDebugType } from "@/enums/engine/EngineDebugType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleObject, ModulePlaceable, ModuleRoom } from "@/module";
+import type { ModuleCreature, ModuleObject, ModuleRoom } from "@/module";
 import { OdysseyWalkMesh, WalkmeshEdge } from "@/odyssey";
 import { OdysseyFace3 } from "@/three/odyssey";
 import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 import { Utility } from "@/utility/Utility";
-
-const log = createScopedLogger(LogScope.Game);
 
 // =============================================
 // TYPE DEFINITIONS
@@ -50,12 +47,7 @@ interface CollisionProfile {
 // CONFIGURATION CONSTANTS
 // =============================================
 
-export class CollisionConfig {
-  /** Presence satisfies no-extraneous-class; do not instantiate. */
-  private readonly _ = true as const;
-
-  private constructor() {}
-
+class CollisionConfig {
   static readonly TOLERANCE = 0.01;
   static readonly MIN_VELOCITY = 0.001;
 
@@ -71,12 +63,7 @@ export class CollisionConfig {
 // OBJECT POOLING SYSTEM
 // =============================================
 
-export class CollisionPool {
-  /** Presence satisfies no-extraneous-class; do not instantiate. */
-  private readonly _ = true as const;
-
-  private constructor() {}
-
+class CollisionPool {
   private static collisionDataPool: ProcessedCollision[] = [];
   private static vectorPool: THREE.Vector3[] = [];
 
@@ -115,7 +102,7 @@ export class CollisionPool {
 // COLLISION STATE MANAGEMENT
 // =============================================
 
-export class CollisionState {
+class CollisionState {
   readonly collisions = new Map<CollisionType, ProcessedCollision[]>();
   readonly activeCollisions = new Set<CollisionEdge>();
   public hitDistance = 1;
@@ -125,8 +112,7 @@ export class CollisionState {
     if (!this.collisions.has(type)) {
       this.collisions.set(type, []);
     }
-    const list = this.collisions.get(type);
-    if (list) list.push(collision);
+    this.collisions.get(type)!.push(collision);
     this.activeCollisions.add(collision.edge);
   }
 
@@ -160,9 +146,9 @@ export class CollisionState {
 
 /**
  * CollisionManager class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file CollisionManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -286,7 +272,7 @@ export class CollisionManager {
 
     this.object.forceVector.copy(finalVelocity);
   }
-
+  
   // =============================================
   // MAIN COLLISION UPDATE METHOD
   // =============================================
@@ -367,17 +353,17 @@ export class CollisionManager {
 
   private validatePrerequisites(): boolean {
     if (!this.object?.model) {
-      log.warn('CollisionManager: No valid object for collision detection');
+      console.warn('CollisionManager: No valid object for collision detection');
       return false;
     }
 
     if (!this.object.room?.collisionManager?.walkmesh) {
-      log.warn('CollisionManager: Object not in valid room with walkmesh');
+      console.warn('CollisionManager: Object not in valid room with walkmesh');
       return false;
     }
 
     if (!GameState.module || !this.object.area) {
-      log.warn('CollisionManager: Missing module or area context');
+      console.warn('CollisionManager: Missing module or area context');
       return false;
     }
 
@@ -425,7 +411,7 @@ export class CollisionManager {
     this.handleObjectGroupCollisions(GameState.PartyManager.party, CollisionType.CREATURE, delta);
   }
 
-  private handleObjectGroupCollisions(objects: ModuleCreature[], type: CollisionType, _delta: number): void {
+  private handleObjectGroupCollisions(objects: ModuleCreature[], type: CollisionType, delta: number): void {
     for (const creature of objects) {
       if (!creature || creature === this.object || creature.isDead()) {
         continue;
@@ -481,7 +467,7 @@ export class CollisionManager {
 
     return collision;
   }
-
+    
   private handlePlaceableCollisions(): void {
     const placeables = this.object.room.placeables;
     for (const placeable of placeables) {
@@ -592,7 +578,7 @@ export class CollisionManager {
     CollisionPool.releaseVector(nextPosition);
   }
 
-  private isInsidePlaceableWalkmesh(point: THREE.Vector3, placeable: ModulePlaceable): boolean {
+  private isInsidePlaceableWalkmesh(point: THREE.Vector3, placeable: any): boolean {
     const walkmesh = placeable?.collisionManager?.walkmesh;
     if (!walkmesh?.walkableFaces?.length) return false;
 
@@ -617,7 +603,7 @@ export class CollisionManager {
   // COLLISION DETECTION UTILITIES
   // =============================================
 
-  private isValidPlaceableForCollision(placeable: ModulePlaceable): boolean {
+  private isValidPlaceableForCollision(placeable: any): boolean {
     if (!placeable?.collisionManager?.walkmesh || !placeable.model?.visible) {
       return false;
     }
@@ -627,7 +613,7 @@ export class CollisionManager {
     return placeable.box.intersectsBox(this.box) || placeable.box.containsBox(this.box);
   }
 
-  private detectEdgeCollisions(edges: CollisionEdge[], collisionType: CollisionType = CollisionType.PLACEABLE): ProcessedCollision[] {
+  private detectEdgeCollisions(edges: any[], collisionType: CollisionType = CollisionType.PLACEABLE): ProcessedCollision[] {
     const collisions: ProcessedCollision[] = [];
     if (!edges || edges.length === 0) return collisions;
 
@@ -642,7 +628,7 @@ export class CollisionManager {
     return collisions;
   }
 
-  private detectSingleEdgeCollision(edge: CollisionEdge, collisionType: CollisionType): ProcessedCollision | null {
+  private detectSingleEdgeCollision(edge: any, collisionType: CollisionType): ProcessedCollision | null {
     const collision = CollisionPool.getProcessedCollision();
     collision.edge = edge;
     collision.type = collisionType;
@@ -895,7 +881,7 @@ export class CollisionManager {
     if (this.object.forceVector.length() === 0) return;
 
     // Check for room transition edges
-    for (const [_index, edge] of this.object.room.collisionManager.walkmesh.edges) {
+    for (const [index, edge] of this.object.room.collisionManager.walkmesh.edges) {
       if (!edge || edge.transition === -1) continue;
 
       if (Utility.LineLineIntersection(

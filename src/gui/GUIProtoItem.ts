@@ -1,15 +1,19 @@
 import * as THREE from "three";
 
+import { Mouse } from "@/controls/Mouse";
+import { Anchor } from "@/enums/gui/Anchor";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import { ResolutionManager } from "@/managers/ResolutionManager";
 import type { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * GUIProtoItem class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GUIProtoItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -26,11 +30,11 @@ export class GUIProtoItem extends GUIControl{
       this.onSelectStateChanged();
     };
 
-    this.addEventListener('mouseIn', (_e) => {
+    this.addEventListener('mouseIn', (e) => {
       this.onSelectStateChanged();
     })
 
-    this.addEventListener('mouseOut', (_e) => {
+    this.addEventListener('mouseOut', (e) => {
       this.onSelectStateChanged();
     })
   }
@@ -82,7 +86,7 @@ export class GUIProtoItem extends GUIControl{
 
     this.widget.position.x = this.anchorOffset.x + this.offset.x;
     this.widget.position.y = this.anchorOffset.y + this.offset.y;
-
+    
     this.calculateBox();*/
   }
 
@@ -102,12 +106,12 @@ export class GUIProtoItem extends GUIControl{
 
   calculateBox(){
     const worldPosition = this.parent.widget.position.clone();
-    //log.info('worldPos', worldPosition);
+    //console.log('worldPos', worldPosition);
     this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
     this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
     this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
     this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
-
+    
     for(let i = 0; i < this.children.length; i++){
       this.children[i].updateBounds();
     }

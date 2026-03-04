@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, ChangeEvent, useCallback } from "react";
 import * as THREE from 'three';
 
 import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
+import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
 import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
@@ -15,29 +16,23 @@ import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { ModalBlueprintBrowserState, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
 import { TabModuleEditorState } from "@/apps/forge/states/tabs";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import "./ModuleEditorSidebarComponent.scss";
 
-import "@/apps/forge/components/ModuleEditorSidebarComponent.scss";
-
-const log = createScopedLogger(LogScope.Forge);
-
-export const ModuleEditorSidebarComponent = function(props: unknown){
-  const tab: TabModuleEditorState | undefined = (props as { tab: TabModuleEditorState })?.tab;
-  if(!tab){
-    return null;
-  }
+export const ModuleEditorSidebarComponent = function(props: any){
+  const tab: TabModuleEditorState = props.tab as TabModuleEditorState;
 
   const [selectedTab, setSelectedTab] = useState<string>('object-properties');
   const [selectedGameObject, setSelectedGameObject] = useState<ForgeGameObject | undefined>(undefined);
 
   useEffect(() => {
     const onSelectionChanged = (gameObject: ForgeGameObject | undefined) => {
-      log.trace('onSelectionChanged', gameObject);
+      console.log('onSelectionChanged', gameObject);
       setSelectedGameObject(gameObject);
     };
 
     tab.addEventListener('onSelectionChanged', onSelectionChanged);
-
+    
     // Set initial selection
     setSelectedGameObject(tab.selectedGameObject);
 
@@ -235,7 +230,7 @@ const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObjec
         </div>
         <ul className="git-instance-properties-editor__list">
           {propertyDefs.map((prop, index) => (
-            <li
+            <li 
               key={index}
               className="git-instance-properties-editor__list-item"
             >
@@ -257,28 +252,28 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
   const nestedPath = propertyDef.nestedPath;
 
   // Get current value
-  const getValue = (): unknown => {
+  const getValue = (): any => {
     if(nestedPath){
       const parts = nestedPath.split('.');
-      let value: unknown = gameObject;
+      let value: any = gameObject;
       for(const part of parts){
-        value = (value as unknown as Record<string, unknown>)?.[part];
+        value = value?.[part];
       }
       return value;
     }
-    return (gameObject as unknown as Record<string, unknown>)[propertyName];
+    return (gameObject as any)[propertyName];
   };
 
   const currentValue = getValue();
 
   // Update value
-  const updateValue = (newValue: unknown) => {
+  const updateValue = (newValue: any) => {
     if(nestedPath){
       const parts = nestedPath.split('.');
       if(parts.length === 2){
         // Handle nested like position.x or rotation.z
         const [objProp, subProp] = parts;
-        const obj = (gameObject as unknown as Record<string, unknown>)[objProp] as Record<string, unknown> | undefined;
+        const obj = (gameObject as any)[objProp];
         if(obj){
           // For position/rotation which are references to container properties,
           // we update the reference directly, then trigger property change
@@ -289,7 +284,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       }
     } else {
       // Direct property update
-      gameObject.setProperty(propertyName as keyof ForgeGameObject, newValue as unknown);
+      gameObject.setProperty(propertyName as keyof ForgeGameObject, newValue);
     }
     tab.updateFile();
   };
@@ -303,22 +298,21 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
           </label>
           <input
             type="number"
-            value={typeof currentValue === 'number' ? currentValue : 0}
+            value={currentValue || 0}
             onChange={(e) => updateValue(parseFloat(e.target.value) || 0)}
             className="property-editor-input"
-            title={propertyDef.label}
           />
         </div>
       );
 
-    case 'string': {
-        // Check if this is a ResRef field that should have a browse button
+    case 'string':
+      // Check if this is a ResRef field that should have a browse button
       const isResRefField = propertyDef.gitFieldLabel === 'TemplateResRef' || propertyDef.gitFieldLabel === 'ResRef';
       const blueprintType = isResRefField ? getBlueprintTypeForGameObject(gameObject) : null;
-
+      
       const handleBrowseClick = () => {
         if(!blueprintType) return;
-
+        
         const modal = new ModalBlueprintBrowserState(blueprintType, (blueprint) => {
           // Update the property with the selected blueprint's resref
           const sanitized = gameObject.sanitizeResRef(blueprint.resref);
@@ -327,7 +321,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
         modal.attachToModalManager(ForgeState.modalManager);
         modal.open();
       };
-
+      
       return (
         <div className="property-editor-row">
           <label className="property-editor-label property-editor-label--ellipsis">
@@ -336,7 +330,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
           <div className="property-editor-input-group">
             <input
               type="text"
-              value={typeof currentValue === 'string' ? currentValue : ''}
+              value={currentValue || ''}
               onChange={(e) => {
                 const value = isResRefField
                   ? gameObject.sanitizeResRef(e.target.value)
@@ -344,7 +338,6 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 updateValue(value);
               }}
               className="property-editor-input"
-              title={propertyDef.label}
             />
             {isResRefField && blueprintType && (
               <button
@@ -358,7 +351,6 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
           </div>
         </div>
       );
-    }
 
     case 'boolean':
       return (
@@ -368,16 +360,14 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
           </label>
           <input
             type="checkbox"
-            checked={Boolean(currentValue)}
+            checked={currentValue || false}
             onChange={(e) => updateValue(e.target.checked)}
             className="property-editor-checkbox"
-            title={propertyDef.label}
           />
         </div>
       );
 
-    case 'position': {
-      const pos = currentValue as THREE.Vector3 | undefined;
+    case 'position':
       // Position is a reference to container.position, so we update it directly
       return (
         <>
@@ -387,16 +377,15 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             </label>
             <input
               type="number"
-              value={pos?.x ?? 0}
+              value={currentValue?.x || 0}
               onChange={(e) => {
-                if(pos){
-                  pos.x = parseFloat(e.target.value) || 0;
-                  gameObject.setProperty('position' as keyof ForgeGameObject, pos);
+                if(currentValue){
+                  currentValue.x = parseFloat(e.target.value) || 0;
+                  gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
                   tab.updateFile();
                 }
               }}
               className="property-editor-input"
-              title={`${propertyDef.label} X`}
             />
           </div>
           <div className="property-editor-row">
@@ -405,16 +394,15 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             </label>
             <input
               type="number"
-              value={pos?.y ?? 0}
+              value={currentValue?.y || 0}
               onChange={(e) => {
-                if(pos){
-                  pos.y = parseFloat(e.target.value) || 0;
-                  gameObject.setProperty('position' as keyof ForgeGameObject, pos);
+                if(currentValue){
+                  currentValue.y = parseFloat(e.target.value) || 0;
+                  gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
                   tab.updateFile();
                 }
               }}
               className="property-editor-input"
-              title={`${propertyDef.label} Y`}
             />
           </div>
           <div className="property-editor-row">
@@ -423,21 +411,19 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             </label>
             <input
               type="number"
-              value={pos?.z ?? 0}
+              value={currentValue?.z || 0}
               onChange={(e) => {
-                if(pos){
-                  pos.z = parseFloat(e.target.value) || 0;
-                  gameObject.setProperty('position' as keyof ForgeGameObject, pos);
+                if(currentValue){
+                  currentValue.z = parseFloat(e.target.value) || 0;
+                  gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
                   tab.updateFile();
                 }
               }}
               className="property-editor-input"
-              title={`${propertyDef.label} Z`}
             />
           </div>
         </>
       );
-    }
 
     case 'rotation':
       if(nestedPath === 'rotation.z'){
@@ -458,70 +444,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 }
               }}
               className="property-editor-input"
-              title={propertyDef.label}
             />
           </div>
         );
       }
       // Full rotation editor
-      {
-        const rot = currentValue as THREE.Euler | undefined;
-        return (
-          <>
-            <div className="property-editor-row">
-              <label className="property-editor-label">
-                {propertyDef.label} X:
-              </label>
-              <input
-                type="number"
-                value={rot?.x ?? 0}
-              onChange={(e) => {
-                const r = rot || new THREE.Euler();
-                r.x = parseFloat(e.target.value) || 0;
-                updateValue(r);
-              }}
-              className="property-editor-input"
-              title={`${propertyDef.label} X`}
-            />
-          </div>
-          <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} Y:
-            </label>
-            <input
-              type="number"
-              value={rot?.y ?? 0}
-              onChange={(e) => {
-                const r = rot || new THREE.Euler();
-                r.y = parseFloat(e.target.value) || 0;
-                updateValue(r);
-              }}
-              className="property-editor-input"
-              title={`${propertyDef.label} Y`}
-            />
-          </div>
-          <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} Z:
-            </label>
-            <input
-              type="number"
-              value={rot?.z ?? 0}
-              onChange={(e) => {
-                const r = rot || new THREE.Euler();
-                r.z = parseFloat(e.target.value) || 0;
-                updateValue(r);
-              }}
-              className="property-editor-input"
-              title={`${propertyDef.label} Z`}
-            />
-          </div>
-        </>
-        );
-      }
-
-    case 'quaternion': {
-      const quat = currentValue as THREE.Quaternion | undefined;
       return (
         <>
           <div className="property-editor-row">
@@ -530,14 +457,13 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             </label>
             <input
               type="number"
-              value={quat?.x ?? 0}
+              value={currentValue?.x || 0}
               onChange={(e) => {
-                const q = quat || new THREE.Quaternion();
-                q.x = parseFloat(e.target.value) || 0;
-                updateValue(q);
+                const rot = currentValue || new THREE.Euler();
+                rot.x = parseFloat(e.target.value) || 0;
+                updateValue(rot);
               }}
               className="property-editor-input"
-              title={`${propertyDef.label} X`}
             />
           </div>
           <div className="property-editor-row">
@@ -546,14 +472,13 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             </label>
             <input
               type="number"
-              value={quat?.y ?? 0}
+              value={currentValue?.y || 0}
               onChange={(e) => {
-                const q = quat || new THREE.Quaternion();
-                q.y = parseFloat(e.target.value) || 0;
-                updateValue(q);
+                const rot = currentValue || new THREE.Euler();
+                rot.y = parseFloat(e.target.value) || 0;
+                updateValue(rot);
               }}
               className="property-editor-input"
-              title={`${propertyDef.label} Y`}
             />
           </div>
           <div className="property-editor-row">
@@ -562,39 +487,85 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             </label>
             <input
               type="number"
-              value={quat?.z ?? 0}
+              value={currentValue?.z || 0}
               onChange={(e) => {
-                const q = quat || new THREE.Quaternion();
-                q.z = parseFloat(e.target.value) || 0;
-                updateValue(q);
+                const rot = currentValue || new THREE.Euler();
+                rot.z = parseFloat(e.target.value) || 0;
+                updateValue(rot);
               }}
               className="property-editor-input"
-              title={`${propertyDef.label} Z`}
+            />
+          </div>
+        </>
+      );
+
+    case 'quaternion':
+      return (
+        <>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
+              {propertyDef.label} X:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.x || 0}
+              onChange={(e) => {
+                const quat = currentValue || new THREE.Quaternion();
+                quat.x = parseFloat(e.target.value) || 0;
+                updateValue(quat);
+              }}
+              className="property-editor-input"
             />
           </div>
           <div className="property-editor-row">
-            <label className="property-editor-label" htmlFor={`${propertyDef.propertyName}-quat-w`}>
+            <label className="property-editor-label">
+              {propertyDef.label} Y:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.y || 0}
+              onChange={(e) => {
+                const quat = currentValue || new THREE.Quaternion();
+                quat.y = parseFloat(e.target.value) || 0;
+                updateValue(quat);
+              }}
+              className="property-editor-input"
+            />
+          </div>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
+              {propertyDef.label} Z:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.z || 0}
+              onChange={(e) => {
+                const quat = currentValue || new THREE.Quaternion();
+                quat.z = parseFloat(e.target.value) || 0;
+                updateValue(quat);
+              }}
+              className="property-editor-input"
+            />
+          </div>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} W:
             </label>
             <input
-              id={`${propertyDef.propertyName}-quat-w`}
               type="number"
-              value={quat?.w ?? 0}
+              value={currentValue?.w || 0}
               onChange={(e) => {
-                const q = quat || new THREE.Quaternion();
-                q.w = parseFloat(e.target.value) || 0;
-                updateValue(q);
+                const quat = currentValue || new THREE.Quaternion();
+                quat.w = parseFloat(e.target.value) || 0;
+                updateValue(quat);
               }}
               className="property-editor-input"
-              title={`${propertyDef.label} W`}
             />
           </div>
         </>
       );
-    }
 
-    case 'vector3': {
-      const vec = currentValue as THREE.Vector3 | undefined;
+    case 'vector3':
       return (
         <>
           <div className="property-editor-row">
@@ -603,14 +574,13 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             </label>
             <input
               type="number"
-              value={vec?.x ?? 0}
+              value={currentValue?.x || 0}
               onChange={(e) => {
-                const v = vec || new THREE.Vector3();
-                v.x = parseFloat(e.target.value) || 0;
-                updateValue(v);
+                const vec = currentValue || new THREE.Vector3();
+                vec.x = parseFloat(e.target.value) || 0;
+                updateValue(vec);
               }}
               className="property-editor-input"
-              title={`${propertyDef.label} X`}
             />
           </div>
           <div className="property-editor-row">
@@ -619,14 +589,13 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             </label>
             <input
               type="number"
-              value={vec?.y ?? 0}
+              value={currentValue?.y || 0}
               onChange={(e) => {
-                const v = vec || new THREE.Vector3();
-                v.y = parseFloat(e.target.value) || 0;
-                updateValue(v);
+                const vec = currentValue || new THREE.Vector3();
+                vec.y = parseFloat(e.target.value) || 0;
+                updateValue(vec);
               }}
               className="property-editor-input"
-              title={`${propertyDef.label} Y`}
             />
           </div>
           <div className="property-editor-row">
@@ -635,19 +604,17 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             </label>
             <input
               type="number"
-              value={vec?.z ?? 0}
+              value={currentValue?.z || 0}
               onChange={(e) => {
-                const v = vec || new THREE.Vector3();
-                v.z = parseFloat(e.target.value) || 0;
-                updateValue(v);
+                const vec = currentValue || new THREE.Vector3();
+                vec.z = parseFloat(e.target.value) || 0;
+                updateValue(vec);
               }}
               className="property-editor-input"
-              title={`${propertyDef.label} Z`}
             />
           </div>
         </>
       );
-    }
 
     case 'CExoLocString':
       return (

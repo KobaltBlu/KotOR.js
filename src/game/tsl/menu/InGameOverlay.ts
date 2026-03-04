@@ -1,16 +1,18 @@
-import { EngineState } from "../../../enums/engine/EngineState";
-import { Anchor } from "../../../enums/gui/Anchor";
-import { GameState } from "../../../GameState";
-import { LBL_MapView } from "../../../gui";
-import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
-import { InGameOverlay as K1_InGameOverlay } from "../../kotor/KOTOR";
-import { ActionMenuManager } from "../../../engine/menu/ActionMenuManager";
-import { TalentObject } from "../../../talents";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
-import type { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { TextureLoader } from "../../../loaders/TextureLoader";
 import * as THREE from "three";
+
+import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { EngineState } from "@/enums/engine/EngineState";
+import { Anchor } from "@/enums/gui/Anchor";
+import { InGameOverlay as K1_InGameOverlay } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import { LBL_MapView } from "@/gui";
+import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
+import { TextureLoader } from "@/loaders/TextureLoader";
+import { TalentObject } from "@/talents";
+import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+
 
 const preloadTextures = ['enemy_bar', 'hostilearrow', 'friend_bar', 'friendlyarrow'];
 const preloadTexturesMap = new Map<string, OdysseyTexture>();

@@ -1,28 +1,13 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 import { ProfilePromoItem } from "@/apps/launcher/components/ProfilePromoItem";
-import type { LauncherProfile, LauncherProfileElement } from "@/apps/launcher/types";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { useApp } from "@/apps/launcher/context/AppContext";
 
-const log = createScopedLogger(LogScope.Launcher);
 
-export type ProfilePromoItemsProfile = LauncherProfile | { name: string; elements?: LauncherProfileElement[] };
-
-export interface ProfilePromoItemsProps {
-  profile: ProfilePromoItemsProfile;
-  tabRef: React.RefObject<HTMLDivElement | null>;
-  promoElementWidth?: number;
-  onClick?: (element: LauncherProfileElement) => void;
-  onDoubleClick?: (element: LauncherProfileElement) => void;
-}
-
-export interface ProfilePromoItemsRef {
-  recalculate: () => void;
-}
-
-export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoItemsProps>(function(props, ref){
-  const profile = props.profile;
-  const tabRef = props.tabRef;
+export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
+  const appContext = useApp();
+  const profile: any = props.profile;
+  const tabRef: any = props.tabRef;
   const promoElementsRef = useRef<HTMLDivElement>(null);
   const promoElementWidthValue: number = props.promoElementWidth || 320;
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -42,7 +27,7 @@ export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoIt
     if(!tabRef.current || !promoElementsRef.current){
       return;
     }
-
+    
     const max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
     canScroll.current = max < 0;
   }, [tabRef, promoElementsRef]);
@@ -58,7 +43,7 @@ export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoIt
     const max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
     scrollLeftVisable.current = false;
     scrollRightVisable.current = false;
-
+    
     if(canScroll.current){
       if(scrollOffset.current < 0){
         scrollLeftVisable.current = true;
@@ -67,7 +52,7 @@ export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoIt
         scrollRightVisable.current = true;
       }
     }
-
+    
     setScrollL(scrollLeftVisable.current);
     setScrollR(scrollRightVisable.current);
     setMarginLeft(scrollOffset.current);
@@ -81,7 +66,7 @@ export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoIt
 
   useImperativeHandle(ref, () => ({
     recalculate() {
-      log.debug('ProfilePromoItems recalculate', profile.name);
+      // console.warn(`recalculate: ${profile.name} promo`);
       updateScrollAndButtons();
     }
   }), [updateScrollAndButtons]);
@@ -125,7 +110,7 @@ export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoIt
 
     // Create new ResizeObserver
     let debounceTimeout: NodeJS.Timeout | null = null;
-    resizeObserverRef.current = new ResizeObserver((_entries) => {
+    resizeObserverRef.current = new ResizeObserver((entries) => {
       // Debounce the updates to avoid excessive recalculations
       if (debounceTimeout) {
         clearTimeout(debounceTimeout);
@@ -171,7 +156,7 @@ export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoIt
       <div className="promo-elements-left" onClick={onBtnPromoLeft}><i className="fas fa-chevron-left"></i></div>
       <div ref={promoElementsRef} className="promo-elements-container" style={{ marginLeft: marginLeft, position: 'absolute' }}>
         {
-          profile.elements?.map( (element, i: number) => {
+          profile.elements.map( (element: any, i: number) => {
             return (
               <ProfilePromoItem element={element} key={`profile-proto-item-${i}`} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></ProfilePromoItem>
             )

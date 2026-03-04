@@ -1,4 +1,3 @@
-
 import { SaveGame } from "@/engine/SaveGame";
 import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
 import { GUISaveGameItem } from "@/game/kotor/gui/GUISaveGameItem";
@@ -11,9 +10,10 @@ import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 /**
  * MenuSaveLoad class.
+ * 
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file MenuSaveLoad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -66,8 +66,9 @@ export class MenuSaveLoad extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if (skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    if(skipInit) return;
+
+    return new Promise<void>((resolve) => {
 
       this._button_y = this.BTN_DELETE;
 
@@ -175,7 +176,7 @@ export class MenuSaveLoad extends GameMenu {
     return saves;
   }
 
-  reloadSaves() {
+  reloadSaves(){
     this.LB_GAMES.clearItems();
     const saves = this.getSaveGames();
     for (const save of saves) {
@@ -231,23 +232,22 @@ export class MenuSaveLoad extends GameMenu {
   triggerControllerDDownPress() {
     this.LB_GAMES.directionalNavigate("down");
   }
-
 }
 
 export class NewSaveItem extends SaveGame {
-  constructor() {
+  constructor(){
     super();
     this.isNewSave = true;
   }
 
-  getFullName() {
+  getFullName(){
     return GameState.TLKManager.TLKStrings[1586].Value;
   }
 
-  async load(): Promise<void> { }
-  async loadNFO(): Promise<void> { }
-  async loadPIFO(): Promise<void> { }
-  async loadGlobalVARS(): Promise<void> { }
-  async loadInventory(): Promise<void> { }
-  async loadPartyTable(): Promise<void> { }
+  async load(): Promise<void> {}
+  async loadNFO(): Promise<void> {}
+  async loadPIFO(): Promise<void> {}
+  async loadGlobalVARS(): Promise<void> {}
+  async loadInventory(): Promise<void> {}
+  async loadPartyTable(): Promise<void> {}
 }

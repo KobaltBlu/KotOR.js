@@ -1,16 +1,19 @@
-import { Keymap } from "@/controls";
-import { GameState } from "@/GameState";
-import { GameMenu, GUIButton, GUIControl, GUIProtoItem } from "@/gui";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import * as THREE from "three";
 
-const log = createScopedLogger(LogScope.Game);
+import { Keymap } from "@/controls";
+import { GameEngineType } from "@/enums/engine";
+import { GameState } from "@/GameState";
+import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { GFFStruct } from "@/resource/GFFStruct";
+import type { TalentSkill } from "@/talents/TalentSkill";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 /**
  * GUIKeyMapItem class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GUIKeyMapItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -40,6 +43,7 @@ export class GUIKeyMapItem extends GUIProtoItem {
       const protoWidth = this.extent.width;
       const protoHeight = this.extent.height - spacing;
       const iconWidth = (protoWidth * .30) - spacing;
+      const iconHeight = this.extent.height - spacing;
 
       const labelWidth = protoWidth - iconWidth - this.parent.border.inneroffset;
 
@@ -73,13 +77,13 @@ export class GUIKeyMapItem extends GUIProtoItem {
       _buttonKeyWidget.position.z = this.zIndex + 1;
       this.widget.add(_buttonKeyWidget);
 
-      this.buttonLabel.addEventListener('click', (_e) => {
+      this.buttonLabel.addEventListener('click', (e) => {
         this.list.select(this);
       });
-
+      
       return this.widget;
     }catch(e){
-      log.error(e);
+      console.error(e);
     }
     return this.widget;
 

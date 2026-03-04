@@ -1,16 +1,16 @@
 
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
 import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import { TextureLoader } from "@/loaders";
 import { ModuleItem } from "@/module";
 
 /**
  * MenuInventory class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file MenuInventory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -46,7 +46,7 @@ export class MenuInventory extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -147,6 +147,6 @@ export class MenuInventory extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_CHAR.click();
   }
-
+  
 }
 

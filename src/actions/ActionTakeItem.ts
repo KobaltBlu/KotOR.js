@@ -3,11 +3,9 @@ import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
-
 
 /**
  * ActionTakeItem class.
@@ -29,7 +27,7 @@ export class ActionTakeItem extends Action {
     // 1 - dword: oTakeFrom
   }
 
-  update(_delta?: number): ActionStatus {
+  update(delta?: number): ActionStatus {
 
     if(
       !BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature) &&
@@ -53,9 +51,9 @@ export class ActionTakeItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const _removed = oTarget.removeItem(oItem, 1);
+    const removed = oTarget.removeItem(oItem, 1);
 
-    if(GameState.PartyManager.party.indexOf(this.owner as ModuleCreature) >= 0){
+    if(GameState.PartyManager.party.indexOf(this.owner as any) >= 0){
       GameState.InventoryManager.addItem( oItem );
     }{
       this.owner.addItem( oItem );

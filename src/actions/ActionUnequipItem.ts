@@ -1,4 +1,5 @@
 import { Action } from "@/actions/Action";
+import { ActionQueue } from "@/actions/ActionQueue";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
@@ -6,7 +7,6 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import { BitWise } from "@/utility/BitWise";
-
 
 /**
  * ActionUnequipItem class.
@@ -29,7 +29,7 @@ export class ActionUnequipItem extends Action {
     // 2 - bInstant (INT)
   }
 
-  update(_delta?: number): ActionStatus {
+  update(delta?: number): ActionStatus {
 
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       return ActionStatus.FAILED;

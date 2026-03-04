@@ -28,7 +28,6 @@ import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { RIMObject } from "@/resource/RIMObject";
-import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
@@ -450,11 +449,11 @@ export class Module {
 
       GameState.ModuleObjectManager.ResetPlayerId();
 
-      GameState.globalLight.color.setRGB(
-        (this.area.dynamicAmbientColor & 0xFF) / 255,
-        (this.area.dynamicAmbientColor >> 8 & 0xFF) / 255,
-        (this.area.dynamicAmbientColor >> 16 & 0xFF) / 255
-      );
+      if (this.area.sun.fogOn && this.area.sun.fogColor) {
+        GameState.globalLight.color.setHex(parseInt('0x' + this.area.sun.fogColor.toString(16)));
+      } else {
+        GameState.globalLight.color.setHex(parseInt('0x' + this.area.dynamicAmbientColor.toString(16)));
+      }
 
       GameState.globalLight.color.setRGB(
         THREE.MathUtils.clamp(GameState.globalLight.color.r, 0.2, 1),
@@ -819,11 +818,9 @@ export class Module {
       }
 
       //Locate the module's dialog MOD file (TSL)
-      if(GameState.GameKey == GameEngineType.TSL){
-        archive = await Module.GetModuleDLG(modName);
-        if(archive instanceof ERFObject){
-          archives.push(archive);
-        }
+      archive = await Module.GetModuleDLG(modName);
+      if (archive instanceof ERFObject) {
+        archives.push(archive);
       }
     } catch (e) {
       log.error(e instanceof Error ? e : new Error(String(e)));

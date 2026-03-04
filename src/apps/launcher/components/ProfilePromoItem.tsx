@@ -1,39 +1,52 @@
-import React from "react";
+import React, { createRef, useEffect, useRef, useState } from "react";
 
 import { GalleryPromoItem } from "@/apps/launcher/components/PromoItems/GalleryPromoItem";
 import { VideoPromoItem } from "@/apps/launcher/components/PromoItems/VideoPromoItem";
 import { WebviewPromoItem } from "@/apps/launcher/components/PromoItems/WebviewPromoItem";
 import { YTVideoPromoItem } from "@/apps/launcher/components/PromoItems/YTVideoPromoItem";
-import type { LauncherProfileElement } from "@/apps/launcher/types";
+import { AppProvider, AppProviderValues, useApp } from "@/apps/launcher/context/AppContext";
 
 export interface ProfilePromoItemProps {
-  element: LauncherProfileElement;
-  onClick?: (element: LauncherProfileElement) => void;
-  onDoubleClick?: (element: LauncherProfileElement) => void;
+  element: any;
+  onClick?: (element: any) => void;
+  onDoubleClick?: (element: any) => void;
 }
 
 export const ProfilePromoItem = function(props: ProfilePromoItemProps){
-  const element = props.element;
+  const element: any = props.element;
+  const appContext = useApp();
 
-  if(element.type === 'gallery'){
-    return <GalleryPromoItem element={element} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></GalleryPromoItem>;
-  }
-
-  if(element.type === 'video'){
-    return <VideoPromoItem element={element} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></VideoPromoItem>;
-  }
-
-  if(element.type === 'webview'){
-    return <WebviewPromoItem element={element} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></WebviewPromoItem>;
-  }
-
-  if(element.type === 'ytvideo'){
-    return <YTVideoPromoItem element={element} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></YTVideoPromoItem>;
-  }
-
-  return (
+  let jsxElement: JSX.Element = (
     <div className="promo-element">
       <p>[Invalid Promo Element]</p>
     </div>
   );
+
+  switch(element.type){
+    case 'gallery':
+      jsxElement = (
+        <GalleryPromoItem element={element} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></GalleryPromoItem>
+      );
+    break;
+    case 'video':
+      jsxElement = (
+        <VideoPromoItem element={element} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></VideoPromoItem>
+      )
+    break;
+    case 'webview':
+      jsxElement = (
+        <WebviewPromoItem element={element} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></WebviewPromoItem>
+      )
+    break;
+    case 'ytvideo':
+      jsxElement = (
+        <YTVideoPromoItem element={element} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></YTVideoPromoItem>
+      )
+    break;
+  }
+
+  return (
+    jsxElement
+  );
+
 }

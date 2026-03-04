@@ -2,10 +2,6 @@ import { GameState } from "@/GameState";
 import { GUIProtoItem } from "@/gui";
 import type { GameMenu, GUIControl } from "@/gui";
 import { GFFStruct } from "@/resource/GFFStruct";
-import type { ITwoDARowData } from "@/resource/TwoDAObject";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * GUIMovieItem class.
@@ -18,23 +14,19 @@ const log = createScopedLogger(LogScope.Game);
  */
 export class GUIMovieItem extends GUIProtoItem {
 
-  declare node: ITwoDARowData;
+  declare node: any;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.extent.height = 63;
-    log.trace('GUIMovieItem constructor', { scale });
   }
 
   createControl(){
-    log.trace('GUIMovieItem.createControl');
     try{
-      const label = GameState.TLKManager.GetStringById(this.node.strrefname).Value;
-      log.debug('GUIMovieItem.createControl: setting text', { strrefname: this.node.strrefname });
-      this.setText(label);
+      this.setText(GameState.TLKManager.GetStringById(this.node.strrefname).Value);
       super.createControl();
     }catch(e){
-      log.error('GUIMovieItem.createControl failed', e);
+      console.error(e);
     }
     return this.widget;
   }

@@ -8,11 +8,7 @@ import { GameState } from "@/GameState";
 import { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 import { Utility } from "@/utility/Utility";
-
-
-const log = createScopedLogger(LogScope.Action);
 
 /**
  * ActionCloseDoor class.
@@ -35,7 +31,7 @@ export class ActionCloseDoor extends Action {
 
   }
 
-  update(_delta: number = 0): ActionStatus {
+  update(delta: number = 0): ActionStatus {
 
     this.target = this.getParameter<ModuleObject>(0);
 
@@ -68,7 +64,7 @@ export class ActionCloseDoor extends Action {
         this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
         this.owner.force = 0;
         this.owner.speed = 0;
-        log.debug('ActionCloseDoor: closing door', this.target?.id);
+        //console.log(action.object);
 
         this.owner.setFacingObject( this.target );
         

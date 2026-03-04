@@ -4,15 +4,14 @@ import { GameState } from "@/GameState";
 import { ModuleMGEnemy } from "@/module/ModuleMGEnemy";
 import type { ModuleMGObstacle } from "@/module/ModuleMGObstacle";
 import type { ModuleMGPlayer } from "@/module/ModuleMGPlayer";
-
-
-const log = createScopedLogger(LogScope.Module);
 import type { ModuleMGTrack } from "@/module/ModuleMGTrack";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Module);
 
 /**
 * ModuleMiniGame class.

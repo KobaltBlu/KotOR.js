@@ -2,12 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 import { PixelManager } from "@/utility/PixelManager";
 
-const log = createScopedLogger(LogScope.Forge);
-
-const concatenate = (resultConstructor: typeof Uint8Array, ...arrays: Uint8Array[]): Uint8Array => {
+const concatenate = (resultConstructor: any, ...arrays: any) => {
   let totalLength = 0;
   for (const arr of arrays) {
     totalLength += arr.length;
@@ -19,10 +16,10 @@ const concatenate = (resultConstructor: typeof Uint8Array, ...arrays: Uint8Array
     offset += arr.length;
   }
   return result;
-};
+}
 
 const getPixelData = async (image: KotOR.TPCObject | KotOR.TGAObject): Promise<Uint8Array> => {
-  return new Promise<Uint8Array>((resolve, _reject) => {
+  return new Promise<Uint8Array>((resolve, reject) => {
     if (image instanceof KotOR.TPCObject) {
       const tpc = image;
       const dds = tpc.getDDS(false);
@@ -30,7 +27,7 @@ const getPixelData = async (image: KotOR.TPCObject | KotOR.TGAObject): Promise<U
 
       const width = tpc.header.width;
       const height = tpc.header.height;
-      const _mipmapCount = 1;
+      const mipmapCount = 1;
 
       if (!tpc.txi.procedureType) {
         if (tpc.header.faces > 1) {
@@ -84,7 +81,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
   onClick
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [_textureLoaded, setTextureLoaded] = useState<boolean>(false);
+  const [textureLoaded, setTextureLoaded] = useState<boolean>(false);
 
   const [cWidth, setCanvasWidth] = useState<number>(width || 0);
   const [cHeight, setCanvasHeight] = useState<number>(height || 0);
@@ -123,7 +120,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
           textureWidth = tpcObject.header.width;
           textureHeight = tpcObject.header.height;
         } else {
-          textureHeight = tpcObject.header.height * ((tpcObject.header as { faces?: number }).faces ?? 1);
+          textureHeight = tpcObject.header.height * ((tpcObject.header as any).faces || 1);
         }
 
         // Determine canvas dimensions
@@ -184,7 +181,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
 
         setTextureLoaded(true);
       } catch (error) {
-        log.error(`Failed to load texture: ${texture}`, error);
+        console.error(`Failed to load texture: ${texture}`, error);
       }
     };
 

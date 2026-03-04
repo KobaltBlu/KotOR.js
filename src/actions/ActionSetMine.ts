@@ -9,11 +9,7 @@ import { GameState } from "@/GameState";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 import { Utility } from "@/utility/Utility";
-
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * ActionSetMine class.
@@ -43,7 +39,7 @@ export class ActionSetMine extends Action {
     //4 - FLOAT: z
   }
 
-  update(_delta?: number): ActionStatus {
+  update(delta?: number): ActionStatus {
 
     this.oItem = this.getParameter<ModuleItem>(0);
     this.target = this.getParameter<ModuleObject>(1);
@@ -64,7 +60,7 @@ export class ActionSetMine extends Action {
         actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
         this.owner.actionQueue.addFront(actionMoveToTarget);
 
-        log.debug('ActionSetMine', 'MOVE_TO_TARGET');
+        console.log('ActionSetMine', 'MOVE_TO_TARGET');
         return ActionStatus.IN_PROGRESS;
       }
 
@@ -75,7 +71,7 @@ export class ActionSetMine extends Action {
         action.setParameter(1, ActionParameterType.FLOAT, 1);
         action.setParameter(2, ActionParameterType.FLOAT, 1.5);
         this.owner.actionQueue.addFront(action);
-        log.debug('ActionSetMine', 'ANIMATION_QUEUED');
+        console.log('ActionSetMine', 'ANIMATION_QUEUED');
         return ActionStatus.IN_PROGRESS;
       }
 
@@ -92,7 +88,7 @@ export class ActionSetMine extends Action {
         }
 
         this.usedItem = true;
-        log.debug('ActionSetMine', 'ITEM_USED');
+        console.log('ActionSetMine', 'ITEM_USED');
 
         const futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(3);
 
@@ -105,9 +101,8 @@ export class ActionSetMine extends Action {
         GameState.module.addEvent(event);
         
         //If we have more charges, reduce the charges count by 1
-        const charges = Number(this.oItem.charges);
-        if (charges > 1) {
-          (this.oItem as { charges: number }).charges = charges - 1;
+        if(this.oItem.charges > 1){
+          this.oItem.charges -= 1;
         }
         //If we are out of charges remove the item from the owners inventory
         else
@@ -116,11 +111,11 @@ export class ActionSetMine extends Action {
         }
       }
       
-      log.debug('ActionSetMine', 'COMPLETE');
+      console.log('ActionSetMine', 'COMPLETE');
       return ActionStatus.COMPLETE;
     }
-
-    log.debug('ActionSetMine', 'FAILED');
+    
+    console.log('ActionSetMine', 'FAILED');
     return ActionStatus.FAILED;
   }
 

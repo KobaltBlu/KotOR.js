@@ -1,7 +1,6 @@
 import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 
-
 /**
  * IDialogAnimationState interface.
  * 

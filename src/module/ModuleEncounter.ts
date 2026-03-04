@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
@@ -16,14 +17,7 @@ import { GFFStruct } from "@/resource/GFFStruct";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { OdysseyFace3 } from "@/three/odyssey";
 import { ConfigClient } from "@/utility/ConfigClient";
-
 // import { ModuleObjectManager, PartyManager, FactionManager } from "@/managers";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-
-const log = createScopedLogger(LogScope.Module);
-import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 /**
 * ModuleEncounter class.
@@ -52,24 +46,24 @@ export class ModuleEncounter extends ModuleObject {
   spawnOption: number;
   started: number;
   objectsInsideIdx: number;
-  lastObjectEntered: ModuleObject | null;
-  lastObjectExited: ModuleObject | null;
+  lastObjectEntered: any;
+  lastObjectExited: any;
   triggered: boolean;
-  areaPoints: number | number[];
-  paletteId: number;
-  respawns: number;
-  numberSpawned: number;
-  heartbeatDay: number;
-  heartbeatTime: number;
-  lastSpawnDay: number;
-  lastSpawnTime: number;
-  lastEntered: number;
-  lastLeft: number;
-  exhausted: boolean;
-  currentSpawns: number;
-  customScriptId: number;
-  areaListMaxSize: number;
-  spawnPoolActive: boolean;
+  areaPoints: any;
+  paletteId: any;
+  respawns: any;
+  numberSpawned: any;
+  heartbeatDay: any;
+  heartbeatTime: any;
+  lastSpawnDay: any;
+  lastSpawnTime: any;
+  lastEntered: any;
+  lastLeft: any;
+  exhausted: any;
+  currentSpawns: any;
+  customScriptId: any;
+  areaListMaxSize: any;
+  spawnPoolActive: any;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -204,21 +198,21 @@ export class ModuleEncounter extends ModuleObject {
         this.template.merge(gff);
         this.initProperties();
         this.loadScripts();
-        try{ this.buildGeometry(); }catch(e){log.error(e)}
+        try{ this.buildGeometry(); }catch(e){console.error(e)}
         //this.initObjectsInside();
       }else{
-        log.error('Failed to load ModuleTrigger template');
+        console.error('Failed to load ModuleTrigger template');
         if(this.template instanceof GFFObject){
           this.initProperties();
           this.loadScripts();
-          try{ this.buildGeometry(); }catch(e){log.error(e)}
+          try{ this.buildGeometry(); }catch(e){console.error(e)}
         }
       }
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
       this.loadScripts();
-      try{ this.buildGeometry(); }catch(e){log.error(e)}
+      try{ this.buildGeometry(); }catch(e){console.error(e)}
     }
   }
 
@@ -244,16 +238,16 @@ export class ModuleEncounter extends ModuleObject {
   getGeometry(){
     const trigGeom = new THREE.BufferGeometry();
     const vertices = this.vertices.slice();
-    const faces: OdysseyFace3[] = [];
+    const faces: any[] = [];
 
     try{
-      const holes: THREE.Vector2[][] = [];
+      const holes: any = [];
       const triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
       for( let i = 0; i < triangles.length; i++ ){
         faces.push( new OdysseyFace3( triangles[i][0], triangles[i][1], triangles[i][2] ));
       }
     }catch(e){
-      log.error('ModuleTrigger', 'Failed to generate faces', {
+      console.error('ModuleTrigger', 'Failed to generate faces', {
         trigger: this,
         error: e
       })
@@ -279,11 +273,11 @@ export class ModuleEncounter extends ModuleObject {
     if(!scriptsNode){ return; }
     for(const scriptKey of scriptKeys){
       if(scriptsNode.hasField(scriptKey)){
-        const resRef = scriptsNode.getStringByLabel(scriptKey);
+        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
         if(!resRef){ continue; }
         const nwscript = GameState.NWScript.Load(resRef);
         if(!nwscript){ 
-          log.warn(`ModuleEncounter.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+          console.warn(`ModuleEncounter.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
           continue; 
         }
         nwscript.caller = this;
@@ -296,9 +290,9 @@ export class ModuleEncounter extends ModuleObject {
     
     if(!this.initialized){
       if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getNumberByLabel('ObjectId');
+        this.id = this.template.getFieldByLabel('ObjectId').getValue();
       }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getNumberByLabel('ID');
+        this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
       GameState.ModuleObjectManager.AddObjectById(this);
@@ -310,18 +304,18 @@ export class ModuleEncounter extends ModuleObject {
         for(let i = 0; i < this.geometry.length; i++){
           const tgv = this.geometry[i];
           this.vertices[i] = new THREE.Vector3( 
-            tgv.getNumberByLabel('X'),
-            tgv.getNumberByLabel('Y'),
-            tgv.getNumberByLabel('Z')
+            tgv.getFieldByLabel('X').getValue(),
+            tgv.getFieldByLabel('Y').getValue(),
+            tgv.getFieldByLabel('Z').getValue()
           );
         }
       }
 
       if(this.template.RootNode.hasField('SWVarTable')){
         const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-        //log.info(localBools);
+        //console.log(localBools);
         for(let i = 0; i < localBools.length; i++){
-          const data = localBools[i].getNumberByLabel('Variable');
+          const data = localBools[i].getFieldByLabel('Variable').getValue();
           for(let bit = 0; bit < 32; bit++){
             this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
           }
@@ -362,19 +356,19 @@ export class ModuleEncounter extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('Active'))
-        this.active = this.template.getBooleanByLabel('Active');
+        this.active = this.template.getFieldByLabel('Active').getValue();
 
       if(this.template.RootNode.hasField('AreaPoints'))
-        this.areaPoints = this.template.getNumberByLabel('AreaPoints');
+        this.areaPoints = this.template.getFieldByLabel('AreaPoints').getValue();
 
       if(this.template.RootNode.hasField('Difficulty'))
-        this.difficulty = this.template.getNumberByLabel('Difficulty');
+        this.difficulty = this.template.getFieldByLabel('Difficulty').getValue();
 
       if(this.template.RootNode.hasField('DifficultyIndex'))
-        this.difficultyIndex = this.template.getNumberByLabel('DifficultyIndex');
+        this.difficultyIndex = this.template.getFieldByLabel('DifficultyIndex').getValue();
 
       if(this.template.RootNode.hasField('Faction')){
-        this.factionId = this.template.getNumberByLabel('Faction');
+        this.factionId = this.template.getFieldByLabel('Faction').getValue();
         if((this.factionId & 0xFFFFFFFF) == -1){
           this.factionId = 0;
         }
@@ -382,88 +376,88 @@ export class ModuleEncounter extends ModuleObject {
       this.faction = GameState.FactionManager.factions.get(this.factionId);
 
       if(this.template.RootNode.hasField('LocalizedName'))
-        this.localizedName = this.template.getNumberByLabel('LocalizedName');
+        this.localizedName = this.template.getFieldByLabel('LocalizedName').getValue();
 
       if(this.template.RootNode.hasField('MaxCreatures'))
-        this.maxCreatures = this.template.getNumberByLabel('MaxCreatures');
+        this.maxCreatures = this.template.getFieldByLabel('MaxCreatures').getValue();
 
       if(this.template.RootNode.hasField('PaletteID'))
-        this.paletteId = this.template.getNumberByLabel('PaletteID');
+        this.paletteId = this.template.getFieldByLabel('PaletteID').getValue();
 
       if(this.template.RootNode.hasField('PlayerOnly'))
-        this.playerOnly = this.template.getBooleanByLabel('PlayerOnly');
+        this.playerOnly = this.template.getFieldByLabel('PlayerOnly').getValue();
 
       if(this.template.RootNode.hasField('RecCreatures'))
-        this.recCreatures = this.template.getNumberByLabel('RecCreatures');
+        this.recCreatures = this.template.getFieldByLabel('RecCreatures').getValue();
 
       if(this.template.RootNode.hasField('Reset'))
-        this.reset = this.template.getNumberByLabel('Reset');
+        this.reset = this.template.getFieldByLabel('Reset').getValue();
 
       if(this.template.RootNode.hasField('ResetTime'))
-        this.resetTime = this.template.getNumberByLabel('ResetTime');
+        this.resetTime = this.template.getFieldByLabel('ResetTime').getValue();
 
       if(this.template.RootNode.hasField('Respawns'))
-        this.respawns = this.template.getNumberByLabel('Respawns');
+        this.respawns = this.template.getFieldByLabel('Respawns').getValue();
 
       if(this.template.RootNode.hasField('SpawnOption'))
-        this.spawnOption = this.template.getNumberByLabel('SpawnOption');
+        this.spawnOption = this.template.getFieldByLabel('SpawnOption').getValue();
 
       if(this.template.RootNode.hasField('Tag'))
-        this.tag = this.template.getStringByLabel('Tag');
-
+        this.tag = this.template.getFieldByLabel('Tag').getValue();
+  
       if(this.template.RootNode.hasField('TemplateResRef'))
-        this.templateResRef = this.template.getStringByLabel('TemplateResRef');
+        this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
 
       if(this.template.RootNode.hasField('XPosition'))
-        this.position.x = this.template.getNumberByLabel('XPosition');
+        this.position.x = this.template.getFieldByLabel('XPosition').getValue();
 
       if(this.template.RootNode.hasField('YPosition'))
-        this.position.y = this.template.getNumberByLabel('YPosition');
-
+        this.position.y = this.template.getFieldByLabel('YPosition').getValue();
+  
       if(this.template.RootNode.hasField('ZPosition'))
-        this.position.z = this.template.getNumberByLabel('ZPosition');
+        this.position.z = this.template.getFieldByLabel('ZPosition').getValue();
 
       if(this.template.RootNode.hasField('Commandable'))
-        this.commandable = this.template.getBooleanByLabel('Commandable');
+        this.commandable = this.template.getFieldByLabel('Commandable').getValue();
 
       if(this.template.RootNode.hasField('NumberSpawned'))
-        this.numberSpawned = this.template.getNumberByLabel('NumberSpawned');
+        this.numberSpawned = this.template.getFieldByLabel('NumberSpawned').getValue();
 
       if(this.template.RootNode.hasField('HeartbeatDay'))
-        this.heartbeatDay = this.template.getNumberByLabel('HeartbeatDay');
+        this.heartbeatDay = this.template.getFieldByLabel('HeartbeatDay').getValue();
 
       if(this.template.RootNode.hasField('HeartbeatTime'))
-        this.heartbeatTime = this.template.getNumberByLabel('HeartbeatTime');
+        this.heartbeatTime = this.template.getFieldByLabel('HeartbeatTime').getValue();
 
       if(this.template.RootNode.hasField('LastSpawnDay'))
-        this.lastSpawnDay = this.template.getNumberByLabel('LastSpawnDay');
+        this.lastSpawnDay = this.template.getFieldByLabel('LastSpawnDay').getValue();
 
       if(this.template.RootNode.hasField('LastSpawnTime'))
-        this.lastSpawnTime = this.template.getNumberByLabel('LastSpawnTime');
+        this.lastSpawnTime = this.template.getFieldByLabel('LastSpawnTime').getValue();
 
       if(this.template.RootNode.hasField('LastEntered'))
-        this.lastEntered = this.template.getNumberByLabel('LastEntered');
+        this.lastEntered = this.template.getFieldByLabel('LastEntered').getValue();
 
       if(this.template.RootNode.hasField('LastLeft'))
-        this.lastLeft = this.template.getNumberByLabel('LastLeft');
+        this.lastLeft = this.template.getFieldByLabel('LastLeft').getValue();
 
       if(this.template.RootNode.hasField('Started'))
-        this.started = this.template.getBooleanByLabel('Started');
+        this.started = this.template.getFieldByLabel('Started').getValue();
 
       if(this.template.RootNode.hasField('Exhausted'))
-        this.exhausted = this.template.getBooleanByLabel('Exhausted');
-
+        this.exhausted = this.template.getFieldByLabel('Exhausted').getValue();
+        
       if(this.template.RootNode.hasField('CurrentSpawns'))
-        this.currentSpawns = this.template.getNumberByLabel('CurrentSpawns');
-
+        this.currentSpawns = this.template.getFieldByLabel('CurrentSpawns').getValue();
+    
       if(this.template.RootNode.hasField('CustomScriptId'))
-        this.customScriptId = this.template.getNumberByLabel('CustomScriptId');
+        this.customScriptId = this.template.getFieldByLabel('CustomScriptId').getValue();
 
       if(this.template.RootNode.hasField('AreaListMaxSize'))
-        this.areaListMaxSize = this.template.getNumberByLabel('AreaListMaxSize');
+        this.areaListMaxSize = this.template.getFieldByLabel('AreaListMaxSize').getValue();
 
       if(this.template.RootNode.hasField('SpawnPoolActive'))
-        this.spawnPoolActive = this.template.getBooleanByLabel('SpawnPoolActive');
+        this.spawnPoolActive = this.template.getFieldByLabel('SpawnPoolActive').getValue();
 
       this.initialized = true;
     }

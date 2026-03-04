@@ -437,7 +437,7 @@ export class CursorManager {
 					}
 				}else{
 					if(!CursorManager.selectedObject){
-						let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
+						const closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
 						// CursorManager.setReticleSelectedObject(closest);
 						CursorManager.setReticleHoveredObject(closest);
 					}

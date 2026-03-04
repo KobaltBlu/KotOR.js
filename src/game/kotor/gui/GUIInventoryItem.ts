@@ -8,17 +8,11 @@ import type { GUIControl, GameMenu } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import { GFFStruct } from "@/resource/GFFStruct";
 
-interface InventoryNodeLike {
-  getName(): string;
-  getStackSize(): number;
-  getIcon(): string;
-}
-
 /**
  * GUIInventoryItem class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GUIInventoryItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -36,13 +30,10 @@ export class GUIInventoryItem extends GUIProtoItem {
 
   createControl(){
     super.createControl();
-    const node = this.node as InventoryNodeLike;
-    const stackSize = node.getStackSize();
-
     //Create the actual control elements below
     const button = new GUIButton(this.menu, this.control, this, this.scale);
     button.extent.width = 200;
-    button.setText(node.getName());
+    button.setText(this.node.getName());
     button.text.alignment = 9;
     button.autoCalculatePosition = false;
     this.children.push(button);
@@ -54,7 +45,7 @@ export class GUIInventoryItem extends GUIProtoItem {
     this.widget.add(_buttonWidget);
 
     const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
-  buttonIcon.setText(stackSize > 1 ? stackSize.toString() : '');
+    buttonIcon.setText(this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '');
     buttonIcon.text.mesh.scale.setScalar(.9);
     buttonIcon.disableTextAlignment();
     buttonIcon.extent.width = 42;
@@ -73,51 +64,49 @@ export class GUIInventoryItem extends GUIProtoItem {
     _buttonIconWidget.position.z = this.zIndex + 1;
 
     //Stack Count Text Position
-    const buttonIconUserData = buttonIcon.widget.userData as { text?: THREE.Object3D };
-    if(buttonIconUserData.text){
-      if(stackSize >= 100){
-        buttonIconUserData.text.position.set(6, -8, 5);
-      }else if(stackSize >= 10){
-        buttonIconUserData.text.position.set(10, -8, 5);
-      }else{
-        buttonIconUserData.text.position.set(14, -8, 5);
-      }
+    if(this.node.getStackSize() >= 100){
+      buttonIcon.widget.userData.text.position.set(6, -8, 5);
+    }else if(this.node.getStackSize() >= 10){
+      buttonIcon.widget.userData.text.position.set(10, -8, 5);
+    }else{
+      buttonIcon.widget.userData.text.position.set(14, -8, 5);
     }
 
     this.widget.add(_buttonIconWidget);
 
-    const iconMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
-    iconMaterial.transparent = true;
-    const iconSprite = new THREE.Sprite(iconMaterial);
-    TextureLoader.enQueue(node.getIcon(), iconMaterial, TextureType.TEXTURE);
-
-    const spriteGroup = new THREE.Group();
+    this.widget.userData.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+    this.widget.userData.iconMaterial.transparent = true;
+    this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
+    //console.log(this.node.getIcon());
+    TextureLoader.enQueue(this.node.getIcon(), this.widget.userData.iconMaterial, TextureType.TEXTURE);
+    
+    this.widget.userData.spriteGroup = new THREE.Group();
     //this.widget.spriteGroup.position.x = -(this.extent.width/2)-(52/2); //HACK
     //this.widget.spriteGroup.position.y -= 4;
-    iconSprite.scale.x = 52;
-    iconSprite.scale.y = 52;
-    iconSprite.position.z = 1;
+    this.widget.userData.iconSprite.scale.x = 52;
+    this.widget.userData.iconSprite.scale.y = 52;
+    this.widget.userData.iconSprite.position.z = 1;
 
-    const hexMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
-    hexMaterial.transparent = true;
-    const hexSprite = new THREE.Sprite(hexMaterial);
-    hexSprite.scale.x = hexSprite.scale.y = 52;
-    hexSprite.position.z = 1;
+    this.widget.userData.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+    this.widget.userData.hexMaterial.transparent = true;
+    this.widget.userData.hexSprite = new THREE.Sprite( this.widget.userData.hexMaterial );
+    this.widget.userData.hexSprite.scale.x = this.widget.userData.hexSprite.scale.y = 52;
+    this.widget.userData.hexSprite.position.z = 1;
 
     if(GameState.GameKey != GameEngineType.TSL)
-      spriteGroup.add(hexSprite);
+      this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);
+      
+    this.widget.userData.spriteGroup.add(this.widget.userData.iconSprite);
 
-    spriteGroup.add(iconSprite);
-
-    if(stackSize >= 100){
-      hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_4');
-      hexMaterial.needsUpdate = true;
-    }else if(stackSize > 1){
-      hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_4');
-      hexMaterial.needsUpdate = true;
+    if(this.node.getStackSize() >= 100){
+      this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_4');
+      this.widget.userData.hexMaterial.needsUpdate = true;
+    }else if(this.node.getStackSize() > 1){
+      this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_4');
+      this.widget.userData.hexMaterial.needsUpdate = true;
     }else{
-      hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex');
-      hexMaterial.needsUpdate = true;
+      this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex');
+      this.widget.userData.hexMaterial.needsUpdate = true;
     }
 
     this.onSelect = () => {
@@ -158,7 +147,7 @@ export class GUIInventoryItem extends GUIProtoItem {
     this.onSelect.call(this);
 
     //StackCount Text
-    _buttonIconWidget.add(spriteGroup);
+    _buttonIconWidget.add(this.widget.userData.spriteGroup);
     return this.widget;
   }
 

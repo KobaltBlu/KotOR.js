@@ -1,40 +1,33 @@
 import React, { useEffect , useState } from "react";
 
 import { useLoadingScreen } from "@/apps/forge/context/LoadingScreenContext";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-const log = createScopedLogger(LogScope.Forge);
-
-export interface LoadingScreenProps {
-  /** Optional passthrough props for styling etc. */
-  [key: string]: unknown;
-}
-
-export const LoadingScreen = function(_props: LoadingScreenProps){
+export const LoadingScreen = function(props: any){
 
   const loaderContext = useLoadingScreen();
-  const [enabled, _setEnabled] = loaderContext.enabled;
-  const [message, _setMessage] = loaderContext.message;
-  const [backgroundURL, _setBackgroundURL] = loaderContext.backgroundURL;
-  const [logoURL, _setLogoURL] = loaderContext.logoURL;
+  const [enabled, setEnabled] = loaderContext.enabled;
+  const [message, setMessage] = loaderContext.message;
+  const [backgroundURL, setBackgroundURL] = loaderContext.backgroundURL;
+  const [logoURL, setLogoURL] = loaderContext.logoURL;
   
   const [render, rerender] = useState<boolean>(false);
 
   useEffect(() => {
-    log.trace('LoadingScreen mounted');
+    //Constructor
+    console.log()
     return () => {
-      log.trace('LoadingScreen unmounted');
+      //Destructor
     };
   }, []);
 
   useEffect(() => {
     rerender(!render);
-    log.debug('LoadingScreen enabled changed', enabled);
+    console.log('ls', enabled);
   }, [enabled]);
 
   useEffect(() => {
     rerender(!render);
-    log.debug('LoadingScreen message changed', message);
+    console.log('ls', message);
   }, [message]);
 
   //style={{display: (enabled) ? 'block' : 'none'}}

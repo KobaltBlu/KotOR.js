@@ -6,7 +6,6 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { BitWise } from "@/utility/BitWise";
 
-
 /**
  * EventPlayAnimation class.
  * 
@@ -29,7 +28,7 @@ export class EventPlayAnimation extends GameEvent {
 
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
-      this.value = struct.getNumberByLabel('Value');
+      this.value = struct.getFieldByLabel('Value').getValue();
     }
   }
 

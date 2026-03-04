@@ -1,8 +1,7 @@
-import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
-
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
 import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
@@ -18,7 +17,6 @@ export class MassController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Mass;
   
-  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }
@@ -30,7 +28,7 @@ export class MassController extends OdysseyController {
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
       manager.modelNode.emitter.mass = next.value;//Math.ceil(last.value + fl * (next.value - last.value));
       manager.modelNode.emitter.attributeChanged('mass');

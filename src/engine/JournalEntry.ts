@@ -4,17 +4,12 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import type { ITwoDARowData } from "@/resource/TwoDAObject";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * JournalEntry class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file JournalEntry.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -27,7 +22,11 @@ export class JournalEntry {
 
   category: JournalCategory;
   entry: JournalCategoryEntry;
-  plot: ITwoDARowData | undefined;
+  plot: any;
+
+  constructor(){
+
+  }
 
   getName(): string {
     return this.category.name.getTLKValue();
@@ -42,23 +41,23 @@ export class JournalEntry {
     if(this.category){
       this.entry = this.category.getEntryById(this.state);
       if(!this.entry){
-        log.warn(`JournalEntry.load: Invalid State "${this.state}"`);
+        console.warn(`JournalEntry.load: Invalid State "${this.state}"`);
       }
     }else{
-      log.warn(`JournalEntry.load: Invalid Category "${this.plot_id}"`);
+      console.warn(`JournalEntry.load: Invalid Category "${this.plot_id}"`);
     }
     const plotTable = GameState.TwoDAManager.datatables.get('plot');
     if(!plotTable){ return; }
 
     const plot = plotTable.getRowByColumnAndValue('label', this.plot_id.toLocaleLowerCase());
     if(!plot){ return; }
-
+    
     this.plot = plot;
   }
 
   getExperience(): number {
     if(this.plot){
-      return parseInt(String(this.plot.xp ?? 0), 10);
+      return parseInt(this.plot.xp);
     }
     return 0;
   }
@@ -75,10 +74,10 @@ export class JournalEntry {
   static FromStruct(struct: GFFStruct): JournalEntry {
     const entry = new JournalEntry();
     if(struct instanceof GFFStruct){
-      if(struct.hasField('JNL_Date'))   entry.date    = struct.getNumberByLabel('JNL_Date');
-      if(struct.hasField('JNL_PlotID')) entry.plot_id = struct.getStringByLabel('JNL_PlotID');
-      if(struct.hasField('JNL_State'))  entry.state   = struct.getNumberByLabel('JNL_State');
-      if(struct.hasField('JNL_Time'))   entry.time    = struct.getNumberByLabel('JNL_Time');
+      if(struct.hasField('JNL_Date'))   entry.date    = struct.getFieldByLabel('JNL_Date')?.getValue();
+      if(struct.hasField('JNL_PlotID')) entry.plot_id = struct.getFieldByLabel('JNL_PlotID')?.getValue();
+      if(struct.hasField('JNL_State'))  entry.state   = struct.getFieldByLabel('JNL_State')?.getValue();
+      if(struct.hasField('JNL_Time'))   entry.time    = struct.getFieldByLabel('JNL_Time')?.getValue();
 
       entry.load();
 

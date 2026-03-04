@@ -6,39 +6,17 @@ import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { TextureType } from "@/enums/loaders/TextureType";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
-import type { GUIControlEvent } from "@/gui/GUIControlEvent";
 import type { GUIListBox } from "@/gui/GUIListBox";
 import { TextureLoader } from "@/loaders";
 import { ResolutionManager } from "@/managers/ResolutionManager";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
-
-interface IScrollArrowUserData {
-  worldPosition: THREE.Vector3;
-  box: THREE.Box2;
-  updateBox: () => void;
-  onClick?: (_e: GUIControlEvent) => void;
-}
-
-interface IScrollThumbUserData {
-  box: THREE.Box2;
-  onClick?: (e: GUIControlEvent) => void;
-  onMouseMove?: (e: GUIControlEvent) => void;
-  onMouseDown?: (e: GUIControlEvent) => void;
-  onMouseUp?: (e: GUIControlEvent) => void;
-  onHover?: (e: GUIControlEvent) => void;
-  getControl?: (_e: GUIControlEvent) => GUIScrollBar;
-}
 
 /**
  * GUIScrollBar class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GUIScrollBar.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -54,29 +32,14 @@ export class GUIScrollBar extends GUIControl{
   upArrow: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   downArrowGeometry: THREE.PlaneGeometry;
   downArrowMaterial: THREE.MeshBasicMaterial;
-  downArrow: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+  downArrow: THREE.Mesh<any, any>;
   _thumb: GFFStruct;
   geometry: THREE.PlaneGeometry;
   thumbMaterial: THREE.MeshBasicMaterial;
-  thumb: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
-  inner_box: THREE.Box2 | undefined;
+  thumb: THREE.Mesh<any, any>;
+  inner_box: any;
 
   arrowSize: number = 16;
-
-  private getUpArrowUserData(): IScrollArrowUserData | undefined {
-    if (!this.upArrow) return undefined;
-    return this.upArrow.userData as IScrollArrowUserData;
-  }
-
-  private getDownArrowUserData(): IScrollArrowUserData | undefined {
-    if (!this.downArrow) return undefined;
-    return this.downArrow.userData as IScrollArrowUserData;
-  }
-
-  private getThumbUserData(): IScrollThumbUserData | undefined {
-    if (!this.thumb) return undefined;
-    return this.thumb.userData as IScrollThumbUserData;
-  }
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
@@ -94,9 +57,9 @@ export class GUIScrollBar extends GUIControl{
     if(this.control.hasField('DIR')){
       this._dir = this.control.getFieldByLabel('DIR')?.getChildStructs()[0];
       if(this._dir?.hasField('IMAGE')){
-        TextureLoader.tpcLoader.fetch(this._dir.getStringByLabel('IMAGE')).then((texture: OdysseyTexture) => {
+        TextureLoader.tpcLoader.fetch(this._dir.getFieldByLabel('IMAGE')?.getValue()).then((texture: OdysseyTexture) => {
           this.arrowTex = texture;
-
+          
           //Up Arrow
           this.upArrowGeometry = new THREE.PlaneGeometry( 1, 1, 1 );
           this.upArrowMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), map: this.arrowTex, side: THREE.DoubleSide} );
@@ -109,15 +72,16 @@ export class GUIScrollBar extends GUIControl{
           this.upArrow.position.z = 5;
 
           this.upArrow.position.y = this.extent.height/2 + this.arrowSize/2;
-          const upArrowUserData = this.getUpArrowUserData() as IScrollArrowUserData;
-          upArrowUserData.worldPosition = new THREE.Vector3();
+          this.upArrow.userData.worldPosition = new THREE.Vector3();
 
           this.upArrowMaterial.transparent = true;
           this.upArrowMaterial.needsUpdate = true;
 
-          upArrowUserData.updateBox = () => {
-            this.upArrow.getWorldPosition(upArrowUserData.worldPosition);
-            upArrowUserData.box = new THREE.Box2(
+          let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
+
+          this.upArrow.userData.updateBox = () => {
+            this.upArrow.getWorldPosition(this.upArrow.userData.worldPosition);
+            this.upArrow.userData.box = new THREE.Box2(
               new THREE.Vector2(
                 -this.extent.width/2,
                 -this.extent.width/2
@@ -127,9 +91,9 @@ export class GUIScrollBar extends GUIControl{
                 this.extent.width/2
               )
             );
-            upArrowUserData.box.translate(upArrowUserData.worldPosition);
+            this.upArrow.userData.box.translate(this.upArrow.userData.worldPosition);
           };
-          upArrowUserData.updateBox();
+          this.upArrow.userData.updateBox();
 
           //Down Arrow
           this.downArrowGeometry = new THREE.PlaneGeometry( 1, 1, 1 );
@@ -143,15 +107,16 @@ export class GUIScrollBar extends GUIControl{
           this.downArrow.position.z = 5;
           this.downArrow.position.y = -(this.extent.height/2 + this.arrowSize/2);
           this.downArrow.rotation.z = Math.PI;
-          const downArrowUserData = this.getDownArrowUserData() as IScrollArrowUserData;
-          downArrowUserData.worldPosition = new THREE.Vector3();
+          this.downArrow.userData.worldPosition = new THREE.Vector3();
+
+          parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
 
           this.downArrowMaterial.transparent = true;
           this.downArrowMaterial.needsUpdate = true;
 
-          downArrowUserData.updateBox = () => {
-            this.downArrow.getWorldPosition(downArrowUserData.worldPosition);
-            downArrowUserData.box = new THREE.Box2(
+          this.downArrow.userData.updateBox = () => {
+            this.downArrow.getWorldPosition(this.downArrow.userData.worldPosition);
+            this.downArrow.userData.box = new THREE.Box2(
               new THREE.Vector2(
                 -this.extent.width/2,
                 -this.extent.width/2
@@ -161,15 +126,15 @@ export class GUIScrollBar extends GUIControl{
                 this.extent.width/2
               )
             );
-            downArrowUserData.box.translate(downArrowUserData.worldPosition)
+            this.downArrow.userData.box.translate(this.downArrow.userData.worldPosition)
           };
-          downArrowUserData.updateBox();
+          this.downArrow.userData.updateBox();
 
-          upArrowUserData.onClick = (_e: GUIControlEvent) => {
+          this.upArrow.userData.onClick = (e: any) => {
             this.scrollUp();
           };
 
-          downArrowUserData.onClick = (_e: GUIControlEvent) => {
+          this.downArrow.userData.onClick = (e: any) => {
             this.scrollDown();
           };
 
@@ -179,6 +144,10 @@ export class GUIScrollBar extends GUIControl{
 
     if(this.control.hasField('THUMB')){
       this._thumb = this.control.getFieldByLabel('THUMB').getChildStructs()[0];
+      /*this.thumbMaterial = new THREE.SpriteMaterial( { map: null, color: new THREE.Color(0xFFFFFF) } );
+      this.thumbMaterial.transparent = true;
+      this.thumb = new THREE.Sprite( this.thumbMaterial );*/
+
       this.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
       this.thumbMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), side: THREE.DoubleSide} );
       this.thumb = new THREE.Mesh( this.geometry, this.thumbMaterial );
@@ -190,9 +159,8 @@ export class GUIScrollBar extends GUIControl{
       this.thumb.position.z = 5;
 
       const parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
-      const thumbUserData = this.getThumbUserData() as IScrollThumbUserData;
 
-      thumbUserData.box = new THREE.Box2(
+      this.thumb.userData.box = new THREE.Box2(
         new THREE.Vector2(
           (parentPos.x - this.extent.width/2),
           (parentPos.y - this.extent.height/2)
@@ -203,36 +171,36 @@ export class GUIScrollBar extends GUIControl{
         )
       )
 
-      thumbUserData.onClick = (e: GUIControlEvent) => {
+      this.thumb.userData.onClick = (e: any) => {
         this.processEventListener('click', [e]);
       };
 
-      thumbUserData.onMouseMove = (e: GUIControlEvent) =>{
+      this.thumb.userData.onMouseMove = (e: any) =>{
         this.processEventListener('mouseMove', [e]);
       }
 
-      thumbUserData.onMouseDown = (e: GUIControlEvent) => {
+      this.thumb.userData.onMouseDown = (e: any) => {
         this.processEventListener('mouseDown', [e]);
       };
 
-      thumbUserData.onMouseUp = (e: GUIControlEvent) => {
+      this.thumb.userData.onMouseUp = (e: any) => {
         this.processEventListener('mouseUp', [e]);
       };
-
-      thumbUserData.onHover = (e: GUIControlEvent) => {
+      
+      this.thumb.userData.onHover = (e: any) => {
         this.processEventListener('hover', [e]);
       };
 
-      thumbUserData.getControl = (_e: GUIControlEvent) => {
+      this.thumb.userData.getControl = (e: any) => {
         return this;
       };
 
-      // this.thumb.click = (e: GUIControlEvent) => {
-      //   log.info('scroll thumb')
+      // this.thumb.click = (e: any) => {
+      //   console.log('scroll thumb')
       // };
 
       if(this._thumb.hasField('IMAGE')){
-        TextureLoader.enQueue(this._thumb.getStringByLabel('IMAGE'), this.thumbMaterial, TextureType.TEXTURE);
+        TextureLoader.enQueue(this._thumb.getFieldByLabel('IMAGE').getValue(), this.thumbMaterial, TextureType.TEXTURE);
         TextureLoader.LoadQueue();
       }
     }
@@ -244,48 +212,50 @@ export class GUIScrollBar extends GUIControl{
     });
 
     this.addEventListener('click', () =>{
+      const mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
       const mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
-      const upArrowBox = this.getUpArrowUserData()?.box;
-      const downArrowBox = this.getDownArrowUserData()?.box;
 
       const scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
-      if(upArrowBox?.containsPoint(Mouse.positionUI)){
+      if(this.upArrow.userData.box.containsPoint(Mouse.positionUI)){
         this.list.scrollUp();
-      }else if(downArrowBox?.containsPoint(Mouse.positionUI)){
+      }else if(this.downArrow.userData.box.containsPoint(Mouse.positionUI)){
         this.list.scrollDown();
-      }else if(this.inner_box?.containsPoint(Mouse.positionUI)){
+      }else if(this.inner_box.containsPoint(Mouse.positionUI)){
         this.mouseInside();
       }
     })
 
     this.addEventListener('mouseDown', (e) => {
       e.stopPropagation();
+      const mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
       const mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
       const scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
-      this.getUpArrowUserData()?.updateBox();
-      this.getDownArrowUserData()?.updateBox();
+      this.upArrow.userData.updateBox();
+      this.downArrow.userData.updateBox();
     });
 
     this.addEventListener('mouseUp', () => {
+      const mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
+      const mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
       //let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       //this.mouseOffset.y = scrollTop;
-      //log.info('GUIScrollBar', 'blah');
+      //console.log('GUIScrollBar', 'blah');
       /*if(this.upArrow.box.containsPoint(Mouse.Mouse.positionUI)){
-        log.info('GUIScrollBar', 'up');
+        console.log('GUIScrollBar', 'up');
         this.list.scrollUp();
       }else if(this.downArrow.box.containsPoint(Mouse.Mouse.positionUI)){
-        log.info('GUIScrollBar', 'down');
+        console.log('GUIScrollBar', 'down');
         this.list.scrollDown();
-      }else */if(this.inner_box?.containsPoint(Mouse.positionUI)){
-        //log.info('GUIScrollBar', 'scroll');
+      }else */if(this.inner_box.containsPoint(Mouse.positionUI)){
+        //console.log('GUIScrollBar', 'scroll');
         this.mouseInside();
       }
     });
 
   }
-
+  
   scrollUp() {
     // throw new Error("Method not implemented.");
   }
@@ -295,9 +265,12 @@ export class GUIScrollBar extends GUIControl{
 
   mouseInside(){
 
+    const mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
     const mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
-    //log.info(mouseY);
+    //console.log(mouseY);
     //if(this.inner_box.containsPoint({x: mouseX, y: mouseY})){
+
+      const centerPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
 
       const scrollBarHeight = this.extent.height;
 
@@ -312,8 +285,8 @@ export class GUIScrollBar extends GUIControl{
       }
 
       const maxScroll = ((scrollBarHeight - this.thumb.scale.y)/2);
-      const scrollPositionVal = (this.thumb.position.y + maxScroll) / (maxScroll*2);
-      this.scrollPos = 1.0 - scrollPositionVal;
+      scrollY = (this.thumb.position.y + maxScroll) / (maxScroll*2);
+      this.scrollPos = 1.0 - scrollY;
       this.update();
 
     //}
@@ -344,11 +317,12 @@ export class GUIScrollBar extends GUIControl{
 
       let offsetY = contentHeight*this.scrollPos;
       const offsetYMax = contentHeight - this.extent.height;
+      const nodeHeight = this.list.getNodeHeight();
       if(offsetY > offsetYMax){
         offsetY = offsetYMax;//Math.floor(offsetYMax / nodeHeight) * nodeHeight;
       }
 
-      //log.info((Math.floor(offsetY / nodeHeight)) * nodeHeight);
+      //console.log((Math.floor(offsetY / nodeHeight)) * nodeHeight);
       /*offsetY = (Math.ceil(offsetY / nodeHeight)) * nodeHeight;
 
       for(let i = 0; i < this.list.itemGroup.children.length; i++){
@@ -371,6 +345,20 @@ export class GUIScrollBar extends GUIControl{
   }
 
   calculatePosition(){
+    let parentExtent = { width: this.menu.width, height: this.menu.height };
+    let parentOffsetX, parentOffsetY;
+    if(!(this.parent.widget instanceof THREE.Scene)){
+      parentExtent = this.menu.tGuiPanel.extent;
+      //console.log(this.parent)
+      //parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x + this.offset.x;
+      //parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y + this.offset.y;
+      parentOffsetX = this.menu.tGuiPanel.worldPosition.x + this.offset.x;
+      parentOffsetY = this.menu.tGuiPanel.worldPosition.y + this.offset.y;
+
+    }else{
+      parentOffsetX = parentOffsetY = 0;
+    }
+
     // let wRatio = ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
     // let hRatio = ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
 
@@ -379,7 +367,7 @@ export class GUIScrollBar extends GUIControl{
         this.anchorOffset.set(-(this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset/2), 0);
       }else{
         this.anchorOffset.set((this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset/2), 0);
-      }
+      }      
     }else{
       this.anchorOffset.set(0, 0);
     }
@@ -391,10 +379,10 @@ export class GUIScrollBar extends GUIControl{
     try{
       worldPosition = this.parent.widget.position.clone();
     }catch(e){
-      log.error(e);
+      console.error(e);
     }
     const parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
-    //log.info('worldPos', worldPosition);
+    //console.log('worldPos', worldPosition);
     this.box = new THREE.Box2(
       new THREE.Vector2(
         this.anchorOffset.x - this.extent.width/2 + worldPosition.x,
@@ -417,9 +405,7 @@ export class GUIScrollBar extends GUIControl{
       )
     );
     if(this.thumb){
-      const thumbUserData = this.getThumbUserData();
-      if (thumbUserData) {
-        thumbUserData.box = new THREE.Box2(
+      this.thumb.userData.box = new THREE.Box2(
         new THREE.Vector2(
           (parentPos.x - this.extent.width/2),
           (parentPos.y - this.extent.height/2)
@@ -428,16 +414,15 @@ export class GUIScrollBar extends GUIControl{
           (parentPos.x + this.extent.width/2),
           (parentPos.y + this.extent.height/2)
         )
-        );
-      }
+      );
     }
 
     if(this.upArrow){
-      this.getUpArrowUserData()?.updateBox();
+      this.upArrow.userData.updateBox();
     }
 
     if(this.downArrow){
-      this.getDownArrowUserData()?.updateBox();
+      this.downArrow.userData.updateBox();
     }
 
   }

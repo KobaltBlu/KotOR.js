@@ -1,4 +1,3 @@
-export * from "@/interface/dialog/IDLGNodeCheckList";
 export * from "@/interface/dialog/IDLGNodeScriptParams";
 export * from "@/interface/dialog/IDLGStuntActor";
 export * from "@/interface/dialog/ICameraState";

@@ -2,20 +2,16 @@ import type { INIConfig } from "@/engine/INIConfig";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { EngineState } from "@/enums/engine/EngineState";
 import { GameState } from "@/GameState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Manager);
 
 /**
  * AutoPauseManager class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file AutoPauseManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-/* eslint-disable @typescript-eslint/no-extraneous-class -- Manager is a static namespace by design */
 export class AutoPauseManager {
 
   static INIConfig: INIConfig;
@@ -33,10 +29,10 @@ export class AutoPauseManager {
   static AutoPauseReason: Map<AutoPauseState, string> = new Map();
   static AutoPauseMessages: Map<AutoPauseState, string> = new Map();
 
-  static onPauseStateChange: (type: AutoPauseState) => void;
+  static onPauseStateChange: Function;
 
   static Init(){
-    log.info('AutoPauseManager.Init', this.INIConfig.getProperty('Autopause Options.End Of Combat Round'))
+    console.log('AutoPauseManager.Init', this.INIConfig.getProperty('Autopause Options.End Of Combat Round'))
     this.AutoPauseEnabled.Generic = true;
     this.AutoPauseEnabled.CombatRoundEnd = this.INIConfig.getProperty('Autopause Options.End Of Combat Round') == 1
     this.AutoPauseEnabled.EnemySighted = this.INIConfig.getProperty('Autopause Options.Enemy Sighted') == 1
@@ -74,9 +70,8 @@ export class AutoPauseManager {
     GameState.MenuManager.InGamePause.LBL_PAUSEREASON.setText(this.AutoPauseReason.get(type));
     // MenuManager.InGamePause.LBL_PRESS.setText(this.AutoPauseMessages.get(type));
 
-    const cb = this.onPauseStateChange;
-    if (typeof cb === 'function') {
-      cb(type);
+    if(typeof this.onPauseStateChange === 'function'){
+      this.onPauseStateChange(type);
     }
 
     return true;

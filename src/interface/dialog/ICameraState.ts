@@ -3,7 +3,6 @@ import type { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
 import type { ICameraParticipant } from "@/interface/dialog/ICameraParticipant";
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 
-
 /**
  * ICameraState interface.
  * 

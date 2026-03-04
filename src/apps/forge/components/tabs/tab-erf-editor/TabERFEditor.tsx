@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 // import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify';
 import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
@@ -12,14 +12,15 @@ import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabERFEditorState } from "@/apps/forge/states/tabs";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
+const MENU_ID = 'context-tab-erf-editor-entry';
 
-import "@/apps/forge/components/tabs/tab-erf-editor/TabERFEditor.scss";
+const exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
 
-const log = createScopedLogger(LogScope.Forge);
-const _MENU_ID = 'context-tab-erf-editor-entry';
-const _exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
+interface ContextMenuProps {
+  archive: KotOR.ERFObject;
+  resource: KotOR.IERFKeyEntry;
+}
 
 export const TabERFEditor = function(props: BaseTabProps) {
   const tab = props.tab as TabERFEditorState;
@@ -44,41 +45,38 @@ export const TabERFEditor = function(props: BaseTabProps) {
 
   useEffect(() => {
     if(!selectedEntry) return;
-    const data = selectedEntry.data as { resource?: KotOR.IERFKeyEntry; archive?: KotOR.ERFObject } | undefined;
-    const resource = data?.resource;
-    const archive = data?.archive;
-    if (!archive || !resource) return;
-    const res = archive.getResource(resource.resRef, resource.resType);
-    setSelectedFilename(resource.resRef);
-    setSelectedFiletype(KotOR.ResourceTypes.getKeyByValue(resource.resType));
-    setSelectedFilesize(KotOR.Utility.bytesToSize(res ? res.size : 0));
+    const { resource, archive } = selectedEntry.data || {};
+    const res = archive.getResource(resource?.resRef, resource?.resType);
+    setSelectedFilename(resource?.resRef);
+    setSelectedFiletype(KotOR.ResourceTypes.getKeyByValue(resource?.resType));
+    setSelectedFilesize(KotOR.Utility.bytesToSize( res ? res.size : 0 ));
   }, [selectedEntry]);
 
   const onResourceClick = (node: FileBrowserNode) => {
-    log.trace('onResourceClick', node);
+    console.log('onResourceClick', node);
     if(!node.data.resource){ return; }
     setSelectedEntry(node);
   }
 
   const onResourceDoubleClick = (node: FileBrowserNode) => {
-    log.trace('onResourceDoubleClick', node);
+    console.log('onResourceDoubleClick', node);
     if(!node.data.resource){ return; }
     openERFResource(node.data.archive, node.data.resource);
   }
 
-  const onContextMenu = (event: React.MouseEvent<HTMLElement>, node: FileBrowserNode) => {
-    log.trace('handleContextMenu', event, node);
+  const onContextMenu = (event: React.MouseEvent<any>, node: FileBrowserNode) => {
+    console.log('handleContextMenu', event, node);
     event.preventDefault();
     event.stopPropagation();
     if(!node.data.resource){ return; }
     setSelectedEntry(node);
-
+    
     const contextMenuItems = createERFContextMenuItems({
       archive: node.data.archive,
       resource: node.data.resource
     });
 
-    log.trace('contextMenuItems', contextMenuItems);
+    console.log('contextMenuItems', contextMenuItems);
     showContextMenu(event.clientX, event.clientY, contextMenuItems);
   };
 
@@ -106,9 +104,9 @@ export const TabERFEditor = function(props: BaseTabProps) {
 
   return (
     <>
-      <div className="file-browser tab-erf-editor">
+      <div className="file-browser">
         <div className="d-flex h-100">
-          <ForgeTreeView className="forgeTreeView--fill">
+          <ForgeTreeView style={{flex: 0.5, height: '100%', overflow: 'auto'}}>
             {
               entries.map( (node: FileBrowserNode) => {
                 return (
@@ -117,7 +115,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
               })
             }
           </ForgeTreeView>
-          <div className="tab-erf-editor__details-panel">
+          <div style={{flex: 0.5, height: '100%'}}>
             {selectedEntry && (
               <div className="d-flex flex-column h-100 text-center align-items-center justify-content-center text-uppercase">
                 <span><i className="fas fa-file-alt"></i></span>

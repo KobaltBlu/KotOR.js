@@ -3,7 +3,6 @@ import { MenuFeedback as K1_MenuFeedback } from "@/game/kotor/KOTOR";
 import { GameState } from "@/GameState";
 import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "@/gui";
 
-
 const LBL_HIDE_UNEQ = 42279;
 const LBL_TUT_POPUPS = 42280;
 const LBL_SUBS = 42281;
@@ -14,20 +13,20 @@ const LBL_HIDE_MENU = 48693;
 const LBL_TOOLTIPS = 48696;
 
 
-const _DESC_HIDE_UNEQ = 42286;
-const _DESC_TUT_POPUPS = 42287;
-const _DESC_SUBS = 42288;
-const _DESC_MAP = 42289;
-const _DESC_FNUMBERS = 42291;
-const _DESC_STATUS = 42451;
-const _DESC_HIDE_MENU = 48700;
-const _DESC_TOOLTIPS = 48703;
+const DESC_HIDE_UNEQ = 42286;
+const DESC_TUT_POPUPS = 42287;
+const DESC_SUBS = 42288;
+const DESC_MAP = 42289;
+const DESC_FNUMBERS = 42291;
+const DESC_STATUS = 42451;
+const DESC_HIDE_MENU = 48700;
+const DESC_TOOLTIPS = 48703;
 
 /**
  * MenuFeedback class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file MenuFeedback.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -53,7 +52,7 @@ export class MenuFeedback extends K1_MenuFeedback {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
 
       const CB_HIDE_UNEQ = this.LB_OPTIONS.addItem(GameState.TLKManager.GetStringById(LBL_HIDE_UNEQ).Value) as GUICheckBox;
       CB_HIDE_UNEQ.attachINIProperty('Game Options.Hide Unequippable');
@@ -162,6 +161,5 @@ export class MenuFeedback extends K1_MenuFeedback {
   show() {
     super.show();
   }
-
+  
 }
-

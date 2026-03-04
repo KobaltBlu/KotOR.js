@@ -1,10 +1,9 @@
 import React from "react";
 
 import { TabAudioPlayer } from "@/apps/forge/components/tabs/tab-audio-player/TabAudioPlayer";
-import type { EditorFile } from '@/apps/forge/EditorFile';
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState } from '@/apps/forge/states/tabs/TabState';
-
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
 
 
 export class TabAudioPlayerState extends TabState {
@@ -38,9 +37,9 @@ export class TabAudioPlayerState extends TabState {
     // ];
   }
 
-  public openFile(_file?: EditorFile): Promise<void> {
-    return new Promise<void>(() => {
-      // Open file dialog / load file; resolve when done
+  public openFile(file?: any){
+    return new Promise<any>( (resolve, reject) => {
+      
     });
   }
 }

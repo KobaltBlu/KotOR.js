@@ -1,5 +1,4 @@
 import { TwoDAObject } from "@/resource/TwoDAObject";
-import type { ITwoDARowData } from "@/resource/TwoDAObject";
 
 /**
  * SWBodyBag class.
@@ -18,21 +17,21 @@ export class SWBodyBag {
   appearance: number = -1;
   corpse: number = -1;
 
-  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}){
+  static From2DA(row: any = {}){
     const bodyBag = new SWBodyBag();
 
-    bodyBag.id = parseInt(String(row.__index ?? -1), 10);
+    bodyBag.id = parseInt(row.__index);
 
-    if(Object.hasOwn(row,'label'))
+    if(row.hasOwnProperty('label'))
       bodyBag.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
-
-    if(Object.hasOwn(row,'iconresref'))
-      bodyBag.name = TwoDAObject.normalizeValue(row.name, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'appearance'))
+    if(row.hasOwnProperty('iconresref'))
+      bodyBag.name = TwoDAObject.normalizeValue(row.name, 'number', '') as number;
+    
+    if(row.hasOwnProperty('appearance'))
       bodyBag.appearance = TwoDAObject.normalizeValue(row.appearance, 'number', 0) as number;
     
-    if(Object.hasOwn(row,'description'))
+    if(row.hasOwnProperty('description'))
       bodyBag.corpse = TwoDAObject.normalizeValue(row.corpse, 'number', -1) as number;
 
     return bodyBag;

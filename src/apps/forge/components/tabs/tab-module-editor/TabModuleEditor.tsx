@@ -1,8 +1,7 @@
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import {
-  faArrowPointer,
-  faArrowsRotate,
-  faArrowsUpDownLeftRight,
+import { 
+  faArrowPointer, 
+  faArrowsRotate, 
+  faArrowsUpDownLeftRight, 
   faSquarePlus,
   faVideo,
   faUser,
@@ -15,7 +14,8 @@ import {
   faTriangleExclamation,
   faLocationPin
 } from "@fortawesome/free-solid-svg-icons";
-import React, { useEffect, useRef, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 
 import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
@@ -27,11 +27,10 @@ import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerCon
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabModuleEditorState, GameObjectType, TabModuleEditorControlMode } from "@/apps/forge/states/tabs";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 // Extended interface for game object items with icons (for context menu)
 interface GameObjectMenuItem extends ContextMenuItem {
-  icon?: IconDefinition;
+  icon?: any;
   iconColor?: string;
 }
 
@@ -142,12 +141,10 @@ const getGameObjectSubTools = (tab: TabModuleEditorState): SubTool[] => {
   }));
 };
 
-const log = createScopedLogger(LogScope.Forge);
-
 // Create tools configuration for the tool palette
 const createTools = (tab: TabModuleEditorState, controlMode: TabModuleEditorControlMode): Tool[] => {
   const gameObjectSubTools = getGameObjectSubTools(tab);
-
+  
   return [
     {
       id: 'select',
@@ -212,7 +209,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
   }, [tab]);
 
   const onModuleLoaded = () => {
-    log.debug('Module loaded');
+    console.log('module loaded');
   }
 
   useEffect(() => {
@@ -228,7 +225,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
 
     let canvas: HTMLCanvasElement | undefined;
     let cleanup: (() => void) | undefined;
-
+    
     // Track right-click dragging state
     let rightMouseDownPos: { x: number; y: number } | null = null;
     let isRightDragging = false;
@@ -247,7 +244,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
       if (rightMouseDownPos && e.buttons === 2) {
         const dx = Math.abs(e.clientX - rightMouseDownPos.x);
         const dy = Math.abs(e.clientY - rightMouseDownPos.y);
-
+        
         if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
           isRightDragging = true;
         }
@@ -284,8 +281,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
               id: 'delete-game-object',
               label: 'Delete',
               onClick: () => {
-                const obj = tab.selectedGameObject;
-                if (obj) tab.module?.area?.detachObject(obj);
+                tab.module?.area?.detachObject(tab.selectedGameObject!);
                 tab.selectGameObject(undefined);
               }
             },
@@ -293,16 +289,14 @@ export const TabModuleEditor = function(props: BaseTabProps){
               id: 'focus-game-object',
               label: 'Focus',
               onClick: () => {
-                const container = tab.selectedGameObject?.container;
-                if (container) tab.ui3DRenderer.lookAtObject(container);
+                tab.ui3DRenderer.lookAtObject(tab.selectedGameObject?.container!);
               }
             },
             {
               id: 'duplicate-game-object',
               label: 'Duplicate',
               onClick: () => {
-                const obj = tab.selectedGameObject;
-                if (obj) tab.cloneGameObject(obj);
+                tab.cloneGameObject(tab.selectedGameObject!);
               }
             }
           ]
@@ -310,7 +304,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
       }
 
       showContextMenu(e.clientX, e.clientY, contextMenuItems);
-
+      
       // Reset tracking after showing menu
       rightMouseDownPos = null;
       isRightDragging = false;
@@ -343,7 +337,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
       setupHandler();
     };
     tab.ui3DRenderer.addEventListener('onCanvasAttached', onCanvasAttached);
-
+    
     return () => {
       if (cleanup) {
         cleanup();
@@ -362,7 +356,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
         <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
           <UI3DRendererView context={tab.ui3DRenderer}>
             <UI3DOverlayComponent context={tab.ui3DRenderer}></UI3DOverlayComponent>
-            <UI3DToolPalette
+            <UI3DToolPalette 
               tools={createTools(tab, controlMode)}
               activeToolId={
                 controlMode === TabModuleEditorControlMode.SELECT ? 'select' :
@@ -371,7 +365,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
                 controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT ? 'add-game-object' :
                 undefined
               }
-              onToolChange={(_toolId) => {
+              onToolChange={(toolId) => {
                 // Tool change is handled by onClick in the tool definition
               }}
             />

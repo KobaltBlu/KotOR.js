@@ -1,19 +1,15 @@
-import React from 'react';
+import React from "react";
 
-import { KeyFrameTimelineComponent } from '@/apps/forge/components/KeyFrameTimelineComponent';
-import { LayoutContainer } from '@/apps/forge/components/LayoutContainer/LayoutContainer';
-import { ModelViewerSidebarComponent } from '@/apps/forge/components/ModelViewerSidebarComponent';
-import { UI3DOverlayComponent } from '@/apps/forge/components/UI3DOverlayComponent';
-import { UI3DRendererView } from '@/apps/forge/components/UI3DRendererView';
-import { LayoutContainerProvider } from '@/apps/forge/context/LayoutContainerContext';
-import type { TabModelViewerState } from '@/apps/forge/states/tabs';
+import { KeyFrameTimelineComponent } from "@/apps/forge/components/KeyFrameTimelineComponent";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { ModelViewerSidebarComponent } from "@/apps/forge/components/ModelViewerSidebarComponent";
+import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
+import { TabModelViewerState } from "@/apps/forge/states/tabs";
 
-export interface TabModelViewerProps {
-  tab: TabModelViewerState;
-}
-
-export const TabModelViewer: React.FC<TabModelViewerProps> = (props) => {
-  const tab = props.tab;
+export const TabModelViewer = function(props: any){
+  const tab: TabModelViewerState = props.tab as TabModelViewerState;
 
   const southPanel = (
     <KeyFrameTimelineComponent tab={tab} />

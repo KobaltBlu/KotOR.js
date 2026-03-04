@@ -2,10 +2,6 @@ import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { GameState } from "@/GameState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * ActionResumeDialog class.
@@ -23,10 +19,9 @@ export class ActionResumeDialog extends Action {
     this.type = ActionType.ActionResumeDialog;
   }
 
-  update(_delta: number = 0): ActionStatus {
-    log.trace('ActionResumeDialog update() owner=%s tag=%s', this.owner.getName(), this.owner.getTag());
+  update(delta: number = 0): ActionStatus {
     GameState.CutsceneManager.paused = false;
-    log.debug('ActionResumeDialog resumed dialog');
+    console.log('ActionResumeDialog', this.owner.getName(), this.owner.getTag());
     return ActionStatus.COMPLETE;
   }
 

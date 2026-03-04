@@ -30,6 +30,8 @@ import type {
   SemanticArrayLiteralNode,
   SemanticIndexNode,
   SemanticCallNode,
+  SemanticExpressionNode,
+  SemanticStatementNode,
 } from "@/nwscript/compiler/ASTSemanticTypes";
 
 type WithCompilerMeta<T> = T & { block_start?: number; block_end?: number };
@@ -182,28 +184,21 @@ export type CompilerExpressionNode =
   | CompilerBinaryNode;
 
 export type CompilerStatementNode =
-  | CompilerBlockNode
-  | CompilerBreakNode
-  | CompilerCaseNode
-  | CompilerContinueNode
-  | CompilerDefaultNode
-  | CompilerDoWhileNode
-  | CompilerElseIfNode
-  | CompilerElseNode
-  | CompilerForNode
+  | CompilerStructNode
+  | CompilerVariableNode
+  | CompilerVariableListNode
   | CompilerFunctionNode
   | CompilerIfNode
-  | CompilerReturnNode
-  | CompilerStructNode
-  | CompilerSwitchNode
-  | CompilerVariableListNode
-  | CompilerVariableNode
+  | CompilerElseIfNode
+  | CompilerElseNode
   | CompilerWhileNode
+  | CompilerDoWhileNode
+  | CompilerForNode
+  | CompilerSwitchNode
+  | CompilerCaseNode
+  | CompilerDefaultNode
+  | CompilerReturnNode
+  | CompilerBreakNode
+  | CompilerContinueNode
+  | CompilerBlockNode
   | CompilerExpressionNode;
-
-/** Compiler-internal context marker added during compilation */
-export interface CompilerStatementContext {
-  statement_context?: 'statement' | 'condition' | 'initializer' | 'incrementor';
-}
-
-export type CompilerStatementNodeWithContext = CompilerStatementNode & CompilerStatementContext;

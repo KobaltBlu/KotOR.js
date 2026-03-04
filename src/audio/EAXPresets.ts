@@ -1,8 +1,4 @@
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Audio);
-
-export interface IEAXPreset {
+interface IEAXPreset {
 
   density: number;
   diffusion: number;
@@ -42,13 +38,12 @@ export interface IEAXPreset {
 export class EAXPresets {
 
   static PresetFromIndex(index = 0): IEAXPreset {
-    log.trace("PresetFromIndex entered", String(index));
+
     const data = EAXPresets.PresetArray[index];
-    if (!data) {
-      log.error("EAX preset not found", index);
-      throw new Error(`EAX preset not found: ${index}`);
+    if(!data){
+      console.error('EAX preset not found', index);
+      return;
     }
-    log.debug("PresetFromIndex building IEAXPreset from array index", index);
     const reverb: IEAXPreset = {
       density: data[0] as number,
       diffusion: data[1] as number,
@@ -74,7 +69,7 @@ export class EAXPresets {
       roomRolloffFactor: data[21] as number,
       decayHFLimit: !!data[22] as boolean,
     };
-    log.trace("PresetFromIndex completed", index);
+
     return reverb;
   }
 

@@ -10,8 +10,6 @@ import { OdysseyModelAnimation } from "@/odyssey";
 import { TalentFeat, TalentSpell } from "@/talents";
 import { BitWise } from "@/utility/BitWise";
 
-
-
 export class CombatRoundAction {
   owner: ModuleObject;
 
@@ -89,10 +87,17 @@ export class CombatRoundAction {
   calculateAttackAnimation(){
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
 
-    const owner = this.owner as ModuleCreature;
+    const owner: ModuleCreature = this.owner as any;
     let attackKey = owner.getCombatAnimationAttackType();
     const weaponWield = owner.getCombatAnimationWeaponType();
     let attackType = 1;
+    let isMelee = true;
+    let isRanged = false;
+
+    if(attackKey == 'b'){
+      isMelee = false;
+      isRanged = true;
+    }
 
     if(this.feat){
       if(attackKey == 'm'){
@@ -137,13 +142,13 @@ export class CombatRoundAction {
 
     //Get random basic melee attack in combat with another melee creature that is targeting you
     if(attackKey == 'm' && BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
-      const target = this.target as ModuleCreature;
+      const target: ModuleCreature = this.target as any;
       if(owner.isDuelingObject(target)){
         attackKey = 'c';
         attackType = Math.round(Math.random()*4)+1;
       }
     }
-
+    
     let animation = attackKey+weaponWield+'a'+attackType;
     if(this.isCutsceneAttack){
       animation = this.animationName;

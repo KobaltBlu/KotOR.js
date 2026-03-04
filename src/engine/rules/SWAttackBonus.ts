@@ -1,4 +1,4 @@
-import { TwoDAObject, type ITwoDARowData } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
  * class SWAttackBonus
@@ -18,12 +18,12 @@ export class SWAttackBonus {
     this.index = index;
   }
 
-  apply2DA(row: ITwoDARowData){
+  apply2DA(row: any){
     this.index = TwoDAObject.normalizeValue(row.__index, 'number', 0);
     this.bab = TwoDAObject.normalizeValue(row.bab, 'number', 1);
   }
 
-  static From2DA(row: ITwoDARowData){
+  static From2DA(row: any){
     const ab = new SWAttackBonus();
     ab.apply2DA(row);
     return ab;

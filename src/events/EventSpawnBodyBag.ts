@@ -6,7 +6,6 @@ import { GameEvent } from "@/events/GameEvent";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 
-
 /**
  * EventSpawnBodyBag class.
  * 
@@ -31,10 +30,10 @@ export class EventSpawnBodyBag extends GameEvent {
 
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
-      this.bodyBagId  = struct.getNumberByLabel('BodyBagId');
-      this.position.x = struct.getNumberByLabel('PositionX');
-      this.position.y = struct.getNumberByLabel('PositionY');
-      this.position.z = struct.getNumberByLabel('PositionZ');
+      this.bodyBagId  = struct.getFieldByLabel('BodyBagId').getValue();
+      this.position.x = struct.getFieldByLabel('PositionX').getValue();
+      this.position.y = struct.getFieldByLabel('PositionY').getValue();
+      this.position.z = struct.getFieldByLabel('PositionZ').getValue();
     }
   }
 

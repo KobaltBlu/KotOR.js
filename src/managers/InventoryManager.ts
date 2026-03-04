@@ -8,17 +8,13 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature, ModuleItem } from "@/module";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Manager);
 // import { PartyManager } from "@/managers/PartyManager";
 
 /**
  * InventoryManager class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file InventoryManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -94,15 +90,15 @@ export class InventoryManager {
       // return false;
 
     const droidorhuman = item.baseItem.droidOrHuman;
-
+    
     return !droidorhuman || (
       (droidorhuman == 1 && creature.getRace() == 6) ||
       (droidorhuman == 2 && creature.getRace() == 5)
     );
-
+    
   }
 
-  static isItemUsableInSlot(item: ModuleItem, slot: number): boolean {
+  static isItemUsableInSlot( item: ModuleItem, slot: any ): boolean {
     const baseItem = item.baseItem;
     return (baseItem.equipableSlots & slot || baseItem.equipableSlots === slot) ? true : false;
   }
@@ -181,7 +177,7 @@ export class InventoryManager {
         //Item not in inventory
       }
     }else{
-      log.warn('InventoryManager.removeItem() unknown item nCount=%s', String(nCount), item);
+      console.warn('InventoryManager.removeItem() unknown item', item, nCount);
     }
   }
 
@@ -194,27 +190,26 @@ export class InventoryManager {
     return false;
   }
 
-  static itemFromJSON(json: { fields?: Record<string, { type?: number; value?: unknown; structs?: unknown[] }> } = {}): Record<string, unknown> {
-    const item: Record<string, unknown> = {};
-    const props = json.fields ?? {};
-    for (const fieldName in props) {
+  static itemFromJSON(json: any = {}){
+    const item: any = {};
+    const props = json.fields;
+    for(const fieldName in props){
       const field = props[fieldName];
-      if (field?.type === 15 && Array.isArray(field.structs)) {
-        const arr: unknown[] = [];
-        for (let i = 0; i < field.structs.length; i++) {
-          arr.push(InventoryManager.itemFromJSON(field.structs[i] as { fields?: Record<string, { type?: number; value?: unknown; structs?: unknown[] }> }));
+      if(field.type == 15){
+        item[fieldName] = [];
+        for(let i = 0; i < field.structs.length; i++){
+          item[fieldName].push(InventoryManager.itemFromJSON(field.structs[i]));
         }
-        item[fieldName] = arr;
-      } else {
-        item[fieldName] = field?.value;
+      }else{
+        item[fieldName] = field.value;
       }
     }
     return item;
   }
 
   static Save(){
-    return new Promise((resolve, _reject) => {
-      //log.info('InventoryManager.Save()', 'Exporting...');
+    return new Promise( async (resolve, reject) => {
+      //console.log('InventoryManager.Save()', 'Exporting...');
       const gff = new GFFObject();
       gff.FileType = 'INV ';
 
@@ -223,9 +218,8 @@ export class InventoryManager {
         itemList.addChildStruct( InventoryManager.inventory[i].save() );
       }
 
-      gff.export( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res') ).then(() => {
-        resolve(gff);
-      });
+      await gff.export( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res') );
+      resolve(gff);
     });
   }
 

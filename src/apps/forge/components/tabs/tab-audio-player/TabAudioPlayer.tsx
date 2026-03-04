@@ -1,28 +1,23 @@
-import React, { useRef, useState } from "react";
-
+import React, { useEffect, useRef, useState } from "react";
 
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
 import * as KotOR from "@/KotOR";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Forge);
 
 export const TabAudioPlayer = function(props: BaseTabProps) {
-  const _tab = props.tab as TabAudioPlayerState;
+  const tab = props.tab as TabAudioPlayerState;
   
   // Use useRef for mutable variables that we want to persist
   // without triggering a re-render on their change
-  const requestRef = useRef<number | undefined>(undefined);
-  const previousTimeRef = useRef<number | undefined>(undefined);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const requestRef = useRef<number>();
+  const previousTimeRef = useRef<number>();
+  const canvasRef = useRef<HTMLCanvasElement>(null as any);
+  const contextRef = useRef<CanvasRenderingContext2D>(null as any);
   
   const [isReady, setIsReady] = useState<boolean>(false);
-  const [_isDisposed, setIsDisposed] = useState<boolean>(false);
+  const [isDisposed, setIsDisposed] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
@@ -57,7 +52,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
   }
 
   const onOpen = (file: KotOR.AudioFile) => {
-    log.debug('onOpen', file);
+    console.log('onOpen', file);
     if(!file){ return; }
     setFile(file);
   }
@@ -82,11 +77,11 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
     AudioPlayerState.AddEventListener('onOpen', onOpen);
     window.addEventListener('resize', onResize);
 
-    log.debug('useEffect', canvasRef, canvasRef.current);
+    console.log('useEffect', canvasRef, canvasRef.current);
     if (canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
-      log.debug('canvas context', ctx);
+      console.log(ctx);
       contextRef.current = (ctx as CanvasRenderingContext2D);
       onResize();
     }
@@ -99,13 +94,13 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
       AudioPlayerState.RemoveEventListener('onStop', onStop);
       AudioPlayerState.RemoveEventListener('onLoop', onLoop);
       AudioPlayerState.RemoveEventListener('onOpen', onOpen);
-      if (requestRef.current != null) cancelAnimationFrame(requestRef.current);
+      cancelAnimationFrame(requestRef.current as any);
       setIsDisposed(true);
       window.removeEventListener('resize', onResize);
     }
   })
 
-  const onBtnPlay = (_e: React.MouseEvent<HTMLSpanElement>) => {
+  const onBtnPlay = (e: React.MouseEvent<HTMLSpanElement>) => {
     if(isPlaying){
       AudioPlayerState.Pause();
     }else{
@@ -113,18 +108,18 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
     }
   }
 
-  const onBtnStop = (_e: React.MouseEvent<HTMLSpanElement>) => {
+  const onBtnStop = (e: React.MouseEvent<HTMLSpanElement>) => {
     AudioPlayerState.Stop();
   }
 
   const onTrackBarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const seekPosition = parseFloat(e.target.value);
-    try{ AudioPlayerState.Stop(); }catch{ /* seek reset */ }
+    try{ AudioPlayerState.Stop(); }catch(e){}
     AudioPlayerState.pausedAt = seekPosition;
-    try{ AudioPlayerState.Play(); }catch{ /* resume after seek */ }
+    try{ AudioPlayerState.Play(); }catch(e){}
   }
 
-  const onBtnSave = (_e: React.MouseEvent<HTMLSpanElement>) => {
+  const onBtnSave = (e: React.MouseEvent<HTMLSpanElement>) => {
     AudioPlayerState.Pause();
     AudioPlayerState.ExportAudio().then( () => {
 
@@ -143,7 +138,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
   const animate = (time: number = 0) => {
     const context = contextRef.current;
     if (previousTimeRef.current != undefined && context && AudioPlayerState.analyser) {
-      const _deltaTime = time - previousTimeRef.current;
+      const deltaTime = time - previousTimeRef.current;
 
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
       const bufferLength = AudioPlayerState.analyserBufferLength;
@@ -153,7 +148,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
       let secondX = (bufferLength * barWidth) - barWidth/2;
 
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-      AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData as Uint8Array);
+      AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData as any);
 
       const totalHeight = 64;
       const maxHeight = 64;

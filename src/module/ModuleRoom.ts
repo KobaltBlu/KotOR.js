@@ -4,7 +4,6 @@ import { ModuleObject } from "@/module/ModuleObject";
 import * as THREE from "three";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
 
-import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from ".";
 
 // import { ShaderManager } from "@/managers";
 
@@ -16,6 +15,7 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
 import { IVISRoom } from "@/interface";
 import { MDLLoader, ResourceLoader, TextureLoader } from "@/loaders";
+import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from "@/module";
 import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "@/odyssey";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
@@ -57,7 +57,6 @@ export class ModuleRoom extends ModuleObject {
   linkedRoomData: IVISRoom[] = [];
   linkedRoomNames: string[] = [];
   linkedRooms: Map<string, ModuleRoom> = new Map<string, ModuleRoom>();
-  linkedRoomsArray: ModuleRoom[] = [];
 
   constructor( roomName: string, area: ModuleArea ){
     super();
@@ -215,7 +214,7 @@ export class ModuleRoom extends ModuleObject {
     }
 
     if(showLinkedRooms){
-      const linkedRooms = this.linkedRoomsArray;
+      const linkedRooms = Array.from(this.linkedRooms.values());
       for(let i = 0, rLen = linkedRooms.length; i < rLen; i++){
         const room = linkedRooms[i];
         if(room.grass){
@@ -254,7 +253,7 @@ export class ModuleRoom extends ModuleObject {
     }
 
     if(hideLinkedRooms){
-      const linkedRooms = this.linkedRoomsArray;
+      const linkedRooms = Array.from(this.linkedRooms.values());
       for(let i = 0, rLen = linkedRooms.length; i < rLen; i++){
         if(typeof linkedRooms[i].model != 'object'){
           continue;
@@ -279,26 +278,7 @@ export class ModuleRoom extends ModuleObject {
    */
   linkRooms(){
     for(let i = 0, iLen = this.linkedRoomData.length; i < iLen; i++){
-      const room = this.area.visObject.getRoomByName(this.linkedRoomData[i].name);
-      if(!room){ 
-        console.warn('ModuleRoom.linkRooms: Linked room not found', this.linkedRoomData[i].name);
-        continue; 
-      }
-      this.addLinkedRoom(room);
-    }
-  }
-
-  addLinkedRoom(room: ModuleRoom){
-    this.linkedRooms.set(room.roomName, room);
-    if(this.linkedRoomsArray.indexOf(room) >= 0) return;
-    this.linkedRoomsArray.push(room);
-  }
-
-  removeLinkedRoom(room: ModuleRoom){
-    this.linkedRooms.delete(room.roomName);
-    const index = this.linkedRoomsArray.indexOf(room);
-    if(index >= 0){
-      this.linkedRoomsArray.splice(index, 1);
+      this.linkedRooms.set(this.linkedRoomData[i].name, this.area.visObject.getRoomByName(this.linkedRoomData[i].name));
     }
   }
 

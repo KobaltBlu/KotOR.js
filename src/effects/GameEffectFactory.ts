@@ -58,17 +58,13 @@ import { EffectTemporaryHitPoints } from "@/effects/EffectTemporaryHitPoints";
 import { EffectVisualEffect } from "@/effects/EffectVisualEffect";
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import type { ModuleObject } from "@/module/ModuleObject";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { createScopedLogger , LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * GameEffectFactory class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GameEffectFactory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -166,21 +162,21 @@ export class GameEffectFactory {
   static EffectForceShield: typeof EffectForceShield = EffectForceShield;
   // static EffectPureGoodPowers: typeof EffectPureGoodPowers = EffectPureGoodPowers;
   // static EfffectPureEvilPowers: typeof EfffectPureEvilPowers = EfffectPureEvilPowers;
+  
+  static EffectFromStruct( struct: GFFStruct ): GameEffect {
+    if(!struct){ return undefined as any; }
 
-  static EffectFromStruct( struct: GFFStruct ): GameEffect | undefined {
-    if(!struct){ return undefined; }
+    let effect: GameEffect = undefined as any;
 
-    let effect: GameEffect | undefined = undefined;
-
-    const eType = struct.getNumberByLabel('Type');
-    const eSubType = struct.getNumberByLabel('SubType');
-    const eCreator = struct.getNumberByLabel('CreatorId');
-    const eSpellId = struct.getNumberByLabel('SpellId');
-
-    const eDuration = struct.getNumberByLabel('Duration');
-    const eExpireDay = struct.getNumberByLabel('ExpireDay');
-    const eExpireTime = struct.getNumberByLabel('ExpireTime');
-    const eNumIntegers = struct.getNumberByLabel('NumIntegers');
+    const eType = struct.getFieldByLabel('Type').getValue();
+    const eSubType = struct.getFieldByLabel('SubType').getValue();
+    const eCreator = struct.getFieldByLabel('CreatorId').getValue();
+    const eSpellId = struct.getFieldByLabel('SpellId').getValue();
+    
+    const eDuration = struct.getFieldByLabel('Duration').getValue();
+    const eExpireDay = struct.getFieldByLabel('ExpireDay').getValue();
+    const eExpireTime = struct.getFieldByLabel('ExpireTime').getValue();
+    const eNumIntegers = struct.getFieldByLabel('NumIntegers').getValue();
 
     const intList: number[] = [];
     const floatList: number[] = [];
@@ -189,22 +185,22 @@ export class GameEffectFactory {
 
     let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      intList[i] = tmpList[i].getNumberByLabel('Value');
+      intList[i] = tmpList[i].getFieldByLabel('Value').getValue();
     }
 
     tmpList = struct.getFieldByLabel('FloatList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      floatList[i] = tmpList[i].getNumberByLabel('Value');
+      floatList[i] = tmpList[i].getFieldByLabel('Value').getValue();
     }
 
     tmpList = struct.getFieldByLabel('StringList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      stringList[i] = tmpList[i].getStringByLabel('Value');
+      stringList[i] = tmpList[i].getFieldByLabel('Value').getValue();
     }
 
     tmpList = struct.getFieldByLabel('ObjectList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      objectList[i] = tmpList[i].getNumberByLabel('Value');
+      objectList[i] = tmpList[i].getFieldByLabel('Value').getValue();
     }
 
     //Initialize the effect object based on the type
@@ -382,7 +378,7 @@ export class GameEffectFactory {
       break;
     }
 
-    const eSkipOnLoad = struct.getBooleanByLabel('SkipOnLoad');
+    const eSkipOnLoad = struct.getFieldByLabel('SkipOnLoad').getValue();
     if(!eSkipOnLoad){
 
       if(typeof effect !== 'undefined'){
@@ -390,24 +386,27 @@ export class GameEffectFactory {
         effect.setExpireDay(eExpireDay);
         effect.setExpireTime(eExpireTime);
         effect.setCreator(eCreator);
-        effect.setSpellId(eSpellId === 4294967295 ? -1 : eSpellId);
+        effect.setSpellId(eSpellId == 4294967295 ? -1 : eSpellId);
         effect.setSubTypeUnMasked(eSubType);
 
         effect.setNumIntegers(eNumIntegers);
         effect.setIntList(intList);
         effect.setFloatList(floatList);
         effect.setStringList(stringList);
-        effect.setObjectList(objectList as unknown as ModuleObject[]);
+        effect.setObjectList(objectList as any);
+        //console.log('Handled Effect', eType, struct.ToJSON());
         //effect.initialize();
       }else{
-        log.debug('Unhandled Effect', eType, struct.toJSON());
+        console.log('Unhandled Effect', eType, struct.toJSON());
       }
       return effect;
     }else{
-      if(typeof effect === 'undefined'){
-        log.debug('Unhandled Skipped Effect', eType, struct.toJSON());
+      if(typeof effect !== 'undefined'){
+        //console.log('Skipped Effect', eType, struct.ToJSON());
+      }else{
+        console.log('Unhandled Skipped Effect', eType, struct.toJSON());
       }
-      return undefined;
+      return undefined as any;
     }
   }
 }

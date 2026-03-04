@@ -7,12 +7,11 @@ import { GUIItemEquipped } from "@/gui/protoitem/GUIItemEquipped";
 import { GUIItemNone } from "@/gui/protoitem/GUIItemNone";
 import type { ModuleItem } from "@/module";
 
-
 /**
  * MenuEquipment class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file MenuEquipment.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -79,11 +78,11 @@ export class MenuEquipment extends K1_MenuEquipment {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.defaultControl = this.BTN_INV_BODY;
 
       // this.LB_ITEMS.offset.x = 0;
-
+      
       this.LB_DESC.hide();
       this.LBL_CANTEQUIP.hide();
 
@@ -104,7 +103,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.slot = ModuleCreatureArmorSlot.IMPLANT;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (_e) => {
+      }).addEventListener('hover', (e) => {
         this.updateListHover(ModuleCreatureArmorSlot.IMPLANT);
       });
 
@@ -113,7 +112,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.slot = ModuleCreatureArmorSlot.HEAD;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (_e) => {
+      }).addEventListener('hover', (e) => {
         this.updateListHover(ModuleCreatureArmorSlot.HEAD);
       });
 
@@ -122,7 +121,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.slot = ModuleCreatureArmorSlot.ARMS;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (_e) => {
+      }).addEventListener('hover', (e) => {
         this.updateListHover(ModuleCreatureArmorSlot.ARMS);
       });
 
@@ -131,7 +130,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.slot = ModuleCreatureArmorSlot.LEFTARMBAND;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (_e) => {
+      }).addEventListener('hover', (e) => {
         this.updateListHover(ModuleCreatureArmorSlot.LEFTARMBAND);
       });
 
@@ -140,7 +139,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.slot = ModuleCreatureArmorSlot.ARMOR;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (_e) => {
+      }).addEventListener('hover', (e) => {
         this.updateListHover(ModuleCreatureArmorSlot.ARMOR);
       });
 
@@ -149,7 +148,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (_e) => {
+      }).addEventListener('hover', (e) => {
         this.updateListHover(ModuleCreatureArmorSlot.RIGHTARMBAND);
       });
 
@@ -158,7 +157,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.slot = ModuleCreatureArmorSlot.LEFTHAND;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (_e) => {
+      }).addEventListener('hover', (e) => {
         this.updateListHover(ModuleCreatureArmorSlot.LEFTHAND);
       });
 
@@ -167,7 +166,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.slot = ModuleCreatureArmorSlot.BELT;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (_e) => {
+      }).addEventListener('hover', (e) => {
         this.updateListHover(ModuleCreatureArmorSlot.BELT);
       });
 
@@ -176,7 +175,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.slot = ModuleCreatureArmorSlot.RIGHTHAND;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (_e) => {
+      }).addEventListener('hover', (e) => {
         this.updateListHover(ModuleCreatureArmorSlot.RIGHTHAND);
       });
 
@@ -185,7 +184,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.slot = ModuleCreatureArmorSlot.LEFTHAND2;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (_e) => {
+      }).addEventListener('hover', (e) => {
         this.updateListHover(ModuleCreatureArmorSlot.LEFTHAND2);
       });
 
@@ -194,21 +193,21 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.slot = ModuleCreatureArmorSlot.RIGHTHAND2;
         this.equipmentSelectionActive = true;
         this.updateList();
-      }).addEventListener('hover', (_e) => {
+      }).addEventListener('hover', (e) => {
         this.updateListHover(ModuleCreatureArmorSlot.RIGHTHAND2);
       });
 
       this.BTN_EQUIP.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.selectedItem){
-          //log.info('selectedItem', this.selectedItem, this.slot, );
+          //console.log('selectedItem', this.selectedItem, this.slot, );
           const currentPC = GameState.PartyManager.party[0];
           currentPC.equipItem(this.slot, this.selectedItem).then( () => {
             this.updateSlotIcons();
           });
-          this.slot = null;
+          this.slot = null as any;
           this.equipmentSelectionActive = false;
-          this.updateSelected(undefined);
+          this.updateSelected(undefined as any);
           this.updateSlotIcons();
         }
       });
@@ -219,7 +218,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.updateSelected(item);
       }
 
-      this.BTN_SWAPWEAPONS.addEventListener('click', (_e) => {
+      this.BTN_SWAPWEAPONS.addEventListener('click', (e) => {
         const currentPC = GameState.PartyManager.party[0];
         if(currentPC){
           const right_1 = currentPC.equipment.RIGHTHAND;
@@ -289,7 +288,7 @@ export class MenuEquipment extends K1_MenuEquipment {
       this.LBL_TOHIT.hide();
       this.LBL_TOHITL.hide();
       this.LBL_TOHITR.hide();
-
+      
       this.LBL_INV_WEAP_L2.hide();
       this.LBL_INV_WEAP_R2.hide();
       this.BTN_INV_WEAP_L2.hide();
@@ -330,6 +329,5 @@ export class MenuEquipment extends K1_MenuEquipment {
     this.LBL_BACK1.widget.position.z = 0;
     this.updateSlotIcons();
   }
-
+  
 }
-

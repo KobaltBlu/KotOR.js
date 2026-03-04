@@ -1,11 +1,8 @@
 import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
+import { GameState } from "@/GameState";
 import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
 
 /**
  * ActionDoCommand class.
@@ -27,11 +24,10 @@ export class ActionDoCommand extends Action {
 
   }
 
-  update(_delta: number = 0): ActionStatus {
-    log.trace('ActionDoCommand update()');
+  update(delta: number = 0): ActionStatus {
     const script = this.getParameter<NWScriptInstance>(0);
     if(!script){
-      log.error('ActionDoCommand: Not an instanceof NWScriptInstance');
+      console.error('ActionDoCommand: Not an instanceof NWScriptInstance');
       return ActionStatus.FAILED;
     }
     

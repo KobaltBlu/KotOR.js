@@ -6,14 +6,12 @@ import { GameState } from "@/GameState";
 import { ModuleCreature, ModuleObject, ModulePlayer } from "@/module";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import type { ITwoDARowData } from "@/resource/TwoDAObject";
-
 
 /**
  * Faction class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file Faction.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -85,7 +83,7 @@ export class Faction {
     return undefined;
   }
 
-  getWeakestMember(_bMustBeVisible = false){
+  getWeakestMember(bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let lowerCR = Infinity;
       let cLowestCR = 0;
@@ -100,12 +98,12 @@ export class Faction {
           }
         }
       }
-      return currentCreature;
+      return currentCreature; 
     // }
     return undefined;
   }
 
-  getStrongestMember(_bMustBeVisible = false){
+  getStrongestMember(bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let highestCR = -Infinity;
       let cHighestCR = 0;
@@ -120,12 +118,12 @@ export class Faction {
           }
         }
       }
-      return currentCreature;
+      return currentCreature; 
     // }
     return undefined;
   }
 
-  getMostDamagedMember(_bMustBeVisible = false){
+  getMostDamagedMember(bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let lowestHP = Infinity;
       let cLowestHP = 0;
@@ -140,12 +138,12 @@ export class Faction {
           }
         }
       }
-      return currentCreature;
+      return currentCreature; 
     // }
     return undefined;
   }
 
-  getLeastDamagedMember(_bMustBeVisible = false){
+  getLeastDamagedMember(bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let highestHP = -Infinity;
       let cHighestHP = 0;
@@ -160,12 +158,12 @@ export class Faction {
           }
         }
       }
-      return currentCreature;
+      return currentCreature; 
     // }
     return undefined;
   }
 
-  getWorstACMember(_bMustBeVisible = false){
+  getWorstACMember(bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let ac = Infinity;
       let cAC = 0;
@@ -180,12 +178,12 @@ export class Faction {
           }
         }
       }
-      return currentCreature;
+      return currentCreature; 
     // }
     return undefined;
   }
 
-  getBestACMember(_bMustBeVisible = false){
+  getBestACMember(bMustBeVisible = false){
     // if(oTarget instanceof ModuleCreature){
       let ac = -Infinity;
       let cAC = 0;
@@ -200,7 +198,7 @@ export class Faction {
           }
         }
       }
-      return currentCreature;
+      return currentCreature; 
     // }
     return undefined;
   }
@@ -228,7 +226,7 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalRep / totalCreatures);
+      return Math.floor(totalRep / totalCreatures); 
     }
     return -1;
   }
@@ -244,7 +242,7 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalGoodEvil / totalCreatures);
+      return Math.floor(totalGoodEvil / totalCreatures); 
     // }
     return -1;
   }
@@ -260,7 +258,7 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalLevel / totalCreatures);
+      return Math.floor(totalLevel / totalCreatures); 
     // }
     return -1;
   }
@@ -276,7 +274,7 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalExp / totalCreatures);
+      return Math.floor(totalExp / totalCreatures); 
     // }
     return -1;
   }
@@ -296,15 +294,13 @@ export class Faction {
       if(classCount.size){
         let bestClass = undefined;
         let count = -Infinity;
-        for(const entry of classCount.entries()){
-          const classId = entry[0] as number;
-          const classCountValue = entry[1] as number;
-          if(classCountValue > count){
-            bestClass = classId;
-            count = classCountValue;
+        for(const c of classCount.entries()){
+          if(c[1] > count){
+            bestClass = c[0];
+            count = c[1];
           }
         }
-        return typeof bestClass == 'number' ? bestClass : -1;
+        return typeof bestClass == 'number' ? bestClass : -1; 
       }else{
         return -1;
       }
@@ -336,11 +332,11 @@ export class Faction {
     return struct;
   }
 
-  static From2DARow( row: ITwoDARowData | undefined = undefined ){
-    if(typeof row === 'object' && row != null){
+  static From2DARow( row: any = undefined ){
+    if(typeof row === 'object'){
       const faction = new Faction();
       faction.id = row.__index;
-      faction.label = String(row.label ?? '');
+      faction.label = row.label;
       faction.global = 1;
 
 
@@ -357,13 +353,13 @@ export class Faction {
       faction.id = struct.getType();
 
       if(struct.hasField('FactionGlobal'))
-        faction.global = struct.getNumberByLabel('FactionGlobal');
+        faction.global = struct.getFieldByLabel('FactionGlobal').getValue();
 
       if(struct.hasField('FactionName'))
-        faction.label = struct.getStringByLabel('FactionName');
+        faction.label = struct.getFieldByLabel('FactionName').getValue();
 
       if(struct.hasField('FactionParentID'))
-        faction.parentId = struct.getNumberByLabel('FactionParentID');
+        faction.parentId = struct.getFieldByLabel('FactionParentID').getValue();
 
       return faction;
     }
