@@ -1,18 +1,18 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type {  GUILabel, GUIButton } from "@/gui";
 
 /** TLK 32321: "Max wager" label prefix */
-const TLK_MAX_WAGER = 32321;
+const TLK_MAX_WAGER = 0x7e41;
 /** TLK 38600: "Your credits" label prefix */
-const TLK_YOUR_CREDITS = 38600;
+const TLK_YOUR_CREDITS = 0x96c8;
 /** TLK 42424: "Quit Pazaak?" confirmation */
-const TLK_QUIT_PAZAAK_CONFIRM = 42424;
+const TLK_QUIT_PAZAAK_CONFIRM = 0xa5b8;
 
 /**
  * MenuPazaakWager class.
  *
- * Handles the wager selection popup for the Pazaak minigame.
+ * Wager selection popup for Pazaak (KotOR I).
  *
  * @file MenuPazaakWager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -40,23 +40,24 @@ export class MenuPazaakWager extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
+
       /**
-       * BTN_QUIT: Show "Quit Pazaak?" confirmation.
+       * BTN_QUIT: Shows "Quit Pazaak?" confirmation. If confirmed, cancels Pazaak (HandleQuitDialog).
        */
       this.BTN_QUIT.addEventListener('click', () => {
         this.handleQuitClicked();
       });
 
       /**
-       * BTN_WAGER: Confirm the wager
+       * BTN_WAGER: Confirms wager, closes popup, stays on setup (HandleWagerExit).
        */
       this.BTN_WAGER.addEventListener('click', () => {
         this.handleWagerClicked();
       });
 
       /**
-       * BTN_LESS: Decrease the wager
+       * BTN_LESS: OnMinusButtonPushed decreases
        */
       this.BTN_LESS.addEventListener('click', () => {
         GameState.PazaakManager.DecreaseWager();
@@ -64,7 +65,7 @@ export class MenuPazaakWager extends GameMenu {
       });
 
       /**
-       * BTN_MORE: Increase the wager
+       * BTN_MORE: OnPlusButtonPushed increases
        */
       this.BTN_MORE.addEventListener('click', () => {
         GameState.PazaakManager.IncreaseWager();
@@ -77,6 +78,7 @@ export class MenuPazaakWager extends GameMenu {
 
   /**
    * Handle BTN_QUIT - show confirmation then cancel if confirmed.
+   * Quit confirmation leads to HandleQuitDialog.
    */
   private handleQuitClicked(){
     GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
@@ -108,7 +110,7 @@ export class MenuPazaakWager extends GameMenu {
   }
 
   /**
-   * Update the wager text and maximum text.
+   * Update wager label: "Max wager" + maxWager, "Your credits" + playerGold.
    */
   rebuild(){
     const pm = GameState.PazaakManager;

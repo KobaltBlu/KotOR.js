@@ -1,11 +1,11 @@
-import type { ModuleCreature, ModuleObject } from "../module";
-import type { TalentFeat, TalentSpell } from "../talents";
-import { ICombatAction } from "../interface/combat/ICombatAction";
-import { AttackResult } from "../enums/combat/AttackResult";
-import { ActionType } from "../enums/actions/ActionType";
-import { WeaponType } from "../enums/combat/WeaponType";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums";
+import { ModuleObjectType } from "@/enums";
+import { ActionType } from "@/enums/actions/ActionType";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { WeaponType } from "@/enums/combat/WeaponType";
+import { ICombatAction } from "@/interface/combat/ICombatAction";
+import type { ModuleCreature, ModuleObject } from "@/module";
+import type { TalentFeat, TalentSpell } from "@/talents";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * CombatData class.
@@ -63,12 +63,12 @@ export class CombatData {
 
   getEquippedWeaponType(){
     if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
-      const owner: ModuleCreature = this.object as any;
-      let lWeapon = owner.equipment.LEFTHAND;
-      let rWeapon = owner.equipment.RIGHTHAND;
-      let claw1 = owner.equipment.CLAW1;
-      let claw2 = owner.equipment.CLAW2;
-      let claw3 = owner.equipment.CLAW3;
+      const owner = this.object as ModuleCreature;
+      const lWeapon = owner.equipment.LEFTHAND;
+      const rWeapon = owner.equipment.RIGHTHAND;
+      const claw1 = owner.equipment.CLAW1;
+      const claw2 = owner.equipment.CLAW2;
+      const claw3 = owner.equipment.CLAW3;
 
       if(rWeapon){
         return (rWeapon.getWeaponType());

@@ -1,28 +1,34 @@
 import * as THREE from "three";
-import type { ModuleArea, ModuleObject } from "../module";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { IGUIControlText } from "../interface/gui/IGUIControlText";
-import { ShaderManager } from "../managers/ShaderManager";
-import { createQuadElements as createIndicies } from "../utility/QuadIndices";
-import { TLKManager } from "../managers/TLKManager";
-import { TextureLoader } from "../loaders/TextureLoader";
-import { TextureType } from "../enums/loaders/TextureType";
-import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
-import { GUIFont } from "../gui/GUIFont";
-import { GUIControlAlignment } from "../enums";
 
-const itemSize = 2
-const box = { min: [0, 0], max: [0, 0] }
+import { GUIControlAlignment } from "@/enums";
+import { TextSprite3DType } from "@/enums/engine/TextSprite3DType";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GUIFont } from "@/gui/GUIFont";
+import { IGUIControlText } from "@/interface/gui/IGUIControlText";
+import { TextureLoader } from "@/loaders/TextureLoader";
+import { ShaderManager } from "@/managers/ShaderManager";
+import { TLKManager } from "@/managers/TLKManager";
+import type { ModuleArea, ModuleObject } from "@/module";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+
+const itemSize = 2;
+const box: { min: number[]; max: number[] } = { min: [0, 0], max: [0, 0] };
 
 /**
  * TextSprite3D class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TextSprite3D.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+/** Used by custom computeBoundingBox to call back into TextSprite3D.computeBox without aliasing this. */
+const geometryOwnerMap = new WeakMap<THREE.BufferGeometry, TextSprite3D>();
+
 export class TextSprite3D {
 
   static HEIGHT: number = 0.1;
@@ -68,64 +74,64 @@ export class TextSprite3D {
       break;
     }
 
-    this.text = {
-      color: this.color,
-      font: '', //fnt_d16x16b
-      strref: -1,
-      text: text,
-      alignment: GUIControlAlignment.HorizontalCenter | GUIControlAlignment.VerticalCenter, //9 //18 //17
-      pulsing: 0,
-      geometry: {} as THREE.BufferGeometry,
-      mesh: {} as THREE.Mesh,
-      material: {} as THREE.ShaderMaterial,
-      texture: {} as OdysseyTexture,
-    };
+    const geometry = new THREE.BufferGeometry();
+    geometry.index = new THREE.BufferAttribute(new Uint16Array(), 1).setUsage(THREE.StaticDrawUsage);
+    const posAttribute = new THREE.BufferAttribute(new Float32Array(), 2).setUsage(THREE.StaticDrawUsage);
+    const uvAttribute = new THREE.BufferAttribute(new Float32Array(), 2).setUsage(THREE.StaticDrawUsage);
+    geometry.setAttribute('position', posAttribute);
+    geometry.setAttribute('uv', uvAttribute);
+    geometry.index.needsUpdate = true;
+    geometry.attributes.position.needsUpdate = true;
+    geometry.attributes.uv.needsUpdate = true;
 
-    this.text.geometry = new THREE.BufferGeometry();
-    this.text.geometry.index = new THREE.BufferAttribute( new Uint16Array(), 1 ).setUsage( THREE.StaticDrawUsage );
-
-    let posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
-    let uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
-    this.text.geometry.setAttribute( 'position', posAttribute );
-    this.text.geometry.setAttribute( 'uv', uvAttribute );
-
-    this.text.geometry.index.needsUpdate = true;
-    this.text.geometry.attributes.position.needsUpdate = true;
-    this.text.geometry.attributes.uv.needsUpdate = true;
-
-    this.text.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui')?.getUniforms()
-      ]),
+    const odysseyGuiU = ShaderManager.Shaders.get('odyssey-gui')?.getUniforms();
+    const odysseyGuiUniforms: Record<string, THREE.IUniform> = Array.isArray(odysseyGuiU)
+      ? (THREE.UniformsUtils.merge(odysseyGuiU) as Record<string, THREE.IUniform>)
+      : (THREE.UniformsUtils.merge(odysseyGuiU ? [odysseyGuiU] : []) as Record<string, THREE.IUniform>);
+    const material = new THREE.ShaderMaterial({
+      uniforms: odysseyGuiUniforms,
       vertexShader: ShaderManager.Shaders.get('odyssey-gui')?.getVertex(),
       fragmentShader: ShaderManager.Shaders.get('odyssey-gui')?.getFragment(),
       side: THREE.DoubleSide,
       transparent: true,
       fog: false,
-      visible: true
+      visible: true,
     });
-    
-    this.text.material.defines.BILLBOARD = '';
-    // this.text.material.defines.USE_SIZEATTENUATION = '';
-    this.text.material.uniforms.diffuse.value = this.text.color;
-    this.text.material.depthTest = false;
-    this.text.material.transparent = true;
-    this.text.mesh = new THREE.Mesh( this.text.geometry, this.text.material );
-    this.text.mesh.frustumCulled = false;
+    material.defines.BILLBOARD = '';
+    material.uniforms.diffuse.value = this.color;
+    material.depthTest = false;
+    material.transparent = true;
 
-    this.text.mesh.scale.setScalar(this.scale);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.frustumCulled = false;
+    mesh.scale.setScalar(this.scale);
 
-    TextureLoader.enQueue('fnt_console', this.text.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+    const texturePlaceholder: OdysseyTexture = {} as OdysseyTexture;
+    this.text = {
+      color: this.color,
+      font: '',
+      strref: -1,
+      text,
+      alignment: GUIControlAlignment.HorizontalCenter | GUIControlAlignment.VerticalCenter,
+      pulsing: 0,
+      geometry,
+      material,
+      mesh,
+      texture: texturePlaceholder,
+    };
+
+    TextureLoader.enQueue('fnt_console', material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
       this.guiFont = new GUIFont(texture);
       this.text.texture = texture;
-      this.text.material.transparent = true;
-      this.text.material.uniforms.alphaTest.value = 0;
-      this.text.material.uniformsNeedUpdate = true;
+      const mat: THREE.ShaderMaterial = this.text.material as THREE.ShaderMaterial;
+      mat.transparent = true;
+      mat.uniforms.alphaTest.value = 0;
+      mat.uniformsNeedUpdate = true;
       this.buildText();
       this.ready = true;
     });
-    
-    this.container.add(this.text.mesh);
+
+    this.container.add(this.text.mesh as THREE.Object3D);
   }
 
   setColor(color: THREE.Color){
@@ -143,18 +149,15 @@ export class TextSprite3D {
     }
 
     if(!this.ready) return;
-    
-    if(this.currentTimer <= 0){
+
+    const mat: THREE.ShaderMaterial = this.text.material as THREE.ShaderMaterial;
+    if (this.currentTimer <= 0) {
       this.currentTimer = 0;
       this.expired = true;
-      this.text.material.uniforms.opacity.value = 0;
-    }else{
-      // const speed = this.speed * delta;
-      // this.container.position.x += this.force.x * speed;
-      // this.container.position.y += this.force.y * speed;
-      // this.container.position.z += this.force.z * speed;
-      this.text.material.uniforms.opacity.value = (this.currentTimer/this.timer);
-      this.currentTimer -= (delta * 1000);
+      mat.uniforms.opacity.value = 0;
+    } else {
+      mat.uniforms.opacity.value = this.currentTimer / this.timer;
+      this.currentTimer -= delta * 1000;
     }
   }
 
@@ -164,18 +167,16 @@ export class TextSprite3D {
     area.attachTextSprite3D(this);
   }
 
-  buildText(){
-    let self = this;
-
-    if(!this.text.texture)
+  buildText(): void {
+    if (!this.text.texture)
       return;
 
-    if(this.text.mesh.parent)
-      this.text.mesh.parent.remove(this.text.mesh);
+    const mesh: THREE.Mesh = this.text.mesh as THREE.Mesh;
+    if (mesh.parent)
+      mesh.parent.remove(mesh);
+    this.container.add(mesh as THREE.Object3D);
 
-    this.container.add(this.text.mesh);
-    
-    let texture = this.text.texture;
+    const texture = this.text.texture;
 
     texture.flipY = false;
     texture.anisotropy = 1;
@@ -183,43 +184,45 @@ export class TextSprite3D {
     texture.magFilter = THREE.LinearFilter;
     texture.needsUpdate = true;
 
-    if(this.text.text != '' || (this.text.strref != 0 && typeof TLKManager.TLKStrings[this.text.strref] != 'undefined'))
-      this.updateTextGeometry(this.text.text != '' ? this.text.text : TLKManager.TLKStrings[this.text.strref].Value);
-    
-    this.text.geometry.computeBoundingSphere = function () {
+    if (this.text.text !== '' || (this.text.strref !== 0 && typeof TLKManager.TLKStrings[this.text.strref] !== 'undefined'))
+      this.updateTextGeometry(this.text.text !== '' ? this.text.text : TLKManager.TLKStrings[this.text.strref].Value);
+
+    const geometry: THREE.BufferGeometry = this.text.geometry as THREE.BufferGeometry;
+    geometryOwnerMap.set(geometry, this);
+
+    geometry.computeBoundingSphere = function computeBoundingSphere(this: THREE.BufferGeometry): void {
       if (this.boundingSphere === null) {
-        this.boundingSphere = new THREE.Sphere()
+        this.boundingSphere = new THREE.Sphere();
       }
-    
-      let positions = this.attributes.position.array
-      let itemSize = this.attributes.position.itemSize
-      if (!positions || !itemSize || positions.length < 2) {
-        this.boundingSphere.radius = 0
-        this.boundingSphere.center.set(0, 0, 0)
-        return
+      const positions = this.attributes.position?.array;
+      const attrItemSize = this.attributes.position?.itemSize;
+      if (!positions || attrItemSize === undefined || positions.length < 2) {
+        this.boundingSphere.radius = 0;
+        this.boundingSphere.center.set(0, 0, 0);
+        return;
       }
-      // this.computeSphere(positions, this.boundingSphere)
       if (isNaN(this.boundingSphere.radius)) {
-        console.error('THREE.BufferGeometry.computeBoundingSphere(): ' +
+        log.error('THREE.BufferGeometry.computeBoundingSphere(): ' +
           'Computed radius is NaN. The ' +
-          '"position" attribute is likely to have NaN values.')
+          '"position" attribute is likely to have NaN values.');
       }
-    }
-    
-    this.text.geometry.computeBoundingBox = function () {
+    };
+
+    geometry.computeBoundingBox = function computeBoundingBox(this: THREE.BufferGeometry): void {
       if (this.boundingBox === null) {
-        this.boundingBox = new THREE.Box3()
+        this.boundingBox = new THREE.Box3();
       }
-    
-      let bbox = this.boundingBox
-      let positions = this.attributes.position.array
-      let itemSize = this.attributes.position.itemSize
-      if (!positions || !itemSize || positions.length < 2) {
-        bbox.makeEmpty()
-        return
+      const bbox = this.boundingBox;
+      const positions = this.attributes.position?.array as Float32Array | undefined;
+      const attrItemSize = this.attributes.position?.itemSize;
+      if (!positions || attrItemSize === undefined || positions.length < 2) {
+        bbox.makeEmpty();
+        return;
       }
-      self.computeBox(positions, bbox)
-    }
+      const owner = geometryOwnerMap.get(this);
+      if (owner)
+        owner.computeBox(Array.from(positions), bbox);
+    };
 
     // this.text.geometry.computeBoundingBox();
     // this.text.geometry.computeBoundingSphere();
@@ -228,26 +231,25 @@ export class TextSprite3D {
     // this.text.mesh.position.x = -tSize.x/2;
   }
 
-  updateTextGeometry(text: string){
-    if(!(this.text.texture instanceof THREE.Texture))
+  updateTextGeometry(text: string): void {
+    if (!(this.text.texture instanceof THREE.Texture))
       return;
-
-    if(!this.guiFont)
+    if (!this.guiFont)
       return;
-    
-    this.guiFont.buildGeometry(this.text.geometry, text, this.text.alignment);
+    const geom: THREE.BufferGeometry = this.text.geometry as THREE.BufferGeometry;
+    this.guiFont.buildGeometry(geom, text, this.text.alignment);
   }
 
   bounds(positions: number[] = []) {
-    let count = positions.length / itemSize
+    const count = positions.length / itemSize
     box.min[0] = positions[0]
     box.min[1] = positions[1]
     box.max[0] = positions[0]
     box.max[1] = positions[1]
 
     for (let i = 0; i < count; i++) {
-      let x = positions[i * itemSize + 0]
-      let y = positions[i * itemSize + 1]
+      const x = positions[i * itemSize + 0]
+      const y = positions[i * itemSize + 1]
       box.min[0] = Math.min(x, box.min[0])
       box.min[1] = Math.min(y, box.min[1])
       box.max[0] = Math.max(x, box.max[0])
@@ -255,20 +257,23 @@ export class TextSprite3D {
     }
   }
 
-  computeBox(positions: number[] = [], output: THREE.Box3) {
-    this.bounds(positions)
-    output.min.set(box.min[0], box.min[1], 0)
-    output.max.set(box.max[0], box.max[1], 0)
+  computeBox(positions: number[] = [], output: THREE.Box3): void {
+    this.bounds(positions);
+    output.min.set(box.min[0], box.min[1], 0);
+    output.max.set(box.max[0], box.max[1], 0);
   }
-  
 
-  dispose(){
-    if(this.disposed) return;
+
+  dispose(): void {
+    if (this.disposed) return;
     this.disposed = true;
-
-    this.text.geometry.dispose();
-    this.text.material.dispose();
-    if(this.text.mesh) this.text.mesh.removeFromParent();
+    const geom: THREE.BufferGeometry = this.text.geometry as THREE.BufferGeometry;
+    const mesh: THREE.Mesh = this.text.mesh as THREE.Mesh;
+    geometryOwnerMap.delete(geom);
+    geom.dispose();
+    (this.text.material as THREE.ShaderMaterial).dispose();
+    if (mesh)
+      mesh.removeFromParent();
     this.container.removeFromParent();
   }
 

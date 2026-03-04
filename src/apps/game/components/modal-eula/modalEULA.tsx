@@ -1,16 +1,21 @@
 import React, { useEffect } from "react";
-import { KotORModal } from "../modal/modal";
-import { useApp } from "../../context/AppContext";
-import { EULA_VERSION, EULA_DATE, EULA } from "../../eula";
+
+import { KotORModal } from "@/apps/game/components/modal/modal";
+import { useApp } from "@/apps/game/context/AppContext";
+import { EULA_VERSION, EULA } from "@/apps/game/eula";
+import * as KotOR from "@/apps/KotOR";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 export const ModalEULA = () => {
   const appContext = useApp();
   const [appState] = appContext.appState;
   const [gameKey] = appContext.gameKey;
-  const [showEULAModal, setShowEULAModal] = appContext.showEULAModal;
+  const [showEULAModal] = appContext.showEULAModal;
 
   useEffect(() => {
-    
+
   }, []);
 
   const onCancel = () => {
@@ -19,24 +24,28 @@ export const ModalEULA = () => {
   }
 
   const onOk = () => {
-    console.log("onOk");
+    log.info("onOk EULA accepted");
     const gameEULAConfig = {
       key: gameKey,
       accepted: true,
       date: new Date().toISOString(),
       version: EULA_VERSION
     };
-    const eulaState: any = Object.assign({}, JSON.parse(window.localStorage.getItem('acceptEULA') as string));
+    const raw = window.localStorage.getItem('acceptEULA');
+    const eulaState: Record<string, { key: KotOR.GameEngineType; accepted: boolean; date: string; version: string }> = Object.assign(
+      {},
+      raw ? (JSON.parse(raw) as Record<string, { key: KotOR.GameEngineType; accepted: boolean; date: string; version: string }>) : {}
+    );
     eulaState[gameKey] = gameEULAConfig;
     window.localStorage.setItem('acceptEULA', JSON.stringify(eulaState));
     appState.acceptEULA();
   }
 
   return (
-    <KotORModal 
-      title="EULA" 
-      show={showEULAModal} 
-      onCancel={onCancel} 
+    <KotORModal
+      title="EULA"
+      show={showEULAModal}
+      onCancel={onCancel}
       onOk={onOk}
     >
       {<EULA />}

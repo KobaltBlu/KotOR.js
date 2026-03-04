@@ -1,19 +1,24 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
 import * as path from "path";
-import { CurrentGame } from "../engine/CurrentGame";
-import type { ModuleCreature, ModuleItem } from "../module";
-import { GameState } from "../GameState";
-import { BaseItemType } from "../enums/combat/BaseItemType";
-import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
-// import { PartyManager } from "./PartyManager";
+
+import { CurrentGame } from "@/engine/CurrentGame";
+import { BaseItemType } from "@/enums/combat/BaseItemType";
+import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleItem } from "@/module";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Manager);
+// import { PartyManager } from "@/managers/PartyManager";
 
 /**
  * InventoryManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InventoryManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -25,9 +30,9 @@ export class InventoryManager {
     if(!slot){
       return InventoryManager.inventory;
     }else{
-      let equippable = [];
+      const equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        let item = InventoryManager.inventory[i];
+        const item = InventoryManager.inventory[i];
         if( InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
           equippable.push(item);
         }
@@ -38,18 +43,18 @@ export class InventoryManager {
 
   static getNonQuestInventory( slot = 0, creature?: ModuleCreature ){
     if(!slot){
-      let equippable = [];
+      const equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        let item = InventoryManager.inventory[i];
+        const item = InventoryManager.inventory[i];
         if(!item.plot){
           equippable.push(item);
         }
       }
       return equippable;
     }else{
-      let equippable = [];
+      const equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        let item = InventoryManager.inventory[i];
+        const item = InventoryManager.inventory[i];
         if(InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
           equippable.push(item);
         }
@@ -60,18 +65,18 @@ export class InventoryManager {
 
   static getQuestInventory(slot = 0, creature?: ModuleCreature){
     if(!slot){
-      let equippable = [];
+      const equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        let item = InventoryManager.inventory[i];
+        const item = InventoryManager.inventory[i];
         if(item.plot){
           equippable.push(item);
         }
       }
       return equippable;
     }else{
-      let equippable = [];
+      const equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        let item = InventoryManager.inventory[i];
+        const item = InventoryManager.inventory[i];
         if(InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
           equippable.push(item);
         }
@@ -88,17 +93,17 @@ export class InventoryManager {
     // if(!(item instanceof ModuleItem) || !(creature instanceof ModuleCreature))
       // return false;
 
-    let droidorhuman = item.baseItem.droidOrHuman;
-    
+    const droidorhuman = item.baseItem.droidOrHuman;
+
     return !droidorhuman || (
       (droidorhuman == 1 && creature.getRace() == 6) ||
       (droidorhuman == 2 && creature.getRace() == 5)
     );
-    
+
   }
 
-  static isItemUsableInSlot( item: ModuleItem, slot: any ): boolean {
-    let baseItem = item.baseItem;
+  static isItemUsableInSlot(item: ModuleItem, slot: number): boolean {
+    const baseItem = item.baseItem;
     return (baseItem.equipableSlots & slot || baseItem.equipableSlots === slot) ? true : false;
   }
 
@@ -125,7 +130,7 @@ export class InventoryManager {
     }else{
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_RECEIVED);
       item.load();
-      let hasItem = InventoryManager.getItemByTag(item.getTag());
+      const hasItem = InventoryManager.getItemByTag(item.getTag());
       if(hasItem){
 
         if(!limitOne){
@@ -148,10 +153,10 @@ export class InventoryManager {
   }
 
   static removeItemByResRef(resRef = '', nCount = 1){
-    let item = InventoryManager.getItemByTag(resRef);
+    const item = InventoryManager.getItemByTag(resRef);
     if(item){
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_LOST);
-      let idx = InventoryManager.inventory.indexOf(item);
+      const idx = InventoryManager.inventory.indexOf(item);
       if(nCount < item.getStackSize()){
         item.setStackSize( (item.getStackSize() - nCount) || 1 );
       }else{
@@ -164,7 +169,7 @@ export class InventoryManager {
     if(typeof item === 'string'){
       InventoryManager.removeItemByResRef(item, nCount);
     }else if(item instanceof GameState.Module.ModuleArea.ModuleItem){
-      let idx = InventoryManager.inventory.indexOf(item);
+      const idx = InventoryManager.inventory.indexOf(item);
       if(idx >= 0){
         GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_LOST);
         if(nCount >= item.getStackSize()){
@@ -176,49 +181,51 @@ export class InventoryManager {
         //Item not in inventory
       }
     }else{
-      console.warn('InventoryManager.removeItem() unknown item', item, nCount);
+      log.warn('InventoryManager.removeItem() unknown item nCount=%s', String(nCount), item);
     }
   }
 
   static getItemByTag(sTag = ''){
     for(let i = 0; i < InventoryManager.inventory.length; i++){
-      let item = InventoryManager.inventory[i];
+      const item = InventoryManager.inventory[i];
       if(item.getTag().toLowerCase() == sTag.toLowerCase())
         return item;
     }
     return false;
   }
 
-  static itemFromJSON(json: any = {}){
-    let item: any = {};
-    let props = json.fields;
-    for(let fieldName in props){
-      let field = props[fieldName];
-      if(field.type == 15){
-        item[fieldName] = [];
-        for(let i = 0; i < field.structs.length; i++){
-          item[fieldName].push(InventoryManager.itemFromJSON(field.structs[i]));
+  static itemFromJSON(json: { fields?: Record<string, { type?: number; value?: unknown; structs?: unknown[] }> } = {}): Record<string, unknown> {
+    const item: Record<string, unknown> = {};
+    const props = json.fields ?? {};
+    for (const fieldName in props) {
+      const field = props[fieldName];
+      if (field?.type === 15 && Array.isArray(field.structs)) {
+        const arr: unknown[] = [];
+        for (let i = 0; i < field.structs.length; i++) {
+          arr.push(InventoryManager.itemFromJSON(field.structs[i] as { fields?: Record<string, { type?: number; value?: unknown; structs?: unknown[] }> }));
         }
-      }else{
-        item[fieldName] = field.value;
+        item[fieldName] = arr;
+      } else {
+        item[fieldName] = field?.value;
       }
     }
     return item;
   }
 
   static Save(){
-    return new Promise( async (resolve, reject) => {
-      //console.log('InventoryManager.Save()', 'Exporting...');
-      let gff = new GFFObject();
+    return new Promise((resolve, _reject) => {
+      //log.info('InventoryManager.Save()', 'Exporting...');
+      const gff = new GFFObject();
       gff.FileType = 'INV ';
 
-      let itemList = gff.RootNode.addField( new GFFField( GFFDataType.LIST, 'ItemList' ));
+      const itemList = gff.RootNode.addField( new GFFField( GFFDataType.LIST, 'ItemList' ));
       for(let i = 0; i < InventoryManager.inventory.length; i++){
         itemList.addChildStruct( InventoryManager.inventory[i].save() );
       }
 
-      await gff.export( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res') );
-      resolve(gff);
+      gff.export( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res') ).then(() => {
+        resolve(gff);
+      });
     });
   }
 

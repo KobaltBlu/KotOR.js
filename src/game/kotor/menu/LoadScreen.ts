@@ -1,13 +1,17 @@
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu } from "../../../gui";
-import type { GUILabel, GUIProgressBar } from "../../../gui";
+import * as THREE from "three";
+
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUILabel, GUIProgressBar } from "@/gui";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger } from "@/utility/Logger";
 
 /**
  * LoadScreen class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LoadScreen.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -19,7 +23,9 @@ export class LoadScreen extends GameMenu {
   LBL_HINT: GUILabel;
   LBL_LOGO: GUILabel;
   LBL_LOADING: GUILabel;
-  defaultTex: any;
+  defaultTex: THREE.Texture | null = null;
+
+  private static readonly log = createScopedLogger(LoadScreen.name);
 
   constructor(){
     super();
@@ -31,9 +37,9 @@ export class LoadScreen extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LBL_HINT.visible = false;
-      (this.defaultTex = this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value;
+      this.defaultTex = this.tGuiPanel.getFill().material as THREE.ShaderMaterial;
       resolve();
     });
   }
@@ -42,41 +48,36 @@ export class LoadScreen extends GameMenu {
     this.PB_PROGRESS.setProgress(val);
   }
 
-  setLoadBackground(resref: string): Promise<boolean> {
-    return new Promise<boolean>( async (resolve, reject) => {
-      if (resref) {
-        const texture = await this.loadTexture(resref);
-        if (texture) {
-          (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = texture;
-          resolve(true);
-          return;
-        } else {
-          const default_texture = await this.loadTexture('load_default');
-          if(default_texture){
-            (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex = default_texture;
-            resolve(true);
-            return;
-          }else{
-            resolve(true);
-            return;
-          }
-        }
-      } else {
-        resolve(false);
-        return;
-      }
-    });
+  async setLoadBackground(resref: string): Promise<boolean> {
+    if (!resref) {
+      return false;
+    }
+
+    const texture = await this.loadTexture(resref);
+    if (texture) {
+      (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = texture;
+      return true;
+    }
+
+    const default_texture = await this.loadTexture('load_default');
+    if (default_texture) {
+      (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex = default_texture;
+    }
+    return true;
   }
 
   showRandomHint() {
     this.LBL_LOADING.setText(GameState.TLKManager.TLKStrings[42493].Value);
-    let id = Math.floor(Math.random() * (GameState.TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
-    let hint = GameState.TwoDAManager.datatables.get('loadscreenhints').rows[id];
+    const table = GameState.TwoDAManager.datatables.get('loadscreenhints');
+    const rowCount = table.RowCount ?? 0;
+    const id = Math.floor(Math.random() * (rowCount - 0 + 1)) + 0;
+    let hint: ITwoDARowData | undefined = table.rows[String(id)];
     if (!hint) {
-      console.log('showRandomHint', id);
-      hint = GameState.TwoDAManager.datatables.get('loadscreenhints').rows[0];
+      LoadScreen.log.info('showRandomHint fallback', id);
+      hint = table.rows['0'];
     }
-    this.LBL_HINT.setText(GameState.TLKManager.TLKStrings[hint.gameplayhint].Value);
+    const hintRef = hint?.gameplayhint;
+    this.LBL_HINT.setText(GameState.TLKManager.TLKStrings[typeof hintRef === 'number' ? hintRef : 0].Value);
   }
 
   showSavingMessage() {
@@ -100,5 +101,5 @@ export class LoadScreen extends GameMenu {
     GameState.FadeOverlayManager.plane.visible = true;
     this.setProgress(0);
   }
-  
+
 }

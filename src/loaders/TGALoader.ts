@@ -1,10 +1,14 @@
 import * as path from "path";
-import { ResourceLoader } from "./ResourceLoader";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { TXI } from "../resource/TXI";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import type { TextureLoader } from "./TextureLoader";
-import { GameFileSystem } from "../utility/GameFileSystem";
+
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import type { TextureLoader } from "@/loaders/TextureLoader";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TXI } from "@/resource/TXI";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Loader);
 
 /**
  * TGALoader class.
@@ -21,11 +25,28 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  * @author takahirox / https://github.com/takahirox/
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+
+/** TGA header structure as parsed from file buffer. */
+interface TGAParseHeader {
+	id_length: number;
+	colormap_type: number;
+	image_type: number;
+	colormap_index: number;
+	colormap_length: number;
+	colormap_size: number;
+	origin: number[];
+	width: number;
+	height: number;
+	pixel_size: number;
+	flags: number;
+}
+
 export class TGALoader {
 
 	static TextureLoader: typeof TextureLoader;
 
 	async fetch( resRef: string ): Promise<OdysseyTexture> {
+		log.trace("fetch", resRef);
 		const texture = new OdysseyTexture();
 		
 		try{
@@ -52,12 +73,10 @@ export class TGALoader {
 				}
 
 				return texture;
-			}catch(e){
-				// console.error(e);
+			}catch{
 				return texture;
 			}
-		}catch(e){
-			// console.error(e);
+		}catch{
 			return undefined;
 		}
 	}
@@ -65,80 +84,54 @@ export class TGALoader {
 	async fetchOverride ( name: string ): Promise<OdysseyTexture> {
 		const dir = path.join('Override');
 		const texture = new OdysseyTexture();
-	
-		try{
-			const buffer = await GameFileSystem.readFile(path.join(dir, name)+'.tga');
 
-			texture.image = this.parse( buffer, name );
-			texture.needsUpdate = true;
-			texture.name = name;
-			texture.bumpMapType = 'BUMP';
-			texture.generateMipmaps = true;
-			texture.txi = new TXI('');
+		const buffer = await GameFileSystem.readFile(path.join(dir, name)+'.tga');
 
-			const txiBuffer = await GameFileSystem.readFile(path.join(dir, name)+'.txi');
+		texture.image = this.parse( buffer, name );
+		texture.needsUpdate = true;
+		texture.name = name;
+		texture.bumpMapType = 'BUMP';
+		texture.generateMipmaps = true;
+		texture.txi = new TXI('');
 
-			const tpcCheck = await TGALoader.TextureLoader.tpcLoader.fetch(name);
+		await GameFileSystem.readFile(path.join(dir, name)+'.txi');
 
-			if(tpcCheck){
-				texture.txi = tpcCheck.txi;
-				return texture;
-			}else{
-				texture.txi = new TXI('');
-				return texture;
-			}
-		}catch(e){
-			// console.error(e);
-			throw e;
+		const tpcCheck = await TGALoader.TextureLoader.tpcLoader.fetch(name);
+
+		if(tpcCheck){
+			texture.txi = tpcCheck.txi;
+			return texture;
 		}
+		texture.txi = new TXI('');
+		return texture;
 	}
 	
 	async fetchLocal( resRef: string ) {
+		log.trace("fetchLocal", resRef);
 		const texture = new OdysseyTexture();
-	
+
+		const buffer = await GameFileSystem.readFile(resRef);
+		texture.image = this.parse( buffer, resRef );
+		texture.needsUpdate = true;
+		texture.name = resRef;
+		texture.bumpMapType = 'BUMP';
+		texture.generateMipmaps = true;
+
 		try{
-			const buffer = await GameFileSystem.readFile(resRef);
-			texture.image = this.parse( buffer, resRef );
-			texture.needsUpdate = true;
-			texture.name = resRef;
-			texture.bumpMapType = 'BUMP';
-			texture.generateMipmaps = true;
-	
-			//fs.readFile(path.join(dir, name)+'.txi', (err, txiBuffer) => {
-	
-				//if(err){
-			
-				try{
-					const tpcCheck = await TGALoader.TextureLoader.tpcLoader.fetch(resRef);
-	
-					/*if(tpcCheck){
-						texture.txi = tpcCheck.txi;
-						onLoad( texture );
-					}else{*/
-						texture.txi = new TXI('');
-					//}
-				}catch(e){
-
-				}
-
-				/*}else{
-					texture.txi = new TXI(txiBuffer);
-					if(typeof onLoad == 'function')
-						onLoad( texture );
-				}*/
-	
-			//});
-			return texture;
-		}catch(e){
-			throw e;
+			const _tpcCheck = await TGALoader.TextureLoader.tpcLoader.fetch(resRef);
+			texture.txi = new TXI('');
+		}catch{
+			// ignore TXI fetch failure
 		}
+
+		return texture;
 	}
 
 	// reference from vthibault, https://github.com/vthibault/roBrowser/blob/master/src/Loaders/Targa.js
-	parse( buffer: Uint8Array, name: string ) {
+	parse( buffer: Uint8Array, _name: string ) {
 
 		// TGA Constants
-		let TGA_TYPE_NO_DATA = 0,
+		const TGA_TYPE_NO_DATA = 0,
 		TGA_TYPE_INDEXED = 1,
 		TGA_TYPE_RGB = 2,
 		TGA_TYPE_GREY = 3,
@@ -155,11 +148,11 @@ export class TGALoader {
 
 
 		if ( buffer.length < 19 )
-			console.error( 'THREE.TGALoader.parse: Not enough data to contain header.' );
+			log.error( 'THREE.TGALoader.parse: Not enough data to contain header.' );
 
-		let content = new Uint8Array( buffer ),
-			offset = 0,
-			header = {
+		const content = new Uint8Array( buffer );
+		let offset = 0;
+		const header = {
 				id_length:       content[ offset ++ ],
 				colormap_type:   content[ offset ++ ],
 				image_type:      content[ offset ++ ],
@@ -177,7 +170,7 @@ export class TGALoader {
 				flags:      content[ offset ++ ]
 			};
 
-		function tgaCheckHeader( header: any ) {
+		function tgaCheckHeader( header: TGAParseHeader ) {
 
 			switch ( header.image_type ) {
 
@@ -186,7 +179,7 @@ export class TGALoader {
 				case TGA_TYPE_RLE_INDEXED:
 					if ( header.colormap_length > 256 || header.colormap_size !== 24 || header.colormap_type !== 1 ) {
 
-						console.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid type colormap data for indexed type' );
+						log.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid type colormap data for indexed type' );
 
 					}
 					break;
@@ -198,25 +191,26 @@ export class TGALoader {
 				case TGA_TYPE_RLE_GREY:
 					if ( header.colormap_type ) {
 
-						console.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid type colormap data for colormap type' );
+						log.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid type colormap data for colormap type' );
 
 					}
 					break;
 
 				// What the need of a file without data ?
 				case TGA_TYPE_NO_DATA:
-					console.error( 'THREE.TGALoader.parse.tgaCheckHeader: No data' );
+					log.error( 'THREE.TGALoader.parse.tgaCheckHeader: No data' );
+					break;
 
 				// Invalid type ?
 				default:
-					console.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid type " ' + header.image_type + '"' );
+					log.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid type " ' + header.image_type + '"' );
 
 			}
 
 			// Check image width and height
 			if ( header.width <= 0 || header.height <= 0 ) {
 
-				console.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid image size' );
+				log.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid image size' );
 
 			}
 
@@ -226,7 +220,7 @@ export class TGALoader {
 				header.pixel_size !== 24 &&
 				header.pixel_size !== 32 ) {
 
-				console.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid pixel size "' + header.pixel_size + '"' );
+				log.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid pixel size "' + header.pixel_size + '"' );
 
 			}
 
@@ -237,7 +231,7 @@ export class TGALoader {
 
 		if ( header.id_length + offset > buffer.length ) {
 
-			console.error( 'THREE.TGALoader.parse: No data' );
+			log.error( 'THREE.TGALoader.parse: No data' );
 
 		}
 
@@ -279,15 +273,11 @@ export class TGALoader {
 		}
 
 		// Parse tga image buffer
-		function tgaParse( use_rle: any, use_pal: any, header: any, offset: any, data: any, face = 0 ) {
+		function tgaParse( use_rle: boolean, use_pal: boolean, header: TGAParseHeader, offset: number, data: Uint8Array, face = 0 ) {
 
-			let pixel_data,
-				pixel_size,
-				pixel_total,
-				palettes;
-
-			pixel_size = header.pixel_size >> 3;
-			pixel_total = header.width * header.height * pixel_size;
+			let pixel_data, palettes;
+			const pixel_size = header.pixel_size >> 3;
+			const pixel_total = header.width * header.height * pixel_size;
 
 			offset += (pixel_total * face);
 
@@ -305,7 +295,7 @@ export class TGALoader {
 
 				let c, count, i;
 				let shift = 0;
-				let pixels = new Uint8Array( pixel_size );
+				const pixels = new Uint8Array( pixel_size );
 
 				while ( shift < pixel_total ) {
 
@@ -362,11 +352,11 @@ export class TGALoader {
 
 		}
 
-		function tgaGetImageData8bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any, palettes: any ) {
+		function tgaGetImageData8bits( imageData: Uint8ClampedArray, y_start: number, y_step: number, y_end: number, x_start: number, x_step: number, x_end: number, image: Uint8Array, palettes: Uint8Array ) {
 
-			let colormap = palettes;
+			const colormap = palettes;
 			let color, i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -386,10 +376,10 @@ export class TGALoader {
 
 		}
 
-		function tgaGetImageData16bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any ) {
+		function tgaGetImageData16bits( imageData: Uint8ClampedArray, y_start: number, y_step: number, y_end: number, x_start: number, x_step: number, x_end: number, image: Uint8Array ) {
 
 			let color, i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -409,10 +399,10 @@ export class TGALoader {
 
 		}
 
-		function tgaGetImageData24bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any ) {
+		function tgaGetImageData24bits( imageData: Uint8ClampedArray, y_start: number, y_step: number, y_end: number, x_start: number, x_step: number, x_end: number, image: Uint8Array ) {
 
 			let i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -431,10 +421,10 @@ export class TGALoader {
 
 		}
 
-		function tgaGetImageData32bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any ) {
+		function tgaGetImageData32bits( imageData: Uint8ClampedArray, y_start: number, y_step: number, y_end: number, x_start: number, x_step: number, x_end: number, image: Uint8Array ) {
 
 			let i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -453,10 +443,10 @@ export class TGALoader {
 
 		}
 
-		function tgaGetImageDataGrey8bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any ) {
+		function tgaGetImageDataGrey8bits( imageData: Uint8ClampedArray, y_start: number, y_step: number, y_end: number, x_start: number, x_step: number, x_end: number, image: Uint8Array ) {
 
 			let color, i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -476,10 +466,10 @@ export class TGALoader {
 
 		}
 
-		function tgaGetImageDataGrey16bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any ) {
+		function tgaGetImageDataGrey16bits( imageData: Uint8ClampedArray, y_start: number, y_step: number, y_end: number, x_start: number, x_step: number, x_end: number, image: Uint8Array ) {
 
 			let i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -498,7 +488,7 @@ export class TGALoader {
 
 		}
 
-		function getTgaRGBA( data: any, width: any, height: any, image: any, palette: any ) {
+		function getTgaRGBA( data: Uint8ClampedArray, width: number, height: number, image: Uint8Array, palette: Uint8Array | undefined ) {
 
 			let x_start,
 				y_start,
@@ -557,7 +547,7 @@ export class TGALoader {
 						tgaGetImageDataGrey16bits( data, y_start, y_step, y_end, x_start, x_step, x_end, image );
 						break;
 					default:
-						console.error( 'THREE.TGALoader.parse.getTgaRGBA: not support this format' );
+						log.error( 'THREE.TGALoader.parse.getTgaRGBA: not support this format' );
 						break;
 				}
 
@@ -581,7 +571,7 @@ export class TGALoader {
 						break;
 
 					default:
-						console.error( 'THREE.TGALoader.parse.getTgaRGBA: not support this format' );
+						log.error( 'THREE.TGALoader.parse.getTgaRGBA: not support this format' );
 						break;
 				}
 
@@ -595,34 +585,34 @@ export class TGALoader {
 		}
 
 		let canvas: HTMLCanvasElement;
-		let faces = (header.height / header.width) == 6 ? 6 : 1;
+		const faces = (header.height / header.width) == 6 ? 6 : 1;
 
 		if(faces == 1){
 			canvas = document.createElement( 'canvas' );
 			canvas.width = header.width;
 			canvas.height = header.height;
 
-			let context = canvas.getContext( '2d' );
-			let imageData = context.createImageData( header.width, header.height );
+			const context = canvas.getContext( '2d' );
+			const imageData = context.createImageData( header.width, header.height );
 
-			let result = tgaParse( use_rle, use_pal, header, offset, content, 0 );
-			let rgbaData = getTgaRGBA( imageData.data, header.width, header.height, result.pixel_data, result.palettes );
+			const result = tgaParse( use_rle, use_pal, header, offset, content, 0 );
+			const _rgbaData = getTgaRGBA( imageData.data, header.width, header.height, result.pixel_data, result.palettes );
 
 			context.putImageData( imageData, 0, 0 );
 			return canvas;
 		}
 
-		let canvases = [];
+		const canvases = [];
 		for(let i = 0; i < faces; i++){
 			canvas = document.createElement( 'canvas' );
 			canvas.width = header.width;
 			canvas.height = header.width;
 			header.height = header.width;
 
-			let context = canvas.getContext( '2d' );
-			let imageData = context.createImageData( header.width, header.width );
-			let result = tgaParse( use_rle, use_pal, header, offset, content, i );
-			let rgbaData = getTgaRGBA( imageData.data, header.width, header.width, result.pixel_data, result.palettes );
+			const context = canvas.getContext( '2d' );
+			const imageData = context.createImageData( header.width, header.width );
+			const result = tgaParse( use_rle, use_pal, header, offset, content, i );
+			const _rgbaData = getTgaRGBA( imageData.data, header.width, header.width, result.pixel_data, result.palettes );
 
 			context.putImageData( imageData, 0, 0 );
 

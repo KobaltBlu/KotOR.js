@@ -13,6 +13,12 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+/** Video frame data passed to updateFrame (e.g. from WebCodecs VideoFrame). */
+export interface BIKVideoFrameData {
+  linesize: number[];
+  data: ArrayBuffer[];
+}
+
 export class BIKObject {
   file: string;
   width: number;

@@ -1,39 +1,72 @@
 import * as THREE from "three";
-import { Anchor } from "../enums/gui/Anchor";
-import { GUIControlAlignment } from "../enums/gui/GUIControlAlignment";
-import { IDPadTarget } from "../interface/gui/IDPadTarget";
-import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
-import { IGUIControlEventListeners } from "../interface/gui/IGUIControlEventListeners";
-import { IGUIControlExtent } from "../interface/gui/IGUIControlExtent";
-import { IGUIControlMoveTo } from "../interface/gui/IGUIControlMoveTo";
-import { IGUIControlText } from "../interface/gui/IGUIControlText";
-import { GFFStruct } from "../resource/GFFStruct";
-import { GameState } from "../GameState";
-import { TextureLoader } from "../loaders";
-import { TextureType } from "../enums/loaders/TextureType";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GameEngineType } from "../enums/engine";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { KeyMapper, Mouse } from "../controls";
-import { IGUIControlColors } from "../interface/gui/IGUIControlColors";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GUIControlEventFactory } from "./GUIControlEventFactory";
-import type { GameMenu } from "./GameMenu";
-import { BitWise } from "../utility/BitWise";
-import { GUIListBox } from "./GUIListBox";
-import { GUIFont } from "./GUIFont";
-import { GUIControlEvent } from "./GUIControlEvent";
-import { GUIControlType } from "../enums/gui/GUIControlType";
-import { KeyMapAction } from "../enums/controls/KeyMapAction";
+
+import { KeyMapper, Mouse } from "@/controls";
+import { KeyMapAction } from "@/enums/controls/KeyMapAction";
+import { GameEngineType } from "@/enums/engine";
+import { Anchor } from "@/enums/gui/Anchor";
+import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GameState } from "@/GameState";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControlEvent, type GUIControlEventData } from "@/gui/GUIControlEvent";
+import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
+import { GUIFont } from "@/gui/GUIFont";
+import { GUIListBox } from "@/gui/GUIListBox";
+import { IDPadTarget } from "@/interface/gui/IDPadTarget";
+import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
+import { IGUIControlColors } from "@/interface/gui/IGUIControlColors";
+import { IGUIControlEventListeners } from "@/interface/gui/IGUIControlEventListeners";
+import { IGUIControlExtent } from "@/interface/gui/IGUIControlExtent";
+import type { IGUIControlListNode } from "@/interface/gui/IGUIControlListNode";
+import { IGUIControlMoveTo } from "@/interface/gui/IGUIControlMoveTo";
+import { IGUIControlText } from "@/interface/gui/IGUIControlText";
+import type { IGUIShaderMaterial } from "@/interface/gui/IGUIShaderMaterial";
+import { TextureLoader } from "@/loaders";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+
+const log = createScopedLogger(LogScope.Game);
+const mergeBufferGeometries = BufferGeometryUtils.mergeBufferGeometries as (
+  geometries: THREE.BufferGeometry[],
+  useGroups?: boolean
+) => THREE.BufferGeometry | null;
+
+/** Duck-typed source for control init (GFFStruct or plain object with same shape). */
+interface IGUIControlInitSource {
+  hasField?(label: string): boolean;
+  getFieldByLabel?(label: string): unknown;
+  [key: string]: unknown;
+}
+interface IGUIControlFieldLike { getValue(): unknown }
+interface IGUIControlVectorLike { getVector(): THREE.Vector3 }
+interface IGUIControlStructLike { hasField?(label: string): boolean; getFieldByLabel?(label: string): unknown; getChildStructs?(): unknown[] }
+interface IGUIColorVectorLike { x: number; y: number; z: number }
+interface IGUIWidgetUserData {
+  control?: GUIControl;
+  border?: THREE.Group;
+  highlight?: THREE.Group;
+  fill?: THREE.Group;
+  text?: THREE.Group;
+  selected?: THREE.Group;
+  highlightSelected?: THREE.Group;
+  [key: string]: unknown;
+}
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
 
 /**
  * GUIControl class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIControl.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -43,14 +76,15 @@ export class GUIControl {
   position: THREE.Vector3 = new THREE.Vector3();
   list: GUIListBox;
   isProtoItem: boolean;
-  node: any;
+  /** List item payload (e.g. ModuleItem or string); set by GUIListBox. */
+  node: IGUIControlListNode | string | undefined;
   visible: boolean = true;
   keymapAction: KeyMapAction;
 
   calculateBox() {
     return;
   }
-  
+
   static COLORS: IGUIControlColors = {
     BORDER: new THREE.Color(1, 1, 1),
     BORDER_HOVER: new THREE.Color(1, 1, 1),
@@ -88,13 +122,13 @@ export class GUIControl {
   zIndex: number = 0;
 
   eventListeners: IGUIControlEventListeners = {
-    click:      [],
-    mouseIn:    [],
-    mouseOut:   [],
-    mouseDown:  [],
-    mouseMove:  [],
-    mouseUp:    [],
-    hover:      []
+    click: [],
+    mouseIn: [],
+    mouseOut: [],
+    mouseDown: [],
+    mouseMove: [],
+    mouseUp: [],
+    hover: []
   };
 
   defaultColor: THREE.Color;
@@ -103,15 +137,15 @@ export class GUIControl {
   allowClick: boolean = true;
   disableSelection: boolean = false;
 
-  onClick?: Function;
-  onMouseMove?: Function;
-  onMouseDown?: Function;
-  onMouseUp?: Function;
-  onMouseIn?: Function;
-  onMouseOut?: Function;
-  onDrag?: Function;
-  onDragEnd?: Function;
-  onHover?: Function;
+  onClick?: (e: GUIControlEvent) => void;
+  onMouseMove?: (e: GUIControlEvent) => void;
+  onMouseDown?: (e: GUIControlEvent) => void;
+  onMouseUp?: (e: GUIControlEvent) => void;
+  onMouseIn?: (e: GUIControlEvent) => void;
+  onMouseOut?: (e: GUIControlEvent) => void;
+  onDrag?: (e: GUIControlEvent) => void;
+  onDragEnd?: (e: GUIControlEvent) => void;
+  onHover?: (e: GUIControlEvent) => void;
 
   onKeyUp?: (e: KeyboardEvent) => void;
   onKeyDown?: (e: KeyboardEvent) => void;
@@ -147,8 +181,8 @@ export class GUIControl {
   objectParent: number;
   objectLocked: number;
   type: number;
-  hasHighlight: any;
-  hasMoveTo: any;
+  hasHighlight: boolean;
+  hasMoveTo: boolean;
   borderEnabled: boolean;
   borderFillEnabled: boolean;
   highlightEnabled: boolean;
@@ -157,11 +191,32 @@ export class GUIControl {
   anchorOffset: THREE.Vector2 = new THREE.Vector2(0, 0);
   editable: boolean;
   selected: boolean;
-  onSelect: Function;
+  onSelect?: () => void;
 
-  userData: any = {};
-  
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl|undefined, scale: boolean = false){
+  userData: Record<string, unknown> = {};
+
+  private getWidgetUserData(): IGUIWidgetUserData {
+    return this.widget.userData as IGUIWidgetUserData;
+  }
+
+  private getWidgetGroup(groupName: 'border' | 'highlight' | 'fill' | 'text'): THREE.Group {
+    const widgetUserData = this.getWidgetUserData();
+    const existingGroup = widgetUserData[groupName];
+    if (existingGroup instanceof THREE.Group) {
+      return existingGroup;
+    }
+
+    const createdGroup = new THREE.Group();
+    widgetUserData[groupName] = createdGroup;
+    this.widget.add(createdGroup);
+    return createdGroup;
+  }
+
+  private getBorderChild(index: number): THREE.Object3D | undefined {
+    return this.getWidgetGroup('border').children[index];
+  }
+
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl | undefined, scale: boolean = false) {
 
     this.menu = menu;
     this.control = control;
@@ -171,7 +226,8 @@ export class GUIControl {
     this.offset = new THREE.Vector2();
 
     this.widget = new THREE.Group();
-    this.widget.userData.control = this;
+    const widgetUserData = this.getWidgetUserData();
+    widgetUserData.control = this;
 
     this.worldPosition = new THREE.Vector3();
     this.box = new THREE.Box2(
@@ -188,7 +244,7 @@ export class GUIControl {
     this.defaultColor = new THREE.Color(0.0, 0.658824, 0.980392);
     this.defaultHighlightColor = new THREE.Color(1, 1, 0);
 
-    if(GameState.GameKey == GameEngineType.TSL){
+    if (GameState.GameKey == GameEngineType.TSL) {
       this.defaultColor = new THREE.Color(0.10196078568697, 0.69803923368454, 0.549019634723663);
       this.defaultHighlightColor = new THREE.Color(0.800000011920929, 0.800000011920929, 0.6980392336845398);
     }
@@ -200,15 +256,15 @@ export class GUIControl {
     this.opacity = 1;
     this.hover = false;
 
-    this.widget.userData.border = new THREE.Group();
-    this.widget.userData.highlight = new THREE.Group();
-    this.widget.userData.fill = new THREE.Group();
-    this.widget.userData.text = new THREE.Group();
+    widgetUserData.border = new THREE.Group();
+    widgetUserData.highlight = new THREE.Group();
+    widgetUserData.fill = new THREE.Group();
+    widgetUserData.text = new THREE.Group();
 
-    this.widget.add(this.widget.userData.border);
-    this.widget.add(this.widget.userData.highlight);
-    this.widget.add(this.widget.userData.fill);
-    this.widget.add(this.widget.userData.text);
+    this.widget.add(widgetUserData.border);
+    this.widget.add(widgetUserData.highlight);
+    this.widget.add(widgetUserData.fill);
+    this.widget.add(widgetUserData.text);
 
     this.initObjects();
     this.initInputListeners();
@@ -217,7 +273,7 @@ export class GUIControl {
 
   }
 
-  initObjects(){
+  initObjects() {
     //--------//
     // Extent
     //--------//
@@ -255,7 +311,7 @@ export class GUIControl {
     };
 
     this.border.geometry = new THREE.BufferGeometry();
-    
+
     this.border.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -284,13 +340,13 @@ export class GUIControl {
     //this.border.corner_material.defines.USE_MAP = '';
     this.border.corner_material.uniforms.diffuse.value = this.border.color;
 
-    this.border.mesh = new THREE.Mesh( this.border.geometry, [this.border.edge_material, this.border.corner_material] );
-    this.widget.userData.border.add(this.border.mesh);
+    this.border.mesh = new THREE.Mesh(this.border.geometry, [this.border.edge_material, this.border.corner_material]);
+    this.getWidgetGroup('border').add(this.border.mesh);
 
     //-------------//
     // Border Fill
     //-------------//
-    
+
     this.border.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -304,10 +360,10 @@ export class GUIControl {
     //this.border.fill.material.defines.USE_UV = '';
     //this.border.fill.material.defines.USE_MAP = '';
     this.border.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
-    this.border.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 ) as THREE.BufferGeometry;
-    this.border.fill.mesh = new THREE.Mesh( this.border.fill.geometry, this.border.fill.material );
+    this.border.fill.geometry = new THREE.PlaneGeometry(1, 1, 1) as THREE.BufferGeometry;
+    this.border.fill.mesh = new THREE.Mesh(this.border.fill.geometry, this.border.fill.material);
 
-    this.widget.userData.border.add( this.border.fill.mesh );
+    this.getWidgetGroup('border').add(this.border.fill.mesh);
 
     //-----------//
     // Highlight
@@ -362,13 +418,13 @@ export class GUIControl {
     //this.highlight.corner_material.defines.USE_MAP = '';
     this.highlight.corner_material.uniforms.diffuse.value = this.highlight.color;
 
-    this.highlight.mesh = new THREE.Mesh( this.highlight.geometry, [this.highlight.edge_material, this.highlight.corner_material] );
-    this.widget.userData.highlight.add(this.highlight.mesh);
+    this.highlight.mesh = new THREE.Mesh(this.highlight.geometry, [this.highlight.edge_material, this.highlight.corner_material]);
+    this.getWidgetGroup('highlight').add(this.highlight.mesh);
 
     //----------------//
     // Highlight Fill
     //----------------//
-    
+
     this.highlight.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
@@ -381,10 +437,10 @@ export class GUIControl {
     });
     //this.highlight.fill.material.defines.USE_MAP = '';
     this.highlight.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
-    this.highlight.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-    this.highlight.fill.mesh = new THREE.Mesh( this.highlight.fill.geometry, this.highlight.fill.material );
+    this.highlight.fill.geometry = new THREE.PlaneGeometry(1, 1, 1);
+    this.highlight.fill.mesh = new THREE.Mesh(this.highlight.fill.geometry, this.highlight.fill.material);
 
-    this.widget.userData.highlight.add( this.highlight.fill.mesh );
+    this.getWidgetGroup('highlight').add(this.highlight.fill.mesh);
 
     //------//
     // Text
@@ -404,12 +460,12 @@ export class GUIControl {
     };
 
     this.text.geometry = new THREE.BufferGeometry();
-    this.text.geometry.index = new THREE.BufferAttribute( new Uint16Array(), 1 ).setUsage( THREE.StaticDrawUsage );
+    this.text.geometry.index = new THREE.BufferAttribute(new Uint16Array(), 1).setUsage(THREE.StaticDrawUsage);
 
-    let posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
-    let uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
-    this.text.geometry.setAttribute( 'position', posAttribute );
-    this.text.geometry.setAttribute( 'uv', uvAttribute );
+    const posAttribute = new THREE.BufferAttribute(new Float32Array(), 2).setUsage(THREE.StaticDrawUsage);
+    const uvAttribute = new THREE.BufferAttribute(new Float32Array(), 2).setUsage(THREE.StaticDrawUsage);
+    this.text.geometry.setAttribute('position', posAttribute);
+    this.text.geometry.setAttribute('uv', uvAttribute);
 
     this.text.geometry.index.needsUpdate = true;
     this.text.geometry.attributes.position.needsUpdate = true;
@@ -429,7 +485,7 @@ export class GUIControl {
     //this.text.material.defines.USE_MAP = '';
     this.text.material.uniforms.diffuse.value = this.text.color;
     //new THREE.MeshBasicMaterial({color: this.text.color, side: THREE.DoubleSide, transparent: true});
-    this.text.mesh = new THREE.Mesh( this.text.geometry, this.text.material );
+    this.text.mesh = new THREE.Mesh(this.text.geometry, this.text.material);
     this.text.mesh.frustumCulled = false;
     //this.widget.userData.text.add(this.text.mesh);
 
@@ -445,85 +501,85 @@ export class GUIControl {
     };
   }
 
-  setList(list: GUIListBox){
+  setList(list: GUIListBox) {
     this.list = list;
   }
 
-  initInputListeners(){
+  initInputListeners() {
     //---------//
     //  Border
     //---------//
 
-    if(this.border.mesh){
+    if (this.border.mesh) {
       this.border.mesh.name = 'GUIBorder';
       this.border.mesh.position.z = this.zOffset;
-      this.attachEventListenters( this.border.mesh );
+      this.attachEventListenters(this.border.mesh);
     }
 
     //-------------//
     // Border Fill
     //-------------//
 
-    if(this.border.fill.mesh){
+    if (this.border.fill.mesh) {
       this.border.fill.mesh.renderOrder = this.id;
-      this.attachEventListenters( this.border.fill.mesh );
+      this.attachEventListenters(this.border.fill.mesh);
     }
 
     //-----------//
     // Highlight
     //-----------//
 
-    if(this.highlight.mesh){
+    if (this.highlight.mesh) {
       this.highlight.mesh.name = 'GUIHighlight';
       this.highlight.mesh.position.z = this.zOffset;
-      this.attachEventListenters( this.highlight.mesh );
+      this.attachEventListenters(this.highlight.mesh);
     }
 
     //----------------//
     // Highlight Fill
     //----------------//
-    
-    if(this.highlight.fill.mesh){
+
+    if (this.highlight.fill.mesh) {
       this.highlight.fill.mesh.renderOrder = this.id;
-      this.attachEventListenters( this.highlight.fill.mesh );
+      this.attachEventListenters(this.highlight.fill.mesh);
     }
 
     //------//
     // Text
     //------//
 
-    if(this.text.mesh){
+    if (this.text.mesh) {
       this.text.mesh.name = 'GUIText';
       this.text.mesh.position.z = this.zOffset;
       this.text.mesh.renderOrder = 5;
-      this.attachEventListenters( this.text.mesh );
+      this.attachEventListenters(this.text.mesh);
     }
-    
+
   }
 
-  attachEventListenters( object: THREE.Object3D ){
-    if( object instanceof THREE.Object3D ){
-      object.userData.isClickable = (e: any) => {
+  attachEventListenters(object: THREE.Object3D) {
+    if (object instanceof THREE.Object3D) {
+      object.userData.isClickable = (_e: GUIControlEvent) => {
         return this.isClickable();
       };
 
-      object.userData.onClick = (e: any) => {
+      object.userData.onClick = (e: GUIControlEvent) => {
         this.processEventListener('click', [e]);
       };
 
-      object.userData.onMouseMove = (e: any) =>{
+      object.userData.onMouseMove = (e: GUIControlEvent) => {
         this.processEventListener('mouseMove', [e]);
       }
 
-      object.userData.onMouseDown = (e: any) => {
+      object.userData.onMouseDown = (e: GUIControlEvent) => {
         this.processEventListener('mouseDown', [e]);
       };
 
-      object.userData.onMouseUp = (e: any) => {
+      object.userData.onMouseUp = (e: GUIControlEvent) => {
         this.processEventListener('mouseUp', [e]);
       };
-      
-      object.userData.onHover = (e: any) => {
+
+      object.userData.onHover = (e: GUIControlEvent) => {
         this.processEventListener('hover', [e]);
       };
 
@@ -533,154 +589,288 @@ export class GUIControl {
     }
   }
 
-  initProperties(){
-    if(this.control instanceof GFFStruct){
-      let control = this.control;
+  initProperties() {
+    if (this.control instanceof GFFStruct) {
+      const control = this.control;
 
-      this.type = ( control.hasField('CONTROLTYPE') ? control.getFieldByLabel('CONTROLTYPE')?.getValue() : -1 );
-      this.widget.name = this.name = ( control.hasField('TAG') ? control.getFieldByLabel('TAG')?.getValue() : -1 );
-      this.id = ( control.hasField('ID') ? control.getFieldByLabel('ID')?.getValue() : -1 );
-      this.objectLocked = ( control.hasField('Obj_Locked') ? control.getFieldByLabel('Obj_Locked')?.getValue() : -1 );
-      this.objectParent = ( control.hasField('Obj_Parent') ? control.getFieldByLabel('Obj_Parent')?.getValue() : -1 );
-      this.objectParentId = ( control.hasField('Obj_ParentID') ? control.getFieldByLabel('Obj_ParentID')?.getValue() : -1 );
-  
-      this.padding = ( control.hasField('PADDING') ? control.getFieldByLabel('PADDING')?.getValue() : 0 );
-  
+      this.type = control.hasField('CONTROLTYPE') ? control.getNumberByLabel('CONTROLTYPE') : -1;
+      this.widget.name = this.name = control.hasField('TAG') ? control.getStringByLabel('TAG') : '';
+      this.id = control.hasField('ID') ? control.getNumberByLabel('ID') : -1;
+      this.objectLocked = control.hasField('Obj_Locked') ? control.getNumberByLabel('Obj_Locked') : -1;
+      this.objectParent = control.hasField('Obj_Parent') ? control.getNumberByLabel('Obj_Parent') : -1;
+      this.objectParentId = control.hasField('Obj_ParentID') ? control.getNumberByLabel('Obj_ParentID') : -1;
+
+      this.padding = control.hasField('PADDING') ? control.getNumberByLabel('PADDING') : 0;
+
       //Extent
       this.hasExtent = control.hasField('EXTENT');
-      if(this.hasExtent){
-        let extent = control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
-        if(extent){
-          this.extent.top = extent.getFieldByLabel('TOP')?.getValue();
-          this.extent.left = extent.getFieldByLabel('LEFT')?.getValue();
-          this.extent.width = extent.getFieldByLabel('WIDTH')?.getValue();
-          this.extent.height = extent.getFieldByLabel('HEIGHT')?.getValue();
+      if (this.hasExtent) {
+        const extent = control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
+        if (extent) {
+          this.extent.top = extent.getNumberByLabel('TOP');
+          this.extent.left = extent.getNumberByLabel('LEFT');
+          this.extent.width = extent.getNumberByLabel('WIDTH');
+          this.extent.height = extent.getNumberByLabel('HEIGHT');
         }
       }
-  
+
       //Border
       this.hasBorder = control.hasField('BORDER');
-      if(this.hasBorder){
-        let border = control.getFieldByLabel('BORDER')?.getChildStructs()[0];
-        if(border){
-          if(border.hasField('COLOR')){
-            let color = border.getFieldByLabel('COLOR')?.getVector();
-            if(color && (color.x * color.y * color.z) < 1 ){
-              if(this.border.color && this.border.fill.material){
+      if (this.hasBorder) {
+        const border = control.getFieldByLabel('BORDER')?.getChildStructs()[0];
+        if (border) {
+          if (border.hasField('COLOR')) {
+            const color = border.getFieldByLabel('COLOR')?.getVector();
+            if (color && (color.x * color.y * color.z) < 1) {
+              if (this.border.color && this.border.fill.material) {
                 this.border.color.setRGB(color.x, color.y, color.z);
                 this.border.fill.material.uniforms.diffuse.value.set(this.border.color);
               }
             }
           }
-  
-          if(typeof this.border.color === 'undefined'){
+
+          if (typeof this.border.color === 'undefined') {
             this.border.color = new THREE.Color(1, 1, 1); //this.defaultColor;
           }
-    
-          this.border.dimension = border.getFieldByLabel('DIMENSION')?.getValue() || 0;
-          this.border.corner = border.getFieldByLabel('CORNER')?.getValue();
-          this.border.edge = border.getFieldByLabel('EDGE')?.getValue();
-          this.border.fill.texture = border.getFieldByLabel('FILL')?.getValue();
-          this.border.fillstyle = border.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
-          this.border.inneroffset = this.border.inneroffsety = border.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
 
-          if(border.hasField('INNEROFFSETY'))
-            this.border.inneroffsety = border.getFieldByLabel('INNEROFFSETY')?.getValue();
+          this.border.dimension = border.getNumberByLabel('DIMENSION') || 0;
+          this.border.corner = border.getStringByLabel('CORNER');
+          this.border.edge = border.getStringByLabel('EDGE');
+          this.border.fill.texture = border.getStringByLabel('FILL');
+          this.border.fillstyle = border.getNumberByLabel('FILLSTYLE') || 0;
+          this.border.inneroffset = this.border.inneroffsety = border.getNumberByLabel('INNEROFFSET') || 0;
 
-          this.border.pulsing = border.getFieldByLabel('PULSING')?.getValue() || 0;
+          if (border.hasField('INNEROFFSETY'))
+            this.border.inneroffsety = border.getNumberByLabel('INNEROFFSETY');
+
+          this.border.pulsing = border.getNumberByLabel('PULSING') || 0;
         }
 
       }
-  
+
       //Text
       this.hasText = control.hasField('TEXT');
-      if(this.hasText){
-        let text = control.getFieldByLabel('TEXT')?.getChildStructs()[0];
-        if(text){
-          this.text.font = text.getFieldByLabel('FONT')?.getValue();
-          this.text.strref = text.getFieldByLabel('STRREF')?.getValue();
-          this.text.text = ( text.hasField('TEXT') ? this.menu.gameStringParse(text.getFieldByLabel('TEXT')?.getValue()) : '' );
-          if(this.text.text == ''){
+      if (this.hasText) {
+        const text = control.getFieldByLabel('TEXT')?.getChildStructs()[0];
+        if (text) {
+          this.text.font = text.getStringByLabel('FONT');
+          this.text.strref = text.getNumberByLabel('STRREF');
+          this.text.text = (text.hasField('TEXT') ? this.menu.gameStringParse(text.getStringByLabel('TEXT')) : '');
+          if (this.text.text == '') {
             this.text.text = this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref]?.Value || '');
           }
-          this.text.alignment = text.getFieldByLabel('ALIGNMENT')?.getValue();
-          this.text.pulsing = text.getFieldByLabel('PULSING')?.getValue();
+          this.text.alignment = text.getNumberByLabel('ALIGNMENT');
+          this.text.pulsing = text.getNumberByLabel('PULSING');
 
-          if(this.text.font == 'fnt_d16x16'){
+          if (this.text.font == 'fnt_d16x16') {
             this.text.font = 'fnt_d16x16b';
           }
 
-          if(text.hasField('COLOR')){
-            let color = text.getFieldByLabel('COLOR')?.getVector();
-            if(color) this.text.color.setRGB(color.x, color.y, color.z)
+          if (text.hasField('COLOR')) {
+            const color = text.getFieldByLabel('COLOR')?.getVector();
+            if (color) this.text.color.setRGB(color.x, color.y, color.z)
           }
 
-          if(typeof this.text.color === 'undefined'){
+          if (typeof this.text.color === 'undefined') {
             this.text.color = this.defaultColor.clone();
           }
         }
       }
-  
+
       //Highlight
       this.hasHighlight = control.hasField('HILIGHT');
-      if(this.hasHighlight){
-        let highlight = control.getFieldByLabel('HILIGHT')?.getChildStructs()[0];
-        if(highlight){
-          if(highlight.hasField('COLOR')){
-            let color = highlight.getFieldByLabel('COLOR')?.getVector();
-            if(color && (color.x * color.y * color.z) < 1 ){
-              if(this.highlight.color && this.highlight.fill.material){
+      if (this.hasHighlight) {
+        const highlight = control.getFieldByLabel('HILIGHT')?.getChildStructs()[0];
+        if (highlight) {
+          if (highlight.hasField('COLOR')) {
+            const color = highlight.getFieldByLabel('COLOR')?.getVector();
+            if (color && (color.x * color.y * color.z) < 1) {
+              if (this.highlight.color && this.highlight.fill.material) {
                 this.highlight.color.setRGB(color.x, color.y, color.z);
                 this.highlight.fill.material.uniforms.diffuse.value.set(this.highlight.color);
               }
             }
           }
-    
-          if(typeof this.highlight.color === 'undefined'){
+
+          if (typeof this.highlight.color === 'undefined') {
             this.highlight.color = new THREE.Color(1, 1, 1); //this.defaultColor;
           }
 
-          this.highlight.dimension = highlight.getFieldByLabel('DIMENSION')?.getValue() || 0;
-          this.highlight.corner = highlight.getFieldByLabel('CORNER')?.getValue() || '';
-          this.highlight.edge = highlight.getFieldByLabel('EDGE')?.getValue() || '';
-          this.highlight.fill.texture = highlight.getFieldByLabel('FILL')?.getValue() || '';
-          this.highlight.fillstyle = highlight.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
-          this.highlight.inneroffset = this.highlight.inneroffsety = highlight.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
+          this.highlight.dimension = highlight.getNumberByLabel('DIMENSION') || 0;
+          this.highlight.corner = highlight.getStringByLabel('CORNER') || '';
+          this.highlight.edge = highlight.getStringByLabel('EDGE') || '';
+          this.highlight.fill.texture = highlight.getStringByLabel('FILL') || '';
+          this.highlight.fillstyle = highlight.getNumberByLabel('FILLSTYLE') || 0;
+          this.highlight.inneroffset = this.highlight.inneroffsety = highlight.getNumberByLabel('INNEROFFSET') || 0;
 
-          if(highlight.hasField('INNEROFFSETY'))
-            this.highlight.inneroffsety = highlight.getFieldByLabel('INNEROFFSETY')?.getValue();
+          if (highlight.hasField('INNEROFFSETY'))
+            this.highlight.inneroffsety = highlight.getNumberByLabel('INNEROFFSETY');
 
-          this.highlight.pulsing = highlight.getFieldByLabel('PULSING')?.getValue() || 0;
+          this.highlight.pulsing = highlight.getNumberByLabel('PULSING') || 0;
         }
       }
-  
+
       //Moveto
       this.hasMoveTo = control.hasField('MOVETO');
-      if(this.hasMoveTo){
-        let moveTo = control.getFieldByLabel('MOVETO')?.getChildStructs()[0];
-        if(moveTo){
-          this.moveTo.down = moveTo.getFieldByLabel('DOWN')?.getValue();
-          this.moveTo.left = moveTo.getFieldByLabel('LEFT')?.getValue();
-          this.moveTo.right = moveTo.getFieldByLabel('RIGHT')?.getValue();
-          this.moveTo.up = moveTo.getFieldByLabel('UP')?.getValue();
+      if (this.hasMoveTo) {
+        const moveTo = control.getFieldByLabel('MOVETO')?.getChildStructs()[0];
+        if (moveTo) {
+          this.moveTo.down = moveTo.getNumberByLabel('DOWN');
+          this.moveTo.left = moveTo.getNumberByLabel('LEFT');
+          this.moveTo.right = moveTo.getNumberByLabel('RIGHT');
+          this.moveTo.up = moveTo.getNumberByLabel('UP');
         }
       }
-    }else if(typeof this.control !== 'undefined'){
-      //TODO
+    } else if (this.control != null && typeof this.control === 'object') {
+      const c = this.control as IGUIControlInitSource;
+      const has = (label: string) => (typeof c.hasField === 'function' ? c.hasField(label) : label in c);
+      const get = (label: string) => (typeof c.getFieldByLabel === 'function' ? c.getFieldByLabel(label) : (c as Record<string, unknown>)[label]);
+      const val = (f: IGUIControlFieldLike | unknown) => (f != null && typeof (f as IGUIControlFieldLike).getValue === 'function' ? (f as IGUIControlFieldLike).getValue() : f);
+      const vec = (f: IGUIControlVectorLike | unknown): IGUIColorVectorLike | undefined => {
+        const raw = f != null && typeof (f as IGUIControlVectorLike).getVector === 'function'
+          ? (f as IGUIControlVectorLike).getVector()
+          : f;
+        if (
+          raw != null
+          && typeof (raw as IGUIColorVectorLike).x === 'number'
+          && typeof (raw as IGUIColorVectorLike).y === 'number'
+          && typeof (raw as IGUIColorVectorLike).z === 'number'
+        ) {
+          return raw as IGUIColorVectorLike;
+        }
+        return undefined;
+      };
+      const child = (f: IGUIControlStructLike | null | undefined): IGUIControlStructLike | undefined => {
+        if (f == null) return undefined;
+        if (typeof (f as IGUIControlStructLike).getChildStructs === 'function') {
+          const arr = (f as IGUIControlStructLike).getChildStructs();
+          return Array.isArray(arr) && arr.length > 0 ? arr[0] : undefined;
+        }
+        return f as IGUIControlStructLike;
+      };
+      const childVal = (ch: IGUIControlStructLike | null | undefined, label: string) => {
+        if (ch == null) return undefined;
+        const f = typeof ch.getFieldByLabel === 'function' ? ch.getFieldByLabel(label) : (ch as Record<string, unknown>)[label];
+        return val(f);
+      };
+      const childVec = (ch: IGUIControlStructLike | null | undefined, label: string) => {
+        if (ch == null) return undefined;
+        const f = typeof ch.getFieldByLabel === 'function' ? ch.getFieldByLabel(label) : (ch as Record<string, unknown>)[label];
+        return vec(f);
+      };
+
+      this.type = has('CONTROLTYPE') ? val(get('CONTROLTYPE')) : -1;
+      this.widget.name = this.name = has('TAG') ? (val(get('TAG')) ?? '') : '';
+      this.id = has('ID') ? val(get('ID')) : -1;
+      this.objectLocked = has('Obj_Locked') ? val(get('Obj_Locked')) : -1;
+      this.objectParent = has('Obj_Parent') ? val(get('Obj_Parent')) : -1;
+      this.objectParentId = has('Obj_ParentID') ? val(get('Obj_ParentID')) : -1;
+      this.padding = has('PADDING') ? (val(get('PADDING')) ?? 0) : 0;
+
+      const extentStruct = child(get('EXTENT'));
+      this.hasExtent = has('EXTENT') && extentStruct != null;
+      if (this.hasExtent && extentStruct) {
+        this.extent.top = childVal(extentStruct, 'TOP');
+        this.extent.left = childVal(extentStruct, 'LEFT');
+        this.extent.width = childVal(extentStruct, 'WIDTH');
+        this.extent.height = childVal(extentStruct, 'HEIGHT');
+      }
+
+      const borderStruct = child(get('BORDER'));
+      this.hasBorder = has('BORDER') && borderStruct != null;
+      if (this.hasBorder && borderStruct) {
+        const color = childVec(borderStruct, 'COLOR');
+        if (color && (color.x * color.y * color.z) < 1) {
+          if (this.border.color && this.border.fill.material) {
+            this.border.color.setRGB(color.x, color.y, color.z);
+            this.border.fill.material.uniforms.diffuse.value.set(this.border.color);
+          }
+        }
+        if (typeof this.border.color === 'undefined') {
+          this.border.color = new THREE.Color(1, 1, 1);
+        }
+        this.border.dimension = childVal(borderStruct, 'DIMENSION') ?? 0;
+        this.border.corner = childVal(borderStruct, 'CORNER');
+        this.border.edge = childVal(borderStruct, 'EDGE');
+        this.border.fill.texture = childVal(borderStruct, 'FILL');
+        this.border.fillstyle = childVal(borderStruct, 'FILLSTYLE') ?? 0;
+        this.border.inneroffset = this.border.inneroffsety = childVal(borderStruct, 'INNEROFFSET') ?? 0;
+        if (borderStruct != null && (typeof borderStruct.hasField === 'function' ? borderStruct.hasField('INNEROFFSETY') : 'INNEROFFSETY' in borderStruct)) {
+          this.border.inneroffsety = childVal(borderStruct, 'INNEROFFSETY');
+        }
+        this.border.pulsing = childVal(borderStruct, 'PULSING') ?? 0;
+      }
+
+      const textStruct = child(get('TEXT'));
+      this.hasText = has('TEXT') && textStruct != null;
+      if (this.hasText && textStruct) {
+        this.text.font = childVal(textStruct, 'FONT');
+        this.text.strref = childVal(textStruct, 'STRREF');
+        this.text.text = (textStruct != null && (typeof textStruct.hasField === 'function' ? textStruct.hasField('TEXT') : 'TEXT' in textStruct))
+          ? this.menu.gameStringParse(childVal(textStruct, 'TEXT') ?? '')
+          : '';
+        if (this.text.text === '') {
+          this.text.text = this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref]?.Value ?? '');
+        }
+        this.text.alignment = childVal(textStruct, 'ALIGNMENT');
+        this.text.pulsing = childVal(textStruct, 'PULSING');
+        if (this.text.font === 'fnt_d16x16') {
+          this.text.font = 'fnt_d16x16b';
+        }
+        const textColor = childVec(textStruct, 'COLOR');
+        if (textColor) this.text.color.setRGB(textColor.x, textColor.y, textColor.z);
+        if (typeof this.text.color === 'undefined') {
+          this.text.color = this.defaultColor.clone();
+        }
+      }
+
+      const highlightStruct = child(get('HILIGHT'));
+      this.hasHighlight = has('HILIGHT') && highlightStruct != null;
+      if (this.hasHighlight && highlightStruct) {
+        const hlColor = childVec(highlightStruct, 'COLOR');
+        if (hlColor && (hlColor.x * hlColor.y * hlColor.z) < 1) {
+          if (this.highlight.color && this.highlight.fill.material) {
+            this.highlight.color.setRGB(hlColor.x, hlColor.y, hlColor.z);
+            this.highlight.fill.material.uniforms.diffuse.value.set(this.highlight.color);
+          }
+        }
+        if (typeof this.highlight.color === 'undefined') {
+          this.highlight.color = new THREE.Color(1, 1, 1);
+        }
+        this.highlight.dimension = childVal(highlightStruct, 'DIMENSION') ?? 0;
+        this.highlight.corner = (childVal(highlightStruct, 'CORNER') ?? '') as string;
+        this.highlight.edge = (childVal(highlightStruct, 'EDGE') ?? '') as string;
+        this.highlight.fill.texture = (childVal(highlightStruct, 'FILL') ?? '') as string;
+        this.highlight.fillstyle = childVal(highlightStruct, 'FILLSTYLE') ?? 0;
+        this.highlight.inneroffset = this.highlight.inneroffsety = childVal(highlightStruct, 'INNEROFFSET') ?? 0;
+        if (highlightStruct != null && (typeof highlightStruct.hasField === 'function' ? highlightStruct.hasField('INNEROFFSETY') : 'INNEROFFSETY' in highlightStruct)) {
+          this.highlight.inneroffsety = childVal(highlightStruct, 'INNEROFFSETY');
+        }
+        this.highlight.pulsing = childVal(highlightStruct, 'PULSING') ?? 0;
+      }
+
+      const moveToStruct = child(get('MOVETO'));
+      this.hasMoveTo = has('MOVETO') && moveToStruct != null;
+      if (this.hasMoveTo && moveToStruct) {
+        this.moveTo.down = childVal(moveToStruct, 'DOWN');
+        this.moveTo.left = childVal(moveToStruct, 'LEFT');
+        this.moveTo.right = childVal(moveToStruct, 'RIGHT');
+        this.moveTo.up = childVal(moveToStruct, 'UP');
+      }
     }
   }
 
-  initTextures(){
+  initTextures() {
 
     //--------//
     // Border
     //--------//
 
-    if(this.border.edge != ''){
+    if (this.border.edge != '') {
       this.border.edge_material.visible = false;
       TextureLoader.enQueue(this.border.edge, this.border.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.border.edge, texture);
+        if (!texture) {
+          log.debug('initTextures', this.border.edge, texture);
           return;
         }
 
@@ -689,24 +879,24 @@ export class GUIControl {
         texture.anisotropy = 1;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
-        if(!this.border.edge_material.transparent){
+        if (!this.border.edge_material.transparent) {
           this.border.mesh.renderOrder = 0;
         }
         texture.needsUpdate = true;
         this.border.edge_material.visible = true;
-        if(typeof this.borderEnabled == 'undefined')
+        if (typeof this.borderEnabled == 'undefined')
           this.borderEnabled = true;
       });
-    }else{
+    } else {
       this.border.edge_material.visible = false;
       this.borderEnabled = false;
     }
 
-    if(this.border.corner != ''){
+    if (this.border.corner != '') {
       this.border.corner_material.visible = false;
       TextureLoader.enQueue(this.border.corner, this.border.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.border.corner, texture);
+        if (!texture) {
+          log.debug('initTextures', this.border.corner, texture);
           return;
         }
 
@@ -715,24 +905,24 @@ export class GUIControl {
         texture.anisotropy = 1;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
-        if(!this.border.corner_material.transparent){
+        if (!this.border.corner_material.transparent) {
           this.border.mesh.renderOrder = 0;
         }
         texture.needsUpdate = true;
         this.border.corner_material.visible = true;
-        if(typeof this.borderEnabled == 'undefined')
+        if (typeof this.borderEnabled == 'undefined')
           this.borderEnabled = true;
       });
-    }else{
+    } else {
       this.border.corner_material.visible = false;
       this.borderEnabled = false;
     }
 
-    if(this.border.fill.texture != ''){
+    if (this.border.fill.texture != '') {
       this.border.fill.material.transparent = true;
       this.border.fill.material.visible = false;
       TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!(texture)){
+        if (!(texture)) {
           this.border.fill.material.visible = false;
           return;
         }
@@ -740,15 +930,15 @@ export class GUIControl {
         texture.anisotropy = 1;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
-        if(!this.border.fill.material.transparent){
+        if (!this.border.fill.material.transparent) {
           this.border.fill.mesh.renderOrder = 0;
         }
         texture.needsUpdate = true;
         this.border.fill.material.visible = true;
-        if(typeof this.borderFillEnabled == 'undefined')
+        if (typeof this.borderFillEnabled == 'undefined')
           this.borderFillEnabled = true;
       });
-    }else{
+    } else {
       this.border.fill.material.visible = false;
       this.borderFillEnabled = false;
     }
@@ -757,11 +947,11 @@ export class GUIControl {
     // Highlight
     //-----------//
 
-    if(this.highlight.edge != ''){
+    if (this.highlight.edge != '') {
       this.highlight.edge_material.visible = false;
       TextureLoader.enQueue(this.highlight.edge, this.highlight.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.highlight.edge, texture);
+        if (!texture) {
+          log.debug('initTextures', this.highlight.edge, texture);
           return;
         }
 
@@ -770,24 +960,24 @@ export class GUIControl {
         texture.anisotropy = 1;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
-        if(!this.highlight.edge_material.transparent){
+        if (!this.highlight.edge_material.transparent) {
           this.highlight.mesh.renderOrder = 0;
         }
         texture.needsUpdate = true;
         this.highlight.edge_material.visible = true;
-        if(typeof this.highlightEnabled == 'undefined')
+        if (typeof this.highlightEnabled == 'undefined')
           this.highlightEnabled = true;
       });
-    }else{
+    } else {
       this.highlight.edge_material.visible = false;
       this.highlightEnabled = false;
     }
 
-    if(this.highlight.corner != ''){
+    if (this.highlight.corner != '') {
       this.highlight.corner_material.visible = false;
       TextureLoader.enQueue(this.highlight.corner, this.highlight.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.highlight.corner, texture);
+        if (!texture) {
+          log.debug('initTextures', this.highlight.corner, texture);
           return;
         }
 
@@ -796,32 +986,32 @@ export class GUIControl {
         texture.anisotropy = 1;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
-        if(!this.highlight.corner_material.transparent){
+        if (!this.highlight.corner_material.transparent) {
           this.highlight.mesh.renderOrder = 0;
         }
         texture.needsUpdate = true;
         this.highlight.corner_material.visible = true;
-        if(typeof this.highlightEnabled == 'undefined')
+        if (typeof this.highlightEnabled == 'undefined')
           this.highlightEnabled = true;
       });
-    }else{
+    } else {
       this.highlight.corner_material.visible = false;
       this.highlightEnabled = false;
     }
 
-    if(this.highlight.fill.material){
-      if(this.highlight.fill.texture != ''){
+    if (this.highlight.fill.material) {
+      if (this.highlight.fill.texture != '') {
         this.highlight.fill.material.transparent = true;
         this.highlight.fill.material.visible = false;
         TextureLoader.enQueue(this.highlight.fill.texture, this.highlight.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          if(this.highlight.fill.material){
-            if(!(texture)){
+          if (this.highlight.fill.material) {
+            if (!(texture)) {
               this.highlight.fill.material.visible = false;
-            }else{
+            } else {
               texture.anisotropy = 1;
               texture.minFilter = THREE.LinearFilter;
               texture.magFilter = THREE.LinearFilter;
-              if(this.highlight.fill.mesh && !this.highlight.fill.material.transparent){
+              if (this.highlight.fill.mesh && !this.highlight.fill.material.transparent) {
                 this.highlight.fill.mesh.renderOrder = 0;
               }
               texture.needsUpdate = true;
@@ -830,7 +1020,7 @@ export class GUIControl {
             }
           }
         });
-      }else{
+      } else {
         this.highlight.fill.material.visible = false;
         this.highlightFillEnabled = false;
       }
@@ -840,11 +1030,11 @@ export class GUIControl {
     // Text
     //------//
 
-    if(this.text.font != ''){
+    if (this.text.font != '') {
       this.text.material.visible = false;
       TextureLoader.enQueue(this.text.font, this.text.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture){
-          console.log('initTextures', this.text.font, texture);
+        if (!texture) {
+          log.debug('initTextures', this.text.font, texture);
           return;
         }
 
@@ -862,37 +1052,37 @@ export class GUIControl {
         this.onFontTextureLoaded();
         this.text.material.visible = true;
       });
-    }else{
+    } else {
       this.text.material.visible = false;
     }
 
   }
 
-  isClickable(){
+  isClickable() {
     return (this.eventListeners['click'].length || this.onClick) && this.isVisible() && !this.disableSelection;
   }
 
-  isVisible(){
+  isVisible() {
     return this.widget.visible;
   }
 
   mouseOver: boolean = false;
-  onHoverOut(){
+  onHoverOut() {
     this.hover = false;
     this.mouseOver = false;
-    if(this.disableSelection){
+    if (this.disableSelection) {
       return;
     }
 
-    if(typeof this.onMouseOut === 'function')
+    if (typeof this.onMouseOut === 'function')
       this.onMouseOut();
 
-    if(this.swapBorderAndHighliteOnHover){
+    if (this.swapBorderAndHighliteOnHover) {
       this.hideHighlight();
 
-      if(this.border.edge != '')
+      if (this.border.edge != '')
         this.showBorder();
-    }else{
+    } else {
       this.showBorder();
       this.hideHighlight();
     }
@@ -901,72 +1091,72 @@ export class GUIControl {
     this.setTooltipVisible(false);
   }
 
-  onHoverIn(){
+  onHoverIn() {
     this.mouseOver = true;
-    if(this.disableSelection){
+    if (this.disableSelection) {
       this.hover = false;
       return;
     }
 
-    if(!this.hover && typeof this.onHover === 'function')
+    if (!this.hover && typeof this.onHover === 'function')
       this.onHover();
 
     this.hover = true;
 
-    if(typeof this.onMouseIn === 'function')
+    if (typeof this.onMouseIn === 'function')
       this.onMouseIn();
 
-    if(this.swapBorderAndHighliteOnHover){
-      if(this.highlight.edge != '' || this.highlight.fill.texture != '')
+    if (this.swapBorderAndHighliteOnHover) {
+      if (this.highlight.edge != '' || this.highlight.fill.texture != '')
         this.showHighlight();
 
-      if(this.highlight.edge != '')
+      if (this.highlight.edge != '')
         this.hideBorder();
-    }else{
+    } else {
       this.showBorder();
       this.showHighlight();
     }
 
-    if(this.isClickable()){
+    if (this.isClickable()) {
       GameState.guiAudioEmitter.playSoundFireAndForget('gui_scroll');
     }
 
     this.processEventListener('hover');
     this.processEventListener('mouseIn');
-    
+
     // this.setTooltipVisible(true);
   }
 
-  onFontTextureLoaded(){
+  onFontTextureLoaded() {
     this.buildText();
   }
 
-  resizeControl(){
+  resizeControl() {
 
-    try{
-      if(this.hasBorder){
+    try {
+      if (this.hasBorder) {
         this.buildBorder();
       }
-      if(this.hasHighlight){
+      if (this.hasHighlight) {
         this.buildHighlight();
       }
-    }catch(e: any){
+    } catch {
       //Must not have a border
     }
 
     this.resizeFill();
-    if(this.hasHighlight){
+    if (this.hasHighlight) {
       this.resizeHighlightFill();
     }
 
   }
 
-  createControl(){
+  createControl() {
 
-    if(this.widget instanceof THREE.Object3D && this.widget.parent){
+    if (this.widget instanceof THREE.Object3D && this.widget.parent) {
       this.widget.parent.remove(this.widget);
     }
-    
+
     //if(this.parent === undefined){
     //  this.widget.add(this.menu.backgroundSprite);
     //}
@@ -978,7 +1168,7 @@ export class GUIControl {
     this.buildHighlightFill();
 
     this.hideHighlight();
-    
+
     this._onCreate();
     //Calculate the widget screen position
     this.calculatePosition();
@@ -990,30 +1180,30 @@ export class GUIControl {
 
   }
 
-  buildChildren(){
+  buildChildren() {
 
-    if(!(this.menu))
+    if (!(this.menu))
       return false;
 
-    if(!(this.menu.tGuiPanel.control instanceof GFFStruct))
+    if (!(this.menu.tGuiPanel.control instanceof GFFStruct))
       return false;
 
-    if(this.menu.tGuiPanel.control.hasField('CONTROLS')){
-      let children = this.menu.tGuiPanel.control.getFieldByLabel('CONTROLS')?.getChildStructs() || [];
-      
-      for(let i = 0; i < children.length; i++){
-        let childParent = ( children[i].hasField('Obj_Parent') ? children[i].getFieldByLabel('Obj_Parent')?.getValue() : '' );
-        if(childParent == this.name){
+    if (this.menu.tGuiPanel.control.hasField('CONTROLS')) {
+      const children = this.menu.tGuiPanel.control.getFieldByLabel('CONTROLS')?.getChildStructs() || [];
+
+      for (let i = 0; i < children.length; i++) {
+        const childParent = (children[i].hasField('Obj_Parent') ? children[i].getStringByLabel('Obj_Parent') : '');
+        if (childParent == this.name) {
 
           const control: GUIControl = this.menu.factory.FromStruct(children[i], this.menu, this, this.scale);
 
-          control.zIndex = this.zIndex+1;
+          control.zIndex = this.zIndex + 1;
 
           this.children.push(control);
 
-          let _cWidget = control.createControl();
+          const _cWidget = control.createControl();
           _cWidget.position.z = control.zIndex;
-          
+
           //this.widget.add(_cWidget);
           this.menu.tGuiPanel.widget.add(_cWidget);
 
@@ -1023,187 +1213,187 @@ export class GUIControl {
     }
   }
 
-  reattach(parent: GUIControl){
-    if(typeof this.parent != 'undefined'){
+  reattach(parent: GUIControl) {
+    if (typeof this.parent != 'undefined') {
       this.parent.widget.remove(this.widget);
     }
-    
+
     this.parent = parent;
     this.parent.widget.add(this.widget);
   }
 
-  getControl(){
+  getControl() {
     return this.widget;
   }
 
-  hide(){
+  hide() {
     this.widget.visible = false;
   }
 
-  show(){
+  show() {
     this.updateWorldPosition();
     this.widget.visible = true;
   }
 
-  update(delta: number){
+  update(delta: number) {
     const opacity = this.disableSelection ? 0.5 : 1;
-    if(this.pulsing || (this.hover && this.isClickable()) || this.selected){
-      const pulseOpacity = 1 - (0.5 *GameState.MenuManager.pulseOpacity) * opacity;
+    if (this.pulsing || (this.hover && this.isClickable()) || this.selected) {
+      const pulseOpacity = 1 - (0.5 * GameState.MenuManager.pulseOpacity) * opacity;
       /**
        * Border
        */
-      if(this.border.edge_material){
+      if (this.border.edge_material) {
         this.border.edge_material.uniforms.opacity.value = this.hover ? 1 : pulseOpacity;
       }
 
-      if(this.border.corner_material){
+      if (this.border.corner_material) {
         this.border.corner_material.uniforms.opacity.value = this.hover ? 1 : pulseOpacity;
       }
-  
-      if(this.border.fill.material){
+
+      if (this.border.fill.material) {
         this.border.fill.material.uniforms.opacity.value = this.hover ? 1 : pulseOpacity;
       }
 
       /**
        * Highlight
        */
-      if(this.highlight.edge_material){
+      if (this.highlight.edge_material) {
         this.highlight.edge_material.uniforms.opacity.value = pulseOpacity;
       }
 
-      if(this.highlight.corner_material){
+      if (this.highlight.corner_material) {
         this.highlight.corner_material.uniforms.opacity.value = pulseOpacity;
       }
 
-      if(this.highlight.fill.material){
+      if (this.highlight.fill.material) {
         this.highlight.fill.material.uniforms.opacity.value = pulseOpacity;
       }
 
       /**
        * Text
        */
-      if(this.text.material){
+      if (this.text.material) {
         this.text.material.uniforms.opacity.value = !this.hover ? 1 : pulseOpacity;
         this.setTextColor(this.defaultHighlightColor.r, this.defaultHighlightColor.g, this.defaultHighlightColor.b);
       }
-    }else{
+    } else {
       this.resetPulse();
     }
 
-    if(this.border.edge_material && this.border.corner_material){
+    if (this.border.edge_material && this.border.corner_material) {
       this.border.edge_material.visible = this.borderEnabled ? true : false;
       this.border.corner_material.visible = this.borderEnabled ? true : false;
     }
 
-    if(this.highlight.edge_material && this.highlight.corner_material){
+    if (this.highlight.edge_material && this.highlight.corner_material) {
       this.highlight.edge_material.visible = this.highlightEnabled ? true : false;
       this.highlight.corner_material.visible = this.highlightEnabled ? true : false;
     }
-    
-    if(this.border.fill.material){
+
+    if (this.border.fill.material) {
       this.border.fill.material.visible = this.borderFillEnabled;
     }
-    
-    if(this.highlight.fill.material){
+
+    if (this.highlight.fill.material) {
       this.highlight.fill.material.visible = this.highlightFillEnabled;
     }
 
-    let len = this.children.length;
-    for(let i = 0; i < len; i++){
+    const len = this.children.length;
+    for (let i = 0; i < len; i++) {
       this.children[i].update(delta);
     }
 
     //Tooltip timer
-    this.tooltipTimer = (this.mouseOver ? this.tooltipTimer + (1000 *delta) : 0);
-    if(this.tooltipTimer > 3000 && this.tooltipText != ''){
+    this.tooltipTimer = (this.mouseOver ? this.tooltipTimer + (1000 * delta) : 0);
+    if (this.tooltipTimer > 3000 && this.tooltipText != '') {
       this.setTooltipVisible(true);
     }
   }
 
-  resetPulse(){
+  resetPulse() {
     const opacity = this.disableSelection ? 0.5 : 1;
-    if(this.border.edge_material){
+    if (this.border.edge_material) {
       this.border.edge_material.uniforms.opacity.value = 1 * opacity;
     }
 
-    if(this.border.corner_material){
+    if (this.border.corner_material) {
       this.border.corner_material.uniforms.opacity.value = 1 * opacity;
     }
 
-    if(this.highlight.edge_material){
+    if (this.highlight.edge_material) {
       this.highlight.edge_material.uniforms.opacity.value = 1 * opacity;
     }
 
-    if(this.highlight.corner_material){
+    if (this.highlight.corner_material) {
       this.highlight.corner_material.uniforms.opacity.value = 1 * opacity;
     }
 
-    if(this.text.material){
+    if (this.text.material) {
       this.text.material.uniforms.opacity.value = 1 * opacity;
       this.setTextColor(this.text.color.r, this.text.color.g, this.text.color.b);
     }
-    
-    if(this.border.fill.material)
+
+    if (this.border.fill.material)
       this.border.fill.material.uniforms.opacity.value = 1 * opacity;
-    
-    if(this.disableSelection){
+
+    if (this.disableSelection) {
       this.hideHighlight();
     }
   }
 
-  setHovering(bState: boolean = false){
+  setHovering(bState: boolean = false) {
     this.hovering = bState;
   }
 
-  hideBorder(){
+  hideBorder() {
     this.border.mesh.visible = false;
     this.hideFill();
   }
 
-  showBorder(){
+  showBorder() {
     this.border.mesh.visible = true;
     this.showFill();
   }
 
-  hideHighlight(){
+  hideHighlight() {
     this.highlight.mesh.visible = false;
     this.hideHighlightFill();
   }
 
-  showHighlight(){
+  showHighlight() {
     this.highlight.mesh.visible = true;
     this.highlight.corner_material.uniforms.diffuse.value.set(this.defaultHighlightColor);
     this.highlight.edge_material.uniforms.diffuse.value.set(this.defaultHighlightColor);
     this.showHighlightFill();
   }
 
-  hideFill(){
+  hideFill() {
     this.border.fill.mesh.visible = false;
   }
 
-  showFill(){
+  showFill() {
     this.border.fill.mesh.visible = true;
   }
 
-  hideHighlightFill(){
+  hideHighlightFill() {
     this.highlight.fill.mesh.visible = false;
   }
 
-  showHighlightFill(){
+  showHighlightFill() {
     this.highlight.fill.mesh.visible = true;
   }
 
-  setBorderColor(r = 1, g = 1, b = 1){
+  setBorderColor(r = 1, g = 1, b = 1) {
     this.border.edge_material.uniforms.diffuse.value.setRGB(r, g, b);
     this.border.corner_material.uniforms.diffuse.value.setRGB(r, g, b);
   }
 
-  setHighlightColor(r = 1, g = 1, b = 1){
+  setHighlightColor(r = 1, g = 1, b = 1) {
     this.highlight.edge_material.uniforms.diffuse.value.setRGB(r, g, b);
     this.highlight.corner_material.uniforms.diffuse.value.setRGB(r, g, b);
   }
 
-  setTextColor(r = 1, g = 1, b = 1){
+  setTextColor(r = 1, g = 1, b = 1) {
     //0.0, 0.658824, 0.980392
     this.text.color.setRGB(r, g, b);
     this.text.material.uniforms.diffuse.value = this.text.color;
@@ -1221,26 +1411,26 @@ export class GUIControl {
     return this.border.fill.mesh;
   }
 
-  getHighlightFill(){
+  getHighlightFill() {
     return this.highlight.fill.mesh;
   }
 
-  setHighlightFillTexture(map: THREE.Texture){
-    if(!(map instanceof THREE.Texture)){
+  setHighlightFillTexture(map: THREE.Texture) {
+    if (!(map instanceof THREE.Texture)) {
       map = TextureLoader.textures.get('fx_static');
     }
 
     this.highlight.fill.material.uniforms.map.value = map;
-    (this.highlight.fill as any).material.map = map;
+    (this.highlight.fill.material as THREE.ShaderMaterial & { map?: THREE.Texture }).map = map;
 
-    if(map instanceof THREE.Texture){
+    if (map instanceof THREE.Texture) {
       this.highlight.fill.material.visible = true;
       this.highlight.fill.material.uniforms.opacity.value = 1;
       this.highlight.fill.material.uniforms.uvTransform.value = this.highlight.fill.material.uniforms.map.value.matrix;
       this.highlight.fill.material.uniforms.map.value.updateMatrix();
       this.highlight.fill.material.defines.USE_UV = '';
       this.highlight.fill.material.defines.USE_MAP = '';
-    }else{
+    } else {
       this.highlight.fill.material.visible = false;
     }
 
@@ -1250,34 +1440,34 @@ export class GUIControl {
     this.highlightFillEnabled = true;
   }
 
-  setFillColor(r = 1, g = 1, b = 1){
+  setFillColor(r = 1, g = 1, b = 1) {
     //0.0, 0.658824, 0.980392
-    if(typeof this.getFill() != 'undefined'){
-      (this.getFill().material as THREE.ShaderMaterial).uniforms.diffuse.value.setRGB(r, g, b);
+    if (typeof this.getFill() != 'undefined') {
+      (this.getFill().material as IGUIShaderMaterial).uniforms.diffuse.value.setRGB(r, g, b);
     }
   }
 
-  getFillTexture(){
+  getFillTexture() {
     return this.border.fill.material.uniforms.map.value;
   }
 
-  setFillTexture(map: THREE.Texture){
-    
-    if(!(map instanceof THREE.Texture)){
+  setFillTexture(map: THREE.Texture) {
+
+    if (!(map instanceof THREE.Texture)) {
       map = TextureLoader.textures.get('fx_static');
     }
 
     this.border.fill.material.uniforms.map.value = map;
-    (this.border.fill as any).material.map = map;
+    (this.border.fill.material as THREE.ShaderMaterial & { map?: THREE.Texture }).map = map;
 
-    if(map instanceof THREE.Texture){
+    if (map instanceof THREE.Texture) {
       this.border.fill.material.visible = true;
       this.border.fill.material.uniforms.opacity.value = 1;
       this.border.fill.material.uniforms.uvTransform.value = this.border.fill.material.uniforms.map.value.matrix;
       this.border.fill.material.uniforms.map.value.updateMatrix();
       this.border.fill.material.defines.USE_UV = '';
       this.border.fill.material.defines.USE_MAP = '';
-    }else{
+    } else {
       this.border.fill.material.visible = false;
     }
 
@@ -1287,43 +1477,44 @@ export class GUIControl {
     this.borderFillEnabled = true;
   }
 
-  getFillTextureName(){
+  getFillTextureName() {
     return this.border.fill.texture;
   }
 
   async setFillTextureName(name = '', bUpdateHighlight = true): Promise<OdysseyTexture> {
     this.border.fill.texture = name;
     this.borderFillEnabled = true;
-    if(!name.length){ return; }
-    
-    if(bUpdateHighlight) this.highlightFillEnabled = true;
-    if(bUpdateHighlight) this.highlight.fill.texture = name;
+    if (!name.length) { return; }
+
+    if (bUpdateHighlight) this.highlightFillEnabled = true;
+    if (bUpdateHighlight) this.highlight.fill.texture = name;
     TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
       this.setFillTexture(texture)
-      if(bUpdateHighlight) this.setHighlightFillTexture(texture);
+      if (bUpdateHighlight) this.setHighlightFillTexture(texture);
       return texture;
     });
     return;
   }
 
-  setMaterialTexture(material: THREE.ShaderMaterial, texture: THREE.Texture|null){
-    if(!(material instanceof THREE.ShaderMaterial))
+  setMaterialTexture(material: IGUIShaderMaterial, texture: THREE.Texture | null) {
+    if (!(material instanceof THREE.ShaderMaterial))
       return false;
 
-    if(texture == undefined)
+    if (texture == undefined)
       texture = null;
 
     material.uniforms.map.value = texture;
-    (material as any).map = texture;
+    (material as THREE.ShaderMaterial & { map?: THREE.Texture }).map = texture;
 
-    if(texture instanceof THREE.Texture){
+    if (texture instanceof THREE.Texture) {
       material.visible = true;
       material.uniforms.opacity.value = 1;
-      material.uniforms.uvTransform.value = material.uniforms.map.value.matrix;
-      material.uniforms.map.value.updateMatrix();
+      const mapValue = material.uniforms.map.value;
+      material.uniforms.uvTransform.value = mapValue.matrix;
+      mapValue.updateMatrix();
       material.defines.USE_UV = '';
       material.defines.USE_MAP = '';
-    }else{
+    } else {
       material.visible = false;
     }
 
@@ -1331,221 +1522,312 @@ export class GUIControl {
     material.uniformsNeedUpdate = true;
     material.visible = (texture instanceof THREE.Texture);
 
-    if(material == this.border.fill.material){
+    if (material == this.border.fill.material) {
       this.borderFillEnabled = true;
     }
 
-    if(material == this.highlight.fill.material){
+    if (material == this.highlight.fill.material) {
       this.highlightFillEnabled = true;
     }
 
   }
 
-  flipY(flip = true){
+  flipY(flip = true) {
     let texture = this.border.fill.material.uniforms.map.value;
-    if(texture instanceof THREE.Texture){
+    if (texture instanceof THREE.Texture) {
       texture.repeat.y = flip ? -1 : 1;
       texture.updateMatrix();
       texture.needsUpdate = true;
     }
 
     texture = this.highlight.fill.material.uniforms.map.value;
-    if(texture instanceof THREE.Texture){
+    if (texture instanceof THREE.Texture) {
       texture.repeat.y = flip ? -1 : 1;
       texture.updateMatrix();
       texture.needsUpdate = true;
     }
   }
 
-  calculatePosition(){
-    if(!this.autoCalculatePosition || this.list)
+  /**
+   * Panel positioning: adjusts screen-space position from extent and bit_flags (centering).
+   * THREE.js: orthographic camera center=(0,0), X-right, Y-up; game coords top-left=(0,0),
+   * X-right, Y-down. Root panel at screen center; children relative to parent group.
+   */
+  calculatePosition() {
+    if (!this.autoCalculatePosition || this.list)
       return;
 
-    let parentExtent = { width: this.menu.width, height: this.menu.height };
-    let parentOffsetX, parentOffsetY;
-    //if(!(this.parent instanceof THREE.Scene)){
-      //parentExtent = this.menu.tGuiPanel.extent;
-      //console.log(this.parent)
-      //parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x;
-      //parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y;
+    const vw = GameState.ResolutionManager.getViewportWidth();
+    const vh = GameState.ResolutionManager.getViewportHeight();
 
-    //}else{
-    //  parentOffsetX = parentOffsetY = 0;
-    //}
+    const isRootPanel = this === this.menu.tGuiPanel;
 
-    if( this.parent && this.parent != this.menu.tGuiPanel && !this.scale){
-      parentExtent = this.menu.tGuiPanel.extent;
-      parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x;
-      parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y;
+    if (isRootPanel) {
+      const flags = this.menu.panelBitFlags;
+      let screenLeft = this.extent.left;
+      let screenTop = this.extent.top;
 
-      let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
-      let posY = ((this.extent.top - ( (parentExtent.height - this.extent.height) / 2 ) ));
-
-      this.widget.position.x = this.offset.x + (posX);
-      this.widget.position.y = (-posY);
-      
-      this.updateBounds();
-
-      return;
-    }else{
-      parentOffsetX = this.menu.tGuiPanel.extent.left;
-      parentOffsetY = this.menu.tGuiPanel.extent.top;
-    }
-
-    // let wRatio = ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
-    // let hRatio = ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
-
-    let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
-    let posY = ((-this.extent.top + ( (parentExtent.height - this.extent.height) / 2 ) ));
-
-    this.anchorOffset = new THREE.Vector2(posX, posY);
-
-    let halfX = parentExtent.width/2;
-    let quatX = 25; //parentExtent.width/4;
-    let halfY = parentExtent.height/2;
-    let quatY = 25; //parentExtent.height/4;
-
-    if(this.scale && this.anchor == 'none'){
-      if(this.extent.left == 0 && this.extent.top == 0){
-        //Screen centered
-      }else{
-        if(this.extent.left < (halfX/2) && this.extent.top > halfY){
-          this.anchor = Anchor.BottomLeft;
-        }else if( ( this.extent.left > quatX && this.extent.left < (halfX+quatX) ) && this.extent.top > halfY){
-          this.anchor = Anchor.BottomCenter;
-        }else if(this.extent.left > (halfX/2) && this.extent.top > halfY){
-          this.anchor = Anchor.BottomRight;
+      if ((flags & 0x08) !== 0) {
+        screenLeft += Math.trunc((vw - this.extent.width) / 2);
+        screenTop += Math.trunc((vh - this.extent.height) / 2);
+      } else {
+        if ((flags & 0x20) !== 0) {
+          screenLeft += Math.trunc((vw - 640) / 2);
         }
-
-        if(this.extent.left < (halfX/2) && this.extent.top < halfY){
-          this.anchor = Anchor.TopLeft;
-        }else if( ( this.extent.left > quatX && this.extent.left < (halfX+quatX) ) && this.extent.top < halfY){
-          this.anchor = Anchor.TopCenter
-        }else if(this.extent.left > (halfX/2) && this.extent.top < halfY){
-          this.anchor = Anchor.TopRight;
+        if ((flags & 0x40) !== 0) {
+          screenTop += Math.trunc((vh - 480) / 2);
         }
       }
+
+      // Convert screen-space top-left to THREE.js orthographic center coords.
+      // THREE.js: center=(0,0), X-right, Y-up
+      // Screen:   origin=(0,0) at top-left, X-right, Y-down
+      // Control center in screen space: (screenLeft + width/2, screenTop + height/2)
+      // THREE.js x = screenCenterX - viewportWidth/2
+      // THREE.js y = viewportHeight/2 - screenCenterY
+      //
+      // Apply this.offset so child-menu panels (e.g. CharGenQuickPanel,
+      // CharGenCustomPanel) that set tGuiPanel.offset in their
+      // menuControlInitializer can shift the root panel position and have
+      // children's hit-test bounds recalculated correctly via recalculatePosition().
+      this.widget.position.x = screenLeft + this.extent.width / 2 - vw / 2 + this.offset.x;
+      this.widget.position.y = vh / 2 - screenTop - this.extent.height / 2 + this.offset.y;
+      this.widget.position.z = 0;
+      this.widget.scale.set(1, 1, 1);
+      this.anchorOffset.set(this.widget.position.x, this.widget.position.y);
+      this.updateBounds();
+      return;
     }
 
-    switch(this.anchor){
-      case Anchor.TopLeft:
-        this.anchorOffset.x = -((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2)) + this.extent.left;
-        this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
-      break;
-      case Anchor.TopCenter:
-        if(this.extent.left < halfX){
-          this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
-        }else{
-          this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
+    // ==========================================
+    // Child control positioning
+    // ==========================================
+    // In the original game, AurGUISetupViewport creates a local coordinate
+    // system for the panel. Controls' extents (left, top, width, height) are
+    // in this local space, with origin at the panel's top-left corner.
+    //
+    // In THREE.js, the root panel's group is at the panel's CENTER.
+    // So we convert from panel-local (top-left origin, Y-down) to
+    // THREE.js local (center origin, Y-up):
+    //   localX = extent.left + width/2 - panelWidth/2
+    //   localY = panelHeight/2 - extent.top - height/2
+    //
+    // This is equivalent to:
+    //   localX = extent.left - (panelWidth - width) / 2
+    //   localY = -(extent.top - (panelHeight - height) / 2)
+
+    const panelW = this.menu.width;
+    const panelH = this.menu.height;
+
+    // When enablePositionScaling is set, anchor controls to viewport edges (used by
+    // menus that use a fixed-resolution layout at a different resolution).
+    if (this.scale) {
+      // Auto-detect anchor region based on position in the design-space panel
+      if (this.anchor === Anchor.None) {
+        const halfX = panelW / 2;
+        const halfY = panelH / 2;
+        const quatX = 25;
+
+        if (this.extent.left === 0 && this.extent.top === 0) {
+          // Screen centered - no anchor
+        } else {
+          // Determine vertical zone
+          const isTop = this.extent.top < halfY;
+          const isBottom = this.extent.top >= halfY;
+
+          // Determine horizontal zone
+          const isLeft = this.extent.left < (halfX / 2);
+          const isRight = this.extent.left >= (halfX / 2);
+          const isCenter = this.extent.left > quatX && this.extent.left < (halfX + quatX);
+
+          if (isBottom) {
+            if (isCenter) this.anchor = Anchor.BottomCenter;
+            else if (isLeft) this.anchor = Anchor.BottomLeft;
+            else if (isRight) this.anchor = Anchor.BottomRight;
+          }
+          if (isTop) {
+            if (isCenter) this.anchor = Anchor.TopCenter;
+            else if (isLeft) this.anchor = Anchor.TopLeft;
+            else if (isRight) this.anchor = Anchor.TopRight;
+          }
         }
-      break;
-      case Anchor.TopRight:
-        this.anchorOffset.x = ((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
-        this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
-      break;
-      case Anchor.BottomLeft:
-        this.anchorOffset.x = -((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2)) + this.extent.left;
-        this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
-      break;
-      case Anchor.BottomCenter:
-        if(this.extent.left < (halfX)){
-          this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
-        }else{
-          this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));  
-        }
-      break;
-      case Anchor.BottomRight:
-        this.anchorOffset.x = ((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
-        this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
-      break;
-      default:
-        this.anchorOffset = new THREE.Vector2(posX, posY);
-      break;
+      }
+
+      // Position control relative to viewport edges.
+      // This maps to how the main interface uses
+      // resolution-specific layouts where controls maintain fixed distances
+      // from screen edges.
+      const edgeRight = panelW - this.extent.left - this.extent.width;
+      const edgeBottom = panelH - this.extent.top - this.extent.height;
+
+      switch (this.anchor) {
+        case Anchor.TopLeft:
+          this.anchorOffset.x = -(vw / 2) + this.extent.left + this.extent.width / 2;
+          this.anchorOffset.y = (vh / 2) - this.extent.top - this.extent.height / 2;
+          break;
+        case Anchor.TopCenter:
+          this.anchorOffset.x = this.extent.left + this.extent.width / 2 - panelW / 2;
+          this.anchorOffset.y = (vh / 2) - this.extent.top - this.extent.height / 2;
+          break;
+        case Anchor.TopRight:
+          this.anchorOffset.x = (vw / 2) - edgeRight - this.extent.width / 2;
+          this.anchorOffset.y = (vh / 2) - this.extent.top - this.extent.height / 2;
+          break;
+        case Anchor.BottomLeft:
+          this.anchorOffset.x = -(vw / 2) + this.extent.left + this.extent.width / 2;
+          this.anchorOffset.y = -(vh / 2) + edgeBottom + this.extent.height / 2;
+          break;
+        case Anchor.BottomCenter:
+          this.anchorOffset.x = this.extent.left + this.extent.width / 2 - panelW / 2;
+          this.anchorOffset.y = -(vh / 2) + edgeBottom + this.extent.height / 2;
+          break;
+        case Anchor.BottomRight:
+          this.anchorOffset.x = (vw / 2) - edgeRight - this.extent.width / 2;
+          this.anchorOffset.y = -(vh / 2) + edgeBottom + this.extent.height / 2;
+          break;
+        default:
+          // No anchor - standard panel-center-relative positioning
+          this.anchorOffset.x = this.extent.left + this.extent.width / 2 - panelW / 2;
+          this.anchorOffset.y = panelH / 2 - this.extent.top - this.extent.height / 2;
+          break;
+      }
+    } else {
+      // Standard child control positioning (non-scaled).
+      // Convert from panel-local (top-left origin, Y-down) to
+      // THREE.js group-local (center origin, Y-up).
+      this.anchorOffset.x = this.extent.left + this.extent.width / 2 - panelW / 2;
+      this.anchorOffset.y = panelH / 2 - this.extent.top - this.extent.height / 2;
     }
 
     this.widget.position.x = this.anchorOffset.x + this.offset.x;
     this.widget.position.y = this.anchorOffset.y + this.offset.y;
+    this.widget.scale.set(1, 1, 1);
 
     this.updateBounds();
 
   }
 
-  getActiveControls(){
+  getActiveControls() {
 
-    if(!this.widget.visible)
+    if (!this.widget.visible)
       return [];
 
     let controls: GUIControl[] = [];
-    for(let i = 0; i < this.children.length; i++){
-      let control = this.children[i];
-      if(control.box && control.box.containsPoint(Mouse.positionUI) && (control.allowClick || control.editable)){
+    for (let i = 0; i < this.children.length; i++) {
+      const control = this.children[i];
+      if (control.box && control.box.containsPoint(Mouse.positionUI) && (control.allowClick || control.editable)) {
         controls.push(control);
-      }else{
+      } else {
         this.menu.setWidgetHoverActive(control, false);
       }
-      if(control.box && control.box.containsPoint(Mouse.positionUI)){
-        controls = controls.concat( control.getActiveControls() );
+      if (control.box && control.box.containsPoint(Mouse.positionUI)) {
+        controls = controls.concat(control.getActiveControls());
       }
     }
-    
+
     return controls;
   }
 
-  updateBounds(){
-    let worldPosition: THREE.Vector3 = new THREE.Vector3;
-    if(this.list){
-      worldPosition.copy(this.parent.widget.position.clone());
-      //console.log('worldPos', worldPosition);
-      this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
-      this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
-      this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
-      this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
-      
-      for(let i = 0; i < this.children.length; i++){
+  /**
+   * Updates the hit-test bounding box for this control.
+   * Tests local coords against extent (left, top, width, height) directly; no scaling.
+   * In THREE.js we compute world-space bounding box from widget position and extent.
+   */
+  updateBounds() {
+    // Use raw extent dimensions for 1:1 pixel rendering.
+    // menu.scale is only applied by setScale() for rare zoom effects (default = 1).
+    const w = this.extent.width * this.menu.scale;
+    const h = this.extent.height * this.menu.scale;
+
+    if (this.list) {
+      // List items: compute world position from parent offset
+      const px = this.parent.widget.position.x;
+      const py = this.parent.widget.position.y;
+      this.box.min.x = this.widget.position.x - w / 2 + px;
+      this.box.min.y = this.widget.position.y - h / 2 + py;
+      this.box.max.x = this.widget.position.x + w / 2 + px;
+      this.box.max.y = this.widget.position.y + h / 2 + py;
+
+      for (let i = 0; i < this.children.length; i++) {
         this.children[i].updateBounds();
       }
-    }else{
-      this.widget.getWorldPosition(worldPosition);
-      this.box.setFromCenterAndSize((new THREE.Vector2(worldPosition.x, worldPosition.y)), new THREE.Vector2(this.extent.width * this.menu.scale, this.extent.height * this.menu.scale));
+    } else {
+      // Compute world position from the flat hierarchy. All child widgets are
+      // placed in tGuiPanel.widget (flat THREE.js group),
+      // so world position = rootPanel.position + localPosition * menuScale.
+      //
+      // We avoid THREE.js getWorldPosition() here because during initial creation
+      // in buildChildren(), the widget is not yet added to the root panel's group
+      // when updateBounds() first runs (called from calculatePosition() inside
+      // createControl(), before the widget.add() call). getWorldPosition() would
+      // then return just the local position — missing the root panel's offset and
+      // producing an incorrect hit-test box.
+      const isRoot = this === this.menu.tGuiPanel;
+      let wx: number, wy: number;
+      if (isRoot) {
+        wx = this.widget.position.x;
+        wy = this.widget.position.y;
+      } else {
+        const s = this.menu.scale;
+        wx = this.menu.tGuiPanel.widget.position.x + this.widget.position.x * s;
+        wy = this.menu.tGuiPanel.widget.position.y + this.widget.position.y * s;
+      }
+      this.worldPosition.set(wx, wy, this.widget.position.z);
+      this.box.min.x = wx - w / 2;
+      this.box.min.y = wy - h / 2;
+      this.box.max.x = wx + w / 2;
+      this.box.max.y = wy + h / 2;
     }
   }
 
-  updateScale(){
+  updateScale() {
     this.updateBounds();
-    for(let i = 0; i < this.children.length; i++){
-      if(this.children[i] instanceof GUIControl)
+    for (let i = 0; i < this.children.length; i++) {
+      if (this.children[i] instanceof GUIControl)
         this.children[i].updateScale();
     }
   }
 
-  recalculate(){
+  recalculate() {
     this.calculatePosition();
     this.updateBounds();
-    for(let i = 0; i < this.children.length; i++){
+    for (let i = 0; i < this.children.length; i++) {
       this.children[i].recalculate();
     }
   }
 
-  getControlExtent(){
-    let renderSize = this.getRendererSize();
+  /**
+   * Recursively update hit-test Box2 bounds for this control and all children
+   * WITHOUT recalculating widget positions.  Use this when the root panel's
+   * widget.position has been changed externally (e.g. by a direct assignment in
+   * a click handler) and only the bounding boxes need to catch up.
+   */
+  updateBoundsRecursive() {
+    this.updateBounds();
+    for (let i = 0; i < this.children.length; i++) {
+      this.children[i].updateBoundsRecursive();
+    }
+  }
 
-    let wRatio = GameState.ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
-    let hRatio = GameState.ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
+  /**
+   * Returns the control's position and size in THREE.js local coordinates
+   * (relative to the parent group's center, Y-up).
+   * Used internally for border/fill/highlight geometry layout.
+   */
+  getControlExtent() {
+    const panelW = this.menu.width;
+    const panelH = this.menu.height;
 
-    let parentExtent = { width: this.menu.width, height: this.menu.height };
-    //if(!(this.parent instanceof THREE.Scene)){
-      //parentExtent = this.parent.control.extent;
-    //}
+    // Convert from panel-local (top-left, Y-down) to THREE.js group-local (center, Y-up)
+    let left = this.extent.left + this.extent.width / 2 - panelW / 2;
+    const top = panelH / 2 - this.extent.top - this.extent.height / 2;
 
-    let left = this.extent.left - ( (parentExtent.width - this.extent.width) / 2 );
-    let top = -this.extent.top + ( (parentExtent.height - this.extent.height) / 2 );
-
-    let shrinkWidth = this.getShrinkWidth();
+    const shrinkWidth = this.getShrinkWidth();
     left += shrinkWidth;
 
     return {
       top: top,
-      left: left,// + this.border.dimension,
+      left: left,
       width: this.extent.width,
       height: this.extent.height,
     };
@@ -1562,8 +1844,8 @@ export class GUIControl {
     };
   }
 
-  getOuterSize(){
-    let extent = this.getControlExtent();
+  getOuterSize() {
+    const extent = this.getControlExtent();
     return {
       top: extent.top,
       left: extent.left,
@@ -1573,7 +1855,7 @@ export class GUIControl {
   }
 
   flipLeft(): boolean {
-    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox) && (this as any).isScrollBarLeft()){
+    if (BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox) && (this as GUIListBox).isScrollBarLeft()) {
       return true;
     }
     return false;
@@ -1588,33 +1870,34 @@ export class GUIControl {
     let height = Math.max(0.00001, this.extent.height - 2 * borderSize);
 
     return {
-      top: extent.top, 
-      left: extent.left, 
+      top: extent.top,
+      left: extent.left,
       width: width,
       height: height
     };
   }
 
-  getBorderSize(){
-    if(GameState.GameKey == GameEngineType.TSL){
+  getBorderSize() {
+    if (GameState.GameKey == GameEngineType.TSL) {
       return this.border.dimension || 0;
-    }else{
+    } else {
       return this.border.dimension || 0;
     }
   }
 
-  getHightlightSize(){
-    if(GameState.GameKey == GameEngineType.TSL){
+  getHightlightSize() {
+    if (GameState.GameKey == GameEngineType.TSL) {
       return this.highlight.dimension || 0;
-    }else{
+    } else {
       return this.highlight.dimension || 0;
     }
   }
 
   getShrinkWidth() {
     let shrinkWidth = 0;
-    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
-      shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2);
+    if (BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)) {
+      const listBox = this as GUIListBox;
+      shrinkWidth = (listBox.scrollbar.extent.width) + (listBox.scrollbar.border.dimension * 2);
     }
     return shrinkWidth;
   }
@@ -1772,21 +2055,21 @@ export class GUIControl {
     };
   }
 
-  buildFill(){
+  buildFill() {
     const extent = this.getFillExtent();
-    
-    if(this.border.fill.mesh){
-      this.border.fill.mesh.name = this.widget.name+' center fill';
+
+    if (this.border.fill.mesh) {
+      this.border.fill.mesh.name = this.widget.name + ' center fill';
       this.border.fill.mesh.scale.x = extent.width || 0.000001;
       this.border.fill.mesh.scale.y = extent.height || 0.000001;
       this.border.fill.mesh.position.z = this.zOffset;
 
       const shrinkWidth = this.getShrinkWidth();
-      this.border.fill.mesh.position.x = (this.flipLeft() ? shrinkWidth/2 : -shrinkWidth/2);
+      this.border.fill.mesh.position.x = (this.flipLeft() ? shrinkWidth / 2 : -shrinkWidth / 2);
     }
   }
 
-  buildBorder(){
+  buildBorder() {
 
     const edgeGeometries = 4;
     const cornerGeometries = 4;
@@ -1795,61 +2078,65 @@ export class GUIControl {
     const planes: THREE.BufferGeometry[] = [];
     let extent;
 
-    for(let i = 0; i < geomCount; i++){
-      switch(i){
+    for (let i = 0; i < geomCount; i++) {
+      switch (i) {
         case 0: //top-border
           extent = this.getBorderExtent('top');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 1: //right-border
           extent = this.getBorderExtent('right');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(-Math.PI/2);
+          planes[i].rotateZ(-Math.PI / 2);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 2: //bottom-border
           extent = this.getBorderExtent('bottom');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 3: //left-border
           extent = this.getBorderExtent('left');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI/2);
+          planes[i].rotateZ(Math.PI / 2);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 4: //top-left-corner
           extent = this.getBorderExtent('topLeft');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 5: //top-right-corner
           extent = this.getBorderExtent('topRight');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(-Math.PI/2);
+          planes[i].rotateZ(-Math.PI / 2);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 6: //bottom-right-corner
           extent = this.getBorderExtent('bottomRight');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 7: //bottom-left-corner
           extent = this.getBorderExtent('bottomLeft');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI/2);
+          planes[i].rotateZ(Math.PI / 2);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
       }
     }
 
-    if(this.border.geometry instanceof THREE.BufferGeometry)
+    if (this.border.geometry instanceof THREE.BufferGeometry)
       this.border.geometry.dispose();
 
-    this.border.geometry = BufferGeometryUtils.mergeBufferGeometries(planes, false);
+    const mergedBorderGeometry = mergeBufferGeometries(planes, false);
+    if (!mergedBorderGeometry) {
+      return;
+    }
+    this.border.geometry = mergedBorderGeometry;
     this.border.geometry.computeBoundingBox();
 
     //Edge Group
@@ -1857,84 +2144,88 @@ export class GUIControl {
     //Corner Group
     this.border.geometry.addGroup(24, 24, 1);
 
-    if(this.border.mesh)
+    if (this.border.mesh)
       this.border.mesh.geometry = this.border.geometry;
 
     //Clean up the temporary plane geometries
     let _plane: THREE.BufferGeometry | undefined;
-    while(planes.length){
+    while (planes.length) {
       _plane = planes.shift();
-      if(_plane){
+      if (_plane) {
         _plane.dispose();
       }
     }
 
   }
 
-  buildHighlight(){
+  buildHighlight() {
 
-    let edgeGeometries = 4;
-    let cornerGeometries = 4;
-    let geomCount = edgeGeometries + cornerGeometries;
+    const edgeGeometries = 4;
+    const cornerGeometries = 4;
+    const geomCount = edgeGeometries + cornerGeometries;
 
-    let planes: THREE.BufferGeometry[] = [];
+    const planes: THREE.BufferGeometry[] = [];
     let extent;
 
-    for(let i = 0; i < geomCount; i++){
-      switch(i){
+    for (let i = 0; i < geomCount; i++) {
+      switch (i) {
         case 0: //top-border
           extent = this.getHighlightExtent('top');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 1: //right-border
           extent = this.getHighlightExtent('right');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(-Math.PI/2);
+          planes[i].rotateZ(-Math.PI / 2);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 2: //bottom-border
           extent = this.getHighlightExtent('bottom');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 3: //left-border
           extent = this.getHighlightExtent('left');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI/2);
+          planes[i].rotateZ(Math.PI / 2);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 4: //top-left-corner
           extent = this.getHighlightExtent('topLeft');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 5: //top-right-corner
           extent = this.getHighlightExtent('topRight');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(-Math.PI/2);
+          planes[i].rotateZ(-Math.PI / 2);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 6: //bottom-right-corner
           extent = this.getHighlightExtent('bottomRight');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
           planes[i].rotateZ(Math.PI);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
         case 7: //bottom-left-corner
           extent = this.getHighlightExtent('bottomLeft');
           planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI/2);
+          planes[i].rotateZ(Math.PI / 2);
           planes[i].translate(extent.left, extent.top, 0);
-        break;
+          break;
       }
     }
 
-    if(this.highlight.geometry instanceof THREE.BufferGeometry)
+    if (this.highlight.geometry instanceof THREE.BufferGeometry)
       this.highlight.geometry.dispose();
 
-    this.highlight.geometry = BufferGeometryUtils.mergeBufferGeometries(planes, false);
+    const mergedHighlightGeometry = mergeBufferGeometries(planes, false);
+    if (!mergedHighlightGeometry) {
+      return;
+    }
+    this.highlight.geometry = mergedHighlightGeometry;
     this.highlight.geometry.computeBoundingBox();
 
     //Edge Group
@@ -1942,58 +2233,57 @@ export class GUIControl {
     //Corner Group
     this.highlight.geometry.addGroup(24, 24, 1);
 
-    if(this.highlight.mesh)
+    if (this.highlight.mesh)
       this.highlight.mesh.geometry = this.highlight.geometry;
 
     //Clean up the temporary plane geometries
     let _plane: THREE.BufferGeometry | undefined;
-    while(planes.length){
+    while (planes.length) {
       _plane = planes.shift();
-      if(_plane){
+      if (_plane) {
         _plane.dispose();
       }
     }
 
   }
 
-  buildHighlightFill(){
-    let extent = this.getFillExtent();
-    if(this.highlight.fill.mesh){
-      this.highlight.fill.mesh.name = this.widget.name+' center fill';
+  buildHighlightFill() {
+    const extent = this.getFillExtent();
+    if (this.highlight.fill.mesh) {
+      this.highlight.fill.mesh.name = this.widget.name + ' center fill';
       this.highlight.fill.mesh.scale.x = extent.width || 0.000001;
       this.highlight.fill.mesh.scale.y = extent.height || 0.000001;
       this.highlight.fill.mesh.position.z = this.zOffset;
     }
   }
 
-  buildText(){
-    let self = this;
-
-    if(!this.text.texture)
+  buildText() {
+    if (!this.text.texture)
       return;
 
-    if(this.text.mesh.parent)
+    if (this.text.mesh.parent)
       this.text.mesh.parent.remove(this.text.mesh);
 
-    this.widget.userData.text.add(this.text.mesh);
-    
-    let texture = this.text.texture;
+    this.getWidgetGroup('text').add(this.text.mesh);
+
+    const texture = this.text.texture;
     texture.flipY = false;
     texture.anisotropy = 1;
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
     texture.needsUpdate = true;
 
-    if(this.text.text != '' || (this.text.strref != 0 && typeof GameState.TLKManager.TLKStrings[this.text.strref] != 'undefined'))
+    if (this.text.text != '' || (this.text.strref != 0 && typeof GameState.TLKManager.TLKStrings[this.text.strref] != 'undefined'))
       this.updateTextGeometry(this.text.text != '' ? this.menu.gameStringParse(this.text.text) : this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref].Value));
-    
-    this.text.geometry.computeBoundingSphere = function () {
+
+    this.text.geometry.computeBoundingSphere = function (this: THREE.BufferGeometry) {
       if (this.boundingSphere === null) {
         this.boundingSphere = new THREE.Sphere()
       }
-    
-      let positions = this.attributes.position.array
-      let itemSize = this.attributes.position.itemSize
+
+      const positionAttribute = this.attributes.position;
+      const positions = positionAttribute?.array as Float32Array | undefined;
+      const itemSize = positionAttribute?.itemSize;
       if (!positions || !itemSize || positions.length < 2) {
         this.boundingSphere.radius = 0
         this.boundingSphere.center.set(0, 0, 0)
@@ -2001,129 +2291,133 @@ export class GUIControl {
       }
       // this.computeSphere(positions, this.boundingSphere)
       if (isNaN(this.boundingSphere.radius)) {
-        console.error('THREE.BufferGeometry.computeBoundingSphere(): ' +
-          'Computed radius is NaN. The ' +
-          '"position" attribute is likely to have NaN values.')
+        log.error('THREE.BufferGeometry.computeBoundingSphere(): Computed radius is NaN. The "position" attribute is likely to have NaN values.');
       }
-    }
-    
-    this.text.geometry.computeBoundingBox = function () {
-      if (this.boundingBox === null) {
-        this.boundingBox = new THREE.Box3()
-      }
-    
-      let bbox = this.boundingBox
-      let positions = this.attributes.position.array
-      let itemSize = this.attributes.position.itemSize
-      if (!positions || !itemSize || positions.length < 2) {
-        bbox.makeEmpty()
-        return
-      }
-      self.computeBox(positions, bbox)
-    }
+    };
 
+    const computeBox = (positions: ArrayLike<number>, output: THREE.Box3) => this.computeBox(positions, output);
+    this.text.geometry.computeBoundingBox = function (this: THREE.BufferGeometry) {
+      if (this.boundingBox === null) {
+        this.boundingBox = new THREE.Box3();
+      }
+      const bbox = this.boundingBox;
+      const positionAttribute = this.getAttribute('position');
+      if (!(positionAttribute instanceof THREE.BufferAttribute)) {
+        bbox.makeEmpty();
+        return;
+      }
+      const positions = positionAttribute.array;
+      const itemSize = positionAttribute.itemSize;
+      if (!positions || !itemSize || positions.length < 2) {
+        bbox.makeEmpty();
+        return;
+      }
+      computeBox(positions, bbox);
+    };
   }
 
-  getCharPositions(char: number){
+
+  getCharPositions(char: number) {
     return {
       ul: this.text.texture.txi.upperleftcoords[char],
       lr: this.text.texture.txi.lowerrightcoords[char]
     }
   }
 
-  updateTextGeometry(text: string){
+  updateTextGeometry(text: string) {
 
-    if(!(this.text.texture instanceof THREE.Texture))
+    if (!(this.text.texture instanceof THREE.Texture))
       return;
 
     if(this.guiFont){
       this.guiFont.buildGeometry(this.text.geometry, this.text.text, this.text.alignment, this.getInnerSize().width);
       this.alignText();
     }
-    
-    if(this.text.geometry && this.text.geometry.boundingBox){
+
+    if (this.text.geometry && this.text.geometry.boundingBox) {
       this.text.geometry.boundingBox.getSize(this.textSize);
     }
-    
+
   }
 
   textSize: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
 
-  alignText(){
-    if(this.text.geometry && this.text.geometry.boundingBox){
+  alignText() {
+    if (this.text.geometry && this.text.geometry.boundingBox) {
       this.text.geometry.boundingBox.getSize(this.textSize);
     }
-    this.widget.userData.text.position.z = this.zOffset;
+    const textGroup = this.getWidgetGroup('text');
+    textGroup.position.z = this.zOffset;
 
     const innerSize = this.getInnerSize()
 
     //Horizontal Alignment moved to GUIFont
     // const horizontal = this.text.alignment & GUIControlAlignment.HorizontalMask;
-    this.widget.userData.text.position.x = -(innerSize.width/2 - this.textSize.x/2) - this.textSize.x/2;
+    textGroup.position.x = -(innerSize.width / 2 - this.textSize.x / 2) - this.textSize.x / 2;
 
-    const vertical   = this.text.alignment & GUIControlAlignment.VerticalMask;
-    switch(vertical){
+    const vertical = this.text.alignment & GUIControlAlignment.VerticalMask;
+    switch (vertical) {
       case GUIControlAlignment.VerticalTop:
-        this.widget.userData.text.position.y = (innerSize.height/2 - this.textSize.y/2) + this.textSize.y/2;
-      break;
+        textGroup.position.y = (innerSize.height / 2 - this.textSize.y / 2) + this.textSize.y / 2;
+        break;
       case GUIControlAlignment.VerticalCenter:
-        this.widget.userData.text.position.y = this.textSize.y/2;
-      break;
+        textGroup.position.y = this.textSize.y / 2;
+        break;
       case GUIControlAlignment.VerticalBottom:
-        this.widget.userData.text.position.y = -(innerSize.height/2 - this.textSize.y/2) + this.textSize.y/2;
-      break;
+        textGroup.position.y = -(innerSize.height / 2 - this.textSize.y / 2) + this.textSize.y / 2;
+        break;
     }
 
-    if(BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox) && this.type == GUIControlType.Label){
+    if (BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox) && this.type == GUIControlType.Label) {
       // this.widget.userData.text.position.x -= (this.parent.scrollbar.extent.width) + (this.parent.scrollbar.border.dimension * 2);
       this.extent.height = this.textSize.y;
       this.resizeControl();
       this.list.updateList();
     }
-    
+
   }
 
-  disableBorder(){
+  disableBorder() {
     this.borderEnabled = false;
   }
 
-  disableBorderFill(){
+  disableBorderFill() {
     this.borderFillEnabled = false;
   }
 
-  disableHighlight(){
+  disableHighlight() {
     this.highlightEnabled = false;
   }
 
-  disableHighlightFill(){
+  disableHighlightFill() {
     this.highlightFillEnabled = false;
   }
 
-  enableBorder(){
+  enableBorder() {
     this.borderEnabled = true;
   }
 
-  enableBorderFill(){
+  enableBorderFill() {
     this.borderFillEnabled = true;
   }
 
-  enableHighlight(){
+  enableHighlight() {
     this.highlightEnabled = true;
   }
 
-  enableHighlightFill(){
+  enableHighlightFill() {
     this.highlightFillEnabled = true;
   }
 
-  disableTextAlignment(){
+  disableTextAlignment() {
     this.text.alignment = 0;
   }
 
-  getRendererSize(){
-    return {width: GameState.ResolutionManager.getViewportWidth(), height: GameState.ResolutionManager.getViewportHeight()};
+  getRendererSize() {
+    return { width: GameState.ResolutionManager.getViewportWidth(), height: GameState.ResolutionManager.getViewportHeight() };
   }
 
-  setKeymapAction(action: KeyMapAction){
+  setKeymapAction(action: KeyMapAction) {
     this.keymapAction = action;
     return this;
   }
@@ -2131,10 +2425,10 @@ export class GUIControl {
   tooltipText: string = '';
   tooltipTimer: number = 3000;
   tooltipVisible: boolean = false;
-  setTooltipText(text: string){
-    if(this.keymapAction){
+  setTooltipText(text: string) {
+    if (this.keymapAction) {
       const action = KeyMapper.Actions[this.keymapAction];
-      if(action){
+      if (action) {
         text += ` | ${action.character}`;
       }
     }
@@ -2142,142 +2436,166 @@ export class GUIControl {
     return this;
   }
 
-  setTooltipVisible(visible: boolean){
+  setTooltipVisible(visible: boolean) {
     const isChanged = this.tooltipVisible != visible;
     this.tooltipVisible = visible;
-    if(this.tooltipVisible && isChanged){
+    if (this.tooltipVisible && isChanged) {
       GameState.MenuManager.MenuToolTip.showToolTip(this.tooltipText, Mouse.positionViewport.x, Mouse.positionViewport.y, this);
-    }else if(!this.tooltipVisible && isChanged){
+    } else if (!this.tooltipVisible && isChanged) {
       GameState.MenuManager.MenuToolTip.hide();
     }
     return this;
   }
 
-  setText(str: any = '', renderOrder = 5){
-    if(typeof str != 'string')
-      str = str.toString();
+  setText(str: string | { toString(): string } = '', renderOrder = 5) {
+    const normalizedText = typeof str === 'string' ? str : str.toString();
+    const trimmedText = normalizedText.trim();
 
-    str = str.trim();
+    const oldText = this.text.text;
+    this.text.text = this.menu.gameStringParse(trimmedText) as string;
 
-    let oldText = this.text.text;
-    this.text.text = this.menu.gameStringParse(str);
-
-    if(typeof this.text.geometry !== 'object')
+    if (typeof this.text.geometry !== 'object')
       this.buildText();
-    
-    if(this.text.mesh){
-      this.text.mesh.renderOrder = undefined;//renderOrder;
+
+    if (this.text.mesh) {
+      this.text.mesh.renderOrder = renderOrder;
     }
 
-    if(oldText != this.text.text && typeof this.text.geometry === 'object'){
-      //console.log('updateText', this.text.text);
+    if (oldText != this.text.text && typeof this.text.geometry === 'object') {
+      //log.info('updateText', this.text.text);
       this.updateTextGeometry(this.text.text);
     }
-    
-    if(this.text.geometry && this.text.geometry.boundingBox){
+
+    if (this.text.geometry && this.text.geometry.boundingBox) {
       this.text.geometry.boundingBox.getSize(this.textSize);
     }
 
   }
 
-  getText(){
+  getText() {
     return this.text.text;
   }
 
-  getTextSize(){
+  getTextSize() {
     this.text.geometry.computeBoundingBox();
     this.text.geometry.boundingBox.getSize(this.textSize);
     return this.textSize;
   }
 
-  _onCreate(){
+  _onCreate() {
     //Dummy Method
   }
 
-  getHintText(){
-    if(this.text.strref != 0 && typeof GameState.TLKManager.TLKStrings[this.text.strref+1] != 'undefined'){
+  getHintText() {
+    if (this.text.strref != 0 && typeof GameState.TLKManager.TLKStrings[this.text.strref + 1] != 'undefined') {
       return GameState.TLKManager.TLKStrings[this.text.strref].Value;
-    }else{
+    } else {
       return '';
     }
   }
 
-  resizeFill(){
-    if(this.border.fill.mesh){
-      let extent = this.getFillExtent();
+  resizeFill() {
+    if (this.border.fill.mesh) {
+      const extent = this.getFillExtent();
       this.border.fill.mesh.scale.x = extent.width || 0.000001;
       this.border.fill.mesh.scale.y = extent.height || 0.000001;
     }
   }
 
-  resizeHighlightFill(){
-    if(this.highlight.fill.mesh){
-      let extent = this.getFillExtent();
+  resizeHighlightFill() {
+    if (this.highlight.fill.mesh) {
+      const extent = this.getFillExtent();
       this.highlight.fill.mesh.scale.x = extent.width || 0.000001;
       this.highlight.fill.mesh.scale.y = extent.height || 0.000001;
     }
   }
 
-  resizeBorder(side: string){
+  resizeBorder(side: string) {
 
-    let extent = this.getBorderExtent(side);
+    const extent = this.getBorderExtent(side);
+    const borderChildren = this.getWidgetGroup('border').children;
 
-    switch(side){
-      case 'top':
-        this.widget.userData.border.children[0].position.set( extent.left, extent.top, 1 ); // top
-        this.widget.userData.border.children[0].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[0].scale.y = extent.height || 0.000001;
-      break;
-      case 'left':
-        this.widget.userData.border.children[1].position.set( extent.left, extent.top, 1 ); // left
-        this.widget.userData.border.children[1].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[1].scale.y = extent.height || 0.000001;
-      break;
-      case 'right':
-        this.widget.userData.border.children[2].position.set( extent.left, extent.top, 1 ); // right
-        this.widget.userData.border.children[2].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[2].scale.y = extent.height || 0.000001;
-      break;
-      case 'bottom':
-        this.widget.userData.border.children[3].position.set( extent.left, extent.top, 1 ); // bottom
-        this.widget.userData.border.children[3].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[3].scale.y = extent.height || 0.000001;
-      break;
+    switch (side) {
+      case 'top': {
+        const topChild = borderChildren[0];
+        if (!topChild) break;
+        topChild.position.set(extent.left, extent.top, 1);
+        topChild.scale.x = extent.width || 0.000001;
+        topChild.scale.y = extent.height || 0.000001;
+        break;
+      }
+      case 'left': {
+        const leftChild = borderChildren[1];
+        if (!leftChild) break;
+        leftChild.position.set(extent.left, extent.top, 1);
+        leftChild.scale.x = extent.width || 0.000001;
+        leftChild.scale.y = extent.height || 0.000001;
+        break;
+      }
+      case 'right': {
+        const rightChild = borderChildren[2];
+        if (!rightChild) break;
+        rightChild.position.set(extent.left, extent.top, 1);
+        rightChild.scale.x = extent.width || 0.000001;
+        rightChild.scale.y = extent.height || 0.000001;
+        break;
+      }
+      case 'bottom': {
+        const bottomChild = borderChildren[3];
+        if (!bottomChild) break;
+        bottomChild.position.set(extent.left, extent.top, 1);
+        bottomChild.scale.x = extent.width || 0.000001;
+        bottomChild.scale.y = extent.height || 0.000001;
+        break;
+      }
     }
 
   }
 
-  resizeCorner(side: string){
-    
-    let extent = this.getBorderExtent(side);
+  resizeCorner(side: string) {
 
-    switch(side){
-      case 'topLeft':
-        this.widget.userData.border.children[4].position.set( extent.left, extent.top, 1 ); // top
-        this.widget.userData.border.children[4].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[4].scale.y = extent.height || 0.000001;
-      break;
-      case 'topRight':
-        this.widget.userData.border.children[5].position.set( extent.left, extent.top, 1 ); // left
-        this.widget.userData.border.children[5].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[5].scale.y = extent.height || 0.000001;
-      break;
-      case 'bottomLeft':
-        this.widget.userData.border.children[6].position.set( extent.left, extent.top, 1 ); // right
-        this.widget.userData.border.children[6].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[6].scale.y = extent.height || 0.000001;
-      break;
-      case 'bottomRight':
-        this.widget.userData.border.children[7].position.set( extent.left, extent.top, 1 ); // bottom
-        this.widget.userData.border.children[7].scale.x = extent.width || 0.000001;
-        this.widget.userData.border.children[7].scale.y = extent.height || 0.000001;
-      break;
+    const extent = this.getBorderExtent(side);
+    const borderChildren = this.getWidgetGroup('border').children;
+
+    switch (side) {
+      case 'topLeft': {
+        const topLeftChild = borderChildren[4];
+        if (!topLeftChild) break;
+        topLeftChild.position.set(extent.left, extent.top, 1);
+        topLeftChild.scale.x = extent.width || 0.000001;
+        topLeftChild.scale.y = extent.height || 0.000001;
+        break;
+      }
+      case 'topRight': {
+        const topRightChild = borderChildren[5];
+        if (!topRightChild) break;
+        topRightChild.position.set(extent.left, extent.top, 1);
+        topRightChild.scale.x = extent.width || 0.000001;
+        topRightChild.scale.y = extent.height || 0.000001;
+        break;
+      }
+      case 'bottomLeft': {
+        const bottomLeftChild = borderChildren[6];
+        if (!bottomLeftChild) break;
+        bottomLeftChild.position.set(extent.left, extent.top, 1);
+        bottomLeftChild.scale.x = extent.width || 0.000001;
+        bottomLeftChild.scale.y = extent.height || 0.000001;
+        break;
+      }
+      case 'bottomRight': {
+        const bottomRightChild = borderChildren[7];
+        if (!bottomRightChild) break;
+        bottomRightChild.position.set(extent.left, extent.top, 1);
+        bottomRightChild.scale.x = extent.width || 0.000001;
+        bottomRightChild.scale.y = extent.height || 0.000001;
+        break;
+      }
     }
 
   }
 
-  resizeHighlight(side: string){
-    
+  resizeHighlight(_side: string) {
+
     /*let extent = this.getHighlightExtent(side);
 
     let geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
@@ -2306,33 +2624,33 @@ export class GUIControl {
     sprite.name = side+' edge';
     this.widget.highlight.add(sprite);
 
-    sprite.isClickable = (e: any) => {
+    sprite.isClickable = (_e: GUIControlEvent) => {
       return this.isClickable();
     };
 
-    sprite.onClick = (e: any) => {
-      if(typeof this.onClick == 'function')
-        this.onClick(e: any);
+    sprite.onClick = (e: GUIControlEvent) => {
+      if (typeof this.onClick === 'function')
+        this.onClick(e);
     };
 
-    sprite.onMouseMove = (e: any) =>{
-      if(typeof this.onMouseMove == 'function')
-        this.onMouseMove(e: any);
+    sprite.onMouseMove = (e: GUIControlEvent) => {
+      if (typeof this.onMouseMove === 'function')
+        this.onMouseMove(e);
     }
 
-    sprite.onMouseDown = (e: any) => {
-      if(typeof this.onMouseDown == 'function')
-        this.onMouseDown(e: any);
+    sprite.onMouseDown = (e: GUIControlEvent) => {
+      if (typeof this.onMouseDown === 'function')
+        this.onMouseDown(e);
     };
 
-    sprite.onMouseUp = (e: any) => {
-      if(typeof this.onMouseUp == 'function')
-        this.onMouseUp(e: any);
+    sprite.onMouseUp = (e: GUIControlEvent) => {
+      if (typeof this.onMouseUp === 'function')
+        this.onMouseUp(e);
     };
-    
-    sprite.onHover = (e: any) => {
-      if(typeof this.onMouseIn == 'function')
-        this.onMouseIn(e: any);
+
+    sprite.onHover = (e: GUIControlEvent) => {
+      if (typeof this.onMouseIn === 'function')
+        this.onMouseIn(e);
     };
 
     sprite.getControl = () => {
@@ -2341,8 +2659,8 @@ export class GUIControl {
 
   }
 
-  resizeHighlightCorner(side: string){
-    
+  resizeHighlightCorner(_side: string) {
+
     /*let extent = this.getHighlightExtent(side);
 
     let geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
@@ -2372,28 +2690,27 @@ export class GUIControl {
   }
 
   //Add an event listener
-  addEventListener(name: string = '', callback?: (event: GUIControlEvent, ...args: any) => void){
-    if(typeof callback === 'function'){
-      if(this.eventListeners.hasOwnProperty(name)){
-        (this.eventListeners as any)[name].push(callback);
+  addEventListener(name: string = '', callback?: (event: GUIControlEvent, ...args: GUIControlEventData[]) => void) {
+    if (typeof callback === 'function') {
+      if (Object.hasOwn(this.eventListeners, name)) {
+        (this.eventListeners as Record<string, Array<(event: GUIControlEvent, ...args: GUIControlEventData[]) => void>>)[name].push(callback);
       }
     }
     return this;
   }
 
   //Remove an event listener
-  removeEventListener(name: string = '', callback?: Function){
+  removeEventListener(name: string = '', callback?: (event: GUIControlEvent, ...args: GUIControlEventData[]) => void) {
 
-    if(this.eventListeners.hasOwnProperty(name)){
-      if(typeof callback === 'function'){
-        //Remove this specific callback from the event listener
-        let cbIndex = (this.eventListeners as any)[name].indexOf(callback);
-        if(cbIndex > -1){
-          (this.eventListeners as any)[name].splice(cbIndex, 1);
+    if (Object.hasOwn(this.eventListeners, name)) {
+      const arr = (this.eventListeners as Record<string, Array<(event: GUIControlEvent, ...args: GUIControlEventData[]) => void>>)[name];
+      if (typeof callback === 'function') {
+        const cbIndex = arr.indexOf(callback);
+        if (cbIndex > -1) {
+          arr.splice(cbIndex, 1);
         }
-      }else{
-        //Remove all callbacks for this listener
-        (this.eventListeners as any)[name] = [];
+      } else {
+        arr.length = 0;
       }
     }
     return this;
@@ -2401,95 +2718,97 @@ export class GUIControl {
   }
 
   //Process an event listener
-  processEventListener(name = '', args: any[] = []){
+  processEventListener(name = '', args: GUIControlEventData[] = []) {
     let processed = false;
 
     const event = GUIControlEventFactory.generateEventObject();
     event.data = args;
 
-    if(!args.length){
-      args = [event];
-    }else{
-      args = [event, ...args];
+    let invokeArgs: [GUIControlEvent, ...GUIControlEventData[]];
+    if (!args.length) {
+      invokeArgs = [event];
+    } else {
+      invokeArgs = [event, ...args];
     }
 
-    if(this.eventListeners.hasOwnProperty(name)){
-      let len = (this.eventListeners as any)[name].length;
-      for(let i = 0; i < len; i++){
-        if(typeof (this.eventListeners as any)[name][i] === 'function'){
+    if (Object.hasOwn(this.eventListeners, name)) {
+      const arr = (this.eventListeners as Record<string, Array<(event: GUIControlEvent, ...args: GUIControlEventData[]) => void>>)[name];
+      for (let i = 0; i < arr.length; i++) {
+        const fn = arr[i];
+        if (typeof fn === 'function') {
           processed = true;
-          (this.eventListeners as any)[name][i].apply(null, args);
+          fn(...invokeArgs);
         }
       }
     }
     return processed;
   }
 
-  click(){
-    if(this.disableSelection){
+  click() {
+    if (this.disableSelection) {
       return;
     }
 
     this.processEventListener('click');
   }
 
-  setDPadTarget(direction = '', control: GUIControl){
-    if(typeof direction == 'string'){
+  setDPadTarget(direction = '', control: GUIControl) {
+    if (typeof direction == 'string') {
       direction = direction.toLowerCase();
     }
 
-    if(control instanceof GUIControl){
-      switch(direction){
+    if (control instanceof GUIControl) {
+      switch (direction) {
         case 'up':
           this.dPadTarget.up = control;
-        break;
+          break;
         case 'down':
           this.dPadTarget.down = control;
-        break;
+          break;
         case 'left':
           this.dPadTarget.left = control;
-        break;
+          break;
         case 'right':
           this.dPadTarget.right = control;
-        break;
+          break;
       }
     }
   }
 
-  directionalNavigate(direction = ''){
-    switch(direction){
+  directionalNavigate(direction = '') {
+    switch (direction) {
       case 'up':
 
-      break;
+        break;
       case 'down':
 
-      break;
+        break;
       case 'left':
 
-      break;
+        break;
       case 'right':
 
-      break;
+        break;
     }
   }
 
-  onINIPropertyAttached(){
+  onINIPropertyAttached() {
     //Stub
   }
 
-  attachINIProperty(key = ''){
-    let property = key;
-    if(property){
+  attachINIProperty(key = '') {
+    const property = key;
+    if (property) {
       this.iniProperty = property;
       this.onINIPropertyAttached();
     }
   }
 
-  updateWorldPosition(){
+  updateWorldPosition() {
 
-    let pos = this.widget.position.clone();
+    const pos = this.widget.position.clone();
     let parent = this.parent;
-    while(parent instanceof GUIControl){
+    while (parent instanceof GUIControl) {
       pos.add(parent.widget.position);
       parent = parent.parent;
     }
@@ -2498,16 +2817,16 @@ export class GUIControl {
 
   }
 
-  bounds(positions: number[] = []) {
-    let count = positions.length / itemSize
+  bounds(positions: ArrayLike<number> = []) {
+    const count = positions.length / itemSize
     box.min[0] = positions[0]
     box.min[1] = positions[1]
     box.max[0] = positions[0]
     box.max[1] = positions[1]
 
     for (let i = 0; i < count; i++) {
-      let x = positions[i * itemSize + 0]
-      let y = positions[i * itemSize + 1]
+      const x = positions[i * itemSize + 0]
+      const y = positions[i * itemSize + 1]
       box.min[0] = Math.min(x, box.min[0])
       box.min[1] = Math.min(y, box.min[1])
       box.max[0] = Math.max(x, box.max[0])
@@ -2515,21 +2834,21 @@ export class GUIControl {
     }
   }
 
-  computeBox(positions: number[] = [], output: THREE.Box3) {
+  computeBox(positions: ArrayLike<number> = [], output: THREE.Box3) {
     this.bounds(positions)
     output.min.set(box.min[0], box.min[1], 0)
     output.max.set(box.max[0], box.max[1], 0)
   }
 
-  computeSphere (positions: number[] = [], output: THREE.Sphere) {
+  computeSphere(positions: ArrayLike<number> = [], output: THREE.Sphere) {
     this.bounds(positions)
-    let minX = box.min[0]
-    let minY = box.min[1]
-    let maxX = box.max[0]
-    let maxY = box.max[1]
-    let width = maxX - minX
-    let height = maxY - minY
-    let length = Math.sqrt(width * width + height * height)
+    const minX = box.min[0]
+    const minY = box.min[1]
+    const maxX = box.max[0]
+    const maxY = box.max[1]
+    const width = maxX - minX
+    const height = maxY - minY
+    const length = Math.sqrt(width * width + height * height)
     output.center.set(minX + width / 2, minY + height / 2, 0)
     output.radius = length / 2
   }

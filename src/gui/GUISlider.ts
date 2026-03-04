@@ -1,27 +1,31 @@
-import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
-import { TextureLoader } from "../loaders";
-import { TextureType } from "../enums/loaders/TextureType";
-import { GameState } from "../GameState";
-import { Mouse } from "../controls/Mouse";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GUISliderDirection } from "../enums/gui/GUISliderDirection";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GUIControl } from "./GUIControl";
-import type { GameMenu } from "./GameMenu";
+
+import { Mouse } from "@/controls/Mouse";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GUISliderDirection } from "@/enums/gui/GUISliderDirection";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GameState } from "@/GameState";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import { TextureLoader } from "@/loaders";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * GUISlider class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUISlider.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUISlider extends GUIControl{
 
-  onValueChanged: Function;
+  onValueChanged: () => void;
 
   thumbStruct: GFFStruct;
   scrollPos: number;
@@ -54,8 +58,8 @@ export class GUISlider extends GUIControl{
     this.thumb.mesh = new THREE.Sprite( this.thumb.material );
     this.widget.add(this.thumb.mesh);
 
-    this.thumb.mesh.addEventListener('click', (e) => {
-      console.log('hello');
+    this.thumb.mesh.addEventListener('click', (_e) => {
+      log.info('hello');
       this.mouseInside();
     });
 
@@ -67,7 +71,7 @@ export class GUISlider extends GUIControl{
       this.thumb.mesh.scale.x = this.thumb.width;
       this.thumb.mesh.scale.y = this.thumb.height;
 
-      let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
+      const parentPos = this.widget.getWorldPosition(new THREE.Vector3());
 
       this.thumb.mesh.userData.box = new THREE.Box2(
         new THREE.Vector2(
@@ -81,7 +85,7 @@ export class GUISlider extends GUIControl{
       )
 
       if(this.thumbStruct.hasField('IMAGE')){
-        TextureLoader.enQueue(this.thumbStruct.getFieldByLabel('IMAGE').getValue(), this.thumb.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+        TextureLoader.enQueue(this.thumbStruct.getStringByLabel('IMAGE'), this.thumb.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           this.thumb.material.transparent = false;
           this.thumb.material.alphaTest = 0.5;
           this.thumb.material.needsUpdate = true;
@@ -140,9 +144,9 @@ export class GUISlider extends GUIControl{
     if(this.disableSelection) return;
 
     // const mouseX = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidthScaled() / 2);
-    const mouseY = -(Mouse.positionViewport.y - (GameState.ResolutionManager.getViewportHeightScaled() / 2));
-    const scrollBarWidth = this.extent.width;
-    const scrollBarHeight = this.extent.height;
+    const _mouseY = -(Mouse.positionViewport.y - (GameState.ResolutionManager.getViewportHeightScaled() / 2));
+    const _scrollBarWidth = this.extent.width;
+    const _scrollBarHeight = this.extent.height;
 
     let value = this.value;
     let valueChanged = false;
@@ -182,11 +186,11 @@ export class GUISlider extends GUIControl{
         mouseY = maxY
       }
 
-      const scrollY = ((mouseY - minY) / (maxY - minY));
+      const thumbScrollRatio = ((mouseY - minY) / (maxY - minY));
       this.thumb.mesh.position.x = 0;
-      this.thumb.mesh.position.y = maxHeight * (scrollY - 0.5);
-      valueChanged = (scrollY != this.value);
-      value = scrollY;
+      this.thumb.mesh.position.y = maxHeight * (thumbScrollRatio - 0.5);
+      valueChanged = (thumbScrollRatio != this.value);
+      value = thumbScrollRatio;
     }
 
     this.value = value;
@@ -223,7 +227,7 @@ export class GUISlider extends GUIControl{
     if(this.iniProperty){
       GameState.iniConfig.setProperty(this.iniProperty, (this.value * 100) | 0);
     }
-    
+
     if(typeof this.onValueChanged === 'function')
       this.onValueChanged(this.value);
 

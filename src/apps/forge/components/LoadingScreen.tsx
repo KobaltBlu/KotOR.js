@@ -1,41 +1,48 @@
-import React, { useEffect } from "react";
-import { useState } from "react";
-import { useLoadingScreen } from "../context/LoadingScreenContext";
+import React, { useEffect , useState } from "react";
 
-export const LoadingScreen = function(props: any){
+import { useLoadingScreen } from "@/apps/forge/context/LoadingScreenContext";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
+
+export interface LoadingScreenProps {
+  /** Optional passthrough props for styling etc. */
+  [key: string]: unknown;
+}
+
+export const LoadingScreen = function(_props: LoadingScreenProps){
 
   const loaderContext = useLoadingScreen();
-  const [enabled, setEnabled] = loaderContext.enabled;
-  const [message, setMessage] = loaderContext.message;
-  const [backgroundURL, setBackgroundURL] = loaderContext.backgroundURL;
-  const [logoURL, setLogoURL] = loaderContext.logoURL;
+  const [enabled, _setEnabled] = loaderContext.enabled;
+  const [message, _setMessage] = loaderContext.message;
+  const [backgroundURL, _setBackgroundURL] = loaderContext.backgroundURL;
+  const [logoURL, _setLogoURL] = loaderContext.logoURL;
   
   const [render, rerender] = useState<boolean>(false);
 
   useEffect(() => {
-    //Constructor
-    console.log()
+    log.trace('LoadingScreen mounted');
     return () => {
-      //Destructor
+      log.trace('LoadingScreen unmounted');
     };
   }, []);
 
   useEffect(() => {
     rerender(!render);
-    console.log('ls', enabled);
+    log.debug('LoadingScreen enabled changed', enabled);
   }, [enabled]);
 
   useEffect(() => {
     rerender(!render);
-    console.log('ls', message);
+    log.debug('LoadingScreen message changed', message);
   }, [message]);
 
   //style={{display: (enabled) ? 'block' : 'none'}}
   return (
-    <div className={`loading-screen se-pre-con ${!!enabled ? 'fade-in' : 'fade-out'}`} style={{display: (enabled) ? 'block' : 'none'}}>
-      <div className="background" style={{backgroundImage: (!!backgroundURL) ? `url(${backgroundURL})` : 'initial'}}></div>
+    <div className={`loading-screen se-pre-con ${enabled ? 'fade-in' : 'fade-out'}`} style={{display: (enabled) ? 'block' : 'none'}}>
+      <div className="background" style={{backgroundImage: (backgroundURL) ? `url(${backgroundURL})` : 'initial'}}></div>
       <div className="logo-wrapper">
-        <img src={logoURL} style={{display: (!!logoURL) ? 'block' : 'none'}} />
+        <img src={logoURL} style={{display: (logoURL) ? 'block' : 'none'}} />
       </div>
       <div className="loading-container">
         <div className="spinner-wrapper">

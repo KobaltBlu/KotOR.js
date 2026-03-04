@@ -1,15 +1,19 @@
-import { Action } from "./Action";
-import { SpellCastInstance } from "../combat";
-import { ModuleObjectType } from "../enums";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { GameState } from "../GameState";
-// import { TalentSpell } from "../talents/TalentSpell";
-import { BitWise } from "../utility/BitWise";
-import type { ModuleObject } from "../module/ModuleObject";
+import { Action } from "@/actions/Action";
+import { SpellCastInstance } from "@/combat";
+import { ModuleObjectType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { GameState } from "@/GameState";
+// import { TalentSpell } from "@/talents/TalentSpell";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Action);
 
 /**
  * ActionCastSpell class.
@@ -22,7 +26,7 @@ import type { ModuleObject } from "../module/ModuleObject";
  */
 export class ActionCastSpell extends Action {
   
-  spell: any = {}
+  spell: import("@/talents/TalentSpell").TalentSpell | Record<string, never> = {}
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
@@ -44,16 +48,16 @@ export class ActionCastSpell extends Action {
 
   }
 
-  update(delta: number = 0): ActionStatus {
-    //console.log('ActionCastSpell', this);
+  update(_delta: number = 0): ActionStatus {
+    log.trace('ActionCastSpell.update', { spellId: this.getParameter<number>(0), targetId: this.getParameter<number>(5) });
     this.target = this.getParameter<ModuleObject>(5);
     this.spell = new GameState.TalentSpell( this.getParameter<number>(0));
 
     if(this.spell){
       if(!this.spell.inRange(this.target, this.owner)){
 
-        // (this.owner as any).openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
+        this.owner.openSpot = undefined;
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);

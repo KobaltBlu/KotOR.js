@@ -1,4 +1,4 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 export class SWFaction {
   id: number;
@@ -14,16 +14,16 @@ export class SWFaction {
     return this.label;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: Record<string, string | number> = {}){
     const faction = new SWFaction();
-    faction.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
-    faction.label = TwoDAObject.normalizeValue(row.label, 'string', '');
+    faction.id = TwoDAObject.normalizeValue(row.__index, 'number', -1) as number;
+    faction.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
 
     Object.keys(row).forEach(key => {
       if(key.startsWith('__index') || key.startsWith('__rowlabel')  || key.startsWith('label')){
         return;
       }
-      faction.reputationMap.set(key, TwoDAObject.normalizeValue(row[key], 'number', 0));
+      faction.reputationMap.set(key, TwoDAObject.normalizeValue(row[key], 'number', 0) as number);
     });
 
     return faction;

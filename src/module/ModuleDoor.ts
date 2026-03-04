@@ -1,52 +1,53 @@
-import { ModuleObject } from "./ModuleObject";
-import type { ModuleRoom } from "./ModuleRoom";
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { GameState } from "../GameState";
-import { SSFType } from "../enums/resource/SSFType";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { CExoLocString } from "../resource/CExoLocString";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyModel3D } from "../three/odyssey";
-
 import * as THREE from "three";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
-import { NWScript } from "../nwscript/NWScript";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ModuleDoorAnimState } from "../enums/module/ModuleDoorAnimState";
-import { ModuleDoorOpenState } from "../enums/module/ModuleDoorOpenState";
-import { ModuleDoorInteractSide } from "../enums/module/ModuleDoorInteractSide";
-// import { AppearanceManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "../managers";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { DLGObject } from "../resource/DLGObject";
-import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { SWDoorAppearance } from "../engine/rules/SWDoorAppearance";
-import { AudioEngine } from "../audio/AudioEngine";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { BitWise } from "../utility/BitWise";
-import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
-import { GameEffectFactory } from "../effects/GameEffectFactory";
-import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "../enums";.3
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
+import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { ModuleDoorAnimState } from "@/enums/module/ModuleDoorAnimState";
+import { ModuleDoorInteractSide } from "@/enums/module/ModuleDoorInteractSide";
+import { ModuleDoorOpenState } from "@/enums/module/ModuleDoorOpenState";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { SSFType } from "@/enums/resource/SSFType";
+import { GameState } from "@/GameState";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleRoom } from "@/module/ModuleRoom";
+import { OdysseyModel, OdysseyWalkMesh } from "@/odyssey";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { DLGObject } from "@/resource/DLGObject";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+// import { AppearanceManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "@/managers";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger , LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
   currentAnimState: ModuleDoorAnimState;
   loop: boolean;
   started: boolean;
-};
+}
 
 /**
 * ModuleDoor class.
-* 
+*
 * Class representing a door found in module areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleDoor.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -82,9 +83,9 @@ export class ModuleDoor extends ModuleObject {
   z: number;
   declare audioEmitter: AudioEmitter;
   boxHelper: THREE.Box3Helper;
-  props: any;
-  useable: any;
-  bodyBag: any;
+  props: Record<string, unknown>;
+  useable: number;
+  bodyBag: number;
 
   trans: THREE.Object3D;
   transitionLineMin: THREE.Vector3 = new THREE.Vector3(-2.5, 0, 0);
@@ -161,7 +162,7 @@ export class ModuleDoor extends ModuleObject {
       this.audioEmitter.type = AudioEmitterType.POSITIONAL;
       this.audioEmitter.load();
     }catch(e){
-      console.error('AudioEmitter failed to create on object', e);
+      log.error('AudioEmitter failed to create on object', e);
     }
 
   }
@@ -230,7 +231,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   getObjectSounds(){
-    let result = {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
+    const result = {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
     const appearance = this.getDoorAppearance();
     if(!appearance) return result;
 
@@ -254,27 +255,27 @@ export class ModuleDoor extends ModuleObject {
     switch(type){
       case ModulePlaceableObjectSound.OPENED:
         if(objSounds?.opened != '****'){
-          this.audioEmitter.playSound(objSounds?.opened);
+          this.audioEmitter.playSound(String(objSounds?.opened ?? ''));
         }
       break;
       case ModulePlaceableObjectSound.CLOSED:
         if(objSounds?.closed != '****'){
-          this.audioEmitter.playSound(objSounds?.closed);
+          this.audioEmitter.playSound(String(objSounds?.closed ?? ''));
         }
       break;
       case ModulePlaceableObjectSound.DESTROYED:
         if(objSounds?.destroyed != '****'){
-          this.audioEmitter.playSound(objSounds?.destroyed);
+          this.audioEmitter.playSound(String(objSounds?.destroyed ?? ''));
         }
       break;
       case ModulePlaceableObjectSound.USED:
         if(objSounds?.used != '****'){
-          this.audioEmitter.playSound(objSounds?.used);
+          this.audioEmitter.playSound(String(objSounds?.used ?? ''));
         }
       break;
       case ModulePlaceableObjectSound.LOCKED:
         if(objSounds?.locked != '****'){
-          this.audioEmitter.playSound(objSounds?.locked);
+          this.audioEmitter.playSound(String(objSounds?.locked ?? ''));
         }
       break;
     }
@@ -361,7 +362,7 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  onClick(callee: ModuleObject){
+  onClick(_callee: ModuleObject){
     GameState.getCurrentPlayer().actionOpenDoor( this );
   }
 
@@ -371,7 +372,7 @@ export class ModuleDoor extends ModuleObject {
 
     // If the door is already open, do nothing
     if(this.openState){
-      console.log('ModuleDoor', this.getTag(), this.getName(), 'already open');
+      log.debug('ModuleDoor', this.getTag(), this.getName(), 'already open');
       return;
     }
 
@@ -408,25 +409,25 @@ export class ModuleDoor extends ModuleObject {
       this.playObjectSound(ModulePlaceableObjectSound.LOCKED);
       return;
     }
-    
+
     this.openDoor(object);
 
   }
 
-  lock(object: ModuleObject){
+  lock(_object: ModuleObject){
     if(this.locked){ return; }
     this.locked = true;
-    
+
     const onLock = this.scripts[ModuleObjectScript.DoorOnLock];
     if(onLock){
       onLock.run(this);
     }
   }
 
-  unlock(object: ModuleObject){
+  unlock(_object: ModuleObject){
     if(!this.locked){ return; }
     this.locked = false;
-    
+
     const onUnlock = this.scripts[ModuleObjectScript.DoorOnUnlock];
     if(onUnlock){
       onUnlock.run(this);
@@ -437,11 +438,11 @@ export class ModuleDoor extends ModuleObject {
     if(!BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject)){
       return false;
     }
-    
+
     const nSecuritySkill = object.getSkillLevel(SkillType.SECURITY);
     if(this.isLocked() && !this.keyRequired && nSecuritySkill >= 1){
-      let d20 = 20;//d20 rolls are auto 20's outside of combat
-      let skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
+      const d20 = 20;//d20 rolls are auto 20's outside of combat
+      const skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
       if(skillCheck >= 1 && nSecuritySkill >= 1){
         this.unlock(object);
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
@@ -453,7 +454,7 @@ export class ModuleDoor extends ModuleObject {
         }
       }
     }
-        
+
     this.use(object);
     return true;
   }
@@ -482,7 +483,7 @@ export class ModuleDoor extends ModuleObject {
     // if(GameState.selectedObject == this){
     //   GameState.selectedObject = GameState.selected = undefined;
     // }
-    
+
     //TODO: detect the correct side that the creature interacted from
     switch(this.objectInteractSide){
       case ModuleDoorInteractSide.SIDE_1:
@@ -500,8 +501,8 @@ export class ModuleDoor extends ModuleObject {
     //Notice all creatures within range that someone opened this door
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-        let creature = GameState.module.area.creatures[i];
-        let distance = creature.position.distanceTo(this.position);
+        const creature = GameState.module.area.creatures[i];
+        const distance = creature.position.distanceTo(this.position);
         if(distance <= creature.getPerceptionRangePrimary()){
           creature.notifyPerceptionHeardObject(object, true);
         }
@@ -520,13 +521,13 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  destroyDoor(object: ModuleObject){
+  destroyDoor(_object: ModuleObject){
 
     const onDeath = this.scripts[ModuleObjectScript.DoorOnDeath];
     if(onDeath){
       onDeath.run(this);
     }
-    
+
     //TODO: detect the correct side that the creature interacted from
     switch(this.objectInteractSide){
       case ModuleDoorInteractSide.SIDE_1:
@@ -567,9 +568,9 @@ export class ModuleDoor extends ModuleObject {
     //Check to see if this trigger is linked to another module
     if(this.linkedToModule && this.type == 1){
       //Check Party Members
-      let partyLen = GameState.PartyManager.party.length;
+      const partyLen = GameState.PartyManager.party.length;
       for(let i = 0; i < partyLen; i++){
-        let partymember = GameState.PartyManager.party[i];
+        const partymember = GameState.PartyManager.party[i];
         if(this.box.containsPoint(partymember.position)){
           if(this.objectsInside.indexOf(partymember) == -1){
             this.objectsInside.push(partymember);
@@ -581,9 +582,9 @@ export class ModuleDoor extends ModuleObject {
       }
     }else{
       //Check Creatures
-      let creatureLen = GameState.module.area.creatures.length;
+      const creatureLen = GameState.module.area.creatures.length;
       for(let i = 0; i < creatureLen; i++){
-        let creature = GameState.module.area.creatures[i];
+        const creature = GameState.module.area.creatures[i];
         if(this.box.containsPoint(creature.position)){
           if(this.objectsInside.indexOf(creature) == -1){
             this.objectsInside.push(creature);
@@ -629,7 +630,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   update(delta = 0){
-    
+
     super.update(delta);
     if(this.model instanceof OdysseyModel3D){
       this.model.update(delta);
@@ -698,19 +699,19 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  updateAnimationState(delta: number = 0){
+  updateAnimationState(_delta: number = 0){
     if(!(this.model instanceof OdysseyModel3D))
       return;
 
-    let currentAnimation = this.model.getAnimationName();
+    const currentAnimation = this.model.getAnimationName();
     if(!this.animStateInfo.currentAnimState) this.setAnimationState(ModuleDoorAnimState.DEFAULT);
     if(this.animStateInfo.currentAnimState){
-      let animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
+      const animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
       if(animation){
         if(currentAnimation != animation.name?.toLowerCase()){
           if(!this.animStateInfo.started){
             if(
-              this.animStateInfo.currentAnimState == ModuleDoorAnimState.CLOSING1 || 
+              this.animStateInfo.currentAnimState == ModuleDoorAnimState.CLOSING1 ||
               this.animStateInfo.currentAnimState == ModuleDoorAnimState.CLOSING2
             ){
               this.collisionDelay = 0.75;
@@ -750,7 +751,7 @@ export class ModuleDoor extends ModuleObject {
           }
         }
       }else{
-        console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
+        log.error('Animation Missing', this.getTag(), this.getName(), this.animState);
         this.setAnimationState(ModuleDoorAnimState.DEFAULT);
       }
     }
@@ -769,7 +770,7 @@ export class ModuleDoor extends ModuleObject {
 
   detachFromRoom(room: ModuleRoom): void {
     if(!room) return;
-    let index = room.doors.indexOf(this);
+    const index = room.doors.indexOf(this);
     if(index >= 0){
       room.doors.splice(index, 1);
     }
@@ -777,13 +778,13 @@ export class ModuleDoor extends ModuleObject {
 
   getCurrentRoom(): void {
     this.room = undefined;
-    let aabbFaces = [];
+    const aabbFaces = [];
     let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
-    let box = this.box.clone();
+    const box = this.box.clone();
 
     this.rooms = [];
     for(let i = 0; i < GameState.module.area.rooms.length; i++){
-      let room = GameState.module.area.rooms[i];
+      const room = GameState.module.area.rooms[i];
       if(room.box.containsPoint(this.position)){
         this.roomIds.push(i);
       }
@@ -791,25 +792,25 @@ export class ModuleDoor extends ModuleObject {
 
     if(box){
       for(let j = 0, jl = this.roomIds.length; j < jl; j++){
-        let room = GameState.module.area.rooms[this.roomIds[j]];
+        const room = GameState.module.area.rooms[this.roomIds[j]];
         if(room && room.collisionManager.walkmesh && room.collisionManager.walkmesh.aabbNodes.length){
           aabbFaces.push({
-            object: room, 
+            object: room,
             faces: room.collisionManager.walkmesh.getAABBCollisionFaces(box)
           });
         }
       }
     }
-    
-    let scratchVec3 = new THREE.Vector3(0, 0, 2);
-    let playerFeetRay = this.position.clone().add(scratchVec3);
+
+    const scratchVec3 = new THREE.Vector3(0, 0, 2);
+    const playerFeetRay = this.position.clone().add(scratchVec3);
     GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
     GameState.raycaster.ray.direction.set(0, 0,-1);
-    
+
     for(let j = 0, jl = aabbFaces.length; j < jl; j++){
-      let castableFaces = aabbFaces[j];
+      const castableFaces = aabbFaces[j];
       intersects = castableFaces.object.collisionManager.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
-      
+
       if(intersects.length){
         if(intersects[0].object.userData.moduleObject){
           this.attachToRoom(intersects[0].object.userData.moduleObject);
@@ -882,17 +883,18 @@ export class ModuleDoor extends ModuleObject {
   }
 
   load(){
-    if(this.getTemplateResRef()){
+    const templateResRef = this.getTemplateResRef();
+    if(templateResRef != null && templateResRef !== ''){
       //Load template and merge fields
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utd'], this.getTemplateResRef());
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utd'], String(templateResRef));
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
-        //console.log(this.template, gff, this)
+        //log.info(this.template, gff, this)
         this.initProperties();
         this.loadScripts();
       }else{
-        console.error(`Failed to load ${ModuleDoor.name} template`);
+        log.error(`Failed to load ${ModuleDoor.name} template`);
         if(this.template instanceof GFFObject){
           this.initProperties();
           this.loadScripts();
@@ -906,8 +908,8 @@ export class ModuleDoor extends ModuleObject {
   }
 
   loadModel(): Promise<OdysseyModel3D> {
-    let modelName = this.getDoorAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
-    return new Promise<OdysseyModel3D>( (resolve, reject) => {
+    const modelName = this.getDoorAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    return new Promise<OdysseyModel3D>( (resolve, _reject) => {
       MDLLoader.loader.load(modelName).then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           context: this.context,
@@ -920,7 +922,7 @@ export class ModuleDoor extends ModuleObject {
         }).then((door: OdysseyModel3D) => {
           if(this.model instanceof OdysseyModel3D){
             this.model.removeFromParent();
-            try{ this.model.dispose(); }catch(e){}
+            try{ this.model.dispose(); }catch{ /* dispose may throw */ }
           }
 
           this.model = door;
@@ -937,7 +939,7 @@ export class ModuleDoor extends ModuleObject {
           }
 
           this.generateTransitionLine();
-          
+
           this.model.disableMatrixUpdate();
 
           switch(this.openState){
@@ -988,7 +990,7 @@ export class ModuleDoor extends ModuleObject {
     if(!scriptsNode){ return; }
     for(const scriptKey of scriptKeys){
       if(scriptsNode.hasField(scriptKey)){
-        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+        const resRef = scriptsNode.getStringByLabel(scriptKey);
         if(!resRef){ continue; }
         const nwscript = GameState.NWScript.Load(resRef);
         if(!nwscript){ continue; }
@@ -1005,51 +1007,51 @@ export class ModuleDoor extends ModuleObject {
       walkmesh.mesh.name = walkmesh.name = resRef;
       walkmesh.mesh.userData.moduleObject = walkmesh.moduleObject = this;
       this.collisionManager.setWalkmesh(walkmesh);
-  
+
       this.updateCollisionState();
-  
+
       return this.collisionManager.walkmesh;
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
   }
 
   initProperties(){
-    
+
     if(!this.initialized){
       if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+        this.id = this.template.RootNode.getNumberByLabel('ObjectId');
       }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
+        this.id = this.template.RootNode.getNumberByLabel('ID');
       }
-      
+
       GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('AnimationState'))
-      this.animationState = this.template.getFieldByLabel('AnimationState').getValue();
+      this.animationState = this.template.RootNode.getNumberByLabel('AnimationState');
 
     if(this.template.RootNode.hasField('Appearance'))
-      this.appearance = this.template.getFieldByLabel('Appearance').getValue();
+      this.appearance = this.template.RootNode.getNumberByLabel('Appearance');
 
     if(this.template.RootNode.hasField('AutoRemoveKey'))
-      this.autoRemoveKey = this.template.getFieldByLabel('AutoRemoveKey').getValue();
+      this.autoRemoveKey = this.template.RootNode.getNumberByLabel('AutoRemoveKey');
 
     if(this.template.RootNode.hasField('CloseLockDC'))
-      this.closeLockDC = this.template.getFieldByLabel('CloseLockDC').getValue();
+      this.closeLockDC = this.template.RootNode.getNumberByLabel('CloseLockDC');
 
     if(this.template.RootNode.hasField('Conversation')){
-      this.conversation = DLGObject.FromResRef(this.template.getFieldByLabel('Conversation').getValue());
+      this.conversation = DLGObject.FromResRef(this.template.RootNode.getStringByLabel('Conversation'));
     }
 
     if(this.template.RootNode.hasField('CurrentHP'))
-      this.currentHP = this.template.getFieldByLabel('CurrentHP').getValue();
+      this.currentHP = this.template.RootNode.getNumberByLabel('CurrentHP');
 
     if(this.template.RootNode.hasField('DisarmDC'))
-      this.disarmDC = this.template.getFieldByLabel('DisarmDC').getValue();
+      this.disarmDC = this.template.RootNode.getNumberByLabel('DisarmDC');
 
     if(this.template.RootNode.hasField('Faction')){
-      this.factionId = this.template.getFieldByLabel('Faction').getValue();
+      this.factionId = this.template.RootNode.getNumberByLabel('Faction');
       if((this.factionId & 0xFFFFFFFF) == -1){
         this.factionId = 0;
       }
@@ -1057,111 +1059,110 @@ export class ModuleDoor extends ModuleObject {
     this.faction = GameState.FactionManager.factions.get(this.factionId);
 
     if(this.template.RootNode.hasField('Fort'))
-      this.fort = this.template.getFieldByLabel('Fort').getValue();
-  
+      this.fort = this.template.RootNode.getNumberByLabel('Fort');
+
     if(this.template.RootNode.hasField('GenericType')){
-      this.genericType = this.template.RootNode.getFieldByLabel('GenericType').getValue();
+      this.genericType = this.template.RootNode.getNumberByLabel('GenericType');
       this.doorAppearance = GameState.AppearanceManager.GetDoorAppearanceById(this.genericType);
     }
-        
+
     if(this.template.RootNode.hasField('HP'))
-      this.hp = this.template.RootNode.getFieldByLabel('HP').getValue();
+      this.hp = this.template.RootNode.getNumberByLabel('HP');
 
     if(this.template.RootNode.hasField('Hardness'))
-      this.hardness = this.template.RootNode.getFieldByLabel('Hardness').getValue();
-    
+      this.hardness = this.template.RootNode.getNumberByLabel('Hardness');
+
     if(this.template.RootNode.hasField('Interruptable'))
-      this.interruptable = this.template.RootNode.getFieldByLabel('Interruptable').getValue();
-        
+      this.interruptable = this.template.RootNode.getBooleanByLabel('Interruptable');
+
     if(this.template.RootNode.hasField('KeyName'))
-      this.keyName = this.template.RootNode.getFieldByLabel('KeyName').getValue();
-  
+      this.keyName = this.template.RootNode.getStringByLabel('KeyName');
+
     if(this.template.RootNode.hasField('KeyRequired'))
-      this.keyRequired = this.template.RootNode.getFieldByLabel('KeyRequired').getValue();
-      
+      this.keyRequired = this.template.RootNode.getBooleanByLabel('KeyRequired');
+
     if(this.template.RootNode.hasField('LoadScreenID'))
-      this.loadScreenID = this.template.getFieldByLabel('LoadScreenID').getValue();
+      this.loadScreenID = this.template.RootNode.getNumberByLabel('LoadScreenID');
 
     if(this.template.RootNode.hasField('LocName'))
       this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
 
     if(this.template.RootNode.hasField('Locked'))
-      this.locked = this.template.getFieldByLabel('Locked').getValue();
+      this.locked = this.template.RootNode.getBooleanByLabel('Locked');
 
     if(this.template.RootNode.hasField('Min1HP'))
-      this.min1HP = this.template.getFieldByLabel('Min1HP').getValue();
+      this.min1HP = this.template.RootNode.getBooleanByLabel('Min1HP');
 
     if(this.template.RootNode.hasField('OpenLockDC'))
-      this.openLockDC = this.template.getFieldByLabel('OpenLockDC').getValue();
+      this.openLockDC = this.template.RootNode.getNumberByLabel('OpenLockDC');
 
     if(this.template.RootNode.hasField('OpenState'))
-      this.openState = this.template.getFieldByLabel('OpenState').getValue();
+      this.openState = this.template.RootNode.getNumberByLabel('OpenState');
 
     if(this.template.RootNode.hasField('PaletteID'))
-      this.paletteID = this.template.getFieldByLabel('PaletteID').getValue();
+      this.paletteID = this.template.RootNode.getNumberByLabel('PaletteID');
 
     if(this.template.RootNode.hasField('Plot'))
-      this.plot = this.template.getFieldByLabel('Plot').getValue();
+      this.plot = this.template.RootNode.getBooleanByLabel('Plot');
 
     if(this.template.RootNode.hasField('PortraidId')){
-      this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
+      this.portraitId = this.template.RootNode.getNumberByLabel('PortraidId');
       this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
     }
 
 
     if(this.template.RootNode.hasField('Ref'))
-      this.ref = this.template.getFieldByLabel('Ref').getValue();
+      this.ref = this.template.RootNode.getNumberByLabel('Ref');
 
     if(this.template.RootNode.hasField('Static'))
-      this.static = this.template.getFieldByLabel('Static').getValue();
+      this.static = this.template.RootNode.getBooleanByLabel('Static');
 
     if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue();
+      this.tag = this.template.RootNode.getStringByLabel('Tag');
 
     if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
+      this.templateResRef = this.template.RootNode.getStringByLabel('TemplateResRef');
 
     if(this.template.RootNode.hasField('TrapDetectDC'))
-      this.trapDetectDC = this.template.getFieldByLabel('TrapDetectDC').getValue();
-  
+      this.trapDetectDC = this.template.RootNode.getNumberByLabel('TrapDetectDC');
+
     if(this.template.RootNode.hasField('TrapDetectable'))
-      this.trapDetectable = !!this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
+      this.trapDetectable = this.template.RootNode.getBooleanByLabel('TrapDetectable');
 
     if(this.template.RootNode.hasField('TrapDisarmable'))
-      this.trapDisarmable = !!this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
-  
+      this.trapDisarmable = this.template.RootNode.getBooleanByLabel('TrapDisarmable');
+
     if(this.template.RootNode.hasField('TrapFlag'))
-      this.trapFlag = !!this.template.RootNode.getFieldByLabel('TrapFlag').getValue();
+      this.trapFlag = this.template.RootNode.getBooleanByLabel('TrapFlag');
 
     if(this.template.RootNode.hasField('TrapOneShot'))
-      this.trapOneShot = !!this.template.getFieldByLabel('TrapOneShot').getValue();
+      this.trapOneShot = this.template.RootNode.getBooleanByLabel('TrapOneShot');
 
     if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
+      this.templateResRef = this.template.RootNode.getStringByLabel('TemplateResRef');
 
     if(this.template.RootNode.hasField('TrapType'))
-      this.trapType = this.template.getFieldByLabel('TrapType').getValue();
+      this.trapType = this.template.RootNode.getNumberByLabel('TrapType');
 
     if(this.template.RootNode.hasField('Will'))
-      this.will = this.template.getFieldByLabel('Will').getValue();
+      this.will = this.template.RootNode.getNumberByLabel('Will');
 
     if(this.template.RootNode.hasField('X'))
-      this.x = this.position.x = this.template.RootNode.getFieldByLabel('X').getValue();
+      this.x = this.position.x = this.template.RootNode.getNumberByLabel('X');
 
     if(this.template.RootNode.hasField('Y'))
-      this.y = this.position.y = this.template.RootNode.getFieldByLabel('Y').getValue();
+      this.y = this.position.y = this.template.RootNode.getNumberByLabel('Y');
 
     if(this.template.RootNode.hasField('Z'))
-      this.z = this.position.z = this.template.RootNode.getFieldByLabel('Z').getValue();
+      this.z = this.position.z = this.template.RootNode.getNumberByLabel('Z');
 
     if(this.template.RootNode.hasField('Bearing'))
-      this.bearing = this.rotation.z = this.template.RootNode.getFieldByLabel('Bearing').getValue();
+      this.bearing = this.rotation.z = this.template.RootNode.getNumberByLabel('Bearing');
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
+      const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getNumberByLabel('Variable');
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
@@ -1169,9 +1170,9 @@ export class ModuleDoor extends ModuleObject {
     }
 
     if(this.template.RootNode.hasField('EffectList')){
-      let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
+      const effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
       for(let i = 0; i < effects.length; i++){
-        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
+        const effect = GameEffectFactory.EffectFromStruct(effects[i]);
         if(effect){
           effect.setAttachedObject(this);
           effect.loadModel();
@@ -1182,26 +1183,26 @@ export class ModuleDoor extends ModuleObject {
     }
 
     if(this.template.RootNode.hasField('LinkedTo'))
-      this.linkedTo = this.template.RootNode.getFieldByLabel('LinkedTo').getValue();
+      this.linkedTo = this.template.RootNode.getStringByLabel('LinkedTo');
 
     if(this.template.RootNode.hasField('LinkedToFlags'))
-      this.linkedToFlags = this.template.RootNode.getFieldByLabel('LinkedToFlags').getValue();
+      this.linkedToFlags = this.template.RootNode.getNumberByLabel('LinkedToFlags');
 
     if(this.template.RootNode.hasField('LinkedToModule'))
-      this.linkedToModule = this.template.RootNode.getFieldByLabel('LinkedToModule').getValue();
+      this.linkedToModule = this.template.RootNode.getStringByLabel('LinkedToModule');
 
     if(this.template.RootNode.hasField('TransitionDestin'))
       this.transitionDestin = this.template.RootNode.getFieldByLabel('TransitionDestin').getCExoLocString();
-    
+
     //BEGIN: TSL Properties
     if(this.template.RootNode.hasField('TweakColor'))
-      this.tweakColor = this.template.getFieldByLabel('TweakColor').getValue();
-    
+      this.tweakColor = this.template.RootNode.getNumberByLabel('TweakColor');
+
     if(this.template.RootNode.hasField('UseTweakColor'))
-      this.useTweakColor = !!this.template.getFieldByLabel('UseTweakColor').getValue();
+      this.useTweakColor = this.template.RootNode.getBooleanByLabel('UseTweakColor');
 
     if(this.template.RootNode.hasField('NotBlastable'))
-      this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
+      this.notBlastable = this.template.RootNode.getBooleanByLabel('NotBlastable');
     //END: TSL Properties
 
     this.initialized = true
@@ -1214,14 +1215,14 @@ export class ModuleDoor extends ModuleObject {
     try{
       const wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
       if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
-    }catch(e){}
+    }catch{ /* walkmesh cleanup */ }
   }
 
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'UTD ';
 
-    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
+    gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Appearance') ).setValue(this.appearance);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Bearing') ).setValue(this.bearing);
@@ -1234,7 +1235,7 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).setValue(this.disarmDC);
 
     //Effects
-    let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
+    const effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
     for(let i = 0; i < this.effects.length; i++){
       effectList.addChildStruct( this.effects[i].save() );
     }
@@ -1245,15 +1246,15 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HP') ).setValue(this.hp);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Hardness') ).setValue(this.hardness);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'KeyName') ).setValue(this.keyName);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'KeyRequired') ).setValue(this.keyRequired);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'KeyRequired') ).setValue(Number(this.keyRequired));
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'LinkedTo') ).setValue(this.linkedTo);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'LinkedToFlags') ).setValue(this.linkedToFlags);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'LinkedToModule') ).setValue(this.linkedToModule);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') ).setValue(this.locName);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'LoadScreenID') ).setValue(this.loadScreenID);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Lockable') ).setValue(this.lockable);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Locked') ).setValue(this.locked);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Lockable') ).setValue(Number(this.lockable));
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Locked') ).setValue(Number(this.locked));
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(Number(this.min1HP));
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
     //Scripts
@@ -1271,26 +1272,26 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnTrapTriggered) ).setValue(this.scripts[ModuleObjectScript.DoorOnTrapTriggered]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnUnlock) ).setValue(this.scripts[ModuleObjectScript.DoorOnUnlock]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.DoorOnUserDefined]?.name || '');
-    
+
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenState') ).setValue(this.openState);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(Number(this.plot));
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') ).setValue(this.ref);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SecretDoorDC') ).setValue(0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(Number(this.static));
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'TransitionDestin') ).setValue(this.transitionDestin);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapFlag') ).setValue(this.trapFlag);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(Number(this.trapDetectable));
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(Number(this.trapDisarmable));
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapFlag') ).setValue(Number(this.trapFlag));
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(Number(this.trapOneShot));
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapType') ).setValue(this.trapType);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Useable') ).setValue(this.useable);
     gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
@@ -1307,34 +1308,35 @@ export class ModuleDoor extends ModuleObject {
     const animations2DA = GameState.TwoDAManager.datatables.get('animations');
     if(animations2DA){
       switch( animation_constant ){
-        case ModuleDoorAnimState.DEFAULT:       //10000, //327 - 
-          return animations2DA.rows[327];
-        case ModuleDoorAnimState.OPENED1:       //10050, //331 - 
-          return animations2DA.rows[331];
-        case ModuleDoorAnimState.OPENED2:       //10051, //332 - 
-          return animations2DA.rows[332];
-        case ModuleDoorAnimState.CLOSED:        //10022, //333 - 
-          return animations2DA.rows[333];
-        case ModuleDoorAnimState.OPENING1:      //10052, //334 - 
-          return animations2DA.rows[334];
-        case ModuleDoorAnimState.OPENING2:      //10053, //335 - 
-          return animations2DA.rows[335];
-        case ModuleDoorAnimState.CLOSING1:      //10054, //336 - 
-          return animations2DA.rows[336];
-        case ModuleDoorAnimState.CLOSING2:      //10055, //337 - 
-          return animations2DA.rows[337];
-        case ModuleDoorAnimState.BUSTED:        //10153, //366 - 
-          return animations2DA.rows[366];
-        case ModuleDoorAnimState.TRANS:         //10269, //344 - 
-          return animations2DA.rows[344];
+        case ModuleDoorAnimState.DEFAULT:       //10000, //327 -
+          return animations2DA.rows[327] as unknown as ITwoDAAnimation;
+        case ModuleDoorAnimState.OPENED1:       //10050, //331 -
+          return animations2DA.rows[331] as unknown as ITwoDAAnimation;
+        case ModuleDoorAnimState.OPENED2:       //10051, //332 -
+          return animations2DA.rows[332] as unknown as ITwoDAAnimation;
+        case ModuleDoorAnimState.CLOSED:        //10022, //333 -
+          return animations2DA.rows[333] as unknown as ITwoDAAnimation;
+        case ModuleDoorAnimState.OPENING1:      //10052, //334 -
+          return animations2DA.rows[334] as unknown as ITwoDAAnimation;
+        case ModuleDoorAnimState.OPENING2:      //10053, //335 -
+          return animations2DA.rows[335] as unknown as ITwoDAAnimation;
+        case ModuleDoorAnimState.CLOSING1:      //10054, //336 -
+          return animations2DA.rows[336] as unknown as ITwoDAAnimation;
+        case ModuleDoorAnimState.CLOSING2:      //10055, //337 -
+          return animations2DA.rows[337] as unknown as ITwoDAAnimation;
+        case ModuleDoorAnimState.BUSTED:        //10153, //366 -
+          return animations2DA.rows[366] as unknown as ITwoDAAnimation;
+        case ModuleDoorAnimState.TRANS:         //10269, //344 -
+          return animations2DA.rows[344] as unknown as ITwoDAAnimation;
       }
 
       return super.animationConstantToAnimation( animation_constant );
     }
+    return super.animationConstantToAnimation( animation_constant );
   }
 
   static GenerateTemplate(){
-    let template = new GFFObject();
+    const template = new GFFObject();
     template.FileType = 'UTD ';
 
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AnimationState') );

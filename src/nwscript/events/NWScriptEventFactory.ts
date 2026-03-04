@@ -1,10 +1,14 @@
-import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
-import { GFFStruct } from "../../resource/GFFStruct";
-import { EventActivateItem } from "./EventActivateItem";
-import { EventConversation } from "./EventConversation";
-import { EventSpellCastAt } from "./EventSpellCastAt";
-import { EventUserDefined } from "./EventUserDefined";
-import { NWScriptEvent } from "./NWScriptEvent";
+import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { EventActivateItem } from "@/nwscript/events/EventActivateItem";
+import { EventConversation } from "@/nwscript/events/EventConversation";
+import { EventSpellCastAt } from "@/nwscript/events/EventSpellCastAt";
+import { EventUserDefined } from "@/nwscript/events/EventUserDefined";
+
+
+const log = createScopedLogger(LogScope.NWScript);
+import { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
 
 /**
  * NWScriptEventFactory class.
@@ -17,36 +21,36 @@ import { NWScriptEvent } from "./NWScriptEvent";
  */
 export class NWScriptEventFactory {
 
-  static EventFromStruct( struct: GFFStruct ){
+  static EventFromStruct(struct: GFFStruct): NWScriptEvent | undefined {
     if(struct instanceof GFFStruct){
-      let event: NWScriptEvent = undefined as any;
+      let event: NWScriptEvent | undefined;
 
-      let eType = struct.getFieldByLabel('EventType').getValue();
+      const eType = struct.getNumberByLabel('EventType');
 
-      let intList: number[] = [];
-      let floatList: number[] = [];
-      let stringList: string[] = [];
-      let objectList: number[] = [];
+      const intList: number[] = [];
+      const floatList: number[] = [];
+      const stringList: string[] = [];
+      const objectList: number[] = [];
 
       let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        intList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
+        intList[i] = tmpList[i].getNumberByLabel('Parameter');
       }
 
       tmpList = struct.getFieldByLabel('FloatList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        floatList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
+        floatList[i] = tmpList[i].getNumberByLabel('Parameter');
       }
 
       tmpList = struct.getFieldByLabel('StringList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        stringList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
+        stringList[i] = tmpList[i].getStringByLabel('Parameter');
       }
 
       if(struct.hasField('ObjectList')){
         tmpList = struct.getFieldByLabel('ObjectList').getChildStructs();
         for(let i = 0, len = tmpList.length; i < len; i++){
-          objectList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
+          objectList[i] = tmpList[i].getNumberByLabel('Parameter');
         }
       }
 
@@ -71,15 +75,15 @@ export class NWScriptEventFactory {
         event.setFloatList(floatList);
         event.setStringList(stringList);
         event.setObjectList(objectList);
-        console.log('NWScriptEvent', event, struct);
+        log.debug('EventFromStruct created event type=%s', String(eType));
       }else{
-        console.log('NWScriptEvent', event, struct);
+        log.warn('EventFromStruct unknown event type=%s', String(eType));
       }
 
       return event;
-
     }
 
+    return undefined;
   }
 
 }

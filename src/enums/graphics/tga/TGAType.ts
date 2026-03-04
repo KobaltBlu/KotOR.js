@@ -16,4 +16,4 @@ export enum TGAType {
 	RLE_INDEXED =  9,
 	RLE_RGB =     10,
 	RLE_GREY =    11
-};
+}

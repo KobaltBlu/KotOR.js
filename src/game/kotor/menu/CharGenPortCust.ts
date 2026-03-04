@@ -1,17 +1,21 @@
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { CharGenClasses } from "../../CharGenClasses";
 import * as THREE from "three";
-import { GameState } from "../../../GameState";
+
+import { CharGenClasses } from "@/game/CharGenClasses";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * CharGenPortCust class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenPortCust.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -56,7 +60,7 @@ export class CharGenPortCust extends GameMenu {
       if(this.isCharLoading) return;
       this.isCharLoading = true;
       const creature = GameState.CharGenManager.selectedCreature;
-    
+
       let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
       const arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
       if(idx <= 0){
@@ -161,7 +165,7 @@ export class CharGenPortCust extends GameMenu {
     this.BTN_ACCEPT.addEventListener('click', (e) => {
       e.stopPropagation();
       const creature = GameState.CharGenManager.selectedCreature;
-      
+
       //Save appearance choice
       creature.template.getFieldByLabel('Appearance_Type').setValue(creature.appearance);
       creature.template.getFieldByLabel('PortraitId').setValue(creature.portraitId);
@@ -170,7 +174,10 @@ export class CharGenPortCust extends GameMenu {
       this.close();
     });
 
-    this.tGuiPanel.widget.userData.fill.position.z = -0.5
+    const panelUserData = this.tGuiPanel.widget.userData as { fill?: { position: THREE.Vector3 } };
+    if(panelUserData.fill){
+      panelUserData.fill.position.z = -0.5;
+    }
 
     this._3dView.visible = true;
     this._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
@@ -182,7 +189,7 @@ export class CharGenPortCust extends GameMenu {
   }
 
   Init3D() {
-    let control = this.LBL_HEAD;
+    const control = this.LBL_HEAD;
     const creature = GameState.CharGenManager.selectedCreature;
     if(creature.model){
       creature.model.removeFromParent();
@@ -202,7 +209,7 @@ export class CharGenPortCust extends GameMenu {
         }
         this.sceneModel3D.playAnimation(0, true);
       }catch(e){
-        console.error(e);
+        log.error(e);
       }
     });
     (control.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
@@ -216,12 +223,12 @@ export class CharGenPortCust extends GameMenu {
       return;
     try {
       const creature = GameState.CharGenManager.selectedCreature;
-      let modelControl = this.LBL_HEAD;
+      const modelControl = this.LBL_HEAD;
       creature.update(delta);
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e);
     }
   }
 
@@ -244,8 +251,8 @@ export class CharGenPortCust extends GameMenu {
     this.portraitId = creature.portraitId;
     try {
       creature.model.removeFromParent();
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e);
     }
     this._3dView.addModel(creature.model);
     (this.LBL_PORTRAIT.getFill().material as THREE.ShaderMaterial).blending = 1;
@@ -262,9 +269,9 @@ export class CharGenPortCust extends GameMenu {
       this._3dView.camera.position.copy(this.sceneModel3D.camerahookf.position);
       this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookf.quaternion);
     }
-    let v3 = new THREE.Vector3();
+    const v3 = new THREE.Vector3();
     creature.model.camerahook.getWorldPosition(v3)
     this._3dView.camera.position.z = v3.z;
   }
-    
+
 }

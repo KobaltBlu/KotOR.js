@@ -1,13 +1,17 @@
-import type { AudioEngine } from "./AudioEngine";
-import { EventListener } from "../utility/EventListener";
+import type { AudioEngine } from "@/audio/AudioEngine";
+import { EventListener } from "@/utility/EventListener";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Audio);
 
 /**
  * AmbientAudioEmitter class.
- * 
+ *
  * The AmbientAudioEmitter class is used to play ambient audio in the game.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AmbientAudioEmitter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -45,7 +49,7 @@ export class AmbientAudioEmitter extends EventListener {
 
   /**
    * Set the data for the audio
-   * @param data 
+   * @param data
    */
   setData(data: ArrayBuffer){
     this.data = data;
@@ -54,7 +58,7 @@ export class AmbientAudioEmitter extends EventListener {
 
   /**
    * Set the destination for the audio
-   * @param destination 
+   * @param destination
    */
   setDestination(destination: AudioNode){
     this.destination = destination;
@@ -64,17 +68,17 @@ export class AmbientAudioEmitter extends EventListener {
 
   /**
    * Play the audio data
-   * @param loop 
-   * @returns 
+   * @param loop
+   * @returns
    */
   async play(loop = false){
     if(!this.data){
-      console.warn('AmbientAudioEmitter', 'No data to play');
+      log.warn('AmbientAudioEmitter No data to play');
       return;
     }
 
     if(!this.destination){
-      console.warn('AmbientAudioEmitter', 'No destination to play to');
+      log.warn('AmbientAudioEmitter No destination to play to');
       return;
     }
 
@@ -119,7 +123,7 @@ export class AmbientAudioEmitter extends EventListener {
     this.playing = false;
     if(this.node){
       this.node.disconnect();
-      try{ this.node.stop(0); }catch(e){}
+      try{ this.node.stop(0); }catch{ return; }
       this.node = null;
     }
     if(this.gainNode){
@@ -147,7 +151,7 @@ export class AmbientAudioEmitter extends EventListener {
 
     const currentTime = this.engine.audioCtx.currentTime;
     const currentGain = this.gainNode.gain.value;
-    
+
     // Set up the fade out curve
     this.gainNode.gain.setValueAtTime(currentGain, currentTime);
     this.gainNode.gain.linearRampToValueAtTime(0, currentTime + duration);
@@ -165,7 +169,7 @@ export class AmbientAudioEmitter extends EventListener {
 
     const currentTime = this.engine.audioCtx.currentTime;
     const currentGain = this.gainNode.gain.value;
-    
+
     // Set up the fade in curve
     this.gainNode.gain.setValueAtTime(currentGain, currentTime);
     this.gainNode.gain.linearRampToValueAtTime(this.volume, currentTime + duration);
@@ -182,7 +186,7 @@ export class AmbientAudioEmitter extends EventListener {
     if(this.node){
       this.node.onended = undefined;
       this.node.disconnect();
-      try{ this.node.stop(0); }catch(e){}
+      try{ this.node.stop(0); }catch{ return; }
       this.node = null;
     }
     if(this.gainNode){

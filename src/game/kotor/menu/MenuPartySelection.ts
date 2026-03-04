@@ -1,19 +1,21 @@
-import { GameState } from "../../../GameState";
-import { GameMenu, GUIControl } from "../../../gui";
-import type { GUILabel, GUIButton, GUICheckBox } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+import { GameState } from "@/GameState";
+import { GameMenu, GUIControl } from "@/gui";
+import type { GUILabel, GUIButton, GUICheckBox } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 const TLK_REMOVE = 38456;
 const TLK_ADD = 38455;
 
 /**
  * MenuPartySelection class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuPartySelection.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -64,8 +66,8 @@ export class MenuPartySelection extends GameMenu {
   forceNPC1 = -1;
   forceNPC2 = -1;
 
-  party: any = {
-    0: {selected: false, available: false},
+  party: Record<number, { selected: boolean; available: boolean }> = {
+    0: { selected: false, available: false },
     1: {selected: false, available: false},
     2: {selected: false, available: false},
     3: {selected: false, available: false},
@@ -90,7 +92,7 @@ export class MenuPartySelection extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_NPC0.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(0)){
@@ -167,7 +169,7 @@ export class MenuPartySelection extends GameMenu {
         }else{
           this.close();
         }
-        
+
       });
 
       this.BTN_BACK.addEventListener('click', (e) => {
@@ -179,7 +181,7 @@ export class MenuPartySelection extends GameMenu {
         e.stopPropagation();
 
         if(this.canRemove(this.selectedNPC)){
-          console.warn(`MenuPartySelection:RemoveNPC`, `Cannot remove a required party member ${this.selectedNPC}`);
+          log.warn(`MenuPartySelection:RemoveNPC`, `Cannot remove a required party member ${this.selectedNPC}`);
           return false;
         }
 
@@ -244,7 +246,7 @@ export class MenuPartySelection extends GameMenu {
       this.BTN_BACK.show();
     }
     TextureLoader.LoadQueue();
-    this.onCloseScript = (this.scriptName != '' || this.scriptName != null) ? 
+    this.onCloseScript = (this.scriptName != '' || this.scriptName != null) ?
       NWScript.Load(this.scriptName) : undefined;
   }
 
@@ -286,7 +288,7 @@ export class MenuPartySelection extends GameMenu {
    */
   indexOfSelectedNPC(npcId: number) {
     for (let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++) {
-      let cpm = GameState.PartyManager.CurrentMembers[i];
+      const cpm = GameState.PartyManager.CurrentMembers[i];
       if (cpm.memberID == npcId) {
         return i;
       }
@@ -299,7 +301,14 @@ export class MenuPartySelection extends GameMenu {
    */
   updateSelection() {
     for (let i = 0; i < GameState.PartyManager.MaxPartyCount; i++) {
-      const btn = this.getControlByName('BTN_NPC' + i);
+      const btn = this.getControlByName('BTN_NPC' + i) as GUIControl & {
+        highlight: {
+          edge_material: { uniforms: { diffuse: { value: { setRGB: (r: number, g: number, b: number) => void } } } };
+          corner_material: { uniforms: { diffuse: { value: { setRGB: (r: number, g: number, b: number) => void } } } };
+        };
+      };
+      const edgeDiffuse = (btn.highlight.edge_material as { uniforms: { diffuse: { value: { setRGB: (r: number, g: number, b: number) => void } } } }).uniforms.diffuse.value;
+      const cornerDiffuse = (btn.highlight.corner_material as { uniforms: { diffuse: { value: { setRGB: (r: number, g: number, b: number) => void } } } }).uniforms.diffuse.value;
       if (GameState.PartyManager.IsNPCInParty(i)) {
         btn.setHighlightColor(0, 1, 0);
       } else {
@@ -329,7 +338,7 @@ export class MenuPartySelection extends GameMenu {
         this.BTN_ACCEPT.show();
       }
     }
-    if(this.selectedNPC == this.forceNPC1 || this.selectedNPC == this.forceNPC2){  
+    if(this.selectedNPC == this.forceNPC1 || this.selectedNPC == this.forceNPC2){
       this.BTN_ACCEPT.hide();
     }
   }
@@ -361,13 +370,13 @@ export class MenuPartySelection extends GameMenu {
         continue;
       }
       LBL_NA.hide();
-      let portrait = GameState.PartyManager.GetPortraitByIndex(i);
+      const portrait = GameState.PartyManager.GetPortraitByIndex(i);
       if (LBL_NA.getFillTextureName() != portrait && !!portrait) {
         LBL_CHAR.setFillTextureName(portrait);
         const texture = await TextureLoader.Load(portrait);
         if(texture)LBL_CHAR.setFillTexture(texture);
       }
-      (LBL_CHAR.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = this.isSelectable(i) ? 1 : 0.5;
+      ((LBL_CHAR.getFill().material as unknown) as { uniforms: { opacity: { value: number } } }).uniforms.opacity.value = this.isSelectable(i) ? 1 : 0.5;
       LBL_CHAR.show();
     }
   }
@@ -445,5 +454,5 @@ export class MenuPartySelection extends GameMenu {
   triggerControllerDRightPress() {
 
   }
-  
+
 }

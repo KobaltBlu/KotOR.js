@@ -1,27 +1,49 @@
 import * as THREE from "three";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameState } from "../GameState";
-import { EngineMode } from "../enums/engine/EngineMode";
-import type { MenuManager } from "../managers/MenuManager";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import { ShaderManager } from "../managers/ShaderManager"
-import { ResourceLoader, TextureLoader } from "../loaders";
-import { GUIControl } from "./GUIControl";
-import { GUIControlFactory } from "./GUIControlFactory";
-import { BitWise } from "../utility/BitWise";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { Mouse } from "../controls/Mouse";
-import { KeyMapper } from "../controls";
-import type { GUIProtoItem } from "./GUIProtoItem";
-import { GUIControlType } from "../enums/gui/GUIControlType";
+
+import { KeyMapper } from "@/controls";
+import { Mouse } from "@/controls/Mouse";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GameState } from "@/GameState";
+import { GUIControl } from "@/gui/GUIControl";
+import { GUIControlFactory } from "@/gui/GUIControlFactory";
+import type { GUIProtoItem } from "@/gui/GUIProtoItem";
+import { ResourceLoader, TextureLoader } from "@/loaders";
+import type { MenuManager } from "@/managers/MenuManager";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import { ShaderManager } from "@/managers/ShaderManager"
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+
+const log = createScopedLogger(LogScope.Game);
+
+type MenuVoidShaderMaterial = THREE.ShaderMaterial & {
+  uniforms: {
+    u_color: { value: THREE.Color };
+    u_time: { value: number };
+    u_resolution: { value: THREE.Vector2 };
+  };
+};
+
+type MenuBackgroundShaderMaterial = THREE.ShaderMaterial & {
+  uniforms: {
+    map: { value: OdysseyTexture | THREE.Texture | null };
+    u_time: { value: number };
+    u_resolution: { value: THREE.Vector2 };
+  };
+};
 
 /**
  * GameMenu class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GameMenu.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -55,6 +77,15 @@ export class GameMenu {
   width: number = 640;
   height: number = 480;
 
+  /**
+   * Panel bit_flags for layout and centering.
+   *
+   * Bit layout: visible (bit 7), initial (bit 2), loaded (bit 1), hit-test (bit 0).
+   * Centering: bit 3 = center on screen; bits 5/6 = horizontal/vertical offset relative to 640x480.
+   * KotOR.js default adds centering for arbitrary resolutions.
+   */
+  panelBitFlags: number = 0x8F;
+
   background: string;
   backgroundSprite: THREE.Mesh;
   backgroundMaterial: THREE.ShaderMaterial;
@@ -65,10 +96,10 @@ export class GameMenu {
 
   engineMode: EngineMode = EngineMode.GUI;
 
-  eventListenters: Map<String, Function[]> = new Map<String, Function[]>();
-  context: any = GameState;
+  eventListenters: Map<string, ((...args: (string | number | boolean | object)[]) => void)[]> = new Map();
+  context: typeof GameState = GameState;
 
-  constructor(){
+  constructor() {
     this._button_a = undefined;
     this._button_b = undefined;
     this._button_x = undefined;
@@ -76,9 +107,9 @@ export class GameMenu {
   }
 
   async load(): Promise<GameMenu> {
-    GameState.PerformanceMonitor.start(this.constructor.name+'.load');
+    GameState.PerformanceMonitor.start(this.constructor.name + '.load');
     await this.loadMenu();
-    GameState.PerformanceMonitor.stop(this.constructor.name+'.load');
+    GameState.PerformanceMonitor.stop(this.constructor.name + '.load');
     return this;
   }
 
@@ -87,72 +118,72 @@ export class GameMenu {
 
     //mainmenu16x12
     await this.loadBackground();
-    try{
+    try {
       const buffer = await ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref);
       this.menuGFF = new GFFObject(buffer);
       await this.buildMenu(this.menuGFF);
-    }catch(e){
-      console.error(e);
-    };
+    } catch (e) {
+      log.error(e);
+    }
     return this;
   }
 
-  async buildMenu(gff: GFFObject){
-    GameState.PerformanceMonitor.start(this.constructor.name+'.buildMenu');
+  async buildMenu(gff: GFFObject) {
+    GameState.PerformanceMonitor.start(this.constructor.name + '.buildMenu');
     this.tGuiPanel = new GUIControl(this, gff.RootNode, undefined, this.enablePositionScaling);
     this.tGuiPanel.allowClick = false;
-    
+
     const extent = this.tGuiPanel.extent;
     this.width = extent.width;
     this.height = extent.height;
 
-    const panelControl = this.tGuiPanel.createControl();
+    this.tGuiPanel.createControl();
 
-    if(this.voidFill){
+    if (this.voidFill) {
       this.tGuiPanel.widget.add(this.backgroundVoidSprite);
     }
 
-    if(this.backgroundSprite){
+    if (this.backgroundSprite) {
       this.tGuiPanel.widget.add(this.backgroundSprite);
     }
-    
-    panelControl.position.x = 0;
-    panelControl.position.y = 0;
+
+    // Root panel position is set by calculatePosition() during createControl().
+    // Do NOT override it here — that would cause an inconsistency between initial
+    // load and resize (recalculatePosition sets the correct position on resize).
 
     //This auto assigns references for the controls to the menu object.
     //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
-    //You can just use this.CONTROL_NAME 
+    //You can just use this.CONTROL_NAME
     this.assignChildControlsToMenu(this.tGuiPanel);
 
     await this.menuControlInitializer();
 
     await TextureLoader.LoadQueue();
-    GameState.PerformanceMonitor.stop(this.constructor.name+'.buildMenu');
+    GameState.PerformanceMonitor.stop(this.constructor.name + '.buildMenu');
     return this;
   }
 
-  async menuControlInitializer(skipInit: boolean = false): Promise<any> {
+  async menuControlInitializer(_skipInit: boolean = false): Promise<void> {
     return;
-  };
+  }
 
-  assignChildControlsToMenu(object: GUIControl){
-    if(!object){ return; }
+  assignChildControlsToMenu(object: GUIControl) {
+    if (!object) { return; }
 
-    for(let i = 0, len = object.children.length; i < len; i++){
+    for (let i = 0, len = object.children.length; i < len; i++) {
       const ctrl = object.children[i];
-      if(!!ctrl && !isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_'+ctrl.name;
-      (this as any)[ctrl.name] = ctrl;
+      if (!!ctrl && !isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_' + ctrl.name;
+      (this as GameMenu & Record<string, GUIControl | undefined>)[ctrl.name] = ctrl;
       this.assignChildControlsToMenu(ctrl);
     }
   }
 
-  async loadBackground(){
+  async loadBackground() {
     /**
      * Background black void to fill the screen behind the menu
      */
-    if(this.voidFill){
-      const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-      // this.backgroundVoidMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0x000000), side: THREE.DoubleSide} );
+    if (this.voidFill) {
+      const geometry = new THREE.PlaneGeometry(1, 1, 1);
       this.backgroundVoidMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
           ShaderManager.Shaders.get('void-gui').getUniforms()
@@ -160,21 +191,22 @@ export class GameMenu {
         vertexShader: ShaderManager.Shaders.get('void-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('void-gui').getFragment(),
       })
-      this.backgroundVoidSprite = new THREE.Mesh( geometry, this.backgroundVoidMaterial );
+      this.backgroundVoidSprite = new THREE.Mesh(geometry, this.backgroundVoidMaterial);
       this.backgroundVoidSprite.position.z = -6;
       this.backgroundVoidSprite.renderOrder = -6;
 
       // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.0, 0.658824, 0.980392);
-      this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.10196078568697, 0.69803923368454, 0.549019634723663);
+      const backgroundVoidMaterial = this.backgroundVoidMaterial as MenuVoidShaderMaterial;
+      backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.10196078568697, 0.69803923368454, 0.549019634723663);
       // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(1.0, 1.0, 1.0);
     }
 
     /**
      * Background texture of the menu
      */
-    if(this.background){
+    if (this.background) {
       const texture: OdysseyTexture = await TextureLoader.tpcLoader.fetch(this.background);
-      const geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
+      const geometry = new THREE.PlaneGeometry(1600, 1200, 1);
       this.backgroundMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
           ShaderManager.Shaders.get('background-gui').getUniforms()
@@ -183,133 +215,153 @@ export class GameMenu {
         fragmentShader: ShaderManager.Shaders.get('background-gui').getFragment(),
       });
       this.backgroundMaterial.transparent = true;
-      this.backgroundSprite = new THREE.Mesh( geometry, this.backgroundMaterial );
+      this.backgroundSprite = new THREE.Mesh(geometry, this.backgroundMaterial);
       this.backgroundSprite.position.z = -5;
       this.backgroundSprite.renderOrder = -5;
-      this.backgroundMaterial.uniforms.map.value = texture;
+      const backgroundMaterial = this.backgroundMaterial as MenuBackgroundShaderMaterial;
+      backgroundMaterial.uniforms.map.value = texture;
     }
   }
 
-  async loadTexture( resRef: string ): Promise<OdysseyTexture> {
+  async loadTexture(resRef: string): Promise<OdysseyTexture> {
     return await TextureLoader.Load(resRef);
   }
 
-  getControlByName(name: string): GUIControl {
-    try{
-      return (this as any)[name];//this.tGuiPanel.getControl().getObjectByName(name).userData.control;
-    }catch(e){
-      console.error('getControlByName', 'Control not found', name);
+  /**
+   * Get a control by its GFF/layout name (e.g. BTN_QUIT, LBL_TITLE).
+   * Controls are assigned to the menu instance during buildMenu.
+   */
+  getControlByName(name: string): GUIControl | undefined {
+    const ctrl = (this as GameMenu & Record<string, GUIControl | undefined>)[name];
+    if (ctrl === undefined) {
+      log.error('getControlByName', 'Control not found', name);
+      return undefined;
     }
-    return;
+    return ctrl as GUIControl;
   }
 
-  hide(){
+  hide(): void {
     this.bVisible = false;
-    GameState.scene_gui.remove(this.tGuiPanel.getControl());
-
-    //Handle the child menu if it is set
-    if(this.childMenu instanceof GameMenu)
+    if (this.tGuiPanel?.getControl()) {
+      GameState.scene_gui.remove(this.tGuiPanel.getControl());
+    }
+    if (this.childMenu instanceof GameMenu) {
       this.childMenu.hide();
+    }
   }
 
   show(){
     // this.Hide();
     if(!this.isOverlayGUI && GameState.Mode !== EngineMode.MOVIE)
       GameState.SetEngineMode(this.engineMode);
-      
+    }
     this.bVisible = true;
     GameState.scene_gui.add(this.tGuiPanel.getControl());
-
-    //Handle the child menu if it is set
-    if(this.childMenu instanceof GameMenu)
+    if (this.childMenu instanceof GameMenu) {
       this.childMenu.show();
+      this.childMenu.tGuiPanel?.updateBoundsRecursive?.();
+    }
   }
 
-  close(){
+  /**
+   * Close this menu: hide it and remove it from the manager stack.
+   * Restores the menu below (if any) as current.
+   */
+  close(): void {
     this.hide();
-    this.manager.Remove(this);
-    // if(!this.isOverlayGUI){
-    //   GameState.RestoreEnginePlayMode();
-    // }
+    if (this.manager?.Remove) {
+      this.manager.Remove(this);
+    }
   }
 
-  open(){
-    this.manager.Add(this);
+  /**
+   * Open this menu: add it to the manager stack and show it.
+   */
+  open(): void {
+    if (this.manager?.Add) {
+      this.manager.Add(this);
+    }
     this.show();
   }
 
-  remove(){
-    //TODO
+  /**
+   * Remove this menu from the manager stack and hide it.
+   * Same effect as close(); provided for API clarity (e.g. "remove" from stack).
+   */
+  remove(): void {
+    this.close();
   }
 
-  isVisible(){
+  isVisible() {
     return this.bVisible;
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0) {
     //Only update if the Menu is visible
-    if(!this.bVisible)
+    if (!this.bVisible)
       return;
 
-    if(this.voidFill){
-      this.backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
-      this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
+    if (this.voidFill) {
+      const backgroundVoidMaterial = this.backgroundVoidMaterial as MenuVoidShaderMaterial;
+      backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
+      backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
       this.backgroundVoidSprite.scale.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), 1);
     }
 
-    if(this.background){
-      this.backgroundMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
-      this.backgroundMaterial.uniforms.u_resolution.value.set(1600, 1200);
+    if (this.background) {
+      const backgroundMaterial = this.backgroundMaterial as MenuBackgroundShaderMaterial;
+      backgroundMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
+      backgroundMaterial.uniforms.u_resolution.value.set(1600, 1200);
     }
 
-    if(this.activeControls.length){
-      for(var i = this.activeControls.length; i--;){
+    if (this.activeControls.length) {
+      for (let i = this.activeControls.length; i--;) {
         const control = this.activeControls[i];
-        if(!control.box.containsPoint(Mouse.positionUI)){
+        if (!control.box.containsPoint(Mouse.positionUI)) {
           control.onHoverOut();
           this.activeControls.splice(i, 1);
         }
       }
     }
 
-    if(this.tGuiPanel && this.tGuiPanel.children){
-      let len = this.tGuiPanel.children.length;
-      for(let i = 0; i < len; i++){
+    if (this.tGuiPanel && this.tGuiPanel.children) {
+      const len = this.tGuiPanel.children.length;
+      for (let i = 0; i < len; i++) {
         this.tGuiPanel.children[i].update(delta);
       }
     }
   }
 
-  recalculatePosition(){
-    try{
+  recalculatePosition() {
+    try {
       this.tGuiPanel.recalculate();
-    }catch(e){ console.error(e); }
+    } catch (e) { log.error(e); }
   }
 
-  setWidgetHoverActive(control: GUIControl, bActive: boolean = false){
+  setWidgetHoverActive(control: GUIControl, bActive: boolean = false) {
 
-    if(!BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIControl))
+    if (!BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIControl))
       return false;
 
-    if(BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIProtoItem) && (
+    if (BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIProtoItem) && (
       typeof (control as GUIProtoItem).list.GUIProtoItemClass !== 'undefined' &&
       control.type !== GUIControlType.Label && control.type !== GUIControlType.ProtoItem
-    )){
+    )) {
       return false;
     }
 
-    let idx = this.activeControls.indexOf(control);
+    const idx = this.activeControls.indexOf(control);
 
-    if(bActive){
-      if(idx == -1){
+    if (bActive) {
+      if (idx == -1) {
         this.activeControls.push(control);
-        if(control){
+        if (control) {
           control.onHoverIn();
         }
       }
-    }else{
-      if(idx > -1){
-        if(control){
+    } else {
+      if (idx > -1) {
+        if (control) {
           control.onHoverOut();
         }
         this.activeControls.splice(idx, 1);
@@ -318,156 +370,158 @@ export class GameMenu {
 
   }
 
-  getActiveControls(){
+  getActiveControls() {
     let controls: GUIControl[] = [];
-    if(this.tGuiPanel){
+    if (this.tGuiPanel) {
       controls = this.tGuiPanel.getActiveControls();
     }
-    if(this.childMenu){
-      controls = controls.concat(controls, this.childMenu.getActiveControls());
+    if (this.childMenu) {
+      controls = controls.concat(this.childMenu.getActiveControls());
     }
     return controls;
   }
 
-  setScale(scale = 1.0){
+  setScale(scale = 1.0) {
 
     this.scale = scale;
     this.tGuiPanel.widget.scale.set(this.scale, this.scale, 1.0);
 
-    for(let i = 0; i < this.tGuiPanel.children.length; i++){
-      if(this.tGuiPanel.children[i])
+    for (let i = 0; i < this.tGuiPanel.children.length; i++) {
+      if (this.tGuiPanel.children[i])
         this.tGuiPanel.children[i].updateScale();
     }
 
   }
 
-  resize(){
-    //STUB
+  resize() {
+    if (this.tGuiPanel) {
+      this.recalculatePosition();
+    }
   }
 
-  triggerControllerAPress(){
-    if(this._button_a){
+  triggerControllerAPress() {
+    if (this._button_a) {
       this._button_a.click();
-    }else if(this.manager.activeGUIElement){
+    } else if (this.manager.activeGUIElement) {
       this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerBPress(){
-    if(this._button_b){
+  triggerControllerBPress() {
+    if (this._button_b) {
       this._button_b.click();
     }
   }
 
-  triggerControllerXPress(){
-    if(this._button_x){
+  triggerControllerXPress() {
+    if (this._button_x) {
       this._button_x.click();
     }
   }
 
-  triggerControllerYPress(){
-    if(this._button_y){
+  triggerControllerYPress() {
+    if (this._button_y) {
       this._button_y.click();
     }
   }
 
-  triggerControllerDUpPress(){
-    if(this.manager.activeGUIElement){
+  triggerControllerDUpPress() {
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerDDownPress(){
-    if(this.manager.activeGUIElement){
+  triggerControllerDDownPress() {
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerDLeftPress(){
-    if(this.manager.activeGUIElement){
+  triggerControllerDLeftPress() {
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerDRightPress(){
-    if(this.manager.activeGUIElement){
+  triggerControllerDRightPress() {
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerBumperLPress(){
-    if(this.manager.activeGUIElement){
+  triggerControllerBumperLPress() {
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerBumperRPress(){
-    if(this.manager.activeGUIElement){
+  triggerControllerBumperRPress() {
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerLStickXPress( positive = false ){
-    
-  }
-
-  triggerControllerLStickYPress( positive = false ){
+  triggerControllerLStickXPress(_positive = false) {
 
   }
 
-  triggerControllerRStickXPress( positive = false ){
+  triggerControllerLStickYPress(_positive = false) {
 
   }
 
-  triggerControllerRStickYPress( positive = false ){
+  triggerControllerRStickXPress(_positive = false) {
 
   }
 
-  addEventListener(name: string, callback: Function){
-    if(typeof callback !== 'function'){ return; }
+  triggerControllerRStickYPress(_positive = false) {
+
+  }
+
+  addEventListener(name: string, callback: (...args: (string | number | boolean | object)[]) => void) {
+    if (typeof callback !== 'function') { return; }
 
     name = name.toUpperCase().trim();
     let listeners = this.eventListenters.get(name);
-    if(!Array.isArray(listeners)){
+    if (!Array.isArray(listeners)) {
       listeners = [callback];
       this.eventListenters.set(name, listeners);
-    }else if(listeners.indexOf(callback) == -1){
+    } else if (listeners.indexOf(callback) == -1) {
       listeners.push(callback);
     }
   }
 
-  removeEventListener(name: string, callback: Function){
-    if(typeof callback !== 'function'){ return; }
+  removeEventListener(name: string, callback: (...args: (string | number | boolean | object)[]) => void) {
+    if (typeof callback !== 'function') { return; }
 
     name = name.toUpperCase().trim();
-    let listeners = this.eventListenters.get(name);
-    if(Array.isArray(listeners)){
-      let idx = listeners.indexOf(callback);
-      if(idx >= 0){ listeners.splice(idx, 1); }
+    const listeners = this.eventListenters.get(name);
+    if (Array.isArray(listeners)) {
+      const idx = listeners.indexOf(callback);
+      if (idx >= 0) { listeners.splice(idx, 1); }
     }
   }
 
-  triggerEventListener(name: string, ...args: any){
+  triggerEventListener(name: string, ...args: Array<string | number | boolean | object>) {
     name = name.toUpperCase().trim();
-    let listeners = this.eventListenters.get(name);
-    if(Array.isArray(listeners)){
-      for(let i = 0; i < listeners.length; i++){
+    const listeners = this.eventListenters.get(name);
+    if (Array.isArray(listeners)) {
+      for (let i = 0; i < listeners.length; i++) {
         listeners[i](...args);
       }
     }
   }
 
-  gameStringParse(text: string){
+  gameStringParse(text: string) {
     text = text.split('##')[0].replaceAll(/\{.*\}/ig, '').trim();
     text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
     text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
     text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('LastName')?.getValue());
 
-    KeyMapper.ACTIONS_ALL.forEach( (keymap) => {
+    KeyMapper.ACTIONS_ALL.forEach((keymap) => {
       text = text.replace(keymap.tokenRegEx, keymap.character);
     });
 
-    text = text.replace(/<CUSTOM(\d+)>/gm, function(match, p1, offset, string){
+    text = text.replace(/<CUSTOM(\d+)>/gm, function (_match: string, p1: string) {
       return GameState.module.getCustomToken(parseInt(p1));
     });
 

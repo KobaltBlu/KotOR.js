@@ -1,32 +1,49 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Launcher);
+
 export interface ProfileProviderValues {
-  lightboxImage: [ string,  React.Dispatch<any>],
-  lightboxActive: [ boolean, React.Dispatch<any>],
-  lightboxImageWidth: [ number,  React.Dispatch<any>],
-  lightboxImageHeight: [ number, React.Dispatch<any>],
+  lightboxImage: [ string,  React.Dispatch<React.SetStateAction<string>>];
+  lightboxActive: [ boolean, React.Dispatch<React.SetStateAction<boolean>>];
+  lightboxImageWidth: [ number,  React.Dispatch<React.SetStateAction<number>>];
+  lightboxImageHeight: [ number, React.Dispatch<React.SetStateAction<number>>];
 }
-export const ProfileContext = createContext<ProfileProviderValues>({} as any);
+
+const noop = () => {};
+const defaultProfileValues: ProfileProviderValues = {
+  lightboxImage: [ '', noop ],
+  lightboxActive: [ false, noop ],
+  lightboxImageWidth: [ 0, noop ],
+  lightboxImageHeight: [ 0, noop ],
+};
+
+export const ProfileContext = createContext<ProfileProviderValues>(defaultProfileValues);
 
 export function useProfile(){
   return useContext(ProfileContext);
 }
 
-export const ProfileProvider = (props: any) => {
+export interface ProfileProviderProps {
+  children: React.ReactNode;
+}
+
+export const ProfileProvider = (props: ProfileProviderProps) => {
   const [lightboxImageValue, setLightboxImage] = useState<string>('');
   const [lightboxActiveValue, setLightboxActive] = useState<boolean>(false);
   const [lightboxImageWidthValue, setLightboxImageWidth] = useState<number>(0);
   const [lightboxImageHeightValue, setLightboxImageHeight] = useState<number>(0);
 
   useEffect(() => {
-    // console.log('useEffect lightboxActive', lightboxActiveValue);
+    log.trace('ProfileContext lightboxActive changed', lightboxActiveValue);
   }, [lightboxActiveValue]);
 
   useEffect( () => {
     if(lightboxImageValue){
-      let img = new Image();
+      const img = new Image();
       img.onload = () => {
-        console.log('img', img.width, img.height);
+        log.debug('lightbox image loaded', img.width, img.height);
         setLightboxImageWidth(img.width);
         setLightboxImageHeight(img.height);
       }
@@ -39,7 +56,7 @@ export const ProfileProvider = (props: any) => {
 
 
   useEffect(() => {
-    // console.log('Global', 'useEffect');
+    log.trace('ProfileContext mounted');
   }, [])
 
   const providerValue: ProfileProviderValues = {

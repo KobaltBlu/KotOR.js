@@ -1,4 +1,5 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
  * class SWSavingThrow
@@ -11,26 +12,21 @@ import { TwoDAObject } from "../../resource/TwoDAObject";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class SWSavingThrow {
-
   index: number = 0;
   level: number = 0;
   fortsave: number = 0;
   willsave: number = 0;
   refsave: number = 0;
 
-  constructor(index: number = 0){
-    // this.index = index;
-  }
-
-  apply2DA(row: any){
+  apply2DA(row: ITwoDARowData | Record<string, string | number>): void {
     this.index = TwoDAObject.normalizeValue(row.__index, 'number', 0);
     this.level = TwoDAObject.normalizeValue(row.level, 'number', 0);
     this.fortsave = TwoDAObject.normalizeValue(row.fortsave, 'number', 0);
     this.willsave = TwoDAObject.normalizeValue(row.willsave, 'number', 0);
     this.refsave = TwoDAObject.normalizeValue(row.refsave, 'number', 0);
   }
-  
-  static From2DA(row: any){
+
+  static From2DA(row: ITwoDARowData | Record<string, string | number>): SWSavingThrow {
     const st = new SWSavingThrow();
     st.apply2DA(row);
     return st;

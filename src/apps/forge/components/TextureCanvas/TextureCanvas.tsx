@@ -1,24 +1,28 @@
 import React, { useEffect, useRef, useState } from "react";
-import * as KotOR from "../../KotOR";
-import { TabImageViewerState } from "../../states/tabs/TabImageViewerState";
-import { PixelManager } from "../../../../utility/PixelManager";
 
-const concatenate = (resultConstructor: any, ...arrays: any) => {
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { PixelManager } from "@/utility/PixelManager";
+
+const log = createScopedLogger(LogScope.Forge);
+
+const concatenate = (resultConstructor: typeof Uint8Array, ...arrays: Uint8Array[]): Uint8Array => {
   let totalLength = 0;
-  for (let arr of arrays) {
+  for (const arr of arrays) {
     totalLength += arr.length;
   }
-  let result = new resultConstructor(totalLength);
+  const result = new resultConstructor(totalLength);
   let offset = 0;
-  for (let arr of arrays) {
+  for (const arr of arrays) {
     result.set(arr, offset);
     offset += arr.length;
   }
   return result;
-}
+};
 
 const getPixelData = async (image: KotOR.TPCObject | KotOR.TGAObject): Promise<Uint8Array> => {
-  return new Promise<Uint8Array>((resolve, reject) => {
+  return new Promise<Uint8Array>((resolve, _reject) => {
     if (image instanceof KotOR.TPCObject) {
       const tpc = image;
       const dds = tpc.getDDS(false);
@@ -26,7 +30,7 @@ const getPixelData = async (image: KotOR.TPCObject | KotOR.TGAObject): Promise<U
 
       const width = tpc.header.width;
       const height = tpc.header.height;
-      const mipmapCount = 1;
+      const _mipmapCount = 1;
 
       if (!tpc.txi.procedureType) {
         if (tpc.header.faces > 1) {
@@ -80,7 +84,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
   onClick
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [textureLoaded, setTextureLoaded] = useState<boolean>(false);
+  const [_textureLoaded, setTextureLoaded] = useState<boolean>(false);
 
   const [cWidth, setCanvasWidth] = useState<number>(width || 0);
   const [cHeight, setCanvasHeight] = useState<number>(height || 0);
@@ -119,7 +123,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
           textureWidth = tpcObject.header.width;
           textureHeight = tpcObject.header.height;
         } else {
-          textureHeight = tpcObject.header.height * ((tpcObject.header as any).faces || 1);
+          textureHeight = tpcObject.header.height * ((tpcObject.header as { faces?: number }).faces ?? 1);
         }
 
         // Determine canvas dimensions
@@ -156,7 +160,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
         TabImageViewerState.FlipY(processedData, textureWidth, textureHeight);
 
         // Create ImageData and draw to canvas
-        let imageData = ctx.createImageData(textureWidth, textureHeight);
+        const imageData = ctx.createImageData(textureWidth, textureHeight);
         imageData.data.set(processedData);
 
         // If scaling is needed, draw to a temporary canvas first, then scale
@@ -180,7 +184,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
 
         setTextureLoaded(true);
       } catch (error) {
-        console.error(`Failed to load texture: ${texture}`, error);
+        log.error(`Failed to load texture: ${texture}`, error);
       }
     };
 

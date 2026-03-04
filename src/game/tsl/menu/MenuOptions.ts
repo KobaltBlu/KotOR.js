@@ -1,10 +1,11 @@
-import { EngineState } from "../../../enums/engine/EngineState";
-import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { GameState } from "../../../GameState";
-import type { GUIButton, GUILabel, GUIListBox } from "../../../gui";
-import { Module } from "../../../module";
-import { NWScript } from "../../../nwscript/NWScript";
-import { MenuOptions as K1_MenuOptions } from "../../kotor/KOTOR";
+
+import { EngineState } from "@/enums/engine/EngineState";
+import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
+import { MenuOptions as K1_MenuOptions } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUIButton, GUILabel, GUIListBox } from "@/gui";
+import { Module } from "@/module";
+import { NWScript } from "@/nwscript/NWScript";
 
 /**
  * MenuOptions class.
@@ -44,7 +45,7 @@ export class MenuOptions extends K1_MenuOptions {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -156,3 +157,4 @@ export class MenuOptions extends K1_MenuOptions {
   }
   
 }
+

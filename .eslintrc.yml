@@ -3,7 +3,7 @@ extends:
   - plugin:@typescript-eslint/strict
   - plugin:import/recommended
   - plugin:import/typescript
-parser: '@typescript-eslint/parser'
+parser: "@typescript-eslint/parser"
 parserOptions:
   ecmaVersion: 2022
   sourceType: module
@@ -11,39 +11,44 @@ parserOptions:
     jsx: true
   project: ./tsconfig.eslint.json
 plugins:
-  - '@typescript-eslint'
+  - "@typescript-eslint"
   - import
 env:
   node: true
   browser: true
   es2022: true
 globals:
+  # File System Access API (browser)
   FileSystemFileHandle: readonly
   FileSystemDirectoryHandle: readonly
   FileSystemWritableFileStream: readonly
+  # Node.js types (used in type positions; no-undef)
   NodeJS: readonly
   BufferEncoding: readonly
   Electron: readonly
 settings:
   import/resolver: node
 rules:
-  '@typescript-eslint/no-unused-vars':
+  # TypeScript strict (enforce no any; use proper types)
+  "@typescript-eslint/no-unused-vars":
     - warn
-    - argsIgnorePattern: '^_'
-      varsIgnorePattern: '^_'
-  '@typescript-eslint/explicit-function-return-type': off
-  '@typescript-eslint/no-extraneous-class': off
-  '@typescript-eslint/no-explicit-any': warn
-  '@typescript-eslint/no-unsafe-argument': warn
-  '@typescript-eslint/no-unsafe-assignment': warn
-  '@typescript-eslint/no-unsafe-call': warn
-  '@typescript-eslint/no-unsafe-member-access': warn
-  '@typescript-eslint/no-unsafe-return': warn
-  '@typescript-eslint/no-unsafe-function-type': warn
+    - argsIgnorePattern: "^_"
+      varsIgnorePattern: "^_"
+  "@typescript-eslint/explicit-function-return-type": off
+  "@typescript-eslint/no-extraneous-class": off
+  "@typescript-eslint/no-explicit-any": warn
+  # Strict type safety: no any/unsafe usage
+  "@typescript-eslint/no-unsafe-argument": warn
+  "@typescript-eslint/no-unsafe-assignment": warn
+  "@typescript-eslint/no-unsafe-call": warn
+  "@typescript-eslint/no-unsafe-member-access": warn
+  "@typescript-eslint/no-unsafe-return": warn
+  "@typescript-eslint/no-unsafe-function-type": warn
 
+  # Use shared logger instead of console (see src/utility/Logger.ts)
   no-console: error
   no-debugger: warn
-  no-unused-vars: off
+  no-unused-vars: off # Use TypeScript version instead
   no-case-declarations: warn
   no-async-promise-executor: warn
   no-extra-semi: warn
@@ -61,16 +66,16 @@ rules:
   prefer-const: warn
   no-var: warn
 
+  # Prefer @ path alias; forbid parent relative (../); same-dir (./) allowed for co-located styles
   no-restricted-imports:
     - error
     - patterns:
         - group:
-            - './*'
-            - './**'
-            - '../*'
-            - '../**'
-          message: Use @/ path alias instead of relative imports
+            - "../*"
+            - "../**"
+          message: "Use @/ path alias instead of relative parent imports (e.g. from \"@/utility/Logger\")"
 
+  # Import rules (warn only - do not block build/debug)
   import/order:
     - warn
     - groups:
@@ -84,35 +89,81 @@ rules:
       alphabetize:
         order: asc
         caseInsensitive: true
+      pathGroups:
+        # Shallower parent imports first (../../ before ../../../)
+        - pattern: "../../[^.]*/**"
+          group: parent
+          position: before
+        - pattern: "../../../**"
+          group: parent
+          position: after
   import/no-unresolved:
     - warn
     - ignore:
-        - '^@/'
+        - "^@/"     # path alias (tsconfig paths)
+        - "^\\./"   # relative imports - assume paths are correct
+        - "^\\.\\." # parent relative imports - assume paths are correct
   import/no-duplicates: warn
 
-  '@typescript-eslint/no-non-null-assertion': error
-  '@typescript-eslint/no-require-imports': error
-  '@typescript-eslint/no-empty-object-type': error
-  '@typescript-eslint/no-invalid-void-type': error
-  '@typescript-eslint/no-useless-constructor': error
-  '@typescript-eslint/no-dynamic-delete': error
-  '@typescript-eslint/prefer-literal-enum-member': error
-  '@typescript-eslint/no-unused-expressions': error
-  '@typescript-eslint/prefer-as-const': error
-  '@typescript-eslint/no-duplicate-enum-values': error
-  '@typescript-eslint/unified-signatures': warn
-  '@typescript-eslint/no-this-alias': warn
-  '@typescript-eslint/triple-slash-reference': warn
+  # Strict rules enforced (fix violations; do not disable)
+  "@typescript-eslint/no-non-null-assertion": error
+  "@typescript-eslint/no-require-imports": error
+  "@typescript-eslint/no-empty-object-type": error
+  "@typescript-eslint/no-invalid-void-type": error
+  "@typescript-eslint/no-useless-constructor": error
+  "@typescript-eslint/no-dynamic-delete": error
+  "@typescript-eslint/prefer-literal-enum-member": error
+  "@typescript-eslint/no-unused-expressions": error
+  "@typescript-eslint/prefer-as-const": error
+  "@typescript-eslint/no-duplicate-enum-values": error
+  "@typescript-eslint/unified-signatures": warn
+  "@typescript-eslint/no-this-alias": warn
+  "@typescript-eslint/triple-slash-reference": warn
   no-mixed-spaces-and-tabs: error
   no-unexpected-multiline: error
   no-global-assign: error
   no-duplicate-case: error
 
 overrides:
+  # Only src/utility/Logger.ts may use console (designated bridge for log output)
   - files: ['src/utility/Logger.ts']
     rules:
       no-console: off
+  # LSP server uses connection.console (not global console); allow for any legacy global console usage
+  - files: ['extensions/kotor-forge-vscode/server/**/*.ts']
+    rules:
+      no-console: off
 
+  # Jest globals for test files
   - files: ['**/*.test.ts', '**/*.spec.ts']
     env:
       jest: true
+
+  # Game/engine enums: duplicate values and non-literal members are intentional (mirror game data)
+  - files: ['src/enums/**/*.ts', 'src/controls/KeyMapper.ts']
+    rules:
+      "@typescript-eslint/no-duplicate-enum-values": off
+      "@typescript-eslint/prefer-literal-enum-member": off
+
+  # kotor-forge-vscode: use node resolver only; ignore runtime/external and shared @kotor paths
+  - files: extensions/kotor-forge-vscode/**/*.{ts,tsx}
+    settings:
+      import/resolver: node
+    rules:
+      import/no-unresolved:
+        - warn
+        - ignore:
+            - "^vscode$"
+            - "^path$"
+            - "^@vscode/"
+            - "^vscode-languageclient"
+            - "^@/"
+            - "^@forge/"
+            - "^@kotor/"
+            - '^\\.'
+    globals:
+      Thenable: readonly
+  # Webview: use extension tsconfig so parser resolves from repo root (avoids c:\tsconfig.webview.json on Windows)
+  - files: extensions/kotor-forge-vscode/src/webview/**/*.{ts,tsx}
+    parserOptions:
+      project: extensions/kotor-forge-vscode/tsconfig.webview.json

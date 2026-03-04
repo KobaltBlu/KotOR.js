@@ -1,10 +1,11 @@
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptInstruction } from "./NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
-import { NWScriptExpressionBuilder } from "./NWScriptExpressionBuilder";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { OP_EQUAL, OP_LOGORII, OP_JZ, OP_JNZ } from './NWScriptOPCodes';
-import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
+
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
+import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
+import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { NWScriptInstruction } from "@/nwscript/decompiler/NWScriptInstruction";
+import { OP_EQUAL, OP_LOGORII, OP_JZ, OP_JNZ } from '@/nwscript/decompiler/NWScriptOPCodes';
+import { NWScriptDataType } from "@/nwscript/enums/nwscript/NWScriptDataType";
 
 /**
  * Detects and simplifies OR chains in NWScript bytecode.
@@ -195,9 +196,12 @@ export class NWScriptORChainDetector {
         if (expr1.operator !== expr2.operator) {
           return false;
         }
+        if (!expr1.left || !expr2.left || !expr1.right || !expr2.right) {
+          return false;
+        }
         // For now, do a simple check - could be improved
-        return this.expressionsEqual(expr1.left!, expr2.left!) &&
-               this.expressionsEqual(expr1.right!, expr2.right!);
+        return this.expressionsEqual(expr1.left, expr2.left) &&
+               this.expressionsEqual(expr1.right, expr2.right);
       
       case NWScriptExpressionType.CONSTANT:
         return expr1.value === expr2.value && expr1.dataType === expr2.dataType;
@@ -210,8 +214,11 @@ export class NWScriptORChainDetector {
         if (expr1.operator !== expr2.operator) {
           return false;
         }
-        return this.expressionsEqual(expr1.left!, expr2.left!) &&
-               this.expressionsEqual(expr1.right!, expr2.right!);
+        if (!expr1.left || !expr2.left || !expr1.right || !expr2.right) {
+          return false;
+        }
+        return this.expressionsEqual(expr1.left, expr2.left) &&
+               this.expressionsEqual(expr1.right, expr2.right);
       
       default:
         // For other types, do a simple comparison

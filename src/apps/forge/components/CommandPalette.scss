@@ -1,0 +1,24 @@
+.command-palette-modal {
+  margin-top: 15vh;
+
+  .modal-body {
+    max-height: 60vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .command-palette-input {
+    font-size: 1rem;
+  }
+
+  .command-palette-list {
+    overflow-y: auto;
+    flex: 1;
+    max-height: 50vh;
+  }
+
+  .command-palette-category {
+    background-color: var(--bs-dark);
+  }
+}

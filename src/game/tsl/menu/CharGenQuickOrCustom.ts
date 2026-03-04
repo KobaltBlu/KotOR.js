@@ -1,13 +1,16 @@
-import { GameState } from "../../../GameState";
-import type { GUIListBox, GUIButton } from "../../../gui";
-import { TalentFeat } from "../../../talents";
-import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "../../kotor/KOTOR";
+import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUIListBox, GUIButton } from "@/gui";
+import { TalentFeat } from "@/talents";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * CharGenQuickOrCustom class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenQuickOrCustom.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -29,7 +32,7 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.QUICK_CHAR_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         try{
@@ -46,9 +49,9 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
           GameState.CharGenManager.selectedCreature.cha = creatureClass.cha;
           GameState.CharGenManager.selectedCreature.str = creatureClass.str;
 
-          GameState.CharGenManager.selectedCreature.fortbonus = parseInt(saving_throw_data.fortsave);
-          GameState.CharGenManager.selectedCreature.willbonus = parseInt(saving_throw_data.willsave);
-          GameState.CharGenManager.selectedCreature.refbonus = parseInt(saving_throw_data.refsave);
+          GameState.CharGenManager.selectedCreature.fortbonus = Number.parseInt(String(saving_throw_data.fortsave), 10);
+          GameState.CharGenManager.selectedCreature.willbonus = Number.parseInt(String(saving_throw_data.willsave), 10);
+          GameState.CharGenManager.selectedCreature.refbonus = Number.parseInt(String(saving_throw_data.refsave), 10);
 
           for(let i = 0, len = feats_table.length; i < len; i++){
             const feat_data = feats_table[i];
@@ -60,7 +63,7 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
           this.manager.CharGenMain.childMenu = this.manager.CharGenQuickPanel;
           this.manager.CharGenMain.open();
         }catch(e){
-          console.log(e);
+          log.info(String(e));
         }
       });
 
@@ -85,7 +88,9 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
 
         try{
           GameState.CharGenManager.selectedCreature.model.parent.remove(GameState.CharGenManager.selectedCreature.model);
-        }catch(e){}
+        }catch {
+          return;
+        }
 
         // this.manager.CharGenClass.getControlByName('_3D_MODEL'+(CharGenManager.selectedClass+1))
         //  .userData._3dView.scene.add(CharGenManager.selectedCreature.model);
@@ -102,5 +107,5 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
       resolve();
     });
   }
-  
+
 }

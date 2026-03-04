@@ -1,16 +1,22 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { ITGAObjectOptions } from "../interface/graphics/tga/ITGAObjectOptions";
-import { ITGAHeader } from "../interface/graphics/tga/ITGAHeader";
-import { GameFileSystem } from "../utility/GameFileSystem";
+/* eslint-disable import/order */
+import { ITGAHeader } from "@/interface/graphics/tga/ITGAHeader";
+import { ITGAObjectOptions } from "@/interface/graphics/tga/ITGAObjectOptions";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Resource);
+import type { TXI } from "@/resource/TXI";
 
 /**
  * TGAObject class.
- * 
+ *
  * Class representing a TGA texture file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TGAObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -20,7 +26,7 @@ export class TGAObject {
   file: Uint8Array;
   header: ITGAHeader;
   pixelData: Uint8Array;
-  txi: any;
+  txi: TXI | null = null;
   filename: string;
 
   constructor ( args: ITGAObjectOptions = {} as ITGAObjectOptions ) {
@@ -32,7 +38,7 @@ export class TGAObject {
 
     const options = {..._default, ...args};
 
-    console.log('TGAObject', args);
+    log.info('TGAObject', args);
 
     if(typeof options.file === 'string'){
       this.file = new Uint8Array(0);
@@ -62,7 +68,7 @@ export class TGAObject {
     } as ITGAHeader;
 
     if(this.file instanceof Uint8Array && !!this.file.length){
-      let reader = new BinaryReader(this.file);
+      const reader = new BinaryReader(this.file);
 
       Header.ID = reader.readByte();
       Header.ColorMapType = reader.readByte();
@@ -73,7 +79,7 @@ export class TGAObject {
       Header.ColorMapIndex = reader.readByte();
 
       if(Header.hasColorMap){
-
+        // Color map present; layout read from header fields above.
       }
 
       Header.offsetX = reader.readUInt32();
@@ -92,11 +98,11 @@ export class TGAObject {
 
   }
 
-  getPixelData( onLoad?: Function ){
+  getPixelData( onLoad?: (pixels: Uint8Array) => void ){
 
-    let reader = new BinaryReader(this.file);
-    console.log('TGAObject', this.header)
-  	reader.seek(this.header.pixelDataOffset);
+    const reader = new BinaryReader(this.file);
+    log.info('TGAObject', this.header);
+    reader.seek(this.header.pixelDataOffset);
 
     //32bpp RGBA
     if(this.header.bitsPerPixel == 32){
@@ -119,7 +125,7 @@ export class TGAObject {
   }
 
   async toExportBuffer(): Promise<Uint8Array> {
-    let writer = new BinaryWriter();
+    const writer = new BinaryWriter();
 
     writer.writeByte(this.header.ID);
     writer.writeByte(this.header.ColorMapType);
@@ -143,13 +149,44 @@ export class TGAObject {
     return true;
   }
 
-  static FlipY(pixelData: Uint8Array, width = 1, height = 1){
+  toJSON(): { header: ITGAHeader; pixelDataBase64: string; filename: string } {
+    const pd = this.pixelData ?? new Uint8Array(0);
+    let b64 = '';
+    if (pd.length) {
+      const buf = (typeof globalThis !== 'undefined' && (globalThis as { Buffer?: { from: (u: Uint8Array) => { toString: (enc: string) => string } } }).Buffer)
+        ? Buffer.from(pd).toString('base64')
+        : btoa(String.fromCharCode(...pd));
+      b64 = buf;
+    }
+    return { header: { ...this.header }, pixelDataBase64: b64, filename: this.filename ?? '' };
+  }
+
+  fromJSON(json: string | ReturnType<TGAObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<TGAObject['toJSON']>) : json;
+    Object.assign(this.header, obj.header ?? {});
+    this.filename = obj.filename ?? '';
+    if (obj.pixelDataBase64) {
+      const raw = (typeof globalThis !== 'undefined' && (globalThis as { Buffer?: unknown }).Buffer)
+        ? Buffer.from(obj.pixelDataBase64, 'base64')
+        : Uint8Array.from(atob(obj.pixelDataBase64), c => c.charCodeAt(0));
+      this.pixelData = raw instanceof Uint8Array ? raw : new Uint8Array(raw);
+    } else this.pixelData = new Uint8Array(0);
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<TGAObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<TGAObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<TGAObject['toJSON']>); }
+
+  static FlipY(pixelData: Uint8Array, width = 1, _height = 1){
     let offset = 0;
-    let stride = width * 4;
+    const stride = width * 4;
 
     //if(!pixelData) pixelData = this.pixelData;
 
-    let unFlipped = Uint8Array.from(pixelData);
+    const unFlipped = Uint8Array.from(pixelData);
 
     for (let pos = unFlipped.length - stride; pos >= 0; pos -= stride) {
       pixelData.set(unFlipped.slice(pos, pos + stride), offset);
@@ -161,19 +198,19 @@ export class TGAObject {
     const tga = new TGAObject();
     if(canvas instanceof HTMLCanvasElement || canvas instanceof OffscreenCanvas){
 
-      let ctx: CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D = canvas.getContext('2d') as any;
+      const ctx = canvas.getContext('2d') as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
       if(ctx){
         tga.header.width = canvas.width;
         tga.header.height = canvas.height;
         tga.header.bitsPerPixel = 32;
         tga.header.FileType = 2;
-        let data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
         tga.pixelData = new Uint8Array(data.length);
 
-        let rowByteLength = data.length / tga.header.height;
+        const rowByteLength = data.length / tga.header.height;
         for(let i = 0; i < tga.header.height; i++){
-          let offset = rowByteLength * i;
+          const offset = rowByteLength * i;
           for(let j = 0, k = rowByteLength; j < rowByteLength; j += 4, k -= 4){
             tga.pixelData[offset + j]     = data[offset + j + 2];//(k - 2)]; // red
             tga.pixelData[offset + j + 1] = data[offset + j + 1];//(k - 3)]; // green

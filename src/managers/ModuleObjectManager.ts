@@ -1,40 +1,49 @@
-import EngineLocation from "../engine/EngineLocation";
-import { CreatureType } from "../enums/nwscript/CreatureType";
-import { NWModuleObjectType } from "../enums/nwscript/NWModuleObjectType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { ReputationType } from "../enums/nwscript/ReputationType";
-import { BitWise } from "../utility/BitWise";
-import { PartyManager } from "./PartyManager";
 import * as THREE from "three";
-import type { Module, ModuleCreature, ModuleDoor, ModuleObject } from "../module";
-import { PerceptionMask } from "../enums/engine/PerceptionMask";
-import { GameState } from "../GameState";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
+
+import EngineLocation from "@/engine/EngineLocation";
+import { PerceptionMask } from "@/enums/engine/PerceptionMask";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { CreatureType } from "@/enums/nwscript/CreatureType";
+import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
+import { ReputationType } from "@/enums/nwscript/ReputationType";
+import { GameState } from "@/GameState";
+import { PartyManager } from "@/managers/PartyManager";
+import type { Module, ModuleCreature, ModuleDoor, ModuleObject } from "@/module";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Manager);
 
 const UPDATE_SELECTABLE_OBJECTS_INTERVAL = 0.5;
 
 /**
  * ModuleObjectManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ModuleObjectManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ModuleObjectManager {
 
+  private constructor() {
+    // Static-only class.
+  }
+
   static objSearchIndex: number;
   static module: Module;
 
-  static ObjectList: Map<any, ModuleObject> = new Map();
+  static ObjectList: Map<number, ModuleObject> = new Map();
   static COUNT: number = 1;
   static PLAYER_ID = ModuleObjectConstant.PLAYER_ID;
 
   static GetObjectById(id: ModuleObject|number = -1){
 
-    if(id == ModuleObjectConstant.OBJECT_INVALID)
+    if(id === ModuleObjectConstant.OBJECT_INVALID || (typeof id === 'number' && id === -1))
       return undefined;
 
     if(typeof id === 'object'){
@@ -43,8 +52,9 @@ export class ModuleObjectManager {
       }
     }
 
-    if(this.ObjectList.has(id)){
-      return this.ObjectList.get(id);
+    const numId = typeof id === 'object' ? (id?.id ?? -1) : id;
+    if(numId >= 1 && this.ObjectList.has(numId)){
+      return this.ObjectList.get(numId);
     }
     return undefined;
 
@@ -56,10 +66,10 @@ export class ModuleObjectManager {
 
   static ResetPlayerId(){
     this.PLAYER_ID = ModuleObjectConstant.PLAYER_ID;
-  };
+  }
 
   static GetNextPlayerId(){
-    console.log('GetNextPlayerId', this.PLAYER_ID);
+    log.trace('GetNextPlayerId PLAYER_ID=%s', String(this.PLAYER_ID));
     return this.PLAYER_ID--;
   }
 
@@ -108,8 +118,8 @@ export class ModuleObjectManager {
     OBJECT_TYPE_ALL              = 32767;*/
 
     sTag = sTag.toLowerCase();
-    let results: ModuleObject[] = [];
-    let obj: any = undefined;
+    const results: ModuleObject[] = [];
+    let obj: ModuleObject | undefined = undefined;
     if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){
       for(let i = 0, len = this.module.area.placeables.length; i < len; i++){
         obj = this.module.area.placeables[i];
@@ -194,7 +204,7 @@ export class ModuleObjectManager {
 
   public static GetNearestObjectByTag(sTag = '', oObject: ModuleObject, iNum = 0){
     sTag = sTag.toLowerCase();
-    let results: ModuleObject[] = [];
+    const results: ModuleObject[] = [];
     let len = this.module.area.placeables.length;
     for(let i = 0; i < len; i++){
       if(this.module.area.placeables[i].getTag().toLowerCase() == sTag)
@@ -254,10 +264,10 @@ export class ModuleObjectManager {
     results.sort(
       function(a,b) {
         try{
-          let distanceA = a.getModel().position.distanceTo(oObject.getModel().position);
-          let distanceB = b.getModel().position.distanceTo(oObject.getModel().position);
+          const distanceA = a.getModel().position.distanceTo(oObject.getModel().position);
+          const distanceB = b.getModel().position.distanceTo(oObject.getModel().position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
+        }catch{
           return 0;
         }
       }
@@ -282,17 +292,17 @@ export class ModuleObjectManager {
     results.sort(
       function(a,b) {
         try{
-          let distanceA = a.position.distanceTo(oObject.position);
-          let distanceB = b.position.distanceTo(oObject.position);
+          const distanceA = a.position.distanceTo(oObject.position);
+          const distanceB = b.position.distanceTo(oObject.position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
+        }catch{
           return 0;
         }
       }
     );
 
-    let result: any;
-    let count = results.length;
+    let result: ModuleObject | undefined;
+    const count = results.length;
 
     for(let i = 0; i < count; i++){
       result = results[i];
@@ -345,10 +355,10 @@ export class ModuleObjectManager {
     results.sort(
       function(a,b) {
         try{
-          let distanceA = a.position.distanceTo(oObject.position);
-          let distanceB = b.position.distanceTo(oObject.position);
+          const distanceA = a.position.distanceTo(oObject.position);
+          const distanceB = b.position.distanceTo(oObject.position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
+        }catch{
           return 0;
         }
       }
@@ -365,10 +375,9 @@ export class ModuleObjectManager {
   public static GetFirstObjectInArea(oArea = this.module.area, oType = 0){
 
     if(!(BitWise.InstanceOf(oArea?.objectType, ModuleObjectType.ModuleArea))){
-      console.error(oArea);
+      log.warn('GetFirstObjectInArea: invalid oArea, using module.area', oArea);
       oArea = this.module.area;
     }
-      
 
     ModuleObjectManager.objSearchIndex = 0;
 
@@ -415,7 +424,7 @@ export class ModuleObjectManager {
 
   public static GetNextObjectInArea(oArea = this.module.area, oType = 0){
     if(!(BitWise.InstanceOf(oArea?.objectType, ModuleObjectType.ModuleArea))){
-      console.error(oArea);
+      log.warn('GetNextObjectInArea: invalid oArea, using module.area', oArea);
       oArea = this.module.area;
     }
     ++ModuleObjectManager.objSearchIndex;
@@ -461,15 +470,15 @@ export class ModuleObjectManager {
     return undefined;
   }
 
-  public static GetNearestCreature(nFirstCriteriaType: CreatureType, nFirstCriteriaValue: any, oTarget: ModuleObject, nNth=1, nSecondCriteriaType=-1, nSecondCriteriaValue=-1, nThirdCriteriaType=-1,  nThirdCriteriaValue=-1, list?: ModuleCreature[] ): ModuleCreature {
-    
+  public static GetNearestCreature(nFirstCriteriaType: CreatureType, nFirstCriteriaValue: number, oTarget: ModuleObject, nNth = 1, nSecondCriteriaType = -1, nSecondCriteriaValue = -1, nThirdCriteriaType = -1, nThirdCriteriaValue = -1, list?: ModuleCreature[]): ModuleCreature | undefined {
+
     if(!list){
       list = this.module.area.creatures;
       list = list.concat(PartyManager.party);
     }
 
-    let results: ModuleCreature[] = [];
-    
+    const results: ModuleCreature[] = [];
+
     switch(nFirstCriteriaType){
       case CreatureType.RACIAL_TYPE:
 
@@ -497,7 +506,7 @@ export class ModuleObjectManager {
                 results.push(list[i]);
               }
             }
-          break;  
+          break;
           case ReputationType.NEUTRAL:
             for(let i = 0; i < list.length; i++){
               if(list[i].isDead()){ continue; }
@@ -582,7 +591,7 @@ export class ModuleObjectManager {
     }
 
     if(results.length){
-      results.sort((a: any, b: any) => {
+      results.sort((a: ModuleCreature, b: ModuleCreature) => {
         return oTarget.position.distanceTo(a.position) - oTarget.position.distanceTo(b.position);
       });
       return results[nNth-1];
@@ -591,10 +600,10 @@ export class ModuleObjectManager {
     return undefined;
   }
 
-  public static GetObjectsInShape(shape = -1, size = 1, target: EngineLocation, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){
+  public static GetObjectsInShape(_shape = -1, size = 1, target: EngineLocation, _lineOfSight = false, oType = -1, _origin = new THREE.Vector3, idx = -1){
 
     let object_pool: ModuleObject[] = [];
-    let results: ModuleObject[] = [];
+    const results: ModuleObject[] = [];
 
     /*
     int    ModuleObjectType.CREATURE         = 1;
@@ -610,7 +619,7 @@ export class ModuleObjectManager {
     int    OBJECT_TYPE_ALL              = 32767;
     */
 
-    //console.log('GetObjectsInShape', objectFilter, shape);
+    //log.info('GetObjectsInShape', objectFilter, shape);
 
     if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){ //CREATURE
       object_pool = object_pool.concat(this.module.area.creatures);
@@ -621,33 +630,33 @@ export class ModuleObjectManager {
     }
 
     if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){ //TRIGGER
-      object_pool = object_pool.concat(this.module.area.triggers); 
+      object_pool = object_pool.concat(this.module.area.triggers);
     }
 
     if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){ //DOOR
-      object_pool = object_pool.concat(this.module.area.doors); 
+      object_pool = object_pool.concat(this.module.area.doors);
     }
 
     if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE){ //AOE
-              
+
     }
 
     if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){ //WAYPOINTS
       object_pool = object_pool.concat(this.module.area.waypoints);
     }
-    
+
     if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){ //PLACEABLE
       object_pool = object_pool.concat(this.module.area.placeables);
     }
 
     if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){ //STORE
-          
+
     }
-    
+
     if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER){ //ENCOUNTER
-          
+
     }
-    
+
     if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){ //SOUND
       object_pool = object_pool.concat(this.module.area.sounds);
     }
@@ -670,9 +679,9 @@ export class ModuleObjectManager {
 
   public static GetAttackerByIndex(oTarget: ModuleObject, index: number = 0): ModuleObject {
     return [].concat(
-      this.module.area.creatures.filter( 
+      this.module.area.creatures.filter(
         (
-          creature => 
+          creature =>
           {
             return (
               creature.combatData.lastAttackTarget == oTarget ||
@@ -723,8 +732,8 @@ export class ModuleObjectManager {
 
     const objects = [
       ...GameState.PartyManager.party,
-      ...GameState.module.area.placeables, 
-      ...GameState.module.area.doors, 
+      ...GameState.module.area.placeables,
+      ...GameState.module.area.doors,
       ...GameState.module.area.creatures,
       ...GameState.module.area.triggers.filter((trig) => trig.type == ModuleTriggerType.TRAP)
     ];
@@ -736,7 +745,7 @@ export class ModuleObjectManager {
     this.#tmpPlayerPosition.z += this.#losZOffset;
 
     this.#tmpTargetPosition.set(0, 0, 0);
-    
+
     for(let i = 0; i < objCount; i++){
       const obj = objects[i];
 

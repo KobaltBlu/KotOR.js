@@ -1,7 +1,7 @@
-import { GameEngineType } from "../../../enums/engine/GameEngineType";
-import { ProjectType } from "../enum/ProjectType";
+import { ProjectType } from "@/apps/forge/enum/ProjectType";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 
-interface OpenFilesList extends Array<string> { }
+type OpenFilesList = string[];
 
 interface ModuleEditorSettings {
   open: boolean;
@@ -11,6 +11,6 @@ export interface ProjectSettings {
   name: string;
   game: GameEngineType;
   type: ProjectType;
-  module_editor: ModuleEditorSettings,
-  open_files: OpenFilesList,
+  module_editor: ModuleEditorSettings;
+  open_files: OpenFilesList;
 }

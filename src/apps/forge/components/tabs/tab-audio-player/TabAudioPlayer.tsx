@@ -1,22 +1,28 @@
-import React, { useEffect, useRef, useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabAudioPlayerState } from "../../../states/tabs/TabAudioPlayerState";
-import { AudioPlayerState } from "../../../states/AudioPlayerState";
-import * as KotOR from "../../../../../KotOR";
+import React, { useRef, useState } from "react";
+
+
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
+import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
+import * as KotOR from "@/KotOR";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 export const TabAudioPlayer = function(props: BaseTabProps) {
-  const tab = props.tab as TabAudioPlayerState;
+  const _tab = props.tab as TabAudioPlayerState;
   
   // Use useRef for mutable variables that we want to persist
   // without triggering a re-render on their change
-  const requestRef = useRef<number>();
-  const previousTimeRef = useRef<number>();
-  const canvasRef = useRef<HTMLCanvasElement>(null as any);
-  const contextRef = useRef<CanvasRenderingContext2D>(null as any);
+  const requestRef = useRef<number | undefined>(undefined);
+  const previousTimeRef = useRef<number | undefined>(undefined);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   
   const [isReady, setIsReady] = useState<boolean>(false);
-  const [isDisposed, setIsDisposed] = useState<boolean>(false);
+  const [_isDisposed, setIsDisposed] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
@@ -51,7 +57,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
   }
 
   const onOpen = (file: KotOR.AudioFile) => {
-    console.log('onOpen', file);
+    log.debug('onOpen', file);
     if(!file){ return; }
     setFile(file);
   }
@@ -76,11 +82,11 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
     AudioPlayerState.AddEventListener('onOpen', onOpen);
     window.addEventListener('resize', onResize);
 
-    console.log('useEffect', canvasRef, canvasRef.current);
+    log.debug('useEffect', canvasRef, canvasRef.current);
     if (canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
-      console.log(ctx);
+      log.debug('canvas context', ctx);
       contextRef.current = (ctx as CanvasRenderingContext2D);
       onResize();
     }
@@ -93,13 +99,13 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
       AudioPlayerState.RemoveEventListener('onStop', onStop);
       AudioPlayerState.RemoveEventListener('onLoop', onLoop);
       AudioPlayerState.RemoveEventListener('onOpen', onOpen);
-      cancelAnimationFrame(requestRef.current as any);
+      if (requestRef.current != null) cancelAnimationFrame(requestRef.current);
       setIsDisposed(true);
       window.removeEventListener('resize', onResize);
     }
   })
 
-  const onBtnPlay = (e: React.MouseEvent<HTMLSpanElement>) => {
+  const onBtnPlay = (_e: React.MouseEvent<HTMLSpanElement>) => {
     if(isPlaying){
       AudioPlayerState.Pause();
     }else{
@@ -107,18 +113,18 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
     }
   }
 
-  const onBtnStop = (e: React.MouseEvent<HTMLSpanElement>) => {
+  const onBtnStop = (_e: React.MouseEvent<HTMLSpanElement>) => {
     AudioPlayerState.Stop();
   }
 
   const onTrackBarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const seekPosition = parseFloat(e.target.value);
-    try{ AudioPlayerState.Stop(); }catch(e){}
+    try{ AudioPlayerState.Stop(); }catch{ /* seek reset */ }
     AudioPlayerState.pausedAt = seekPosition;
-    try{ AudioPlayerState.Play(); }catch(e){}
+    try{ AudioPlayerState.Play(); }catch{ /* resume after seek */ }
   }
 
-  const onBtnSave = (e: React.MouseEvent<HTMLSpanElement>) => {
+  const onBtnSave = (_e: React.MouseEvent<HTMLSpanElement>) => {
     AudioPlayerState.Pause();
     AudioPlayerState.ExportAudio().then( () => {
 
@@ -137,7 +143,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
   const animate = (time: number = 0) => {
     const context = contextRef.current;
     if (previousTimeRef.current != undefined && context && AudioPlayerState.analyser) {
-      const deltaTime = time - previousTimeRef.current;
+      const _deltaTime = time - previousTimeRef.current;
 
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
       const bufferLength = AudioPlayerState.analyserBufferLength;
@@ -147,7 +153,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
       let secondX = (bufferLength * barWidth) - barWidth/2;
 
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-      AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData as any);
+      AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData as Uint8Array);
 
       const totalHeight = 64;
       const maxHeight = 64;

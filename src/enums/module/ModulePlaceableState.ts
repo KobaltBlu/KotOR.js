@@ -16,4 +16,4 @@ export enum ModulePlaceableState {
   DEAD    =  3,
   ON      =  4,
   OFF     =  5
-};
+}

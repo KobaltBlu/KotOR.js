@@ -1,8 +1,12 @@
 import * as THREE from "three";
-import { PathPoint } from "./PathPoint";
-import type { ModuleObject } from "../../module/ModuleObject";
-import { GameState } from "../../GameState";
-import { BinaryHeap } from "./BinaryHeap";
+
+import { BinaryHeap } from "@/engine/pathfinding/BinaryHeap";
+import { PathPoint } from "@/engine/pathfinding/PathPoint";
+import { GameState } from "@/GameState";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 export class ComputedPath {
   owner: ModuleObject;
@@ -24,18 +28,23 @@ export class ComputedPath {
   enableHelper: boolean = false;
 
   constructor(owner: ModuleObject, origin: PathPoint = undefined, destination: PathPoint = undefined){
+    log.trace('ComputedPath constructor');
     this.owner = owner;
     this.origin = origin;
     this.destination = destination;
     this.points = [];
+    log.trace('ComputedPath constructor done');
   }
 
   setOwner(owner: ModuleObject){
+    log.trace('ComputedPath.setOwner');
     this.owner = owner;
   }
 
   getCost( point: PathPoint ){
-    return point.vector.distanceToSquared( this.destination.vector );
+    const cost = point.vector.distanceToSquared( this.destination.vector );
+    log.trace('ComputedPath.getCost', cost);
+    return cost;
   }
 
   clone(){
@@ -46,18 +55,24 @@ export class ComputedPath {
     return clone;
   }
 
-  //https://github.com/bgrins/javascript-astar
   search(): ComputedPath {
+    log.trace('ComputedPath.search');
     const openHeap = new BinaryHeap<PathPoint>(
-      //scorer
-      function(node: PathPoint) { 
-      return node.f; 
-    });
+      function(node: PathPoint) {
+        return node.f;
+      });
     openHeap.push(this.origin);
+    let iterations = 0;
     while(openHeap.size() > 0){
+      iterations++;
       const currentNode = openHeap.pop();
+      if (currentNode === undefined) {
+        log.trace('ComputedPath.search pop undefined');
+        break;
+      }
 
       if(currentNode == this.destination){
+        log.trace('ComputedPath.search destination reached', iterations);
         let curr = currentNode;
         curr.end = true;
         this.points = [];
@@ -65,22 +80,24 @@ export class ComputedPath {
           this.points.push(curr);
           curr = curr.parent;
         }
-        
+
         this.points.reverse();
         this.prunePathPoints();
+        log.debug('ComputedPath.search path points', this.points.length);
         return this;
       }
 
       currentNode.closed = true;
 
       const neighbors = currentNode.connections;
+      log.trace('ComputedPath.search neighbors', neighbors.length);
       for(let i = 0, il = neighbors.length; i < il; i++) {
-        let neighbor = neighbors[i];
+        const neighbor = neighbors[i];
         if(neighbor.closed || !neighbor.hasLOS(currentNode, this.owner)) {
           continue;
         }
-        let gScore = currentNode.g + neighbor.cost;
-        let beenVisited = neighbor.visited;
+        const gScore = currentNode.g + neighbor.cost;
+        const beenVisited = neighbor.visited;
         if(!beenVisited || gScore < neighbor.g) {
           neighbor.visited = true;
           neighbor.parent = currentNode;
@@ -105,7 +122,7 @@ export class ComputedPath {
    * @returns void
    */
   prunePathPoints(){
-    // return;
+    log.trace('ComputedPath.prunePathPoints', this.points.length);
     if(!this.points.length)
       return;
 
@@ -132,7 +149,7 @@ export class ComputedPath {
         pruneRest = true;
         continue;
       }
-      
+
       if(cPoint == this.origin)
         continue;
 
@@ -163,11 +180,11 @@ export class ComputedPath {
   }
 
   reIndex(): void {
-    let parent: PathPoint;
+    let _parent: PathPoint;
     for(let i = 0; i < this.points.length; i++){
       const p = this.points[i];
       p.parent = p;
-      parent = p;
+      _parent = p;
     }
   }
 
@@ -203,7 +220,7 @@ export class ComputedPath {
       this.helperPositions.setX(idx, point.vector.x);
       this.helperPositions.setY(idx, point.vector.y);
       this.helperPositions.setZ(idx, point.vector.z);
-      
+
       this.helperPositions.setX(idx2, point.vector.x);
       this.helperPositions.setY(idx2, point.vector.y);
       this.helperPositions.setZ(idx2, point.vector.z + 0.75);
@@ -229,7 +246,7 @@ export class ComputedPath {
       this.helperPositions.setX(idx3, point.vector.x);
       this.helperPositions.setY(idx3, point.vector.y);
       this.helperPositions.setZ(idx3, point.vector.z + 0.75);
-      
+
       this.helperPositions.setX(idx4, cPoint.vector.x);
       this.helperPositions.setY(idx4, cPoint.vector.y);
       this.helperPositions.setZ(idx4, cPoint.vector.z + 0.75);
@@ -251,7 +268,7 @@ export class ComputedPath {
 
     this.helperMesh.geometry = this.helperGeometry;
     this.helperMesh.material = this.helperMaterial;
-    
+
     if(!this.helperMesh.parent){
       GameState.scene.add( this.helperMesh );
     }
@@ -266,7 +283,7 @@ export class ComputedPath {
     const pointCount = this.points.length;
     let connectionIndexStart = (pointCount * 2);
     for(let i = 0; i < pointCount; i++){
-      const point = this.points[i];
+      const _point = this.points[i];
 
       const idx = i * 2;
       const idx2 = idx + 1;
@@ -285,7 +302,7 @@ export class ComputedPath {
         continue;
       }
 
-      const cPoint = this.points[i + 1];
+      const _cPoint = this.points[i + 1];
       const idx3 = connectionIndexStart;
       const idx4 = idx3 + 1;
 

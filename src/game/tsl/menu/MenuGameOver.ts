@@ -1,5 +1,5 @@
-import { GameMenu } from "../../../gui";
-import type { GUIButton, GUILabel } from "../../../gui";
+import { GameMenu } from "@/gui";
+import type { GUIButton, GUILabel } from "@/gui";
 
 /**
  * MenuGameOver class.
@@ -27,9 +27,10 @@ export class MenuGameOver extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
   
 }
+

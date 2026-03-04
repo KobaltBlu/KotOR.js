@@ -1,7 +1,8 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
+
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * EncounterSpawnPointEntry class.
@@ -18,7 +19,7 @@ export class EncounterSpawnPointEntry{
   orientation = 0.0;
 
   save(){
-    let struct = new GFFStruct();
+    const struct = new GFFStruct();
 
     struct.addField( new GFFField(GFFDataType.FLOAT, 'X') ).setValue(this.position.x);
     struct.addField( new GFFField(GFFDataType.FLOAT, 'Y') ).setValue(this.position.y);
@@ -28,20 +29,20 @@ export class EncounterSpawnPointEntry{
     return struct;
   }
 
-  static FromStruct( struct: GFFStruct ){
-    if(struct instanceof GFFStruct){
-      let entry = new EncounterSpawnPointEntry();
+  static FromStruct(struct: GFFStruct): EncounterSpawnPointEntry | undefined {
+    if (struct instanceof GFFStruct) {
+      const entry = new EncounterSpawnPointEntry();
       if(struct.hasField('X'))
-        entry.position.x = struct.getFieldByLabel('X').getValue();
+        entry.position.x = struct.getNumberByLabel('X');
 
       if(struct.hasField('Y'))
-        entry.position.y = struct.getFieldByLabel('Y').getValue();
+        entry.position.y = struct.getNumberByLabel('Y');
 
       if(struct.hasField('Z'))
-        entry.position.z = struct.getFieldByLabel('Z').getValue();
+        entry.position.z = struct.getNumberByLabel('Z');
   
       if(struct.hasField('Orientation'))
-        entry.orientation = struct.getFieldByLabel('Orientation').getValue();
+        entry.orientation = struct.getNumberByLabel('Orientation');
 
       return entry;
     }

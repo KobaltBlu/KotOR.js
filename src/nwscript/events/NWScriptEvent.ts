@@ -1,13 +1,16 @@
-import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
-import { GFFDataType } from "../../enums/resource/GFFDataType";
-import { GFFField } from "../../resource/GFFField";
-import { GFFStruct } from "../../resource/GFFStruct";
-import { GameState } from "../../GameState";
-import { EventConversation } from "./EventConversation";
-import { EventSpellCastAt } from "./EventSpellCastAt";
-import { EventUserDefined } from "./EventUserDefined";
-import { EventActivateItem } from "./EventActivateItem";
-// import { ModuleObjectManager } from "../../managers";
+import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { EventActivateItem } from "@/nwscript/events/EventActivateItem";
+import { EventConversation } from "@/nwscript/events/EventConversation";
+import { EventSpellCastAt } from "@/nwscript/events/EventSpellCastAt";
+import { EventUserDefined } from "@/nwscript/events/EventUserDefined";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+// import { ModuleObjectManager } from "@/managers";
+
+/** Object list entries: object id (number) or ModuleObject. */
+export type NWScriptObjectListEntry = number | import('@/module/ModuleObject').ModuleObject;
 
 /**
  * NWScriptEvent class.
@@ -20,10 +23,10 @@ import { EventActivateItem } from "./EventActivateItem";
  */
 export class NWScriptEvent {
   type: NWScriptEventType;
-  intList: any[];
-  floatList: any[];
-  stringList: any[];
-  objectList: any[];
+  intList: number[];
+  floatList: number[];
+  stringList: string[];
+  objectList: NWScriptObjectListEntry[];
 
   constructor(){
     this.intList = [];
@@ -32,7 +35,7 @@ export class NWScriptEvent {
     this.objectList = [];
   }
 
-  setIntList(intList: any[] = []){
+  setIntList(intList: number[] = []){
     if(Array.isArray(intList)){
       this.intList = intList;
     }
@@ -46,7 +49,7 @@ export class NWScriptEvent {
     return this.intList[nOffset];
   }
 
-  setFloatList(floatList: any[] = []){
+  setFloatList(floatList: number[] = []){
     if(Array.isArray(floatList)){
       this.floatList = floatList;
     }
@@ -60,7 +63,7 @@ export class NWScriptEvent {
     return this.floatList[nOffset];
   }
 
-  setStringList(stringList: any[] = []){
+  setStringList(stringList: string[] = []){
     if(Array.isArray(stringList)){
       this.stringList = stringList;
     }
@@ -74,13 +77,13 @@ export class NWScriptEvent {
     return this.stringList[nOffset];
   }
 
-  setObjectList(objectList: any[] = []){
+  setObjectList(objectList: NWScriptObjectListEntry[] = []){
     if(Array.isArray(objectList)){
       this.objectList = objectList;
     }
   }
 
-  setObject(nOffset = 0, nValue?: any){
+  setObject(nOffset = 0, nValue?: NWScriptObjectListEntry | { id?: number }): void {
     if(typeof nValue === 'object'){
       nValue = nValue.id;
     }else if(!nValue || (typeof nValue == 'undefined')){
@@ -96,33 +99,33 @@ export class NWScriptEvent {
 
   save(){
 
-    let eventStruct = new GFFStruct(2);
+    const eventStruct = new GFFStruct(2);
     eventStruct.addField( new GFFField(GFFDataType.WORD, 'EventType') ).setValue(this.type);
 
-    let intList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'IntList') );
+    const intList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'IntList') );
     for(let i = 0; i < this.intList.length; i++){
-      let intStruct = new GFFStruct(0x69);
+      const intStruct = new GFFStruct(0x69);
       intStruct.addField( new GFFField(GFFDataType.INT, "Parameter").setValue(this.getInt(i) || 0));
       intList.addChildStruct(intStruct);
     }
 
-    let floatList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'FloatList') );
+    const floatList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'FloatList') );
     for(let i = 0; i < this.floatList.length; i++){
-      let floatStruct = new GFFStruct(0x69);
+      const floatStruct = new GFFStruct(0x69);
       floatStruct.addField( new GFFField(GFFDataType.FLOAT, "Parameter").setValue(this.getFloat(i) || 0.0));
       floatList.addChildStruct(floatStruct);
     }
 
-    let stringList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'StringList') );
+    const stringList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'StringList') );
     for(let i = 0; i < this.stringList.length; i++){
-      let stringStruct = new GFFStruct(0x69);
+      const stringStruct = new GFFStruct(0x69);
       stringStruct.addField( new GFFField(GFFDataType.CEXOSTRING, "Parameter").setValue(this.getString(i) || ''));
       stringList.addChildStruct(stringStruct);
     }
 
-    let objectList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'ObjectList') );
+    const objectList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'ObjectList') );
     for(let i = 0; i < this.objectList.length; i++){
-      let objectStruct = new GFFStruct(0x69);
+      const objectStruct = new GFFStruct(0x69);
       objectStruct.addField( new GFFField(GFFDataType.DWORD, "Parameter").setValue( typeof this.getObject(i) === 'object' ? this.getObject(i).id : 2130706432 ));
       objectList.addChildStruct(objectStruct);
     }

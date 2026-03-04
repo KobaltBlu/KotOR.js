@@ -1,195 +1,224 @@
-import * as path from "path";
 import * as fs from "fs";
-import { ApplicationProfile } from "./ApplicationProfile";
-import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
-import { IGameFileSystemReadDirOptions } from "../interface/filesystem/IGameFileSystemReadDirOptions";
-declare const dialog: any;
+import * as path from "path";
+
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+/** Electron dialog (injected by preload when ENV is ELECTRON). Used by showOpenFileDialog/showSaveFileDialog when implemented. */
+declare const _dialog: {
+  showOpenDialog: (opts?: { properties?: string[] }) => Promise<{ filePaths?: string[] }>;
+  locateDirectoryDialog: () => Promise<string | null>;
+};
+
+const log = createScopedLogger(LogScope.Default);
 
 const spleep = (time: number = 0) => {
-  return new Promise( (resolve, reject) => {
+  return new Promise<void>((resolve, _reject) => {
     setTimeout(resolve, time);
   });
 }
 
 /**
  * GameFileSystem class.
- * 
+ *
  * Handles file system access for the application.
  * It will use either the File System Access API or the fs module built into node
  * depending on the ENVIRONMENT ( BROWSER|ELECTRON ) the app was loaded under.
- * 
+ *
  * This class should only access the directory that the user supplied and not escape it.
  * Under the web this is forced, but the node implementation is not so strict.
- * 
+ *
  * This class will also be able to access sub files and folders of the supplied directory.
- * 
+ *
  * File access outside of this usecase should be delagated to calling the open/save file dialogs
  * when the user requests them.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GameFileSystem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GameFileSystem {
 
-  private static normalizePath(filepath: string){
+  private static normalizePath(filepath: string) {
     filepath = filepath.trim();
-    filepath.replace(/^\/+/, '').replace(/\/+$/, '');
-    filepath.replace(/^\\+/, '').replace(/\\+$/, '');
+    filepath = filepath.replace(/\\/g, '/');
+    filepath = filepath.replace(/^\/+/, '').replace(/\/+$/, '');
     return filepath;
   }
 
+  /** Returns true if name is valid for getFileHandle/getDirectoryHandle (no empty, ".", "..", path separators, or OS-invalid chars). */
+  private static isSafeHandleName(name: string): boolean {
+    if (typeof name !== 'string') return false;
+    const trimmed = name.trim();
+    if (trimmed === '' || trimmed === '.' || trimmed === '..') return false;
+    if (/[/\\]/.test(name)) return false;
+    if (/[:*?"<>|]/.test(name)) return false;
+    return true;
+  }
+
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
-  static async open(filepath: string, mode: 'r'|'w' = 'r'): Promise<any> {
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<number>( (resolve, reject) => {
+  static async open(filepath: string, _mode: 'r' | 'w' = 'r'): Promise<number | FileSystemFileHandle> {
+    if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+      return new Promise<number>((resolve, reject) => {
         fs.open(path.join(ApplicationProfile.directory, filepath), (err, fd) => {
-          if(err){
-            console.error(err);
+          if (err) {
             reject(err);
             return;
           }
           resolve(fd);
         });
       });
-    }else{
-      // console.log('open', filepath);
+    } else {
+      // log.info('open', filepath);
       filepath = this.normalizePath(filepath);
-      const dirs = filepath.split('/');
+      const dirs = filepath.split('/').filter(Boolean);
       const filename = dirs.pop();
+      if (!filename || !this.isSafeHandleName(filename)) {
+        throw new Error(`Invalid file name for path: ${filepath}`);
+      }
       const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
-      if(dirHandle){
-        const file = await dirHandle.getFileHandle(filename, {
-          create: false
-        });
-        if(file){
-          return file;
-        }else{
-          throw new Error('Failed to read file');
+      if (dirHandle) {
+        const safeName = filename.trim();
+        if (!safeName || !this.isSafeHandleName(safeName)) {
+          throw new Error(`Invalid file name for path: ${filepath}`);
         }
-      }else{
+        try {
+          return await dirHandle.getFileHandle(safeName, { create: false });
+        } catch (e) {
+          // Some environments can behave case-sensitively even on Windows-like filesystems.
+          // Fall back to a case-insensitive scan of the directory entries.
+          const targetLower = safeName.toLowerCase();
+          for await (const entry of dirHandle.values()) {
+            if (entry.kind === 'file' && entry.name.toLowerCase() === targetLower) {
+              return await dirHandle.getFileHandle(entry.name, { create: false });
+            }
+          }
+          throw e;
+        }
+      } else {
         throw new Error('Failed to locate file directory');
       }
     }
   }
 
-  static async read(handle: FileSystemFileHandle|number, output: Uint8Array, offset: number, length: number, position: number){
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<Uint8Array>( (resolve, reject) => {
+  static async read(handle: FileSystemFileHandle | number, output: Uint8Array, offset: number, length: number, position: number) {
+    if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+      return new Promise<Uint8Array>((resolve, reject) => {
         fs.read(handle as number, output, offset, length, position, (err, bytes, buffer) => {
-          if(err) reject(err);
+          if (err) reject(err);
           output.set(new Uint8Array(buffer), offset);
           resolve(output);
         })
       });
-    }else{
-      if(!(handle)) throw new Error('No file handle supplied!');
-      
-      if(!(handle instanceof FileSystemFileHandle)) throw new Error('FileSystemFileHandle expected but one was not supplied!');
-      
-      if(!(output instanceof Uint8Array)) throw new Error('No output buffer supplied!');
+    } else {
+      if (!(handle)) throw new Error('No file handle supplied!');
+
+      if (!(handle instanceof FileSystemFileHandle)) throw new Error('FileSystemFileHandle expected but one was not supplied!');
+
+      if (!(output instanceof Uint8Array)) throw new Error('No output buffer supplied!');
 
       const file = await handle.getFile();
-      if(!file) throw new Error('Failed to read file from handle!');
+      if (!file) throw new Error('Failed to read file from handle!');
 
-      let blob = await file.slice(position, position + length);
-      let arrayBuffer = await blob.arrayBuffer();
+      const blob = await file.slice(position, position + length);
+      const arrayBuffer = await blob.arrayBuffer();
       output.set(new Uint8Array(arrayBuffer), offset);
       // output.copy(new Uint8Array(arrayBuffer));
     }
   }
 
-  static async close(handle: FileSystemFileHandle|number){
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<void>( (resolve, reject) => {
+  static async close(handle: FileSystemFileHandle | number) {
+    if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+      return new Promise<void>((resolve, _reject) => {
         fs.close(handle as number, () => {
           resolve();
         })
       });
-    }else{
+    } else {
       //this api does not expose a close method for reads
       return;
     }
   }
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
-  static async readFile(filepath: string, options: any = {}): Promise<Uint8Array> {
-    // console.log('readFile', filepath);
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<Uint8Array>( (resolve, reject) => {
+  static async readFile(filepath: string, options: { encoding?: BufferEncoding } | null = {}): Promise<Uint8Array> {
+    // log.info('readFile', filepath);
+    if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+      return new Promise<Uint8Array>((resolve, _reject) => {
         fs.readFile(path.join(ApplicationProfile.directory, filepath), options, (err, buffer) => {
-          if(err) reject(undefined);
-          resolve(new Uint8Array(buffer));
+          if (err) {
+            _reject(err);
+            return;
+          }
+          resolve(new Uint8Array(buffer as Buffer));
         })
       });
-    }else{
+    } else {
       const file = await this.open(filepath);
-      if(!file) throw new Error('Failed to read file');
-      
-      let handle = await file.getFile();
-      return new Uint8Array( await handle.arrayBuffer() );
+      if (!file || typeof file === 'number') throw new Error('Failed to read file');
+
+      const handle = await (file as FileSystemFileHandle).getFile();
+      return new Uint8Array(await handle.arrayBuffer());
     }
   }
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
   static async writeFile(filepath: string, data: Uint8Array): Promise<boolean> {
-    return new Promise<boolean>( async (resolve, reject) => {
-      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+    if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+      return new Promise<boolean>((resolve, _reject) => {
         fs.writeFile(path.join(ApplicationProfile.directory, filepath), data, (err) => {
           resolve(!err);
-        })
-      }else{
-        filepath = this.normalizePath(filepath);
-        const dirs = filepath.split('/');
-        const filename = dirs.pop();
-        const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
-        
-        if(!dirHandle) throw new Error('Failed to locate file directory');
-        
-        const newFile = await dirHandle.getFileHandle(filename, {
-          create: true
         });
-
-        if(!newFile) throw new Error('Failed to create file');
-
-        try{
-          let stream = await newFile.createWritable();
-          await stream.write(data as any);
-          await stream.close();
-          resolve(true);
-          return;
-        }catch(e){
-          console.error(e);
-          resolve(false);
-          return;
-          // throw new Error('Failed to write file');
-        }
-      }
-    });
+      });
+    }
+    filepath = this.normalizePath(filepath);
+    const dirs = filepath.split('/').filter(Boolean);
+    const filename = dirs.pop();
+    if (!filename || !this.isSafeHandleName(filename)) {
+      throw new Error(`Invalid file name for path: ${filepath}`);
+    }
+    const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
+    if (!dirHandle) throw new Error('Failed to locate file directory');
+    const safeName = filename.trim();
+    if (!safeName || !this.isSafeHandleName(safeName)) {
+      throw new Error(`Invalid file name for path: ${filepath}`);
+    }
+    const newFile = await dirHandle.getFileHandle(safeName, { create: true });
+    if (!newFile) throw new Error('Failed to create file');
+    try {
+      const stream = await newFile.createWritable();
+      await stream.write(data as FileSystemWriteChunkType);
+      await stream.close();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   static async readdir(
-    dirpath: string, options: IGameFileSystemReadDirOptions = {}, files: any[] = []
+    dirpath: string, options: IGameFileSystemReadDirOptions = {}, files: string[] = []
   ): Promise<string[]> {
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+    if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
       return await this.readdir_fs(dirpath, options, files);
-    }else{
+    } else {
       return await this.readdir_web(dirpath, options, files);
     }
   }
 
-  private static async readdir_web(pathOrHandle: string|FileSystemDirectoryHandle = '', opts: any = {},  files: any[] = [], dirbase: string = ''){
-    try{
-      if(typeof pathOrHandle === 'string'){
+  private static async readdir_web(pathOrHandle: string | FileSystemDirectoryHandle = '', opts: IGameFileSystemReadDirOptions = {}, files: string[] = [], dirbase: string = '') {
+    try {
+      if (typeof pathOrHandle === 'string') {
         const dirPath = pathOrHandle as string;
         pathOrHandle = await this.resolvePathDirectoryHandle(pathOrHandle);
-        if(!pathOrHandle) throw new Error('Failed to locate directory inside game folder: '+dirPath);
+        if (!pathOrHandle) throw new Error('Failed to locate directory inside game folder: ' + dirPath);
         dirbase = pathOrHandle.name;
       }
 
-      if(pathOrHandle instanceof FileSystemDirectoryHandle){
+      if (pathOrHandle instanceof FileSystemDirectoryHandle) {
         // Convert async iterator to array for parallel processing
         const entries = [];
         for await (const entry of pathOrHandle.values()) {
@@ -230,7 +259,7 @@ export class GameFileSystem {
 
           // Process all subdirectories in parallel
           const subdirResults = await Promise.all(subdirPromises);
-          
+
           // Flatten results
           for (const subdirFiles of subdirResults) {
             files.push(...subdirFiles);
@@ -240,277 +269,297 @@ export class GameFileSystem {
 
       return files;
 
-    }catch(e){
-      console.error(e);
-      if(typeof pathOrHandle === 'string'){
-        throw new Error('Failed to resolve directory inside game folder: '+pathOrHandle);
-      }else{
-        throw new Error('Failed to resolve directory inside game folder: '+pathOrHandle.name);
+    } catch (e) {
+      log.error(String(e), e);
+      if (typeof pathOrHandle === 'string') {
+        throw new Error('Failed to resolve directory inside game folder: ' + pathOrHandle);
+      } else {
+        throw new Error('Failed to resolve directory inside game folder: ' + pathOrHandle.name);
       }
     }
   }
 
   private static async isFSDirectory(resource_path: string = ''): Promise<boolean> {
-    return new Promise<boolean>( (resolve, reject) => {
+    return new Promise<boolean>((resolve) => {
       fs.stat(path.join(ApplicationProfile.directory, resource_path), (err, stats) => {
-        if(err){
-          console.error(err);
-          reject();
+        if (err) {
+          // ENOENT = path does not exist (e.g. optional game folders like StreamVoice in K1)
+          if (err.code !== 'ENOENT') {
+            log.error(String(err), err);
+          }
+          resolve(false);
           return;
         }
-        resolve((stats.mode & fs.constants.S_IFDIR) == fs.constants.S_IFDIR)
-      })
+        resolve((stats.mode & fs.constants.S_IFDIR) === fs.constants.S_IFDIR);
+      });
     });
   }
 
-  private static async readdir_fs(resource_path: string = '', opts: IGameFileSystemReadDirOptions = {},  files: any[] = [], depthState?: any) {
-    if(typeof depthState === 'undefined'){
+  private static async readdir_fs(resource_path: string = '', opts: IGameFileSystemReadDirOptions = {}, files: string[] = [], depthState?: { folder: string; depth: number }) {
+    if (typeof depthState === 'undefined') {
       depthState = {
         'folder': resource_path,
         depth: 0
       }
-    }else{
+    } else {
       depthState.depth++;
     }
-    return new Promise<string[]>( async (resolve, reject) => {
-      try{
-        let dir_path = path.join(ApplicationProfile.directory, resource_path);
-        
-        if(!(await this.isFSDirectory(resource_path))){
-          if(!opts.list_dirs){
-            files.push(resource_path);
+    return new Promise<string[]>((resolve, reject) => {
+      (async () => {
+        try {
+          const exists = await this.exists(resource_path);
+          if (!exists) {
+            resolve(files);
+            return;
           }
-          resolve(files);
-          return;
-        }else{
-          if((depthState.depth < 1) || !!opts.recursive ){
-            // let dir_base = path.join(ApplicationProfile.directory, resource_path);
-            fs.readdir(dir_path, {withFileTypes: true}, async (err, dir_files: fs.Dirent[]) => {
-              if(err){
-                console.error(err);
+          const dir_path = path.join(ApplicationProfile.directory, resource_path);
+
+          if (!(await this.isFSDirectory(resource_path))) {
+            if (!opts.list_dirs) {
+              files.push(resource_path);
+            }
+            resolve(files);
+            return;
+          }
+          if ((depthState.depth < 1) || opts.recursive) {
+            fs.readdir(dir_path, { withFileTypes: true }, async (err, dir_files: fs.Dirent[]) => {
+              if (err) {
+                log.error(String(err), err);
                 reject(err);
                 return;
               }
               let file: fs.Dirent;
               let file_path = '';
               let is_dir = false;
-              if(!!opts.list_dirs && depthState.depth){
+              if (opts.list_dirs && depthState.depth) {
                 files.push(resource_path);
               }
-              for(let i = 0, len = dir_files.length; i < len; i++){
+              for (let i = 0, len = dir_files.length; i < len; i++) {
                 file = dir_files[i];
                 file_path = path.join(resource_path, file.name);
                 is_dir = (await this.isFSDirectory(file_path));
-                try{
-                  if(!!is_dir){
-                    if(!!opts.recursive){
+                try {
+                  if (is_dir) {
+                    if (opts.recursive) {
                       await this.readdir_fs(file_path, opts, files, depthState);
-                    }else{
+                    } else {
                       files.push(path.join(file_path));
                     }
-                  }else{
-                    if(!opts.list_dirs){
+                  } else {
+                    if (!opts.list_dirs) {
                       files.push(path.join(file_path));
-                    }else{
-                      //don't push a file when we are only listing directories
                     }
+                    // else: only listing directories, don't push file
                   }
-                }catch(e){
-                  console.error(e);
-                  // reject(e);
+                } catch (err) {
+                  log.error(String(err), err);
                 }
               }
               resolve(files);
             });
-          }else{
+          } else {
             resolve(files);
           }
+        } catch {
+          resolve(files);
         }
-      }catch(e){
-        resolve(files);
-      }
+      })();
     });
   }
 
-  static async mkdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}){
-    return new Promise<boolean>( async (resolve, reject) => {
-      dirPath = dirPath.trim();
-      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        fs.mkdir(path.join(ApplicationProfile.directory, dirPath), { recursive: !!opts.recursive }, async (err) => {
-          if(err){
-            console.error(err);
-            resolve(false)
-            return;
-          }
-          await spleep(100);
-          resolve(true)
-          return;
-        });
-      }else{
-        if(dirPath.length){
-          const dirs = dirPath.length ? dirPath.split(path.sep) : [];
-          const cacheKey = dirs.join('/');
-          if(this.directoryCache.has(cacheKey)){
-            return this.directoryCache.get(cacheKey)!;
-          }
-          try{
-            let currentDirHandle = ApplicationProfile.directoryHandle; 
-            for(let i = 0, len = dirs.length; i < len; i++){
-              const isTargetDirectory = (i == dirs.length-1);
-              const canCreate = (isTargetDirectory || !!opts.recursive);
-              currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: canCreate });
-              console.log('handle', currentDirHandle, isTargetDirectory, canCreate);
-              if(!currentDirHandle && !isTargetDirectory){
-                resolve(false);
-                return;
-              }
-              this.directoryCache.set(cacheKey, currentDirHandle);
+  static async mkdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}) {
+    return new Promise<boolean>((resolve, _reject) => {
+      (async () => {
+        dirPath = dirPath.trim();
+        if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+          fs.mkdir(path.join(ApplicationProfile.directory, dirPath), { recursive: !!opts.recursive }, async (err) => {
+            if (err) {
+              log.error(String(err), err);
+              resolve(false);
+              return;
             }
-            console.log('mkdir', currentDirHandle);
-            await spleep(1000);
+            await spleep(100);
             resolve(true);
-          }catch(e){
-            console.error(e);
+            return;
+          });
+        } else {
+          if (dirPath.length) {
+            const dirs = dirPath.length ? dirPath.split(path.sep) : [];
+            const cacheKey = dirs.join('/');
+            const cached = this.directoryCache.get(cacheKey);
+            if (cached !== undefined) return cached;
+            try {
+              let currentDirHandle = ApplicationProfile.directoryHandle;
+              for (let i = 0, len = dirs.length; i < len; i++) {
+                const isTargetDirectory = (i == dirs.length - 1);
+                const canCreate = (isTargetDirectory || !!opts.recursive);
+                currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: canCreate });
+                log.trace('handle', currentDirHandle, isTargetDirectory, canCreate);
+                if (!currentDirHandle && !isTargetDirectory) {
+                  resolve(false);
+                  return;
+                }
+                this.directoryCache.set(cacheKey, currentDirHandle);
+              }
+              log.trace('mkdir', currentDirHandle);
+              await spleep(1000);
+              resolve(true);
+            } catch (e) {
+              log.error(String(e), e);
+              resolve(false);
+              return;
+            }
+          } else {
             resolve(false);
             return;
           }
-        }else{
-          resolve(false);
-          return;
         }
-      }
+      })();
     });
   }
 
-  static async rmdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}){
-    return new Promise<boolean>( async (resolve, reject) => {
-      dirPath = dirPath.trim();
-      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        console.log(`fs.rmdir`, path.join(ApplicationProfile.directory, dirPath));
-        fs.rmdir(
-          path.join(ApplicationProfile.directory, dirPath), 
-          {
-            recursive: opts.recursive
-          } as fs.RmDirOptions, 
-          async (err) => {
-            if(err){
-              console.error(err);
+  static async rmdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}) {
+    return new Promise<boolean>((resolve, _reject) => {
+      (async () => {
+        dirPath = dirPath.trim();
+        if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+          const fullPath = path.join(ApplicationProfile.directory, dirPath);
+          log.trace('fs.rmdir', fullPath, opts.recursive ? '(recursive)' : '');
+          const callback = (err: NodeJS.ErrnoException | null) => {
+            if (err) {
+              log.error(String(err), err);
               resolve(false);
               return;
             }
             resolve(true);
-          }
-        );
-      }else{
-        try{
-          const details = path.parse(dirPath);
-          // let handle = await this.resolvePathDirectoryHandle(dirPath);
-          let parentHandle = await this.resolvePathDirectoryHandle(details.dir);
-          if(parentHandle == ApplicationProfile.directoryHandle) resolve(false);
-          if(parentHandle){
-            for await (const entry of parentHandle.values()) {
-              if(entry.kind == 'file') continue;
-              if(entry.name.toLowerCase() != details.name.toLowerCase()) continue;
-              await parentHandle.removeEntry(entry.name, {
-                recursive: opts.recursive
-              });
-              break;
+          };
+          if (opts.recursive) {
+            try {
+              (fs.rm as unknown as (a: string, b: { recursive: boolean }, c: (err: NodeJS.ErrnoException | null) => void) => void)(
+                fullPath,
+                { recursive: true },
+                callback
+              );
+            } catch {
+              (fs.rmdir as unknown as (a: string, b: { recursive: boolean }, c: (err: NodeJS.ErrnoException | null) => void) => void)(
+                fullPath,
+                { recursive: true },
+                callback
+              );
             }
+          } else {
+            fs.rmdir(fullPath, callback);
           }
-          resolve(true);
-          return;
-        }catch(e){
-          console.error(e);
-          resolve(false);
-          return;
+        } else {
+          try {
+            const details = path.parse(dirPath);
+            const parentHandle = await this.resolvePathDirectoryHandle(details.dir);
+            if (parentHandle == ApplicationProfile.directoryHandle) resolve(false);
+            if (parentHandle) {
+              for await (const entry of parentHandle.values()) {
+                if (entry.kind == 'file') continue;
+                if (entry.name.toLowerCase() != details.name.toLowerCase()) continue;
+                await parentHandle.removeEntry(entry.name, { recursive: opts.recursive });
+                break;
+              }
+            }
+            resolve(true);
+            return;
+          } catch (e) {
+            log.error(String(e), e);
+            resolve(false);
+            return;
+          }
         }
-      }
+      })();
     });
   }
 
-  static async opendir_web(dirPath: string = ''): Promise<FileSystemDirectoryHandle|undefined> {
-    const details = path.parse(dirPath);
+  static async opendir_web(dirPath: string = ''): Promise<FileSystemDirectoryHandle | undefined> {
     return await this.resolvePathDirectoryHandle(dirPath);
   }
 
   static exists(dirOrFilePath: string): Promise<boolean> {
-    return new Promise<boolean>( async (resolve, reject) => {
-      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        fs.stat(path.join(ApplicationProfile.directory, dirOrFilePath), (err, stats) => {
-          if(err){
-            console.log(dirOrFilePath);
-            console.error(err);
+    return new Promise<boolean>((resolve, _reject) => {
+      if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+        fs.stat(path.join(ApplicationProfile.directory, dirOrFilePath), (err, _stats) => {
+          if (err) {
+            if (err.code !== 'ENOENT') {
+              log.error(`GameFileSystem.exists: ${dirOrFilePath} - ${err.message}`);
+            }
             resolve(false);
-            return
+            return;
           }
-
           resolve(true);
         });
-      }else{
-        const details = path.parse(dirOrFilePath);
-        try{
-          if(details.ext){
-            let handle = await this.resolveFilePathDirectoryHandle(dirOrFilePath);
-            if(handle){
-              let fileHandle = await handle.getFileHandle(details.base);
-              if(fileHandle){
-                resolve(true);
-                return;
-              }else{
+      } else {
+        (async () => {
+          const details = path.parse(dirOrFilePath);
+          try {
+            if (details.ext) {
+              if (!this.isSafeHandleName(details.base)) {
                 resolve(false);
                 return;
               }
-            }else{
+              const handle = await this.resolveFilePathDirectoryHandle(dirOrFilePath);
+              if (handle) {
+                const fileHandle = await handle.getFileHandle(details.base);
+                if (fileHandle) {
+                  resolve(true);
+                  return;
+                }
+                resolve(false);
+                return;
+              }
               resolve(false);
               return;
             }
-          }else{
-            let handle = await this.resolvePathDirectoryHandle(dirOrFilePath);
-            if(handle){
+            const handle = await this.resolvePathDirectoryHandle(dirOrFilePath);
+            if (handle) {
               resolve(true);
               return;
-            }else{
-              resolve(false);
-              return;
             }
+            resolve(false);
+          } catch (e) {
+            const isNotFound = e instanceof DOMException && e.name === 'NotFoundError';
+            if (!isNotFound) {
+              log.trace(dirOrFilePath);
+              log.error(String(e), e);
+            }
+            resolve(false);
           }
-        }catch(e){
-          console.log(dirOrFilePath);
-          console.error(e);
-          resolve(false);
-          return;
-        }
+        })();
       }
     });
   }
 
-  static async unlink(handleOrPath: string|FileSystemFileHandle){
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<void>( (resolve, reject) => {
-        try{
+  static async unlink(handleOrPath: string | FileSystemFileHandle) {
+    if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+      return new Promise<void>((resolve, reject) => {
+        try {
           fs.unlink(handleOrPath as string, () => {
             resolve();
             return;
           })
-        }catch(e){
-          console.error(e);
+        } catch (e) {
+          log.error(String(e), e);
           reject(e);
           return;
         }
       })
-    }else{
-      if(handleOrPath instanceof FileSystemFileHandle){
-        let file = await handleOrPath.getFile();
-        //@ts-expect-error
-        file.remove();
+    } else {
+      if (handleOrPath instanceof FileSystemFileHandle) {
+        const file = await handleOrPath.getFile();
+        (file as File & { remove?: () => void }).remove?.();
       }
     }
   }
 
-  static async showOpenFileDialog(){
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-
-    }else{
+  static async showOpenFileDialog() {
+    if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+      void _dialog; // TODO: use _dialog.showOpenDialog when implementing
+      return undefined;
+    } else {
       // const pickerOpts = {
       //   types: [
       //     {
@@ -523,49 +572,41 @@ export class GameFileSystem {
       //   excludeAcceptAllOption: true,
       //   multiple: false
       // };
-      let [fileHandle] = await window.showOpenFilePicker({multiple: false});
+      const [fileHandle] = await window.showOpenFilePicker({ multiple: false });
       return fileHandle;
     }
   }
 
-  static async showSaveFileDialog(){
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-
-    }else{
-      // const opts = {
-      //   types: [{
-      //     description: 'Text file',
-      //     accept: {'text/plain': ['.txt']},
-      //   }],
-      // };
-      let fileHandle = await window.showSaveFilePicker({
-        // d
-      });
+  static async showSaveFileDialog() {
+    if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+      void _dialog; // TODO: use _dialog when implementing
+      return undefined;
+    } else {
+      return await window.showSaveFilePicker({});
     }
   }
 
   private static async resolvePathDirectoryHandle(filepath: string, parent = false): Promise<FileSystemDirectoryHandle> {
-    if(ApplicationProfile.directoryHandle){
-      const dirs = filepath.length ? filepath.split('/') : [];
+    if (ApplicationProfile.directoryHandle) {
+      const dirs = filepath.length ? filepath.split('/').filter((s) => this.isSafeHandleName(s)) : [];
       const cacheKey = dirs.join('/');
-      if(this.directoryCache.has(cacheKey)){
-        return this.directoryCache.get(cacheKey)!;
-      }
+      const cachedDir = this.directoryCache.get(cacheKey);
+      if (cachedDir !== undefined) return cachedDir;
       let lastDirectoryHandle = ApplicationProfile.directoryHandle;
       let currentDirHandle = ApplicationProfile.directoryHandle;
       let found = false;
-      for(let i = 0, len = dirs.length; i < len; i++){
+      for (let i = 0, len = dirs.length; i < len; i++) {
         lastDirectoryHandle = currentDirHandle;
         // currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i]);
         found = false;
         for await (const entry of currentDirHandle.values()) {
-          if(entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()){
+          if (entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()) {
             found = true;
             currentDirHandle = entry as FileSystemDirectoryHandle;
             break;
           }
         }
-        if(!found){
+        if (!found) {
           throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
         }
       }
@@ -578,26 +619,26 @@ export class GameFileSystem {
   static directoryCache: Map<string, FileSystemDirectoryHandle> = new Map();
 
   private static async resolveFilePathDirectoryHandle(filepath: string): Promise<FileSystemDirectoryHandle> {
-    if(ApplicationProfile.directoryHandle){
-      const dirs = filepath.split('/');
-      const filename = dirs.pop();
+    if (ApplicationProfile.directoryHandle) {
+      filepath = this.normalizePath(filepath);
+      const dirs = filepath.split('/').filter((s) => this.isSafeHandleName(s));
+      dirs.pop(); // base name not needed for directory resolution
       const cacheKey = dirs.join('/');
-      if(this.directoryCache.has(cacheKey)){
-        return this.directoryCache.get(cacheKey)!;
-      }
+      const cachedHandle = this.directoryCache.get(cacheKey);
+      if (cachedHandle !== undefined) return cachedHandle;
       let currentDirHandle = ApplicationProfile.directoryHandle;
       let found = false;
-      for(let i = 0, len = dirs.length; i < len; i++){
+      for (let i = 0, len = dirs.length; i < len; i++) {
         // currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i]);
         found = false;
         for await (const entry of currentDirHandle.values()) {
-          if(entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()){
+          if (entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()) {
             found = true;
             currentDirHandle = entry as FileSystemDirectoryHandle;
             break;
           }
         }
-        if(!found){
+        if (!found) {
           throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
         }
       }
@@ -607,34 +648,35 @@ export class GameFileSystem {
     return;
   }
 
-  static async initializeGameDirectory(){
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      ApplicationProfile.directory = ApplicationProfile.directory;
-    }else{
+  static async initializeGameDirectory() {
+    if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
+      // ELECTRON: directory is set by the launcher; no-op here
+      void 0;
+    } else {
       ApplicationProfile.directoryHandle = await window.showDirectoryPicker({
         mode: "readwrite"
       });
     }
   }
 
-  static async validateDirectoryHandle(handle: FileSystemDirectoryHandle){
-    try{
+  static async validateDirectoryHandle(handle: FileSystemDirectoryHandle) {
+    try {
       if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
         return true;
       }
       return false;
-    }catch(e){
-      console.error(e);
+    } catch (e) {
+      log.error(String(e), e);
       return false;
     }
   }
 
-  static async showRequestDirectoryDialog(){
-    let handle = await window.showDirectoryPicker({
-      id: ApplicationProfile.profile?.key,
+  static async showRequestDirectoryDialog() {
+    const handle = await window.showDirectoryPicker({
+      id: typeof ApplicationProfile.profile?.key === 'string' ? ApplicationProfile.profile.key : undefined,
       mode: "readwrite"
     });
-    if(handle){
+    if (handle) {
       if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
         return handle;
       }

@@ -1,8 +1,11 @@
-import { OdysseyController } from "./OdysseyController";
+import * as THREE from "three";
+
 import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
+
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * FrameStartController class.
@@ -17,21 +20,24 @@ export class FrameStartController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.FrameStart;
 
+  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.material.uniforms.frameRange.value.x = data.value;
-      manager.modelNode.emitter.material.uniformsNeedUpdate = true;
+      const emitter = manager.modelNode.emitter;
+      (emitter.material.uniforms.frameRange.value as THREE.Vector2).x = data.value;
+      emitter.material.uniformsNeedUpdate = true;
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.material.uniforms.frameRange.value.x = next.value;
-      manager.modelNode.emitter.material.uniformsNeedUpdate = true;
+      const emitter = manager.modelNode.emitter;
+      (emitter.material.uniforms.frameRange.value as THREE.Vector2).x = next.value;
+      emitter.material.uniformsNeedUpdate = true;
     }
   }
 

@@ -1,10 +1,16 @@
-import { EAXPresets } from "./EAXPresets";
+
+
+import type { IEAXPreset } from "@/audio/EAXPresets";
+import { EAXPresets } from "@/audio/EAXPresets";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Audio);
 
 /**
  * ReverbEngine class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ReverbEngine.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -49,7 +55,7 @@ export class ReverbEngine {
   private decayHFRatio: number = 1.0;
   private decayLFRatio: number = 1.0;
   private cachedWetGain: number = 0;
-  
+
   // Missing EAX features
   private reflectionsPan: [number, number, number] = [0, 0, 0];
   private lateReverbPan: [number, number, number] = [0, 0, 0];
@@ -64,7 +70,8 @@ export class ReverbEngine {
   private listenerOrientation: [number, number, number] = [0, 0, 1];
 
   constructor(context: AudioContext) {
-    console.log("Initializing ReverbEngine");
+    log.trace("ReverbEngine constructor entered");
+    log.info("Initializing ReverbEngine");
     this.context = context;
     this.currentPreset = 0;
 
@@ -132,15 +139,19 @@ export class ReverbEngine {
    * Load preset and apply all parameters with correct EAX mapping
    */
   loadPreset(index: number) {
-    console.log("Loading preset:", index);
-    if (this.currentPreset === index) return;
-
-    const preset = EAXPresets.PresetFromIndex(index);
-    if (!preset) {
-      console.error('EAX preset not found', index);
+    log.trace("loadPreset entered", String(index));
+    log.info("Loading preset:", index);
+    if (this.currentPreset === index) {
+      log.debug("loadPreset skipped, already current", index);
       return;
     }
 
+    const preset = EAXPresets.PresetFromIndex(index);
+    if (!preset) {
+      log.error("EAX preset not found", index);
+      return;
+    }
+    log.debug("loadPreset applying EAX params", preset.density, preset.diffusion, preset.decayTime);
     this.currentPreset = index;
     this.density = preset.density;
     this.diffusion = preset.diffusion;
@@ -172,14 +183,15 @@ export class ReverbEngine {
     this.wetGain.gain.value = reverbLevel;
     this.cachedWetGain = reverbLevel;
     this.dryGain.gain.value = 1.0 - preset.gain;
-
+    log.debug("loadPreset completed", index);
   }
 
   /**
    * Generate proper EAX impulse response with early reflections and late reverb
    */
-  private generateEAXImpulse(preset: any): AudioBuffer {
-    console.log("Generating EAX impulse for preset");
+  private generateEAXImpulse(preset: IEAXPreset): AudioBuffer {
+    log.trace("generateEAXImpulse entered");
+    log.info("Generating EAX impulse for preset");
     const sampleRate = this.context.sampleRate;
     const length = Math.ceil(preset.decayTime * sampleRate);
     const buffer = this.context.createBuffer(2, length, sampleRate);
@@ -214,10 +226,12 @@ export class ReverbEngine {
       }
     }
 
+    log.debug("generateEAXImpulse completed", length, sampleRate);
     return buffer;
   }
 
   applyDiffusion(data: Float32Array, dataRight: Float32Array, sampleRate: number, diffusion: number) {
+    log.trace("applyDiffusion", data.length, sampleRate, diffusion);
     const delaySamples = Math.floor(0.05 * sampleRate);
     const gain = 0.7 * diffusion;
     const temp = new Float32Array(data.length);
@@ -235,7 +249,11 @@ export class ReverbEngine {
   }
 
   applyEcho(data: Float32Array, sampleRate: number, length: number) {
-    if (this.echoDepth <= 0) return;
+    if (this.echoDepth <= 0) {
+      log.trace("applyEcho skipped, echoDepth <= 0");
+      return;
+    }
+    log.trace("applyEcho", length, this.echoTime, this.echoDepth);
 
     const echoDelaySamples = Math.floor(this.echoTime * sampleRate);
     const echoGain = this.echoDepth;
@@ -248,7 +266,11 @@ export class ReverbEngine {
   }
 
   applyModulation(data: Float32Array, sampleRate: number, length: number) {
-    if (this.modulationDepth <= 0) return;
+    if (this.modulationDepth <= 0) {
+      log.trace("applyModulation skipped, modulationDepth <= 0");
+      return;
+    }
+    log.trace("applyModulation", length, this.modulationTime, this.modulationDepth);
 
     const modulationRate = 1.0 / this.modulationTime;
     const modulationDepth = this.modulationDepth * 0.01;
@@ -264,7 +286,11 @@ export class ReverbEngine {
   }
 
   applyDecayHFLimit(data: Float32Array, sampleRate: number, length: number) {
-    if (!this.decayHFLimit) return;
+    if (!this.decayHFLimit) {
+      log.trace("applyDecayHFLimit skipped, decayHFLimit false");
+      return;
+    }
+    log.trace("applyDecayHFLimit", length);
 
     const hfLimitTime = 0.1;
     const hfLimitSamples = Math.floor(hfLimitTime * sampleRate);
@@ -280,12 +306,15 @@ export class ReverbEngine {
    * Connect audio source into the engine - proper EAX routing
    */
   connectSource(source: AudioNode) {
-    console.log("Connecting source to ReverbEngine");
+    log.trace("connectSource entered");
+    log.info("Connecting source to ReverbEngine");
     source.connect(this.earlyReflections);
     source.connect(this.dryGain);
+    log.debug("connectSource completed");
   }
 
   getOutput(): AudioNode {
+    log.trace("getOutput");
     return this.output;
   }
 
@@ -293,6 +322,7 @@ export class ReverbEngine {
    * Get current EAX parameters for debugging
    */
   getEAXParameters() {
+    log.trace("getEAXParameters");
     return {
       density: this.density,
       diffusion: this.diffusion,
@@ -312,11 +342,14 @@ export class ReverbEngine {
    * Enable/disable reverb processing
    */
   setEnabled(enabled: boolean) {
+    log.trace("setEnabled", enabled);
     if (enabled) {
       this.wetGain.gain.value = this.cachedWetGain; // Restore cached value
+      log.debug("setEnabled reverb on, wetGain restored", this.cachedWetGain);
     } else {
       this.cachedWetGain = this.wetGain.gain.value; // Cache current value
       this.wetGain.gain.value = 0;
+      log.debug("setEnabled reverb off, wetGain cached", this.cachedWetGain);
     }
   }
 
@@ -324,6 +357,7 @@ export class ReverbEngine {
    * Update listener position and orientation for 3D audio processing
    */
   updateListener(position: [number, number, number], orientation: [number, number, number]) {
+    log.trace("updateListener", position, orientation);
     this.listenerPosition = position;
     this.listenerOrientation = orientation;
   }
@@ -332,20 +366,18 @@ export class ReverbEngine {
    * Calculate proper 3D positioning using EAX-style spatial processing
    */
   calculate3DPosition(relativePos: [number, number, number], channel: number) {
+    log.trace("calculate3DPosition", relativePos, channel);
     const distance = Math.sqrt(
       relativePos[0] ** 2 + relativePos[1] ** 2 + relativePos[2] ** 2
     );
-    if (distance < 0.01) return 1.0;
+    if (distance < 0.01) {
+      log.debug("calculate3DPosition near zero distance");
+      return 1.0;
+    }
 
-    const orientX = this.listenerOrientation[0];
-    const orientY = this.listenerOrientation[1];
-    const orientZ = this.listenerOrientation[2];
     const relativeX = relativePos[0] / distance;
     const relativeY = relativePos[1] / distance;
     const relativeZ = relativePos[2] / distance;
-
-    const dotProduct = relativeX * orientX + relativeY * orientY + relativeZ * orientZ;
-    const angle = Math.acos(Math.max(-1, Math.min(1, dotProduct / distance)));
 
     const azimuth = Math.atan2(relativeX, relativeZ);
     const elevation = Math.asin(relativeY / distance);
@@ -384,7 +416,6 @@ export class ReverbEngine {
 
   calculateDistanceAttenuation(distance: number) {
     const minDistance = 1.0;
-    const maxDistance = 100.0;
     const rolloffFactor = 1.0;
 
     if (distance <= minDistance) {

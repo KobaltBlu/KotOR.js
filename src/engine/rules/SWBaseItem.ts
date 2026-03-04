@@ -1,8 +1,9 @@
-import { DiceType } from "../../enums/combat/DiceType";
-import { WeaponSize } from "../../enums/combat/WeaponSize";
-import { WeaponType } from "../../enums/combat/WeaponType";
-import { WeaponWield } from "../../enums/combat/WeaponWield";
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { DiceType } from "@/enums/combat/DiceType";
+import { WeaponSize } from "@/enums/combat/WeaponSize";
+import { WeaponType } from "@/enums/combat/WeaponType";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
 
 export class SWBaseItem {
   id: number = 0;
@@ -101,130 +102,130 @@ export class SWBaseItem {
     }
   }
 
-  static From2DA (row: any = {}): SWBaseItem {
+  static From2DA (row: ITwoDARowData | Record<string, string | number> = {}): SWBaseItem {
     const baseItem = new SWBaseItem();
     
-    if(row.hasOwnProperty('__index'))
+    if(Object.hasOwn(row,'__index'))
       baseItem.id = TwoDAObject.normalizeValue(row.__index, 'number', 0) as number;
-    if(row.hasOwnProperty('name'))
+    if(Object.hasOwn(row,'name'))
       baseItem.name = TwoDAObject.normalizeValue(row.name, 'number', 0) as number;
-    if(row.hasOwnProperty('label'))
+    if(Object.hasOwn(row,'label'))
       baseItem.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
-    if(row.hasOwnProperty('equipableslots'))
+    if(Object.hasOwn(row,'equipableslots'))
       baseItem.equipableSlots = TwoDAObject.normalizeValue(row.equipableslots, 'number', 0) as number;
-    if(row.hasOwnProperty('walkdist'))
+    if(Object.hasOwn(row,'walkdist'))
       baseItem.canRotateIcon = TwoDAObject.normalizeValue(row.walkdist, 'boolean', false) as boolean;
-    if(row.hasOwnProperty('modeltype'))
+    if(Object.hasOwn(row,'modeltype'))
       baseItem.modelType = TwoDAObject.normalizeValue(row.modeltype, 'number', 1.7) as number;
-    if(row.hasOwnProperty('itemclass'))
+    if(Object.hasOwn(row,'itemclass'))
       baseItem.itemClass = TwoDAObject.normalizeValue(row.itemclass, 'string', '') as string;
-    if(row.hasOwnProperty('genderspecific'))
+    if(Object.hasOwn(row,'genderspecific'))
       baseItem.genderSpecific = TwoDAObject.normalizeValue(row.genderspecific, 'number', 0) as number;
-    if(row.hasOwnProperty('partenvmap'))
-      baseItem.partEnvMap = TwoDAObject.normalizeValue(row.partenvmap, 'boolean', 0) as boolean;
-    if(row.hasOwnProperty('defaultmodel'))
+    if(Object.hasOwn(row,'partenvmap'))
+      baseItem.partEnvMap = TwoDAObject.normalizeValue(row.partenvmap, 'boolean', false) as boolean;
+    if(Object.hasOwn(row,'defaultmodel'))
       baseItem.defaultModel = TwoDAObject.normalizeValue(row.defaultmodel, 'string', 'I_Null') as string;
-    if(row.hasOwnProperty('defaulticon'))
+    if(Object.hasOwn(row,'defaulticon'))
       baseItem.defaultIcon = TwoDAObject.normalizeValue(row.defaulticon, 'string', '') as string;
-    if(row.hasOwnProperty('container'))
+    if(Object.hasOwn(row,'container'))
       baseItem.container = TwoDAObject.normalizeValue(row.container, 'boolean', false) as boolean;
-    if(row.hasOwnProperty('weaponwield'))
+    if(Object.hasOwn(row,'weaponwield'))
       baseItem.weaponWield = TwoDAObject.normalizeValue(row.weaponwield, 'number', 0) as number;
-    if(row.hasOwnProperty('weapontype'))
+    if(Object.hasOwn(row,'weapontype'))
       baseItem.weaponType = TwoDAObject.normalizeValue(row.weapontype, 'number', 0) as number;
-    if(row.hasOwnProperty('damageflags'))
+    if(Object.hasOwn(row,'damageflags'))
       baseItem.damageFlags = TwoDAObject.normalizeValue(row.damageflags, 'number', 0) as number;
-    if(row.hasOwnProperty('weaponsize'))
+    if(Object.hasOwn(row,'weaponsize'))
       baseItem.weaponSize = TwoDAObject.normalizeValue(row.weaponsize, 'number', 0) as number;
-    if(row.hasOwnProperty('rangedweapon'))
+    if(Object.hasOwn(row,'rangedweapon'))
       baseItem.rangedWeapon = TwoDAObject.normalizeValue(row.rangedweapon, 'boolean', false) as boolean;
-    if(row.hasOwnProperty('maxattackrange'))
+    if(Object.hasOwn(row,'maxattackrange'))
       baseItem.maxAttackRange = TwoDAObject.normalizeValue(row.maxattackrange, 'number', 0) as number;
-    if(row.hasOwnProperty('prefattackdist'))
+    if(Object.hasOwn(row,'prefattackdist'))
       baseItem.prefAttackDist = TwoDAObject.normalizeValue(row.prefattackdist, 'number', 0.5) as number;
-    if(row.hasOwnProperty('minrange'))
+    if(Object.hasOwn(row,'minrange'))
       baseItem.minRange = TwoDAObject.normalizeValue(row.minrange, 'number', 0) as number;
-    if(row.hasOwnProperty('maxrange'))
+    if(Object.hasOwn(row,'maxrange'))
       baseItem.maxRange = TwoDAObject.normalizeValue(row.maxrange, 'number', 100) as number;
-    if(row.hasOwnProperty('bloodcolr'))
-      baseItem.bloodColor = TwoDAObject.normalizeValue(row.bloodcolr, 'string', '') as any;
-    if(row.hasOwnProperty('numdice'))
+    if(Object.hasOwn(row,'bloodcolr'))
+      baseItem.bloodColor = TwoDAObject.normalizeValue(row.bloodcolr, 'string', '') as SWBaseItem['bloodColor'];
+    if(Object.hasOwn(row,'numdice'))
       baseItem.numDice = TwoDAObject.normalizeValue(row.numdice, 'number', 0) as number;
-    if(row.hasOwnProperty('dietoroll'))
+    if(Object.hasOwn(row,'dietoroll'))
       baseItem.dieToRoll = TwoDAObject.normalizeValue(row.dietoroll, 'number', 4) as number;
-    if(row.hasOwnProperty('critthreat'))
+    if(Object.hasOwn(row,'critthreat'))
       baseItem.criticalThreat = TwoDAObject.normalizeValue(row.critthreat, 'number', 0) as number;
-    if(row.hasOwnProperty('crithitmult'))
+    if(Object.hasOwn(row,'crithitmult'))
       baseItem.criticalHitMultiplier = TwoDAObject.normalizeValue(row.crithitmult, 'number', 1) as number;
-    if(row.hasOwnProperty('basecost'))
+    if(Object.hasOwn(row,'basecost'))
       baseItem.baseCost = TwoDAObject.normalizeValue(row.basecost, 'number', 1) as number;
-    if(row.hasOwnProperty('stacking'))
+    if(Object.hasOwn(row,'stacking'))
       baseItem.stacking = TwoDAObject.normalizeValue(row.stacking, 'number', 99) as number;
-    if(row.hasOwnProperty('itemmultiplier'))
+    if(Object.hasOwn(row,'itemmultiplier'))
       baseItem.itemMultiplier = TwoDAObject.normalizeValue(row.itemmultiplier, 'number', 1) as number;
-    if(row.hasOwnProperty('description'))
+    if(Object.hasOwn(row,'description'))
       baseItem.description = TwoDAObject.normalizeValue(row.description, 'number', -1) as number;
-    if(row.hasOwnProperty('invsoundtype'))
+    if(Object.hasOwn(row,'invsoundtype'))
       baseItem.invSoundType = TwoDAObject.normalizeValue(row.invsoundtype, 'number', 0) as number;
-    if(row.hasOwnProperty('maxprops'))
+    if(Object.hasOwn(row,'maxprops'))
       baseItem.maxProps = TwoDAObject.normalizeValue(row.maxprops, 'number', 8) as number;
-    if(row.hasOwnProperty('minprops'))
+    if(Object.hasOwn(row,'minprops'))
       baseItem.minProps = TwoDAObject.normalizeValue(row.minprops, 'number', 0) as number;
-    if(row.hasOwnProperty('propcolumn'))
+    if(Object.hasOwn(row,'propcolumn'))
       baseItem.propColumn = TwoDAObject.normalizeValue(row.propcolumn, 'number', 0) as number;
-    if(row.hasOwnProperty('reqfeat0'))
+    if(Object.hasOwn(row,'reqfeat0'))
       baseItem.requiredFeat0 = TwoDAObject.normalizeValue(row.reqfeat0, 'number', -1) as number;
-    if(row.hasOwnProperty('reqfeat1'))
+    if(Object.hasOwn(row,'reqfeat1'))
       baseItem.requiredFeat1 = TwoDAObject.normalizeValue(row.reqfeat1, 'number', -1) as number;
-    if(row.hasOwnProperty('reqfeat2'))
+    if(Object.hasOwn(row,'reqfeat2'))
       baseItem.requiredFeat2 = TwoDAObject.normalizeValue(row.reqfeat2, 'number', -1) as number;
-    if(row.hasOwnProperty('reqfeat3'))
+    if(Object.hasOwn(row,'reqfeat3'))
       baseItem.requiredFeat3 = TwoDAObject.normalizeValue(row.reqfeat3, 'number', -1) as number;
-    if(row.hasOwnProperty('reqfeat4'))
+    if(Object.hasOwn(row,'reqfeat4'))
       baseItem.requiredFeat4 = TwoDAObject.normalizeValue(row.reqfeat4, 'number', -1) as number;
-    if(row.hasOwnProperty('ac_enchant'))
+    if(Object.hasOwn(row,'ac_enchant'))
       baseItem.acEnchant = TwoDAObject.normalizeValue(row.ac_enchant, 'boolean', false) as boolean;
-    if(row.hasOwnProperty('baseac'))
+    if(Object.hasOwn(row,'baseac'))
       baseItem.baseAC = TwoDAObject.normalizeValue(row.baseac, 'number', 0) as number;
-    if(row.hasOwnProperty('accheck'))
+    if(Object.hasOwn(row,'accheck'))
       baseItem.acCheck = TwoDAObject.normalizeValue(row.accheck, 'boolean', false) as boolean;
-    if(row.hasOwnProperty('armorcheckpen'))
+    if(Object.hasOwn(row,'armorcheckpen'))
       baseItem.armorCheckPen = TwoDAObject.normalizeValue(row.armorcheckpen, 'boolean', false) as boolean;
-    if(row.hasOwnProperty('baseitemstatref'))
+    if(Object.hasOwn(row,'baseitemstatref'))
       baseItem.baseItemStatRef = TwoDAObject.normalizeValue(row.baseitemstatref, 'number', -1) as number;
-    if(row.hasOwnProperty('chargesstarting'))
+    if(Object.hasOwn(row,'chargesstarting'))
       baseItem.chargesStarting = TwoDAObject.normalizeValue(row.chargesstarting, 'number', 0) as number;
-    if(row.hasOwnProperty('rotateonground'))
+    if(Object.hasOwn(row,'rotateonground'))
       baseItem.rotateOnGround = TwoDAObject.normalizeValue(row.rotateonground, 'boolean', true) as boolean;
-    if(row.hasOwnProperty('tenthlbs'))
+    if(Object.hasOwn(row,'tenthlbs'))
       baseItem.tenthLBS = TwoDAObject.normalizeValue(row.tenthlbs, 'number', 1.7) as number;
-    if(row.hasOwnProperty('weaponmattype'))
+    if(Object.hasOwn(row,'weaponmattype'))
       baseItem.weaponMaterialType = TwoDAObject.normalizeValue(row.weaponmattype, 'number', -1) as number;
-    if(row.hasOwnProperty('ammunitiontype'))
+    if(Object.hasOwn(row,'ammunitiontype'))
       baseItem.ammunitionType = TwoDAObject.normalizeValue(row.ammunitiontype, 'number', -1) as number;
-    if(row.hasOwnProperty('powereditem'))
+    if(Object.hasOwn(row,'powereditem'))
       baseItem.poweredItem = TwoDAObject.normalizeValue(row.powereditem, 'number', -1) as number;
-    if(row.hasOwnProperty('powerupsnd'))
+    if(Object.hasOwn(row,'powerupsnd'))
       baseItem.powerUpSound = TwoDAObject.normalizeValue(row.powerupsnd, 'string', '') as string;
-    if(row.hasOwnProperty('powerdownsnd'))
+    if(Object.hasOwn(row,'powerdownsnd'))
       baseItem.powerDownSound = TwoDAObject.normalizeValue(row.powerdownsnd, 'string', '') as string;
-    if(row.hasOwnProperty('poweredsnd'))
+    if(Object.hasOwn(row,'poweredsnd'))
       baseItem.poweredSound = TwoDAObject.normalizeValue(row.poweredsnd, 'string', '') as string;
-    if(row.hasOwnProperty('itemtype'))
+    if(Object.hasOwn(row,'itemtype'))
       baseItem.itemType = TwoDAObject.normalizeValue(row.itemtype, 'number', 0) as number;
-    if(row.hasOwnProperty('bodyvar'))
-      baseItem.bodyVar = TwoDAObject.normalizeValue(row.bodyvar, 'string', undefined) as any;
-    if(row.hasOwnProperty('specfeat'))
+    if(Object.hasOwn(row,'bodyvar'))
+      baseItem.bodyVar = TwoDAObject.normalizeValue(row.bodyvar, 'string', undefined) as SWBaseItem['bodyVar'];
+    if(Object.hasOwn(row,'specfeat'))
       baseItem.specFeat = TwoDAObject.normalizeValue(row.specfeat, 'number', -1) as number;
-    if(row.hasOwnProperty('focfeat'))
+    if(Object.hasOwn(row,'focfeat'))
       baseItem.focFeat = TwoDAObject.normalizeValue(row.focfeat, 'number', -1) as number;
-    if(row.hasOwnProperty('droidorhuman'))
+    if(Object.hasOwn(row,'droidorhuman'))
       baseItem.droidOrHuman = TwoDAObject.normalizeValue(row.droidorhuman, 'number', 0) as number;
-    if(row.hasOwnProperty('denysubrace'))
+    if(Object.hasOwn(row,'denysubrace'))
       baseItem.denySubrace = TwoDAObject.normalizeValue(row.denysubrace, 'number', 0) as number;
-    if(row.hasOwnProperty('armortype'))
+    if(Object.hasOwn(row,'armortype'))
       baseItem.armorType = TwoDAObject.normalizeValue(row.armortype, 'string', '') as string;
-    if(row.hasOwnProperty('storepanelsort'))
+    if(Object.hasOwn(row,'storepanelsort'))
       baseItem.storePanelSort = TwoDAObject.normalizeValue(row.storepanelsort, 'number', 1.7) as number;
 
     baseItem.postProcess();

@@ -1,7 +1,8 @@
-import { GameState } from "../GameState";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { GameEffect } from "./GameEffect";
-// import { TwoDAManager } from "../managers";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameState } from "@/GameState";
+
+// import { TwoDAManager } from "@/managers";
 
 /**
  * EffectForceShield class.
@@ -13,7 +14,7 @@ import { GameEffect } from "./GameEffect";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectForceShield extends GameEffect {
-  forceShield: any;
+  forceShield: import("@/resource/TwoDAObject").ITwoDARowData | undefined;
   constructor(){
     super();
     this.type = GameEffectType.EffectForceShield;
@@ -39,7 +40,7 @@ export class EffectForceShield extends GameEffect {
 
     super.onApply();
     
-    let eVisualEffect = new GameState.GameEffectFactory.EffectVisualEffect();
+    const eVisualEffect = new GameState.GameEffectFactory.EffectVisualEffect();
     eVisualEffect.setCreator(this.getCreator());
     eVisualEffect.setSpellId(this.getSpellId());
     eVisualEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());
@@ -51,7 +52,7 @@ export class EffectForceShield extends GameEffect {
     this.object.addEffect(eVisualEffect);
     eVisualEffect.setSkipOnLoad(true);
 
-    let eDamageResistEffect = new GameState.GameEffectFactory.EffectDamageResistance();
+    const eDamageResistEffect = new GameState.GameEffectFactory.EffectDamageResistance();
     eDamageResistEffect.setCreator(this.getCreator());
     eDamageResistEffect.setSpellId(this.getSpellId());
     eDamageResistEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());

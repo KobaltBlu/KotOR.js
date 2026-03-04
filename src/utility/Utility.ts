@@ -1,6 +1,11 @@
 import * as path from 'path';
+
 import * as THREE from 'three';
-import { GameFileSystem } from './GameFileSystem';
+
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const _log = createScopedLogger(LogScope.Manager);
 
 const PI: number = Math.PI;
 const TWO_PI: number = Math.PI * 2;
@@ -39,12 +44,12 @@ export interface OdysseyFileInfo {
  */
 export class Utility {
 
-  static bytesToSize(bytes: any) {
-    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  static bytesToSize(bytes: number) {
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     if (bytes == 0) return '0 Byte';
-    var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)).toString());
+    const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)).toString());
     return Math.round(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
-  };
+  }
 
   // /https://github.com/mattdesl/lerp/blob/master/index.js
   static lerp(v0: number = 0, v1: number = 0, t: number = 0) {
@@ -56,7 +61,7 @@ export class Utility {
     fromAngle = (fromAngle + TWO_PI) % TWO_PI;
     toAngle = (toAngle + TWO_PI) % TWO_PI;
 
-    var diff = Math.abs(fromAngle - toAngle);
+    const diff = Math.abs(fromAngle - toAngle);
     if (diff < PI) {
       return Utility.lerp(fromAngle, toAngle, t);
     }
@@ -77,7 +82,7 @@ export class Utility {
   }
 
   static PadInt(num: number|string, size: number): string {
-    let s = "000000000" + num;
+    const s = "000000000" + num;
     return s.substr(s.length-size);
   }
 
@@ -99,7 +104,7 @@ export class Utility {
 
   }
 
-  static FileExists(file: string, onComplete?: Function){
+  static FileExists(file: string, onComplete?: (exists: boolean) => void){
     if(file != null){
       GameFileSystem.exists(file).then( (exists) => {
         if(onComplete != null)
@@ -140,10 +145,10 @@ export class Utility {
     //isLocal
     if(filePath.indexOf(':\\') > -1){
 
-      let filePathInfo = path.parse(filePath);
+      const filePathInfo = path.parse(filePath);
 
-      let fileInfo = filePath.split('\\');
-      fileInfo = fileInfo[fileInfo.length - 1].split('.');
+      let _fileInfo = filePath.split('\\');
+      _fileInfo = _fileInfo[_fileInfo.length - 1].split('.');
 
       if(filePathInfo.ext.indexOf('.') == 0)
         filePathInfo.ext = filePathInfo.ext.substr(1, filePathInfo.ext.length - 1);
@@ -162,10 +167,10 @@ export class Utility {
     //isArchive
     else if(filePath.indexOf('://') > -1){
 
-      let archivePath = filePath.split('://')[0];//.split('.');
-      let resourcePath = filePath.split('://')[1];//.split('.');
-      let archivePathInfo = path.parse(archivePath);
-      let resourcePathInfo = path.parse(resourcePath);
+      const archivePath = filePath.split('://')[0];//.split('.');
+      const resourcePath = filePath.split('://')[1];//.split('.');
+      const archivePathInfo = path.parse(archivePath);
+      const resourcePathInfo = path.parse(resourcePath);
 
       return {
         location: OdysseyPathLocation.archive,
@@ -185,14 +190,14 @@ export class Utility {
 
     //possible relative filePath
     else{
-
+      // fallthrough to return empty path info
     }
 
     return {} as OdysseyPathInfo;
 
   }
 
-  static isPOW2(n: number): boolean{
+  static isPOW2(_n: number): boolean{
     return false;
   }
 
@@ -209,7 +214,7 @@ export class Utility {
 
     let mipmaps = 1;
     while(size > 1){
-      //console.log(size);
+      //log.info(size);
       mipmaps++;
       size = size >> 1;
     }
@@ -217,7 +222,7 @@ export class Utility {
   }
 
   static Distance2DSquared(v0: THREE.Vector3|THREE.Vector2, v1: THREE.Vector3|THREE.Vector2){
-    let dx = v0.x - v1.x, dy = v0.y - v1.y;
+    const dx = v0.x - v1.x, dy = v0.y - v1.y;
     return dx * dx + dy * dy;
   }
 
@@ -226,31 +231,27 @@ export class Utility {
   }
 
   static LineLineIntersection (x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number) {
-    let det, gamma, lambda;
-    det = (x2 - x1) * (y4 - y3) - (x4 - x3) * (y2 - y1);
+    const det = (x2 - x1) * (y4 - y3) - (x4 - x3) * (y2 - y1);
     if (det === 0)
       return false;
 
-    lambda = ((y4 - y3) * (x4 - x1) + (x3 - x4) * (y4 - y1)) / det;
-    gamma = ((y1 - y2) * (x4 - x1) + (x2 - x1) * (y4 - y1)) / det;
+    const lambda = ((y4 - y3) * (x4 - x1) + (x3 - x4) * (y4 - y1)) / det;
+    const gamma = ((y1 - y2) * (x4 - x1) + (x2 - x1) * (y4 - y1)) / det;
     return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
   }
 
   static THREELineLineIntersection (a: THREE.Line3, b: THREE.Line3) {
-    let det, gamma, lambda;
-    det = (a.end.x - a.start.x) * (b.end.y - b.start.y) - (b.end.x - b.start.x) * (a.end.y - a.start.y);
+    const det = (a.end.x - a.start.x) * (b.end.y - b.start.y) - (b.end.x - b.start.x) * (a.end.y - a.start.y);
     if (det === 0)
       return false;
 
-    lambda = ((b.end.y - b.start.y) * (b.end.x - a.start.x) + (b.start.x - b.end.x) * (b.end.y - a.start.y)) / det;
-    gamma = ((a.start.y - a.end.y) * (b.end.x - a.start.x) + (a.end.x - a.start.x) * (b.end.y - a.start.y)) / det;
+    const lambda = ((b.end.y - b.start.y) * (b.end.x - a.start.x) + (b.start.x - b.end.x) * (b.end.y - a.start.y)) / det;
+    const gamma = ((a.start.y - a.end.y) * (b.end.x - a.start.x) + (a.end.x - a.start.x) * (b.end.y - a.start.y)) / det;
     return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
   }
 
-  static ArrayMatch(array1: any[]|Uint8Array, array2: any[]|Uint8Array){
-    return (array1.length == array2.length) && array1.every(function(element, index) {
-      return element === array2[index];
-    });
+  static ArrayMatch(array1: number[] | Uint8Array, array2: number[] | Uint8Array): boolean {
+    return array1.length === array2.length && array1.every((element, index) => element === array2[index]);
   }
   
   static TWO_PI = 2 * Math.PI;

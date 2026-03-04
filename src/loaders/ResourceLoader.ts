@@ -1,14 +1,16 @@
 import * as path from "path";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { ERFObject } from "../resource/ERFObject";
-import { RIMObject } from "../resource/RIMObject";
-import { CacheScope } from "../enums/resource/CacheScope";
-import { IResourceCacheScopes } from "../interface/resource/IResourceCacheScopes";
-import { KEYManager } from "../managers/KEYManager";
-import { RIMManager } from "../managers/RIMManager";
-import { IRIMResource } from "../interface/resource/IRIMResource";
-import { IERFResource } from "../interface/resource/IERFResource";
-import { GameFileSystem } from "../utility/GameFileSystem";
+
+import { CacheScope } from "@/enums/resource/CacheScope";
+import { IResourceCacheScopes } from "@/interface/resource/IResourceCacheScopes";
+import { KEYManager } from "@/managers/KEYManager";
+import { RIMManager } from "@/managers/RIMManager";
+import { ERFObject } from "@/resource/ERFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { RIMObject } from "@/resource/RIMObject";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Loader);
 
 /**
  * ResourceLoader class.
@@ -19,10 +21,15 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class ResourceLoader {
+/** Per-resource-type, per-resref options (e.g. in-memory overrides). */
+export type ResourceLoaderResources = Record<number, Record<string, unknown>>;
+/** Fallback buffer cache when scope is null (resId -> resRef -> buffer). */
+export type ResourceLoaderCache = Record<number, Record<string, Uint8Array>>;
 
-  static Resources: any = {};
-  static cache: any = {};
+/* eslint-disable @typescript-eslint/no-extraneous-class -- static-only loader API */
+export class ResourceLoader {
+  static Resources: ResourceLoaderResources = {};
+  static cache: ResourceLoaderCache = {};
   static CacheScopes: IResourceCacheScopes = {
     override: new Map(),
     global:   new Map(),
@@ -32,6 +39,7 @@ export class ResourceLoader {
   static ModuleArchives: (RIMObject | ERFObject)[] = [];
 
   static InitCache(){
+    log.trace("InitCache");
     const resourceTypes = Object.values(ResourceTypes).filter( t => typeof t === 'number' && t < 0xFFFF ) as number[];
     for(let i = 0; i < resourceTypes.length; i++){
       const restype = resourceTypes[i];
@@ -40,14 +48,17 @@ export class ResourceLoader {
       ResourceLoader.CacheScopes[CacheScope.MODULE].set(restype, new Map());
       ResourceLoader.CacheScopes[CacheScope.PROJECT].set(restype, new Map());
     }
+    log.debug("InitCache done", resourceTypes.length, "types");
   }
 
   static async InitOverrideCache(){
+    log.trace("InitOverrideCache");
     ResourceLoader.ClearCache(CacheScope.OVERRIDE);
-
+    log.debug("InitOverrideCache done");
   }
 
   static async InitGlobalCache(){
+    log.trace("InitGlobalCache");
     ResourceLoader.ClearCache(CacheScope.GLOBAL);
     const cacheableTemplates = [
       ResourceTypes['ncs'], ResourceTypes['utc'], ResourceTypes['uti'],
@@ -56,7 +67,7 @@ export class ResourceLoader {
       ResourceTypes['utm'], ResourceTypes['dlg'], ResourceTypes['ssf'],
     ];
 
-    console.log('Caching Types:', cacheableTemplates);
+    log.info('Caching Types:', cacheableTemplates);
 
     const scope = ResourceLoader.CacheScopes[CacheScope.GLOBAL];
     const keys = KEYManager.Key.keys.filter( k => cacheableTemplates.includes(k.resType) );
@@ -67,14 +78,16 @@ export class ResourceLoader {
         buffer
       );
     }));
+    log.debug("InitGlobalCache done", keys.length, "keys");
   }
 
   static async InitModuleCache(archives: (RIMObject|ERFObject)[]){
+    log.trace("InitModuleCache", archives.length, "archives");
     ResourceLoader.ClearCache(CacheScope.MODULE);
     this.ModuleArchives = archives;
 
-    let start = Date.now();
-    console.log(`InitModuleCache: Start`);
+    const start = Date.now();
+    log.info(`InitModuleCache: Start`);
 
     const scope = ResourceLoader.CacheScopes[CacheScope.MODULE];
     await Promise.all(archives.map(async (archive) => {
@@ -83,7 +96,7 @@ export class ResourceLoader {
         for(let i = 0; i < resources.length; i++){
           const resource = resources[i];
           const buffer = await archive.getResourceBuffer(resource);
-          // console.log('InitModuleCache: RIM', resource.resRef.toLocaleLowerCase(), buffer);
+          // log.info('InitModuleCache: RIM', resource.resRef.toLocaleLowerCase(), buffer);
           scope.get(resource.resType).set(
             resource.resRef.toLocaleLowerCase(),
             buffer
@@ -94,7 +107,7 @@ export class ResourceLoader {
         for(let i = 0; i < keyList.length; i++){
           const key = keyList[i];
           const buffer = await archive.getResourceBufferByResRef(key.resRef, key.resType);
-          // console.log('InitModuleCache: ERF', resource.resRef.toLocaleLowerCase(), buffer);
+          // log.info('InitModuleCache: ERF', resource.resRef.toLocaleLowerCase(), buffer);
           scope.get(key.resType).set(
             key.resRef.toLocaleLowerCase(),
             buffer
@@ -103,20 +116,21 @@ export class ResourceLoader {
       }
     }));
 
-    let end = Date.now();
-    console.log(`InitModuleCache: End - ${((end-start)/1000)}s`);
+    const end = Date.now();
+    log.info(`InitModuleCache: End - ${((end-start)/1000)}s`);
 
   }
 
   static ClearCache(scope: CacheScope){
-    if(!!ResourceLoader.CacheScopes[scope])
+    log.trace("ClearCache", scope);
+    if(ResourceLoader.CacheScopes[scope])
       ResourceLoader.CacheScopes[scope].forEach( cacheType => {
         cacheType.clear();
       });
   }
 
   static async loadResource(resId: number, resRef: string): Promise<Uint8Array> {
-
+    log.trace("loadResource", resId, resRef);
     if(!resId){
       throw new Error(`Invalid resId ${resId}`);
     }
@@ -128,39 +142,43 @@ export class ResourceLoader {
     //Resource Cache
     let data = ResourceLoader.getCache(resId, resRef);
     if(data){
+      log.trace("loadResource cache hit", resRef);
       return data;
     }
 
-    // data = await this.searchLocal(resId, resRef);
-    // if(data){
-    //   ResourceLoader.setCache(null, resId, resRef, data);
-    //   return data;
-    // }
+    data = await this.searchLocal(resId, resRef);
+    if(data){
+      log.trace("loadResource searchLocal hit", resRef);
+      ResourceLoader.setCache(null, resId, resRef, data);
+      return data;
+    }
 
     data = await this.searchKeyTable(resId, resRef);
     if(data){
+      log.trace("loadResource searchKeyTable hit", resRef);
       ResourceLoader.setCache(null, resId, resRef, data);
       return data;
     }
 
     data = await this.searchModuleArchives(resId, resRef);
     if(data){
+      log.trace("loadResource searchModuleArchives hit", resRef);
       ResourceLoader.setCache(null, resId, resRef, data);
       return data;
     }
 
     //Resource Not Found
-    if(!data){
-      throw new Error(`Resource not found: ResRef: ${resRef} ResId: ${resId}`);
-    }
-
+    log.warn("loadResource not found", resRef, resId);
+    throw new Error(`Resource not found: ResRef: ${resRef} ResId: ${resId}`);
   }
 
-  static loadCachedResource(resId: number, resRef: string): Uint8Array {
+  static loadCachedResource(resId: number, resRef: string): Uint8Array | undefined {
+    log.trace("loadCachedResource", resId, resRef);
     return ResourceLoader.getCache(resId, resRef.toLocaleLowerCase());
   }
 
   static setResource(resId: number, resRef: string, opts = {}){
+    log.trace("setResource", resId, resRef);
     resRef = resRef.toLowerCase();
 
     if(typeof ResourceLoader.Resources[resId] === 'undefined'){
@@ -170,6 +188,7 @@ export class ResourceLoader {
   }
 
   static getResource(resId: number, resRef: string){
+    log.trace("getResource", resId, resRef);
     if(typeof ResourceLoader.Resources[resId] !== 'undefined'){
       if(typeof ResourceLoader.Resources[resId][resRef] !== 'undefined'){
         return ResourceLoader.Resources[resId][resRef];
@@ -179,10 +198,12 @@ export class ResourceLoader {
   }
 
   static clearCache(){
+    log.trace("clearCache");
     ResourceLoader.cache = {};
   }
 
-  static getCache(resId: number, resRef: string): Uint8Array {
+  static getCache(resId: number, resRef: string): Uint8Array | undefined {
+    log.trace("getCache", resId, resRef);
     if(ResourceLoader.CacheScopes[CacheScope.OVERRIDE].get(resId).has(resRef)){
       return ResourceLoader.CacheScopes[CacheScope.OVERRIDE].get(resId).get(resRef);
     }
@@ -203,24 +224,27 @@ export class ResourceLoader {
     return null;
   }
 
-  static setCache(type: CacheScope, resId: number, resRef: string, buffer: Uint8Array){
-    const cache = ResourceLoader.CacheScopes[type];
-    if(cache){
-      ResourceLoader.CacheScopes[type].get(resId).set(resRef, buffer);
+  static setCache(type: CacheScope | null, resId: number, resRef: string, buffer: Uint8Array): void {
+    log.trace("setCache", type, resId, resRef, buffer.length);
+    const scope = type !== null ? ResourceLoader.CacheScopes[type] : null;
+    if(scope){
+      scope.get(resId).set(resRef, buffer);
       return;
     }
 
-    if(typeof ResourceLoader.cache[resId] === 'undefined')
+    if (typeof ResourceLoader.cache[resId] === 'undefined') {
       ResourceLoader.cache[resId] = {};
-
+    }
     ResourceLoader.cache[resId][resRef] = buffer;
   }
 
-  static async searchLocal(resId: number, resRef = ''): Promise<Uint8Array> {
-    let data = await this.searchOverride(resId, resRef);
+  static async searchLocal(resId: number, resRef = ''): Promise<Uint8Array | undefined> {
+    log.trace("searchLocal", resId, resRef);
+    const data = await this.searchOverride(resId, resRef);
     if(data){
       return data;
     }
+    return undefined;
   }
 
   /**
@@ -229,7 +253,8 @@ export class ResourceLoader {
    * or when loading without a prior full override scan.
    * Path is Override/{resRef}.{ext} where ext is derived from resId via ResourceTypes.
    */
-  static async searchOverride(resId: number, resRef = ''): Promise<Uint8Array> {
+  static async searchOverride(resId: number, resRef = ''): Promise<Uint8Array | undefined> {
+    log.trace("searchOverride", resId, resRef);
     if (!resRef) {
       return undefined;
     }
@@ -256,7 +281,8 @@ export class ResourceLoader {
     }
   }
 
-  static async searchModuleArchives(resId: number, resRef = ''): Promise<Uint8Array> {
+  static async searchModuleArchives(resId: number, resRef = ''): Promise<Uint8Array | undefined> {
+    log.trace("searchModuleArchives", resId, resRef, this.ModuleArchives.length);
     const archiveCount = this.ModuleArchives.length;
 
     for(let i = 0; i < archiveCount; i++){
@@ -279,14 +305,17 @@ export class ResourceLoader {
     return undefined;
   }
 
-  static async searchKeyTable(resId: number, resRef: string): Promise<Uint8Array> {
+  static async searchKeyTable(resId: number, resRef: string): Promise<Uint8Array | undefined> {
+    log.trace("searchKeyTable", resId, resRef);
     const keyLookup = KEYManager.Key.getFileKey(resRef, resId);
     if(keyLookup){
       return await KEYManager.Key.getFileBuffer(keyLookup);
     }
+    return undefined;
   }
 
-  static async searchModules(resId: number, resRef: string): Promise<Uint8Array> {
+  static async searchModules(resId: number, resRef: string): Promise<Uint8Array | undefined> {
+    log.trace("searchModules", resId, resRef);
     const rims = Array.from(RIMManager.RIMs.values());
     const rimCount = rims.length;
 

@@ -1,8 +1,13 @@
 import React, { useState, useCallback, memo, useMemo } from "react";
-import { FileBrowserNode } from "../../FileBrowserNode";
-import { FileTypeManager } from "../../FileTypeManager";
-import { EditorFile } from "../../EditorFile";
-import { ListItemNode } from "./ListItemNode";
+
+import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
+import { getResourceIconPath } from "@/apps/forge/data";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface ResourceListNodeProps {
   node: FileBrowserNode;
@@ -31,7 +36,7 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
 
   const handleDoubleClick = useCallback(() => {
     if (node.type === 'resource') {
-      console.log('Opening resource:', node);
+      log.debug('Opening resource:', node);
       FileTypeManager.onOpenResource(
         new EditorFile({
           path: node.data.path,
@@ -42,14 +47,14 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
   }, [node]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    console.log('Context menu for:', node.name);
+    log.trace('Context menu for:', node.name);
     // Add context menu logic here
     if(typeof onContextMenu === 'function'){
       onContextMenu(e, node);
     }
   }, [node, onContextMenu]);
 
-  const handleSelect = useCallback((nodeId: string) => {
+  const handleSelect = useCallback((_nodeId: string) => {
     if (onSelect) {
       onSelect(node);
     }
@@ -65,9 +70,10 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
         depth={depth + 1}
         isSelected={false}
         onSelect={onSelect}
+        onContextMenu={onContextMenu}
       />
     ));
-  }, [openState, hasChildren, node.nodes, depth, onSelect]);
+  }, [openState, hasChildren, node.nodes, depth, onSelect, onContextMenu]);
 
   // Prepare data attributes for the core component
   const dataAttributes = {
@@ -78,6 +84,9 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
     'data-archive': node.data?.archive,
   };
 
+  const fileType = node.name?.split('.').pop()?.toLowerCase();
+  const iconImageUrl = !isFolder && fileType ? getResourceIconPath(fileType) : undefined;
+
   return (
     <ListItemNode
       id={node.id.toString()}
@@ -87,7 +96,8 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
       isSelected={isSelected}
       depth={depth}
       iconType={isFolder ? 'folder' : 'file'}
-      fileType={node.name?.split('.').pop()?.toLowerCase()}
+      fileType={fileType}
+      iconImageUrl={iconImageUrl}
       onToggle={handleToggle}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}

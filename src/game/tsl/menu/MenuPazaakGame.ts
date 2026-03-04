@@ -1,5 +1,5 @@
-import type { GUILabel, GUIButton } from "../../../gui";
-import { MenuPazaakGame as K1_MenuPazaakGame } from "../../kotor/KOTOR";
+import { MenuPazaakGame as K1_MenuPazaakGame } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * MenuPazaakGame class.
@@ -104,7 +104,7 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
@@ -114,3 +114,4 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
   }
   
 }
+

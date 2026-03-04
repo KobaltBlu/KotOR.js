@@ -1,5 +1,5 @@
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { MenuQuestItem as K1_MenuQuestItem } from "../../kotor/KOTOR";
+import { MenuQuestItem as K1_MenuQuestItem } from "@/game/kotor/KOTOR";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 /**
  * MenuQuestItem class.
@@ -27,9 +27,10 @@ export class MenuQuestItem extends K1_MenuQuestItem {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
   
 }
+

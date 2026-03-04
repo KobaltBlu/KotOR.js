@@ -1,19 +1,23 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel } from "../../../gui";
 import * as THREE from "three";
-import { CutsceneMode } from "../../../enums/dialog/CutsceneMode";
-import { DLGNode } from "../../../resource/DLGNode";
-import { ConversationState } from "../../../enums/dialog/ConversationState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
+
+import { ConversationState } from "@/enums/dialog/ConversationState";
+import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIControl, GUIListBox, GUILabel } from "@/gui";
+import { DLGNode } from "@/resource/DLGNode";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 const LETTERBOX_HEIGHT = 100;
 
 /**
  * InGameDialog class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameDialog.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -37,9 +41,13 @@ export class InGameDialog extends GameMenu {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
+    log.trace('InGameDialog.menuControlInitializer', { skipInit });
     await super.menuControlInitializer();
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if(skipInit) {
+      log.debug('InGameDialog.menuControlInitializer: skipInit true');
+      return;
+    }
+    return new Promise<void>((resolve, _reject) => {
       this.LBL_MESSAGE.setText('');
       this.LBL_MESSAGE.setTextColor(this.LBL_MESSAGE.defaultColor.r, this.LBL_MESSAGE.defaultColor.g, this.LBL_MESSAGE.defaultColor.b);
 
@@ -47,7 +55,8 @@ export class InGameDialog extends GameMenu {
       this.LB_REPLIES.extent.top = (GameState.ResolutionManager.getViewportHeight()/2) - this.LB_REPLIES.extent.height/2;
       this.LB_REPLIES.calculatePosition();
       this.LB_REPLIES.calculateBox();
-      this.LB_REPLIES.onSelected = (entry: DLGNode, control: any, index: number) => {
+      this.LB_REPLIES.onSelected = (entry: DLGNode, _control: GUIControl, index: number) => {
+        log.debug('InGameDialog reply selected', { index });
         GameState.CutsceneManager.selectReplyAtIndex(index);
       }
 
@@ -65,11 +74,14 @@ export class InGameDialog extends GameMenu {
   }
 
   show(){
+    log.trace('InGameDialog.show');
     super.show();
     GameState.SetEngineMode(EngineMode.DIALOG);
+    log.debug('InGameDialog.show: engine mode set to DIALOG');
   }
 
   setReplies(replies: DLGNode[]) {
+    log.trace('InGameDialog.setReplies', { count: replies.length });
     this.LB_REPLIES.clearItems();
     for (let i = 0; i < replies.length; i++) {
       const reply = replies[i];
@@ -97,7 +109,7 @@ export class InGameDialog extends GameMenu {
     this.updateLetterBox(delta);
   }
 
-  updateLetterBox(delta: number = 0){
+  updateLetterBox(_delta: number = 0){
     if(!this.canLetterbox || this.letterBoxed) return;
 
     if (GameState.CutsceneManager.cutsceneMode == CutsceneMode.ANIMATED) {
@@ -107,7 +119,7 @@ export class InGameDialog extends GameMenu {
       this.LBL_MESSAGE.show();
       return;
     }
-    
+
     if (this.bottomBar.position.y < -(GameState.ResolutionManager.getViewportHeight() / 2) + LETTERBOX_HEIGHT / 2) {
       this.bottomBar.position.y += 5;
       this.topBar.position.y -= 5;
@@ -123,9 +135,9 @@ export class InGameDialog extends GameMenu {
   updateTextPosition(isListening: boolean = false) {
     if (typeof this.LBL_MESSAGE.text.geometry !== 'undefined') {
       this.LBL_MESSAGE.text.geometry.computeBoundingBox();
-      let bb = this.LBL_MESSAGE.text.geometry.boundingBox;
-      let height = Math.abs(bb.min.y) + Math.abs(bb.max.y);
-      let width = Math.abs(bb.min.x) + Math.abs(bb.max.x);
+      const bb = this.LBL_MESSAGE.text.geometry.boundingBox;
+      const height = Math.abs(bb.min.y) + Math.abs(bb.max.y);
+      const width = Math.abs(bb.min.x) + Math.abs(bb.max.x);
       if (isListening) {
         this.LBL_MESSAGE.widget.position.y = -GameState.ResolutionManager.getViewportHeight() / 2 + 50;
       } else {
@@ -177,5 +189,5 @@ export class InGameDialog extends GameMenu {
     if(!this.LB_REPLIES.isVisible()) return;
     this.LB_REPLIES.directionalNavigate('down');
   }
-  
+
 }

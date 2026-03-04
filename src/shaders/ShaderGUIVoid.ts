@@ -1,5 +1,6 @@
-import { Shader } from "./Shader";
 import * as THREE from "three";
+
+import { Shader } from "@/shaders/Shader";
 
 /**
  * ShaderGUIVoid class.

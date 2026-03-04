@@ -1,5 +1,5 @@
-import type { ModuleCreatureAnimState } from "../../enums/module/ModuleCreatureAnimState";
-import type { ITwoDAAnimation } from "../twoDA/ITwoDAAnimation";
+import type { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 
 /**
  * ICreatureAnimationState interface.

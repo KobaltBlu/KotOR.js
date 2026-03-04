@@ -1,12 +1,14 @@
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import { OP_JSR, OP_RETN, OP_RSADD, OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_SAVEBP, OP_RESTOREBP, OP_MOVSP, OP_CPTOPBP } from '../NWScriptOPCodes';
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { OP_JSR, OP_RETN, OP_RSADD, OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_SAVEBP, OP_RESTOREBP, OP_MOVSP, OP_CPTOPBP } from '@/nwscript/NWScriptOPCodes';
+
+
 
 /**
- * Represents a function/subroutine in the decompiled code.
+ * Represents a function/subroutine in the reconstructed script.
  */
 export interface NWScriptFunction {
   name: string;
@@ -184,7 +186,7 @@ export class NWScriptFunctionAnalyzer {
     // function definitions (RSADD + JSR = function with return type).
     
     // Search through entry block for first RSADD and JSR
-    // The entry block may start with T (0x42) instruction, so we need to search
+    // The entry block may start with T instruction, so we need to search
     // Pattern: [T] [RSADD] JSR RETN
     let entryRSADD: NWScriptInstruction | null = null;
     let firstJSR: NWScriptInstruction | null = null;
@@ -226,7 +228,8 @@ export class NWScriptFunctionAnalyzer {
     const queue: NWScriptBasicBlock[] = [firstJSRBlock];
     
     while (queue.length > 0 && !hasGlobals) {
-      const block = queue.shift()!;
+      const block = queue.shift();
+      if (block === undefined) break;
       if (visited.has(block)) continue;
       visited.add(block);
       
@@ -260,7 +263,8 @@ export class NWScriptFunctionAnalyzer {
             const jsrSearchQueue: NWScriptBasicBlock[] = Array.from(block.successors);
             
             while (jsrSearchQueue.length > 0 && !foundJSR) {
-              const succBlock = jsrSearchQueue.shift()!;
+              const succBlock = jsrSearchQueue.shift();
+              if (succBlock === undefined) break;
               if (jsrSearchVisited.has(succBlock)) continue;
               jsrSearchVisited.add(succBlock);
               
@@ -346,7 +350,7 @@ export class NWScriptFunctionAnalyzer {
     
     // Use the determined main/StartingConditional entry
     const entryBlock = mainEntryBlock;
-    const entryAddress = mainEntryAddress;
+    const _entryAddress = mainEntryAddress;
     
     // Collect all blocks reachable from entry that aren't part of subroutines
     const bodyBlocks = this.collectFunctionBody(entryBlock);
@@ -499,7 +503,8 @@ export class NWScriptFunctionAnalyzer {
     const queue: NWScriptBasicBlock[] = [entryBlock];
 
     while (queue.length > 0) {
-      const current = queue.shift()!;
+      const current = queue.shift();
+      if (current === undefined) break;
       if (visited.has(current)) continue;
       visited.add(current);
 
@@ -571,7 +576,7 @@ export class NWScriptFunctionAnalyzer {
    */
   private isInitializationBlock(block: NWScriptBasicBlock): boolean {
     // Check if all instructions in the block are initialization instructions
-    let allInit = true;
+    const _allInit = true;
     let hasNonInit = false;
 
     for (const instruction of block.instructions) {
@@ -653,8 +658,8 @@ export class NWScriptFunctionAnalyzer {
     const parameters: NWScriptFunctionParameter[] = [];
     for (let i = 0; i < sortedOffsets.length; i++) {
       const offset = sortedOffsets[i];
-      const info = parameterOffsets.get(offset)!;
-      
+      const info = parameterOffsets.get(offset);
+      if (info === undefined) throw new Error('parameter info missing');
       // Parameter index (0 = first parameter, accessed with most negative offset)
       const paramIndex = i;
       
@@ -688,7 +693,7 @@ export class NWScriptFunctionAnalyzer {
   /**
    * Analyze return type from stack usage
    */
-  private analyzeReturnType(entryBlock: NWScriptBasicBlock, bodyBlocks: NWScriptBasicBlock[]): NWScriptDataType {
+  private analyzeReturnType(entryBlock: NWScriptBasicBlock, _bodyBlocks: NWScriptBasicBlock[]): NWScriptDataType {
     // Look for RSADD at the start (indicates return type)
     for (const instruction of entryBlock.instructions) {
       if (instruction.code === OP_RSADD) {

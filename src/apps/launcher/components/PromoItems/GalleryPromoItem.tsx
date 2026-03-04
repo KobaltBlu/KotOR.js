@@ -1,29 +1,29 @@
-import React, { createRef, useEffect, useState } from "react";
-import { useApp } from "../../context/AppContext";
-import { useProfile } from "../../context/ProfileContext";
+import React, { useEffect, useState } from "react";
 
-export interface ProfilePromoItemProps {
-  element: any;
-  onClick?: (element: any) => void;
-  onDoubleClick?: (element: any) => void;
+import type { LauncherProfileElement } from "@/apps/launcher/types";
+
+export interface GalleryPromoItemProps {
+  element: LauncherProfileElement;
+  onClick?: (element: LauncherProfileElement) => void;
+  onDoubleClick?: (element: LauncherProfileElement) => void;
 }
 
-export const GalleryPromoItem = function(props: ProfilePromoItemProps){
-  const element: any = props.element;
+export const GalleryPromoItem = function(props: GalleryPromoItemProps) {
+  const element = props.element;
 
   const [index, setIndex] = useState(0);
 
-  const onBtnLeftClick: React.MouseEventHandler<HTMLDivElement> = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onBtnLeftClick: React.MouseEventHandler<HTMLDivElement> = () => {
     galleryPreviousImage();
   };
 
-  const onBtnRightClick: React.MouseEventHandler<HTMLDivElement> = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onBtnRightClick: React.MouseEventHandler<HTMLDivElement> = () => {
     galleryNextImage();
   };
 
   const galleryPreviousImage = () => {
-    let count = element.images.length;
-    let newIndex = index - 1;
+    const count = element.images.length;
+    const newIndex = index - 1;
     setIndex(index - 1);
     if(newIndex < 0){
       setIndex(count - 1);
@@ -31,8 +31,8 @@ export const GalleryPromoItem = function(props: ProfilePromoItemProps){
   }
 
   const galleryNextImage = () => {
-    let count = element.images.length;
-    let newIndex = index + 1;
+    const count = element.images.length;
+    const newIndex = index + 1;
     setIndex(index + 1);
     if(newIndex >= count){
       setIndex(0);
@@ -51,7 +51,7 @@ export const GalleryPromoItem = function(props: ProfilePromoItemProps){
       <div className="gallery-left" onClick={onBtnLeftClick}><i className="fas fa-chevron-left"></i></div>
       <div className="gallery-images">
         {
-          element.images.map((image: any, i: number) => {
+          (element.images ?? []).map((image, i: number) => {
             return (
               <div key={`gallery-image-${i}`} className={`gallery-image ${i == index ? 'active' : ''}`} data-full={image.path_full} style={{backgroundImage: `url(${image.path_thumbnail})`}} onClick={() => {
                 if(typeof props.onClick === 'function'){

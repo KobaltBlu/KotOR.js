@@ -1,4 +1,8 @@
 
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const _log = createScopedLogger(LogScope.Manager);
+
 /**
  * Represents a single performance monitoring event with timing data.
  * 
@@ -61,7 +65,7 @@ class PerformanceMonitorEvent {
    * event.start();
    * // ... perform database operation ...
    * event.stop();
-   * console.log(event.duration); // Duration in milliseconds
+   * log.info(event.duration); // Duration in milliseconds
    */
   stop(){
     this.endTime = performance.now();
@@ -81,7 +85,7 @@ class PerformanceMonitorEvent {
    * event.start();
    * // ... perform operation ...
    * event.stop();
-   * console.log(event.toString()); // "database_query: 150ms"
+   * log.info(event.toString()); // "database_query: 150ms"
    */
   toString(){
     const duration = this.duration < 1000 ? `${this.duration}ms` : `${(this.duration / 1000).toFixed(2)}s`;
@@ -109,7 +113,7 @@ class PerformanceMonitorEvent {
  * PerformanceMonitor.stop('module_loading');
  * 
  * // Get a formatted report of all performance events
- * console.log(PerformanceMonitor.toString());
+ * log.info(PerformanceMonitor.toString());
  */
 export class PerformanceMonitor {
   
@@ -196,7 +200,7 @@ export class PerformanceMonitor {
    * PerformanceMonitor.stop('operation1');
    * PerformanceMonitor.stop('operation2');
    * 
-   * console.log(PerformanceMonitor.toString());
+   * log.info(PerformanceMonitor.toString());
    * // Output:
    * // operation2: 250ms
    * // operation1: 150ms

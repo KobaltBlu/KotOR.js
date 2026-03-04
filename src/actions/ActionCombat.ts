@@ -1,25 +1,24 @@
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { Action } from "./Action";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ModuleObjectConstant, ModuleObjectType } from "../enums";
-import { BitWise } from "../utility/BitWise";
-import { GameState } from "../GameState";
-import { ActionQueue } from "./ActionQueue";
+import { Action } from "@/actions/Action";
+import { ModuleObjectConstant, ModuleObjectType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { GameState } from "@/GameState";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionCombat class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionCombat.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionCombat extends Action {
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionCombat;
 
@@ -27,13 +26,13 @@ export class ActionCombat extends Action {
     // 0 - int: (?) 1 or 0
 
   }
-  
+
   /**
    * Updates the combat action state.
-   * 
+   *
    * Processes the combat round and executes scheduled combat actions like attacks and spells.
    * Adds appropriate actions to the owner's action queue based on the combat action type.
-   * 
+   *
    * @param delta - Time elapsed since last update in seconds
    * @returns ActionStatus indicating the current state of the combat action:
    *          - FAILED if owner is not a creature
@@ -41,27 +40,27 @@ export class ActionCombat extends Action {
    *          - IN_PROGRESS if round is paused
    *          - Status from processing scheduled actions
    */
-  update(delta: number = 0): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return ActionStatus.FAILED;
+  update(_delta: number = 0): ActionStatus {
+    if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return ActionStatus.FAILED;
 
     const combatRound = this.owner.combatRound;
-    if(!combatRound) return ActionStatus.COMPLETE;
+    if (!combatRound) return ActionStatus.COMPLETE;
 
     const scheduledActionList = combatRound.scheduledActionList;
 
-    if(combatRound.roundPaused) return ActionStatus.IN_PROGRESS;
-    if(!scheduledActionList.length){
+    if (combatRound.roundPaused) return ActionStatus.IN_PROGRESS;
+    if (!scheduledActionList.length) {
       return ActionStatus.COMPLETE;
     }
     const combatAction = scheduledActionList.shift();
-    if(!combatAction){
+    if (!combatAction) {
       return ActionStatus.COMPLETE;
     }
 
     combatRound.action = combatAction;
-    switch(combatAction.actionType){
+    switch (combatAction.actionType) {
       case CombatActionType.ATTACK:
-      case CombatActionType.ATTACK_USE_FEAT:
+      case CombatActionType.ATTACK_USE_FEAT: {
         const attackAction = new GameState.ActionFactory.ActionPhysicalAttacks();
         attackAction.setParameter(0, ActionParameterType.INT, combatAction.resultsCalculated);
         attackAction.setParameter(1, ActionParameterType.DWORD, combatAction.target.id);
@@ -75,8 +74,9 @@ export class ActionCombat extends Action {
         attackAction.setParameter(9, ActionParameterType.INT, combatAction.resultsCalculated ? combatAction.attackDamage : 0);
         attackAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(attackAction);
-      break;
-      case CombatActionType.CAST_SPELL:
+        }
+        break;
+      case CombatActionType.CAST_SPELL: {
         const spellAction = new GameState.ActionFactory.ActionCastSpell();
         spellAction.setParameter(0, ActionParameterType.INT, combatAction.spell ? combatAction.spell.id : 0); //Spell Id
         spellAction.setParameter(1, ActionParameterType.INT, combatAction.spellClassIndex);
@@ -90,28 +90,50 @@ export class ActionCombat extends Action {
         spellAction.setParameter(9, ActionParameterType.INT, combatAction.projectilePath); //ProjectilePath
         spellAction.setParameter(10, ActionParameterType.INT, -1);
         spellAction.setParameter(11, ActionParameterType.INT, combatAction.overrideSpell ? combatAction.overrideSpell.id : -1);
-        attackAction.isUserAction = combatAction.isUserAction;
+        spellAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(spellAction);
-      break;
-      case CombatActionType.ITEM_CAST_SPELL:
-        //TODO
-      break;
-      case CombatActionType.ITEM_EQUIP:
+        }
+        break;
+      case CombatActionType.ITEM_CAST_SPELL: {
+        const itemCastSpellAction = new GameState.ActionFactory.ActionItemCastSpell();
+        const target = combatAction.target;
+        const targetId = target?.id ?? ModuleObjectConstant.OBJECT_INVALID;
+        const targetPos = target?.position ?? { x: 0, y: 0, z: 0 };
+        const areaId = target?.area?.id ?? this.owner?.area?.id ?? ModuleObjectConstant.OBJECT_INVALID;
+        itemCastSpellAction.setParameter(0, ActionParameterType.DWORD, targetId);
+        itemCastSpellAction.setParameter(1, ActionParameterType.DWORD, areaId);
+        itemCastSpellAction.setParameter(2, ActionParameterType.FLOAT, targetPos.x);
+        itemCastSpellAction.setParameter(3, ActionParameterType.FLOAT, targetPos.y);
+        itemCastSpellAction.setParameter(4, ActionParameterType.FLOAT, targetPos.z);
+        itemCastSpellAction.setParameter(5, ActionParameterType.INT, combatAction.spell ? combatAction.spell.id : -1);
+        itemCastSpellAction.setParameter(6, ActionParameterType.INT, 1);
+        itemCastSpellAction.setParameter(7, ActionParameterType.FLOAT, 1.0);
+        itemCastSpellAction.setParameter(8, ActionParameterType.INT, combatAction.projectilePath ?? -1);
+        itemCastSpellAction.setParameter(9, ActionParameterType.INT, combatAction.overrideSpell ? combatAction.overrideSpell.id : -1);
+        itemCastSpellAction.setParameter(10, ActionParameterType.DWORD, combatAction.item?.id ?? ModuleObjectConstant.OBJECT_INVALID);
+        itemCastSpellAction.setParameter(11, ActionParameterType.STRING, '');
+        itemCastSpellAction.isUserAction = combatAction.isUserAction;
+        this.owner.actionQueue.unshift(itemCastSpellAction);
+      }
+        break;
+      case CombatActionType.ITEM_EQUIP: {
         const equipAction = new GameState.ActionFactory.ActionEquipItem();
         equipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
         equipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
         equipAction.setParameter(2, ActionParameterType.INT, combatAction.equipInstant ? 1 : 0);
-        attackAction.isUserAction = combatAction.isUserAction;
+        equipAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(equipAction);
-      break;
-      case CombatActionType.ITEM_UNEQUIP:
+        }
+        break;
+      case CombatActionType.ITEM_UNEQUIP: {
         const unequipAction = new GameState.ActionFactory.ActionUnequipItem();
         unequipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
         unequipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
         unequipAction.setParameter(2, ActionParameterType.INT, combatAction.equipInstant ? 1 : 0);
-        attackAction.isUserAction = combatAction.isUserAction;
+        unequipAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(unequipAction);
-      break;
+        }
+        break;
     }
 
     return ActionStatus.IN_PROGRESS;

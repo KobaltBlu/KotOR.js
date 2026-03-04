@@ -1,0 +1,40 @@
+---
+description: Forge app, KotOR resource formats, and VS Code extension — editor types, TabState, webview bridge, and where to change things
+globs: src/apps/forge/**/*,extensions/kotor-forge-vscode/**/*,src/resource/**/*
+alwaysApply: false
+---
+
+# Forge & KotOR Extension Context
+
+When editing Forge, the VS Code extension, or KotOR resource classes, use this context.
+
+## Three Layers
+
+1. **Library** (`src/resource/`): Format parsers/serializers — `GFFObject`, `TwoDAObject`, `TLKObject`, `ERFObject`, etc. They have `toBuffer()`, often `toJSON()` / `fromJSON()` or `fromBuffer()`. Changes here affect both standalone Forge and the extension.
+2. **Forge** (`src/apps/forge/`): Editors and app state. Each file type is edited by a **TabState** subclass (e.g. `TabTwoDAEditorState`, `TabTLKEditorState`, `TabJsonViewState`) and a React component under `components/tabs/`. `EditorFile` holds path and buffer(s). `ForgeState` uses an optional `IForgeHostAdapter` for save/tabs (real in Electron, delegated in webview).
+3. **Extension** (`extensions/kotor-forge-vscode/`): Custom editors for KotOR files. One webview per document; init sends `editorType` and file data. `forgeEditorRegistry.ts` maps `editorType` → TabState class. Adding a new editor type: add the TabState in Forge, then add the mapping in `EDITOR_MAP` and in `KotorForgeProvider.getEditorTypeFromExt` (and `customEditors` in package.json if needed).
+
+## Key Mappings
+
+- **Extension → editorType**: From file extension (e.g. `.utc` → `utc`, `.2da` → `2da`, `.tlk` → `tlk`). View type `kotor.forge.json` forces `editorType: 'json'`.
+- **editorType → TabState**: See `forgeEditorRegistry.ts` `EDITOR_MAP` (e.g. `2da` → `TabTwoDAEditorState`, `json` → `TabJsonViewState`).
+- **Standalone Forge**: `FileTypeManager.onOpenResource()` switches on extension and adds the same TabState classes.
+
+## Webview ↔ Extension
+
+- Messages: `init`, `ready`, `edit`, `undo`, `redo`, `revert`, `requestSave`, `saveComplete`, `saveError`, `getFileData`, `response`. Bridge in webview: `WebviewBridge.ts`; handler in extension: `BaseKotorEditorProvider.onMessage`.
+- Save: Webview calls `bridge.postMessage({ type: 'requestSave', buffer })`; extension writes file and replies `saveComplete` / `saveError`. Document model lives in extension (`KotorDocument`); webview holds the current buffer and tab state.
+- Revert: Extension posts `revert` with new content; webview updates `tab.file.buffer` and calls `tab.openFile()` if available.
+
+## When Adding or Changing an Editor
+
+1. **New format** (no TabState yet): Add resource class in `src/resource/` if needed; add TabState + component in `src/apps/forge/`; register in `FileTypeManager`; add to extension `EDITOR_MAP` and `getEditorTypeFromExt`; add selector to `customEditors` in extension package.json if the type should open by default.
+2. **New view of existing format** (e.g. JSON view): Reuse existing TabState or add one (e.g. `TabJsonViewState`); add `editorType` in registry and a new custom editor contribution with its own `viewType`.
+3. **Sync (undo/redo, format, sort)**: See `WEBVIEW_VSCODE_SYNC_DESIGN.md` in the extension. Edits must call `bridge.notifyEdit()`; webview must handle `undo`/`redo` and optional `runCommand`.
+
+## Tests and Lint
+
+- Tests: `npm test` or `npm run test:quick` from repo root (Jest). Resource tests in `src/resource/*.test.ts`.
+- Lint: `npm run lint` from root. Extension has its own ESLint config.
+
+Refer to **AGENTS.md** at repo root for full project layout, commands, and conventions.

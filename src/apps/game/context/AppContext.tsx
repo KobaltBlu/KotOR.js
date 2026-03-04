@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { AppState } from "../states/AppState";
-import * as KotOR from "../KotOR";
+
+import * as KotOR from "@/apps/game/KotOR";
+import { AppState } from "@/apps/game/states/AppState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 export interface AppProviderValues {
   appState: [typeof AppState];
@@ -16,13 +20,22 @@ export interface AppProviderValues {
   loadingScreenBackgroundURL: [string, React.Dispatch<string>];
   loadingScreenLogoURL: [string, React.Dispatch<string>];
 }
-export const AppContext = createContext<AppProviderValues>({} as any);
+export const AppContext = createContext<AppProviderValues | null>(null);
 
-export function useApp(){
-  return useContext(AppContext);
+export function useApp(): AppProviderValues {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useApp must be used within AppProvider');
+  return ctx;
 }
 
-export const AppProvider = (props: any) => {
+export interface AppProviderProps {
+  children?: React.ReactNode;
+  gameKey?: KotOR.GameEngineType;
+  showEULAModal?: boolean;
+  showGrantModal?: boolean;
+}
+
+export const AppProvider = (props: AppProviderProps) => {
   const [gameKey, setGameKey] = useState<KotOR.GameEngineType>(props.gameKey || KotOR.GameEngineType.KOTOR);
   const [appReady, setAppReady] = useState<boolean>(false);
   const [gameLoaded, setGameLoaded] = useState<boolean>(false);
@@ -37,7 +50,7 @@ export const AppProvider = (props: any) => {
   const [loadingScreenLogoURL, setLoadingScreenLogoURL] = useState<string>('');
 
   const onAppReady = () => {
-    console.log('onAppReady', AppState.eulaAccepted, AppState.directoryLocated);
+    log.debug('onAppReady', AppState.eulaAccepted, AppState.directoryLocated);
     setAppReady(true);
     setGameKey(AppState.gameKey);
     setShowEULAModal(!AppState.eulaAccepted);
@@ -45,7 +58,7 @@ export const AppProvider = (props: any) => {
   }
 
   const onPreload = () => {
-    console.log('onPreload', AppState.eulaAccepted, AppState.directoryLocated);
+    log.debug('onPreload', AppState.eulaAccepted, AppState.directoryLocated);
     setShowEULAModal(!AppState.eulaAccepted);
     setShowGrantModal(AppState.eulaAccepted && !AppState.directoryLocated);
   }
@@ -73,18 +86,18 @@ export const AppProvider = (props: any) => {
 
   const onLoadingScreenInit = (backgroundURL: string, logoURL: string, message?: string) => {
     setLoadingScreenMessage(message || 'Loading...');
-    setLoadingScreenBackgroundURL(backgroundURL);
-    setLoadingScreenLogoURL(logoURL);
-  }
+    setLoadingScreenBackgroundURL(backgroundURL ?? '');
+    setLoadingScreenLogoURL(logoURL ?? '');
+  };
 
   const onLoadingScreenMessage = (message: string) => {
     setLoadingScreenMessage(message);
   }
 
-  useEffect(() => { 
+  useEffect(() => {
     window.addEventListener('keypress', onKeyPress);
     AppState.addEventListener('on-preload', onPreload);
-    AppState.addEventListener('on-ready', onAppReady);  
+    AppState.addEventListener('on-ready', onAppReady);
     AppState.addEventListener('on-game-loaded', onGameLoaded);
     AppState.addEventListener('on-loader-show', onLoadingScreenShow);
     AppState.addEventListener('on-loader-hide', onLoadingScreenHide);
@@ -103,7 +116,7 @@ export const AppProvider = (props: any) => {
     }
   }, []);
 
-  useEffect(() => { 
+  useEffect(() => {
     window.addEventListener('keypress', onKeyPress);
     return () => {
       window.removeEventListener('keypress', onKeyPress);

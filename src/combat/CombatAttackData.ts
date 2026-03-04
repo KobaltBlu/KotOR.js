@@ -1,23 +1,24 @@
-import { CombatAttackDamage } from "./CombatAttackDamage";
-import type { ModuleCreature, ModuleItem, ModuleObject } from "../module";
-import { CExoLocString } from "../resource/CExoLocString";
-import { GFFStruct } from "../resource/GFFStruct";
-import { DamageType } from "../enums/combat/DamageType";
-import { EffectDamage } from "../effects";
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
-import { AttackResult } from "../enums/combat/AttackResult";
-import { TalentFeat } from "../talents";
-import { CombatFeatType } from "../enums/combat/CombatFeatType";
-import { WeaponWield } from "../enums/combat/WeaponWield";
-import { Dice } from "../utility/Dice";
-import { DiceType } from "../enums/combat/DiceType";
-import { WeaponType } from "../enums/combat/WeaponType";
+import { CombatAttackDamage } from "@/combat/CombatAttackDamage";
+import { EffectDamage } from "@/effects";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
+import { DamageType } from "@/enums/combat/DamageType";
+import { DiceType } from "@/enums/combat/DiceType";
+import { WeaponType } from "@/enums/combat/WeaponType";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { TalentFeat } from "@/talents";
+import { Dice } from "@/utility/Dice";
+
 
 /**
  * CombatAttackData class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CombatAttackData.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -111,7 +112,7 @@ export class CombatAttackData {
   /**
    * The damage list for the attack
    */
-  damageList: CombatAttackDamage[] = new Array(15);
+  damageList: CombatAttackDamage[] = Array.from({ length: 15 }, () => new CombatAttackDamage());
 
   /**
    * The killing blow for the attack
@@ -157,10 +158,7 @@ export class CombatAttackData {
    * Constructor for the CombatAttackData class
    */
   constructor(){
-    this.damageList = new Array(15);
-    for(let i = 0; i < 15; i++){
-      this.damageList[i] = new CombatAttackDamage();
-    }
+    this.damageList = Array.from({ length: 15 }, () => new CombatAttackDamage());
   }
 
   /**
@@ -169,7 +167,7 @@ export class CombatAttackData {
    * @param isCritial - Whether the attack is a critical hit
    * @param feat - The feat that is being used for the attack
    */
-  calculateDamage(creature: ModuleCreature, isCritial: boolean = false, feat?: TalentFeat){
+  calculateDamage(creature: ModuleCreature, isCritial: boolean = false, _feat?: TalentFeat){
     /**
      * Unarmed Strike
      */
@@ -179,7 +177,7 @@ export class CombatAttackData {
       this.damageList[DamageType.BLUDGEONING].addDamage(nDamage * damageMultiplier);
 
       return;
-    };
+    }
 
     const damageMultiplier = isCritial ? this.attackWeapon.baseItem.criticalHitMultiplier : 1.0;
 
@@ -189,28 +187,28 @@ export class CombatAttackData {
         this.damageList[this.attackWeapon.getDamageBonusType()].addDamage(this.attackWeapon.getDamageBonus() * damageMultiplier);
       }
 
-      if( 
-        creature.getHasFeat(CombatFeatType.POWER_ATTACK) || 
+      if(
+        creature.getHasFeat(CombatFeatType.POWER_ATTACK) ||
         creature.getHasFeat(CombatFeatType.POWER_BLAST)
       ){
         this.damageList[DamageType.BASE].addDamage(5 * damageMultiplier);
       }
 
-      if( 
-        creature.getHasFeat(CombatFeatType.IMPROVED_POWER_ATTACK) || 
+      if(
+        creature.getHasFeat(CombatFeatType.IMPROVED_POWER_ATTACK) ||
         creature.getHasFeat(CombatFeatType.IMPROVED_POWER_BLAST)
       ){
         this.damageList[DamageType.BASE].addDamage(8 * damageMultiplier);
       }
 
-      if( 
-        creature.getHasFeat(CombatFeatType.MASTER_POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.MASTER_POWER_BLAST) 
+      if(
+        creature.getHasFeat(CombatFeatType.MASTER_POWER_ATTACK) ||
+        creature.getHasFeat(CombatFeatType.MASTER_POWER_BLAST)
       ){
         this.damageList[DamageType.BASE].addDamage(10 * damageMultiplier);
       }
 
-      let specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
+      const specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
       if(specBonus > 0){
         this.damageList[DamageType.BASE].addDamage(specBonus * damageMultiplier);
       }
@@ -242,7 +240,7 @@ export class CombatAttackData {
   calculateWeaponSpecBonus(creature: ModuleCreature, weapon: ModuleItem): number {
     let bonus = 0;
     if(!creature){ return; }
-    
+
     switch(weapon.getWeaponWield()){
       case WeaponWield.BLASTER_PISTOL:
         if(creature.getHasFeat(CombatFeatType.WEAPON_SPEC_BLASTER)){

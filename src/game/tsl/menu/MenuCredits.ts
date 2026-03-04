@@ -1,5 +1,5 @@
-import type { GUIListBox } from "../../../gui";
-import { MenuCredits as K1_MenuCredits } from "../../kotor/KOTOR";
+import { MenuCredits as K1_MenuCredits } from "@/game/kotor/KOTOR";
+import type { GUIListBox } from "@/gui";
 
 /**
  * MenuCredits class.
@@ -24,9 +24,10 @@ export class MenuCredits extends K1_MenuCredits {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
   
 }
+

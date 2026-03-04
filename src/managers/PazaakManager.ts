@@ -1,22 +1,24 @@
-import { GameState } from "../GameState";
-import { PazaakCards } from "../enums/minigames/PazaakCards";
-import { PazaakHandSlots } from "../enums/minigames/PazaakHandSlots";
-import { PazaakSideDeckSlots } from "../enums/minigames/PazaakSideDeckSlots";
-import { PazaakTableSlots } from "../enums/minigames/PazaakTableSlots";
-import { PazaakTurnMode } from "../enums/minigames/PazaakTurnMode";
-import { PazaakTurnState } from "../enums/minigames/PazaakTurnState";
-import { IPTPazaakCard } from "../interface/minigames/IPTPazaakCard";
-import { IPazaakTable } from "../interface/minigames/IPazaakTable";
-import { ModuleCreature } from "../module/ModuleCreature";
-import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { PazaakConfig as PazaakConfig_TSL } from "../game/tsl/minigames/mg-pazaak-config";
-import { PazaakConfig as PazaakConfig_KOTOR } from "../game/kotor/minigames/mg-pazaak-config";
-import { GameEngineType } from "../enums/engine/GameEngineType";
-import { IPazaakCard } from "../interface/minigames/IPazaakCard";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import type { PazaakDeck } from "../engine/minigames/PazaakDeck";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
+import { PazaakHandSlots } from "@/enums/minigames/PazaakHandSlots";
+import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
+import { PazaakTableSlots } from "@/enums/minigames/PazaakTableSlots";
+import { PazaakTurnMode } from "@/enums/minigames/PazaakTurnMode";
+import { PazaakTurnState } from "@/enums/minigames/PazaakTurnState";
+import { PazaakConfig as PazaakConfig_KOTOR } from "@/game/kotor/minigames/mg-pazaak-config";
+import { PazaakConfig as PazaakConfig_TSL } from "@/game/tsl/minigames/mg-pazaak-config";
+import { GameState } from "@/GameState";
+import { IPazaakCard } from "@/interface/minigames/IPazaakCard";
+import { IPazaakTable } from "@/interface/minigames/IPazaakTable";
+import { IPTPazaakCard } from "@/interface/minigames/IPTPazaakCard";
+import { ModuleCreature } from "@/module/ModuleCreature";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-const MSG_CONFIRM_SIDE_DECK = 32322;
+const log = createScopedLogger(LogScope.Manager);
+
+const _MSG_CONFIRM_SIDE_DECK = 32322;
 const MSG_YOU_WIN = 32334;
 const MSG_TIED = 32338;
 const MSG_YOU_LOSE = 32335;
@@ -157,7 +159,7 @@ export class PazaakManager {
    * Initialize the Pazaak manager
    */
   static Initialize(){
-    console.log(`PazaakManager: Initializing`);
+    log.trace(`PazaakManager: Initializing`);
     /**
      * Pazaak Cards
      * - index 0-4: 2 cards
@@ -247,7 +249,7 @@ export class PazaakManager {
     try{
       this.EndScriptInstance = GameState.NWScript.Load(this.EndScript, true);
     }catch(e){
-      console.error(`PazaakManager: Failed to load end script ${this.EndScript}: ${e}`);
+      log.error(`PazaakManager: Failed to load end script ${this.EndScript}: ${e}`);
     }
   }
 
@@ -262,7 +264,7 @@ export class PazaakManager {
     for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
       const card = deckConfig.cards[i];
       if(card == PazaakCards.INVALID){
-        console.error(`PazaakManager: Invalid card modifier ${deckConfig.cards[i]} for deck ${deckIndex}`);
+        log.error(`PazaakManager: Invalid card modifier ${deckConfig.cards[i]} for deck ${deckIndex}`);
       }
       deck.set(i, card != PazaakCards.INVALID ? card : PazaakCards.PLUS_1);
     }
@@ -360,6 +362,7 @@ export class PazaakManager {
 
   /**
    * Cancel the Pazaak game from the wager/setup screen.
+   * HandleQuitDialog / EndPazaakGame behavior.
    */
   static CancelPazaak(){
     if(GameState.MenuManager?.MenuPazaakWager?.bVisible){
@@ -399,7 +402,7 @@ export class PazaakManager {
      * Begin the round
      */
     else if(action.type == PazaakActionType.BEGIN_ROUND){
-      console.log(`PazaakManager: Begin round... Player starts first.`);
+      log.info(`PazaakManager: Begin round... Player starts first.`);
       this.TurnMode = PazaakTurnMode.PLAYER;
       for(let i = 0; i < this.Tables.length; i++){
         this.Tables[i].points = 0;
@@ -417,7 +420,7 @@ export class PazaakManager {
      */
     else if(action.type == PazaakActionType.BEGIN_TURN){
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
-      console.log(`PazaakManager: Begin turn ${tableIndex == 0 ? `Player` : `Opponent`}`);
+      log.info(`PazaakManager: Begin turn ${tableIndex == 0 ? `Player` : `Opponent`}`);
       const table = this.Tables[tableIndex];
       table.handCardPlayed = false;
       if(table.stand){
@@ -442,7 +445,7 @@ export class PazaakManager {
     else if(action.type == PazaakActionType.END_TURN){
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       const bStanding = this.GetActionPropertyAsNumber(0, 1) == 1;
-      console.log(`PazaakManager: End turn ${tableIndex == 0 ? 'Player' : 'Opponent'} [${bStanding ? 'standing' : 'not standing'}]`);
+      log.info(`PazaakManager: End turn ${tableIndex == 0 ? 'Player' : 'Opponent'} [${bStanding ? 'standing' : 'not standing'}]`);
       const table = this.Tables[tableIndex];
       table.stand = bStanding;
 
@@ -483,7 +486,7 @@ export class PazaakManager {
       //calculate the result of the round
       const playerPoints = this.Tables[PazaakTurnMode.PLAYER].points;
       const opponentPoints = this.Tables[PazaakTurnMode.OPPONENT].points;
-      console.log(`PazaakManager: End round ${playerPoints} - ${opponentPoints}`);
+      log.info(`PazaakManager: End round ${playerPoints} - ${opponentPoints}`);
       //[Results]:
       // -1 - tied
       //  0 - player wins
@@ -550,7 +553,7 @@ export class PazaakManager {
       if(GameState.PartyManager.Player){
         GameState.PartyManager.Player.addGold(winnings);
       }
-      console.log(`PazaakManager: End game ${winner == PazaakTurnMode.PLAYER ? 'Player' : 'Opponent'} wins! | ${winnings} gold`);
+      log.info(`PazaakManager: End game ${winner == PazaakTurnMode.PLAYER ? 'Player' : 'Opponent'} wins! | ${winnings} gold`);
       GameState.MenuManager.MenuPazaakGame.close();
       if(this.EndScriptInstance){
         this.EndScriptInstance.run(this.Opponent);
@@ -565,7 +568,7 @@ export class PazaakManager {
       let cardDrawn = false;
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       const table = this.Tables[tableIndex];
-      console.log(`PazaakManager: Draw card ${tableIndex == 0 ? 'Player' : 'Opponent'}`);
+      log.info(`PazaakManager: Draw card ${tableIndex == 0 ? 'Player' : 'Opponent'}`);
 
       /**
        * Draw a card from the main deck
@@ -585,8 +588,8 @@ export class PazaakManager {
       /**
        * Find the best card to play next
        */
-      let bestCardIndex = -1;
-      let bestCardFlipped = false;
+      let _bestCardIndex = -1;
+      let _bestCardFlipped = false;
       let scoreAfterBestCard = table.points;
       for(let i = 0; i < PazaakHandSlots.MAX_SLOTS; i++){
         const sdCardIndex = table.handCards.get(i);
@@ -604,13 +607,13 @@ export class PazaakManager {
         const bestIndex = findBestIndex(scores, this.TargetPoints);
 
         if(bestIndex == 2){
-          bestCardIndex = i;
+          _bestCardIndex = i;
           scoreAfterBestCard = table.points + card.modifier[0];
-          bestCardFlipped = false;
+          _bestCardFlipped = false;
         }else if(bestIndex == 3){
-          bestCardIndex = i;
+          _bestCardIndex = i;
           scoreAfterBestCard = table.points + card.modifier[1];
-          bestCardFlipped = true;
+          _bestCardFlipped = true;
         }
       }
 
@@ -652,12 +655,12 @@ export class PazaakManager {
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       const handIndex = this.GetActionPropertyAsNumber(0, 1);
       const flipped = this.GetActionPropertyAsNumber(0, 2) == 1;
-      console.log(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${handIndex} ${flipped ? 'flipped' : 'not flipped'}`);
+      log.info(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${handIndex} ${flipped ? 'flipped' : 'not flipped'}`);
 
       const table = this.Tables[tableIndex];
       const cardIndex = table.handCards.get(handIndex);
       if(cardIndex == PazaakCards.INVALID){
-        console.error(`PazaakManager: Invalid hand card ${handIndex}`);
+        log.error(`PazaakManager: Invalid hand card ${handIndex}`);
         return;
       }
 
@@ -666,7 +669,7 @@ export class PazaakManager {
         if(tableCard != undefined){
           continue;
         }
-        console.log(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${i + 1} ${flipped ? 'flipped' : 'not flipped'}`);
+        log.info(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${i + 1} ${flipped ? 'flipped' : 'not flipped'}`);
         const card: IPazaakCard = this.Config.data.sideDeckCards[cardIndex];
         card.flipped = flipped;
         //Play the card
@@ -695,10 +698,10 @@ export class PazaakManager {
      * AI determines a move
      */
     else if(action.type == PazaakActionType.AI_DETERMINE_MOVE){
-      console.log(`PazaakManager: AI determining move...`);
+      log.info(`PazaakManager: AI determining move...`);
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       const aiTable = this.Tables[tableIndex];
-      const playerTable = this.Tables[PazaakTurnMode.PLAYER];
+      const _playerTable = this.Tables[PazaakTurnMode.PLAYER];
 
       /**
        * Find the best card to play next
@@ -820,10 +823,10 @@ export class PazaakManager {
   // Turn Management //
   //-----------------//
 
-  static BuildAction(tableIndex: number, actionType: PazaakActionType, properties: any[] = []){
+  static BuildAction(tableIndex: number, actionType: PazaakActionType, properties: (string | number | boolean | object)[] = []){
     const props: IPazaakActionProperty[] = [];
     for(let i = 0; i < properties.length; i++){
-      let type = typeof properties[i] === 'string' ? PazaakActionPropertyType.STRING : PazaakActionPropertyType.NUMBER;
+      const type = typeof properties[i] === 'string' ? PazaakActionPropertyType.STRING : PazaakActionPropertyType.NUMBER;
       props.push({
         type: type,
         value: properties[i]
@@ -836,12 +839,12 @@ export class PazaakManager {
     };
   }
 
-  static AddAction(tableIndex: number, actionType: PazaakActionType, properties: any[] = []){
+  static AddAction(tableIndex: number, actionType: PazaakActionType, properties: (string | number | boolean | object)[] = []){
     const action = this.BuildAction(tableIndex, actionType, properties);
     this.Actions.push(action);
   }
 
-  static AddActionFront(tableIndex: number, actionType: PazaakActionType, properties: any[] = []){
+  static AddActionFront(tableIndex: number, actionType: PazaakActionType, properties: (string | number | boolean | object)[] = []){
     const action = this.BuildAction(tableIndex, actionType, properties);
     this.Actions.unshift(action);
   }
@@ -885,7 +888,7 @@ export class PazaakManager {
         );
         //If there are no available side deck cards, break
         if(availableSideDeckCards.length == 0){
-          console.warn(`PazaakManager: No available side deck cards for player ${i}`);
+          log.warn(`PazaakManager: No available side deck cards for player ${i}`);
           continue;
         }
 

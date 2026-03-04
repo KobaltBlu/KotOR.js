@@ -1,0 +1,137 @@
+.forge-ifo-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0f1116;
+  color: #d8e0ef;
+
+  &__loading {
+    padding: 2rem;
+    text-align: center;
+    color: #b8c2d8;
+  }
+
+  &__tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #2a3142;
+    background: #181c25;
+    padding: 0 0.5rem;
+
+    button {
+      padding: 0.75rem 1.5rem;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #b8c2d8;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+      font-weight: 500;
+
+      &:hover {
+        color: #d8e0ef;
+        background: #20283a;
+      }
+
+      &.active {
+        color: #8aa4ff;
+        border-bottom-color: #8aa4ff;
+      }
+    }
+  }
+
+  &__content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+  }
+}
+
+.ifo-tab-content {
+  max-width: 800px;
+  margin: 0 auto;
+
+  h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #2a3142;
+    color: #8aa4ff;
+    font-size: 1.1rem;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  .property-group {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.85rem;
+      color: #b8c2d8;
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 0.5rem;
+      background: #181c25;
+      border: 1px solid #2a3142;
+      border-radius: 4px;
+      color: #d8e0ef;
+      font-family: inherit;
+      font-size: 0.9rem;
+
+      &:focus {
+        outline: none;
+        border-color: #8aa4ff;
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+      line-height: 1.4;
+    }
+  }
+
+  .property-row {
+    display: flex;
+    gap: 1rem;
+
+    .property-group {
+      flex: 1;
+    }
+  }
+
+  .no-data {
+    padding: 2rem;
+    text-align: center;
+    color: #b8c2d8;
+    font-style: italic;
+  }
+
+  .areas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .area-item {
+    padding: 0.75rem;
+    background: #181c25;
+    border: 1px solid #2a3142;
+    border-radius: 4px;
+
+    strong {
+      color: #8aa4ff;
+      font-size: 0.95rem;
+    }
+  }
+}

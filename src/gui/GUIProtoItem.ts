@@ -1,18 +1,15 @@
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import type { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
-import { Anchor } from "../enums/gui/Anchor";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import type { GUIListBox } from "./GUIListBox";
-import { Mouse } from "../controls/Mouse";
+
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import type { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * GUIProtoItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIProtoItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -29,11 +26,11 @@ export class GUIProtoItem extends GUIControl{
       this.onSelectStateChanged();
     };
 
-    this.addEventListener('mouseIn', (e) => {
+    this.addEventListener('mouseIn', (_e) => {
       this.onSelectStateChanged();
     })
 
-    this.addEventListener('mouseOut', (e) => {
+    this.addEventListener('mouseOut', (_e) => {
       this.onSelectStateChanged();
     })
   }
@@ -85,7 +82,7 @@ export class GUIProtoItem extends GUIControl{
 
     this.widget.position.x = this.anchorOffset.x + this.offset.x;
     this.widget.position.y = this.anchorOffset.y + this.offset.y;
-    
+
     this.calculateBox();*/
   }
 
@@ -94,7 +91,7 @@ export class GUIProtoItem extends GUIControl{
 
     if(this.text.geometry){
       this.text.geometry.computeBoundingBox();
-      let tSize = this.text.geometry.boundingBox.getSize(new THREE.Vector3);
+      const tSize = this.text.geometry.boundingBox.getSize(new THREE.Vector3);
       if(tSize.y > height){
         height = tSize.y/2;
       }
@@ -104,13 +101,13 @@ export class GUIProtoItem extends GUIControl{
   }
 
   calculateBox(){
-    let worldPosition = this.parent.widget.position.clone();
-    //console.log('worldPos', worldPosition);
+    const worldPosition = this.parent.widget.position.clone();
+    //log.info('worldPos', worldPosition);
     this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
     this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
     this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
     this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
-    
+
     for(let i = 0; i < this.children.length; i++){
       this.children[i].updateBounds();
     }

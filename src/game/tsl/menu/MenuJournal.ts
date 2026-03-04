@@ -1,6 +1,9 @@
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { MenuJournal as K1_MenuJournal } from "../../kotor/KOTOR";
-import { GUIJournalItem } from "../gui/GUIJournalItem";
+import { MenuJournal as K1_MenuJournal } from "@/game/kotor/KOTOR";
+import { GUIJournalItem } from "@/game/tsl/gui/GUIJournalItem";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 enum JournalSort {
   RECIEVED = 0,
@@ -46,7 +49,7 @@ export class MenuJournal extends K1_MenuJournal {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       this.BTN_MESSAGES = this.getControlByName('BTN_MESSAGES');
 
@@ -57,8 +60,8 @@ export class MenuJournal extends K1_MenuJournal {
       });
       
       this.LB_ITEMS.GUIProtoItemClass = GUIJournalItem;
-      this.LB_ITEMS.onSelect = (node: any) => {
-        console.log(node);
+      this.LB_ITEMS.onSelected = (node, _control, _index) => {
+        log.debug('journal node', node);
       };
 
       this.BTN_FILTER_TIME.addEventListener('click', (e) => {

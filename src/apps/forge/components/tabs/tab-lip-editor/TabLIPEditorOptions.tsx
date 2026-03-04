@@ -1,17 +1,27 @@
-import React, { NewLifecycle, useEffect, useState } from "react";
-import { SceneGraphTreeView } from "../../SceneGraphTreeView";
-import { SceneGraphNode } from "../../../SceneGraphNode";
-import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes, TabLIPEditorOptionsState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import React, { useEffect, useState } from "react";
 import { Button, Form } from "react-bootstrap";
-import { SectionContainer } from "../../SectionContainer";
 
-import * as KotOR from "../../../KotOR";
+import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
+import { SectionContainer } from "@/apps/forge/components/SectionContainer";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import * as KotOR from "@/apps/forge/KotOR";
+import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalLIPBatchProcessorState } from "@/apps/forge/states/modal/ModalLIPBatchProcessorState";
+import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes, TabLIPEditorOptionsState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-export const TabLIPEditorOptions = function(props: any){
-  const tab: TabLIPEditorOptionsState = props.tab;
-  const parentTab: TabLIPEditorState = props.parentTab;
-  const [nodes, setNodes] = useState<SceneGraphNode[]>(tab.sceneGraphNodes);
+
+const log = createScopedLogger(LogScope.Forge);
+
+export interface TabLIPEditorOptionsProps {
+  tab: TabLIPEditorOptionsState;
+  parentTab: TabLIPEditorState;
+}
+
+export const TabLIPEditorOptions = function(props: TabLIPEditorOptionsProps){
+  const { tab, parentTab } = props;
+  const [_nodes, _setNodes] = useState<SceneGraphNode[]>(tab.sceneGraphNodes);
   const [selectedFrame, setSelectedFrame] = useState<KotOR.ILIPKeyFrame>(parentTab.selected_frame);
   const [selectedHead, setSelectedHead] = useState<string>(parentTab.current_head);
   const [duration, setDuration] = useState<number>(parentTab.lip.duration);
@@ -47,25 +57,25 @@ export const TabLIPEditorOptions = function(props: any){
   });
 
   useEffect( () => {
-    console.log('duration', 'change');
+    log.debug('duration', 'change');
   }, [duration]);
 
-  const onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let shape = parseInt(e.target.value);
+  const _onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const shape = parseInt(e.target.value);
     parentTab.selected_frame.shape = !isNaN(shape) ? shape : 0;
     parentTab.selectKeyFrame(parentTab.selected_frame);
   }
 
   const onPreviewHeadChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let head = (e.target.value);
+    const head = (e.target.value);
     parentTab.loadHead(head);
   }
 
-  const onImportPHNClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onImportPHNClick = (_e: React.MouseEvent<HTMLButtonElement>) => {
     parentTab.importPHN();
   }
 
-  const onFitToKeyFrames = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onFitToKeyFrames = (_e: React.MouseEvent<HTMLButtonElement>) => {
     parentTab.fitDurationToKeyFrames();
   }
 
@@ -100,12 +110,12 @@ export const TabLIPEditorOptions = function(props: any){
       </SectionContainer> */}
       <SectionContainer name="Preview Head" slim={true}>
         {
-          !!selectedFrame ? (
+          selectedFrame ? (
             <div className="selected-keyframe-head-options">
               <b>Heads</b>
               <Form.Select onChange={onPreviewHeadChange} value={selectedHead}>
                 {
-                  heads.map( (row: any, i: number) => {
+                  heads.map( (row: { head: string }, _i: number) => {
                     const head = (row.head as string).toLocaleLowerCase();
                     return <option value={head}>{head}</option>
                   })
@@ -118,7 +128,12 @@ export const TabLIPEditorOptions = function(props: any){
         }
       </SectionContainer>
       <SectionContainer name="Utilities">
-        <Button onClick={onImportPHNClick}>Import PHN</Button>
+        <Button onClick={onImportPHNClick} className="me-2">Import PHN</Button>
+        <Button variant="outline-secondary" onClick={() => {
+          const lipBatchModal = new ModalLIPBatchProcessorState();
+          ForgeState.modalManager.addModal(lipBatchModal);
+          lipBatchModal.open();
+        }}>LIP Batch Processor…</Button>
       </SectionContainer>
     </>
   );

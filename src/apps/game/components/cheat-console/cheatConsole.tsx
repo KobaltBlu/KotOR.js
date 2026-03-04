@@ -1,15 +1,15 @@
 import React, { useState } from "react";
-import { useApp } from "../../context/AppContext";
-import { EngineDebugType } from "../../../../enums/engine/EngineDebugType";
-import './cheat-console.scss';
-import * as KotOR from "../../KotOR";
+
+import { useApp } from "@/apps/game/context/AppContext";
+import * as KotOR from "@/apps/game/KotOR";
+import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import "@/apps/game/components/cheat-console/cheat-console.scss";
 
 export const CheatConsole = () => {
   const appContext = useApp();
   const [appState] = appContext.appState;
   const [gameKey] = appContext.gameKey;
-  const [showCheatConsole, setShowCheatConsole] = appContext.showCheatConsole;
-  const [showPerformanceMonitor] = appContext.showPerformanceMonitor;
+  const [, setShowCheatConsole] = appContext.showCheatConsole;
   const [consoleInput, setConsoleInput] = useState('');
   const [debugTick, setDebugTick] = useState(0);
   const [showDebugMenu, setShowDebugMenu] = useState(false);
@@ -42,7 +42,7 @@ export const CheatConsole = () => {
     }
   ];
 
-  const onConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {  
+  const onConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setConsoleInput(e.target.value);
   }
 
@@ -73,7 +73,7 @@ export const CheatConsole = () => {
     KotOR.GameState.ToggleDebugState(type);
     setDebugTick(debugTick + 1);
   }
-  
+
   const onToggleDebugMenu = () => {
     setShowDebugMenu(!showDebugMenu);
   }

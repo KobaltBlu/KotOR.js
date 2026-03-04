@@ -1,9 +1,14 @@
-import { ResourceLoader } from "../loaders";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { AudioFile } from "./AudioFile";
 import * as path from "path";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { KEYManager } from "../managers/KEYManager";
+
+import { AudioFile } from "@/audio/AudioFile";
+import { ResourceLoader } from "@/loaders";
+import { KEYManager } from "@/managers/KEYManager";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Loader);
 
 /**
  * AudioLoader class.
@@ -17,12 +22,9 @@ import { KEYManager } from "../managers/KEYManager";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class AudioLoader {
-
-  constructor () { }
-
   static toArrayBuffer(buffer: Uint8Array) {
-    let ab = new ArrayBuffer(buffer.length);
-    let view = new Uint8Array(ab);
+    const ab = new ArrayBuffer(buffer.length);
+    const view = new Uint8Array(ab);
     for (let i = 0; i < buffer.length; ++i) {
         view[i] = buffer[i];
     }
@@ -31,11 +33,11 @@ export class AudioLoader {
 
   static async LoadSound (resRef: string){
 
-    if(AudioLoader.cache.hasOwnProperty(resRef)){
+    if (Object.hasOwn(AudioLoader.cache, resRef)) {
       return AudioLoader.cache[resRef];
     }else{
       const visKey = KEYManager.Key.getFileKey(resRef, ResourceTypes['wav']);
-      if(!!visKey){
+      if(visKey){
         try{
           const buffer = await KEYManager.Key.getFileBuffer(visKey);
           if(!buffer){ return; }
@@ -49,7 +51,7 @@ export class AudioLoader {
             return buffer;
           }
         }catch(e){
-          console.error(e);
+          log.error('AudioLoader.LoadSound', e as Error);
           throw e;
         }
       }else{
@@ -63,29 +65,29 @@ export class AudioLoader {
   static async LoadStreamSound (resRef: string) {
     try{
       const file = path.join('streamsounds', resRef+'.wav');
-      console.log('AudioLoader.LoadStreamSound : file', file);
+      log.debug('AudioLoader.LoadStreamSound : file', file);
       const buffer = await GameFileSystem.readFile(file);
       const af = new AudioFile(buffer);
       const data = await af.getPlayableByteStream();
       return data;
     }catch(e){
-      console.log(`AudioLoader.LoadStreamSound : read`);
-      console.error(e);
+      log.debug('AudioLoader.LoadStreamSound : read');
+      log.error('AudioLoader.LoadStreamSound', e as Error);
       throw e;
     }
   }
 
   static async LoadStreamWave (ResRef: string) {
-    const snd = ResourceLoader.getResource(ResourceTypes['wav'], ResRef);
-    if(!!snd){
+    const snd = ResourceLoader.getResource(ResourceTypes['wav'], ResRef) as { file: string } | null | undefined;
+    if(!!snd && typeof snd.file === 'string'){
       try{
         const buffer = await GameFileSystem.readFile(snd.file);
         const af = new AudioFile(buffer);
         const data = await af.getPlayableByteStream();
         return data;
       }catch(e){
-        console.log(`AudioLoader.LoadStreamWave : read`);
-        console.error(e);
+        log.debug('AudioLoader.LoadStreamWave : read');
+        log.error('AudioLoader.LoadStreamWave', e as Error);
         throw e;
       }
     }else{
@@ -98,18 +100,27 @@ export class AudioLoader {
   }
 
   static async LoadAmbientSound (resRef: string): Promise<Uint8Array> {
-    try{
-      const file = path.join('streammusic', resRef+'.wav');
-      const buffer = await GameFileSystem.readFile(file);
-      const af = new AudioFile(buffer);
-      return await af.getPlayableByteStream();
-    }catch(e){
-      console.log(`AudioLoader.LoadAmbientSound : read`);
-      console.error(e);
-      throw e;
+    let lastErr: unknown;
+    const candidates = [
+      `streammusic/${resRef}.wav`,
+      `streammusic/${resRef}.mp3`,
+    ];
+
+    for (const file of candidates) {
+      try {
+        const buffer = await GameFileSystem.readFile(file);
+        const af = new AudioFile(buffer);
+        return await af.getPlayableByteStream();
+      } catch (e) {
+        lastErr = e;
+      }
     }
+
+    log.debug('AudioLoader.LoadAmbientSound : read');
+    log.error(lastErr instanceof Error ? lastErr : new Error(String(lastErr)));
+    throw lastErr;
   }
 
-  static cache: any = {};
+  static cache: Record<string, ArrayBuffer | Uint8Array> = {};
 
 }

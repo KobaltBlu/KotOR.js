@@ -1,18 +1,22 @@
 import React from "react";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTPEditor } from "../../components/tabs/tab-utp-editor/TabUTPEditor";
-import { UI3DRenderer } from "../../UI3DRenderer";
-import { UI3DRendererView } from "../../components/UI3DRendererView";
-import { ForgePlaceable } from "../../module-editor/ForgePlaceable";
+
+import { TabUTPEditor } from "@/apps/forge/components/tabs/tab-utp-editor/TabUTPEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
+
 
 export class TabUTPEditorState extends TabState {
   tabName: string = `UTP`;
   placeable: ForgePlaceable = new ForgePlaceable();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.placeable.blueprint;
   }
@@ -20,10 +24,11 @@ export class TabUTPEditorState extends TabState {
   ui3DRenderer: UI3DRenderer;
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace('TabUTPEditorState constructor entry');
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
-    this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    this.ui3DRenderer.addEventListener('onBeforeRender', (delta: number) => this.animate(delta));
 
     this.setContentView(<TabUTPEditor tab={this}></TabUTPEditor>);
     this.openFile();
@@ -35,27 +40,32 @@ export class TabUTPEditorState extends TabState {
         }
       }
     ];
-    
+    log.trace('TabUTPEditorState constructor exit');
   }
 
   public openFile(file?: EditorFile){
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
+    log.trace('TabUTPEditorState openFile entry', !!file);
+    return new Promise<KotOR.GFFObject>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
+
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
-  
+        log.debug('TabUTPEditorState openFile tabName', this.tabName);
+
         file.readFile().then( async (response) => {
           this.placeable = new ForgePlaceable(response.buffer);
           this.placeable.setContext(this.ui3DRenderer);
           await this.placeable.load();
           this.ui3DRenderer.attachObject(this.placeable.container, false);
           this.processEventListener('onEditorFileLoad', [this]);
+          log.trace('TabUTPEditorState openFile loaded');
           resolve(this.blueprint);
         });
+      } else {
+        log.trace('TabUTPEditorState openFile no file');
       }
     });
   }
@@ -66,7 +76,7 @@ export class TabUTPEditorState extends TabState {
   center: THREE.Vector3 = new THREE.Vector3();
   size: THREE.Vector3 = new THREE.Vector3();
   origin: THREE.Vector3 = new THREE.Vector3();
-  
+
   updateCameraFocus(){
     const model = this.placeable.model;
     if(!model) return;
@@ -119,7 +129,7 @@ export class TabUTPEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-  
+
   updateFile(){
     this.placeable.exportToBlueprint();
   }

@@ -1,18 +1,12 @@
 {
-  "compilerOptions": {
-    "noEmit": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-    "types": ["node", "jest", "offscreencanvas", "@types/wicg-file-system-access"],
-    "lib": ["ESNext", "dom", "WebWorker"]
-  },
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true, "baseUrl": ".", "paths": { "@/*": ["src/*"] } },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
-    "src/**/*.js",
-    "src/**/*.jsx"
+    "src/types/**/*.d.ts",
+    "extensions/**/*.ts",
+    "extensions/**/*.tsx"
   ],
-  "exclude": ["node_modules", "dist", "coverage", "release", "vendor"]
+  "exclude": ["node_modules", "dist", ".history"]
 }

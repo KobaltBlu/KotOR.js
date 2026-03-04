@@ -1,70 +1,74 @@
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { EffectACDecrease } from "./EffectACDecrease";
-import { EffectACIncrease } from "./EffectACIncrease";
-import { EffectAbilityDecrease } from "./EffectAbilityDecrease";
-import { EffectAbilityIncrease } from "./EffectAbilityIncrease";
-import { EffectAreaOfEffect } from "./EffectAreaOfEffect";
-import { EffectAssuredDeflection } from "./EffectAssuredDeflection";
-import { EffectAssuredHit } from "./EffectAssuredHit";
-import { EffectAttackDecrease } from "./EffectAttackDecrease";
-import { EffectAttackIncrease } from "./EffectAttackIncrease";
-import { EffectBeam } from "./EffectBeam";
-import { EffectBlasterDeflectionDecrease } from "./EffectBlasterDeflectionDecrease";
-import { EffectBlasterDeflectionIncrease } from "./EffectBlasterDeflectionIncrease";
-import { EffectConcealment } from "./EffectConcealment";
-import { EffectDamage } from "./EffectDamage";
-import { EffectDamageDecrease } from "./EffectDamageDecrease";
-import { EffectDamageForcePoints } from "./EffectDamageForcePoints";
-import { EffectDamageImmunityDecrease } from "./EffectDamageImmunityDecrease";
-import { EffectDamageImmunityIncrease } from "./EffectDamageImmunityIncrease";
-import { EffectDamageIncrease } from "./EffectDamageIncrease";
-import { EffectDamageReduction } from "./EffectDamageReduction";
-import { EffectDamageResistance } from "./EffectDamageResistance";
-import { EffectDeath } from "./EffectDeath";
-import { EffectDisease } from "./EffectDisease";
-import { EffectDisguise } from "./EffectDisguise";
-import { EffectEntangle } from "./EffectEntangle";
-import { EffectFeat } from "./EffectFeat";
-import { EffectForceFizzle } from "./EffectForceFizzle";
-import { EffectForceJump } from "./EffectForceJump";
-import { EffectForcePushed } from "./EffectForcePushed";
-import { EffectForceResisted } from "./EffectForceResisted";
-import { EffectForceShield } from "./EffectForceShield";
-import { EffectHaste } from "./EffectHaste";
-import { EffectHeal } from "./EffectHeal";
-import { EffectHealForcePoints } from "./EffectHealForcePoints";
-import { EffectIcon } from "./EffectIcon";
-import { EffectImmunity } from "./EffectImmunity";
-import { EffectInvisibility } from "./EffectInvisibility";
-import { EffectKnockdown } from "./EffectKnockdown";
-import { EffectLink } from "./EffectLink";
-import { EffectMissChance } from "./EffectMissChance";
-import { EffectMovementSpeedDecrease } from "./EffectMovementSpeedDecrease";
-import { EffectMovementSpeedIncrease } from "./EffectMovementSpeedIncrease";
-import { EffectPoison } from "./EffectPoison";
-import { EffectRacialType } from "./EffectRacialType";
-import { EffectRegenerate } from "./EffectRegenerate";
-import { EffectResurrection } from "./EffectResurrection";
-import { EffectSavingThrowDecrease } from "./EffectSavingThrowDecrease";
-import { EffectSavingThrowIncrease } from "./EffectSavingThrowIncrease";
-import { EffectSetState } from "./EffectSetState";
-import { EffectSkillDecrease } from "./EffectSkillDecrease";
-import { EffectSkillIncrease } from "./EffectSkillIncrease";
-import { EffectSlow } from "./EffectSlow";
-import { EffectSpellImmunity } from "./EffectSpellImmunity";
-import { EffectTemporaryForce } from "./EffectTemporaryForce";
-import { EffectTemporaryHitPoints } from "./EffectTemporaryHitPoints";
-import { EffectVisualEffect } from "./EffectVisualEffect";
-import { EffectForceResistanceIncrease } from "./EffectForceResistanceIncrease";
-import { EffectForceResistanceDecrease } from "./EffectForceResistanceDecrease";
-import { GameEffect } from "./GameEffect";
+import { EffectAbilityDecrease } from "@/effects/EffectAbilityDecrease";
+import { EffectAbilityIncrease } from "@/effects/EffectAbilityIncrease";
+import { EffectACDecrease } from "@/effects/EffectACDecrease";
+import { EffectACIncrease } from "@/effects/EffectACIncrease";
+import { EffectAreaOfEffect } from "@/effects/EffectAreaOfEffect";
+import { EffectAssuredDeflection } from "@/effects/EffectAssuredDeflection";
+import { EffectAssuredHit } from "@/effects/EffectAssuredHit";
+import { EffectAttackDecrease } from "@/effects/EffectAttackDecrease";
+import { EffectAttackIncrease } from "@/effects/EffectAttackIncrease";
+import { EffectBeam } from "@/effects/EffectBeam";
+import { EffectBlasterDeflectionDecrease } from "@/effects/EffectBlasterDeflectionDecrease";
+import { EffectBlasterDeflectionIncrease } from "@/effects/EffectBlasterDeflectionIncrease";
+import { EffectConcealment } from "@/effects/EffectConcealment";
+import { EffectDamage } from "@/effects/EffectDamage";
+import { EffectDamageDecrease } from "@/effects/EffectDamageDecrease";
+import { EffectDamageForcePoints } from "@/effects/EffectDamageForcePoints";
+import { EffectDamageImmunityDecrease } from "@/effects/EffectDamageImmunityDecrease";
+import { EffectDamageImmunityIncrease } from "@/effects/EffectDamageImmunityIncrease";
+import { EffectDamageIncrease } from "@/effects/EffectDamageIncrease";
+import { EffectDamageReduction } from "@/effects/EffectDamageReduction";
+import { EffectDamageResistance } from "@/effects/EffectDamageResistance";
+import { EffectDeath } from "@/effects/EffectDeath";
+import { EffectDisease } from "@/effects/EffectDisease";
+import { EffectDisguise } from "@/effects/EffectDisguise";
+import { EffectEntangle } from "@/effects/EffectEntangle";
+import { EffectFeat } from "@/effects/EffectFeat";
+import { EffectForceFizzle } from "@/effects/EffectForceFizzle";
+import { EffectForceJump } from "@/effects/EffectForceJump";
+import { EffectForcePushed } from "@/effects/EffectForcePushed";
+import { EffectForceResistanceDecrease } from "@/effects/EffectForceResistanceDecrease";
+import { EffectForceResistanceIncrease } from "@/effects/EffectForceResistanceIncrease";
+import { EffectForceResisted } from "@/effects/EffectForceResisted";
+import { EffectForceShield } from "@/effects/EffectForceShield";
+import { EffectHaste } from "@/effects/EffectHaste";
+import { EffectHeal } from "@/effects/EffectHeal";
+import { EffectHealForcePoints } from "@/effects/EffectHealForcePoints";
+import { EffectIcon } from "@/effects/EffectIcon";
+import { EffectImmunity } from "@/effects/EffectImmunity";
+import { EffectInvisibility } from "@/effects/EffectInvisibility";
+import { EffectKnockdown } from "@/effects/EffectKnockdown";
+import { EffectLink } from "@/effects/EffectLink";
+import { EffectMissChance } from "@/effects/EffectMissChance";
+import { EffectMovementSpeedDecrease } from "@/effects/EffectMovementSpeedDecrease";
+import { EffectMovementSpeedIncrease } from "@/effects/EffectMovementSpeedIncrease";
+import { EffectPoison } from "@/effects/EffectPoison";
+import { EffectRacialType } from "@/effects/EffectRacialType";
+import { EffectRegenerate } from "@/effects/EffectRegenerate";
+import { EffectResurrection } from "@/effects/EffectResurrection";
+import { EffectSavingThrowDecrease } from "@/effects/EffectSavingThrowDecrease";
+import { EffectSavingThrowIncrease } from "@/effects/EffectSavingThrowIncrease";
+import { EffectSetState } from "@/effects/EffectSetState";
+import { EffectSkillDecrease } from "@/effects/EffectSkillDecrease";
+import { EffectSkillIncrease } from "@/effects/EffectSkillIncrease";
+import { EffectSlow } from "@/effects/EffectSlow";
+import { EffectSpellImmunity } from "@/effects/EffectSpellImmunity";
+import { EffectTemporaryForce } from "@/effects/EffectTemporaryForce";
+import { EffectTemporaryHitPoints } from "@/effects/EffectTemporaryHitPoints";
+import { EffectVisualEffect } from "@/effects/EffectVisualEffect";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger , LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * GameEffectFactory class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GameEffectFactory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -162,45 +166,45 @@ export class GameEffectFactory {
   static EffectForceShield: typeof EffectForceShield = EffectForceShield;
   // static EffectPureGoodPowers: typeof EffectPureGoodPowers = EffectPureGoodPowers;
   // static EfffectPureEvilPowers: typeof EfffectPureEvilPowers = EfffectPureEvilPowers;
-  
-  static EffectFromStruct( struct: GFFStruct ): GameEffect {
-    if(!struct){ return undefined as any; }
 
-    let effect: GameEffect = undefined as any;
+  static EffectFromStruct( struct: GFFStruct ): GameEffect | undefined {
+    if(!struct){ return undefined; }
 
-    let eType = struct.getFieldByLabel('Type').getValue();
-    let eSubType = struct.getFieldByLabel('SubType').getValue();
-    let eCreator = struct.getFieldByLabel('CreatorId').getValue();
-    let eSpellId = struct.getFieldByLabel('SpellId').getValue();
-    
-    let eDuration = struct.getFieldByLabel('Duration').getValue();
-    let eExpireDay = struct.getFieldByLabel('ExpireDay').getValue();
-    let eExpireTime = struct.getFieldByLabel('ExpireTime').getValue();
-    let eNumIntegers = struct.getFieldByLabel('NumIntegers').getValue();
+    let effect: GameEffect | undefined = undefined;
 
-    let intList: number[] = [];
-    let floatList: number[] = [];
-    let stringList: string[] = [];
-    let objectList: number[] = [];
+    const eType = struct.getNumberByLabel('Type');
+    const eSubType = struct.getNumberByLabel('SubType');
+    const eCreator = struct.getNumberByLabel('CreatorId');
+    const eSpellId = struct.getNumberByLabel('SpellId');
+
+    const eDuration = struct.getNumberByLabel('Duration');
+    const eExpireDay = struct.getNumberByLabel('ExpireDay');
+    const eExpireTime = struct.getNumberByLabel('ExpireTime');
+    const eNumIntegers = struct.getNumberByLabel('NumIntegers');
+
+    const intList: number[] = [];
+    const floatList: number[] = [];
+    const stringList: string[] = [];
+    const objectList: number[] = [];
 
     let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      intList[i] = tmpList[i].getFieldByLabel('Value').getValue();
+      intList[i] = tmpList[i].getNumberByLabel('Value');
     }
 
     tmpList = struct.getFieldByLabel('FloatList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      floatList[i] = tmpList[i].getFieldByLabel('Value').getValue();
+      floatList[i] = tmpList[i].getNumberByLabel('Value');
     }
 
     tmpList = struct.getFieldByLabel('StringList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      stringList[i] = tmpList[i].getFieldByLabel('Value').getValue();
+      stringList[i] = tmpList[i].getStringByLabel('Value');
     }
 
     tmpList = struct.getFieldByLabel('ObjectList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      objectList[i] = tmpList[i].getFieldByLabel('Value').getValue();
+      objectList[i] = tmpList[i].getNumberByLabel('Value');
     }
 
     //Initialize the effect object based on the type
@@ -378,7 +382,7 @@ export class GameEffectFactory {
       break;
     }
 
-    let eSkipOnLoad = struct.getFieldByLabel('SkipOnLoad').getValue();
+    const eSkipOnLoad = struct.getBooleanByLabel('SkipOnLoad');
     if(!eSkipOnLoad){
 
       if(typeof effect !== 'undefined'){
@@ -386,27 +390,24 @@ export class GameEffectFactory {
         effect.setExpireDay(eExpireDay);
         effect.setExpireTime(eExpireTime);
         effect.setCreator(eCreator);
-        effect.setSpellId(eSpellId == 4294967295 ? -1 : eSpellId);
+        effect.setSpellId(eSpellId === 4294967295 ? -1 : eSpellId);
         effect.setSubTypeUnMasked(eSubType);
 
         effect.setNumIntegers(eNumIntegers);
         effect.setIntList(intList);
         effect.setFloatList(floatList);
         effect.setStringList(stringList);
-        effect.setObjectList(objectList as any);
-        //console.log('Handled Effect', eType, struct.ToJSON());
+        effect.setObjectList(objectList as unknown as ModuleObject[]);
         //effect.initialize();
       }else{
-        console.log('Unhandled Effect', eType, struct.toJSON());
+        log.debug('Unhandled Effect', eType, struct.toJSON());
       }
       return effect;
     }else{
-      if(typeof effect !== 'undefined'){
-        //console.log('Skipped Effect', eType, struct.ToJSON());
-      }else{
-        console.log('Unhandled Skipped Effect', eType, struct.toJSON());
+      if(typeof effect === 'undefined'){
+        log.debug('Unhandled Skipped Effect', eType, struct.toJSON());
       }
-      return undefined as any;
+      return undefined;
     }
   }
 }

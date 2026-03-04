@@ -1,15 +1,17 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 
 const LTR_HEADER_LENGTH = 9;
 
 /**
  * LTRObject class
- * 
+ *
  * Class representing a LTR file in memory.
  * uses Markov Chains to generate random names for character generation ingame
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LTRObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -18,9 +20,9 @@ const LTR_HEADER_LENGTH = 9;
  */
 export class LTRObject {
 
-  static CharacterArrays: any = {
+  static CharacterArrays: Record<number, string> = {
     26: 'abcdefghijklmnopqrstuvwxyz',
-    28: 'abcdefghijklmnopqrstuvwxyz\'-'
+    28: "abcdefghijklmnopqrstuvwxyz'-",
   };
 
   buffer: Uint8Array;
@@ -44,7 +46,7 @@ export class LTRObject {
 
   }
 
-  openFile(file: string){
+  openFile(_file: string){
 
   }
 
@@ -83,11 +85,11 @@ export class LTRObject {
         for(let j = 0; j < this.charCount; j++){
           this.doubleArray[i][0][j] = br.readSingle();
         }
-  
+
         for(let j = 0; j < this.charCount; j++){
           this.doubleArray[i][1][j] = br.readSingle();
         }
-  
+
         for(let j = 0; j < this.charCount; j++){
           this.doubleArray[i][2][j] = br.readSingle();
         }
@@ -105,11 +107,11 @@ export class LTRObject {
           for(let k = 0; k < this.charCount; k++){
             this.tripleArray[i][j][0][k] = br.readSingle();
           }
-    
+
           for(let k = 0; k < this.charCount; k++){
             this.tripleArray[i][j][1][k] = br.readSingle();
           }
-    
+
           for(let k = 0; k < this.charCount; k++){
             this.tripleArray[i][j][2][k] = br.readSingle();
           }
@@ -134,10 +136,10 @@ export class LTRObject {
     let prob: number = 0;
     let i = 0;
     let wordIndex = 0;
-    let chars = [];
-    
+    const chars = [];
+
     let attempts = 0;
-    let bGetFirstThree = true;
+    const bGetFirstThree = true;
     let bGenerating = false;
     let bDone = false;
 
@@ -145,7 +147,7 @@ export class LTRObject {
       for (i = 0, prob = Math.random(); i < this.charCount; i++)
         if (prob < this.singleArray[0][i])
           break;
-        
+
       if (i == this.charCount){
         continue;
       }
@@ -168,7 +170,7 @@ export class LTRObject {
         continue;
       }
       chars[wordIndex++] = i;
-      
+
       bGenerating = true;
       while(bGenerating && !bDone){
         prob = Math.random();
@@ -181,19 +183,19 @@ export class LTRObject {
             }
           }
         }
-  
-        if(!bGenerating){ 
+
+        if(!bGenerating){
           bDone = true;
-          break; 
+          break;
         }
-  
+
         for (i = 0; i < this.charCount; i++) {
           if (prob < this.tripleArray[chars[wordIndex-2]][chars[wordIndex-1]][1][i]) {
             chars[wordIndex++] = i;
             break;
           }
         }
-  
+
         if (i == this.charCount) {
           if (chars.length < 3 || ++attempts > 100){
             bGenerating = false;
@@ -201,10 +203,76 @@ export class LTRObject {
         }
       }
     }
-    
+
     return chars.map((value: number, index: number) => {
       return index == 0 ? letters[value].toUpperCase() : letters[value];
     }).join('') as string;
   }
+
+  /**
+   * Serialize LTR back to binary (same layout as readBuffer) for editor save.
+   */
+  toBuffer(): Uint8Array {
+    const bw = new BinaryWriter();
+    const cc = this.charCount ?? 0;
+    bw.writeChars((this.fileType ?? 'LTR ').substring(0, 4).padEnd(4, '\0'));
+    bw.writeChars((this.fileVersion ?? 'V1.0').substring(0, 4).padEnd(4, '\0'));
+    bw.writeByte(cc & 0xff);
+
+    const s0 = this.singleArray?.[0] ?? [];
+    const s1 = this.singleArray?.[1] ?? [];
+    const s2 = this.singleArray?.[2] ?? [];
+    for (let i = 0; i < cc; i++) bw.writeSingle(s0[i] ?? 0);
+    for (let i = 0; i < cc; i++) bw.writeSingle(s1[i] ?? 0);
+    for (let i = 0; i < cc; i++) bw.writeSingle(s2[i] ?? 0);
+
+    const d = this.doubleArray ?? [];
+    for (let i = 0; i < cc; i++) {
+      const di = d[i] ?? [[], [], []];
+      for (let j = 0; j < cc; j++) bw.writeSingle((di[0] ?? [])[j] ?? 0);
+      for (let j = 0; j < cc; j++) bw.writeSingle((di[1] ?? [])[j] ?? 0);
+      for (let j = 0; j < cc; j++) bw.writeSingle((di[2] ?? [])[j] ?? 0);
+    }
+
+    const t = this.tripleArray ?? [];
+    for (let i = 0; i < cc; i++) {
+      for (let j = 0; j < cc; j++) {
+        const tij = (t[i] ?? [])[j] ?? [[], [], []];
+        for (let k = 0; k < cc; k++) bw.writeSingle((tij[0] ?? [])[k] ?? 0);
+        for (let k = 0; k < cc; k++) bw.writeSingle((tij[1] ?? [])[k] ?? 0);
+        for (let k = 0; k < cc; k++) bw.writeSingle((tij[2] ?? [])[k] ?? 0);
+      }
+    }
+
+    return bw.position > 0 ? bw.buffer.slice(0, bw.position) : new Uint8Array(0);
+  }
+
+  toJSON(): { fileType: string; fileVersion: string; charCount: number; singleArray: number[][]; doubleArray: number[][][]; tripleArray: number[][][][] } {
+    return {
+      fileType: this.fileType ?? 'LTR ',
+      fileVersion: this.fileVersion ?? 'V1.0',
+      charCount: this.charCount ?? 0,
+      singleArray: this.singleArray ?? [[], [], []],
+      doubleArray: this.doubleArray ?? [],
+      tripleArray: this.tripleArray ?? []
+    };
+  }
+
+  fromJSON(json: string | ReturnType<LTRObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<LTRObject['toJSON']>) : json;
+    this.fileType = obj.fileType ?? 'LTR ';
+    this.fileVersion = obj.fileVersion ?? 'V1.0';
+    this.charCount = obj.charCount ?? 0;
+    this.singleArray = obj.singleArray ?? [[], [], []];
+    this.doubleArray = obj.doubleArray ?? [];
+    this.tripleArray = obj.tripleArray ?? [];
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<LTRObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<LTRObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<LTRObject['toJSON']>); }
 
 }

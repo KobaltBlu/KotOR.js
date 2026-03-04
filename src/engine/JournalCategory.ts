@@ -1,8 +1,9 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { CExoLocString } from "../resource/CExoLocString";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { JournalCategoryEntry } from "./JournalCategoryEntry";
+import { JournalCategoryEntry } from "@/engine/JournalCategoryEntry";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+
 
 /**
  * JournalCategory class.
@@ -22,10 +23,10 @@ export class JournalCategory {
   priority: number = 0;
   tag: string = '';
 
-  getEntryById(id: number = 0): JournalCategoryEntry {
+  getEntryById(id: number = 0): JournalCategoryEntry | undefined {
     return this.entries.find( (entry) => {
       return entry.id == id;
-    }) as any
+    });
   }
 
   toStruct(id: number = 0): GFFStruct {
@@ -42,12 +43,12 @@ export class JournalCategory {
   static FromStruct(struct: GFFStruct): JournalCategory {
     const category = new JournalCategory();
     if(struct instanceof GFFStruct){
-      if(struct.hasField('Comment'))    category.comment     = struct.getFieldByLabel('Comment')?.getValue();
+      if(struct.hasField('Comment'))    category.comment     = struct.getStringByLabel('Comment');
       if(struct.hasField('Name'))       category.name        = struct.getFieldByLabel('Name')?.getCExoLocString();
-      if(struct.hasField('PlanetID'))   category.planet_id   = struct.getFieldByLabel('PlanetID')?.getValue();
-      if(struct.hasField('PlotIndex'))  category.plot_index  = struct.getFieldByLabel('PlotIndex')?.getValue();
-      if(struct.hasField('Priority'))   category.priority    = struct.getFieldByLabel('Priority')?.getValue();
-      if(struct.hasField('Tag'))        category.tag         = struct.getFieldByLabel('Tag')?.getValue();
+      if(struct.hasField('PlanetID'))   category.planet_id   = struct.getNumberByLabel('PlanetID');
+      if(struct.hasField('PlotIndex'))  category.plot_index  = struct.getNumberByLabel('PlotIndex');
+      if(struct.hasField('Priority'))   category.priority    = struct.getNumberByLabel('Priority');
+      if(struct.hasField('Tag'))        category.tag         = struct.getStringByLabel('Tag');
 
       if(struct.hasField('EntryList')){
         const categories = struct.getFieldByLabel('EntryList').getChildStructs();

@@ -1,22 +1,28 @@
 import * as path from "path";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { ResourceTypes } from "./ResourceTypes";
-import { IERFLanguage } from "../interface/resource/IERFLanguage";
-import { IERFKeyEntry } from "../interface/resource/IERFKeyEntry";
-import { IERFResource } from "../interface/resource/IERFResource";
-import { IERFObjectHeader } from "../interface/resource/IERFObjectHeader";
-  
+
+import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
+import { IERFLanguage } from "@/interface/resource/IERFLanguage";
+import { IERFObjectHeader } from "@/interface/resource/IERFObjectHeader";
+import { IERFResource } from "@/interface/resource/IERFResource";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Resource);
+
 const ERF_HEADER_SIZE = 160;
 
 /**
  * ERFObject class.
- * 
+ *
  * Class representing a ERF archive file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ERFObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -25,7 +31,7 @@ export class ERFObject {
   resource_path: string;
   buffer: Uint8Array;
   inMemory: boolean = false;
-  
+
   localizedStrings: IERFLanguage[] = [];
   keyList: IERFKeyEntry[] = [];
   resources: IERFResource[] = [];
@@ -54,6 +60,33 @@ export class ERFObject {
       this.inMemory = false;
       this.pathInfo = path.parse(file);
     }
+  }
+
+  /**
+   * Load ERF from buffer synchronously (PyKotor read_erf parity for read_unknown_resource).
+   * Populates header, keyList, resources, and each resource's data from the buffer.
+   */
+  static fromBufferSync(buffer: Uint8Array): ERFObject {
+    if (buffer.length < ERF_HEADER_SIZE) {
+      throw new Error('ERF buffer too short for header.');
+    }
+    const erf = new ERFObject(buffer);
+    const headerBuf = buffer.slice(0, ERF_HEADER_SIZE);
+    erf.parseHeader(headerBuf);
+    erf.erfDataOffset = erf.header.offsetToResourceList + (erf.header.entryCount * 8);
+    if (buffer.length < erf.erfDataOffset) {
+      throw new Error('ERF buffer too short for structure.');
+    }
+    erf.parseStructures(buffer.slice(0, erf.erfDataOffset));
+    for (let i = 0; i < erf.resources.length; i++) {
+      const res = erf.resources[i];
+      if (res.offset + res.size <= buffer.length) {
+        res.data = buffer.slice(res.offset, res.offset + res.size);
+      } else {
+        res.data = new Uint8Array(0);
+      }
+    }
+    return erf;
   }
 
   async load(): Promise<ERFObject> {
@@ -89,7 +122,7 @@ export class ERFObject {
     this.reader.seek(this.header.offsetToLocalizedString);
 
     for (let i = 0; i < this.header.languageCount; i++) {
-      let language: IERFLanguage = {} as IERFLanguage;
+      const language: IERFLanguage = {} as IERFLanguage;
       language.languageId = this.reader.readUInt32();
       language.stringSize = this.reader.readUInt32();
       language.value = this.reader.readChars(language.stringSize);
@@ -99,7 +132,7 @@ export class ERFObject {
     this.reader.seek(this.header.offsetToKeyList);
 
     for (let i = 0; i < this.header.entryCount; i++) {
-      let key: IERFKeyEntry = {} as IERFKeyEntry;
+      const key: IERFKeyEntry = {} as IERFKeyEntry;
       key.resRef = this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
       key.resId = this.reader.readUInt32();
       key.resType = this.reader.readUInt16();
@@ -110,7 +143,7 @@ export class ERFObject {
     this.reader.seek(this.header.offsetToResourceList);
 
     for (let i = 0; i < this.header.entryCount; i++) {
-      let resource: IERFResource = {} as IERFResource;
+      const resource: IERFResource = {} as IERFResource;
       resource.offset = this.reader.readUInt32();
       resource.size = this.reader.readUInt32();
       this.resources.push(resource);
@@ -135,7 +168,7 @@ export class ERFObject {
 
       await GameFileSystem.close(fd);
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
   }
 
@@ -154,11 +187,11 @@ export class ERFObject {
   getResourceInfo(resRef: string, resType: number): IERFResource{
     resRef = resRef.toLowerCase();
     for(let i = 0; i < this.keyList.length; i++){
-      let key = this.keyList[i];
+      const key = this.keyList[i];
       if (key.resRef == resRef && key.resType == resType) {
         return this.resources[key.resId];
       }
-    };
+    }
     return undefined;
   }
 
@@ -192,7 +225,7 @@ export class ERFObject {
   async getResourceBufferByResRef(resRef: string, resType: number): Promise<Uint8Array> {
     const resource = this.getResourceInfo(resRef, resType);
     if (typeof resource === 'undefined') {
-      console.error('getResourceBufferByResRef', resRef, resType, resource);
+      log.error('getResourceBufferByResRef', resRef, resType, resource);
       return new Uint8Array(0);
     }
 
@@ -206,7 +239,7 @@ export class ERFObject {
       if (key.resType == resType) {
         resources.push(this.resources[key.resId]);
       }
-    };
+    }
     return resources;
   }
 
@@ -219,22 +252,63 @@ export class ERFObject {
     if(!resource){
       return new Uint8Array(0);
     }
-    
+
     if(this.inMemory){
         const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
       await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
       return buffer;
     }else{
-      let buffer = new Uint8Array(resource.size);
+      const buffer = new Uint8Array(resource.size);
       const fd = await GameFileSystem.open(this.resource_path, 'r');
       await GameFileSystem.read(fd, buffer, 0, resource.size, resource.offset);
-      // console.log('ERF Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
+      // log.info('ERF Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
       await GameFileSystem.writeFile(
         path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer
       );
       return buffer;
     }
   }
+
+  toJSON(): { header: IERFObjectHeader; localizedStrings: IERFLanguage[]; keyList: IERFKeyEntry[]; resources: Array<{ offset: number; size: number; dataBase64?: string }> } {
+    return {
+      header: { ...this.header },
+      localizedStrings: [...(this.localizedStrings ?? [])],
+      keyList: (this.keyList ?? []).map(k => ({ resRef: k.resRef, resId: k.resId, resType: k.resType, unused: k.unused })),
+      resources: (this.resources ?? []).map(r => ({
+        offset: r.offset,
+        size: r.size,
+        dataBase64: r.data?.length ? (typeof Buffer !== 'undefined' ? Buffer.from(r.data).toString('base64') : btoa(String.fromCharCode(...r.data))) : undefined
+      }))
+    };
+  }
+
+  fromJSON(json: string | ReturnType<ERFObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<ERFObject['toJSON']>) : json;
+    Object.assign(this.header, obj.header);
+    this.header.fileType = (String(this.header.fileType ?? 'MOD ').padEnd(4, ' ')).slice(0, 4);
+    this.header.fileVersion = (String(this.header.fileVersion ?? 'V1.0').padEnd(4, ' ')).slice(0, 4);
+    this.localizedStrings = obj.localizedStrings ?? [];
+    this.keyList = (obj.keyList ?? []).map((k: IERFKeyEntry) => ({ ...k }));
+    this.resources = (obj.resources ?? []).map((r: { offset: number; size: number; dataBase64?: string }) => {
+      const res: IERFResource = {
+        offset: r.offset,
+        size: r.size,
+        data: r.dataBase64
+          ? (typeof Buffer !== 'undefined'
+              ? new Uint8Array(Buffer.from(r.dataBase64, 'base64'))
+              : Uint8Array.from(atob(r.dataBase64), c => c.charCodeAt(0)))
+          : new Uint8Array(0)
+      };
+      return res;
+    });
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<ERFObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<ERFObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<ERFObject['toJSON']>); }
 
   addResource(resRef: string, resType: number, buffer: Uint8Array){
 
@@ -253,22 +327,22 @@ export class ERFObject {
 
   }
 
-  export( file: string, onExport?: Function, onError?: Function ){
-    return new Promise( (resolve: Function, reject: Function) => {
+  export( file: string, onExport?: () => void, onError?: (err?: unknown) => void ){
+    return new Promise<void>( (resolve: () => void, reject: (reason?: unknown) => void) => {
 
       if(!file){
         reject('Failed to export: Missing file path.');
         return;
       }
 
-      let buffer = this.getExportBuffer();
+      const buffer = this.getExportBuffer();
       GameFileSystem.writeFile( file, buffer ).then( () => {
         if(typeof onExport === 'function')
           onExport();
 
         resolve();
       }).catch( (err) => {
-        console.error(err);
+        log.error(err);
         if(typeof onError === 'function')
           onError(err);
         reject();
@@ -279,10 +353,10 @@ export class ERFObject {
 
   getExportBuffer(){
 
-    let output = new BinaryWriter();
+    const output = new BinaryWriter();
 
-    let keyEleLen = 24;
-    let resEleLen = 8;
+    const keyEleLen = 24;
+    const resEleLen = 8;
     let locStringsLen = 0;
 
     for(let i = 0; i < this.localizedStrings.length; i++){
@@ -344,13 +418,13 @@ export class ERFObject {
 
     return output.buffer;
   }
-  
+
   static DayOfTheYear(date?: Date) {
     if(!date){
       date = new Date(Date.now());
     }
-  
+
     return (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(date.getFullYear(), 0, 0)) / 24 / 60 / 60 / 1000;
-  };
+  }
 
 }

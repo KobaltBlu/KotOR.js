@@ -12,4 +12,4 @@ export interface IOdysseyArrayDefinition {
   offset: number;
   count: number;
   count2: number;
-};
+}

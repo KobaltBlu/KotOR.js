@@ -1,25 +1,25 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+
 // import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify';
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabERFEditorState } from "../../../states/tabs";
-import * as KotOR from "../../../KotOR";
-import { FileTypeManager } from "../../../FileTypeManager";
-import { EditorFile } from "../../../EditorFile";
-import { ForgeTreeView } from "../../treeview/ForgeTreeView";
-import { FileBrowserNode } from "../../../FileBrowserNode";
-import { ERFListNode } from "../../treeview/ERFListNode";
-import { useContextMenu } from "../../common/ContextMenu";
-import { createERFContextMenuItems } from "./ERFContextMenu";
+import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
+import { createERFContextMenuItems } from "@/apps/forge/components/tabs/tab-erf-editor/ERFContextMenu";
+import { ERFListNode } from "@/apps/forge/components/treeview/ERFListNode";
+import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabERFEditorState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-const MENU_ID = 'context-tab-erf-editor-entry';
 
-const exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
+import "@/apps/forge/components/tabs/tab-erf-editor/TabERFEditor.scss";
 
-interface ContextMenuProps {
-  archive: KotOR.ERFObject;
-  resource: KotOR.IERFKeyEntry;
-}
+const log = createScopedLogger(LogScope.Forge);
+const _MENU_ID = 'context-tab-erf-editor-entry';
+const _exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
 
 export const TabERFEditor = function(props: BaseTabProps) {
   const tab = props.tab as TabERFEditorState;
@@ -44,38 +44,41 @@ export const TabERFEditor = function(props: BaseTabProps) {
 
   useEffect(() => {
     if(!selectedEntry) return;
-    const { resource, archive } = selectedEntry.data || {};
-    const res = archive.getResource(resource?.resRef, resource?.resType);
-    setSelectedFilename(resource?.resRef);
-    setSelectedFiletype(KotOR.ResourceTypes.getKeyByValue(resource?.resType));
-    setSelectedFilesize(KotOR.Utility.bytesToSize( res ? res.size : 0 ));
+    const data = selectedEntry.data as { resource?: KotOR.IERFKeyEntry; archive?: KotOR.ERFObject } | undefined;
+    const resource = data?.resource;
+    const archive = data?.archive;
+    if (!archive || !resource) return;
+    const res = archive.getResource(resource.resRef, resource.resType);
+    setSelectedFilename(resource.resRef);
+    setSelectedFiletype(KotOR.ResourceTypes.getKeyByValue(resource.resType));
+    setSelectedFilesize(KotOR.Utility.bytesToSize(res ? res.size : 0));
   }, [selectedEntry]);
 
   const onResourceClick = (node: FileBrowserNode) => {
-    console.log('onResourceClick', node);
+    log.trace('onResourceClick', node);
     if(!node.data.resource){ return; }
     setSelectedEntry(node);
   }
 
   const onResourceDoubleClick = (node: FileBrowserNode) => {
-    console.log('onResourceDoubleClick', node);
+    log.trace('onResourceDoubleClick', node);
     if(!node.data.resource){ return; }
     openERFResource(node.data.archive, node.data.resource);
   }
 
-  const onContextMenu = (event: React.MouseEvent<any>, node: FileBrowserNode) => {
-    console.log('handleContextMenu', event, node);
+  const onContextMenu = (event: React.MouseEvent<HTMLElement>, node: FileBrowserNode) => {
+    log.trace('handleContextMenu', event, node);
     event.preventDefault();
     event.stopPropagation();
     if(!node.data.resource){ return; }
     setSelectedEntry(node);
-    
+
     const contextMenuItems = createERFContextMenuItems({
       archive: node.data.archive,
       resource: node.data.resource
     });
 
-    console.log('contextMenuItems', contextMenuItems);
+    log.trace('contextMenuItems', contextMenuItems);
     showContextMenu(event.clientX, event.clientY, contextMenuItems);
   };
 
@@ -103,9 +106,9 @@ export const TabERFEditor = function(props: BaseTabProps) {
 
   return (
     <>
-      <div className="file-browser">
+      <div className="file-browser tab-erf-editor">
         <div className="d-flex h-100">
-          <ForgeTreeView style={{flex: 0.5, height: '100%', overflow: 'auto'}}>
+          <ForgeTreeView className="forgeTreeView--fill">
             {
               entries.map( (node: FileBrowserNode) => {
                 return (
@@ -114,7 +117,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
               })
             }
           </ForgeTreeView>
-          <div style={{flex: 0.5, height: '100%'}}>
+          <div className="tab-erf-editor__details-panel">
             {selectedEntry && (
               <div className="d-flex flex-column h-100 text-center align-items-center justify-content-center text-uppercase">
                 <span><i className="fas fa-file-alt"></i></span>

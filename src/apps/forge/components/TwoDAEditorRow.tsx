@@ -1,30 +1,36 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 
-import * as KotOR from "../KotOR";
+import type * as KotOR from '@/apps/forge/KotOR';
 
+export interface TwoDAEditorRowProps {
+  selected: boolean;
+  onCellSelected: (row: Record<string, string>, cell: string | undefined, rowIndex: number) => void;
+  twoDAObject: KotOR.TwoDAObject;
+  row: Record<string, string>;
+  index: number;
+}
 
-export const TwoDAEditorRow = function(props: any){
-  let selected = props.selected as boolean;
-  const onCellSelectedCallback = props.onCellSelected as Function;
+export const TwoDAEditorRow: React.FC<TwoDAEditorRowProps> = (props) => {
+  const selected = props.selected;
+  const onCellSelectedCallback = props.onCellSelected;
   const [render, rerender] = useState<boolean>(false);
 
-  const twoDAObject: KotOR.TwoDAObject = props.twoDAObject;
+  const twoDAObject = props.twoDAObject;
   const row = props.row;
   const rIndex = props.index;
 
-  const onCellChange = (row: any, column: string, value: any,) => {
-    // console.log('change', column, value);
-    row[column] = value;
+  const onCellChange = (rowData: Record<string, string>, column: string, value: string) => {
+    rowData[column] = value;
     rerender(!render);
   };
 
-  const onClickRow = (e: React.MouseEvent<HTMLTableRowElement>) => {
+  const onClickRow = (_e: React.MouseEvent<HTMLTableRowElement>) => {
     onCellSelectedCallback(row, undefined, rIndex);
-  }
+  };
 
   const onClickCell = (e: React.MouseEvent<HTMLTableCellElement>, cellName: string) => {
     onCellSelectedCallback(row, cellName, rIndex);
-  }
+  };
 
   return (
     <tr className={selected ? `focus` : ``} tabIndex={rIndex * twoDAObject.ColumnCount} onClick={onClickRow}>
@@ -46,11 +52,9 @@ export const TwoDAEditorRow = function(props: any){
               //   }
               // }
 
-              onBlur={
-                (e: React.ChangeEvent<HTMLTableCellElement>) => {
-                  onCellChange(row, column, e.target.innerText);
-                }
-              }
+              onBlur={(e: React.FocusEvent<HTMLTableCellElement>) => {
+                onCellChange(row, column, (e.target as HTMLTableCellElement).innerText);
+              }}
 
               data-value={value}
             >{value}</td>

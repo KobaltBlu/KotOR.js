@@ -1,14 +1,15 @@
-import type { GFFStruct } from "../resource/GFFStruct";
-import { GUIButton } from "./GUIButton";
-import { GUICheckBox } from "./GUICheckBox";
-import { GUIControl } from "./GUIControl";
-import { GUILabel } from "./GUILabel";
-import { GUIListBox } from "./GUIListBox";
-import { GUIProgressBar } from "./GUIProgressBar";
-import { GUIProtoItem } from "./GUIProtoItem";
-import { GUIScrollBar } from "./GUIScrollBar";
-import { GUISlider } from "./GUISlider";
-import type { GameMenu } from "./GameMenu";
+
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIButton } from "@/gui/GUIButton";
+import { GUICheckBox } from "@/gui/GUICheckBox";
+import { GUIControl } from "@/gui/GUIControl";
+import { GUILabel } from "@/gui/GUILabel";
+import { GUIListBox } from "@/gui/GUIListBox";
+import { GUIProgressBar } from "@/gui/GUIProgressBar";
+import { GUIProtoItem } from "@/gui/GUIProtoItem";
+import { GUIScrollBar } from "@/gui/GUIScrollBar";
+import { GUISlider } from "@/gui/GUISlider";
+import type { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * GUIControlFactory class.
@@ -20,6 +21,7 @@ import type { GameMenu } from "./GameMenu";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIControlFactory {
+  private constructor() {}
 
   static GUIControl: typeof GUIControl = GUIControl;
   static GUILabel: typeof GUILabel = GUILabel;

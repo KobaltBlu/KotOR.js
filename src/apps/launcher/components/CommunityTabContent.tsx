@@ -1,50 +1,61 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { useApp } from "../context/AppContext";
-import { CommunityProvider, useCommunity } from "../context/CommunityContext";
-import { ProfilePromoItems } from "./ProfilePromoItems";
-import { LightboxComponent } from "./LightboxComponenet";
 
-export interface CommunityTabContentProps {};
+import { LightboxComponent } from "@/apps/launcher/components/LightboxComponenet";
+import { ProfilePromoItems, ProfilePromoItemsRef } from "@/apps/launcher/components/ProfilePromoItems";
+import { useApp } from "@/apps/launcher/context/AppContext";
+import { CommunityProvider } from "@/apps/launcher/context/CommunityContext";
+import type { CommunityVideoItem } from "@/apps/launcher/context/CommunityContext";
+import type { LauncherProfileElement } from "@/apps/launcher/types";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-export const CommunityTabContent = forwardRef(function(props: CommunityTabContentProps, ref: any){
+const log = createScopedLogger(LogScope.Launcher);
+
+/** Props for CommunityTabContent; no props are used but forwardRef requires a props type. */
+export type CommunityTabContentProps = Record<string, never>;
+
+export type CommunityTabContentRef = {
+  showTab: () => void;
+};
+
+export const CommunityTabContent = forwardRef<CommunityTabContentRef, CommunityTabContentProps>(function(props, ref){
   const appContext = useApp();
-  const communityContext = useCommunity();
   const tabRef = useRef<HTMLDivElement>(null);
-  const promoRef = useRef<any>(null);
+  const promoRef = useRef<ProfilePromoItemsRef | null>(null);
 
   const [lightboxActiveValue, setLightboxActive] = useState<boolean>(false);
   const [lightboxType, setLightboxType] = useState<'image'|'ytvideo'>('ytvideo');
   const [lightboxSrc, setLightboxSrc] = useState<string>("");
 
-  const [communityProfile, setCommunityProfile] = useState<any>({
+  const [communityProfile, setCommunityProfile] = useState<{ name: string; elements: LauncherProfileElement[] }>({
     name: 'Community',
     elements: [],
   });
-  const [videos, setVideos] = appContext.videos;
+  const [videos] = appContext.videos;
 
   useImperativeHandle(ref, () => ({
     showTab() {
-      // console.warn(`showTab: ${profile.name}`);
+      log.trace('CommunityTabContent showTab', 'Community');
       if(promoRef.current) promoRef.current.recalculate();
     }
   }));
-  
+
   useEffect(() => {
     setCommunityProfile({
       name: 'Community',
-      elements: videos.map( (video: any) => {
+      elements: videos.map( (video: CommunityVideoItem) => {
+        const link = video.link as { '@attributes'?: { href?: string } } | undefined;
         return {
           type: 'ytvideo',
           title: video.title,
-          url: video.link['@attributes'].href,
+          url: link?.['@attributes']?.href ?? '',
           thumbnail: video.thumbnail,
           id: video.id,
-        };
+        } as LauncherProfileElement;
       }),
     });
   }, [videos]);
 
-  const onPromoItemClick = useCallback((element: any) => {
+  const onPromoItemClick = useCallback((element: LauncherProfileElement) => {
     if(element.type === 'ytvideo'){
       setLightboxType('ytvideo');
       setLightboxSrc(element.id);
@@ -81,7 +92,7 @@ export const CommunityTabContent = forwardRef(function(props: CommunityTabConten
             <ProfilePromoItems ref={promoRef} profile={communityProfile} tabRef={tabRef} promoElementWidth={456.5} onClick={onPromoItemClick}></ProfilePromoItems>
           </div>
         </div>
-        <LightboxComponent 
+        <LightboxComponent
           active={lightboxActiveValue}
           onClose={onLightboxClose}
           type={lightboxType}

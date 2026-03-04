@@ -1,18 +1,18 @@
-import { GameState } from "../GameState";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-// import { TwoDAManager, TLKManager } from "../managers";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { TwoDAObject } from "../resource/TwoDAObject";
-import type { TalentSpell } from "../talents/TalentSpell";
-import { SWSavingThrow } from "../engine/rules/SWSavingThrow";
-import { SWAttackBonus } from "../engine/rules/SWAttackBonus";
+import { SWAttackBonus } from "@/engine/rules/SWAttackBonus";
+import { SWSavingThrow } from "@/engine/rules/SWSavingThrow";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+// import { TwoDAManager, TLKManager } from "@/managers";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { TwoDAObject, type ITwoDARowData } from "@/resource/TwoDAObject";
+import type { TalentSpell } from "@/talents/TalentSpell";
 
 /**
  * CreatureClass class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CreatureClass.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -118,9 +118,9 @@ export class CreatureClass {
     return this.acbonuses[this.level];
   }
 
-  isFeatAvailable( feat: any ){
+  isFeatAvailable( feat: ITwoDARowData | undefined ){
     if(typeof feat != 'undefined'){
-      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
+      const status = parseInt(String(feat[this.featstable.toLowerCase()+'_list'] ?? ''), 10);
       if(isNaN(status)){
         return false;
       }
@@ -132,9 +132,9 @@ export class CreatureClass {
     return false;
   }
 
-  getFeatStatus( feat: any ){
+  getFeatStatus( feat: ITwoDARowData | undefined ){
     if(typeof feat != 'undefined'){
-      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
+      const status = parseInt(String(feat[this.featstable.toLowerCase()+'_list'] ?? ''), 10);
       if(isNaN(status)){
         return false;
       }
@@ -144,9 +144,9 @@ export class CreatureClass {
     return -1;
   }
 
-  getFeatGrantedLevel( feat: any ){
+  getFeatGrantedLevel( feat: ITwoDARowData | undefined ){
     if(typeof feat != 'undefined'){
-      let granted = parseInt(feat[this.featstable.toLowerCase()+'_granted']);
+      const granted = parseInt(String(feat[this.featstable.toLowerCase()+'_granted'] ?? ''), 10);
       if(isNaN(granted)){
         return -1;
       }
@@ -156,34 +156,31 @@ export class CreatureClass {
     return -1;
   }
 
-  static FromCreatureClassStruct(cls_struct: GFFStruct){
-    if(typeof cls_struct != 'undefined'){
-      let cls = new CreatureClass(cls_struct.getFieldByLabel('Class').getValue());
-      cls.setLevel(cls_struct.getFieldByLabel('ClassLevel').getValue());
-      let known_struct = cls_struct.getFieldByLabel('KnownList0');
-      if(known_struct){
-        let known_spell_structs = known_struct.getChildStructs();
-        for(let i = 0; i < known_spell_structs.length; i++){
+  static FromCreatureClassStruct(cls_struct: GFFStruct): CreatureClass | undefined {
+    if (typeof cls_struct !== 'undefined') {
+      const classField = cls_struct.getFieldByLabel('Class');
+      const levelField = cls_struct.getFieldByLabel('ClassLevel');
+      const cls = new CreatureClass(classField ? classField.getNumber() : 0);
+      if (levelField) cls.setLevel(levelField.getNumber());
+      const known_struct = cls_struct.getFieldByLabel('KnownList0');
+      if (known_struct) {
+        const known_spell_structs = known_struct.getChildStructs();
+        for (let i = 0; i < known_spell_structs.length; i++) {
+          const known_spell_struct = known_spell_structs[i];
+          let spell: TalentSpell | undefined;
 
-          let known_spell_struct = known_spell_structs[i];
-          let spell = undefined;
-
-          if(known_spell_struct.hasField('Spell')){
-            spell = new GameState.TalentSpell(
-              known_spell_struct.getFieldByLabel('Spell').getValue()
-            );
+          if (known_spell_struct.hasField('Spell')) {
+            const spellId = known_spell_struct.getFieldByLabel('Spell').getNumber();
+            spell = new GameState.TalentSpell(spellId);
           }
 
-          if(typeof spell != 'undefined'){
-            if(known_spell_struct.hasField('SpellFlags'))
-              spell.setFlags(known_spell_struct.getFieldByLabel('SpellFlags').getValue());
-        
-            if(known_spell_struct.hasField('SpellMetaMagic'))
-              spell.setMetaMagic(known_spell_struct.getFieldByLabel('SpellMetaMagic').getValue());
-
+          if (typeof spell !== 'undefined') {
+            if (known_spell_struct.hasField('SpellFlags'))
+              spell.setFlags(known_spell_struct.getFieldByLabel('SpellFlags').getNumber());
+            if (known_spell_struct.hasField('SpellMetaMagic'))
+              spell.setMetaMagic(known_spell_struct.getFieldByLabel('SpellMetaMagic').getNumber());
             cls.addSpell(spell);
           }
-
         }
       }
       return cls;
@@ -191,145 +188,145 @@ export class CreatureClass {
     return undefined;
   }
 
-  apply2DA(row: any){
-    this.id = parseInt(row.__index);
+  apply2DA(row: ITwoDARowData): void {
+    this.id = row.__index;
 
-    if(row.hasOwnProperty('label'))
-      this.label = TwoDAObject.normalizeValue(row.label, 'string', '');
+    if (Object.hasOwn(row, 'label'))
+      this.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
 
-    if(row.hasOwnProperty('name'))
-      this.name = TwoDAObject.normalizeValue(row.name, 'number', -1);
+    if (Object.hasOwn(row, 'name'))
+      this.name = TwoDAObject.normalizeValue(row.name, 'number', -1) as number;
 
-    if(row.hasOwnProperty('description'))
-      this.description = TwoDAObject.normalizeValue(row.description, 'number', -1);
+    if (Object.hasOwn(row, 'description'))
+      this.description = TwoDAObject.normalizeValue(row.description, 'number', -1) as number;
 
-    if(row.hasOwnProperty('icon'))
-      this.icon = TwoDAObject.normalizeValue(row.icon, 'string', '');
+    if (Object.hasOwn(row, 'icon'))
+      this.icon = TwoDAObject.normalizeValue(row.icon, 'string', '') as string;
 
-    if(row.hasOwnProperty('hitdie'))
-      this.hitdie = TwoDAObject.normalizeValue(row.hitdie, 'number', 8);
+    if (Object.hasOwn(row, 'hitdie'))
+      this.hitdie = TwoDAObject.normalizeValue(row.hitdie, 'number', 8) as number;
 
-    if(row.hasOwnProperty('attackbonustable'))
-      this.attackbonustable = TwoDAObject.normalizeValue(row.attackbonustable, 'string', 'CLS_ATK_1');
+    if (Object.hasOwn(row, 'attackbonustable'))
+      this.attackbonustable = TwoDAObject.normalizeValue(row.attackbonustable, 'string', 'CLS_ATK_1') as 'CLS_ATK_1' | 'CLS_ATK_2' | 'CLS_ATK_3';
 
-    if(row.hasOwnProperty('featstable'))
-      this.featstable = TwoDAObject.normalizeValue(row.featstable, 'string', 'SOL');
+    if (Object.hasOwn(row, 'featstable'))
+      this.featstable = TwoDAObject.normalizeValue(row.featstable, 'string', 'SOL') as string;
 
-    if(row.hasOwnProperty('savingthrowtable'))
-      this.savingthrowtable = TwoDAObject.normalizeValue(row.savingthrowtable, 'string', 'CLS_ST_SOL');
+    if (Object.hasOwn(row, 'savingthrowtable'))
+      this.savingthrowtable = TwoDAObject.normalizeValue(row.savingthrowtable, 'string', 'CLS_ST_SOL') as string;
 
-    if(row.hasOwnProperty('skillstable'))
-      this.skillstable = TwoDAObject.normalizeValue(row.skillstable, 'string', 'CLS_SK_SOL');
+    if (Object.hasOwn(row, 'skillstable'))
+      this.skillstable = TwoDAObject.normalizeValue(row.skillstable, 'string', 'CLS_SK_SOL') as string;
 
-    if(row.hasOwnProperty('skillpointbase'))
-      this.skillpointbase = TwoDAObject.normalizeValue(row.skillpointbase, 'number', 1);
+    if (Object.hasOwn(row, 'skillpointbase'))
+      this.skillpointbase = TwoDAObject.normalizeValue(row.skillpointbase, 'number', 1) as number;
 
-    if(row.hasOwnProperty('spellgaintable'))
-      this.spellgaintable = TwoDAObject.normalizeValue(row.spellgaintable, 'string', ''); 
+    if (Object.hasOwn(row, 'spellgaintable'))
+      this.spellgaintable = TwoDAObject.normalizeValue(row.spellgaintable, 'string', '') as string;
 
-    if(row.hasOwnProperty('spellknowntable'))
-      this.spellknowntable = TwoDAObject.normalizeValue(row.spellknowntable, 'string', '');
+    if (Object.hasOwn(row, 'spellknowntable'))
+      this.spellknowntable = TwoDAObject.normalizeValue(row.spellknowntable, 'string', '') as string;
 
-    if(row.hasOwnProperty('playerclass'))
-      this.playerclass = TwoDAObject.normalizeValue(row.playerclass, 'boolean', false);
+    if (Object.hasOwn(row, 'playerclass'))
+      this.playerclass = TwoDAObject.normalizeValue(row.playerclass, 'boolean', false) as boolean;
 
-    if(row.hasOwnProperty('spellcaster'))
-      this.spellcaster = TwoDAObject.normalizeValue(row.spellcaster, 'boolean', false);
+    if (Object.hasOwn(row, 'spellcaster'))
+      this.spellcaster = TwoDAObject.normalizeValue(row.spellcaster, 'boolean', false) as boolean;
 
-    if(row.hasOwnProperty('str'))
-      this.str = TwoDAObject.normalizeValue(row.str, 'number', 10);
+    if (Object.hasOwn(row, 'str'))
+      this.str = TwoDAObject.normalizeValue(row.str, 'number', 10) as number;
 
-    if(row.hasOwnProperty('dex'))
-      this.dex = TwoDAObject.normalizeValue(row.dex, 'number', 10);
+    if (Object.hasOwn(row, 'dex'))
+      this.dex = TwoDAObject.normalizeValue(row.dex, 'number', 10) as number;
 
-    if(row.hasOwnProperty('con'))
-      this.con = TwoDAObject.normalizeValue(row.con, 'number', 10); 
+    if (Object.hasOwn(row, 'con'))
+      this.con = TwoDAObject.normalizeValue(row.con, 'number', 10) as number;
 
-    if(row.hasOwnProperty('wis'))
-      this.wis = TwoDAObject.normalizeValue(row.wis, 'number', 10);
+    if (Object.hasOwn(row, 'wis'))
+      this.wis = TwoDAObject.normalizeValue(row.wis, 'number', 10) as number;
 
-    if(row.hasOwnProperty('int'))
-      this.int = TwoDAObject.normalizeValue(row.int, 'number', 10); 
+    if (Object.hasOwn(row, 'int'))
+      this.int = TwoDAObject.normalizeValue(row.int, 'number', 10) as number;
 
-    if(row.hasOwnProperty('cha'))
-      this.cha = TwoDAObject.normalizeValue(row.cha, 'number', 10);
+    if (Object.hasOwn(row, 'cha'))
+      this.cha = TwoDAObject.normalizeValue(row.cha, 'number', 10) as number;
 
-    if(row.hasOwnProperty('primaryabil'))
-      this.primaryabil = TwoDAObject.normalizeValue(row.primaryabil, 'string', 'STR');  
+    if (Object.hasOwn(row, 'primaryabil'))
+      this.primaryabil = TwoDAObject.normalizeValue(row.primaryabil, 'string', 'STR') as 'STR' | 'DEX' | 'WIS' | 'CON' | 'INT' | 'CHA';
 
-    if(row.hasOwnProperty('alignrestrict'))
-      this.alignrestrict = TwoDAObject.normalizeValue(row.alignrestrict, 'number', 0);
+    if (Object.hasOwn(row, 'alignrestrict'))
+      this.alignrestrict = TwoDAObject.normalizeValue(row.alignrestrict, 'number', 0) as number;
 
-    if(row.hasOwnProperty('alignrstrcttype'))
-      this.alignrstrcttype = TwoDAObject.normalizeValue(row.alignrstrcttype, 'number', 0);  
+    if (Object.hasOwn(row, 'alignrstrcttype'))
+      this.alignrstrcttype = TwoDAObject.normalizeValue(row.alignrstrcttype, 'number', 0) as number;
 
-    if(row.hasOwnProperty('constant'))
-      this.constant = TwoDAObject.normalizeValue(row.constant, 'string', 'CCLASS_SOLDIER');
+    if (Object.hasOwn(row, 'constant'))
+      this.constant = TwoDAObject.normalizeValue(row.constant, 'string', 'CCLASS_SOLDIER') as string;
 
-    if(row.hasOwnProperty('forcedie'))
-      this.forcedie = TwoDAObject.normalizeValue(row.forcedie, 'number', 0);
+    if (Object.hasOwn(row, 'forcedie'))
+      this.forcedie = TwoDAObject.normalizeValue(row.forcedie, 'number', 0) as number;
 
-    if(row.hasOwnProperty('armorclasscolumn'))
-      this.armorclasscolumn = TwoDAObject.normalizeValue(row.armorclasscolumn, 'string', 'SOL');
+    if(Object.hasOwn(row, 'armorclasscolumn'))
+      this.armorclasscolumn = TwoDAObject.normalizeValue(row.armorclasscolumn, 'string', 'SOL') as string;
 
-    if(row.hasOwnProperty('featgain'))
-      this.featgain = TwoDAObject.normalizeValue(row.featgain, 'string', 'SOL');
+    if(Object.hasOwn(row, 'featgain'))
+      this.featgain = TwoDAObject.normalizeValue(row.featgain, 'string', 'SOL') as string;
 
     if(this.savingthrowtable){
       const savingThrows = GameState.TwoDAManager.datatables.get(this.savingthrowtable.toLowerCase());
       if(savingThrows){
-        this.savingThrows = Object.values(savingThrows.rows).map((row: any) => SWSavingThrow.From2DA(row));
+        this.savingThrows = Object.values(savingThrows.rows).map((row: ITwoDARowData) => SWSavingThrow.From2DA(row));
       }
     }
 
     if(this.attackbonustable){
       const attackBonuses = GameState.TwoDAManager.datatables.get(this.attackbonustable.toLowerCase());
       if(attackBonuses){
-        this.attackBonuses = Object.values(attackBonuses.rows).map((row: any) => SWAttackBonus.From2DA(row));
+        this.attackBonuses = Object.values(attackBonuses.rows).map((row: ITwoDARowData) => SWAttackBonus.From2DA(row));
       }
     }
 
-    let featGain = GameState.SWRuleSet.featGains;
+    const featGain = GameState.SWRuleSet.featGains;
     if(featGain){
       this.featGainPoints = featGain.getRegular(this.featgain);
     }
 
-    let spellGain = GameState.SWRuleSet.spellGains;
+    const spellGain = GameState.SWRuleSet.spellGains;
     if(spellGain){
       this.spellGainPoints = spellGain.getSpellGain(this.spellgaintable);
     }
 
     const acbonuses = GameState.TwoDAManager.datatables.get('acbonus');
-    if(acbonuses){
-      this.acbonuses = Object.values(acbonuses.rows).map((row: any) => {
+    if (acbonuses) {
+      this.acbonuses = Object.values(acbonuses.rows).map((row: ITwoDARowData) => {
         const col = row[this.armorclasscolumn.toLowerCase()];
-        return col ? TwoDAObject.normalizeValue(col, 'number', 0) : 0;
+        return (col ? TwoDAObject.normalizeValue(col, 'number', 0) : 0) as number;
       });
     }
 
   }
 
-  static From2DA(row: any){
+  static From2DA(row: ITwoDARowData): CreatureClass {
     const cls = new CreatureClass();
     cls.apply2DA(row);
     return cls;
   }
 
   save(){
-    let _class = new GFFStruct(2);
+    const _class = new GFFStruct(2);
     _class.addField( new GFFField(GFFDataType.INT, 'Class') ).setValue(this.id);
     _class.addField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).setValue(this.level);
 
     //Spell Caster specific data
     if(this.spellcaster){
       //Not sure what this is or if it is used in KOTOR
-      let spellsPerDay = _class.addField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
-      let spellsPerDayStruct = new GFFStruct(17767);
+      const spellsPerDay = _class.addField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
+      const spellsPerDayStruct = new GFFStruct(17767);
       spellsPerDayStruct.addField( new GFFField(GFFDataType.BYTE, "NumSpellsLeft").setValue(0));
       spellsPerDay.addChildStruct(spellsPerDayStruct);
 
       //List of known spells
-      let knownList0 = _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
+      const knownList0 = _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
       for(let i = 0; i < this.spells.length; i++){
         knownList0.addChildStruct(this.spells[i].save());
       }

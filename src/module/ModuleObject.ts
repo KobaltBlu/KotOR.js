@@ -1,66 +1,74 @@
 import * as THREE from "three";
-import type { Action } from "../actions/Action";
-import { ActionQueue } from "../actions/ActionQueue";
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { CollisionManager } from "../engine/CollisionManager";
-import { CombatData } from "../combat/CombatData";
-import type { EffectLink } from "../effects";
-import type { GameEffect } from "../effects/GameEffect";
-import EngineLocation from "../engine/EngineLocation";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
-import { NWScriptEventType } from "../enums/nwscript/NWScriptEventType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import { IEffectIconListItem } from "../interface/module/IEffectIconListItem";
-import { SSFType } from "../enums/resource/SSFType";
-import { NWScriptEvent } from "../nwscript/events";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { OdysseyModel, OdysseyModelAnimation, OdysseyWalkMesh } from "../odyssey";
-import { CExoLocString } from "../resource/CExoLocString";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { LIPObject } from "../resource/LIPObject";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { Utility } from "../utility/Utility";
-import { ComputedPath } from "../engine/pathfinding";
-import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from ".";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { DLGObject } from "../resource/DLGObject";
-import { Faction } from "../engine/Faction";
-import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { SWPlaceableAppearance } from "../engine/rules/SWPlaceableAppearance";
-import { SWCreatureAppearance } from "../engine/rules/SWCreatureAppearance";
-import { SWDoorAppearance } from "../engine/rules/SWDoorAppearance";
-import { IDialogAnimationState } from "../interface/animation/IDialogAnimationState";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
-import { PerceptionMask } from "../enums/engine/PerceptionMask";
-import { MDLLoader } from "../loaders";
-import { CombatRound, CombatRoundAction } from "../combat";
-import { Dice } from "../utility/Dice";
-import { DiceType } from "../enums/combat/DiceType";
-import { BitWise } from "../utility/BitWise";
-import { ActionType } from "../enums/actions/ActionType";
-import { NWScript } from "../nwscript/NWScript";
-import { CombatActionType, EngineDebugType, ModuleObjectScript, ModuleTriggerType, SkillType, TalkVolume } from "../enums";
-import type { SWPortrait } from "../engine/rules/SWPortrait";
-import type { IHeardString } from "../interface/dialog/IHeardString";
-import type { SWRange } from "../engine/rules/SWRange";
-import { TURN_SPEED_SLOW } from "../engine/TurnSpeeds";
 
+import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleItem, ModuleRoom } from ".";
+
+import type { Action } from "@/actions/Action";
+import { ActionQueue } from "@/actions/ActionQueue";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { CombatRound, CombatRoundAction } from "@/combat";
+import { CombatData } from "@/combat/CombatData";
+import type { SpellCastInstance } from "@/combat/SpellCastInstance";
+import type { EffectLink } from "@/effects";
+import type { GameEffect } from "@/effects/GameEffect";
+import { CollisionManager } from "@/engine/CollisionManager";
+import EngineLocation from "@/engine/EngineLocation";
+import { Faction } from "@/engine/Faction";
+import { ComputedPath } from "@/engine/pathfinding";
+import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
+import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
+import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
+import type { SWPortrait } from "@/engine/rules/SWPortrait";
+import type { SWRange } from "@/engine/rules/SWRange";
+import { TURN_SPEED_SLOW } from "@/engine/TurnSpeeds";
+import { CombatActionType, EngineDebugType, ModuleObjectScript, ModuleTriggerType, SkillType, TalkVolume } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionType } from "@/enums/actions/ActionType";
+import { DiceType } from "@/enums/combat/DiceType";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { PerceptionMask } from "@/enums/engine/PerceptionMask";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModulePlaceableAnimState } from "@/enums/module/ModulePlaceableAnimState";
+import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { SSFType } from "@/enums/resource/SSFType";
+import { GameState } from "@/GameState";
+import { IDialogAnimationState } from "@/interface/animation/IDialogAnimationState";
+import type { IHeardString } from "@/interface/dialog/IHeardString";
+import type { IGameContext } from "@/interface/engine/IGameContext";
+import type { IPerceptionInfo } from "@/interface/engine/IPerceptionInfo";
+import { IEffectIconListItem } from "@/interface/module/IEffectIconListItem";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import { MDLLoader } from "@/loaders";
+import { NWScriptEvent } from "@/nwscript/events";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel, OdysseyModelAnimation, OdysseyWalkMesh } from "@/odyssey";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { DLGObject } from "@/resource/DLGObject";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { LIPObject } from "@/resource/LIPObject";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { BitWise } from "@/utility/BitWise";
+import { Dice } from "@/utility/Dice";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
+
+
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
 * ModuleObject class.
-* 
+*
 * Class representing is the base class for all objects found in an area.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleObject.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -95,7 +103,7 @@ export class ModuleObject {
   v20: THREE.Vector2 = new THREE.Vector2();
   v21: THREE.Vector2 = new THREE.Vector2();
   tmpPos: THREE.Vector3 = new THREE.Vector3();
-  openSpot: any;
+  openSpot: { targetVector: THREE.Vector3 } | undefined;
 
   audioEmitter: AudioEmitter;
   footstepEmitter: AudioEmitter;
@@ -157,14 +165,14 @@ export class ModuleObject {
   faction: Faction;
 
   effects: GameEffect[] = [];
-  casting: any[] = [];
-  damageList: any[] = [];
-  _locals: { Booleans: any[]; Numbers: {}; };
-  objectsInside: any[];
+  casting: SpellCastInstance[] = [];
+  damageList: { delay: number; amount: number }[] = [];
+  _locals: { Booleans: boolean[]; Numbers: Record<number, number> };
+  objectsInside: ModuleObject[] = [];
   lockDialogOrientation: boolean = false;
-  context: any;
+  context: IGameContext;
 
-  heartbeatTimer: any;
+  heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
   _heartbeatTimerOffset: number;
   _heartbeatTimeout: number;
 
@@ -172,9 +180,9 @@ export class ModuleObject {
   heardStrings: IHeardString[] = [];
   perceptionList: IPerceptionInfo[] = [];
   isListening: boolean;
-  listeningPatterns: any = {};
+  listeningPatterns: Record<string, number> = {};
   perceptionRange: SWRange;
-  
+
   spawned: boolean = false;
   _inventoryPointer: number;
 
@@ -190,40 +198,42 @@ export class ModuleObject {
   linkedToFlags: number = 0;
   linkedTo: string = '';
   transitionDestin: CExoLocString = new CExoLocString();
-  description: any;
-  commandable: any;
-  autoRemoveKey: any;
-  animState: any;
-  keyName: any;
-  loadScreenID: any;
-  locName: any;
-  localizedName: any;
+  description: CExoLocString;
+  commandable: boolean;
+  autoRemoveKey: number;
+  animState: number;
+  keyName: string;
+  loadScreenID: number;
+  locName: CExoLocString;
+  localizedName: CExoLocString;
   hasMapNote: boolean;
   mapNote: CExoLocString;
   mapNoteEnabled: boolean;
   portraitId: number;
   portrait: SWPortrait;
-  setByPlayerParty: any;
-  highlightHeight: any;
+  setByPlayerParty: boolean;
+  highlightHeight: number;
   appearance: number = -1;
-  cursor: any;
+  cursor: number;
   isDeadSelectable: boolean = true;
   isDestroyable: boolean = true;
   isRaisable: boolean = true;
   playerCreated: boolean = false;
 
   //complex animation varaibles
-  fp_push_played: any;
-  fp_land_played: any;
-  fp_getup_played: any;
+  fp_push_played: boolean;
+  fp_land_played: boolean;
+  fp_getup_played: boolean;
 
-  deferEventUpdate: any;
-  distanceToCamera: any;
+  deferEventUpdate: (() => void) | undefined;
+  distanceToCamera: number;
   facingAnim: boolean;
   mesh: THREE.Mesh;
-  geometry: any;
-  vertices: any;
-  type: any;
+  /** Animation/geometry data; may be BufferGeometry or 2DA row data depending on context. */
+  geometry: THREE.BufferGeometry | Record<string, string | number> | null;
+  vertices: Float32Array | number[] | undefined;
+  /** Object type or animation type depending on context. */
+  type: number | string;
   isReady: boolean = false;
 
   //Actions
@@ -231,7 +241,7 @@ export class ModuleObject {
   action: Action;
 
   #computedPath: ComputedPath;
-  
+
   lipObject: LIPObject;
   lookAtObject: ModuleObject;
 
@@ -356,7 +366,7 @@ export class ModuleObject {
         data: PerceptionMask.SEEN_AND_HEARD
       }
     ];
-    
+
     this.isListening = false;
     this.listeningPatterns = {};
     this.combatData.initiative = 0;
@@ -383,7 +393,7 @@ export class ModuleObject {
 
   /**
    * Attach to room
-   * @param room 
+   * @param room
    */
   attachToRoom(room: ModuleRoom){
     this.detachFromRoom(this.room);
@@ -393,17 +403,17 @@ export class ModuleObject {
 
   /**
    * Detach from room
-   * @param room 
+   * @param room
    */
   detachFromRoom(room: ModuleRoom){
     if(!room) return;
-    room.removeChildObject(this); 
+    room.removeChildObject(this);
     this.room = undefined;
   }
 
   /**
    * Set the context
-   * @param ctx 
+   * @param ctx
    */
   setContext(ctx = GameState){
     this.context = ctx;
@@ -416,7 +426,7 @@ export class ModuleObject {
 
   /**
    * Get the model
-   * @returns 
+   * @returns
    */
   getModel(){
     if(this.model instanceof THREE.Object3D)
@@ -427,7 +437,7 @@ export class ModuleObject {
 
   /**
    * Check if the object is visible
-   * @returns 
+   * @returns
    */
   isVisible(){
     return this.getModel().visible;
@@ -435,7 +445,7 @@ export class ModuleObject {
 
   /**
    * Get the hit distance
-   * @returns 
+   * @returns
    */
   getHitDistance(){
     return 1;
@@ -463,7 +473,7 @@ export class ModuleObject {
 
   /**
    * Update the object
-   * @param delta 
+   * @param delta
    */
   update(delta = 0){
 
@@ -474,7 +484,7 @@ export class ModuleObject {
       }
       return;
     }
-    
+
     //Process the heartbeat timer
     if(this._heartbeatTimeout <= 0){
       if(GameState.module){
@@ -528,7 +538,7 @@ export class ModuleObject {
 
   /**
    * Update the paused state
-   * @param delta 
+   * @param delta
    */
   updatePaused(delta: number = 0){
     // this.force = 0;
@@ -559,7 +569,7 @@ export class ModuleObject {
       }
       return;
     }
-    
+
     if(GameState.Mode == EngineMode.DIALOG || GameState.Mode == EngineMode.MINIGAME){
       this.model.visible = true;
     }
@@ -567,7 +577,7 @@ export class ModuleObject {
 
   /**
    * Clear all actions
-   * @param skipUnclearable 
+   * @param skipUnclearable
    */
   clearAllActions(skipUnclearable = false){
     this.combatRound.clearActions();
@@ -578,7 +588,7 @@ export class ModuleObject {
     if(skipUnclearable){
       let i = this.actionQueue.length;
       while(i--){
-        let action = this.actionQueue[i];
+        const action = this.actionQueue[i];
         if(action.type == ActionType.ActionDialogObject){ continue; }
         if(typeof action.clearable !== 'undefined'){
           if(action.clearable){
@@ -598,8 +608,8 @@ export class ModuleObject {
 
   /**
    * Clear the combat action
-   * @param combatAction 
-   * @returns 
+   * @param combatAction
+   * @returns
    */
   clearCombatAction(combatAction: CombatRoundAction = undefined){
     return this.combatRound.clearAction(combatAction);
@@ -607,8 +617,8 @@ export class ModuleObject {
 
   /**
    * Clear the combat action at index
-   * @param index 
-   * @returns 
+   * @param index
+   * @returns
    */
   clearCombatActionAtIndex(index: number = 0): boolean {
     if(index <= 0) return;
@@ -617,9 +627,9 @@ export class ModuleObject {
 
   /**
    * Action play animation
-   * @param anim 
-   * @param speed 
-   * @param time 
+   * @param anim
+   * @param speed
+   * @param time
    */
   actionPlayAnimation(anim = 0, speed = 1, time = 1){
     if(typeof anim === 'string')
@@ -633,18 +643,18 @@ export class ModuleObject {
       action.setParameter(2, ActionParameterType.FLOAT, time);
       this.actionQueue.add(action);
     }else{
-      console.error('actionPlayAnimation', animConstant, anim);
+      log.error('actionPlayAnimation', animConstant, anim);
     }
   }
 
   /**
    * Action dialog object
-   * @param target 
-   * @param dialogResRef 
-   * @param ignoreStartRange 
-   * @param bPrivate 
-   * @param nConvoType 
-   * @param clearable 
+   * @param target
+   * @param dialogResRef
+   * @param ignoreStartRange
+   * @param bPrivate
+   * @param nConvoType
+   * @param clearable
    */
   actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, bPrivate = 0, nConvoType = 1, clearable = false ){
     const action = new GameState.ActionFactory.ActionDialogObject();
@@ -655,13 +665,13 @@ export class ModuleObject {
     action.setParameter(4, ActionParameterType.INT, ignoreStartRange ? 1 : 0);
     action.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
     action.clearable = clearable;
-    console.log('ModuleObject.actionDialogObject', action);
+    log.debug('ModuleObject.actionDialogObject', action);
     this.actionQueue.add(action);
   }
 
   /**
    * Action use object
-   * @param object 
+   * @param object
    */
   actionUseObject( object: ModuleObject ){
     const action = new GameState.ActionFactory.ActionUseObject();
@@ -671,7 +681,7 @@ export class ModuleObject {
 
   /**
    * Action open door
-   * @param door 
+   * @param door
    */
   actionOpenDoor( door: ModuleObject ){
     const action = new GameState.ActionFactory.ActionOpenDoor();
@@ -682,7 +692,7 @@ export class ModuleObject {
 
   /**
    * Action close door
-   * @param door 
+   * @param door
    */
   actionCloseDoor( door: ModuleObject ){
     const action = new GameState.ActionFactory.ActionCloseDoor();
@@ -693,7 +703,7 @@ export class ModuleObject {
 
   /**
    * Action wait
-   * @param time 
+   * @param time
    */
   actionWait( time = 0 ){
     const action = new GameState.ActionFactory.ActionWait();
@@ -707,7 +717,7 @@ export class ModuleObject {
 
   /**
    * Gets the length (duration) of an animation state in seconds
-   * 
+   *
    * @param animationState - The animation state constant (e.g., ModuleCreatureAnimState.WALKING)
    * @returns The animation length in seconds, or 0 if not found
    */
@@ -733,7 +743,7 @@ export class ModuleObject {
 
   /**
    * Gets the length (duration) of an animation by name in seconds
-   * 
+   *
    * @param animationName - The name of the animation (e.g., "walking", "attack")
    * @returns The animation length in seconds, or 0 if not found
    */
@@ -753,7 +763,7 @@ export class ModuleObject {
 
   /**
    * Gets the current playing animation length in seconds
-   * 
+   *
    * @returns The current animation length in seconds, or 0 if no animation is playing
    */
   getCurrentAnimationLength(): number {
@@ -771,8 +781,8 @@ export class ModuleObject {
 
   /**
    * Get the animation name by id
-   * @param id 
-   * @returns 
+   * @param id
+   * @returns
    */
   getAnimationNameById(id = -1){
 
@@ -895,348 +905,350 @@ export class ModuleObject {
         return ModuleCreatureAnimState.DIVE_ROLL;
 
       // Placeable animation constants
-      case 200: 
+      case 200:
         return ModulePlaceableAnimState.ACTIVATE;
-      case 201: 
+      case 201:
         return ModulePlaceableAnimState.DEACTIVATE;
-      case 202: 
+      case 202:
         return ModulePlaceableAnimState.OPEN;
-      case 203: 
+      case 203:
         return ModulePlaceableAnimState.CLOSE;
-      case 204: 
+      case 204:
         return ModulePlaceableAnimState.ANIMLOOP01;
-      case 205: 
+      case 205:
         return ModulePlaceableAnimState.ANIMLOOP02;
-      case 206: 
+      case 206:
         return ModulePlaceableAnimState.ANIMLOOP03;
-      case 207: 
+      case 207:
         return ModulePlaceableAnimState.ANIMLOOP04;
-      case 208: 
+      case 208:
         return ModulePlaceableAnimState.ANIMLOOP05;
-      case 209: 
+      case 209:
         return ModulePlaceableAnimState.ANIMLOOP06;
-      case 210: 
+      case 210:
         return ModulePlaceableAnimState.ANIMLOOP07;
-      case 211: 
+      case 211:
         return ModulePlaceableAnimState.ANIMLOOP08;
-      case 212: 
+      case 212:
         return ModulePlaceableAnimState.ANIMLOOP09;
-      case 213: 
+      case 213:
         return ModulePlaceableAnimState.ANIMLOOP10;
     }
 
-    //console.error('Animation case missing', id);
+    //log.error('Animation case missing', id);
     return ModuleCreatureAnimState.PAUSE;
   }
 
   /**
    * Get the animation constant to animation
-   * @param animation_constant 
-   * @returns 
+   * @param animation_constant
+   * @returns
    */
   animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation{
 
     const animations2DA = GameState.TwoDAManager.datatables.get('animations');
     if(animations2DA){
+      // Animations 2DA rows from game data match ITwoDAAnimation shape; index keys are numeric
+      const rows = animations2DA.rows as Record<number, ITwoDAAnimation>;
 
       const debilitatedEffect = this.effects.find( e => e.type == GameEffectType.EffectSetState );
       if(debilitatedEffect){
         switch(debilitatedEffect.getInt(0)){
           case 1: //Confused
-            return animations2DA.rows[15];
+            return rows[15];
           case 2: //Frightened
-            return animations2DA.rows[73];
+            return rows[73];
           case 3: //Droid Stun
-            return animations2DA.rows[270];
+            return rows[270];
           case 4: //Stunned
-            return animations2DA.rows[78];
+            return rows[78];
           case 5: //Paralyzed
-            return animations2DA.rows[78];
+            return rows[78];
           case 6: //Sleep
-            return animations2DA.rows[76];
+            return rows[76];
           case 7: //Choke
             if(this.isSimpleCreature()){
-              return animations2DA.rows[264];
+              return rows[264];
             }else{
-              return animations2DA.rows[72];
+              return rows[72];
             }
           break;
           case 8: //Horrified
-            return animations2DA.rows[74];
+            return rows[74];
           case 9: //Force Pushed
             if(!this.fp_push_played)
-              return animations2DA.rows[84];
+              return rows[84];
             if(!this.fp_land_played)
-              return animations2DA.rows[85];
+              return rows[85];
             if(!this.fp_getup_played)
-              return animations2DA.rows[86];
+              return rows[86];
           break;
           case 10: //Whirlwind
-            return animations2DA.rows[75];
+            return rows[75];
         }
       }
-      
+
       switch( animation_constant ){
         case ModuleCreatureAnimState.PAUSE:
         case ModuleCreatureAnimState.PAUSE_ALT:
-          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
+          if(this.isPoisoned() || this.isDiseased()) return rows[15];
           if(this.isSimpleCreature()){
-            return animations2DA.rows[256];
+            return rows[256];
           }else{
             if(this.getHP()/this.getMaxHP() > .20){
-              return animations2DA.rows[6];
+              return rows[6];
             }else{
-              return animations2DA.rows[8];
+              return rows[8];
             }
           }
         break;
         case ModuleCreatureAnimState.PAUSE2:
-          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
+          if(this.isPoisoned() || this.isDiseased()) return rows[15];
           if(this.isSimpleCreature()){
-            return animations2DA.rows[257];
+            return rows[257];
           }else{
             if(this.getHP()/this.getMaxHP() > .20){
-              return animations2DA.rows[7];
+              return rows[7];
             }else{
-              return animations2DA.rows[8];
+              return rows[8];
             }
           }
         break;
         case ModuleCreatureAnimState.PAUSE3:
-          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
+          if(this.isPoisoned() || this.isDiseased()) return rows[15];
           if(this.getHP()/this.getMaxHP() > .20){
-            return animations2DA.rows[359];
+            return rows[359];
           }else{
-            return animations2DA.rows[8];
+            return rows[8];
           }
         break;
         case ModuleCreatureAnimState.PAUSE4:
-          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
+          if(this.isPoisoned() || this.isDiseased()) return rows[15];
           if(this.getHP()/this.getMaxHP() > .20){
-            return animations2DA.rows[357];
+            return rows[357];
           }else{
-            return animations2DA.rows[8];
+            return rows[8];
           }
         break;
         case ModuleCreatureAnimState.PAUSE_SCRATCH_HEAD:
-          if(this.isPoisoned()) return animations2DA.rows[15];
+          if(this.isPoisoned()) return rows[15];
           if(this.isSimpleCreature()){
-            return animations2DA.rows[12];
+            return rows[12];
           }else{
             if(this.getHP()/this.getMaxHP() > .20){
-              return animations2DA.rows[7];
+              return rows[7];
             }else{
-              return animations2DA.rows[8];
+              return rows[8];
             }
           }
         break;
         case ModuleCreatureAnimState.PAUSE_BORED:
-          return animations2DA.rows[13];
+          return rows[13];
         break;
         case ModuleCreatureAnimState.PAUSE_TIRED:
-          return animations2DA.rows[14];
+          return rows[14];
         break;
         case ModuleCreatureAnimState.PAUSE_DRUNK:
-          return animations2DA.rows[15];
+          return rows[15];
         break;
         case ModuleCreatureAnimState.PAUSE_INJ:
-          return animations2DA.rows[8];
+          return rows[8];
         break;
         case ModuleCreatureAnimState.DEAD:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[275];
+            return rows[275];
           }else{
-            return animations2DA.rows[81];
+            return rows[81];
           }
         break;
         case ModuleCreatureAnimState.DEAD1:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[275];
+            return rows[275];
           }else{
-            return animations2DA.rows[83];
+            return rows[83];
           }
         break;
         case ModuleCreatureAnimState.DIE:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[274];
+            return rows[274];
           }else{
-            return animations2DA.rows[80];
+            return rows[80];
           }
         break;
         case ModuleCreatureAnimState.DIE1:
-          return animations2DA.rows[82];
+          return rows[82];
         break;
         case ModuleCreatureAnimState.GET_UP_DEAD:
-          return animations2DA.rows[381];
+          return rows[381];
         break;
         case ModuleCreatureAnimState.GET_UP_DEAD1:
-          return animations2DA.rows[382];
+          return rows[382];
         break;
         case ModuleCreatureAnimState.WALK_INJ:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[254];
+            return rows[254];
           }else{
-            return animations2DA.rows[1];
+            return rows[1];
           }
         break;
         case ModuleCreatureAnimState.WALKING:
           if(this.isSimpleCreature()){
             if(this.getHP()/this.getMaxHP() > .20){
-              return animations2DA.rows[253];
+              return rows[253];
             }else{
-              return animations2DA.rows[254];
+              return rows[254];
             }
           }else{
             if(this.getHP()/this.getMaxHP() > .20){
               switch(this.getCombatAnimationWeaponType()){
                 case 2:
-                  return animations2DA.rows[338];
+                  return rows[338];
                 case 3:
-                  return animations2DA.rows[341];
+                  return rows[341];
                 case 4:
-                  return animations2DA.rows[339];
+                  return rows[339];
                 case 7:
-                  return animations2DA.rows[340];
+                  return rows[340];
                 case 9:
-                  return animations2DA.rows[340];
+                  return rows[340];
                 default:
-                  return animations2DA.rows[0];
+                  return rows[0];
               }
             }else{
-              return animations2DA.rows[1];
+              return rows[1];
             }
           }
         break;
         case ModuleCreatureAnimState.RUNNING:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[255];
+            return rows[255];
           }else{
             if(this.getHP()/this.getMaxHP() > .20){
               switch(this.getCombatAnimationWeaponType()){
                 case 1:
-                  return animations2DA.rows[343];
+                  return rows[343];
                 case 2:
-                  return animations2DA.rows[345];
+                  return rows[345];
                 case 3:
-                  return animations2DA.rows[345];
+                  return rows[345];
                 case 4:
-                  return animations2DA.rows[3];
+                  return rows[3];
                 case 7:
-                  return animations2DA.rows[340];
+                  return rows[340];
                 case 9:
-                  return animations2DA.rows[340];
+                  return rows[340];
                 default:
-                  return animations2DA.rows[2];
+                  return rows[2];
               }
             }else{
-              return animations2DA.rows[4];
+              return rows[4];
             }
           }
         break;
         case ModuleCreatureAnimState.RUN_INJ:
-          return animations2DA.rows[4];
+          return rows[4];
         break;
         //COMBAT READY
         case ModuleCreatureAnimState.READY:
         case ModuleCreatureAnimState.READY_ALT:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[278];
+            return rows[278];
           }else{
             switch(this.getCombatAnimationWeaponType()){
               case 1:
-                return animations2DA.rows[92];
+                return rows[92];
               case 2:
-                return animations2DA.rows[133];
+                return rows[133];
               case 3:
-                return animations2DA.rows[174];
+                return rows[174];
               case 4:
-                return animations2DA.rows[215];
+                return rows[215];
               case 5:
-                return animations2DA.rows[223];
+                return rows[223];
               case 6:
-                return animations2DA.rows[237];
+                return rows[237];
               case 7:
-                return animations2DA.rows[245];
+                return rows[245];
               case 9:
-                return animations2DA.rows[84]; //84 == pushed | 85 == hit ground prone back | 86 == get up from ground prone
+                return rows[84]; //84 == pushed | 85 == hit ground prone back | 86 == get up from ground prone
               default:
-                return animations2DA.rows[249];
+                return rows[249];
             }
           }
         break;
         case ModuleCreatureAnimState.DODGE:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[281];
+            return rows[281];
           }else{
-            return animations2DA.rows[302];
+            return rows[302];
           }
         break;
         case ModuleCreatureAnimState.SPASM:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[268];
+            return rows[268];
           }else{
-            return animations2DA.rows[77];
+            return rows[77];
           }
         break;
         case ModuleCreatureAnimState.TAUNT:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[263];
+            return rows[263];
           }else{
-            return animations2DA.rows[33];
+            return rows[33];
           }
         break;
         case ModuleCreatureAnimState.GREETING:
-          return animations2DA.rows[31];
+          return rows[31];
         break;
         case ModuleCreatureAnimState.LISTEN:
-          return animations2DA.rows[18];
+          return rows[18];
         break;
         case ModuleCreatureAnimState.LISTEN_INJURED:
-          return animations2DA.rows[371];
+          return rows[371];
         break;
         case ModuleCreatureAnimState.TALK_NORMAL:
-          return animations2DA.rows[25];
+          return rows[25];
         break;
         case ModuleCreatureAnimState.TALK_PLEADING:
-          return animations2DA.rows[27];
+          return rows[27];
         break;
         case ModuleCreatureAnimState.TALK_FORCEFUL:
-          return animations2DA.rows[26];
+          return rows[26];
         break;
         case ModuleCreatureAnimState.TALK_LAUGHING:
-          return animations2DA.rows[29];
+          return rows[29];
         break;
         case ModuleCreatureAnimState.TALK_SAD:
-          return animations2DA.rows[28];
+          return rows[28];
         break;
         case ModuleCreatureAnimState.TALK_INJURED:
-          return animations2DA.rows[370];
+          return rows[370];
         break;
         case ModuleCreatureAnimState.SALUTE:
-          return animations2DA.rows[16];
+          return rows[16];
         break;
         case ModuleCreatureAnimState.BOW:
-          return animations2DA.rows[19];
+          return rows[19];
         break;
         case ModuleCreatureAnimState.VICTORY:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[260];
+            return rows[260];
           }else{
-            return animations2DA.rows[17];
+            return rows[17];
           }
         break;
         case ModuleCreatureAnimState.HEAD_TURN_LEFT:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[258];
+            return rows[258];
           }else{
-            return animations2DA.rows[11];
+            return rows[11];
           }
         break;
         case ModuleCreatureAnimState.HEAD_TURN_RIGHT:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[259];
+            return rows[259];
           }else{
-            return animations2DA.rows[10];
+            return rows[10];
           }
         break;
         case ModuleCreatureAnimState.TURN_LEFT:
@@ -1254,250 +1266,250 @@ export class ModuleObject {
           }
         break;
         case ModuleCreatureAnimState.GET_LOW:
-          return animations2DA.rows[40];
+          return rows[40];
         break;
         case ModuleCreatureAnimState.GET_MID:
-          return animations2DA.rows[41];
+          return rows[41];
         break;
         case ModuleCreatureAnimState.INJECT:
-          return animations2DA.rows[37];
+          return rows[37];
         break;
         case ModuleCreatureAnimState.DAMAGE:
-          return animations2DA.rows[303];
+          return rows[303];
         break;
         case ModuleCreatureAnimState.USE_COMPUTER_LP:
-          return animations2DA.rows[44];
+          return rows[44];
         break;
         case ModuleCreatureAnimState.WHIRLWIND:
-          return animations2DA.rows[75];
+          return rows[75];
         break;
         case ModuleCreatureAnimState.DEACTIVATE:
-          return animations2DA.rows[270];
+          return rows[270];
         break;
         case ModuleCreatureAnimState.FLIRT:
-          return animations2DA.rows[32];
+          return rows[32];
         break;
         case ModuleCreatureAnimState.USE_COMPUTER:
-          return animations2DA.rows[43];
+          return rows[43];
         break;
         case ModuleCreatureAnimState.DANCE:
-          return animations2DA.rows[53];
+          return rows[53];
         break;
         case ModuleCreatureAnimState.DANCE1:
-          return animations2DA.rows[54];
+          return rows[54];
         break;
         case ModuleCreatureAnimState.HORROR:
-          return animations2DA.rows[74];
+          return rows[74];
         break;
         case ModuleCreatureAnimState.USE_COMPUTER2:
-          return animations2DA.rows[43];
+          return rows[43];
         break;
         case ModuleCreatureAnimState.PERSUADE:
-          return animations2DA.rows[68];
+          return rows[68];
         break;
         case ModuleCreatureAnimState.ACTIVATE_ITEM:
-          return animations2DA.rows[38];
+          return rows[38];
         break;
         case ModuleCreatureAnimState.UNLOCK_DOOR:
-          return animations2DA.rows[47];
+          return rows[47];
         break;
         case ModuleCreatureAnimState.THROW_HIGH:
-          return animations2DA.rows[57];
+          return rows[57];
         break;
         case ModuleCreatureAnimState.THROW_LOW:
-          return animations2DA.rows[58];
+          return rows[58];
         break;
         case ModuleCreatureAnimState.UNLOCK_CONTAINER:
-          return animations2DA.rows[48];
+          return rows[48];
         break;
         case ModuleCreatureAnimState.DISABLE_MINE:
-          return animations2DA.rows[51];
+          return rows[51];
         break;
         case ModuleCreatureAnimState.WALK_STEALTH:
-          return animations2DA.rows[5];
+          return rows[5];
         break;
         case ModuleCreatureAnimState.UNLOCK_DOOR2:
-          return animations2DA.rows[47];
+          return rows[47];
         break;
         case ModuleCreatureAnimState.UNLOCK_CONTAINER2:
-          return animations2DA.rows[48];
+          return rows[48];
         break;
         case ModuleCreatureAnimState.ACTIVATE_ITEM2:
-          return animations2DA.rows[38];
+          return rows[38];
         break;
         case ModuleCreatureAnimState.SLEEP:
-          return animations2DA.rows[76];
+          return rows[76];
         break;
         case ModuleCreatureAnimState.PARALYZED:
-          return animations2DA.rows[78];
+          return rows[78];
         break;
         case ModuleCreatureAnimState.PRONE:
-          return animations2DA.rows[79];
+          return rows[79];
         break;
         case ModuleCreatureAnimState.SET_MINE:
-          return animations2DA.rows[52];
+          return rows[52];
         break;
         case ModuleCreatureAnimState.DISABLE_MINE2:
-          return animations2DA.rows[51];
+          return rows[51];
         break;
         case ModuleCreatureAnimState.CUSTOM01:
-          return animations2DA.rows[346];
+          return rows[346];
         break;
         case ModuleCreatureAnimState.FBLOCK:
-          return animations2DA.rows[355];
+          return rows[355];
         break;
         case ModuleCreatureAnimState.CHOKE:
           if(this.isSimpleCreature()){
-            return animations2DA.rows[264];
+            return rows[264];
           }else{
-            return animations2DA.rows[72];
+            return rows[72];
           }
         break;
         case ModuleCreatureAnimState.WELD:
-          return animations2DA.rows[360];
+          return rows[360];
         break;
         case ModuleCreatureAnimState.TREAT_INJURED:
-          return animations2DA.rows[34];
+          return rows[34];
         break;
         case ModuleCreatureAnimState.TREAT_INJURED_LP:
-          return animations2DA.rows[35];
+          return rows[35];
         break;
         case ModuleCreatureAnimState.CATCH_SABER:
-          return animations2DA.rows[71];
+          return rows[71];
         break;
         case ModuleCreatureAnimState.THROW_SABER_LP:
-          return animations2DA.rows[70];
+          return rows[70];
         break;
         case ModuleCreatureAnimState.THROW_SABER:
-          return animations2DA.rows[69];
+          return rows[69];
         break;
         case ModuleCreatureAnimState.KNEEL_TALK_ANGRY:
-          return animations2DA.rows[384];
+          return rows[384];
         break;
         case ModuleCreatureAnimState.KNEEL_TALK_SAD:
-          return animations2DA.rows[385];
+          return rows[385];
         break;
         case ModuleCreatureAnimState.KNOCKED_DOWN:
-          return animations2DA.rows[85];
+          return rows[85];
         break;
         case ModuleCreatureAnimState.KNOCKED_DOWN2:
-          return animations2DA.rows[85];
+          return rows[85];
         break;
         case ModuleCreatureAnimState.DEAD_PRONE:
-          return animations2DA.rows[375];
+          return rows[375];
         break;
         case ModuleCreatureAnimState.KNEEL:
-          return animations2DA.rows[23];
+          return rows[23];
         break;
         case ModuleCreatureAnimState.KNEEL1:
-          return animations2DA.rows[23];
+          return rows[23];
         break;
         case ModuleCreatureAnimState.FLOURISH:
           switch( this.getCombatAnimationWeaponType() ){
             case 1:
-              return animations2DA.rows[91];
+              return rows[91];
             case 2:
-              return animations2DA.rows[132];
+              return rows[132];
             case 3:
-              return animations2DA.rows[173];
+              return rows[173];
             case 4:
-              return animations2DA.rows[214];
+              return rows[214];
             case 5:
-              return animations2DA.rows[222];
+              return rows[222];
             case 6:
-              return animations2DA.rows[136];
+              return rows[136];
             case 7:
-              return animations2DA.rows[244];
+              return rows[244];
             case 8:
-              return animations2DA.rows[373];
+              return rows[373];
             case 9:
-              return animations2DA.rows[244];
+              return rows[244];
             default:
-              return animations2DA.rows[373];
+              return rows[373];
           }
         break;
-        
+
         //BEGIN TSL ANIMATIONS
         case ModuleCreatureAnimState.TOUCH_HEART:
-          return animations2DA.rows[462];
+          return rows[462];
         break;
         case ModuleCreatureAnimState.ROLL_EYES:
-          return animations2DA.rows[463];
+          return rows[463];
         break;
         case ModuleCreatureAnimState.USE_ITEM_ON_OTHER:
-          return animations2DA.rows[464];
+          return rows[464];
         break;
         case ModuleCreatureAnimState.STAND_ATTENTION:
-          return animations2DA.rows[465];
+          return rows[465];
         break;
         case ModuleCreatureAnimState.NOD_YES:
-          return animations2DA.rows[466];
+          return rows[466];
         break;
         case ModuleCreatureAnimState.NOD_NO:
-          return animations2DA.rows[467];
+          return rows[467];
         break;
         case ModuleCreatureAnimState.POINT:
-          return animations2DA.rows[468];
+          return rows[468];
         break;
         case ModuleCreatureAnimState.POINT_LP:
-          return animations2DA.rows[469];
+          return rows[469];
         break;
         case ModuleCreatureAnimState.POINT_DOWN:
-          return animations2DA.rows[470];
+          return rows[470];
         break;
         case ModuleCreatureAnimState.SCANNING:
-          return animations2DA.rows[471];
+          return rows[471];
         break;
         case ModuleCreatureAnimState.SHRUG:
-          return animations2DA.rows[472];
+          return rows[472];
         break;
         case ModuleCreatureAnimState.SIT_CHAIR:
-          return animations2DA.rows[316];
+          return rows[316];
         break;
         case ModuleCreatureAnimState.SIT_CHAIR_DRUNK:
-          return animations2DA.rows[317];
+          return rows[317];
         break;
         case ModuleCreatureAnimState.SIT_CHAIR_PAZAAK:
-          return animations2DA.rows[318];
+          return rows[318];
         break;
         case ModuleCreatureAnimState.SIT_CHAIR_COMP1:
-          return animations2DA.rows[316];
+          return rows[316];
         break;
         case ModuleCreatureAnimState.SIT_CHAIR_COMP2:
-          return animations2DA.rows[316];
+          return rows[316];
         break;
         case ModuleCreatureAnimState.CUT_HANDS:
-          return animations2DA.rows[557];
+          return rows[557];
         break;
         case ModuleCreatureAnimState.L_HAND_CHOP:
-          return animations2DA.rows[558];
+          return rows[558];
         break;
         case ModuleCreatureAnimState.COLLAPSE:
-          return animations2DA.rows[559];
+          return rows[559];
         break;
         case ModuleCreatureAnimState.COLLAPSE_LP:
-          return animations2DA.rows[560];
+          return rows[560];
         break;
         case ModuleCreatureAnimState.COLLAPSE_STAND:
-          return animations2DA.rows[561];
+          return rows[561];
         break;
         case ModuleCreatureAnimState.BAO_DUR_POWER_PUNCH:
-          return animations2DA.rows[562];
+          return rows[562];
         break;
         case ModuleCreatureAnimState.POINT_UP:
-          return animations2DA.rows[563];
+          return rows[563];
         break;
         case ModuleCreatureAnimState.POINT_UP_LOWER:
-          return animations2DA.rows[564];
+          return rows[564];
         break;
         case ModuleCreatureAnimState.HOOD_OFF:
-          return animations2DA.rows[565];
+          return rows[565];
         break;
         case ModuleCreatureAnimState.HOOD_ON:
-          return animations2DA.rows[566];
+          return rows[566];
         break;
         case ModuleCreatureAnimState.DIVE_ROLL:
-          return animations2DA.rows[567];
+          return rows[567];
         break;
         //END TSL ANIMATIONS
 
@@ -1509,8 +1521,8 @@ export class ModuleObject {
 
   /**
    * Set the facing
-   * @param facing 
-   * @param instant 
+   * @param facing
+   * @param instant
    */
   setFacing(facing = 0, instant = false, speed = TURN_SPEED_SLOW){
     this.wasFacing = Utility.NormalizeRadian(this.rotation.z);
@@ -1527,12 +1539,12 @@ export class ModuleObject {
    * On hover input event
    */
   onHover(){
-    
+
   }
 
   /**
    * On click input event
-   * @param callee 
+   * @param callee
    */
   onClick(callee: ModuleObject){
 
@@ -1540,7 +1552,7 @@ export class ModuleObject {
 
   /**
    * Trigger the user defined event
-   * @param event 
+   * @param event
    */
   triggerUserDefinedEvent( event: NWScriptEvent ){
     if(!(event instanceof NWScriptEvent)){ return; }
@@ -1555,14 +1567,14 @@ export class ModuleObject {
     }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)){
       onUserDefined = this.scripts[ModuleObjectScript.TriggerOnUserDefined];
     }
-    
+
     if(!onUserDefined){ return; }
     onUserDefined.run(this, parseInt(event.getInt(0)));
   }
 
   /**
    * Trigger the spell cast at event
-   * @param event 
+   * @param event
    */
   triggerSpellCastAtEvent( event: NWScriptEvent ){
     if(!(event instanceof NWScriptEvent)){ return; }
@@ -1586,10 +1598,10 @@ export class ModuleObject {
 
   /**
    * Script event handler
-   * @param event 
+   * @param event
    */
   scriptEventHandler( event: NWScriptEvent ){
-    // console.log('scriptEventHandler', this.tag, event);
+    // log.info('scriptEventHandler', this.tag, event);
     if(event instanceof NWScriptEvent){
       switch(event.type){
         case NWScriptEventType.EventUserDefined:
@@ -1599,7 +1611,7 @@ export class ModuleObject {
           this.triggerSpellCastAtEvent( event );
         break;
         default:
-          console.error('scriptEventHandler', 'Unhandled Event', event, this);
+          log.error('scriptEventHandler', 'Unhandled Event', event, this);
         break;
       }
     }
@@ -1639,7 +1651,7 @@ export class ModuleObject {
 
   /**
    * Get the appearance
-   * @returns 
+   * @returns
    */
   getAppearance(): SWPlaceableAppearance|SWCreatureAppearance|SWDoorAppearance {
     return;
@@ -1647,7 +1659,7 @@ export class ModuleObject {
 
   /**
    * On spawn
-   * @param runScript 
+   * @param runScript
    */
   onSpawn(runScript = true){
 
@@ -1658,30 +1670,30 @@ export class ModuleObject {
 
     if(runScript && onSpawn){
       onSpawn.run(this, 0);
-      console.log('spawned', this.getName());
+      log.debug('spawned', this.getName());
     }
-    
+
     this.spawned = true;
-    
+
     this.initEffects();
     this.computeBoundingBox();
   }
 
   /**
    * Get the name
-   * @returns 
+   * @returns
    */
-  getName(): any {
-    console.warn("Method not implemented.", this.tag);
+  getName(): string {
+    log.warn("Method not implemented.", this.tag);
     return '';
   }
 
   /**
    * Get the race
-   * @returns 
+   * @returns
    */
-  getRace(): any {
-    console.warn("Method not implemented.", this.tag);
+  getRace(): number {
+    log.warn("Method not implemented.", this.tag);
     return 0;
   }
 
@@ -1691,8 +1703,8 @@ export class ModuleObject {
 
   /**
    * Check if the object has the item by tag
-   * @param sTag 
-   * @returns 
+   * @param sTag
+   * @returns
    */
   hasItemByTag(sTag=''){
     sTag = sTag.toLowerCase();
@@ -1705,18 +1717,18 @@ export class ModuleObject {
       if(cItem.tag.toLocaleLowerCase() == sTag)
         return true;
     }
-    
+
     return false;
   }
 
   /**
    * Add the item
-   * @param item 
-   * @returns 
+   * @param item
+   * @returns
    */
   addItem(item: ModuleItem){
     item.load();
-    
+
     const eItem = this.getItemByTag(item.getTag());
     if(eItem){
       eItem.setStackSize(eItem.getStackSize() + item.getStackSize());
@@ -1729,9 +1741,9 @@ export class ModuleObject {
 
   /**
    * Remove the item
-   * @param item 
-   * @param nCount 
-   * @returns 
+   * @param item
+   * @param nCount
+   * @returns
    */
   removeItem(item: ModuleItem, nCount = 1): ModuleItem {
     const eItem = this.getItemByTag(item.getTag());
@@ -1753,9 +1765,9 @@ export class ModuleObject {
 
   /**
    * Remove the item by tag
-   * @param sTag 
-   * @param nCount 
-   * @returns 
+   * @param sTag
+   * @param nCount
+   * @returns
    */
   removeItemByTag(sTag = '', nCount = 1): ModuleItem {
     const eItem = this.getItemByTag(sTag);
@@ -1777,8 +1789,8 @@ export class ModuleObject {
 
   /**
    * Get the item
-   * @param oItem 
-   * @returns 
+   * @param oItem
+   * @returns
    */
   getItem(oItem: ModuleItem): ModuleItem {
     if(!oItem){ return undefined; }
@@ -1793,8 +1805,8 @@ export class ModuleObject {
 
   /**
    * Get the item by tag
-   * @param sTag 
-   * @returns 
+   * @param sTag
+   * @returns
    */
   getItemByTag(sTag = ''): ModuleItem {
     if(this.isPartyMember()){
@@ -1802,7 +1814,7 @@ export class ModuleObject {
     }
 
     for(let i = 0; i < this.inventory.length; i++){
-      let item = this.inventory[i];
+      const item = this.inventory[i];
       if(item.getTag() == sTag)
         return item;
     }
@@ -1811,7 +1823,7 @@ export class ModuleObject {
 
   /**
    * Get the gold
-   * @returns 
+   * @returns
    */
   getGold(): number {
     if(this.isPartyMember()){
@@ -1822,7 +1834,7 @@ export class ModuleObject {
 
   /**
    * Add gold
-   * @param nGold 
+   * @param nGold
    */
   addGold(nGold = 0): void {
     if(this.isPartyMember()){
@@ -1833,7 +1845,7 @@ export class ModuleObject {
 
   /**
    * Remove gold
-   * @param nGold 
+   * @param nGold
    */
   removeGold(nGold = 0): void {
     if(this.isPartyMember()){
@@ -1844,7 +1856,7 @@ export class ModuleObject {
 
   /**
    * Update the collision
-   * @param delta 
+   * @param delta
    */
   updateCollision(delta: number = 0){
     //stub
@@ -1852,24 +1864,24 @@ export class ModuleObject {
 
   /**
    * Do a command
-   * @param script 
+   * @param script
    */
   doCommand(script: NWScriptInstance){
-    //console.log('doCommand', this.getTag(), script, action, instruction);
-    let action = new GameState.ActionFactory.ActionDoCommand();
+    //log.info('doCommand', this.getTag(), script, action, instruction);
+    const action = new GameState.ActionFactory.ActionDoCommand();
     action.setParameter(0, ActionParameterType.SCRIPT_SITUATION, script);
     this.actionQueue.add(action);
   }
 
   /**
    * Add a trap
-   * @param nTrapId 
-   * @param owner 
+   * @param nTrapId
+   * @param owner
    */
   addTrap(nTrapId: number = -1, owner: ModuleObject){
     const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[nTrapId];
     if(!trap){ return; }
-    console.log('addTrap', trap);
+    log.debug('addTrap', trap);
 
     if(trap.trapscript?.length && trap.trapscript != '****'){
       const nwscript = NWScript.Load(trap.trapscript);
@@ -1886,7 +1898,7 @@ export class ModuleObject {
     this.trapType = nTrapId;
 
     this.ownerDemolitions = owner.getSkillLevel(SkillType.DEMOLITIONS);
-    let d20 = 20;
+    const d20 = 20;
 
     const nDetectDC = !isNaN(parseInt(trap.detectdcmod)) ? parseInt(trap.detectdcmod) : 0;
     this.trapDetectDC = nDetectDC + d20 + this.ownerDemolitions;
@@ -1930,7 +1942,7 @@ export class ModuleObject {
 
   /**
    * Check if the object is in conversation
-   * @returns 
+   * @returns
    */
   isInConversation(){
     return (GameState.Mode == EngineMode.DIALOG) && (GameState.CutsceneManager.owner == this || GameState.CutsceneManager.listener == this);
@@ -1938,7 +1950,7 @@ export class ModuleObject {
 
   /**
    * Check if the object is dead
-   * @returns 
+   * @returns
    */
   isDead(){
     return this.getHP() <= 0;
@@ -1946,7 +1958,7 @@ export class ModuleObject {
 
   /**
    * Check if the object is debilitated
-   * @returns 
+   * @returns
    */
   isDebilitated() {
     return false;
@@ -1954,7 +1966,7 @@ export class ModuleObject {
 
   /**
    * Check if the object is stunned
-   * @returns 
+   * @returns
    */
   isStunned() {
     return false;
@@ -1962,7 +1974,7 @@ export class ModuleObject {
 
   /**
    * Check if the object is paralyzed
-   * @returns 
+   * @returns
    */
   isParalyzed() {
     return false;
@@ -1970,7 +1982,7 @@ export class ModuleObject {
 
   /**
    * Check if the object is poisoned
-   * @returns 
+   * @returns
    */
   isPoisoned() {
     return false;
@@ -1978,15 +1990,15 @@ export class ModuleObject {
 
   /**
    * Check if the object is diseased
-   * @returns 
+   * @returns
    */
-  isDiseased(): any {
+  isDiseased(): boolean {
     return false;
   }
 
   /**
    * Get the combat animation weapon type
-   * @returns 
+   * @returns
    */
   getCombatAnimationWeaponType() {
     return 0
@@ -1994,7 +2006,7 @@ export class ModuleObject {
 
   /**
    * Check if the object is dueling
-   * @returns 
+   * @returns
    */
   isDueling(): boolean {
     return false;
@@ -2002,8 +2014,8 @@ export class ModuleObject {
 
   /**
    * Check if the action is in range
-   * @param action 
-   * @returns 
+   * @param action
+   * @returns
    */
   actionInRange(action: Action){
     return true;
@@ -2050,10 +2062,10 @@ export class ModuleObject {
 
   /**
    * On dialog
-   * @param oSpeaker 
-   * @param listenPatternNumber 
-   * @param conversation 
-   * @returns 
+   * @param oSpeaker
+   * @param listenPatternNumber
+   * @param conversation
+   * @returns
    */
   onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined): boolean {
     //stub
@@ -2078,7 +2090,7 @@ export class ModuleObject {
     //https://nwnlexicon.com/index.php?title=SpeakString
     let notifyCreatures = false;
     let notifyPCs = false;
-    let talkVolume = volume;
+    const talkVolume = volume;
 
     let range = 5;
     switch(talkVolume){
@@ -2104,19 +2116,19 @@ export class ModuleObject {
 
     const rangeSquared = range * range;
     let cDistanceSquared = 0;
-    // console.log('SpeakString', this.getName(), str, volume, range);
+    // log.info('SpeakString', this.getName(), str, volume, range);
     const speakString = str.toLowerCase();
 
     if(notifyPCs){
       for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
         const creature = GameState.PartyManager.party[i];
-        if(creature != (this as any) && !creature.isDead()){
+        if(creature !== (this as ModuleObject) && !creature.isDead()){
           cDistanceSquared = this.position.distanceToSquared(creature.position);
           if(cDistanceSquared > rangeSquared){ continue; }
-          creature.heardStrings.push({ 
-            speaker: this, 
-            string: speakString, 
-            volume: talkVolume 
+          creature.heardStrings.push({
+            speaker: this,
+            string: speakString,
+            volume: talkVolume
           });
         }
       }
@@ -2125,40 +2137,40 @@ export class ModuleObject {
     if(notifyCreatures){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
         const creature = GameState.module.area.creatures[i];
-        if(creature != (this as any) && !creature.isDead()){
+        if(creature !== (this as ModuleObject) && !creature.isDead()){
           cDistanceSquared = this.position.distanceToSquared(creature.position);
           if(cDistanceSquared > rangeSquared){ continue; }
 
           creature.heardStrings.push({
             speaker: this,
-            string: speakString, 
+            string: speakString,
             volume: talkVolume
           });
         }
       }
     }
   }
-  
+
   /**
    * Reset the excited duration
    */
   resetExcitedDuration() {
-    console.warn("Method not implemented.", this.tag);
+    log.warn("Method not implemented.", this.tag);
   }
 
   /**
    * Set the commadable
-   * @param arg0 
+   * @param arg0
    */
-  setCommadable(arg0: any) {
-    console.warn("Method not implemented.", this.tag);
+  setCommadable(arg0: boolean | number) {
+    log.warn("Method not implemented.", this.tag);
   }
 
   /**
    * Damage the object
-   * @param amount 
-   * @param oAttacker 
-   * @param delayTime 
+   * @param amount
+   * @param oAttacker
+   * @param delayTime
    */
   damage(amount = 0, oAttacker?: ModuleObject, delayTime = 0){
     this.subtractHP(amount);
@@ -2169,7 +2181,7 @@ export class ModuleObject {
 
   /**
    * Get the current room
-   * @returns 
+   * @returns
    */
   getCurrentRoom(){
     this.collisionManager.findWalkableFace();
@@ -2177,7 +2189,7 @@ export class ModuleObject {
 
   /**
    * Get the computed path
-   * @returns 
+   * @returns
    */
   getComputedPath(){
     return this.#computedPath;
@@ -2185,10 +2197,10 @@ export class ModuleObject {
 
   /**
    * Set the computed path
-   * @param computedPath 
+   * @param computedPath
    */
   setComputedPath(computedPath: ComputedPath){
-    if(!!this.#computedPath){
+    if(this.#computedPath){
       this.#computedPath.dispose();
     }
     this.#computedPath = computedPath;
@@ -2204,8 +2216,8 @@ export class ModuleObject {
   #tmpLIOVec3 = new THREE.Vector3();
   /**
    * Check if a line intersects the object
-   * @param line 
-   * @returns 
+   * @param line
+   * @returns
    */
   checkLineIntersectsObject(line: THREE.Line3){
     line.closestPointToPoint(this.position, true, this.#tmpLIOVec3);
@@ -2239,7 +2251,7 @@ export class ModuleObject {
 
   /**
    * Get the camera hook position
-   * @returns 
+   * @returns
    */
   getCameraHookPosition(){
     if(this.model && this.model.camerahook){
@@ -2254,7 +2266,7 @@ export class ModuleObject {
 
   /**
    * Get the camera height
-   * @returns 
+   * @returns
    */
   getCameraHeight(){
     if(this.model && this.model.camerahook){
@@ -2266,10 +2278,10 @@ export class ModuleObject {
 
   /**
    * Set the cutscene mode
-   * @param state 
+   * @param state
    */
   setCutsceneMode(state: boolean = false){
-    console.log('setCutsceneMode', this.getTag(), state);
+    log.debug('setCutsceneMode', this.getTag(), state);
     this.cutsceneMode = state;
     if(this.model && this.model.skins){
       for(let i = 0, len = this.model.skins.length; i < len; i++){
@@ -2280,12 +2292,12 @@ export class ModuleObject {
 
   /**
    * Apply a visual effect
-   * @param resref 
+   * @param resref
    */
   applyVisualEffect(resref = 'v_light'){
     if(this.model instanceof OdysseyModel3D){
       MDLLoader.loader.load(resref).then( (mdl: OdysseyModel) => {
-        OdysseyModel3D.FromMDL(mdl, { 
+        OdysseyModel3D.FromMDL(mdl, {
           context: this.context,
           // manageLighting: false
         }).then( (effectMDL: OdysseyModel3D) => {
@@ -2299,7 +2311,7 @@ export class ModuleObject {
               effectMDL.disableEmitters();
               setTimeout( () => {
                 if(this.model instanceof OdysseyModel3D){
-                  let index = this.model.effects.indexOf(effectMDL);
+                  const index = this.model.effects.indexOf(effectMDL);
                   effectMDL.dispose();
                   this.model.effects.splice(index, 1);
                 }
@@ -2317,9 +2329,9 @@ export class ModuleObject {
 
   /**
    * Set the position
-   * @param x 
-   * @param y 
-   * @param z 
+   * @param x
+   * @param y
+   * @param z
    */
   setPosition(x: THREE.Vector3|number = 0, y = 0, z = 0){
     if(x instanceof THREE.Vector3){
@@ -2333,13 +2345,13 @@ export class ModuleObject {
       this.computeBoundingBox();
       this.updateCollision();
     }catch(e){
-      console.error('ModuleObject.setPosition failed ');
+      log.error('ModuleObject.setPosition failed', e as Error);
     }
   }
 
   /**
    * Get the position
-   * @returns 
+   * @returns
    */
   getPosition(){
     return this.position;
@@ -2347,7 +2359,7 @@ export class ModuleObject {
 
   /**
    * Get the orientation
-   * @returns 
+   * @returns
    */
   getOrientation(){
     return this.rotation;
@@ -2355,7 +2367,7 @@ export class ModuleObject {
 
   /**
    * Get the facing
-   * @returns 
+   * @returns
    */
   getFacing(){
     return this.rotation.z;
@@ -2363,7 +2375,7 @@ export class ModuleObject {
 
   /**
    * Set the facing object
-   * @param target 
+   * @param target
    */
   setFacingObject( target: ModuleObject ){
 
@@ -2371,7 +2383,7 @@ export class ModuleObject {
 
   /**
    * Get the rotation
-   * @returns 
+   * @returns
    */
   getRotation(){
     return Math.floor(this.getFacing() * 180) + 180;
@@ -2379,7 +2391,7 @@ export class ModuleObject {
 
   /**
    * Get the location
-   * @returns 
+   * @returns
    */
   getLocation(){
     const rotation = this.getRotationFromBearing();
@@ -2395,8 +2407,8 @@ export class ModuleObject {
 
   /**
    * Get the rotation from bearing
-   * @param bearing 
-   * @returns 
+   * @param bearing
+   * @returns
    */
   getRotationFromBearing( bearing: number = undefined ){
     const theta = (typeof bearing == 'number') ? bearing : this.rotation.z;
@@ -2410,7 +2422,7 @@ export class ModuleObject {
 
   /**
    * Look at an object
-   * @param oObject 
+   * @param oObject
    */
   lookAt(oObject: ModuleObject){
     return;
@@ -2418,7 +2430,7 @@ export class ModuleObject {
 
   /**
    * Check if the object is static
-   * @returns 
+   * @returns
    */
   isStatic(){
     return false;
@@ -2426,7 +2438,7 @@ export class ModuleObject {
 
   /**
    * Check if the object is useable
-   * @returns 
+   * @returns
    */
   isUseable(){
     return false;
@@ -2434,7 +2446,7 @@ export class ModuleObject {
 
   /**
    * Get the conversation
-   * @returns 
+   * @returns
    */
   getConversation(): DLGObject {
     return this.conversation;
@@ -2442,7 +2454,7 @@ export class ModuleObject {
 
   /**
    * Get the fortitude save
-   * @returns 
+   * @returns
    */
   getFortitudeSave(){
     return this.fortitudeSaveThrow;
@@ -2450,7 +2462,7 @@ export class ModuleObject {
 
   /**
    * Get the reflex save
-   * @returns 
+   * @returns
    */
   getReflexSave(){
     return this.reflexSaveThrow;
@@ -2458,15 +2470,15 @@ export class ModuleObject {
 
   /**
    * Fortitude save
-   * @param nDC 
-   * @param nSaveType 
-   * @param oVersus 
-   * @returns 
+   * @param nDC
+   * @param nSaveType
+   * @param oVersus
+   * @returns
    */
-  fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatRound.GetMod(this.getCON());
-    
+  fortitudeSave(nDC = 0, nSaveType = 0, oVersus?: ModuleObject){
+    const roll = Dice.roll(1, DiceType.d20);
+    const bonus = CombatRound.GetMod(this.getCON());
+
     if((roll + this.getFortitudeSave() + bonus) > nDC){
       return 1
     }
@@ -2476,23 +2488,23 @@ export class ModuleObject {
 
   /**
    * Get the CON
-   * @returns 
+   * @returns
    */
   getCON(): number {
-    return 0;;
+    return 0;
   }
 
   /**
    * Reflex save
-   * @param nDC 
-   * @param nSaveType 
-   * @param oVersus 
-   * @returns 
+   * @param nDC
+   * @param nSaveType
+   * @param oVersus
+   * @returns
    */
-  reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatRound.GetMod(this.getDEX());
-    
+  reflexSave(nDC = 0, nSaveType = 0, oVersus?: ModuleObject){
+    const roll = Dice.roll(1, DiceType.d20);
+    const bonus = CombatRound.GetMod(this.getDEX());
+
     if((roll + this.getReflexSave() + bonus) > nDC){
       return 1
     }
@@ -2502,7 +2514,7 @@ export class ModuleObject {
 
   /**
    * Get the DEX
-   * @returns 
+   * @returns
    */
   getDEX(): number {
     return 0;
@@ -2510,7 +2522,7 @@ export class ModuleObject {
 
   /**
    * Get the will save
-   * @returns 
+   * @returns
    */
   getWillSave(){
     return this.willSaveThrow;
@@ -2518,14 +2530,14 @@ export class ModuleObject {
 
   /**
    * Will save
-   * @param nDC 
-   * @param nSaveType 
-   * @param oVersus 
-   * @returns 
+   * @param nDC
+   * @param nSaveType
+   * @param oVersus
+   * @returns
    */
-  willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatRound.GetMod(this.getWIS());
+  willSave(nDC = 0, nSaveType = 0, oVersus?: ModuleObject){
+    const roll = Dice.roll(1, DiceType.d20);
+    const bonus = CombatRound.GetMod(this.getWIS());
 
     if((roll + this.getWillSave() + bonus) > nDC){
       return 1
@@ -2536,7 +2548,7 @@ export class ModuleObject {
 
   /**
    * Get the WIS
-   * @returns 
+   * @returns
    */
   getWIS(): number {
     return 0;
@@ -2544,24 +2556,24 @@ export class ModuleObject {
 
   /**
    * Get the skill level
-   * @param value 
-   * @returns 
+   * @param value
+   * @returns
    */
   getSkillLevel(value: number = 0): number {
     return 0;
   }
-  
+
   /**
    * Resist force
-   * @param oCaster 
-   * @returns 
+   * @param oCaster
+   * @returns
    */
   resistForce(oCaster: ModuleObject){
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(oCaster, ModuleObjectType.ModuleCreature)){
       //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
       //1d20 + their level vs. a DC of your level plus 10
-      let roll = Dice.roll(1, DiceType.d20, (this as any).getTotalClassLevel());
-      return (roll > 10 + (oCaster as any).getTotalClassLevel());
+      const roll = Dice.roll(1, DiceType.d20, (this as ModuleCreature as ModuleObject & { getTotalClassLevel(): number }).getTotalClassLevel());
+      return (roll > 10 + (oCaster as ModuleObject & { getTotalClassLevel(): number }).getTotalClassLevel());
     }
     return 0;
   }
@@ -2589,7 +2601,7 @@ export class ModuleObject {
    */
   addEffect(effect: GameEffect, type = 0, duration = 0){
     if(!effect){
-      console.warn('AddEffect', 'Invalid GameEffect', effect);
+      log.warn('AddEffect', 'Invalid GameEffect', effect);
       return;
     }
 
@@ -2620,8 +2632,8 @@ export class ModuleObject {
 
   /**
    * Get an effect by type
-   * @param type 
-   * @returns 
+   * @param type
+   * @returns
    */
   getEffect(type = -1){
     for(let i = 0; i < this.effects.length; i++){
@@ -2634,8 +2646,8 @@ export class ModuleObject {
 
   /**
    * Check if the object has an effect by type
-   * @param type 
-   * @returns 
+   * @param type
+   * @returns
    */
   hasEffect(type = -1){
     return this.getEffect(type) ? true : false;
@@ -2643,7 +2655,7 @@ export class ModuleObject {
 
   /**
    * Remove all effects by creator
-   * @param oCreator 
+   * @param oCreator
    */
   removeEffectsByCreator( oCreator: ModuleObject ){
     if(!(oCreator instanceof ModuleObject)){
@@ -2653,7 +2665,7 @@ export class ModuleObject {
     let effect = this.effects[eIndex];
     while(effect){
       if(effect.getCreator() == oCreator){
-        let index = this.effects.indexOf(effect);
+        const index = this.effects.indexOf(effect);
         if(index >= 0){
           this.effects.splice(index, 1)[0].onRemove();
         }
@@ -2664,12 +2676,12 @@ export class ModuleObject {
 
   /**
    * Remove all effects by type
-   * @param type 
+   * @param type
    */
   removeEffectsByType(type: number = -1){
     let effect = this.getEffect(type);
     while(effect){
-      let index = this.effects.indexOf(effect);
+      const index = this.effects.indexOf(effect);
       if(index >= 0){
         this.effects.splice(index, 1)[0].onRemove();
       }
@@ -2679,7 +2691,7 @@ export class ModuleObject {
 
   /**
    * Remove an effect by type or GameEffect
-   * @param type 
+   * @param type
    */
   removeEffect(effect: GameEffect){
     if(!effect){ return; }
@@ -2690,7 +2702,7 @@ export class ModuleObject {
 
   /**
    * Jump to an EngineLocation
-   * @param lLocation 
+   * @param lLocation
    */
   JumpToLocation(lLocation: EngineLocation){
     if(lLocation){
@@ -2705,50 +2717,41 @@ export class ModuleObject {
 
   /**
    * Face a point
-   * @param vPoint 
+   * @param vPoint
    */
   FacePoint(vPoint=new THREE.Vector3){
-    let tangent = vPoint.clone().sub(this.position.clone());
-    let atan = Math.atan2(-tangent.y, -tangent.x);
+    const tangent = vPoint.clone().sub(this.position.clone());
+    const atan = Math.atan2(-tangent.y, -tangent.x);
     this.setFacing(atan + Math.PI/2, true);
   }
 
   /**
    * Get the x orientation
-   * @returns 
+   * @returns
    */
   getXOrientation(){
-    if(this.template.RootNode.hasField('XOrientation')){
-      return this.template.RootNode.getFieldByLabel('XOrientation').getValue();
-    }
-    return 0;
+    return this.template.RootNode.getNumberByLabel('XOrientation');
   }
 
   /**
    * Get the y orientation
-   * @returns 
+   * @returns
    */
   getYOrientation(){
-    if(this.template.RootNode.hasField('XOrientation')){
-      return this.template.RootNode.getFieldByLabel('XOrientation').getValue();
-    }
-    return 0;
+    return this.template.RootNode.getNumberByLabel('XOrientation');
   }
 
   /**
    * Get the z orientation
-   * @returns 
+   * @returns
    */
   getZOrientation(){
-    if(this.template.RootNode.hasField('ZOrientation')){
-      return this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
-    }
-    return 0;
+    return this.template.RootNode.getNumberByLabel('ZOrientation');
   }
 
   /**
    * Get the linked to module
-   * @returns 
+   * @returns
    */
   getLinkedToModule(){
     return this.linkedToModule;
@@ -2756,7 +2759,7 @@ export class ModuleObject {
 
   /**
    * Get the linked to flags
-   * @returns 
+   * @returns
    */
   getLinkedToFlags(){
     return this.linkedToFlags;
@@ -2764,7 +2767,7 @@ export class ModuleObject {
 
   /**
    * Get the linked to
-   * @returns 
+   * @returns
    */
   getLinkedTo(){
     return this.linkedTo;
@@ -2772,7 +2775,7 @@ export class ModuleObject {
 
   /**
    * Get the transition destin
-   * @returns 
+   * @returns
    */
   getTransitionDestin(){
     if(this.transitionDestin instanceof CExoLocString){
@@ -2783,37 +2786,32 @@ export class ModuleObject {
 
   /**
    * Get the portrait id
-   * @returns 
+   * @returns
    */
   getPortraitId(){
-    if(this.template.RootNode.hasField('PortraitId')){
-      return this.template.RootNode.getFieldByLabel('PortraitId').getValue();
-    }
-    return 0;
+    return this.template.RootNode.getNumberByLabel('PortraitId');
   }
 
   /**
    * Get the key name
-   * @returns 
+   * @returns
    */
   getKeyName(){
-    if(this.template.RootNode.hasField('KeyName')){
-      return this.template.RootNode.getFieldByLabel('KeyName').getValue();
-    }
-    return null;
+    const v = this.template.RootNode.getStringByLabel('KeyName');
+    return v || null;
   }
 
   /**
    * Get the tag
-   * @returns 
+   * @returns
    */
   getTag(){
     if(this.tag){
       return this.tag
     }
-    
-    if(this.template && this.template.RootNode && this.template.RootNode.hasField('Tag')){
-      return this.template.RootNode.getFieldByLabel('Tag').getValue()
+
+    if(this.template?.RootNode?.hasField('Tag')){
+      return this.template.RootNode.getStringByLabel('Tag');
     }
 
     return '';
@@ -2821,29 +2819,25 @@ export class ModuleObject {
 
   /**
    * Get the template resref
-   * @returns 
+   * @returns
    */
   getTemplateResRef(){
-    if(this.template.RootNode.hasField('TemplateResRef')){
-      return this.template.RootNode.getFieldByLabel('TemplateResRef').getValue()
-    }
-    return null;
+    const v = this.template.RootNode.getStringByLabel('TemplateResRef');
+    return v || null;
   }
 
   /**
    * Get the resref
-   * @returns 
+   * @returns
    */
   getResRef(){
-    if(this.template.RootNode.hasField('ResRef')){
-      return this.template.RootNode.getFieldByLabel('ResRef').getValue()
-    }
-    return null;
+    const v = this.template.RootNode.getStringByLabel('ResRef');
+    return v || null;
   }
 
   /**
    * Set the template resref
-   * @param sRef 
+   * @param sRef
    */
   setTemplateResRef(sRef=''){
     if(this.template.RootNode.hasField('TemplateResRef')){
@@ -2851,12 +2845,12 @@ export class ModuleObject {
     }else{
       this.template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(sRef)
     }
-    
+
   }
 
   /**
    * Set the HP
-   * @param value 
+   * @param value
    */
   setHP(value = 0){
     this.currentHP = value;
@@ -2864,8 +2858,8 @@ export class ModuleObject {
 
   /**
    * Add HP
-   * @param value 
-   * @param ignoreMaxHitPoints 
+   * @param value
+   * @param ignoreMaxHitPoints
    */
   addHP(value = 0, ignoreMaxHitPoints = false){
     this.currentHP = (this.getHP() + value);
@@ -2873,7 +2867,7 @@ export class ModuleObject {
 
   /**
    * Subtract HP
-   * @param value 
+   * @param value
    */
   subtractHP(value = 0){
     this.setHP(this.getHP() - value);
@@ -2881,7 +2875,7 @@ export class ModuleObject {
 
   /**
    * Get the HP
-   * @returns 
+   * @returns
    */
   getHP(){
     return this.currentHP;
@@ -2889,7 +2883,7 @@ export class ModuleObject {
 
   /**
    * Get the max HP
-   * @returns 
+   * @returns
    */
   getMaxHP(){
     return this.hp;
@@ -2897,7 +2891,7 @@ export class ModuleObject {
 
   /**
    * Set the max HP
-   * @param value 
+   * @param value
    */
   setMaxHP(value = 0){
     return this.hp = value;
@@ -2905,7 +2899,7 @@ export class ModuleObject {
 
   /**
    * Set the min one HP
-   * @param value 
+   * @param value
    */
   setMinOneHP(value: boolean = false){
     this.min1HP = value;
@@ -2913,20 +2907,20 @@ export class ModuleObject {
 
   /**
    * Add FP
-   * @param nAmount 
-   * @param ignoreMaxForcePoints 
+   * @param nAmount
+   * @param ignoreMaxForcePoints
    */
   addFP(nAmount = 0, ignoreMaxForcePoints = false){}
 
   /**
    * Subtract FP
-   * @param nAmount 
+   * @param nAmount
    */
   subtractFP(nAmount = 0){}
 
   /**
    * Get the AC
-   * @returns 
+   * @returns
    */
   getAC(){
     return 10;
@@ -2934,15 +2928,15 @@ export class ModuleObject {
 
   /**
    * Check if the object is a party member
-   * @returns 
+   * @returns
    */
   isPartyMember(){
-    return this.isPM;//GameState.PartyManager.party.indexOf(this as any) >= 0;
+    return this.isPM; // GameState.PartyManager.party.indexOf(this) >= 0;
   }
 
   /**
    * Compute the bounding box
-   * @param force 
+   * @param force
    */
   computeBoundingBox(force: boolean = false){
     if(this.container){
@@ -2960,15 +2954,15 @@ export class ModuleObject {
       this.model.updateMatrixWorld(true);
       this.model.updateMatrix();
     }
-    
+
     if(this.model instanceof THREE.Object3D)
       this.box.setFromObject(this.model);
   }
 
   /**
    * Check if the object is on screen
-   * @param frustum 
-   * @returns 
+   * @param frustum
+   * @returns
    */
   isOnScreen(frustum = GameState.viewportFrustum){
     if(this.area && this.area.fog){
@@ -2983,7 +2977,7 @@ export class ModuleObject {
 
   /**
    * Get the reticle node
-   * @returns 
+   * @returns
    */
   getReticleNode(){
     if(!this.model){ return; }
@@ -2991,15 +2985,15 @@ export class ModuleObject {
     if(this.model.talkdummy){
       return this.model.talkdummy;
     }
-    
+
     if(this.model.camerahook){
       return this.model.camerahook;
     }
-    
+
     if(this.model.lookathook){
       return this.model.lookathook;
     }
-    
+
     if(this.model.headhook){
       return this.model.headhook;
     }
@@ -3009,16 +3003,16 @@ export class ModuleObject {
 
   /**
    * Set the listening state
-   * @param bListenting 
+   * @param bListenting
    */
   setListening(bListenting = false){
-    this.isListening = bListenting ? true : false;;
+    this.isListening = bListenting ? true : false;
   }
 
   /**
    * Set the listening pattern
-   * @param sString 
-   * @param iNum 
+   * @param sString
+   * @param iNum
    */
   setListeningPattern(sString = '', iNum = 0){
     this.listeningPatterns[sString] = iNum;
@@ -3026,7 +3020,7 @@ export class ModuleObject {
 
   /**
    * Get the listening state
-   * @returns 
+   * @returns
    */
   getIsListening(){
     return this.isListening ? true : false;
@@ -3034,8 +3028,8 @@ export class ModuleObject {
 
   /**
    * Get the local boolean
-   * @param index 
-   * @returns 
+   * @param index
+   * @returns
    */
   getLocalBoolean(index: number){
     return !!this._locals.Booleans[index];
@@ -3043,17 +3037,17 @@ export class ModuleObject {
 
   /**
    * Get the local number
-   * @param index 
-   * @returns 
+   * @param index
+   * @returns
    */
   getLocalNumber(index: number){
-    return (this._locals.Numbers as any)[index] ? (this._locals.Numbers as any)[index] as number : 0;
+    return this._locals.Numbers[index] ?? 0;
   }
 
   /**
    * Set the local boolean
-   * @param index 
-   * @param bool 
+   * @param index
+   * @param bool
    */
   setLocalBoolean(index: number, bool: boolean){
     this._locals.Booleans[index] = !!bool;
@@ -3061,17 +3055,17 @@ export class ModuleObject {
 
   /**
    * Set the local number
-   * @param index 
-   * @param value 
+   * @param index
+   * @param value
    */
   setLocalNumber(index: number, value: number){
-    (this._locals.Numbers as any)[index] = value;
+    this._locals.Numbers[index] = value;
   }
 
   /**
    * Check if the object is hostile to another object
-   * @param target 
-   * @returns 
+   * @param target
+   * @returns
    */
   isHostile(target: ModuleObject){
     return GameState.FactionManager.IsHostile(this, target);
@@ -3079,8 +3073,8 @@ export class ModuleObject {
 
   /**
    * Check if the object is neutral to another object
-   * @param target 
-   * @returns 
+   * @param target
+   * @returns
    */
   isNeutral(target: ModuleObject){
     return GameState.FactionManager.IsNeutral(this, target);
@@ -3088,8 +3082,8 @@ export class ModuleObject {
 
   /**
    * Check if the object is friendly to another object
-   * @param target 
-   * @returns 
+   * @param target
+   * @returns
    */
   isFriendly(target: ModuleObject){
     return GameState.FactionManager.IsFriendly(this, target);
@@ -3097,8 +3091,8 @@ export class ModuleObject {
 
   /**
    * Get the reputation of the object with another object
-   * @param target 
-   * @returns 
+   * @param target
+   * @returns
    */
   getReputation(target: ModuleObject){
     return GameState.FactionManager.GetReputation(this, target);
@@ -3106,7 +3100,7 @@ export class ModuleObject {
 
   /**
    * Get the primary perception range
-   * @returns 
+   * @returns
    */
   getPerceptionRangePrimary(){
     if(!this.perceptionRange){ return 1; }
@@ -3115,7 +3109,7 @@ export class ModuleObject {
 
   /**
    * Get the secondary perception range
-   * @returns 
+   * @returns
    */
   getPerceptionRangeSecondary(){
     if(!this.perceptionRange){ return 1; }
@@ -3128,7 +3122,7 @@ export class ModuleObject {
   initPerceptionList(){
     let length = this.perceptionList.length;
     while(length--){
-      let perceptionObject = this.perceptionList[length];
+      const perceptionObject = this.perceptionList[length];
       if(perceptionObject){
         if(typeof perceptionObject.object == 'undefined' && perceptionObject.objectId){
           perceptionObject.object = GameState.ModuleObjectManager.GetObjectById(perceptionObject.objectId);
@@ -3142,24 +3136,24 @@ export class ModuleObject {
 
   /**
    * Notify the object that it has been heard by another object
-   * @param object 
-   * @param heard 
-   * @returns 
+   * @param object
+   * @param heard
+   * @returns
    */
   notifyPerceptionHeardObject(object: ModuleObject, heard = false){
     if(!object) return;
 
     let triggerOnNotice = false;
     let perceptionObject;
-    let exists = this.perceptionList.filter( (o) => o.object == object );
+    const exists = this.perceptionList.filter( (o) => o.object == object );
     if(exists.length){
-      let existingObject = exists[0];
+      const existingObject = exists[0];
       triggerOnNotice = (!!(existingObject.data & 0x02) != heard);
       existingObject.data |= 0x02;
       perceptionObject = existingObject;
     }else{
       if(heard){
-        let newObject = {
+        const newObject = {
           object: object,
           objectId: object.id,
           data: 0x02
@@ -3192,23 +3186,23 @@ export class ModuleObject {
 
   /**
    * Notify the object that it has been seen by another object
-   * @param object 
-   * @param seen 
-   * @returns 
+   * @param object
+   * @param seen
+   * @returns
    */
   notifyPerceptionSeenObject(object: ModuleObject, seen = false){
     if(!object) return;
 
     let triggerOnNotice = false;
     let perceptionObject;
-    let exists = this.perceptionList.filter( (o) => o.object == object );
+    const exists = this.perceptionList.filter( (o) => o.object == object );
     if(exists.length){
-      let existingObject = exists[0];
+      const existingObject = exists[0];
       triggerOnNotice = (!!(existingObject.data & 0x01) != seen);
       perceptionObject = existingObject;
     }else{
       if(seen){
-        let newObject = {
+        const newObject = {
           object: object,
           objectId: object.id,
           data: 0x01
@@ -3245,14 +3239,14 @@ export class ModuleObject {
 
   /**
    * Check if the object has line of sight to another object
-   * @param oTarget 
-   * @param max_distance 
-   * @returns 
+   * @param oTarget
+   * @param max_distance
+   * @returns
    */
   hasLineOfSight(oTarget: ModuleObject, max_distance = 30){
     if(!this.spawned || !GameState.module.readyToProcessEvents)
       return false;
-    
+
     if(!(oTarget instanceof ModuleObject)){
       return false;
     }
@@ -3328,25 +3322,25 @@ export class ModuleObject {
 
     return true;
   }
-  
+
   /**
    * Set the animation state
-   * @param animState 
+   * @param animState
    */
-  setAnimationState(animState: any){
+  setAnimationState(animState: number){
     this.animState = animState;
   }
 
   /**
    * Play an animation
-   * @param anim 
+   * @param anim
    */
   dialogPlayAnimation(anim: ITwoDAAnimation = {} as ITwoDAAnimation){
-    console.log('dialogPlayAnimation',anim);
-    if(!this.model){ 
-      console.warn('dialogPlayAnimation failed');
-      console.log(this, anim);
-      return; 
+    log.debug('dialogPlayAnimation', anim);
+    if(!this.model){
+      log.warn('dialogPlayAnimation failed');
+      log.debug('dialogPlayAnimation this, anim', this, anim);
+      return;
     }
 
     const odysseyAnimation = this.model.odysseyAnimations.find( (a) => a.name.toLocaleLowerCase() == anim.name.toLocaleLowerCase() );
@@ -3375,40 +3369,40 @@ export class ModuleObject {
 
   /**
    * Use an object
-   * @param object 
+   * @param object
    */
   use(object: ModuleObject){
-    console.warn("Method not implemented.", this.tag);
+    log.warn("Method not implemented.", this.tag);
   }
 
   /**
    * Attack a creature
-   * @param target 
-   * @param feat 
-   * @param isCutsceneAttack 
-   * @param attackDamage 
-   * @param attackAnimation 
-   * @param attackResult 
+   * @param target
+   * @param feat
+   * @param isCutsceneAttack
+   * @param attackDamage
+   * @param attackAnimation
+   * @param attackResult
    */
-  attackCreature(target: ModuleObject, feat?: any, isCutsceneAttack: boolean = false, attackDamage:number = 0, attackAnimation?: any, attackResult?: any) {
-    console.warn("Method not implemented.", this.tag, target);
+  attackCreature(target: ModuleObject, _feat?: number | import("@/talents/TalentFeat").TalentFeat, isCutsceneAttack: boolean = false, _attackDamage: number = 0, _attackAnimation?: number | string, _attackResult?: number | import("@/enums/combat/AttackResult").AttackResult) {
+    log.warn("Method not implemented.", this.tag, target);
   }
   /**
    * Set the commandable state
-   * @param arg0 
+   * @param arg0
    */
   setCommandable(arg0: boolean) {
-    console.warn("Method not implemented.", this.tag);
+    log.warn("Method not implemented.", this.tag);
   }
 
   /**
    * Play a sound set
-   * @param ssfType 
+   * @param ssfType
    */
   playSoundSet(ssfType: SSFType){
-    console.warn("Method not implemented.", this.tag);
+    log.warn("Method not implemented.", this.tag);
   }
-  
+
   /**
    * Initialize the properties
    */
@@ -3416,38 +3410,38 @@ export class ModuleObject {
 
     if(!this.initialized){
       if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+        this.id = this.template.getNumberByLabel('ObjectId');
       }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
+        this.id = this.template.getNumberByLabel('ID');
       }
-      
+
       GameState.ModuleObjectManager.AddObjectById(this);
     }
-    
+
     if(this.template.RootNode.hasField('Animation'))
-      this.animState = this.template.getFieldByLabel('Animation').getValue();
-    
+      this.animState = this.template.getNumberByLabel('Animation');
+
     if(this.template.RootNode.hasField('Appearance')){
-      this.appearance = this.template.getFieldByLabel('Appearance').getValue();
+      this.appearance = this.template.getNumberByLabel('Appearance');
     }
-    
+
     if(this.template.RootNode.hasField('Description'))
       this.description = this.template.getFieldByLabel('Description').getCExoLocString();
-    
+
     if(this.template.RootNode.hasField('ObjectId'))
-      this.id = this.template.getFieldByLabel('ObjectId').getValue();
+      this.id = this.template.getNumberByLabel('ObjectId');
 
     if(this.template.RootNode.hasField('AutoRemoveKey'))
-      this.autoRemoveKey = this.template.getFieldByLabel('AutoRemoveKey').getValue();
+      this.autoRemoveKey = this.template.getNumberByLabel('AutoRemoveKey');
 
     if(this.template.RootNode.hasField('Commandable'))
-      this.commandable = this.template.getFieldByLabel('Commandable').getValue();
+      this.commandable = this.template.getBooleanByLabel('Commandable');
 
     if(this.template.RootNode.hasField('Cursor'))
-      this.cursor = this.template.getFieldByLabel('Cursor').getValue();
+      this.cursor = this.template.getNumberByLabel('Cursor');
 
     if(this.template.RootNode.hasField('Faction')){
-      this.factionId = this.template.getFieldByLabel('Faction').getValue();
+      this.factionId = this.template.getNumberByLabel('Faction');
       if((this.factionId & 0xFFFFFFFF) == -1){
         this.factionId = 0;
       }
@@ -3459,35 +3453,35 @@ export class ModuleObject {
 
       //Push verticies
       for(let i = 0; i < this.geometry.length; i++){
-        let tgv = this.geometry[i];
-        this.vertices[i] = new THREE.Vector3( 
-          tgv.getFieldByLabel('PointX').getValue(),
-          tgv.getFieldByLabel('PointY').getValue(),
-          tgv.getFieldByLabel('PointZ').getValue()
+        const tgv = this.geometry[i];
+        this.vertices[i] = new THREE.Vector3(
+          tgv.getNumberByLabel('PointX'),
+          tgv.getNumberByLabel('PointY'),
+          tgv.getNumberByLabel('PointZ')
         );
       }
     }
 
     if(this.template.RootNode.hasField('HasMapNote'))
-      this.hasMapNote = this.template.getFieldByLabel('HasMapNote').getValue();
+      this.hasMapNote = this.template.getNumberByLabel('HasMapNote');
 
     if(this.template.RootNode.hasField('HighlightHeight'))
-      this.highlightHeight = this.template.getFieldByLabel('HighlightHeight').getValue();
+      this.highlightHeight = this.template.getNumberByLabel('HighlightHeight');
 
     if(this.template.RootNode.hasField('KeyName'))
-      this.keyName = this.template.getFieldByLabel('KeyName').getValue();
+      this.keyName = this.template.getStringByLabel('KeyName');
 
     if(this.template.RootNode.hasField('LinkedTo'))
-      this.linkedTo = this.template.getFieldByLabel('LinkedTo').getValue();
+      this.linkedTo = this.template.getNumberByLabel('LinkedTo');
 
     if(this.template.RootNode.hasField('LinkedToFlags'))
-      this.linkedToFlags = this.template.getFieldByLabel('LinkedToFlags').getValue();
-  
+      this.linkedToFlags = this.template.getNumberByLabel('LinkedToFlags');
+
     if(this.template.RootNode.hasField('LinkedToModule'))
-      this.linkedToModule = this.template.RootNode.getFieldByLabel('LinkedToModule').getValue();
-        
+      this.linkedToModule = this.template.RootNode.getStringByLabel('LinkedToModule');
+
     if(this.template.RootNode.hasField('LoadScreenID'))
-      this.loadScreenID = this.template.getFieldByLabel('LoadScreenID').getValue();
+      this.loadScreenID = this.template.getNumberByLabel('LoadScreenID');
 
     if(this.template.RootNode.hasField('LocName'))
       this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
@@ -3499,74 +3493,74 @@ export class ModuleObject {
       this.mapNote = this.template.getFieldByLabel('MapNote').getCExoLocString();
 
     if(this.template.RootNode.hasField('MapNoteEnabled'))
-      this.mapNoteEnabled = this.template.getFieldByLabel('MapNoteEnabled').getValue();
+      this.mapNoteEnabled = this.template.getNumberByLabel('MapNoteEnabled');
 
     if(this.template.RootNode.hasField('PortraidId')){
-      this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
+      this.portraitId = this.template.getNumberByLabel('PortraidId');
       this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
     }
 
     if(this.template.RootNode.hasField('SetByPlayerParty'))
-      this.setByPlayerParty = this.template.getFieldByLabel('SetByPlayerParty').getValue();
+      this.setByPlayerParty = this.template.getBooleanByLabel('SetByPlayerParty');
 
     if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue();
+      this.tag = this.template.getStringByLabel('Tag');
 
     if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
+      this.templateResRef = this.template.getStringByLabel('TemplateResRef');
 
     if(this.template.RootNode.hasField('TransitionDestin'))
       this.transitionDestin = this.template.getFieldByLabel('TransitionDestin').getCExoLocString();
 
     if(this.template.RootNode.hasField('TrapDetectable'))
-      this.trapDetectable = this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
+      this.trapDetectable = this.template.RootNode.getBooleanByLabel('TrapDetectable');
 
     if(this.template.RootNode.hasField('TrapDisarmable'))
-      this.trapDisarmable = this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
+      this.trapDisarmable = this.template.RootNode.getBooleanByLabel('TrapDisarmable');
 
     if(this.template.RootNode.hasField('TrapOneShot'))
-      this.trapOneShot = this.template.getFieldByLabel('TrapOneShot').getValue();
+      this.trapOneShot = this.template.getBooleanByLabel('TrapOneShot');
 
     if(this.template.RootNode.hasField('TrapType'))
-      this.trapType = this.template.getFieldByLabel('TrapType').getValue();
+      this.trapType = this.template.getNumberByLabel('TrapType');
 
     if(this.template.RootNode.hasField('Type'))
-      this.type = this.template.getFieldByLabel('Type').getValue();
+      this.type = this.template.getNumberByLabel('Type');
 
     if(this.template.RootNode.hasField('XPosition'))
-      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
+      this.position.x = this.template.RootNode.getNumberByLabel('XPosition');
 
     if(this.template.RootNode.hasField('YPosition'))
-      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
+      this.position.y = this.template.RootNode.getNumberByLabel('YPosition');
 
     if(this.template.RootNode.hasField('ZPosition'))
-      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
+      this.position.z = this.template.RootNode.getNumberByLabel('ZPosition');
 
     if(this.template.RootNode.hasField('XOrientation'))
-      this.xOrientation = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
+      this.xOrientation = this.template.RootNode.getNumberByLabel('XOrientation');
 
     if(this.template.RootNode.hasField('YOrientation'))
-      this.yOrientation = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
+      this.yOrientation = this.template.RootNode.getNumberByLabel('YOrientation');
 
     if(this.template.RootNode.hasField('ZOrientation'))
-      this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
-      
+      this.zOrientation = this.template.RootNode.getNumberByLabel('ZOrientation');
+
     if(this.template.RootNode.hasField('FortSaveThrow'))
-      this.fortitudeSaveThrow = this.template.RootNode.getFieldByLabel('FortSaveThrow').getValue();
+      this.fortitudeSaveThrow = this.template.RootNode.getNumberByLabel('FortSaveThrow');
 
     if(this.template.RootNode.hasField('RefSaveThrow'))
-      this.reflexSaveThrow = this.template.RootNode.getFieldByLabel('RefSaveThrow').getValue();
+      this.reflexSaveThrow = this.template.RootNode.getNumberByLabel('RefSaveThrow');
 
     if(this.template.RootNode.hasField('WillSaveThrow'))
-      this.willSaveThrow = this.template.RootNode.getFieldByLabel('WillSaveThrow').getValue();
+      this.willSaveThrow = this.template.RootNode.getNumberByLabel('WillSaveThrow');
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
       if(swVarTableStruct){
         if(swVarTableStruct.hasField('BitArray')){
-          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+          const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
           for(let i = 0; i < localBools.length; i++){
-            let data = localBools[i].getFieldByLabel('Variable').getValue();
+            const data = localBools[i].getNumberByLabel('Variable');
             for(let bit = 0; bit < 32; bit++){
               this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
             }
@@ -3574,9 +3568,9 @@ export class ModuleObject {
         }
 
         if(swVarTableStruct.hasField('ByteArray')){
-          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+          const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
           for(let i = 0; i < localNumbers.length; i++){
-            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            const data = localNumbers[i].getNumberByLabel('Variable');
             this.setLocalNumber(i, data);
           }
         }
@@ -3593,7 +3587,7 @@ export class ModuleObject {
   Save(){
     //TODO
 
-    let gff = new GFFObject();
+    const gff = new GFFObject();
 
     return gff;
 
@@ -3601,17 +3595,17 @@ export class ModuleObject {
 
   /**
    * Get the SWVarTable save struct
-   * @returns 
+   * @returns
    */
   getSWVarTableSaveStruct(){
-    let swVarTableStruct = new GFFStruct();
+    const swVarTableStruct = new GFFStruct();
 
-    let swVarTableBitArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'BitArray') );
+    const swVarTableBitArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'BitArray') );
 
     for(let i = 0; i < 3; i++){
-      let varStruct = new GFFStruct();
+      const varStruct = new GFFStruct();
       let value = 0;
-      let offset = 32 * i;
+      const offset = 32 * i;
       for(let j = 0; j < 32; j++){
         if(this.getLocalBoolean(offset + j) == true){
           value |= 1 << j;
@@ -3622,10 +3616,10 @@ export class ModuleObject {
       swVarTableBitArray.addChildStruct(varStruct);
     }
 
-    let swVarTableByteArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'ByteArray') );
+    const swVarTableByteArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'ByteArray') );
 
     for(let i = 0; i < 8; i++){
-      let varStruct = new GFFStruct();
+      const varStruct = new GFFStruct();
       varStruct.addField( new GFFField(GFFDataType.BYTE, 'Variable') ).setValue( Number(this.getLocalNumber(i)) );
       swVarTableByteArray.addChildStruct(varStruct);
     }
@@ -3634,7 +3628,7 @@ export class ModuleObject {
 
   /**
    * Convert the action queue to an action list
-   * @returns 
+   * @returns
    */
   actionQueueToActionList(){
     const actionList = new GFFField(GFFDataType.LIST, 'ActionList');
@@ -3727,7 +3721,7 @@ export class ModuleObject {
    */
   destroy(){
     this.destroyed = true;
-    try{ console.log('destroy', this.getTag(), this);}catch(e: any){}
+    try{ log.debug('destroy', this.getTag(), this); }catch(e){ /* no-op */ }
     try{
       this.container.removeFromParent();
 
@@ -3866,7 +3860,7 @@ export class ModuleObject {
       GameState.ModuleObjectManager.RemoveObject(this);
       GameState.CursorManager.notifyObjectDestroyed(this);
     }catch(e){
-      console.error('ModuleObject.destroy', e);
+      log.error('ModuleObject.destroy', e as Error);
     }
   }
 

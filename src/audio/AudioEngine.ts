@@ -1,13 +1,18 @@
 import * as THREE from "three";
-import type { AudioEmitter } from "./AudioEmitter";
-import { AudioEngineMode } from "../enums/audio/AudioEngineMode";
-import { IAreaAudioProperties } from "../interface/area/IAreaAudioProperties";
-import { AmbientAudioEmitter } from "./AmbientAudioEmitter";
-import { EAXPresets } from "./EAXPresets";
-import { BackgroundMusicMode } from "../enums/audio/BackgroundMusicMode";
-import { BackgroundMusicState } from "../enums/audio/BackgroundMusicState";
-import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
-import { ReverbEngine } from "./ReverbEngine";
+
+import { AmbientAudioEmitter } from "@/audio/AmbientAudioEmitter";
+import type { AudioEmitter } from "@/audio/AudioEmitter";
+import { EAXPresets } from "@/audio/EAXPresets";
+import { ReverbEngine } from "@/audio/ReverbEngine";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { AudioEngineMode } from "@/enums/audio/AudioEngineMode";
+import { BackgroundMusicMode } from "@/enums/audio/BackgroundMusicMode";
+import { BackgroundMusicState } from "@/enums/audio/BackgroundMusicState";
+import { IAreaAudioProperties } from "@/interface/area/IAreaAudioProperties";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 class AudioChannel {
 
@@ -66,11 +71,11 @@ type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | '
 
 /**
  * AudioEngine class.
- * 
+ *
  * The AudioEngine class manages audio levels and the AudioEmitters that are added to it.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AudioEngine.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -78,9 +83,9 @@ type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | '
 export class AudioEngine {
 
   static focused: boolean = true;
-  
+
   static engines: AudioEngine[] = [];
-  
+
   static loopBGM = true;
 
   static sfxChannel: AudioChannel;
@@ -97,10 +102,16 @@ export class AudioEngine {
 
   static AUDIO_BUFFER_CACHE: Map<string, AudioBuffer> = new Map<string, AudioBuffer>();
 
-  audioCtx: AudioContext = new (global.AudioContext || (global as any).webkitAudioContext)();
+  audioCtx: AudioContext = (() => {
+    const Ctx = typeof globalThis.AudioContext !== 'undefined'
+      ? globalThis.AudioContext
+      : (globalThis as typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) throw new Error('AudioContext not available');
+    return new Ctx();
+  })();
 
-  // reverbLF: any;
-  // reverbHF: any;
+  // reverbLF: number;
+  // reverbHF: number;
   emitters: AudioEmitter[];
 
   ambientAudioDayEmitter: AmbientAudioEmitter;
@@ -285,7 +296,7 @@ export class AudioEngine {
   }
 
   setReverbProfile(index = 0){
-    console.log('setReverbProfile:', index);
+    log.trace('setReverbProfile index=%s', String(index));
     if(index == -1){
       this.setReverbState(false);
       return;
@@ -296,13 +307,13 @@ export class AudioEngine {
 
     const software_mode = (this.mode == AudioEngineMode.Software);
     if(software_mode){
-      console.warn('setReverbProfile:', 'Reverb can\'t be set because Force Software mode is on');
+      log.warn('setReverbProfile: Reverb can\'t be set because Force Software mode is on');
     }
 
     if(index >= 0){
-      let data = EAXPresets.PresetFromIndex(index);
-      console.log('setReverbProfile:', data);
-      
+      const data = EAXPresets.PresetFromIndex(index);
+      log.debug('setReverbProfile data=%o', data);
+
       this.setReverbState(!software_mode);
     }else{
       this.setReverbState(false);
@@ -443,7 +454,7 @@ export class AudioEngine {
   }
 
   static ToggleMute(){
-    console.warn('ToggleMute is unimplemented');
+    log.warn('ToggleMute is unimplemented');
   }
 
   static Mute(channel: AudioEngineChannel = AudioEngineChannel.ALL) {

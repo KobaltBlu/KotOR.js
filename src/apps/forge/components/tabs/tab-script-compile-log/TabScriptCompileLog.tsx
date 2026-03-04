@@ -1,18 +1,26 @@
-import React, { useState } from "react";
-import { TabScriptCompileLogState, TabTextEditorState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import React, { useState } from 'react';
 
-export const TabScriptCompileLog = function(props: any){
-  const tab: TabScriptCompileLogState = props.tab;
-  const parentTab: TabTextEditorState = props.parentTab;
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import type { TabScriptCompileLogState, TabTextEditorState } from '@/apps/forge/states/tabs';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
-  const [logs, setLogs] = useState<any[]>([]);
+const _log = createScopedLogger(LogScope.Forge);
 
-  const onCompile = () => {
-    // console.log('onCompile');
-  };
+export interface ScriptCompileLogEntry {
+  message: string;
+}
 
-  useEffectOnce( () => {
+export interface TabScriptCompileLogProps {
+  tab: TabScriptCompileLogState;
+  parentTab: TabTextEditorState;
+}
+
+export const TabScriptCompileLog: React.FC<TabScriptCompileLogProps> = (_props) => {
+
+  const [logs, _setLogs] = useState<ScriptCompileLogEntry[]>([]);
+
+
+  useEffectOnce(() => {
     // parentTab.addEventListener('onCompile', onCompile);
     return () => {
       // parentTab.removeEventListener('onCompile', onCompile);
@@ -22,13 +30,11 @@ export const TabScriptCompileLog = function(props: any){
   return (
     <div className="tab-pane-content scroll-y log-list">
       {
-        logs.map( (log) => {
-          return (
-            <div className="script-log">
-              <span className="message">{log.message}</span>
-            </div>
-          )
-        })
+        logs.map((entry, idx) => (
+          <div key={idx} className="script-log">
+            <span className="message">{entry.message}</span>
+          </div>
+        ))
       }
     </div>
   );

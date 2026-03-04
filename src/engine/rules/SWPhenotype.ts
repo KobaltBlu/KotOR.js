@@ -1,5 +1,5 @@
-import { TLKManager } from "../../managers/TLKManager";
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { TLKManager } from "@/managers/TLKManager";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 export class SWPhenotype {
   id: number;
@@ -10,7 +10,7 @@ export class SWPhenotype {
     return this.name != -1 ? TLKManager.GetStringById(this.name).Value : this.label;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWPhenotype {
     const phenotype = new SWPhenotype();
     phenotype.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     phenotype.label = TwoDAObject.normalizeValue(row.label, 'string', '');

@@ -1,21 +1,17 @@
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel } from "../../../gui";
-import { ModuleObject } from "../../../module";
-import { DLGObject } from "../../../resource/DLGObject";
-import { DLGNode } from "../../../resource/DLGNode";
-import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
-import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
-import { AudioEngine } from "../../../audio/AudioEngine";
-import { ConversationState } from "../../../enums/dialog/ConversationState";
+import { ConversationState } from "@/enums/dialog/ConversationState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIControl, GUIListBox, GUILabel } from "@/gui";
+import { ModuleObject } from "@/module";
+import { DLGNode } from "@/resource/DLGNode";
+import { DLGObject } from "@/resource/DLGObject";
 
 /**
  * InGameComputer class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameComputer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -44,7 +40,7 @@ export class InGameComputer extends GameMenu {
 
   owner: ModuleObject;
   listener: ModuleObject;
-  
+
   ended: boolean = false;
 
   dialog: DLGObject;
@@ -66,10 +62,10 @@ export class InGameComputer extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
       this.LB_REPLIES.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
-      this.LB_REPLIES.onSelected = (entry: DLGNode, control: any, index: number) => {
+      this.LB_REPLIES.onSelected = (_entry: DLGNode, _control: GUIControl, index: number) => {
         GameState.CutsceneManager.selectReplyAtIndex(index);
       }
       resolve();
@@ -95,14 +91,14 @@ export class InGameComputer extends GameMenu {
   setEntry(entry: DLGNode) {
     this.currentEntry = entry;
     this.LB_MESSAGE.clearItems();
-    if (!!entry.getCompiledString()) {
+    if (entry.getCompiledString()) {
       this.LB_MESSAGE.addItem(entry.getCompiledString());
     }
     this.LB_MESSAGE.updateList();
     this.LB_MESSAGE.show();
   }
 
-  setDialogMode(state: ConversationState) {
+  setDialogMode(_state: ConversationState) {
     // if(state == ConversationState.LISTENING_TO_SPEAKER){
     //   this.LB_MESSAGE.show();
     //   this.LB_MESSAGE.clearItems();
@@ -116,5 +112,5 @@ export class InGameComputer extends GameMenu {
     //   this.LB_MESSAGE.updateList();
     // }
   }
-  
+
 }

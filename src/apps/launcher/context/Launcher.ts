@@ -1,73 +1,83 @@
+import * as swForge from '@/apps/launcher/profiles/forge';
+import * as swKotOR from '@/apps/launcher/profiles/kotor';
+import * as swKotOR2 from '@/apps/launcher/profiles/tsl';
+import type { AppCategoriesMap, LauncherProfile, ProfileCategory } from '@/apps/launcher/types';
+import { ConfigClient } from '@/utility/ConfigClient';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
-
-import * as swKotOR from "../profiles/kotor";
-import * as swKotOR2 from "../profiles/tsl";
-import * as swForge from "../profiles/forge";
-import { ConfigClient } from "../../../utility/ConfigClient";
+const log = createScopedLogger(LogScope.Launcher);
 
 export class Launcher {
-
   static PROFILE_ID: number = 0;
-  static GetProfileID(){
-    return Launcher.PROFILE_ID++;
+  static AppCategories: AppCategoriesMap = {
+    game: { name: 'Games', profiles: [] },
+    tools: { name: 'Modding Tools', profiles: [] },
+  };
+  static AppProfiles: Record<string, LauncherProfile> = {};
+
+  static GetProfileID(): number {
+    const id = Launcher.PROFILE_ID++;
+    log.trace('GetProfileID() returned %s', String(id));
+    return id;
   }
 
-  static AppCategories: any = {
-    game: { name: 'Games', profiles: [] },
-    tools: { name: 'Modding Tools', profiles: [] }
-  };
-  static AppProfiles: any = {};
-
-  static async InitProfiles(){
+  static async InitProfiles(): Promise<void> {
+    log.trace('InitProfiles() started');
     await ConfigClient.Init();
     Launcher.PROFILE_ID = 0;
 
-    Launcher.AppProfiles['kotor'] = swKotOR.LauncherConfig;
-    Launcher.AppProfiles['kotor'].key = 'kotor';
-  
-    Launcher.AppProfiles['tsl'] = swKotOR2.LauncherConfig;
-    Launcher.AppProfiles['tsl'].key = 'tsl';
-  
-    Launcher.AppProfiles['forge'] = swForge.LauncherConfig;
-    Launcher.AppProfiles['forge'].key = 'forge';
-  
-    if(typeof ConfigClient.get(['Profiles']) === 'undefined'){
+    const kotorConfig = { ...swKotOR.LauncherConfig, key: 'kotor' };
+    const tslConfig = { ...swKotOR2.LauncherConfig, key: 'tsl' };
+    const forgeConfig = { ...swForge.LauncherConfig, key: 'forge' };
+
+    Launcher.AppProfiles['kotor'] = kotorConfig;
+    Launcher.AppProfiles['tsl'] = tslConfig;
+    Launcher.AppProfiles['forge'] = forgeConfig;
+
+    if (typeof ConfigClient.get(['Profiles']) === 'undefined') {
+      log.debug('InitProfiles() initializing Profiles in config');
       ConfigClient.set('Profiles', {});
     }
-  
-    let _profiles = Object.keys(Launcher.AppProfiles);
-    for(let i = 0; i < _profiles.length; i++){
-      let profile_key = _profiles[i];
-      let cached_profile = ConfigClient.get(['Profiles', profile_key]);
-      if(typeof cached_profile == 'undefined'){
-        cached_profile = Launcher.AppProfiles[profile_key];
-        cached_profile.key = profile_key;
-        cached_profile.sort = i;
-        cached_profile.id = Launcher.GetProfileID();
-      }else{
-        cached_profile = Object.assign(Launcher.AppProfiles[profile_key], cached_profile);
-        cached_profile.key = profile_key;
-        cached_profile.sort = i;
-        cached_profile.id = Launcher.GetProfileID();
+
+    const profileKeys = Object.keys(Launcher.AppProfiles);
+    for (let i = 0; i < profileKeys.length; i++) {
+      const profile_key = profileKeys[i];
+      let cached_profile = ConfigClient.get(['Profiles', profile_key]) as LauncherProfile | undefined;
+      if (typeof cached_profile === 'undefined') {
+        cached_profile = { ...Launcher.AppProfiles[profile_key], key: profile_key, sort: i, id: Launcher.GetProfileID() };
+      } else {
+        cached_profile = Object.assign({}, Launcher.AppProfiles[profile_key], cached_profile, {
+          key: profile_key,
+          sort: i,
+          id: Launcher.GetProfileID(),
+        });
       }
       ConfigClient.set(['Profiles', profile_key], cached_profile);
     }
-    Launcher.AppProfiles = ConfigClient.get('Profiles');
-    for (const [key, category] of Object.entries(Launcher.AppCategories) as any[]) {
-      category.key = key;
-      category.profiles = [];
-    };
-  
-    for (const [key, profile] of Object.entries(Launcher.AppProfiles) as any[]) {
-      if(typeof Launcher.AppCategories[profile.category] === 'object'){
-        Launcher.AppCategories[profile.category].profiles.push(profile);
+    Launcher.AppProfiles = ConfigClient.get('Profiles') as Record<string, LauncherProfile>;
+
+    for (const [key, category] of Object.entries(Launcher.AppCategories)) {
+      (category as ProfileCategory).key = key;
+      (category as ProfileCategory).profiles = [];
+    }
+
+    for (const [_key, profile] of Object.entries(Launcher.AppProfiles)) {
+      const cat = Launcher.AppCategories[profile.category];
+      if (typeof cat === 'object' && cat) {
+        cat.profiles.push(profile);
       }
-    };
+    }
+    log.info('InitProfiles() completed profiles=%s categories=%s', String(Object.keys(Launcher.AppProfiles).length), String(Object.keys(Launcher.AppCategories).length));
   }
 
-  static GetProfileByKey (key: string = 'kotor') {
-    const profile = Object.values(Launcher.AppProfiles).find( (p:any) => p.key == key);
-    return profile ? profile : Launcher.AppCategories.game.profiles[0];
+  static GetProfileByKey(key: string = 'kotor'): LauncherProfile | undefined {
+    log.trace('GetProfileByKey() key=%s', key);
+    const profile = Object.values(Launcher.AppProfiles).find((p: LauncherProfile) => p.key === key);
+    if (profile) {
+      return profile;
+    }
+    const fallback = Launcher.AppCategories.game?.profiles?.[0];
+    log.debug('GetProfileByKey() no profile for key=%s, fallback=%s', key, fallback ? 'yes' : 'no');
+    return fallback;
   }
-
 }

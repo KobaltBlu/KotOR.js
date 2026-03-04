@@ -1,10 +1,16 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
-import { ItemPropertyEntry } from "../states/tabs/TabUTIEditorState";
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ItemPropertyEntry } from "@/apps/forge/states/tabs/TabUTIEditorState";
+import type { IGameContext } from "@/interface/engine/IGameContext";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class ForgeItem extends ForgeGameObject {
   //GIT Instance Properties
-  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.uti;
+  templateResType: number = KotOR.ResourceTypes.uti;
 
   //Blueprint Properties
   addCost: number = 0;
@@ -28,17 +34,24 @@ export class ForgeItem extends ForgeGameObject {
   // Model data
   model: KotOR.OdysseyModel3D;
   modelLoading: boolean = false;
-  kBaseItem: any = {};
+  kBaseItem: Record<string, string | number> = {};
 
   constructor(buffer?: Uint8Array){
     super();
     if(buffer){
       this.loadFromBuffer(buffer);
     }
-    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+    const onPropChange: EventListenerCallback = (...args: unknown[]) => {
+      this.onPropertyChange(
+        args[0] as string,
+        args[1] as string | number | boolean | object,
+        args[2] as string | number | boolean | object
+      );
+    };
+    this.addEventListener('onPropertyChange', onPropChange);
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
+  onPropertyChange(property: string, newValue: string | number | boolean | object, oldValue: string | number | boolean | object){
     if(property === 'baseItem'){
       this.loadBaseItem();
       if(newValue !== oldValue){
@@ -68,19 +81,19 @@ export class ForgeItem extends ForgeGameObject {
     if(!root) return;
 
     if(root.hasField('AddCost')){
-      this.addCost = root.getFieldByLabel('AddCost').getValue() || 0;
+      this.addCost = root.getNumberByLabel('AddCost');
     }
     if(root.hasField('BaseItem')){
-      this.baseItem = root.getFieldByLabel('BaseItem').getValue() || 0;
+      this.baseItem = root.getNumberByLabel('BaseItem');
     }
     if(root.hasField('Charges')){
-      this.charges = root.getFieldByLabel('Charges').getValue() || 0;
+      this.charges = root.getNumberByLabel('Charges');
     }
     if(root.hasField('Comment')){
-      this.comment = root.getFieldByLabel('Comment').getValue() || '';
+      this.comment = root.getStringByLabel('Comment');
     }
     if(root.hasField('Cost')){
-      this.cost = root.getFieldByLabel('Cost').getValue() || 0;
+      this.cost = root.getNumberByLabel('Cost');
     }
     if(root.hasField('DescIdentified')){
       this.descIdentified = root.getFieldByLabel('DescIdentified').getCExoLocString() || new KotOR.CExoLocString();
@@ -89,50 +102,52 @@ export class ForgeItem extends ForgeGameObject {
       this.description = root.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('Identified')){
-      this.identified = root.getFieldByLabel('Identified').getValue() !== undefined ? !!root.getFieldByLabel('Identified').getValue() : true;
+      this.identified = root.getBooleanByLabel('Identified');
+    } else {
+      this.identified = true;
     }
     if(root.hasField('LocalizedName')){
       this.locName = root.getFieldByLabel('LocalizedName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('ModelVariation')){
-      this.modelVariation = root.getFieldByLabel('ModelVariation').getValue() || 1;
+      this.modelVariation = root.getNumberByLabel('ModelVariation');
     }
     if(root.hasField('PaletteID')){
-      this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
+      this.paletteID = root.getNumberByLabel('PaletteID');
     }
     if(root.hasField('Plot')){
-      this.plot = root.getFieldByLabel('Plot').getValue() || false;
+      this.plot = root.getBooleanByLabel('Plot');
     }
     if(root.hasField('PropertiesList')){
       const propertiesField = root.getFieldByLabel('PropertiesList');
       const structs = propertiesField?.getChildStructs() || [];
       this.properties = structs.map((struct: KotOR.GFFStruct) => {
-        const getValue = (label: string, defaultValue = 0) => struct.hasField(label) ? struct.getFieldByLabel(label).getValue() ?? defaultValue : defaultValue;
+        const getNum = (label: string, defaultValue = 0) => struct.hasField(label) ? struct.getNumberByLabel(label) : defaultValue;
         return {
-          chanceAppear: getValue('ChanceAppear', 100),
-          costTable: getValue('CostTable', 0),
-          costValue: getValue('CostValue', 0),
-          param1: getValue('Param1', 255),
-          param1Value: getValue('Param1Value', 0),
-          propertyName: getValue('PropertyName', 0),
-          subtype: getValue('Subtype', 0),
+          chanceAppear: getNum('ChanceAppear', 100),
+          costTable: getNum('CostTable', 0),
+          costValue: getNum('CostValue', 0),
+          param1: getNum('Param1', 255),
+          param1Value: getNum('Param1Value', 0),
+          propertyName: getNum('PropertyName', 0),
+          subtype: getNum('Subtype', 0),
         } as ItemPropertyEntry;
       });
     }
     if(root.hasField('StackSize')){
-      this.stackSize = root.getFieldByLabel('StackSize').getValue() || 1;
+      this.stackSize = root.getNumberByLabel('StackSize');
     }
     if(root.hasField('Stolen')){
-      this.stolen = root.getFieldByLabel('Stolen').getValue() || false;
+      this.stolen = root.getBooleanByLabel('Stolen');
     }
     if(root.hasField('Tag')){
-      this.tag = root.getFieldByLabel('Tag').getValue() || '';
+      this.tag = root.getStringByLabel('Tag');
     }
     if(root.hasField('TemplateResRef')){
-      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
+      this.templateResRef = root.getStringByLabel('TemplateResRef');
     }
     if(root.hasField('UpgradeLevel')){
-      this.upgradeLevel = root.getFieldByLabel('UpgradeLevel').getValue() || 0;
+      this.upgradeLevel = root.getNumberByLabel('UpgradeLevel');
     }
   }
 
@@ -142,7 +157,7 @@ export class ForgeItem extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'AddCost', this.addCost) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'BaseItem', this.baseItem) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Charges', this.charges) );
@@ -181,7 +196,7 @@ export class ForgeItem extends ForgeGameObject {
   }
 
   loadBaseItem(){
-    if(!this.baseItem){ 
+    if(!this.baseItem){
       this.kBaseItem = {};
       return this.kBaseItem;
     }
@@ -195,7 +210,7 @@ export class ForgeItem extends ForgeGameObject {
   }
 
   nthStringConverter(name = '', nth = 1){
-    let value = nth.toString();
+    const value = nth.toString();
     name = name.substr(0, name.length - value.length);
     return name + value;
   }
@@ -203,16 +218,16 @@ export class ForgeItem extends ForgeGameObject {
   async loadModel(){
     if(this.model){
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch(e){}
+      try{ this.model.dispose(); }catch{ /* ignore */ }
     }
 
-    if(!this.baseItem){ 
+    if(!this.baseItem){
       this.model = new KotOR.OdysseyModel3D();
       return this.model;
     }
 
-    const itemclass = this.stringCleaner(this.kBaseItem.itemclass);
-    let defaultModel = this.stringCleaner(this.kBaseItem.defaultmodel);
+    const itemclass = this.stringCleaner(String(this.kBaseItem.itemclass ?? ''));
+    let defaultModel = this.stringCleaner(String(this.kBaseItem.defaultmodel ?? ''));
 
     if(defaultModel != 'i_null'){
       defaultModel = this.nthStringConverter(defaultModel, this.modelVariation);
@@ -226,7 +241,7 @@ export class ForgeItem extends ForgeGameObject {
       this.processEventListener('onModelChange', [this]);
       const mdl = await KotOR.MDLLoader.loader.load(defaultModel);
       const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
-        context: this.context,
+        context: this.context as unknown as IGameContext,
         lighting: true
       });
       this.model = model;
@@ -237,7 +252,7 @@ export class ForgeItem extends ForgeGameObject {
       this.processEventListener('onModelChange', [this]);
       return this.model;
     }catch(e){
-      console.error(e);
+      log.error(e as Error);
       this.model = new KotOR.OdysseyModel3D();
       this.modelLoading = false;
       this.processEventListener('onModelChange', [this]);
@@ -264,13 +279,13 @@ export class ForgeItem extends ForgeGameObject {
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
-    this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
-    this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
-    this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('ZOrientation').getValue() as number;
-    this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
+    this.templateResRef = strt.getStringByLabel('TemplateResRef');
+    this.rotation.z = strt.getNumberByLabel('XOrientation');
+    this.position.x = strt.getNumberByLabel('XPosition');
+    this.rotation.z = strt.getNumberByLabel('YOrientation');
+    this.position.y = strt.getNumberByLabel('YPosition');
+    this.rotation.z = strt.getNumberByLabel('ZOrientation');
+    this.position.z = strt.getNumberByLabel('ZPosition');
   }
 
 }

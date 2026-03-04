@@ -1,9 +1,11 @@
 import * as THREE from "three";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
-import type { ModuleWaypoint } from "./ModuleWaypoint";
+
+import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+
 
 /**
 * AreaMap class.
@@ -41,8 +43,8 @@ export class AreaMap {
   mapNotes: ModuleWaypoint[] = [];
 
   eventListeners: {
-    mapNoteAdded: Function[],
-    mapNoteRemoved: Function[],
+    mapNoteAdded: ((...args: (string | number | boolean | object)[]) => void)[],
+    mapNoteRemoved: ((...args: (string | number | boolean | object)[]) => void)[],
   } = {
     mapNoteAdded: [],
     mapNoteRemoved: []
@@ -91,7 +93,7 @@ export class AreaMap {
     const resX = this.mapResX+1;
     const resY = this.mapResY+1;
     this.fogAlphaPixelData = new Uint8Array(resX * resY);
-    this.fogAlphaTexture = new THREE.DataTexture(this.fogAlphaPixelData as any, resX, resY, THREE.AlphaFormat);
+    this.fogAlphaTexture = new THREE.DataTexture(this.fogAlphaPixelData as Uint8Array, resX, resY, THREE.AlphaFormat);
     this.fogAlphaTexture.minFilter = THREE.LinearFilter;
     this.fogAlphaTexture.magFilter = THREE.LinearFilter;
     this.fogAlphaTexture.flipY = true;
@@ -115,9 +117,9 @@ export class AreaMap {
   loadDataStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
       this.data = struct.getFieldByLabel('AreaMapData').getVoid();
-      this.dataSize = struct.getFieldByLabel('AreaMapDataSize').getValue();
-      this.mapResX = struct.getFieldByLabel('AreaMapResX').getValue();
-      this.mapResY = struct.getFieldByLabel('AreaMapResY').getValue();
+      this.dataSize = struct.getNumberByLabel('AreaMapDataSize');
+      this.mapResX = struct.getNumberByLabel('AreaMapResX');
+      this.mapResY = struct.getNumberByLabel('AreaMapResY');
       this.generateAlphaTexture();      
     }
   }
@@ -160,25 +162,25 @@ export class AreaMap {
           this._mapCoordinates.y = ((( x - this.worldPt1X) * scaleX) + this.mapPt1X);
           this._mapCoordinates.x = (((-y - this.worldPt1Y) * scaleY) + this.mapPt1Y);
         }
-      break;
+        break;
       case MapNorthAxis.EAST:
         {
           scaleX = (this.mapPt1Y - this.mapPt2Y) / (this.worldPt1X - this.worldPt2X);
-			    scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
+          scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
 
           this._mapCoordinates.x = (((y - this.worldPt1Y) * scaleY) + this.mapPt1X);
           this._mapCoordinates.y = (((x - this.worldPt1X) * scaleX) + this.mapPt1Y);
         }
-      break;
+        break;
       case MapNorthAxis.WEST: //end_m01ab
         {
           scaleX = (this.mapPt1Y - this.mapPt2Y) / (this.worldPt1X - this.worldPt2X);
-			    scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
+          scaleY = (this.mapPt1X - this.mapPt2X) / (this.worldPt1Y - this.worldPt2Y);
 
           this._mapCoordinates.x = (((y - this.worldPt1Y) * scaleY) + this.mapPt1X);
           this._mapCoordinates.y = 1 - (((x - this.worldPt1X) * scaleX) + this.mapPt1Y);
         }
-      break;
+        break;
     }
     return this._mapCoordinates;
   }
@@ -315,7 +317,7 @@ export class AreaMap {
   }
 
   export(): GFFStruct {
-    let mapStruct = new GFFStruct(14);
+    const mapStruct = new GFFStruct(14);
 
     mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt1X') ).setValue(this.mapPt1X);
     mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt1Y') ).setValue(this.mapPt1Y);
@@ -333,7 +335,7 @@ export class AreaMap {
   }
 
   exportData(){
-    let dataStruct = new GFFStruct(14);
+    const dataStruct = new GFFStruct(14);
 
     let byteIndex = 0;
     for(let i = 0; i < this.fogAlphaPixelData.length; i++){
@@ -353,7 +355,7 @@ export class AreaMap {
     return dataStruct;
   }
 
-  addEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', callback: Function){
+  addEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', callback: (...args: (string | number | boolean | object)[]) => void){
     if(!(typeof callback === 'function')) return;
 
     const list = this.eventListeners[name];
@@ -363,7 +365,7 @@ export class AreaMap {
     list.push(callback);
   }
 
-  removeEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', callback: Function){
+  removeEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', callback: (...args: (string | number | boolean | object)[]) => void){
     if(!(typeof callback === 'function')) return;
 
     const list = this.eventListeners[name];
@@ -375,7 +377,7 @@ export class AreaMap {
     list.splice(index, 1);
   }
 
-  processEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', args: any[]){
+  processEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', args: (string | number | boolean | object)[]){
     const list = this.eventListeners[name];
     if(!Array.isArray(list)) return;
 
@@ -386,19 +388,19 @@ export class AreaMap {
 
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
-      let areaMap = new AreaMap();
+      const areaMap = new AreaMap();
 
-      areaMap.mapPt1X = struct.getFieldByLabel('MapPt1X').getValue();
-      areaMap.mapPt1Y = struct.getFieldByLabel('MapPt1Y').getValue();
-      areaMap.mapPt2X = struct.getFieldByLabel('MapPt2X').getValue();
-      areaMap.mapPt2Y = struct.getFieldByLabel('MapPt2Y').getValue();
-      areaMap.mapResX = struct.getFieldByLabel('MapResX').getValue();
-      areaMap.mapZoom = struct.getFieldByLabel('MapZoom').getValue();
-      areaMap.northAxis = struct.getFieldByLabel('NorthAxis').getValue();
-      areaMap.worldPt1X = struct.getFieldByLabel('WorldPt1X').getValue();
-      areaMap.worldPt1Y = struct.getFieldByLabel('WorldPt1Y').getValue();
-      areaMap.worldPt2X = struct.getFieldByLabel('WorldPt2X').getValue();
-      areaMap.worldPt2Y = struct.getFieldByLabel('WorldPt2Y').getValue();
+      areaMap.mapPt1X = struct.getNumberByLabel('MapPt1X');
+      areaMap.mapPt1Y = struct.getNumberByLabel('MapPt1Y');
+      areaMap.mapPt2X = struct.getNumberByLabel('MapPt2X');
+      areaMap.mapPt2Y = struct.getNumberByLabel('MapPt2Y');
+      areaMap.mapResX = struct.getNumberByLabel('MapResX');
+      areaMap.mapZoom = struct.getNumberByLabel('MapZoom');
+      areaMap.northAxis = struct.getNumberByLabel('NorthAxis');
+      areaMap.worldPt1X = struct.getNumberByLabel('WorldPt1X');
+      areaMap.worldPt1Y = struct.getNumberByLabel('WorldPt1Y');
+      areaMap.worldPt2X = struct.getNumberByLabel('WorldPt2X');
+      areaMap.worldPt2Y = struct.getNumberByLabel('WorldPt2Y');
 
       areaMap.init();
 

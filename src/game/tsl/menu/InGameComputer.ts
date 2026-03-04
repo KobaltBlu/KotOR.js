@@ -1,6 +1,8 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIListBox } from "../../../gui";
-import { InGameComputer as K1_InGameComputer } from "../../kotor/KOTOR";
+import { InGameComputer as K1_InGameComputer } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUIControl, GUILabel, GUIListBox } from "@/gui";
+import { DLGNode } from "@/resource/DLGNode";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /**
  * InGameComputer class.
@@ -11,6 +13,8 @@ import { InGameComputer as K1_InGameComputer } from "../../kotor/KOTOR";
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+const log = createScopedLogger(LogScope.Game);
+
 export class InGameComputer extends K1_InGameComputer {
 
   declare LBL_REP_UNITS: GUILabel;
@@ -38,14 +42,21 @@ export class InGameComputer extends K1_InGameComputer {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
+    log.trace('InGameComputer.menuControlInitializer', { skipInit });
     await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if(skipInit) {
+      log.debug('InGameComputer.menuControlInitializer: skipInit true');
+      return;
+    }
+    return new Promise<void>((resolve, _reject) => {
+      log.debug('InGameComputer.menuControlInitializer: initializing');
       this.LB_MESSAGE.clearItems();
       this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
-      this.LB_REPLIES.onSelected = (entry: any, control: any, index: number) => {
+      this.LB_REPLIES.onSelected = (_entry: DLGNode, _control: GUIControl, index: number) => {
+        log.debug('InGameComputer: reply selected', { index });
         GameState.CutsceneManager.selectReplyAtIndex(index);
       }
+      log.trace('InGameComputer.menuControlInitializer complete');
       resolve();
     });
   }

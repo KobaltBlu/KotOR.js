@@ -1,7 +1,11 @@
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
+import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+
+
+const log = createScopedLogger(LogScope.NWScript);
 import {
   OP_CONST, OP_ACTION, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII,
   OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ,
@@ -9,7 +13,7 @@ import {
   OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
   OP_NEG, OP_COMPI, OP_NOTI,
   OP_CPTOPBP, OP_CPTOPSP
-} from '../NWScriptOPCodes';
+} from '@/nwscript/NWScriptOPCodes';
 
 /**
  * Builds expressions from stack-based instructions.
@@ -60,7 +64,7 @@ export class NWScriptExpressionBuilder {
    * Local variable initializations (for looking up variable info by index)
    * Set by the converter to provide variable names and types
    */
-  private localVariableInits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: any }> = [];
+  private localVariableInits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: number | string | boolean }> = [];
   
   /**
    * Current stack pointer (for calculating source positions in CPTOPSP)
@@ -126,7 +130,7 @@ export class NWScriptExpressionBuilder {
    * Handle CONST instruction (push constant onto stack)
    */
   private handleConst(instruction: NWScriptInstruction): NWScriptExpression {
-    let value: any;
+    let value: number | string;
     let dataType: NWScriptDataType;
 
     switch (instruction.type) {
@@ -172,8 +176,9 @@ export class NWScriptExpressionBuilder {
       return expr;
     }
 
-    const right = this.expressionStack.pop()!;
-    const left = this.expressionStack.pop()!;
+    const right = this.expressionStack.pop();
+    const left = this.expressionStack.pop();
+    if (right === undefined || left === undefined) throw new Error('Expression stack underflow in binary op');
     const operator = this.getBinaryOperator(instruction.code);
     const dataType = this.getResultType(instruction.type);
     
@@ -198,7 +203,8 @@ export class NWScriptExpressionBuilder {
 
     // If only one element, create a comparison with a default right side
     if (this.expressionStack.length === 1) {
-      const left = this.expressionStack.pop()!;
+      const left = this.expressionStack.pop();
+      if (left === undefined) throw new Error('Expression stack underflow in comparison');
       const right = NWScriptExpression.constant(0, NWScriptDataType.INTEGER);
       const operator = this.getComparisonOperator(instruction.code);
       const expr = NWScriptExpression.comparison(operator, left, right);
@@ -207,8 +213,9 @@ export class NWScriptExpressionBuilder {
     }
 
     // Normal case: pop two elements
-    const right = this.expressionStack.pop()!;
-    const left = this.expressionStack.pop()!;
+    const right = this.expressionStack.pop();
+    const left = this.expressionStack.pop();
+    if (right === undefined || left === undefined) throw new Error('Expression stack underflow in comparison');
     const operator = this.getComparisonOperator(instruction.code);
     
     const expr = NWScriptExpression.comparison(operator, left, right);
@@ -230,10 +237,11 @@ export class NWScriptExpressionBuilder {
       return expr;
     }
 
-    const right = this.expressionStack.pop()!;
-    const left = this.expressionStack.pop()!;
+    const right = this.expressionStack.pop();
+    const left = this.expressionStack.pop();
+    if (right === undefined || left === undefined) throw new Error('Expression stack underflow in logical op');
     const operator = this.getLogicalOperator(instruction.code);
-    
+
     const expr = NWScriptExpression.logical(operator, left, right);
     this.expressionStack.push(expr);
     return expr;
@@ -253,10 +261,11 @@ export class NWScriptExpressionBuilder {
       return expr;
     }
 
-    const right = this.expressionStack.pop()!;
-    const left = this.expressionStack.pop()!;
+    const right = this.expressionStack.pop();
+    const left = this.expressionStack.pop();
+    if (right === undefined || left === undefined) throw new Error('Expression stack underflow in bitwise op');
     const operator = instruction.code === OP_INCORII ? '|' : '^';
-    
+
     const expr = NWScriptExpression.binaryOp(operator, left, right, NWScriptDataType.INTEGER);
     this.expressionStack.push(expr);
     return expr;
@@ -283,9 +292,9 @@ export class NWScriptExpressionBuilder {
       return expr;
     }
 
-    const right = this.expressionStack.pop()!;
-    const left = this.expressionStack.pop()!;
-    
+    const right = this.expressionStack.pop();
+    const left = this.expressionStack.pop();
+    if (right === undefined || left === undefined) throw new Error('Expression stack underflow in shift op');
     let operator: string;
     switch (instruction.code) {
       case OP_SHLEFTII: operator = '<<'; break;
@@ -293,7 +302,7 @@ export class NWScriptExpressionBuilder {
       case OP_USHRIGHTII: operator = '>>>'; break;
       default: operator = '?';
     }
-    
+
     const expr = NWScriptExpression.binaryOp(operator, left, right, NWScriptDataType.INTEGER);
     this.expressionStack.push(expr);
     return expr;
@@ -312,7 +321,8 @@ export class NWScriptExpressionBuilder {
       return expr;
     }
 
-    const operand = this.expressionStack.pop()!;
+    const operand = this.expressionStack.pop();
+    if (operand === undefined) throw new Error('Expression stack underflow in unary op');
     const operator = this.getUnaryOperator(instruction.code);
     const dataType = instruction.type === 0x03 ? NWScriptDataType.INTEGER : NWScriptDataType.FLOAT;
     
@@ -338,7 +348,9 @@ export class NWScriptExpressionBuilder {
     // So when we pop them, we get them in reverse order (last arg first)
     // We use push to collect them, then reverse to get correct order
     for (let i = 0; i < argCount && this.expressionStack.length > 0; i++) {
-      args.unshift(this.expressionStack.pop()!);
+      const arg = this.expressionStack.pop();
+      if (arg === undefined) throw new Error('Expression stack underflow in action args');
+      args.unshift(arg);
       // args.push(this.expressionStack.pop()!); // Push to array (will be in reverse order)
     }
     
@@ -373,13 +385,15 @@ export class NWScriptExpressionBuilder {
       
       if (offsetSigned < 0 && this.functionParameters.has(offsetSigned)) {
         // This is a function parameter (negative offset relative to BP)
-        const param = this.functionParameters.get(offsetSigned)!;
+        const param = this.functionParameters.get(offsetSigned);
+        if (param === undefined) throw new Error('function parameter missing');
         varName = param.name;
         dataType = param.dataType;
       } else if (offsetSigned < 0 && this.globalVariables.has(offsetSigned)) {
         // This is a global variable (negative offset relative to BP)
         // ALL stack offsets are negative - we're always looking down from the top
-        const globalVar = this.globalVariables.get(offsetSigned)!;
+        const globalVar = this.globalVariables.get(offsetSigned);
+        if (globalVar === undefined) throw new Error('global variable missing');
         varName = globalVar.name;
         dataType = globalVar.dataType;
       } else {
@@ -399,13 +413,13 @@ export class NWScriptExpressionBuilder {
       
       // First, try to resolve using the dynamic stack position map (stack-aware)
       const varIndex = this.variableStackPositions.get(sourceStackPos);
-      console.log(`[ExpressionBuilder.handleVariableRead] CPTOPSP: SP=${this.stackPointer}, offset=${offsetSigned}, sourcePos=${sourceStackPos}, varIndex=${varIndex}`);
+      log.info(`[ExpressionBuilder.handleVariableRead] CPTOPSP: SP=${this.stackPointer}, offset=${offsetSigned}, sourcePos=${sourceStackPos}, varIndex=${varIndex}`);
       if (varIndex !== undefined && this.localVariableInits[varIndex]) {
         // Found variable using stack-aware resolution
         const init = this.localVariableInits[varIndex];
         varName = `localVar_${varIndex}`;
         dataType = init.dataType;
-        console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using stack-aware resolution`);
+        log.info(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using stack-aware resolution`);
       } else {
         // Stack-aware fallback: Check all variable positions with tolerance
         // The stack may have grown between RSADD and CPTOPSP, so check all recorded positions
@@ -428,18 +442,19 @@ export class NWScriptExpressionBuilder {
           const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
           if (this.localVariables.has(offsetUnsigned)) {
             // Use mapped local variable name from static mapping
-            const localVar = this.localVariables.get(offsetUnsigned)!;
+            const localVar = this.localVariables.get(offsetUnsigned);
+            if (localVar === undefined) throw new Error('local variable missing');
             varName = localVar.name;
             dataType = localVar.dataType;
-            console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using static offset mapping (offset=${offsetUnsigned.toString(16)})`);
+            log.info(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using static offset mapping (offset=${offsetUnsigned.toString(16)})`);
           } else {
             // Generate a generic name as absolute last resort
             varName = this.generateVariableName(false, offset);
             dataType = NWScriptDataType.INTEGER; // Default, could be improved
-            console.log(`[ExpressionBuilder.handleVariableRead] Generated generic name: ${varName}`);
+            log.info(`[ExpressionBuilder.handleVariableRead] Generated generic name: ${varName}`);
           }
         } else {
-          console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using fallback tolerance search`);
+          log.info(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using fallback tolerance search`);
         }
       }
     }
@@ -594,7 +609,7 @@ export class NWScriptExpressionBuilder {
   /**
    * Set local variable initializations for variable info lookup
    */
-  setLocalVariableInits(inits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: any }>): void {
+  setLocalVariableInits(inits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: number | string | boolean }>): void {
     this.localVariableInits = inits;
   }
   

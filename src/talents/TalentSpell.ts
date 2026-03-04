@@ -1,17 +1,21 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { TalentObject } from "./TalentObject";
-import type { ModuleObject } from "../module";
-import { OdysseyModel3D } from "../three/odyssey";
-import { TwoDAManager } from "../managers/TwoDAManager";
-import { ActionType } from "../enums/actions/ActionType";
-import { ActionCombat } from "../actions/ActionCombat";
-import { CombatRoundAction, SpellCastInstance } from "../combat";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { TalentObjectType } from "../enums/engine/TalentObjectType";
-import { TwoDAObject } from "../resource/TwoDAObject";
+import { TalentObject } from "@/talents/TalentObject";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { ActionCombat } from "@/actions/ActionCombat";
+import { CombatRoundAction, SpellCastInstance } from "@/combat";
+import { ActionType } from "@/enums/actions/ActionType";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { TalentObjectType } from "@/enums/engine/TalentObjectType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import type { ModuleObject } from "@/module";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 const underscoreParser = (value: string = ''): number[] => {
   return value.split('_').map((val) => {
@@ -180,7 +184,7 @@ export class TalentSpell extends TalentObject {
   useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
     super.useTalentOnObject(oTarget, oCaster);
 
-    console.log('Talent.useTalentOnObject', this);
+    log.info('Talent.useTalentOnObject', this);
     
     oCaster.combatData.lastSpellTarget = oTarget;
     oTarget.combatData.lastSpellAttacker = oCaster;
@@ -213,7 +217,7 @@ export class TalentSpell extends TalentObject {
     if(oTarget == oCaster){
       return true;
     }
-    let distance = oCaster.position.distanceTo(oTarget.position);
+    const distance = oCaster.position.distanceTo(oTarget.position);
     //Spell ranges are defined in the ranges.2da file
     switch(this.range){
       case 'L': //Large
@@ -249,194 +253,194 @@ export class TalentSpell extends TalentObject {
     }
   }
 
-  static From2DA( row: any ){
+  static From2DA(row: ITwoDARowData | Record<string, string | number>) {
     const spell = new TalentSpell();
     spell.parseTwoDARow(row);
     return spell;
   }
 
-  parseTwoDARow( row: any ){
-    if (row.hasOwnProperty('__rowlabel'))
+  parseTwoDARow(row: ITwoDARowData | Record<string, string | number>) {
+    if (Object.hasOwn(row,'__rowlabel'))
       this.id = TwoDAObject.normalizeValue(row.__rowlabel, 'number', 0);
 
-    if (row.hasOwnProperty('label'))
+    if (Object.hasOwn(row,'label'))
       this.label = TwoDAObject.normalizeValue(row.label, 'string', '');
 
-    if (row.hasOwnProperty('name'))
+    if (Object.hasOwn(row,'name'))
       this.name = TwoDAObject.normalizeValue(row.name, 'number', -1);
 
-    if (row.hasOwnProperty('spelldesc'))
+    if (Object.hasOwn(row,'spelldesc'))
       this.spelldesc = TwoDAObject.normalizeValue(row.spelldesc, 'number', -1);
 
-    if (row.hasOwnProperty('forcepoints'))
+    if (Object.hasOwn(row,'forcepoints'))
       this.forcepoints = TwoDAObject.normalizeValue(row.forcepoints, 'number', -1);
 
-    if (row.hasOwnProperty('goodevil'))
+    if (Object.hasOwn(row,'goodevil'))
       this.goodEvil = TwoDAObject.normalizeValue(row.goodevil, 'string', '-');
 
-    if (row.hasOwnProperty('usertype'))
+    if (Object.hasOwn(row,'usertype'))
       this.userType = TwoDAObject.normalizeValue(row.usertype, 'number', 0);
 
-    if (row.hasOwnProperty('prerequisites'))
+    if (Object.hasOwn(row,'prerequisites'))
       this.prerequisites = underscoreParser(TwoDAObject.normalizeValue(row.prerequisites, 'string', ''));
 
-    if (row.hasOwnProperty('masterspell'))
+    if (Object.hasOwn(row,'masterspell'))
       this.masterspell = TwoDAObject.normalizeValue(row.masterspell, 'number', -1);
 
-    if (row.hasOwnProperty('guardian'))
+    if (Object.hasOwn(row,'guardian'))
       this.guardian = TwoDAObject.normalizeValue(row.guardian, 'number', 0);
 
-    if (row.hasOwnProperty('consular'))
+    if (Object.hasOwn(row,'consular'))
       this.consular = TwoDAObject.normalizeValue(row.consular, 'number', 0);
 
-    if (row.hasOwnProperty('sentinel'))
+    if (Object.hasOwn(row,'sentinel'))
       this.sentinel = TwoDAObject.normalizeValue(row.sentinel, 'number', 0);
 
-    if (row.hasOwnProperty('weaponmaster'))
+    if (Object.hasOwn(row,'weaponmaster'))
       this.weaponmaster = TwoDAObject.normalizeValue(row.weaponmaster, 'number', 0);
 
-    if (row.hasOwnProperty('jedimaster'))
+    if (Object.hasOwn(row,'jedimaster'))
       this.jedimaster = TwoDAObject.normalizeValue(row.jedimaster, 'number', 0);
 
-    if (row.hasOwnProperty('watchman'))
+    if (Object.hasOwn(row,'watchman'))
       this.watchman = TwoDAObject.normalizeValue(row.watchman, 'number', 0);
 
-    if (row.hasOwnProperty('marauder'))
+    if (Object.hasOwn(row,'marauder'))
       this.marauder = TwoDAObject.normalizeValue(row.marauder, 'number', 0);
 
-    if (row.hasOwnProperty('sithlord'))
+    if (Object.hasOwn(row,'sithlord'))
       this.sithlord = TwoDAObject.normalizeValue(row.sithlord, 'number', 0);
 
-    if (row.hasOwnProperty('assassin'))
+    if (Object.hasOwn(row,'assassin'))
       this.assassin = TwoDAObject.normalizeValue(row.assassin, 'number', 0);
 
-    if (row.hasOwnProperty('inate'))
+    if (Object.hasOwn(row,'inate'))
       this.inate = TwoDAObject.normalizeValue(row.inate, 'number', 0);
 
-    if (row.hasOwnProperty('maxcr'))
+    if (Object.hasOwn(row,'maxcr'))
       this.maxCR = TwoDAObject.normalizeValue(row.maxcr, 'number', -1);
 
-    if (row.hasOwnProperty('category'))
+    if (Object.hasOwn(row,'category'))
       this.category = TwoDAObject.normalizeValue(row.category, 'number', 0);
 
-    if (row.hasOwnProperty('range'))
+    if (Object.hasOwn(row,'range'))
       this.range = TwoDAObject.normalizeValue(row.range, 'string', '');
 
-    if (row.hasOwnProperty('iconresref'))
+    if (Object.hasOwn(row,'iconresref'))
       this.iconresref = TwoDAObject.normalizeValue(row.iconresref, 'string', '');
 
-    if (row.hasOwnProperty('impactscript'))
+    if (Object.hasOwn(row,'impactscript'))
       this.impactscript = TwoDAObject.normalizeValue(row.impactscript, 'string', '');
 
-    if (row.hasOwnProperty('conjtime'))
+    if (Object.hasOwn(row,'conjtime'))
       this.conjtime = TwoDAObject.normalizeValue(row.conjtime, 'number', 0);
 
-    if (row.hasOwnProperty('conjanim'))
+    if (Object.hasOwn(row,'conjanim'))
       this.conjanim = TwoDAObject.normalizeValue(row.conjanim, 'string', '');
 
-    if (row.hasOwnProperty('conjheadvisual'))
+    if (Object.hasOwn(row,'conjheadvisual'))
       this.conjheadvisual = TwoDAObject.normalizeValue(row.conjheadvisual, 'string', '');
 
-    if (row.hasOwnProperty('conjhandvisual'))
+    if (Object.hasOwn(row,'conjhandvisual'))
       this.conjhandvisual = TwoDAObject.normalizeValue(row.conjhandvisual, 'string', '');
 
-    if (row.hasOwnProperty('conjgrndvisual'))
+    if (Object.hasOwn(row,'conjgrndvisual'))
       this.conjgrndvisual = TwoDAObject.normalizeValue(row.conjgrndvisual, 'string', '');
 
-    if (row.hasOwnProperty('conjsoundvfx'))
+    if (Object.hasOwn(row,'conjsoundvfx'))
       this.conjsoundvfx = TwoDAObject.normalizeValue(row.conjsoundvfx, 'string', '');
 
-    if (row.hasOwnProperty('conjsoundmale'))
+    if (Object.hasOwn(row,'conjsoundmale'))
       this.conjsoundmale = TwoDAObject.normalizeValue(row.conjsoundmale, 'string', '');
 
-    if (row.hasOwnProperty('conjsoundfemale'))
+    if (Object.hasOwn(row,'conjsoundfemale'))
       this.conjsoundfemale = TwoDAObject.normalizeValue(row.conjsoundfemale, 'string', '');
 
-    if (row.hasOwnProperty('castanim'))
+    if (Object.hasOwn(row,'castanim'))
       this.castanim = TwoDAObject.normalizeValue(row.castanim, 'string', 'self');
 
-    if (row.hasOwnProperty('casttime'))
+    if (Object.hasOwn(row,'casttime'))
       this.casttime = TwoDAObject.normalizeValue(row.casttime, 'number', 0);
 
-    if (row.hasOwnProperty('castheadvisual'))
+    if (Object.hasOwn(row,'castheadvisual'))
       this.castheadvisual = TwoDAObject.normalizeValue(row.castheadvisual, 'string', '');
 
-    if (row.hasOwnProperty('casthandvisual'))
+    if (Object.hasOwn(row,'casthandvisual'))
       this.casthandvisual = TwoDAObject.normalizeValue(row.casthandvisual, 'string', '');
 
-    if (row.hasOwnProperty('castgrndvisual'))
+    if (Object.hasOwn(row,'castgrndvisual'))
       this.castgrndvisual = TwoDAObject.normalizeValue(row.castgrndvisual, 'string', '');
 
-    if (row.hasOwnProperty('castsound'))
+    if (Object.hasOwn(row,'castsound'))
       this.castsound = TwoDAObject.normalizeValue(row.castsound, 'string', '');
     
-    if (row.hasOwnProperty('catchtime'))
+    if (Object.hasOwn(row,'catchtime'))
       this.catchtime = TwoDAObject.normalizeValue(row.catchtime, 'number', 0);
 
-    if (row.hasOwnProperty('catchanim'))
+    if (Object.hasOwn(row,'catchanim'))
       this.catchanim = TwoDAObject.normalizeValue(row.catchanim, 'string', '');
 
-    if (row.hasOwnProperty('proj'))
+    if (Object.hasOwn(row,'proj'))
       this.proj = TwoDAObject.normalizeValue(row.proj, 'number', 0);
 
-    if (row.hasOwnProperty('projmodel'))
+    if (Object.hasOwn(row,'projmodel'))
       this.projmodel = TwoDAObject.normalizeValue(row.projmodel, 'string', '');
 
-    if (row.hasOwnProperty('projtype'))
+    if (Object.hasOwn(row,'projtype'))
       this.projtype = TwoDAObject.normalizeValue(row.projtype, 'string', '');
     
-    if (row.hasOwnProperty('projspwnpoint'))
+    if (Object.hasOwn(row,'projspwnpoint'))
       this.projspwnpoint = TwoDAObject.normalizeValue(row.projspwnpoint, 'string', '');
     
-    if (row.hasOwnProperty('projsound'))
+    if (Object.hasOwn(row,'projsound'))
       this.projsound = TwoDAObject.normalizeValue(row.projsound, 'string', '');
 
-    if (row.hasOwnProperty('projorientation'))
+    if (Object.hasOwn(row,'projorientation'))
       this.projorientation = TwoDAObject.normalizeValue(row.projorientation, 'string', '');
 
-    if (row.hasOwnProperty('immunitytype'))
+    if (Object.hasOwn(row,'immunitytype'))
       this.immunitytype = TwoDAObject.normalizeValue(row.immunitytype, 'string', '');
     
-    if (row.hasOwnProperty('itemimmunity'))
+    if (Object.hasOwn(row,'itemimmunity'))
       this.itemimmunity = TwoDAObject.normalizeValue(row.itemimmunity, 'string', '');
     
-    if (row.hasOwnProperty('forcehostile'))
+    if (Object.hasOwn(row,'forcehostile'))
       this.forcehostile = TwoDAObject.normalizeValue(row.forcehostile, 'number', -1);
     
-    if (row.hasOwnProperty('forcefriendly'))
+    if (Object.hasOwn(row,'forcefriendly'))
       this.forcefriendly = TwoDAObject.normalizeValue(row.forcefriendly, 'number', -1);
     
-    if (row.hasOwnProperty('forcepassive'))
+    if (Object.hasOwn(row,'forcepassive'))
       this.forcepassive = TwoDAObject.normalizeValue(row.forcepassive, 'number', -1);
     
-    if (row.hasOwnProperty('forcepriority'))
+    if (Object.hasOwn(row,'forcepriority'))
       this.forcepriority = TwoDAObject.normalizeValue(row.forcepriority, 'number', -1);
     
-    if (row.hasOwnProperty('dark_recom'))
+    if (Object.hasOwn(row,'dark_recom'))
       this.dark_recom = TwoDAObject.normalizeValue(row.dark_recom, 'number', -1);
     
-    if (row.hasOwnProperty('light_recom'))
+    if (Object.hasOwn(row,'light_recom'))
       this.light_recom = TwoDAObject.normalizeValue(row.light_recom, 'number', -1);
     
-    if (row.hasOwnProperty('exclusion'))
+    if (Object.hasOwn(row,'exclusion'))
       this.exclusion = TwoDAObject.normalizeValue(row.exclusion, 'number', 0);
     
-    if (row.hasOwnProperty('requireitemmask'))
+    if (Object.hasOwn(row,'requireitemmask'))
       this.requireitemmask = TwoDAObject.normalizeValue(row.requireitemmask, 'number', 0);
     
-    if (row.hasOwnProperty('forbiditemmask'))
+    if (Object.hasOwn(row,'forbiditemmask'))
       this.forbiditemmask = TwoDAObject.normalizeValue(row.forbiditemmask, 'number', 0);
     
-    if (row.hasOwnProperty('pips'))
+    if (Object.hasOwn(row,'pips'))
       this.pips = TwoDAObject.normalizeValue(row.pips, 'number', -1);
     
-    if (row.hasOwnProperty('itemtargeting'))
+    if (Object.hasOwn(row,'itemtargeting'))
       this.itemtargeting = TwoDAObject.normalizeValue(row.itemtargeting, 'number', -1);
     
-    if (row.hasOwnProperty('hostilesetting'))
+    if (Object.hasOwn(row,'hostilesetting'))
       this.hostilesetting = TwoDAObject.normalizeValue(row.hostilesetting, 'number', -1);
 
-    if (row.hasOwnProperty('formmask'))
+    if (Object.hasOwn(row,'formmask'))
       this.formmask = TwoDAObject.normalizeValue(row.formmask, 'number', 0);
   }
 
@@ -457,7 +461,7 @@ export class TalentSpell extends TalentObject {
   }
 
   save(){
-    let spellStruct = new GFFStruct(3);
+    const spellStruct = new GFFStruct(3);
     spellStruct.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue(this.getId());
     //spellStruct.addField( new GFFField(GFFDataType.SHORT, 'SpellFlags') ).setValue(this.getFlags());
     //spellStruct.addField( new GFFField(GFFDataType.SHORT, 'SpellMetaMagic') ).setValue(this.getMetaMagic());

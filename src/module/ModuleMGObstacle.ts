@@ -1,19 +1,22 @@
-import { ModuleObject } from "./ModuleObject";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
-import { NWScript } from "../nwscript/NWScript";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFObject } from "../resource/GFFObject";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import { GameState } from "../GameState";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ILayoutObstacle } from "@/interface/resource/ILayoutObstacle";
+import { ModuleObject } from "@/module/ModuleObject";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFObject } from "@/resource/GFFObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Module);
+import { GameState } from "@/GameState";
 
 /**
 * ModuleMGObstacle class.
-* 
+*
 * Class representing a obstacle found in minigame modules.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMGObstacle.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -26,67 +29,69 @@ export class ModuleMGObstacle extends ModuleObject {
   invince_period: number;
   layout: ILayoutObstacle;
 
-  constructor(template: GFFObject, layout: ILayoutObstacle){
+  constructor(template: GFFObject | undefined, layout: ILayoutObstacle) {
     super(template);
     this.objectType |= ModuleObjectType.ModuleMGObstacle;
     this.name = '';
     this.invince = 0;
     this.layout = layout;
+    if (layout?.position) this.position.copy(layout.position as { x: number; y: number; z: number });
   }
 
-  setTemplate(template: GFFObject){
+  setTemplate(template: GFFObject) {
     this.template = template;
     this.initProperties();
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0) {
 
     this.invince -= delta;
-    if(this.invince < 0) this.invince = 0;
+    if (this.invince < 0) this.invince = 0;
 
   }
 
-  updatePaused(delta: number = 0){
-    
-  }
-
-  damage(damage = 0){
+  updatePaused(delta: number = 0) {
 
   }
 
-  adjustHitPoints(nHP = 0, nAbsolute = 0){
+  damage(damage = 0) {
+
+  }
+
+  adjustHitPoints(nHP = 0, nAbsolute = 0) {
     this.hit_points += nHP;
   }
 
-  startInvulnerability(){
+  startInvulnerability() {
     this.invince = this.invince_period || 0;
   }
 
-  onAnimEvent(){
+  onAnimEvent() {
     const onAnimEvent = this.scripts[ModuleObjectScript.MGObstacleOnAnimEvent];
-    if(!onAnimEvent){ return; }
+    if (!onAnimEvent) { return; }
     onAnimEvent.run(this, 0);
   }
 
-  onCreate(){
+  onCreate() {
     const onCreate = this.scripts[ModuleObjectScript.MGObstacleOnCreate];
-    if(!onCreate){ return; }
+    if (!onCreate) { return; }
     onCreate.run(this, 0);
   }
 
-  onHitBullet(){
+  onHitBullet() {
     const onHitBullet = this.scripts[ModuleObjectScript.MGObstacleOnHitBullet];
-    if(!onHitBullet){ return; }
+    if (!onHitBullet) { return; }
     onHitBullet.run(this, 0);
   }
 
-  onHitFollower(){
+  onHitFollower() {
     const onHitFollower = this.scripts[ModuleObjectScript.MGObstacleOnHitFollower];
-    if(!onHitFollower){ return; }
+    if (!onHitFollower) { return; }
     onHitFollower.run(this, 0);
   }
 
-  loadScripts(){
+  loadScripts() {
+    if (!this.template?.RootNode) return;
     const scriptKeys = [
       ModuleObjectScript.MGObstacleOnAnimEvent,
       ModuleObjectScript.MGObstacleOnCreate,
@@ -94,24 +99,27 @@ export class ModuleMGObstacle extends ModuleObject {
       ModuleObjectScript.MGObstacleOnHitBullet,
       ModuleObjectScript.MGObstacleOnHitFollower,
     ];
-
-    for(const scriptKey of scriptKeys){
-      if(!scriptKey){ continue; }
-      const nwscript = GameState.NWScript.Load(scriptKey);
-      if(!nwscript){ 
-        console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}] for object ${this.name}`);
-        continue; 
+    const scriptsNode = this.template.getFieldByLabel('Scripts')?.getFieldStruct();
+    if (!scriptsNode) return;
+    for (const scriptKey of scriptKeys) {
+      if (!scriptsNode.hasField(scriptKey)) continue;
+      const resRef = scriptsNode.getStringByLabel(scriptKey);
+      if (!resRef) continue;
+      const nwscript = GameState.NWScript.Load(resRef);
+      if (!nwscript) {
+        log.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+        continue;
       }
       nwscript.caller = this;
       this.scripts[scriptKey] = nwscript;
     }
-
   }
 
-  initProperties(){
-    if(this.template.RootNode.hasField('Name'))
-      this.name = this.template.getFieldByLabel('Name').getValue().toLowerCase();
-
+  initProperties() {
+    if (this.template?.RootNode?.hasField('Name'))
+      this.name = this.template.getStringByLabel('Name').toLowerCase();
+    if (this.layout?.name) this.name = this.layout.name.toLowerCase();
+    if (this.layout?.position) this.position.copy(this.layout.position as { x: number; y: number; z: number });
     this.initialized = true;
   }
 

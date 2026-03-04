@@ -1,0 +1,222 @@
+.forge-git-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0f1116;
+  color: #d8e0ef;
+
+  &__loading {
+    padding: 2rem;
+    text-align: center;
+    color: #b8c2d8;
+  }
+
+  &__container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  &__sidebar {
+    width: 320px;
+    border-right: 1px solid #2a3142;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 0.5rem;
+    gap: 0.75rem;
+  }
+
+  &__main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+
+  &__no-selection {
+    padding: 2rem;
+    text-align: center;
+    color: #b8c2d8;
+    
+    p {
+      margin-bottom: 2rem;
+    }
+  }
+
+  &__stats {
+    background: #181c25;
+    border: 1px solid #2a3142;
+    border-radius: 4px;
+    padding: 1rem;
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: left;
+
+    h4 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+      color: #8aa4ff;
+    }
+
+    p {
+      margin: 0.25rem 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.git-instance-list {
+  background: #181c25;
+  border: 1px solid #2a3142;
+  border-radius: 4px;
+  overflow: hidden;
+
+  h4 {
+    margin: 0;
+    padding: 0.5rem;
+    background: #20283a;
+    border-bottom: 1px solid #2a3142;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  &__items {
+    max-height: 250px;
+    overflow-y: auto;
+  }
+}
+
+.git-instance-item {
+  padding: 0.5rem;
+  cursor: pointer;
+  border-bottom: 1px solid #2a3142;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #20283a;
+  }
+
+  &.selected {
+    background: #2a4070;
+    border-left: 3px solid #8aa4ff;
+  }
+
+  .instance-index {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: #8aa4ff;
+    min-width: 35px;
+  }
+
+  .instance-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .instance-template {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .instance-tag {
+    font-size: 0.75rem;
+    color: #b8c2d8;
+  }
+}
+
+.git-instance-properties {
+  h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #2a3142;
+    color: #8aa4ff;
+  }
+
+  h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: #d8e0ef;
+    font-size: 0.95rem;
+
+    &:first-of-type {
+      margin-top: 0;
+    }
+  }
+
+  .property-group {
+    margin-bottom: 1rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.85rem;
+      color: #b8c2d8;
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 0.5rem;
+      background: #181c25;
+      border: 1px solid #2a3142;
+      border-radius: 4px;
+      color: #d8e0ef;
+      font-family: inherit;
+      font-size: 0.9rem;
+
+      &:focus {
+        outline: none;
+        border-color: #8aa4ff;
+      }
+    }
+  }
+
+  .property-row {
+    display: flex;
+    gap: 1rem;
+
+    .property-group {
+      flex: 1;
+    }
+  }
+
+  .all-fields {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #181c25;
+    border: 1px solid #2a3142;
+    border-radius: 4px;
+    padding: 0.5rem;
+  }
+
+  .field-item {
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #2a3142;
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .field-label {
+      font-weight: 600;
+      color: #8aa4ff;
+      min-width: 150px;
+    }
+
+    .field-value {
+      flex: 1;
+      color: #d8e0ef;
+      word-break: break-word;
+    }
+  }
+}

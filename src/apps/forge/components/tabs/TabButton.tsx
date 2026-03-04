@@ -1,7 +1,11 @@
-import React, { MouseEventHandler, useEffect, useState } from "react";
-import { useTabManager } from "../../context/TabManagerContext";
-import { TabState } from "../../states/tabs";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import React, { useEffect, useState } from "react";
+
+import { useTabManager } from "@/apps/forge/context/TabManagerContext";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { TabState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface TabButtonProps {
   tab: TabState
@@ -15,14 +19,14 @@ export const TabButton = function(props: TabButtonProps) {
 
   //tabManager
   const tabManager = useTabManager();
-  const [selectedTab, setSelectedTab] = tabManager.selectedTab;
-  
+  const [_selectedTab, setSelectedTab] = tabManager.selectedTab;
+
   useEffect( () => {
-    // console.log('tabName', tab.tabName);
+    log.trace('TabButton tabName changed', tab.tabName);
   }, [tabName]);
 
   const onTabNameChange = () => {
-    console.log('onTabNameChange', tab.tabName)
+    log.debug('onTabNameChange', tab.tabName);
     setTabName(tab.tabName);
   };
 
@@ -53,8 +57,13 @@ export const TabButton = function(props: TabButtonProps) {
   }
 
   const onTabCloseClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    //TODO: Handle unsaved changes modal
     e.stopPropagation();
+    if (tab.file?.unsaved_changes) {
+      const discard = window.confirm(
+        `"${tab.tabName}" has unsaved changes. Close anyway?`
+      );
+      if (!discard) return;
+    }
     tab.remove();
   }
 
@@ -63,8 +72,8 @@ export const TabButton = function(props: TabButtonProps) {
       <a>{tabName}</a>&nbsp;
       {(
         tab.isClosable ? (
-          <button type="button" className="close" onClick={onTabCloseClick}>
-            <span className="fa-solid fa-xmark"></span>
+          <button type="button" className="close" onClick={onTabCloseClick} title="Close tab" aria-label="Close tab">
+            <span className="fa-solid fa-xmark" aria-hidden></span>
           </button>
         ) : (<></>)
       )}

@@ -1,14 +1,16 @@
-import type { ModuleCreature, ModuleItem, ModuleObject } from "../module";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { TalentFeat, TalentSpell } from "../talents";
-import { AttackResult } from "../enums/combat/AttackResult";
-import { ProjectilePath } from "../enums/combat/ProjectilePath";
-import { OdysseyModelAnimation } from "../odyssey";
-import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { SpellCastInstance } from "./SpellCastInstance";
-import { CombatFeatType } from "../enums/combat/CombatFeatType";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums";
+import { SpellCastInstance } from "@/combat/SpellCastInstance";
+import { ModuleObjectType } from "@/enums";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
+import { ProjectilePath } from "@/enums/combat/ProjectilePath";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import { OdysseyModelAnimation } from "@/odyssey";
+import { TalentFeat, TalentSpell } from "@/talents";
+import { BitWise } from "@/utility/BitWise";
+
+
 
 export class CombatRoundAction {
   owner: ModuleObject;
@@ -87,17 +89,10 @@ export class CombatRoundAction {
   calculateAttackAnimation(){
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
 
-    const owner: ModuleCreature = this.owner as any;
+    const owner = this.owner as ModuleCreature;
     let attackKey = owner.getCombatAnimationAttackType();
-    let weaponWield = owner.getCombatAnimationWeaponType();
+    const weaponWield = owner.getCombatAnimationWeaponType();
     let attackType = 1;
-    let isMelee = true;
-    let isRanged = false;
-
-    if(attackKey == 'b'){
-      isMelee = false;
-      isRanged = true;
-    }
 
     if(this.feat){
       if(attackKey == 'm'){
@@ -142,13 +137,13 @@ export class CombatRoundAction {
 
     //Get random basic melee attack in combat with another melee creature that is targeting you
     if(attackKey == 'm' && BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
-      const target: ModuleCreature = this.target as any;
+      const target = this.target as ModuleCreature;
       if(owner.isDuelingObject(target)){
         attackKey = 'c';
         attackType = Math.round(Math.random()*4)+1;
       }
     }
-    
+
     let animation = attackKey+weaponWield+'a'+attackType;
     if(this.isCutsceneAttack){
       animation = this.animationName;

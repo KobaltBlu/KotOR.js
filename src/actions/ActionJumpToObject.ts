@@ -1,16 +1,16 @@
-import { ModuleObjectType } from "../enums";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import type { ModuleObject } from "../module/ModuleObject";
-import { BitWise } from "../utility/BitWise";
-import { Action } from "./Action";
-import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
+import { Action } from "@/actions/Action";
+import { ModuleObjectType } from "@/enums";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionJumpToObject class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionJumpToObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -24,10 +24,10 @@ export class ActionJumpToObject extends Action {
     //PARAMS
     // 0 - dword: target object id
     // 1 - int: walkStraightLineToPoint 0 | 1
-    
+
   }
 
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
 
     this.target = this.getParameter<ModuleObject>(0);
 

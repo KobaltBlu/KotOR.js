@@ -1,11 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Form } from "react-bootstrap";
-import * as KotOR from "../KotOR";
-import { TabModelViewerState } from "../states/tabs";
-import { useEffectOnce } from "../helpers/UseEffectOnce";
 
-export const KeyFrameTimelineComponent = function(props: any){
-  const tab: TabModelViewerState = props.tab;
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabModelViewerState } from "@/apps/forge/states/tabs";
+
+export interface KeyFrameTimelineProps {
+  tab: TabModelViewerState;
+}
+
+export const KeyFrameTimelineComponent = function(props: KeyFrameTimelineProps){
+  const tab = props.tab;
 
   const [currentAnimation, setCurrentAnimation] = useState<KotOR.OdysseyModelAnimation>();
   const [selectedAnimationIndex, setSelectedAnimationIndex] = useState<number>(tab.selectedAnimationIndex);
@@ -13,12 +18,12 @@ export const KeyFrameTimelineComponent = function(props: any){
   const [scrollHeight, setScrollHeight] = useState<number>(0);
   const [panelHeight, setPanelHeight] = useState<number>(0);
   const [seekPositionLeft, setSeekPositionLeft] = useState<number>(0);
-  const waveformCanvasRef = useRef<HTMLCanvasElement>();
-  const keyframeWindowRef = useRef<HTMLDivElement>();
+  const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
+  const keyframeWindowRef = useRef<HTMLDivElement>(null);
 
   const [animations, setAnimations] = useState<KotOR.OdysseyModelAnimation[]>([]);
   const [timelineZoom, setTimelineZoom] = useState<number>(tab.timelineZoom);
-  const [timelineOffset, setTimelineOffset] = useState<number>(tab.timelineOffset);
+  const [timelineOffset, _setTimelineOffset] = useState<number>(tab.timelineOffset);
   const [looping, setLooping] = useState<boolean>(tab.looping);
   const [paused, setPaused] = useState<boolean>(tab.paused);
 
@@ -56,7 +61,7 @@ export const KeyFrameTimelineComponent = function(props: any){
     setPaused(true);
   }
 
-  const panelObserver = new ResizeObserver((elements: ResizeObserverEntry[]) => {
+  const panelObserver = new ResizeObserver((_elements: ResizeObserverEntry[]) => {
     setPanelHeight(keyframeWindowRef.current?.clientHeight || 0);
   });
 
@@ -88,7 +93,7 @@ export const KeyFrameTimelineComponent = function(props: any){
     if(keyframeWindowRef?.current) panelObserver.observe(keyframeWindowRef?.current);
   }, [keyframeWindowRef.current]);
 
-  const timestamps: JSX.Element[] = [];
+  const timestamps: React.ReactElement[] = [];
 
   const onBtnZoomIn = function(){
     tab.keyframeTrackZoomIn();
@@ -116,7 +121,7 @@ export const KeyFrameTimelineComponent = function(props: any){
   }
 
   const onSelectAnimationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let index = parseInt(e.target.value);
+    const index = parseInt(e.target.value);
     tab.setAnimationByIndex(index);
   }
 
@@ -129,8 +134,8 @@ export const KeyFrameTimelineComponent = function(props: any){
     if(waveformCanvasRef.current && waveformCanvasRef.current.parentElement){
 
       //Update the lips elapsed time based on the seekbar position
-      let position = getTimelinePixelPositionRelativeToMouseEvent(e);
-      let time = getTimelinePixelPositionAsTime(position);
+      const position = getTimelinePixelPositionRelativeToMouseEvent(e);
+      const time = getTimelinePixelPositionAsTime(position);
       tab.seek(time);
       
       const seekPosition = (tab.getCurrentAnimationElapsed() * tab.timelineZoom);
@@ -139,8 +144,8 @@ export const KeyFrameTimelineComponent = function(props: any){
   }
 
   const onMouseMoveKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
-    let position = getTimelinePixelPositionRelativeToMouseEvent(e);
-    let time = getTimelinePixelPositionAsTime(position);
+    const position = getTimelinePixelPositionRelativeToMouseEvent(e);
+    const time = getTimelinePixelPositionAsTime(position);
     if(tab.scrubbing){
       tab.seek(time);
       
@@ -157,13 +162,13 @@ export const KeyFrameTimelineComponent = function(props: any){
     }
   }
 
-  const onMouseDownKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onMouseDownKeyFrameWindow = (_e: React.MouseEvent<HTMLDivElement>) => {
     tab.dragging_frame = undefined;
     tab.scrubbing = true;
     tab.pause();
   }
 
-  const onMouseUpKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onMouseUpKeyFrameWindow = (_e: React.MouseEvent<HTMLDivElement>) => {
     clearTimeout(tab.scrubbingTimeout);
     if(tab.scrubbing){
       tab.pause();
@@ -186,9 +191,9 @@ export const KeyFrameTimelineComponent = function(props: any){
       const keyframeWindowElement = waveformCanvasRef.current.parentElement;
       const bRect = keyframeWindowElement.getBoundingClientRect();
 
-      let maxPixels = (tab.getCurrentAnimationLength() * tab.timelineZoom);
+      const maxPixels = (tab.getCurrentAnimationLength() * tab.timelineZoom);
       
-      let position = (e.pageX - 200 - bRect.left + keyframeWindowElement.scrollLeft);
+      const position = (e.pageX - 200 - bRect.left + keyframeWindowElement.scrollLeft);
       if(position < 0) return 0;
       if(position > maxPixels) return maxPixels;
       return position;
@@ -197,8 +202,8 @@ export const KeyFrameTimelineComponent = function(props: any){
   }
 
   const getTimelinePixelPositionAsTime = (position: number = 0) => {
-    let percentage = position / (tab.getCurrentAnimationLength() * tab.timelineZoom);
-    let time = tab.getCurrentAnimationLength() * percentage;
+    const percentage = position / (tab.getCurrentAnimationLength() * tab.timelineZoom);
+    const time = tab.getCurrentAnimationLength() * percentage;
     if(time < 0) return 0;
     if(time > tab.getCurrentAnimationLength()) return tab.getCurrentAnimationLength();
     return time;
@@ -216,8 +221,8 @@ export const KeyFrameTimelineComponent = function(props: any){
       factor = 60;
     }
 
-    let nthTime = factor/60;
-    let count = Math.ceil(Math.ceil(currentAnimation.length) / nthTime);
+    const nthTime = factor/60;
+    const count = Math.ceil(Math.ceil(currentAnimation.length) / nthTime);
 
     for(let i = 0; i <= count; i++){
       let s = factor * i;
@@ -251,23 +256,23 @@ export const KeyFrameTimelineComponent = function(props: any){
         <div className="keyframe-controls-center">
           {/* <a title="Delete Keyframe" className="fa-solid fa-trash"></a> */}
           {/* <a title="Previous Keyframe" className="fa-solid fa-chevron-left"></a> */}
-          <a title={!paused ? `Pause` : `Play`} className={`fa-solid fa-${!paused ? `pause` : `play`}`} onClick={ (e) => onBtnPlayPause() }></a>
-          <a title="Stop" className="fa-solid fa-stop" onClick={ (e) => onBtnStop() }></a>
+          <a title={!paused ? `Pause` : `Play`} className={`fa-solid fa-${!paused ? `pause` : `play`}`} onClick={ (_e) => onBtnPlayPause() }></a>
+          <a title="Stop" className="fa-solid fa-stop" onClick={ (_e) => onBtnStop() }></a>
           {/* <a title="Next Keyframe" className="fa-solid fa-chevron-right"></a> */}
           {/* <a title="Add Keyframe" className="fa-solid fa-plus"></a> */}
         </div>
         <div className="keyframe-controls-right">
-          <a title="Timeline Zoom In" className="fa-solid fa-magnifying-glass-plus" onClick={ (e) => onBtnZoomIn() }></a>
-          <a title="Timeline Zoom Out" className="fa-solid fa-magnifying-glass-minus" onClick={ (e) => onBtnZoomOut() }></a>
+          <a title="Timeline Zoom In" className="fa-solid fa-magnifying-glass-plus" onClick={ (_e) => onBtnZoomIn() }></a>
+          <a title="Timeline Zoom Out" className="fa-solid fa-magnifying-glass-minus" onClick={ (_e) => onBtnZoomOut() }></a>
         </div>
       </div>
-      <div ref={keyframeWindowRef as any} className="keyframe-bar" onClick={onClickKeyFrameWindow} onMouseDown={onMouseDownKeyFrameWindow} onMouseUp={onMouseUpKeyFrameWindow} onMouseMove={onMouseMoveKeyFrameWindow} onScroll={onScrollKeyFrameWindow}>
-        <canvas ref={waveformCanvasRef as any} style={{position: 'absolute', top: 0, left: 200, width: (tab.getCurrentAnimationLength() * tab.timelineZoom) }} />
+      <div ref={keyframeWindowRef} className="keyframe-bar" onClick={onClickKeyFrameWindow} onMouseDown={onMouseDownKeyFrameWindow} onMouseUp={onMouseUpKeyFrameWindow} onMouseMove={onMouseMoveKeyFrameWindow} onScroll={onScrollKeyFrameWindow}>
+        <canvas ref={waveformCanvasRef} style={{position: 'absolute', top: 0, left: 200, width: (tab.getCurrentAnimationLength() * tab.timelineZoom) }} />
         <div className="keyframe-time-track" style={{ top: scrollTop, right: 'initial', width: 200 + (tab.getCurrentAnimationLength() * tab.timelineZoom), zIndex: 1 }}>{ timestamps }</div>
         <div className="keyframe-track" style={{ height: scrollHeight, right: 'initial', width: 200 + (tab.getCurrentAnimationLength() * tab.timelineZoom) }}>
           {(
-            currentAnimation ? currentAnimation.nodes.map( (node, index) => {
-              return <AnimationNodeTimelineComponent key={`keyframe-node-${index}`} node={node} timelineZoom={timelineZoom} timelineOffset={timelineOffset} />
+            currentAnimation ? currentAnimation.nodes.map( (node, _index) => {
+              return <AnimationNodeTimelineComponent key={`keyframe-node-${_index}`} node={node} timelineZoom={timelineZoom} timelineOffset={timelineOffset} />
             }) : <></>
           )}
         </div>
@@ -280,10 +285,14 @@ export const KeyFrameTimelineComponent = function(props: any){
 
 }
 
-const AnimationNodeTimelineComponent = function(props: any){
-  const node: KotOR.OdysseyModelAnimationNode = props.node;
-  const timelineZoom = props.timelineZoom;
-  const timelineOffset = props.timelineOffset;
+interface AnimationNodeTimelineProps {
+  node: KotOR.OdysseyModelAnimationNode;
+  timelineZoom: number;
+  timelineOffset: number;
+}
+
+const AnimationNodeTimelineComponent = function(props: AnimationNodeTimelineProps){
+  const { node, timelineZoom, timelineOffset } = props;
 
   return (
     <>
@@ -295,7 +304,7 @@ const AnimationNodeTimelineComponent = function(props: any){
       </div>
     </div>
       {
-        [...node.controllers.entries()].map( (value, index) => {
+        [...node.controllers.entries()].map( (value, _index) => {
           return <ControllerTimelineComponent key={`keyframe-controller-${value[1].uuid}`} controller={value[1]} timelineZoom={timelineZoom} timelineOffset={timelineOffset} />
         })
       }
@@ -303,10 +312,14 @@ const AnimationNodeTimelineComponent = function(props: any){
   );
 }
 
-const ControllerTimelineComponent = function(props: any) {
-  const controller: KotOR.OdysseyController = props.controller;
-  const timelineZoom = props.timelineZoom;
-  const timelineOffset = props.timelineOffset;
+interface ControllerTimelineProps {
+  controller: KotOR.OdysseyController;
+  timelineZoom: number;
+  timelineOffset: number;
+}
+
+const ControllerTimelineComponent = function(props: ControllerTimelineProps) {
+  const { controller, timelineZoom, timelineOffset } = props;
 
   return (
     <div className="keyframe-track-wrapper controller" style={{ display: 'flex' }}>

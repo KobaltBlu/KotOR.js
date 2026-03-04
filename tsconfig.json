@@ -1,35 +1,55 @@
 {
   "compilerOptions": {
-    "moduleResolution": "node",
-    "target": "ESNext",
-    "module": "commonjs",
-    "declaration": false,
-    "noImplicitAny": true,
-    "removeComments": true,
-    "experimentalDecorators": true,
-    "rootDir": ".",
-    "sourceMap": false,
-    "listFiles": true,
-    "newLine": "LF",
-    "noEmitOnError": true,
-    "strictNullChecks": false,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
     "allowJs": true,
+    "baseUrl": ".",
+    "declaration": false,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+    "ignoreDeprecations": "6.0",
+    "isolatedModules": true,
     "jsx": "react",
-    "types": [
-      "@types/wicg-file-system-access",
-      "user-agent-data-types",
-      "node",
-      "offscreencanvas",
-    ],
     "lib": [
       "ESNext",
       "dom",
       "WebWorker"
     ],
+    "listFiles": true,
+    "module": "Node16",
+    "moduleResolution": "node16",
+    "newLine": "LF",
+    "noEmitOnError": true,
+    "noImplicitAny": true,
     "outDir": "dist",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "removeComments": true,
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "strict": false,
+    "strictNullChecks": false,
+    "target": "ESNext",
+    "types": [
+      "@types/wicg-file-system-access",
+      "jest",
+      "node",
+      "offscreencanvas",
+      "user-agent-data-types"
+    ]
   },
-  "include": ["src/KotOR.ts", "src/types", "src/index.d.ts"],
-  "exclude": ["node_modules", "src/**/*.spec.ts"]
+  "exclude": [
+    "node_modules",
+    "src/**/*.spec.ts",
+    ".history"
+  ],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/types",
+    "src/index.d.ts"
+  ]
 }

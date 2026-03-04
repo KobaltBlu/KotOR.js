@@ -1,5 +1,5 @@
-import type { GUIButton, GUILabel, GUIListBox } from "../../../gui";
-import { MenuUpgradeSelect as K1_MenuUpgradeSelect } from "../../kotor/KOTOR";
+import { MenuUpgradeSelect as K1_MenuUpgradeSelect } from "@/game/kotor/KOTOR";
+import type { GUIButton, GUILabel, GUIListBox } from "@/gui";
 
 /**
  * MenuUpgradeSelect class.
@@ -35,9 +35,10 @@ export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
   
 }
+

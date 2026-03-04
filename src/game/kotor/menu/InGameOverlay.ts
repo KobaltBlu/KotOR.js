@@ -1,31 +1,33 @@
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, LBL_MapView } from "../../../gui";
-import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import * as THREE from "three";
-import { Anchor } from "../../../enums/gui/Anchor";
-import { SSFType } from "../../../enums/resource/SSFType";
-import { TalentObject } from "../../../talents";
-import { EngineState } from "../../../enums/engine/EngineState";
-import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
-import { BitWise } from "../../../utility/BitWise";
-import { KeyMapAction, ModuleObjectType } from "../../../enums";
-import type { ModuleObject } from "../../../module/ModuleObject";
 
-const TLK_TOOLTIP_FULL_HEALTH = 42498;
+import { KeyMapAction, ModuleObjectType } from "@/enums";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { EngineState } from "@/enums/engine/EngineState";
+import { Anchor } from "@/enums/gui/Anchor";
+import { SSFType } from "@/enums/resource/SSFType";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_MapView } from "@/gui";
+import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import type { ModuleObject } from "@/module/ModuleObject";
+
+const log = createScopedLogger(LogScope.Game);
 
 const TLK_TOOLTIP_SOLOMODE = 48035;
 const TLK_TOOLTIP_STEALTH = 247;
 const TLK_TOOLTIP_PAUSE = 48019;
 
-const TLK_TOOLTIP_QUEST     = 48218;
+const TLK_TOOLTIP_QUEST = 48218;
 const TLK_TOOLTIP_EQUIPMENT = 48219;
 const TLK_TOOLTIP_INVENTORY = 48220;
-const TLK_TOOLTIP_MAP       = 48221;
-const TLK_TOOLTIP_OPTIONS   = 48222;
-const TLK_TOOLTIP_MESSAGES  = 48223;
+const TLK_TOOLTIP_MAP = 48221;
+const TLK_TOOLTIP_OPTIONS = 48222;
+const TLK_TOOLTIP_MESSAGES = 48223;
 const TLK_TOOLTIP_ABILITIES = 48224;
 const TLK_TOOLTIP_CHARACTER = 48225;
 
@@ -45,9 +47,9 @@ const ARROW_DIR_RIGHT = Math.PI;
 
 /**
  * InGameOverlay class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameOverlay.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -170,11 +172,29 @@ export class InGameOverlay extends GameMenu {
 
   constructor(){
     super();
-    this.gui_resref = 'mipc28x6';
+    this.gui_resref = InGameOverlay.getMainInterfaceResref(
+      ResolutionManager.getViewportWidth(),
+      ResolutionManager.getViewportHeight()
+    );
     this.background = '';
     this.voidFill = false;
-    this.enablePositionScaling = true;
+    this.enablePositionScaling = false;
     this.userCanClose = false;
+    this.panelBitFlags = 0x87;
+  }
+
+  /**
+   * GUI resref by viewport: 1024 -> mipc210x7, 1280x960 -> mipc212x9, 1280x1024 -> mipc212x10,
+   * 1600 -> mipc216x12, else mipc28x6. Panel extent in each GFF matches that resolution.
+   */
+  static getMainInterfaceResref(viewportWidth: number, viewportHeight: number): string {
+    if (viewportWidth === 1024) return 'mipc210x7';
+    if (viewportWidth === 1280) {
+      if (viewportHeight === 960) return 'mipc212x9';
+      if (viewportHeight === 1024) return 'mipc212x10';
+    }
+    if (viewportWidth === 1600) return 'mipc216x12';
+    return 'mipc28x6';
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -298,9 +318,9 @@ export class InGameOverlay extends GameMenu {
       this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        if(GameState.State == EngineState.PAUSED){
+        if (GameState.State == EngineState.PAUSED) {
           GameState.AutoPauseManager.Unpause();
-        }else{
+        } else {
           GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
         }
 
@@ -321,49 +341,54 @@ export class InGameOverlay extends GameMenu {
         GameState.TLKManager.TLKStrings[TLK_TOOLTIP_STEALTH].Value
       );
 
-      this.BTN_CHAR1.addEventListener('click', (e) => {
-        if(GameState.PartyManager.party[0].canLevelUp()){
+      this.BTN_CHAR1.addEventListener('click', (_e) => {
+        if (GameState.PartyManager.party[0].canLevelUp()) {
           this.manager.MenuCharacter.open();
-        }else{
+        } else {
           this.manager.MenuEquipment.open();
         }
       });
 
-      this.BTN_CHAR2.addEventListener('click', (e) => {
+      this.BTN_CHAR2.addEventListener('click', (_e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
-        switch(Math.floor(Math.random() * (4 - 1) + 1)){
+        switch (Math.floor(Math.random() * (4 - 1) + 1)) {
           case 2:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
-          break;
+            break;
           case 3:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
-          break;
+            break;
           default:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
-          break;
+            break;
         }
       });
 
-      this.BTN_CHAR3.addEventListener('click', (e) => {
+      this.BTN_CHAR3.addEventListener('click', (_e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
-        switch(Math.floor(Math.random() * (4 - 1) + 1)){
+        switch (Math.floor(Math.random() * (4 - 1) + 1)) {
           case 2:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
-          break;
+            break;
           case 3:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
-          break;
+            break;
           default:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
-          break;
+            break;
         }
       });
 
       this.BTN_CLEARALL.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearAllActions();
-        GameState.getCurrentPlayer().combatData.combatState = false;
-        GameState.getCurrentPlayer().cancelCombat();
+        const currentPlayer = GameState.getCurrentPlayer() as {
+          clearAllActions: () => void;
+          combatData: { combatState: boolean };
+          cancelCombat: () => void;
+        };
+        currentPlayer.clearAllActions();
+        currentPlayer.combatData.combatState = false;
+        currentPlayer.cancelCombat();
       });
 
       this.LBL_QUEUE0.addEventListener('click', (e) => {
@@ -386,20 +411,21 @@ export class InGameOverlay extends GameMenu {
         GameState.getCurrentPlayer().clearCombatActionAtIndex(2);
       });
 
-      for(let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++){
+      for (let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++) {
 
-        this.getControlByName('LBL_TARGET'+i).addEventListener('click', (e) => {
+        const targetLabel = this.getControlByName('LBL_TARGET' + i) as GUIButton;
+        targetLabel.addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.onTargetMenuAction(i);
         });
 
-        this.getControlByName('BTN_TARGETUP'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_TARGETUP' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
           this.UpdateTargetUIIcon(i);
         });
 
-        this.getControlByName('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_TARGETDOWN' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
           this.UpdateTargetUIIcon(i);
@@ -407,20 +433,20 @@ export class InGameOverlay extends GameMenu {
 
       }
 
-      for(let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++){
+      for (let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++) {
 
-        this.getControlByName('LBL_ACTION'+i).addEventListener('click', (e) => {
+        this.getControlByName('LBL_ACTION' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.onSelfMenuAction(i);
         });
 
-        this.getControlByName('BTN_ACTIONUP'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_ACTIONUP' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
           this.UpdateSelfUIIcon(i);
         });
 
-        this.getControlByName('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_ACTIONDOWN' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
           this.UpdateSelfUIIcon(i);
@@ -496,7 +522,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   TogglePartyMember(nth = 0, bVisible = false) {
-    if (!bVisible) { 
+    if (!bVisible) {
       this.getControlByName('LBL_CMBTEFCTRED' + (nth + 1))?.hide();
       this.getControlByName('LBL_CMBTEFCTINC' + (nth + 1))?.hide();
       this.getControlByName('LBL_LEVELUP' + (nth + 1))?.hide();
@@ -516,30 +542,30 @@ export class InGameOverlay extends GameMenu {
       this.getControlByName('PB_VIT' + (nth + 1))?.show();
       if (!GameState.module.area.miniGame && GameState.PartyManager.party[nth]) {
         switch (nth) {
-        case 0:
-          if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP1').pulsing = true;
-            this.getControlByName('LBL_LEVELUP1')?.show();
-          } else {
-            this.getControlByName('LBL_LEVELUP1')?.hide();
-          }
-          break;
-        case 1:
-          if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP3').pulsing = true;
-            this.getControlByName('LBL_LEVELUP3')?.show();
-          } else {
-            this.getControlByName('LBL_LEVELUP3')?.hide();
-          }
-          break;
-        case 2:
-          if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP2').pulsing = true;
-            this.getControlByName('LBL_LEVELUP2')?.show();
-          } else {
-            this.getControlByName('LBL_LEVELUP2')?.hide();
-          }
-          break;
+          case 0:
+            if (GameState.PartyManager.party[nth].canLevelUp()) {
+              this.getControlByName('LBL_LEVELUP1').pulsing = true;
+              this.getControlByName('LBL_LEVELUP1')?.show();
+            } else {
+              this.getControlByName('LBL_LEVELUP1')?.hide();
+            }
+            break;
+          case 1:
+            if (GameState.PartyManager.party[nth].canLevelUp()) {
+              this.getControlByName('LBL_LEVELUP3').pulsing = true;
+              this.getControlByName('LBL_LEVELUP3')?.show();
+            } else {
+              this.getControlByName('LBL_LEVELUP3')?.hide();
+            }
+            break;
+          case 2:
+            if (GameState.PartyManager.party[nth].canLevelUp()) {
+              this.getControlByName('LBL_LEVELUP2').pulsing = true;
+              this.getControlByName('LBL_LEVELUP2')?.show();
+            } else {
+              this.getControlByName('LBL_LEVELUP2')?.hide();
+            }
+            break;
         }
       }
     }
@@ -550,8 +576,8 @@ export class InGameOverlay extends GameMenu {
       TextureLoader.Load(sTexture).then((texture: OdysseyTexture) => {
         this.miniMap.setTexture(texture);
       });
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e);
     }
   }
 
@@ -559,8 +585,8 @@ export class InGameOverlay extends GameMenu {
     if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature) && GameState.CursorManager.selectedObject.isDead())
       return false;
     return (
-      !this.manager.MenuContainer.bVisible && 
-      GameState.CursorManager.reticle2.visible && 
+      !this.manager.MenuContainer.bVisible &&
+      GameState.CursorManager.reticle2.visible &&
       BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleObject) &&
       !BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleRoom)
     );
@@ -568,17 +594,19 @@ export class InGameOverlay extends GameMenu {
 
   UpdateTargetUIIcon(index = 0) {
     const guiControl = this.getControlByName('LBL_TARGET' + index);
+    const borderMaterial = guiControl.border.fill.material as THREE.ShaderMaterial;
+    const highlightMaterial = guiControl.highlight.fill.material as THREE.ShaderMaterial;
     if (!GameState.ActionMenuManager.ActionPanels.targetPanels[index].actions.length) {
-      guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-      guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      guiControl.setMaterialTexture(borderMaterial, undefined);
+      guiControl.setMaterialTexture(highlightMaterial, undefined);
       guiControl.setFillTextureName('');
       return;
     }
 
     const action = GameState.ActionMenuManager.ActionPanels.targetPanels[index].getSelectedAction();
     if (!action) {
-      guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-      guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      guiControl.setMaterialTexture(borderMaterial, undefined);
+      guiControl.setMaterialTexture(highlightMaterial, undefined);
       guiControl.setFillTextureName('');
       return;
     }
@@ -587,10 +615,10 @@ export class InGameOverlay extends GameMenu {
       guiControl.setFillTextureName(action.icon);
       guiControl.setHighlightFillTexture(action.icon);
       TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
-        guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
-        guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
-        guiControl.border.fill.material.transparent = true;
-        guiControl.highlight.fill.material.transparent = true;
+        guiControl.setMaterialTexture(borderMaterial, texture);
+        guiControl.setMaterialTexture(highlightMaterial, texture);
+        borderMaterial.transparent = true;
+        highlightMaterial.transparent = true;
         guiControl.widget.position.z = 5;
       });
     }
@@ -598,26 +626,28 @@ export class InGameOverlay extends GameMenu {
 
   UpdateSelfUIIcon(index = 0) {
     const guiControl = this.getControlByName('LBL_ACTION' + index);
+    const borderMaterial = guiControl.border.fill.material as THREE.ShaderMaterial;
+    const highlightMaterial = guiControl.highlight.fill.material as THREE.ShaderMaterial;
     if (GameState.ActionMenuManager.ActionPanels.selfPanels[index].actions.length) {
       const action = GameState.ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
       if (action && guiControl.getFillTextureName() != action.icon) {
         guiControl.setFillTextureName(action.icon);
         guiControl.setHighlightFillTexture(action.icon);
         TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
-          guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
-          guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
-          guiControl.border.fill.material.transparent = true;
-          guiControl.highlight.fill.material.transparent = true;
+          guiControl.setMaterialTexture(borderMaterial, texture);
+          guiControl.setMaterialTexture(highlightMaterial, texture);
+          borderMaterial.transparent = true;
+          highlightMaterial.transparent = true;
           guiControl.widget.position.z = 5;
         });
       } else if (!action) {
-        guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-        guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+        guiControl.setMaterialTexture(borderMaterial, undefined);
+        guiControl.setMaterialTexture(highlightMaterial, undefined);
         guiControl.setFillTextureName('');
       }
     } else {
-      guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-      guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      guiControl.setMaterialTexture(borderMaterial, undefined);
+      guiControl.setMaterialTexture(highlightMaterial, undefined);
       guiControl.setFillTextureName('');
     }
   }
@@ -757,9 +787,9 @@ export class InGameOverlay extends GameMenu {
     this.LBL_NAMEBG.recalculate();
     this.PB_HEALTH.recalculate();
     this.LBL_HEALTHBG.recalculate();
-    if (!!GameState.ActionMenuManager.targetActionCount()) {
+    if (GameState.ActionMenuManager.targetActionCount()) {
       for (let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++) {
-        let xPos = (this.getControlByName('BTN_TARGET' + i).extent.width + 5) * i + 20;
+        const xPos = (this.getControlByName('BTN_TARGET' + i).extent.width + 5) * i + 20;
         this.getControlByName('BTN_TARGET' + i).scale = false;
         this.getControlByName('BTN_TARGET' + i).extent.left = this.targetScreenPosition.x + xPos;
         this.getControlByName('BTN_TARGET' + i).extent.top = this.targetScreenPosition.y;
@@ -784,11 +814,11 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('LBL_TARGET' + i).recalculate();
         this.getControlByName('BTN_TARGET' + i)?.show();
         this.getControlByName('LBL_TARGET' + i)?.show();
-        
-        if(GameState.ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1){
+
+        if (GameState.ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1) {
           this.getControlByName('BTN_TARGETUP' + i)?.hide();
           this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
-        }else{
+        } else {
           this.getControlByName('BTN_TARGETUP' + i)?.show();
           this.getControlByName('BTN_TARGETDOWN' + i)?.show();
         }
@@ -803,16 +833,16 @@ export class InGameOverlay extends GameMenu {
     }
   }
 
-  UpdateSelfUIPanels(delta = 0) {
+  UpdateSelfUIPanels(_delta = 0) {
     for (let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++) {
       this.UpdateSelfUIIcon(i);
       this.getControlByName('BTN_ACTIONUP' + i).recalculate();
       this.getControlByName('BTN_ACTIONDOWN' + i).recalculate();
-        
-      if(GameState.ActionMenuManager.ActionPanels.selfPanels[i].actions.length <= 1){
+
+      if (GameState.ActionMenuManager.ActionPanels.selfPanels[i].actions.length <= 1) {
         this.getControlByName('BTN_ACTIONUP' + i)?.hide();
         this.getControlByName('BTN_ACTIONDOWN' + i)?.hide();
-      }else{
+      } else {
         this.getControlByName('BTN_ACTIONUP' + i)?.show();
         this.getControlByName('BTN_ACTIONDOWN' + i)?.show();
       }
@@ -821,22 +851,22 @@ export class InGameOverlay extends GameMenu {
 
   /**
    * Update HUD Notification Icons
-   * 
-   * @param delta 
+   *
+   * @param delta
    */
-  UpdateHUDNotificationIcons(delta = 0){
-    if(GameState.UINotificationManager.bNotificationSoundQueued){
+  UpdateHUDNotificationIcons(delta = 0) {
+    if (GameState.UINotificationManager.bNotificationSoundQueued) {
       GameState.UINotificationManager.bNotificationSoundQueued = false;
       GameState.guiAudioEmitter.playSoundFireAndForget('gui_quest');
     }
     /**
      * Item Lost
      */
-    if(GameState.UINotificationManager.ItemLostTimer > 0){
+    if (GameState.UINotificationManager.ItemLostTimer > 0) {
       this.LBL_ITEMLOST.show();
       this.LBL_ITEMLOST.pulsing = true;
       GameState.UINotificationManager.ItemLostTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.ItemLostTimer = 0;
       this.LBL_ITEMLOST.hide();
     }
@@ -844,11 +874,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Item Received
      */
-    if(GameState.UINotificationManager.ItemReceivedTimer > 0){
+    if (GameState.UINotificationManager.ItemReceivedTimer > 0) {
       this.LBL_ITEMRCVD.show();
       this.LBL_ITEMRCVD.pulsing = true;
       GameState.UINotificationManager.ItemReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.ItemReceivedTimer = 0;
       this.LBL_ITEMRCVD.hide();
     }
@@ -856,11 +886,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Credits Received
      */
-    if(GameState.UINotificationManager.CreditsReceivedTimer > 0){
-      this.LBL_CASH.show();   
+    if (GameState.UINotificationManager.CreditsReceivedTimer > 0) {
+      this.LBL_CASH.show();
       this.LBL_CASH.pulsing = true;
       GameState.UINotificationManager.CreditsReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.CreditsReceivedTimer = 0;
       this.LBL_CASH.hide();
     }
@@ -868,11 +898,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Journal Entry Added
      */
-    if(GameState.UINotificationManager.JournalEntryAddedTimer > 0){
+    if (GameState.UINotificationManager.JournalEntryAddedTimer > 0) {
       this.LBL_JOURNAL.show();
       this.LBL_JOURNAL.pulsing = true;
       GameState.UINotificationManager.JournalEntryAddedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.JournalEntryAddedTimer = 0;
       this.LBL_JOURNAL.hide();
     }
@@ -880,11 +910,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Light Shift
      */
-    if(GameState.UINotificationManager.LightShiftTimer > 0){
+    if (GameState.UINotificationManager.LightShiftTimer > 0) {
       this.LBL_LIGHTSHIFT.show();
       this.LBL_LIGHTSHIFT.pulsing = true;
       GameState.UINotificationManager.LightShiftTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.LightShiftTimer = 0;
       this.LBL_LIGHTSHIFT.hide();
     }
@@ -892,11 +922,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Dark Shift
      */
-    if(GameState.UINotificationManager.DarkShiftTimer > 0){
+    if (GameState.UINotificationManager.DarkShiftTimer > 0) {
       this.LBL_DARKSHIFT.show();
       this.LBL_DARKSHIFT.pulsing = true;
       GameState.UINotificationManager.DarkShiftTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.DarkShiftTimer = 0;
       this.LBL_DARKSHIFT.hide();
     }
@@ -904,11 +934,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Plot XP Received
      */
-    if(GameState.UINotificationManager.PlotXPReceivedTimer > 0){
+    if (GameState.UINotificationManager.PlotXPReceivedTimer > 0) {
       this.LBL_PLOTXP.show();
       this.LBL_PLOTXP.pulsing = true;
       GameState.UINotificationManager.PlotXPReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.PlotXPReceivedTimer = 0;
       this.LBL_PLOTXP.hide();
     }
@@ -916,11 +946,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Stealth XP Received
      */
-    if(GameState.UINotificationManager.StealthXPReceivedTimer > 0){
+    if (GameState.UINotificationManager.StealthXPReceivedTimer > 0) {
       this.LBL_STEALTHXP.show();
       this.LBL_STEALTHXP.pulsing = true;
       GameState.UINotificationManager.StealthXPReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.StealthXPReceivedTimer = 0;
       this.LBL_STEALTHXP.hide();
     }
@@ -949,20 +979,20 @@ export class InGameOverlay extends GameMenu {
     this.TogglePartyMember(0, false);
     this.TogglePartyMember(1, false);
     this.TogglePartyMember(2, false);
-    
+
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-      let partyMember = GameState.PartyManager.party[i];
+      const partyMember = GameState.PartyManager.party[i];
       let id = i;
       switch (i) {
-      case 1:
-        id = 2;
-        break;
-      case 2:
-        id = 1;
-        break;
+        case 1:
+          id = 2;
+          break;
+        case 2:
+          id = 1;
+          break;
       }
       this.TogglePartyMember(id, true);
-      let pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
+      const pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
       const portraitResRef = partyMember.getPortraitResRef();
       if (pmBG.getFillTextureName() != portraitResRef) {
         pmBG.setFillTextureName(portraitResRef);
@@ -980,16 +1010,16 @@ export class InGameOverlay extends GameMenu {
     }
     if (oPC.excitedDuration || oPC.combatRound.scheduledActionList.length) {
       this.showCombatUI();
-      let action0 = oPC.combatRound.action;
-      let action1 = oPC.combatRound.scheduledActionList[0];
-      let action2 = oPC.combatRound.scheduledActionList[1];
-      let action3 = oPC.combatRound.scheduledActionList[2];
+      const action0 = oPC.combatRound.action;
+      const action1 = oPC.combatRound.scheduledActionList[0];
+      const action2 = oPC.combatRound.scheduledActionList[1];
+      const action3 = oPC.combatRound.scheduledActionList[2];
       if (action0 != undefined) {
         if (this.LBL_QUEUE0.getFillTextureName() != action0.iconResRef) {
           this.LBL_QUEUE0.setFillTextureName(action0.iconResRef);
           TextureLoader.tpcLoader.fetch(action0.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE0.setFillTexture(texture);
-            this.LBL_QUEUE0.border.fill.material.transparent = true;
+            (this.LBL_QUEUE0.border.fill.material as THREE.ShaderMaterial).transparent = true;
           });
         }
       } else {
@@ -1001,7 +1031,7 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE1.setFillTextureName(action1.iconResRef);
           TextureLoader.tpcLoader.fetch(action1.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE1.setFillTexture(texture);
-            this.LBL_QUEUE1.border.fill.material.transparent = true;
+            (this.LBL_QUEUE1.border.fill.material as THREE.ShaderMaterial).transparent = true;
           });
         }
       } else {
@@ -1013,7 +1043,7 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE2.setFillTextureName(action2.iconResRef);
           TextureLoader.tpcLoader.fetch(action2.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE2.setFillTexture(texture);
-            this.LBL_QUEUE2.border.fill.material.transparent = true;
+            (this.LBL_QUEUE2.border.fill.material as THREE.ShaderMaterial).transparent = true;
           });
         }
       } else {
@@ -1025,7 +1055,7 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE3.setFillTextureName(action3.iconResRef);
           TextureLoader.tpcLoader.fetch(action3.iconResRef).then((texture: OdysseyTexture) => {
             this.LBL_QUEUE3.setFillTexture(texture);
-            this.LBL_QUEUE3.border.fill.material.transparent = true;
+            (this.LBL_QUEUE3.border.fill.material as THREE.ShaderMaterial).transparent = true;
           });
         }
       } else {
@@ -1055,7 +1085,7 @@ export class InGameOverlay extends GameMenu {
         GameState.getCurrentPlayer().clearAllActions();
         GameState.CursorManager.selectedObject.onClick(GameState.getCurrentPlayer());
       } else {
-        let distance = GameState.getCurrentPlayer().position.distanceTo(GameState.CursorManager.selectedObject.position);
+        const distance = GameState.getCurrentPlayer().position.distanceTo(GameState.CursorManager.selectedObject.position);
         if (distance > 1.5) {
           GameState.getCurrentPlayer().clearAllActions();
           GameState.CursorManager.selectedObject.clearAllActions();
@@ -1064,5 +1094,5 @@ export class InGameOverlay extends GameMenu {
       }
     }
   }
-  
+
 }

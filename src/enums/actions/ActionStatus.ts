@@ -23,4 +23,4 @@ export enum ActionStatus {
 
   /** Indicates that the action is waiting to be executed */
   WAITING = 4,
-};
+}

@@ -1,96 +1,109 @@
-import { BrowserWindow, dialog } from "electron";
-import { ApplicationWindow } from "./ApplicationWindow";
-import { LauncherWindow } from "./LauncherWindow";
-import * as path from "path";
-//exec & execFile are used for launching the original games from the launcher
 import { execFile, exec } from "child_process";
+import * as path from "path";
+
+import { BrowserWindow, dialog } from "electron";
+
+import type { ApplicationWindowProfile } from "@/electron/ApplicationWindow";
+import { ApplicationWindow } from "@/electron/ApplicationWindow";
+import { LauncherWindow } from "@/electron/LauncherWindow";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+//exec & execFile are used for launching the original games from the launcher
+
+
+const log = createScopedLogger(LogScope.Electron);
 
 export class WindowManager {
 
   static launcherWindow: LauncherWindow;
   static windows: ApplicationWindow[] = [];
 
-  static createLauncherWindow(){
-    if(!WindowManager.launcherWindow){
+  static createLauncherWindow() {
+    log.trace('createLauncherWindow enter');
+    if (!WindowManager.launcherWindow) {
+      log.debug('creating new LauncherWindow');
       WindowManager.launcherWindow = new LauncherWindow();
     }
+    log.trace('createLauncherWindow show');
     WindowManager.launcherWindow.show();
+    log.trace('createLauncherWindow exit');
   }
 
-  static toggleLauncherWindow(){
-    if(!WindowManager.launcherWindow){
+  static toggleLauncherWindow() {
+    log.trace('toggleLauncherWindow');
+    if (!WindowManager.launcherWindow) {
       this.createLauncherWindow();
-    }else{
+    } else {
       WindowManager.launcherWindow.toggleWindow();
     }
   }
 
-  static addWindow(window: ApplicationWindow){
-    let index = WindowManager.windows.indexOf(window);
-    if(index < 0){
+  static addWindow(window: ApplicationWindow) {
+    const index = WindowManager.windows.indexOf(window);
+    if (index < 0) {
       WindowManager.windows.push(window);
     }
   }
 
-  static removeWindow(window: ApplicationWindow){
-    let index = WindowManager.windows.indexOf(window);
-    if(index >= 0){
+  static removeWindow(window: ApplicationWindow) {
+    const index = WindowManager.windows.indexOf(window);
+    if (index >= 0) {
       WindowManager.windows.splice(index, 1);
     }
   }
 
-  static hideLauncher(){
-    if(WindowManager.launcherWindow){
+  static hideLauncher() {
+    if (WindowManager.launcherWindow) {
       WindowManager.launcherWindow.hide();
     }
   }
 
-  static showLauncher(){
-    if(!WindowManager.launcherWindow){
+  static showLauncher() {
+    if (!WindowManager.launcherWindow) {
       WindowManager.createLauncherWindow();
-    }else{
+    } else {
       WindowManager.launcherWindow.show();
     }
   }
 
   static initIPC(ipcMain: Electron.IpcMain) {
-    ipcMain.on('config-changed', (event, data) => {
-      for(let i = 0, len = WindowManager.windows.length; i < len; i++){
+    ipcMain.on('config-changed', (_event: Electron.IpcMainEvent, data: string | number | boolean | object) => {
+      for (let i = 0, len = WindowManager.windows.length; i < len; i++) {
         WindowManager.windows[i].send('config-changed', data);
       }
-      if(WindowManager.launcherWindow instanceof LauncherWindow){
+      if (WindowManager.launcherWindow instanceof LauncherWindow) {
         WindowManager.launcherWindow.send('config-changed', data);
       }
     });
-    
-    ipcMain.handle('win-minimize', (event, data) => {
-      let win = BrowserWindow.getFocusedWindow();
-      if(win){
+
+    ipcMain.handle('win-minimize', (_event: Electron.IpcMainInvokeEvent, _data: unknown) => {
+      const win = BrowserWindow.getFocusedWindow();
+      if (win) {
         win.minimize();
         return true;
       }
       return false;
     });
-    
-    ipcMain.handle('win-maximize', (event, data) => {
-      let win = BrowserWindow.getFocusedWindow();
-      if(win){
-        console.log(win.isMaximized());
-        if(win.isMaximized()){
+
+    ipcMain.handle('win-maximize', (_event: Electron.IpcMainInvokeEvent, _data: unknown) => {
+      const win = BrowserWindow.getFocusedWindow();
+      if (win) {
+        log.debug('win-maximize isMaximized=%s', String(win.isMaximized()));
+        if (win.isMaximized()) {
           win.unmaximize();
           return true;
-        }else{
+        } else {
           win.maximize();
           return true;
-        } 
+        }
       }
       return false;
     });
-    
-    ipcMain.handle('locate-game-directory', (event, data) => {
-      return new Promise( (resolve, reject) => {
-        dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory', 'createDirectory']}).then(result => {
-          if(result.filePaths.length && !result.canceled){
+
+    ipcMain.handle('locate-game-directory', (_event: Electron.IpcMainInvokeEvent, _data: unknown) => {
+      return new Promise((resolve, reject) => {
+        dialog.showOpenDialog({ title: 'KotOR Game Install Folder', properties: ['openDirectory', 'createDirectory'] }).then(result => {
+          if (result.filePaths.length && !result.canceled) {
             resolve(result.filePaths[0]);
           }
         }).catch(err => {
@@ -98,9 +111,9 @@ export class WindowManager {
         });
       });
     });
-    
-    ipcMain.handle('open-file-dialog', (event, data: Electron.OpenDialogOptions) => {
-      return new Promise( (resolve, reject) => {
+
+    ipcMain.handle('open-file-dialog', (_event: Electron.IpcMainInvokeEvent, data: Electron.OpenDialogOptions) => {
+      return new Promise((resolve, reject) => {
         dialog.showOpenDialog(data).then(result => {
           resolve(result);
         }).catch(err => {
@@ -108,31 +121,47 @@ export class WindowManager {
         });
       });
     });
-    
-    ipcMain.handle('save-file-dialog', (event, data: Electron.SaveDialogOptions) => {
-      return new Promise( (resolve, reject) => {
-        console.log('save-file-dialog2', event, data[0]);
-        dialog.showSaveDialog(data[0]).then(result => {
+
+    ipcMain.handle('save-file-dialog', (_event: Electron.IpcMainInvokeEvent, data: Electron.SaveDialogOptions[]) => {
+      return new Promise((resolve, reject) => {
+        const options = data[0] ?? {};
+        log.info('save-file-dialog2', options);
+        dialog.showSaveDialog(options).then(result => {
           resolve(result);
         }).catch(err => {
           reject(err)
         });
       });
     });
-    
-    ipcMain.on('launch_profile', (event, profile) => {
+
+    ipcMain.on('launch_profile', (_event: Electron.IpcMainEvent, profile: ApplicationWindowProfile) => {
       const window = new ApplicationWindow(profile);
       WindowManager.addWindow(window);
       WindowManager.hideLauncher();
     });
-    
-    ipcMain.on('launch_executable', (event, exe_path) => {
+
+    ipcMain.handle('show-loading-error', async (_event, message: string) => {
+      const win = BrowserWindow.fromWebContents(_event.sender);
+      if (!win || win.isDestroyed()) return;
+      const title = 'Error';
+      const detail = typeof message === 'string' && message.length > 0 ? message : 'An error occurred while loading.';
+      await dialog.showMessageBox(win, {
+        type: 'error',
+        title,
+        message: detail,
+        buttons: ['OK'],
+        noLink: true,
+      });
+      win.close();
+    });
+
+    ipcMain.on('launch_executable', (_event: Electron.IpcMainEvent, exe_path: string) => {
       WindowManager.hideLauncher();
-      let cwd = path.parse(exe_path);
-      if(process.platform == 'linux'){
+      const cwd = path.parse(exe_path);
+      if (process.platform == 'linux') {
         //Attempt to find wine so we can run the exe
         exec(`which wine`, (error) => {
-          if(error){
+          if (error) {
             dialog.showMessageBoxSync({
               type: 'error',
               title: 'Error',
@@ -140,22 +169,22 @@ export class WindowManager {
               buttons: ['Ok']
             });
             WindowManager.showLauncher();
-          }else{
+          } else {
             //Attempt to launch with wine
             exec(`cd ${cwd.dir} && wine ./${cwd.base}`, (error, stdout, stderr) => {
-              console.error(error);
-              console.error(stdout);
-              console.error(stderr);
+              log.error(error);
+              log.error(stdout);
+              log.error(stderr);
               WindowManager.showLauncher();
             });
           }
         });
-      }else{
-        console.log('Launching', exe_path, 'in', cwd.dir);
-        execFile(exe_path, [], {cwd:cwd.dir}, (error, stdout, stderr) => {
-          console.error(error);
-          console.error(stdout);
-          console.error(stderr);
+      } else {
+        log.info('Launching', exe_path, 'in', cwd.dir);
+        execFile(exe_path, [], { cwd: cwd.dir }, (error, stdout, stderr) => {
+          log.error(error);
+          log.error(stdout);
+          log.error(stderr);
           WindowManager.showLauncher();
         });
       }

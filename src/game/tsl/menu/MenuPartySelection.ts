@@ -1,20 +1,21 @@
-import { GameState } from "../../../GameState";
-import { LBL_3DView } from "../../../gui";
-import type { GUILabel, GUICheckBox, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { ModuleCreature } from "../../../module";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { MenuPartySelection as K1_MenuPartySelection } from "../../kotor/KOTOR";
+import * as THREE from "three";
+
+import { MenuPartySelection as K1_MenuPartySelection } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import { LBL_3DView } from "@/gui";
+import type { GUILabel, GUICheckBox, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { ModuleCreature } from "@/module";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
 
 /**
  * MenuPartySelection class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuPartySelection.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -86,8 +87,8 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   default9: string;
   default10: string;
   default11: string;
-  char: any;
-  LBL_3D_VIEW: any;
+  char: ModuleCreature | undefined;
+  LBL_3D_VIEW!: LBL_3DView;
   cgmain_light: OdysseyModel;
 
   constructor(){
@@ -100,7 +101,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.childMenu = this.manager.MenuTop;
       this.default0 = this.LBL_NA0.getFillTextureName();
       this.default1 = this.LBL_NA1.getFillTextureName();
@@ -223,7 +224,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }else{
           this.close();
         }
-        
+
       });
 
       this.BTN_BACK.addEventListener('click', (e) => {
@@ -258,19 +259,27 @@ export class MenuPartySelection extends K1_MenuPartySelection {
           // manageLighting: false,
           context: this.LBL_3D_VIEW
         }).then((model: OdysseyModel3D) => {
-          //console.log('Model Loaded', model);
-          this.LBL_3D_VIEW.model = model;
-          this.LBL_3D_VIEW.addModel(this.LBL_3D_VIEW.model);
+          //log.info('Model Loaded', model);
+          const model3d = model as OdysseyModel3D & {
+            getObjectByName: (name: string) => { position: THREE.Vector3; quaternion: THREE.Quaternion } | null;
+          };
+          this.LBL_3D_VIEW.model = model3d;
+          this.LBL_3D_VIEW.addModel(model3d as unknown as THREE.Object3D);
 
-          this.LBL_3D_VIEW.camerahook = this.LBL_3D_VIEW.model.getObjectByName('camerahook');
-          
+          const camerahook = model3d.getObjectByName('camerahook');
+          if (!camerahook) {
+            resolve();
+            return;
+          }
+          this.LBL_3D_VIEW.camerahook = camerahook;
+
           this.LBL_3D_VIEW.camera.position.copy(
-            this.LBL_3D_VIEW.camerahook.position
+            camerahook.position
           );
 
           this.LBL_3D_VIEW.camera.quaternion.copy(
-            this.LBL_3D_VIEW.camerahook.quaternion
-          ); 
+            camerahook.quaternion
+          );
           this.LBL_3D_VIEW.camera.position.z = 1;
 
           this.LBL_3D_VIEW.camera.updateProjectionMatrix();
@@ -338,7 +347,9 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       }
       try {
         this.LBL_3D_VIEW.render(delta);
-      } catch (e: any) { }
+      } catch {
+        return;
+      }
     }
   }
 
@@ -358,10 +369,11 @@ export class MenuPartySelection extends K1_MenuPartySelection {
           creature.position.set(0, 0, 0);
           creature.model.rotation.z = -Math.PI / 2;
           this.LBL_3D_VIEW.group.creatures.add(creature.model);
-          this.char.LoadModel();
+          (this.char as ModuleCreature & { LoadModel: () => void }).LoadModel();
         }
       });
     }
   }
-  
+
 }
+

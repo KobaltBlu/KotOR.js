@@ -1,30 +1,36 @@
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import type { GUIControl, GUIListBox, GUIScrollBar } from "../gui";
-import { Utility } from "../utility/Utility";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { EngineState } from "../enums/engine/EngineState";
-import { KeyMapAction } from "../enums/controls/KeyMapAction";
-import { MiniGameType } from "../enums/engine/MiniGameType";
-import { FollowerCamera } from "../engine/FollowerCamera";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GUIControlEventFactory } from "../gui/GUIControlEventFactory";
-import { Keyboard } from "./Keyboard";
-import { GamePad } from "./GamePad";
-import { Mouse } from "./Mouse";
-import { KeyMapper } from "./KeyMapper";
-import { AnalogInput } from "./AnalogInput";
-import { TGAObject } from "../resource/TGAObject";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
+
+import { AnalogInput } from "@/controls/AnalogInput";
+import { GamePad } from "@/controls/GamePad";
+import { Keyboard } from "@/controls/Keyboard";
+import { KeyMapper } from "@/controls/KeyMapper";
+import { Mouse } from "@/controls/Mouse";
+import { FollowerCamera } from "@/engine/FollowerCamera";
+import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
+import { KeyMapAction } from "@/enums/controls/KeyMapAction";
+import { MouseState } from "@/enums/controls/MouseState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { EngineState } from "@/enums/engine/EngineState";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { GUIControl, GUIListBox, GUIScrollBar } from "@/gui";
+import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { TGAObject } from "@/resource/TGAObject";
+import { BitWise } from "@/utility/BitWise";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
+
+const log = createScopedLogger(LogScope.Controls);
 
 /**
  * IngameControls class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file IngameControls.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -42,7 +48,7 @@ export class IngameControls {
 
   gamePadMovement: boolean = false;
 
-  plMoveEvent: (e: any) => void;
+  plMoveEvent: (e: MouseEvent) => void;
 
   constructor(camera: THREE.Camera, element: HTMLElement){
 
@@ -52,8 +58,6 @@ export class IngameControls {
     this.gamePad = new GamePad();
 
     this.initKeys();
-
-    this.element.requestPointerLock = this.element.requestPointerLock;
 
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       this.keyboard.onKeyDown(e);
@@ -146,8 +150,7 @@ export class IngameControls {
     });
 
     // Ask the browser to release the pointer
-    document.exitPointerLock = document.exitPointerLock;
-    document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
+    document.addEventListener('pointerlockchange', (ev: Event) => this.plChangeCallback(ev), true);
 
     window.addEventListener('mousedown', (event: MouseEvent) => {
       // Block GUI selection while a movie is playing
@@ -170,8 +173,6 @@ export class IngameControls {
       }
 
       GameState.raycaster.setFromCamera( GameState.mouse, GameState.camera_gui );
-      
-      let clickCaptured = false;
 
       const customEvent = GUIControlEventFactory.generateEventObject();
 
@@ -184,12 +185,12 @@ export class IngameControls {
         for(let i = 0; i < uiControls.length; i++){
           if(!customEvent.propagate)
             break;
-          
+
           const control = uiControls[i];
           if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
             clickCaptured = true;
             if(GameState.debug.CONTROLS)
-              console.log('uiControls', control)
+              log.debug('uiControls', control)
             try{
               if(control.processEventListener('mouseDown', [customEvent])){
                 Mouse.downItem = control;
@@ -227,7 +228,7 @@ export class IngameControls {
       }else{
         Mouse.Update( event.clientX, event.clientY );
       }
-      
+
       if(Mouse.downItem && Mouse.leftDown){
         if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
           if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
@@ -253,6 +254,12 @@ export class IngameControls {
 
       Mouse.leftClick = true;
 
+      // Ask the browser to release the pointer
+      document.exitPointerLock();
+
+      if(GameState.debug.CONTROLS)
+        log.debug('UP');
+
       if(Mouse.leftDown){
         if(!Mouse.pointerLock){
           Mouse.Update( event.clientX, event.clientY );
@@ -262,7 +269,7 @@ export class IngameControls {
         if(GameState.noClickTimer){
           return;
         }
-        
+
         let clickCaptured = false;
 
         const customEvent = GUIControlEventFactory.generateEventObject();
@@ -272,9 +279,11 @@ export class IngameControls {
           if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
             try{
               Mouse.downItem.processEventListener('mouseUp', [customEvent]);
+              if(GameState.debug.CONTROLS)
+                log.debug('MouseUp', Mouse.downItem, Mouse.downItem.name);
               Mouse.leftClick = false;
             }catch(e){
-              console.error(e);
+              log.error('mouseUp processEventListener', e);
             }
           }
         }
@@ -295,9 +304,11 @@ export class IngameControls {
                   GameState.MenuManager.activeGUIElement = control;
                   control.processEventListener('click', [customEvent]);
                   GameState.guiAudioEmitter.playSoundFireAndForget('gui_click');
+                  if(GameState.debug.CONTROLS)
+                    log.debug('MouseClick', control, control.name);
                   Mouse.leftClick = false;
                 }catch(e){
-                  console.error(e);
+                  log.error('click processEventListener', e);
                 }
               }
             }
@@ -305,7 +316,7 @@ export class IngameControls {
         }
 
         let selectedObject = clickCaptured;
-  
+
         if(!clickCaptured && (GameState.Mode != EngineMode.DIALOG)){
           if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
             const moduleObject = GameState.CursorManager.onMouseHitInteractive();
@@ -322,8 +333,8 @@ export class IngameControls {
                     GameState.getCurrentPlayer().clearAllActions();
                     moduleObject.onClick(GameState.getCurrentPlayer());
                   }else{
-                    let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
-                    //console.log(distance);
+                    const distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
+                    log.trace('Distance to object', distance);
                     if(distance > 1.5){
                       GameState.getCurrentPlayer().clearAllActions();
                       moduleObject.clearAllActions();
@@ -334,10 +345,10 @@ export class IngameControls {
                 GameState.CursorManager.setReticleSelectedObject(moduleObject);
               }
               if(GameState.debug.SELECTED_OBJECT)
-                console.log('Ingame Object', moduleObject);
+                log.debug('Ingame Object', moduleObject);
             }else{
               if(GameState.debug.SELECTED_OBJECT)
-                console.log('Object', moduleObject);
+                log.debug('Object', moduleObject);
             }
 
             if(!selectedObject){
@@ -406,7 +417,7 @@ export class IngameControls {
       const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       if(!followee.canMove()) return;
-      
+
       followee.clearAllActions(true);
       followee.force = 1;
       followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing - Math.PI/2), false, TURN_SPEED_FAST);
@@ -438,7 +449,7 @@ export class IngameControls {
       // if(GameState.State == EngineState.PAUSED) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       if(
-        (keymap.keyboardInput.down || 
+        (keymap.keyboardInput.down ||
         (keymap.gamepadInput as AnalogInput).value < 0)
       ){
         FollowerCamera.clearFocusObject();
@@ -458,7 +469,7 @@ export class IngameControls {
       // if(GameState.State == EngineState.PAUSED) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       if(
-        (keymap.keyboardInput.down || 
+        (keymap.keyboardInput.down ||
         (keymap.gamepadInput as AnalogInput).value > 0)
       ){
         FollowerCamera.clearFocusObject();
@@ -487,8 +498,8 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       const pc = GameState.getCurrentPlayer();
-      if(pc){
-        pc.walk = !pc.walk;
+      if(pc && BitWise.InstanceOfObject(pc, ModuleObjectType.ModuleCreature)){
+        (pc as ModuleCreature).walk = !(pc as ModuleCreature).walk;
       }
     });
 
@@ -604,7 +615,7 @@ export class IngameControls {
       if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
         case MiniGameType.SWOOPRACE:
-        
+
         break;
         case MiniGameType.TURRET:
           GameState.module.area.miniGame.player.rotate('x', -1 * delta);
@@ -688,7 +699,10 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.Flourish].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      GameState.getCurrentPlayer().flourish();
+      const pc = GameState.getCurrentPlayer();
+      if(pc && BitWise.InstanceOfObject(pc, ModuleObjectType.ModuleCreature)){
+        (pc as ModuleCreature).flourish();
+      }
     });
 
     KeyMapper.Actions[KeyMapAction.FlyUp].setProcessor( (keymap, delta = 0) => {
@@ -705,21 +719,21 @@ export class IngameControls {
       followee.position.z -= 5 * delta;
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleUp].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleUp].setProcessor( (keymap, _delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
        GameState.rendererUpscaleFactor += 0.25;
       if(GameState.rendererUpscaleFactor >= 4) GameState.rendererUpscaleFactor = 4;
       GameState.updateRendererUpscaleFactor();
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleDown].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleDown].setProcessor( (keymap, _delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       GameState.rendererUpscaleFactor -= 0.25;
       if(GameState.rendererUpscaleFactor <= 0.25) GameState.rendererUpscaleFactor = 0.25;
       GameState.updateRendererUpscaleFactor();
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleReset].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleReset].setProcessor( (keymap, _delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       GameState.rendererUpscaleFactor = 1.0;
       GameState.updateRendererUpscaleFactor();
@@ -736,40 +750,40 @@ export class IngameControls {
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuInventory.open();
     });
-    
+
     KeyMapper.Actions[KeyMapAction.Character].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuCharacter.open();
     });
-    
+
     KeyMapper.Actions[KeyMapAction.SkillsAndFeats].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuAbilities.open();
     });
-    
-    
+
+
     KeyMapper.Actions[KeyMapAction.Messages].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuMessages.open();
     });
-    
-    
+
+
     KeyMapper.Actions[KeyMapAction.Quests].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuJournal.open();
     });
-    
-    
+
+
     KeyMapper.Actions[KeyMapAction.Map].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuMap.open();
     });
-    
+
     KeyMapper.Actions[KeyMapAction.Options].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
@@ -792,7 +806,7 @@ export class IngameControls {
     for(let i = 0, len = GameState.MenuManager.activeModals.length; i < len; i++){
       const activeMenu = GameState.MenuManager.activeModals[i];
       if(!activeMenu.isVisible()) continue;
-      
+
       elements = elements.concat(activeMenu.getActiveControls());
     }
 
@@ -813,10 +827,7 @@ export class IngameControls {
   }
 
   Update(delta: number = 0){
-
-    let xoffset = 0;
-    let yoffset = 0;
-    let currentMenu = GameState.MenuManager.GetCurrentMenu();
+    const currentMenu = GameState.MenuManager.GetCurrentMenu();
 
     this.gamePadMovement = false;
 
@@ -827,6 +838,11 @@ export class IngameControls {
       KeyMapper.BindGamepad(this.gamePad);
     }
     this.gamePad.updateState(delta);
+
+    if(Mouse.Dragging){
+      //Reset the offset value to fix the lingering drag effect
+      Mouse.OffsetX = Mouse.OffsetY = 0;
+    }
 
     if(currentMenu){
       if(this.gamePad.button_a.pressed){
@@ -863,8 +879,8 @@ export class IngameControls {
     if(GameState.State == EngineState.RUNNING){
 
       if(
-        (GameState.Mode == EngineMode.INGAME) && 
-        currentMenu != GameState.MenuManager.InGameConfirm && 
+        (GameState.Mode == EngineMode.INGAME) &&
+        currentMenu != GameState.MenuManager.InGameConfirm &&
         currentMenu != GameState.MenuManager.MenuContainer
       ){
         const followee = GameState.PartyManager.party[0];
@@ -882,7 +898,7 @@ export class IngameControls {
         }
       }
     }
-    
+
     KeyMapper.ProcessMappings(GameState.Mode, delta);
 
     //Keyboard: onFrameEnd
@@ -895,7 +911,7 @@ export class IngameControls {
     Mouse.OldMouseY = Mouse.MouseY;
   }
 
-  plChangeCallback(e: any){
+  plChangeCallback(_e: Event){
     if(document.pointerLockElement === this.element) {
       Mouse.pointerLock = true;
     } else {

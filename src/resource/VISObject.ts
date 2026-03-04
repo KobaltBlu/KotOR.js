@@ -1,9 +1,13 @@
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { ModuleObjectType } from "../enums";
-import type { ModuleArea, ModuleRoom } from "../module";
-import { BitWise } from "../utility/BitWise";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import type { IVISRoom } from "../interface/module/IVISRoom";
+import { ModuleObjectType } from "@/enums";
+import type { IVISRoom } from "@/interface/module/IVISRoom";
+import type { ModuleArea, ModuleRoom } from "@/module";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { BitWise } from "@/utility/BitWise";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Resource);
 
 enum VISReadMode {
   ROOM = 0,
@@ -18,14 +22,14 @@ interface IReadContext {
 
 /**
  * VISObject class.
- * 
+ *
  * Class representing a Extra Texture Information file in memory.
- * 
- * CHILD_ROOMS are rooms that are visible from the parent room. The engine will not 
+ *
+ * CHILD_ROOMS are rooms that are visible from the parent room. The engine will not
  * render rooms that are not present in this list when you are standing in a parent room
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file VISObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -47,16 +51,19 @@ export class VISObject {
 
   constructor ( data?: Uint8Array ) {
     this.data = data;
+    if (data?.length) {
+      this.read(data);
+    }
   }
 
   read(data?: Uint8Array){
-    // console.log('VISObject.read');
+    // log.info('VISObject.read');
     if(data){
       this.data = data;
     }
 
     if(!this.data){
-      console.warn('VISObject.read: No data to read');
+      log.warn('VISObject.read: No data to read');
       return;
     }
 
@@ -64,16 +71,16 @@ export class VISObject {
     const lines = text.split('\n');
     const lineCount = lines.length;
 
-    // console.log(`VISObject.read: ${lineCount} lines found`);
+    // log.info(`VISObject.read: ${lineCount} lines found`);
 
     this.resetReadContext();
 
     /**
      * VIS Object File Format
-     * [Parent Room] 
+     * [Parent Room]
      *  - room_name number_of_child_rooms
      *  - regex: ^([^\s]+)[\s|\t](\d+)\n
-     * [Child Room] 
+     * [Child Room]
      *  - child_room_name
      *  - regex: ^\s{2}([^\s]+)\n
      */
@@ -93,7 +100,7 @@ export class VISObject {
        * Child Room parse logic
        */
       if(isChildRoom){
-        // console.log(`VISObject.read: Child Room: ${line}`);
+        // log.info(`VISObject.read: Child Room: ${line}`);
         this.readContext.mode = VISReadMode.CHILD_ROOMS;
         //CHILD_ROOMS
         this.readContext.currentRoom.rooms.push(line);
@@ -104,7 +111,12 @@ export class VISObject {
        */
       else
       {
-        // console.log(`VISObject.read: Parent Room: ${line}`);
+        // Skip version header lines (e.g. "roomname V3.28")
+        const args = line.split(/\s+/);
+        if (args.length >= 2 && args[1].startsWith('V')) {
+          continue;
+        }
+
         //If we are still in CHILD_ROOMS mode and the current line is a room.
         //Push the currentRoom to the rooms array and reset the current room var
         if(this.readContext.mode == VISReadMode.CHILD_ROOMS){
@@ -113,22 +125,21 @@ export class VISObject {
 
         this.readContext.mode = VISReadMode.ROOM;
 
-        const args = line.split(' ');
-
         this.readContext.currentRoom.name = args[0];
-        this.readContext.currentRoom.count = parseInt(args[1]);
+        this.readContext.currentRoom.count = parseInt(args[1], 10) || 0;
         this.readContext.linkedRoomCount = 0;
       }
     }
 
     this.resetReadContext();
-    // console.log('VISObject.read: Done!');
+    // log.info('VISObject.read: Done!');
   }
 
   /**
-   * Add a room to the rooms map
+   * Push current parsed room to the rooms map (used during read).
+   * @internal
    */
-  addRoom(): void {
+  private addRoomFromContext(): void {
     if(!this.readContext.currentRoom?.name){
       return;
     }
@@ -143,7 +154,7 @@ export class VISObject {
    */
   resetReadContext () {
     if(this.readContext.currentRoom){
-      this.addRoom();
+      this.addRoomFromContext();
     }
 
     this.readContext = {
@@ -163,7 +174,7 @@ export class VISObject {
     }
 
     if(!this.area){
-      console.warn('VISObject.attachArea: No area to process');
+      log.warn('VISObject.attachArea: No area to process');
       return;
     }
 
@@ -211,16 +222,163 @@ export class VISObject {
   }
 
   /**
+   * Returns true if the specified room exists in this VIS.
+   */
+  roomExists(model: string): boolean {
+    return this.rooms.has(model.toLowerCase());
+  }
+
+  /**
+   * Adds a room. If it already exists, does nothing.
+   */
+  addRoom(model: string): void {
+    const key = model.toLowerCase();
+    if (!this.rooms.has(key)) {
+      this.rooms.set(key, { name: key, count: 0, rooms: [] });
+    }
+  }
+
+  /**
+   * Removes a room and any visibility references to it.
+   */
+  removeRoom(model: string): void {
+    const lower = model.toLowerCase();
+    for (const visRoom of this.rooms.values()) {
+      const i = visRoom.rooms.findIndex(r => r.toLowerCase() === lower);
+      if (i >= 0) {
+        visRoom.rooms.splice(i, 1);
+        visRoom.count = visRoom.rooms.length;
+      }
+    }
+    this.rooms.delete(lower);
+  }
+
+  /**
+   * Renames a room and updates all visibility references.
+   */
+  renameRoom(oldName: string, newName: string): void {
+    const oldKey = oldName.toLowerCase();
+    const newKey = newName.toLowerCase();
+    if (oldKey === newKey) return;
+    const existing = this.rooms.get(oldKey);
+    if (!existing) return;
+    this.rooms.delete(oldKey);
+    existing.name = newKey;
+    existing.rooms = existing.rooms.map(r => r.toLowerCase() === oldKey ? newKey : r);
+    this.rooms.set(newKey, existing);
+    for (const visRoom of this.rooms.values()) {
+      if (visRoom.name === newKey) continue;
+      for (let i = 0; i < visRoom.rooms.length; i++) {
+        if (visRoom.rooms[i].toLowerCase() === oldKey) visRoom.rooms[i] = newKey;
+      }
+    }
+  }
+
+  /**
+   * Sets whether 'show' is visible when viewing from 'whenInside'.
+   */
+  setVisible(whenInside: string, show: string, visible: boolean): void {
+    const whenKey = whenInside.toLowerCase();
+    const showKey = show.toLowerCase();
+    if (!this.rooms.has(whenKey) || !this.rooms.has(showKey)) {
+      throw new Error('One of the specified rooms does not exist.');
+    }
+    const visRoom = this.rooms.get(whenKey);
+    if (visRoom === undefined) throw new Error('One of the specified rooms does not exist.');
+    const idx = visRoom.rooms.findIndex(r => r.toLowerCase() === showKey);
+    if (visible) {
+      if (idx < 0) {
+        visRoom.rooms.push(showKey);
+        visRoom.count = visRoom.rooms.length;
+      }
+    } else {
+      if (idx >= 0) {
+        visRoom.rooms.splice(idx, 1);
+        visRoom.count = visRoom.rooms.length;
+      }
+    }
+  }
+
+  /**
+   * Returns true if 'show' is visible from 'whenInside'.
+   */
+  getVisible(whenInside: string, show: string): boolean {
+    const whenKey = whenInside.toLowerCase();
+    const showKey = show.toLowerCase();
+    if (!this.rooms.has(whenKey) || !this.rooms.has(showKey)) {
+      throw new Error('One of the specified rooms does not exist.');
+    }
+    const visRoom = this.rooms.get(whenKey);
+    if (visRoom === undefined) throw new Error('One of the specified rooms does not exist.');
+    return visRoom.rooms.some(r => r.toLowerCase() === showKey);
+  }
+
+  /**
+   * Sets all rooms visible from each other.
+   */
+  setAllVisible(): void {
+    const allRooms = Array.from(this.rooms.keys());
+    for (const whenInside of allRooms) {
+      const visRoom = this.rooms.get(whenInside);
+      if (visRoom === undefined) continue;
+      visRoom.rooms = allRooms.filter(r => r !== whenInside);
+      visRoom.count = visRoom.rooms.length;
+    }
+  }
+
+  /**
    * Get a room by name
    * @param name - The name of the room to get
    * @returns The room or null if it is not found
    */
   getRoomByName(name: string): ModuleRoom | null {
     if(!this.area){
-      console.warn('VISObject.getRoomByName: No area to process');
+      log.warn('VISObject.getRoomByName: No area to process');
       return null;
     }
     return this.area.rooms.find(room => room.roomName.toLocaleLowerCase() === name.toLocaleLowerCase()) || null;
+  }
+
+  toJSON(): { rooms: Array<{ name: string; count: number; rooms: string[] }> } {
+    return {
+      rooms: Array.from(this.rooms.values()).map(r => ({ name: r.name, count: r.count, rooms: [...(r.rooms ?? [])] }))
+    };
+  }
+
+  fromJSON(json: string | ReturnType<VISObject['toJSON']>): void {
+    const obj = typeof json === 'string' ? (JSON.parse(json) as ReturnType<VISObject['toJSON']>) : json;
+    this.rooms.clear();
+    for (const r of obj.rooms ?? []) {
+      this.rooms.set(r.name.toLowerCase(), { name: r.name.toLowerCase(), count: r.count ?? r.rooms?.length ?? 0, rooms: r.rooms ?? [] });
+    }
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<VISObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<VISObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<VISObject['toJSON']>); }
+
+  /**
+   * Serialize VIS to binary (ASCII format). Use for saving without writing to file.
+   */
+  toBuffer(): Uint8Array {
+    const data = new BinaryWriter();
+    const rooms = Array.from(this.rooms.values());
+    for (let i = 0; i < rooms.length; i++) {
+      const room = rooms[i];
+      const roomCount = room.rooms.length;
+      data.writeChars(room.name + ' ' + roomCount);
+      data.writeByte(13);
+      data.writeByte(10);
+      for (let j = 0; j < roomCount; j++) {
+        data.writeChars('  ' + room.rooms[j]);
+        data.writeByte(13);
+        data.writeByte(10);
+      }
+    }
+    return data.buffer;
   }
 
   /**
@@ -228,48 +386,24 @@ export class VISObject {
    * @param fileName - The name of the file to export to
    */
   export (fileName = 'm01aa') {
-    // console.log(`VISObject.export: ${fileName}.vis`);
-    const data = new BinaryWriter();
-
-    const rooms = Array.from(this.rooms.values());
-    console.log(`VISObject.export: ${rooms.length} rooms found`);
-
-    /**
-     * Write the rooms to the output buffer
-     */
-    for(let i = 0; i < rooms.length; i++){
-      const room = rooms[i];
-      const roomCount = room.rooms.length;
-      // console.log(`VISObject.export: ${room.name} - ${roomCount} child rooms`);
-
-      data.writeChars(room.name+' '+roomCount);
-
-      data.writeByte(13); //CarriageReturn
-      data.writeByte(10); //NewLine
-
-      /**
-       * Write the child rooms to the output buffer
-       */
-      for( let j = 0; j < roomCount; j++ ){
-        // console.log(`VISObject.export: ${room.rooms[j]}`);
-        data.writeChars('  '+room.rooms[j]);
-        if(i < ( rooms.length - 1 ) || j < (roomCount - 1)){
-          data.writeByte(13); //CarriageReturn
-          data.writeByte(10); //NewLine
-        }
-      }
-
-    }
-
-    /**
-     * Write the output buffer to a file
-     */
-    GameFileSystem.writeFile(`${fileName}.vis`, data.buffer).then( () => {
-      // console.log(`VISObject.export: ${fileName}.vis saved`);
-    });
-
+    const buf = this.toBuffer();
+    GameFileSystem.writeFile(`${fileName}.vis`, buf).then(() => {});
   }
 
+}
+
+/**
+ * Load VIS from buffer (PyKotor read_vis).
+ */
+export function readVISFromBuffer(buffer: Uint8Array): VISObject {
+  return new VISObject(buffer);
+}
+
+/**
+ * Serialize VIS to buffer (PyKotor bytes_vis).
+ */
+export function writeVISToBuffer(vis: VISObject): Uint8Array {
+  return vis.toBuffer();
 }
 
 

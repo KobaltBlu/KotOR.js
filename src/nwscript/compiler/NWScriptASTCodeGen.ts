@@ -10,20 +10,15 @@ import {
   VariableListNode,
   FunctionNode,
   IfNode,
-  ElseIfNode,
-  ElseNode,
   WhileNode,
   DoWhileNode,
   ForNode,
   SwitchNode,
-  CaseNode,
-  DefaultNode,
   ReturnNode,
   BreakNode,
   ContinueNode,
   BlockNode,
   LiteralNode,
-  VariableReferenceNode,
   ArrayLiteralNode,
   FunctionCallNode,
   CallNode,
@@ -36,7 +31,7 @@ import {
   BinaryOpNode,
   ArgumentNode,
   DataTypeNode,
-} from "./ASTTypes";
+} from "@/nwscript/compiler/ASTTypes";
 
 export interface CodeGenOptions {
   tabSize?: number;
@@ -148,7 +143,9 @@ export class NWScriptASTCodeGen {
       result += '\n' + this.indent() + '{\n';
       this.indentLevel++;
       for (const prop of struct.properties) {
-        result += this.indent() + this.generateDataType(prop.datatype!) + ' ' + prop.name + ';\n';
+        const dt = prop.datatype;
+        if (!dt) throw new Error(`struct property ${prop.name} missing datatype`);
+        result += this.indent() + this.generateDataType(dt) + ' ' + prop.name + ';\n';
       }
       this.indentLevel--;
       result += this.indent() + '}';
@@ -390,11 +387,11 @@ export class NWScriptASTCodeGen {
     return result;
   }
 
-  private generateBreak(breakNode: BreakNode): string {
+  private generateBreak(_breakNode: BreakNode): string {
     return this.indent() + 'break;';
   }
 
-  private generateContinue(continueNode: ContinueNode): string {
+  private generateContinue(_continueNode: ContinueNode): string {
     return this.indent() + 'continue;';
   }
 
@@ -534,8 +531,8 @@ export class NWScriptASTCodeGen {
   }
 
   private generateBinary(binary: BinaryOpNode, precedence: number): string {
-    let op = binary.operator.value;
-    let opPrecedence = this.getOperatorPrecedence(op);
+    const op = binary.operator.value;
+    const opPrecedence = this.getOperatorPrecedence(op);
     
     // For left-associative operators:
     // - Left side: parenthesize if its precedence is <= current (same or lower)

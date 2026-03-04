@@ -1,0 +1,134 @@
+// =============================================================================
+// BOOTSTRAP THEME OVERLAY (CSS)
+// =============================================================================
+// Load after bootstrap/dist/css/bootstrap.css to apply our dark theme.
+// Uses our variables so we don't compile Bootstrap's Sass (avoids deprecation warnings).
+
+@use "variables" as *;
+
+body {
+  background-color: $bg-primary;
+  color: $text-primary;
+}
+
+a {
+  color: $primary-blue-light;
+  text-decoration: none;
+  &:hover {
+    color: $primary-blue-lightest;
+  }
+}
+
+// Cards
+.card {
+  background-color: $bg-secondary;
+  color: $text-primary;
+  border-color: $border-primary;
+  .card-header {
+    background-color: $bg-tertiary;
+    border-color: $border-primary;
+    color: $text-primary;
+  }
+}
+
+// Form controls
+.form-control,
+.form-select {
+  background-color: $form-bg;
+  color: $text-primary;
+  border-color: $form-border;
+  &::placeholder {
+    color: $form-placeholder;
+  }
+  &:focus {
+    border-color: $form-border-focus;
+  }
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: $form-border-focus;
+}
+
+// Buttons (base; Bootstrap adds many variants)
+.btn {
+  color: $text-primary;
+  background-color: $bg-secondary;
+  border-color: $border-primary;
+}
+
+// Dropdowns
+.dropdown-menu {
+  background-color: $bg-secondary;
+  border-color: $border-primary;
+  .dropdown-item {
+    color: $text-primary;
+    &:hover {
+      background-color: $hover-bg;
+      color: $text-secondary;
+    }
+  }
+}
+
+// Modals
+.modal-content {
+  background-color: $bg-secondary;
+  color: $text-primary;
+  border-color: $border-primary;
+}
+
+.modal-backdrop {
+  background-color: #000;
+  &.show {
+    opacity: 0.75;
+  }
+}
+
+// Navs and tabs
+.nav-link {
+  color: $text-primary;
+  &:hover {
+    color: $primary-blue-light;
+  }
+}
+
+.nav-tabs {
+  .nav-link.active {
+    background-color: $bg-secondary;
+    color: $text-secondary;
+    border-color: $border-primary;
+  }
+}
+
+// Tables
+.table {
+  background-color: $bg-secondary;
+  color: $text-primary;
+  border-color: $border-primary;
+  &.table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: $bg-tertiary;
+  }
+  > tbody > tr:hover {
+    background-color: $hover-bg;
+  }
+}
+
+// Borders (global Bootstrap border color)
+.border {
+  border-color: $border-primary !important;
+}
+
+// Secondary/tertiary backgrounds
+.bg-body-secondary {
+  background-color: $bg-secondary;
+}
+.bg-body-tertiary {
+  background-color: $bg-tertiary;
+}
+
+.text-body-secondary {
+  color: $text-secondary;
+}
+.text-body-tertiary {
+  color: $text-tertiary;
+}

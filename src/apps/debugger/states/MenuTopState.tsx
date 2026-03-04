@@ -1,15 +1,18 @@
-import { IPCDataType, IPCMessageType, IPCMessageTypeDebug } from "../../../enums/server";
-import { IPCMessage, IPCMessageParam } from "../../../server";
-import { DebugApp } from "../DebugApp";
-import { EngineDebugType } from "../../../enums/engine/EngineDebugType";
-import { MenuTopItem } from "../MenuTopItem";
+import { DebugApp } from "@/apps/debugger/DebugApp";
+import { MenuTopItem } from "@/apps/debugger/MenuTopItem";
+import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import { IPCDataType, IPCMessageType, IPCMessageTypeDebug } from "@/enums/server";
+import { IPCMessage, IPCMessageParam } from "@/server";
+
 
 
 export class MenuTopState {
+  /** Instance marker so this class is not treated as extraneous (static-only). */
+  private readonly _instance = true;
 
   static title: string = `KotOR Forge`;
   static items: MenuTopItem[] = [];
-  
+
   static optionsItemExample: MenuTopItem;
   static optionDebugPathFinding: MenuTopItem;
   static optionDebugObjectLabels: MenuTopItem;
@@ -20,7 +23,7 @@ export class MenuTopState {
     this.optionsItemExample = new MenuTopItem({
       name: `Options`
     });
-    
+
     this.optionDebugPathFinding = new MenuTopItem({
       name: `Debug: Path Finding`,
       onClick: () => {

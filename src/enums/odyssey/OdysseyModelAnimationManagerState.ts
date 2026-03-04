@@ -1,3 +1,5 @@
+import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+
 /**
  * OdysseyModelAnimationManagerState interface.
  * 
@@ -16,5 +18,5 @@ export interface OdysseyModelAnimationManagerState {
   delta: number;
   lastEvent: number;
   events: boolean[];
-  animation?: any;
+  animation?: { name?: string; [key: string]: string | number | boolean | undefined } | ITwoDAAnimation;
 }

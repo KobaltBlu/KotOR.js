@@ -1,8 +1,25 @@
-import React, { ComponentProps, ReactEventHandler, useState } from "react";
-import { Container, Dropdown, Nav, NavDropdown, Navbar } from 'react-bootstrap';
-import { useEffectOnce } from "../helpers/UseEffectOnce";
+import React, { useState } from "react";
+import { Dropdown, Nav, NavDropdown } from 'react-bootstrap';
 
-export const MenuItem = function(props: any){
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+
+export interface MenuItemData {
+  type?: string;
+  name: string;
+  items?: MenuItemData[];
+  onClick?: (e: React.MouseEvent<HTMLElement>, item: MenuItemData) => void;
+  uuid?: string;
+  rebuild?: () => void;
+  addEventListener?(type: string, callback: () => void): void;
+  removeEventListener?(type: string, callback: () => void): void;
+}
+
+export interface MenuItemProps {
+  item: MenuItemData | null | undefined;
+  parent?: MenuItemData | null;
+}
+
+export const MenuItem = function(props: MenuItemProps){
   const item = props.item;
   const parent = props.parent;
 
@@ -14,28 +31,32 @@ export const MenuItem = function(props: any){
   };
 
   useEffectOnce( () => { //constructor
-    item.addEventListener('onRebuild', onRebuild);
-    return () => { //deconstructor
-      item.removeEventListener('onRebuild', onRebuild);
+    if (item?.addEventListener && item?.removeEventListener) {
+      item.addEventListener('onRebuild', onRebuild);
+      return () => { //deconstructor
+        item?.removeEventListener?.('onRebuild', onRebuild);
+      };
     }
   });
 
   const onClick = (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
-    if(typeof item.onClick === 'function'){
+    if (item && typeof item.onClick === 'function'){
       item.onClick(e, item);
     }
-  }
+  };
+
+  if (!item) return null;
 
   if(item.type === 'separator' || item.type === 'sep'){
     return (
       <Dropdown.Divider></Dropdown.Divider>
     );
-  }else if(item.items.length){
+  }else if(item.items?.length){
     return (
       <NavDropdown title={item.name}>
-        {item.items.map((child: any, i: any) => 
+        {item.items.map((child: MenuItemData, i: number) =>
           (
-            <MenuItem key={(`menu-item-${child.uuid}`)} item={child} parent={item}></MenuItem>
+            <MenuItem key={`menu-item-${child?.uuid ?? child?.name ?? i}`} item={child} parent={item}></MenuItem>
           )
         )}
       </NavDropdown>

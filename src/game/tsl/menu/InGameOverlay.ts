@@ -23,9 +23,9 @@ const ARROW_DIR_RIGHT = Math.PI;
 
 /**
  * InGameOverlay class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameOverlay.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -157,6 +157,8 @@ export class InGameOverlay extends K1_InGameOverlay {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>(async (resolve, reject) => {
+      const getButtonControl = (name: string): GUIButton => this.getControlByName(name) as GUIButton;
+      const fillNode = this.tGuiPanel.widget.userData.fill as { visible?: boolean };
 
       //Auto scale anchor hack/fix
       this.BTN_ACTION5.anchor = Anchor.BottomLeft;
@@ -164,7 +166,7 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.LBL_QUEUE0.anchor = Anchor.BottomCenter;
       this.LBL_QUEUE0.recalculate();
 
-      this.tGuiPanel.widget.userData.fill.visible = false;
+      fillNode.visible = false;
 
       /*this.TB_STEALTH.hideBorder();
       this.TB_PAUSE.hideBorder();
@@ -268,7 +270,7 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
-        
+
         if(GameState.State == EngineState.PAUSED){
           GameState.AutoPauseManager.Unpause();
         }else{
@@ -285,59 +287,70 @@ export class InGameOverlay extends K1_InGameOverlay {
         e.stopPropagation();
       });
 
-      this.BTN_CHAR1.addEventListener('click', (e) => {
+      this.BTN_CHAR1.addEventListener('click', (_e) => {
         this.manager.MenuEquipment.open()
       });
 
-      this.BTN_CHAR2.addEventListener('click', (e) => {
+      this.BTN_CHAR2.addEventListener('click', (_e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
       });
 
-      this.BTN_CHAR3.addEventListener('click', (e) => {
+      this.BTN_CHAR3.addEventListener('click', (_e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
       });
 
       this.BTN_CLEARALL.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearAllActions();
-        GameState.getCurrentPlayer().combatData.combatState = false;
-        GameState.getCurrentPlayer().cancelCombat();
+        const currentPlayer = GameState.getCurrentPlayer() as {
+          clearAllActions: () => void;
+          combatData: { combatState: boolean };
+          cancelCombat: () => void;
+          clearCombatAction: () => void;
+          clearCombatActionAtIndex: (index: number) => void;
+        };
+        currentPlayer.clearAllActions();
+        currentPlayer.combatData.combatState = false;
+        currentPlayer.cancelCombat();
       });
 
       this.LBL_QUEUE0.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatAction();
+        const currentPlayer = GameState.getCurrentPlayer() as { clearCombatAction: () => void };
+        currentPlayer.clearCombatAction();
       });
 
       this.LBL_QUEUE1.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatActionAtIndex(0);
+        const currentPlayer = GameState.getCurrentPlayer() as { clearCombatActionAtIndex: (index: number) => void };
+        currentPlayer.clearCombatActionAtIndex(0);
       });
 
       this.LBL_QUEUE2.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatActionAtIndex(1);
+        const currentPlayer = GameState.getCurrentPlayer() as { clearCombatActionAtIndex: (index: number) => void };
+        currentPlayer.clearCombatActionAtIndex(1);
       });
 
       this.LBL_QUEUE3.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatActionAtIndex(2);
+        const currentPlayer = GameState.getCurrentPlayer() as { clearCombatActionAtIndex: (index: number) => void };
+        currentPlayer.clearCombatActionAtIndex(2);
       });
 
       for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
 
-        this.getControlByName('LBL_TARGET'+i).addEventListener('click', (e) => {
+        getButtonControl('LBL_TARGET'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.onTargetMenuAction(i);
         });
 
-        this.getControlByName('BTN_TARGETUP'+i).addEventListener('click', (e) => {
+        getButtonControl('BTN_TARGETUP'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
           this.UpdateTargetUIIcon(i);
         });
 
-        this.getControlByName('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
+        getButtonControl('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
           this.UpdateTargetUIIcon(i);
@@ -347,18 +360,18 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
 
-        this.getControlByName('LBL_ACTION'+i).addEventListener('click', (e) => {
+        getButtonControl('LBL_ACTION'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.onSelfMenuAction(i);
         });
 
-        this.getControlByName('BTN_ACTIONUP'+i).addEventListener('click', (e) => {
+        getButtonControl('BTN_ACTIONUP'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
           this.UpdateSelfUIIcon(i);
         });
 
-        this.getControlByName('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
+        getButtonControl('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
           this.UpdateSelfUIIcon(i);
@@ -408,5 +421,6 @@ export class InGameOverlay extends K1_InGameOverlay {
   resize() {
     this.recalculatePosition();
   }
-  
+
 }
+

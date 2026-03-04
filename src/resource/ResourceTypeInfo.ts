@@ -1,8 +1,8 @@
 /**
  * ResourceTypeInfo.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ResourceTypeInfo.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -193,6 +193,7 @@ export const ResourceTypeInfo = {
     "ptx" : 'PTX File',
     "ltx" : 'LTX File',
     "trx" : 'TRX File',
+    "indoor" : 'Indoor Map',
 
     "nds" : 'Nintendo DS ROM',
     "herf" : 'Hashed ERF',
@@ -329,13 +330,13 @@ export const ResourceTypeInfo = {
     "bif" : 'BIF Archive',
     "key" : 'BIF Archive KEY',
 
-    getKeyByValue: function( value: any ) {
-        for( let prop in this ) {
-            if( this.hasOwnProperty( prop ) ) {
-                 if( this[ prop ] === value )
-                     return prop;
+    getKeyByValue: function (this: Record<string, string>, value: string): string | undefined {
+        for (const prop in this) {
+            if (Object.hasOwn(this, prop) && typeof this[prop] === 'string') {
+                if (this[prop] === value) return prop;
             }
         }
+        return undefined;
     }
 
 }

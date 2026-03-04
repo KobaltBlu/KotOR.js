@@ -1,14 +1,13 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { CharGenClasses } from "../../CharGenClasses";
-import { CharGenPortCust as K1_CharGenPortCust } from "../../kotor/KOTOR";
+import { CharGenClasses } from "@/game/CharGenClasses";
+import { CharGenPortCust as K1_CharGenPortCust } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * CharGenPortCust class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenPortCust.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -54,9 +53,9 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       if(this.isCharLoading) return;
       this.isCharLoading = true;
       const creature = GameState.CharGenManager.selectedCreature;
-    
+
       let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
-      let arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
+      const arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
       if(idx <= 0){
         creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[arrayLength - 1];
       }else{
@@ -65,7 +64,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       creature.setAppearance(creature.appearance);
 
       for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
-        let port = GameState.SWRuleSet.portraits[i];
+        const port = GameState.SWRuleSet.portraits[i];
         if(port.appearancenumber == creature.appearance){
           creature.portraitId = i;
           creature.portrait = GameState.SWRuleSet.portraits[i];
@@ -82,9 +81,10 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         }
       }
 
-      const model = await creature.loadModel();
+      await creature.loadModel();
       this.updateCamera();
       this.UpdatePortrait();
+      const model = creature.model;
       if(model){
         model.rotation.z = -Math.PI/2;
         model.removeFromParent();
@@ -101,7 +101,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       const creature = GameState.CharGenManager.selectedCreature;
 
       let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
-      let arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
+      const arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
       if(idx >= arrayLength - 1){
         creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[0];
       }else{
@@ -110,7 +110,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       creature.setAppearance(creature.appearance);
 
       for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
-        let port = GameState.SWRuleSet.portraits[i];
+        const port = GameState.SWRuleSet.portraits[i];
         if(port.appearancenumber == creature.appearance){
           creature.portraitId = i;
           creature.portrait = GameState.SWRuleSet.portraits[i];
@@ -126,9 +126,10 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         }
       }
 
-      const model = await creature.loadModel();
+      await creature.loadModel();
       this.updateCamera();
       this.UpdatePortrait();
+      const model = creature.model;
       if(model){
         model.rotation.z = -Math.PI/2;
         model.removeFromParent();
@@ -147,7 +148,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         creature.appearance = this.appearance;
         creature.portraitId = this.portraitId;
         creature.setAppearance(creature.appearance);
-        const model = await creature.loadModel();
+        await creature.loadModel();
         this.exiting = false;
         this.close();
       }
@@ -157,7 +158,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
     this.BTN_ACCEPT.addEventListener('click', (e) => {
       e.stopPropagation();
       const creature = GameState.CharGenManager.selectedCreature;
-      
+
       //Save appearance choice
       creature.template.getFieldByLabel('Appearance_Type').setValue(creature.appearance);
       creature.template.getFieldByLabel('PortraitId').setValue(creature.portraitId);
@@ -165,7 +166,10 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       this.close();
     });
 
-    this.tGuiPanel.widget.userData.fill.position.z = -0.5
+    const panelUserData = this.tGuiPanel.widget.userData as { fill?: { position: { z: number } } };
+    if(panelUserData.fill){
+      panelUserData.fill.position.z = -0.5;
+    }
 
     this._3dView.visible = true;
     this._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
@@ -174,5 +178,5 @@ export class CharGenPortCust extends K1_CharGenPortCust {
 
     this.Init3D();
   }
-  
+
 }

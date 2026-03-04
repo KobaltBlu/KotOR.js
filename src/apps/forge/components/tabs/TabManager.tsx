@@ -1,46 +1,44 @@
 import React, { useEffect, useRef, useState } from "react";
-import TabButton from "./TabButton";
-import { TabManagerProvider, useTabManager } from "../../context/TabManagerContext";
-import { TabState } from "../../states/tabs";
 
-import * as KotOR from "../../KotOR";
+import TabButton from "@/apps/forge/components/tabs/TabButton";
+import { useTabManager } from "@/apps/forge/context/TabManagerContext";
+import { TabState } from "@/apps/forge/states/tabs";
 
-export interface TabManagerProps {
-  // manager: EditorTabManager
-}
+/** Props for TabManager; currently none required */
+export type TabManagerProps = object;
 
-export const TabManager = function(props: TabManagerProps){
+export const TabManager = function(_props: TabManagerProps){
 
   const tabManagerContext = useTabManager();
   const [render, rerender] = useState(false);
-  const [manager, setTabManager] = tabManagerContext.manager;
-  const [tabs, setTabs] = tabManagerContext.tabs;
-  const [selectedTab, setSelectedTab] = tabManagerContext.selectedTab;
+  const [manager, _setTabManager] = tabManagerContext.manager;
+  const [tabs, _setTabs] = tabManagerContext.tabs;
+  const [_selectedTab, _setSelectedTab] = tabManagerContext.selectedTab;
 
   const tabsMenuRef = useRef<HTMLUListElement>(null);
   const tabsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // console.log('tabs', tabs);
+    // log.info('tabs', tabs);
   }, [tabs]);
 
   const onTabAdded = () => {
-    // console.log('added', ForgeState.tabManager.tabs);
+    // log.info('added', ForgeState.tabManager.tabs);
     rerender(!render);
   };
 
   const onTabRemoved = () => {
-    // console.log('removed', ForgeState.tabManager.tabs);
+    // log.info('removed', ForgeState.tabManager.tabs);
     rerender(!render);
   };
 
-  const onTabShow = (tab: TabState) => {
-    // console.log('show', tab);
+  const onTabShow = (_tab: TabState) => {
+    // log.info('show', tab);
     rerender(!render);
   };
 
-  const onTabHide = (tab: TabState) => {
-    // console.log('hide', tab);
+  const onTabHide = (_tab: TabState) => {
+    // log.info('hide', tab);
     rerender(!render);
   };
 
@@ -63,22 +61,24 @@ export const TabManager = function(props: TabManagerProps){
       <div className="tabManager">
         <ul ref={tabsMenuRef} className="tabs-menu">
           {
-            tabs.map( (tab: any) => {
-              return <TabButton key={tab.id} tab={tab} ></TabButton>
+            tabs.map( (tab: unknown) => {
+              const typedTab = tab as TabState;
+              return <TabButton key={typedTab.id} tab={typedTab} ></TabButton>
             })
           }
         </ul>
         <div ref={tabsContainerRef} className="tabs tab-content">
           {
-            tabs.map( (tab: any) => {
+            tabs.map( (tab: unknown) => {
+              const typedTab = tab as TabState;
               return (
-                <div key={tab.id} className={`tab-pane ${tab.constructor.name} ${tab.visible ? 'active' : ''}`}>
-                  {tab.render()}
+                <div key={typedTab.id} className={`tab-pane ${typedTab.constructor.name} ${typedTab.visible ? 'active' : ''}`}>
+                  {typedTab.render()}
                 </div>
               )
             })
           }
-        </div> 
+        </div>
       </div>
     </div>
   );

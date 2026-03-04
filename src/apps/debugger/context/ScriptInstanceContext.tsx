@@ -1,24 +1,35 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import * as KotOR from "../KotOR";
-import { useApp } from "./AppContext";
-import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
-import { IPCMessage } from "../../../server/ipc/IPCMessage";
-import { IPCMessageParam } from "../../../server/ipc/IPCMessageParam";
-import { IPCDataType } from "../../../enums/server/ipc/IPCDataType";
-// import { useEffectOnce } from "../../forge/helpers/UseEffectOnce";
+
+import { useApp } from "@/apps/debugger/context/AppContext";
+import * as KotOR from "@/apps/debugger/KotOR";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { IPCMessage } from "@/server/ipc/IPCMessage";
+import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Debug);
+// import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
 export interface ScriptInstanceProviderValues {
   instance: [KotOR.NWScriptInstance|undefined, React.Dispatch<KotOR.NWScriptInstance|undefined>];
   breakpointMap: [Map<number, boolean>, React.Dispatch<Map<number, boolean>>];
   seekAddress: [number, React.Dispatch<number>];
 }
-export const ScriptInstanceContext = createContext<ScriptInstanceProviderValues>({} as any);
+const defaultScriptInstanceValue: ScriptInstanceProviderValues = null as unknown as ScriptInstanceProviderValues;
+export const ScriptInstanceContext = createContext<ScriptInstanceProviderValues>(defaultScriptInstanceValue);
 
 export function useScriptInstance(){
   return useContext(ScriptInstanceContext);
 }
 
-export const ScriptInstanceProvider = (props: {children: any; instance: KotOR.NWScriptInstance|undefined}) => {
+export interface ScriptInstanceProviderProps {
+  children: React.ReactNode;
+  instance: KotOR.NWScriptInstance | undefined;
+}
+
+export const ScriptInstanceProvider = (props: ScriptInstanceProviderProps) => {
   const appContext = useApp();
   const sendMessageHelper = appContext.sendMessageHelper;
   // const [channelMessage, sendChanelMessage] = appContext.channelMessage;
@@ -35,7 +46,7 @@ export const ScriptInstanceProvider = (props: {children: any; instance: KotOR.NW
     seekAddress: [seekAddress, setSeekAddress],
   };
 
-  const breakPointUpdateHandler = (address: number, added: false) => {
+  const breakPointUpdateHandler = (address: number, added: boolean) => {
     if(!instance) return;
     setBreakpointMap(new Map(instance.breakPoints));
     rerender(!render);
@@ -47,14 +58,14 @@ export const ScriptInstanceProvider = (props: {children: any; instance: KotOR.NW
   }
 
   const seekHandler = (address: number) => {
-    console.log("Seeking to", address);
+    log.debug("Seeking to", address);
     setSeekAddress(address);
   }
 
   useEffect(() => {
-    console.log("Setting instance", props.instance);
+    log.debug("Setting instance", props.instance?.uuid);
     if(instance) {
-      console.log("Removing breakpoint listener", instance.uuid);
+      log.debug("Removing breakpoint listener", instance.uuid);
       instance.removeEventListener('breakpoint', breakPointUpdateHandler);
       instance.removeEventListener('seek', seekHandler);
     }
@@ -63,7 +74,7 @@ export const ScriptInstanceProvider = (props: {children: any; instance: KotOR.NW
     if(props.instance) {
       setBreakpointMap(new Map(props.instance.breakPoints));
       setSeekAddress(props.instance.seek);
-      console.log("Adding breakpoint listener", props.instance.uuid);
+      log.debug("Adding breakpoint listener", props.instance.uuid);
       props.instance.addEventListener('breakpoint', breakPointUpdateHandler);
       props.instance.addEventListener('seek', seekHandler);
     }

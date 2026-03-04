@@ -1,10 +1,11 @@
 import * as THREE from "three";
-import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
-import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
-import { OdysseyController } from "./OdysseyController";
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
+
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
 
 /**
  * AlphaController class.
@@ -19,36 +20,39 @@ export class AlphaController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Alpha;
 
+  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    if(manager.modelNode.userData.mesh){
-      if(manager.modelNode.userData.mesh.material instanceof THREE.Material){
-        if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
-          manager.modelNode.userData.mesh.material.uniforms.opacity.value = data.value;
-          manager.modelNode.userData.mesh.material.opacity = data.value;
-          manager.modelNode.userData.mesh.material.uniformsNeedUpdate = true;
-        }else if(manager.modelNode.userData.mesh.material instanceof THREE.Material){
-          manager.modelNode.userData.mesh.material.opacity = data.value;
-        }
-        manager.modelNode.userData.mesh.material.transparent = true;
-        manager.modelNode.userData.mesh.material.needsUpdate = true;
+  setFrame(manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
+    const mesh = manager.modelNode.userData.mesh as THREE.Mesh | undefined;
+    if(mesh?.material){
+      const mat = mesh.material as THREE.Material;
+      if(mat instanceof THREE.ShaderMaterial){
+        mat.uniforms.opacity.value = data.value;
+        mat.opacity = data.value;
+        mat.uniformsNeedUpdate = true;
+      } else {
+        mat.opacity = data.value;
       }
+      mat.transparent = true;
+      mat.needsUpdate = true;
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    if(manager.modelNode.userData.mesh){
-      if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
-        manager.modelNode.userData.mesh.material.uniforms.opacity.value = ((next.value - last.value) * fl + last.value);;
-        manager.modelNode.userData.mesh.material.uniformsNeedUpdate = true;
+  animate(manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
+    const mesh = manager.modelNode.userData.mesh as THREE.Mesh | undefined;
+    if(mesh?.material){
+      const mat = mesh.material as THREE.Material;
+      const opacity = (Number(next.value) - Number(last.value)) * fl + Number(last.value);
+      if(mat instanceof THREE.ShaderMaterial){
+        mat.uniforms.opacity.value = opacity;
+        mat.uniformsNeedUpdate = true;
       }
-      manager.modelNode.userData.mesh.material.opacity = ((next.value - last.value) * fl + last.value);
-      manager.modelNode.userData.mesh.material.transparent = true;//manager.modelNode.mesh.material.opacity < 1.0;
-      //manager.modelNode.userData.mesh.material.depthFunc = 4;
-      manager.modelNode.userData.mesh.material.needsUpdate = true;
+      mat.opacity = opacity;
+      mat.transparent = true;
+      mat.needsUpdate = true;
     }
   }
 

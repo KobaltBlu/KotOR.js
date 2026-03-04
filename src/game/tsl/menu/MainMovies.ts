@@ -1,8 +1,11 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
-import { TwoDAObject } from "../../../resource/TwoDAObject";
-import { MainMovies as K1_MainMovies } from "../../kotor/KOTOR";
-import { GUIMovieItem } from "../gui/GUIMovieItem";
+import { MainMovies as K1_MainMovies } from "@/game/kotor/KOTOR";
+import { GUIMovieItem } from "@/game/tsl/gui/GUIMovieItem";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 interface MovieItem {
   name: string;
@@ -77,6 +80,7 @@ export class MainMovies extends K1_MainMovies {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
+    log.trace('menuControlInitializer entered', { skipInit });
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
@@ -113,12 +117,15 @@ export class MainMovies extends K1_MainMovies {
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
+        log.debug('MainMovies BTN_BACK clicked');
         this.close();
       });
       this._button_b = this.BTN_BACK;
 
+      log.trace('MainMovies menuControlInitializer completed');
       resolve();
     });
   }
   
 }
+

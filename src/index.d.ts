@@ -1,5 +1,4 @@
 import * as fs from "fs";
-import {electron} from "electron";
 
 // Add data types to window.navigator ambiently for implicit use in the entire project. See https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html#-reference-types- for more info.
 /// <reference types="user-agent-data-types" />
@@ -11,16 +10,24 @@ declare module '*.html' {
   export default content;
 }
 
-interface ElectronContextBridge {
-  isMac: () => boolean;
-  minimize: (profile?: any) => Promise<any>;
-  maximize: (profile?: any) => Promise<any>;
-  locate_game_directory: (profile: any) => Promise<string>;
-  launchProfile: (profile: any) => Promise<any>;
+/** Minimal profile shape used by the Electron context bridge (external API). */
+interface ElectronProfile {
+  key?: string;
+  name?: string;
 }
 
-interface DialogContextBridge extends Electron.Dialog {
-  locateDirectoryDialog: (profile?: any) => Promise<string>
+interface ElectronContextBridge {
+  isMac: () => boolean;
+  minimize: (profile?: ElectronProfile) => Promise<void>;
+  maximize: (profile?: ElectronProfile) => Promise<void>;
+  locate_game_directory: (profile: ElectronProfile) => Promise<string>;
+  launchProfile: (profile: ElectronProfile) => Promise<void>;
+}
+
+interface DialogContextBridge {
+  locateDirectoryDialog: (profile?: ElectronProfile) => Promise<string>;
+  showOpenDialog?: (opts?: unknown) => Promise<{ filePaths?: string[]; canceled?: boolean }>;
+  showSaveDialog?: (opts?: unknown) => Promise<{ filePath?: string; cancelled?: boolean }>;
 }
 
 declare global {
@@ -30,9 +37,17 @@ declare global {
   }
 }
 declare global {
-  interface Window { 
+  interface Window {
     electron: ElectronContextBridge;
     dialog: DialogContextBridge;
     fs: typeof fs;
+    /** Launcher app (set by launcher index for dev/debug). */
+    Launcher?: unknown;
+    /** ConfigClient (set by launcher index for dev/debug). */
+    ConfigClient?: unknown;
+    /** Root render result (set by launcher index). */
+    launcherView?: unknown;
+    /** Node require (Electron renderer); only present in Electron context. */
+    require?: NodeRequire;
   }
 }

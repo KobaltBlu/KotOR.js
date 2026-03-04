@@ -1,5 +1,9 @@
-import { ModuleCalendar } from "./ModuleCalendar";
-import { GFFObject } from "../resource/GFFObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { ModuleCalendar } from "@/module/ModuleCalendar";
+
+
+const log = createScopedLogger(LogScope.Module);
+import { GFFObject } from "@/resource/GFFObject";
 
 /**
 * ModuleTimeManager class.
@@ -101,10 +105,10 @@ export class ModuleTimeManager {
   }
 
   getFutureTimeFromSeconds(seconds: number = 0){
-    // console.log('getFutureTimeFromSeconds', seconds);
-    let future = this.calendar.clone();
+    // log.info('getFutureTimeFromSeconds', seconds);
+    const future = this.calendar.clone();
     future.advanceDeltaTime(seconds);
-    // console.log('getFutureTimeFromSeconds.future', (future.pauseTime - this.pauseTime), (future.pauseTime - this.pauseTime) / 1000 );
+    // log.info('getFutureTimeFromSeconds.future', (future.pauseTime - this.pauseTime), (future.pauseTime - this.pauseTime) / 1000 );
     return future;
   }
 
@@ -121,51 +125,51 @@ export class ModuleTimeManager {
   setFromIFO(ifo: GFFObject){
     if(ifo instanceof GFFObject){
       if(ifo.RootNode.hasField('Mod_PauseDay')){
-        this.pauseDay = ifo.getFieldByLabel('Mod_PauseDay').getValue();
+        this.pauseDay = ifo.getNumberByLabel('Mod_PauseDay');
       }
 
       if(ifo.RootNode.hasField('Mod_PauseTime')){
-        this.pauseTime = ifo.getFieldByLabel('Mod_PauseTime').getValue();
+        this.pauseTime = ifo.getNumberByLabel('Mod_PauseTime');
       }
 
       if(ifo.RootNode.hasField('Mod_DawnHour')){
-        this.dawnHour = ifo.getFieldByLabel('Mod_DawnHour').getValue();
+        this.dawnHour = ifo.getNumberByLabel('Mod_DawnHour');
       }
 
       if(ifo.RootNode.hasField('Mod_DuskHour')){
-        this.duskHour = ifo.getFieldByLabel('Mod_DuskHour').getValue();
+        this.duskHour = ifo.getNumberByLabel('Mod_DuskHour');
       }
 
       if(ifo.RootNode.hasField('Mod_MinPerHour')){
-        this.minutesPerHour = ifo.getFieldByLabel('Mod_MinPerHour').getValue();
+        this.minutesPerHour = ifo.getNumberByLabel('Mod_MinPerHour');
       }
 
       if(ifo.RootNode.hasField('Mod_StartYear')){
-        this.year = ifo.getFieldByLabel('Mod_StartYear').getValue();
+        this.year = ifo.getNumberByLabel('Mod_StartYear');
       }
 
       if(ifo.RootNode.hasField('Mod_StartMonth')){
-        this.month = ifo.getFieldByLabel('Mod_StartMonth').getValue();
+        this.month = ifo.getNumberByLabel('Mod_StartMonth');
       }
 
       if(ifo.RootNode.hasField('Mod_StartDay')){
-        this.day = ifo.getFieldByLabel('Mod_StartDay').getValue();
+        this.day = ifo.getNumberByLabel('Mod_StartDay');
       }
 
       if(ifo.RootNode.hasField('Mod_StartHour')){
-        this.hour = ifo.getFieldByLabel('Mod_StartHour').getValue();
+        this.hour = ifo.getNumberByLabel('Mod_StartHour');
       }
 
       if(ifo.RootNode.hasField('Mod_StartMinute')){
-        this.minute = ifo.getFieldByLabel('Mod_StartMinute').getValue();
+        this.minute = ifo.getNumberByLabel('Mod_StartMinute');
       }
 
       if(ifo.RootNode.hasField('Mod_StartSecond')){
-        this.second = ifo.getFieldByLabel('Mod_StartSecond').getValue();
+        this.second = ifo.getNumberByLabel('Mod_StartSecond');
       }
 
       if(ifo.RootNode.hasField('Mod_StartMiliSec')){
-        this.milisecond = ifo.getFieldByLabel('Mod_StartMiliSec').getValue();
+        this.milisecond = ifo.getNumberByLabel('Mod_StartMiliSec');
       }
     }
   }
