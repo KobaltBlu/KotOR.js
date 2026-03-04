@@ -119,8 +119,9 @@ export class GUISpellItem extends GUIProtoItem {
         this.widget.userData.iconSprite.position.z = 5;
         this.widget.userData.iconSprite.renderOrder = 5;
         TextureLoader.enQueue((isUnknown && !hasSpell) ? 'ip_secret' : spell.iconresref, this.widget.userData.iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          this.widget.userData.iconSprite.scale.x = texture.image.width;
-          this.widget.userData.iconSprite.scale.y = texture.image.height;
+          const img = texture.image as HTMLImageElement | undefined;
+          this.widget.userData.iconSprite.scale.x = img?.width ?? 32;
+          this.widget.userData.iconSprite.scale.y = img?.height ?? 32;
           if(locked && !isUnknown){
             this.widget.userData.iconMaterial.opacity = 0.25;
           }

@@ -31,7 +31,7 @@ export class ShaderGrass extends Shader {
         fadeEndDistance: { value: 100.0 },  // Distance where grass becomes invisible
         useDistanceFade: { value: true }    // Toggle for distance fade
       }
-    ]);
+    ]) as Record<string, THREE.IUniform>;
     this.vertex = `
     #include <common>
     #include <uv_pars_vertex>

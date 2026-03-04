@@ -123,7 +123,11 @@ export class MainMenu extends K1_MainMenu {
   }
 
   update(delta = 0) {
-    this._3dView.render(delta);
+    super.update(delta);
+    // _3dView is set asynchronously in MDLLoader.load('mainmenu01').then(...); guard so we don't throw before it's ready
+    if (this._3dView) {
+      this._3dView.render(delta);
+    }
   }
 
   show() {

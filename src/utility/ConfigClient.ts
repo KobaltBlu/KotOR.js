@@ -2,9 +2,9 @@ import { get, set } from 'idb-keyval';
 
 /**
  * ConfigClient class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ConfigClient.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -14,11 +14,17 @@ export class ConfigClient {
   static UUID: string = ConfigClient.uuidv4();
 
   static async Init() {
-    ConfigClient.options = Object.assign(
-      defaults, 
-      await get('app_settings')
+    const INIT_TIMEOUT_MS = 5000;
+    const timeoutPromise = new Promise<undefined>((_, reject) =>
+      setTimeout(() => reject(new Error('ConfigClient.Init timeout')), INIT_TIMEOUT_MS)
     );
-
+    try {
+      const stored = await Promise.race([get('app_settings'), timeoutPromise]);
+      ConfigClient.options = Object.assign({}, defaults, stored ?? {});
+    } catch (e) {
+      console.warn('ConfigClient.Init: storage unavailable or slow, using defaults', e);
+      ConfigClient.options = Object.assign({}, defaults);
+    }
   }
 
   static get(path: string|any[] = '', defaultValue?:any){
@@ -58,7 +64,7 @@ export class ConfigClient {
         if(scope[parts[i]]){
           scope = scope[parts[i]];
         }
-        
+
         if(typeof scope == 'undefined'){
           console.warn('ConfigManager.set', 'Invalid property', path);
           return undefined;
@@ -87,11 +93,17 @@ export class ConfigClient {
   }
 
   static save(onSave?: Function, silent?: boolean){
-    set('app_settings', ConfigClient.options);
-    localStorage.setItem('client-config-updated', JSON.stringify({
-      time: Date.now(),
-      id: ConfigClient.UUID
-    }));
+    set('app_settings', ConfigClient.options).catch((e: unknown) => {
+      if (!silent) console.warn('ConfigClient.save: IndexedDB write failed, using in-memory config only', e);
+    });
+    try {
+      localStorage.setItem('client-config-updated', JSON.stringify({
+        time: Date.now(),
+        id: ConfigClient.UUID
+      }));
+    } catch (e) {
+      if (!silent) console.warn('ConfigClient.save: localStorage write failed', e);
+    }
   }
 
   static uuidv4() {
@@ -104,7 +116,7 @@ export class ConfigClient {
 
 window.addEventListener('storage', (event: StorageEvent) => {
   console.log('storage', event);
-  ConfigClient.Init();
+  ConfigClient.Init().catch(() => {});
 });
 
 const defaults: any = {

@@ -189,10 +189,10 @@ export class MenuCharacter extends GameMenu {
             resolve();
           });
 
-        }).catch((e: any) => {
+        }).catch((_e: unknown) => {
           resolve();
         });
-      }).catch((e: any) => {
+      }).catch((_e: unknown) => {
         resolve();
       });
     });
@@ -206,7 +206,7 @@ export class MenuCharacter extends GameMenu {
       this.char.update(delta);
     try {
       this._3dView.render(delta);
-    } catch (e: any) {
+    } catch (e: unknown) {
     }
   }
 

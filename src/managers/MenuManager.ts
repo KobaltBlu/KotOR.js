@@ -9,9 +9,9 @@ import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 
 /**
  * MenuManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -99,7 +99,7 @@ export class MenuManager {
     if(!menu) return;
 
     MenuManager.MenuToolTip.hide();
-    
+
     if(!menu.isOverlayGUI){
       //Hide the current top most menu in the list before adding the new Menu
       if(MenuManager.activeMenus.length)
@@ -108,9 +108,9 @@ export class MenuManager {
       const idx = MenuManager.activeMenus.indexOf(menu);
       if(idx >= 0)
         MenuManager.activeMenus.splice(idx, 1);
-      
+
       MenuManager.activeMenus.push(menu);
-  
+
       MenuManager.Resize();
     }else{
       if(MenuManager.activeModals.indexOf(menu) == -1)
@@ -156,6 +156,32 @@ export class MenuManager {
 
   static GetCurrentMenu(){
     return MenuManager.activeMenus[MenuManager.activeMenus.length-1];
+  }
+
+  static CyclePrimaryMenu(direction: number){
+    const menus: GameMenu[] = [
+      MenuManager.MenuMessages,
+      MenuManager.MenuJournal,
+      MenuManager.MenuMap,
+      MenuManager.MenuOptions,
+      MenuManager.MenuCharacter,
+      MenuManager.MenuAbilities,
+      MenuManager.MenuInventory,
+      MenuManager.MenuEquipment
+    ].filter(Boolean);
+
+    if(!menus.length || !MenuManager.MenuTop){ return; }
+
+    const current = MenuManager.GetCurrentMenu();
+    let index = menus.indexOf(current);
+    if(index < 0){
+      index = direction >= 0 ? 0 : menus.length - 1;
+    }else{
+      index = (index + (direction >= 0 ? 1 : -1) + menus.length) % menus.length;
+    }
+
+    MenuManager.MenuTop.CloseAllOtherMenus();
+    menus[index].open();
   }
 
   static Resize(){
@@ -222,8 +248,8 @@ export class MenuManager {
     await menu.load();
     PerformanceMonitor.stop(menuConstructor.name+'.GameMenuLoader');
     return menu;
-  }  
-  
+  }
+
   static async LoadMainGameMenus(){
     try{
       if(GameState.GameKey == GameEngineType.KOTOR){
@@ -271,7 +297,7 @@ export class MenuManager {
       console.error(e);
     }
   }
-  
+
   static async LoadCharGenGameMenus(){
     try{
       if(GameState.GameKey == GameEngineType.KOTOR){

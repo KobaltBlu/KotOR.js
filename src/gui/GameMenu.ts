@@ -1,28 +1,27 @@
 import * as THREE from "three";
-
-import { KeyMapper } from "@/controls";
-import { Mouse } from "@/controls/Mouse";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import { GameState } from "@/GameState";
-import { GUIControl } from "@/gui/GUIControl";
-import { GUIControlFactory } from "@/gui/GUIControlFactory";
-import { ResourceLoader, TextureLoader } from "@/loaders";
-import type { MenuManager } from "@/managers/MenuManager";
-import { GFFObject } from "@/resource/GFFObject";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { ResolutionManager } from "@/managers/ResolutionManager";
-import { ShaderManager } from "@/managers/ShaderManager"
-import { BitWise } from "@/utility/BitWise";
-import type { GUIProtoItem } from "@/gui/GUIProtoItem";
+import { GFFObject } from "../resource/GFFObject";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { GameState } from "../GameState";
+import { EngineMode } from "../enums/engine/EngineMode";
+import type { MenuManager } from "../managers/MenuManager";
+import { ResolutionManager } from "../managers/ResolutionManager";
+import { ShaderManager } from "../managers/ShaderManager"
+import { ResourceLoader, TextureLoader } from "../loaders";
+import { GUIControl } from "./GUIControl";
+import { GUIControlFactory } from "./GUIControlFactory";
+import { BitWise } from "../utility/BitWise";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { Mouse } from "../controls/Mouse";
+import { KeyMapper } from "../controls";
+import type { GUIProtoItem } from "./GUIProtoItem";
+import { GUIControlType } from "../enums/gui/GUIControlType";
 
 /**
  * GameMenu class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GameMenu.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -66,7 +65,8 @@ export class GameMenu {
 
   engineMode: EngineMode = EngineMode.GUI;
 
-  eventListenters: Map<string, Function[]> = new Map<string, Function[]>();
+  eventListenters: Map<String, Function[]> = new Map<String, Function[]>();
+  /** Runtime context (GameState in game, UI3DRenderer in Forge GUI editor). */
   context: any = GameState;
 
   constructor(){
@@ -94,7 +94,7 @@ export class GameMenu {
       await this.buildMenu(this.menuGFF);
     }catch(e){
       console.error(e);
-    }
+    };
     return this;
   }
 
@@ -102,7 +102,7 @@ export class GameMenu {
     GameState.PerformanceMonitor.start(this.constructor.name+'.buildMenu');
     this.tGuiPanel = new GUIControl(this, gff.RootNode, undefined, this.enablePositionScaling);
     this.tGuiPanel.allowClick = false;
-    
+
     const extent = this.tGuiPanel.extent;
     this.width = extent.width;
     this.height = extent.height;
@@ -116,13 +116,13 @@ export class GameMenu {
     if(this.backgroundSprite){
       this.tGuiPanel.widget.add(this.backgroundSprite);
     }
-    
+
     panelControl.position.x = 0;
     panelControl.position.y = 0;
 
     //This auto assigns references for the controls to the menu object.
     //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
-    //You can just use this.CONTROL_NAME 
+    //You can just use this.CONTROL_NAME
     this.assignChildControlsToMenu(this.tGuiPanel);
 
     await this.menuControlInitializer();
@@ -134,7 +134,7 @@ export class GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false): Promise<any> {
     return;
-  }
+  };
 
   assignChildControlsToMenu(object: GUIControl){
     if(!object){ return; }
@@ -142,7 +142,7 @@ export class GameMenu {
     for(let i = 0, len = object.children.length; i < len; i++){
       const ctrl = object.children[i];
       if(!!ctrl && !isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_'+ctrl.name;
-      (this as any)[ctrl.name] = ctrl;
+      (this as unknown as Record<string, GUIControl>)[ctrl.name] = ctrl;
       this.assignChildControlsToMenu(ctrl);
     }
   }
@@ -157,7 +157,7 @@ export class GameMenu {
       this.backgroundVoidMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
           ShaderManager.Shaders.get('void-gui').getUniforms()
-        ]),
+        ] as unknown as { [uniform: string]: THREE.IUniform }[]),
         vertexShader: ShaderManager.Shaders.get('void-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('void-gui').getFragment(),
       })
@@ -179,7 +179,7 @@ export class GameMenu {
       this.backgroundMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
           ShaderManager.Shaders.get('background-gui').getUniforms()
-        ]),
+        ] as unknown as { [uniform: string]: THREE.IUniform }[]),
         vertexShader: ShaderManager.Shaders.get('background-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('background-gui').getFragment(),
       });
@@ -195,13 +195,13 @@ export class GameMenu {
     return await TextureLoader.Load(resRef);
   }
 
-  getControlByName(name: string): GUIControl {
+  getControlByName(name: string): GUIControl | undefined {
     try{
       return (this as any)[name];//this.tGuiPanel.getControl().getObjectByName(name).userData.control;
     }catch(e){
       console.error('getControlByName', 'Control not found', name);
     }
-    return;
+    return undefined;
   }
 
   hide(){
@@ -215,10 +215,11 @@ export class GameMenu {
 
   show(){
     // this.Hide();
-    if(!this.isOverlayGUI && GameState.Mode !== EngineMode.MOVIE)
+    if(!this.isOverlayGUI)
       GameState.SetEngineMode(this.engineMode);
-      
+
     this.bVisible = true;
+    this.resize();
     GameState.scene_gui.add(this.tGuiPanel.getControl());
 
     //Handle the child menu if it is set
@@ -255,7 +256,8 @@ export class GameMenu {
     if(this.voidFill){
       this.backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
       this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
-      this.backgroundVoidSprite.scale.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), 1);
+      // Void in design space so root panel scale maps it to viewport
+      this.backgroundVoidSprite.scale.set(this.width, this.height, 1);
     }
 
     if(this.background){
@@ -264,7 +266,7 @@ export class GameMenu {
     }
 
     if(this.activeControls.length){
-      for(let i = this.activeControls.length; i--;){
+      for(var i = this.activeControls.length; i--;){
         const control = this.activeControls[i];
         if(!control.box.containsPoint(Mouse.positionUI)){
           control.onHoverOut();
@@ -274,7 +276,7 @@ export class GameMenu {
     }
 
     if(this.tGuiPanel && this.tGuiPanel.children){
-      const len = this.tGuiPanel.children.length;
+      let len = this.tGuiPanel.children.length;
       for(let i = 0; i < len; i++){
         this.tGuiPanel.children[i].update(delta);
       }
@@ -299,7 +301,7 @@ export class GameMenu {
       return false;
     }
 
-    const idx = this.activeControls.indexOf(control);
+    let idx = this.activeControls.indexOf(control);
 
     if(bActive){
       if(idx == -1){
@@ -342,8 +344,18 @@ export class GameMenu {
 
   }
 
+  /**
+   * Scale root panel so design space (menu.width x menu.height) maps to viewport.
+   * Ensures GUI fills the viewport and mouse hit-testing stays in sync.
+   * Called on show() and when resolution changes (MenuManager.Resize).
+   */
   resize(){
-    //STUB
+    if(!this.tGuiPanel || this.width <= 0 || this.height <= 0)
+      return;
+    const scaleX = ResolutionManager.getViewportWidth() / this.width;
+    const scaleY = ResolutionManager.getViewportHeight() / this.height;
+    this.tGuiPanel.widget.scale.set(scaleX, scaleY, 1.0);
+    this.tGuiPanel.recalculate();
   }
 
   triggerControllerAPress(){
@@ -409,7 +421,7 @@ export class GameMenu {
   }
 
   triggerControllerLStickXPress( positive = false ){
-    
+
   }
 
   triggerControllerLStickYPress( positive = false ){
@@ -441,16 +453,16 @@ export class GameMenu {
     if(typeof callback !== 'function'){ return; }
 
     name = name.toUpperCase().trim();
-    const listeners = this.eventListenters.get(name);
+    let listeners = this.eventListenters.get(name);
     if(Array.isArray(listeners)){
-      const idx = listeners.indexOf(callback);
+      let idx = listeners.indexOf(callback);
       if(idx >= 0){ listeners.splice(idx, 1); }
     }
   }
 
-  triggerEventListener(name: string, ...args: any){
+  triggerEventListener(name: string, ...args: unknown[]): void {
     name = name.toUpperCase().trim();
-    const listeners = this.eventListenters.get(name);
+    let listeners = this.eventListenters.get(name);
     if(Array.isArray(listeners)){
       for(let i = 0; i < listeners.length; i++){
         listeners[i](...args);

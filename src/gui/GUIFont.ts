@@ -36,7 +36,8 @@ export class GUIFont {
       this.txi = this.texture.txi;
       this.scale = 1;
   
-      this.ratio = texture.image.width / texture.image.height;
+      const img = texture.image as HTMLImageElement | undefined;
+      this.ratio = img && img.width && img.height ? img.width / img.height : 1;
   
       this.height = this.txi.fontheight     * 100;
       this.bsline = this.txi.baselineheight * 100;
@@ -215,7 +216,9 @@ export class GUIFontChar {
     // this.ul.y = Math.min(Math.max(this.ul.y, 0), 1);
     // this.lr.x = Math.min(Math.max(this.lr.x, 0), 1);
     // this.lr.y = Math.min(Math.max(this.lr.y, 0), 1);
-    this.width = ((this.lr.x - this.ul.x) * font.texture.image.width) * this.font.scale;
-    this.height = ((this.ul.y - this.lr.y) * font.texture.image.height) * this.font.scale;
+    const img = font.texture.image as HTMLImageElement | undefined;
+    const w = img?.width ?? 1, h = img?.height ?? 1;
+    this.width = ((this.lr.x - this.ul.x) * w) * this.font.scale;
+    this.height = ((this.ul.y - this.lr.y) * h) * this.font.scale;
   }
 }

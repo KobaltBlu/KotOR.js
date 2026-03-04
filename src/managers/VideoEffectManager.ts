@@ -4,9 +4,9 @@ import type { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
  * VideoEffectManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file VideoEffectManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -16,6 +16,29 @@ export class VideoEffectManager {
   static videoEffects: VideoEffect[] = [];
   static videoEffect: VideoEffect;
   static videoEffectId: number = -1;
+
+  /** Speed blur (motion blur) enabled state. Reva: enableSpeedBlur. */
+  static enableSpeedBlur: boolean = false;
+  /** Frame accumulation ratio for speed blur (0–1). Reva: accumulationRatio. Default 0.75. */
+  static speedBlurRatio: number = 0.75;
+
+  /**
+   * Turn speed blur on/off and set accumulation ratio (Reva: SWMG_SetSpeedBlurEffect).
+   * @param bEnabled TRUE = on, FALSE = off
+   * @param fRatio Frame accumulation ratio (optional, default 0.75)
+   */
+  static SetSpeedBlurEffect(bEnabled: boolean, fRatio: number = 0.75): void {
+    VideoEffectManager.enableSpeedBlur = !!bEnabled;
+    VideoEffectManager.speedBlurRatio = typeof fRatio === 'number' && !isNaN(fRatio)
+      ? Math.max(0, Math.min(1, fRatio)) : 0.75;
+    const pass = GameState.afterimagePass;
+    if (pass) {
+      pass.enabled = VideoEffectManager.enableSpeedBlur;
+      if (pass.uniforms?.damp) {
+        pass.uniforms.damp.value = VideoEffectManager.speedBlurRatio;
+      }
+    }
+  }
 
   static SetVideoEffect(id: number = -1){
     if(VideoEffectManager.videoEffectId == id){ return; }
@@ -37,9 +60,9 @@ export class VideoEffectManager {
 
   static Update(delta: number = 0){
     if(!VideoEffectManager.videoEffect){ return; }
-    
+
     if(!GameState.odysseyShaderPass){ return; }
-    
+
     const effect = VideoEffectManager.videoEffect;
 
     if(effect.enableSaturation){
@@ -66,11 +89,12 @@ export class VideoEffectManager {
 
   static Reset(){
     VideoEffectManager.videoEffectId = -1;
-    VideoEffectManager.videoEffect = undefined;
+    VideoEffectManager.videoEffect = new VideoEffect();
+    VideoEffectManager.SetSpeedBlurEffect(false);
 		GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
 		GameState.odysseyShaderPass.uniforms.saturation.value = 1;
 		GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
-		
+
 		GameState.odysseyShaderPass.uniforms.bscanlines.value = false;
 		GameState.odysseyShaderPass.uniforms.grayscale.value = false;
   }

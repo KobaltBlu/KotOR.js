@@ -1,9 +1,9 @@
-import React from "react";
 import ReactDOM from "react-dom/client";
-
-import { GameApp } from "@/apps/game/app";
-import { AppProvider } from "@/apps/game/context/AppContext";
-import * as KotOR from "@/apps/game/KotOR";
+import React from "react";
+import * as KotOR from "./KotOR";
+import { AppProvider } from "./context/AppContext";
+import { LoadingConsoleProvider } from "./context/LoadingConsoleProvider";
+import { GameApp } from "./app";
 import './app.scss';
 
 window.addEventListener('beforeunload', (e) => {
@@ -16,11 +16,18 @@ window.addEventListener('beforeunload', (e) => {
 
 window.addEventListener('DOMContentLoaded', () => {
   ( async () => {
-    const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
+    const container = document.getElementById("root");
+    if (!container) {
+      console.error("[Game] Root element #root not found; cannot mount React app.");
+      return;
+    }
+    const root = ReactDOM.createRoot(container);
     root.render(
-      <AppProvider>
-        <GameApp />
-      </AppProvider>
+      <LoadingConsoleProvider>
+        <AppProvider>
+          <GameApp />
+        </AppProvider>
+      </LoadingConsoleProvider>
     );
   })();
 });

@@ -1,5 +1,5 @@
-import { AnalogInput } from "@/controls/AnalogInput";
-import { KeyInput } from "@/controls/KeyInput";
+import { AnalogInput } from "./AnalogInput";
+import { KeyInput } from "./KeyInput";
 
 /**
  * GamePad class.
@@ -135,10 +135,10 @@ export class GamePad {
   static Init(){
     GamePad.GamePads = {};
 
-    function gamepadHandler(e: any, connecting: boolean = false) {
+    function gamepadHandler(e: GamepadEvent, connecting: boolean = false): void {
       const gamepad = e.gamepad;
-      // Note:
-      // gamepad === navigator.getGamepads()[gamepad.index]
+      if (!gamepad) return;
+      // Note: gamepad === navigator.getGamepads()[gamepad.index]
       console.log('gamepadHandler', e, connecting);
       if (connecting) {
         GamePad.GamePads[gamepad.index] = gamepad;
@@ -155,13 +155,13 @@ export class GamePad {
       }
     }
 
-    global.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
-    global.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e, false); }, false);
+    global.addEventListener("gamepadconnected", (e: Event) => { gamepadHandler(e as GamepadEvent, true); }, false);
+    global.addEventListener("gamepaddisconnected", (e: Event) => { gamepadHandler(e as GamepadEvent, false); }, false);
   }
 
 
-  static CurrentGamePad: GamePad;
+  static CurrentGamePad: Gamepad | undefined;
   static CurrentGamePadIndex: number = -1;
-  static GamePads: any = {};
+  static GamePads: Record<number, Gamepad> = {};
 
 }

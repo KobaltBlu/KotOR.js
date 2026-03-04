@@ -67,11 +67,11 @@ type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | '
 
 /**
  * AudioEngine class.
- * 
+ *
  * The AudioEngine class manages audio levels and the AudioEmitters that are added to it.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AudioEngine.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -79,9 +79,9 @@ type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | '
 export class AudioEngine {
 
   static focused: boolean = true;
-  
+
   static engines: AudioEngine[] = [];
-  
+
   static loopBGM = true;
 
   static sfxChannel: AudioChannel;
@@ -303,7 +303,7 @@ export class AudioEngine {
     if(index >= 0){
       const data = EAXPresets.PresetFromIndex(index);
       console.log('setReverbProfile:', data);
-      
+
       this.setReverbState(!software_mode);
     }else{
       this.setReverbState(false);
@@ -433,9 +433,22 @@ export class AudioEngine {
 
     //Clean up the background music emitters
     this.areaMusicDayAudioEmitter.dispose();
+    this.areaMusicNightAudioEmitter.dispose();
     this.battleMusicAudioEmitter.dispose();
     this.battleStingerAudioEmitter.dispose();
     this.dialogMusicAudioEmitter.dispose();
+
+    // Reset BGM state so main menu / next module can play cleanly
+    this.bgmState = BackgroundMusicState.UNLOADED;
+    this.bgmMode = BackgroundMusicMode.NONE;
+    this.bgmTimer = 0;
+    this.areaMusicLoaded = false;
+    this.areaMusicNightLoaded = false;
+    this.battleMusicLoaded = false;
+    this.battleStingerLoaded = false;
+    this.dialogMusicLoaded = false;
+    this.ambientLoaded = false;
+    this.ambientNightLoaded = false;
   }
 
   static GetAudioEngine(){

@@ -1,18 +1,17 @@
+import type { GameMenu } from "./GameMenu";
+import { GUIControl } from "./GUIControl";
+import type { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
-
-import { Mouse } from "@/controls/Mouse";
-import { GameEngineType } from "@/enums/engine";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import { GameState } from "@/GameState";
-import type { GameMenu } from "@/gui/GameMenu";
-import { GUIControl } from "@/gui/GUIControl";
-import { GUIControlEvent } from "@/gui/GUIControlEvent";
-import { GUIProtoItem } from "@/gui/GUIProtoItem";
-import type { GUIScrollBar } from "@/gui/GUIScrollBar";
-import { TextureLoader } from "@/loaders/TextureLoader";
-import type { GFFStruct } from "@/resource/GFFStruct";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { TextureLoader } from "../loaders/TextureLoader";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
+import { GameState } from "../GameState";
+import { GameEngineType } from "../enums/engine";
+import { Mouse } from "../controls/Mouse";
+import { GUIControlType } from "../enums/gui/GUIControlType";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { GUIProtoItem } from "./GUIProtoItem";
+import type { GUIScrollBar } from "./GUIScrollBar";
+import { GUIControlEvent } from "./GUIControlEvent";
 
 interface GUIListItemCallbacks {
   onClick?: (e: GUIControlEvent, ...args: any) => void;
@@ -40,7 +39,7 @@ export class GUIListBox extends GUIControl {
   maxScroll: number;
   GUIProtoItemClass: typeof GUIProtoItem;
   onSelected: (node: any, control: GUIControl, index: number) => void;
-  onClicked: (node: any, control: GUIControl, index: number) => void;
+  onActivated?: (node: any, control: GUIControl, index: number) => void;
   hasProtoItem: boolean;
   protoItem: GUIControl;
   hasScrollBar: boolean;
@@ -67,6 +66,10 @@ export class GUIListBox extends GUIControl {
   
   static hexTextures: Map<string, OdysseyTexture>;
   static InitTextures: () => void;
+
+  private lastClickTime = 0;
+  private lastClickItem: GUIControl;
+  private doubleClickThreshold = 350;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
@@ -108,7 +111,7 @@ export class GUIListBox extends GUIControl {
     const shrinkWidth = this.scrollbar ? this.scrollbar.extent.width/2 : 0;
     this.itemGroup.position.x += this.isScrollBarLeft() ? shrinkWidth : shrinkWidth * -1;
 
-    const extent = this.getOuterSize();
+    let extent = this.getOuterSize();
     this.width = extent.width;
     this.height = extent.height;
 
@@ -172,7 +175,7 @@ export class GUIListBox extends GUIControl {
   }
 
   render(){
-    const oldClearColor = new THREE.Color()
+    let oldClearColor = new THREE.Color()
     this.menu.context.renderer.getClearColor(oldClearColor);
     this.menu.context.renderer.setClearColor(this.clearColor, 1);
     this.menu.context.renderer.setRenderTarget(this.texture);
@@ -211,7 +214,7 @@ export class GUIListBox extends GUIControl {
 
   removeItemByIndex(index = -1){
     if(index >= 0 && this.children.length > index){
-      const node = this.children.splice(index, 1)[0];
+      let node = this.children.splice(index, 1)[0];
       node.widget.parent.remove(node.widget);
 
       //Select a new item if the one removed was selected
@@ -235,8 +238,8 @@ export class GUIListBox extends GUIControl {
   }
 
   addItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): GUIControl {
-    const control = this.protoItem;
-    const type = control.type;
+    let control = this.protoItem;
+    let type = control.type;
     
     let ctrl: GUIControl;
     let widget: THREE.Object3D;
@@ -267,9 +270,6 @@ export class GUIListBox extends GUIControl {
           ctrl.buildText();
 
           this.itemGroup.add(widget);
-
-          ctrl.setHighlightColor(ctrl.defaultHighlightColor.r, ctrl.defaultHighlightColor.g, ctrl.defaultHighlightColor.b);
-          ctrl.setBorderColor(ctrl.defaultColor.r, ctrl.defaultColor.g, ctrl.defaultColor.b);
           
           if(typeof options.onClick === 'function'){
             ctrl.addEventListener('click', (e) => {
@@ -319,8 +319,8 @@ export class GUIListBox extends GUIControl {
             ctrl.setList( this );
             idx = this.children.push(ctrl) - 1;
 
-            ctrl.setHighlightColor(ctrl.defaultHighlightColor.r, ctrl.defaultHighlightColor.g, ctrl.defaultHighlightColor.b);
-            ctrl.setBorderColor(ctrl.defaultColor.r, ctrl.defaultColor.g, ctrl.defaultColor.b);
+            ctrl.highlight.color = new THREE.Color(0.83203125, 1, 0.83203125);
+            ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
 
             widget = ctrl.createControl();
             ctrl.setText(node.getName());
@@ -370,7 +370,7 @@ export class GUIListBox extends GUIControl {
 
     if(ctrl){
       ctrl.addEventListener('click', (e) => {
-        this.select(ctrl);
+        this.handleItemClick(ctrl);
       });
     }
 
@@ -427,15 +427,30 @@ export class GUIListBox extends GUIControl {
           control.onSelect.call(this);
           // item.processEventListener('select');
         }
-
         if(!bWasItemSelected && typeof this.onSelected === 'function')
           this.onSelected(control.node, control, this.children.indexOf(control));
       }
-        
-      if(control instanceof GUIControl && typeof this.onClicked === 'function')
-        this.onClicked(control.node, control, this.children.indexOf(control));
     }catch(e){
       console.error(e);
+    }
+  }
+
+  activateSelected(){
+    if(this.selectedItem && typeof this.onActivated === 'function'){
+      this.onActivated(this.selectedItem.node, this.selectedItem, this.children.indexOf(this.selectedItem));
+    }
+  }
+
+  private handleItemClick(control: GUIControl){
+    this.select(control);
+    const now = performance.now();
+    const isDoubleClick =
+      this.lastClickItem === control &&
+      (now - this.lastClickTime) <= this.doubleClickThreshold;
+    this.lastClickTime = now;
+    this.lastClickItem = control;
+    if(isDoubleClick && typeof this.onActivated === 'function'){
+      this.onActivated(control.node, control, this.children.indexOf(control));
     }
   }
 
@@ -444,7 +459,7 @@ export class GUIListBox extends GUIControl {
   }
 
   selectItem(item: any){
-    const idx = this.listItems.indexOf(item);
+    let idx = this.listItems.indexOf(item);
     if(idx >= 0){
       this.select(this.children[idx]);
       this.setSelectedIndex(idx);
@@ -473,7 +488,7 @@ export class GUIListBox extends GUIControl {
     }
 
     // Position items consistently
-    const currentY = visibleTop - this.listMarginTop;
+    let currentY = visibleTop - this.listMarginTop;
     
     for (let i = 0; i < this.children.length; i++) {
       const node = this.children[i];
@@ -495,21 +510,21 @@ export class GUIListBox extends GUIControl {
 
   cullOffscreen(){
     return;
-    const parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3())
+    let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3())
     this.minY = parentPos.y + this.extent.height/2;
     this.maxY = parentPos.y - this.extent.height/2;
 
-    const nodePadding = 0;//(this.getNodeHeight()/2);
+    let nodePadding = 0;//(this.getNodeHeight()/2);
 
-    const nodes = this.itemGroup.children;
+    let nodes = this.itemGroup.children;
     for(let i = 0; i < nodes.length; i++){
-      const control = nodes[i].userData.control;
-      const nodePos = control.updateWorldPosition(); //getWorldPosition(nodes[i].control.worldPosition);
-      const nodeTop = nodePos.y + control.extent.height/2 - nodePadding;
-      const nodeBottom = nodePos.y - control.extent.height/2 + nodePadding;
-      const height = nodeBottom - nodeTop;
-      const nodeCenter = nodeTop + height/2;
-      const inside = ( (nodeTop < this.minY && nodeBottom > this.maxY) || (nodeCenter < this.minY && nodeCenter > this.maxY) );
+      let control = nodes[i].userData.control;
+      let nodePos = control.updateWorldPosition(); //getWorldPosition(nodes[i].control.worldPosition);
+      let nodeTop = nodePos.y + control.extent.height/2 - nodePadding;
+      let nodeBottom = nodePos.y - control.extent.height/2 + nodePadding;
+      let height = nodeBottom - nodeTop;
+      let nodeCenter = nodeTop + height/2;
+      let inside = ( (nodeTop < this.minY && nodeBottom > this.maxY) || (nodeCenter < this.minY && nodeCenter > this.maxY) );
       nodes[i].visible = inside;
     }
   }
@@ -526,12 +541,12 @@ export class GUIListBox extends GUIControl {
     
     if(!node){
       if(this.hasProtoItem && this.protoItem.control.hasField('EXTENT')){
-        const extent = this.protoItem.control.getFieldByLabel('EXTENT').getChildStructs()[0];
+        let extent = this.protoItem.control.getFieldByLabel('EXTENT').getChildStructs()[0];
         height += extent.getFieldByLabel('HEIGHT').getValue() || 0;
       }
 
       if(this.hasProtoItem && this.protoItem.control.hasField('BORDER')){
-        const border = this.protoItem.control.getFieldByLabel('BORDER').getChildStructs()[0];
+        let border = this.protoItem.control.getFieldByLabel('BORDER').getChildStructs()[0];
         height += (border.getFieldByLabel('DIMENSION').getValue() || 0) / 2;
       }
 
@@ -539,12 +554,12 @@ export class GUIListBox extends GUIControl {
         console.warn('GUIListBox.getNodeHeight', 'No proto item found', `${this.menu.gui_resref}.gui`, this.name);
       }
     } else {
-      const control = node;
+      let control = node;
       let cHeight = (node.extent.height + (node.getBorderSize()/2));
 
       if(control.text.geometry){
         control.text.geometry.computeBoundingBox();
-        const tSize = new THREE.Vector3();
+        let tSize = new THREE.Vector3();
         control.text.geometry.boundingBox.getSize(tSize);
         if(tSize.y > cHeight){
           cHeight = tSize.y;
@@ -559,7 +574,7 @@ export class GUIListBox extends GUIControl {
   getContentHeight(){
     let height = this.border.inneroffsety * 2;//this.padding * 2;
     for(let i = 0; i < this.children.length; i++){
-      const control = this.children[i];
+      let control = this.children[i];
       // let node = this.listItems[i];
 
       // let cHeight = (control.extent.height + (control.getBorderSize()/2));
@@ -602,7 +617,7 @@ export class GUIListBox extends GUIControl {
 
     let controls: GUIControl[] = [];
     for(let i = 0; i < this.children.length; i++){
-      const control = this.children[i];
+      let control = this.children[i];
       //Check to see if the control is onscreen
       if(control.widget.visible){
         //check to see if the mouse is inside the control
@@ -638,7 +653,7 @@ export class GUIListBox extends GUIControl {
   }
 
   calculateBox(){
-    const worldPosition = this.parent.widget.position.clone();
+    let worldPosition = this.parent.widget.position.clone();
     //console.log('worldPos', worldPosition);
 
     this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
@@ -680,7 +695,7 @@ export class GUIListBox extends GUIControl {
   }
 
   directionalNavigate(direction = ''){
-    const maxItems = this.children.length;
+    let maxItems = this.children.length;
     let index = this.children.indexOf(this.selectedItem);
     switch(direction){
       case 'up':

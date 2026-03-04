@@ -102,7 +102,7 @@ export class MenuContainer extends GameMenu {
     if (onClosed && this.container instanceof GameState.Module.ModuleArea.ModulePlaceable) {
       try {
         this.container.close(GameState.getCurrentPlayer());
-      } catch (e: any) {
+      } catch (e: unknown) {
 
       }
     }

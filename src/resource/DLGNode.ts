@@ -1,32 +1,25 @@
-import { AudioEmitter } from "@/audio";
-import { DialogMessageEntry } from "@/engine/DialogMessageEntry";
-import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
-import { DLGNodeEngineType } from "@/enums/dialog/DLGNodeEngineType";
-import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
-import { IDLGNodeScriptParams } from "@/interface/dialog/IDLGNodeScriptParams";
-// import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "@/managers";
-import type { ModuleCreature, ModuleObject } from "@/module";
-// import { NWScript } from "@/nwscript/NWScript";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import type { DLGObject } from "@/resource/DLGObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { LIPObject } from "@/resource/LIPObject";
-import { BitWise } from "@/utility/BitWise";
-
-class DummyScriptInstance extends NWScriptInstance {
-  name: string = 'SWG_DUMMY_SCRIPT';
-  run(caller?: any, scriptVar?: number): false | 0 | 1 {
-    return false;
-  }
-}
+import { AudioEmitter } from "../audio";
+import { DLGNodeType } from "../enums/dialog/DLGNodeType";
+import { DLGNodeEngineType } from "../enums/dialog/DLGNodeEngineType";
+import { GameState } from "../GameState";
+import { IDLGNodeScriptParams } from "../interface/dialog/IDLGNodeScriptParams";
+// import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "../managers";
+import type { ModuleCreature, ModuleObject } from "../module";
+// import { NWScript } from "../nwscript/NWScript";
+import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { LIPObject } from "./LIPObject";
+import { GFFStruct } from "./GFFStruct";
+import { DialogMessageEntry } from "../engine/DialogMessageEntry";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
+import type { DLGObject } from "./DLGObject";
 
 /**
  * DLGNode class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file DLGNode.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -55,9 +48,9 @@ export class DLGNode {
   scriptParams: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
   script2: NWScriptInstance;
   script2Params: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
-  isActive: NWScriptInstance | DummyScriptInstance;
+  isActive: NWScriptInstance;
   isActiveParams: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
-  isActive2: NWScriptInstance | DummyScriptInstance;
+  isActive2: NWScriptInstance;
   isActive2Params: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
   Logic: boolean;
   index: number;
@@ -215,7 +208,7 @@ export class DLGNode {
         return bSuccess ? true : false;
       }
     }
-    
+
     return true;
   }
 
@@ -234,7 +227,7 @@ export class DLGNode {
         return (bSuccess ? true : false);
       }
     }
-    
+
     return true;
   }
 
@@ -243,10 +236,10 @@ export class DLGNode {
   }
 
   getActiveReplies(): number[] {
-    const totalReplies = this.replies.length;
-    const replyIds: number[] = [];
+    let totalReplies = this.replies.length;
+    let replyIds: number[] = [];
     for(let i = 0; i < totalReplies; i++){
-      const replyLink = this.replies[i];
+      let replyLink = this.replies[i];
       if(replyLink.runActiveScripts()){
         replyIds.push(replyLink.index);
       }
@@ -260,11 +253,12 @@ export class DLGNode {
       GameState.JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
     }
     try{
-      console.log('saving', this.speaker.getName(), this.text);
+      const speakerName = this.speaker?.getName?.() ?? '';
+      console.log('saving', speakerName, this.text);
       if(this.nodeType == DLGNodeType.ENTRY){
         GameState.DialogMessageManager.AddEntry(
           new DialogMessageEntry(
-            this.speaker.getName(), this.text
+            speakerName, this.text
           )
         )
       }else{
@@ -280,7 +274,7 @@ export class DLGNode {
   update(delta: number = 0): boolean {
     this.elapsed += delta * 1000;
     this.processFadeOverlay();
-    if(this.checkList.voiceOverError){
+    if(!!this.checkList.voiceOverError){
       if(this.elapsed >= this.delay){
         this.checkList.voiceOverComplete = true;
       }
@@ -379,7 +373,7 @@ export class DLGNode {
   }
 
   getVideoEffect(): number {
-    return this.camVidEffect == -1 || this.cameraAngle != DLGCameraAngle.ANGLE_PLACEABLE_CAMERA ? -1 : this.camVidEffect;
+    return this.camVidEffect == -1 ? -1 : this.camVidEffect;
   }
 
   resetChecklist(){
@@ -411,7 +405,7 @@ export class DLGNode {
   }
 
   static FromDialogStruct( struct: GFFStruct, dialog: DLGObject ){
-    const node = new DLGNode(dialog);
+    let node = new DLGNode(dialog);
     node.setDialog(dialog);
 
     if(struct.hasField('Quest')){
@@ -544,8 +538,8 @@ export class DLGNode {
       const structs = struct.getFieldByLabel('RepliesList').getChildStructs();
       node.entries = [];
       for(let i = 0; i < structs.length; i++){
-        const replyStruct = structs[i];
-        const linkNode = new DLGNode(dialog);
+        let replyStruct = structs[i];
+        let linkNode = new DLGNode(dialog);
 
         if(replyStruct.hasField('Not')){
           linkNode.isActiveParams.Not = replyStruct.getFieldByLabel('Not').getValue();
@@ -610,7 +604,7 @@ export class DLGNode {
         if(replyStruct.hasField('Active')){
           const resref = replyStruct.getFieldByLabel('Active').getValue();
           if(resref){
-            linkNode.isActive = GameState.NWScript.Load(resref) || new DummyScriptInstance(null);
+            linkNode.isActive = GameState.NWScript.Load(resref);
             if(linkNode.isActive){
               linkNode.isActive.name = resref;
             }
@@ -620,7 +614,7 @@ export class DLGNode {
         if(replyStruct.hasField('Active2')){
           const resref = replyStruct.getFieldByLabel('Active2').getValue();
           if(resref){
-            linkNode.isActive2 = GameState.NWScript.Load(resref) || new DummyScriptInstance(null);
+            linkNode.isActive2 = GameState.NWScript.Load(resref);
             if(linkNode.isActive2){
               linkNode.isActive2.name = resref;
             }
@@ -640,9 +634,9 @@ export class DLGNode {
       const structs = struct.getFieldByLabel('EntriesList').getChildStructs();
       node.replies = [];
       for(let i = 0; i < structs.length; i++){
-        const entryStruct = structs[i];
-        const linkNode = new DLGNode(dialog);
-        
+        let entryStruct = structs[i];
+        let linkNode = new DLGNode(dialog);
+
         if(entryStruct.hasField('Not')){
           linkNode.isActiveParams.Not = entryStruct.getFieldByLabel('Not').getValue();
         }
@@ -706,7 +700,7 @@ export class DLGNode {
         if(entryStruct.hasField('Active')){
           const resref = entryStruct.getFieldByLabel('Active').getValue();
           if(resref){
-            linkNode.isActive = GameState.NWScript.Load(resref) || new DummyScriptInstance(null);
+            linkNode.isActive = GameState.NWScript.Load(resref);
             if(linkNode.isActive){
               linkNode.isActive.name = resref;
             }
@@ -716,7 +710,7 @@ export class DLGNode {
         if(entryStruct.hasField('Active2')){
           const resref = entryStruct.getFieldByLabel('Active2').getValue();
           if(resref){
-            linkNode.isActive2 = GameState.NWScript.Load(resref) || new DummyScriptInstance(null);
+            linkNode.isActive2 = GameState.NWScript.Load(resref);
             if(linkNode.isActive2){
               linkNode.isActive2.name = resref;
             }
@@ -735,16 +729,16 @@ export class DLGNode {
     if(struct.hasField('AnimList')){
       const structs = struct.getFieldByLabel('AnimList').getChildStructs();
       for(let i = 0; i < structs.length; i++){
-        const childStruct = structs[i];
-        const animation = {
+        let childStruct = structs[i];
+        let animation = {
           animation: '',
           participant: '',
         };
-        
+
         if(childStruct.hasField('Animation')){
           animation.animation = childStruct.getFieldByLabel('Animation').getValue();
         }
-        
+
         if(childStruct.hasField('Participant')){
           animation.participant = childStruct.getFieldByLabel('Participant').getValue().toLocaleLowerCase();
         }

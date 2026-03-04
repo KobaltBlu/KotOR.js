@@ -65,7 +65,7 @@ export class CurrentGame {
     try{
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         console.log(`CurrentGame.CleanGameInProgressFolder`, `Mode: ELECTRON`);
-        let rm_response: boolean;
+        let rm_response: boolean = true;
         if(await GameFileSystem.exists(CurrentGame.gameinprogress_dir)){
           rm_response = await GameFileSystem.rmdir(CurrentGame.gameinprogress_dir, { recursive: true });
           console.log(

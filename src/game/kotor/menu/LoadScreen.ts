@@ -1,7 +1,8 @@
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUILabel, GUIProgressBar } from "@/gui";
+import * as THREE from "three";
+import { GameState } from "../../../GameState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
+import { GameMenu } from "../../../gui";
+import type { GUILabel, GUIProgressBar } from "../../../gui";
 
 /**
  * LoadScreen class.
@@ -70,7 +71,7 @@ export class LoadScreen extends GameMenu {
 
   showRandomHint() {
     this.LBL_LOADING.setText(GameState.TLKManager.TLKStrings[42493].Value);
-    const id = Math.floor(Math.random() * (GameState.TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
+    let id = Math.floor(Math.random() * (GameState.TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
     let hint = GameState.TwoDAManager.datatables.get('loadscreenhints').rows[id];
     if (!hint) {
       console.log('showRandomHint', id);

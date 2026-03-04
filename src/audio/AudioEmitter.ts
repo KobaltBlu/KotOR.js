@@ -294,7 +294,7 @@ export class AudioEmitter {
         this.currentSound.connect(this.mainNode);
 
         return this.currentSound;
-      }catch(e: any){
+      }catch(e: unknown){
         console.log('AudioEmitter', 'Sound not added to emitter', resRef);
         throw e;
       }
@@ -402,9 +402,9 @@ export class AudioEmitter {
       const buffer: AudioBuffer = await this.engine.audioCtx.decodeAudioData(data.buffer as ArrayBuffer );
       this.buffers.set(resRef, buffer);
       return buffer;
-    }catch(e){
+    }catch(e: unknown){
       console.error('AudioEmitter.addSound: Failed to decodeAudioData');
-      if (e.name === 'DataCloneError') {
+      if (e instanceof Error && e.name === 'DataCloneError') {
         console.error('AudioEmitter.addSound: ArrayBuffer is detached. This usually happens when the buffer was transferred to another context.');
       }
       console.error(e);
@@ -420,7 +420,7 @@ export class AudioEmitter {
       this.currentSound.onended = undefined;
       this.currentSound.disconnect();
       this.currentSound.stop(0);
-    }catch(e: any) { 
+    }catch(e: unknown) { 
       console.error('Failed to disconnect sound', e);
     }
     this.currentSound = null;

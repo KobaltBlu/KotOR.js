@@ -15,11 +15,11 @@ import { OdysseyModel3D } from "@/three/odyssey";
 
 /**
 * ModuleMGEnemy class.
-* 
+*
 * Class representing an enemy object found in minigame modules.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMGEnemy.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -158,7 +158,7 @@ export class ModuleMGEnemy extends ModuleObject {
       }
       this.track.update(delta);
     }
-        
+
     for(let i = 0; i < this.gunBanks.length; i++){
       this.gunBanks[i].update(delta);
       if(this.alive){
@@ -173,7 +173,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   updatePaused(delta: number = 0){
-    
+
   }
 
   damage(damage = 0){
@@ -250,6 +250,7 @@ export class ModuleMGEnemy extends ModuleObject {
 
   async load(){
     this.initProperties();
+    this.loadScripts();
     GameState.scene.add(this.sphere_geom);
     return this.template;
   }
@@ -266,9 +267,17 @@ export class ModuleMGEnemy extends ModuleObject {
       });
       try{
         this.models.push(model);
-        this.container.add(model);  
+        this.container.add(model);
         model.name = item.model;
 
+        (model as unknown as { addEventListener: (t: string, fn: (e: { event?: string }) => void) => void }).addEventListener?.('playEvent', (e: { event?: string }) => {
+          const mg = GameState.module?.area?.miniGame;
+          if (mg) {
+            mg.lastAnimEvent = e.event ?? '';
+            mg.lastAnimEventModelName = model.name ?? '';
+          }
+          this.onAnimEvent();
+        });
       }catch(e){
         console.error(e);
       }
@@ -369,9 +378,9 @@ export class ModuleMGEnemy extends ModuleObject {
         const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
         if(!resRef){ continue; }
         const nwscript = GameState.NWScript.Load(resRef);
-        if(!nwscript){ 
+        if(!nwscript){
           console.warn(`ModuleMGEnemy.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-          continue; 
+          continue;
         }
         nwscript.caller = this;
         this.scripts[scriptKey] = nwscript;

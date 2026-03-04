@@ -53,7 +53,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
           profile.directory = directory;
           rerender(!render);
         }
-      }).catch( (e: any) => {
+      }).catch( (e: unknown) => {
         console.error(e);
       });
     }else{

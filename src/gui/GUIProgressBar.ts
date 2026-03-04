@@ -64,13 +64,15 @@ export class GUIProgressBar extends GUIControl {
     };
 
     this.progress.geometry = new THREE.BufferGeometry();
-    
+
+    const odysseyGuiShader = ShaderManager.Shaders.get('odyssey-gui')!;
+    // @ts-expect-error - merge return type inference fails with getUniforms()
+    const odysseyGuiUniforms: Record<string, THREE.IUniform> = THREE.UniformsUtils.merge([odysseyGuiShader.getUniforms()]);
+
     this.progress.edge_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -79,11 +81,9 @@ export class GUIProgressBar extends GUIControl {
     this.progress.edge_material.uniforms.diffuse.value = this.progress.color;
 
     this.progress.corner_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -99,11 +99,9 @@ export class GUIProgressBar extends GUIControl {
     //---------------//
     
     this.progress.fill.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true

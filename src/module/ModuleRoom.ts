@@ -1,40 +1,32 @@
-import { ModuleObject } from "@/module/ModuleObject";
-
-
+import { ModuleObject } from "./ModuleObject";
+import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from ".";
 import * as THREE from "three";
-import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
-
-
-// import { ShaderManager } from "@/managers";
-
-
-const log = createScopedLogger(LogScope.Module);
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { IVISRoom } from "@/interface";
-import { MDLLoader, ResourceLoader, TextureLoader } from "@/loaders";
-import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from "@/module";
-import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "@/odyssey";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { VISObject } from "@/resource/VISObject";
-import { OdysseyFace3, OdysseyModel3D } from "@/three/odyssey";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-import { Utility } from "@/utility/Utility";
+import { GameState } from "../GameState";
+import { OdysseyFace3, OdysseyModel3D } from "../three/odyssey";
+import { Utility } from "../utility/Utility";
+import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
+import { BinaryReader } from "../utility/binary/BinaryReader";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { MDLLoader, ResourceLoader, TextureLoader } from "../loaders";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
+import { GFFStruct } from "../resource/GFFStruct";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
+import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils";
+// import { ShaderManager } from "../managers";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
+import { VISObject } from "../resource/VISObject";
+import { IVISRoom } from "../interface";
+import { EngineMode } from "../enums/engine/EngineMode";
 
 /**
 * ModuleRoom class.
-* 
+*
 * Class representing rooms found in modules areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleRoom.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -82,7 +74,7 @@ export class ModuleRoom extends ModuleObject {
     this.doors = [];
     this.placeables = [];
     this.sounds = [];
-    
+
     for(let i = 0, len = this.area.doors.length; i < len; i++){
       const object = this.area.doors[i] as ModuleDoor;
       if(object && (box.containsBox(object.box) || box.containsPoint(object.position) || box.intersectsSphere(object.sphere))){
@@ -190,16 +182,16 @@ export class ModuleRoom extends ModuleObject {
 
     if(this.grass){
       this.grass.material.uniforms.time.value += delta;
-      
+
       // Update camera position for distance fade and player position for trample
       if(GameState.getCurrentPlayer()?.position){
         this.grass.material.uniforms.playerPosition.value.copy(GameState.getCurrentPlayer()?.position);
         this.grass.material.uniforms.useDistanceFade.value = (GameState.Mode == EngineMode.DIALOG) ? false : true;
       }
-      
+
       // Update entity positions in texture for multi-entity trample
       this.updatePositionDataTexture();
-      
+
       this.grass.material.uniformsNeedUpdate = true;
     }
   }
@@ -227,15 +219,11 @@ export class ModuleRoom extends ModuleObject {
     }
 
     //Add the walkmesh back to the scene
-    if(this.collisionManager.walkmesh && !this.collisionManager.walkmesh.mesh.parent){
-      GameState.group.room_walkmeshes.add(this.collisionManager.walkmesh.mesh);
-    }else if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh.parent){
-      this.collisionManager.walkmesh.mesh.parent.remove(this.collisionManager.walkmesh.mesh);
-      GameState.group.room_walkmeshes.add(this.collisionManager.walkmesh.mesh);
-    }
-
-    if(this.collisionManager.walkmesh){
-      this.collisionManager.walkmesh.buildEdgeNormalHelpers();
+    if(this.collisionData.walkmesh && !this.collisionData.walkmesh.mesh.parent){
+      GameState.group.room_walkmeshes.add(this.collisionData.walkmesh.mesh);
+    }else if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh.parent){
+      this.collisionData.walkmesh.mesh.parent.remove(this.collisionData.walkmesh.mesh);
+      GameState.group.room_walkmeshes.add(this.collisionData.walkmesh.mesh);
     }
 
     for(let i = 0, sLen = this.sounds.length; i < sLen; i++){
@@ -261,10 +249,10 @@ export class ModuleRoom extends ModuleObject {
         linkedRooms[i].model.visible = false;
       }
     }
-    
+
     //Remove the walkmesh back to the scene
-    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh.parent){
-      this.collisionManager.walkmesh.mesh.parent.remove(this.collisionManager.walkmesh.mesh);
+    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh.parent){
+      this.collisionData.walkmesh.mesh.parent.remove(this.collisionData.walkmesh.mesh);
     }
 
     for(let i = 0, sLen = this.sounds.length; i < sLen; i++){
@@ -322,15 +310,15 @@ export class ModuleRoom extends ModuleObject {
 
     //Load the walkmesh
     try{
-      if(!(this.collisionManager.walkmesh instanceof OdysseyWalkMesh)){
+      if(!(this.collisionData.walkmesh instanceof OdysseyWalkMesh)){
         const wok = await this.loadWalkmesh(this.roomName);
         if(wok){
-          this.collisionManager.setWalkmesh(wok);
-          wok.mesh.position.z += 0.001;
+          this.collisionData.walkmesh = wok;
+          this.collisionData.walkmesh.mesh.position.z += 0.001;
         }
       }
     }catch(e){
-      log.error(e);
+      console.error(e);
     }
 
     //Disable matrix update for static objects
@@ -339,7 +327,7 @@ export class ModuleRoom extends ModuleObject {
     try{
       this.buildGrass();
     }catch(e){
-      log.error(e);
+      console.error(e);
     }
 
     return this.model;
@@ -354,37 +342,37 @@ export class ModuleRoom extends ModuleObject {
       this.model.wok = wok;
       return wok;
     }catch(e){
-      log.error(e);
+      console.error(e);
     }
   }
 
   buildGrass(){
     if(!this.area.grass.textureName){
-      // log.warn('ModuleRoom.buildGrass: No grass texture found for room', this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No grass texture found for room', this.roomName);
       return;
     }
 
     const density = this.area.grass.density;
     const quadOffsetZ = this.area.grass.quadSize/2;
     if(!this.model){
-      // log.warn('ModuleRoom.buildGrass: No model found for room', this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No model found for room', this.roomName);
       return;
     }
 
     const aabb = this.model.aabb;
     if(!(aabb instanceof OdysseyModelNodeAABB)){
-      // log.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
       return;
     }
 
     if(!aabb.grassFaces.length){
-      // log.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
       return;
     }
 
     // Pre-calculate grass blade geometry once
     const grassGeometry = this.createGrassBladeGeometry();
-    
+
     const geometry = new THREE.InstancedBufferGeometry();
     geometry.index = grassGeometry.index;
     geometry.attributes.position = grassGeometry.attributes.position;
@@ -434,15 +422,15 @@ export class ModuleRoom extends ModuleObject {
     // Pre-calculate face data and grass counts
     const faceData = this.precalculateFaceData(aabb, density);
     const totalGrassCount = faceData.totalGrassCount;
-    
+
     if(totalGrassCount === 0){
-      // log.warn('ModuleRoom.buildGrass: No grass instances to create for room', this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No grass instances to create for room', this.roomName);
       return;
     }
 
     this.grass = new THREE.InstancedMesh(geometry, grass_material, totalGrassCount);
     this.grass.frustumCulled = false;
-    
+
     // Pre-allocate reusable objects
     const objForMatrix = new THREE.Object3D();
     const tmpVec3 = new THREE.Vector3();
@@ -459,7 +447,7 @@ export class ModuleRoom extends ModuleObject {
     // Pre-allocate arrays
     const instanceIndices = new Float32Array(totalGrassCount);
     const lightmapUV = new Float32Array(totalGrassCount * 2);
-    
+
     // Initialize instance indices
     for(let i = 0; i < totalGrassCount; i++){
       instanceIndices[i] = i;
@@ -470,12 +458,12 @@ export class ModuleRoom extends ModuleObject {
     const uv2 = aabb.tvectors[1];
 
     let instanceIndex = 0;
-    
+
     // Process each face
     for(let k = 0; k < aabb.grassFaces.length; k++){
       const face = aabb.grassFaces[k];
       const grassCount = faceData.faceGrassCounts[k];
-      
+
       if(grassCount < 1) continue;
 
       // Set face vertices
@@ -487,7 +475,7 @@ export class ModuleRoom extends ModuleObject {
       const tvI1 = face.a * 2;
       const tvI2 = face.b * 2;
       const tvI3 = face.c * 2;
-      
+
       uvA.set(uv2[tvI1], uv2[tvI1 + 1]);
       uvB.set(uv2[tvI2], uv2[tvI2 + 1]);
       uvC.set(uv2[tvI3], uv2[tvI3 + 1]);
@@ -524,16 +512,16 @@ export class ModuleRoom extends ModuleObject {
             .addScaledVector(uvA, a)
             .addScaledVector(uvB, b)
             .addScaledVector(uvC, c);
-          
+
           lightmapUV[(instanceIndex * 2) + 0] = uv.x;
-          lightmapUV[(instanceIndex * 2) + 1] = uv.y; 
+          lightmapUV[(instanceIndex * 2) + 1] = uv.y;
         }
 
         this.grass.setMatrixAt(instanceIndex, objForMatrix.matrix);
         instanceIndex++;
       }
     }
-    
+
     this.grass.instanceMatrix.needsUpdate = true;
     geometry.setAttribute('instanceID', new THREE.InstancedBufferAttribute(instanceIndices, 1));
     geometry.setAttribute('lightmapUV', new THREE.InstancedBufferAttribute(lightmapUV, 2));
@@ -550,7 +538,7 @@ export class ModuleRoom extends ModuleObject {
    */
   private createGrassBladeGeometry(): THREE.BufferGeometry {
     let grassGeometry: THREE.BufferGeometry | undefined = undefined;
-    
+
     for(let i = 0; i < 4; i++){
       const blade = new THREE.PlaneGeometry(this.area.grass.quadSize, this.area.grass.quadSize, 1, 1);
       blade.rotateX(Math.PI/2);
@@ -560,14 +548,14 @@ export class ModuleRoom extends ModuleObject {
         grassGeometry = blade;
         continue;
       }
-      
-      grassGeometry = BufferGeometryUtils.mergeBufferGeometries([grassGeometry, blade]);
+
+      grassGeometry = mergeBufferGeometries([grassGeometry, blade]);
     }
 
     // Set constraint array for wind effect
     const constraint = new Float32Array([
-      1, 1, 0, 0, 
-      1, 1, 0, 0, 
+      1, 1, 0, 0,
+      1, 1, 0, 0,
       1, 1, 0, 0,
       1, 1, 0, 0
     ]);
@@ -581,7 +569,7 @@ export class ModuleRoom extends ModuleObject {
       3, 3, 3, 3,
     ]);
     grassGeometry.setAttribute('quadIdx', new THREE.BufferAttribute(quadIdx, 1));
-    
+
     return grassGeometry;
   }
 
@@ -591,11 +579,11 @@ export class ModuleRoom extends ModuleObject {
   private precalculateFaceData(aabb: OdysseyModelNodeAABB, density: number): { totalGrassCount: number, faceGrassCounts: number[] } {
     const faceGrassCounts: number[] = [];
     let totalGrassCount = 0;
-    
+
     const FA = new THREE.Vector3();
     const FB = new THREE.Vector3();
     const FC = new THREE.Vector3();
-    
+
     for(let i = 0; i < aabb.grassFaces.length; i++){
       const face = aabb.grassFaces[i];
 
@@ -605,12 +593,12 @@ export class ModuleRoom extends ModuleObject {
 
       const triangle = new THREE.Triangle(FA, FB, FC);
       const tArea = triangle.getArea();
-      const grassCount = Math.max(1, Math.floor((tArea * density) * 0.50));
+      let grassCount = Math.max(1, Math.floor((tArea * density) * 0.50));
 
       totalGrassCount += grassCount;
       faceGrassCounts.push(grassCount);
     }
-    
+
     return { totalGrassCount, faceGrassCounts };
   }
 
@@ -622,15 +610,15 @@ export class ModuleRoom extends ModuleObject {
     // Format: RGBA where R=X, G=Y, B=Z, A=active flag
     const textureSize = Math.ceil(Math.sqrt(maxEntities));
     const data = new Float32Array(textureSize * textureSize * 4);
-    
+
     // Initialize all positions to (0,0,0,0) - inactive
     for (let i = 0; i < data.length; i += 4) {
       data[i] = 0;     // X
-      data[i + 1] = 0; // Y  
+      data[i + 1] = 0; // Y
       data[i + 2] = 0; // Z
       data[i + 3] = 0; // Active flag (0 = inactive, 1 = active)
     }
-    
+
     const texture = new THREE.DataTexture(
       data,
       textureSize,
@@ -638,7 +626,7 @@ export class ModuleRoom extends ModuleObject {
       THREE.RGBAFormat,
       THREE.FloatType
     );
-    
+
     texture.needsUpdate = true;
     return texture;
   }
@@ -648,21 +636,21 @@ export class ModuleRoom extends ModuleObject {
    */
   private updatePositionDataTexture(): void {
     if (!this.grass || !this.grass.material.uniforms.positionMap.value) return;
-    
+
     const texture = this.grass.material.uniforms.positionMap.value;
     const data = texture.image.data;
     const textureSize = texture.image.width;
     let entityIndex = 0;
-    
+
     // Clear all positions
     for (let i = 0; i < data.length; i += 4) {
       data[i + 3] = 0; // Set all to inactive
     }
-    
+
     // Add creature positions
     for (const creature of this.creatures) {
       if (entityIndex >= textureSize * textureSize) break;
-      
+
       const pixelIndex = entityIndex * 4;
       data[pixelIndex] = creature.position.x;
       data[pixelIndex + 1] = creature.position.y;
@@ -670,22 +658,22 @@ export class ModuleRoom extends ModuleObject {
       data[pixelIndex + 3] = 1.0; // Active
       entityIndex++;
     }
-    
+
     texture.needsUpdate = true;
   }
 
   /**
    * Load grass textures asynchronously
    */
-  private loadGrassTextures(grass_material: THREE.ShaderMaterial, lm_texture: THREE.Texture): void {
+  private loadGrassTextures(grass_material: THREE.ShaderMaterial, lm_texture: any): void {
     if(!this.area.grass.textureName){
-      // log.warn('ModuleRoom.buildGrass: No grass texture found for room ' + this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No grass texture found for room ' + this.roomName);
       return;
     }
-    
+
     TextureLoader.Load(this.area.grass.textureName).then((diffuseMap: OdysseyTexture) => {
       if(!diffuseMap) return;
-      
+
       diffuseMap.minFilter = THREE.LinearFilter;
       diffuseMap.magFilter = THREE.LinearFilter;
       grass_material.uniforms.map.value = diffuseMap;
@@ -693,16 +681,16 @@ export class ModuleRoom extends ModuleObject {
       grass_material.defines.USE_MAP = '';
       grass_material.defines.USE_UV = '';
       grass_material.needsUpdate = true;
-      
+
       if(!lm_texture){
-        // log.warn('ModuleRoom.buildGrass: No grass lightmap found for room ' + this.roomName);
+        // console.warn('ModuleRoom.buildGrass: No grass lightmap found for room ' + this.roomName);
         return;
       }
-      
+
       // Load lightmap texture
       TextureLoader.Load(lm_texture).then((lightMap: OdysseyTexture) => {
         if(!lightMap) return;
-        
+
         lightMap.minFilter = THREE.LinearFilter;
         lightMap.magFilter = THREE.LinearFilter;
         grass_material.uniforms.lightMap.value = lightMap;
@@ -714,17 +702,17 @@ export class ModuleRoom extends ModuleObject {
   }
 
 
-  
-  containsPoint2d(point: THREE.Vector2 | { x: number; y: number }) {
 
-    if (!this.model)
+  containsPoint2d(point: any){
+
+    if(!this.model)
       return false;
 
     return point.x < this.model.box.min.x || point.x > this.model.box.max.x ||
       point.y < this.model.box.min.y || point.y > this.model.box.max.y ? false : true;
   }
-  
-  containsPoint3d(point: THREE.Vector3 | { x: number; y: number; z: number }){
+
+  containsPoint3d(point: any){
 
     if(!this.model)
       return false;
@@ -736,17 +724,17 @@ export class ModuleRoom extends ModuleObject {
 
   findWalkableFace( object?: ModuleObject ) : OdysseyFace3 {
     let face;
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject) && this.collisionManager.walkmesh){
-      for(let j = 0, jl = this.collisionManager.walkmesh.walkableFaces.length; j < jl; j++){
-        face = this.collisionManager.walkmesh.walkableFaces[j];
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject) && this.collisionData.walkmesh){
+      for(let j = 0, jl = this.collisionData.walkmesh.walkableFaces.length; j < jl; j++){
+        face = this.collisionData.walkmesh.walkableFaces[j];
         if(face.triangle.containsPoint(object.position)){
-          object.collisionManager.groundFace = face;
-          object.collisionManager.lastGroundFace = object.collisionManager.groundFace;
-          object.collisionManager.surfaceId = object.collisionManager.groundFace.walkIndex;
+          object.collisionData.groundFace = face;
+          object.collisionData.lastGroundFace = object.collisionData.groundFace;
+          object.collisionData.surfaceId = object.collisionData.groundFace.walkIndex;
           object.room = this;
 
-          face.triangle.closestPointToPoint(object.position, object.collisionManager.wm_c_point);
-          object.position.z = object.collisionManager.wm_c_point.z + .005;
+          face.triangle.closestPointToPoint(object.position, object.collisionData.wm_c_point);
+          object.position.z = object.collisionData.wm_c_point.z + .005;
           return face;
         }
       }
@@ -756,15 +744,15 @@ export class ModuleRoom extends ModuleObject {
 
   destroy(): void {
     super.destroy();
-      
-    if(this.collisionManager.walkmesh)
-      this.collisionManager.walkmesh.dispose();
+
+    if(this.collisionData.walkmesh)
+      this.collisionData.walkmesh.dispose();
 
     try{
-      const wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
+      let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
       GameState.walkmeshList.splice(wmIdx, 1);
     }catch(e){
-      log.error(e);
+      console.error(e);
     }
 
     try{
@@ -774,7 +762,7 @@ export class ModuleRoom extends ModuleObject {
         this.grass.removeFromParent();
       }
     }catch(e){
-      log.error(e);
+      console.error(e);
     }
   }
 

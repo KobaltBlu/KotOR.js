@@ -42,7 +42,7 @@ export class OdysseyLight3D extends OdysseyObject3D {
 
   constructor(node: OdysseyModelNodeLight){
     super(node);
-    this.type = 'OdysseyLight';
+    (this as { type: string }).type = 'OdysseyLight';
   }
 
   getIntensity(){

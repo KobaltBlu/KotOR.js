@@ -1,10 +1,10 @@
-import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
-import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
-import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
-import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
-import type { NWScriptInstruction } from "@/nwscript/decompiler/NWScriptInstruction";
-import { OP_EQUAL, OP_LOGORII, OP_JZ, OP_JNZ } from '@/nwscript/decompiler/NWScriptOPCodes';
-import { NWScriptDataType } from "@/nwscript/enums/nwscript/NWScriptDataType";
+import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
+import type { NWScriptInstruction } from "../NWScriptInstruction";
+import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
+import { NWScriptExpressionBuilder } from "./NWScriptExpressionBuilder";
+import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+import { OP_EQUAL, OP_LOGORII, OP_JZ, OP_JNZ } from "../NWScriptOPCodes";
+import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
 
 /**
  * Detects and simplifies OR chains in NWScript bytecode.
@@ -21,12 +21,28 @@ import { NWScriptDataType } from "@/nwscript/enums/nwscript/NWScriptDataType";
  */
 export class NWScriptORChainDetector {
   private functionParameters: NWScriptFunctionParameter[] = [];
+  private globalVariables: Map<number, { name: string; dataType: NWScriptDataType }> = new Map();
+  private localVariables: Map<number, { name: string; dataType: NWScriptDataType }> = new Map();
 
   /**
    * Set function parameters for proper variable name mapping
    */
   setFunctionParameters(parameters: NWScriptFunctionParameter[]): void {
     this.functionParameters = parameters;
+  }
+
+  /**
+   * Set global variables for variable name mapping (e.g. GetGlobalBoolean -> symbolic name)
+   */
+  setGlobalVariables(globals: Map<number, { name: string; dataType: NWScriptDataType }>): void {
+    this.globalVariables = globals;
+  }
+
+  /**
+   * Set local variables for variable name mapping (e.g. GetLocalInt -> symbolic name)
+   */
+  setLocalVariables(locals: Map<number, { name: string; dataType: NWScriptDataType }>): void {
+    this.localVariables = locals;
   }
 
   /**
@@ -74,7 +90,13 @@ export class NWScriptORChainDetector {
     // Track the expression builder state
     const exprBuilder = new NWScriptExpressionBuilder();
     exprBuilder.setFunctionParameters(this.functionParameters);
-    
+    if (this.globalVariables.size > 0) {
+      exprBuilder.setGlobalVariables(this.globalVariables);
+    }
+    if (this.localVariables.size > 0) {
+      exprBuilder.setLocalVariables(this.localVariables);
+    }
+
     // Track JZ instructions and their conditions
     const jzConditions = new Map<number, NWScriptExpression>();
     

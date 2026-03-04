@@ -1,12 +1,13 @@
-import { Planet, Planetary } from "@/engine/Planetary";
-import { GameState } from "@/GameState";
-import { GameMenu, LBL_3DView } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
-import { MDLLoader, TextureLoader } from "@/loaders";
-import { NWScript } from "@/nwscript/NWScript";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { OdysseyModel } from "@/odyssey";
-import { OdysseyModel3D } from "@/three/odyssey";
+import * as THREE from "three";
+import { GameState } from "../../../GameState";
+import { GameMenu, LBL_3DView } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
+import { MDLLoader, TextureLoader } from "../../../loaders";
+import { NWScript } from "../../../nwscript/NWScript";
+import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
+import { OdysseyModel } from "../../../odyssey";
+import { Planet, Planetary } from "../../../engine/Planetary";
+import { OdysseyModel3D } from "../../../three/odyssey";
 
 const STR_ALREADY_AT_THAT_LOCATION = 125629;
 
@@ -14,7 +15,7 @@ interface PlanetAnimStateInfo {
   lastAnimState: 'zoomin'|'rotate';
   currentAnimState: 'zoomin'|'rotate';
   started: boolean;
-}
+};
 
 /**
  * MenuGalaxyMap class.
@@ -142,7 +143,7 @@ export class MenuGalaxyMap extends GameMenu {
     try {
       this._3dView.render(delta);
       (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
     }
   }
@@ -178,16 +179,16 @@ export class MenuGalaxyMap extends GameMenu {
 
       _3dView.render(delta);
       (planetControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
     }
   }
 
   UpdateScale() {
-    const controls = this.manager.MenuGalaxyMap.tGuiPanel.children;
+    let controls = this.manager.MenuGalaxyMap.tGuiPanel.children;
     for (let i = 0; i < controls.length; i++) {
-      const control = controls[i];
-      const plnt = Planetary.GetPlanetByGUITag(control.name);
+      let control = controls[i];
+      let plnt = Planetary.GetPlanetByGUITag(control.name);
       if (plnt) {
         if (plnt.enabled) {
           control.show();

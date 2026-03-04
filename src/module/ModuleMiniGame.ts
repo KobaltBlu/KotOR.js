@@ -1,17 +1,14 @@
-import { MiniGameType } from "@/enums/engine/MiniGameType";
-import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-import { GameState } from "@/GameState";
-import { ModuleMGEnemy } from "@/module/ModuleMGEnemy";
-import type { ModuleMGObstacle } from "@/module/ModuleMGObstacle";
-import type { ModuleMGPlayer } from "@/module/ModuleMGPlayer";
-import type { ModuleMGTrack } from "@/module/ModuleMGTrack";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Module);
+import { GameState } from "../GameState";
+import { MiniGameType } from "../enums/engine/MiniGameType";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ModuleMGEnemy } from "./ModuleMGEnemy";
+import type { ModuleObject } from "./ModuleObject";
+import type { ModuleMGObstacle } from "./ModuleMGObstacle";
+import type { ModuleMGPlayer } from "./ModuleMGPlayer";
+import type { ModuleMGTrack } from "./ModuleMGTrack";
 
 /**
 * ModuleMiniGame class.
@@ -28,40 +25,40 @@ const log = createScopedLogger(LogScope.Module);
 export class ModuleMiniGame {
   type: MiniGameType;
 
-  /** Bump plane. */
+  /** Bump plane (Reva: bump_plane). */
   bumpPlane: number = 0;
-  /** Camera FOV in degrees (default 65). */
+  /** Camera FOV in degrees (Reva: camera_view_angle, default 65). */
   cameraViewAngle: number = 65;
-  /** Depth of field. */
+  /** Depth of field (Reva: depth_of_field). */
   dof: number = 0;
-  /** Do bumping. */
+  /** Do bumping (Reva: do_bumping). */
   doBumping: number = 0;
   player: ModuleMGPlayer | undefined;
 
-  /** Far clip plane (default 100). */
+  /** Far clip plane (Reva: clip_end, default 100). */
   farClip: number = 100;
-  /** Lateral acceleration. */
+  /** Lateral acceleration (Reva: lateral_accel). */
   lateralAccel: number = 0;
-  /** Movement per second. */
+  /** Movement per second (Reva: movement_per_sec). */
   movementPerSec: number = 0;
-  /** Music resref. */
+  /** Music resref (Reva: music CResRef). */
   music: string = '';
-  /** Near clip plane (default 0.1). */
+  /** Near clip plane (Reva: clip_start, default 0.1). */
   nearClip: number = 0.1;
-  /** Use inertia. */
+  /** Use inertia (Reva: use_inertia). */
   useInertia: number = 0;
-  /** Enemy count; synced from enemies.length. */
+  /** Enemy count (Reva: enemy_count); synced from enemies.length. */
   get enemy_count(): number { return this.enemies.length; }
-  /** Obstacle count; synced from obstacles.length. */
+  /** Obstacle count (Reva: obstacle_count); synced from obstacles.length. */
   get obstacle_count(): number { return this.obstacles.length; }
 
   enemies: ModuleMGEnemy[] = [];
   obstacles: ModuleMGObstacle[] = [];
   tracks: ModuleMGTrack[] = [];
 
-  /** Last HP change (for script queries). */
+  /** Last HP change (Reva: for SWMG_GetLastHPChange). */
   lastHPChange: number = 0;
-  /** Last bullet hit part name. */
+  /** Last bullet hit part name (Reva: for SWMG_GetLastBulletHitPart). */
   lastBulletHitPart: string = '';
   /** Last bullet hit damage (for script queries). */
   lastBulletHitDamage: number = 0;
@@ -69,27 +66,27 @@ export class ModuleMiniGame {
   lastBulletHitTarget: ModuleObject | undefined;
   /** Last bullet shooter (object). */
   lastBulletHitShooter: ModuleObject | undefined;
-  /** Last bullet fired damage. */
+  /** Last bullet fired damage (for SWMG_GetLastBulletFiredDamage). */
   lastBulletFiredDamage: number = 0;
-  /** Last bullet fired target type. */
+  /** Last bullet fired target type (for SWMG_GetLastBulletFiredTarget). */
   lastBulletFiredTarget: number = 0;
-  /** Last animation key event name. */
+  /** Last animation key event name (Reva: for SWMG_GetLastEvent). */
   lastAnimEvent: string = '';
-  /** Last animation key event model name. */
+  /** Last animation key event model name (Reva: for SWMG_GetLastEventModelName). */
   lastAnimEventModelName: string = '';
 
-  constructor(struct: GFFStruct) {
-    if (struct.hasField('Bump_Plane')) this.bumpPlane = struct.getNumberByLabel('Bump_Plane');
-    if (struct.hasField('CameraViewAngle')) this.cameraViewAngle = struct.getNumberByLabel('CameraViewAngle');
-    if (struct.hasField('DOF')) this.dof = struct.getNumberByLabel('DOF');
-    if (struct.hasField('DoBumping')) this.doBumping = struct.getBooleanByLabel('DoBumping');
-    if (struct.hasField('Far_Clip')) this.farClip = struct.getNumberByLabel('Far_Clip');
-    if (struct.hasField('LateralAccel')) this.lateralAccel = struct.getNumberByLabel('LateralAccel');
-    if (struct.hasField('MovementPerSec')) this.movementPerSec = struct.getNumberByLabel('MovementPerSec');
-    if (struct.hasField('Music')) this.music = struct.getStringByLabel('Music');
-    if (struct.hasField('Near_Clip')) this.nearClip = struct.getNumberByLabel('Near_Clip');
-    if (struct.hasField('Type')) this.type = struct.getNumberByLabel('Type');
-    if (struct.hasField('UseInertia')) this.useInertia = struct.getBooleanByLabel('UseInertia');
+  constructor(struct: GFFStruct){
+    if (struct.hasField('Bump_Plane')) this.bumpPlane = struct.getFieldByLabel('Bump_Plane').getValue();
+    if (struct.hasField('CameraViewAngle')) this.cameraViewAngle = struct.getFieldByLabel('CameraViewAngle').getValue();
+    if (struct.hasField('DOF')) this.dof = struct.getFieldByLabel('DOF').getValue();
+    if (struct.hasField('DoBumping')) this.doBumping = struct.getFieldByLabel('DoBumping').getValue();
+    if (struct.hasField('Far_Clip')) this.farClip = struct.getFieldByLabel('Far_Clip').getValue();
+    if (struct.hasField('LateralAccel')) this.lateralAccel = struct.getFieldByLabel('LateralAccel').getValue();
+    if (struct.hasField('MovementPerSec')) this.movementPerSec = struct.getFieldByLabel('MovementPerSec').getValue();
+    if (struct.hasField('Music')) this.music = typeof struct.getFieldByLabel('Music').getValue() === 'string' ? struct.getFieldByLabel('Music').getValue() : '';
+    if (struct.hasField('Near_Clip')) this.nearClip = struct.getFieldByLabel('Near_Clip').getValue();
+    if (struct.hasField('Type')) this.type = struct.getFieldByLabel('Type').getValue();
+    if (struct.hasField('UseInertia')) this.useInertia = struct.getFieldByLabel('UseInertia').getValue();
 
     if (struct.hasField('Player')) {
       const playerStructs = struct.getFieldByLabel('Player').getChildStructs();
@@ -109,33 +106,33 @@ export class ModuleMiniGame {
     }
   }
 
-  tick(delta: number = 0) {
+  tick(delta: number = 0){
     if (this.player) this.player.update(delta);
     for (let i = 0; i < this.enemies.length; i++) this.enemies[i].update(delta);
     for (let i = 0; i < this.obstacles.length; i++) this.obstacles[i].update(delta);
   }
 
-  tickPaused(delta: number = 0) {
+  tickPaused(delta: number = 0){
     if (this.player) this.player.updatePaused(delta);
     for (let i = 0; i < this.enemies.length; i++) this.enemies[i].updatePaused(delta);
     for (let i = 0; i < this.obstacles.length; i++) this.obstacles[i].updatePaused(delta);
   }
 
-  async load() {
-    try { await this.loadMGTracks(); } catch (e) { log.error(e); }
-    if (this.player) { try { await this.loadMGPlayer(); } catch (e) { log.error(e); } }
-    try { await this.loadMGEnemies(); } catch (e) { log.error(e); }
+  async load(){
+    try { await this.loadMGTracks(); } catch(e){ console.error(e); }
+    if (this.player) { try { await this.loadMGPlayer(); } catch(e){ console.error(e); } }
+    try { await this.loadMGEnemies(); } catch(e){ console.error(e); }
   }
 
-  initMiniGameObjects() {
-    for (let i = 0; i < this.enemies.length; i++) {
-      if (this.enemies[i]) {
+  initMiniGameObjects(){
+    for(let i = 0; i < this.enemies.length; i++){
+      if(this.enemies[i]){
         this.enemies[i].onCreate();
       }
     }
 
-    for (let i = 0; i < this.obstacles.length; i++) {
-      if (this.obstacles[i]) {
+    for(let i = 0; i < this.obstacles.length; i++){
+      if(this.obstacles[i]){
         this.obstacles[i].onCreate();
       }
     }
@@ -144,19 +141,19 @@ export class ModuleMiniGame {
   }
 
   async loadMGPlayer(): Promise<void> {
-    log.info('Loading MG Player')
+    console.log('Loading MG Player')
     const player: ModuleMGPlayer = this.player;
-    await player.load();
-    await player.loadCamera();
-    await player.loadModel();
-    await player.loadGunBanks();
-    const track = this.tracks.find(o => o.track === player.trackName);
-    player.setTrack(track.model);
-    player.getCurrentRoom();
+      await player.load();
+      await player.loadCamera();
+      await player.loadModel();
+      await player.loadGunBanks();
+      const track = this.tracks.find(o => o.track === player.trackName);
+      player.setTrack(track.model);
+      player.getCurrentRoom();
   }
 
-  async loadMGTracks(): Promise<void> {
-    for (let i = 0; i < this.tracks.length; i++) {
+  async loadMGTracks(): Promise<void>{
+    for(let i = 0; i < this.tracks.length; i++){
       const track = this.tracks[i];
       await track.load();
       const model = await track.loadModel();
@@ -165,7 +162,7 @@ export class ModuleMiniGame {
       model.userData.index = i;
       //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
       model.hasCollision = true;
-      GameState.group.creatures.add(track.model);
+      GameState.group.creatures.add( track.model );
 
       track.computeBoundingBox();
       track.getCurrentRoom();
@@ -173,7 +170,7 @@ export class ModuleMiniGame {
   }
 
   async loadMGEnemies(): Promise<void> {
-    for (let i = 0; i < this.enemies.length; i++) {
+    for(let i = 0; i < this.enemies.length; i++){
       const enemy = this.enemies[i];
       await enemy.load();
       await enemy.loadModel();
@@ -185,11 +182,11 @@ export class ModuleMiniGame {
     }
   }
 
-  runMiniGameScripts() {
-    for (let i = 0; i < this.enemies.length; i++) {
+  runMiniGameScripts(){
+    for(let i = 0; i < this.enemies.length; i++){
       const enemy = this.enemies[i];
       const onCreate = enemy.scripts[ModuleObjectScript.MGEnemyOnCreate];
-      if (!onCreate) { return; }
+      if(!onCreate){ return; }
       onCreate.run(enemy, 0);
     }
   }

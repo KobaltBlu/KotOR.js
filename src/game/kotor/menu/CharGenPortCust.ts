@@ -222,7 +222,7 @@ export class CharGenPortCust extends GameMenu {
       creature.update(delta);
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
     }
   }
@@ -246,7 +246,7 @@ export class CharGenPortCust extends GameMenu {
     this.portraitId = creature.portraitId;
     try {
       creature.model.removeFromParent();
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
     }
     this._3dView.addModel(creature.model);

@@ -1,16 +1,15 @@
 import * as THREE from "three";
-
-import { GUIControlAlignment } from "@/enums";
-import { TextSprite3DType } from "@/enums/engine/TextSprite3DType";
-import { TextureType } from "@/enums/loaders/TextureType";
-import { GUIFont } from "@/gui/GUIFont";
-import { IGUIControlText } from "@/interface/gui/IGUIControlText";
-import { TextureLoader } from "@/loaders/TextureLoader";
-import { ShaderManager } from "@/managers/ShaderManager";
-import { TLKManager } from "@/managers/TLKManager";
-import type { ModuleArea, ModuleObject } from "@/module";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
+import type { ModuleArea, ModuleObject } from "../module";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
+import { IGUIControlText } from "../interface/gui/IGUIControlText";
+import { ShaderManager } from "../managers/ShaderManager";
+import { createQuadElements as createIndicies } from "../utility/QuadIndices";
+import { TLKManager } from "../managers/TLKManager";
+import { TextureLoader } from "../loaders/TextureLoader";
+import { TextureType } from "../enums/loaders/TextureType";
+import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
+import { GUIFont } from "../gui/GUIFont";
+import { GUIControlAlignment } from "../enums";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -85,8 +84,8 @@ export class TextSprite3D {
     this.text.geometry = new THREE.BufferGeometry();
     this.text.geometry.index = new THREE.BufferAttribute( new Uint16Array(), 1 ).setUsage( THREE.StaticDrawUsage );
 
-    const posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
-    const uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
+    let posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
+    let uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
     this.text.geometry.setAttribute( 'position', posAttribute );
     this.text.geometry.setAttribute( 'uv', uvAttribute );
 
@@ -94,12 +93,13 @@ export class TextSprite3D {
     this.text.geometry.attributes.position.needsUpdate = true;
     this.text.geometry.attributes.uv.needsUpdate = true;
 
+    const odysseyGuiShader = ShaderManager.Shaders.get('odyssey-gui')!;
+    // @ts-expect-error - merge return type inference fails with getUniforms()
+    const odysseyGuiUniforms: Record<string, THREE.IUniform> = THREE.UniformsUtils.merge([odysseyGuiShader.getUniforms()]);
     this.text.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui')?.getUniforms()
-      ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui')?.getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui')?.getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.DoubleSide,
       transparent: true,
       fog: false,
@@ -166,7 +166,7 @@ export class TextSprite3D {
   }
 
   buildText(){
-    const self = this;
+    let self = this;
 
     if(!this.text.texture)
       return;
@@ -176,7 +176,7 @@ export class TextSprite3D {
 
     this.container.add(this.text.mesh);
     
-    const texture = this.text.texture;
+    let texture = this.text.texture;
 
     texture.flipY = false;
     texture.anisotropy = 1;
@@ -192,8 +192,8 @@ export class TextSprite3D {
         this.boundingSphere = new THREE.Sphere()
       }
     
-      const positions = this.attributes.position.array
-      const itemSize = this.attributes.position.itemSize
+      let positions = this.attributes.position.array
+      let itemSize = this.attributes.position.itemSize
       if (!positions || !itemSize || positions.length < 2) {
         this.boundingSphere.radius = 0
         this.boundingSphere.center.set(0, 0, 0)
@@ -212,9 +212,9 @@ export class TextSprite3D {
         this.boundingBox = new THREE.Box3()
       }
     
-      const bbox = this.boundingBox
-      const positions = this.attributes.position.array
-      const itemSize = this.attributes.position.itemSize
+      let bbox = this.boundingBox
+      let positions = this.attributes.position.array
+      let itemSize = this.attributes.position.itemSize
       if (!positions || !itemSize || positions.length < 2) {
         bbox.makeEmpty()
         return
@@ -239,16 +239,16 @@ export class TextSprite3D {
     this.guiFont.buildGeometry(this.text.geometry, text, this.text.alignment);
   }
 
-  bounds(positions: number[] = []) {
-    const count = positions.length / itemSize
+  bounds(positions: ArrayLike<number> = []) {
+    let count = positions.length / itemSize
     box.min[0] = positions[0]
     box.min[1] = positions[1]
     box.max[0] = positions[0]
     box.max[1] = positions[1]
 
     for (let i = 0; i < count; i++) {
-      const x = positions[i * itemSize + 0]
-      const y = positions[i * itemSize + 1]
+      let x = positions[i * itemSize + 0]
+      let y = positions[i * itemSize + 1]
       box.min[0] = Math.min(x, box.min[0])
       box.min[1] = Math.min(y, box.min[1])
       box.max[0] = Math.max(x, box.max[0])
@@ -256,7 +256,7 @@ export class TextSprite3D {
     }
   }
 
-  computeBox(positions: number[] = [], output: THREE.Box3) {
+  computeBox(positions: ArrayLike<number> = [], output: THREE.Box3) {
     this.bounds(positions)
     output.min.set(box.min[0], box.min[1], 0)
     output.max.set(box.max[0], box.max[1], 0)

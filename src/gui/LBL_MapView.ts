@@ -119,12 +119,13 @@ export class LBL_MapView {
     this.mapGroup.add(this.mapPlane);
 
     //FOG
+    const odysseyFowShader = GameState.ShaderManager.Shaders.get('odyssey-fow')!;
+    // @ts-expect-error - merge return type inference fails with getUniforms()
+    const odysseyFowUniforms: Record<string, THREE.IUniform> = THREE.UniformsUtils.merge([odysseyFowShader.getUniforms()]);
     const fogPlaneMaterial = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-fow').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-fow').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-fow').getFragment(),
+      uniforms: odysseyFowUniforms,
+      vertexShader: odysseyFowShader.getVertex(),
+      fragmentShader: odysseyFowShader.getFragment(),
     });
     fogPlaneMaterial.defines.USE_MAP = '';
     fogPlaneMaterial.defines.USE_UV = '';
@@ -454,8 +455,9 @@ export class LBL_MapView {
       texWidth = this.mapTexture.mipmaps[0].width;
       texHeight = this.mapTexture.mipmaps[0].height;
     }else if(this.mapTexture.source.data){
-      texWidth = this.mapTexture.source.data.width;
-      texHeight = this.mapTexture.source.data.height;
+      const data = this.mapTexture.source.data as { width: number; height: number };
+      texWidth = data.width;
+      texHeight = data.height;
     }
 
     return { width: texWidth, height: texHeight };

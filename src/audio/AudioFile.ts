@@ -172,9 +172,15 @@ export class AudioFile {
 
     if(this.audioType == AudioFileAudioType.WAVE){
       if(this.header.format == AudioFileWaveEncoding.ADPCM){
-        const RAW_PCM_DATA_OFFSET = 60;
-        this.reader.seek(RAW_PCM_DATA_OFFSET);
-        const dataADPCM = this.reader.readBytes(this.reader.length() - (RAW_PCM_DATA_OFFSET));
+        // Use parsed data chunk offsets/sizes (files can have varying headers/chunks).
+        const dataOffset = typeof this.header.dataOffset === 'number' ? this.header.dataOffset : 60;
+        const dataSize =
+          typeof this.header.dataSize === 'number'
+            ? this.header.dataSize
+            : Math.max(0, this.reader.length() - dataOffset);
+
+        this.reader.seek(dataOffset);
+        const dataADPCM = this.reader.readBytes(dataSize);
         const adpcm = new ADPCMDecoder({
           sampleRate: this.header.sampleRate,
           frameSize: this.header.frameSize,
@@ -280,6 +286,9 @@ export class AudioFile {
     //header.channels = 2;
 
 	  header.bits = 16;
+    const bytesPerSample = header.bits / 8;
+    const blockAlign = header.channels * bytesPerSample;
+    const byteRate = header.sampleRate * blockAlign;
 
     bWriter.writeChars('RIFF');
     bWriter.writeUInt32(riffSize);
@@ -289,8 +298,8 @@ export class AudioFile {
     bWriter.writeUInt16(1);
     bWriter.writeUInt16(header.channels);
     bWriter.writeUInt32(header.sampleRate);
-    bWriter.writeUInt32(header.sampleRate * 4);
-    bWriter.writeUInt16((header.bits * header.channels) / 8);
+    bWriter.writeUInt32(byteRate);
+    bWriter.writeUInt16(blockAlign);
     bWriter.writeUInt16(header.bits);
     //bWriter.WriteUInt16(0);
     bWriter.writeChars('data');

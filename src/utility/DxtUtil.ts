@@ -1,4 +1,4 @@
-import { BinaryReader } from "@/BinaryReader";
+import { BinaryReader } from "./binary/BinaryReader";
 
 /**
  * DxtUtil class.
@@ -19,11 +19,11 @@ export class DxtUtil {
 
 	static DecompressDxt5(imageReader: any, width: number, height: number) {
 		
-		const imageData = new Uint8Array(imageReader.length);
-		const Reader = new BinaryReader(Buffer.from(imageReader));
+		let imageData = new Uint8Array(imageReader.length);
+		let Reader = new BinaryReader(Buffer.from(imageReader));
 
-		const blockCountX = (width + 3) / 4;
-		const blockCountY = (height + 3) / 4;
+		let blockCountX = (width + 3) / 4;
+		let blockCountY = (height + 3) / 4;
 
 		for (let y = 0; y < blockCountY; y++){
 			for (let x = 0; x < blockCountX; x++){
@@ -35,8 +35,8 @@ export class DxtUtil {
 	}
 
 	static DecompressDxt5Block(imageReader: any, x: number, y: number, blockCountX: number, width: number, height: number, imageData: Uint8Array) {
-		const alpha0 = imageReader.readByte();
-		const alpha1 = imageReader.readByte();
+		let alpha0 = imageReader.readByte();
+		let alpha1 = imageReader.readByte();
 
 		let alphaMask = imageReader.readByte();
 		alphaMask += imageReader.readByte() << 8;
@@ -45,13 +45,13 @@ export class DxtUtil {
 		alphaMask += imageReader.readByte() << 32;
 		alphaMask += imageReader.readByte() << 40;
 
-		const c0 = imageReader.readUInt16();
-		const c1 = imageReader.readUInt16();
+		let c0 = imageReader.readUInt16();
+		let c1 = imageReader.readUInt16();
 
 		let r0, g0, b0;
 		let r1, g1, b1;
-		const converted0 = this.ConvertRgb565ToRgb888(c0, r0, g0, b0);
-		const converted1 = this.ConvertRgb565ToRgb888(c1, r1, g1, b1);
+		let converted0 = this.ConvertRgb565ToRgb888(c0, r0, g0, b0);
+		let converted1 = this.ConvertRgb565ToRgb888(c1, r1, g1, b1);
 
 		r0 = converted0.r;
 		g0 = converted0.g;
@@ -61,14 +61,14 @@ export class DxtUtil {
 		g1 = converted1.g;
 		b1 = converted1.b;
 
-		const lookupTable = imageReader.readUInt32();
+		let lookupTable = imageReader.readUInt32();
 
 		for (let blockY = 0; blockY < 4; blockY++){
 			for (let blockX = 0; blockX < 4; blockX++){
 				let r = 0, g = 0, b = 0, a = 255;
-				const index = (lookupTable >> 2 * (4 * blockY + blockX)) & 0x03;
+				let index = (lookupTable >> 2 * (4 * blockY + blockX)) & 0x03;
 
-				const alphaIndex = ((alphaMask >> 3 * (4 * blockY + blockX)) & 0x07);
+				let alphaIndex = ((alphaMask >> 3 * (4 * blockY + blockX)) & 0x07);
 				if (alphaIndex == 0){
 					a = alpha0;
 				}else if (alphaIndex == 1){
@@ -106,11 +106,11 @@ export class DxtUtil {
 						break;
 				}
 
-				const px = (x << 2) + blockX;
-				const py = (y << 2) + blockY;
+				let px = (x << 2) + blockX;
+				let py = (y << 2) + blockY;
 				if ((px < width) && (py < height))
 				{
-					const offset = ((py * width) + px) << 2;
+					let offset = ((py * width) + px) << 2;
 					imageData[offset] = r;
 					imageData[offset + 1] = g;
 					imageData[offset + 2] = b;

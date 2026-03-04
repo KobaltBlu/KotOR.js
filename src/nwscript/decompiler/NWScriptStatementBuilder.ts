@@ -278,7 +278,8 @@ export class NWScriptStatementBuilder {
 
     // IMPROVEMENT: Try OR chain detection
     this.orChainDetector.setFunctionParameters(this.currentFunctionParameters);
-    // OR chain detector doesn't have setGlobalVariables/setLocalVariables yet, but it should use ExpressionBuilder
+    this.orChainDetector.setGlobalVariables(this.stackSimulator.getGlobalVariables());
+    this.orChainDetector.setLocalVariables(this.stackSimulator.getLocalVariables());
     const orChainExpr = this.orChainDetector.detectORChain(headerBlock);
     if (orChainExpr) {
       // Found an OR chain - use it
@@ -349,7 +350,8 @@ export class NWScriptStatementBuilder {
 
     // IMPROVEMENT: Try OR chain detection
     this.orChainDetector.setFunctionParameters(this.currentFunctionParameters);
-    // TODO: Add setGlobalVariables/setLocalVariables to OR chain detector
+    this.orChainDetector.setGlobalVariables(this.stackSimulator.getGlobalVariables());
+    this.orChainDetector.setLocalVariables(this.stackSimulator.getLocalVariables());
     const orChainExpr = this.orChainDetector.detectORChain(block);
     if (orChainExpr) {
       // Found an OR chain - use it

@@ -55,7 +55,7 @@ export class GUISlider extends GUIControl{
     this.thumb.mesh = new THREE.Sprite( this.thumb.material );
     this.widget.add(this.thumb.mesh);
 
-    this.thumb.mesh.addEventListener('click', (e) => {
+    (this.thumb.mesh as THREE.Object3D).addEventListener('click' as keyof THREE.Object3DEventMap, (_e: THREE.Event) => {
       console.log('hello');
       this.mouseInside();
     });
@@ -82,7 +82,12 @@ export class GUISlider extends GUIControl{
       )
 
       if(this.thumbStruct.hasField('IMAGE')){
-        TextureLoader.enQueue(this.thumbStruct.getFieldByLabel('IMAGE').getValue(), this.thumb.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+        const imageField = this.thumbStruct.getFieldByLabel('IMAGE');
+        const imageName = (imageField != null ? String(imageField.getValue() ?? '') : '').trim();
+        if(!imageName.length){
+          // Some GUIs include the IMAGE field but leave it empty; don't enqueue invalid names.
+        }else{
+          TextureLoader.enQueue(imageName, this.thumb.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           this.thumb.material.transparent = false;
           this.thumb.material.alphaTest = 0.5;
           this.thumb.material.needsUpdate = true;
@@ -91,8 +96,9 @@ export class GUISlider extends GUIControl{
             this.thumb.height = texture.header.height;
             this.thumb.mesh.scale.set(texture.header.width, texture.header.height, 1);
           }
-        });
-        TextureLoader.LoadQueue();
+          });
+          TextureLoader.LoadQueue();
+        }
       }
     }
 

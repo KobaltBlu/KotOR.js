@@ -156,7 +156,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
           }
         }
       }
-    }catch(e: any){
+    }catch(e: unknown){
       console.error(e);
     }
 

@@ -93,7 +93,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   constructor(odysseyNode: OdysseyModelNode){
     super();
-    this.type = 'OdysseyEmitter';
+    (this as { type: string }).type = 'OdysseyEmitter';
 
     this.isDetonated = false;
     this.particleIndex = 0;
@@ -1079,8 +1079,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     sortArray.sort( numericalSort );
     const indices = index.array;
     for ( let i = 0; i < length; i ++ ) {
-      // @ts-expect-error
-      indices[ i ] = sortArray[ i ][ 1 ];
+      (indices as unknown as number[])[ i ] = sortArray[ i ][ 1 ];
     }
     
     this.geometry.index.needsUpdate = true;

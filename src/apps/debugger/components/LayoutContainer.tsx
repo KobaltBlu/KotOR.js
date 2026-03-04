@@ -4,10 +4,10 @@ import Draggable from 'react-draggable';
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
 export interface LayoutContainerProps {
-  northContent?: JSX.Element;
-  southContent?: JSX.Element;
-  eastContent?: JSX.Element;
-  westContent?: JSX.Element;
+  northContent?: React.ReactElement;
+  southContent?: React.ReactElement;
+  eastContent?: React.ReactElement;
+  westContent?: React.ReactElement;
   northSize?: number;
   southSize?: number;
   eastSize?: number;
@@ -19,38 +19,38 @@ export interface LayoutContainerProps {
 }
 
 export const LayoutContainer = function(props: LayoutContainerProps) {
-  const containerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const centerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const northRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const northHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const northHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const southRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const southHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const southHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const eastRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const eastHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const eastHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const westRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const westHandleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
-  const westHandleToggleRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
+  const containerRef = useRef<HTMLDivElement>(null!);
+  const centerRef = useRef<HTMLDivElement>(null!);
+  const northRef = useRef<HTMLDivElement>(null!);
+  const northHandleRef = useRef<HTMLDivElement>(null!);
+  const northHandleToggleRef = useRef<HTMLDivElement>(null!);
+  const southRef = useRef<HTMLDivElement>(null!);
+  const southHandleRef = useRef<HTMLDivElement>(null!);
+  const southHandleToggleRef = useRef<HTMLDivElement>(null!);
+  const eastRef = useRef<HTMLDivElement>(null!);
+  const eastHandleRef = useRef<HTMLDivElement>(null!);
+  const eastHandleToggleRef = useRef<HTMLDivElement>(null!);
+  const westRef = useRef<HTMLDivElement>(null!);
+  const westHandleRef = useRef<HTMLDivElement>(null!);
+  const westHandleToggleRef = useRef<HTMLDivElement>(null!);
 
-  const layoutNorthSize = useRef<number>() as React.MutableRefObject<number>;
-  const layoutSouthSize = useRef<number>() as React.MutableRefObject<number>;
-  const layoutEastSize = useRef<number>() as React.MutableRefObject<number>;
-  const layoutWestSize = useRef<number>() as React.MutableRefObject<number>;
+  const layoutNorthSize = useRef<number>(0);
+  const layoutSouthSize = useRef<number>(0);
+  const layoutEastSize = useRef<number>(0);
+  const layoutWestSize = useRef<number>(0);
 
-  const layoutNorthOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
-  const layoutSouthOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
-  const layoutEastOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
-  const layoutWestOpen = useRef<boolean>() as React.MutableRefObject<boolean>;
+  const layoutNorthOpen = useRef<boolean>(true);
+  const layoutSouthOpen = useRef<boolean>(true);
+  const layoutEastOpen = useRef<boolean>(true);
+  const layoutWestOpen = useRef<boolean>(true);
 
-  const layoutBarOpenSize = useRef<number>() as React.MutableRefObject<number>;
-  const layoutBarClosedSize = useRef<number>() as React.MutableRefObject<number>;
+  const layoutBarOpenSize = useRef<number>(0);
+  const layoutBarClosedSize = useRef<number>(0);
 
-  const northContent: JSX.Element = props.northContent as JSX.Element;
-  const southContent: JSX.Element = props.southContent as JSX.Element;
-  const eastContent: JSX.Element = props.eastContent as JSX.Element;
-  const westContent: JSX.Element = props.westContent as JSX.Element;
+  const northContent = props.northContent as React.ReactElement | undefined;
+  const southContent = props.southContent as React.ReactElement | undefined;
+  const eastContent = props.eastContent as React.ReactElement | undefined;
+  const westContent = props.westContent as React.ReactElement | undefined;
 
   const layout_north_enabled: boolean = northContent ? true : false;
   const layout_south_enabled: boolean = southContent ? true : false;

@@ -54,15 +54,27 @@ function beautifyBackgroundImage(url: string|undefined = undefined): Promise<str
             const newBackgroundURL = URL.createObjectURL(await canvas.convertToBlob({type: 'image/webp', quality:  100}));
             resolve(newBackgroundURL);
           }catch(e){
+            // Tainted canvas: cross-origin image without CORS prevents convertToBlob. Use original URL.
+            const err = e as { name?: string; code?: number; message?: string };
+            const isTaintedCanvas =
+              (err?.name === 'SecurityError') ||
+              (typeof err?.code === 'number' && err.code === 18) ||
+              (typeof err?.message === 'string' && /tainted|convertToBlob/i.test(err.message));
+            if (isTaintedCanvas) {
+              resolve(url);
+              return;
+            }
             console.error(e);
             reject();
           }
+        } else {
+          resolve(url);
         }
-      }
-      img.onerror = (e) => {
-        console.error(e);
+      };
+      img.onerror = () => {
         reject();
-      }
+      };
+      img.crossOrigin = 'anonymous';
       img.src = url;
     }else{
       reject();
@@ -125,8 +137,8 @@ export const AppProvider = (props: any) => {
 
   const providerValue: AppProviderValues = {
     version: process.env.VERSION || 'N/A',
-    profileCategories: [profileCategoriesValue, setProfilesCategories], 
-    selectedProfile: [selectedProfileValue, setSelectedProfile], 
+    profileCategories: [profileCategoriesValue, setProfilesCategories],
+    selectedProfile: [selectedProfileValue, setSelectedProfile],
     backgroundImage: [backgroundImageValue, setBackgroundImage],
     videos: [videos, setVideos],
     discordWidgetOpen: [discordWidgetOpen, setDiscordWidgetOpen],

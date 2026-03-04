@@ -28,9 +28,9 @@ export class OdysseyTexture extends THREE.Texture {
     format?: THREE.PixelFormat|THREE.CompressedPixelFormat,
     type?: THREE.TextureDataType,
     anisotropy?: number,
-    encoding?: THREE.TextureEncoding,
+    colorSpace?: THREE.ColorSpace,
   ){
-    super(image, mapping, wrapS, wrapT, magFilter, minFilter, format as THREE.PixelFormat, type, anisotropy, encoding);
+    super(image, mapping, wrapS, wrapT, magFilter as THREE.MagnificationTextureFilter, minFilter, format as THREE.PixelFormat, type, anisotropy, colorSpace);
     this.txi = new TXI();
   }
 }

@@ -54,7 +54,7 @@ export class SWRange {
     return RANGE_TYPES.SPELL;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: Record<string, unknown> = {}): SWRange {
     const range = new SWRange();
     range.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     range.label = TwoDAObject.normalizeValue(row.label, 'string', '');

@@ -37,7 +37,7 @@ export class GUIScrollBar extends GUIControl{
   geometry: THREE.PlaneGeometry;
   thumbMaterial: THREE.MeshBasicMaterial;
   thumb: THREE.Mesh<any, any>;
-  inner_box: any;
+  inner_box: THREE.Box2;
 
   arrowSize: number = 16;
 
@@ -130,11 +130,11 @@ export class GUIScrollBar extends GUIControl{
           };
           this.downArrow.userData.updateBox();
 
-          this.upArrow.userData.onClick = (e: any) => {
+          this.upArrow.userData.onClick = (_e: MouseEvent) => {
             this.scrollUp();
           };
 
-          this.downArrow.userData.onClick = (e: any) => {
+          this.downArrow.userData.onClick = (_e: MouseEvent) => {
             this.scrollDown();
           };
 
@@ -171,27 +171,27 @@ export class GUIScrollBar extends GUIControl{
         )
       )
 
-      this.thumb.userData.onClick = (e: any) => {
+      this.thumb.userData.onClick = (e: MouseEvent) => {
         this.processEventListener('click', [e]);
       };
 
-      this.thumb.userData.onMouseMove = (e: any) =>{
+      this.thumb.userData.onMouseMove = (e: MouseEvent) =>{
         this.processEventListener('mouseMove', [e]);
       }
 
-      this.thumb.userData.onMouseDown = (e: any) => {
+      this.thumb.userData.onMouseDown = (e: MouseEvent) => {
         this.processEventListener('mouseDown', [e]);
       };
 
-      this.thumb.userData.onMouseUp = (e: any) => {
+      this.thumb.userData.onMouseUp = (e: MouseEvent) => {
         this.processEventListener('mouseUp', [e]);
       };
       
-      this.thumb.userData.onHover = (e: any) => {
+      this.thumb.userData.onHover = (e: MouseEvent) => {
         this.processEventListener('hover', [e]);
       };
 
-      this.thumb.userData.getControl = (e: any) => {
+      this.thumb.userData.getControl = (_e: MouseEvent) => {
         return this;
       };
 
@@ -200,8 +200,12 @@ export class GUIScrollBar extends GUIControl{
       // };
 
       if(this._thumb.hasField('IMAGE')){
-        TextureLoader.enQueue(this._thumb.getFieldByLabel('IMAGE').getValue(), this.thumbMaterial, TextureType.TEXTURE);
-        TextureLoader.LoadQueue();
+        const imageField = this._thumb.getFieldByLabel('IMAGE');
+        const imageName = (imageField != null ? String(imageField.getValue() ?? '') : '').trim();
+        if(imageName.length){
+          TextureLoader.enQueue(imageName, this.thumbMaterial, TextureType.TEXTURE);
+          TextureLoader.LoadQueue();
+        }
       }
     }
 

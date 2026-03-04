@@ -71,7 +71,7 @@ export class EventListener {
    * @param type 
    * @param args 
    */
-  processEventListener<T extends string>(type: T, args: any[] = []): void {
+  processEventListener<T extends string>(type: T, args: unknown[] = []): void {
     if(!Array.isArray(this.#eventListeners[type])){
       this.#eventListeners[type] = [];
     }

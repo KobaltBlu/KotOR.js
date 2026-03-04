@@ -384,7 +384,7 @@ export class CutsceneManager {
           this.getCurrentOwner().dialogPlayAnimation(anim);
         }
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
     }
 
@@ -396,7 +396,7 @@ export class CutsceneManager {
           this.getCurrentListener().dialogPlayAnimation(anim);
         }
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
     }
 
@@ -474,7 +474,7 @@ export class CutsceneManager {
               creature.dialogPlayOdysseyAnimation(odysseyAnimation);
             }
           }
-        } catch (e: any) {
+        } catch (e: unknown) {
           console.error(e);
         }
       } else {

@@ -448,12 +448,13 @@ export class TPCObject {
             _texture.mipmaps = images[ f ].mipmaps;
           }
         }
-        (_texture as any).image = images;
-        _texture.image.width = texDatas.width;
-        _texture.image.height = texDatas.height;
+        (_texture as { image: { width: number; height: number } }).image = images as unknown as { width: number; height: number };
+        (_texture as { image: { width: number; height: number } }).image.width = texDatas.width;
+        (_texture as { image: { width: number; height: number } }).image.height = texDatas.height;
       } else {
-        _texture.image.width = texDatas.width;
-        _texture.image.height = texDatas.height;
+        const img = (_texture as { image: { width: number; height: number } }).image;
+        img.width = texDatas.width;
+        img.height = texDatas.height;
         _texture.mipmaps = texDatas.mipmaps;
       }
     // }

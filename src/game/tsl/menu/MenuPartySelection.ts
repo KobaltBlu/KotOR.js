@@ -338,7 +338,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       }
       try {
         this.LBL_3D_VIEW.render(delta);
-      } catch (e: any) { }
+      } catch (_e: unknown) { }
     }
   }
 

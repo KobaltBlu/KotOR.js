@@ -46,9 +46,9 @@ const ARROW_DIR_RIGHT = Math.PI;
 
 /**
  * InGameOverlay class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameOverlay.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -165,6 +165,7 @@ export class InGameOverlay extends GameMenu {
   BTN_TARGETDOWN2: GUIButton;
   LBL_TARGET2: GUIButton;
   miniMap: LBL_MapView;
+  private stealthSkillIndex: number = -1;
 
   namePlateArrow: THREE.Mesh;
   namePlateArrowMaterial: THREE.MeshBasicMaterial;
@@ -482,7 +483,37 @@ export class InGameOverlay extends GameMenu {
     this.LBL_QUEUE3?.show();
   }
 
+  /** Combat message auto-clear timer handle */
+  private _combatMessageClearTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * Set and show the combat message (hit/miss/crit etc.).
+   * Reva: CGuiInGame::SetCombatMessage -> CSWGuiMainInterface::SetCombatMessage (combat_mode_message_label)
+   *
+   * @param text - Message text to display
+   * @param durationMs - How long to show before auto-hiding (default 2500)
+   */
+  setCombatMessage(text: string, durationMs = 2500) {
+    if (!text?.trim()) return;
+    if (this._combatMessageClearTimer) {
+      clearTimeout(this._combatMessageClearTimer);
+      this._combatMessageClearTimer = null;
+    }
+    this.LBL_CMBTMODEMSG?.setText(text);
+    this.LBL_CMBTMSGBG?.show();
+    this.LBL_CMBTMODEMSG?.show();
+    this._combatMessageClearTimer = setTimeout(() => {
+      this.LBL_CMBTMSGBG?.hide();
+      this.LBL_CMBTMODEMSG?.hide();
+      this._combatMessageClearTimer = null;
+    }, durationMs);
+  }
+
   hideCombatUI() {
+    if (this._combatMessageClearTimer) {
+      clearTimeout(this._combatMessageClearTimer);
+      this._combatMessageClearTimer = null;
+    }
     this.BTN_CLEARALL?.hide();
     this.BTN_CLEARONE?.hide();
     this.LBL_COMBATBG1?.hide();
@@ -497,7 +528,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   TogglePartyMember(nth = 0, bVisible = false) {
-    if (!bVisible) { 
+    if (!bVisible) {
       this.getControlByName('LBL_CMBTEFCTRED' + (nth + 1))?.hide();
       this.getControlByName('LBL_CMBTEFCTINC' + (nth + 1))?.hide();
       this.getControlByName('LBL_LEVELUP' + (nth + 1))?.hide();
@@ -551,7 +582,7 @@ export class InGameOverlay extends GameMenu {
       TextureLoader.Load(sTexture).then((texture: OdysseyTexture) => {
         this.miniMap.setTexture(texture);
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
     }
   }
@@ -560,8 +591,8 @@ export class InGameOverlay extends GameMenu {
     if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature) && GameState.CursorManager.selectedObject.isDead())
       return false;
     return (
-      !this.manager.MenuContainer.bVisible && 
-      GameState.CursorManager.reticle2.visible && 
+      !this.manager.MenuContainer.bVisible &&
+      GameState.CursorManager.reticle2.visible &&
       BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleObject) &&
       !BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleRoom)
     );
@@ -698,8 +729,9 @@ export class InGameOverlay extends GameMenu {
         this.namePlateArrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
       }
     }
-    if (this.manager.InGameOverlay.LBL_NAME.text.text != GameState.CursorManager.selectedObject.getName()) {
-      this.LBL_NAME.setText(GameState.CursorManager.selectedObject.getName(), 25);
+    const displayName = GameState.CursorManager.selectedObject.getDisplayName();
+    if (this.manager.InGameOverlay.LBL_NAME.text.text != displayName) {
+      this.LBL_NAME.setText(displayName, 25);
     }
     let health = 100 * Math.min(Math.max(GameState.CursorManager.selectedObject.getHP() / GameState.CursorManager.selectedObject.getMaxHP(), 0), 1);
     if (health > 100)
@@ -785,7 +817,7 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('LBL_TARGET' + i).recalculate();
         this.getControlByName('BTN_TARGET' + i)?.show();
         this.getControlByName('LBL_TARGET' + i)?.show();
-        
+
         if(GameState.ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1){
           this.getControlByName('BTN_TARGETUP' + i)?.hide();
           this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
@@ -809,7 +841,7 @@ export class InGameOverlay extends GameMenu {
       this.UpdateSelfUIIcon(i);
       this.getControlByName('BTN_ACTIONUP' + i).recalculate();
       this.getControlByName('BTN_ACTIONDOWN' + i).recalculate();
-        
+
       if(GameState.ActionMenuManager.ActionPanels.selfPanels[i].actions.length <= 1){
         this.getControlByName('BTN_ACTIONUP' + i)?.hide();
         this.getControlByName('BTN_ACTIONDOWN' + i)?.hide();
@@ -822,8 +854,8 @@ export class InGameOverlay extends GameMenu {
 
   /**
    * Update HUD Notification Icons
-   * 
-   * @param delta 
+   *
+   * @param delta
    */
   UpdateHUDNotificationIcons(delta = 0){
     if(GameState.UINotificationManager.bNotificationSoundQueued){
@@ -858,7 +890,7 @@ export class InGameOverlay extends GameMenu {
      * Credits Received
      */
     if(GameState.UINotificationManager.CreditsReceivedTimer > 0){
-      this.LBL_CASH.show();   
+      this.LBL_CASH.show();
       this.LBL_CASH.pulsing = true;
       GameState.UINotificationManager.CreditsReceivedTimer -= delta;
     }else{
@@ -935,6 +967,24 @@ export class InGameOverlay extends GameMenu {
     if (GameState.module.area.miniGame) { return; }
 
     const oPC = GameState.getCurrentPlayer();
+    if(this.stealthSkillIndex < 0){
+      this.stealthSkillIndex = GameState.SWRuleSet.skills.findIndex((skill) => (skill.label || '').toLowerCase() === 'stealth');
+    }
+    if(this.TB_SOLO){
+      if(GameState.PartyManager.party.length > 1){
+        this.TB_SOLO.show();
+      }else{
+        this.TB_SOLO.hide();
+      }
+    }
+    if(this.TB_STEALTH){
+      const canStealth = this.stealthSkillIndex >= 0 && oPC?.getHasSkill(this.stealthSkillIndex);
+      if(canStealth){
+        this.TB_STEALTH.show();
+      }else{
+        this.TB_STEALTH.hide();
+      }
+    }
     GameState.ActionMenuManager.SetPC(oPC);
     GameState.ActionMenuManager.SetTarget(GameState.CursorManager.selectedObject);
     GameState.ActionMenuManager.UpdateMenuActions();
@@ -950,7 +1000,7 @@ export class InGameOverlay extends GameMenu {
     this.TogglePartyMember(0, false);
     this.TogglePartyMember(1, false);
     this.TogglePartyMember(2, false);
-    
+
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
       const partyMember = GameState.PartyManager.party[i];
       let id = i;
@@ -1065,5 +1115,5 @@ export class InGameOverlay extends GameMenu {
       }
     }
   }
-  
+
 }

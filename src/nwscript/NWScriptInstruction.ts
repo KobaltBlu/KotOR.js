@@ -268,7 +268,7 @@ export class NWScriptInstruction {
    * @param min_length - The minimum length of the hexadecimal string
    * @returns The hexadecimal string
    */
-  private intToHex(value: number, minLength: number): string {
+  intToHex(value: number, minLength: number): string {
     let hex = value.toString(16).toUpperCase();
     if (value < 0) {
       // Handle negative numbers as two's complement

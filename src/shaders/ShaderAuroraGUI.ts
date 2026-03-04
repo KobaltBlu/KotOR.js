@@ -137,7 +137,7 @@ export class ShaderAuroraGUI extends Shader {
         bounds: { value: new THREE.Vector4(0, 0, 0, 0) },
         scissorBounds: { value: new THREE.Vector4(0, 0, 0, 0) },
       }
-    ])
+    ]) as Record<string, THREE.IUniform>
   }
 
 }

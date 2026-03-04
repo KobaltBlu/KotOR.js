@@ -63,7 +63,7 @@ export class ShaderGUIVoid extends Shader {
         u_colorIntensity: {value: 0.25 },
         u_intensity: {value: 0.15 },
       }
-    ])
+    ]) as Record<string, THREE.IUniform>
   }
 
 }

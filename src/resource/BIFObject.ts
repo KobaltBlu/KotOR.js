@@ -191,7 +191,7 @@ export class BIFObject {
           this.getResourceBuffer(res).then( (buffer: Uint8Array) => {
             if(typeof onLoad === 'function')
               onLoad(buffer);
-          }, (e: any) => {
+          }, (_e: unknown) => {
             if(typeof onError === 'function')
               onError('Resource not found in BIF archive '+pathInfo.archive.name);
           });

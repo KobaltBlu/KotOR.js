@@ -1,4 +1,5 @@
-import type { PathPoint } from "@/engine/pathfinding/PathPoint";
+import * as THREE from "three";
+import type { PathPoint } from "../../../engine/pathfinding/PathPoint";
 
 /**
  * IClosestPathPointData interface.

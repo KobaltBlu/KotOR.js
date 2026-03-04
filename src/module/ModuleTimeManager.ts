@@ -1,17 +1,13 @@
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-import { ModuleCalendar } from "@/module/ModuleCalendar";
-
-
-const log = createScopedLogger(LogScope.Module);
-import { GFFObject } from "@/resource/GFFObject";
+import { ModuleCalendar } from "./ModuleCalendar";
+import { GFFObject } from "../resource/GFFObject";
 
 /**
 * ModuleTimeManager class.
-* 
+*
 * Class representing the time manager for a game module.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleTimeManager.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -54,8 +50,8 @@ export class ModuleTimeManager {
     second = (second % 60) | 0;
     milisecond = (milisecond % 1000) | 0;
 
-    const time = ( hour * this.minutesPerHour * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) + 
-      ( minute * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) + 
+    const time = ( hour * this.minutesPerHour * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) +
+      ( minute * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) +
       ( second * ModuleCalendar.MILISECONDS_IN_SECOND ) + milisecond;
 
     let advanceDay = 0;
@@ -105,10 +101,10 @@ export class ModuleTimeManager {
   }
 
   getFutureTimeFromSeconds(seconds: number = 0){
-    // log.info('getFutureTimeFromSeconds', seconds);
-    const future = this.calendar.clone();
+    // console.log('getFutureTimeFromSeconds', seconds);
+    let future = this.calendar.clone();
     future.advanceDeltaTime(seconds);
-    // log.info('getFutureTimeFromSeconds.future', (future.pauseTime - this.pauseTime), (future.pauseTime - this.pauseTime) / 1000 );
+    // console.log('getFutureTimeFromSeconds.future', (future.pauseTime - this.pauseTime), (future.pauseTime - this.pauseTime) / 1000 );
     return future;
   }
 
@@ -124,53 +120,46 @@ export class ModuleTimeManager {
 
   setFromIFO(ifo: GFFObject){
     if(ifo instanceof GFFObject){
-      if(ifo.RootNode.hasField('Mod_PauseDay')){
-        this.pauseDay = ifo.getNumberByLabel('Mod_PauseDay');
-      }
+      const getVal = (label: string): number | undefined => {
+        const f = ifo.getFieldByLabel(label);
+        return f != null ? f.getValue() : undefined;
+      };
 
-      if(ifo.RootNode.hasField('Mod_PauseTime')){
-        this.pauseTime = ifo.getNumberByLabel('Mod_PauseTime');
-      }
+      const pauseDayVal = getVal('Mod_PauseDay');
+      if (pauseDayVal !== undefined) this.pauseDay = pauseDayVal;
 
-      if(ifo.RootNode.hasField('Mod_DawnHour')){
-        this.dawnHour = ifo.getNumberByLabel('Mod_DawnHour');
-      }
+      const pauseTimeVal = getVal('Mod_PauseTime');
+      if (pauseTimeVal !== undefined) this.pauseTime = pauseTimeVal;
 
-      if(ifo.RootNode.hasField('Mod_DuskHour')){
-        this.duskHour = ifo.getNumberByLabel('Mod_DuskHour');
-      }
+      const dawnHourVal = getVal('Mod_DawnHour');
+      if (dawnHourVal !== undefined) this.dawnHour = dawnHourVal;
 
-      if(ifo.RootNode.hasField('Mod_MinPerHour')){
-        this.minutesPerHour = ifo.getNumberByLabel('Mod_MinPerHour');
-      }
+      const duskHourVal = getVal('Mod_DuskHour');
+      if (duskHourVal !== undefined) this.duskHour = duskHourVal;
 
-      if(ifo.RootNode.hasField('Mod_StartYear')){
-        this.year = ifo.getNumberByLabel('Mod_StartYear');
-      }
+      const minPerHourVal = getVal('Mod_MinPerHour');
+      if (minPerHourVal !== undefined) this.minutesPerHour = minPerHourVal;
 
-      if(ifo.RootNode.hasField('Mod_StartMonth')){
-        this.month = ifo.getNumberByLabel('Mod_StartMonth');
-      }
+      const yearVal = getVal('Mod_StartYear');
+      if (yearVal !== undefined) this.year = yearVal;
 
-      if(ifo.RootNode.hasField('Mod_StartDay')){
-        this.day = ifo.getNumberByLabel('Mod_StartDay');
-      }
+      const monthVal = getVal('Mod_StartMonth');
+      if (monthVal !== undefined) this.month = monthVal;
 
-      if(ifo.RootNode.hasField('Mod_StartHour')){
-        this.hour = ifo.getNumberByLabel('Mod_StartHour');
-      }
+      const dayVal = getVal('Mod_StartDay');
+      if (dayVal !== undefined) this.day = dayVal;
 
-      if(ifo.RootNode.hasField('Mod_StartMinute')){
-        this.minute = ifo.getNumberByLabel('Mod_StartMinute');
-      }
+      const hourVal = getVal('Mod_StartHour');
+      if (hourVal !== undefined) this.hour = hourVal;
 
-      if(ifo.RootNode.hasField('Mod_StartSecond')){
-        this.second = ifo.getNumberByLabel('Mod_StartSecond');
-      }
+      const minuteVal = getVal('Mod_StartMinute');
+      if (minuteVal !== undefined) this.minute = minuteVal;
 
-      if(ifo.RootNode.hasField('Mod_StartMiliSec')){
-        this.milisecond = ifo.getNumberByLabel('Mod_StartMiliSec');
-      }
+      const secondVal = getVal('Mod_StartSecond');
+      if (secondVal !== undefined) this.second = secondVal;
+
+      const milisecondVal = getVal('Mod_StartMiliSec');
+      if (milisecondVal !== undefined) this.milisecond = milisecondVal;
     }
   }
 

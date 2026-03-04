@@ -9,9 +9,9 @@ import { ResourceTypes } from "@/resource/ResourceTypes";
 
 /**
  * CheatConsoleManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CheatConsoleManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -42,7 +42,7 @@ export class CheatConsoleManager {
     points = Math.abs(points);
     const player = GameState.getCurrentPlayer();
     if(player){
-      
+
     }
   }
 
@@ -96,7 +96,7 @@ export class CheatConsoleManager {
   static heal (){
     const player = GameState.getCurrentPlayer();
     if(player){
-      
+
     }
   }
 
@@ -133,7 +133,11 @@ export class CheatConsoleManager {
     const args = command.trim().toLowerCase().split(' ');
     const cmd = args.shift();
     const params = args;
-    switch(cmd){  
+    switch(cmd){
+      case 'help':
+      case '?':
+        console.log('Cheat console commands: adddark <n>, addlight <n>, addlevel <n>, addxp <n>, giveitem <resref> <n>, givecredits <n>, heal, revealmap, warp <module>, whereami, giverandomloot <n>');
+        break;
       case 'adddark':
         CheatConsoleManager.addDarkSide(parseInt(params[0]));
         break;
@@ -145,25 +149,25 @@ export class CheatConsoleManager {
         break;
       case 'addxp':
         CheatConsoleManager.addEXP(parseInt(params[0]));
-        break;  
+        break;
       case 'giveitem':
         CheatConsoleManager.giveItem(params[0], parseInt(params[1]));
         break;
       case 'givecredits':
         CheatConsoleManager.giveCredits(parseInt(params[0]));
-        break;  
+        break;
       case 'heal':
         CheatConsoleManager.heal();
         break;
       case 'revealmap':
         CheatConsoleManager.revealmap();
-        break;  
+        break;
       case 'warp':
         CheatConsoleManager.warp(params[0]);
         break;
       case 'whereami':
         CheatConsoleManager.whereami();
-        break;  
+        break;
       case 'giverandomloot':
         CheatConsoleManager.giveRandomLoot(parseInt(params[0]));
         break;

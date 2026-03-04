@@ -1,12 +1,8 @@
 import { useEffect, useRef } from "react";
 
-/** Effect function run once; may return a cleanup function. */
-type EffectOnceFn = () => (() => void) | undefined;
+export const useEffectOnce = ( effect: Function ) => {
 
-export const useEffectOnce = (effect: EffectOnceFn): void => {
-  const effectRef = useRef<EffectOnceFn>(effect);
-  effectRef.current = effect;
-  const destroyFunc = useRef<(() => void) | undefined>(undefined);
+  const destroyFunc = useRef<Function | undefined>(undefined);
   const calledOnce = useRef(false);
   const renderAfterCalled = useRef(false);
 
@@ -14,17 +10,15 @@ export const useEffectOnce = (effect: EffectOnceFn): void => {
     renderAfterCalled.current = true;
   }
 
-  useEffect(() => {
-    if (calledOnce.current) {
-      return;
+  useEffect( () => {
+    if (calledOnce.current) { 
+      return; 
     }
 
     calledOnce.current = true;
-    const run = effectRef.current;
-    const cleanup = run ? run() : undefined;
-    destroyFunc.current = typeof cleanup === "function" ? cleanup : undefined;
+    destroyFunc.current = effect();
 
-    return () => {
+    return ()=> {
       if (!renderAfterCalled.current) {
         return;
       }

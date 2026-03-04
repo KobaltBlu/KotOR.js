@@ -155,11 +155,11 @@ export class MenuCharacter extends K1_MenuCharacter {
             this._3dViewModel.playAnimation(0, true);
             resolve();
           });
-        }).catch( (e: any) => {
+        }).catch( (e: unknown) => {
           console.error(e);
           resolve();
         });
-      }).catch( (e: any) => {
+      }).catch( (e: unknown) => {
         console.error(e);
         resolve();
       });
@@ -175,7 +175,7 @@ export class MenuCharacter extends K1_MenuCharacter {
     try {
       this._3dView.render(delta);
       (this.LBL_3DCHAR.getFill().material as any).needsUpdate = true;
-    } catch (e: any) { }
+    } catch (_e: unknown) { }
   }
 
   show() {

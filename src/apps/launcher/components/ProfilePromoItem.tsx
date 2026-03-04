@@ -16,7 +16,7 @@ export const ProfilePromoItem = function(props: ProfilePromoItemProps){
   const element: any = props.element;
   const appContext = useApp();
 
-  let jsxElement: JSX.Element = (
+  let jsxElement: React.ReactElement = (
     <div className="promo-element">
       <p>[Invalid Promo Element]</p>
     </div>
