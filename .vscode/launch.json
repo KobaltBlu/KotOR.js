@@ -1,7 +1,7 @@
 {
   "compounds": [
     {
-      "name": "Extension + Watch (compile then launch)",
+      "name": "Extension: Watch + Launch",
       "configurations": [
         "Launch Extension (watch mode)"
       ],
@@ -178,29 +178,6 @@
         "**/node_modules/**"
       ],
       "smartStep": true,
-      "type": "extensionHost"
-    },
-    {
-      "name": "Launch Extension (repo root legacy)",
-      "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}/extensions/kotor-forge-vscode"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/extensions/kotor-forge-vscode/dist/**/*.js",
-        "${workspaceFolder}/extensions/kotor-forge-vscode/server/out/**/*.js"
-      ],
-      "preLaunchTask": "Compile KotOR Forge extension",
-      "presentation": {
-        "group": "1-extension",
-        "order": 99
-      },
-      "request": "launch",
-      "runtimeExecutable": "${execPath}",
-      "timeout": 60000,
-      "skipFiles": [
-        "<node_internals>/**",
-        "**/node_modules/**"
-      ],
       "type": "extensionHost"
     },
     {

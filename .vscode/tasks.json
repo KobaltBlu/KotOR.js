@@ -3,12 +3,18 @@
     "cwd": "${workspaceFolder}",
     "env": {}
   },
+  "presentation": {
+    "panel": "shared",
+    "reveal": "silent",
+    "showReuseMessage": false
+  },
   "tasks": [
     {
       "label": "Compile KotOR Forge extension",
       "detail": "Build extension and LSP server (webpack + tsc). Used as preLaunchTask for extension debugging.",
-      "command": "cmd",
-      "args": ["/c", "npm run compile || exit /b 0"],
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "compile"],
       "group": {
         "isDefault": true,
         "kind": "build"
@@ -18,19 +24,17 @@
         "env": {}
       },
       "presentation": {
-        "clear": false,
-        "close": false,
         "panel": "shared",
-        "reveal": "silent",
-        "showReuseMessage": false
+        "reveal": "always"
       },
-      "problemMatcher": [{ "base": "$tsc", "severity": "warning" }],
-      "type": "shell"
+      "problemMatcher": [{ "base": "$tsc", "severity": "warning" }]
     },
     {
       "label": "Watch KotOR Forge extension",
       "detail": "Run webpack in watch mode. Use with 'Launch Extension (watch mode)' for live reload.",
-      "command": "npm run watch",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "watch"],
       "group": "build",
       "isBackground": true,
       "options": {
@@ -58,16 +62,18 @@
           "endsPattern": "webpack\\s+\\d+\\.\\d+\\.\\d+\\s+compiled|compiled\\s+with|Compiled\\s+successfully|compiled\\s+successfully"
         }
       },
-      "type": "shell"
+      "runOptions": {
+        "instanceLimit": 1
+      }
     },
     {
-      "label": "Dev: Prepare KotOR Forge extension (server only + watch)",
+      "label": "Dev: Prepare KotOR Forge extension (server + watch)",
       "detail": "Dev prep: compile LSP server (best-effort) then start webpack watch (waits for first compile).",
       "type": "shell",
-      "command": "cmd",
-      "args": ["/c", "echo Dev prep"],
+      "command": "echo",
+      "args": ["Dev prep"],
       "dependsOn": [
-        "Compile extension server only",
+        "Compile KotOR Forge extension server only",
         "Watch KotOR Forge extension"
       ],
       "dependsOrder": "sequence",
@@ -76,8 +82,9 @@
     {
       "label": "Compile KotOR Forge extension server only",
       "detail": "Compile only the NWScript LSP server (extensions/kotor-forge-vscode/server).",
-      "command": "cmd",
-      "args": ["/c", "npm run compile:server || exit /b 0"],
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "compile:server"],
       "group": "build",
       "options": {
         "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
@@ -89,12 +96,12 @@
       },
       "problemMatcher": [
         { "base": "$tsc", "severity": "warning" }
-      ],
-      "type": "shell"
+      ]
     },
     {
       "label": "Clean KotOR Forge extension",
       "detail": "Remove dist/, server/out/, and output/ in the extension folder.",
+      "type": "shell",
       "command": "npm run clean",
       "group": "none",
       "options": {
@@ -105,14 +112,14 @@
         "panel": "shared",
         "reveal": "silent"
       },
-      "problemMatcher": [],
-      "type": "shell"
+      "problemMatcher": []
     },
     {
       "label": "Lint KotOR Forge extension",
       "detail": "Run ESLint on extension src.",
-      "command": "cmd",
-      "args": ["/c", "npm run lint || exit /b 0"],
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "lint"],
       "group": "none",
       "options": {
         "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
@@ -124,10 +131,10 @@
       },
       "problemMatcher": [
         { "base": "$eslint-stylish", "severity": "warning" }
-      ],
-      "type": "shell"
+      ]
     },
     {
+      "type": "shell",
       "command": "npm run package",
       "dependsOn": [
         "Compile KotOR Forge extension"
@@ -144,12 +151,12 @@
         "panel": "shared",
         "reveal": "always"
       },
-      "problemMatcher": [],
-      "type": "shell"
+      "problemMatcher": []
     },
     {
       "label": "Install extension dependencies",
       "detail": "Install extension and server node_modules.",
+      "type": "shell",
       "command": "npm install",
       "group": "none",
       "options": {
@@ -160,12 +167,12 @@
         "panel": "shared",
         "reveal": "always"
       },
-      "problemMatcher": [],
-      "type": "shell"
+      "problemMatcher": []
     },
     {
       "label": "Install root dependencies",
       "detail": "Install root package dependencies.",
+      "type": "shell",
       "command": "npm install",
       "group": "none",
       "options": {
@@ -176,13 +183,14 @@
         "panel": "shared",
         "reveal": "always"
       },
-      "problemMatcher": [],
-      "type": "shell"
+      "problemMatcher": []
     },
     {
       "label": "Watch web (root)",
       "detail": "Root: webpack dev watch (KotOR.js / Forge Electron bundle). Background task: use terminal dropdown to Terminate or Rerun.",
-      "command": "npm run watch",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "webpack:dev-watch"],
       "group": "build",
       "isBackground": true,
       "options": {
@@ -205,10 +213,14 @@
           "endsPattern": "(webpack\\s+\\d+\\.\\d+\\.\\d+\\s+compiled|compiled\\s+with|Compiled\\s+successfully|compiled\\s+successfully|Build\\s+completed|done\\s+in|built\\s+in)"
         }
       },
-      "type": "shell"
+      "runOptions": {
+        "instanceLimit": 1
+      }
     },
     {
-      "command": "npm run watch:verbose",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "webpack:dev-watch", "--", "--progress", "--stats", "verbose"],
       "detail": "Root: webpack dev watch with verbose progress/stats. Background task: use terminal dropdown to Terminate or Rerun.",
       "group": "build",
       "isBackground": true,
@@ -233,12 +245,14 @@
           "endsPattern": "(webpack\\s+\\d+\\.\\d+\\.\\d+\\s+compiled|compiled\\s+with|Compiled\\s+successfully|compiled\\s+successfully|Build\\s+completed|done\\s+in|built\\s+in)"
         }
       },
-      "type": "shell"
+      "runOptions": {
+        "instanceLimit": 1
+      }
     },
     {
       "label": "Build web for serve (root)",
       "type": "shell",
-      "command": "npm run build:web:dev",
+      "command": "npm run webpack:dev",
       "options": { "cwd": "${workspaceFolder}", "env": {} },
       "group": "build",
       "presentation": { "reveal": "silent", "panel": "shared" },
@@ -247,7 +261,7 @@
     {
       "label": "Clean and build web (root)",
       "type": "shell",
-      "command": "npm run clean && npm run build:web:dev",
+      "command": "npx -y rimraf dist && npm run webpack:dev",
       "options": { "cwd": "${workspaceFolder}", "env": {} },
       "group": "build",
       "presentation": { "reveal": "always", "panel": "shared" },
