@@ -48,6 +48,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
   statusBarItem.command = 'kotorForge.switchActiveGame';
+  const sessionStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99);
+  sessionStatusBarItem.command = 'kotorForge.refreshSessions';
   const refreshStatusBar = () => {
     const cfg = vscode.workspace.getConfiguration('kotorForge');
     const activeGame = cfg.get<string>('activeGame', 'kotor');
@@ -62,6 +64,41 @@ export function activate(context: vscode.ExtensionContext) {
   const sessionTreeProvider = new SessionTreeProvider();
   const resourceTreeProvider = new ResourceTreeProvider();
   const validationDiagnostics = vscode.languages.createDiagnosticCollection('kotorForgeValidation');
+  const refreshSessionStatusBar = async () => {
+    const cfg = vscode.workspace.getConfiguration('kotorForge');
+    const sessionManagerUrl = cfg.get<string>('sessionManagerUrl', '').trim();
+    if (!sessionManagerUrl) {
+      sessionStatusBarItem.text = '$(server) Sessions: off';
+      sessionStatusBarItem.tooltip = 'Session manager URL is not configured.';
+      sessionStatusBarItem.show();
+      return;
+    }
+
+    try {
+      const adminToken = cfg.get<string>('sessionManagerAdminToken', '').trim();
+      const endpoint = new URL('/api/sessions', sessionManagerUrl);
+      if (adminToken) {
+        endpoint.searchParams.set('includeTokens', '1');
+      }
+      const response = await fetch(endpoint.toString(), {
+        headers: adminToken ? { 'x-admin-token': adminToken } : undefined,
+      });
+      if (!response.ok) {
+        throw new Error(`status ${response.status}`);
+      }
+      const sessions = await response.json() as Array<{ status?: string; containerStatus?: string }>;
+      const active = sessions.filter((s) => s.status !== 'expired' && s.status !== 'closed').length;
+      const ready = sessions.filter((s) => s.containerStatus === 'ready').length;
+      sessionStatusBarItem.text = `$(server-environment) Sessions: ${active}`;
+      sessionStatusBarItem.tooltip = `Hosted sessions active: ${active}\nContainers ready: ${ready}\nTotal tracked: ${sessions.length}`;
+      sessionStatusBarItem.show();
+    } catch (error) {
+      sessionStatusBarItem.text = '$(warning) Sessions: error';
+      sessionStatusBarItem.tooltip = `Session manager unavailable.\n${error instanceof Error ? error.message : String(error)}`;
+      sessionStatusBarItem.show();
+    }
+  };
+  void refreshSessionStatusBar();
   context.subscriptions.push(
     validationDiagnostics,
     vscode.window.registerTreeDataProvider('kotorForgeSessions', sessionTreeProvider),
@@ -70,6 +107,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (e.affectsConfiguration('kotorForge.sessionManagerUrl')
         || e.affectsConfiguration('kotorForge.sessionManagerAdminToken')) {
         sessionTreeProvider.refresh();
+        void refreshSessionStatusBar();
       }
       if (e.affectsConfiguration('files.exclude')) {
         resourceTreeProvider.refresh();
@@ -77,6 +115,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
   context.subscriptions.push(
+    sessionStatusBarItem,
     statusBarItem,
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('kotorForge.activeGame')
@@ -86,6 +125,10 @@ export function activate(context: vscode.ExtensionContext) {
       }
     })
   );
+  const sessionStatusInterval = setInterval(() => {
+    void refreshSessionStatusBar();
+  }, 15000);
+  context.subscriptions.push(new vscode.Disposable(() => clearInterval(sessionStatusInterval)));
 
   // Register Forge-backed custom editors: default + Generic GFF option for GFF types
   log.trace('Registering KotorForgeProvider (default + kotor.forge.gff)');
@@ -167,6 +210,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('kotorForge.refreshSessions', () => {
       log.debug('Command invoked: kotorForge.refreshSessions');
       sessionTreeProvider.refresh();
+      void refreshSessionStatusBar();
     }),
 
     vscode.commands.registerCommand('kotorForge.openHostedSession', async (value?: string | { accessUrl?: string }) => {
