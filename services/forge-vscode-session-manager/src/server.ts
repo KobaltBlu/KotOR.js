@@ -604,6 +604,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (method === 'POST' && pathname === '/api/timeouts/evaluate') {
+      if (!requireAdminForOperationalRoutes(req, url)) {
+        writeJson(res, 401, { error: 'Missing or invalid admin token' });
+        return;
+      }
       const events = manager.evaluateTimeouts();
       writeJson(res, 200, { events });
       return;

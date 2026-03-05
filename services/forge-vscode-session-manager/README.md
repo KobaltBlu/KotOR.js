@@ -35,7 +35,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - `POST /api/sessions/:id/container-stopped` *(requires `x-session-token`)*
 - `POST /api/sessions/:id/container-failed` *(requires `x-session-token`)*
 - `DELETE /api/sessions/:id` *(requires `x-session-token`)*
-- `POST /api/timeouts/evaluate`
+- `POST /api/timeouts/evaluate` *(requires `x-admin-token` when admin token configured)*
 - `GET /api/events` *(requires `x-admin-token` when admin token configured)*
 - `* /sessions/:id/*` *(token-gated reverse proxy to OpenVSCode upstream)*
 

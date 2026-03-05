@@ -109,6 +109,11 @@ async function main() {
     assert(typeof unauthorizedStats.error === 'string', 'stats without admin token should return auth error');
     const unauthorizedEvents = await requestJsonExpect('/api/events', 401, { includeAdminToken: false });
     assert(typeof unauthorizedEvents.error === 'string', 'events without admin token should return auth error');
+    const unauthorizedTimeoutEval = await requestJsonExpect('/api/timeouts/evaluate', 401, {
+      method: 'POST',
+      includeAdminToken: false,
+    });
+    assert(typeof unauthorizedTimeoutEval.error === 'string', 'timeout evaluation without admin token should return auth error');
   }
 
   if (assertOriginBlock) {
