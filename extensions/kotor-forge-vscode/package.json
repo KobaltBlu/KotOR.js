@@ -315,6 +315,16 @@
         "command": "kotorForge.refreshResources",
         "title": "Refresh Resource Tree",
         "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.validateActiveResource",
+        "title": "Validate Active Resource",
+        "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.findResourceReferences",
+        "title": "Find Resource References",
+        "category": "KotOR Forge"
       }
     ],
     "views": {
@@ -360,6 +370,16 @@
           "when": "resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis",
           "command": "kotorForge.openAsToml",
           "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis || resourceExtname == .mdl || resourceExtname == .mdx || resourceExtname == .json",
+          "command": "kotorForge.validateActiveResource",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis || resourceExtname == .mdl || resourceExtname == .mdx || resourceExtname == .nss || resourceExtname == .ncs",
+          "command": "kotorForge.findResourceReferences",
+          "group": "navigation"
         }
       ],
       "view/title": [
@@ -374,7 +394,21 @@
           "group": "navigation"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "kotorForge.validateActiveResource",
+        "key": "ctrl+alt+v",
+        "mac": "cmd+alt+v",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kotorForge.findResourceReferences",
+        "key": "ctrl+alt+f",
+        "mac": "cmd+alt+f",
+        "when": "editorTextFocus"
+      }
+    ]
   },
   "scripts": {
     "clean": "npx -y rimraf ./dist ./server/out ./output",

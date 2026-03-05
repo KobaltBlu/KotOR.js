@@ -9,6 +9,18 @@ import { ResourceTreeProvider } from './views/ResourceTreeProvider';
 import { SessionTreeProvider } from './views/SessionTreeProvider';
 
 const log = createScopedLogger(LogScope.Extension);
+const GFF_LIKE_EXTS = new Set(['.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
+
+function getActiveResourceUri(): vscode.Uri | undefined {
+  const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
+  const input = tab?.input as { uri?: vscode.Uri } | undefined;
+  return input?.uri || vscode.window.activeTextEditor?.document?.uri;
+}
+
+function getResourceExtension(uri?: vscode.Uri): string {
+  if (!uri) return '';
+  return `.${(uri.fsPath.split('.').pop() ?? '').toLowerCase()}`;
+}
 
 function getActiveGameLabel(activeGame: string): string {
   return activeGame === 'tsl' ? 'TSL' : 'K1';
@@ -49,7 +61,9 @@ export function activate(context: vscode.ExtensionContext) {
   refreshStatusBar();
   const sessionTreeProvider = new SessionTreeProvider();
   const resourceTreeProvider = new ResourceTreeProvider();
+  const validationDiagnostics = vscode.languages.createDiagnosticCollection('kotorForgeValidation');
   context.subscriptions.push(
+    validationDiagnostics,
     vscode.window.registerTreeDataProvider('kotorForgeSessions', sessionTreeProvider),
     vscode.window.registerTreeDataProvider('kotorForgeResources', resourceTreeProvider),
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -182,13 +196,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand('kotorForge.openAsXml', async () => {
       log.debug('Command invoked: kotorForge.openAsXml');
-      const gffLikeExts = new Set(['.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
-      const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
-      const input = tab?.input as { uri?: vscode.Uri } | undefined;
-      const uri = input?.uri || vscode.window.activeTextEditor?.document?.uri;
-      const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
+      const uri = getActiveResourceUri();
+      const ext = getResourceExtension(uri);
 
-      if (!uri || !gffLikeExts.has(`.${ext}`)) {
+      if (!uri || !GFF_LIKE_EXTS.has(ext)) {
         vscode.window.showWarningMessage('Open a GFF-based KotOR resource first (.utc/.utp/.are/.dlg/.gff/etc).');
         log.debug('openAsXml: no suitable file active');
         return;
@@ -212,13 +223,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand('kotorForge.openAsYaml', async () => {
       log.debug('Command invoked: kotorForge.openAsYaml');
-      const gffLikeExts = new Set(['.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
-      const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
-      const input = tab?.input as { uri?: vscode.Uri } | undefined;
-      const uri = input?.uri || vscode.window.activeTextEditor?.document?.uri;
-      const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
+      const uri = getActiveResourceUri();
+      const ext = getResourceExtension(uri);
 
-      if (!uri || !gffLikeExts.has(`.${ext}`)) {
+      if (!uri || !GFF_LIKE_EXTS.has(ext)) {
         vscode.window.showWarningMessage('Open a GFF-based KotOR resource first (.utc/.utp/.are/.dlg/.gff/etc).');
         return;
       }
@@ -241,13 +249,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand('kotorForge.openAsToml', async () => {
       log.debug('Command invoked: kotorForge.openAsToml');
-      const gffLikeExts = new Set(['.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
-      const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
-      const input = tab?.input as { uri?: vscode.Uri } | undefined;
-      const uri = input?.uri || vscode.window.activeTextEditor?.document?.uri;
-      const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
+      const uri = getActiveResourceUri();
+      const ext = getResourceExtension(uri);
 
-      if (!uri || !gffLikeExts.has(`.${ext}`)) {
+      if (!uri || !GFF_LIKE_EXTS.has(ext)) {
         vscode.window.showWarningMessage('Open a GFF-based KotOR resource first (.utc/.utp/.are/.dlg/.gff/etc).');
         return;
       }
@@ -270,10 +275,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand('kotorForge.openAsAscii', async () => {
       log.debug('Command invoked: kotorForge.openAsAscii');
-      const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
-      const input = tab?.input as { uri?: vscode.Uri } | undefined;
-      const uri = input?.uri || vscode.window.activeTextEditor?.document?.uri;
-      const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
+      const uri = getActiveResourceUri();
+      const ext = getResourceExtension(uri).replace('.', '');
 
       if (!uri || (ext !== 'mdl' && ext !== 'mdx')) {
         vscode.window.showWarningMessage('Open an MDL/MDX resource first.');
@@ -307,6 +310,106 @@ export function activate(context: vscode.ExtensionContext) {
         log.error(`openAsAscii failed: ${e}`);
         vscode.window.showErrorMessage(`Failed to open as ASCII MDL: ${e instanceof Error ? e.message : String(e)}`);
       }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.validateActiveResource', async () => {
+      log.debug('Command invoked: kotorForge.validateActiveResource');
+      const uri = getActiveResourceUri();
+      const ext = getResourceExtension(uri);
+      if (!uri) {
+        vscode.window.showWarningMessage('Open a KotOR resource first to validate.');
+        return;
+      }
+
+      validationDiagnostics.delete(uri);
+      try {
+        const raw = await vscode.workspace.fs.readFile(uri);
+        if (GFF_LIKE_EXTS.has(ext)) {
+          new GFFObject(new Uint8Array(raw));
+        } else if (ext === '.mdl') {
+          let mdxBytes: Uint8Array | undefined;
+          const mdxUri = uri.with({ path: uri.path.replace(/\.mdl$/i, '.mdx') });
+          try {
+            mdxBytes = await vscode.workspace.fs.readFile(mdxUri);
+          } catch {
+            mdxBytes = undefined;
+          }
+          readMDL(new Uint8Array(raw), { mdxBuffer: mdxBytes ? new Uint8Array(mdxBytes) : undefined });
+        } else if (ext === '.json') {
+          JSON.parse(new TextDecoder().decode(raw));
+        }
+
+        vscode.window.showInformationMessage(`Validation succeeded for ${uri.path.split('/').pop() || uri.toString()}.`);
+        log.info(`validateActiveResource: validation succeeded for ${uri.toString()}`);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        const diagnostic = new vscode.Diagnostic(
+          new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+          `KotOR resource validation failed: ${message}`,
+          vscode.DiagnosticSeverity.Error
+        );
+        validationDiagnostics.set(uri, [diagnostic]);
+        vscode.window.showErrorMessage(`Validation failed: ${message}`);
+        log.error(`validateActiveResource failed for ${uri.toString()}: ${message}`);
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.findResourceReferences', async () => {
+      log.debug('Command invoked: kotorForge.findResourceReferences');
+      const uri = getActiveResourceUri();
+      if (!uri) {
+        vscode.window.showWarningMessage('Open a resource first to search references.');
+        return;
+      }
+
+      const fileName = uri.path.split('/').pop() || '';
+      const resref = fileName.split('.').slice(0, -1).join('.') || fileName;
+      if (!resref) {
+        vscode.window.showWarningMessage('Unable to derive resource name for reference search.');
+        return;
+      }
+
+      const matches: Array<{ uri: vscode.Uri; range: vscode.Range; preview: string }> = [];
+      await vscode.workspace.findTextInFiles(
+        { pattern: resref, isRegExp: false, isCaseSensitive: false },
+        {
+          include: '**/*.{nss,ncs,dlg,2da,utc,utd,ute,uti,utm,utp,uts,utt,utw,are,git,ifo,jrl,res,gff,txt,json,xml,yaml,yml,toml}',
+          exclude: '**/{node_modules,.git,dist,build,.next,.cache}/**',
+          maxResults: 200,
+        },
+        (result) => {
+          if (result instanceof vscode.TextSearchMatch) {
+            const firstRange = Array.isArray(result.ranges) ? result.ranges[0] : result.ranges;
+            matches.push({
+              uri: result.uri,
+              range: firstRange,
+              preview: result.preview.text.trim(),
+            });
+          }
+        }
+      );
+
+      if (!matches.length) {
+        vscode.window.showInformationMessage(`No references found for "${resref}".`);
+        return;
+      }
+
+      const picks = matches.map((match, index) => ({
+        label: `${index + 1}. ${vscode.workspace.asRelativePath(match.uri)}:${match.range.start.line + 1}`,
+        description: match.preview,
+        match,
+      }));
+      const selected = await vscode.window.showQuickPick(picks, {
+        title: `References for "${resref}"`,
+        placeHolder: `Found ${matches.length} references`,
+      });
+
+      if (!selected) return;
+
+      const document = await vscode.workspace.openTextDocument(selected.match.uri);
+      const editor = await vscode.window.showTextDocument(document, { preview: false });
+      editor.selection = new vscode.Selection(selected.match.range.start, selected.match.range.end);
+      editor.revealRange(selected.match.range, vscode.TextEditorRevealType.InCenter);
     })
   );
   log.trace('Extension commands registered');
