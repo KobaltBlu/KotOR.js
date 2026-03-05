@@ -5,6 +5,7 @@ import { bytesMDL, readMDL } from '@kotor/resource/MDLAuto';
 import { getLogger, setExtensionLogger, LogScope, createScopedLogger } from './logger';
 import { activateLsp, deactivateLsp } from './lsp/client';
 import { KotorForgeProvider } from './providers/KotorForgeProvider';
+import { ResourceTreeProvider } from './views/ResourceTreeProvider';
 import { SessionTreeProvider } from './views/SessionTreeProvider';
 
 const log = createScopedLogger(LogScope.Extension);
@@ -47,11 +48,16 @@ export function activate(context: vscode.ExtensionContext) {
   };
   refreshStatusBar();
   const sessionTreeProvider = new SessionTreeProvider();
+  const resourceTreeProvider = new ResourceTreeProvider();
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider('kotorForgeSessions', sessionTreeProvider),
+    vscode.window.registerTreeDataProvider('kotorForgeResources', resourceTreeProvider),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('kotorForge.sessionManagerUrl')) {
         sessionTreeProvider.refresh();
+      }
+      if (e.affectsConfiguration('files.exclude')) {
+        resourceTreeProvider.refresh();
       }
     })
   );
@@ -146,6 +152,11 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('kotorForge.refreshSessions', () => {
       log.debug('Command invoked: kotorForge.refreshSessions');
       sessionTreeProvider.refresh();
+    }),
+
+    vscode.commands.registerCommand('kotorForge.refreshResources', () => {
+      log.debug('Command invoked: kotorForge.refreshResources');
+      resourceTreeProvider.refresh();
     }),
 
     vscode.commands.registerCommand('kotorForge.openAsJson', async () => {

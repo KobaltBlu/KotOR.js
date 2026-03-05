@@ -310,10 +310,19 @@
         "command": "kotorForge.openAsToml",
         "title": "Open as TOML",
         "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.refreshResources",
+        "title": "Refresh Resource Tree",
+        "category": "KotOR Forge"
       }
     ],
     "views": {
       "explorer": [
+        {
+          "id": "kotorForgeResources",
+          "name": "KotOR Forge Resources"
+        },
         {
           "id": "kotorForgeSessions",
           "name": "KotOR Forge Sessions"
@@ -357,6 +366,11 @@
         {
           "when": "view == kotorForgeSessions",
           "command": "kotorForge.refreshSessions",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeResources",
+          "command": "kotorForge.refreshResources",
           "group": "navigation"
         }
       ]
