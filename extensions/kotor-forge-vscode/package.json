@@ -516,17 +516,17 @@
       ],
       "view/item/context": [
         {
-          "when": "view == kotorForgeSessions && viewItem == kotorForge.session",
+          "when": "view == kotorForgeSessions && viewItem == kotorForge.session.access",
           "command": "kotorForge.openHostedSession",
           "group": "navigation"
         },
         {
-          "when": "view == kotorForgeSessions && viewItem == kotorForge.session",
+          "when": "view == kotorForgeSessions && (viewItem == kotorForge.session || viewItem == kotorForge.session.access)",
           "command": "kotorForge.closeHostedSession",
           "group": "navigation"
         },
         {
-          "when": "view == kotorForgeSessions && viewItem == kotorForge.session",
+          "when": "view == kotorForgeSessions && viewItem == kotorForge.session.access",
           "command": "kotorForge.copyHostedSessionUrl",
           "group": "navigation"
         }

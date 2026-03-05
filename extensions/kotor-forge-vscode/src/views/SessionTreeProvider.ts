@@ -8,6 +8,8 @@ export interface SessionTreeNode {
   containerStatus?: string;
   token?: string;
   accessUrl?: string;
+  containerUpstreamUrl?: string;
+  containerError?: string;
   warningInMs?: number;
   expiresInMs?: number;
 }
@@ -40,16 +42,20 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeN
     item.id = element.id;
     const container = element.containerStatus || 'unknown';
     item.description = `${element.status}/${container} • ${expires}`;
-    item.tooltip = `Session ${element.id}\nStatus: ${element.status}\nContainer: ${container}\nUser: ${element.userId}\nWarning in: ${warning}\nExpires in: ${expires}`;
-    item.contextValue = 'kotorForge.session';
-    item.iconPath = element.status === 'warning'
+    const upstream = element.containerUpstreamUrl || '(n/a)';
+    const failure = element.containerError || '(none)';
+    item.tooltip = `Session ${element.id}\nStatus: ${element.status}\nContainer: ${container}\nUser: ${element.userId}\nWarning in: ${warning}\nExpires in: ${expires}\nUpstream: ${upstream}\nContainer error: ${failure}`;
+    item.contextValue = element.accessUrl ? 'kotorForge.session.access' : 'kotorForge.session';
+    item.iconPath = container === 'failed'
+      ? new vscode.ThemeIcon('error')
+      : element.status === 'warning'
       ? new vscode.ThemeIcon('warning')
       : (container === 'ready' ? new vscode.ThemeIcon('vm-active') : new vscode.ThemeIcon('vm'));
     if (element.accessUrl) {
       item.command = {
         command: 'kotorForge.openHostedSession',
         title: 'Open Hosted Session',
-        arguments: [element.accessUrl],
+        arguments: [{ id: element.id, accessUrl: element.accessUrl }],
       };
     }
     return item;
