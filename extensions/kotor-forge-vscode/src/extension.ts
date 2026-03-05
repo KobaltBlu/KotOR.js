@@ -658,6 +658,13 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
+    vscode.commands.registerCommand('kotorForge.clearValidationDiagnostics', () => {
+      log.debug('Command invoked: kotorForge.clearValidationDiagnostics');
+      validationDiagnostics.clear();
+      vscode.window.showInformationMessage('KotOR resource validation diagnostics cleared.');
+      log.info('clearValidationDiagnostics: diagnostic collection cleared');
+    }),
+
     vscode.commands.registerCommand('kotorForge.findResourceReferences', async () => {
       log.debug('Command invoked: kotorForge.findResourceReferences');
       const uri = getActiveResourceUri();

@@ -347,6 +347,11 @@
         "category": "KotOR Forge"
       },
       {
+        "command": "kotorForge.clearValidationDiagnostics",
+        "title": "Clear Validation Diagnostics",
+        "category": "KotOR Forge"
+      },
+      {
         "command": "kotorForge.findResourceReferences",
         "title": "Find Resource References",
         "category": "KotOR Forge"
@@ -471,6 +476,11 @@
         {
           "when": "view == kotorForgeResources",
           "command": "kotorForge.validateWorkspaceResources",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeResources",
+          "command": "kotorForge.clearValidationDiagnostics",
           "group": "navigation"
         }
       ],
