@@ -27,6 +27,13 @@ import * as vscode from 'vscode';
 // ---------------------------------------------------------------------------
 
 const noop = (..._args: unknown[]) => {};
+const LOG_LEVEL_LOOKUP: Record<string, vscode.LogLevel> = {
+  trace: vscode.LogLevel.Trace,
+  debug: vscode.LogLevel.Debug,
+  info: vscode.LogLevel.Info,
+  warn: vscode.LogLevel.Warning,
+  error: vscode.LogLevel.Error,
+};
 
 function makeNoopChannel(): vscode.LogOutputChannel {
   return {
@@ -54,6 +61,26 @@ function makeNoopChannel(): vscode.LogOutputChannel {
 
 let extensionChannel: vscode.LogOutputChannel | undefined;
 const noopChannel = makeNoopChannel();
+let configuredLogLevel: vscode.LogLevel = vscode.LogLevel.Info;
+
+function shouldLog(level: vscode.LogLevel): boolean {
+  return level >= configuredLogLevel;
+}
+
+export function setConfiguredLogLevel(level: string | vscode.LogLevel): vscode.LogLevel {
+  if (typeof level === 'string') {
+    const normalized = level.trim().toLowerCase();
+    configuredLogLevel = LOG_LEVEL_LOOKUP[normalized] ?? vscode.LogLevel.Info;
+    return configuredLogLevel;
+  }
+
+  configuredLogLevel = level;
+  return configuredLogLevel;
+}
+
+export function getConfiguredLogLevel(): vscode.LogLevel {
+  return configuredLogLevel;
+}
 
 /**
  * Set the extension's log output channel. Called once during activation.
@@ -123,11 +150,26 @@ export function createScopedLogger(scope: string) {
     get onDidChangeLogLevel() { return ch().onDidChangeLogLevel; },
 
     // ---- log level methods (all 5 from trace→error) ----
-    trace: (msg: string, ...args: unknown[]) => ch().trace(`${scope} ${msg}`, ...args),
-    debug: (msg: string, ...args: unknown[]) => ch().debug(`${scope} ${msg}`, ...args),
-    info:  (msg: string, ...args: unknown[]) => ch().info(`${scope} ${msg}`, ...args),
-    warn:  (msg: string, ...args: unknown[]) => ch().warn(`${scope} ${msg}`, ...args),
-    error: (msg: string | Error, ...args: unknown[]) => ch().error(`${scope} ${msg}`, ...args),
+    trace: (msg: string, ...args: unknown[]) => {
+      if (!shouldLog(vscode.LogLevel.Trace)) return;
+      ch().trace(`${scope} ${msg}`, ...args);
+    },
+    debug: (msg: string, ...args: unknown[]) => {
+      if (!shouldLog(vscode.LogLevel.Debug)) return;
+      ch().debug(`${scope} ${msg}`, ...args);
+    },
+    info:  (msg: string, ...args: unknown[]) => {
+      if (!shouldLog(vscode.LogLevel.Info)) return;
+      ch().info(`${scope} ${msg}`, ...args);
+    },
+    warn:  (msg: string, ...args: unknown[]) => {
+      if (!shouldLog(vscode.LogLevel.Warning)) return;
+      ch().warn(`${scope} ${msg}`, ...args);
+    },
+    error: (msg: string | Error, ...args: unknown[]) => {
+      if (!shouldLog(vscode.LogLevel.Error)) return;
+      ch().error(`${scope} ${msg}`, ...args);
+    },
 
     // ---- raw output (unfiltered) ----
     append:     (value: string) => ch().append(value),

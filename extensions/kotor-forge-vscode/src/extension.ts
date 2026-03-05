@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { GFFObject } from '@kotor/resource/GFFObject';
 import { bytesMDL, readMDL } from '@kotor/resource/MDLAuto';
-import { getLogger, setExtensionLogger, LogScope, createScopedLogger } from './logger';
+import { getLogger, setExtensionLogger, setConfiguredLogLevel, LogScope, createScopedLogger } from './logger';
 import { activateLsp, deactivateLsp } from './lsp/client';
 import { KotorForgeProvider } from './providers/KotorForgeProvider';
 import { ResourceTreeProvider } from './views/ResourceTreeProvider';
@@ -90,6 +90,13 @@ export function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel('Forge-KotOR.js', { log: true });
   context.subscriptions.push(outputChannel);
   setExtensionLogger(outputChannel);
+  const refreshConfiguredLogLevel = () => {
+    const cfg = vscode.workspace.getConfiguration('kotorForge');
+    const configured = cfg.get<string>('logLevel', 'info');
+    const resolved = setConfiguredLogLevel(configured);
+    outputChannel.info(`[Logger] Configured minimum level: ${vscode.LogLevel[resolved]} (${configured})`);
+  };
+  refreshConfiguredLogLevel();
 
   log.info('KotOR Forge extension is now active');
   log.debug(`Extension extensionPath: ${context.extensionPath}`);
@@ -171,6 +178,9 @@ export function activate(context: vscode.ExtensionContext) {
         || e.affectsConfiguration('kotorForge.kotorPath')
         || e.affectsConfiguration('kotorForge.tslPath')) {
         refreshStatusBar();
+      }
+      if (e.affectsConfiguration('kotorForge.logLevel')) {
+        refreshConfiguredLogLevel();
       }
     })
   );
