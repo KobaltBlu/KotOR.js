@@ -13,6 +13,8 @@ export interface SettingsData {
   gffSpecializedEditors: boolean;
   scriptEditorFontSize: number;
   autoSave: boolean;
+  autoSaveIntervalMs: number;
+  autoSaveSnapshots: boolean;
 
   // Updates
   checkForUpdatesOnStartup: boolean;
@@ -45,6 +47,8 @@ export class ModalSettingsState extends ModalState {
       gffSpecializedEditors: config.get('Editor.GFF.UseSpecialized', true) as boolean,
       scriptEditorFontSize: config.get('Editor.Script.FontSize', 14) as number,
       autoSave: config.get('Editor.AutoSave', false) as boolean,
+      autoSaveIntervalMs: config.get('Editor.AutoSaveIntervalMs', 30000) as number,
+      autoSaveSnapshots: config.get('Editor.AutoSaveSnapshots', true) as boolean,
       checkForUpdatesOnStartup: config.get('Updates.CheckOnStartup', false) as boolean,
       useBetaChannel: config.get('Updates.UseBetaChannel', false) as boolean,
       theme: config.get('Appearance.Theme', 'dark') as string,
@@ -58,6 +62,8 @@ export class ModalSettingsState extends ModalState {
     config.set('Editor.GFF.UseSpecialized', this.settings.gffSpecializedEditors);
     config.set('Editor.Script.FontSize', this.settings.scriptEditorFontSize);
     config.set('Editor.AutoSave', this.settings.autoSave);
+    config.set('Editor.AutoSaveIntervalMs', this.settings.autoSaveIntervalMs);
+    config.set('Editor.AutoSaveSnapshots', this.settings.autoSaveSnapshots);
     config.set('Updates.CheckOnStartup', this.settings.checkForUpdatesOnStartup);
     config.set('Updates.UseBetaChannel', this.settings.useBetaChannel);
     config.set('Appearance.Theme', this.settings.theme);

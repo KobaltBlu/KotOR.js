@@ -6,6 +6,7 @@ import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFile
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import * as KotOR from '@/apps/forge/KotOR';
+import { AutosaveManager } from "@/apps/forge/managers/AutosaveManager";
 import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
 import { Project } from "@/apps/forge/Project";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
@@ -32,6 +33,7 @@ export class ForgeState {
   static recentFiles: EditorFile[] = [];
   static recentProjects: RecentProject[] = [];
   static hostAdapter?: IForgeHostAdapter;
+  static autosaveManager: AutosaveManager = new AutosaveManager(() => ForgeState.tabManager);
 
   static #eventListeners: any = {};
 
@@ -200,6 +202,7 @@ export class ForgeState {
         ForgeState.explorerTabManager.addTab(ForgeState.resourceExplorerTab);
         ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
         ForgeState.resourceExplorerTab.show();
+        ForgeState.autosaveManager.start();
 
         TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
           ForgeState.loaderHide();
@@ -565,5 +568,14 @@ export class ForgeState {
 
 window.addEventListener('beforeunload', (event) => { 
   console.log('Saving Editor Config');
+  try{
+    ForgeState.autosaveManager.stop();
+    const currentTab = ForgeState.tabManager.currentTab;
+    if(currentTab){
+      void ForgeState.autosaveManager.captureSnapshot(currentTab);
+    }
+  }catch(e){
+    console.warn('Failed to persist autosave snapshot on unload', e);
+  }
   ForgeState.saveOpenTabsState();
 });

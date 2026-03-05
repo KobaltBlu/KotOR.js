@@ -171,6 +171,32 @@ export const ModalSettings: React.FC<BaseModalProps> = (props) => {
                 </div>
 
                 <div className="form-group">
+                  <label>Auto-save Interval (ms)</label>
+                  <input
+                    title="Auto-save interval"
+                    placeholder="30000"
+                    type="number"
+                    value={settings.autoSaveIntervalMs}
+                    onChange={(e) => modal.updateSetting('autoSaveIntervalMs', Math.max(5000, parseInt(e.target.value) || 30000))}
+                    min="5000"
+                    step="1000"
+                  />
+                  <small>Interval used by the autosave scheduler while files have unsaved changes</small>
+                </div>
+
+                <div className="form-group">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={settings.autoSaveSnapshots}
+                      onChange={(e) => modal.updateSetting('autoSaveSnapshots', e.target.checked)}
+                    />
+                    Store autosave crash snapshots
+                  </label>
+                  <small>Persist temporary snapshots locally so unsaved data can be recovered after unexpected reloads</small>
+                </div>
+
+                <div className="form-group">
                   <label>Script Editor Font Size</label>
                   <input
                     title="Script Editor Font Size"
