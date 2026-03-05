@@ -25,10 +25,10 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - `GET /api/config`
 - `POST /api/sessions`
 - `GET /api/sessions`
-- `GET /api/sessions/:id`
-- `POST /api/sessions/:id/heartbeat`
-- `POST /api/sessions/:id/save-complete`
-- `DELETE /api/sessions/:id`
+- `GET /api/sessions/:id` *(requires `x-session-token`)*
+- `POST /api/sessions/:id/heartbeat` *(requires `x-session-token`)*
+- `POST /api/sessions/:id/save-complete` *(requires `x-session-token`)*
+- `DELETE /api/sessions/:id` *(requires `x-session-token`)*
 - `POST /api/timeouts/evaluate`
 - `GET /api/events`
 
@@ -36,6 +36,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 
 - Workspace directories are persisted under `data/workspaces/<sessionId>` (not tmpfs).
 - Session metadata is persisted under `data/sessions/<sessionId>.json`.
+- Session creation returns a per-session token used to authorize sensitive operations.
 - This service is intentionally orchestration-focused; container launch/proxy wiring can be layered on top in the next phase.
 
 ## Local compose stack

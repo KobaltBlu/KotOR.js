@@ -22,7 +22,7 @@ export const LauncherConfig: LauncherProfile = {
     "url": "http://127.0.0.1:18080",
     "sessionManagerUrl": "http://127.0.0.1:8090",
     "openVSCodeBaseUrl": "http://127.0.0.1:18080",
-    "sessionUrlTemplate": "{openVSCodeBaseUrl}/?sessionId={sessionId}&game={game}",
+    "sessionUrlTemplate": "{openVSCodeBaseUrl}/?sessionId={sessionId}&sessionToken={sessionToken}&game={game}",
     "promptMessage": "OpenVSCode (beta) launches a hosted Forge editor session. Continue?"
   },
   "elements": [

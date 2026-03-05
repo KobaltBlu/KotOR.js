@@ -73,6 +73,7 @@ function buildHostedSessionUrl(session: SessionCreateResponse | null, options: O
   if (session && options.sessionUrlTemplate) {
     const templated = fillTemplate(options.sessionUrlTemplate, {
       sessionId: String(session.id),
+      sessionToken: String((session as any).token || ''),
       game,
       openVSCodeBaseUrl,
     });
@@ -82,6 +83,9 @@ function buildHostedSessionUrl(session: SessionCreateResponse | null, options: O
   if (session) {
     const parsed = new URL(openVSCodeBaseUrl, window.location.origin);
     parsed.searchParams.set("sessionId", String(session.id));
+    if ((session as any).token) {
+      parsed.searchParams.set("sessionToken", String((session as any).token));
+    }
     parsed.searchParams.set("game", game);
     return parsed.toString();
   }

@@ -5,10 +5,17 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function requestJson(path, { method = 'GET', body } = {}) {
+async function requestJson(path, { method = 'GET', body, token } = {}) {
+  const headers = {};
+  if (body) {
+    headers['content-type'] = 'application/json';
+  }
+  if (token) {
+    headers['x-session-token'] = token;
+  }
   const response = await fetch(`${sessionBaseUrl}${path}`, {
     method,
-    headers: body ? { 'content-type': 'application/json' } : undefined,
+    headers: Object.keys(headers).length ? headers : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
   const payload = await response.json();
@@ -43,9 +50,11 @@ async function main() {
     body: { userId: 'ci-user', game: 'kotor' },
   });
   const sessionId = session.id;
+  const sessionToken = session.token;
   assert(typeof sessionId === 'string' && sessionId.length > 0, 'session id should be returned');
+  assert(typeof sessionToken === 'string' && sessionToken.length > 0, 'session token should be returned');
 
-  await requestJson(`/api/sessions/${sessionId}/heartbeat`, { method: 'POST' });
+  await requestJson(`/api/sessions/${sessionId}/heartbeat`, { method: 'POST', token: sessionToken });
 
   // warning window
   await sleep(1300);
@@ -63,17 +72,17 @@ async function main() {
     'save request event should be emitted at expiry'
   );
 
-  const sessionAfterSaveRequest = await requestJson(`/api/sessions/${sessionId}`);
+  const sessionAfterSaveRequest = await requestJson(`/api/sessions/${sessionId}`, { token: sessionToken });
   assert(sessionAfterSaveRequest.status === 'saving', 'session should remain in saving state before save-complete');
 
-  await requestJson(`/api/sessions/${sessionId}/save-complete`, { method: 'POST' });
+  await requestJson(`/api/sessions/${sessionId}/save-complete`, { method: 'POST', token: sessionToken });
   const expiredEval = await requestJson('/api/timeouts/evaluate', { method: 'POST' });
   assert(
     Array.isArray(expiredEval.events) && expiredEval.events.some((event) => event.type === 'session_expired' && event.sessionId === sessionId),
     'session should expire only after save-complete'
   );
 
-  const finalSession = await requestJson(`/api/sessions/${sessionId}`);
+  const finalSession = await requestJson(`/api/sessions/${sessionId}`, { token: sessionToken });
   assert(finalSession.status === 'expired', 'session status should be expired at end of lifecycle');
 
   console.log('[e2e] session manager lifecycle checks passed');

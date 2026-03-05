@@ -6,6 +6,7 @@ export type SessionStatus = 'active' | 'warning' | 'saving' | 'expired' | 'close
 
 export interface ForgeSession {
   id: string;
+  token: string;
   userId: string;
   game: 'kotor' | 'tsl';
   createdAt: number;
@@ -78,6 +79,7 @@ export class SessionManagerCore {
 
     const session: ForgeSession = {
       id,
+      token: randomUUID().replace(/-/g, ''),
       userId,
       game,
       createdAt: now,
@@ -94,15 +96,15 @@ export class SessionManagerCore {
     return session;
   }
 
-  heartbeat(sessionId: string, now = Date.now()): ForgeSession {
-    const session = this.requireSession(sessionId);
+  heartbeat(sessionId: string, token: string, now = Date.now()): ForgeSession {
+    const session = this.requireAuthorizedSession(sessionId, token);
     session.lastHeartbeatAt = now;
     this.persistSession(session);
     return session;
   }
 
-  markSaveCompleted(sessionId: string, now = Date.now()): ForgeSession {
-    const session = this.requireSession(sessionId);
+  markSaveCompleted(sessionId: string, token: string, now = Date.now()): ForgeSession {
+    const session = this.requireAuthorizedSession(sessionId, token);
     session.saveCompletedAt = now;
     if (session.status === 'saving') {
       session.status = 'warning';
@@ -111,12 +113,16 @@ export class SessionManagerCore {
     return session;
   }
 
-  closeSession(sessionId: string, now = Date.now()): ForgeSession {
-    const session = this.requireSession(sessionId);
+  closeSession(sessionId: string, token: string, now = Date.now()): ForgeSession {
+    const session = this.requireAuthorizedSession(sessionId, token);
     session.status = 'closed';
     this.appendEvent({ type: 'session_closed', at: now, sessionId });
     this.persistSession(session);
     return session;
+  }
+
+  getAuthorizedSession(sessionId: string, token: string): ForgeSession {
+    return this.requireAuthorizedSession(sessionId, token);
   }
 
   /**
@@ -184,6 +190,14 @@ export class SessionManagerCore {
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new Error(`Session not found: ${sessionId}`);
+    }
+    return session;
+  }
+
+  private requireAuthorizedSession(sessionId: string, token: string): ForgeSession {
+    const session = this.requireSession(sessionId);
+    if (!token || token !== session.token) {
+      throw new Error(`Unauthorized session token for session ${sessionId}`);
     }
     return session;
   }

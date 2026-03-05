@@ -38,9 +38,36 @@ function parseSessionId(urlPath: string): string | null {
   return parts[sessionsIndex + 1];
 }
 
-function sessionResponse(session: ForgeSession): Record<string, unknown> {
+function readSessionToken(req: http.IncomingMessage, url: URL): string | undefined {
+  const fromHeader = req.headers['x-session-token'];
+  if (typeof fromHeader === 'string' && fromHeader.trim().length > 0) {
+    return fromHeader.trim();
+  }
+  const fromQuery = url.searchParams.get('token');
+  if (fromQuery && fromQuery.trim().length > 0) {
+    return fromQuery.trim();
+  }
+  return undefined;
+}
+
+function sessionResponse(session: ForgeSession, includeToken = false): Record<string, unknown> {
+  const base = {
+    id: session.id,
+    userId: session.userId,
+    game: session.game,
+    createdAt: session.createdAt,
+    lastHeartbeatAt: session.lastHeartbeatAt,
+    warningAt: session.warningAt,
+    expiresAt: session.expiresAt,
+    workspacePath: session.workspacePath,
+    status: session.status,
+    warningSentAt: session.warningSentAt,
+    saveRequestedAt: session.saveRequestedAt,
+    saveCompletedAt: session.saveCompletedAt,
+  };
   return {
-    ...session,
+    ...base,
+    ...(includeToken ? { token: session.token } : {}),
     warningInMs: Math.max(0, session.warningAt - Date.now()),
     expiresInMs: Math.max(0, session.expiresAt - Date.now()),
   };
@@ -71,12 +98,12 @@ const server = http.createServer(async (req, res) => {
       const userId = String(body.userId || 'anonymous');
       const game = body.game === 'tsl' ? 'tsl' : 'kotor';
       const session = manager.createSession(userId, game);
-      writeJson(res, 201, sessionResponse(session));
+      writeJson(res, 201, sessionResponse(session, true));
       return;
     }
 
     if (method === 'GET' && pathname === '/api/sessions') {
-      writeJson(res, 200, manager.listSessions().map(sessionResponse));
+      writeJson(res, 200, manager.listSessions().map((session) => sessionResponse(session)));
       return;
     }
 
@@ -88,7 +115,12 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (method === 'GET') {
-        const session = manager.getSession(sessionId);
+        const token = readSessionToken(req, url);
+        if (!token) {
+          writeJson(res, 401, { error: 'Missing session token' });
+          return;
+        }
+        const session = manager.getAuthorizedSession(sessionId, token);
         if (!session) {
           writeJson(res, 404, { error: 'Session not found' });
           return;
@@ -98,19 +130,34 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (method === 'DELETE') {
-        const session = manager.closeSession(sessionId);
+        const token = readSessionToken(req, url);
+        if (!token) {
+          writeJson(res, 401, { error: 'Missing session token' });
+          return;
+        }
+        const session = manager.closeSession(sessionId, token);
         writeJson(res, 200, sessionResponse(session));
         return;
       }
 
       if (method === 'POST' && pathname.endsWith('/heartbeat')) {
-        const session = manager.heartbeat(sessionId);
+        const token = readSessionToken(req, url);
+        if (!token) {
+          writeJson(res, 401, { error: 'Missing session token' });
+          return;
+        }
+        const session = manager.heartbeat(sessionId, token);
         writeJson(res, 200, sessionResponse(session));
         return;
       }
 
       if (method === 'POST' && pathname.endsWith('/save-complete')) {
-        const session = manager.markSaveCompleted(sessionId);
+        const token = readSessionToken(req, url);
+        if (!token) {
+          writeJson(res, 401, { error: 'Missing session token' });
+          return;
+        }
+        const session = manager.markSaveCompleted(sessionId, token);
         writeJson(res, 200, sessionResponse(session));
         return;
       }
@@ -129,7 +176,12 @@ const server = http.createServer(async (req, res) => {
 
     writeJson(res, 404, { error: 'Not found' });
   } catch (error) {
-    writeJson(res, 500, { error: String(error) });
+    const message = String(error);
+    if (message.includes('Unauthorized session token')) {
+      writeJson(res, 401, { error: message });
+      return;
+    }
+    writeJson(res, 500, { error: message });
   }
 });
 

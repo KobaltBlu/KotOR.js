@@ -30,7 +30,7 @@ describe('SessionManagerCore', () => {
     expect(stillSavingEvents.some((event) => event.type === 'session_expired')).toBe(false);
     expect(manager.getSession(session.id)?.status).toBe('saving');
 
-    manager.markSaveCompleted(session.id, start + 1_200);
+    manager.markSaveCompleted(session.id, session.token, start + 1_200);
     const expiredEvents = manager.evaluateTimeouts(start + 1_250);
     expect(expiredEvents.some((event) => event.type === 'session_expired' && event.sessionId === session.id)).toBe(true);
     expect(manager.getSession(session.id)?.status).toBe('expired');
@@ -47,5 +47,21 @@ describe('SessionManagerCore', () => {
 
     manager.createSession('user-1', 'kotor', 1);
     expect(() => manager.createSession('user-2', 'tsl', 2)).toThrow('Session capacity reached');
+  });
+
+  it('requires matching session token for mutating actions', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-session-manager-'));
+    const manager = new SessionManagerCore({
+      dataRoot: tempRoot,
+      maxSessions: 2,
+      sessionTtlMs: 10_000,
+      warningLeadMs: 2_000,
+    });
+
+    const session = manager.createSession('user-1', 'kotor', 100);
+    expect(() => manager.heartbeat(session.id, 'bad-token', 200)).toThrow('Unauthorized session token');
+    expect(() => manager.closeSession(session.id, 'bad-token', 300)).toThrow('Unauthorized session token');
+
+    expect(manager.heartbeat(session.id, session.token, 200).lastHeartbeatAt).toBe(200);
   });
 });
