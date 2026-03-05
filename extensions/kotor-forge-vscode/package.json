@@ -199,6 +199,11 @@
           "default": "info",
           "description": "Minimum log level for the Forge-KotOR.js output channel (Trace = most verbose, Error = only errors). You can also change the level from the dropdown in the Output panel when viewing 'Forge-KotOR.js'."
         },
+        "kotorForge.sessionManagerUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8090",
+          "description": "Base URL for the Forge OpenVSCode session manager service."
+        },
         "kotorForge.nwscript.maxNumberOfProblems": {
           "scope": "resource",
           "type": "number",
@@ -290,8 +295,21 @@
         "command": "kotorForge.openAsAscii",
         "title": "Open as ASCII",
         "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.refreshSessions",
+        "title": "Refresh Sessions",
+        "category": "KotOR Forge"
       }
     ],
+    "views": {
+      "explorer": [
+        {
+          "id": "kotorForgeSessions",
+          "name": "KotOR Forge Sessions"
+        }
+      ]
+    },
     "menus": {
       "editor/context": [
         {
@@ -312,6 +330,13 @@
         {
           "when": "resourceExtname == .mdl || resourceExtname == .mdx",
           "command": "kotorForge.openAsAscii",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "when": "view == kotorForgeSessions",
+          "command": "kotorForge.refreshSessions",
           "group": "navigation"
         }
       ]

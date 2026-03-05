@@ -5,6 +5,7 @@ import { bytesMDL, readMDL } from '@kotor/resource/MDLAuto';
 import { getLogger, setExtensionLogger, LogScope, createScopedLogger } from './logger';
 import { activateLsp, deactivateLsp } from './lsp/client';
 import { KotorForgeProvider } from './providers/KotorForgeProvider';
+import { SessionTreeProvider } from './views/SessionTreeProvider';
 
 const log = createScopedLogger(LogScope.Extension);
 
@@ -45,6 +46,15 @@ export function activate(context: vscode.ExtensionContext) {
     log.trace(`Status bar refreshed activeGame=${activeGame}`);
   };
   refreshStatusBar();
+  const sessionTreeProvider = new SessionTreeProvider();
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider('kotorForgeSessions', sessionTreeProvider),
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('kotorForge.sessionManagerUrl')) {
+        sessionTreeProvider.refresh();
+      }
+    })
+  );
   context.subscriptions.push(
     statusBarItem,
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -131,6 +141,11 @@ export function activate(context: vscode.ExtensionContext) {
       refreshStatusBar();
       vscode.window.showInformationMessage(`KotOR Forge active game set to ${selection.label}`);
       log.info(`Active game switched to ${selection.value}`);
+    }),
+
+    vscode.commands.registerCommand('kotorForge.refreshSessions', () => {
+      log.debug('Command invoked: kotorForge.refreshSessions');
+      sessionTreeProvider.refresh();
     }),
 
     vscode.commands.registerCommand('kotorForge.openAsJson', async () => {
