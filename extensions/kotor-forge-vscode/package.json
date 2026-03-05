@@ -327,6 +327,11 @@
         "category": "KotOR Forge"
       },
       {
+        "command": "kotorForge.compareWithSaved",
+        "title": "Compare with Saved",
+        "category": "KotOR Forge"
+      },
+      {
         "command": "kotorForge.refreshResources",
         "title": "Refresh Resource Tree",
         "category": "KotOR Forge"
@@ -420,6 +425,11 @@
           "when": "resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis || resourceExtname == .mdl || resourceExtname == .mdx || resourceExtname == .nss || resourceExtname == .ncs",
           "command": "kotorForge.findResourceReferences",
           "group": "navigation"
+        },
+        {
+          "when": "editorTextFocus",
+          "command": "kotorForge.compareWithSaved",
+          "group": "navigation"
         }
       ],
       "view/title": [
@@ -489,6 +499,12 @@
         "command": "kotorForge.validateWorkspaceResources",
         "key": "ctrl+alt+shift+v",
         "mac": "cmd+alt+shift+v",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kotorForge.compareWithSaved",
+        "key": "ctrl+alt+shift+c",
+        "mac": "cmd+alt+shift+c",
         "when": "editorTextFocus"
       }
     ]
