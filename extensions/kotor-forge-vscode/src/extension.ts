@@ -462,6 +462,43 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
+    vscode.commands.registerCommand('kotorForge.showSessionManagerEvents', async () => {
+      log.debug('Command invoked: kotorForge.showSessionManagerEvents');
+      const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      const confirmed = await vscode.window.showWarningMessage(
+        'Fetch and drain session manager event queue?',
+        { modal: true },
+        'Drain Events'
+      );
+      if (confirmed !== 'Drain Events') {
+        return;
+      }
+
+      try {
+        const payload = await fetchSessionManagerResource(
+          sessionManagerUrl,
+          '/api/events',
+          adminToken
+        ) as { events?: unknown[] };
+        const events = Array.isArray(payload.events) ? payload.events : [];
+        const doc = await vscode.workspace.openTextDocument({
+          content: JSON.stringify(events, null, 2),
+          language: 'json',
+        });
+        await vscode.window.showTextDocument(doc, { preview: false });
+        log.info(`[session-events] opened drained event payload (${events.length} event(s))`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to fetch session manager events: ${message}`);
+        log.error(`showSessionManagerEvents failed: ${message}`);
+      }
+    }),
+
     vscode.commands.registerCommand('kotorForge.openHostedSession', async (value?: string | { accessUrl?: string }) => {
       log.debug('Command invoked: kotorForge.openHostedSession');
       const accessUrl = typeof value === 'string'
