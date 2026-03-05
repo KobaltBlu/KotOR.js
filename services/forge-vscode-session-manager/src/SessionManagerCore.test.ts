@@ -188,4 +188,27 @@ describe('SessionManagerCore', () => {
     expect(pruneEvents.some((event) => event.type === 'session_pruned' && event.sessionId === session.id)).toBe(true);
     expect(manager.getSession(session.id)).toBeUndefined();
   });
+
+  it('tracks cumulative event counters independent of event draining', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-session-manager-'));
+    const manager = new SessionManagerCore({
+      dataRoot: tempRoot,
+      maxSessions: 2,
+      sessionTtlMs: 10_000,
+      warningLeadMs: 2_000,
+    });
+
+    const session = manager.createSession('event-user', 'kotor', 1000);
+    manager.drainEvents();
+    manager.heartbeat(session.id, session.token, 1100);
+    manager.closeSession(session.id, session.token, 1200);
+    manager.markContainerStopped(session.id, session.token, 1300);
+    manager.drainEvents();
+
+    const counts = manager.getEventCounts();
+    expect((counts.session_created || 0) >= 1).toBe(true);
+    expect((counts.session_closed || 0) >= 1).toBe(true);
+    expect((counts.session_container_stop_requested || 0) >= 1).toBe(true);
+    expect((counts.session_container_stopped || 0) >= 1).toBe(true);
+  });
 });

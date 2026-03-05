@@ -214,6 +214,7 @@ function buildStatsSnapshot(): Record<string, unknown> {
     expiredSessions: expired,
     byStatus,
     byContainerStatus,
+    eventCounts: manager.getEventCounts(),
     at: Date.now(),
   };
 }
@@ -226,6 +227,7 @@ function buildPrometheusMetrics(): string {
     expiredSessions: number;
     byStatus: Record<string, number>;
     byContainerStatus: Record<string, number>;
+    eventCounts: Record<string, number>;
   };
 
   const lines: string[] = [
@@ -249,6 +251,10 @@ function buildPrometheusMetrics(): string {
 
   for (const [status, value] of Object.entries(stats.byContainerStatus || {})) {
     lines.push(`forge_session_manager_containers_by_status{status="${status}"} ${value}`);
+  }
+
+  for (const [eventType, value] of Object.entries(stats.eventCounts || {})) {
+    lines.push(`forge_session_manager_events_total{type="${eventType}"} ${value}`);
   }
 
   return `${lines.join('\n')}\n`;

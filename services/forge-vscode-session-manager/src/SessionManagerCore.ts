@@ -63,6 +63,7 @@ export interface SessionManagerOptions {
 export class SessionManagerCore {
   private readonly sessions = new Map<string, ForgeSession>();
   private readonly events: SessionEvent[] = [];
+  private readonly eventCounts = new Map<SessionEventType, number>();
   private readonly dataRoot: string;
   private readonly maxSessions: number;
   private readonly sessionTtlMs: number;
@@ -336,8 +337,17 @@ export class SessionManagerCore {
     return copy;
   }
 
+  getEventCounts(): Record<string, number> {
+    const counts: Record<string, number> = {};
+    for (const [type, count] of this.eventCounts.entries()) {
+      counts[type] = count;
+    }
+    return counts;
+  }
+
   private appendEvent(event: SessionEvent): void {
     this.events.push(event);
+    this.eventCounts.set(event.type, (this.eventCounts.get(event.type) || 0) + 1);
   }
 
   private requireSession(sessionId: string): ForgeSession {

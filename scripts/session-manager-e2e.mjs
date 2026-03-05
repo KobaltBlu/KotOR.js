@@ -142,8 +142,10 @@ async function main() {
   );
   const statsAfterCreate = await requestJson('/api/stats');
   assert(statsAfterCreate.activeSessions >= 1, 'stats should report at least one active session after creation');
+  assert(typeof statsAfterCreate.eventCounts === 'object', 'stats should include event counters');
   const metricsAfterCreate = await requestText('/api/metrics');
   assert(metricsAfterCreate.includes('forge_session_manager_sessions_total'), 'metrics output should include session totals');
+  assert(metricsAfterCreate.includes('forge_session_manager_events_total'), 'metrics output should include event counters');
 
   await requestJson(`/api/sessions/${sessionId}/container-ready`, {
     method: 'POST',
