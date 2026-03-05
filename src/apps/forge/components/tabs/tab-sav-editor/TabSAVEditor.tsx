@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 
 import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 import { EditorFile } from "@/apps/forge/EditorFile";
@@ -66,6 +66,21 @@ export const TabSAVEditor = function(props: BaseTabProps){
   const globalVariableCandidates = saveMeta?.globalVariableCandidates || [];
   const canEditAreaName = tab.canEditAreaName();
   const canEditModuleSettings = tab.canEditModuleSettings();
+  const scriptSuggestions = useMemo(() => {
+    const keyObject = KotOR.KEYManager?.Key;
+    if (!keyObject?.keys?.length) {
+      return [] as string[];
+    }
+
+    const ncsType = KotOR.ResourceTypes['ncs'];
+    const names = keyObject.keys
+      .filter((entry: KotOR.IKEYEntry) => entry.resType === ncsType)
+      .map((entry: KotOR.IKEYEntry) => String(entry.resRef || '').toLowerCase())
+      .filter((name: string) => name.length > 0);
+
+    return Array.from(new Set(names)).sort();
+  }, []);
+  const scriptSuggestionListId = 'sav-area-script-suggestions';
 
   const filteredResources = resources.filter((resKey: { resRef: string; resType: number }) => {
     const ext = KotOR.ResourceTypes.getKeyByValue(resKey.resType) || 'unknown';
@@ -242,6 +257,11 @@ export const TabSAVEditor = function(props: BaseTabProps){
               </div>
             </div>
             <div className="property-row">
+              <datalist id={scriptSuggestionListId}>
+                {scriptSuggestions.map((name) => (
+                  <option key={`sav-area-script-${name}`} value={name} />
+                ))}
+              </datalist>
               <div className="property-group">
                 <label>OnEnter Script</label>
                 <input
@@ -251,6 +271,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
                   onChange={(e) => tab.updateAreaOnEnterScript(e.target.value)}
                   placeholder="OnEnter script..."
                   maxLength={16}
+                  list={scriptSuggestionListId}
                   disabled={!canEditAreaName}
                 />
               </div>
@@ -263,6 +284,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
                   onChange={(e) => tab.updateAreaOnExitScript(e.target.value)}
                   placeholder="OnExit script..."
                   maxLength={16}
+                  list={scriptSuggestionListId}
                   disabled={!canEditAreaName}
                 />
               </div>
@@ -277,6 +299,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
                   onChange={(e) => tab.updateAreaOnHeartbeatScript(e.target.value)}
                   placeholder="OnHeartbeat script..."
                   maxLength={16}
+                  list={scriptSuggestionListId}
                   disabled={!canEditAreaName}
                 />
               </div>
@@ -289,6 +312,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
                   onChange={(e) => tab.updateAreaOnUserDefinedScript(e.target.value)}
                   placeholder="OnUserDefined script..."
                   maxLength={16}
+                  list={scriptSuggestionListId}
                   disabled={!canEditAreaName}
                 />
               </div>
