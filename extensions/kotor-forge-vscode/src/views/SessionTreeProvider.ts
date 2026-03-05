@@ -11,6 +11,19 @@ export interface SessionTreeNode {
   expiresInMs?: number;
 }
 
+function formatRemaining(ms?: number): string {
+  if (typeof ms !== 'number') return '?';
+  return `${Math.max(0, Math.round(ms / 1000))}s`;
+}
+
+function rankStatus(session: SessionTreeNode): number {
+  if (session.status === 'active' || session.status === 'warning' || session.status === 'saving') {
+    return 0;
+  }
+  if (session.status === 'closed') return 1;
+  return 2;
+}
+
 export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeNode> {
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<SessionTreeNode | undefined | void>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
@@ -20,15 +33,17 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeN
   }
 
   getTreeItem(element: SessionTreeNode): vscode.TreeItem {
-    const expires = typeof element.expiresInMs === 'number'
-      ? `${Math.max(0, Math.round(element.expiresInMs / 1000))}s`
-      : '?';
+    const expires = formatRemaining(element.expiresInMs);
+    const warning = formatRemaining(element.warningInMs);
     const item = new vscode.TreeItem(`${element.userId} (${element.game.toUpperCase()})`, vscode.TreeItemCollapsibleState.None);
     item.id = element.id;
     const container = element.containerStatus || 'unknown';
     item.description = `${element.status}/${container} • ${expires}`;
-    item.tooltip = `Session ${element.id}\nStatus: ${element.status}\nContainer: ${container}\nUser: ${element.userId}\nExpires in: ${expires}`;
+    item.tooltip = `Session ${element.id}\nStatus: ${element.status}\nContainer: ${container}\nUser: ${element.userId}\nWarning in: ${warning}\nExpires in: ${expires}`;
     item.contextValue = 'kotorForge.session';
+    item.iconPath = element.status === 'warning'
+      ? new vscode.ThemeIcon('warning')
+      : (container === 'ready' ? new vscode.ThemeIcon('vm-active') : new vscode.ThemeIcon('vm'));
     if (element.accessUrl) {
       item.command = {
         command: 'kotorForge.openHostedSession',
@@ -61,7 +76,14 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeN
         return [];
       }
       const sessions = await response.json() as SessionTreeNode[];
-      return Array.isArray(sessions) ? sessions : [];
+      if (!Array.isArray(sessions)) {
+        return [];
+      }
+      return sessions.sort((a, b) => {
+        const rankDelta = rankStatus(a) - rankStatus(b);
+        if (rankDelta !== 0) return rankDelta;
+        return (a.expiresInMs || 0) - (b.expiresInMs || 0);
+      });
     } catch {
       return [];
     }
