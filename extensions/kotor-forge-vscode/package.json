@@ -372,6 +372,11 @@
         "category": "KotOR Forge"
       },
       {
+        "command": "kotorForge.showHostedSessionDetails",
+        "title": "Show Hosted Session Details",
+        "category": "KotOR Forge"
+      },
+      {
         "command": "kotorForge.showSessionManagerStats",
         "title": "Show Session Manager Stats",
         "category": "KotOR Forge"
@@ -523,6 +528,11 @@
         {
           "when": "view == kotorForgeSessions && (viewItem == kotorForge.session || viewItem == kotorForge.session.access)",
           "command": "kotorForge.closeHostedSession",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeSessions && (viewItem == kotorForge.session || viewItem == kotorForge.session.access)",
+          "command": "kotorForge.showHostedSessionDetails",
           "group": "navigation"
         },
         {

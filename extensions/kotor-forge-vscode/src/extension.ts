@@ -618,6 +618,40 @@ export function activate(context: vscode.ExtensionContext) {
       log.info(`[session-copy-url] copied access URL${sessionId ? ` for ${sessionId}` : ''}`);
     }),
 
+    vscode.commands.registerCommand('kotorForge.showHostedSessionDetails', async (value?: { id?: string; token?: string }) => {
+      log.debug('Command invoked: kotorForge.showHostedSessionDetails');
+      const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      const sessionId = value?.id || '';
+      if (!sessionId) {
+        vscode.window.showWarningMessage('Session id is required to inspect hosted session details.');
+        return;
+      }
+
+      try {
+        const queryToken = !adminToken && value?.token ? `?token=${encodeURIComponent(value.token)}` : '';
+        const payload = await fetchSessionManagerResource(
+          sessionManagerUrl,
+          `/api/sessions/${encodeURIComponent(sessionId)}${queryToken}`,
+          adminToken
+        ) as Record<string, unknown>;
+        const doc = await vscode.workspace.openTextDocument({
+          content: JSON.stringify(payload, null, 2),
+          language: 'json',
+        });
+        await vscode.window.showTextDocument(doc, { preview: false });
+        log.info(`[session-details] opened details for ${sessionId}`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to fetch hosted session details: ${message}`);
+        log.error(`showHostedSessionDetails failed: ${message}`);
+      }
+    }),
+
     vscode.commands.registerCommand('kotorForge.openHostedSession', async (value?: string | { accessUrl?: string }) => {
       log.debug('Command invoked: kotorForge.openHostedSession');
       const accessUrl = typeof value === 'string'
