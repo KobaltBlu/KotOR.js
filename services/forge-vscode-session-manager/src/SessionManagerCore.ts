@@ -38,6 +38,7 @@ export type SessionEventType =
   | 'session_container_stopped'
   | 'session_container_failed'
   | 'session_workspace_quota_exceeded'
+  | 'session_pruned'
   | 'session_warning'
   | 'session_save_requested'
   | 'session_expired'
@@ -56,6 +57,7 @@ export interface SessionManagerOptions {
   sessionTtlMs: number;
   warningLeadMs: number;
   maxWorkspaceBytes?: number;
+  closedSessionRetentionMs?: number;
 }
 
 export class SessionManagerCore {
@@ -66,6 +68,7 @@ export class SessionManagerCore {
   private readonly sessionTtlMs: number;
   private readonly warningLeadMs: number;
   private readonly maxWorkspaceBytes: number;
+  private readonly closedSessionRetentionMs: number;
 
   constructor(options: SessionManagerOptions) {
     this.dataRoot = options.dataRoot;
@@ -73,9 +76,11 @@ export class SessionManagerCore {
     this.sessionTtlMs = options.sessionTtlMs;
     this.warningLeadMs = options.warningLeadMs;
     this.maxWorkspaceBytes = Math.max(0, Number(options.maxWorkspaceBytes || 0));
+    this.closedSessionRetentionMs = Math.max(0, Number(options.closedSessionRetentionMs ?? (72 * 60 * 60 * 1000)));
 
     fs.mkdirSync(this.getWorkspacesRoot(), { recursive: true });
     fs.mkdirSync(this.getMetadataRoot(), { recursive: true });
+    this.loadPersistedSessions();
   }
 
   listSessions(): ForgeSession[] {
@@ -320,6 +325,7 @@ export class SessionManagerCore {
       this.persistSession(session);
     }
 
+    this.pruneRetiredSessions(now);
     return this.drainEvents();
   }
 
@@ -353,6 +359,96 @@ export class SessionManagerCore {
   private persistSession(session: ForgeSession): void {
     const metadataPath = path.join(this.getMetadataRoot(), `${session.id}.json`);
     fs.writeFileSync(metadataPath, JSON.stringify(session, null, 2), 'utf-8');
+  }
+
+  private loadPersistedSessions(): void {
+    try {
+      const metadataRoot = this.getMetadataRoot();
+      const entries = fs.readdirSync(metadataRoot);
+      for (const entry of entries) {
+        if (!entry.endsWith('.json')) continue;
+        const fullPath = path.join(metadataRoot, entry);
+        try {
+          const parsed = JSON.parse(fs.readFileSync(fullPath, 'utf-8')) as Partial<ForgeSession>;
+          if (!parsed.id || !parsed.userId || !parsed.game) continue;
+
+          const restored: ForgeSession = {
+            id: parsed.id,
+            token: String(parsed.token || randomUUID().replace(/-/g, '')),
+            userId: parsed.userId,
+            game: parsed.game,
+            createdAt: Number(parsed.createdAt || Date.now()),
+            lastHeartbeatAt: Number(parsed.lastHeartbeatAt || parsed.createdAt || Date.now()),
+            warningAt: Number(parsed.warningAt || Date.now()),
+            expiresAt: Number(parsed.expiresAt || Date.now()),
+            workspacePath: parsed.workspacePath || path.join(this.getWorkspacesRoot(), parsed.id),
+            sessionPath: parsed.sessionPath || `/sessions/${parsed.id}`,
+            status: parsed.status || 'active',
+            containerStatus: parsed.containerStatus || 'start_requested',
+            containerId: parsed.containerId,
+            containerUpstreamUrl: parsed.containerUpstreamUrl,
+            containerError: parsed.containerError,
+            containerReadyAt: parsed.containerReadyAt,
+            containerStopRequestedAt: parsed.containerStopRequestedAt,
+            containerStoppedAt: parsed.containerStoppedAt,
+            warningSentAt: parsed.warningSentAt,
+            saveRequestedAt: parsed.saveRequestedAt,
+            saveCompletedAt: parsed.saveCompletedAt,
+          };
+          this.sessions.set(restored.id, restored);
+        } catch {
+          // ignore malformed metadata rows
+        }
+      }
+    } catch {
+      // metadata directory may be empty on first run
+    }
+  }
+
+  private pruneRetiredSessions(now: number): void {
+    if (this.closedSessionRetentionMs <= 0) return;
+
+    for (const [sessionId, session] of this.sessions.entries()) {
+      if (session.status !== 'expired' && session.status !== 'closed') continue;
+      if (session.containerStatus !== 'stopped' && session.containerStatus !== 'failed') continue;
+
+      const terminalAt = session.status === 'expired'
+        ? Math.max(
+          session.saveCompletedAt || 0,
+          session.containerStoppedAt || 0,
+          session.containerStopRequestedAt || 0,
+          session.expiresAt || 0,
+          session.lastHeartbeatAt || 0
+        )
+        : Math.max(
+          session.containerStoppedAt || 0,
+          session.containerStopRequestedAt || 0,
+          session.lastHeartbeatAt || 0
+        );
+      if ((now - terminalAt) < this.closedSessionRetentionMs) continue;
+
+      const metadataPath = path.join(this.getMetadataRoot(), `${sessionId}.json`);
+      try {
+        fs.rmSync(session.workspacePath, { recursive: true, force: true });
+      } catch {
+        // ignore workspace cleanup failures
+      }
+      try {
+        fs.rmSync(metadataPath, { force: true });
+      } catch {
+        // ignore metadata cleanup failures
+      }
+      this.sessions.delete(sessionId);
+      this.appendEvent({
+        type: 'session_pruned',
+        at: now,
+        sessionId,
+        payload: {
+          status: session.status,
+          containerStatus: session.containerStatus,
+        },
+      });
+    }
   }
 
   private requestContainerStop(session: ForgeSession, now: number, reason: 'session_closed' | 'session_expired'): void {

@@ -46,6 +46,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - Resume endpoint returns the latest active session for a `(userId, game)` pair, or creates one.
 - Session events now include container lifecycle hooks (`start_requested`, `ready`, `stop_requested`, `stopped`, `failed`) for reverse proxy/orchestration workers.
 - Optional workspace quota guard (`FORGE_SESSION_MANAGER_MAX_WORKSPACE_BYTES`) emits `session_workspace_quota_exceeded` and transitions session to save-request flow before expiry.
+- Closed/expired sessions are retained then pruned (`FORGE_SESSION_MANAGER_RETENTION_MS`, default 72h) once container state is stopped/failed.
 - Optional admin operations can be enabled by setting `FORGE_SESSION_MANAGER_ADMIN_TOKEN` and supplying `x-admin-token`.
 - `GET /api/sessions?includeTokens=1` returns tokenized access URLs when called with a valid admin token.
 - Session responses now include `accessUrl` and `sessionPath` for tokenized proxied access routing.

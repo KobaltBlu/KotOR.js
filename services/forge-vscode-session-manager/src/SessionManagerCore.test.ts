@@ -143,4 +143,49 @@ describe('SessionManagerCore', () => {
     expect(events.some((event) => event.type === 'session_save_requested' && event.sessionId === session.id)).toBe(true);
     expect(manager.getSession(session.id)?.status).toBe('saving');
   });
+
+  it('restores persisted sessions on manager restart', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-session-manager-'));
+    const managerA = new SessionManagerCore({
+      dataRoot: tempRoot,
+      maxSessions: 2,
+      sessionTtlMs: 30_000,
+      warningLeadMs: 5_000,
+    });
+    const created = managerA.createSession('persist-user', 'kotor', 5000);
+    managerA.markContainerReady(created.id, created.token, 'persist-container', { now: 5100, upstreamUrl: 'http://127.0.0.1:19001' });
+
+    const managerB = new SessionManagerCore({
+      dataRoot: tempRoot,
+      maxSessions: 2,
+      sessionTtlMs: 30_000,
+      warningLeadMs: 5_000,
+    });
+    const restored = managerB.getSession(created.id);
+    expect(restored).toBeDefined();
+    expect(restored?.token).toBe(created.token);
+    expect(restored?.containerStatus).toBe('ready');
+    expect(restored?.containerUpstreamUrl).toBe('http://127.0.0.1:19001');
+  });
+
+  it('prunes retired sessions after retention window', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-session-manager-'));
+    const manager = new SessionManagerCore({
+      dataRoot: tempRoot,
+      maxSessions: 2,
+      sessionTtlMs: 30_000,
+      warningLeadMs: 5_000,
+      closedSessionRetentionMs: 50,
+    });
+
+    const session = manager.createSession('prune-user', 'kotor', 1000);
+    manager.markContainerReady(session.id, session.token, 'prune-container', { now: 1010 });
+    manager.closeSession(session.id, session.token, 1020);
+    manager.markContainerStopped(session.id, session.token, 1030);
+    manager.drainEvents();
+
+    const pruneEvents = manager.evaluateTimeouts(2000);
+    expect(pruneEvents.some((event) => event.type === 'session_pruned' && event.sessionId === session.id)).toBe(true);
+    expect(manager.getSession(session.id)).toBeUndefined();
+  });
 });

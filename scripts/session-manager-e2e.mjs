@@ -61,6 +61,8 @@ async function main() {
     Array.isArray(startEvents.events) && startEvents.events.some((event) => event.type === 'session_container_start_requested' && event.sessionId === sessionId),
     'container start-request event should be emitted on creation'
   );
+  const statsAfterCreate = await requestJson('/api/stats');
+  assert(statsAfterCreate.activeSessions >= 1, 'stats should report at least one active session after creation');
 
   await requestJson(`/api/sessions/${sessionId}/container-ready`, {
     method: 'POST',
@@ -122,6 +124,8 @@ async function main() {
   const finalSession = await requestJson(`/api/sessions/${sessionId}`, { token: sessionToken });
   assert(finalSession.status === 'expired', 'session status should be expired at end of lifecycle');
   assert(finalSession.containerStatus === 'stopped', 'container status should be stopped after acknowledgement');
+  const statsAtEnd = await requestJson('/api/stats');
+  assert(statsAtEnd.expiredSessions >= 1, 'stats should report expired sessions at lifecycle end');
 
   console.log('[e2e] session manager lifecycle checks passed');
 }
