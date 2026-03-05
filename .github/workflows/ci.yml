@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+      - "cursor/**"
+
+jobs:
+  forge-build-and-smoke-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Build root bundles
+        run: npm run webpack:dev
+
+      - name: Run root smoke tests
+        run: npm test
+
+  vscode-extension-compile:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: extensions/kotor-forge-vscode
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: |
+            extensions/kotor-forge-vscode/package-lock.json
+            extensions/kotor-forge-vscode/server/package-lock.json
+
+      - name: Install extension dependencies
+        run: npm install --no-package-lock
+
+      - name: Compile extension host + webview + language server
+        run: npm run compile
