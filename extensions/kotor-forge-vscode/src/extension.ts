@@ -509,6 +509,34 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
+    vscode.commands.registerCommand('kotorForge.showHostedSessionsSnapshot', async () => {
+      log.debug('Command invoked: kotorForge.showHostedSessionsSnapshot');
+      const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      try {
+        const sessions = await fetchSessionManagerResource(
+          sessionManagerUrl,
+          adminToken ? '/api/sessions?includeTokens=1' : '/api/sessions',
+          adminToken
+        ) as unknown;
+        const doc = await vscode.workspace.openTextDocument({
+          content: JSON.stringify(sessions, null, 2),
+          language: 'json',
+        });
+        await vscode.window.showTextDocument(doc, { preview: false });
+        const count = Array.isArray(sessions) ? sessions.length : 0;
+        log.info(`[session-snapshot] opened hosted session snapshot (${count} session(s))`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to fetch hosted sessions snapshot: ${message}`);
+        log.error(`showHostedSessionsSnapshot failed: ${message}`);
+      }
+    }),
+
     vscode.commands.registerCommand('kotorForge.showSessionManagerEvents', async () => {
       log.debug('Command invoked: kotorForge.showSessionManagerEvents');
       const { sessionManagerUrl, adminToken } = readSessionManagerSettings();

@@ -397,6 +397,11 @@
         "category": "KotOR Forge"
       },
       {
+        "command": "kotorForge.showHostedSessionsSnapshot",
+        "title": "Show Hosted Sessions Snapshot",
+        "category": "KotOR Forge"
+      },
+      {
         "command": "kotorForge.showSessionManagerEvents",
         "title": "Show Session Manager Events",
         "category": "KotOR Forge"
@@ -496,6 +501,11 @@
         {
           "when": "view == kotorForgeSessions",
           "command": "kotorForge.showSessionManagerConfig",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeSessions",
+          "command": "kotorForge.showHostedSessionsSnapshot",
           "group": "navigation"
         },
         {
