@@ -56,7 +56,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - `GET /api/sessions?includeTokens=1` returns tokenized access URLs when called with a valid admin token.
 - Session responses now include `accessUrl` and `sessionPath` for tokenized proxied access routing.
 - Configure `FORGE_SESSION_MANAGER_PUBLIC_BASE_URL` when external clients should use a public hostname instead of localhost.
-- Stats payload includes aggregate `eventCounts`; metrics export includes `forge_session_manager_events_total{type=...}` counters.
+- Stats payload includes aggregate `eventCounts` plus process telemetry (`uptimeSeconds`, RSS/heap memory); metrics export includes `forge_session_manager_events_total{type=...}` and process gauges.
 - `scripts/session-manager-orchestrator.mjs` provides a polling orchestration worker that converts container lifecycle events into `/container-ready`, `/container-stopped`, and `/container-failed` acknowledgements.
 - Orchestrator modes:
   - `FORGE_SESSION_ORCHESTRATOR_MODE=mock` (default): acknowledges ready/stopped events against a shared upstream URL.

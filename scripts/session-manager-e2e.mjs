@@ -146,6 +146,7 @@ async function main() {
   const metricsAfterCreate = await requestText('/api/metrics');
   assert(metricsAfterCreate.includes('forge_session_manager_sessions_total'), 'metrics output should include session totals');
   assert(metricsAfterCreate.includes('forge_session_manager_events_total'), 'metrics output should include event counters');
+  assert(metricsAfterCreate.includes('forge_session_manager_process_uptime_seconds'), 'metrics output should include process uptime gauge');
 
   await requestJson(`/api/sessions/${sessionId}/container-ready`, {
     method: 'POST',

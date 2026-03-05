@@ -241,6 +241,12 @@ function buildStatsSnapshot(): Record<string, unknown> {
     byStatus,
     byContainerStatus,
     eventCounts: manager.getEventCounts(),
+    process: {
+      uptimeSeconds: process.uptime(),
+      memoryRssBytes: process.memoryUsage().rss,
+      memoryHeapUsedBytes: process.memoryUsage().heapUsed,
+      memoryHeapTotalBytes: process.memoryUsage().heapTotal,
+    },
     at: Date.now(),
   };
 }
@@ -254,6 +260,12 @@ function buildPrometheusMetrics(): string {
     byStatus: Record<string, number>;
     byContainerStatus: Record<string, number>;
     eventCounts: Record<string, number>;
+    process?: {
+      uptimeSeconds?: number;
+      memoryRssBytes?: number;
+      memoryHeapUsedBytes?: number;
+      memoryHeapTotalBytes?: number;
+    };
   };
 
   const lines: string[] = [
@@ -282,6 +294,19 @@ function buildPrometheusMetrics(): string {
   for (const [eventType, value] of Object.entries(stats.eventCounts || {})) {
     lines.push(`forge_session_manager_events_total{type="${eventType}"} ${value}`);
   }
+
+  lines.push('# HELP forge_session_manager_process_uptime_seconds Session manager process uptime in seconds.');
+  lines.push('# TYPE forge_session_manager_process_uptime_seconds gauge');
+  lines.push(`forge_session_manager_process_uptime_seconds ${Number(stats.process?.uptimeSeconds || 0).toFixed(3)}`);
+  lines.push('# HELP forge_session_manager_process_memory_rss_bytes Resident set size memory usage in bytes.');
+  lines.push('# TYPE forge_session_manager_process_memory_rss_bytes gauge');
+  lines.push(`forge_session_manager_process_memory_rss_bytes ${Math.max(0, Math.floor(stats.process?.memoryRssBytes || 0))}`);
+  lines.push('# HELP forge_session_manager_process_memory_heap_used_bytes Heap memory currently used in bytes.');
+  lines.push('# TYPE forge_session_manager_process_memory_heap_used_bytes gauge');
+  lines.push(`forge_session_manager_process_memory_heap_used_bytes ${Math.max(0, Math.floor(stats.process?.memoryHeapUsedBytes || 0))}`);
+  lines.push('# HELP forge_session_manager_process_memory_heap_total_bytes Total heap memory in bytes.');
+  lines.push('# TYPE forge_session_manager_process_memory_heap_total_bytes gauge');
+  lines.push(`forge_session_manager_process_memory_heap_total_bytes ${Math.max(0, Math.floor(stats.process?.memoryHeapTotalBytes || 0))}`);
 
   return `${lines.join('\n')}\n`;
 }
