@@ -32,6 +32,7 @@ export function buildOpenVSCodeBetaUrl(baseUrl: string, gameKey?: string): strin
 interface SessionCreateResponse {
   id: string;
   game: string;
+  accessUrl?: string;
   [key: string]: unknown;
 }
 
@@ -87,6 +88,11 @@ async function requestHostedSession(options: OpenVSCodeBetaLaunchOptions): Promi
 
 function buildHostedSessionUrl(session: SessionCreateResponse | null, options: OpenVSCodeBetaLaunchOptions): string {
   const game = normalizeGameKey(options.gameKey);
+
+  if (session && typeof session.accessUrl === 'string' && session.accessUrl.trim().length > 0) {
+    return buildOpenVSCodeBetaUrl(session.accessUrl, game);
+  }
+
   const openVSCodeBaseUrl = options.openVSCodeBaseUrl || options.baseUrl || "";
   if (!openVSCodeBaseUrl) return "";
 

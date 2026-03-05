@@ -10,6 +10,7 @@ const SESSION_TTL_MS = Number(process.env.FORGE_SESSION_MANAGER_TTL_MS || 45 * 6
 const WARNING_LEAD_MS = Number(process.env.FORGE_SESSION_MANAGER_WARNING_MS || 5 * 60 * 1000);
 const ADMIN_TOKEN = String(process.env.FORGE_SESSION_MANAGER_ADMIN_TOKEN || '').trim();
 const OPENVSCODE_BASE_URL = process.env.FORGE_OPENVSCODE_BASE_URL || 'http://127.0.0.1:18080';
+const PUBLIC_BASE_URL = process.env.FORGE_SESSION_MANAGER_PUBLIC_BASE_URL || `http://127.0.0.1:${PORT}`;
 
 const manager = new SessionManagerCore({
   dataRoot: DATA_ROOT,
@@ -71,11 +72,10 @@ function isAdminRequest(req: http.IncomingMessage, url: URL): boolean {
 }
 
 function buildSessionAccessUrl(session: ForgeSession, includeToken: boolean): string {
-  const base = new URL(OPENVSCODE_BASE_URL, 'http://127.0.0.1');
-  base.searchParams.set('sessionId', session.id);
+  const base = new URL(session.sessionPath, PUBLIC_BASE_URL);
   base.searchParams.set('game', session.game);
   if (includeToken) {
-    base.searchParams.set('sessionToken', session.token);
+    base.searchParams.set('token', session.token);
   }
   return base.toString();
 }
@@ -108,6 +108,99 @@ function sessionResponse(session: ForgeSession, includeToken = false): Record<st
     warningInMs: Math.max(0, session.warningAt - Date.now()),
     expiresInMs: Math.max(0, session.expiresAt - Date.now()),
   };
+}
+
+const HOP_BY_HOP_HEADERS = new Set([
+  'connection',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+  'host',
+  'content-length',
+  'x-session-token',
+  'x-admin-token',
+]);
+
+function createProxyHeaders(req: http.IncomingMessage): Headers {
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(req.headers)) {
+    const lower = key.toLowerCase();
+    if (HOP_BY_HOP_HEADERS.has(lower)) continue;
+    if (typeof value === 'undefined') continue;
+    if (Array.isArray(value)) {
+      headers.set(key, value.join(', '));
+      continue;
+    }
+    headers.set(key, value);
+  }
+  return headers;
+}
+
+async function readRequestBody(req: http.IncomingMessage): Promise<Buffer | undefined> {
+  if ((req.method || 'GET') === 'GET' || (req.method || 'GET') === 'HEAD') {
+    return undefined;
+  }
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return chunks.length ? Buffer.concat(chunks) : undefined;
+}
+
+async function proxySessionRequest(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  requestUrl: URL,
+  session: ForgeSession,
+  token: string
+): Promise<void> {
+  if (session.status === 'expired' || session.status === 'closed') {
+    writeJson(res, 410, { error: `Session ${session.id} is no longer active` });
+    return;
+  }
+
+  if (session.containerStatus !== 'ready') {
+    writeJson(res, 503, {
+      error: `Session container not ready (${session.containerStatus})`,
+      sessionId: session.id,
+    });
+    return;
+  }
+
+  const basePath = session.sessionPath.endsWith('/') ? session.sessionPath.slice(0, -1) : session.sessionPath;
+  const suffixPath = requestUrl.pathname.startsWith(basePath)
+    ? requestUrl.pathname.slice(basePath.length) || '/'
+    : '/';
+  const target = new URL(suffixPath, OPENVSCODE_BASE_URL);
+
+  const query = new URLSearchParams(requestUrl.searchParams);
+  query.delete('token');
+  query.delete('adminToken');
+  target.search = query.toString();
+
+  const headers = createProxyHeaders(req);
+  const body = await readRequestBody(req);
+  const proxiedResponse = await fetch(target.toString(), {
+    method: req.method || 'GET',
+    headers,
+    body: body ? new Uint8Array(body) : undefined,
+  });
+
+  const heartbeatNow = Date.now();
+  manager.heartbeat(session.id, token, heartbeatNow);
+
+  res.statusCode = proxiedResponse.status;
+  for (const [key, value] of proxiedResponse.headers.entries()) {
+    if (HOP_BY_HOP_HEADERS.has(key.toLowerCase())) continue;
+    res.setHeader(key, value);
+  }
+
+  const responseBuffer = Buffer.from(await proxiedResponse.arrayBuffer());
+  res.end(responseBuffer);
 }
 
 function resolveAuthorizedSession(
@@ -148,12 +241,25 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (pathname.startsWith('/sessions/')) {
+      const sessionId = parseSessionId(pathname);
+      if (!sessionId) {
+        writeJson(res, 400, { error: 'Invalid session id' });
+        return;
+      }
+
+      const auth = resolveAuthorizedSession(req, url, sessionId);
+      await proxySessionRequest(req, res, url, auth.session, auth.token);
+      return;
+    }
+
     if (method === 'GET' && pathname === '/api/config') {
       writeJson(res, 200, {
         maxSessions: MAX_SESSIONS,
         sessionTtlMs: SESSION_TTL_MS,
         warningLeadMs: WARNING_LEAD_MS,
         openVSCodeBaseUrl: OPENVSCODE_BASE_URL,
+        publicBaseUrl: PUBLIC_BASE_URL,
         adminTokenEnabled: Boolean(ADMIN_TOKEN),
       });
       return;

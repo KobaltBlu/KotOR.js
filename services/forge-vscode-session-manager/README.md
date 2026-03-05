@@ -34,6 +34,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - `DELETE /api/sessions/:id` *(requires `x-session-token`)*
 - `POST /api/timeouts/evaluate`
 - `GET /api/events`
+- `* /sessions/:id/*` *(token-gated reverse proxy to OpenVSCode upstream)*
 
 ## Notes
 
@@ -43,7 +44,8 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - Resume endpoint returns the latest active session for a `(userId, game)` pair, or creates one.
 - Session events now include container lifecycle hooks (`start_requested`, `ready`, `stop_requested`, `stopped`) for reverse proxy/orchestration workers.
 - Optional admin operations can be enabled by setting `FORGE_SESSION_MANAGER_ADMIN_TOKEN` and supplying `x-admin-token`.
-- This service is intentionally orchestration-focused; container launch/proxy wiring can be layered on top in the next phase.
+- Session responses now include `accessUrl` and `sessionPath` for tokenized proxied access routing.
+- Configure `FORGE_SESSION_MANAGER_PUBLIC_BASE_URL` when external clients should use a public hostname instead of localhost.
 
 ## Local compose stack
 

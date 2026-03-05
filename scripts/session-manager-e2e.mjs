@@ -53,6 +53,7 @@ async function main() {
   const sessionToken = session.token;
   assert(typeof sessionId === 'string' && sessionId.length > 0, 'session id should be returned');
   assert(typeof sessionToken === 'string' && sessionToken.length > 0, 'session token should be returned');
+  assert(typeof session.accessUrl === 'string' && session.accessUrl.length > 0, 'session access URL should be returned');
   assert(session.containerStatus === 'start_requested', 'new session should request container start');
 
   const startEvents = await requestJson('/api/events');
@@ -66,12 +67,15 @@ async function main() {
     token: sessionToken,
     body: { containerId: 'ci-container-1' },
   });
+  const proxyResponse = await fetch(session.accessUrl);
+  assert(proxyResponse.ok, 'proxy access URL should route to OpenVSCode upstream when container ready');
 
   const resumed = await requestJson('/api/sessions/resume', {
     method: 'POST',
     body: { userId: 'ci-user', game: 'kotor' },
   });
   assert(resumed.id === sessionId, 'resume endpoint should return existing active session');
+  assert(typeof resumed.accessUrl === 'string' && resumed.accessUrl.includes(`/sessions/${sessionId}`), 'resume should include stable proxied session access URL');
 
   await requestJson(`/api/sessions/${sessionId}/heartbeat`, { method: 'POST', token: sessionToken });
 
