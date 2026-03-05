@@ -3,12 +3,15 @@ import React, { useState, useCallback, useEffect } from "react";
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
 import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { LazyTextureCanvas } from "@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalInventoryBrowserState } from "@/apps/forge/states/modal/ModalInventoryBrowserState";
 import { TabUTIEditorState, ItemPropertyEntry } from "@/apps/forge/states/tabs";
 
 export const TabUTIEditor = function(props: BaseTabProps){
@@ -34,6 +37,7 @@ export const TabUTIEditor = function(props: BaseTabProps){
   const [identified, setIdentified] = useState<boolean>(true);
   const [modelVariation, setModelVariation] = useState<number>(0);
   const [upgradeLevel, setUpgradeLevel] = useState<number>(0);
+  const [iconResRef, setIconResRef] = useState<string>('');
 
   const onItemChange = useCallback(() => {
     if (!tab.item || !tab.blueprint) return;
@@ -55,6 +59,7 @@ export const TabUTIEditor = function(props: BaseTabProps){
     setIdentified(tab.item.identified);
     setModelVariation(tab.item.modelVariation);
     setUpgradeLevel(tab.item.upgradeLevel);
+    setIconResRef(tab.item.getIconResRef());
   }, [tab]);
 
   useEffect(() => {
@@ -69,28 +74,28 @@ export const TabUTIEditor = function(props: BaseTabProps){
   }, [tab, onItemChange]);
 
   // Helper functions using ForgeItem methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeItem, parser: (value: number) => number = (v) => v) => 
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeItem, parser: (value: number) => number = (v) => v) =>
     tab.item.createNumberFieldHandler(setter, property, tab.item, tab, parser);
-  
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeItem) => 
+
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeItem) =>
     tab.item.createByteFieldHandler(setter, property, tab.item, tab);
-  
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeItem) => 
+
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeItem) =>
     tab.item.createWordFieldHandler(setter, property, tab.item, tab);
-  
-  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeItem) => 
+
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeItem) =>
     tab.item.createBooleanFieldHandler(setter, property, tab.item, tab);
-  
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeItem) => 
+
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeItem) =>
     tab.item.createResRefFieldHandler(setter, property, tab.item, tab);
-  
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeItem) => 
+
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeItem) =>
     tab.item.createCExoStringFieldHandler(setter, property, tab.item, tab);
-  
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeItem) => 
+
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeItem) =>
     tab.item.createCExoLocStringFieldHandler(setter, property, tab.item, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeItem) => 
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeItem) =>
     tab.item.createForgeCheckboxFieldHandler(setter, property, tab.item, tab);
 
   const updateProperties = (next: ItemPropertyEntry[]) => {
@@ -120,6 +125,26 @@ export const TabUTIEditor = function(props: BaseTabProps){
     const next = properties.map((prop, idx) => idx === index ? {...prop, [field]: value} : prop);
     updateProperties(next);
   }
+
+  const onLoadFromInventoryBrowser = () => {
+    const modal = new ModalInventoryBrowserState([], async (updatedInventory) => {
+      const selectedResref = updatedInventory[0]?.resref;
+      if (!selectedResref) {
+        return;
+      }
+
+      const sourceItem = modal.findItemByResref(selectedResref);
+      if (!sourceItem) {
+        return;
+      }
+
+      await tab.importFromBuffer(sourceItem.gff.getExportBuffer());
+      onItemChange();
+    }, 'store');
+
+    modal.attachToModalManager(ForgeState.modalManager);
+    modal.open();
+  };
 
   const renderPropertyRow = (property: ItemPropertyEntry, index: number) => (
     <tr key={`item-property-${index}`}>
@@ -165,6 +190,11 @@ export const TabUTIEditor = function(props: BaseTabProps){
               <FormField label="Template ResRef" info="Internal resource reference (max 16 chars, lowercase).">
                 <input type="text" value={templateResRef} disabled={true} maxLength={16} />
               </FormField>
+              <FormField label="Load Existing" info="Import fields from an existing UTI in core/module/override.">
+                <button className="btn btn-sm btn-outline-secondary" onClick={onLoadFromInventoryBrowser}>
+                  Load From Inventory Browser
+                </button>
+              </FormField>
               <FormField label="Tag" info="Unique identifier (max 32 chars).">
                 <input type="text" value={tag} onChange={onUpdateResRefField(setTag, 'tag')} maxLength={32} />
               </FormField>
@@ -191,6 +221,16 @@ export const TabUTIEditor = function(props: BaseTabProps){
               </FormField>
               <FormField label="Model Variation" info="Model variation for the item blueprint.">
                 <input type="number" min={1} max={255} value={modelVariation} onChange={onUpdateByteField(setModelVariation, 'modelVariation')} />
+              </FormField>
+              <FormField label="Icon Preview" info="Resolved from baseitems.2da itemclass and model variation.">
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                  {iconResRef ? (
+                    <LazyTextureCanvas texture={iconResRef} width={32} height={32} />
+                  ) : (
+                    <div style={{width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>?</div>
+                  )}
+                  <code>{iconResRef || '(no icon)'}</code>
+                </div>
               </FormField>
               <FormField label="Upgrade Level" info="Upgrade level for the item blueprint.">
                 <input type="number" min={0} max={255} value={upgradeLevel} onChange={onUpdateByteField(setUpgradeLevel, 'upgradeLevel')} />

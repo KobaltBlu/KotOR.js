@@ -1,6 +1,7 @@
 import React from "react";
 
 import { ModalInventoryBrowser } from "@/apps/forge/components/modal/ModalInventoryBrowser";
+import { InstallationRegistry } from "@/apps/forge/data/InstallationRegistry";
 import type { InventoryItemEntry } from "@/apps/forge/module-editor/ForgeCreature";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ModalItemBrowserState, type UTIItem } from "@/apps/forge/states/modal/ModalItemBrowserState";
@@ -62,6 +63,7 @@ export class ModalInventoryBrowserState extends ModalState {
     }
 
     try {
+      await InstallationRegistry.get2DA(InstallationRegistry.BASEITEMS);
       const items: UTISourceItem[] = [];
       const utiKeys = KotOR.KEYManager.Key.keys.filter(
         (key: KotOR.IKEYEntry) => key.resType === KotOR.ResourceTypes['uti'],
@@ -94,6 +96,7 @@ export class ModalInventoryBrowserState extends ModalState {
 
   async loadModuleItems() {
     try {
+      await InstallationRegistry.get2DA(InstallationRegistry.BASEITEMS);
       const items: UTISourceItem[] = [];
       const moduleScope = KotOR.ResourceLoader.CacheScopes[KotOR.CacheScope.MODULE];
       const utiMap: Map<string, Uint8Array> | undefined = moduleScope?.get(KotOR.ResourceTypes['uti'] as number);
@@ -118,6 +121,7 @@ export class ModalInventoryBrowserState extends ModalState {
 
   async loadOverrideItems() {
     try {
+      await InstallationRegistry.get2DA(InstallationRegistry.BASEITEMS);
       const items: UTISourceItem[] = [];
       const overrideScope = KotOR.ResourceLoader.CacheScopes[KotOR.CacheScope.OVERRIDE];
       const utiMap: Map<string, Uint8Array> | undefined = overrideScope?.get(KotOR.ResourceTypes['uti'] as number);
@@ -164,7 +168,7 @@ export class ModalInventoryBrowserState extends ModalState {
       }
 
       if (baseItem > 0) {
-        const baseitems2DA = KotOR.TwoDAManager.datatables.get('baseitems');
+        const baseitems2DA = InstallationRegistry.get2DASync(InstallationRegistry.BASEITEMS);
         if (baseitems2DA) {
           const baseItemRow = baseitems2DA.getRowByIndex(baseItem);
           if (baseItemRow) {
@@ -193,6 +197,15 @@ export class ModalInventoryBrowserState extends ModalState {
     this.processEventListener('onSearchChanged', [this]);
   }
 
+  findItemByResref(resref: string): UTISourceItem | undefined {
+    const lookup = resref.toLowerCase();
+    return [
+      ...this.coreItems,
+      ...this.moduleItems,
+      ...this.overrideItems,
+    ].find((item) => item.resref.toLowerCase() === lookup);
+  }
+
   addItem(resref: string) {
     this.inventory.push({ resref, droppable: false, infinite: false });
     this.processEventListener('onInventoryChanged', [this]);
@@ -200,6 +213,22 @@ export class ModalInventoryBrowserState extends ModalState {
 
   removeItem(index: number) {
     this.inventory.splice(index, 1);
+    this.processEventListener('onInventoryChanged', [this]);
+  }
+
+  moveItemUp(index: number) {
+    if (index <= 0 || index >= this.inventory.length) return;
+    const temp = this.inventory[index - 1];
+    this.inventory[index - 1] = this.inventory[index];
+    this.inventory[index] = temp;
+    this.processEventListener('onInventoryChanged', [this]);
+  }
+
+  moveItemDown(index: number) {
+    if (index < 0 || index >= this.inventory.length - 1) return;
+    const temp = this.inventory[index + 1];
+    this.inventory[index + 1] = this.inventory[index];
+    this.inventory[index] = temp;
     this.processEventListener('onInventoryChanged', [this]);
   }
 

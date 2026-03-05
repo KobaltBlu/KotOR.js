@@ -22,7 +22,7 @@ export interface ItemPropertyEntry {
 export class TabUTIEditorState extends TabState {
   tabName: string = `UTI`;
   item: ForgeItem = new ForgeItem();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.item.blueprint;
   }
@@ -36,6 +36,14 @@ export class TabUTIEditorState extends TabState {
   }
 
   ui3DRenderer: UI3DRenderer;
+
+  private bindItemEvents(item: ForgeItem) {
+    item.addEventListener('onPropertyChange', (property: string, newValue: any, oldValue: any) => {
+      if(property === 'baseItem' || property === 'modelVariation'){
+        this.processEventListener('onModelChange', [this]);
+      }
+    });
+  }
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -52,12 +60,17 @@ export class TabUTIEditorState extends TabState {
         }
       }
     ];
-    
-    this.item.addEventListener('onPropertyChange', (property: string, newValue: any, oldValue: any) => {
-      if(property === 'baseItem' || property === 'modelVariation'){
-        this.processEventListener('onModelChange', [this]);
-      }
-    });
+
+    this.bindItemEvents(this.item);
+  }
+
+  async importFromBuffer(buffer: Uint8Array): Promise<void> {
+    this.item = new ForgeItem(buffer);
+    this.item.setContext(this.ui3DRenderer);
+    this.bindItemEvents(this.item);
+    await this.item.load();
+    this.ui3DRenderer.attachObject(this.item.container, false);
+    this.processEventListener('onEditorFileChange', [this]);
   }
 
   public openFile(file?: EditorFile){
@@ -65,15 +78,16 @@ export class TabUTIEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
+
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-  
+
         file.readFile().then( async (response) => {
           this.item = new ForgeItem(response.buffer);
           this.item.setContext(this.ui3DRenderer);
+          this.bindItemEvents(this.item);
           await this.item.load();
           this.ui3DRenderer.attachObject(this.item.container, false);
           this.processEventListener('onEditorFileLoad', [this]);
@@ -132,7 +146,7 @@ export class TabUTIEditorState extends TabState {
     super.hide();
     this.ui3DRenderer.enabled = false;
   }
-  
+
   updateFile(){
     this.item.exportToBlueprint();
   }

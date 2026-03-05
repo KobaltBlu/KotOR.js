@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useMemo, useState, useEffect, useCallback } from "react"
 
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
@@ -97,6 +97,23 @@ export const TabUTTEditor = function(props: BaseTabProps){
   const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) => 
     tab.trigger.createForgeCheckboxFieldHandler(setter, property, tab.trigger, tab);
 
+  const scriptSuggestions = useMemo(() => {
+    const keyObject = KotOR.KEYManager?.Key;
+    if (!keyObject?.keys?.length) {
+      return [] as string[];
+    }
+
+    const ncsType = KotOR.ResourceTypes['ncs'];
+    const names = keyObject.keys
+      .filter((entry: KotOR.IKEYEntry) => entry.resType === ncsType)
+      .map((entry: KotOR.IKEYEntry) => String(entry.resRef || '').toLowerCase())
+      .filter((name: string) => name.length > 0);
+
+    return Array.from(new Set(names)).sort();
+  }, []);
+
+  const scriptSuggestionListId = 'utt-script-suggestions';
+
   useEffect(() => {
     if(!tab) return;
     onTriggerChange();
@@ -173,28 +190,33 @@ export const TabUTTEditor = function(props: BaseTabProps){
       headerTitle: 'Scripts',
       content: (
         <>
+          <datalist id={scriptSuggestionListId}>
+            {scriptSuggestions.map((name) => (
+              <option key={`utt-script-${name}`} value={name} />
+            ))}
+          </datalist>
           <table style={{ width: '100%' }}>
             <tbody>
               <FormField label="On Click" info="ResRef of script executed when clicked.">
-                <input type="text" value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} maxLength={16} />
+                <input type="text" value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On Heartbeat" info="ResRef of ScriptOnHeartbeat.">
-                <input type="text" value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} maxLength={16} />
+                <input type="text" value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On Enter" info="ResRef of ScriptOnEnter.">
-                <input type="text" value={onEnter} onChange={onUpdateResRefField(setOnEnter, 'onEnter')} maxLength={16} />
+                <input type="text" value={onEnter} onChange={onUpdateResRefField(setOnEnter, 'onEnter')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On Exit" info="ResRef of ScriptOnExit.">
-                <input type="text" value={onExit} onChange={onUpdateResRefField(setOnExit, 'onExit')} maxLength={16} />
+                <input type="text" value={onExit} onChange={onUpdateResRefField(setOnExit, 'onExit')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On User Defined" info="ResRef of ScriptOnUserDefine.">
-                <input type="text" value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} maxLength={16} />
+                <input type="text" value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On Disarm" info="ResRef executed when trap is disarmed.">
-                <input type="text" value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} maxLength={16} />
+                <input type="text" value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On Trap Triggered" info="ResRef fired when trap trips.">
-                <input type="text" value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} maxLength={16} />
+                <input type="text" value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
             </tbody>
           </table>

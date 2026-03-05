@@ -114,6 +114,14 @@ export const ModalInventoryBrowser = (props: BaseModalProps) => {
     modal.removeItem(index);
   };
 
+  const handleMoveItemUp = (index: number) => {
+    modal.moveItemUp(index);
+  };
+
+  const handleMoveItemDown = (index: number) => {
+    modal.moveItemDown(index);
+  };
+
   const handleDroppableChange = (index: number, checked: boolean) => {
     modal.setDroppable(index, checked);
   };
@@ -235,6 +243,7 @@ export const ModalInventoryBrowser = (props: BaseModalProps) => {
                       <th>Item</th>
                       {showDroppable && <th title="Droppable">Drop</th>}
                       {showInfinite && <th title="Infinite stock">Inf</th>}
+                      <th title="Reorder">Order</th>
                       <th></th>
                     </tr>
                   </thead>
@@ -262,6 +271,24 @@ export const ModalInventoryBrowser = (props: BaseModalProps) => {
                             />
                           </td>
                         )}
+                        <td className="inv-browser-table-check">
+                          <button
+                            className="inv-browser-remove-btn"
+                            onClick={() => handleMoveItemUp(index)}
+                            title="Move item up"
+                            disabled={index === 0}
+                          >
+                            ^
+                          </button>
+                          <button
+                            className="inv-browser-remove-btn"
+                            onClick={() => handleMoveItemDown(index)}
+                            title="Move item down"
+                            disabled={index === inventory.length - 1}
+                          >
+                            v
+                          </button>
+                        </td>
                         <td>
                           <button
                             className="inv-browser-remove-btn"

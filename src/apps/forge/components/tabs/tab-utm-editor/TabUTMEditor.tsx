@@ -126,7 +126,7 @@ export const TabUTMEditor = function(props: BaseTabProps){
       if (selected) {
         onItemFieldChange(index, 'inventoryRes', selected.resref);
       }
-    });
+    }, 'store');
 
     modal.attachToModalManager(ForgeState.modalManager);
     modal.open();

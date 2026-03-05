@@ -1,6 +1,6 @@
 ﻿import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useCallback, useEffect, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
@@ -463,6 +463,23 @@ export const TabUTCEditor = function(props: BaseTabProps){
     tab.creature.setProperty('specAbilityList', updated);
     tab.updateFile();
   };
+
+  const scriptSuggestions = useMemo(() => {
+    const keyObject = KotOR.KEYManager?.Key;
+    if (!keyObject?.keys?.length) {
+      return [] as string[];
+    }
+
+    const ncsType = KotOR.ResourceTypes['ncs'];
+    const names = keyObject.keys
+      .filter((entry: KotOR.IKEYEntry) => entry.resType === ncsType)
+      .map((entry: KotOR.IKEYEntry) => String(entry.resRef || '').toLowerCase())
+      .filter((name: string) => name.length > 0);
+
+    return Array.from(new Set(names)).sort();
+  }, []);
+
+  const scriptSuggestionListId = 'utc-script-suggestions';
 
   const tabs: SubTab[] = [
     {
@@ -1079,63 +1096,68 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerTitle: 'Scripts',
       content: (
         <>
+          <datalist id={scriptSuggestionListId}>
+            {scriptSuggestions.map((name) => (
+              <option key={`utc-script-${name}`} value={name} />
+            ))}
+          </datalist>
           <table style={{width: '100%'}}>
             <tbody>
               <tr>
                 <td><label>Attacked</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptAttacked} onChange={onUpdateResRefField(setScriptAttacked, 'scriptAttacked')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptAttacked} onChange={onUpdateResRefField(setScriptAttacked, 'scriptAttacked')} /></td>
               </tr>
               <tr>
                 <td><label>Damaged</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptDamaged} onChange={onUpdateResRefField(setScriptDamaged, 'scriptDamaged')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptDamaged} onChange={onUpdateResRefField(setScriptDamaged, 'scriptDamaged')} /></td>
               </tr>
               <tr>
                 <td><label>Death</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptDeath} onChange={onUpdateResRefField(setScriptDeath, 'scriptDeath')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptDeath} onChange={onUpdateResRefField(setScriptDeath, 'scriptDeath')} /></td>
               </tr>
               <tr>
                 <td><label>Dialogue</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptDialogu} onChange={onUpdateResRefField(setScriptDialogu, 'scriptDialogu')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptDialogu} onChange={onUpdateResRefField(setScriptDialogu, 'scriptDialogu')} /></td>
               </tr>
               <tr>
                 <td><label>Disturbed</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptDisturbed} onChange={onUpdateResRefField(setScriptDisturbed, 'scriptDisturbed')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptDisturbed} onChange={onUpdateResRefField(setScriptDisturbed, 'scriptDisturbed')} /></td>
               </tr>
               <tr>
                 <td><label>End Dialogue</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptEndDialogue} onChange={onUpdateResRefField(setScriptEndDialogue, 'scriptEndDialogue')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptEndDialogue} onChange={onUpdateResRefField(setScriptEndDialogue, 'scriptEndDialogue')} /></td>
               </tr>
               <tr>
                 <td><label>End Round</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptEndRound} onChange={onUpdateResRefField(setScriptEndRound, 'scriptEndRound')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptEndRound} onChange={onUpdateResRefField(setScriptEndRound, 'scriptEndRound')} /></td>
               </tr>
               <tr>
                 <td><label>Heartbeat</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptHeartbeat} onChange={onUpdateResRefField(setScriptHeartbeat, 'scriptHeartbeat')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptHeartbeat} onChange={onUpdateResRefField(setScriptHeartbeat, 'scriptHeartbeat')} /></td>
               </tr>
               <tr>
                 <td><label>On Blocked</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptOnBlocked} onChange={onUpdateResRefField(setScriptOnBlocked, 'scriptOnBlocked')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptOnBlocked} onChange={onUpdateResRefField(setScriptOnBlocked, 'scriptOnBlocked')} /></td>
               </tr>
               <tr>
                 <td><label>On Notice</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptOnNotice} onChange={onUpdateResRefField(setScriptOnNotice, 'scriptOnNotice')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptOnNotice} onChange={onUpdateResRefField(setScriptOnNotice, 'scriptOnNotice')} /></td>
               </tr>
               <tr>
                 <td><label>Rested</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptRested} onChange={onUpdateResRefField(setScriptRested, 'scriptRested')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptRested} onChange={onUpdateResRefField(setScriptRested, 'scriptRested')} /></td>
               </tr>
               <tr>
                 <td><label>Spawn</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptSpawn} onChange={onUpdateResRefField(setScriptSpawn, 'scriptSpawn')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptSpawn} onChange={onUpdateResRefField(setScriptSpawn, 'scriptSpawn')} /></td>
               </tr>
               <tr>
                 <td><label>Spell At</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptSpellAt} onChange={onUpdateResRefField(setScriptSpellAt, 'scriptSpellAt')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptSpellAt} onChange={onUpdateResRefField(setScriptSpellAt, 'scriptSpellAt')} /></td>
               </tr>
               <tr>
                 <td><label>User Define</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptUserDefined} onChange={onUpdateResRefField(setScriptUserDefined, 'scriptUserDefined')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptUserDefined} onChange={onUpdateResRefField(setScriptUserDefined, 'scriptUserDefined')} /></td>
               </tr>
             </tbody>
           </table>

@@ -27,6 +27,28 @@
     gap: 0.75rem;
   }
 
+  &__sidebar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &__sidebar-filter {
+    input {
+      width: 100%;
+      padding: 0.45rem 0.6rem;
+      background: #181c25;
+      border: 1px solid #2a3142;
+      border-radius: 4px;
+      color: #d8e0ef;
+
+      &:focus {
+        outline: none;
+        border-color: #8aa4ff;
+      }
+    }
+  }
+
   &__main {
     flex: 1;
     overflow-y: auto;
@@ -37,7 +59,7 @@
     padding: 2rem;
     text-align: center;
     color: #b8c2d8;
-    
+
     p {
       margin-bottom: 2rem;
     }
@@ -65,6 +87,40 @@
   }
 }
 
+.git-action-btn {
+  flex: 1 1 45%;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #3a4763;
+  background: #20283a;
+  color: #d8e0ef;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background: #2a3651;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &--danger {
+    border-color: #6b3941;
+    background: #3a2126;
+
+    &:hover {
+      background: #4a2a31;
+    }
+  }
+
+  &--inline {
+    flex: 0 0 auto;
+    padding: 0.3rem 0.55rem;
+    font-size: 0.8rem;
+  }
+}
+
 .git-instance-list {
   background: #181c25;
   border: 1px solid #2a3142;
@@ -83,6 +139,13 @@
   &__items {
     max-height: 250px;
     overflow-y: auto;
+  }
+
+  &__empty {
+    padding: 0.6rem;
+    color: #97a1b8;
+    font-size: 0.8rem;
+    font-style: italic;
   }
 }
 
@@ -194,6 +257,26 @@
     border: 1px solid #2a3142;
     border-radius: 4px;
     padding: 0.5rem;
+  }
+
+  .git-inline-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    label {
+      margin: 0;
+      color: #b8c2d8;
+      font-size: 0.85rem;
+    }
+
+    select {
+      padding: 0.25rem 0.4rem;
+      background: #181c25;
+      border: 1px solid #2a3142;
+      border-radius: 4px;
+      color: #d8e0ef;
+    }
   }
 
   .field-item {

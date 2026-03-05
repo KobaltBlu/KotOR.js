@@ -3,7 +3,7 @@ import { ResourceLoader } from "@/loaders/ResourceLoader";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
-import { TwoDARegistry, type TwoDARegistryKey } from "@/apps/forge/data/TwoDARegistry";
+import { TwoDARegistry } from "@/apps/forge/data/TwoDARegistry";
 
 /**
  * InstallationRegistry – typed, lazy-loading 2DA cache for Forge editors.

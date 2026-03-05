@@ -1,6 +1,7 @@
 import React from "react";
 
 import { ModalItemBrowser } from "@/apps/forge/components/modal/ModalItemBrowser";
+import { InstallationRegistry } from "@/apps/forge/data/InstallationRegistry";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
 
@@ -37,8 +38,9 @@ export class ModalItemBrowserState extends ModalState {
     }
 
     try {
+      await InstallationRegistry.get2DA(InstallationRegistry.BASEITEMS);
       const items: UTIItem[] = [];
-      
+
       // Get all UTI files from KEYManager
       const utiKeys = KotOR.KEYManager.Key.keys.filter(
         (key: KotOR.IKEYEntry) => key.resType === KotOR.ResourceTypes['uti']
@@ -81,7 +83,7 @@ export class ModalItemBrowserState extends ModalState {
 
           // Get icon from baseitem
           if (baseItem > 0) {
-            const baseitems2DA = KotOR.TwoDAManager.datatables.get('baseitems');
+            const baseitems2DA = InstallationRegistry.get2DASync(InstallationRegistry.BASEITEMS);
             if (baseitems2DA) {
               const baseItemRow = baseitems2DA.getRowByIndex(baseItem);
               if (baseItemRow) {
@@ -120,7 +122,7 @@ export class ModalItemBrowserState extends ModalState {
 
   setSearchQuery(query: string) {
     this.searchQuery = query.toLowerCase();
-    this.filteredItems = this.items.filter(item => 
+    this.filteredItems = this.items.filter(item =>
       item.resref.toLowerCase().includes(this.searchQuery) ||
       item.localizedName.toLowerCase().includes(this.searchQuery)
     );
