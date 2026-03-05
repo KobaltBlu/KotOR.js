@@ -599,6 +599,25 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
+    vscode.commands.registerCommand('kotorForge.copyHostedSessionUrl', async (value?: { id?: string; accessUrl?: string } | string) => {
+      log.debug('Command invoked: kotorForge.copyHostedSessionUrl');
+      const sessionId = typeof value === 'object' && value?.id ? value.id : '';
+      const accessUrl = typeof value === 'string'
+        ? value
+        : (value && typeof value.accessUrl === 'string' ? value.accessUrl : '');
+      if (!accessUrl) {
+        vscode.window.showWarningMessage('No hosted session access URL is available for this item.');
+        return;
+      }
+
+      await vscode.env.clipboard.writeText(accessUrl);
+      const summary = sessionId
+        ? `Copied hosted session URL for ${sessionId}.`
+        : 'Copied hosted session URL.';
+      vscode.window.showInformationMessage(summary);
+      log.info(`[session-copy-url] copied access URL${sessionId ? ` for ${sessionId}` : ''}`);
+    }),
+
     vscode.commands.registerCommand('kotorForge.openHostedSession', async (value?: string | { accessUrl?: string }) => {
       log.debug('Command invoked: kotorForge.openHostedSession');
       const accessUrl = typeof value === 'string'
