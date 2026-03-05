@@ -10,6 +10,7 @@ import { SessionTreeProvider } from './views/SessionTreeProvider';
 
 const log = createScopedLogger(LogScope.Extension);
 const GFF_LIKE_EXTS = new Set(['.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
+const VALIDATION_EXTS = new Set([...GFF_LIKE_EXTS, '.mdl', '.mdx', '.json']);
 
 function getActiveResourceUri(): vscode.Uri | undefined {
   const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
@@ -31,6 +32,54 @@ function buildStatusBarTooltip(activeGame: string, kotorPath: string, tslPath: s
   const k1 = kotorPath || '(not set)';
   const k2 = tslPath || '(not set)';
   return `KotOR Forge active game: ${activeLabel}\nK1 path: ${k1}\nTSL path: ${k2}`;
+}
+
+function getResourceLabel(uri: vscode.Uri): string {
+  return uri.path.split('/').pop() || uri.toString();
+}
+
+function createValidationDiagnostic(message: string): vscode.Diagnostic {
+  return new vscode.Diagnostic(
+    new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+    `KotOR resource validation failed: ${message}`,
+    vscode.DiagnosticSeverity.Error
+  );
+}
+
+async function validateResourceUri(uri: vscode.Uri, extOverride?: string): Promise<void> {
+  const ext = (extOverride || getResourceExtension(uri)).toLowerCase();
+  const raw = await vscode.workspace.fs.readFile(uri);
+
+  if (GFF_LIKE_EXTS.has(ext)) {
+    new GFFObject(new Uint8Array(raw));
+    return;
+  }
+
+  if (ext === '.mdl') {
+    let mdxBytes: Uint8Array | undefined;
+    const mdxUri = uri.with({ path: uri.path.replace(/\.mdl$/i, '.mdx') });
+    try {
+      mdxBytes = await vscode.workspace.fs.readFile(mdxUri);
+    } catch {
+      mdxBytes = undefined;
+    }
+    readMDL(new Uint8Array(raw), { mdxBuffer: mdxBytes ? new Uint8Array(mdxBytes) : undefined });
+    return;
+  }
+
+  if (ext === '.mdx') {
+    const mdlUri = uri.with({ path: uri.path.replace(/\.mdx$/i, '.mdl') });
+    const mdlBytes = await vscode.workspace.fs.readFile(mdlUri);
+    readMDL(new Uint8Array(mdlBytes), { mdxBuffer: new Uint8Array(raw) });
+    return;
+  }
+
+  if (ext === '.json') {
+    JSON.parse(new TextDecoder().decode(raw));
+    return;
+  }
+
+  throw new Error(`Unsupported resource type for validation: ${ext}`);
 }
 
 /**
@@ -420,37 +469,80 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.showWarningMessage('Open a KotOR resource first to validate.');
         return;
       }
+      if (!VALIDATION_EXTS.has(ext)) {
+        vscode.window.showWarningMessage(`Validation is not supported for ${ext || 'this file type'}.`);
+        return;
+      }
 
       validationDiagnostics.delete(uri);
       try {
-        const raw = await vscode.workspace.fs.readFile(uri);
-        if (GFF_LIKE_EXTS.has(ext)) {
-          new GFFObject(new Uint8Array(raw));
-        } else if (ext === '.mdl') {
-          let mdxBytes: Uint8Array | undefined;
-          const mdxUri = uri.with({ path: uri.path.replace(/\.mdl$/i, '.mdx') });
-          try {
-            mdxBytes = await vscode.workspace.fs.readFile(mdxUri);
-          } catch {
-            mdxBytes = undefined;
-          }
-          readMDL(new Uint8Array(raw), { mdxBuffer: mdxBytes ? new Uint8Array(mdxBytes) : undefined });
-        } else if (ext === '.json') {
-          JSON.parse(new TextDecoder().decode(raw));
-        }
-
-        vscode.window.showInformationMessage(`Validation succeeded for ${uri.path.split('/').pop() || uri.toString()}.`);
+        await validateResourceUri(uri, ext);
+        vscode.window.showInformationMessage(`Validation succeeded for ${getResourceLabel(uri)}.`);
         log.info(`validateActiveResource: validation succeeded for ${uri.toString()}`);
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        const diagnostic = new vscode.Diagnostic(
-          new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-          `KotOR resource validation failed: ${message}`,
-          vscode.DiagnosticSeverity.Error
-        );
-        validationDiagnostics.set(uri, [diagnostic]);
+        validationDiagnostics.set(uri, [createValidationDiagnostic(message)]);
         vscode.window.showErrorMessage(`Validation failed: ${message}`);
         log.error(`validateActiveResource failed for ${uri.toString()}: ${message}`);
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.validateWorkspaceResources', async () => {
+      log.debug('Command invoked: kotorForge.validateWorkspaceResources');
+      const extPattern = Array.from(VALIDATION_EXTS)
+        .map((ext) => ext.replace('.', ''))
+        .join(',');
+      const files = await vscode.workspace.findFiles(
+        `**/*.{${extPattern}}`,
+        '**/{node_modules,.git,dist,build,.next,.cache}/**',
+        400
+      );
+
+      if (!files.length) {
+        vscode.window.showWarningMessage('No supported KotOR resources found in workspace for validation.');
+        return;
+      }
+
+      let validatedCount = 0;
+      let failedCount = 0;
+      validationDiagnostics.clear();
+
+      await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Notification,
+        title: 'KotOR Forge: validating workspace resources',
+        cancellable: true,
+      }, async (progress, token) => {
+        for (let index = 0; index < files.length; index += 1) {
+          if (token.isCancellationRequested) {
+            log.warn(`validateWorkspaceResources cancelled after ${index} files`);
+            break;
+          }
+
+          const uri = files[index];
+          progress.report({
+            message: `${index + 1}/${files.length} ${getResourceLabel(uri)}`,
+            increment: (100 / files.length),
+          });
+
+          try {
+            await validateResourceUri(uri);
+            validatedCount += 1;
+          } catch (error) {
+            failedCount += 1;
+            const message = error instanceof Error ? error.message : String(error);
+            validationDiagnostics.set(uri, [createValidationDiagnostic(message)]);
+            log.warn(`validateWorkspaceResources failed for ${uri.toString()}: ${message}`);
+          }
+        }
+      });
+
+      const summary = `Validated ${validatedCount}/${files.length} resources`;
+      if (failedCount > 0) {
+        vscode.window.showWarningMessage(`${summary}; failures: ${failedCount}. See Problems for details.`);
+        log.warn(`validateWorkspaceResources completed with failures: ${failedCount}/${files.length}`);
+      } else {
+        vscode.window.showInformationMessage(`${summary}; no validation errors detected.`);
+        log.info(`validateWorkspaceResources completed successfully: ${validatedCount}/${files.length}`);
       }
     }),
 

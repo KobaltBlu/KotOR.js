@@ -327,6 +327,11 @@
         "category": "KotOR Forge"
       },
       {
+        "command": "kotorForge.validateWorkspaceResources",
+        "title": "Validate Workspace Resources",
+        "category": "KotOR Forge"
+      },
+      {
         "command": "kotorForge.findResourceReferences",
         "title": "Find Resource References",
         "category": "KotOR Forge"
@@ -412,6 +417,11 @@
           "when": "view == kotorForgeResources",
           "command": "kotorForge.refreshResources",
           "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeResources",
+          "command": "kotorForge.validateWorkspaceResources",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -433,6 +443,12 @@
         "command": "kotorForge.findResourceReferences",
         "key": "ctrl+alt+f",
         "mac": "cmd+alt+f",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kotorForge.validateWorkspaceResources",
+        "key": "ctrl+alt+shift+v",
+        "mac": "cmd+alt+shift+v",
         "when": "editorTextFocus"
       }
     ]
