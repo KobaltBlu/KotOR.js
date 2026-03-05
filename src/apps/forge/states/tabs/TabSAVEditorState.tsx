@@ -30,6 +30,9 @@ export class TabSAVEditorState extends TabState {
   globalVariables?: GlobalVariableSnapshot;
   private globalVariableGff?: KotOR.GFFObject;
   private globalVariableResType?: number;
+  private moduleInfoGff?: KotOR.GFFObject;
+  private moduleInfoResRef?: string;
+  private moduleInfoResType?: number;
   saveMeta?: {
     areaName?: string;
     lastModule?: string;
@@ -83,6 +86,7 @@ export class TabSAVEditorState extends TabState {
       await this.erf.load();
       log.trace("TabSAVEditorState openFile erf.load done");
 
+      await this.loadModuleInfoForEditing();
       this.saveMeta = await this.extractSaveMetadata();
       log.debug("TabSAVEditorState openFile saveMeta resourceCount", this.saveMeta?.resourceCount);
       this.undoManager.clear();
@@ -229,6 +233,105 @@ export class TabSAVEditorState extends TabState {
     this.resourceOverrides.set(overrideKey, exportBuffer);
     this.file.unsaved_changes = true;
     this.processEventListener('onEditorFileLoad', [this]);
+  }
+
+  private async loadModuleInfoForEditing(): Promise<void> {
+    this.moduleInfoGff = undefined;
+    this.moduleInfoResRef = undefined;
+    this.moduleInfoResType = undefined;
+    if (!this.erf) return;
+
+    const key = this.erf.keyList.find((entry) => KotOR.ResourceTypes.getKeyByValue(entry.resType) === 'ifo');
+    if (!key) return;
+
+    const buffer = await this.getResourceBufferByEntry(key.resRef, key.resType);
+    if (!buffer?.length) return;
+
+    this.moduleInfoGff = new KotOR.GFFObject(buffer);
+    this.moduleInfoResRef = key.resRef;
+    this.moduleInfoResType = key.resType;
+  }
+
+  private markModuleInfoChanged(): void {
+    if (!this.file || !this.moduleInfoGff || !this.moduleInfoResRef || this.moduleInfoResType == null) return;
+
+    const exportBuffer = this.moduleInfoGff.getExportBuffer();
+    const overrideKey = this.resourceOverrideKey(this.moduleInfoResRef, this.moduleInfoResType);
+    this.resourceOverrides.set(overrideKey, exportBuffer);
+
+    const moduleName = String(this.moduleInfoGff.RootNode.getFieldByLabel('Mod_Entry_Area')?.getValue() || 'Unknown');
+    const dawnHour = Number(this.moduleInfoGff.RootNode.getFieldByLabel('Mod_DawnHour')?.getValue() || 0);
+    const duskHour = Number(this.moduleInfoGff.RootNode.getFieldByLabel('Mod_DuskHour')?.getValue() || 0);
+    if (this.saveMeta) {
+      this.saveMeta.lastModule = moduleName;
+      this.saveMeta.gameTime = Math.max(0, duskHour - dawnHour);
+    }
+
+    this.file.unsaved_changes = true;
+    this.processEventListener('onEditorFileLoad', [this]);
+  }
+
+  private applyModuleInfoField(label: string, value: string | number): void {
+    if (!this.moduleInfoGff) return;
+    const field = this.moduleInfoGff.RootNode.getFieldByLabel(label);
+    if (!field) return;
+    field.setValue(value);
+    this.markModuleInfoChanged();
+  }
+
+  updateModuleEntryArea(value: string): void {
+    if (!this.moduleInfoGff) return;
+    const field = this.moduleInfoGff.RootNode.getFieldByLabel('Mod_Entry_Area');
+    if (!field) return;
+    const previous = String(field.getValue() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-module-entry-edit',
+      description: 'Edit module entry area',
+      redo: () => this.applyModuleInfoField('Mod_Entry_Area', value),
+      undo: () => this.applyModuleInfoField('Mod_Entry_Area', previous),
+    });
+  }
+
+  updateModuleDawnHour(value: number): void {
+    if (!this.moduleInfoGff) return;
+    const field = this.moduleInfoGff.RootNode.getFieldByLabel('Mod_DawnHour');
+    if (!field) return;
+    const previous = Number(field.getValue() || 0);
+    const next = Math.max(0, Math.min(23, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-module-dawn-edit',
+      description: 'Edit dawn hour',
+      redo: () => this.applyModuleInfoField('Mod_DawnHour', next),
+      undo: () => this.applyModuleInfoField('Mod_DawnHour', previous),
+    });
+  }
+
+  updateModuleDuskHour(value: number): void {
+    if (!this.moduleInfoGff) return;
+    const field = this.moduleInfoGff.RootNode.getFieldByLabel('Mod_DuskHour');
+    if (!field) return;
+    const previous = Number(field.getValue() || 0);
+    const next = Math.max(0, Math.min(23, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-module-dusk-edit',
+      description: 'Edit dusk hour',
+      redo: () => this.applyModuleInfoField('Mod_DuskHour', next),
+      undo: () => this.applyModuleInfoField('Mod_DuskHour', previous),
+    });
+  }
+
+  getModuleDawnHour(): number {
+    return Number(this.moduleInfoGff?.RootNode.getFieldByLabel('Mod_DawnHour')?.getValue() || 0);
+  }
+
+  getModuleDuskHour(): number {
+    return Number(this.moduleInfoGff?.RootNode.getFieldByLabel('Mod_DuskHour')?.getValue() || 0);
   }
 
   private applyGlobalBoolean(index: number, value: boolean): void {

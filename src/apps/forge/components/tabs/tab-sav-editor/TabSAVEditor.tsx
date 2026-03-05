@@ -139,6 +139,44 @@ export const TabSAVEditor = function(props: BaseTabProps){
               <span>{saveMeta?.gameTime || 0}</span>
             </div>
           </div>
+          <div className="sav-module-edit">
+            <h4>Module Session Settings</h4>
+            <div className="property-group">
+              <label>Entry Area ResRef</label>
+              <input
+                title="Entry Area ResRef"
+                type="text"
+                value={saveMeta?.lastModule || ''}
+                onChange={(e) => tab.updateModuleEntryArea(e.target.value)}
+                placeholder="Entry area module..."
+                maxLength={16}
+              />
+            </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Dawn Hour</label>
+                <input
+                  title="Dawn Hour"
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={tab.getModuleDawnHour()}
+                  onChange={(e) => tab.updateModuleDawnHour(parseInt(e.target.value, 10) || 0)}
+                />
+              </div>
+              <div className="property-group">
+                <label>Dusk Hour</label>
+                <input
+                  title="Dusk Hour"
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={tab.getModuleDuskHour()}
+                  onChange={(e) => tab.updateModuleDuskHour(parseInt(e.target.value, 10) || 0)}
+                />
+              </div>
+            </div>
+          </div>
           <div className="sav-quick-actions">
             <button onClick={() => quickOpenByType('ifo')}>Open Module Info (IFO)</button>
             <button onClick={() => quickOpenByType('are')}>Open Area (ARE)</button>
