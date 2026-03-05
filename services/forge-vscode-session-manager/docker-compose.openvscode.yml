@@ -15,6 +15,7 @@ services:
       FORGE_SESSION_MANAGER_WARNING_MS: "300000"
       FORGE_OPENVSCODE_BASE_URL: "http://127.0.0.1:18080"
       FORGE_SESSION_MANAGER_PUBLIC_BASE_URL: "http://127.0.0.1:8090"
+      FORGE_SESSION_MANAGER_ADMIN_TOKEN: "dev-admin-token"
     command: >
       bash -lc "npx tsc services/forge-vscode-session-manager/src/server.ts services/forge-vscode-session-manager/src/SessionManagerCore.ts --target ES2020 --module commonjs --outDir services/forge-vscode-session-manager/dist --esModuleInterop --skipLibCheck && node services/forge-vscode-session-manager/dist/server.js"
     ports:
@@ -32,6 +33,20 @@ services:
       - --without-connection-token
     ports:
       - "18080:3000"
+
+  session-orchestrator:
+    image: node:22-bookworm
+    depends_on:
+      - session-manager
+    working_dir: /workspace
+    volumes:
+      - ../../:/workspace
+    environment:
+      FORGE_SESSION_MANAGER_BASE_URL: "http://session-manager:8090"
+      FORGE_SESSION_MANAGER_ADMIN_TOKEN: "dev-admin-token"
+      FORGE_SESSION_ORCHESTRATOR_POLL_MS: "1000"
+    command: >
+      bash -lc "node scripts/session-manager-orchestrator.mjs"
 
 volumes:
   session-manager-data:

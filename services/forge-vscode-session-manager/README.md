@@ -47,6 +47,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - `GET /api/sessions?includeTokens=1` returns tokenized access URLs when called with a valid admin token.
 - Session responses now include `accessUrl` and `sessionPath` for tokenized proxied access routing.
 - Configure `FORGE_SESSION_MANAGER_PUBLIC_BASE_URL` when external clients should use a public hostname instead of localhost.
+- `scripts/session-manager-orchestrator.mjs` provides a polling orchestration worker that converts container lifecycle events into `/container-ready` and `/container-stopped` acknowledgements.
 
 ## Local compose stack
 
@@ -60,3 +61,4 @@ Endpoints:
 
 - Session manager: `http://127.0.0.1:8090`
 - OpenVSCode: `http://127.0.0.1:18080`
+- Orchestrator sidecar: auto-runs in compose and acknowledges container lifecycle events using admin token.
