@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { GFFObject } from '@kotor/resource/GFFObject';
+import { bytesMDL, readMDL } from '@kotor/resource/MDLAuto';
 import { getLogger, setExtensionLogger, LogScope, createScopedLogger } from './logger';
 import { activateLsp, deactivateLsp } from './lsp/client';
 import { KotorForgeProvider } from './providers/KotorForgeProvider';
@@ -180,6 +181,47 @@ export function activate(context: vscode.ExtensionContext) {
       } catch (e) {
         log.error(`openAsXml failed: ${e}`);
         vscode.window.showErrorMessage(`Failed to open as XML: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.openAsAscii', async () => {
+      log.debug('Command invoked: kotorForge.openAsAscii');
+      const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
+      const input = tab?.input as { uri?: vscode.Uri } | undefined;
+      const uri = input?.uri || vscode.window.activeTextEditor?.document?.uri;
+      const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
+
+      if (!uri || (ext !== 'mdl' && ext !== 'mdx')) {
+        vscode.window.showWarningMessage('Open an MDL/MDX resource first.');
+        return;
+      }
+
+      if (ext === 'mdx') {
+        vscode.window.showWarningMessage('Open the matching .mdl file to view ASCII model data.');
+        return;
+      }
+
+      try {
+        const mdlBytes = await vscode.workspace.fs.readFile(uri);
+        let mdxBytes: Uint8Array | undefined;
+        const mdxUri = uri.with({ path: uri.path.replace(/\.mdl$/i, '.mdx') });
+        try {
+          mdxBytes = await vscode.workspace.fs.readFile(mdxUri);
+        } catch {
+          mdxBytes = undefined;
+        }
+
+        const mdl = readMDL(new Uint8Array(mdlBytes), { mdxBuffer: mdxBytes ? new Uint8Array(mdxBytes) : undefined });
+        const ascii = new TextDecoder().decode(bytesMDL(mdl, 'mdl_ascii'));
+        const asciiDoc = await vscode.workspace.openTextDocument({
+          content: ascii,
+          language: 'plaintext',
+        });
+        await vscode.window.showTextDocument(asciiDoc, { preview: false });
+        log.info(`openAsAscii: opened ASCII model for ${uri.toString()}`);
+      } catch (e) {
+        log.error(`openAsAscii failed: ${e}`);
+        vscode.window.showErrorMessage(`Failed to open as ASCII MDL: ${e instanceof Error ? e.message : String(e)}`);
       }
     })
   );
