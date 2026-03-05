@@ -349,6 +349,10 @@ export class TabSAVEditorState extends TabState {
     this.markAreaInfoChanged();
   }
 
+  private hasAreaField(label: string): boolean {
+    return !!this.areaInfoGff?.RootNode.getFieldByLabel(label);
+  }
+
   updateAreaName(value: string): void {
     if (!this.areaInfoGff) return;
     const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('Name')?.getCExoLocString?.()?.getValue?.() || '');
@@ -431,7 +435,7 @@ export class TabSAVEditorState extends TabState {
   }
 
   updateAreaNoRest(value: boolean): void {
-    if (!this.areaInfoGff) return;
+    if (!this.areaInfoGff || !this.hasAreaField('NoRest')) return;
     const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('NoRest')?.getValue?.() || 0) > 0;
     if (previous === value) return;
 
@@ -444,7 +448,7 @@ export class TabSAVEditorState extends TabState {
   }
 
   updateAreaNoHangBack(value: boolean): void {
-    if (!this.areaInfoGff) return;
+    if (!this.areaInfoGff || !this.hasAreaField('NoHangBack')) return;
     const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('NoHangBack')?.getValue?.() || 0) > 0;
     if (previous === value) return;
 
@@ -457,7 +461,7 @@ export class TabSAVEditorState extends TabState {
   }
 
   updateAreaPlayerOnly(value: boolean): void {
-    if (!this.areaInfoGff) return;
+    if (!this.areaInfoGff || !this.hasAreaField('PlayerOnly')) return;
     const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('PlayerOnly')?.getValue?.() || 0) > 0;
     if (previous === value) return;
 
@@ -470,7 +474,7 @@ export class TabSAVEditorState extends TabState {
   }
 
   updateAreaUnescapable(value: boolean): void {
-    if (!this.areaInfoGff) return;
+    if (!this.areaInfoGff || !this.hasAreaField('Unescapable')) return;
     const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('Unescapable')?.getValue?.() || 0) > 0;
     if (previous === value) return;
 
@@ -479,6 +483,73 @@ export class TabSAVEditorState extends TabState {
       description: 'Edit area unescapable flag',
       redo: () => this.applyAreaBooleanField('Unescapable', value),
       undo: () => this.applyAreaBooleanField('Unescapable', previous),
+    });
+  }
+
+  updateAreaDayNightCycle(value: boolean): void {
+    if (!this.areaInfoGff || !this.hasAreaField('DayNightCycle')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('DayNightCycle')?.getValue?.() || 0) > 0;
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-day-night-cycle-edit',
+      description: 'Edit area day/night cycle flag',
+      redo: () => this.applyAreaBooleanField('DayNightCycle', value),
+      undo: () => this.applyAreaBooleanField('DayNightCycle', previous),
+    });
+  }
+
+  updateAreaIsNight(value: boolean): void {
+    if (!this.areaInfoGff || !this.hasAreaField('IsNight')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('IsNight')?.getValue?.() || 0) > 0;
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-is-night-edit',
+      description: 'Edit area is-night flag',
+      redo: () => this.applyAreaBooleanField('IsNight', value),
+      undo: () => this.applyAreaBooleanField('IsNight', previous),
+    });
+  }
+
+  updateAreaStealthXPEnabled(value: boolean): void {
+    if (!this.areaInfoGff || !this.hasAreaField('StealthXPEnabled')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('StealthXPEnabled')?.getValue?.() || 0) > 0;
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-stealth-xp-enabled-edit',
+      description: 'Edit area stealth XP enabled flag',
+      redo: () => this.applyAreaBooleanField('StealthXPEnabled', value),
+      undo: () => this.applyAreaBooleanField('StealthXPEnabled', previous),
+    });
+  }
+
+  updateAreaStealthXPMax(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('StealthXPMax')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('StealthXPMax')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(65535, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-stealth-xp-max-edit',
+      description: 'Edit area stealth XP max',
+      redo: () => this.applyAreaNumberField('StealthXPMax', next, 0, 65535),
+      undo: () => this.applyAreaNumberField('StealthXPMax', previous, 0, 65535),
+    });
+  }
+
+  updateAreaStealthXPLoss(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('StealthXPLoss')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('StealthXPLoss')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(65535, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-stealth-xp-loss-edit',
+      description: 'Edit area stealth XP loss',
+      redo: () => this.applyAreaNumberField('StealthXPLoss', next, 0, 65535),
+      undo: () => this.applyAreaNumberField('StealthXPLoss', previous, 0, 65535),
     });
   }
 
@@ -575,6 +646,26 @@ export class TabSAVEditorState extends TabState {
 
   getAreaUnescapable(): boolean {
     return Number(this.areaInfoGff?.RootNode.getFieldByLabel('Unescapable')?.getValue?.() || 0) > 0;
+  }
+
+  getAreaDayNightCycle(): boolean {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('DayNightCycle')?.getValue?.() || 0) > 0;
+  }
+
+  getAreaIsNight(): boolean {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('IsNight')?.getValue?.() || 0) > 0;
+  }
+
+  getAreaStealthXPEnabled(): boolean {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('StealthXPEnabled')?.getValue?.() || 0) > 0;
+  }
+
+  getAreaStealthXPMax(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('StealthXPMax')?.getValue?.() || 0);
+  }
+
+  getAreaStealthXPLoss(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('StealthXPLoss')?.getValue?.() || 0);
   }
 
   canEditAreaName(): boolean {

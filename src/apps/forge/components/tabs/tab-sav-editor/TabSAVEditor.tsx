@@ -257,6 +257,64 @@ export const TabSAVEditor = function(props: BaseTabProps){
                 />
               </div>
             </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Day/Night Cycle</label>
+                <input
+                  title="Area Day Night Cycle"
+                  type="checkbox"
+                  checked={tab.getAreaDayNightCycle()}
+                  onChange={(e) => tab.updateAreaDayNightCycle(e.target.checked)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Is Night</label>
+                <input
+                  title="Area Is Night"
+                  type="checkbox"
+                  checked={tab.getAreaIsNight()}
+                  onChange={(e) => tab.updateAreaIsNight(e.target.checked)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Stealth XP Enabled</label>
+                <input
+                  title="Area Stealth XP Enabled"
+                  type="checkbox"
+                  checked={tab.getAreaStealthXPEnabled()}
+                  onChange={(e) => tab.updateAreaStealthXPEnabled(e.target.checked)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Stealth XP Max</label>
+                <input
+                  title="Area Stealth XP Max"
+                  type="number"
+                  min={0}
+                  max={65535}
+                  value={tab.getAreaStealthXPMax()}
+                  onChange={(e) => tab.updateAreaStealthXPMax(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Stealth XP Loss</label>
+                <input
+                  title="Area Stealth XP Loss"
+                  type="number"
+                  min={0}
+                  max={65535}
+                  value={tab.getAreaStealthXPLoss()}
+                  onChange={(e) => tab.updateAreaStealthXPLoss(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
           </div>
           <div className="sav-module-edit">
             <h4>Module Session Settings</h4>
