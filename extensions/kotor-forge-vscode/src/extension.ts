@@ -699,6 +699,49 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
+    vscode.commands.registerCommand('kotorForge.markHostedSessionSaved', async (value?: { id?: string; token?: string } | string) => {
+      log.debug('Command invoked: kotorForge.markHostedSessionSaved');
+      const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      const sessionId = typeof value === 'string'
+        ? value
+        : (value?.id || '');
+      if (!sessionId) {
+        vscode.window.showWarningMessage('Session id is required to mark hosted session save complete.');
+        return;
+      }
+
+      try {
+        const extraHeaders = !adminToken && value && typeof value === 'object' && typeof value.token === 'string' && value.token
+          ? { 'x-session-token': value.token }
+          : undefined;
+
+        const session = await fetchSessionManagerResource(
+          sessionManagerUrl,
+          `/api/sessions/${encodeURIComponent(sessionId)}/save-complete`,
+          adminToken,
+          false,
+          {
+            method: 'POST',
+            headers: extraHeaders,
+          }
+        ) as { status?: string };
+
+        vscode.window.showInformationMessage(`Marked save complete for ${sessionId} (status: ${session.status || 'unknown'}).`);
+        log.info(`[session-save-complete] marked ${sessionId} save complete; status=${session.status || 'unknown'}`);
+        sessionTreeProvider.refresh();
+        void refreshSessionStatusBar();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to mark hosted session save complete: ${message}`);
+        log.error(`markHostedSessionSaved failed: ${message}`);
+      }
+    }),
+
     vscode.commands.registerCommand('kotorForge.copyHostedSessionUrl', async (value?: { id?: string; accessUrl?: string } | string) => {
       log.debug('Command invoked: kotorForge.copyHostedSessionUrl');
       const sessionId = typeof value === 'object' && value?.id ? value.id : '';

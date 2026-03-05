@@ -372,6 +372,11 @@
         "category": "KotOR Forge"
       },
       {
+        "command": "kotorForge.markHostedSessionSaved",
+        "title": "Mark Hosted Session Save Complete",
+        "category": "KotOR Forge"
+      },
+      {
         "command": "kotorForge.copyHostedSessionUrl",
         "title": "Copy Hosted Session URL",
         "category": "KotOR Forge"
@@ -553,6 +558,11 @@
         {
           "when": "view == kotorForgeSessions && (viewItem == kotorForge.session || viewItem == kotorForge.session.access)",
           "command": "kotorForge.heartbeatHostedSession",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeSessions && (viewItem == kotorForge.session || viewItem == kotorForge.session.access)",
+          "command": "kotorForge.markHostedSessionSaved",
           "group": "navigation"
         },
         {
