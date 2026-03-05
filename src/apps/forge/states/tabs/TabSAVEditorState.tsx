@@ -817,6 +817,76 @@ export class TabSAVEditorState extends TabState {
     });
   }
 
+  updateAreaSunAmbientColor(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('SunAmbientColor')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('SunAmbientColor')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(4294967295, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-sun-ambient-color-edit',
+      description: 'Edit area sun ambient color',
+      redo: () => this.applyAreaNumberField('SunAmbientColor', next, 0, 4294967295),
+      undo: () => this.applyAreaNumberField('SunAmbientColor', previous, 0, 4294967295),
+    });
+  }
+
+  updateAreaSunDiffuseColor(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('SunDiffuseColor')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('SunDiffuseColor')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(4294967295, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-sun-diffuse-color-edit',
+      description: 'Edit area sun diffuse color',
+      redo: () => this.applyAreaNumberField('SunDiffuseColor', next, 0, 4294967295),
+      undo: () => this.applyAreaNumberField('SunDiffuseColor', previous, 0, 4294967295),
+    });
+  }
+
+  updateAreaMoonAmbientColor(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('MoonAmbientColor')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('MoonAmbientColor')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(4294967295, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-moon-ambient-color-edit',
+      description: 'Edit area moon ambient color',
+      redo: () => this.applyAreaNumberField('MoonAmbientColor', next, 0, 4294967295),
+      undo: () => this.applyAreaNumberField('MoonAmbientColor', previous, 0, 4294967295),
+    });
+  }
+
+  updateAreaMoonDiffuseColor(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('MoonDiffuseColor')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('MoonDiffuseColor')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(4294967295, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-moon-diffuse-color-edit',
+      description: 'Edit area moon diffuse color',
+      redo: () => this.applyAreaNumberField('MoonDiffuseColor', next, 0, 4294967295),
+      undo: () => this.applyAreaNumberField('MoonDiffuseColor', previous, 0, 4294967295),
+    });
+  }
+
+  updateAreaDynAmbientColor(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('DynAmbientColor')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('DynAmbientColor')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(4294967295, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-dyn-ambient-color-edit',
+      description: 'Edit area dynamic ambient color',
+      redo: () => this.applyAreaNumberField('DynAmbientColor', next, 0, 4294967295),
+      undo: () => this.applyAreaNumberField('DynAmbientColor', previous, 0, 4294967295),
+    });
+  }
+
   updateModuleEntryArea(value: string): void {
     if (!this.moduleInfoGff) return;
     const field = this.moduleInfoGff.RootNode.getFieldByLabel('Mod_Entry_Area');
@@ -1006,6 +1076,26 @@ export class TabSAVEditorState extends TabState {
 
   getAreaMoonFogColor(): number {
     return Number(this.areaInfoGff?.RootNode.getFieldByLabel('MoonFogColor')?.getValue?.() || 0);
+  }
+
+  getAreaSunAmbientColor(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('SunAmbientColor')?.getValue?.() || 0);
+  }
+
+  getAreaSunDiffuseColor(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('SunDiffuseColor')?.getValue?.() || 0);
+  }
+
+  getAreaMoonAmbientColor(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('MoonAmbientColor')?.getValue?.() || 0);
+  }
+
+  getAreaMoonDiffuseColor(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('MoonDiffuseColor')?.getValue?.() || 0);
+  }
+
+  getAreaDynAmbientColor(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('DynAmbientColor')?.getValue?.() || 0);
   }
 
   canEditAreaName(): boolean {

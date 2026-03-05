@@ -557,6 +557,70 @@ export const TabSAVEditor = function(props: BaseTabProps){
                 />
               </div>
             </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Sun Ambient Color</label>
+                <input
+                  title="Area Sun Ambient Color"
+                  type="number"
+                  min={0}
+                  max={4294967295}
+                  value={tab.getAreaSunAmbientColor()}
+                  onChange={(e) => tab.updateAreaSunAmbientColor(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Sun Diffuse Color</label>
+                <input
+                  title="Area Sun Diffuse Color"
+                  type="number"
+                  min={0}
+                  max={4294967295}
+                  value={tab.getAreaSunDiffuseColor()}
+                  onChange={(e) => tab.updateAreaSunDiffuseColor(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Moon Ambient Color</label>
+                <input
+                  title="Area Moon Ambient Color"
+                  type="number"
+                  min={0}
+                  max={4294967295}
+                  value={tab.getAreaMoonAmbientColor()}
+                  onChange={(e) => tab.updateAreaMoonAmbientColor(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Moon Diffuse Color</label>
+                <input
+                  title="Area Moon Diffuse Color"
+                  type="number"
+                  min={0}
+                  max={4294967295}
+                  value={tab.getAreaMoonDiffuseColor()}
+                  onChange={(e) => tab.updateAreaMoonDiffuseColor(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Dynamic Ambient Color</label>
+                <input
+                  title="Area Dynamic Ambient Color"
+                  type="number"
+                  min={0}
+                  max={4294967295}
+                  value={tab.getAreaDynAmbientColor()}
+                  onChange={(e) => tab.updateAreaDynAmbientColor(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
           </div>
           <div className="sav-module-edit">
             <h4>Module Session Settings</h4>
