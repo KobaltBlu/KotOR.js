@@ -195,6 +195,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
   const sessionStatusInterval = setInterval(() => {
+    sessionTreeProvider.refresh();
     void refreshSessionStatusBar();
   }, 15000);
   context.subscriptions.push(new vscode.Disposable(() => clearInterval(sessionStatusInterval)));
