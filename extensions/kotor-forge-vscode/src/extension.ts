@@ -23,6 +23,33 @@ function getResourceExtension(uri?: vscode.Uri): string {
   return `.${(uri.fsPath.split('.').pop() ?? '').toLowerCase()}`;
 }
 
+function resolveCommandUri(value?: unknown): vscode.Uri | undefined {
+  if (value instanceof vscode.Uri) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    try {
+      return vscode.Uri.parse(value);
+    } catch {
+      return undefined;
+    }
+  }
+  if (value && typeof value === 'object') {
+    const candidate = (value as { uri?: unknown }).uri;
+    if (candidate instanceof vscode.Uri) {
+      return candidate;
+    }
+    if (typeof candidate === 'string') {
+      try {
+        return vscode.Uri.parse(candidate);
+      } catch {
+        return undefined;
+      }
+    }
+  }
+  return undefined;
+}
+
 function getActiveGameLabel(activeGame: string): string {
   return activeGame === 'tsl' ? 'TSL' : 'K1';
 }
@@ -778,9 +805,9 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
-    vscode.commands.registerCommand('kotorForge.validateActiveResource', async () => {
+    vscode.commands.registerCommand('kotorForge.validateActiveResource', async (value?: unknown) => {
       log.debug('Command invoked: kotorForge.validateActiveResource');
-      const uri = getActiveResourceUri();
+      const uri = resolveCommandUri(value) || getActiveResourceUri();
       const ext = getResourceExtension(uri);
       if (!uri) {
         vscode.window.showWarningMessage('Open a KotOR resource first to validate.');
@@ -870,9 +897,9 @@ export function activate(context: vscode.ExtensionContext) {
       log.info('clearValidationDiagnostics: diagnostic collection cleared');
     }),
 
-    vscode.commands.registerCommand('kotorForge.findResourceReferences', async () => {
+    vscode.commands.registerCommand('kotorForge.findResourceReferences', async (value?: unknown) => {
       log.debug('Command invoked: kotorForge.findResourceReferences');
-      const uri = getActiveResourceUri();
+      const uri = resolveCommandUri(value) || getActiveResourceUri();
       if (!uri) {
         vscode.window.showWarningMessage('Open a resource first to search references.');
         return;

@@ -549,6 +549,16 @@
           "when": "view == kotorForgeSessions && (viewItem == kotorForge.session || viewItem == kotorForge.session.access)",
           "command": "kotorForge.copyHostedSessionId",
           "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeResources && viewItem == kotorForge.resourceFile",
+          "command": "kotorForge.validateActiveResource",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeResources && viewItem == kotorForge.resourceFile",
+          "command": "kotorForge.findResourceReferences",
+          "group": "navigation"
         }
       ]
     },
