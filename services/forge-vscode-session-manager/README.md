@@ -49,6 +49,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - Optional workspace quota guard (`FORGE_SESSION_MANAGER_MAX_WORKSPACE_BYTES`) emits `session_workspace_quota_exceeded` and transitions session to save-request flow before expiry.
 - Closed/expired sessions are retained then pruned (`FORGE_SESSION_MANAGER_RETENTION_MS`, default 72h) once container state is stopped/failed.
 - Optional admin operations can be enabled by setting `FORGE_SESSION_MANAGER_ADMIN_TOKEN` and supplying `x-admin-token`.
+- Optional upstream host allow-list (`FORGE_SESSION_MANAGER_ALLOWED_UPSTREAM_HOSTS=host1,host2`) can restrict `/container-ready` `upstreamUrl` targets to approved hostnames.
 - `GET /api/sessions?includeTokens=1` returns tokenized access URLs when called with a valid admin token.
 - Session responses now include `accessUrl` and `sessionPath` for tokenized proxied access routing.
 - Configure `FORGE_SESSION_MANAGER_PUBLIC_BASE_URL` when external clients should use a public hostname instead of localhost.

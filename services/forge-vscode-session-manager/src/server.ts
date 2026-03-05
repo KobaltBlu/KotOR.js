@@ -13,6 +13,10 @@ const CLOSED_SESSION_RETENTION_MS = Number(process.env.FORGE_SESSION_MANAGER_RET
 const ADMIN_TOKEN = String(process.env.FORGE_SESSION_MANAGER_ADMIN_TOKEN || '').trim();
 const OPENVSCODE_BASE_URL = process.env.FORGE_OPENVSCODE_BASE_URL || 'http://127.0.0.1:18080';
 const PUBLIC_BASE_URL = process.env.FORGE_SESSION_MANAGER_PUBLIC_BASE_URL || `http://127.0.0.1:${PORT}`;
+const ALLOWED_UPSTREAM_HOSTS = String(process.env.FORGE_SESSION_MANAGER_ALLOWED_UPSTREAM_HOSTS || '')
+  .split(',')
+  .map((part) => part.trim().toLowerCase())
+  .filter(Boolean);
 
 const manager = new SessionManagerCore({
   dataRoot: DATA_ROOT,
@@ -86,6 +90,29 @@ function requireAdminForOperationalRoutes(req: http.IncomingMessage, url: URL): 
     return true;
   }
   return isAdminRequest(req, url);
+}
+
+function validateUpstreamUrl(upstreamUrl: string): { ok: true } | { ok: false; reason: string } {
+  let parsed: URL;
+  try {
+    parsed = new URL(upstreamUrl);
+  } catch {
+    return { ok: false, reason: 'Invalid upstreamUrl format' };
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return { ok: false, reason: 'upstreamUrl must use http or https' };
+  }
+
+  if (!ALLOWED_UPSTREAM_HOSTS.length) {
+    return { ok: true };
+  }
+
+  const host = parsed.hostname.toLowerCase();
+  if (!ALLOWED_UPSTREAM_HOSTS.includes(host)) {
+    return { ok: false, reason: `upstreamUrl host not allowed: ${parsed.hostname}` };
+  }
+  return { ok: true };
 }
 
 function buildSessionAccessUrl(session: ForgeSession, includeToken: boolean): string {
@@ -350,6 +377,7 @@ const server = http.createServer(async (req, res) => {
         warningLeadMs: WARNING_LEAD_MS,
         maxWorkspaceBytes: MAX_WORKSPACE_BYTES,
         closedSessionRetentionMs: CLOSED_SESSION_RETENTION_MS,
+        allowedUpstreamHosts: ALLOWED_UPSTREAM_HOSTS,
         openVSCodeBaseUrl: OPENVSCODE_BASE_URL,
         publicBaseUrl: PUBLIC_BASE_URL,
         adminTokenEnabled: Boolean(ADMIN_TOKEN),
@@ -448,6 +476,13 @@ const server = http.createServer(async (req, res) => {
           ? body.containerId
           : (auth.session.containerId || `container-${sessionId}`);
         const requestedUpstreamUrl = typeof body.upstreamUrl === 'string' ? body.upstreamUrl : undefined;
+        if (requestedUpstreamUrl) {
+          const validation = validateUpstreamUrl(requestedUpstreamUrl);
+          if (!validation.ok) {
+            writeJson(res, 400, { error: ('reason' in validation) ? validation.reason : 'Invalid upstreamUrl' });
+            return;
+          }
+        }
         const session = manager.markContainerReady(sessionId, auth.token, requestedContainerId, {
           upstreamUrl: requestedUpstreamUrl,
         });
