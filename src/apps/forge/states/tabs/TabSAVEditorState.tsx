@@ -300,6 +300,10 @@ export class TabSAVEditorState extends TabState {
     this.markModuleInfoChanged();
   }
 
+  private hasModuleField(label: string): boolean {
+    return !!this.moduleInfoGff?.RootNode.getFieldByLabel(label);
+  }
+
   private markAreaInfoChanged(): void {
     if (!this.file || !this.areaInfoGff || !this.areaInfoResRef || this.areaInfoResType == null) return;
 
@@ -934,12 +938,80 @@ export class TabSAVEditorState extends TabState {
     });
   }
 
+  updateModuleOnLoadScript(value: string): void {
+    if (!this.moduleInfoGff || !this.hasModuleField('Mod_OnModLoad')) return;
+    const previous = String(this.moduleInfoGff.RootNode.getFieldByLabel('Mod_OnModLoad')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-module-script-load-edit',
+      description: 'Edit module OnLoad script',
+      redo: () => this.applyModuleInfoField('Mod_OnModLoad', value),
+      undo: () => this.applyModuleInfoField('Mod_OnModLoad', previous),
+    });
+  }
+
+  updateModuleOnStartScript(value: string): void {
+    if (!this.moduleInfoGff || !this.hasModuleField('Mod_OnModStart')) return;
+    const previous = String(this.moduleInfoGff.RootNode.getFieldByLabel('Mod_OnModStart')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-module-script-start-edit',
+      description: 'Edit module OnStart script',
+      redo: () => this.applyModuleInfoField('Mod_OnModStart', value),
+      undo: () => this.applyModuleInfoField('Mod_OnModStart', previous),
+    });
+  }
+
+  updateModuleOnHeartbeatScript(value: string): void {
+    if (!this.moduleInfoGff || !this.hasModuleField('Mod_OnHeartbeat')) return;
+    const previous = String(this.moduleInfoGff.RootNode.getFieldByLabel('Mod_OnHeartbeat')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-module-script-heartbeat-edit',
+      description: 'Edit module OnHeartbeat script',
+      redo: () => this.applyModuleInfoField('Mod_OnHeartbeat', value),
+      undo: () => this.applyModuleInfoField('Mod_OnHeartbeat', previous),
+    });
+  }
+
+  updateModuleOnUserDefinedScript(value: string): void {
+    if (!this.moduleInfoGff || !this.hasModuleField('Mod_OnUsrDefined')) return;
+    const previous = String(this.moduleInfoGff.RootNode.getFieldByLabel('Mod_OnUsrDefined')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-module-script-user-defined-edit',
+      description: 'Edit module OnUserDefined script',
+      redo: () => this.applyModuleInfoField('Mod_OnUsrDefined', value),
+      undo: () => this.applyModuleInfoField('Mod_OnUsrDefined', previous),
+    });
+  }
+
   getModuleDawnHour(): number {
     return Number(this.moduleInfoGff?.RootNode.getFieldByLabel('Mod_DawnHour')?.getValue() || 0);
   }
 
   getModuleDuskHour(): number {
     return Number(this.moduleInfoGff?.RootNode.getFieldByLabel('Mod_DuskHour')?.getValue() || 0);
+  }
+
+  getModuleOnLoadScript(): string {
+    return String(this.moduleInfoGff?.RootNode.getFieldByLabel('Mod_OnModLoad')?.getValue?.() || '');
+  }
+
+  getModuleOnStartScript(): string {
+    return String(this.moduleInfoGff?.RootNode.getFieldByLabel('Mod_OnModStart')?.getValue?.() || '');
+  }
+
+  getModuleOnHeartbeatScript(): string {
+    return String(this.moduleInfoGff?.RootNode.getFieldByLabel('Mod_OnHeartbeat')?.getValue?.() || '');
+  }
+
+  getModuleOnUserDefinedScript(): string {
+    return String(this.moduleInfoGff?.RootNode.getFieldByLabel('Mod_OnUsrDefined')?.getValue?.() || '');
   }
 
   getAreaName(): string {

@@ -686,6 +686,62 @@ export const TabSAVEditor = function(props: BaseTabProps){
                 />
               </div>
             </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>OnLoad Script</label>
+                <input
+                  title="Module OnLoad Script"
+                  type="text"
+                  value={tab.getModuleOnLoadScript()}
+                  onChange={(e) => tab.updateModuleOnLoadScript(e.target.value)}
+                  placeholder="OnLoad script..."
+                  maxLength={16}
+                  list={scriptSuggestionListId}
+                  disabled={!canEditModuleSettings}
+                />
+              </div>
+              <div className="property-group">
+                <label>OnStart Script</label>
+                <input
+                  title="Module OnStart Script"
+                  type="text"
+                  value={tab.getModuleOnStartScript()}
+                  onChange={(e) => tab.updateModuleOnStartScript(e.target.value)}
+                  placeholder="OnStart script..."
+                  maxLength={16}
+                  list={scriptSuggestionListId}
+                  disabled={!canEditModuleSettings}
+                />
+              </div>
+            </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>OnHeartbeat Script</label>
+                <input
+                  title="Module OnHeartbeat Script"
+                  type="text"
+                  value={tab.getModuleOnHeartbeatScript()}
+                  onChange={(e) => tab.updateModuleOnHeartbeatScript(e.target.value)}
+                  placeholder="OnHeartbeat script..."
+                  maxLength={16}
+                  list={scriptSuggestionListId}
+                  disabled={!canEditModuleSettings}
+                />
+              </div>
+              <div className="property-group">
+                <label>OnUserDefined Script</label>
+                <input
+                  title="Module OnUserDefined Script"
+                  type="text"
+                  value={tab.getModuleOnUserDefinedScript()}
+                  onChange={(e) => tab.updateModuleOnUserDefinedScript(e.target.value)}
+                  placeholder="OnUserDefined script..."
+                  maxLength={16}
+                  list={scriptSuggestionListId}
+                  disabled={!canEditModuleSettings}
+                />
+              </div>
+            </div>
           </div>
           <div className="sav-quick-actions">
             <button onClick={() => quickOpenByType('ifo')}>Open Module Info (IFO)</button>
