@@ -266,6 +266,29 @@ export function activate(context: vscode.ExtensionContext) {
       log.info(`Active game switched to ${selection.value}`);
     }),
 
+    vscode.commands.registerCommand('kotorForge.setLogLevel', async () => {
+      log.debug('Command invoked: kotorForge.setLogLevel');
+      const cfg = vscode.workspace.getConfiguration('kotorForge');
+      const current = cfg.get<string>('logLevel', 'info');
+      const selection = await vscode.window.showQuickPick([
+        { label: 'Trace', value: 'trace', description: 'Most verbose diagnostics' },
+        { label: 'Debug', value: 'debug', description: 'Development/debug details' },
+        { label: 'Info', value: 'info', description: 'Normal operational logs' },
+        { label: 'Warn', value: 'warn', description: 'Warnings and errors only' },
+        { label: 'Error', value: 'error', description: 'Errors only' },
+      ], {
+        title: 'Set KotOR Forge log level',
+        placeHolder: `Current: ${current}`,
+      });
+      if (!selection) {
+        return;
+      }
+
+      await cfg.update('logLevel', selection.value, true);
+      vscode.window.showInformationMessage(`KotOR Forge log level set to ${selection.label}`);
+      log.info(`Log level switched to ${selection.value}`);
+    }),
+
     vscode.commands.registerCommand('kotorForge.refreshSessions', () => {
       log.debug('Command invoked: kotorForge.refreshSessions');
       sessionTreeProvider.refresh();

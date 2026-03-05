@@ -297,6 +297,11 @@
         "category": "KotOR Forge"
       },
       {
+        "command": "kotorForge.setLogLevel",
+        "title": "Set Log Level",
+        "category": "KotOR Forge"
+      },
+      {
         "command": "kotorForge.openAsAscii",
         "title": "Open as ASCII",
         "category": "KotOR Forge"
@@ -411,6 +416,11 @@
         {
           "when": "view == kotorForgeSessions",
           "command": "kotorForge.refreshSessions",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeSessions",
+          "command": "kotorForge.setLogLevel",
           "group": "navigation"
         },
         {
