@@ -341,6 +341,14 @@ export class TabSAVEditorState extends TabState {
     this.markAreaInfoChanged();
   }
 
+  private applyAreaBooleanField(label: string, value: boolean): void {
+    if (!this.areaInfoGff) return;
+    const field = this.areaInfoGff.RootNode.getFieldByLabel(label);
+    if (!field) return;
+    field.setValue(value ? 1 : 0);
+    this.markAreaInfoChanged();
+  }
+
   updateAreaName(value: string): void {
     if (!this.areaInfoGff) return;
     const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('Name')?.getCExoLocString?.()?.getValue?.() || '');
@@ -422,6 +430,58 @@ export class TabSAVEditorState extends TabState {
     });
   }
 
+  updateAreaNoRest(value: boolean): void {
+    if (!this.areaInfoGff) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('NoRest')?.getValue?.() || 0) > 0;
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-no-rest-edit',
+      description: 'Edit area no-rest flag',
+      redo: () => this.applyAreaBooleanField('NoRest', value),
+      undo: () => this.applyAreaBooleanField('NoRest', previous),
+    });
+  }
+
+  updateAreaNoHangBack(value: boolean): void {
+    if (!this.areaInfoGff) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('NoHangBack')?.getValue?.() || 0) > 0;
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-no-hang-back-edit',
+      description: 'Edit area no-hang-back flag',
+      redo: () => this.applyAreaBooleanField('NoHangBack', value),
+      undo: () => this.applyAreaBooleanField('NoHangBack', previous),
+    });
+  }
+
+  updateAreaPlayerOnly(value: boolean): void {
+    if (!this.areaInfoGff) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('PlayerOnly')?.getValue?.() || 0) > 0;
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-player-only-edit',
+      description: 'Edit area player-only flag',
+      redo: () => this.applyAreaBooleanField('PlayerOnly', value),
+      undo: () => this.applyAreaBooleanField('PlayerOnly', previous),
+    });
+  }
+
+  updateAreaUnescapable(value: boolean): void {
+    if (!this.areaInfoGff) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('Unescapable')?.getValue?.() || 0) > 0;
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-unescapable-edit',
+      description: 'Edit area unescapable flag',
+      redo: () => this.applyAreaBooleanField('Unescapable', value),
+      undo: () => this.applyAreaBooleanField('Unescapable', previous),
+    });
+  }
+
   updateModuleEntryArea(value: string): void {
     if (!this.moduleInfoGff) return;
     const field = this.moduleInfoGff.RootNode.getFieldByLabel('Mod_Entry_Area');
@@ -499,6 +559,22 @@ export class TabSAVEditorState extends TabState {
 
   getAreaChanceLightning(): number {
     return Number(this.areaInfoGff?.RootNode.getFieldByLabel('ChanceLightning')?.getValue?.() || 0);
+  }
+
+  getAreaNoRest(): boolean {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('NoRest')?.getValue?.() || 0) > 0;
+  }
+
+  getAreaNoHangBack(): boolean {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('NoHangBack')?.getValue?.() || 0) > 0;
+  }
+
+  getAreaPlayerOnly(): boolean {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('PlayerOnly')?.getValue?.() || 0) > 0;
+  }
+
+  getAreaUnescapable(): boolean {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('Unescapable')?.getValue?.() || 0) > 0;
   }
 
   canEditAreaName(): boolean {

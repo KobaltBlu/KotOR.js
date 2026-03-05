@@ -215,6 +215,48 @@ export const TabSAVEditor = function(props: BaseTabProps){
                 />
               </div>
             </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>No Rest</label>
+                <input
+                  title="Area No Rest"
+                  type="checkbox"
+                  checked={tab.getAreaNoRest()}
+                  onChange={(e) => tab.updateAreaNoRest(e.target.checked)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>No Hang Back</label>
+                <input
+                  title="Area No Hang Back"
+                  type="checkbox"
+                  checked={tab.getAreaNoHangBack()}
+                  onChange={(e) => tab.updateAreaNoHangBack(e.target.checked)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Player Only</label>
+                <input
+                  title="Area Player Only"
+                  type="checkbox"
+                  checked={tab.getAreaPlayerOnly()}
+                  onChange={(e) => tab.updateAreaPlayerOnly(e.target.checked)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Unescapable</label>
+                <input
+                  title="Area Unescapable"
+                  type="checkbox"
+                  checked={tab.getAreaUnescapable()}
+                  onChange={(e) => tab.updateAreaUnescapable(e.target.checked)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
           </div>
           <div className="sav-module-edit">
             <h4>Module Session Settings</h4>
