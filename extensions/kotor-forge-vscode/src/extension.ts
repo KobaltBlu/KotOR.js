@@ -618,6 +618,21 @@ export function activate(context: vscode.ExtensionContext) {
       log.info(`[session-copy-url] copied access URL${sessionId ? ` for ${sessionId}` : ''}`);
     }),
 
+    vscode.commands.registerCommand('kotorForge.copyHostedSessionId', async (value?: { id?: string } | string) => {
+      log.debug('Command invoked: kotorForge.copyHostedSessionId');
+      const sessionId = typeof value === 'string'
+        ? value
+        : (value?.id || '');
+      if (!sessionId) {
+        vscode.window.showWarningMessage('No hosted session id is available for this item.');
+        return;
+      }
+
+      await vscode.env.clipboard.writeText(sessionId);
+      vscode.window.showInformationMessage(`Copied hosted session id: ${sessionId}`);
+      log.info(`[session-copy-id] copied session id ${sessionId}`);
+    }),
+
     vscode.commands.registerCommand('kotorForge.showHostedSessionDetails', async (value?: { id?: string; token?: string }) => {
       log.debug('Command invoked: kotorForge.showHostedSessionDetails');
       const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
