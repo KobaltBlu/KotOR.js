@@ -1,12 +1,15 @@
 const sessionBaseUrl = process.env.FORGE_SESSION_MANAGER_BASE_URL || 'http://127.0.0.1:8090';
 const openVsCodeUrl = process.env.OPENVSCODE_BASE_URL || 'http://127.0.0.1:18080';
 const adminToken = process.env.FORGE_SESSION_MANAGER_ADMIN_TOKEN || '';
+const assertAdminAuth = process.env.FORGE_SESSION_MANAGER_E2E_ASSERT_ADMIN_AUTH === '1';
+const assertOriginBlock = process.env.FORGE_SESSION_MANAGER_E2E_ASSERT_ORIGIN_BLOCK === '1';
+const allowedOrigin = process.env.FORGE_SESSION_MANAGER_E2E_ALLOWED_ORIGIN || '';
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function requestJson(path, { method = 'GET', body, token } = {}) {
+async function requestJson(path, { method = 'GET', body, token, includeAdminToken = true, origin } = {}) {
   const headers = {};
   if (body) {
     headers['content-type'] = 'application/json';
@@ -14,8 +17,11 @@ async function requestJson(path, { method = 'GET', body, token } = {}) {
   if (token) {
     headers['x-session-token'] = token;
   }
-  if (adminToken) {
+  if (adminToken && includeAdminToken) {
     headers['x-admin-token'] = adminToken;
+  }
+  if (origin) {
+    headers.origin = origin;
   }
   const response = await fetch(`${sessionBaseUrl}${path}`, {
     method,
@@ -29,13 +35,16 @@ async function requestJson(path, { method = 'GET', body, token } = {}) {
   return payload;
 }
 
-async function requestText(path, { method = 'GET', token } = {}) {
+async function requestText(path, { method = 'GET', token, includeAdminToken = true, origin } = {}) {
   const headers = {};
   if (token) {
     headers['x-session-token'] = token;
   }
-  if (adminToken) {
+  if (adminToken && includeAdminToken) {
     headers['x-admin-token'] = adminToken;
+  }
+  if (origin) {
+    headers.origin = origin;
   }
 
   const response = await fetch(`${sessionBaseUrl}${path}`, {
@@ -45,6 +54,33 @@ async function requestText(path, { method = 'GET', token } = {}) {
   const payload = await response.text();
   if (!response.ok) {
     throw new Error(`${method} ${path} failed (${response.status}): ${payload}`);
+  }
+  return payload;
+}
+
+async function requestJsonExpect(path, expectedStatus, options = {}) {
+  const headers = {};
+  if (options.body) {
+    headers['content-type'] = 'application/json';
+  }
+  if (options.token) {
+    headers['x-session-token'] = options.token;
+  }
+  if (adminToken && options.includeAdminToken !== false) {
+    headers['x-admin-token'] = adminToken;
+  }
+  if (options.origin) {
+    headers.origin = options.origin;
+  }
+
+  const response = await fetch(`${sessionBaseUrl}${path}`, {
+    method: options.method || 'GET',
+    headers: Object.keys(headers).length ? headers : undefined,
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  const payload = await response.json();
+  if (response.status !== expectedStatus) {
+    throw new Error(`${options.method || 'GET'} ${path} expected ${expectedStatus} but got ${response.status}: ${JSON.stringify(payload)}`);
   }
   return payload;
 }
@@ -67,6 +103,25 @@ async function main() {
   console.log(`[e2e] checking session manager health at ${sessionBaseUrl}`);
   const health = await requestJson('/healthz');
   assert(health.ok === true, 'healthz response should be ok=true');
+
+  if (assertAdminAuth && adminToken) {
+    const unauthorizedStats = await requestJsonExpect('/api/stats', 401, { includeAdminToken: false });
+    assert(typeof unauthorizedStats.error === 'string', 'stats without admin token should return auth error');
+    const unauthorizedEvents = await requestJsonExpect('/api/events', 401, { includeAdminToken: false });
+    assert(typeof unauthorizedEvents.error === 'string', 'events without admin token should return auth error');
+  }
+
+  if (assertOriginBlock) {
+    const blocked = await requestJsonExpect('/api/stats', 403, {
+      origin: 'https://blocked.example.invalid',
+    });
+    assert(typeof blocked.error === 'string' && blocked.error.includes('Origin not allowed'), 'blocked origin should be rejected');
+
+    if (allowedOrigin) {
+      const allowed = await requestJson('/api/stats', { origin: allowedOrigin });
+      assert(typeof allowed.totalSessions === 'number', 'allowed origin should pass policy checks');
+    }
+  }
 
   console.log('[e2e] creating session');
   const session = await requestJson('/api/sessions', {

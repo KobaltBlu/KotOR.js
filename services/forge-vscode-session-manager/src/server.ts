@@ -17,6 +17,10 @@ const ALLOWED_UPSTREAM_HOSTS = String(process.env.FORGE_SESSION_MANAGER_ALLOWED_
   .split(',')
   .map((part) => part.trim().toLowerCase())
   .filter(Boolean);
+const ALLOWED_ORIGINS = String(process.env.FORGE_SESSION_MANAGER_ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((part) => part.trim().toLowerCase())
+  .filter(Boolean);
 
 const manager = new SessionManagerCore({
   dataRoot: DATA_ROOT,
@@ -113,6 +117,31 @@ function validateUpstreamUrl(upstreamUrl: string): { ok: true } | { ok: false; r
     return { ok: false, reason: `upstreamUrl host not allowed: ${parsed.hostname}` };
   }
   return { ok: true };
+}
+
+function normalizeOrigin(origin: string): string | null {
+  try {
+    return new URL(origin).origin.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isRequestOriginAllowed(req: http.IncomingMessage): boolean {
+  if (!ALLOWED_ORIGINS.length) {
+    return true;
+  }
+
+  const originHeader = req.headers.origin;
+  if (typeof originHeader !== 'string' || !originHeader.trim()) {
+    return true;
+  }
+
+  const normalized = normalizeOrigin(originHeader.trim());
+  if (!normalized) {
+    return false;
+  }
+  return ALLOWED_ORIGINS.includes(normalized);
 }
 
 function buildSessionAccessUrl(session: ForgeSession, includeToken: boolean): string {
@@ -353,6 +382,11 @@ const server = http.createServer(async (req, res) => {
   const pathname = url.pathname;
 
   try {
+    if (!isRequestOriginAllowed(req)) {
+      writeJson(res, 403, { error: 'Origin not allowed' });
+      return;
+    }
+
     if (method === 'GET' && pathname === '/healthz') {
       writeJson(res, 200, { ok: true });
       return;
@@ -378,6 +412,7 @@ const server = http.createServer(async (req, res) => {
         maxWorkspaceBytes: MAX_WORKSPACE_BYTES,
         closedSessionRetentionMs: CLOSED_SESSION_RETENTION_MS,
         allowedUpstreamHosts: ALLOWED_UPSTREAM_HOSTS,
+        allowedOrigins: ALLOWED_ORIGINS,
         openVSCodeBaseUrl: OPENVSCODE_BASE_URL,
         publicBaseUrl: PUBLIC_BASE_URL,
         adminTokenEnabled: Boolean(ADMIN_TOKEN),

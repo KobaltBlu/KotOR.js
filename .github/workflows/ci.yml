@@ -88,7 +88,7 @@ jobs:
             sleep 2
           done
 
-          FORGE_SESSION_MANAGER_TTL_MS=2000 FORGE_SESSION_MANAGER_WARNING_MS=1000 node services/forge-vscode-session-manager/dist/server.js > /tmp/session-manager.log 2>&1 &
+          FORGE_SESSION_MANAGER_TTL_MS=2000 FORGE_SESSION_MANAGER_WARNING_MS=1000 FORGE_SESSION_MANAGER_ADMIN_TOKEN=ci-admin-token FORGE_SESSION_MANAGER_ALLOWED_UPSTREAM_HOSTS=127.0.0.1,localhost FORGE_SESSION_MANAGER_ALLOWED_ORIGINS=http://127.0.0.1:8090 node services/forge-vscode-session-manager/dist/server.js > /tmp/session-manager.log 2>&1 &
           SESSION_MANAGER_PID=$!
           trap 'kill $SESSION_MANAGER_PID || true; docker rm -f openvscode || true' EXIT
 
@@ -99,7 +99,7 @@ jobs:
             sleep 1
           done
 
-          node scripts/session-manager-e2e.mjs
+          FORGE_SESSION_MANAGER_ADMIN_TOKEN=ci-admin-token FORGE_SESSION_MANAGER_E2E_ASSERT_ADMIN_AUTH=1 FORGE_SESSION_MANAGER_E2E_ASSERT_ORIGIN_BLOCK=1 FORGE_SESSION_MANAGER_E2E_ALLOWED_ORIGIN=http://127.0.0.1:8090 node scripts/session-manager-e2e.mjs
 
       - name: Print session manager logs
         if: always()
