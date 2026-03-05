@@ -392,6 +392,71 @@ export class TabSAVEditorState extends TabState {
     });
   }
 
+  updateAreaAmbientSndDay(value: string): void {
+    if (!this.areaInfoGff || !this.hasAreaField('AmbientSndDay')) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('AmbientSndDay')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-ambient-day-edit',
+      description: 'Edit area ambient day sound',
+      redo: () => this.applyAreaField('AmbientSndDay', value),
+      undo: () => this.applyAreaField('AmbientSndDay', previous),
+    });
+  }
+
+  updateAreaAmbientSndNight(value: string): void {
+    if (!this.areaInfoGff || !this.hasAreaField('AmbientSndNight')) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('AmbientSndNight')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-ambient-night-edit',
+      description: 'Edit area ambient night sound',
+      redo: () => this.applyAreaField('AmbientSndNight', value),
+      undo: () => this.applyAreaField('AmbientSndNight', previous),
+    });
+  }
+
+  updateAreaMusicDay(value: string): void {
+    if (!this.areaInfoGff || !this.hasAreaField('MusicDay')) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('MusicDay')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-music-day-edit',
+      description: 'Edit area day music',
+      redo: () => this.applyAreaField('MusicDay', value),
+      undo: () => this.applyAreaField('MusicDay', previous),
+    });
+  }
+
+  updateAreaMusicNight(value: string): void {
+    if (!this.areaInfoGff || !this.hasAreaField('MusicNight')) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('MusicNight')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-music-night-edit',
+      description: 'Edit area night music',
+      redo: () => this.applyAreaField('MusicNight', value),
+      undo: () => this.applyAreaField('MusicNight', previous),
+    });
+  }
+
+  updateAreaMusicBattle(value: string): void {
+    if (!this.areaInfoGff || !this.hasAreaField('MusicBattle')) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('MusicBattle')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-music-battle-edit',
+      description: 'Edit area battle music',
+      redo: () => this.applyAreaField('MusicBattle', value),
+      undo: () => this.applyAreaField('MusicBattle', previous),
+    });
+  }
+
   updateAreaChanceRain(value: number): void {
     if (!this.areaInfoGff) return;
     const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('ChanceRain')?.getValue?.() || 0);
@@ -618,6 +683,26 @@ export class TabSAVEditorState extends TabState {
 
   getAreaComments(): string {
     return String(this.areaInfoGff?.RootNode.getFieldByLabel('Comments')?.getValue?.() || '');
+  }
+
+  getAreaAmbientSndDay(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('AmbientSndDay')?.getValue?.() || '');
+  }
+
+  getAreaAmbientSndNight(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('AmbientSndNight')?.getValue?.() || '');
+  }
+
+  getAreaMusicDay(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('MusicDay')?.getValue?.() || '');
+  }
+
+  getAreaMusicNight(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('MusicNight')?.getValue?.() || '');
+  }
+
+  getAreaMusicBattle(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('MusicBattle')?.getValue?.() || '');
   }
 
   getAreaChanceRain(): number {

@@ -179,6 +179,70 @@ export const TabSAVEditor = function(props: BaseTabProps){
             </div>
             <div className="property-row">
               <div className="property-group">
+                <label>Ambient Day</label>
+                <input
+                  title="Area Ambient Day"
+                  type="text"
+                  value={tab.getAreaAmbientSndDay()}
+                  onChange={(e) => tab.updateAreaAmbientSndDay(e.target.value)}
+                  placeholder="Ambient day sound..."
+                  maxLength={16}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Ambient Night</label>
+                <input
+                  title="Area Ambient Night"
+                  type="text"
+                  value={tab.getAreaAmbientSndNight()}
+                  onChange={(e) => tab.updateAreaAmbientSndNight(e.target.value)}
+                  placeholder="Ambient night sound..."
+                  maxLength={16}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Music Day</label>
+                <input
+                  title="Area Music Day"
+                  type="text"
+                  value={tab.getAreaMusicDay()}
+                  onChange={(e) => tab.updateAreaMusicDay(e.target.value)}
+                  placeholder="Day music..."
+                  maxLength={16}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Music Night</label>
+                <input
+                  title="Area Music Night"
+                  type="text"
+                  value={tab.getAreaMusicNight()}
+                  onChange={(e) => tab.updateAreaMusicNight(e.target.value)}
+                  placeholder="Night music..."
+                  maxLength={16}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Music Battle</label>
+                <input
+                  title="Area Music Battle"
+                  type="text"
+                  value={tab.getAreaMusicBattle()}
+                  onChange={(e) => tab.updateAreaMusicBattle(e.target.value)}
+                  placeholder="Battle music..."
+                  maxLength={16}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
+            <div className="property-row">
+              <div className="property-group">
                 <label>Rain Chance</label>
                 <input
                   title="Area Rain Chance"
