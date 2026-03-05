@@ -1,12 +1,15 @@
-﻿import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
+import type { IGFFFieldJSON } from "@/interface/resource/IGFFFieldJSON";
+import type { IGFFStructJSON } from "@/interface/resource/IGFFStructJSON";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { CExoLocSubString } from "@/resource/CExoLocSubString";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import * as path from "path";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 
 export type GFFObjectOnCompleteCallback = (gff: GFFObject) => void;
 
@@ -230,8 +233,142 @@ export class GFFObject {
 
   }
 
-  toJSON(){
+  toJSON(): IGFFStructJSON {
     return this.RootNode.toJSON();
+  }
+
+  fromJSON(json: string | IGFFStructJSON): void {
+    const source = typeof json === 'string' ? JSON.parse(json) as IGFFStructJSON : json;
+    this.RootNode = this.structFromJSON(source);
+    this.json = this.toJSON();
+  }
+
+  toXML(): string {
+    return objectToXML(this.toJSON());
+  }
+
+  fromXML(xml: string): void {
+    this.fromJSON(xmlToObject(xml) as IGFFStructJSON);
+  }
+
+  toYAML(): string {
+    return objectToYAML(this.toJSON());
+  }
+
+  fromYAML(yaml: string): void {
+    this.fromJSON(yamlToObject(yaml) as IGFFStructJSON);
+  }
+
+  toTOML(): string {
+    return objectToTOML(this.toJSON());
+  }
+
+  fromTOML(toml: string): void {
+    this.fromJSON(tomlToObject(toml) as IGFFStructJSON);
+  }
+
+  private structFromJSON(structJson: IGFFStructJSON): GFFStruct {
+    const struct = new GFFStruct(typeof structJson?.type === 'number' ? structJson.type : -1);
+    const fields = structJson?.fields || {};
+    const labels = Object.keys(fields);
+    for (let i = 0; i < labels.length; i++) {
+      const label = labels[i];
+      struct.addField(this.fieldFromJSON(label, fields[label]));
+    }
+    return struct;
+  }
+
+  private fieldFromJSON(label: string, fieldJson: IGFFFieldJSON): GFFField {
+    const type = Number(fieldJson?.type ?? GFFDataType.VOID);
+    const field = new GFFField(type, label);
+    const value = fieldJson?.value;
+
+    switch (type) {
+      case GFFDataType.CEXOLOCSTRING: {
+        const loc = new CExoLocString(typeof (value as any)?.RESREF === 'number' ? (value as any).RESREF : -1);
+        const strings = Array.isArray((value as any)?.strings) ? (value as any).strings : [];
+        for (let i = 0; i < strings.length; i++) {
+          const sub = strings[i];
+          const stringId = typeof sub?.StringID === 'number'
+            ? sub.StringID
+            : ((typeof sub?.language === 'number' ? sub.language : 0) * 2) + (typeof sub?.gender === 'number' ? sub.gender : 0);
+          const text = typeof sub?.str === 'string' ? sub.str : (typeof sub?.string === 'string' ? sub.string : '');
+          loc.addSubString(new CExoLocSubString(stringId, text));
+        }
+        field.setCExoLocString(loc);
+        break;
+      }
+      case GFFDataType.VECTOR:
+        field.setVector({
+          x: Number((value as any)?.x ?? 0),
+          y: Number((value as any)?.y ?? 0),
+          z: Number((value as any)?.z ?? 0),
+        });
+        break;
+      case GFFDataType.ORIENTATION:
+        field.setOrientation({
+          x: Number((value as any)?.x ?? 0),
+          y: Number((value as any)?.y ?? 0),
+          z: Number((value as any)?.z ?? 0),
+          w: Number((value as any)?.w ?? 1),
+        });
+        break;
+      case GFFDataType.VOID:
+        field.setData(this.uint8ArrayFromUnknown(value));
+        break;
+      case GFFDataType.DWORD64:
+      case GFFDataType.INT64:
+        field.setData(this.bigIntToBytes(value, type === GFFDataType.INT64));
+        break;
+      default:
+        field.setValue(value);
+        break;
+    }
+
+    if (Array.isArray(fieldJson?.structs)) {
+      const structs = fieldJson.structs.map((child) => this.structFromJSON(child));
+      field.setChildStructs(structs);
+    }
+
+    return field;
+  }
+
+  private uint8ArrayFromUnknown(value: unknown): Uint8Array {
+    if (value instanceof Uint8Array) return value;
+    if (Array.isArray(value)) return new Uint8Array(value.map((v) => Number(v) || 0));
+    if (typeof value === 'string') {
+      try {
+        if (typeof Buffer !== 'undefined') {
+          return new Uint8Array(Buffer.from(value, 'base64'));
+        }
+      } catch (e) {
+        console.warn('GFFObject.uint8ArrayFromUnknown: failed base64 decode', e);
+      }
+      return new Uint8Array(0);
+    }
+    if (value && typeof value === 'object') {
+      const asObject = value as Record<string, unknown>;
+      const numericKeys = Object.keys(asObject)
+        .filter((key) => /^\d+$/.test(key))
+        .map((key) => Number(key))
+        .sort((a, b) => a - b);
+      if (numericKeys.length) {
+        return new Uint8Array(numericKeys.map((index) => Number(asObject[index]) || 0));
+      }
+    }
+    return new Uint8Array(0);
+  }
+
+  private bigIntToBytes(value: unknown, signed: boolean): Uint8Array {
+    const bytes = new Uint8Array(8);
+    const view = new DataView(bytes.buffer);
+    const big = typeof value === 'bigint' ? value : BigInt(Number(value ?? 0));
+    if (signed) {
+      view.setBigInt64(0, big, true);
+    } else {
+      view.setBigUint64(0, big, true);
+    }
+    return bytes;
   }
 
   buildStruct(struct: any){
