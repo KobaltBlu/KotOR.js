@@ -29,6 +29,26 @@ async function requestJson(path, { method = 'GET', body, token } = {}) {
   return payload;
 }
 
+async function requestText(path, { method = 'GET', token } = {}) {
+  const headers = {};
+  if (token) {
+    headers['x-session-token'] = token;
+  }
+  if (adminToken) {
+    headers['x-admin-token'] = adminToken;
+  }
+
+  const response = await fetch(`${sessionBaseUrl}${path}`, {
+    method,
+    headers: Object.keys(headers).length ? headers : undefined,
+  });
+  const payload = await response.text();
+  if (!response.ok) {
+    throw new Error(`${method} ${path} failed (${response.status}): ${payload}`);
+  }
+  return payload;
+}
+
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -67,6 +87,8 @@ async function main() {
   );
   const statsAfterCreate = await requestJson('/api/stats');
   assert(statsAfterCreate.activeSessions >= 1, 'stats should report at least one active session after creation');
+  const metricsAfterCreate = await requestText('/api/metrics');
+  assert(metricsAfterCreate.includes('forge_session_manager_sessions_total'), 'metrics output should include session totals');
 
   await requestJson(`/api/sessions/${sessionId}/container-ready`, {
     method: 'POST',

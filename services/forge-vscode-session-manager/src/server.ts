@@ -29,6 +29,12 @@ function writeJson(res: http.ServerResponse, statusCode: number, body: unknown):
   res.end(JSON.stringify(body));
 }
 
+function writeText(res: http.ServerResponse, statusCode: number, contentType: string, body: string): void {
+  res.statusCode = statusCode;
+  res.setHeader('content-type', contentType);
+  res.end(body);
+}
+
 async function readJsonBody(req: http.IncomingMessage): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
@@ -154,6 +160,42 @@ function buildStatsSnapshot(): Record<string, unknown> {
     byContainerStatus,
     at: Date.now(),
   };
+}
+
+function buildPrometheusMetrics(): string {
+  const stats = buildStatsSnapshot() as {
+    totalSessions: number;
+    activeSessions: number;
+    readyContainers: number;
+    expiredSessions: number;
+    byStatus: Record<string, number>;
+    byContainerStatus: Record<string, number>;
+  };
+
+  const lines: string[] = [
+    '# HELP forge_session_manager_sessions_total Total tracked sessions.',
+    '# TYPE forge_session_manager_sessions_total gauge',
+    `forge_session_manager_sessions_total ${stats.totalSessions}`,
+    '# HELP forge_session_manager_sessions_active Active sessions (not expired/closed).',
+    '# TYPE forge_session_manager_sessions_active gauge',
+    `forge_session_manager_sessions_active ${stats.activeSessions}`,
+    '# HELP forge_session_manager_ready_containers Number of ready containers.',
+    '# TYPE forge_session_manager_ready_containers gauge',
+    `forge_session_manager_ready_containers ${stats.readyContainers}`,
+    '# HELP forge_session_manager_expired_sessions Number of expired sessions.',
+    '# TYPE forge_session_manager_expired_sessions gauge',
+    `forge_session_manager_expired_sessions ${stats.expiredSessions}`,
+  ];
+
+  for (const [status, value] of Object.entries(stats.byStatus || {})) {
+    lines.push(`forge_session_manager_sessions_by_status{status="${status}"} ${value}`);
+  }
+
+  for (const [status, value] of Object.entries(stats.byContainerStatus || {})) {
+    lines.push(`forge_session_manager_containers_by_status{status="${status}"} ${value}`);
+  }
+
+  return `${lines.join('\n')}\n`;
 }
 
 const HOP_BY_HOP_HEADERS = new Set([
@@ -321,6 +363,15 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       writeJson(res, 200, buildStatsSnapshot());
+      return;
+    }
+
+    if (method === 'GET' && pathname === '/api/metrics') {
+      if (!requireAdminForOperationalRoutes(req, url)) {
+        writeJson(res, 401, { error: 'Missing or invalid admin token' });
+        return;
+      }
+      writeText(res, 200, 'text/plain; version=0.0.4; charset=utf-8', buildPrometheusMetrics());
       return;
     }
 

@@ -24,6 +24,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - `GET /healthz`
 - `GET /api/config`
 - `GET /api/stats` *(requires `x-admin-token` when admin token configured)*
+- `GET /api/metrics` *(Prometheus text format; requires `x-admin-token` when admin token configured)*
 - `POST /api/sessions`
 - `POST /api/sessions/resume`
 - `GET /api/sessions`
