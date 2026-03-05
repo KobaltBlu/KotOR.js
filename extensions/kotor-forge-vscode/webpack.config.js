@@ -33,6 +33,7 @@ module.exports = (_env, argv) => {
     resolve: {
       extensions: ['.ts', '.js'],
       alias: {
+        '@': path.resolve(__dirname, '../../src'),
         '@kotor': path.resolve(__dirname, '../../src')
       }
     },

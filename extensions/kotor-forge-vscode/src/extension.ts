@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import { GFFObject } from '@kotor/resource/GFFObject';
 import { getLogger, setExtensionLogger, LogScope, createScopedLogger } from './logger';
 import { activateLsp, deactivateLsp } from './lsp/client';
 import { KotorForgeProvider } from './providers/KotorForgeProvider';
@@ -75,14 +76,9 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('kotorForge.openAsJson', async () => {
       log.debug('Command invoked: kotorForge.openAsJson');
       const jsonExts = new Set(['.2da', '.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.tlk', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
-      let uri: vscode.Uri | undefined;
       const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
       const input = tab?.input as { uri?: vscode.Uri } | undefined;
-      if (input?.uri) {
-        uri = input.uri;
-      } else if (vscode.window.activeTextEditor?.document?.uri) {
-        uri = vscode.window.activeTextEditor.document.uri;
-      }
+      const uri = input?.uri || vscode.window.activeTextEditor?.document?.uri;
       const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
       if (!uri || !jsonExts.has(`.${ext}`)) {
         vscode.window.showWarningMessage('Open a KotOR file that supports JSON view (e.g. .utc, .gff, .2da, .tlk) first.');
@@ -95,6 +91,36 @@ export function activate(context: vscode.ExtensionContext) {
       } catch (e) {
         log.error(`openAsJson failed: ${e}`);
         vscode.window.showErrorMessage(`Failed to open as JSON: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.openAsXml', async () => {
+      log.debug('Command invoked: kotorForge.openAsXml');
+      const gffLikeExts = new Set(['.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
+      const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
+      const input = tab?.input as { uri?: vscode.Uri } | undefined;
+      const uri = input?.uri || vscode.window.activeTextEditor?.document?.uri;
+      const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
+
+      if (!uri || !gffLikeExts.has(`.${ext}`)) {
+        vscode.window.showWarningMessage('Open a GFF-based KotOR resource first (.utc/.utp/.are/.dlg/.gff/etc).');
+        log.debug('openAsXml: no suitable file active');
+        return;
+      }
+
+      try {
+        const raw = await vscode.workspace.fs.readFile(uri);
+        const gff = new GFFObject(new Uint8Array(raw));
+        const xml = gff.toXML();
+        const xmlDoc = await vscode.workspace.openTextDocument({
+          content: xml,
+          language: 'xml',
+        });
+        await vscode.window.showTextDocument(xmlDoc, { preview: false });
+        log.info(`openAsXml: opened XML preview for ${uri.toString()}`);
+      } catch (e) {
+        log.error(`openAsXml failed: ${e}`);
+        vscode.window.showErrorMessage(`Failed to open as XML: ${e instanceof Error ? e.message : String(e)}`);
       }
     })
   );

@@ -275,6 +275,11 @@
         "command": "kotorForge.openAsJson",
         "title": "Open as JSON",
         "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.openAsXml",
+        "title": "Open as XML",
+        "category": "KotOR Forge"
       }
     ],
     "menus": {
@@ -287,6 +292,11 @@
         {
           "when": "resourceExtname == .2da || resourceExtname == .tlk || resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis",
           "command": "kotorForge.openAsJson",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis",
+          "command": "kotorForge.openAsXml",
           "group": "navigation"
         }
       ]
