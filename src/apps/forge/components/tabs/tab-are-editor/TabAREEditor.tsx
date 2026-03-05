@@ -883,7 +883,15 @@ const RoomsTab = ({ are, tab }: TabProps) => {
 
             return (
               <div key={index} className="room-item">
-                <strong>{roomName}</strong>
+                <div className="property-group">
+                  <label>Room Name</label>
+                  <input
+                    title="Room Name"
+                    type="text"
+                    value={roomName}
+                    onChange={(e) => updateRoomField(room, 'RoomName', e.target.value)}
+                  />
+                </div>
                 <div className="property-group are-room-actions">
                   <button onClick={() => tab.moveRoomUp(index)} disabled={index <= 0}>Up</button>
                   <button onClick={() => tab.moveRoomDown(index)} disabled={index >= rooms.length - 1}>Down</button>
