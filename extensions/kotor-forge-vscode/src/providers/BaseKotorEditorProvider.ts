@@ -328,6 +328,9 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
 
       case 'edit':
         log.debug(`onMessage edit uri=${document.uri.fsPath} label=${message.label ?? 'Edit'} dataLength=${message.data?.length ?? 0}`);
+        {
+          const before = Array.from(document.documentData ?? new Uint8Array(0));
+          const after = Array.from(new Uint8Array(message.data || []));
         document.makeEdit({
           label: message.label || 'Edit',
           data: new Uint8Array(message.data || []),
@@ -335,17 +338,18 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
             log.trace(`edit undo uri=${document.uri.fsPath}`);
             this.postMessageToWebviews(document, {
               type: 'undo',
-              edits: message.undoData
+                content: before
             });
           },
           redo: () => {
             log.trace(`edit redo uri=${document.uri.fsPath}`);
             this.postMessageToWebviews(document, {
               type: 'redo',
-              edits: message.redoData
+                content: after
             });
           }
         });
+        }
         break;
 
       case 'response':

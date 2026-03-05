@@ -280,6 +280,11 @@
         "command": "kotorForge.openAsXml",
         "title": "Open as XML",
         "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.switchActiveGame",
+        "title": "Switch Active Game",
+        "category": "KotOR Forge"
       }
     ],
     "menus": {

@@ -114,6 +114,10 @@ export class KotorDocument implements vscode.CustomDocument {
   makeEdit(edit: KotorDocumentEdit) {
     log.debug(`makeEdit() uri=${this._uri.fsPath} label=${edit.label} dataLength=${edit.data?.length ?? 0}`);
     this._edits.push(edit);
+    this._documentData = edit.data;
+    this._onDidChangeDocument.fire({
+      edits: this._edits
+    });
     this._onDidChange.fire({
       label: edit.label,
       undo: async () => {
@@ -149,6 +153,7 @@ export class KotorDocument implements vscode.CustomDocument {
       return;
     }
     await vscode.workspace.fs.writeFile(targetResource, fileData);
+    this._documentData = fileData;
     log.debug(`saveAs() wrote ${fileData.length} bytes to ${targetResource.fsPath}`);
   }
 
@@ -159,7 +164,7 @@ export class KotorDocument implements vscode.CustomDocument {
     log.trace(`revert() uri=${this._uri.fsPath}`);
     const diskContent = await KotorDocument.readFile(this.uri);
     this._documentData = diskContent;
-    this._edits = this._savedEdits;
+    this._edits = Array.from(this._savedEdits);
     this._onDidChangeDocument.fire({
       content: diskContent,
       edits: this._edits

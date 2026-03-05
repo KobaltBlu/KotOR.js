@@ -7,6 +7,17 @@ import { KotorForgeProvider } from './providers/KotorForgeProvider';
 
 const log = createScopedLogger(LogScope.Extension);
 
+function getActiveGameLabel(activeGame: string): string {
+  return activeGame === 'tsl' ? 'TSL' : 'K1';
+}
+
+function buildStatusBarTooltip(activeGame: string, kotorPath: string, tslPath: string): string {
+  const activeLabel = activeGame === 'tsl' ? 'KotOR II: The Sith Lords' : 'KotOR I';
+  const k1 = kotorPath || '(not set)';
+  const k2 = tslPath || '(not set)';
+  return `KotOR Forge active game: ${activeLabel}\nK1 path: ${k1}\nTSL path: ${k2}`;
+}
+
 /**
  * Extension activation function
  */
@@ -19,6 +30,30 @@ export function activate(context: vscode.ExtensionContext) {
   log.info('KotOR Forge extension is now active');
   log.debug(`Extension extensionPath: ${context.extensionPath}`);
   log.trace(`Extension subscriptions count: ${context.subscriptions.length}`);
+
+  const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  statusBarItem.command = 'kotorForge.switchActiveGame';
+  const refreshStatusBar = () => {
+    const cfg = vscode.workspace.getConfiguration('kotorForge');
+    const activeGame = cfg.get<string>('activeGame', 'kotor');
+    const kotorPath = cfg.get<string>('kotorPath', '');
+    const tslPath = cfg.get<string>('tslPath', '');
+    statusBarItem.text = `$(symbol-key) KotOR: ${getActiveGameLabel(activeGame)}`;
+    statusBarItem.tooltip = buildStatusBarTooltip(activeGame, kotorPath, tslPath);
+    statusBarItem.show();
+    log.trace(`Status bar refreshed activeGame=${activeGame}`);
+  };
+  refreshStatusBar();
+  context.subscriptions.push(
+    statusBarItem,
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('kotorForge.activeGame')
+        || e.affectsConfiguration('kotorForge.kotorPath')
+        || e.affectsConfiguration('kotorForge.tslPath')) {
+        refreshStatusBar();
+      }
+    })
+  );
 
   // Register Forge-backed custom editors: default + Generic GFF option for GFF types
   log.trace('Registering KotorForgeProvider (default + kotor.forge.gff)');
@@ -48,6 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
         await vscode.workspace.getConfiguration('kotorForge').update('kotorPath', path[0].fsPath, true);
         getLogger().info(`[Extension] KotOR path set to: ${path[0].fsPath}`);
         vscode.window.showInformationMessage(`KotOR path set to: ${path[0].fsPath}`);
+        refreshStatusBar();
         log.trace('kotorForge.setKotorPath completed successfully');
       } else {
         log.debug('kotorForge.setKotorPath cancelled or no path selected');
@@ -67,10 +103,33 @@ export function activate(context: vscode.ExtensionContext) {
         await vscode.workspace.getConfiguration('kotorForge').update('tslPath', path[0].fsPath, true);
         getLogger().info(`[Extension] KotOR II path set to: ${path[0].fsPath}`);
         vscode.window.showInformationMessage(`KotOR II path set to: ${path[0].fsPath}`);
+        refreshStatusBar();
         log.trace('kotorForge.setTSLPath completed successfully');
       } else {
         log.debug('kotorForge.setTSLPath cancelled or no path selected');
       }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.switchActiveGame', async () => {
+      log.debug('Command invoked: kotorForge.switchActiveGame');
+      const cfg = vscode.workspace.getConfiguration('kotorForge');
+      const current = cfg.get<string>('activeGame', 'kotor');
+      const selection = await vscode.window.showQuickPick([
+        { label: 'KotOR I', description: 'kotor', value: 'kotor' },
+        { label: 'KotOR II: The Sith Lords', description: 'tsl', value: 'tsl' },
+      ], {
+        title: 'Select active KotOR game',
+        placeHolder: `Current: ${current}`,
+      });
+
+      if (!selection) {
+        return;
+      }
+
+      await cfg.update('activeGame', selection.value, true);
+      refreshStatusBar();
+      vscode.window.showInformationMessage(`KotOR Forge active game set to ${selection.label}`);
+      log.info(`Active game switched to ${selection.value}`);
     }),
 
     vscode.commands.registerCommand('kotorForge.openAsJson', async () => {

@@ -8,6 +8,7 @@ import { TabManager } from '@forge/components/tabs/TabManager';
 import { LayoutContainerProvider } from '@forge/context/LayoutContainerContext';
 import { TabManagerProvider } from '@forge/context/TabManagerContext';
 import { EditorFile } from '@forge/EditorFile';
+import type { EditorFileEventListenerTypes } from '@forge/EditorFile';
 import { FileLocationType } from '@forge/enum/FileLocationType';
 import { ForgeState } from '@forge/states/ForgeState';
 import type { TabState } from '@forge/states/tabs/TabState';
@@ -47,6 +48,66 @@ export const WebviewApp: React.FC = () => {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const initOnce = useRef(false);
+  const suppressEditSyncRef = useRef(false);
+  const detachEditSyncRef = useRef<(() => void) | null>(null);
+
+  const attachEditSync = (tabState: TabState): (() => void) => {
+    const file = tabState?.file;
+    if (!(file instanceof EditorFile)) {
+      return () => undefined;
+    }
+
+    let notifyTimeout: number | undefined;
+    const onSaveStateChanged = () => {
+      if (!file.unsaved_changes || suppressEditSyncRef.current) {
+        return;
+      }
+
+      if (notifyTimeout) {
+        window.clearTimeout(notifyTimeout);
+      }
+
+      notifyTimeout = window.setTimeout(async () => {
+        if (suppressEditSyncRef.current) return;
+        try {
+          if (typeof tabState.updateFile === 'function') {
+            tabState.updateFile();
+          }
+          const buffer = await tabState.getExportBuffer();
+          bridge.notifyEdit('Edit', buffer);
+        } catch (e) {
+          log.warn(`Failed to notify edit to host: ${e}`);
+        }
+      }, 40);
+    };
+
+    file.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', onSaveStateChanged);
+    return () => {
+      if (notifyTimeout) {
+        window.clearTimeout(notifyTimeout);
+      }
+      file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', onSaveStateChanged);
+    };
+  };
+
+  const applyHostContent = async (content: number[], markSaved = false): Promise<void> => {
+    const manager = adapter.getTabManager();
+    const tab = manager.currentTab as TabState | undefined;
+    if (!tab?.file) return;
+
+    suppressEditSyncRef.current = true;
+    try {
+      tab.file.buffer = new Uint8Array(content);
+      if (markSaved) {
+        tab.file.unsaved_changes = false;
+      }
+      if (typeof (tab as TabState & { openFile?: () => Promise<void> }).openFile === 'function') {
+        await (tab as TabState & { openFile: () => Promise<void> }).openFile();
+      }
+    } finally {
+      suppressEditSyncRef.current = false;
+    }
+  };
 
   useEffect(() => {
     if (initOnce.current) return;
@@ -79,6 +140,10 @@ export const WebviewApp: React.FC = () => {
         const tabState = createTabStateForEditorType(editorType, { editorFile });
         log.debug(`addTab() adding tab type=${tabState.constructor.name} id=${tabState.id}`);
         adapter.getTabManager().addTab(tabState);
+        if (detachEditSyncRef.current) {
+          detachEditSyncRef.current();
+        }
+        detachEditSyncRef.current = attachEditSync(tabState);
         log.info(`Tab added and shown; editor ready type=${editorType} tab=${tabState.constructor.name}`);
         setReady(true);
       } catch (e) {
@@ -107,27 +172,35 @@ export const WebviewApp: React.FC = () => {
       }
     });
 
-    bridge.on('undo', () => { log.trace('undo message received (host drives undo)'); });
-    bridge.on('redo', () => { log.trace('redo message received (host drives redo)'); });
+    bridge.on('undo', (data: unknown) => {
+      const msg = data as { content?: number[] };
+      if (!Array.isArray(msg?.content)) return;
+      log.trace(`undo message received contentLength=${msg.content.length}`);
+      void applyHostContent(msg.content);
+    });
+    bridge.on('redo', (data: unknown) => {
+      const msg = data as { content?: number[] };
+      if (!Array.isArray(msg?.content)) return;
+      log.trace(`redo message received contentLength=${msg.content.length}`);
+      void applyHostContent(msg.content);
+    });
 
     bridge.on('revert', (data: unknown) => {
       const msg = data as { content?: number[] };
       const content = msg?.content;
       if (!Array.isArray(content)) return;
       log.info('revert message received, applying to current tab');
-      const manager = adapter.getTabManager();
-      const tab = manager.currentTab as TabState | undefined;
-      if (tab?.file) {
-        tab.file.buffer = new Uint8Array(content);
-        tab.file.unsaved_changes = false;
-        if (typeof (tab as TabState & { openFile?: () => Promise<void> }).openFile === 'function') {
-          void (tab as TabState & { openFile: () => Promise<void> }).openFile();
-        }
-      }
+      void applyHostContent(content, true);
     });
 
     log.info('Bridge handlers registered, calling notifyReady()');
     bridge.notifyReady();
+    return () => {
+      if (detachEditSyncRef.current) {
+        detachEditSyncRef.current();
+        detachEditSyncRef.current = null;
+      }
+    };
   }, [adapter]);
 
   if (error) {
