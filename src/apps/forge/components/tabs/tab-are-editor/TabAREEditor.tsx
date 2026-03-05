@@ -869,6 +869,9 @@ const RoomsTab = ({ are, tab }: TabProps) => {
   return (
     <div className="are-tab-content">
       <h4>Rooms ({rooms.length})</h4>
+      <div className="property-group">
+        <button onClick={() => tab.addRoom()}>Add Room</button>
+      </div>
       {rooms.length === 0 ? (
         <p className="no-data">No rooms defined in this area.</p>
       ) : (
@@ -881,6 +884,10 @@ const RoomsTab = ({ are, tab }: TabProps) => {
             return (
               <div key={index} className="room-item">
                 <strong>{roomName}</strong>
+                <div className="property-group are-room-actions">
+                  <button onClick={() => tab.duplicateRoom(index)}>Duplicate</button>
+                  <button onClick={() => tab.deleteRoom(index)}>Delete</button>
+                </div>
                 <div className="property-row">
                   <div className="property-group">
                     <label>EnvAudio</label>

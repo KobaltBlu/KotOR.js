@@ -45,6 +45,7 @@ export class TabAREEditorState extends TabState {
       const response = await this.file.readFile();
       log.debug('TabAREEditorState openFile readFile done', response.buffer?.length ?? 0);
       this.are = new KotOR.GFFObject(response.buffer);
+      this.undoManager.clear();
       this.processEventListener('onEditorFileLoad', [this]);
       log.trace('TabAREEditorState openFile are loaded');
     } else {
@@ -105,6 +106,100 @@ export class TabAREEditorState extends TabState {
         this.markDataChanged();
       }
     });
+  }
+
+  private ensureRoomsField(): KotOR.GFFField | undefined {
+    if (!this.are) return;
+    let roomsField = this.are.RootNode.getFieldByLabel('Rooms');
+    if (!roomsField) {
+      roomsField = this.are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Rooms'));
+    }
+    return roomsField;
+  }
+
+  private createRoomStruct(name: string, envAudio = 0, ambientScale = 0): KotOR.GFFStruct {
+    const room = new KotOR.GFFStruct(3);
+    room.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'RoomName', name));
+    room.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'EnvAudio', envAudio));
+    room.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'AmbientScale', ambientScale));
+    return room;
+  }
+
+  addRoom(): boolean {
+    const roomsField = this.ensureRoomsField();
+    if (!roomsField) return false;
+
+    const list = roomsField.getChildStructs();
+    const room = this.createRoomStruct(`Room ${list.length + 1}`);
+    this.undoManager.execute({
+      type: 'are-room-add',
+      description: 'Add room',
+      redo: () => {
+        list.push(room);
+        this.markDataChanged();
+      },
+      undo: () => {
+        const idx = list.indexOf(room);
+        if (idx >= 0) {
+          list.splice(idx, 1);
+        }
+        this.markDataChanged();
+      }
+    });
+    return true;
+  }
+
+  deleteRoom(index: number): boolean {
+    const roomsField = this.ensureRoomsField();
+    if (!roomsField) return false;
+    const list = roomsField.getChildStructs();
+    if (index < 0 || index >= list.length) return false;
+
+    const removedRoom = list[index];
+    this.undoManager.execute({
+      type: 'are-room-delete',
+      description: 'Delete room',
+      redo: () => {
+        list.splice(index, 1);
+        this.markDataChanged();
+      },
+      undo: () => {
+        list.splice(index, 0, removedRoom);
+        this.markDataChanged();
+      }
+    });
+    return true;
+  }
+
+  duplicateRoom(index: number): boolean {
+    const roomsField = this.ensureRoomsField();
+    if (!roomsField) return false;
+    const list = roomsField.getChildStructs();
+    if (index < 0 || index >= list.length) return false;
+
+    const source = list[index];
+    const roomName = String(source.getFieldByLabel('RoomName')?.getValue() || `Room ${index + 1}`);
+    const envAudio = Number(source.getFieldByLabel('EnvAudio')?.getValue() || 0);
+    const ambientScale = Number(source.getFieldByLabel('AmbientScale')?.getValue() || 0);
+    const clone = this.createRoomStruct(`${roomName}_copy`, envAudio, ambientScale);
+    const insertIndex = index + 1;
+
+    this.undoManager.execute({
+      type: 'are-room-duplicate',
+      description: 'Duplicate room',
+      redo: () => {
+        list.splice(insertIndex, 0, clone);
+        this.markDataChanged();
+      },
+      undo: () => {
+        const idx = list.indexOf(clone);
+        if (idx >= 0) {
+          list.splice(idx, 1);
+        }
+        this.markDataChanged();
+      }
+    });
+    return true;
   }
 
   undo() {
