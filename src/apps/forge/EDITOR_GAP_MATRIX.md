@@ -5,6 +5,7 @@ This document maps all resource types to their current implementation status and
 ## Legend
 
 - **✅ Full Editor**: Specialized editor with full UI implementation
+- **🟡 Partial Editor**: Specialized editor exists but advanced workflows are still incomplete
 - **⚠️ Fallback**: Tab exists but redirects to generic viewer (GFF/binary/ERF)
 - **❌ Missing**: No dedicated tab (handled by default case → binary viewer)
 
@@ -13,7 +14,7 @@ This document maps all resource types to their current implementation status and
 | Extension | Status | Current Tab | Backing Parser | Notes |
 |-----------|--------|-------------|----------------|-------|
 | **2da** | ✅ Full | TabTwoDAEditorState | TwoDAObject | Spreadsheet editor with full UI |
-| **are** | ✅ Full | TabAREEditorState | GFFObject | Area editor UI with dedicated tab and export |
+| **are** | ✅ Full | TabAREEditorState | GFFObject (ARE format) | Specialized tabs implemented (Basic/Audio/Map/Environment/Scripts/Rooms) with minimap/map-schema controls, weather/lighting coverage, room editing, and script ResRef autocomplete |
 | **bik** | ✅ Full | TabBIKPlayerState | BIKObject | Video playback tab wired from FileTypeManager |
 | **bwm/dwk/pwk/wok** | ✅ Full | TabWOKEditorState | WalkmeshObject (need to verify) | 3D walkmesh editor with face/vertex/edge modes |
 | **dlg** | ✅ Full | TabDLGEditorState | DLGObject, DLGNode | Dedicated dialog editor tab |
@@ -38,14 +39,14 @@ This document maps all resource types to their current implementation status and
 | **tpc/tga** | ✅ Full | TabImageViewerState | TPCObject, TGAObject | Texture viewer |
 | **txi** | ✅ Full | TabTextEditorState | TXI | Texture info text files - text editor |
 | **txt** | ✅ Full | TabTextEditorState | (text) | Plain text files |
-| **utc** | ✅ Full | TabUTCEditorState | GFFObject (UTC format) | Creature blueprint editor with 3D preview |
+| **utc** | ✅ Full | TabUTCEditorState | GFFObject (UTC format) | Creature blueprint editor with 3D preview and script ResRef autocomplete |
 | **utd** | ✅ Full | TabUTDEditorState | GFFObject (UTD format) | Door blueprint editor |
-| **ute** | ✅ Full | TabUTEEditorState | GFFObject (UTE format) | Encounter blueprint editor |
+| **ute** | ✅ Full | TabUTEEditorState | GFFObject (UTE format) | Encounter blueprint editor with script ResRef autocomplete |
 | **uti** | ✅ Full | TabUTIEditorState | GFFObject (UTI format) | Item blueprint editor with tabs |
 | **utm** | ✅ Full | TabUTMEditorState | GFFObject (UTM format) | Merchant blueprint editor |
 | **utp** | ✅ Full | TabUTPEditorState | GFFObject (UTP format) | Placeable blueprint editor |
 | **uts** | ✅ Full | TabUTSEditorState | GFFObject (UTS format) | Sound blueprint editor |
-| **utt** | ✅ Full | TabUTTEditorState | GFFObject (UTT format) | Trigger blueprint editor |
+| **utt** | ✅ Full | TabUTTEditorState | GFFObject (UTT format) | Trigger blueprint editor with script ResRef autocomplete |
 | **utw** | ✅ Full | TabUTWEditorState | GFFObject (UTW format) | Waypoint blueprint editor |
 | **vis** | ✅ Full | TabVISEditorState | VISObject | Dedicated VIS editor and room selection support |
 | **wav/mp3** | ✅ Full | AudioPlayerState (inline) | (audio) | Audio playback - inline audio player |
