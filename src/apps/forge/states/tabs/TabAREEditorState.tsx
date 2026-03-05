@@ -2,7 +2,9 @@ import React from "react";
 
 import { TabAREEditor } from "@/apps/forge/components/tabs/tab-are-editor/TabAREEditor";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import type { GFFFieldValue } from "@/apps/forge/interfaces/GFFFormField";
 import * as KotOR from "@/apps/forge/KotOR";
+import { UndoManager } from "@/apps/forge/managers/UndoManager";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
@@ -12,6 +14,7 @@ export class TabAREEditorState extends TabState {
   tabName: string = 'ARE Editor';
   are?: KotOR.GFFObject;
   activeTab: string = 'basic';
+  undoManager: UndoManager = new UndoManager();
 
   constructor(options: BaseTabStateOptions = {}){
     log.trace('TabAREEditorState constructor entry');
@@ -68,6 +71,50 @@ export class TabAREEditorState extends TabState {
 
   updateFile() {
     log.trace('TabAREEditorState updateFile');
+  }
+
+  markDataChanged() {
+    if (this.file) {
+      this.file.unsaved_changes = true;
+    }
+    this.processEventListener('onEditorFileLoad', [this]);
+  }
+
+  setFieldValue(struct: KotOR.GFFStruct | undefined, label: string, value: GFFFieldValue): void {
+    const field = struct?.getFieldByLabel(label);
+    if (!field) return;
+
+    const previousValue = field.getValue();
+    if (previousValue === value) return;
+
+    if (typeof previousValue === 'object' || typeof value === 'object') {
+      field.setValue(value);
+      this.markDataChanged();
+      return;
+    }
+
+    this.undoManager.execute({
+      type: 'are-field-edit',
+      description: `Edit ${label}`,
+      redo: () => {
+        field.setValue(value);
+        this.markDataChanged();
+      },
+      undo: () => {
+        field.setValue(previousValue as GFFFieldValue);
+        this.markDataChanged();
+      }
+    });
+  }
+
+  undo() {
+    this.undoManager.undo();
+    this.processEventListener('onEditorFileLoad', [this]);
+  }
+
+  redo() {
+    this.undoManager.redo();
+    this.processEventListener('onEditorFileLoad', [this]);
   }
 
   getResourceID(): string | undefined {

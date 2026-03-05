@@ -16,9 +16,13 @@ export const TabAREEditor = function(props: BaseTabProps){
   const tab = props.tab as TabAREEditorState;
   const [are, setAre] = useState(tab.are);
   const [activeTab, setActiveTab] = useState(tab.activeTab);
+  const [, setRevision] = useState(0);
 
   useEffect(() => {
-    const loadHandler = () => setAre(tab.are);
+    const loadHandler = () => {
+      setAre(tab.are);
+      setRevision((value) => value + 1);
+    };
     const tabHandler = () => setActiveTab(tab.activeTab);
 
     tab.addEventListener('onEditorFileLoad', loadHandler);
@@ -37,6 +41,21 @@ export const TabAREEditor = function(props: BaseTabProps){
         { label: 'Save', onClick: () => tab.save() },
         { label: 'Save As', onClick: () => tab.saveAs() }
       ]
+    },
+    {
+      label: 'Edit',
+      children: [
+        {
+          label: 'Undo',
+          disabled: !tab.undoManager.canUndo(),
+          onClick: () => tab.undo()
+        },
+        {
+          label: 'Redo',
+          disabled: !tab.undoManager.canRedo(),
+          onClick: () => tab.redo()
+        }
+      ]
     }
   ];
 
@@ -48,10 +67,6 @@ export const TabAREEditor = function(props: BaseTabProps){
       </div>
     );
   }
-
-  const markUnsaved = () => {
-    tab.file.unsaved_changes = true;
-  };
 
   return (
     <div className="forge-are-editor">
@@ -95,12 +110,12 @@ export const TabAREEditor = function(props: BaseTabProps){
         </button>
       </div>
       <div className="forge-are-editor__content">
-        {activeTab === 'basic' && <BasicTab are={are} onUpdate={markUnsaved} />}
-        {activeTab === 'audio' && <AudioTab are={are} onUpdate={markUnsaved} />}
-        {activeTab === 'map' && <MapTab are={are} onUpdate={markUnsaved} areaResRef={tab.file?.resref || ''} />}
-        {activeTab === 'environment' && <EnvironmentTab are={are} onUpdate={markUnsaved} />}
-        {activeTab === 'scripts' && <ScriptsTab are={are} onUpdate={markUnsaved} />}
-        {activeTab === 'rooms' && <RoomsTab are={are} onUpdate={markUnsaved} />}
+        {activeTab === 'basic' && <BasicTab are={are} tab={tab} />}
+        {activeTab === 'audio' && <AudioTab are={are} tab={tab} />}
+        {activeTab === 'map' && <MapTab are={are} tab={tab} areaResRef={tab.file?.resref || ''} />}
+        {activeTab === 'environment' && <EnvironmentTab are={are} tab={tab} />}
+        {activeTab === 'scripts' && <ScriptsTab are={are} tab={tab} />}
+        {activeTab === 'rooms' && <RoomsTab are={are} tab={tab} />}
       </div>
     </div>
   );
@@ -108,25 +123,21 @@ export const TabAREEditor = function(props: BaseTabProps){
 
 interface TabProps {
   are: KotOR.GFFObject;
-  onUpdate: () => void;
+  tab: TabAREEditorState;
 }
 
 interface MapTabProps extends TabProps {
   areaResRef: string;
 }
 
-const BasicTab = ({ are, onUpdate }: TabProps) => {
+const BasicTab = ({ are, tab }: TabProps) => {
   const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
     const v = are.RootNode.getFieldByLabel(label)?.getValue();
     return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
   const setFieldValue = (label: string, value: GFFFieldValue) => {
-    const field = are.RootNode.getFieldByLabel(label);
-    if(field){
-      field.setValue(value);
-      onUpdate();
-    }
+    tab.setFieldValue(are.RootNode, label, value);
   };
 
   const getLocStringValue = (label: string): KotOR.CExoLocString => {
@@ -201,18 +212,14 @@ const BasicTab = ({ are, onUpdate }: TabProps) => {
   );
 };
 
-const AudioTab = ({ are, onUpdate }: TabProps) => {
+const AudioTab = ({ are, tab }: TabProps) => {
   const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
     const v = are.RootNode.getFieldByLabel(label)?.getValue();
     return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
   const setFieldValue = (label: string, value: GFFFieldValue) => {
-    const field = are.RootNode.getFieldByLabel(label);
-    if(field){
-      field.setValue(value);
-      onUpdate();
-    }
+    tab.setFieldValue(are.RootNode, label, value);
   };
 
   return (
@@ -280,25 +287,28 @@ const AudioTab = ({ are, onUpdate }: TabProps) => {
   );
 };
 
-const MapTab = ({ are, onUpdate, areaResRef }: MapTabProps) => {
+const MapTab = ({ are, tab, areaResRef }: MapTabProps) => {
   const minimapTexture = areaResRef ? `lbl_map${areaResRef.toLowerCase()}` : '';
 
   const ensureMapStruct = () => {
     let mapField = are.RootNode.getFieldByLabel('Map');
     if (!mapField) {
       mapField = are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Map'));
+      tab.markDataChanged();
     }
 
     let mapStruct = mapField?.getChildStructs()?.[0];
     if (!mapStruct) {
       mapStruct = new KotOR.GFFStruct(14);
       mapField?.addChildStruct(mapStruct);
+      tab.markDataChanged();
     }
 
     const ensureField = (label: string, type: number, defaultValue: GFFFieldValue) => {
       let field = mapStruct.getFieldByLabel(label);
       if (!field) {
         field = mapStruct.addField(new KotOR.GFFField(type, label, defaultValue));
+        tab.markDataChanged();
       }
       return field;
     };
@@ -329,11 +339,7 @@ const MapTab = ({ are, onUpdate, areaResRef }: MapTabProps) => {
 
   const setMapFieldValue = (label: string, value: GFFFieldValue) => {
     const mapStruct = getMapStruct();
-    const field = mapStruct?.getFieldByLabel(label);
-    if (field) {
-      field.setValue(value);
-      onUpdate();
-    }
+    tab.setFieldValue(mapStruct, label, value);
   };
 
   return (
@@ -483,18 +489,14 @@ const MapTab = ({ are, onUpdate, areaResRef }: MapTabProps) => {
   );
 };
 
-const EnvironmentTab = ({ are, onUpdate }: TabProps) => {
+const EnvironmentTab = ({ are, tab }: TabProps) => {
   const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
     const v = are.RootNode.getFieldByLabel(label)?.getValue();
     return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
   const setFieldValue = (label: string, value: GFFFieldValue) => {
-    const field = are.RootNode.getFieldByLabel(label);
-    if(field){
-      field.setValue(value);
-      onUpdate();
-    }
+    tab.setFieldValue(are.RootNode, label, value);
   };
 
   return (
@@ -772,18 +774,14 @@ const EnvironmentTab = ({ are, onUpdate }: TabProps) => {
   );
 };
 
-const ScriptsTab = ({ are, onUpdate }: TabProps) => {
+const ScriptsTab = ({ are, tab }: TabProps) => {
   const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
     const v = are.RootNode.getFieldByLabel(label)?.getValue();
     return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
   const setFieldValue = (label: string, value: GFFFieldValue) => {
-    const field = are.RootNode.getFieldByLabel(label);
-    if(field){
-      field.setValue(value);
-      onUpdate();
-    }
+    tab.setFieldValue(are.RootNode, label, value);
   };
 
   const scriptSuggestions = useMemo(() => {
@@ -861,15 +859,11 @@ const ScriptsTab = ({ are, onUpdate }: TabProps) => {
   );
 };
 
-const RoomsTab = ({ are, onUpdate }: TabProps) => {
+const RoomsTab = ({ are, tab }: TabProps) => {
   const rooms = are.RootNode.getFieldByLabel('Rooms')?.getChildStructs() || [];
 
   const updateRoomField = (room: KotOR.GFFStruct, label: string, value: GFFFieldValue) => {
-    const field = room.getFieldByLabel(label);
-    if (field) {
-      field.setValue(value);
-      onUpdate();
-    }
+    tab.setFieldValue(room, label, value);
   };
 
   return (
