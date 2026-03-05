@@ -228,6 +228,25 @@ export class EditorFile extends EventListenerModel {
 
   async readFile(): Promise<EditorFileReadResponse> {
     return new Promise<EditorFileReadResponse>( async (resolve, reject) => {
+      const canRestoreSnapshot =
+        !this.buffer?.length &&
+        this.reskey !== KotOR.ResourceTypes.mdl &&
+        this.reskey !== KotOR.ResourceTypes.mdx &&
+        KotOR.ConfigClient.get('Editor.AutoSaveSnapshots', true);
+
+      if (canRestoreSnapshot && ForgeState.autosaveManager) {
+        const snapshot = ForgeState.autosaveManager.getSnapshotForFile(this);
+        if (snapshot && snapshot.length > 0) {
+          this.buffer = snapshot;
+          this.unsaved_changes = true;
+          console.info('EditorFile.readFile restored autosave snapshot for', this.getFilename());
+          resolve({
+            buffer: this.buffer,
+          });
+          return;
+        }
+      }
+
       if(this.reskey == KotOR.ResourceTypes.mdl || this.reskey == KotOR.ResourceTypes.mdx){
         //Mdl / Mdx Special Loader
         resolve(
