@@ -233,4 +233,25 @@ describe('SessionManagerCore', () => {
     expect(parsed.some((entry) => entry.type === 'session_created')).toBe(true);
     expect(parsed.some((entry) => entry.type === 'session_closed')).toBe(true);
   });
+
+  it('forwards lifecycle events to optional callback sink', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-session-manager-'));
+    const captured: string[] = [];
+    const manager = new SessionManagerCore({
+      dataRoot: tempRoot,
+      maxSessions: 2,
+      sessionTtlMs: 10_000,
+      warningLeadMs: 2_000,
+      onEvent: (event) => {
+        captured.push(event.type);
+      },
+    });
+
+    const session = manager.createSession('webhook-user', 'kotor', 1000);
+    manager.closeSession(session.id, session.token, 1500);
+
+    expect(captured.includes('session_created')).toBe(true);
+    expect(captured.includes('session_closed')).toBe(true);
+    expect(captured.includes('session_container_stop_requested')).toBe(true);
+  });
 });

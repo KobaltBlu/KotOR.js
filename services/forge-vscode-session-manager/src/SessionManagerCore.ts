@@ -59,6 +59,7 @@ export interface SessionManagerOptions {
   maxWorkspaceBytes?: number;
   closedSessionRetentionMs?: number;
   eventLogPath?: string;
+  onEvent?: (event: SessionEvent) => void;
 }
 
 export class SessionManagerCore {
@@ -72,6 +73,7 @@ export class SessionManagerCore {
   private readonly maxWorkspaceBytes: number;
   private readonly closedSessionRetentionMs: number;
   private readonly eventLogPath?: string;
+  private readonly onEvent?: (event: SessionEvent) => void;
 
   constructor(options: SessionManagerOptions) {
     this.dataRoot = options.dataRoot;
@@ -81,6 +83,7 @@ export class SessionManagerCore {
     this.maxWorkspaceBytes = Math.max(0, Number(options.maxWorkspaceBytes || 0));
     this.closedSessionRetentionMs = Math.max(0, Number(options.closedSessionRetentionMs ?? (72 * 60 * 60 * 1000)));
     this.eventLogPath = options.eventLogPath ? path.resolve(options.eventLogPath) : undefined;
+    this.onEvent = options.onEvent;
 
     fs.mkdirSync(this.getWorkspacesRoot(), { recursive: true });
     fs.mkdirSync(this.getMetadataRoot(), { recursive: true });
@@ -359,6 +362,13 @@ export class SessionManagerCore {
         fs.appendFileSync(this.eventLogPath, `${JSON.stringify(event)}\n`, 'utf-8');
       } catch {
         // ignore event log write failures
+      }
+    }
+    if (this.onEvent) {
+      try {
+        this.onEvent(event);
+      } catch {
+        // ignore external sink callback failures
       }
     }
   }

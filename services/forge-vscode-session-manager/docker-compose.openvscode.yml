@@ -21,6 +21,8 @@ services:
       FORGE_SESSION_MANAGER_ALLOWED_UPSTREAM_HOSTS: "openvscode,127.0.0.1,localhost"
       FORGE_SESSION_MANAGER_ALLOWED_ORIGINS: "http://127.0.0.1:8090,http://localhost:8090"
       FORGE_SESSION_MANAGER_EVENT_LOG_PATH: "/workspace/services/forge-vscode-session-manager/data/session-events.ndjson"
+      FORGE_SESSION_MANAGER_EVENT_WEBHOOK_URL: ""
+      FORGE_SESSION_MANAGER_EVENT_WEBHOOK_BEARER_TOKEN: ""
     command: >
       bash -lc "npx tsc services/forge-vscode-session-manager/src/server.ts services/forge-vscode-session-manager/src/SessionManagerCore.ts --target ES2020 --module commonjs --outDir services/forge-vscode-session-manager/dist --esModuleInterop --skipLibCheck && node services/forge-vscode-session-manager/dist/server.js"
     ports:

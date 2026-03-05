@@ -14,6 +14,8 @@ const ADMIN_TOKEN = String(process.env.FORGE_SESSION_MANAGER_ADMIN_TOKEN || '').
 const OPENVSCODE_BASE_URL = process.env.FORGE_OPENVSCODE_BASE_URL || 'http://127.0.0.1:18080';
 const PUBLIC_BASE_URL = process.env.FORGE_SESSION_MANAGER_PUBLIC_BASE_URL || `http://127.0.0.1:${PORT}`;
 const EVENT_LOG_PATH = String(process.env.FORGE_SESSION_MANAGER_EVENT_LOG_PATH || '').trim();
+const EVENT_WEBHOOK_URL = String(process.env.FORGE_SESSION_MANAGER_EVENT_WEBHOOK_URL || '').trim();
+const EVENT_WEBHOOK_BEARER_TOKEN = String(process.env.FORGE_SESSION_MANAGER_EVENT_WEBHOOK_BEARER_TOKEN || '').trim();
 const ALLOWED_UPSTREAM_HOSTS = String(process.env.FORGE_SESSION_MANAGER_ALLOWED_UPSTREAM_HOSTS || '')
   .split(',')
   .map((part) => part.trim().toLowerCase())
@@ -23,6 +25,27 @@ const ALLOWED_ORIGINS = String(process.env.FORGE_SESSION_MANAGER_ALLOWED_ORIGINS
   .map((part) => part.trim().toLowerCase())
   .filter(Boolean);
 
+function sendEventToWebhook(event: unknown): void {
+  if (!EVENT_WEBHOOK_URL) {
+    return;
+  }
+
+  const headers: HeadersInit = {
+    'content-type': 'application/json',
+  };
+  if (EVENT_WEBHOOK_BEARER_TOKEN) {
+    headers.authorization = `Bearer ${EVENT_WEBHOOK_BEARER_TOKEN}`;
+  }
+
+  void fetch(EVENT_WEBHOOK_URL, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(event),
+  }).catch((error) => {
+    console.warn(`Failed to deliver session event webhook: ${String(error)}`);
+  });
+}
+
 const manager = new SessionManagerCore({
   dataRoot: DATA_ROOT,
   maxSessions: MAX_SESSIONS,
@@ -31,6 +54,7 @@ const manager = new SessionManagerCore({
   maxWorkspaceBytes: MAX_WORKSPACE_BYTES,
   closedSessionRetentionMs: CLOSED_SESSION_RETENTION_MS,
   eventLogPath: EVENT_LOG_PATH || undefined,
+  onEvent: EVENT_WEBHOOK_URL ? sendEventToWebhook : undefined,
 });
 
 function writeJson(res: http.ServerResponse, statusCode: number, body: unknown): void {
@@ -420,6 +444,7 @@ const server = http.createServer(async (req, res) => {
         maxWorkspaceBytes: MAX_WORKSPACE_BYTES,
         closedSessionRetentionMs: CLOSED_SESSION_RETENTION_MS,
         eventLogPath: EVENT_LOG_PATH || null,
+        eventWebhookEnabled: Boolean(EVENT_WEBHOOK_URL),
         allowedUpstreamHosts: ALLOWED_UPSTREAM_HOSTS,
         allowedOrigins: ALLOWED_ORIGINS,
         openVSCodeBaseUrl: OPENVSCODE_BASE_URL,
