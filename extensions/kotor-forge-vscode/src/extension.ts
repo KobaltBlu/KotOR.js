@@ -775,9 +775,14 @@ export function activate(context: vscode.ExtensionContext) {
       await openActiveGffAsText('TOML', 'toml', (gff) => gff.toTOML(), resolveCommandUri(value));
     }),
 
-    vscode.commands.registerCommand('kotorForge.compareWithSaved', async () => {
+    vscode.commands.registerCommand('kotorForge.compareWithSaved', async (value?: unknown) => {
       log.debug('Command invoked: kotorForge.compareWithSaved');
-      const editor = vscode.window.activeTextEditor;
+      let editor = vscode.window.activeTextEditor;
+      const uri = resolveCommandUri(value);
+      if (uri) {
+        const document = await vscode.workspace.openTextDocument(uri);
+        editor = await vscode.window.showTextDocument(document, { preview: false });
+      }
       if (!editor) {
         vscode.window.showWarningMessage('Focus a text editor first to compare with saved.');
         return;

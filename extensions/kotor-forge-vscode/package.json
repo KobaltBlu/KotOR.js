@@ -587,6 +587,11 @@
         },
         {
           "when": "view == kotorForgeResources && viewItem == kotorForge.resourceFile",
+          "command": "kotorForge.compareWithSaved",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeResources && viewItem == kotorForge.resourceFile",
           "command": "kotorForge.validateActiveResource",
           "group": "navigation"
         },
