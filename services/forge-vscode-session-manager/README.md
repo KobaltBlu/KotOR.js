@@ -23,6 +23,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 
 - `GET /healthz`
 - `GET /api/config`
+- `GET /api/stats`
 - `POST /api/sessions`
 - `POST /api/sessions/resume`
 - `GET /api/sessions`

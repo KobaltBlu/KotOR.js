@@ -213,6 +213,48 @@ export function activate(context: vscode.ExtensionContext) {
       void refreshSessionStatusBar();
     }),
 
+    vscode.commands.registerCommand('kotorForge.showSessionManagerStats', async () => {
+      log.debug('Command invoked: kotorForge.showSessionManagerStats');
+      const cfg = vscode.workspace.getConfiguration('kotorForge');
+      const sessionManagerUrl = cfg.get<string>('sessionManagerUrl', '').trim();
+      const adminToken = cfg.get<string>('sessionManagerAdminToken', '').trim();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      try {
+        const endpoint = new URL('/api/stats', sessionManagerUrl);
+        const response = await fetch(endpoint.toString(), {
+          headers: adminToken ? { 'x-admin-token': adminToken } : undefined,
+        });
+        if (!response.ok) {
+          throw new Error(`stats request failed (${response.status})`);
+        }
+        const stats = await response.json() as {
+          activeSessions?: number;
+          readyContainers?: number;
+          totalSessions?: number;
+          byStatus?: Record<string, number>;
+          byContainerStatus?: Record<string, number>;
+        };
+        const statusSummary = Object.entries(stats.byStatus || {})
+          .map(([key, value]) => `${key}:${value}`)
+          .join(', ');
+        const containerSummary = Object.entries(stats.byContainerStatus || {})
+          .map(([key, value]) => `${key}:${value}`)
+          .join(', ');
+
+        const summary = `Sessions active ${stats.activeSessions ?? 0}, ready ${stats.readyContainers ?? 0}, total ${stats.totalSessions ?? 0}`;
+        vscode.window.showInformationMessage(summary);
+        log.info(`[session-stats] ${summary}; status=[${statusSummary}] containers=[${containerSummary}]`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to fetch session manager stats: ${message}`);
+        log.error(`showSessionManagerStats failed: ${message}`);
+      }
+    }),
+
     vscode.commands.registerCommand('kotorForge.openHostedSession', async (value?: string | { accessUrl?: string }) => {
       log.debug('Command invoked: kotorForge.openHostedSession');
       const accessUrl = typeof value === 'string'

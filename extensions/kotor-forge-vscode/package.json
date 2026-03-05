@@ -335,6 +335,11 @@
         "command": "kotorForge.openHostedSession",
         "title": "Open Hosted Session",
         "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.showSessionManagerStats",
+        "title": "Show Session Manager Stats",
+        "category": "KotOR Forge"
       }
     ],
     "views": {
@@ -396,6 +401,11 @@
         {
           "when": "view == kotorForgeSessions",
           "command": "kotorForge.refreshSessions",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeSessions",
+          "command": "kotorForge.showSessionManagerStats",
           "group": "navigation"
         },
         {

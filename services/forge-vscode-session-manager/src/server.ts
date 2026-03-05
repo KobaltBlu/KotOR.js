@@ -112,6 +112,39 @@ function sessionResponse(session: ForgeSession, includeToken = false): Record<st
   };
 }
 
+function buildStatsSnapshot(): Record<string, unknown> {
+  const sessions = manager.listSessions();
+  const byStatus: Record<string, number> = {};
+  const byContainerStatus: Record<string, number> = {};
+  let active = 0;
+  let ready = 0;
+  let expired = 0;
+
+  for (const session of sessions) {
+    byStatus[session.status] = (byStatus[session.status] || 0) + 1;
+    byContainerStatus[session.containerStatus] = (byContainerStatus[session.containerStatus] || 0) + 1;
+    if (session.status !== 'expired' && session.status !== 'closed') {
+      active += 1;
+    }
+    if (session.containerStatus === 'ready') {
+      ready += 1;
+    }
+    if (session.status === 'expired') {
+      expired += 1;
+    }
+  }
+
+  return {
+    totalSessions: sessions.length,
+    activeSessions: active,
+    readyContainers: ready,
+    expiredSessions: expired,
+    byStatus,
+    byContainerStatus,
+    at: Date.now(),
+  };
+}
+
 const HOP_BY_HOP_HEADERS = new Set([
   'connection',
   'keep-alive',
@@ -266,6 +299,11 @@ const server = http.createServer(async (req, res) => {
         publicBaseUrl: PUBLIC_BASE_URL,
         adminTokenEnabled: Boolean(ADMIN_TOKEN),
       });
+      return;
+    }
+
+    if (method === 'GET' && pathname === '/api/stats') {
+      writeJson(res, 200, buildStatsSnapshot());
       return;
     }
 
