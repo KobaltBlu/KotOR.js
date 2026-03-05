@@ -3,6 +3,7 @@ import React from "react";
 import { TabSAVEditor } from "@/apps/forge/components/tabs/tab-sav-editor/TabSAVEditor";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
+import { UndoManager } from "@/apps/forge/managers/UndoManager";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
@@ -24,6 +25,7 @@ export interface GlobalVariableSnapshot {
 export class TabSAVEditorState extends TabState {
   tabName: string = 'Save Game Editor';
   erf?: KotOR.ERFObject;
+  undoManager: UndoManager = new UndoManager();
   resourceOverrides: Map<string, Uint8Array> = new Map();
   globalVariables?: GlobalVariableSnapshot;
   private globalVariableGff?: KotOR.GFFObject;
@@ -83,6 +85,7 @@ export class TabSAVEditorState extends TabState {
 
       this.saveMeta = await this.extractSaveMetadata();
       log.debug("TabSAVEditorState openFile saveMeta resourceCount", this.saveMeta?.resourceCount);
+      this.undoManager.clear();
       if (this.saveMeta.globalVariableCandidates?.length) {
         const first = this.saveMeta.globalVariableCandidates[0];
         await this.loadGlobalVariables(first.resRef, first.ext);
@@ -214,6 +217,7 @@ export class TabSAVEditorState extends TabState {
     this.globalVariableGff = new KotOR.GFFObject(buffer);
     this.globalVariableResType = key.resType;
     this.globalVariables = this.decodeGlobalVariables(this.globalVariableGff, key.resRef, ext);
+    this.undoManager.clear();
     this.processEventListener('onEditorFileLoad', [this]);
   }
 
@@ -227,7 +231,7 @@ export class TabSAVEditorState extends TabState {
     this.processEventListener('onEditorFileLoad', [this]);
   }
 
-  updateGlobalBoolean(index: number, value: boolean): void {
+  private applyGlobalBoolean(index: number, value: boolean): void {
     if (!this.globalVariables || !this.globalVariableGff) return;
 
     const boolEntry = this.globalVariables.booleans[index];
@@ -254,7 +258,22 @@ export class TabSAVEditorState extends TabState {
     this.markGlobalVariableChanged();
   }
 
-  updateGlobalNumber(index: number, value: number): void {
+  updateGlobalBoolean(index: number, value: boolean): void {
+    if (!this.globalVariables) return;
+    const boolEntry = this.globalVariables.booleans[index];
+    if (!boolEntry) return;
+    const previous = boolEntry.value;
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-global-bool-edit',
+      description: `Set ${boolEntry.name}`,
+      redo: () => this.applyGlobalBoolean(index, value),
+      undo: () => this.applyGlobalBoolean(index, previous),
+    });
+  }
+
+  private applyGlobalNumber(index: number, value: number): void {
     if (!this.globalVariables || !this.globalVariableGff) return;
     const numberEntry = this.globalVariables.numbers[index];
     if (!numberEntry) return;
@@ -275,7 +294,23 @@ export class TabSAVEditorState extends TabState {
     this.markGlobalVariableChanged();
   }
 
-  updateGlobalString(index: number, value: string): void {
+  updateGlobalNumber(index: number, value: number): void {
+    if (!this.globalVariables) return;
+    const numberEntry = this.globalVariables.numbers[index];
+    if (!numberEntry) return;
+    const previous = numberEntry.value;
+    const next = Math.max(0, Math.min(255, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-global-number-edit',
+      description: `Set ${numberEntry.name}`,
+      redo: () => this.applyGlobalNumber(index, next),
+      undo: () => this.applyGlobalNumber(index, previous),
+    });
+  }
+
+  private applyGlobalString(index: number, value: string): void {
     if (!this.globalVariables || !this.globalVariableGff) return;
     const stringEntry = this.globalVariables.strings[index];
     if (!stringEntry) return;
@@ -284,6 +319,31 @@ export class TabSAVEditorState extends TabState {
     const valueList = this.globalVariableGff.RootNode.getFieldByLabel('ValString')?.getChildStructs?.() || [];
     valueList[index]?.getFieldByLabel('String')?.setValue(value);
     this.markGlobalVariableChanged();
+  }
+
+  updateGlobalString(index: number, value: string): void {
+    if (!this.globalVariables) return;
+    const stringEntry = this.globalVariables.strings[index];
+    if (!stringEntry) return;
+    const previous = stringEntry.value;
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-global-string-edit',
+      description: `Set ${stringEntry.name}`,
+      redo: () => this.applyGlobalString(index, value),
+      undo: () => this.applyGlobalString(index, previous),
+    });
+  }
+
+  undo(): void {
+    this.undoManager.undo();
+    this.processEventListener('onEditorFileLoad', [this]);
+  }
+
+  redo(): void {
+    this.undoManager.redo();
+    this.processEventListener('onEditorFileLoad', [this]);
   }
 
   private countListEntries(root: KotOR.GFFStruct, labels: string[]): number {

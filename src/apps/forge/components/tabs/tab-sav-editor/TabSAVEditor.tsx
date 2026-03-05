@@ -41,6 +41,13 @@ export const TabSAVEditor = function(props: BaseTabProps){
         { label: 'Save', onClick: () => tab.save() },
         { label: 'Save As', onClick: () => tab.saveAs() }
       ]
+    },
+    {
+      label: 'Edit',
+      children: [
+        { label: 'Undo', onClick: () => tab.undo(), disabled: !tab.undoManager.canUndo() },
+        { label: 'Redo', onClick: () => tab.redo(), disabled: !tab.undoManager.canRedo() },
+      ]
     }
   ];
 
@@ -199,8 +206,9 @@ export const TabSAVEditor = function(props: BaseTabProps){
                     </thead>
                     <tbody>
                       {globals.booleans
-                        .filter((entry) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
-                        .map((entry, index) => (
+                        .map((entry, index) => ({ entry, index }))
+                        .filter(({ entry }) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
+                        .map(({ entry, index }) => (
                           <tr key={`gbool-${entry.name}-${index}`}>
                             <td>{entry.name}</td>
                             <td>
@@ -228,8 +236,9 @@ export const TabSAVEditor = function(props: BaseTabProps){
                     </thead>
                     <tbody>
                       {globals.numbers
-                        .filter((entry) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
-                        .map((entry, index) => (
+                        .map((entry, index) => ({ entry, index }))
+                        .filter(({ entry }) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
+                        .map(({ entry, index }) => (
                           <tr key={`gnum-${entry.name}-${index}`}>
                             <td>{entry.name}</td>
                             <td>
@@ -259,8 +268,9 @@ export const TabSAVEditor = function(props: BaseTabProps){
                     </thead>
                     <tbody>
                       {globals.strings
-                        .filter((entry) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
-                        .map((entry, index) => (
+                        .map((entry, index) => ({ entry, index }))
+                        .filter(({ entry }) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
+                        .map(({ entry, index }) => (
                           <tr key={`gstr-${entry.name}-${index}`}>
                             <td>{entry.name}</td>
                             <td>
