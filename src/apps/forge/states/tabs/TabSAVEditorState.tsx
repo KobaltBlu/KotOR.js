@@ -332,6 +332,15 @@ export class TabSAVEditorState extends TabState {
     this.markAreaInfoChanged();
   }
 
+  private applyAreaNumberField(label: string, value: number, min: number, max: number): void {
+    if (!this.areaInfoGff) return;
+    const field = this.areaInfoGff.RootNode.getFieldByLabel(label);
+    if (!field) return;
+    const next = Math.max(min, Math.min(max, Number.isFinite(value) ? Math.round(value) : min));
+    field.setValue(next);
+    this.markAreaInfoChanged();
+  }
+
   updateAreaName(value: string): void {
     if (!this.areaInfoGff) return;
     const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('Name')?.getCExoLocString?.()?.getValue?.() || '');
@@ -368,6 +377,48 @@ export class TabSAVEditorState extends TabState {
       description: 'Edit area comments',
       redo: () => this.applyAreaField('Comments', value),
       undo: () => this.applyAreaField('Comments', previous),
+    });
+  }
+
+  updateAreaChanceRain(value: number): void {
+    if (!this.areaInfoGff) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('ChanceRain')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(100, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-chance-rain-edit',
+      description: 'Edit area rain chance',
+      redo: () => this.applyAreaNumberField('ChanceRain', next, 0, 100),
+      undo: () => this.applyAreaNumberField('ChanceRain', previous, 0, 100),
+    });
+  }
+
+  updateAreaChanceSnow(value: number): void {
+    if (!this.areaInfoGff) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('ChanceSnow')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(100, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-chance-snow-edit',
+      description: 'Edit area snow chance',
+      redo: () => this.applyAreaNumberField('ChanceSnow', next, 0, 100),
+      undo: () => this.applyAreaNumberField('ChanceSnow', previous, 0, 100),
+    });
+  }
+
+  updateAreaChanceLightning(value: number): void {
+    if (!this.areaInfoGff) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('ChanceLightning')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(100, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-chance-lightning-edit',
+      description: 'Edit area lightning chance',
+      redo: () => this.applyAreaNumberField('ChanceLightning', next, 0, 100),
+      undo: () => this.applyAreaNumberField('ChanceLightning', previous, 0, 100),
     });
   }
 
@@ -436,6 +487,18 @@ export class TabSAVEditorState extends TabState {
 
   getAreaComments(): string {
     return String(this.areaInfoGff?.RootNode.getFieldByLabel('Comments')?.getValue?.() || '');
+  }
+
+  getAreaChanceRain(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('ChanceRain')?.getValue?.() || 0);
+  }
+
+  getAreaChanceSnow(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('ChanceSnow')?.getValue?.() || 0);
+  }
+
+  getAreaChanceLightning(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('ChanceLightning')?.getValue?.() || 0);
   }
 
   canEditAreaName(): boolean {

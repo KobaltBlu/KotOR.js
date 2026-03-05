@@ -177,6 +177,44 @@ export const TabSAVEditor = function(props: BaseTabProps){
                 disabled={!canEditAreaName}
               />
             </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Rain Chance</label>
+                <input
+                  title="Area Rain Chance"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={tab.getAreaChanceRain()}
+                  onChange={(e) => tab.updateAreaChanceRain(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Snow Chance</label>
+                <input
+                  title="Area Snow Chance"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={tab.getAreaChanceSnow()}
+                  onChange={(e) => tab.updateAreaChanceSnow(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Lightning Chance</label>
+                <input
+                  title="Area Lightning Chance"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={tab.getAreaChanceLightning()}
+                  onChange={(e) => tab.updateAreaChanceLightning(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
           </div>
           <div className="sav-module-edit">
             <h4>Module Session Settings</h4>
