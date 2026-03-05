@@ -153,21 +153,46 @@ function normalizeOrigin(origin: string): string | null {
   }
 }
 
-function isRequestOriginAllowed(req: http.IncomingMessage): boolean {
-  if (!ALLOWED_ORIGINS.length) {
-    return true;
-  }
-
+function readNormalizedOrigin(req: http.IncomingMessage): string | undefined {
   const originHeader = req.headers.origin;
   if (typeof originHeader !== 'string' || !originHeader.trim()) {
+    return undefined;
+  }
+  return normalizeOrigin(originHeader.trim()) || '';
+}
+
+function isRequestOriginAllowed(req: http.IncomingMessage): boolean {
+  const normalized = readNormalizedOrigin(req);
+  if (typeof normalized === 'undefined') {
     return true;
   }
-
-  const normalized = normalizeOrigin(originHeader.trim());
   if (!normalized) {
     return false;
   }
+  if (!ALLOWED_ORIGINS.length) {
+    return true;
+  }
   return ALLOWED_ORIGINS.includes(normalized);
+}
+
+function getCorsOrigin(req: http.IncomingMessage): string | undefined {
+  const normalized = readNormalizedOrigin(req);
+  if (!normalized) {
+    return undefined;
+  }
+  if (!ALLOWED_ORIGINS.length || ALLOWED_ORIGINS.includes(normalized)) {
+    return normalized;
+  }
+  return undefined;
+}
+
+function applyCorsHeaders(req: http.IncomingMessage, res: http.ServerResponse): void {
+  const origin = getCorsOrigin(req);
+  if (!origin) return;
+  res.setHeader('access-control-allow-origin', origin);
+  res.setHeader('vary', 'Origin');
+  res.setHeader('access-control-allow-methods', 'GET,POST,DELETE,OPTIONS');
+  res.setHeader('access-control-allow-headers', 'content-type,x-session-token,x-admin-token');
 }
 
 function buildSessionAccessUrl(session: ForgeSession, includeToken: boolean): string {
@@ -441,6 +466,13 @@ const server = http.createServer(async (req, res) => {
   try {
     if (!isRequestOriginAllowed(req)) {
       writeJson(res, 403, { error: 'Origin not allowed' });
+      return;
+    }
+    applyCorsHeaders(req, res);
+
+    if (method === 'OPTIONS') {
+      res.statusCode = 204;
+      res.end();
       return;
     }
 

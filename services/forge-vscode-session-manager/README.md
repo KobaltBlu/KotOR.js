@@ -51,6 +51,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - Optional admin operations can be enabled by setting `FORGE_SESSION_MANAGER_ADMIN_TOKEN` and supplying `x-admin-token`.
 - Optional upstream host allow-list (`FORGE_SESSION_MANAGER_ALLOWED_UPSTREAM_HOSTS=host1,host2`) can restrict `/container-ready` `upstreamUrl` targets to approved hostnames.
 - Optional origin allow-list (`FORGE_SESSION_MANAGER_ALLOWED_ORIGINS=https://host1,https://host2`) can reject browser-originated requests from unapproved origins.
+- Allowed origins automatically receive CORS response headers and `OPTIONS` preflight handling for browser clients.
 - Optional durable event sink (`FORGE_SESSION_MANAGER_EVENT_LOG_PATH=/path/to/session-events.ndjson`) appends lifecycle events as NDJSON for external log shipping.
 - Optional webhook event sink (`FORGE_SESSION_MANAGER_EVENT_WEBHOOK_URL=https://ops.example/events`) pushes each lifecycle event as JSON via HTTP POST (optionally with `FORGE_SESSION_MANAGER_EVENT_WEBHOOK_BEARER_TOKEN`).
 - `GET /api/sessions?includeTokens=1` returns tokenized access URLs when called with a valid admin token.

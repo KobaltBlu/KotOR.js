@@ -85,6 +85,23 @@ async function requestJsonExpect(path, expectedStatus, options = {}) {
   return payload;
 }
 
+async function requestOptionsExpect(path, expectedStatus, { origin } = {}) {
+  const headers = {};
+  if (origin) {
+    headers.origin = origin;
+    headers['access-control-request-method'] = 'GET';
+  }
+  const response = await fetch(`${sessionBaseUrl}${path}`, {
+    method: 'OPTIONS',
+    headers: Object.keys(headers).length ? headers : undefined,
+  });
+  if (response.status !== expectedStatus) {
+    const payload = await response.text();
+    throw new Error(`OPTIONS ${path} expected ${expectedStatus} but got ${response.status}: ${payload}`);
+  }
+  return response;
+}
+
 function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
@@ -129,6 +146,8 @@ async function main() {
     if (allowedOrigin) {
       const allowed = await requestJson('/api/stats', { origin: allowedOrigin });
       assert(typeof allowed.totalSessions === 'number', 'allowed origin should pass policy checks');
+      const preflight = await requestOptionsExpect('/api/stats', 204, { origin: allowedOrigin });
+      assert(preflight.headers.get('access-control-allow-origin') === allowedOrigin, 'allowed origin should receive CORS allow-origin header');
     }
   }
 
