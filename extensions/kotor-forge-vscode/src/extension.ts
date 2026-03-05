@@ -120,8 +120,9 @@ async function openActiveGffAsText(
   formatLabel: 'XML' | 'YAML' | 'TOML',
   language: string,
   convert: (gff: GFFObject) => string,
+  targetUri?: vscode.Uri,
 ): Promise<void> {
-  const uri = getActiveResourceUri();
+  const uri = targetUri || getActiveResourceUri();
   const ext = getResourceExtension(uri);
 
   if (!uri || !GFF_LIKE_EXTS.has(ext)) {
@@ -712,14 +713,12 @@ export function activate(context: vscode.ExtensionContext) {
       resourceTreeProvider.refresh();
     }),
 
-    vscode.commands.registerCommand('kotorForge.openAsJson', async () => {
+    vscode.commands.registerCommand('kotorForge.openAsJson', async (value?: unknown) => {
       log.debug('Command invoked: kotorForge.openAsJson');
       const jsonExts = new Set(['.2da', '.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.tlk', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
-      const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
-      const input = tab?.input as { uri?: vscode.Uri } | undefined;
-      const uri = input?.uri || vscode.window.activeTextEditor?.document?.uri;
-      const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
-      if (!uri || !jsonExts.has(`.${ext}`)) {
+      const uri = resolveCommandUri(value) || getActiveResourceUri();
+      const ext = getResourceExtension(uri);
+      if (!uri || !jsonExts.has(ext)) {
         vscode.window.showWarningMessage('Open a KotOR file that supports JSON view (e.g. .utc, .gff, .2da, .tlk) first.');
         log.debug('openAsJson: no suitable file active');
         return;
@@ -733,19 +732,19 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
-    vscode.commands.registerCommand('kotorForge.openAsXml', async () => {
+    vscode.commands.registerCommand('kotorForge.openAsXml', async (value?: unknown) => {
       log.debug('Command invoked: kotorForge.openAsXml');
-      await openActiveGffAsText('XML', 'xml', (gff) => gff.toXML());
+      await openActiveGffAsText('XML', 'xml', (gff) => gff.toXML(), resolveCommandUri(value));
     }),
 
-    vscode.commands.registerCommand('kotorForge.openAsYaml', async () => {
+    vscode.commands.registerCommand('kotorForge.openAsYaml', async (value?: unknown) => {
       log.debug('Command invoked: kotorForge.openAsYaml');
-      await openActiveGffAsText('YAML', 'yaml', (gff) => gff.toYAML());
+      await openActiveGffAsText('YAML', 'yaml', (gff) => gff.toYAML(), resolveCommandUri(value));
     }),
 
-    vscode.commands.registerCommand('kotorForge.openAsToml', async () => {
+    vscode.commands.registerCommand('kotorForge.openAsToml', async (value?: unknown) => {
       log.debug('Command invoked: kotorForge.openAsToml');
-      await openActiveGffAsText('TOML', 'toml', (gff) => gff.toTOML());
+      await openActiveGffAsText('TOML', 'toml', (gff) => gff.toTOML(), resolveCommandUri(value));
     }),
 
     vscode.commands.registerCommand('kotorForge.compareWithSaved', async () => {
@@ -766,9 +765,9 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
-    vscode.commands.registerCommand('kotorForge.openAsAscii', async () => {
+    vscode.commands.registerCommand('kotorForge.openAsAscii', async (value?: unknown) => {
       log.debug('Command invoked: kotorForge.openAsAscii');
-      const uri = getActiveResourceUri();
+      const uri = resolveCommandUri(value) || getActiveResourceUri();
       const ext = getResourceExtension(uri).replace('.', '');
 
       if (!uri || (ext !== 'mdl' && ext !== 'mdx')) {

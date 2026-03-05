@@ -552,6 +552,31 @@
         },
         {
           "when": "view == kotorForgeResources && viewItem == kotorForge.resourceFile",
+          "command": "kotorForge.openAsJson",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeResources && viewItem == kotorForge.resourceFile",
+          "command": "kotorForge.openAsXml",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeResources && viewItem == kotorForge.resourceFile",
+          "command": "kotorForge.openAsYaml",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeResources && viewItem == kotorForge.resourceFile",
+          "command": "kotorForge.openAsToml",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeResources && viewItem == kotorForge.resourceFile",
+          "command": "kotorForge.openAsAscii",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeResources && viewItem == kotorForge.resourceFile",
           "command": "kotorForge.validateActiveResource",
           "group": "navigation"
         },
