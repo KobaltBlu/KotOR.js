@@ -41,6 +41,10 @@ export interface LauncherProfile {
   height?: number;
   executable?: { win?: string; mac?: string };
   launch: LauncherProfileLaunch;
+  openVSCodeBeta?: {
+    url: string;
+    promptMessage?: string;
+  };
   verify_install_dir?: boolean;
   elements?: LauncherProfileElement[];
   settings?: Record<string, LauncherProfileSettingsEntry>;

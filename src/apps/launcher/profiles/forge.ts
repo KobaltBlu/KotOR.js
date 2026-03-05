@@ -18,6 +18,10 @@ export const LauncherConfig: LauncherProfile = {
     "frameless": true,
     "fullscreen": false
   },
+  "openVSCodeBeta": {
+    "url": "http://127.0.0.1:8080/new",
+    "promptMessage": "OpenVSCode (beta) launches a hosted Forge editor session. Continue?"
+  },
   "elements": [
     {
       "type": "gallery",

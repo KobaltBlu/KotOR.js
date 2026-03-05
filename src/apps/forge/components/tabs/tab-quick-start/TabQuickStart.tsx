@@ -1,7 +1,8 @@
-﻿import React, { useState, useCallback, memo } from "react";
+import React, { useState, useCallback, memo } from "react";
 
 import { EditorFile } from "@/apps/forge/EditorFile";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { launchOpenVSCodeBeta } from "@/apps/forge/integration/OpenVSCodeBeta";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import * as KotOR from "@/apps/forge/KotOR";
@@ -31,6 +32,24 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
   const onBtnOpenProject = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     Project.OpenByDirectory();
+  }, []);
+
+  const onBtnOpenVSCodeBeta = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const forgeProfile = KotOR.ConfigClient.get(['Profiles', 'forge']) as { openVSCodeBeta?: { url?: string; promptMessage?: string } } | undefined;
+    const baseUrl = forgeProfile?.openVSCodeBeta?.url || '';
+    if (!baseUrl) {
+      window.alert('OpenVSCode (beta) URL is not configured.');
+      return;
+    }
+    launchOpenVSCodeBeta({
+      baseUrl,
+      gameKey: String(KotOR.ApplicationProfile.GameKey || 'kotor'),
+      promptMessage: forgeProfile?.openVSCodeBeta?.promptMessage,
+      openExternal: KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON
+        ? (url) => window.electron.openExternal(url)
+        : undefined,
+    });
   }, []);
 
   const onRecentFilesUpdated = useCallback(() => {
@@ -166,6 +185,10 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
             <div className="action-button" onClick={onBtnOpenProject}>
               <i className="fa-solid fa-folder-open" />
               <span>Open Project</span>
+            </div>
+            <div className="action-button" onClick={onBtnOpenVSCodeBeta}>
+              <i className="fa-solid fa-code" />
+              <span>OpenVSCode (beta)</span>
             </div>
           </div>
         </div>

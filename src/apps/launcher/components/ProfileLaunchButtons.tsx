@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
+import { launchOpenVSCodeBeta } from "@/apps/forge/integration/OpenVSCodeBeta";
 import { useApp } from "@/apps/launcher/context/AppContext";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
@@ -17,6 +18,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   const [render, rerender] = useState(false);
   const [selectValue, setSelectValue] = useState<any>("js");
   const [forgeSelectValue, setForgeSelectValue] = useState<any>();
+  const forgeCompatibleProfiles = (profileCategoriesValue?.game?.profiles || []).filter((p: any) => p.isForgeCompatible);
   const isLocateRequired = (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON && !!profile.locate_required) && !profile.directory
 
   const launchLabel = profile.category == 'game' ? 'PLAY' : 'OPEN';
@@ -24,6 +26,12 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   const hasExecutableSupport = (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON && profile.executable) ? true: false;
 
   const isForge = (profile.name == 'KotOR Forge');
+
+  useEffect(() => {
+    if (isForge && !forgeSelectValue && forgeCompatibleProfiles.length > 0) {
+      setForgeSelectValue(forgeCompatibleProfiles[0].key);
+    }
+  }, [forgeCompatibleProfiles, forgeSelectValue, isForge]);
 
   const onSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectValue(e.target.value);
@@ -73,10 +81,13 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   const btnLaunch = () => {
     const clean_profile = Object.assign({}, profile);
     if(isForge){
-      const clean_game_profile = Object.assign({}, profileCategoriesValue?.game?.profiles.find( (p: any) => {
+      const clean_game_profile = Object.assign({}, forgeCompatibleProfiles.find( (p: any) => {
         return p.key == forgeSelectValue;
-      }));
+      }) || forgeCompatibleProfiles[0]);
       console.log('s', forgeSelectValue, clean_game_profile);
+      if(!clean_game_profile?.key){
+        return;
+      }
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         clean_profile.key = clean_game_profile.key;
         window.electron.launchProfile(clean_profile);
@@ -94,6 +105,25 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
         }
       }
     }
+  };
+
+  const btnOpenVSCodeBeta = () => {
+    const selectedGameKey = forgeSelectValue || forgeCompatibleProfiles[0]?.key || 'kotor';
+    const profileConfig = profile.openVSCodeBeta || {};
+    const baseUrl = profileConfig.url || '';
+    if(!baseUrl){
+      window.alert('OpenVSCode (beta) URL is not configured for this profile.');
+      return;
+    }
+
+    launchOpenVSCodeBeta({
+      baseUrl,
+      gameKey: selectedGameKey,
+      promptMessage: profileConfig.promptMessage,
+      openExternal: ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON
+        ? (url) => window.electron.openExternal(url)
+        : undefined,
+    });
   };
 
   if(isLocateRequired){
@@ -114,10 +144,8 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
           </div> : isForge ? (
             <div className="launch-select">
               <select className="select" onChange={onForgeSelectChange} value={forgeSelectValue}>
-                {(
-                  profileCategoriesValue?.game?.profiles || [])
-                  .filter( (p: any) => p.isForgeCompatible )
-                  .map((p: any, index: number) => {
+                {forgeCompatibleProfiles
+                  .map((p: any) => {
                     return (
                       <option key={p.name} value={p.key}>{p.name}</option>
                     )
@@ -129,6 +157,11 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
         }
         <div className="launch-btns">
           <a href="#" className="btn-launch" key="launch-btn-launch" onClick={onLaunchClick}>{launchLabel}</a>
+          {isForge && (
+            <a href="#" className="btn-launch" key="launch-btn-openvscode-beta" onClick={(e) => { e.preventDefault(); btnOpenVSCodeBeta(); }}>
+              OpenVSCode (beta)
+            </a>
+          )}
         </div>
       </>  
     );
