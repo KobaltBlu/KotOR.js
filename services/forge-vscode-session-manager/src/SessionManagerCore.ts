@@ -58,6 +58,7 @@ export interface SessionManagerOptions {
   warningLeadMs: number;
   maxWorkspaceBytes?: number;
   closedSessionRetentionMs?: number;
+  eventLogPath?: string;
 }
 
 export class SessionManagerCore {
@@ -70,6 +71,7 @@ export class SessionManagerCore {
   private readonly warningLeadMs: number;
   private readonly maxWorkspaceBytes: number;
   private readonly closedSessionRetentionMs: number;
+  private readonly eventLogPath?: string;
 
   constructor(options: SessionManagerOptions) {
     this.dataRoot = options.dataRoot;
@@ -78,9 +80,13 @@ export class SessionManagerCore {
     this.warningLeadMs = options.warningLeadMs;
     this.maxWorkspaceBytes = Math.max(0, Number(options.maxWorkspaceBytes || 0));
     this.closedSessionRetentionMs = Math.max(0, Number(options.closedSessionRetentionMs ?? (72 * 60 * 60 * 1000)));
+    this.eventLogPath = options.eventLogPath ? path.resolve(options.eventLogPath) : undefined;
 
     fs.mkdirSync(this.getWorkspacesRoot(), { recursive: true });
     fs.mkdirSync(this.getMetadataRoot(), { recursive: true });
+    if (this.eventLogPath) {
+      fs.mkdirSync(path.dirname(this.eventLogPath), { recursive: true });
+    }
     this.loadPersistedSessions();
   }
 
@@ -348,6 +354,13 @@ export class SessionManagerCore {
   private appendEvent(event: SessionEvent): void {
     this.events.push(event);
     this.eventCounts.set(event.type, (this.eventCounts.get(event.type) || 0) + 1);
+    if (this.eventLogPath) {
+      try {
+        fs.appendFileSync(this.eventLogPath, `${JSON.stringify(event)}\n`, 'utf-8');
+      } catch {
+        // ignore event log write failures
+      }
+    }
   }
 
   private requireSession(sessionId: string): ForgeSession {

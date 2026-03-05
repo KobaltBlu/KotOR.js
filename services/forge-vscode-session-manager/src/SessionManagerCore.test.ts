@@ -211,4 +211,26 @@ describe('SessionManagerCore', () => {
     expect((counts.session_container_stop_requested || 0) >= 1).toBe(true);
     expect((counts.session_container_stopped || 0) >= 1).toBe(true);
   });
+
+  it('writes event stream to optional ndjson log sink', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-session-manager-'));
+    const eventLogPath = path.join(tempRoot, 'events', 'session-events.ndjson');
+    const manager = new SessionManagerCore({
+      dataRoot: tempRoot,
+      maxSessions: 2,
+      sessionTtlMs: 10_000,
+      warningLeadMs: 2_000,
+      eventLogPath,
+    });
+
+    const session = manager.createSession('log-user', 'kotor', 1000);
+    manager.closeSession(session.id, session.token, 1500);
+    manager.drainEvents();
+
+    const content = fs.readFileSync(eventLogPath, 'utf-8').trim().split('\n');
+    expect(content.length >= 2).toBe(true);
+    const parsed = content.map((line) => JSON.parse(line) as { type?: string });
+    expect(parsed.some((entry) => entry.type === 'session_created')).toBe(true);
+    expect(parsed.some((entry) => entry.type === 'session_closed')).toBe(true);
+  });
 });

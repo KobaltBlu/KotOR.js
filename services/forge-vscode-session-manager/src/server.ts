@@ -13,6 +13,7 @@ const CLOSED_SESSION_RETENTION_MS = Number(process.env.FORGE_SESSION_MANAGER_RET
 const ADMIN_TOKEN = String(process.env.FORGE_SESSION_MANAGER_ADMIN_TOKEN || '').trim();
 const OPENVSCODE_BASE_URL = process.env.FORGE_OPENVSCODE_BASE_URL || 'http://127.0.0.1:18080';
 const PUBLIC_BASE_URL = process.env.FORGE_SESSION_MANAGER_PUBLIC_BASE_URL || `http://127.0.0.1:${PORT}`;
+const EVENT_LOG_PATH = String(process.env.FORGE_SESSION_MANAGER_EVENT_LOG_PATH || '').trim();
 const ALLOWED_UPSTREAM_HOSTS = String(process.env.FORGE_SESSION_MANAGER_ALLOWED_UPSTREAM_HOSTS || '')
   .split(',')
   .map((part) => part.trim().toLowerCase())
@@ -29,6 +30,7 @@ const manager = new SessionManagerCore({
   warningLeadMs: WARNING_LEAD_MS,
   maxWorkspaceBytes: MAX_WORKSPACE_BYTES,
   closedSessionRetentionMs: CLOSED_SESSION_RETENTION_MS,
+  eventLogPath: EVENT_LOG_PATH || undefined,
 });
 
 function writeJson(res: http.ServerResponse, statusCode: number, body: unknown): void {
@@ -417,6 +419,7 @@ const server = http.createServer(async (req, res) => {
         warningLeadMs: WARNING_LEAD_MS,
         maxWorkspaceBytes: MAX_WORKSPACE_BYTES,
         closedSessionRetentionMs: CLOSED_SESSION_RETENTION_MS,
+        eventLogPath: EVENT_LOG_PATH || null,
         allowedUpstreamHosts: ALLOWED_UPSTREAM_HOSTS,
         allowedOrigins: ALLOWED_ORIGINS,
         openVSCodeBaseUrl: OPENVSCODE_BASE_URL,

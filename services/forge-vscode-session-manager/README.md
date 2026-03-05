@@ -51,6 +51,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - Optional admin operations can be enabled by setting `FORGE_SESSION_MANAGER_ADMIN_TOKEN` and supplying `x-admin-token`.
 - Optional upstream host allow-list (`FORGE_SESSION_MANAGER_ALLOWED_UPSTREAM_HOSTS=host1,host2`) can restrict `/container-ready` `upstreamUrl` targets to approved hostnames.
 - Optional origin allow-list (`FORGE_SESSION_MANAGER_ALLOWED_ORIGINS=https://host1,https://host2`) can reject browser-originated requests from unapproved origins.
+- Optional durable event sink (`FORGE_SESSION_MANAGER_EVENT_LOG_PATH=/path/to/session-events.ndjson`) appends lifecycle events as NDJSON for external log shipping.
 - `GET /api/sessions?includeTokens=1` returns tokenized access URLs when called with a valid admin token.
 - Session responses now include `accessUrl` and `sessionPath` for tokenized proxied access routing.
 - Configure `FORGE_SESSION_MANAGER_PUBLIC_BASE_URL` when external clients should use a public hostname instead of localhost.
