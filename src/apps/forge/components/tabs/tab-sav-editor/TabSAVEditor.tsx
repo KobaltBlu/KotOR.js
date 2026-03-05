@@ -64,6 +64,8 @@ export const TabSAVEditor = function(props: BaseTabProps){
   const resourceTypeCounts = saveMeta?.typeCounts || {};
   const resourceTypeOptions = Object.keys(resourceTypeCounts).sort();
   const globalVariableCandidates = saveMeta?.globalVariableCandidates || [];
+  const canEditAreaName = tab.canEditAreaName();
+  const canEditModuleSettings = tab.canEditModuleSettings();
 
   const filteredResources = resources.filter((resKey: { resRef: string; resType: number }) => {
     const ext = KotOR.ResourceTypes.getKeyByValue(resKey.resType) || 'unknown';
@@ -140,6 +142,20 @@ export const TabSAVEditor = function(props: BaseTabProps){
             </div>
           </div>
           <div className="sav-module-edit">
+            <h4>Area Session Settings</h4>
+            <div className="property-group">
+              <label>Area Display Name</label>
+              <input
+                title="Area Display Name"
+                type="text"
+                value={tab.getAreaName()}
+                onChange={(e) => tab.updateAreaName(e.target.value)}
+                placeholder="Area display name..."
+                disabled={!canEditAreaName}
+              />
+            </div>
+          </div>
+          <div className="sav-module-edit">
             <h4>Module Session Settings</h4>
             <div className="property-group">
               <label>Entry Area ResRef</label>
@@ -150,6 +166,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
                 onChange={(e) => tab.updateModuleEntryArea(e.target.value)}
                 placeholder="Entry area module..."
                 maxLength={16}
+                disabled={!canEditModuleSettings}
               />
             </div>
             <div className="property-row">
@@ -162,6 +179,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
                   max={23}
                   value={tab.getModuleDawnHour()}
                   onChange={(e) => tab.updateModuleDawnHour(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditModuleSettings}
                 />
               </div>
               <div className="property-group">
@@ -173,6 +191,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
                   max={23}
                   value={tab.getModuleDuskHour()}
                   onChange={(e) => tab.updateModuleDuskHour(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditModuleSettings}
                 />
               </div>
             </div>

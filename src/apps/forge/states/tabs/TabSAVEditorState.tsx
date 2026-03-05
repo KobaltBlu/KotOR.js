@@ -33,6 +33,9 @@ export class TabSAVEditorState extends TabState {
   private moduleInfoGff?: KotOR.GFFObject;
   private moduleInfoResRef?: string;
   private moduleInfoResType?: number;
+  private areaInfoGff?: KotOR.GFFObject;
+  private areaInfoResRef?: string;
+  private areaInfoResType?: number;
   saveMeta?: {
     areaName?: string;
     lastModule?: string;
@@ -87,6 +90,7 @@ export class TabSAVEditorState extends TabState {
       log.trace("TabSAVEditorState openFile erf.load done");
 
       await this.loadModuleInfoForEditing();
+      await this.loadAreaInfoForEditing();
       this.saveMeta = await this.extractSaveMetadata();
       log.debug("TabSAVEditorState openFile saveMeta resourceCount", this.saveMeta?.resourceCount);
       this.undoManager.clear();
@@ -252,6 +256,23 @@ export class TabSAVEditorState extends TabState {
     this.moduleInfoResType = key.resType;
   }
 
+  private async loadAreaInfoForEditing(): Promise<void> {
+    this.areaInfoGff = undefined;
+    this.areaInfoResRef = undefined;
+    this.areaInfoResType = undefined;
+    if (!this.erf) return;
+
+    const key = this.erf.keyList.find((entry) => KotOR.ResourceTypes.getKeyByValue(entry.resType) === 'are');
+    if (!key) return;
+
+    const buffer = await this.getResourceBufferByEntry(key.resRef, key.resType);
+    if (!buffer?.length) return;
+
+    this.areaInfoGff = new KotOR.GFFObject(buffer);
+    this.areaInfoResRef = key.resRef;
+    this.areaInfoResType = key.resType;
+  }
+
   private markModuleInfoChanged(): void {
     if (!this.file || !this.moduleInfoGff || !this.moduleInfoResRef || this.moduleInfoResType == null) return;
 
@@ -277,6 +298,43 @@ export class TabSAVEditorState extends TabState {
     if (!field) return;
     field.setValue(value);
     this.markModuleInfoChanged();
+  }
+
+  private markAreaInfoChanged(): void {
+    if (!this.file || !this.areaInfoGff || !this.areaInfoResRef || this.areaInfoResType == null) return;
+
+    const exportBuffer = this.areaInfoGff.getExportBuffer();
+    const overrideKey = this.resourceOverrideKey(this.areaInfoResRef, this.areaInfoResType);
+    this.resourceOverrides.set(overrideKey, exportBuffer);
+
+    const areaName = String(this.areaInfoGff.RootNode.getFieldByLabel('Name')?.getCExoLocString?.()?.getValue?.() || 'Unknown');
+    if (this.saveMeta) {
+      this.saveMeta.areaName = areaName;
+    }
+
+    this.file.unsaved_changes = true;
+    this.processEventListener('onEditorFileLoad', [this]);
+  }
+
+  private applyAreaName(value: string): void {
+    if (!this.areaInfoGff) return;
+    const field = this.areaInfoGff.RootNode.getFieldByLabel('Name');
+    if (!field) return;
+    field.setValue(value);
+    this.markAreaInfoChanged();
+  }
+
+  updateAreaName(value: string): void {
+    if (!this.areaInfoGff) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('Name')?.getCExoLocString?.()?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-name-edit',
+      description: 'Edit area display name',
+      redo: () => this.applyAreaName(value),
+      undo: () => this.applyAreaName(previous),
+    });
   }
 
   updateModuleEntryArea(value: string): void {
@@ -332,6 +390,18 @@ export class TabSAVEditorState extends TabState {
 
   getModuleDuskHour(): number {
     return Number(this.moduleInfoGff?.RootNode.getFieldByLabel('Mod_DuskHour')?.getValue() || 0);
+  }
+
+  getAreaName(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('Name')?.getCExoLocString?.()?.getValue?.() || this.saveMeta?.areaName || '');
+  }
+
+  canEditAreaName(): boolean {
+    return !!this.areaInfoGff;
+  }
+
+  canEditModuleSettings(): boolean {
+    return !!this.moduleInfoGff;
   }
 
   private applyGlobalBoolean(index: number, value: boolean): void {
