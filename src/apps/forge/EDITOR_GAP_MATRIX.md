@@ -13,28 +13,28 @@ This document maps all resource types to their current implementation status and
 | Extension | Status | Current Tab | Backing Parser | Notes |
 |-----------|--------|-------------|----------------|-------|
 | **2da** | ✅ Full | TabTwoDAEditorState | TwoDAObject | Spreadsheet editor with full UI |
-| **are** | ⚠️ Fallback | TabAREEditorState → GFF | GFFObject | Area files - redirects to GFF editor |
-| **bik** | ❌ Missing | None (commented out) | BIKObject | Movie files - no viewer implemented |
+| **are** | ✅ Full | TabAREEditorState | GFFObject | Area editor UI with dedicated tab and export |
+| **bik** | ✅ Full | TabBIKPlayerState | BIKObject | Video playback tab wired from FileTypeManager |
 | **bwm/dwk/pwk/wok** | ✅ Full | TabWOKEditorState | WalkmeshObject (need to verify) | 3D walkmesh editor with face/vertex/edge modes |
-| **dlg** | ⚠️ Fallback | TabDLGEditorState → GFF | DLGObject, DLGNode | Dialog files - redirects to GFF editor |
+| **dlg** | ✅ Full | TabDLGEditorState | DLGObject, DLGNode | Dedicated dialog editor tab |
 | **erf** | ✅ Full | TabERFEditorState | ERFObject | Archive viewer with resource list |
-| **fac** | ⚠️ Fallback | TabFACEditorState → GFF | GFFObject (FAC format) | Faction files - redirects to GFF editor |
+| **fac** | ✅ Full | TabFACEditorState | GFFObject (FAC format) | Dedicated FAC editor state |
 | **gff/res** | ✅ Full | TabGFFEditorState | GFFObject | Generic GFF tree editor |
-| **git** | ⚠️ Fallback | TabGITEditorState → GFF | GFFObject (GIT format) | Game instance template - redirects to GFF |
+| **git** | ✅ Full | TabGITEditorState | GFFObject (GIT format) | Dedicated GIT instance editor with insertion/deletion flows |
 | **gui** | ✅ Full | TabGUIEditorState | GFFObject | GUI files - specialized editor |
-| **ifo** | ⚠️ Fallback | TabIFOEditorState → GFF | GFFObject (IFO format) | Module info - redirects to GFF editor |
-| **jrl** | ⚠️ Fallback | TabJRLEditorState → GFF | GFFObject (JRL format) | Journal files - redirects to GFF editor |
+| **ifo** | ✅ Full | TabIFOEditorState | GFFObject (IFO format) | Dedicated IFO editor state |
+| **jrl** | ✅ Full | TabJRLEditorState | GFFObject (JRL format) | Dedicated journal editor state |
 | **lip** | ✅ Full | TabLIPEditorState | LIPObject | Lip-sync keyframe editor |
-| **ltr** | ⚠️ Fallback | TabLTREditorState → GFF | LTRObject | Letter/loot files - redirects to GFF editor |
+| **ltr** | ✅ Full | TabLTREditorState | LTRObject | Dedicated LTR editor state |
 | **lyt** | ✅ Full | TabTextEditorState | LYTObject | Layout text files - text editor |
 | **mdl/mdx** | ✅ Full | TabModelViewerState | MDLObject (need to verify path) | 3D model viewer |
 | **mod** | ✅ Full | TabERFEditorState | ERFObject | Module archives - same as ERF |
 | **ncs** | ✅ Full | TabTextEditorState | (binary script, converted to NSS) | Compiled scripts - text editor |
 | **nss** | ✅ Full | TabTextEditorState | (text) | Script files - Monaco editor with syntax highlighting |
 | **pth** | ✅ Full | TabPTHEditorState | (need to verify parser) | Path files - specialized editor |
-| **sav** | ⚠️ Fallback | TabSAVEditorState → ERF | ERFObject | Save game archives - redirects to ERF viewer |
-| **ssf** | ⚠️ Fallback | TabSSFEditorState → Binary | SSFObject | Sound set files - redirects to binary viewer |
-| **tlk** | ⚠️ Fallback | TabTLKEditorState → Binary | TLKObject, TLKString | Talk table - redirects to binary viewer |
+| **sav** | ✅ Full | TabSAVEditorState | ERFObject | Dedicated SAV tab with metadata extraction and ERF-backed export |
+| **ssf** | ✅ Full | TabSSFEditorState | SSFObject | Dedicated SSF tab + SSFObject buffer export |
+| **tlk** | ✅ Full | TabTLKEditorState | TLKObject, TLKString | Dedicated TLK editor (search/filter/jump/ref tooling) |
 | **tpc/tga** | ✅ Full | TabImageViewerState | TPCObject, TGAObject | Texture viewer |
 | **txi** | ✅ Full | TabTextEditorState | TXI | Texture info text files - text editor |
 | **txt** | ✅ Full | TabTextEditorState | (text) | Plain text files |
@@ -47,7 +47,7 @@ This document maps all resource types to their current implementation status and
 | **uts** | ✅ Full | TabUTSEditorState | GFFObject (UTS format) | Sound blueprint editor |
 | **utt** | ✅ Full | TabUTTEditorState | GFFObject (UTT format) | Trigger blueprint editor |
 | **utw** | ✅ Full | TabUTWEditorState | GFFObject (UTW format) | Waypoint blueprint editor |
-| **vis** | ⚠️ Fallback | TabVISEditorState → Binary | VISObject | Visibility files - redirects to binary viewer |
+| **vis** | ✅ Full | TabVISEditorState | VISObject | Dedicated VIS editor and room selection support |
 | **wav/mp3** | ✅ Full | AudioPlayerState (inline) | (audio) | Audio playback - inline audio player |
 | **(default)** | ❌ Missing | TabBinaryViewerState | None | Unknown types - binary hex viewer |
 
@@ -56,34 +56,22 @@ This document maps all resource types to their current implementation status and
 ### Full Editors
 - 2DA, ERF/MOD, GFF, GUI, LIP, LYT/TXI/TXT/NSS/NCS (TabTextEditorState), MDL/MDX, PTH, TPC/TGA, UTC, UTD, UTE, UTI, UTM, UTP, UTS, UTT, UTW, WAV/MP3, WOK/BWM/DWK/PWK, plus default binary viewer for unknown types.
 
-### Fallback/Stub Editors (11)
-- **GFF fallback**: ARE, DLG, FAC, GIT, IFO, JRL, LTR
-- **Binary fallback**: SSF, TLK, VIS
-- **ERF fallback**: SAV
+### Fallback/Stub Editors (0 currently routed)
+- Remaining quality gaps are feature-depth gaps, not hard fallbacks to generic tabs.
 
-### Missing (1+)
-- BIK (commented out), any unknown extension → binary viewer
+### Missing (default behavior only)
+- Unknown/unmapped extensions continue to route to `TabBinaryViewerState`.
 
 ## Priority for Implementation
 
-### High Priority (stub → real editor)
-1. **DLG** - Dialog editor (node tree/graph) - Parser: `DLGObject`, `DLGNode`
-2. **ARE** - Area editor (rooms, environment) - Parser: `GFFObject` (ARE format)
-3. **GIT** - Instance placement editor - Parser: `GFFObject` (GIT format)
-4. **IFO** - Module info editor - Parser: `GFFObject` (IFO format)
+### High Priority (feature-depth parity, not routing parity)
+1. **ARE** - expand advanced map/environment/script workflows in dedicated UI.
+2. **GIT** - deepen instance editing workflows and placement ergonomics.
+3. **SAV** - extend internals editing beyond metadata/archive management.
 
-### Medium Priority (binary → real editor)
-5. **TLK** - Talk table editor (string list) - Parser: `TLKObject`, `TLKString`
-6. **SSF** - Sound set editor (sound mapping) - Parser: `SSFObject`
-7. **VIS** - Visibility matrix editor - Parser: `VISObject`
-
-### Medium Priority (ERF → real editor)
-8. **SAV** - Save game editor (structured data) - Parser: `ERFObject` + internal GFF structures
-
-### Lower Priority (GFF → specialized)
-9. **FAC** - Faction editor (reputation table) - Parser: `GFFObject` (FAC format)
-10. **JRL** - Journal editor (quest tree) - Parser: `GFFObject` (JRL format)
-11. **LTR** - Letter editor (loot/letter data) - Parser: `LTRObject`
+### Medium Priority
+4. Improve TLK/SSF/VIS advanced tooling (bulk operations, validation, richer previews).
+5. Add stronger autosave/undo integration coverage across all specialized tabs.
 
 ## TS Parser Locations
 
