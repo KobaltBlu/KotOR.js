@@ -56,3 +56,54 @@ jobs:
 
       - name: Compile extension host + webview + language server
         run: npm run compile
+
+  session-manager-openvscode-e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Compile session manager service
+        run: npx tsc "services/forge-vscode-session-manager/src/server.ts" "services/forge-vscode-session-manager/src/SessionManagerCore.ts" --target ES2020 --module commonjs --outDir "services/forge-vscode-session-manager/dist" --esModuleInterop --skipLibCheck
+
+      - name: Run OpenVSCode + session manager lifecycle test
+        run: |
+          set -euo pipefail
+          docker run -d --name openvscode -p 18080:3000 gitpod/openvscode-server:latest --without-connection-token
+
+          for i in {1..30}; do
+            if curl -fsS "http://127.0.0.1:18080" > /dev/null; then
+              break
+            fi
+            sleep 2
+          done
+
+          FORGE_SESSION_MANAGER_TTL_MS=2000 FORGE_SESSION_MANAGER_WARNING_MS=1000 node services/forge-vscode-session-manager/dist/server.js > /tmp/session-manager.log 2>&1 &
+          SESSION_MANAGER_PID=$!
+          trap 'kill $SESSION_MANAGER_PID || true; docker rm -f openvscode || true' EXIT
+
+          for i in {1..20}; do
+            if curl -fsS "http://127.0.0.1:8090/healthz" > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          node scripts/session-manager-e2e.mjs
+
+      - name: Print session manager logs
+        if: always()
+        run: |
+          if [ -f /tmp/session-manager.log ]; then
+            cat /tmp/session-manager.log
+          fi
