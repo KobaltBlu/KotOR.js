@@ -380,6 +380,11 @@
         "command": "kotorForge.showSessionManagerEvents",
         "title": "Show Session Manager Events",
         "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.evaluateSessionTimeouts",
+        "title": "Evaluate Session Timeouts",
+        "category": "KotOR Forge"
       }
     ],
     "views": {
@@ -476,6 +481,11 @@
         {
           "when": "view == kotorForgeSessions",
           "command": "kotorForge.showSessionManagerEvents",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeSessions",
+          "command": "kotorForge.evaluateSessionTimeouts",
           "group": "navigation"
         },
         {

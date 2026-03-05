@@ -50,14 +50,29 @@ async function fetchSessionManagerResource(
   sessionManagerUrl: string,
   resourcePath: string,
   adminToken: string,
-  asText = false
+  asText = false,
+  requestInit?: {
+    method?: 'GET' | 'POST' | 'DELETE';
+    body?: unknown;
+  }
 ): Promise<unknown> {
+  const method = requestInit?.method || 'GET';
+  const body = requestInit?.body;
+  const headers: Record<string, string> = {};
+  if (adminToken) {
+    headers['x-admin-token'] = adminToken;
+  }
+  if (typeof body !== 'undefined') {
+    headers['content-type'] = 'application/json';
+  }
   const endpoint = new URL(resourcePath, sessionManagerUrl);
   const response = await fetch(endpoint.toString(), {
-    headers: adminToken ? { 'x-admin-token': adminToken } : undefined,
+    method,
+    headers: Object.keys(headers).length ? headers : undefined,
+    body: typeof body !== 'undefined' ? JSON.stringify(body) : undefined,
   });
   if (!response.ok) {
-    throw new Error(`${resourcePath} request failed (${response.status})`);
+    throw new Error(`${method} ${resourcePath} request failed (${response.status})`);
   }
   return asText ? response.text() : response.json();
 }
@@ -496,6 +511,35 @@ export function activate(context: vscode.ExtensionContext) {
         const message = error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(`Failed to fetch session manager events: ${message}`);
         log.error(`showSessionManagerEvents failed: ${message}`);
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.evaluateSessionTimeouts', async () => {
+      log.debug('Command invoked: kotorForge.evaluateSessionTimeouts');
+      const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      try {
+        const payload = await fetchSessionManagerResource(
+          sessionManagerUrl,
+          '/api/timeouts/evaluate',
+          adminToken,
+          false,
+          { method: 'POST' }
+        ) as { events?: unknown[] };
+        const events = Array.isArray(payload.events) ? payload.events : [];
+        const summary = `Timeout evaluation complete: ${events.length} event(s) emitted.`;
+        vscode.window.showInformationMessage(summary);
+        log.info(`[session-timeouts] ${summary}`);
+        sessionTreeProvider.refresh();
+        void refreshSessionStatusBar();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to evaluate session timeouts: ${message}`);
+        log.error(`evaluateSessionTimeouts failed: ${message}`);
       }
     }),
 
