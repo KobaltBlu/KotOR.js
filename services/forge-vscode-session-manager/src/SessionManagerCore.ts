@@ -37,6 +37,7 @@ export type SessionEventType =
   | 'session_container_stop_requested'
   | 'session_container_stopped'
   | 'session_container_failed'
+  | 'session_workspace_quota_exceeded'
   | 'session_warning'
   | 'session_save_requested'
   | 'session_expired'
@@ -54,6 +55,7 @@ export interface SessionManagerOptions {
   maxSessions: number;
   sessionTtlMs: number;
   warningLeadMs: number;
+  maxWorkspaceBytes?: number;
 }
 
 export class SessionManagerCore {
@@ -63,12 +65,14 @@ export class SessionManagerCore {
   private readonly maxSessions: number;
   private readonly sessionTtlMs: number;
   private readonly warningLeadMs: number;
+  private readonly maxWorkspaceBytes: number;
 
   constructor(options: SessionManagerOptions) {
     this.dataRoot = options.dataRoot;
     this.maxSessions = options.maxSessions;
     this.sessionTtlMs = options.sessionTtlMs;
     this.warningLeadMs = options.warningLeadMs;
+    this.maxWorkspaceBytes = Math.max(0, Number(options.maxWorkspaceBytes || 0));
 
     fs.mkdirSync(this.getWorkspacesRoot(), { recursive: true });
     fs.mkdirSync(this.getMetadataRoot(), { recursive: true });
@@ -257,6 +261,29 @@ export class SessionManagerCore {
         continue;
       }
 
+      if (this.maxWorkspaceBytes > 0 && !session.saveRequestedAt) {
+        const workspaceBytes = this.getDirectorySize(session.workspacePath);
+        if (workspaceBytes > this.maxWorkspaceBytes) {
+          session.saveRequestedAt = now;
+          session.status = 'saving';
+          this.appendEvent({
+            type: 'session_workspace_quota_exceeded',
+            at: now,
+            sessionId: session.id,
+            payload: {
+              workspaceBytes,
+              maxWorkspaceBytes: this.maxWorkspaceBytes,
+            },
+          });
+          this.appendEvent({
+            type: 'session_save_requested',
+            at: now,
+            sessionId: session.id,
+            payload: { reason: 'workspace_quota_exceeded' },
+          });
+        }
+      }
+
       if (!session.warningSentAt && now >= session.warningAt) {
         session.warningSentAt = now;
         session.status = 'warning';
@@ -356,6 +383,26 @@ export class SessionManagerCore {
       }
     }
     return latest;
+  }
+
+  private getDirectorySize(directoryPath: string): number {
+    try {
+      const entries = fs.readdirSync(directoryPath, { withFileTypes: true });
+      let total = 0;
+      for (const entry of entries) {
+        const fullPath = path.join(directoryPath, entry.name);
+        if (entry.isDirectory()) {
+          total += this.getDirectorySize(fullPath);
+          continue;
+        }
+        if (entry.isFile()) {
+          total += fs.statSync(fullPath).size;
+        }
+      }
+      return total;
+    } catch {
+      return 0;
+    }
   }
 
   private getWorkspacesRoot(): string {

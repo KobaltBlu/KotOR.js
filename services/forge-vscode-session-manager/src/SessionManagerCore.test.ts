@@ -124,4 +124,23 @@ describe('SessionManagerCore', () => {
     expect(manager.getSession(session.id)?.containerStatus).toBe('failed');
     expect(manager.getSession(session.id)?.containerError).toContain('image not found');
   });
+
+  it('requests save when workspace quota is exceeded', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-session-manager-'));
+    const manager = new SessionManagerCore({
+      dataRoot: tempRoot,
+      maxSessions: 2,
+      sessionTtlMs: 30_000,
+      warningLeadMs: 5_000,
+      maxWorkspaceBytes: 8,
+    });
+
+    const session = manager.createSession('quota-user', 'kotor', 1000);
+    fs.writeFileSync(path.join(session.workspacePath, 'bigfile.bin'), Buffer.from('this file exceeds quota'));
+
+    const events = manager.evaluateTimeouts(1200);
+    expect(events.some((event) => event.type === 'session_workspace_quota_exceeded' && event.sessionId === session.id)).toBe(true);
+    expect(events.some((event) => event.type === 'session_save_requested' && event.sessionId === session.id)).toBe(true);
+    expect(manager.getSession(session.id)?.status).toBe('saving');
+  });
 });

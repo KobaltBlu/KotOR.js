@@ -8,6 +8,7 @@ const DATA_ROOT = process.env.FORGE_SESSION_MANAGER_DATA_ROOT || path.resolve(pr
 const MAX_SESSIONS = Number(process.env.FORGE_SESSION_MANAGER_MAX_SESSIONS || 8);
 const SESSION_TTL_MS = Number(process.env.FORGE_SESSION_MANAGER_TTL_MS || 45 * 60 * 1000);
 const WARNING_LEAD_MS = Number(process.env.FORGE_SESSION_MANAGER_WARNING_MS || 5 * 60 * 1000);
+const MAX_WORKSPACE_BYTES = Number(process.env.FORGE_SESSION_MANAGER_MAX_WORKSPACE_BYTES || 0);
 const ADMIN_TOKEN = String(process.env.FORGE_SESSION_MANAGER_ADMIN_TOKEN || '').trim();
 const OPENVSCODE_BASE_URL = process.env.FORGE_OPENVSCODE_BASE_URL || 'http://127.0.0.1:18080';
 const PUBLIC_BASE_URL = process.env.FORGE_SESSION_MANAGER_PUBLIC_BASE_URL || `http://127.0.0.1:${PORT}`;
@@ -17,6 +18,7 @@ const manager = new SessionManagerCore({
   maxSessions: MAX_SESSIONS,
   sessionTtlMs: SESSION_TTL_MS,
   warningLeadMs: WARNING_LEAD_MS,
+  maxWorkspaceBytes: MAX_WORKSPACE_BYTES,
 });
 
 function writeJson(res: http.ServerResponse, statusCode: number, body: unknown): void {
@@ -295,6 +297,7 @@ const server = http.createServer(async (req, res) => {
         maxSessions: MAX_SESSIONS,
         sessionTtlMs: SESSION_TTL_MS,
         warningLeadMs: WARNING_LEAD_MS,
+        maxWorkspaceBytes: MAX_WORKSPACE_BYTES,
         openVSCodeBaseUrl: OPENVSCODE_BASE_URL,
         publicBaseUrl: PUBLIC_BASE_URL,
         adminTokenEnabled: Boolean(ADMIN_TOKEN),
