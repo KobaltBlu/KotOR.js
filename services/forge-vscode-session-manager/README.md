@@ -37,3 +37,16 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - Workspace directories are persisted under `data/workspaces/<sessionId>` (not tmpfs).
 - Session metadata is persisted under `data/sessions/<sessionId>.json`.
 - This service is intentionally orchestration-focused; container launch/proxy wiring can be layered on top in the next phase.
+
+## Local compose stack
+
+You can spin up OpenVSCode + the session manager with:
+
+```bash
+docker compose -f services/forge-vscode-session-manager/docker-compose.openvscode.yml up
+```
+
+Endpoints:
+
+- Session manager: `http://127.0.0.1:8090`
+- OpenVSCode: `http://127.0.0.1:18080`

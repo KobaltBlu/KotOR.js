@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  session-manager:
+    image: node:22-bookworm
+    working_dir: /workspace
+    volumes:
+      - ../../:/workspace
+      - session-manager-data:/workspace/services/forge-vscode-session-manager/data
+    environment:
+      FORGE_SESSION_MANAGER_PORT: "8090"
+      FORGE_SESSION_MANAGER_DATA_ROOT: "/workspace/services/forge-vscode-session-manager/data"
+      FORGE_SESSION_MANAGER_MAX_SESSIONS: "16"
+      FORGE_SESSION_MANAGER_TTL_MS: "2700000"
+      FORGE_SESSION_MANAGER_WARNING_MS: "300000"
+    command: >
+      bash -lc "npx tsc services/forge-vscode-session-manager/src/server.ts services/forge-vscode-session-manager/src/SessionManagerCore.ts --target ES2020 --module commonjs --outDir services/forge-vscode-session-manager/dist --esModuleInterop --skipLibCheck && node services/forge-vscode-session-manager/dist/server.js"
+    ports:
+      - "8090:8090"
+
+  openvscode:
+    image: gitpod/openvscode-server:latest
+    depends_on:
+      - session-manager
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - "3000"
+      - --without-connection-token
+    ports:
+      - "18080:3000"
+
+volumes:
+  session-manager-data:
