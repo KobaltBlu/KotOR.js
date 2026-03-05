@@ -337,6 +337,34 @@ export function activate(context: vscode.ExtensionContext) {
       void refreshSessionStatusBar();
     }),
 
+    vscode.commands.registerCommand('kotorForge.checkSessionManagerHealth', async () => {
+      log.debug('Command invoked: kotorForge.checkSessionManagerHealth');
+      const cfg = vscode.workspace.getConfiguration('kotorForge');
+      const sessionManagerUrl = cfg.get<string>('sessionManagerUrl', '').trim();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      try {
+        const endpoint = new URL('/healthz', sessionManagerUrl);
+        const response = await fetch(endpoint.toString());
+        if (!response.ok) {
+          throw new Error(`health check failed (${response.status})`);
+        }
+        const payload = await response.json() as { ok?: boolean };
+        if (!payload.ok) {
+          throw new Error('session manager returned unhealthy status');
+        }
+        vscode.window.showInformationMessage(`Session manager reachable at ${endpoint.origin}`);
+        log.info(`[session-health] healthy: ${endpoint.origin}`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Session manager health check failed: ${message}`);
+        log.error(`checkSessionManagerHealth failed: ${message}`);
+      }
+    }),
+
     vscode.commands.registerCommand('kotorForge.showSessionManagerStats', async () => {
       log.debug('Command invoked: kotorForge.showSessionManagerStats');
       const cfg = vscode.workspace.getConfiguration('kotorForge');

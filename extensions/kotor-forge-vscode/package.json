@@ -312,6 +312,11 @@
         "category": "KotOR Forge"
       },
       {
+        "command": "kotorForge.checkSessionManagerHealth",
+        "title": "Check Session Manager Health",
+        "category": "KotOR Forge"
+      },
+      {
         "command": "kotorForge.openAsYaml",
         "title": "Open as YAML",
         "category": "KotOR Forge"
@@ -421,6 +426,11 @@
         {
           "when": "view == kotorForgeSessions",
           "command": "kotorForge.refreshSessions",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeSessions",
+          "command": "kotorForge.checkSessionManagerHealth",
           "group": "navigation"
         },
         {
