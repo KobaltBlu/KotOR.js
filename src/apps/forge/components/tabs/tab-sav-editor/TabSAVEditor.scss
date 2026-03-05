@@ -77,6 +77,54 @@
       }
     }
   }
+
+  .sav-global-vars {
+    margin-top: 0.9rem;
+    background: #181c25;
+    border: 1px solid #2a3142;
+    border-radius: 4px;
+    padding: 0.65rem 0.75rem;
+
+    h4 {
+      margin: 0 0 0.5rem 0;
+      color: #8aa4ff;
+      font-size: 0.9rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+
+      th, td {
+        padding: 0.35rem 0.4rem;
+        font-size: 0.8rem;
+        border-bottom: 1px solid #2a3142;
+      }
+
+      th {
+        color: #8aa4ff;
+        text-align: left;
+      }
+
+      td {
+        color: #d8e0ef;
+      }
+
+      button {
+        background: #20283a;
+        border: 1px solid #3d4e74;
+        color: #d8e0ef;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        padding: 0.2rem 0.45rem;
+        cursor: pointer;
+
+        &:hover {
+          background: #2a3654;
+        }
+      }
+    }
+  }
 }
 
 .resource-list {

@@ -53,6 +53,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
   const resources = erf.keyList ?? [];
   const resourceTypeCounts = saveMeta?.typeCounts || {};
   const resourceTypeOptions = Object.keys(resourceTypeCounts).sort();
+  const globalVariableCandidates = saveMeta?.globalVariableCandidates || [];
 
   const filteredResources = resources.filter((resKey: { resRef: string; resType: number }) => {
     const ext = KotOR.ResourceTypes.getKeyByValue(resKey.resType) || 'unknown';
@@ -85,6 +86,16 @@ export const TabSAVEditor = function(props: BaseTabProps){
   const quickOpenByType = (ext: string) => {
     const found = resources.find((resKey: { resRef: string; resType: number }) => {
       return KotOR.ResourceTypes.getKeyByValue(resKey.resType) === ext;
+    });
+    if (found) {
+      openResource(found);
+    }
+  };
+
+  const openByRefAndExt = (resRef: string, ext: string) => {
+    const found = resources.find((resKey: { resRef: string; resType: number }) => {
+      const keyExt = KotOR.ResourceTypes.getKeyByValue(resKey.resType) || '';
+      return resKey.resRef === resRef && keyExt === ext;
     });
     if (found) {
       openResource(found);
@@ -124,6 +135,39 @@ export const TabSAVEditor = function(props: BaseTabProps){
             <button onClick={() => quickOpenByType('utc')}>Open Player Creature (UTC)</button>
             <button onClick={() => quickOpenByType('git')}>Open Instance State (GIT)</button>
           </div>
+          {globalVariableCandidates.length > 0 && (
+            <div className="sav-global-vars">
+              <h4>Global Variable Candidates</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Resource</th>
+                    <th>Type</th>
+                    <th>Booleans</th>
+                    <th>Numbers</th>
+                    <th>Strings</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {globalVariableCandidates.map((candidate) => (
+                    <tr key={`${candidate.resRef}.${candidate.ext}`}>
+                      <td>{candidate.resRef}</td>
+                      <td>{candidate.ext}</td>
+                      <td>{candidate.boolCount}</td>
+                      <td>{candidate.numberCount}</td>
+                      <td>{candidate.stringCount}</td>
+                      <td>
+                        <button onClick={() => openByRefAndExt(candidate.resRef, candidate.ext)}>
+                          Open
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <div className="resource-list">

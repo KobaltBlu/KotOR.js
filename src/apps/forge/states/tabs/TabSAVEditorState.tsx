@@ -17,6 +17,13 @@ export class TabSAVEditorState extends TabState {
     gameTime?: number;
     resourceCount?: number;
     typeCounts?: Record<string, number>;
+    globalVariableCandidates?: Array<{
+      resRef: string;
+      ext: string;
+      boolCount: number;
+      numberCount: number;
+      stringCount: number;
+    }>;
   };
 
   constructor(options: BaseTabStateOptions = {}){
@@ -94,7 +101,72 @@ export class TabSAVEditorState extends TabState {
     return counts;
   }
 
-  async extractSaveMetadata(): Promise<{ areaName: string; lastModule: string; gameTime: number; resourceCount: number; typeCounts: Record<string, number> }> {
+  private countListEntries(root: KotOR.GFFStruct, labels: string[]): number {
+    for (const label of labels) {
+      const field = root.getFieldByLabel(label);
+      const structs = field?.getChildStructs?.() || [];
+      if (structs.length > 0) {
+        return structs.length;
+      }
+    }
+    return 0;
+  }
+
+  private async extractGlobalVariableCandidates(): Promise<Array<{
+    resRef: string;
+    ext: string;
+    boolCount: number;
+    numberCount: number;
+    stringCount: number;
+  }>> {
+    if (!this.erf) return [];
+
+    const candidates = this.erf.keyList
+      .filter((entry) => {
+        const ext = KotOR.ResourceTypes.getKeyByValue(entry.resType) || '';
+        const ref = String(entry.resRef || '').toLowerCase();
+        return ext === 'res' || ext === 'gff' || ref.includes('global') || ref.includes('var');
+      })
+      .slice(0, 64);
+
+    const summaries: Array<{
+      resRef: string;
+      ext: string;
+      boolCount: number;
+      numberCount: number;
+      stringCount: number;
+    }> = [];
+
+    for (const key of candidates) {
+      const ext = KotOR.ResourceTypes.getKeyByValue(key.resType) || 'unknown';
+      try {
+        const buffer = await this.erf.getResourceBufferByResRef(key.resRef, key.resType);
+        if (!buffer?.length) continue;
+
+        const gff = new KotOR.GFFObject(buffer);
+        const root = gff.RootNode;
+        const boolCount = this.countListEntries(root, ['CatBoolean', 'GlobalBooleans', 'Booleans', 'BooleanVars']);
+        const numberCount = this.countListEntries(root, ['CatNumber', 'GlobalNumbers', 'Numbers', 'NumberVars']);
+        const stringCount = this.countListEntries(root, ['CatString', 'GlobalStrings', 'Strings', 'StringVars']);
+        const total = boolCount + numberCount + stringCount;
+        if (!total) continue;
+
+        summaries.push({
+          resRef: key.resRef,
+          ext,
+          boolCount,
+          numberCount,
+          stringCount,
+        });
+      } catch (e) {
+        log.trace("TabSAVEditorState extractGlobalVariableCandidates skip", key.resRef, e);
+      }
+    }
+
+    return summaries;
+  }
+
+  async extractSaveMetadata(): Promise<{ areaName: string; lastModule: string; gameTime: number; resourceCount: number; typeCounts: Record<string, number>; globalVariableCandidates: Array<{ resRef: string; ext: string; boolCount: number; numberCount: number; stringCount: number; }>; }> {
     log.trace("TabSAVEditorState extractSaveMetadata entry");
     let areaName = 'Unknown';
     let lastModule = 'Unknown';
@@ -128,7 +200,8 @@ export class TabSAVEditorState extends TabState {
       lastModule,
       gameTime,
       resourceCount: this.erf?.keyList.length ?? 0,
-      typeCounts: this.buildTypeCounts()
+      typeCounts: this.buildTypeCounts(),
+      globalVariableCandidates: await this.extractGlobalVariableCandidates(),
     };
     log.trace("TabSAVEditorState extractSaveMetadata resourceCount", meta.resourceCount);
     return meta;
