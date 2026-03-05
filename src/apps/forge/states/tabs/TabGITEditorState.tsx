@@ -3,6 +3,7 @@ import React from "react";
 import { TabGITEditor } from "@/apps/forge/components/tabs/tab-git-editor/TabGITEditor";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
+import { UndoManager } from "@/apps/forge/managers/UndoManager";
 import { InsertInstanceResourceType } from "@/apps/forge/states/modal/ModalInsertInstanceState";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
@@ -15,6 +16,7 @@ export class TabGITEditorState extends TabState {
   selectedInstance?: KotOR.GFFStruct;
   selectedInstanceType: string = '';
   selectedInstanceIndex: number = -1;
+  undoManager: UndoManager = new UndoManager(200);
 
   static readonly INSTANCE_FIELD_BY_EXT: Record<InsertInstanceResourceType, string> = {
     utc: 'Creature List',
@@ -72,6 +74,29 @@ export class TabGITEditorState extends TabState {
     this.processEventListener('onInstanceSelected', [instance, type, index]);
   }
 
+  private markDataChanged() {
+    if (this.file) {
+      this.file.unsaved_changes = true;
+    }
+    this.processEventListener('onEditorFileLoad', [this]);
+  }
+
+  undo(): boolean {
+    const changed = this.undoManager.undo();
+    if (changed) {
+      this.markDataChanged();
+    }
+    return changed;
+  }
+
+  redo(): boolean {
+    const changed = this.undoManager.redo();
+    if (changed) {
+      this.markDataChanged();
+    }
+    return changed;
+  }
+
   private ensureInstanceListField(fieldLabel: string): KotOR.GFFField | undefined {
     if (!this.git) return;
 
@@ -111,11 +136,29 @@ export class TabGITEditorState extends TabState {
     if (!listField) return false;
 
     const instance = this.createInstanceStruct(ext, resref);
-    listField.addChildStruct(instance);
-
-    const nextIndex = listField.getChildStructs().length - 1;
-    this.selectInstance(instance, listFieldLabel, nextIndex);
-    this.processEventListener('onEditorFileLoad', [this]);
+    this.undoManager.execute({
+      type: 'git-add-instance',
+      description: `Add ${ext.toUpperCase()} instance`,
+      redo: () => {
+        listField.addChildStruct(instance);
+        const nextIndex = listField.getChildStructs().length - 1;
+        this.selectInstance(instance, listFieldLabel, nextIndex);
+      },
+      undo: () => {
+        const list = listField.getChildStructs();
+        const idx = list.indexOf(instance);
+        if (idx >= 0) {
+          list.splice(idx, 1);
+        }
+        if (list.length) {
+          const nextIndex = Math.max(0, Math.min(idx, list.length - 1));
+          this.selectInstance(list[nextIndex], listFieldLabel, nextIndex);
+        } else {
+          this.selectInstance(undefined, '', -1);
+        }
+      }
+    });
+    this.markDataChanged();
     return true;
   }
 
@@ -130,16 +173,27 @@ export class TabGITEditorState extends TabState {
     const list = listField.getChildStructs();
     if (this.selectedInstanceIndex >= list.length) return false;
 
-    list.splice(this.selectedInstanceIndex, 1);
-
-    if (list.length > 0) {
-      const nextIndex = Math.min(this.selectedInstanceIndex, list.length - 1);
-      this.selectInstance(list[nextIndex], this.selectedInstanceType, nextIndex);
-    } else {
-      this.selectInstance(undefined, '', -1);
-    }
-
-    this.processEventListener('onEditorFileLoad', [this]);
+    const removedInstance = list[this.selectedInstanceIndex];
+    const removedIndex = this.selectedInstanceIndex;
+    const type = this.selectedInstanceType;
+    this.undoManager.execute({
+      type: 'git-delete-instance',
+      description: 'Delete instance',
+      redo: () => {
+        list.splice(removedIndex, 1);
+        if (list.length > 0) {
+          const nextIndex = Math.min(removedIndex, list.length - 1);
+          this.selectInstance(list[nextIndex], type, nextIndex);
+        } else {
+          this.selectInstance(undefined, '', -1);
+        }
+      },
+      undo: () => {
+        list.splice(removedIndex, 0, removedInstance);
+        this.selectInstance(removedInstance, type, removedIndex);
+      }
+    });
+    this.markDataChanged();
     return true;
   }
 
@@ -169,10 +223,28 @@ export class TabGITEditorState extends TabState {
     }
 
     const insertIndex = this.selectedInstanceIndex + 1;
-    list.splice(insertIndex, 0, clonedStruct);
-
-    this.selectInstance(clonedStruct, this.selectedInstanceType, insertIndex);
-    this.processEventListener('onEditorFileLoad', [this]);
+    const type = this.selectedInstanceType;
+    this.undoManager.execute({
+      type: 'git-duplicate-instance',
+      description: 'Duplicate instance',
+      redo: () => {
+        list.splice(insertIndex, 0, clonedStruct);
+        this.selectInstance(clonedStruct, type, insertIndex);
+      },
+      undo: () => {
+        const idx = list.indexOf(clonedStruct);
+        if (idx >= 0) {
+          list.splice(idx, 1);
+        }
+        const sourceIndex = Math.max(0, Math.min(this.selectedInstanceIndex, list.length - 1));
+        if (list.length) {
+          this.selectInstance(list[sourceIndex], type, sourceIndex);
+        } else {
+          this.selectInstance(undefined, '', -1);
+        }
+      }
+    });
+    this.markDataChanged();
     return true;
   }
 
@@ -188,12 +260,24 @@ export class TabGITEditorState extends TabState {
     if (this.selectedInstanceIndex >= list.length) return false;
 
     const index = this.selectedInstanceIndex;
-    const prev = list[index - 1];
-    list[index - 1] = list[index];
-    list[index] = prev;
-
-    this.selectInstance(list[index - 1], this.selectedInstanceType, index - 1);
-    this.processEventListener('onEditorFileLoad', [this]);
+    const type = this.selectedInstanceType;
+    this.undoManager.execute({
+      type: 'git-move-instance-up',
+      description: 'Move instance up',
+      redo: () => {
+        const prev = list[index - 1];
+        list[index - 1] = list[index];
+        list[index] = prev;
+        this.selectInstance(list[index - 1], type, index - 1);
+      },
+      undo: () => {
+        const current = list[index - 1];
+        list[index - 1] = list[index];
+        list[index] = current;
+        this.selectInstance(list[index], type, index);
+      }
+    });
+    this.markDataChanged();
     return true;
   }
 
@@ -209,12 +293,24 @@ export class TabGITEditorState extends TabState {
     if (this.selectedInstanceIndex >= list.length - 1) return false;
 
     const index = this.selectedInstanceIndex;
-    const next = list[index + 1];
-    list[index + 1] = list[index];
-    list[index] = next;
-
-    this.selectInstance(list[index + 1], this.selectedInstanceType, index + 1);
-    this.processEventListener('onEditorFileLoad', [this]);
+    const type = this.selectedInstanceType;
+    this.undoManager.execute({
+      type: 'git-move-instance-down',
+      description: 'Move instance down',
+      redo: () => {
+        const next = list[index + 1];
+        list[index + 1] = list[index];
+        list[index] = next;
+        this.selectInstance(list[index + 1], type, index + 1);
+      },
+      undo: () => {
+        const current = list[index + 1];
+        list[index + 1] = list[index];
+        list[index] = current;
+        this.selectInstance(list[index], type, index);
+      }
+    });
+    this.markDataChanged();
     return true;
   }
 

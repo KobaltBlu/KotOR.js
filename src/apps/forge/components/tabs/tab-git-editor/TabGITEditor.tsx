@@ -45,6 +45,13 @@ export const TabGITEditor = function(props: BaseTabProps){
         { label: 'Save', onClick: () => tab.save() },
         { label: 'Save As', onClick: () => tab.saveAs() }
       ]
+    },
+    {
+      label: 'Edit',
+      children: [
+        { label: 'Undo', onClick: () => tab.undo(), disabled: !tab.undoManager.canUndo() },
+        { label: 'Redo', onClick: () => tab.redo(), disabled: !tab.undoManager.canRedo() },
+      ]
     }
   ];
 
@@ -67,7 +74,7 @@ export const TabGITEditor = function(props: BaseTabProps){
       title: 'Insert GIT Instance',
       onSelect: (resref, ext) => {
         if (tab.addInstanceFromBlueprint(resref, ext)) {
-          markUnsavedAndRefresh();
+          setRevision((v) => v + 1);
         }
       }
     });
@@ -77,25 +84,25 @@ export const TabGITEditor = function(props: BaseTabProps){
 
   const deleteSelectedInstance = () => {
     if (tab.deleteSelectedInstance()) {
-      markUnsavedAndRefresh();
+      setRevision((v) => v + 1);
     }
   };
 
   const duplicateSelectedInstance = () => {
     if (tab.duplicateSelectedInstance()) {
-      markUnsavedAndRefresh();
+      setRevision((v) => v + 1);
     }
   };
 
   const moveSelectedInstanceUp = () => {
     if (tab.moveSelectedInstanceUp()) {
-      markUnsavedAndRefresh();
+      setRevision((v) => v + 1);
     }
   };
 
   const moveSelectedInstanceDown = () => {
     if (tab.moveSelectedInstanceDown()) {
-      markUnsavedAndRefresh();
+      setRevision((v) => v + 1);
     }
   };
 
