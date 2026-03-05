@@ -655,6 +655,50 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
+    vscode.commands.registerCommand('kotorForge.heartbeatHostedSession', async (value?: { id?: string; token?: string } | string) => {
+      log.debug('Command invoked: kotorForge.heartbeatHostedSession');
+      const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      const sessionId = typeof value === 'string'
+        ? value
+        : (value?.id || '');
+      if (!sessionId) {
+        vscode.window.showWarningMessage('Session id is required to heartbeat hosted session.');
+        return;
+      }
+
+      try {
+        const extraHeaders = !adminToken && value && typeof value === 'object' && typeof value.token === 'string' && value.token
+          ? { 'x-session-token': value.token }
+          : undefined;
+
+        const session = await fetchSessionManagerResource(
+          sessionManagerUrl,
+          `/api/sessions/${encodeURIComponent(sessionId)}/heartbeat`,
+          adminToken,
+          false,
+          {
+            method: 'POST',
+            headers: extraHeaders,
+          }
+        ) as { expiresInMs?: number };
+
+        const expiresInSeconds = Math.max(0, Math.round((session.expiresInMs || 0) / 1000));
+        vscode.window.showInformationMessage(`Heartbeat sent for ${sessionId}. Expires in ~${expiresInSeconds}s.`);
+        log.info(`[session-heartbeat] refreshed ${sessionId}, expiresIn=${expiresInSeconds}s`);
+        sessionTreeProvider.refresh();
+        void refreshSessionStatusBar();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to heartbeat hosted session: ${message}`);
+        log.error(`heartbeatHostedSession failed: ${message}`);
+      }
+    }),
+
     vscode.commands.registerCommand('kotorForge.copyHostedSessionUrl', async (value?: { id?: string; accessUrl?: string } | string) => {
       log.debug('Command invoked: kotorForge.copyHostedSessionUrl');
       const sessionId = typeof value === 'object' && value?.id ? value.id : '';
