@@ -462,6 +462,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (method === 'GET' && pathname === '/api/config') {
+      if (!requireAdminForOperationalRoutes(req, url)) {
+        writeJson(res, 401, { error: 'Missing or invalid admin token' });
+        return;
+      }
       writeJson(res, 200, {
         maxSessions: MAX_SESSIONS,
         sessionTtlMs: SESSION_TTL_MS,
@@ -519,6 +523,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (method === 'GET' && pathname === '/api/sessions') {
+      if (!requireAdminForOperationalRoutes(req, url)) {
+        writeJson(res, 401, { error: 'Missing or invalid admin token' });
+        return;
+      }
       const includeTokens = isAdminRequest(req, url) && url.searchParams.get('includeTokens') === '1';
       writeJson(res, 200, manager.listSessions().map((session) => sessionResponse(session, includeTokens)));
       return;

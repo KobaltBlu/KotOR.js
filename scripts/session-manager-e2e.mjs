@@ -105,8 +105,12 @@ async function main() {
   assert(health.ok === true, 'healthz response should be ok=true');
 
   if (assertAdminAuth && adminToken) {
+    const unauthorizedConfig = await requestJsonExpect('/api/config', 401, { includeAdminToken: false });
+    assert(typeof unauthorizedConfig.error === 'string', 'config without admin token should return auth error');
     const unauthorizedStats = await requestJsonExpect('/api/stats', 401, { includeAdminToken: false });
     assert(typeof unauthorizedStats.error === 'string', 'stats without admin token should return auth error');
+    const unauthorizedSessions = await requestJsonExpect('/api/sessions', 401, { includeAdminToken: false });
+    assert(typeof unauthorizedSessions.error === 'string', 'session listing without admin token should return auth error');
     const unauthorizedEvents = await requestJsonExpect('/api/events', 401, { includeAdminToken: false });
     assert(typeof unauthorizedEvents.error === 'string', 'events without admin token should return auth error');
     const unauthorizedTimeoutEval = await requestJsonExpect('/api/timeouts/evaluate', 401, {

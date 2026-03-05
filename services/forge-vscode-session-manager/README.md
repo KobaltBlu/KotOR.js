@@ -22,12 +22,12 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 ## Endpoints
 
 - `GET /healthz`
-- `GET /api/config`
+- `GET /api/config` *(requires `x-admin-token` when admin token configured)*
 - `GET /api/stats` *(requires `x-admin-token` when admin token configured)*
 - `GET /api/metrics` *(Prometheus text format; requires `x-admin-token` when admin token configured)*
 - `POST /api/sessions`
 - `POST /api/sessions/resume`
-- `GET /api/sessions`
+- `GET /api/sessions` *(requires `x-admin-token` when admin token configured)*
 - `GET /api/sessions/:id` *(requires `x-session-token`)*
 - `POST /api/sessions/:id/heartbeat` *(requires `x-session-token`)*
 - `POST /api/sessions/:id/save-complete` *(requires `x-session-token`)*
