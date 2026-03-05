@@ -30,3 +30,19 @@ export * from "@/apps/forge/states/tabs/TabScriptInspectorState";
 
 export * from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorState";
 export * from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorOptionsState";
+
+export * from "@/apps/forge/states/tabs/TabDLGEditorState";
+export * from "@/apps/forge/states/tabs/TabAREEditorState";
+export * from "@/apps/forge/states/tabs/TabGITEditorState";
+export * from "@/apps/forge/states/tabs/TabIFOEditorState";
+export * from "@/apps/forge/states/tabs/TabFACEditorState";
+export * from "@/apps/forge/states/tabs/TabJRLEditorState";
+export * from "@/apps/forge/states/tabs/TabLTREditorState";
+export * from "@/apps/forge/states/tabs/TabTLKEditorState";
+export * from "@/apps/forge/states/tabs/TabSSFEditorState";
+export * from "@/apps/forge/states/tabs/TabVISEditorState";
+export * from "@/apps/forge/states/tabs/TabSAVEditorState";
+export * from "@/apps/forge/states/tabs/TabAudioPlayerState";
+export * from "@/apps/forge/states/tabs/TabBinaryViewerState";
+export * from "@/apps/forge/states/tabs/TabJsonViewState";
+export * from "@/apps/forge/states/tabs/TabDiffToolState";

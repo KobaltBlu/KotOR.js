@@ -3,37 +3,14 @@ import * as vscode from 'vscode';
 
 import { KotorDocument } from '../KotorDocument';
 import { LogScope, createScopedLogger } from '../logger';
+import { getForgeEditorTypeFromExtension, isModelResourceExtension } from '@kotor/apps/forge/integration/EditorTypeRegistry';
 
 import { BaseKotorEditorProvider } from './BaseKotorEditorProvider';
 
 const log = createScopedLogger(LogScope.Forge);
 
-const GFF_EXTS = new Set([
-  'gff', 'res', 'are', 'git', 'ifo', 'jrl', 'fac', 'gui', 'pth', 'vis', 'ltr', 'bic'
-]);
-const UTX_EXTS = new Set(['utc', 'utd', 'utp', 'uti', 'ute', 'uts', 'utt', 'utw', 'utm']);
-const MODEL_EXTS = new Set(['mdl', 'mdx']);
-const IMAGE_EXTS = new Set(['tpc', 'tga']);
-const WALKMESH_EXTS = new Set(['wok', 'dwk', 'pwk', 'bwm']);
-const ARCHIVE_EXTS = new Set(['erf', 'mod', 'sav', 'rim']);
-const AUDIO_EXTS = new Set(['wav', 'mp3']);
-
 function getEditorTypeFromExt(ext: string): string {
-  const lower = ext.toLowerCase();
-  let editorType: string;
-  if (UTX_EXTS.has(lower)) editorType = lower;
-  else if (GFF_EXTS.has(lower)) editorType = 'gff';
-  else if (lower === 'dlg') editorType = 'dlg';
-  else if (lower === '2da') editorType = '2da';
-  else if (ARCHIVE_EXTS.has(lower)) editorType = 'erf';
-  else if (MODEL_EXTS.has(lower)) editorType = 'model';
-  else if (IMAGE_EXTS.has(lower)) editorType = 'image';
-  else if (WALKMESH_EXTS.has(lower)) editorType = 'walkmesh';
-  else if (lower === 'tlk') editorType = 'tlk';
-  else if (lower === 'lip') editorType = 'lip';
-  else if (lower === 'ssf') editorType = 'ssf';
-  else if (AUDIO_EXTS.has(lower)) editorType = 'audio';
-  else editorType = 'binary';
+  const editorType = getForgeEditorTypeFromExtension(ext);
   log.trace(`getEditorTypeFromExt(${ext}) -> ${editorType}`);
   return editorType;
 }
@@ -113,7 +90,7 @@ export class KotorForgeProvider extends BaseKotorEditorProvider {
   protected async getExtraInitData(document: KotorDocument): Promise<Record<string, unknown>> {
     const ext = path.extname(document.uri.fsPath).replace('.', '').toLowerCase();
     log.trace(`getExtraInitData() uri=${document.uri.fsPath} ext=${ext}`);
-    if (!MODEL_EXTS.has(ext)) {
+    if (!isModelResourceExtension(ext)) {
       log.trace(`getExtraInitData() not a model ext, returning {}`);
       return {};
     }

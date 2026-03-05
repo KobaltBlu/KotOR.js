@@ -1143,8 +1143,8 @@ connection.onHover((params: TextDocumentPositionParams): Hover | null => {
 
   // Check for scriptlib constants in document or global
   const scriptlibConsts = getAvailableConstants(text);
-  if (Object.hasOwn(scriptlibConsts, word) || Object.hasOwn(GLOBAL_SCRIPTLIB.constants, word)) {
-    const val = Object.hasOwn(scriptlibConsts, word) ? scriptlibConsts[word] : GLOBAL_SCRIPTLIB.constants[word];
+  if (Object.prototype.hasOwnProperty.call(scriptlibConsts, word) || Object.prototype.hasOwnProperty.call(GLOBAL_SCRIPTLIB.constants, word)) {
+    const val = Object.prototype.hasOwnProperty.call(scriptlibConsts, word) ? scriptlibConsts[word] : GLOBAL_SCRIPTLIB.constants[word];
     const type = typeof val === 'number' ? 'int' : typeof val === 'string' ? 'string' : 'unknown';
     return {
       contents: {
@@ -1320,8 +1320,8 @@ connection.onDefinition(async (params: TextDocumentPositionParams) => {
 
   // Then constants (document includes, then global)
   const docConsts = getAvailableConstants(text) as Record<string, ScriptlibConstantValue>;
-  const inDocConsts: boolean = Boolean(Object.hasOwn(docConsts, word));
-  const inGlobalConsts: boolean = Boolean(Object.hasOwn(GLOBAL_SCRIPTLIB.constants as Record<string, ScriptlibConstantValue>, word));
+  const inDocConsts: boolean = Boolean(Object.prototype.hasOwnProperty.call(docConsts, word));
+  const inGlobalConsts: boolean = Boolean(Object.prototype.hasOwnProperty.call(GLOBAL_SCRIPTLIB.constants as Record<string, ScriptlibConstantValue>, word));
   if (inDocConsts || inGlobalConsts) {
     // We don't currently store per-document const positions. Use global if available.
     // Try to find in any parsed include by scanning cache

@@ -112,7 +112,7 @@ export enum TokenType {
 
 export interface Token {
   type: TokenType;
-  value: string;
+  value: string | number;
   location: SourceLocation;
   raw?: string;
 }

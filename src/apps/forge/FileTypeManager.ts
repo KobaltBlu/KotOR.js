@@ -1,11 +1,11 @@
 import { EditorFile } from "@/apps/forge/EditorFile";
+import { getForgeEditorTypeFromExtension } from "@/apps/forge/integration/EditorTypeRegistry";
 import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
-import { Project } from "@/apps/forge/Project";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { 
-  TabBIKPlayerState, TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabPTHEditorState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState, 
-  TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState 
+  TabAREEditorState, TabBIKPlayerState, TabBinaryViewerState, TabDLGEditorState, TabERFEditorState, TabFACEditorState, TabGFFEditorState, TabGITEditorState, TabGUIEditorState, TabIFOEditorState, TabImageViewerState, TabJRLEditorState, TabLIPEditorState, TabLTREditorState, TabModelViewerState, TabPTHEditorState, TabSAVEditorState, TabSSFEditorState, TabTextEditorState, TabTLKEditorState, TabTwoDAEditorState, TabUTCEditorState, 
+  TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabVISEditorState, TabWOKEditorState 
 } from "@/apps/forge/states/tabs";
 import { ResourceTypes } from "@/KotOR";
 
@@ -27,62 +27,53 @@ export class FileTypeManager {
   }
 
   static onOpenResource(res: EditorFile|string){
-
-    let ext = 'NA';
+    let ext = '';
 
     if(typeof res === 'string'){
       res = new EditorFile({path: res});
-      ext = ResourceTypes.getKeyByValue(res.reskey);
+      ext = ResourceTypes.getKeyByValue(res.reskey) || '';
     }else{
-      ext = ResourceTypes.getKeyByValue(res.reskey);
+      ext = ResourceTypes.getKeyByValue(res.reskey) || '';
     }
+    const editorType = getForgeEditorTypeFromExtension(ext);
 
     //Update the opened files list
     ForgeState.addRecentFile(res);
 
-    console.log('FileTypeManager.onOpenResource', res, ext);
+    console.log('FileTypeManager.onOpenResource', res, ext, editorType);
 
-    switch(ext){
-      case 'lyt':
-      case 'vis':
-      case 'txi':
-      case 'txt':
+    switch(editorType){
+      case 'text':
         ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));
       break;
       case '2da':
         ForgeState.tabManager.addTab(new TabTwoDAEditorState({editorFile: res}));
       break;
       case 'dlg':
-        ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
-        // ForgeState.tabManager.addTab(new TabDLGEditorState({editorFile: res}));
+        ForgeState.tabManager.addTab(new TabDLGEditorState({editorFile: res}));
       break;
       case 'lip':
         ForgeState.tabManager.addTab(new TabLIPEditorState({editorFile: res}));
       break;
+      case 'ssf':
+        ForgeState.tabManager.addTab(new TabSSFEditorState({editorFile: res}));
+      break;
+      case 'tlk':
+        ForgeState.tabManager.addTab(new TabTLKEditorState({editorFile: res}));
+      break;
       case 'erf':
-      case 'mod':
-      case 'sav':
         ForgeState.tabManager.addTab(new TabERFEditorState({editorFile: res}));
       break;
-      case 'mdl':
-      case 'mdx':
+      case 'sav':
+        ForgeState.tabManager.addTab(new TabSAVEditorState({editorFile: res}));
+      break;
+      case 'model':
         ForgeState.tabManager.addTab(new TabModelViewerState({editorFile: res}));
       break;
-      case 'dwk':
-      case 'pwk':
-      case 'wok':
+      case 'walkmesh':
         ForgeState.tabManager.addTab(new TabWOKEditorState({editorFile: res}));
       break;
-      case 'nss':
-        ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));
-        // ForgeState.tabManager.addTab(new TabScriptEditorState({editorFile: res}));
-      break;
-      case 'ncs':
-        ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));
-        // ForgeState.tabManager.addTab(new TabScriptEditorState({editorFile: res}));
-      break;
-      case 'tpc':
-      case 'tga':
+      case 'image':
         ForgeState.tabManager.addTab(new TabImageViewerState({editorFile: res}));
       break;
       case 'utc':
@@ -112,39 +103,45 @@ export class FileTypeManager {
       case 'utw':
         ForgeState.tabManager.addTab(new TabUTWEditorState({editorFile: res}));
       break;
-      case 'gui': 
+      case 'gui':
         ForgeState.tabManager.addTab(new TabGUIEditorState({editorFile: res}));
       break;
       case 'pth':
         ForgeState.tabManager.addTab(new TabPTHEditorState({editorFile: res}));
       break;
-      case 'ifo': 
-      case 'are': 
-      case 'git': 
-      case 'res': 
-      case 'fac': 
+      case 'are':
+        ForgeState.tabManager.addTab(new TabAREEditorState({editorFile: res}));
+      break;
+      case 'ifo':
+        ForgeState.tabManager.addTab(new TabIFOEditorState({editorFile: res}));
+      break;
+      case 'git':
+        ForgeState.tabManager.addTab(new TabGITEditorState({editorFile: res}));
+      break;
+      case 'jrl':
+        ForgeState.tabManager.addTab(new TabJRLEditorState({editorFile: res}));
+      break;
+      case 'fac':
+        ForgeState.tabManager.addTab(new TabFACEditorState({editorFile: res}));
+      break;
+      case 'vis':
+        ForgeState.tabManager.addTab(new TabVISEditorState({editorFile: res}));
+      break;
+      case 'ltr':
+        ForgeState.tabManager.addTab(new TabLTREditorState({editorFile: res}));
+      break;
+      case 'gff':
         ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
       break;
       case 'bik':
         ForgeState.tabManager.addTab(new TabBIKPlayerState({editorFile: res}));
       break;
-      case 'wav':
-      case 'mp3':
+      case 'audio':
         console.log('audio file', res);
         AudioPlayerState.OpenAudio(res);
-        // ForgeState.inlineAudioPlayer.OpenAudio({editorFile: res});
-
-        // if(ForgeState.Project instanceof Project){
-        //   ForgeState.Project.removeFromOpenFileList({editorFile: res});
-        // }
       break;
       default:
-        // NotificationManager.Notify(NotificationManager.Types.WARNING, `File Type: (${ext}) not yet supported`);
-        // console.warn('FileTypeManager.onOpenResource', 'Unknown FileType', ext, res);
-        
-        // if(ForgeState.Project instanceof Project){
-        //   ForgeState.Project.removeFromOpenFileList({editorFile: res});
-        // }
+        ForgeState.tabManager.addTab(new TabBinaryViewerState({editorFile: res}));
       break;
     }
 

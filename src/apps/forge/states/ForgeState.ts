@@ -1,4 +1,5 @@
 import { EditorFile } from "@/apps/forge/EditorFile";
+import type { IForgeHostAdapter } from "@/apps/forge/ForgeHostAdapter";
 import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
@@ -30,6 +31,7 @@ export class ForgeState {
 
   static recentFiles: EditorFile[] = [];
   static recentProjects: RecentProject[] = [];
+  static hostAdapter?: IForgeHostAdapter;
 
   static #eventListeners: any = {};
 
@@ -83,6 +85,18 @@ export class ForgeState {
 
   static triggerEventListener<T>(type: T, args: any[] = []): void {
     this.processEventListener(type, args);
+  }
+
+  static setHostAdapter(adapter?: IForgeHostAdapter): void {
+    ForgeState.hostAdapter = adapter;
+    if (adapter) {
+      ForgeState.tabManager = adapter.getTabManager();
+      ForgeState.modalManager = adapter.getModalManager();
+    }
+  }
+
+  static getHostAdapter(): IForgeHostAdapter | undefined {
+    return ForgeState.hostAdapter;
   }
 
   /**
@@ -277,6 +291,9 @@ export class ForgeState {
 
   static addRecentFile(file: EditorFile){
     try{
+      if (ForgeState.hostAdapter?.addRecentFile) {
+        ForgeState.hostAdapter.addRecentFile(file);
+      }
       //Update the opened files list
       const file_path = file.getPath();
       if(file_path){

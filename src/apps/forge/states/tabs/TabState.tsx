@@ -229,6 +229,23 @@ export class TabState extends EventListenerModel {
     }
     return new Promise<boolean>( async (resolve, reject) => {
       try{
+        const hostAdapter = ForgeState.getHostAdapter();
+        if (hostAdapter) {
+          try {
+            const fallbackName = currentFile.getFilename() || 'resource.bin';
+            const pathInfo = pathParse(fallbackName);
+            const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+            await hostAdapter.requestSave(this, saveBuffer);
+            currentFile.buffer = saveBuffer;
+            currentFile.unsaved_changes = false;
+            resolve(true);
+          } catch (e) {
+            console.error(e);
+            resolve(false);
+          }
+          return;
+        }
+
         if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
           if(currentFile.path?.length){
             console.log('saveFile', currentFile.path);
@@ -336,6 +353,24 @@ export class TabState extends EventListenerModel {
     // currentFile.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
     return new Promise<boolean>( async (resolve, reject) => {
       try{
+        const hostAdapter = ForgeState.getHostAdapter();
+        if (hostAdapter) {
+          try {
+            const fallbackName = currentFile.getFilename() || 'resource.bin';
+            const pathInfo = pathParse(fallbackName);
+            const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+            await hostAdapter.requestSave(this, saveBuffer);
+            currentFile.buffer = saveBuffer;
+            currentFile.unsaved_changes = false;
+            this.editorFileUpdated();
+            resolve(true);
+          } catch (e) {
+            console.error(e);
+            resolve(false);
+          }
+          return;
+        }
+
         if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
           const savePath = await dialog.showSaveDialog({
             title: 'Save File As',
