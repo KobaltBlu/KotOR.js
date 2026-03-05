@@ -62,6 +62,14 @@ async function fetchSessionManagerResource(
   return asText ? response.text() : response.json();
 }
 
+function readSessionManagerSettings(): { sessionManagerUrl: string; adminToken: string } {
+  const cfg = vscode.workspace.getConfiguration('kotorForge');
+  return {
+    sessionManagerUrl: cfg.get<string>('sessionManagerUrl', '').trim(),
+    adminToken: cfg.get<string>('sessionManagerAdminToken', '').trim(),
+  };
+}
+
 async function openActiveGffAsText(
   formatLabel: 'XML' | 'YAML' | 'TOML',
   language: string,
@@ -168,8 +176,7 @@ export function activate(context: vscode.ExtensionContext) {
   const resourceTreeProvider = new ResourceTreeProvider();
   const validationDiagnostics = vscode.languages.createDiagnosticCollection('kotorForgeValidation');
   const refreshSessionStatusBar = async () => {
-    const cfg = vscode.workspace.getConfiguration('kotorForge');
-    const sessionManagerUrl = cfg.get<string>('sessionManagerUrl', '').trim();
+    const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
     if (!sessionManagerUrl) {
       sessionStatusBarItem.text = '$(server) Sessions: off';
       sessionStatusBarItem.tooltip = 'Session manager URL is not configured.';
@@ -178,7 +185,6 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     try {
-      const adminToken = cfg.get<string>('sessionManagerAdminToken', '').trim();
       const sessions = await fetchSessionManagerResource(
         sessionManagerUrl,
         adminToken ? '/api/sessions?includeTokens=1' : '/api/sessions',
@@ -339,8 +345,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand('kotorForge.checkSessionManagerHealth', async () => {
       log.debug('Command invoked: kotorForge.checkSessionManagerHealth');
-      const cfg = vscode.workspace.getConfiguration('kotorForge');
-      const sessionManagerUrl = cfg.get<string>('sessionManagerUrl', '').trim();
+      const { sessionManagerUrl } = readSessionManagerSettings();
       if (!sessionManagerUrl) {
         vscode.window.showWarningMessage('Session manager URL is not configured.');
         return;
@@ -367,9 +372,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand('kotorForge.showSessionManagerStats', async () => {
       log.debug('Command invoked: kotorForge.showSessionManagerStats');
-      const cfg = vscode.workspace.getConfiguration('kotorForge');
-      const sessionManagerUrl = cfg.get<string>('sessionManagerUrl', '').trim();
-      const adminToken = cfg.get<string>('sessionManagerAdminToken', '').trim();
+      const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
       if (!sessionManagerUrl) {
         vscode.window.showWarningMessage('Session manager URL is not configured.');
         return;
@@ -406,9 +409,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand('kotorForge.showSessionManagerMetrics', async () => {
       log.debug('Command invoked: kotorForge.showSessionManagerMetrics');
-      const cfg = vscode.workspace.getConfiguration('kotorForge');
-      const sessionManagerUrl = cfg.get<string>('sessionManagerUrl', '').trim();
-      const adminToken = cfg.get<string>('sessionManagerAdminToken', '').trim();
+      const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
       if (!sessionManagerUrl) {
         vscode.window.showWarningMessage('Session manager URL is not configured.');
         return;
@@ -436,9 +437,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     vscode.commands.registerCommand('kotorForge.showSessionManagerConfig', async () => {
       log.debug('Command invoked: kotorForge.showSessionManagerConfig');
-      const cfg = vscode.workspace.getConfiguration('kotorForge');
-      const sessionManagerUrl = cfg.get<string>('sessionManagerUrl', '').trim();
-      const adminToken = cfg.get<string>('sessionManagerAdminToken', '').trim();
+      const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
       if (!sessionManagerUrl) {
         vscode.window.showWarningMessage('Session manager URL is not configured.');
         return;
