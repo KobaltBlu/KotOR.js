@@ -79,6 +79,7 @@ jobs:
       - name: Run OpenVSCode + session manager lifecycle test
         run: |
           set -euo pipefail
+          OPENVSCODE_LOG=/tmp/openvscode.log
           docker run -d --name openvscode -p 18080:3000 gitpod/openvscode-server:latest --without-connection-token
 
           for i in {1..30}; do
@@ -90,7 +91,7 @@ jobs:
 
           FORGE_SESSION_MANAGER_TTL_MS=2000 FORGE_SESSION_MANAGER_WARNING_MS=1000 FORGE_SESSION_MANAGER_ADMIN_TOKEN=ci-admin-token FORGE_SESSION_MANAGER_ALLOWED_UPSTREAM_HOSTS=127.0.0.1,localhost FORGE_SESSION_MANAGER_ALLOWED_ORIGINS=http://127.0.0.1:8090 node services/forge-vscode-session-manager/dist/server.js > /tmp/session-manager.log 2>&1 &
           SESSION_MANAGER_PID=$!
-          trap 'kill $SESSION_MANAGER_PID || true; docker rm -f openvscode || true' EXIT
+          trap 'kill $SESSION_MANAGER_PID || true; docker logs openvscode > "$OPENVSCODE_LOG" 2>&1 || true; docker rm -f openvscode || true' EXIT
 
           for i in {1..20}; do
             if curl -fsS "http://127.0.0.1:8090/healthz" > /dev/null; then
@@ -107,3 +108,16 @@ jobs:
           if [ -f /tmp/session-manager.log ]; then
             cat /tmp/session-manager.log
           fi
+          if [ -f /tmp/openvscode.log ]; then
+            cat /tmp/openvscode.log
+          fi
+
+      - name: Upload OpenVSCode/session-manager logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: session-manager-openvscode-logs
+          path: |
+            /tmp/session-manager.log
+            /tmp/openvscode.log
+          if-no-files-found: ignore
