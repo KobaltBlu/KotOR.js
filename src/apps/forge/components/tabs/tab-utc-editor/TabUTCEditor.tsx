@@ -287,25 +287,25 @@ export const TabUTCEditor = function(props: BaseTabProps){
     };
   }, []);
 
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeCreature, parser: (value: number) => number = (v) => v) => 
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeCreature, parser: (value: number) => number = (v) => v) =>
     tab.creature.createNumberFieldHandler(setter, property, tab.creature, tab, parser);
 
-  const onUpdateNumberArrayField = (setter: (value: number[]) => void, index: number, property: keyof ForgeCreature) => 
+  const onUpdateNumberArrayField = (setter: (value: number[]) => void, index: number, property: keyof ForgeCreature) =>
     tab.creature.createNumberArrayFieldHandler(setter, index, property, tab.creature, tab);
 
-  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeCreature) => 
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeCreature) =>
     tab.creature.createBooleanFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeCreature) => 
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeCreature) =>
     tab.creature.createResRefFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeCreature) => 
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeCreature) =>
     tab.creature.createCExoStringFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeCreature) => 
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeCreature) =>
     tab.creature.createCExoLocStringFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeCreature) => 
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeCreature) =>
     tab.creature.createForgeCheckboxFieldHandler(setter, property, tab.creature, tab);
 
   const onUpdateClassListField = (setter: (value: number) => void, property: 'class' | 'level') => {
@@ -681,7 +681,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
               </tbody>
             </table>
           </fieldset>
-          
+
           <table>
             <tbody>
               <tr>
@@ -706,10 +706,10 @@ export const TabUTCEditor = function(props: BaseTabProps){
                     <legend>Hit Points</legend>
                     <label>Base Hit Points</label>
                     <input type="number" min="0" value={hitPoints} onChange={onUpdateNumberField(setHitPoints, 'hitPoints')} />
-        
+
                     <label>Current Hit Points</label>
                     <input type="number" min="0" value={currentHitPoints} onChange={onUpdateNumberField(setCurrentHitPoints, 'currentHitPoints')} />
-        
+
                     <label>Max Hit Points</label>
                     <input type="number" min="0" value={maxHitPoints} onChange={onUpdateNumberField(setMaxHitPoints, 'maxHitPoints')} />
                   </fieldset>
@@ -852,9 +852,9 @@ export const TabUTCEditor = function(props: BaseTabProps){
         <>
           <div className="feats">
             {feats.map((feat, index) => (
-              <div 
+              <div
                 className="feat-row"
-                key={`feat-${feat.id}`} 
+                key={`feat-${feat.id}`}
               >
                 <div className={`feat-icon ${featList.includes(feat.id) ? 'enabled' : 'disabled'}`} onClick={onFeatClick(feat.id)}>
                   <InfoBubble
@@ -921,9 +921,9 @@ export const TabUTCEditor = function(props: BaseTabProps){
         <>
           <div className="feats">
             {spells.map((spell, index) => (
-              <div 
+              <div
                 className="feat-row"
-                key={`feat-${spell.id}`} 
+                key={`feat-${spell.id}`}
               >
                 <div className={`feat-icon ${knownList0.find(s => s.spell == spell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.id)}>
                   <InfoBubble
@@ -1029,9 +1029,9 @@ export const TabUTCEditor = function(props: BaseTabProps){
         <>
           <div className="feats">
             {specialAbilitiesList.map((specialAbility, index) => (
-              <div 
+              <div
                 className="feat-row"
-                key={`feat-${specialAbility.id}`} 
+                key={`feat-${specialAbility.id}`}
               >
                 <div className={`feat-icon ${specialAbilities.find(s => s.spell == specialAbility.id) ? 'enabled' : 'disabled'}`} onClick={onSpecialAbilityClick(specialAbility.id)}>
                   <InfoBubble
