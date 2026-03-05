@@ -3,7 +3,7 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   transform: {
-    "^.+.ts?$": ["ts-jest",{}],
+    "^.+\\.tsx?$": ["ts-jest", { tsconfig: "tsconfig.jest.json" }],
   },
   testMatch: ['**/*.test.ts'],
   coverageDirectory: './coverage',
