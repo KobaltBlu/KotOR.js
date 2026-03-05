@@ -74,7 +74,6 @@ function beautifyBackgroundImage(url: string|undefined = undefined): Promise<str
       img.onerror = () => {
         reject();
       };
-      img.crossOrigin = 'anonymous';
       img.src = url;
     }else{
       reject();

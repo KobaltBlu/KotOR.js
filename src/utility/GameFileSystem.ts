@@ -73,7 +73,7 @@ export class GameFileSystem {
           throw new Error('Failed to read file');
         }
       }else{
-        throw new Error('Failed to locate file directory');
+        throw new Error('Failed to locate file directory: ApplicationProfile.directoryHandle might be undefined or missing');
       }
     }
   }
@@ -679,8 +679,11 @@ export class GameFileSystem {
   }
 
   static async showRequestDirectoryDialog(){
+    const profileKey = typeof ApplicationProfile.profile?.key === 'string'
+      ? ApplicationProfile.profile.key
+      : undefined;
     let handle = await window.showDirectoryPicker({
-      id: ApplicationProfile.profile?.key,
+      id: profileKey,
       mode: "readwrite"
     });
     if(handle){

@@ -95,12 +95,14 @@ export class CurrentGame {
               }
             }
           }else if(create){
+            if(!ApplicationProfile.directoryHandle) throw new Error("ApplicationProfile.directoryHandle is not set");
             const directory_handle = await ApplicationProfile.directoryHandle.getDirectoryHandle(CurrentGame.gameinprogress_dir, { create: true });
             console.log('exists', directory_handle);
           }
         }catch(e){
           console.error(e);
           if(create){
+            if(!ApplicationProfile.directoryHandle) throw new Error("ApplicationProfile.directoryHandle is not set");
             const directory_handle = await ApplicationProfile.directoryHandle.getDirectoryHandle(CurrentGame.gameinprogress_dir, { create: true });
             console.log('exists', directory_handle);
           }

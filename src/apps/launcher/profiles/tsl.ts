@@ -6,7 +6,7 @@ export const LauncherConfig: LauncherProfile = {
   "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/208580/c491c003d93f0947b8e514ff1933daa7c4d8c171.ico",
   "logo": "https://steamcdn-a.akamaihd.net/steam/apps/208580/logo.png",
   "background": "https://swkotor.net/images/nihilus-vs-atris.jpg",
-  "background_fallback": "./images/vqMNET.jpg",
+  "background_fallback": "./images/kotor_forge.jpg",
   "category": "game",
   "directory": null,
   "locate_required": true,

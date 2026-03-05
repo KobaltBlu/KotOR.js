@@ -11,7 +11,8 @@ import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanv
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
 import * as KotOR from "@/apps/forge/KotOR";
-import type{ CreatureClassEntry, ForgeCreature, KnownSpellEntry, SpecialAbilityEntry } from "@/apps/forge/module-editor/ForgeCreature";
+import type{ CreatureClassEntry, ForgeCreature, InventoryItemEntry, KnownSpellEntry, SpecialAbilityEntry } from "@/apps/forge/module-editor/ForgeCreature";
+import { ModalInventoryBrowserState } from "@/apps/forge/states/modal/ModalInventoryBrowserState";
 import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
 import { TabUTCEditorState } from "@/apps/forge/states/tabs";
 import '@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor.scss';
@@ -96,7 +97,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [int, setInt] = useState<number>(10);
   const [interruptable, setInterruptable] = useState<boolean>(true);
   const [isPC, setIsPC] = useState<boolean>(false);
-  const [itemList, setItemList] = useState<string[]>([]);
+  const [itemList, setItemList] = useState<InventoryItemEntry[]>([]);
   const [lastName, setLastName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
   const [lawfulChaotic, setLawfulChaotic] = useState<number>(0);
   const [maxHitPoints, setMaxHitPoints] = useState<number>(0);
@@ -200,7 +201,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
     setInt(tab.creature.int);
     setInterruptable(tab.creature.interruptable);
     setIsPC(tab.creature.isPC);
-    setItemList([...tab.creature.itemList]);
+    setItemList(tab.creature.itemList.map(i => ({ ...i })));
     setLastName(tab.creature.lastName);
     setLawfulChaotic(tab.creature.lawfulChaotic);
     setMaxHitPoints(tab.creature.maxHitPoints);
@@ -1159,6 +1160,49 @@ export const TabUTCEditor = function(props: BaseTabProps){
             <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idbelt' : 'ibelt'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.BELT)} />
             <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idweap_r' : 'ihand_r'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.RIGHTHAND)} />
           </div>
+
+          <fieldset>
+            <legend>
+              Inventory Items
+              <button
+                className="btn btn-sm btn-outline-secondary ms-2"
+                onClick={() => {
+                  const modal = new ModalInventoryBrowserState(
+                    tab.creature.itemList,
+                    (updatedInventory) => {
+                      tab.creature.setProperty('itemList', updatedInventory);
+                      setItemList(updatedInventory.map(i => ({ ...i })));
+                      tab.updateFile();
+                    },
+                  );
+                  modal.attachToModalManager(ForgeState.modalManager);
+                  modal.open();
+                }}
+              >
+                Edit Inventory
+              </button>
+            </legend>
+            {itemList.length === 0 ? (
+              <p className="text-muted small">No items in inventory.</p>
+            ) : (
+              <table className="table table-sm table-dark mb-0 utc-inventory-table">
+                <thead>
+                  <tr>
+                    <th>ResRef</th>
+                    <th title="Droppable">Drop</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemList.map((entry, idx) => (
+                    <tr key={`item-${idx}`}>
+                      <td>{entry.resref}</td>
+                      <td>{entry.droppable ? '✓' : ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </fieldset>
         </>
       )
     },

@@ -6,7 +6,7 @@ export const LauncherConfig: LauncherProfile = {
   "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/32370/0bb8aed2de4ae751637ddb5ac7edb0b786698f14.ico",
   "logo": "https://steamcdn-a.akamaihd.net/steam/apps/32370/logo.png",
   "background": "https://swkotor.net/images/malak-revan.jpg",
-  "background_fallback": "./images/uBjXWl.jpg",
+  "background_fallback": "./images/kotor_forge.jpg",
   "category": "game",
   "directory": null,
   "locate_required": true,

@@ -8,7 +8,7 @@ import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeStore, StoreItemEntry } from "@/apps/forge/module-editor/ForgeStore";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
+import { ModalInventoryBrowserState } from "@/apps/forge/states/modal/ModalInventoryBrowserState";
 import { TabUTMEditorState } from "@/apps/forge/states/tabs/TabUTMEditorState";
 
 export const TabUTMEditor = function(props: BaseTabProps){
@@ -39,19 +39,19 @@ export const TabUTMEditor = function(props: BaseTabProps){
   }, [tab]);
 
   // Helper functions using ForgeStore methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeStore, parser: (value: number) => number = (v) => v) => 
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeStore, parser: (value: number) => number = (v) => v) =>
     tab.store.createNumberFieldHandler(setter, property, tab.store, tab, parser);
-  
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeStore) => 
+
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeStore) =>
     tab.store.createByteFieldHandler(setter, property, tab.store, tab);
-  
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeStore) => 
+
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeStore) =>
     tab.store.createResRefFieldHandler(setter, property, tab.store, tab);
-  
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeStore) => 
+
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeStore) =>
     tab.store.createCExoStringFieldHandler(setter, property, tab.store, tab);
-  
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeStore) => 
+
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeStore) =>
     tab.store.createCExoLocStringFieldHandler(setter, property, tab.store, tab);
 
   useEffect(() => {
@@ -92,12 +92,43 @@ export const TabUTMEditor = function(props: BaseTabProps){
     tab.updateFile();
   };
 
-  const onOpenItemBrowser = (index: number) => {
-    const modal = new ModalItemBrowserState((item) => {
-      onItemFieldChange(index, 'inventoryRes', item.resref);
-    });
+  const onOpenInventoryBrowser = () => {
+    const inventory = tab.store.itemList.map((entry) => ({
+      resref: entry.inventoryRes,
+      droppable: false,
+      infinite: false,
+    }));
+
+    const modal = new ModalInventoryBrowserState(inventory, (updatedInventory) => {
+      const updatedStoreItems = updatedInventory.map((entry, index) => ({
+        inventoryRes: entry.resref,
+        reposPosX: tab.store.itemList[index]?.reposPosX ?? index,
+        reposPosY: tab.store.itemList[index]?.reposPosY ?? 0,
+      }));
+      setItemList(updatedStoreItems);
+      tab.store.itemList = updatedStoreItems;
+      tab.updateFile();
+    }, 'store');
+
     modal.attachToModalManager(ForgeState.modalManager);
-    modal.loadItems();
+    modal.open();
+  };
+
+  const onOpenItemBrowser = (index: number) => {
+    const modal = new ModalInventoryBrowserState([
+      {
+        resref: itemList[index]?.inventoryRes || '',
+        droppable: false,
+        infinite: false,
+      }
+    ], (updatedInventory) => {
+      const selected = updatedInventory[0];
+      if (selected) {
+        onItemFieldChange(index, 'inventoryRes', selected.resref);
+      }
+    });
+
+    modal.attachToModalManager(ForgeState.modalManager);
     modal.open();
   };
 
@@ -111,35 +142,35 @@ export const TabUTMEditor = function(props: BaseTabProps){
         <>
           <table style={{ width: '100%' }}>
             <tbody>
-              <FormField 
-                label="Name" 
+              <FormField
+                label="Name"
                 info="The display name of the store. This is what players will see in-game and can be localized for different languages."
               >
-                <CExoLocStringEditor 
+                <CExoLocStringEditor
                   value={locName}
                   onChange={onUpdateCExoLocStringField(setLocName, 'locName')}
                 />
               </FormField>
-              <FormField 
-                label="Tag" 
+              <FormField
+                label="Tag"
                 info="A unique identifier for this store. Used by scripts to reference this specific object. Must be unique within the module."
               >
                 <input type="text" placeholder="Enter tag" maxLength={32} value={tag} onChange={onUpdateCExoStringField(setTag, 'tag')} />
               </FormField>
-              <FormField 
-                label="ResRef" 
+              <FormField
+                label="ResRef"
                 info="The resource reference of this store's blueprint template. This should match the filename of the UTM file."
               >
                 <input type="text" placeholder="Enter resref" maxLength={16} value={templateResRef} onChange={onUpdateResRefField(setTemplateResRef, 'templateResRef')} />
               </FormField>
-              <FormField 
-                label="Comment" 
+              <FormField
+                label="Comment"
                 info="Designer-only notes stored in blueprint."
               >
                 <textarea value={comment} onChange={onUpdateCExoStringField(setComment, 'comment')} rows={2} />
               </FormField>
-              <FormField 
-                label="Buy/Sell Flag" 
+              <FormField
+                label="Buy/Sell Flag"
                 info="Controls what the store can do: 0 = Buy only, 1 = Sell only, 2 = Buy and Sell, 3 = Neither."
               >
                 <select value={buySellFlag} onChange={(e) => { setBuySellFlag(Number(e.target.value)); tab.store.buySellFlag = Number(e.target.value); tab.updateFile(); }}>
@@ -149,20 +180,20 @@ export const TabUTMEditor = function(props: BaseTabProps){
                   <option value={3}>Neither</option>
                 </select>
               </FormField>
-              <FormField 
-                label="Mark Down" 
+              <FormField
+                label="Mark Down"
                 info="Percentage discount when selling items to the store (0-100)."
               >
                 <input type="number" min="0" max="100" value={markDown} onChange={onUpdateNumberField(setMarkDown, 'markDown')} />
               </FormField>
-              <FormField 
-                label="Mark Up" 
+              <FormField
+                label="Mark Up"
                 info="Percentage markup when buying items from the store (0-100)."
               >
                 <input type="number" min="0" max="100" value={markUp} onChange={onUpdateNumberField(setMarkUp, 'markUp')} />
               </FormField>
-              <FormField 
-                label="On Open Store" 
+              <FormField
+                label="On Open Store"
                 info="Script that runs when the store is opened by a player."
               >
                 <input type="text" placeholder="Enter script name" maxLength={16} value={onOpenStore} onChange={onUpdateResRefField(setOnOpenStore, 'onOpenStore')} />
@@ -185,12 +216,20 @@ export const TabUTMEditor = function(props: BaseTabProps){
                 <td colSpan={2}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <strong>Item List</strong>
-                    <button 
-                      onClick={onAddItem} 
-                      className="btn btn-sm btn-primary"
-                    >
-                      <i className="fa-solid fa-plus"></i> Add Item
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button
+                        onClick={onOpenInventoryBrowser}
+                        className="btn btn-sm btn-outline-secondary"
+                      >
+                        Inventory Browser
+                      </button>
+                      <button
+                        onClick={onAddItem}
+                        className="btn btn-sm btn-primary"
+                      >
+                        <i className="fa-solid fa-plus"></i> Add Item
+                      </button>
+                    </div>
                   </div>
                   {itemList.length === 0 ? (
                     <div style={{ textAlign: 'center', fontStyle: 'italic', padding: '20px' }}>
@@ -211,15 +250,15 @@ export const TabUTMEditor = function(props: BaseTabProps){
                           <tr key={index}>
                             <td>
                               <div style={{ display: 'flex', gap: '5px' }}>
-                                <input 
-                                  type="text" 
-                                  maxLength={16} 
-                                  value={item.inventoryRes} 
+                                <input
+                                  type="text"
+                                  maxLength={16}
+                                  value={item.inventoryRes}
                                   onChange={(e) => onItemFieldChange(index, 'inventoryRes', e.target.value)}
                                   className="form-control"
                                   placeholder="Enter item resref"
                                 />
-                                <button 
+                                <button
                                   onClick={() => onOpenItemBrowser(index)}
                                   className="btn btn-sm btn-secondary"
                                   title="Browse Items"
@@ -229,27 +268,27 @@ export const TabUTMEditor = function(props: BaseTabProps){
                               </div>
                             </td>
                             <td>
-                              <input 
-                                type="number" 
-                                min="0" 
-                                value={item.reposPosX} 
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.reposPosX}
                                 onChange={(e) => onItemFieldChange(index, 'reposPosX', parseInt(e.target.value) || 0)}
                                 className="form-control"
                                 placeholder="0"
                               />
                             </td>
                             <td>
-                              <input 
-                                type="number" 
-                                min="0" 
-                                value={item.reposPosY} 
+                              <input
+                                type="number"
+                                min="0"
+                                value={item.reposPosY}
                                 onChange={(e) => onItemFieldChange(index, 'reposPosY', parseInt(e.target.value) || 0)}
                                 className="form-control"
                                 placeholder="0"
                               />
                             </td>
                             <td>
-                              <button 
+                              <button
                                 onClick={() => onRemoveItem(index)}
                                 className="btn btn-sm btn-danger"
                                 title="Remove Item"

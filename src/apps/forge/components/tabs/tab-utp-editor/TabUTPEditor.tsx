@@ -21,7 +21,9 @@ import {
 } from "@/apps/forge/helpers/UTxEditorHelpers";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
 import * as KotOR from "@/apps/forge/KotOR";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
+import { ForgePlaceable, PlaceableItemEntry } from "@/apps/forge/module-editor/ForgePlaceable";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalInventoryBrowserState } from "@/apps/forge/states/modal/ModalInventoryBrowserState";
 import { TabUTIEditorState, TabUTPEditorState } from "@/apps/forge/states/tabs";
 
 export const TabUTPEditor = function(props: BaseTabProps){
@@ -86,33 +88,34 @@ export const TabUTPEditor = function(props: BaseTabProps){
   const [type, setType] = useState<number>(0);
   const [useable, setUseable] = useState<boolean>(false);
   const [will, setWill] = useState<number>(0);
+  const [itemList, setItemList] = useState<PlaceableItemEntry[]>([]);
 
   const [kPlaceableAppearances, setKPlaceableAppearances] = useState<any[]>([]);
   const [kFactions, setKFactions] = useState<any[]>([]);
 
   // Helper functions using ForgePlaceable methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgePlaceable, parser: (value: number) => number = (v) => v) => 
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgePlaceable, parser: (value: number) => number = (v) => v) =>
     tab.placeable.createNumberFieldHandler(setter, property, tab.placeable, tab, parser);
-  
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgePlaceable) => 
+
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createByteFieldHandler(setter, property, tab.placeable, tab);
-  
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgePlaceable) => 
+
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createWordFieldHandler(setter, property, tab.placeable, tab);
-  
-  const updateBooleanField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) => 
+
+  const updateBooleanField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createBooleanFieldHandler(setter, property, tab.placeable, tab);
-  
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgePlaceable) => 
+
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createResRefFieldHandler(setter, property, tab.placeable, tab);
-  
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgePlaceable) => 
+
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createCExoStringFieldHandler(setter, property, tab.placeable, tab);
-  
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgePlaceable) => 
+
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createCExoLocStringFieldHandler(setter, property, tab.placeable, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) => 
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createForgeCheckboxFieldHandler(setter, property, tab.placeable, tab);
 
   const onPlaceableChange = useCallback(() => {
@@ -174,9 +177,37 @@ export const TabUTPEditor = function(props: BaseTabProps){
     setType(tab.placeable.t_type);
     setUseable(tab.placeable.useable);
     setWill(tab.placeable.will);
+    setItemList(tab.placeable.itemList.map((item) => ({ ...item })));
     setKPlaceableAppearances(tab.placeable.kPlaceableAppearances || []);
     setKFactions(tab.placeable.kFactions || []);
   }, [tab]);
+
+  const onOpenInventoryBrowser = () => {
+    const inventory = tab.placeable.itemList.map((entry) => ({
+      resref: entry.inventoryRes,
+      droppable: entry.droppable,
+      infinite: false,
+    }));
+
+    const modal = new ModalInventoryBrowserState(inventory, (updatedInventory) => {
+      const updatedPlaceableItems = updatedInventory.map((entry) => ({
+        inventoryRes: entry.resref,
+        droppable: entry.droppable,
+      }));
+
+      tab.placeable.setProperty('itemList', updatedPlaceableItems);
+      if (updatedPlaceableItems.length > 0 && !tab.placeable.hasInventory) {
+        tab.placeable.setProperty('hasInventory', true);
+        setHasInventory(true);
+      }
+
+      setItemList(updatedPlaceableItems.map((entry) => ({ ...entry })));
+      tab.updateFile();
+    }, 'placeable');
+
+    modal.attachToModalManager(ForgeState.modalManager);
+    modal.open();
+  };
 
   useEffect(() => {
     if(!tab) return;
@@ -358,6 +389,38 @@ export const TabUTPEditor = function(props: BaseTabProps){
               </tr>
             </tbody>
           </table>
+          <br />
+          <fieldset>
+            <legend>
+              Inventory Items
+              <button
+                className="btn btn-sm btn-outline-secondary ms-2"
+                onClick={onOpenInventoryBrowser}
+              >
+                Edit Inventory
+              </button>
+            </legend>
+            {itemList.length === 0 ? (
+              <p className="text-muted small">No items in inventory.</p>
+            ) : (
+              <table className="table table-sm table-dark mb-0 utc-inventory-table">
+                <thead>
+                  <tr>
+                    <th>ResRef</th>
+                    <th title="Droppable">Drop</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemList.map((entry, index) => (
+                    <tr key={`utp-item-${index}`}>
+                      <td>{entry.inventoryRes}</td>
+                      <td>{entry.droppable ? '✓' : ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </fieldset>
         </>
       )
     },

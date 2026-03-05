@@ -1,6 +1,11 @@
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
+export interface PlaceableItemEntry {
+  inventoryRes: string;
+  droppable: boolean;
+}
+
 export class ForgePlaceable extends ForgeGameObject {
 
   walkmesh: KotOR.OdysseyWalkMesh;
@@ -31,6 +36,7 @@ export class ForgePlaceable extends ForgeGameObject {
   hp: number = 0;
   hardness: number = 0;
   hasInventory: boolean = false;
+  itemList: PlaceableItemEntry[] = [];
   interruptable: boolean = false;
   keyName: string = '';
   keyRequired: boolean = false;
@@ -157,6 +163,16 @@ export class ForgePlaceable extends ForgeGameObject {
     }
     if(root.hasField('HasInventory')){
       this.hasInventory = root.getFieldByLabel('HasInventory').getValue() || false;
+    }
+    if(root.hasField('ItemList')){
+      const itemListField = root.getFieldByLabel('ItemList');
+      const structs = itemListField.getChildStructs() || [];
+      this.itemList = structs.map((struct: KotOR.GFFStruct) => {
+        return {
+          inventoryRes: struct.hasField('InventoryRes') ? struct.getFieldByLabel('InventoryRes').getValue() || '' : '',
+          droppable: struct.hasField('Dropable') ? !!struct.getFieldByLabel('Dropable').getValue() : false,
+        } as PlaceableItemEntry;
+      });
     }
     if(root.hasField('Interruptable')){
       this.interruptable = root.getFieldByLabel('Interruptable').getValue() || false;
@@ -308,6 +324,18 @@ export class ForgePlaceable extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'HP', this.hp) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Hardness', this.hardness) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'HasInventory', this.hasInventory ? 1 : 0) );
+
+    const itemListField = root.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'ItemList'));
+    for(let i = 0; i < this.itemList.length; i++){
+      if(itemListField){
+        const itemStruct = new KotOR.GFFStruct(0);
+        const item = this.itemList[i];
+        itemStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'InventoryRes', item.inventoryRes || ''));
+        itemStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Dropable', item.droppable ? 1 : 0));
+        itemListField.addChildStruct(itemStruct);
+      }
+    }
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Interruptable', this.interruptable ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'KeyName', this.keyName) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'KeyRequired', this.keyRequired ? 1 : 0) );

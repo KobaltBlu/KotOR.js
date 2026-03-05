@@ -31,6 +31,8 @@ export {
   type TwoDARegistryKey,
 } from "@/apps/forge/data/TwoDARegistry";
 
+export { InstallationRegistry } from "@/apps/forge/data/InstallationRegistry";
+
 export {
   DEFAULT_EXTRACT_OPTIONS,
   type ExtractOptions,
