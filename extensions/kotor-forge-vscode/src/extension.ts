@@ -199,6 +199,64 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
+    vscode.commands.registerCommand('kotorForge.openAsYaml', async () => {
+      log.debug('Command invoked: kotorForge.openAsYaml');
+      const gffLikeExts = new Set(['.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
+      const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
+      const input = tab?.input as { uri?: vscode.Uri } | undefined;
+      const uri = input?.uri || vscode.window.activeTextEditor?.document?.uri;
+      const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
+
+      if (!uri || !gffLikeExts.has(`.${ext}`)) {
+        vscode.window.showWarningMessage('Open a GFF-based KotOR resource first (.utc/.utp/.are/.dlg/.gff/etc).');
+        return;
+      }
+
+      try {
+        const raw = await vscode.workspace.fs.readFile(uri);
+        const gff = new GFFObject(new Uint8Array(raw));
+        const yaml = gff.toYAML();
+        const yamlDoc = await vscode.workspace.openTextDocument({
+          content: yaml,
+          language: 'yaml',
+        });
+        await vscode.window.showTextDocument(yamlDoc, { preview: false });
+        log.info(`openAsYaml: opened YAML preview for ${uri.toString()}`);
+      } catch (e) {
+        log.error(`openAsYaml failed: ${e}`);
+        vscode.window.showErrorMessage(`Failed to open as YAML: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.openAsToml', async () => {
+      log.debug('Command invoked: kotorForge.openAsToml');
+      const gffLikeExts = new Set(['.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
+      const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
+      const input = tab?.input as { uri?: vscode.Uri } | undefined;
+      const uri = input?.uri || vscode.window.activeTextEditor?.document?.uri;
+      const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
+
+      if (!uri || !gffLikeExts.has(`.${ext}`)) {
+        vscode.window.showWarningMessage('Open a GFF-based KotOR resource first (.utc/.utp/.are/.dlg/.gff/etc).');
+        return;
+      }
+
+      try {
+        const raw = await vscode.workspace.fs.readFile(uri);
+        const gff = new GFFObject(new Uint8Array(raw));
+        const toml = gff.toTOML();
+        const tomlDoc = await vscode.workspace.openTextDocument({
+          content: toml,
+          language: 'toml',
+        });
+        await vscode.window.showTextDocument(tomlDoc, { preview: false });
+        log.info(`openAsToml: opened TOML preview for ${uri.toString()}`);
+      } catch (e) {
+        log.error(`openAsToml failed: ${e}`);
+        vscode.window.showErrorMessage(`Failed to open as TOML: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }),
+
     vscode.commands.registerCommand('kotorForge.openAsAscii', async () => {
       log.debug('Command invoked: kotorForge.openAsAscii');
       const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;

@@ -300,6 +300,16 @@
         "command": "kotorForge.refreshSessions",
         "title": "Refresh Sessions",
         "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.openAsYaml",
+        "title": "Open as YAML",
+        "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.openAsToml",
+        "title": "Open as TOML",
+        "category": "KotOR Forge"
       }
     ],
     "views": {
@@ -330,6 +340,16 @@
         {
           "when": "resourceExtname == .mdl || resourceExtname == .mdx",
           "command": "kotorForge.openAsAscii",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis",
+          "command": "kotorForge.openAsYaml",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis",
+          "command": "kotorForge.openAsToml",
           "group": "navigation"
         }
       ],
