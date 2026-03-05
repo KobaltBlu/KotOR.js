@@ -321,6 +321,31 @@ export class TabSAVEditorState extends TabState {
     this.markGlobalVariableChanged();
   }
 
+  private applyGlobalName(kind: 'boolean' | 'number' | 'string', index: number, value: string): void {
+    if (!this.globalVariables || !this.globalVariableGff) return;
+
+    const root = this.globalVariableGff.RootNode;
+    const labels = kind === 'boolean'
+      ? ['CatBoolean', 'GlobalBooleans', 'Booleans', 'BooleanVars']
+      : kind === 'number'
+        ? ['CatNumber', 'GlobalNumbers', 'Numbers', 'NumberVars']
+        : ['CatString', 'GlobalStrings', 'Strings', 'StringVars'];
+    const categories = this.getStructListByLabels(root, labels);
+    categories[index]?.getFieldByLabel('Name')?.setValue(value);
+
+    if (kind === 'boolean' && this.globalVariables.booleans[index]) {
+      this.globalVariables.booleans[index].name = value;
+    }
+    if (kind === 'number' && this.globalVariables.numbers[index]) {
+      this.globalVariables.numbers[index].name = value;
+    }
+    if (kind === 'string' && this.globalVariables.strings[index]) {
+      this.globalVariables.strings[index].name = value;
+    }
+
+    this.markGlobalVariableChanged();
+  }
+
   updateGlobalString(index: number, value: string): void {
     if (!this.globalVariables) return;
     const stringEntry = this.globalVariables.strings[index];
@@ -333,6 +358,48 @@ export class TabSAVEditorState extends TabState {
       description: `Set ${stringEntry.name}`,
       redo: () => this.applyGlobalString(index, value),
       undo: () => this.applyGlobalString(index, previous),
+    });
+  }
+
+  updateGlobalBooleanName(index: number, value: string): void {
+    if (!this.globalVariables) return;
+    const entry = this.globalVariables.booleans[index];
+    if (!entry) return;
+    const previous = entry.name;
+    if (previous === value) return;
+    this.undoManager.execute({
+      type: 'sav-global-bool-name-edit',
+      description: `Rename ${previous || 'Boolean'}`,
+      redo: () => this.applyGlobalName('boolean', index, value),
+      undo: () => this.applyGlobalName('boolean', index, previous),
+    });
+  }
+
+  updateGlobalNumberName(index: number, value: string): void {
+    if (!this.globalVariables) return;
+    const entry = this.globalVariables.numbers[index];
+    if (!entry) return;
+    const previous = entry.name;
+    if (previous === value) return;
+    this.undoManager.execute({
+      type: 'sav-global-number-name-edit',
+      description: `Rename ${previous || 'Number'}`,
+      redo: () => this.applyGlobalName('number', index, value),
+      undo: () => this.applyGlobalName('number', index, previous),
+    });
+  }
+
+  updateGlobalStringName(index: number, value: string): void {
+    if (!this.globalVariables) return;
+    const entry = this.globalVariables.strings[index];
+    if (!entry) return;
+    const previous = entry.name;
+    if (previous === value) return;
+    this.undoManager.execute({
+      type: 'sav-global-string-name-edit',
+      description: `Rename ${previous || 'String'}`,
+      redo: () => this.applyGlobalName('string', index, value),
+      undo: () => this.applyGlobalName('string', index, previous),
     });
   }
 

@@ -210,7 +210,14 @@ export const TabSAVEditor = function(props: BaseTabProps){
                         .filter(({ entry }) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
                         .map(({ entry, index }) => (
                           <tr key={`gbool-${entry.name}-${index}`}>
-                            <td>{entry.name}</td>
+                            <td>
+                              <input
+                                title={`bool-name-${entry.name}`}
+                                type="text"
+                                value={entry.name}
+                                onChange={(e) => tab.updateGlobalBooleanName(index, e.target.value)}
+                              />
+                            </td>
                             <td>
                               <input
                                 title={`bool-${entry.name}`}
@@ -240,7 +247,14 @@ export const TabSAVEditor = function(props: BaseTabProps){
                         .filter(({ entry }) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
                         .map(({ entry, index }) => (
                           <tr key={`gnum-${entry.name}-${index}`}>
-                            <td>{entry.name}</td>
+                            <td>
+                              <input
+                                title={`num-name-${entry.name}`}
+                                type="text"
+                                value={entry.name}
+                                onChange={(e) => tab.updateGlobalNumberName(index, e.target.value)}
+                              />
+                            </td>
                             <td>
                               <input
                                 title={`num-${entry.name}`}
@@ -272,7 +286,14 @@ export const TabSAVEditor = function(props: BaseTabProps){
                         .filter(({ entry }) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
                         .map(({ entry, index }) => (
                           <tr key={`gstr-${entry.name}-${index}`}>
-                            <td>{entry.name}</td>
+                            <td>
+                              <input
+                                title={`str-name-${entry.name}`}
+                                type="text"
+                                value={entry.name}
+                                onChange={(e) => tab.updateGlobalStringName(index, e.target.value)}
+                              />
+                            </td>
                             <td>
                               <input
                                 title={`str-${entry.name}`}
