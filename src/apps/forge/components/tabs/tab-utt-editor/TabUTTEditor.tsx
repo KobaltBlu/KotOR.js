@@ -73,28 +73,28 @@ export const TabUTTEditor = function(props: BaseTabProps){
   }, [tab]);
 
   // Helper functions using ForgeTrigger methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeTrigger, parser: (value: number) => number = (v) => v) => 
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeTrigger, parser: (value: number) => number = (v) => v) =>
     tab.trigger.createNumberFieldHandler(setter, property, tab.trigger, tab, parser);
-  
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createByteFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createWordFieldHandler(setter, property, tab.trigger, tab);
-  
-  const _onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) => 
+
+  const _onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createBooleanFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createResRefFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createCExoStringFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createCExoLocStringFieldHandler(setter, property, tab.trigger, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) => 
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createForgeCheckboxFieldHandler(setter, property, tab.trigger, tab);
 
   const scriptSuggestions = useMemo(() => {
