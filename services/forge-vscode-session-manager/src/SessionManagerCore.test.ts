@@ -96,9 +96,10 @@ describe('SessionManagerCore', () => {
     expect(createdEvents.some((event) => event.type === 'session_container_start_requested' && event.sessionId === session.id)).toBe(true);
     expect(manager.getSession(session.id)?.containerStatus).toBe('start_requested');
 
-    manager.markContainerReady(session.id, session.token, 'container-123', 1200);
+    manager.markContainerReady(session.id, session.token, 'container-123', { now: 1200, upstreamUrl: 'http://127.0.0.1:19999' });
     expect(manager.getSession(session.id)?.containerStatus).toBe('ready');
     expect(manager.getSession(session.id)?.containerId).toBe('container-123');
+    expect(manager.getSession(session.id)?.containerUpstreamUrl).toBe('http://127.0.0.1:19999');
 
     manager.closeSession(session.id, session.token, 1500);
     const closeEvents = manager.drainEvents();
@@ -107,5 +108,20 @@ describe('SessionManagerCore', () => {
 
     manager.markContainerStopped(session.id, session.token, 1700);
     expect(manager.getSession(session.id)?.containerStatus).toBe('stopped');
+  });
+
+  it('marks container failure reason for orchestration errors', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-session-manager-'));
+    const manager = new SessionManagerCore({
+      dataRoot: tempRoot,
+      maxSessions: 2,
+      sessionTtlMs: 20_000,
+      warningLeadMs: 2_000,
+    });
+
+    const session = manager.createSession('user-failed', 'kotor', 1000);
+    manager.markContainerFailed(session.id, session.token, 'docker run failed: image not found', 1100);
+    expect(manager.getSession(session.id)?.containerStatus).toBe('failed');
+    expect(manager.getSession(session.id)?.containerError).toContain('image not found');
   });
 });

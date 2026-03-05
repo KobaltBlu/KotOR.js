@@ -65,8 +65,11 @@ async function main() {
   await requestJson(`/api/sessions/${sessionId}/container-ready`, {
     method: 'POST',
     token: sessionToken,
-    body: { containerId: 'ci-container-1' },
+    body: { containerId: 'ci-container-1', upstreamUrl: openVsCodeUrl },
   });
+  const readySession = await requestJson(`/api/sessions/${sessionId}`, { token: sessionToken });
+  assert(readySession.containerStatus === 'ready', 'session should become ready after container-ready acknowledgement');
+  assert(readySession.containerUpstreamUrl === openVsCodeUrl, 'session should persist container upstream url');
   const proxyResponse = await fetch(session.accessUrl);
   assert(proxyResponse.ok, 'proxy access URL should route to OpenVSCode upstream when container ready');
 

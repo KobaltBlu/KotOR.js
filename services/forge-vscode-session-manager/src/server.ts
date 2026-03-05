@@ -94,6 +94,8 @@ function sessionResponse(session: ForgeSession, includeToken = false): Record<st
     status: session.status,
     containerStatus: session.containerStatus,
     containerId: session.containerId,
+    containerUpstreamUrl: session.containerUpstreamUrl,
+    containerError: session.containerError,
     containerReadyAt: session.containerReadyAt,
     containerStopRequestedAt: session.containerStopRequestedAt,
     containerStoppedAt: session.containerStoppedAt,
@@ -158,15 +160,16 @@ async function proxySessionRequest(
   session: ForgeSession,
   token: string
 ): Promise<void> {
-  if (session.status === 'expired' || session.status === 'closed') {
+    if (session.status === 'expired' || session.status === 'closed') {
     writeJson(res, 410, { error: `Session ${session.id} is no longer active` });
     return;
   }
 
-  if (session.containerStatus !== 'ready') {
+    if (session.containerStatus !== 'ready') {
     writeJson(res, 503, {
       error: `Session container not ready (${session.containerStatus})`,
       sessionId: session.id,
+        reason: session.containerError || null,
     });
     return;
   }
@@ -175,7 +178,8 @@ async function proxySessionRequest(
   const suffixPath = requestUrl.pathname.startsWith(basePath)
     ? requestUrl.pathname.slice(basePath.length) || '/'
     : '/';
-  const target = new URL(suffixPath, OPENVSCODE_BASE_URL);
+  const upstreamUrl = session.containerUpstreamUrl || OPENVSCODE_BASE_URL;
+  const target = new URL(suffixPath, upstreamUrl);
 
   const query = new URLSearchParams(requestUrl.searchParams);
   query.delete('token');
@@ -337,7 +341,10 @@ const server = http.createServer(async (req, res) => {
         const requestedContainerId = typeof body.containerId === 'string'
           ? body.containerId
           : (auth.session.containerId || `container-${sessionId}`);
-        const session = manager.markContainerReady(sessionId, auth.token, requestedContainerId);
+        const requestedUpstreamUrl = typeof body.upstreamUrl === 'string' ? body.upstreamUrl : undefined;
+        const session = manager.markContainerReady(sessionId, auth.token, requestedContainerId, {
+          upstreamUrl: requestedUpstreamUrl,
+        });
         writeJson(res, 200, sessionResponse(session));
         return;
       }
@@ -345,6 +352,17 @@ const server = http.createServer(async (req, res) => {
       if (method === 'POST' && pathname.endsWith('/container-stopped')) {
         const auth = resolveAuthorizedSession(req, url, sessionId);
         const session = manager.markContainerStopped(sessionId, auth.token);
+        writeJson(res, 200, sessionResponse(session));
+        return;
+      }
+
+      if (method === 'POST' && pathname.endsWith('/container-failed')) {
+        const auth = resolveAuthorizedSession(req, url, sessionId);
+        const body = await readJsonBody(req);
+        const reason = typeof body.reason === 'string' && body.reason.trim().length
+          ? body.reason.trim()
+          : 'container startup failed';
+        const session = manager.markContainerFailed(sessionId, auth.token, reason);
         writeJson(res, 200, sessionResponse(session));
         return;
       }

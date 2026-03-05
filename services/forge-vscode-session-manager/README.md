@@ -31,6 +31,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - `POST /api/sessions/:id/save-complete` *(requires `x-session-token`)*
 - `POST /api/sessions/:id/container-ready` *(requires `x-session-token`)*
 - `POST /api/sessions/:id/container-stopped` *(requires `x-session-token`)*
+- `POST /api/sessions/:id/container-failed` *(requires `x-session-token`)*
 - `DELETE /api/sessions/:id` *(requires `x-session-token`)*
 - `POST /api/timeouts/evaluate`
 - `GET /api/events`
@@ -42,12 +43,15 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - Session metadata is persisted under `data/sessions/<sessionId>.json`.
 - Session creation returns a per-session token used to authorize sensitive operations.
 - Resume endpoint returns the latest active session for a `(userId, game)` pair, or creates one.
-- Session events now include container lifecycle hooks (`start_requested`, `ready`, `stop_requested`, `stopped`) for reverse proxy/orchestration workers.
+- Session events now include container lifecycle hooks (`start_requested`, `ready`, `stop_requested`, `stopped`, `failed`) for reverse proxy/orchestration workers.
 - Optional admin operations can be enabled by setting `FORGE_SESSION_MANAGER_ADMIN_TOKEN` and supplying `x-admin-token`.
 - `GET /api/sessions?includeTokens=1` returns tokenized access URLs when called with a valid admin token.
 - Session responses now include `accessUrl` and `sessionPath` for tokenized proxied access routing.
 - Configure `FORGE_SESSION_MANAGER_PUBLIC_BASE_URL` when external clients should use a public hostname instead of localhost.
-- `scripts/session-manager-orchestrator.mjs` provides a polling orchestration worker that converts container lifecycle events into `/container-ready` and `/container-stopped` acknowledgements.
+- `scripts/session-manager-orchestrator.mjs` provides a polling orchestration worker that converts container lifecycle events into `/container-ready`, `/container-stopped`, and `/container-failed` acknowledgements.
+- Orchestrator modes:
+  - `FORGE_SESSION_ORCHESTRATOR_MODE=mock` (default): acknowledges ready/stopped events against a shared upstream URL.
+  - `FORGE_SESSION_ORCHESTRATOR_MODE=docker`: launches/stops isolated OpenVSCode containers per session and reports dynamic per-session upstream URLs.
 
 ## Local compose stack
 

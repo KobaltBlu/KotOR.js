@@ -45,6 +45,8 @@ services:
       FORGE_SESSION_MANAGER_BASE_URL: "http://session-manager:8090"
       FORGE_SESSION_MANAGER_ADMIN_TOKEN: "dev-admin-token"
       FORGE_SESSION_ORCHESTRATOR_POLL_MS: "1000"
+      FORGE_SESSION_ORCHESTRATOR_MODE: "mock"
+      FORGE_OPENVSCODE_BASE_URL: "http://openvscode:3000"
     command: >
       bash -lc "node scripts/session-manager-orchestrator.mjs"
 

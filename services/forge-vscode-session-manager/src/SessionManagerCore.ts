@@ -19,6 +19,8 @@ export interface ForgeSession {
   status: SessionStatus;
   containerStatus: SessionContainerStatus;
   containerId?: string;
+  containerUpstreamUrl?: string;
+  containerError?: string;
   containerReadyAt?: number;
   containerStopRequestedAt?: number;
   containerStoppedAt?: number;
@@ -34,6 +36,7 @@ export type SessionEventType =
   | 'session_container_ready'
   | 'session_container_stop_requested'
   | 'session_container_stopped'
+  | 'session_container_failed'
   | 'session_warning'
   | 'session_save_requested'
   | 'session_expired'
@@ -126,6 +129,8 @@ export class SessionManagerCore {
       if (existing.containerStatus === 'stopped' || existing.containerStatus === 'failed') {
         existing.containerStatus = 'start_requested';
         existing.containerId = undefined;
+        existing.containerUpstreamUrl = undefined;
+        existing.containerError = undefined;
         existing.containerStoppedAt = undefined;
         existing.containerStopRequestedAt = undefined;
         this.appendEvent({
@@ -182,16 +187,27 @@ export class SessionManagerCore {
     return this.requireAuthorizedSession(sessionId, token);
   }
 
-  markContainerReady(sessionId: string, token: string, containerId: string, now = Date.now()): ForgeSession {
+  markContainerReady(
+    sessionId: string,
+    token: string,
+    containerId: string,
+    options: { upstreamUrl?: string; now?: number } = {}
+  ): ForgeSession {
     const session = this.requireAuthorizedSession(sessionId, token);
+    const now = options.now ?? Date.now();
     session.containerId = containerId || session.containerId;
     session.containerStatus = 'ready';
+    session.containerUpstreamUrl = options.upstreamUrl || session.containerUpstreamUrl;
+    session.containerError = undefined;
     session.containerReadyAt = now;
     this.appendEvent({
       type: 'session_container_ready',
       at: now,
       sessionId: session.id,
-      payload: { containerId: session.containerId },
+      payload: {
+        containerId: session.containerId,
+        upstreamUrl: session.containerUpstreamUrl,
+      },
     });
     this.persistSession(session);
     return session;
@@ -200,12 +216,30 @@ export class SessionManagerCore {
   markContainerStopped(sessionId: string, token: string, now = Date.now()): ForgeSession {
     const session = this.requireAuthorizedSession(sessionId, token);
     session.containerStatus = 'stopped';
+    session.containerError = undefined;
     session.containerStoppedAt = now;
     this.appendEvent({
       type: 'session_container_stopped',
       at: now,
       sessionId: session.id,
       payload: { containerId: session.containerId },
+    });
+    this.persistSession(session);
+    return session;
+  }
+
+  markContainerFailed(sessionId: string, token: string, reason: string, now = Date.now()): ForgeSession {
+    const session = this.requireAuthorizedSession(sessionId, token);
+    session.containerStatus = 'failed';
+    session.containerError = reason || 'unknown';
+    this.appendEvent({
+      type: 'session_container_failed',
+      at: now,
+      sessionId: session.id,
+      payload: {
+        reason: session.containerError,
+        containerId: session.containerId,
+      },
     });
     this.persistSession(session);
     return session;
