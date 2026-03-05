@@ -312,6 +312,11 @@
         "category": "KotOR Forge"
       },
       {
+        "command": "kotorForge.createHostedSession",
+        "title": "Create Hosted Session",
+        "category": "KotOR Forge"
+      },
+      {
         "command": "kotorForge.checkSessionManagerHealth",
         "title": "Check Session Manager Health",
         "category": "KotOR Forge"
@@ -486,6 +491,11 @@
         {
           "when": "view == kotorForgeSessions",
           "command": "kotorForge.refreshSessions",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeSessions",
+          "command": "kotorForge.createHostedSession",
           "group": "navigation"
         },
         {

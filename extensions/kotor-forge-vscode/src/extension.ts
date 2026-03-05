@@ -390,6 +390,85 @@ export function activate(context: vscode.ExtensionContext) {
       void refreshSessionStatusBar();
     }),
 
+    vscode.commands.registerCommand('kotorForge.createHostedSession', async () => {
+      log.debug('Command invoked: kotorForge.createHostedSession');
+      const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      const userId = (await vscode.window.showInputBox({
+        title: 'Create hosted OpenVSCode session',
+        prompt: 'Enter user id',
+        value: process.env.USER || process.env.USERNAME || 'anonymous',
+        validateInput: (value) => value.trim().length ? undefined : 'User id is required',
+      }))?.trim();
+      if (!userId) {
+        return;
+      }
+
+      const gamePick = await vscode.window.showQuickPick([
+        { label: 'KotOR I', value: 'kotor' as const },
+        { label: 'KotOR II: The Sith Lords', value: 'tsl' as const },
+      ], {
+        title: 'Select game for hosted session',
+      });
+      if (!gamePick) {
+        return;
+      }
+
+      const modePick = await vscode.window.showQuickPick([
+        { label: 'Resume existing session', value: 'resume' as const },
+        { label: 'Create new session', value: 'create' as const },
+      ], {
+        title: 'Choose hosted session mode',
+      });
+      if (!modePick) {
+        return;
+      }
+
+      const endpoint = modePick.value === 'resume'
+        ? '/api/sessions/resume'
+        : '/api/sessions';
+      const body = modePick.value === 'resume'
+        ? { userId, game: gamePick.value }
+        : { userId, game: gamePick.value, resumeExisting: false };
+
+      try {
+        const session = await fetchSessionManagerResource(
+          sessionManagerUrl,
+          endpoint,
+          adminToken,
+          false,
+          {
+            method: 'POST',
+            body,
+          }
+        ) as { id?: string; accessUrl?: string };
+
+        const createdId = session.id || '(unknown)';
+        if (typeof session.accessUrl === 'string' && session.accessUrl.length) {
+          const action = await vscode.window.showInformationMessage(
+            `Hosted session ready: ${createdId}`,
+            'Open Session'
+          );
+          if (action === 'Open Session') {
+            await vscode.env.openExternal(vscode.Uri.parse(session.accessUrl));
+          }
+        } else {
+          vscode.window.showInformationMessage(`Hosted session ready: ${createdId}`);
+        }
+        log.info(`[session-create] ${modePick.value} succeeded for ${userId} (${gamePick.value}); id=${createdId}`);
+        sessionTreeProvider.refresh();
+        void refreshSessionStatusBar();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to ${modePick.value} hosted session: ${message}`);
+        log.error(`createHostedSession failed: ${message}`);
+      }
+    }),
+
     vscode.commands.registerCommand('kotorForge.checkSessionManagerHealth', async () => {
       log.debug('Command invoked: kotorForge.checkSessionManagerHealth');
       const { sessionManagerUrl } = readSessionManagerSettings();
