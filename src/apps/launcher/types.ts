@@ -42,7 +42,10 @@ export interface LauncherProfile {
   executable?: { win?: string; mac?: string };
   launch: LauncherProfileLaunch;
   openVSCodeBeta?: {
-    url: string;
+    url?: string;
+    sessionManagerUrl?: string;
+    openVSCodeBaseUrl?: string;
+    sessionUrlTemplate?: string;
     promptMessage?: string;
   };
   verify_install_dir?: boolean;

@@ -107,17 +107,20 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
     }
   };
 
-  const btnOpenVSCodeBeta = () => {
+  const btnOpenVSCodeBeta = async () => {
     const selectedGameKey = forgeSelectValue || forgeCompatibleProfiles[0]?.key || 'kotor';
     const profileConfig = profile.openVSCodeBeta || {};
-    const baseUrl = profileConfig.url || '';
-    if(!baseUrl){
-      window.alert('OpenVSCode (beta) URL is not configured for this profile.');
+    if(!profileConfig.url && !profileConfig.openVSCodeBaseUrl && !profileConfig.sessionManagerUrl){
+      window.alert('OpenVSCode (beta) configuration is missing for this profile.');
       return;
     }
 
-    launchOpenVSCodeBeta({
-      baseUrl,
+    await launchOpenVSCodeBeta({
+      baseUrl: profileConfig.url,
+      sessionManagerUrl: profileConfig.sessionManagerUrl,
+      openVSCodeBaseUrl: profileConfig.openVSCodeBaseUrl,
+      sessionUrlTemplate: profileConfig.sessionUrlTemplate,
+      userId: `launcher-${selectedGameKey}`,
       gameKey: selectedGameKey,
       promptMessage: profileConfig.promptMessage,
       openExternal: ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON
@@ -158,7 +161,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
         <div className="launch-btns">
           <a href="#" className="btn-launch" key="launch-btn-launch" onClick={onLaunchClick}>{launchLabel}</a>
           {isForge && (
-            <a href="#" className="btn-launch" key="launch-btn-openvscode-beta" onClick={(e) => { e.preventDefault(); btnOpenVSCodeBeta(); }}>
+            <a href="#" className="btn-launch" key="launch-btn-openvscode-beta" onClick={(e) => { e.preventDefault(); void btnOpenVSCodeBeta(); }}>
               OpenVSCode (beta)
             </a>
           )}

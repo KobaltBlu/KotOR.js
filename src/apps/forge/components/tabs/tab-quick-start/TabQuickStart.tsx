@@ -36,16 +36,28 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
 
   const onBtnOpenVSCodeBeta = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const forgeProfile = KotOR.ConfigClient.get(['Profiles', 'forge']) as { openVSCodeBeta?: { url?: string; promptMessage?: string } } | undefined;
-    const baseUrl = forgeProfile?.openVSCodeBeta?.url || '';
-    if (!baseUrl) {
-      window.alert('OpenVSCode (beta) URL is not configured.');
+    const forgeProfile = KotOR.ConfigClient.get(['Profiles', 'forge']) as {
+      openVSCodeBeta?: {
+        url?: string;
+        sessionManagerUrl?: string;
+        openVSCodeBaseUrl?: string;
+        sessionUrlTemplate?: string;
+        promptMessage?: string;
+      }
+    } | undefined;
+    const beta = forgeProfile?.openVSCodeBeta;
+    if (!beta?.url && !beta?.openVSCodeBaseUrl && !beta?.sessionManagerUrl) {
+      window.alert('OpenVSCode (beta) configuration is missing.');
       return;
     }
-    launchOpenVSCodeBeta({
-      baseUrl,
+    void launchOpenVSCodeBeta({
+      baseUrl: beta?.url,
+      sessionManagerUrl: beta?.sessionManagerUrl,
+      openVSCodeBaseUrl: beta?.openVSCodeBaseUrl,
+      sessionUrlTemplate: beta?.sessionUrlTemplate,
+      userId: `forge-${String(KotOR.ApplicationProfile.GameKey || 'kotor').toLowerCase()}`,
       gameKey: String(KotOR.ApplicationProfile.GameKey || 'kotor'),
-      promptMessage: forgeProfile?.openVSCodeBeta?.promptMessage,
+      promptMessage: beta?.promptMessage,
       openExternal: KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON
         ? (url) => window.electron.openExternal(url)
         : undefined,
