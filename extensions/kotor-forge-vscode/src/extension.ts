@@ -314,6 +314,39 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
+    vscode.commands.registerCommand('kotorForge.showSessionManagerMetrics', async () => {
+      log.debug('Command invoked: kotorForge.showSessionManagerMetrics');
+      const cfg = vscode.workspace.getConfiguration('kotorForge');
+      const sessionManagerUrl = cfg.get<string>('sessionManagerUrl', '').trim();
+      const adminToken = cfg.get<string>('sessionManagerAdminToken', '').trim();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      try {
+        const endpoint = new URL('/api/metrics', sessionManagerUrl);
+        const response = await fetch(endpoint.toString(), {
+          headers: adminToken ? { 'x-admin-token': adminToken } : undefined,
+        });
+        if (!response.ok) {
+          throw new Error(`metrics request failed (${response.status})`);
+        }
+
+        const metricsText = await response.text();
+        const doc = await vscode.workspace.openTextDocument({
+          content: metricsText,
+          language: 'plaintext',
+        });
+        await vscode.window.showTextDocument(doc, { preview: false });
+        log.info(`[session-metrics] opened metrics snapshot (${metricsText.length} bytes)`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to fetch session manager metrics: ${message}`);
+        log.error(`showSessionManagerMetrics failed: ${message}`);
+      }
+    }),
+
     vscode.commands.registerCommand('kotorForge.openHostedSession', async (value?: string | { accessUrl?: string }) => {
       log.debug('Command invoked: kotorForge.openHostedSession');
       const accessUrl = typeof value === 'string'

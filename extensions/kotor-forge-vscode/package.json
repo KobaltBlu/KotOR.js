@@ -345,6 +345,11 @@
         "command": "kotorForge.showSessionManagerStats",
         "title": "Show Session Manager Stats",
         "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.showSessionManagerMetrics",
+        "title": "Show Session Manager Metrics",
+        "category": "KotOR Forge"
       }
     ],
     "views": {
@@ -411,6 +416,11 @@
         {
           "when": "view == kotorForgeSessions",
           "command": "kotorForge.showSessionManagerStats",
+          "group": "navigation"
+        },
+        {
+          "when": "view == kotorForgeSessions",
+          "command": "kotorForge.showSessionManagerMetrics",
           "group": "navigation"
         },
         {
