@@ -154,6 +154,29 @@ export const TabSAVEditor = function(props: BaseTabProps){
                 disabled={!canEditAreaName}
               />
             </div>
+            <div className="property-group">
+              <label>Area Tag</label>
+              <input
+                title="Area Tag"
+                type="text"
+                value={tab.getAreaTag()}
+                onChange={(e) => tab.updateAreaTag(e.target.value)}
+                placeholder="Area tag..."
+                maxLength={32}
+                disabled={!canEditAreaName}
+              />
+            </div>
+            <div className="property-group">
+              <label>Area Comments</label>
+              <textarea
+                title="Area Comments"
+                value={tab.getAreaComments()}
+                onChange={(e) => tab.updateAreaComments(e.target.value)}
+                placeholder="Area comments..."
+                rows={3}
+                disabled={!canEditAreaName}
+              />
+            </div>
           </div>
           <div className="sav-module-edit">
             <h4>Module Session Settings</h4>

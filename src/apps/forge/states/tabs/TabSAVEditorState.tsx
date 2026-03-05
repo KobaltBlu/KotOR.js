@@ -324,6 +324,14 @@ export class TabSAVEditorState extends TabState {
     this.markAreaInfoChanged();
   }
 
+  private applyAreaField(label: string, value: string): void {
+    if (!this.areaInfoGff) return;
+    const field = this.areaInfoGff.RootNode.getFieldByLabel(label);
+    if (!field) return;
+    field.setValue(value);
+    this.markAreaInfoChanged();
+  }
+
   updateAreaName(value: string): void {
     if (!this.areaInfoGff) return;
     const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('Name')?.getCExoLocString?.()?.getValue?.() || '');
@@ -334,6 +342,32 @@ export class TabSAVEditorState extends TabState {
       description: 'Edit area display name',
       redo: () => this.applyAreaName(value),
       undo: () => this.applyAreaName(previous),
+    });
+  }
+
+  updateAreaTag(value: string): void {
+    if (!this.areaInfoGff) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('Tag')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-tag-edit',
+      description: 'Edit area tag',
+      redo: () => this.applyAreaField('Tag', value),
+      undo: () => this.applyAreaField('Tag', previous),
+    });
+  }
+
+  updateAreaComments(value: string): void {
+    if (!this.areaInfoGff) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('Comments')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-comments-edit',
+      description: 'Edit area comments',
+      redo: () => this.applyAreaField('Comments', value),
+      undo: () => this.applyAreaField('Comments', previous),
     });
   }
 
@@ -394,6 +428,14 @@ export class TabSAVEditorState extends TabState {
 
   getAreaName(): string {
     return String(this.areaInfoGff?.RootNode.getFieldByLabel('Name')?.getCExoLocString?.()?.getValue?.() || this.saveMeta?.areaName || '');
+  }
+
+  getAreaTag(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('Tag')?.getValue?.() || '');
+  }
+
+  getAreaComments(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('Comments')?.getValue?.() || '');
   }
 
   canEditAreaName(): boolean {
