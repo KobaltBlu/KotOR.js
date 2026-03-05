@@ -202,6 +202,56 @@ export class TabAREEditorState extends TabState {
     return true;
   }
 
+  moveRoomUp(index: number): boolean {
+    const roomsField = this.ensureRoomsField();
+    if (!roomsField) return false;
+    const list = roomsField.getChildStructs();
+    if (index <= 0 || index >= list.length) return false;
+
+    this.undoManager.execute({
+      type: 'are-room-move-up',
+      description: 'Move room up',
+      redo: () => {
+        const previous = list[index - 1];
+        list[index - 1] = list[index];
+        list[index] = previous;
+        this.markDataChanged();
+      },
+      undo: () => {
+        const current = list[index - 1];
+        list[index - 1] = list[index];
+        list[index] = current;
+        this.markDataChanged();
+      }
+    });
+    return true;
+  }
+
+  moveRoomDown(index: number): boolean {
+    const roomsField = this.ensureRoomsField();
+    if (!roomsField) return false;
+    const list = roomsField.getChildStructs();
+    if (index < 0 || index >= list.length - 1) return false;
+
+    this.undoManager.execute({
+      type: 'are-room-move-down',
+      description: 'Move room down',
+      redo: () => {
+        const next = list[index + 1];
+        list[index + 1] = list[index];
+        list[index] = next;
+        this.markDataChanged();
+      },
+      undo: () => {
+        const current = list[index + 1];
+        list[index + 1] = list[index];
+        list[index] = current;
+        this.markDataChanged();
+      }
+    });
+    return true;
+  }
+
   undo() {
     this.undoManager.undo();
     this.processEventListener('onEditorFileLoad', [this]);

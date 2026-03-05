@@ -885,6 +885,8 @@ const RoomsTab = ({ are, tab }: TabProps) => {
               <div key={index} className="room-item">
                 <strong>{roomName}</strong>
                 <div className="property-group are-room-actions">
+                  <button onClick={() => tab.moveRoomUp(index)} disabled={index <= 0}>Up</button>
+                  <button onClick={() => tab.moveRoomDown(index)} disabled={index >= rooms.length - 1}>Down</button>
                   <button onClick={() => tab.duplicateRoom(index)}>Duplicate</button>
                   <button onClick={() => tab.deleteRoom(index)}>Delete</button>
                 </div>
