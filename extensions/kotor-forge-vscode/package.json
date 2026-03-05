@@ -204,6 +204,11 @@
           "default": "http://127.0.0.1:8090",
           "description": "Base URL for the Forge OpenVSCode session manager service."
         },
+        "kotorForge.sessionManagerAdminToken": {
+          "type": "string",
+          "default": "",
+          "description": "Optional admin token for Forge session manager operations that require elevated access (for session links/tokens)."
+        },
         "kotorForge.nwscript.maxNumberOfProblems": {
           "scope": "resource",
           "type": "number",
@@ -325,6 +330,11 @@
         "command": "kotorForge.findResourceReferences",
         "title": "Find Resource References",
         "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.openHostedSession",
+        "title": "Open Hosted Session",
+        "category": "KotOR Forge"
       }
     ],
     "views": {
@@ -391,6 +401,13 @@
         {
           "when": "view == kotorForgeResources",
           "command": "kotorForge.refreshResources",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "when": "view == kotorForgeSessions && viewItem == kotorForge.session",
+          "command": "kotorForge.openHostedSession",
           "group": "navigation"
         }
       ]

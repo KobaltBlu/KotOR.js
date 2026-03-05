@@ -44,6 +44,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - Resume endpoint returns the latest active session for a `(userId, game)` pair, or creates one.
 - Session events now include container lifecycle hooks (`start_requested`, `ready`, `stop_requested`, `stopped`) for reverse proxy/orchestration workers.
 - Optional admin operations can be enabled by setting `FORGE_SESSION_MANAGER_ADMIN_TOKEN` and supplying `x-admin-token`.
+- `GET /api/sessions?includeTokens=1` returns tokenized access URLs when called with a valid admin token.
 - Session responses now include `accessUrl` and `sessionPath` for tokenized proxied access routing.
 - Configure `FORGE_SESSION_MANAGER_PUBLIC_BASE_URL` when external clients should use a public hostname instead of localhost.
 

@@ -6,6 +6,7 @@ export interface SessionTreeNode {
   game: string;
   status: string;
   containerStatus?: string;
+  accessUrl?: string;
   warningInMs?: number;
   expiresInMs?: number;
 }
@@ -28,19 +29,34 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeN
     item.description = `${element.status}/${container} • ${expires}`;
     item.tooltip = `Session ${element.id}\nStatus: ${element.status}\nContainer: ${container}\nUser: ${element.userId}\nExpires in: ${expires}`;
     item.contextValue = 'kotorForge.session';
+    if (element.accessUrl) {
+      item.command = {
+        command: 'kotorForge.openHostedSession',
+        title: 'Open Hosted Session',
+        arguments: [element.accessUrl],
+      };
+    }
     return item;
   }
 
   async getChildren(_element?: SessionTreeNode): Promise<SessionTreeNode[]> {
     const cfg = vscode.workspace.getConfiguration('kotorForge');
     const sessionManagerUrl = cfg.get<string>('sessionManagerUrl', '').trim();
+    const adminToken = cfg.get<string>('sessionManagerAdminToken', '').trim();
     if (!sessionManagerUrl) {
       return [];
     }
 
     try {
-      const endpoint = new URL('/api/sessions', sessionManagerUrl).toString();
-      const response = await fetch(endpoint);
+      const endpoint = new URL('/api/sessions', sessionManagerUrl);
+      if (adminToken) {
+        endpoint.searchParams.set('includeTokens', '1');
+      }
+      const response = await fetch(endpoint.toString(), {
+        headers: adminToken
+          ? { 'x-admin-token': adminToken }
+          : undefined,
+      });
       if (!response.ok) {
         return [];
       }

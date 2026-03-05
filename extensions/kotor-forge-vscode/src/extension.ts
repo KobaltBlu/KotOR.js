@@ -67,7 +67,8 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.registerTreeDataProvider('kotorForgeSessions', sessionTreeProvider),
     vscode.window.registerTreeDataProvider('kotorForgeResources', resourceTreeProvider),
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration('kotorForge.sessionManagerUrl')) {
+      if (e.affectsConfiguration('kotorForge.sessionManagerUrl')
+        || e.affectsConfiguration('kotorForge.sessionManagerAdminToken')) {
         sessionTreeProvider.refresh();
       }
       if (e.affectsConfiguration('files.exclude')) {
@@ -166,6 +167,19 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('kotorForge.refreshSessions', () => {
       log.debug('Command invoked: kotorForge.refreshSessions');
       sessionTreeProvider.refresh();
+    }),
+
+    vscode.commands.registerCommand('kotorForge.openHostedSession', async (value?: string | { accessUrl?: string }) => {
+      log.debug('Command invoked: kotorForge.openHostedSession');
+      const accessUrl = typeof value === 'string'
+        ? value
+        : (value && typeof value.accessUrl === 'string' ? value.accessUrl : undefined);
+      if (!accessUrl || typeof accessUrl !== 'string') {
+        vscode.window.showWarningMessage('Session access URL is unavailable. Set session manager admin token for tokenized links.');
+        return;
+      }
+      const parsed = vscode.Uri.parse(accessUrl);
+      await vscode.env.openExternal(parsed);
     }),
 
     vscode.commands.registerCommand('kotorForge.refreshResources', () => {

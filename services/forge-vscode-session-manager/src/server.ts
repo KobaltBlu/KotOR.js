@@ -287,7 +287,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (method === 'GET' && pathname === '/api/sessions') {
-      writeJson(res, 200, manager.listSessions().map((session) => sessionResponse(session)));
+      const includeTokens = isAdminRequest(req, url) && url.searchParams.get('includeTokens') === '1';
+      writeJson(res, 200, manager.listSessions().map((session) => sessionResponse(session, includeTokens)));
       return;
     }
 
