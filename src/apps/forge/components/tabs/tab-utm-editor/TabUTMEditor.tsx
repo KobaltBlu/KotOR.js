@@ -3,12 +3,11 @@ import React, { useState, useEffect, useCallback } from "react"
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
 import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { openInventoryBrowserModal } from "@/apps/forge/helpers/InventoryBrowserLauncher";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeStore, StoreItemEntry } from "@/apps/forge/module-editor/ForgeStore";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalInventoryBrowserState } from "@/apps/forge/states/modal/ModalInventoryBrowserState";
 import { TabUTMEditorState } from "@/apps/forge/states/tabs/TabUTMEditorState";
 
 export const TabUTMEditor = function(props: BaseTabProps){
@@ -99,7 +98,7 @@ export const TabUTMEditor = function(props: BaseTabProps){
       infinite: false,
     }));
 
-    const modal = new ModalInventoryBrowserState(inventory, (updatedInventory) => {
+    openInventoryBrowserModal(inventory, (updatedInventory) => {
       const updatedStoreItems = updatedInventory.map((entry, index) => ({
         inventoryRes: entry.resref,
         reposPosX: tab.store.itemList[index]?.reposPosX ?? index,
@@ -109,13 +108,10 @@ export const TabUTMEditor = function(props: BaseTabProps){
       tab.store.itemList = updatedStoreItems;
       tab.updateFile();
     }, 'store');
-
-    modal.attachToModalManager(ForgeState.modalManager);
-    modal.open();
   };
 
   const onOpenItemBrowser = (index: number) => {
-    const modal = new ModalInventoryBrowserState([
+    openInventoryBrowserModal([
       {
         resref: itemList[index]?.inventoryRes || '',
         droppable: false,
@@ -127,9 +123,6 @@ export const TabUTMEditor = function(props: BaseTabProps){
         onItemFieldChange(index, 'inventoryRes', selected.resref);
       }
     }, 'store');
-
-    modal.attachToModalManager(ForgeState.modalManager);
-    modal.open();
   };
 
   const tabs: SubTab[] = [

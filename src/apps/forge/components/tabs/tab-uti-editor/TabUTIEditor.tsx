@@ -3,6 +3,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
 import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { openInventoryBrowserModal } from "@/apps/forge/helpers/InventoryBrowserLauncher";
 import { LazyTextureCanvas } from "@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
@@ -10,8 +11,6 @@ import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalInventoryBrowserState } from "@/apps/forge/states/modal/ModalInventoryBrowserState";
 import { TabUTIEditorState, ItemPropertyEntry } from "@/apps/forge/states/tabs";
 
 export const TabUTIEditor = function(props: BaseTabProps){
@@ -127,7 +126,7 @@ export const TabUTIEditor = function(props: BaseTabProps){
   }
 
   const onLoadFromInventoryBrowser = () => {
-    const modal = new ModalInventoryBrowserState([], async (updatedInventory) => {
+    const modal = openInventoryBrowserModal([], async (updatedInventory) => {
       const selectedResref = updatedInventory[0]?.resref;
       if (!selectedResref) {
         return;
@@ -141,9 +140,6 @@ export const TabUTIEditor = function(props: BaseTabProps){
       await tab.importFromBuffer(sourceItem.gff.getExportBuffer());
       onItemChange();
     }, 'store');
-
-    modal.attachToModalManager(ForgeState.modalManager);
-    modal.open();
   };
 
   const renderPropertyRow = (property: ItemPropertyEntry, index: number) => (
