@@ -54,6 +54,7 @@ async function fetchSessionManagerResource(
   requestInit?: {
     method?: 'GET' | 'POST' | 'DELETE';
     body?: unknown;
+    headers?: Record<string, string>;
   }
 ): Promise<unknown> {
   const method = requestInit?.method || 'GET';
@@ -61,6 +62,9 @@ async function fetchSessionManagerResource(
   const headers: Record<string, string> = {};
   if (adminToken) {
     headers['x-admin-token'] = adminToken;
+  }
+  if (requestInit?.headers) {
+    Object.assign(headers, requestInit.headers);
   }
   if (typeof body !== 'undefined') {
     headers['content-type'] = 'application/json';
@@ -540,6 +544,58 @@ export function activate(context: vscode.ExtensionContext) {
         const message = error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(`Failed to evaluate session timeouts: ${message}`);
         log.error(`evaluateSessionTimeouts failed: ${message}`);
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.closeHostedSession', async (value?: { id?: string; token?: string } | string) => {
+      log.debug('Command invoked: kotorForge.closeHostedSession');
+      const { sessionManagerUrl, adminToken } = readSessionManagerSettings();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      const sessionId = typeof value === 'string'
+        ? value
+        : (value?.id || '');
+      if (!sessionId) {
+        vscode.window.showWarningMessage('Session id is required to close hosted session.');
+        return;
+      }
+
+      const confirm = await vscode.window.showWarningMessage(
+        `Close hosted session ${sessionId}?`,
+        { modal: true },
+        'Close Session'
+      );
+      if (confirm !== 'Close Session') {
+        return;
+      }
+
+      try {
+        const extraHeaders = !adminToken && value && typeof value === 'object' && typeof value.token === 'string' && value.token
+          ? { 'x-session-token': value.token }
+          : undefined;
+
+        await fetchSessionManagerResource(
+          sessionManagerUrl,
+          `/api/sessions/${encodeURIComponent(sessionId)}`,
+          adminToken,
+          false,
+          {
+            method: 'DELETE',
+            headers: extraHeaders,
+          }
+        );
+
+        vscode.window.showInformationMessage(`Hosted session ${sessionId} closed.`);
+        log.info(`[session-close] closed ${sessionId}`);
+        sessionTreeProvider.refresh();
+        void refreshSessionStatusBar();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to close hosted session: ${message}`);
+        log.error(`closeHostedSession failed: ${message}`);
       }
     }),
 

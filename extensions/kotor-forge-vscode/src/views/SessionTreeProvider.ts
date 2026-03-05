@@ -6,6 +6,7 @@ export interface SessionTreeNode {
   game: string;
   status: string;
   containerStatus?: string;
+  token?: string;
   accessUrl?: string;
   warningInMs?: number;
   expiresInMs?: number;
