@@ -15,6 +15,8 @@ export const TabSAVEditor = function(props: BaseTabProps){
   const tab = props.tab as TabSAVEditorState;
   const [erf, setErf] = useState(tab.erf);
   const [saveMeta, setSaveMeta] = useState(tab.saveMeta);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
 
   useEffect(() => {
     const loadHandler = () => {
@@ -49,6 +51,19 @@ export const TabSAVEditor = function(props: BaseTabProps){
   }
 
   const resources = erf.keyList ?? [];
+  const resourceTypeCounts = saveMeta?.typeCounts || {};
+  const resourceTypeOptions = Object.keys(resourceTypeCounts).sort();
+
+  const filteredResources = resources.filter((resKey: { resRef: string; resType: number }) => {
+    const ext = KotOR.ResourceTypes.getKeyByValue(resKey.resType) || 'unknown';
+    if (typeFilter !== 'all' && ext !== typeFilter) {
+      return false;
+    }
+
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return resKey.resRef.toLowerCase().includes(q) || ext.toLowerCase().includes(q);
+  });
 
   const openResource = (resKey: { resRef: string; resType: number }) => {
     const resRef = resKey.resRef;
@@ -65,6 +80,15 @@ export const TabSAVEditor = function(props: BaseTabProps){
 
       FileTypeManager.onOpenResource(file);
     });
+  };
+
+  const quickOpenByType = (ext: string) => {
+    const found = resources.find((resKey: { resRef: string; resType: number }) => {
+      return KotOR.ResourceTypes.getKeyByValue(resKey.resType) === ext;
+    });
+    if (found) {
+      openResource(found);
+    }
   };
 
   return (
@@ -89,11 +113,40 @@ export const TabSAVEditor = function(props: BaseTabProps){
               <label>Module:</label>
               <span>{saveMeta?.lastModule || 'Unknown'}</span>
             </div>
+            <div className="stat-item">
+              <label>Game Time:</label>
+              <span>{saveMeta?.gameTime || 0}</span>
+            </div>
+          </div>
+          <div className="sav-quick-actions">
+            <button onClick={() => quickOpenByType('ifo')}>Open Module Info (IFO)</button>
+            <button onClick={() => quickOpenByType('are')}>Open Area (ARE)</button>
+            <button onClick={() => quickOpenByType('utc')}>Open Player Creature (UTC)</button>
+            <button onClick={() => quickOpenByType('git')}>Open Instance State (GIT)</button>
           </div>
         </div>
 
         <div className="resource-list">
-          <h4>Save Game Resources ({resources.length})</h4>
+          <h4>Save Game Resources ({filteredResources.length}/{resources.length})</h4>
+          <div className="resource-list__filters">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by resref/type..."
+            />
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+            >
+              <option value="all">All Types</option>
+              {resourceTypeOptions.map((ext) => (
+                <option key={ext} value={ext}>
+                  {ext} ({resourceTypeCounts[ext]})
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="resource-table">
             <table>
               <thead>
@@ -103,7 +156,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
                 </tr>
               </thead>
               <tbody>
-                {resources.map((resKey: { resRef: string; resType: number }, index: number) => {
+                {filteredResources.map((resKey: { resRef: string; resType: number }, index: number) => {
                   const ext = KotOR.ResourceTypes.getKeyByValue(resKey.resType);
                   return (
                     <tr

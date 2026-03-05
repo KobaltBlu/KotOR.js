@@ -11,7 +11,13 @@ const log = createScopedLogger(LogScope.Forge);
 export class TabSAVEditorState extends TabState {
   tabName: string = 'Save Game Editor';
   erf?: KotOR.ERFObject;
-  saveMeta?: { areaName?: string; lastModule?: string; gameTime?: number; resourceCount?: number };
+  saveMeta?: {
+    areaName?: string;
+    lastModule?: string;
+    gameTime?: number;
+    resourceCount?: number;
+    typeCounts?: Record<string, number>;
+  };
 
   constructor(options: BaseTabStateOptions = {}){
     log.trace("TabSAVEditorState constructor entry");
@@ -51,7 +57,7 @@ export class TabSAVEditorState extends TabState {
       await this.erf.load();
       log.trace("TabSAVEditorState openFile erf.load done");
 
-      this.saveMeta = this.extractSaveMetadata();
+      this.saveMeta = await this.extractSaveMetadata();
       log.debug("TabSAVEditorState openFile saveMeta resourceCount", this.saveMeta?.resourceCount);
 
       this.processEventListener('onEditorFileLoad', [this]);
@@ -62,13 +68,67 @@ export class TabSAVEditorState extends TabState {
     log.trace("TabSAVEditorState openFile exit");
   }
 
-  extractSaveMetadata(): { areaName: string; lastModule: string; gameTime: number; resourceCount: number } {
+  private async readGffResourceByExt(ext: string): Promise<KotOR.GFFObject | undefined> {
+    if (!this.erf) return;
+    const key = this.erf.keyList.find((entry) => KotOR.ResourceTypes.getKeyByValue(entry.resType) === ext);
+    if (!key) return;
+    try {
+      const buffer = await this.erf.getResourceBufferByResRef(key.resRef, key.resType);
+      if (!buffer?.length) return;
+      return new KotOR.GFFObject(buffer);
+    } catch (e) {
+      log.warn("TabSAVEditorState readGffResourceByExt failed", ext, e);
+      return;
+    }
+  }
+
+  private buildTypeCounts(): Record<string, number> {
+    const counts: Record<string, number> = {};
+    if (!this.erf) return counts;
+
+    for (const key of this.erf.keyList) {
+      const ext = KotOR.ResourceTypes.getKeyByValue(key.resType) || 'unknown';
+      counts[ext] = (counts[ext] || 0) + 1;
+    }
+
+    return counts;
+  }
+
+  async extractSaveMetadata(): Promise<{ areaName: string; lastModule: string; gameTime: number; resourceCount: number; typeCounts: Record<string, number> }> {
     log.trace("TabSAVEditorState extractSaveMetadata entry");
+    let areaName = 'Unknown';
+    let lastModule = 'Unknown';
+    let gameTime = 0;
+
+    const ifo = await this.readGffResourceByExt('ifo');
+    if (ifo) {
+      const entryArea = ifo.RootNode.getFieldByLabel('Mod_Entry_Area')?.getValue();
+      if (typeof entryArea === 'string' && entryArea.length) {
+        lastModule = entryArea;
+      }
+      const dawnHour = Number(ifo.RootNode.getFieldByLabel('Mod_DawnHour')?.getValue() || 0);
+      const duskHour = Number(ifo.RootNode.getFieldByLabel('Mod_DuskHour')?.getValue() || 0);
+      if (Number.isFinite(dawnHour) && Number.isFinite(duskHour)) {
+        gameTime = Math.max(0, duskHour - dawnHour);
+      }
+    }
+
+    const are = await this.readGffResourceByExt('are');
+    if (are) {
+      const nameField = are.RootNode.getFieldByLabel('Name');
+      const locString = nameField?.getCExoLocString?.();
+      const locValue = locString?.getValue?.();
+      if (typeof locValue === 'string' && locValue.length) {
+        areaName = locValue;
+      }
+    }
+
     const meta = {
-      areaName: 'Unknown',
-      lastModule: 'Unknown',
-      gameTime: 0,
-      resourceCount: this.erf?.keyList.length ?? 0
+      areaName,
+      lastModule,
+      gameTime,
+      resourceCount: this.erf?.keyList.length ?? 0,
+      typeCounts: this.buildTypeCounts()
     };
     log.trace("TabSAVEditorState extractSaveMetadata resourceCount", meta.resourceCount);
     return meta;

@@ -56,6 +56,27 @@
       }
     }
   }
+
+  .sav-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+
+    button {
+      background: #20283a;
+      border: 1px solid #3d4e74;
+      color: #d8e0ef;
+      padding: 0.35rem 0.65rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      cursor: pointer;
+
+      &:hover {
+        background: #2a3654;
+      }
+    }
+  }
 }
 
 .resource-list {
@@ -67,6 +88,25 @@
   h4 {
     margin: 0 0 0.75rem 0;
     color: #8aa4ff;
+  }
+
+  .resource-list__filters {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+
+    input, select {
+      background: #181c25;
+      border: 1px solid #2a3142;
+      color: #d8e0ef;
+      border-radius: 4px;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.85rem;
+    }
+
+    input {
+      flex: 1;
+    }
   }
 
   .resource-table {
