@@ -457,6 +457,106 @@ export const TabSAVEditor = function(props: BaseTabProps){
                 />
               </div>
             </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Sun Fog Enabled</label>
+                <input
+                  title="Area Sun Fog Enabled"
+                  type="checkbox"
+                  checked={tab.getAreaSunFogOn()}
+                  onChange={(e) => tab.updateAreaSunFogOn(e.target.checked)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Moon Fog Enabled</label>
+                <input
+                  title="Area Moon Fog Enabled"
+                  type="checkbox"
+                  checked={tab.getAreaMoonFogOn()}
+                  onChange={(e) => tab.updateAreaMoonFogOn(e.target.checked)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Sun Fog Near</label>
+                <input
+                  title="Area Sun Fog Near"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  value={tab.getAreaSunFogNear()}
+                  onChange={(e) => tab.updateAreaSunFogNear(parseFloat(e.target.value) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Sun Fog Far</label>
+                <input
+                  title="Area Sun Fog Far"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  value={tab.getAreaSunFogFar()}
+                  onChange={(e) => tab.updateAreaSunFogFar(parseFloat(e.target.value) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Moon Fog Near</label>
+                <input
+                  title="Area Moon Fog Near"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  value={tab.getAreaMoonFogNear()}
+                  onChange={(e) => tab.updateAreaMoonFogNear(parseFloat(e.target.value) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Moon Fog Far</label>
+                <input
+                  title="Area Moon Fog Far"
+                  type="number"
+                  step="0.1"
+                  min={0}
+                  value={tab.getAreaMoonFogFar()}
+                  onChange={(e) => tab.updateAreaMoonFogFar(parseFloat(e.target.value) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Sun Fog Color (ARGB)</label>
+                <input
+                  title="Area Sun Fog Color"
+                  type="number"
+                  min={0}
+                  max={4294967295}
+                  value={tab.getAreaSunFogColor()}
+                  onChange={(e) => tab.updateAreaSunFogColor(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Moon Fog Color (ARGB)</label>
+                <input
+                  title="Area Moon Fog Color"
+                  type="number"
+                  min={0}
+                  max={4294967295}
+                  value={tab.getAreaMoonFogColor()}
+                  onChange={(e) => tab.updateAreaMoonFogColor(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
           </div>
           <div className="sav-module-edit">
             <h4>Module Session Settings</h4>

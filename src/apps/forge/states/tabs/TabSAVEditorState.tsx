@@ -341,6 +341,15 @@ export class TabSAVEditorState extends TabState {
     this.markAreaInfoChanged();
   }
 
+  private applyAreaFloatField(label: string, value: number, min: number, max: number): void {
+    if (!this.areaInfoGff) return;
+    const field = this.areaInfoGff.RootNode.getFieldByLabel(label);
+    if (!field) return;
+    const next = Math.max(min, Math.min(max, Number.isFinite(value) ? value : min));
+    field.setValue(next);
+    this.markAreaInfoChanged();
+  }
+
   private applyAreaBooleanField(label: string, value: boolean): void {
     if (!this.areaInfoGff) return;
     const field = this.areaInfoGff.RootNode.getFieldByLabel(label);
@@ -698,6 +707,116 @@ export class TabSAVEditorState extends TabState {
     });
   }
 
+  updateAreaSunFogOn(value: boolean): void {
+    if (!this.areaInfoGff || !this.hasAreaField('SunFogOn')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('SunFogOn')?.getValue?.() || 0) > 0;
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-sun-fog-on-edit',
+      description: 'Edit area sun fog enabled',
+      redo: () => this.applyAreaBooleanField('SunFogOn', value),
+      undo: () => this.applyAreaBooleanField('SunFogOn', previous),
+    });
+  }
+
+  updateAreaMoonFogOn(value: boolean): void {
+    if (!this.areaInfoGff || !this.hasAreaField('MoonFogOn')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('MoonFogOn')?.getValue?.() || 0) > 0;
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-moon-fog-on-edit',
+      description: 'Edit area moon fog enabled',
+      redo: () => this.applyAreaBooleanField('MoonFogOn', value),
+      undo: () => this.applyAreaBooleanField('MoonFogOn', previous),
+    });
+  }
+
+  updateAreaSunFogNear(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('SunFogNear')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('SunFogNear')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(1000000, Number.isFinite(value) ? value : 0));
+    if (Math.abs(previous - next) < 0.00001) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-sun-fog-near-edit',
+      description: 'Edit area sun fog near',
+      redo: () => this.applyAreaFloatField('SunFogNear', next, 0, 1000000),
+      undo: () => this.applyAreaFloatField('SunFogNear', previous, 0, 1000000),
+    });
+  }
+
+  updateAreaSunFogFar(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('SunFogFar')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('SunFogFar')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(1000000, Number.isFinite(value) ? value : 0));
+    if (Math.abs(previous - next) < 0.00001) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-sun-fog-far-edit',
+      description: 'Edit area sun fog far',
+      redo: () => this.applyAreaFloatField('SunFogFar', next, 0, 1000000),
+      undo: () => this.applyAreaFloatField('SunFogFar', previous, 0, 1000000),
+    });
+  }
+
+  updateAreaMoonFogNear(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('MoonFogNear')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('MoonFogNear')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(1000000, Number.isFinite(value) ? value : 0));
+    if (Math.abs(previous - next) < 0.00001) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-moon-fog-near-edit',
+      description: 'Edit area moon fog near',
+      redo: () => this.applyAreaFloatField('MoonFogNear', next, 0, 1000000),
+      undo: () => this.applyAreaFloatField('MoonFogNear', previous, 0, 1000000),
+    });
+  }
+
+  updateAreaMoonFogFar(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('MoonFogFar')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('MoonFogFar')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(1000000, Number.isFinite(value) ? value : 0));
+    if (Math.abs(previous - next) < 0.00001) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-moon-fog-far-edit',
+      description: 'Edit area moon fog far',
+      redo: () => this.applyAreaFloatField('MoonFogFar', next, 0, 1000000),
+      undo: () => this.applyAreaFloatField('MoonFogFar', previous, 0, 1000000),
+    });
+  }
+
+  updateAreaSunFogColor(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('SunFogColor')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('SunFogColor')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(4294967295, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-sun-fog-color-edit',
+      description: 'Edit area sun fog color',
+      redo: () => this.applyAreaNumberField('SunFogColor', next, 0, 4294967295),
+      undo: () => this.applyAreaNumberField('SunFogColor', previous, 0, 4294967295),
+    });
+  }
+
+  updateAreaMoonFogColor(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('MoonFogColor')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('MoonFogColor')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(4294967295, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-moon-fog-color-edit',
+      description: 'Edit area moon fog color',
+      redo: () => this.applyAreaNumberField('MoonFogColor', next, 0, 4294967295),
+      undo: () => this.applyAreaNumberField('MoonFogColor', previous, 0, 4294967295),
+    });
+  }
+
   updateModuleEntryArea(value: string): void {
     if (!this.moduleInfoGff) return;
     const field = this.moduleInfoGff.RootNode.getFieldByLabel('Mod_Entry_Area');
@@ -855,6 +974,38 @@ export class TabSAVEditorState extends TabState {
 
   getAreaShadowOpacity(): number {
     return Number(this.areaInfoGff?.RootNode.getFieldByLabel('ShadowOpacity')?.getValue?.() || 0);
+  }
+
+  getAreaSunFogOn(): boolean {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('SunFogOn')?.getValue?.() || 0) > 0;
+  }
+
+  getAreaMoonFogOn(): boolean {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('MoonFogOn')?.getValue?.() || 0) > 0;
+  }
+
+  getAreaSunFogNear(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('SunFogNear')?.getValue?.() || 0);
+  }
+
+  getAreaSunFogFar(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('SunFogFar')?.getValue?.() || 0);
+  }
+
+  getAreaMoonFogNear(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('MoonFogNear')?.getValue?.() || 0);
+  }
+
+  getAreaMoonFogFar(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('MoonFogFar')?.getValue?.() || 0);
+  }
+
+  getAreaSunFogColor(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('SunFogColor')?.getValue?.() || 0);
+  }
+
+  getAreaMoonFogColor(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('MoonFogColor')?.getValue?.() || 0);
   }
 
   canEditAreaName(): boolean {
