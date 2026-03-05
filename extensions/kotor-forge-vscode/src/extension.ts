@@ -46,6 +46,22 @@ function createValidationDiagnostic(message: string): vscode.Diagnostic {
   );
 }
 
+async function fetchSessionManagerResource(
+  sessionManagerUrl: string,
+  resourcePath: string,
+  adminToken: string,
+  asText = false
+): Promise<unknown> {
+  const endpoint = new URL(resourcePath, sessionManagerUrl);
+  const response = await fetch(endpoint.toString(), {
+    headers: adminToken ? { 'x-admin-token': adminToken } : undefined,
+  });
+  if (!response.ok) {
+    throw new Error(`${resourcePath} request failed (${response.status})`);
+  }
+  return asText ? response.text() : response.json();
+}
+
 async function validateResourceUri(uri: vscode.Uri, extOverride?: string): Promise<void> {
   const ext = (extOverride || getResourceExtension(uri)).toLowerCase();
   const raw = await vscode.workspace.fs.readFile(uri);
@@ -132,17 +148,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     try {
       const adminToken = cfg.get<string>('sessionManagerAdminToken', '').trim();
-      const endpoint = new URL('/api/sessions', sessionManagerUrl);
-      if (adminToken) {
-        endpoint.searchParams.set('includeTokens', '1');
-      }
-      const response = await fetch(endpoint.toString(), {
-        headers: adminToken ? { 'x-admin-token': adminToken } : undefined,
-      });
-      if (!response.ok) {
-        throw new Error(`status ${response.status}`);
-      }
-      const sessions = await response.json() as Array<{ status?: string; containerStatus?: string }>;
+      const sessions = await fetchSessionManagerResource(
+        sessionManagerUrl,
+        adminToken ? '/api/sessions?includeTokens=1' : '/api/sessions',
+        adminToken
+      ) as Array<{ status?: string; containerStatus?: string }>;
       const active = sessions.filter((s) => s.status !== 'expired' && s.status !== 'closed').length;
       const ready = sessions.filter((s) => s.containerStatus === 'ready').length;
       sessionStatusBarItem.text = `$(server-environment) Sessions: ${active}`;
@@ -306,14 +316,11 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       try {
-        const endpoint = new URL('/api/stats', sessionManagerUrl);
-        const response = await fetch(endpoint.toString(), {
-          headers: adminToken ? { 'x-admin-token': adminToken } : undefined,
-        });
-        if (!response.ok) {
-          throw new Error(`stats request failed (${response.status})`);
-        }
-        const stats = await response.json() as {
+        const stats = await fetchSessionManagerResource(
+          sessionManagerUrl,
+          '/api/stats',
+          adminToken
+        ) as {
           activeSessions?: number;
           readyContainers?: number;
           totalSessions?: number;
@@ -348,15 +355,12 @@ export function activate(context: vscode.ExtensionContext) {
       }
 
       try {
-        const endpoint = new URL('/api/metrics', sessionManagerUrl);
-        const response = await fetch(endpoint.toString(), {
-          headers: adminToken ? { 'x-admin-token': adminToken } : undefined,
-        });
-        if (!response.ok) {
-          throw new Error(`metrics request failed (${response.status})`);
-        }
-
-        const metricsText = await response.text();
+        const metricsText = await fetchSessionManagerResource(
+          sessionManagerUrl,
+          '/api/metrics',
+          adminToken,
+          true
+        ) as string;
         const doc = await vscode.workspace.openTextDocument({
           content: metricsText,
           language: 'plaintext',
