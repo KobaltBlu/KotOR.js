@@ -375,6 +375,35 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
+    vscode.commands.registerCommand('kotorForge.showSessionManagerConfig', async () => {
+      log.debug('Command invoked: kotorForge.showSessionManagerConfig');
+      const cfg = vscode.workspace.getConfiguration('kotorForge');
+      const sessionManagerUrl = cfg.get<string>('sessionManagerUrl', '').trim();
+      const adminToken = cfg.get<string>('sessionManagerAdminToken', '').trim();
+      if (!sessionManagerUrl) {
+        vscode.window.showWarningMessage('Session manager URL is not configured.');
+        return;
+      }
+
+      try {
+        const config = await fetchSessionManagerResource(
+          sessionManagerUrl,
+          '/api/config',
+          adminToken
+        ) as Record<string, unknown>;
+        const doc = await vscode.workspace.openTextDocument({
+          content: JSON.stringify(config, null, 2),
+          language: 'json',
+        });
+        await vscode.window.showTextDocument(doc, { preview: false });
+        log.info('[session-config] opened session manager config snapshot');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to fetch session manager config: ${message}`);
+        log.error(`showSessionManagerConfig failed: ${message}`);
+      }
+    }),
+
     vscode.commands.registerCommand('kotorForge.openHostedSession', async (value?: string | { accessUrl?: string }) => {
       log.debug('Command invoked: kotorForge.openHostedSession');
       const accessUrl = typeof value === 'string'
