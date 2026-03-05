@@ -670,6 +670,34 @@ export class TabSAVEditorState extends TabState {
     });
   }
 
+  updateAreaWindPower(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('WindPower')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('WindPower')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(3, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-wind-power-edit',
+      description: 'Edit area wind power',
+      redo: () => this.applyAreaNumberField('WindPower', next, 0, 3),
+      undo: () => this.applyAreaNumberField('WindPower', previous, 0, 3),
+    });
+  }
+
+  updateAreaShadowOpacity(value: number): void {
+    if (!this.areaInfoGff || !this.hasAreaField('ShadowOpacity')) return;
+    const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('ShadowOpacity')?.getValue?.() || 0);
+    const next = Math.max(0, Math.min(100, Number.isFinite(value) ? Math.round(value) : 0));
+    if (previous === next) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-shadow-opacity-edit',
+      description: 'Edit area shadow opacity',
+      redo: () => this.applyAreaNumberField('ShadowOpacity', next, 0, 100),
+      undo: () => this.applyAreaNumberField('ShadowOpacity', previous, 0, 100),
+    });
+  }
+
   updateModuleEntryArea(value: string): void {
     if (!this.moduleInfoGff) return;
     const field = this.moduleInfoGff.RootNode.getFieldByLabel('Mod_Entry_Area');
@@ -819,6 +847,14 @@ export class TabSAVEditorState extends TabState {
 
   getAreaStealthXPLoss(): number {
     return Number(this.areaInfoGff?.RootNode.getFieldByLabel('StealthXPLoss')?.getValue?.() || 0);
+  }
+
+  getAreaWindPower(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('WindPower')?.getValue?.() || 0);
+  }
+
+  getAreaShadowOpacity(): number {
+    return Number(this.areaInfoGff?.RootNode.getFieldByLabel('ShadowOpacity')?.getValue?.() || 0);
   }
 
   canEditAreaName(): boolean {

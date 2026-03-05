@@ -431,6 +431,32 @@ export const TabSAVEditor = function(props: BaseTabProps){
                 />
               </div>
             </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>Wind Power</label>
+                <input
+                  title="Area Wind Power"
+                  type="number"
+                  min={0}
+                  max={3}
+                  value={tab.getAreaWindPower()}
+                  onChange={(e) => tab.updateAreaWindPower(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>Shadow Opacity</label>
+                <input
+                  title="Area Shadow Opacity"
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={tab.getAreaShadowOpacity()}
+                  onChange={(e) => tab.updateAreaShadowOpacity(parseInt(e.target.value, 10) || 0)}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
           </div>
           <div className="sav-module-edit">
             <h4>Module Session Settings</h4>
