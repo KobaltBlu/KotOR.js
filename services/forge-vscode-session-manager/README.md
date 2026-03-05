@@ -29,6 +29,8 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - `GET /api/sessions/:id` *(requires `x-session-token`)*
 - `POST /api/sessions/:id/heartbeat` *(requires `x-session-token`)*
 - `POST /api/sessions/:id/save-complete` *(requires `x-session-token`)*
+- `POST /api/sessions/:id/container-ready` *(requires `x-session-token`)*
+- `POST /api/sessions/:id/container-stopped` *(requires `x-session-token`)*
 - `DELETE /api/sessions/:id` *(requires `x-session-token`)*
 - `POST /api/timeouts/evaluate`
 - `GET /api/events`
@@ -39,6 +41,8 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - Session metadata is persisted under `data/sessions/<sessionId>.json`.
 - Session creation returns a per-session token used to authorize sensitive operations.
 - Resume endpoint returns the latest active session for a `(userId, game)` pair, or creates one.
+- Session events now include container lifecycle hooks (`start_requested`, `ready`, `stop_requested`, `stopped`) for reverse proxy/orchestration workers.
+- Optional admin operations can be enabled by setting `FORGE_SESSION_MANAGER_ADMIN_TOKEN` and supplying `x-admin-token`.
 - This service is intentionally orchestration-focused; container launch/proxy wiring can be layered on top in the next phase.
 
 ## Local compose stack

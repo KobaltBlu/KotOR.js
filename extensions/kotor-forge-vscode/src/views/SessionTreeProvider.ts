@@ -5,6 +5,7 @@ export interface SessionTreeNode {
   userId: string;
   game: string;
   status: string;
+  containerStatus?: string;
   warningInMs?: number;
   expiresInMs?: number;
 }
@@ -23,8 +24,9 @@ export class SessionTreeProvider implements vscode.TreeDataProvider<SessionTreeN
       : '?';
     const item = new vscode.TreeItem(`${element.userId} (${element.game.toUpperCase()})`, vscode.TreeItemCollapsibleState.None);
     item.id = element.id;
-    item.description = `${element.status} • ${expires}`;
-    item.tooltip = `Session ${element.id}\nStatus: ${element.status}\nUser: ${element.userId}\nExpires in: ${expires}`;
+    const container = element.containerStatus || 'unknown';
+    item.description = `${element.status}/${container} • ${expires}`;
+    item.tooltip = `Session ${element.id}\nStatus: ${element.status}\nContainer: ${container}\nUser: ${element.userId}\nExpires in: ${expires}`;
     item.contextValue = 'kotorForge.session';
     return item;
   }

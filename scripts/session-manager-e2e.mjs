@@ -53,6 +53,19 @@ async function main() {
   const sessionToken = session.token;
   assert(typeof sessionId === 'string' && sessionId.length > 0, 'session id should be returned');
   assert(typeof sessionToken === 'string' && sessionToken.length > 0, 'session token should be returned');
+  assert(session.containerStatus === 'start_requested', 'new session should request container start');
+
+  const startEvents = await requestJson('/api/events');
+  assert(
+    Array.isArray(startEvents.events) && startEvents.events.some((event) => event.type === 'session_container_start_requested' && event.sessionId === sessionId),
+    'container start-request event should be emitted on creation'
+  );
+
+  await requestJson(`/api/sessions/${sessionId}/container-ready`, {
+    method: 'POST',
+    token: sessionToken,
+    body: { containerId: 'ci-container-1' },
+  });
 
   const resumed = await requestJson('/api/sessions/resume', {
     method: 'POST',
@@ -87,9 +100,21 @@ async function main() {
     Array.isArray(expiredEval.events) && expiredEval.events.some((event) => event.type === 'session_expired' && event.sessionId === sessionId),
     'session should expire only after save-complete'
   );
+  assert(
+    Array.isArray(expiredEval.events) && expiredEval.events.some((event) => event.type === 'session_container_stop_requested' && event.sessionId === sessionId),
+    'container stop-request should be emitted when session expires'
+  );
+
+  await requestJson(`/api/sessions/${sessionId}/container-stopped`, { method: 'POST', token: sessionToken });
+  const stopEvents = await requestJson('/api/events');
+  assert(
+    Array.isArray(stopEvents.events) && stopEvents.events.some((event) => event.type === 'session_container_stopped' && event.sessionId === sessionId),
+    'container stopped event should be emitted after container stop acknowledgement'
+  );
 
   const finalSession = await requestJson(`/api/sessions/${sessionId}`, { token: sessionToken });
   assert(finalSession.status === 'expired', 'session status should be expired at end of lifecycle');
+  assert(finalSession.containerStatus === 'stopped', 'container status should be stopped after acknowledgement');
 
   console.log('[e2e] session manager lifecycle checks passed');
 }

@@ -8,6 +8,8 @@ const DATA_ROOT = process.env.FORGE_SESSION_MANAGER_DATA_ROOT || path.resolve(pr
 const MAX_SESSIONS = Number(process.env.FORGE_SESSION_MANAGER_MAX_SESSIONS || 8);
 const SESSION_TTL_MS = Number(process.env.FORGE_SESSION_MANAGER_TTL_MS || 45 * 60 * 1000);
 const WARNING_LEAD_MS = Number(process.env.FORGE_SESSION_MANAGER_WARNING_MS || 5 * 60 * 1000);
+const ADMIN_TOKEN = String(process.env.FORGE_SESSION_MANAGER_ADMIN_TOKEN || '').trim();
+const OPENVSCODE_BASE_URL = process.env.FORGE_OPENVSCODE_BASE_URL || 'http://127.0.0.1:18080';
 
 const manager = new SessionManagerCore({
   dataRoot: DATA_ROOT,
@@ -50,6 +52,34 @@ function readSessionToken(req: http.IncomingMessage, url: URL): string | undefin
   return undefined;
 }
 
+function readAdminToken(req: http.IncomingMessage, url: URL): string | undefined {
+  const fromHeader = req.headers['x-admin-token'];
+  if (typeof fromHeader === 'string' && fromHeader.trim().length > 0) {
+    return fromHeader.trim();
+  }
+  const fromQuery = url.searchParams.get('adminToken');
+  if (fromQuery && fromQuery.trim().length > 0) {
+    return fromQuery.trim();
+  }
+  return undefined;
+}
+
+function isAdminRequest(req: http.IncomingMessage, url: URL): boolean {
+  if (!ADMIN_TOKEN) return false;
+  const provided = readAdminToken(req, url);
+  return Boolean(provided && provided === ADMIN_TOKEN);
+}
+
+function buildSessionAccessUrl(session: ForgeSession, includeToken: boolean): string {
+  const base = new URL(OPENVSCODE_BASE_URL, 'http://127.0.0.1');
+  base.searchParams.set('sessionId', session.id);
+  base.searchParams.set('game', session.game);
+  if (includeToken) {
+    base.searchParams.set('sessionToken', session.token);
+  }
+  return base.toString();
+}
+
 function sessionResponse(session: ForgeSession, includeToken = false): Record<string, unknown> {
   const base = {
     id: session.id,
@@ -60,7 +90,13 @@ function sessionResponse(session: ForgeSession, includeToken = false): Record<st
     warningAt: session.warningAt,
     expiresAt: session.expiresAt,
     workspacePath: session.workspacePath,
+    sessionPath: session.sessionPath,
     status: session.status,
+    containerStatus: session.containerStatus,
+    containerId: session.containerId,
+    containerReadyAt: session.containerReadyAt,
+    containerStopRequestedAt: session.containerStopRequestedAt,
+    containerStoppedAt: session.containerStoppedAt,
     warningSentAt: session.warningSentAt,
     saveRequestedAt: session.saveRequestedAt,
     saveCompletedAt: session.saveCompletedAt,
@@ -68,9 +104,37 @@ function sessionResponse(session: ForgeSession, includeToken = false): Record<st
   return {
     ...base,
     ...(includeToken ? { token: session.token } : {}),
+    accessUrl: buildSessionAccessUrl(session, includeToken),
     warningInMs: Math.max(0, session.warningAt - Date.now()),
     expiresInMs: Math.max(0, session.expiresAt - Date.now()),
   };
+}
+
+function resolveAuthorizedSession(
+  req: http.IncomingMessage,
+  url: URL,
+  sessionId: string
+): { session: ForgeSession; token: string } {
+  const token = readSessionToken(req, url);
+  if (token) {
+    return {
+      session: manager.getAuthorizedSession(sessionId, token),
+      token,
+    };
+  }
+
+  if (isAdminRequest(req, url)) {
+    const session = manager.getSession(sessionId);
+    if (!session) {
+      throw new Error(`Session not found: ${sessionId}`);
+    }
+    return {
+      session,
+      token: session.token,
+    };
+  }
+
+  throw new Error('Missing session token');
 }
 
 const server = http.createServer(async (req, res) => {
@@ -89,6 +153,8 @@ const server = http.createServer(async (req, res) => {
         maxSessions: MAX_SESSIONS,
         sessionTtlMs: SESSION_TTL_MS,
         warningLeadMs: WARNING_LEAD_MS,
+        openVSCodeBaseUrl: OPENVSCODE_BASE_URL,
+        adminTokenEnabled: Boolean(ADMIN_TOKEN),
       });
       return;
     }
@@ -127,49 +193,51 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (method === 'GET') {
-        const token = readSessionToken(req, url);
-        if (!token) {
-          writeJson(res, 401, { error: 'Missing session token' });
-          return;
-        }
-        const session = manager.getAuthorizedSession(sessionId, token);
+        const auth = resolveAuthorizedSession(req, url, sessionId);
+        const session = auth.session;
         if (!session) {
           writeJson(res, 404, { error: 'Session not found' });
           return;
         }
-        writeJson(res, 200, sessionResponse(session));
+        writeJson(res, 200, sessionResponse(session, isAdminRequest(req, url) || auth.token === session.token));
         return;
       }
 
       if (method === 'DELETE') {
-        const token = readSessionToken(req, url);
-        if (!token) {
-          writeJson(res, 401, { error: 'Missing session token' });
-          return;
-        }
-        const session = manager.closeSession(sessionId, token);
+        const auth = resolveAuthorizedSession(req, url, sessionId);
+        const session = manager.closeSession(sessionId, auth.token);
         writeJson(res, 200, sessionResponse(session));
         return;
       }
 
       if (method === 'POST' && pathname.endsWith('/heartbeat')) {
-        const token = readSessionToken(req, url);
-        if (!token) {
-          writeJson(res, 401, { error: 'Missing session token' });
-          return;
-        }
-        const session = manager.heartbeat(sessionId, token);
+        const auth = resolveAuthorizedSession(req, url, sessionId);
+        const session = manager.heartbeat(sessionId, auth.token);
         writeJson(res, 200, sessionResponse(session));
         return;
       }
 
       if (method === 'POST' && pathname.endsWith('/save-complete')) {
-        const token = readSessionToken(req, url);
-        if (!token) {
-          writeJson(res, 401, { error: 'Missing session token' });
-          return;
-        }
-        const session = manager.markSaveCompleted(sessionId, token);
+        const auth = resolveAuthorizedSession(req, url, sessionId);
+        const session = manager.markSaveCompleted(sessionId, auth.token);
+        writeJson(res, 200, sessionResponse(session));
+        return;
+      }
+
+      if (method === 'POST' && pathname.endsWith('/container-ready')) {
+        const auth = resolveAuthorizedSession(req, url, sessionId);
+        const body = await readJsonBody(req);
+        const requestedContainerId = typeof body.containerId === 'string'
+          ? body.containerId
+          : (auth.session.containerId || `container-${sessionId}`);
+        const session = manager.markContainerReady(sessionId, auth.token, requestedContainerId);
+        writeJson(res, 200, sessionResponse(session));
+        return;
+      }
+
+      if (method === 'POST' && pathname.endsWith('/container-stopped')) {
+        const auth = resolveAuthorizedSession(req, url, sessionId);
+        const session = manager.markContainerStopped(sessionId, auth.token);
         writeJson(res, 200, sessionResponse(session));
         return;
       }
@@ -189,8 +257,12 @@ const server = http.createServer(async (req, res) => {
     writeJson(res, 404, { error: 'Not found' });
   } catch (error) {
     const message = String(error);
-    if (message.includes('Unauthorized session token')) {
+    if (message.includes('Unauthorized session token') || message.includes('Missing session token')) {
       writeJson(res, 401, { error: message });
+      return;
+    }
+    if (message.includes('Session not found:')) {
+      writeJson(res, 404, { error: message });
       return;
     }
     writeJson(res, 500, { error: message });

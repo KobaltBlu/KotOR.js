@@ -33,7 +33,9 @@ describe('SessionManagerCore', () => {
     manager.markSaveCompleted(session.id, session.token, start + 1_200);
     const expiredEvents = manager.evaluateTimeouts(start + 1_250);
     expect(expiredEvents.some((event) => event.type === 'session_expired' && event.sessionId === session.id)).toBe(true);
+    expect(expiredEvents.some((event) => event.type === 'session_container_stop_requested' && event.sessionId === session.id)).toBe(true);
     expect(manager.getSession(session.id)?.status).toBe('expired');
+    expect(manager.getSession(session.id)?.containerStatus).toBe('stop_requested');
   });
 
   it('enforces max session capacity', () => {
@@ -78,5 +80,32 @@ describe('SessionManagerCore', () => {
     const resumed = manager.createOrResumeSession('resume-user', 'kotor', 1500);
     expect(resumed.id).toBe(created.id);
     expect(resumed.lastHeartbeatAt).toBe(1500);
+  });
+
+  it('queues container lifecycle events and supports container acknowledgements', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-session-manager-'));
+    const manager = new SessionManagerCore({
+      dataRoot: tempRoot,
+      maxSessions: 2,
+      sessionTtlMs: 20_000,
+      warningLeadMs: 2_000,
+    });
+
+    const session = manager.createSession('user-container', 'kotor', 1000);
+    const createdEvents = manager.drainEvents();
+    expect(createdEvents.some((event) => event.type === 'session_container_start_requested' && event.sessionId === session.id)).toBe(true);
+    expect(manager.getSession(session.id)?.containerStatus).toBe('start_requested');
+
+    manager.markContainerReady(session.id, session.token, 'container-123', 1200);
+    expect(manager.getSession(session.id)?.containerStatus).toBe('ready');
+    expect(manager.getSession(session.id)?.containerId).toBe('container-123');
+
+    manager.closeSession(session.id, session.token, 1500);
+    const closeEvents = manager.drainEvents();
+    expect(closeEvents.some((event) => event.type === 'session_container_stop_requested' && event.sessionId === session.id)).toBe(true);
+    expect(manager.getSession(session.id)?.containerStatus).toBe('stop_requested');
+
+    manager.markContainerStopped(session.id, session.token, 1700);
+    expect(manager.getSession(session.id)?.containerStatus).toBe('stopped');
   });
 });

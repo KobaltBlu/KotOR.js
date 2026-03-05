@@ -13,6 +13,7 @@ services:
       FORGE_SESSION_MANAGER_MAX_SESSIONS: "16"
       FORGE_SESSION_MANAGER_TTL_MS: "2700000"
       FORGE_SESSION_MANAGER_WARNING_MS: "300000"
+      FORGE_OPENVSCODE_BASE_URL: "http://127.0.0.1:18080"
     command: >
       bash -lc "npx tsc services/forge-vscode-session-manager/src/server.ts services/forge-vscode-session-manager/src/SessionManagerCore.ts --target ES2020 --module commonjs --outDir services/forge-vscode-session-manager/dist --esModuleInterop --skipLibCheck && node services/forge-vscode-session-manager/dist/server.js"
     ports:

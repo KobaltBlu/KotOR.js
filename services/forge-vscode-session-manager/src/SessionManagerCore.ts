@@ -3,6 +3,7 @@ import * as path from 'path';
 import { randomUUID } from 'crypto';
 
 export type SessionStatus = 'active' | 'warning' | 'saving' | 'expired' | 'closed';
+export type SessionContainerStatus = 'start_requested' | 'ready' | 'stop_requested' | 'stopped' | 'failed';
 
 export interface ForgeSession {
   id: string;
@@ -14,7 +15,13 @@ export interface ForgeSession {
   warningAt: number;
   expiresAt: number;
   workspacePath: string;
+  sessionPath: string;
   status: SessionStatus;
+  containerStatus: SessionContainerStatus;
+  containerId?: string;
+  containerReadyAt?: number;
+  containerStopRequestedAt?: number;
+  containerStoppedAt?: number;
   warningSentAt?: number;
   saveRequestedAt?: number;
   saveCompletedAt?: number;
@@ -23,6 +30,10 @@ export interface ForgeSession {
 export type SessionEventType =
   | 'session_created'
   | 'session_resumed'
+  | 'session_container_start_requested'
+  | 'session_container_ready'
+  | 'session_container_stop_requested'
+  | 'session_container_stopped'
   | 'session_warning'
   | 'session_save_requested'
   | 'session_expired'
@@ -88,11 +99,22 @@ export class SessionManagerCore {
       warningAt: now + Math.max(0, this.sessionTtlMs - this.warningLeadMs),
       expiresAt: now + this.sessionTtlMs,
       workspacePath,
+      sessionPath: `/sessions/${id}`,
       status: 'active',
+      containerStatus: 'start_requested',
     };
 
     this.sessions.set(id, session);
     this.appendEvent({ type: 'session_created', at: now, sessionId: id, payload: { userId, game } });
+    this.appendEvent({
+      type: 'session_container_start_requested',
+      at: now,
+      sessionId: id,
+      payload: {
+        workspacePath: session.workspacePath,
+        sessionPath: session.sessionPath,
+      },
+    });
     this.persistSession(session);
     return session;
   }
@@ -101,6 +123,22 @@ export class SessionManagerCore {
     const existing = this.findLatestActiveSessionByUser(userId, game);
     if (existing) {
       existing.lastHeartbeatAt = now;
+      if (existing.containerStatus === 'stopped' || existing.containerStatus === 'failed') {
+        existing.containerStatus = 'start_requested';
+        existing.containerId = undefined;
+        existing.containerStoppedAt = undefined;
+        existing.containerStopRequestedAt = undefined;
+        this.appendEvent({
+          type: 'session_container_start_requested',
+          at: now,
+          sessionId: existing.id,
+          payload: {
+            workspacePath: existing.workspacePath,
+            sessionPath: existing.sessionPath,
+            reason: 'resume',
+          },
+        });
+      }
       this.appendEvent({
         type: 'session_resumed',
         at: now,
@@ -135,12 +173,42 @@ export class SessionManagerCore {
     const session = this.requireAuthorizedSession(sessionId, token);
     session.status = 'closed';
     this.appendEvent({ type: 'session_closed', at: now, sessionId });
+    this.requestContainerStop(session, now, 'session_closed');
     this.persistSession(session);
     return session;
   }
 
   getAuthorizedSession(sessionId: string, token: string): ForgeSession {
     return this.requireAuthorizedSession(sessionId, token);
+  }
+
+  markContainerReady(sessionId: string, token: string, containerId: string, now = Date.now()): ForgeSession {
+    const session = this.requireAuthorizedSession(sessionId, token);
+    session.containerId = containerId || session.containerId;
+    session.containerStatus = 'ready';
+    session.containerReadyAt = now;
+    this.appendEvent({
+      type: 'session_container_ready',
+      at: now,
+      sessionId: session.id,
+      payload: { containerId: session.containerId },
+    });
+    this.persistSession(session);
+    return session;
+  }
+
+  markContainerStopped(sessionId: string, token: string, now = Date.now()): ForgeSession {
+    const session = this.requireAuthorizedSession(sessionId, token);
+    session.containerStatus = 'stopped';
+    session.containerStoppedAt = now;
+    this.appendEvent({
+      type: 'session_container_stopped',
+      at: now,
+      sessionId: session.id,
+      payload: { containerId: session.containerId },
+    });
+    this.persistSession(session);
+    return session;
   }
 
   /**
@@ -185,6 +253,7 @@ export class SessionManagerCore {
       if (session.saveCompletedAt && session.saveCompletedAt >= session.saveRequestedAt) {
         session.status = 'expired';
         this.appendEvent({ type: 'session_expired', at: now, sessionId: session.id });
+        this.requestContainerStop(session, now, 'session_expired');
       }
 
       this.persistSession(session);
@@ -223,6 +292,24 @@ export class SessionManagerCore {
   private persistSession(session: ForgeSession): void {
     const metadataPath = path.join(this.getMetadataRoot(), `${session.id}.json`);
     fs.writeFileSync(metadataPath, JSON.stringify(session, null, 2), 'utf-8');
+  }
+
+  private requestContainerStop(session: ForgeSession, now: number, reason: 'session_closed' | 'session_expired'): void {
+    if (session.containerStatus === 'stop_requested' || session.containerStatus === 'stopped') {
+      return;
+    }
+
+    session.containerStatus = 'stop_requested';
+    session.containerStopRequestedAt = now;
+    this.appendEvent({
+      type: 'session_container_stop_requested',
+      at: now,
+      sessionId: session.id,
+      payload: {
+        reason,
+        containerId: session.containerId,
+      },
+    });
   }
 
   private findLatestActiveSessionByUser(userId: string, game: 'kotor' | 'tsl'): ForgeSession | undefined {
