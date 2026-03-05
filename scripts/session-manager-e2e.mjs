@@ -1,5 +1,6 @@
 const sessionBaseUrl = process.env.FORGE_SESSION_MANAGER_BASE_URL || 'http://127.0.0.1:8090';
 const openVsCodeUrl = process.env.OPENVSCODE_BASE_URL || 'http://127.0.0.1:18080';
+const adminToken = process.env.FORGE_SESSION_MANAGER_ADMIN_TOKEN || '';
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -12,6 +13,9 @@ async function requestJson(path, { method = 'GET', body, token } = {}) {
   }
   if (token) {
     headers['x-session-token'] = token;
+  }
+  if (adminToken) {
+    headers['x-admin-token'] = adminToken;
   }
   const response = await fetch(`${sessionBaseUrl}${path}`, {
     method,

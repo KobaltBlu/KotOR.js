@@ -75,6 +75,13 @@ function isAdminRequest(req: http.IncomingMessage, url: URL): boolean {
   return Boolean(provided && provided === ADMIN_TOKEN);
 }
 
+function requireAdminForOperationalRoutes(req: http.IncomingMessage, url: URL): boolean {
+  if (!ADMIN_TOKEN) {
+    return true;
+  }
+  return isAdminRequest(req, url);
+}
+
 function buildSessionAccessUrl(session: ForgeSession, includeToken: boolean): string {
   const base = new URL(session.sessionPath, PUBLIC_BASE_URL);
   base.searchParams.set('game', session.game);
@@ -309,6 +316,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (method === 'GET' && pathname === '/api/stats') {
+      if (!requireAdminForOperationalRoutes(req, url)) {
+        writeJson(res, 401, { error: 'Missing or invalid admin token' });
+        return;
+      }
       writeJson(res, 200, buildStatsSnapshot());
       return;
     }
@@ -419,6 +430,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (method === 'GET' && pathname === '/api/events') {
+      if (!requireAdminForOperationalRoutes(req, url)) {
+        writeJson(res, 401, { error: 'Missing or invalid admin token' });
+        return;
+      }
       writeJson(res, 200, { events: manager.drainEvents() });
       return;
     }

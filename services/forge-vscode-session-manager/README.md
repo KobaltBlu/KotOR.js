@@ -23,7 +23,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 
 - `GET /healthz`
 - `GET /api/config`
-- `GET /api/stats`
+- `GET /api/stats` *(requires `x-admin-token` when admin token configured)*
 - `POST /api/sessions`
 - `POST /api/sessions/resume`
 - `GET /api/sessions`
@@ -35,7 +35,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - `POST /api/sessions/:id/container-failed` *(requires `x-session-token`)*
 - `DELETE /api/sessions/:id` *(requires `x-session-token`)*
 - `POST /api/timeouts/evaluate`
-- `GET /api/events`
+- `GET /api/events` *(requires `x-admin-token` when admin token configured)*
 - `* /sessions/:id/*` *(token-gated reverse proxy to OpenVSCode upstream)*
 
 ## Notes
