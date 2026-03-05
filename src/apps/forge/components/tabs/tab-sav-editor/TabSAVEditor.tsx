@@ -15,13 +15,16 @@ export const TabSAVEditor = function(props: BaseTabProps){
   const tab = props.tab as TabSAVEditorState;
   const [erf, setErf] = useState(tab.erf);
   const [saveMeta, setSaveMeta] = useState(tab.saveMeta);
+  const [globals, setGlobals] = useState(tab.globalVariables);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [globalSearch, setGlobalSearch] = useState('');
 
   useEffect(() => {
     const loadHandler = () => {
       setErf(tab.erf);
       setSaveMeta(tab.saveMeta);
+      setGlobals(tab.globalVariables);
     };
 
     tab.addEventListener('onEditorFileLoad', loadHandler);
@@ -70,7 +73,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
     const resRef = resKey.resRef;
     const resType = resKey.resType;
 
-    erf.getResourceBufferByResRef(resRef, resType).then((buffer: Uint8Array) => {
+    tab.getResourceBufferByEntry(resRef, resType).then((buffer: Uint8Array) => {
       const file = new EditorFile({
         path: `erf://${tab.file.path}?resref=${resRef}&restype=${KotOR.ResourceTypes.getKeyByValue(resType)}`,
         buffer: buffer,
@@ -158,6 +161,9 @@ export const TabSAVEditor = function(props: BaseTabProps){
                       <td>{candidate.numberCount}</td>
                       <td>{candidate.stringCount}</td>
                       <td>
+                        <button onClick={() => void tab.loadGlobalVariables(candidate.resRef, candidate.ext)}>
+                          Inspect
+                        </button>
                         <button onClick={() => openByRefAndExt(candidate.resRef, candidate.ext)}>
                           Open
                         </button>
@@ -166,6 +172,111 @@ export const TabSAVEditor = function(props: BaseTabProps){
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {globals && (
+            <div className="sav-global-vars">
+              <h4>
+                Global Variables: {globals.resRef}.{globals.ext}
+              </h4>
+              <div className="resource-list__filters">
+                <input
+                  type="text"
+                  value={globalSearch}
+                  onChange={(e) => setGlobalSearch(e.target.value)}
+                  placeholder="Filter global variable names..."
+                />
+              </div>
+              <div className="sav-global-vars__sections">
+                <div className="sav-global-vars__section">
+                  <h5>Booleans ({globals.booleans.length})</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {globals.booleans
+                        .filter((entry) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
+                        .map((entry, index) => (
+                          <tr key={`gbool-${entry.name}-${index}`}>
+                            <td>{entry.name}</td>
+                            <td>
+                              <input
+                                title={`bool-${entry.name}`}
+                                type="checkbox"
+                                checked={entry.value}
+                                onChange={(e) => tab.updateGlobalBoolean(index, e.target.checked)}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="sav-global-vars__section">
+                  <h5>Numbers ({globals.numbers.length})</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {globals.numbers
+                        .filter((entry) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
+                        .map((entry, index) => (
+                          <tr key={`gnum-${entry.name}-${index}`}>
+                            <td>{entry.name}</td>
+                            <td>
+                              <input
+                                title={`num-${entry.name}`}
+                                type="number"
+                                min={0}
+                                max={255}
+                                value={entry.value}
+                                onChange={(e) => tab.updateGlobalNumber(index, parseInt(e.target.value, 10) || 0)}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="sav-global-vars__section">
+                  <h5>Strings ({globals.strings.length})</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {globals.strings
+                        .filter((entry) => !globalSearch || entry.name.toLowerCase().includes(globalSearch.toLowerCase()))
+                        .map((entry, index) => (
+                          <tr key={`gstr-${entry.name}-${index}`}>
+                            <td>{entry.name}</td>
+                            <td>
+                              <input
+                                title={`str-${entry.name}`}
+                                type="text"
+                                value={entry.value}
+                                onChange={(e) => tab.updateGlobalString(index, e.target.value)}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -8,9 +8,26 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 const log = createScopedLogger(LogScope.Forge);
 
+interface GlobalVariableEntry<T extends boolean | number | string> {
+  name: string;
+  value: T;
+}
+
+export interface GlobalVariableSnapshot {
+  resRef: string;
+  ext: string;
+  booleans: GlobalVariableEntry<boolean>[];
+  numbers: GlobalVariableEntry<number>[];
+  strings: GlobalVariableEntry<string>[];
+}
+
 export class TabSAVEditorState extends TabState {
   tabName: string = 'Save Game Editor';
   erf?: KotOR.ERFObject;
+  resourceOverrides: Map<string, Uint8Array> = new Map();
+  globalVariables?: GlobalVariableSnapshot;
+  private globalVariableGff?: KotOR.GFFObject;
+  private globalVariableResType?: number;
   saveMeta?: {
     areaName?: string;
     lastModule?: string;
@@ -66,6 +83,10 @@ export class TabSAVEditorState extends TabState {
 
       this.saveMeta = await this.extractSaveMetadata();
       log.debug("TabSAVEditorState openFile saveMeta resourceCount", this.saveMeta?.resourceCount);
+      if (this.saveMeta.globalVariableCandidates?.length) {
+        const first = this.saveMeta.globalVariableCandidates[0];
+        await this.loadGlobalVariables(first.resRef, first.ext);
+      }
 
       this.processEventListener('onEditorFileLoad', [this]);
       log.info("TabSAVEditorState openFile loaded");
@@ -99,6 +120,170 @@ export class TabSAVEditorState extends TabState {
     }
 
     return counts;
+  }
+
+  private resourceOverrideKey(resRef: string, resType: number): string {
+    return `${String(resRef).toLowerCase()}:${resType}`;
+  }
+
+  private findResourceKey(resRef: string, ext: string): { resRef: string; resType: number } | undefined {
+    if (!this.erf) return;
+    return this.erf.keyList.find((entry) => entry.resRef === resRef && (KotOR.ResourceTypes.getKeyByValue(entry.resType) || '') === ext);
+  }
+
+  async getResourceBufferByEntry(resRef: string, resType: number): Promise<Uint8Array> {
+    const key = this.resourceOverrideKey(resRef, resType);
+    const override = this.resourceOverrides.get(key);
+    if (override) {
+      return new Uint8Array(override);
+    }
+    return await this.erf?.getResourceBufferByResRef(resRef, resType) || new Uint8Array(0);
+  }
+
+  private getStructListByLabels(root: KotOR.GFFStruct, labels: string[]): KotOR.GFFStruct[] {
+    for (const label of labels) {
+      const field = root.getFieldByLabel(label);
+      const structs = field?.getChildStructs?.() || [];
+      if (structs.length > 0) {
+        return structs;
+      }
+    }
+    return [];
+  }
+
+  private getVoidValueByLabels(root: KotOR.GFFStruct, labels: string[]): Uint8Array {
+    for (const label of labels) {
+      const field = root.getFieldByLabel(label);
+      const value = field?.getVoid?.();
+      if (value instanceof Uint8Array) {
+        return new Uint8Array(value);
+      }
+    }
+    return new Uint8Array(0);
+  }
+
+  private decodeGlobalVariables(gff: KotOR.GFFObject, resRef: string, ext: string): GlobalVariableSnapshot {
+    const root = gff.RootNode;
+    const booleanCats = this.getStructListByLabels(root, ['CatBoolean', 'GlobalBooleans', 'Booleans', 'BooleanVars']);
+    const numberCats = this.getStructListByLabels(root, ['CatNumber', 'GlobalNumbers', 'Numbers', 'NumberVars']);
+    const stringCats = this.getStructListByLabels(root, ['CatString', 'GlobalStrings', 'Strings', 'StringVars']);
+
+    const booleanValues = this.getVoidValueByLabels(root, ['ValBoolean', 'BooleanValues']);
+    const numberValues = this.getVoidValueByLabels(root, ['ValNumber', 'NumberValues']);
+    const stringValues = this.getStructListByLabels(root, ['ValString', 'StringValues']);
+
+    const booleans: GlobalVariableEntry<boolean>[] = booleanCats.map((cat, index) => {
+      const name = String(cat.getFieldByLabel('Name')?.getValue() || `Boolean ${index}`);
+      const byteIndex = Math.floor(index / 8);
+      const bitIndex = index % 8;
+      const byte = booleanValues[byteIndex] || 0;
+      const value = (byte & (1 << bitIndex)) !== 0;
+      return { name, value };
+    });
+
+    const numbers: GlobalVariableEntry<number>[] = numberCats.map((cat, index) => {
+      const name = String(cat.getFieldByLabel('Name')?.getValue() || `Number ${index}`);
+      const value = Number(numberValues[index] || 0);
+      return { name, value };
+    });
+
+    const strings: GlobalVariableEntry<string>[] = stringCats.map((cat, index) => {
+      const name = String(cat.getFieldByLabel('Name')?.getValue() || `String ${index}`);
+      const valueStruct = stringValues[index];
+      const value = String(valueStruct?.getFieldByLabel('String')?.getValue() || '');
+      return { name, value };
+    });
+
+    return {
+      resRef,
+      ext,
+      booleans,
+      numbers,
+      strings,
+    };
+  }
+
+  async loadGlobalVariables(resRef: string, ext: string): Promise<void> {
+    if (!this.erf) return;
+    const key = this.findResourceKey(resRef, ext);
+    if (!key) return;
+
+    const buffer = await this.getResourceBufferByEntry(key.resRef, key.resType);
+    if (!buffer?.length) return;
+
+    this.globalVariableGff = new KotOR.GFFObject(buffer);
+    this.globalVariableResType = key.resType;
+    this.globalVariables = this.decodeGlobalVariables(this.globalVariableGff, key.resRef, ext);
+    this.processEventListener('onEditorFileLoad', [this]);
+  }
+
+  private markGlobalVariableChanged(): void {
+    if (!this.file || !this.globalVariableGff || !this.globalVariables || this.globalVariableResType == null) return;
+
+    const exportBuffer = this.globalVariableGff.getExportBuffer();
+    const overrideKey = this.resourceOverrideKey(this.globalVariables.resRef, this.globalVariableResType);
+    this.resourceOverrides.set(overrideKey, exportBuffer);
+    this.file.unsaved_changes = true;
+    this.processEventListener('onEditorFileLoad', [this]);
+  }
+
+  updateGlobalBoolean(index: number, value: boolean): void {
+    if (!this.globalVariables || !this.globalVariableGff) return;
+
+    const boolEntry = this.globalVariables.booleans[index];
+    if (!boolEntry) return;
+    boolEntry.value = value;
+
+    const field = this.globalVariableGff.RootNode.getFieldByLabel('ValBoolean');
+    const sourceBytes = new Uint8Array(field?.getVoid?.() || []);
+    const byteIndex = Math.floor(index / 8);
+    const bitIndex = index % 8;
+    const boolBytes = byteIndex < sourceBytes.length
+      ? sourceBytes
+      : (() => {
+        const grown = new Uint8Array(byteIndex + 1);
+        grown.set(sourceBytes);
+        return grown;
+      })();
+    if (value) {
+      boolBytes[byteIndex] = (boolBytes[byteIndex] || 0) | (1 << bitIndex);
+    } else {
+      boolBytes[byteIndex] = (boolBytes[byteIndex] || 0) & ~(1 << bitIndex);
+    }
+    field?.setData?.(boolBytes);
+    this.markGlobalVariableChanged();
+  }
+
+  updateGlobalNumber(index: number, value: number): void {
+    if (!this.globalVariables || !this.globalVariableGff) return;
+    const numberEntry = this.globalVariables.numbers[index];
+    if (!numberEntry) return;
+    const next = Math.max(0, Math.min(255, Number.isFinite(value) ? Math.round(value) : 0));
+    numberEntry.value = next;
+
+    const field = this.globalVariableGff.RootNode.getFieldByLabel('ValNumber');
+    const sourceBytes = new Uint8Array(field?.getVoid?.() || []);
+    const numberBytes = index < sourceBytes.length
+      ? sourceBytes
+      : (() => {
+        const grown = new Uint8Array(index + 1);
+        grown.set(sourceBytes);
+        return grown;
+      })();
+    numberBytes[index] = next;
+    field?.setData?.(numberBytes);
+    this.markGlobalVariableChanged();
+  }
+
+  updateGlobalString(index: number, value: string): void {
+    if (!this.globalVariables || !this.globalVariableGff) return;
+    const stringEntry = this.globalVariables.strings[index];
+    if (!stringEntry) return;
+    stringEntry.value = value;
+
+    const valueList = this.globalVariableGff.RootNode.getFieldByLabel('ValString')?.getChildStructs?.() || [];
+    valueList[index]?.getFieldByLabel('String')?.setValue(value);
+    this.markGlobalVariableChanged();
   }
 
   private countListEntries(root: KotOR.GFFStruct, labels: string[]): number {
@@ -210,7 +395,15 @@ export class TabSAVEditorState extends TabState {
   async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
     log.trace("TabSAVEditorState getExportBuffer entry");
     if(this.erf){
-      const buf = this.erf.getExportBuffer();
+      const output = new KotOR.ERFObject();
+      output.header.fileType = this.erf.header.fileType;
+      output.header.fileVersion = this.erf.header.fileVersion;
+
+      for (const key of this.erf.keyList) {
+        const buffer = await this.getResourceBufferByEntry(key.resRef, key.resType);
+        output.addResource(key.resRef, key.resType, buffer);
+      }
+      const buf = output.getExportBuffer();
       log.trace("TabSAVEditorState getExportBuffer length", buf?.length);
       return buf;
     }

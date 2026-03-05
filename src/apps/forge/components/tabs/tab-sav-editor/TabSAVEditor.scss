@@ -122,6 +122,36 @@
         &:hover {
           background: #2a3654;
         }
+
+        &:not(:first-child) {
+          margin-left: 0.3rem;
+        }
+      }
+    }
+
+    .sav-global-vars__sections {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.6rem;
+    }
+
+    .sav-global-vars__section {
+      h5 {
+        margin: 0 0 0.3rem 0;
+        color: #b6c8ff;
+        font-size: 0.82rem;
+      }
+
+      input[type="number"],
+      input[type="text"] {
+        width: 100%;
+        background: #101521;
+        border: 1px solid #2a3142;
+        color: #d8e0ef;
+        border-radius: 3px;
+        padding: 0.2rem 0.3rem;
+        font-size: 0.75rem;
       }
     }
   }
