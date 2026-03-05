@@ -243,6 +243,58 @@ export const TabSAVEditor = function(props: BaseTabProps){
             </div>
             <div className="property-row">
               <div className="property-group">
+                <label>OnEnter Script</label>
+                <input
+                  title="Area OnEnter Script"
+                  type="text"
+                  value={tab.getAreaOnEnterScript()}
+                  onChange={(e) => tab.updateAreaOnEnterScript(e.target.value)}
+                  placeholder="OnEnter script..."
+                  maxLength={16}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>OnExit Script</label>
+                <input
+                  title="Area OnExit Script"
+                  type="text"
+                  value={tab.getAreaOnExitScript()}
+                  onChange={(e) => tab.updateAreaOnExitScript(e.target.value)}
+                  placeholder="OnExit script..."
+                  maxLength={16}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
+            <div className="property-row">
+              <div className="property-group">
+                <label>OnHeartbeat Script</label>
+                <input
+                  title="Area OnHeartbeat Script"
+                  type="text"
+                  value={tab.getAreaOnHeartbeatScript()}
+                  onChange={(e) => tab.updateAreaOnHeartbeatScript(e.target.value)}
+                  placeholder="OnHeartbeat script..."
+                  maxLength={16}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+              <div className="property-group">
+                <label>OnUserDefined Script</label>
+                <input
+                  title="Area OnUserDefined Script"
+                  type="text"
+                  value={tab.getAreaOnUserDefinedScript()}
+                  onChange={(e) => tab.updateAreaOnUserDefinedScript(e.target.value)}
+                  placeholder="OnUserDefined script..."
+                  maxLength={16}
+                  disabled={!canEditAreaName}
+                />
+              </div>
+            </div>
+            <div className="property-row">
+              <div className="property-group">
                 <label>Rain Chance</label>
                 <input
                   title="Area Rain Chance"

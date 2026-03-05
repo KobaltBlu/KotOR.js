@@ -457,6 +457,58 @@ export class TabSAVEditorState extends TabState {
     });
   }
 
+  updateAreaOnEnterScript(value: string): void {
+    if (!this.areaInfoGff || !this.hasAreaField('OnEnter')) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('OnEnter')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-script-on-enter-edit',
+      description: 'Edit area OnEnter script',
+      redo: () => this.applyAreaField('OnEnter', value),
+      undo: () => this.applyAreaField('OnEnter', previous),
+    });
+  }
+
+  updateAreaOnExitScript(value: string): void {
+    if (!this.areaInfoGff || !this.hasAreaField('OnExit')) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('OnExit')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-script-on-exit-edit',
+      description: 'Edit area OnExit script',
+      redo: () => this.applyAreaField('OnExit', value),
+      undo: () => this.applyAreaField('OnExit', previous),
+    });
+  }
+
+  updateAreaOnHeartbeatScript(value: string): void {
+    if (!this.areaInfoGff || !this.hasAreaField('OnHeartbeat')) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('OnHeartbeat')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-script-on-heartbeat-edit',
+      description: 'Edit area OnHeartbeat script',
+      redo: () => this.applyAreaField('OnHeartbeat', value),
+      undo: () => this.applyAreaField('OnHeartbeat', previous),
+    });
+  }
+
+  updateAreaOnUserDefinedScript(value: string): void {
+    if (!this.areaInfoGff || !this.hasAreaField('OnUserDefined')) return;
+    const previous = String(this.areaInfoGff.RootNode.getFieldByLabel('OnUserDefined')?.getValue?.() || '');
+    if (previous === value) return;
+
+    this.undoManager.execute({
+      type: 'sav-area-script-on-user-defined-edit',
+      description: 'Edit area OnUserDefined script',
+      redo: () => this.applyAreaField('OnUserDefined', value),
+      undo: () => this.applyAreaField('OnUserDefined', previous),
+    });
+  }
+
   updateAreaChanceRain(value: number): void {
     if (!this.areaInfoGff) return;
     const previous = Number(this.areaInfoGff.RootNode.getFieldByLabel('ChanceRain')?.getValue?.() || 0);
@@ -703,6 +755,22 @@ export class TabSAVEditorState extends TabState {
 
   getAreaMusicBattle(): string {
     return String(this.areaInfoGff?.RootNode.getFieldByLabel('MusicBattle')?.getValue?.() || '');
+  }
+
+  getAreaOnEnterScript(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('OnEnter')?.getValue?.() || '');
+  }
+
+  getAreaOnExitScript(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('OnExit')?.getValue?.() || '');
+  }
+
+  getAreaOnHeartbeatScript(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('OnHeartbeat')?.getValue?.() || '');
+  }
+
+  getAreaOnUserDefinedScript(): string {
+    return String(this.areaInfoGff?.RootNode.getFieldByLabel('OnUserDefined')?.getValue?.() || '');
   }
 
   getAreaChanceRain(): number {
