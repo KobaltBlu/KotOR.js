@@ -24,6 +24,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - `GET /healthz`
 - `GET /api/config`
 - `POST /api/sessions`
+- `POST /api/sessions/resume`
 - `GET /api/sessions`
 - `GET /api/sessions/:id` *(requires `x-session-token`)*
 - `POST /api/sessions/:id/heartbeat` *(requires `x-session-token`)*
@@ -37,6 +38,7 @@ This enforces a "save before terminate" policy to prevent silent data loss.
 - Workspace directories are persisted under `data/workspaces/<sessionId>` (not tmpfs).
 - Session metadata is persisted under `data/sessions/<sessionId>.json`.
 - Session creation returns a per-session token used to authorize sensitive operations.
+- Resume endpoint returns the latest active session for a `(userId, game)` pair, or creates one.
 - This service is intentionally orchestration-focused; container launch/proxy wiring can be layered on top in the next phase.
 
 ## Local compose stack

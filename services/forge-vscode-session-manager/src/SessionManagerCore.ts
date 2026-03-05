@@ -22,6 +22,7 @@ export interface ForgeSession {
 
 export type SessionEventType =
   | 'session_created'
+  | 'session_resumed'
   | 'session_warning'
   | 'session_save_requested'
   | 'session_expired'
@@ -94,6 +95,23 @@ export class SessionManagerCore {
     this.appendEvent({ type: 'session_created', at: now, sessionId: id, payload: { userId, game } });
     this.persistSession(session);
     return session;
+  }
+
+  createOrResumeSession(userId: string, game: 'kotor' | 'tsl' = 'kotor', now = Date.now()): ForgeSession {
+    const existing = this.findLatestActiveSessionByUser(userId, game);
+    if (existing) {
+      existing.lastHeartbeatAt = now;
+      this.appendEvent({
+        type: 'session_resumed',
+        at: now,
+        sessionId: existing.id,
+        payload: { userId, game },
+      });
+      this.persistSession(existing);
+      return existing;
+    }
+
+    return this.createSession(userId, game, now);
   }
 
   heartbeat(sessionId: string, token: string, now = Date.now()): ForgeSession {
@@ -205,6 +223,18 @@ export class SessionManagerCore {
   private persistSession(session: ForgeSession): void {
     const metadataPath = path.join(this.getMetadataRoot(), `${session.id}.json`);
     fs.writeFileSync(metadataPath, JSON.stringify(session, null, 2), 'utf-8');
+  }
+
+  private findLatestActiveSessionByUser(userId: string, game: 'kotor' | 'tsl'): ForgeSession | undefined {
+    let latest: ForgeSession | undefined;
+    for (const session of this.sessions.values()) {
+      if (session.userId !== userId || session.game !== game) continue;
+      if (session.status === 'expired' || session.status === 'closed') continue;
+      if (!latest || session.lastHeartbeatAt > latest.lastHeartbeatAt) {
+        latest = session;
+      }
+    }
+    return latest;
   }
 
   private getWorkspacesRoot(): string {

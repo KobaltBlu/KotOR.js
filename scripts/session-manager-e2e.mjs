@@ -54,6 +54,12 @@ async function main() {
   assert(typeof sessionId === 'string' && sessionId.length > 0, 'session id should be returned');
   assert(typeof sessionToken === 'string' && sessionToken.length > 0, 'session token should be returned');
 
+  const resumed = await requestJson('/api/sessions/resume', {
+    method: 'POST',
+    body: { userId: 'ci-user', game: 'kotor' },
+  });
+  assert(resumed.id === sessionId, 'resume endpoint should return existing active session');
+
   await requestJson(`/api/sessions/${sessionId}/heartbeat`, { method: 'POST', token: sessionToken });
 
   // warning window

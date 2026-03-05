@@ -46,23 +46,43 @@ function fillTemplate(template: string, values: Record<string, string>): string 
 async function requestHostedSession(options: OpenVSCodeBetaLaunchOptions): Promise<SessionCreateResponse | null> {
   if (!options.sessionManagerUrl) return null;
 
-  const createUrl = new URL("/api/sessions", options.sessionManagerUrl).toString();
-  const response = await fetch(createUrl, {
+  const userId = options.userId || "forge-user";
+  const game = normalizeGameKey(options.gameKey);
+
+  const resumeUrl = new URL("/api/sessions/resume", options.sessionManagerUrl).toString();
+  const resumeResponse = await fetch(resumeUrl, {
     method: "POST",
     headers: {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      userId: options.userId || "forge-user",
-      game: normalizeGameKey(options.gameKey),
+      userId,
+      game,
     }),
   });
 
-  if (!response.ok) {
-    throw new Error(`Session creation failed (${response.status})`);
+  if (resumeResponse.ok) {
+    return await resumeResponse.json() as SessionCreateResponse;
   }
 
-  return await response.json() as SessionCreateResponse;
+  const createUrl = new URL("/api/sessions", options.sessionManagerUrl).toString();
+  const createResponse = await fetch(createUrl, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      userId,
+      game,
+      resumeExisting: true,
+    }),
+  });
+
+  if (!createResponse.ok) {
+    throw new Error(`Session creation failed (${createResponse.status})`);
+  }
+
+  return await createResponse.json() as SessionCreateResponse;
 }
 
 function buildHostedSessionUrl(session: SessionCreateResponse | null, options: OpenVSCodeBetaLaunchOptions): string {

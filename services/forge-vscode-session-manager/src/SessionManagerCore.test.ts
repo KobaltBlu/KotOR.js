@@ -64,4 +64,19 @@ describe('SessionManagerCore', () => {
 
     expect(manager.heartbeat(session.id, session.token, 200).lastHeartbeatAt).toBe(200);
   });
+
+  it('resumes existing active session for same user and game', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'forge-session-manager-'));
+    const manager = new SessionManagerCore({
+      dataRoot: tempRoot,
+      maxSessions: 4,
+      sessionTtlMs: 30_000,
+      warningLeadMs: 5_000,
+    });
+
+    const created = manager.createSession('resume-user', 'kotor', 1000);
+    const resumed = manager.createOrResumeSession('resume-user', 'kotor', 1500);
+    expect(resumed.id).toBe(created.id);
+    expect(resumed.lastHeartbeatAt).toBe(1500);
+  });
 });

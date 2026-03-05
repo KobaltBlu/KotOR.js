@@ -97,8 +97,20 @@ const server = http.createServer(async (req, res) => {
       const body = await readJsonBody(req);
       const userId = String(body.userId || 'anonymous');
       const game = body.game === 'tsl' ? 'tsl' : 'kotor';
-      const session = manager.createSession(userId, game);
+      const resumeExisting = Boolean(body.resumeExisting);
+      const session = resumeExisting
+        ? manager.createOrResumeSession(userId, game)
+        : manager.createSession(userId, game);
       writeJson(res, 201, sessionResponse(session, true));
+      return;
+    }
+
+    if (method === 'POST' && pathname === '/api/sessions/resume') {
+      const body = await readJsonBody(req);
+      const userId = String(body.userId || 'anonymous');
+      const game = body.game === 'tsl' ? 'tsl' : 'kotor';
+      const session = manager.createOrResumeSession(userId, game);
+      writeJson(res, 200, sessionResponse(session, true));
       return;
     }
 
