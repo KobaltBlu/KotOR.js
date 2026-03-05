@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "listFiles": false,
+    "jsx": "react",
+    "lib": [
+      "ESNext",
+      "dom"
+    ],
+    "types": [
+      "jest",
+      "node",
+      "@types/wicg-file-system-access",
+      "react",
+      "react-dom"
+    ]
+  },
+  "include": [
+    "src/tests/**/*.ts",
+    "src/apps/forge/helpers/**/*.ts",
+    "src/types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "release"
+  ]
+}
