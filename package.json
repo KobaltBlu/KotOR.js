@@ -17,7 +17,7 @@
     "electron:compile": "tsc --project tsconfig.electron.json",
     "electron:build": "npm run webpack:prod && npm run electron:compile && npx electron-builder build --publish=never",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
-    "test": "jest --runInBand --verbose --no-cache src/apps/forge/data/ForgeResourceIcons.test.ts src/utility/PathUtil.test.ts src/apps/forge/helpers/ReferenceFinder.test.ts src/apps/forge/integration/EditorTypeRegistry.test.ts src/resource/GFFObject.serialization.test.ts",
+    "test": "jest --runInBand --verbose --no-cache src/apps/forge/data/ForgeResourceIcons.test.ts src/utility/PathUtil.test.ts src/apps/forge/helpers/ReferenceFinder.test.ts src/apps/forge/integration/EditorTypeRegistry.test.ts src/resource/GFFObject.serialization.test.ts services/forge-vscode-session-manager/src/SessionManagerCore.test.ts",
     "test:all": "jest --runInBand --verbose --no-cache"
   },
   "author": "KobaltBlu",
