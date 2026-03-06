@@ -144,6 +144,7 @@ export class ModuleCreature extends ModuleObject {
   joiningXP: any;
   skillPoints: any;
   npcId: number;
+  encounterCreature: boolean = false;
   // appearance: any;
 
   animationState: ICreatureAnimationState;
@@ -1230,6 +1231,7 @@ export class ModuleCreature extends ModuleObject {
   moveToObject(target: ModuleObject, bRun = true, distance = 1.0){
 
     if(target instanceof ModuleObject){
+      this.attemptedMovementTarget = target;
         
       // this.openSpot = undefined;
       let action = new GameState.ActionFactory.ActionMoveToPoint();

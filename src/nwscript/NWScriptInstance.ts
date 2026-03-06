@@ -96,6 +96,7 @@ export class NWScriptInstance {
   creatureAttackerIndex: Map<number, number> = new Map<number, number>();
   factionMemberIndex: Map<number, number> = new Map<number, number>();
   objectInSphapeIndex: Map<number, number> = new Map<number, number>();
+  partyMemberIndex: number = 0;
   matchedSubstrings: string[] = [];
 
   breakPoints: Map<number, boolean> = new Map<number, boolean>();

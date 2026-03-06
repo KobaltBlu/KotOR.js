@@ -159,6 +159,8 @@ export class ModuleObject {
   effects: GameEffect[] = [];
   casting: any[] = [];
   damageList: any[] = [];
+  lastDamageByType: Record<number, number> = {};
+  attemptedMovementTarget?: ModuleObject;
   _locals: { Booleans: any[]; Numbers: {}; };
   objectsInside: any[];
   lockDialogOrientation: boolean = false;
@@ -2165,13 +2167,18 @@ export class ModuleObject {
    * Damage the object
    * @param amount 
    * @param oAttacker 
-   * @param delayTime 
+   * @param delayTime
+   * @param damageType DAMAGE_TYPE_* bitmask (optional)
    */
-  damage(amount = 0, oAttacker?: ModuleObject, delayTime = 0){
+  damage(amount = 0, oAttacker?: ModuleObject, delayTime = 0, damageType?: number){
     this.subtractHP(amount);
     this.combatData.lastDamager = oAttacker;
     this.combatData.lastAttacker = oAttacker;
     (this as any).lastDamageAmount = amount;
+    this.lastDamageByType = {};
+    if(damageType !== undefined){
+      this.lastDamageByType[damageType] = amount;
+    }
     this.onDamaged();
   }
 

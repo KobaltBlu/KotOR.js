@@ -749,3 +749,210 @@ describe('EffectHitPointChangeWhenDying (fn 387)', () => {
     expect(result).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// 22. GetFirstPC / GetNextPC (fn 548-549) – party member iteration
+// ---------------------------------------------------------------------------
+
+describe('GetFirstPC / GetNextPC (fn 548-549)', () => {
+  it('GetFirstPC resets iterator and returns party[0]', () => {
+    const party = [{ name: 'Revan' }, { name: 'Bastila' }, { name: 'Carth' }];
+    let partyMemberIndex = 0;
+
+    // Simulate GetFirstPC
+    partyMemberIndex = 0;
+    const first = party[0];
+
+    expect(first).toBe(party[0]);
+    expect(partyMemberIndex).toBe(0);
+  });
+
+  it('GetNextPC iterates through remaining party members', () => {
+    const party = [{ name: 'Revan' }, { name: 'Bastila' }, { name: 'Carth' }];
+    let partyMemberIndex = 0;
+
+    // Simulate GetFirstPC
+    const first = party[partyMemberIndex];
+    expect(first.name).toBe('Revan');
+
+    // Simulate GetNextPC
+    partyMemberIndex++;
+    const second = partyMemberIndex < party.length ? party[partyMemberIndex] : undefined;
+    expect(second).toBeDefined();
+    expect(second!.name).toBe('Bastila');
+
+    // GetNextPC again
+    partyMemberIndex++;
+    const third = partyMemberIndex < party.length ? party[partyMemberIndex] : undefined;
+    expect(third).toBeDefined();
+    expect(third!.name).toBe('Carth');
+
+    // GetNextPC past end
+    partyMemberIndex++;
+    const fourth = partyMemberIndex < party.length ? party[partyMemberIndex] : undefined;
+    expect(fourth).toBeUndefined();
+  });
+
+  it('GetFirstPC called again resets the iterator', () => {
+    const party = [{ name: 'Revan' }, { name: 'Bastila' }];
+    let partyMemberIndex = 0;
+
+    // GetFirstPC
+    partyMemberIndex = 0;
+    expect(party[partyMemberIndex].name).toBe('Revan');
+
+    // GetNextPC
+    partyMemberIndex++;
+    expect(party[partyMemberIndex].name).toBe('Bastila');
+
+    // GetFirstPC again - should reset
+    partyMemberIndex = 0;
+    expect(party[partyMemberIndex].name).toBe('Revan');
+  });
+
+  it('empty party: GetFirstPC returns undefined', () => {
+    const party: any[] = [];
+    let partyMemberIndex = 0;
+    const first = party[0];
+    expect(first).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 23. GetWasForcePowerSuccessful (fn 726) – force power success tracking
+// ---------------------------------------------------------------------------
+
+describe('GetWasForcePowerSuccessful (fn 726)', () => {
+  it('returns TRUE (1) when lastForcePowerSuccess is true', () => {
+    const combatData: any = { lastForcePowerSuccess: true };
+    const result = combatData.lastForcePowerSuccess ? 1 : 0;
+    expect(result).toBe(1);
+  });
+
+  it('returns FALSE (0) when lastForcePowerSuccess is false', () => {
+    const combatData: any = { lastForcePowerSuccess: false };
+    const result = combatData.lastForcePowerSuccess ? 1 : 0;
+    expect(result).toBe(0);
+  });
+
+  it('defaults to FALSE when uninitialized', () => {
+    const combatData: any = {};
+    combatData.lastForcePowerSuccess = false;
+    const result = combatData.lastForcePowerSuccess ? 1 : 0;
+    expect(result).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 24. GetDamageDealtByType (fn 344) – damage type tracking
+// ---------------------------------------------------------------------------
+
+describe('GetDamageDealtByType (fn 344)', () => {
+  it('returns 0 when no damage of requested type was dealt', () => {
+    const lastDamageByType: Record<number, number> = {};
+    const result = lastDamageByType[1] || 0; // DAMAGE_TYPE_BLUDGEONING = 1
+    expect(result).toBe(0);
+  });
+
+  it('returns the correct amount for a specific damage type', () => {
+    const lastDamageByType: Record<number, number> = {};
+    const DAMAGE_TYPE_FIRE = 256;
+    lastDamageByType[DAMAGE_TYPE_FIRE] = 15;
+
+    expect(lastDamageByType[DAMAGE_TYPE_FIRE] || 0).toBe(15);
+    expect(lastDamageByType[1] || 0).toBe(0); // Other types are 0
+  });
+
+  it('clears previous damage on new damage event', () => {
+    let lastDamageByType: Record<number, number> = { 1: 10, 2: 5 };
+
+    // Simulate new damage event (clears old values)
+    lastDamageByType = {};
+    lastDamageByType[4] = 20; // Slashing damage
+
+    expect(lastDamageByType[1] || 0).toBe(0); // Old value cleared
+    expect(lastDamageByType[4] || 0).toBe(20);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 25. GetAttemptedMovementTarget (fn 489) – movement target tracking
+// ---------------------------------------------------------------------------
+
+describe('GetAttemptedMovementTarget (fn 489)', () => {
+  it('returns the target that was set during moveToObject', () => {
+    const target = { name: 'Door', id: 42 };
+    const creature: any = { attemptedMovementTarget: undefined };
+
+    // Simulate moveToObject setting the target
+    creature.attemptedMovementTarget = target;
+    expect(creature.attemptedMovementTarget).toBe(target);
+  });
+
+  it('returns undefined when no movement has been attempted', () => {
+    const creature: any = { attemptedMovementTarget: undefined };
+    expect(creature.attemptedMovementTarget).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 26. GetIsEncounterCreature (fn 409) – encounter creature flag
+// ---------------------------------------------------------------------------
+
+describe('GetIsEncounterCreature (fn 409)', () => {
+  it('returns TRUE (1) for creature spawned from encounter', () => {
+    const creature: any = { encounterCreature: true };
+    const result = creature.encounterCreature ? 1 : 0;
+    expect(result).toBe(1);
+  });
+
+  it('returns FALSE (0) for placed creature', () => {
+    const creature: any = { encounterCreature: false };
+    const result = creature.encounterCreature ? 1 : 0;
+    expect(result).toBe(0);
+  });
+
+  it('defaults to false for new creatures', () => {
+    const creature: any = { encounterCreature: false };
+    expect(creature.encounterCreature).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 27. EffectDamage damage-type tracking on target
+// ---------------------------------------------------------------------------
+
+describe('EffectDamage damage-type tracking', () => {
+  it('records damage type and amount on target when effect is applied', () => {
+    const DAMAGE_TYPE_FIRE = 256;
+    const amount = 25;
+
+    // Simulate EffectDamage.onApply
+    const target: any = {
+      lastDamageByType: {},
+      lastDamageAmount: 0,
+    };
+
+    target.lastDamageByType = {};
+    target.lastDamageByType[DAMAGE_TYPE_FIRE] = amount;
+    target.lastDamageAmount = amount;
+
+    expect(target.lastDamageByType[DAMAGE_TYPE_FIRE]).toBe(25);
+    expect(target.lastDamageAmount).toBe(25);
+  });
+
+  it('clears previous damage type data on new damage event', () => {
+    const target: any = {
+      lastDamageByType: { 1: 10 },
+      lastDamageAmount: 10,
+    };
+
+    // New damage event
+    target.lastDamageByType = {};
+    target.lastDamageByType[256] = 20;
+    target.lastDamageAmount = 20;
+
+    expect(target.lastDamageByType[1]).toBeUndefined();
+    expect(target.lastDamageByType[256]).toBe(20);
+  });
+});

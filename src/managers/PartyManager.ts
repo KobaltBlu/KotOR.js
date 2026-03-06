@@ -531,16 +531,16 @@ export class PartyManager {
    * @param leaveInWorld - Whether to leave the NPC in the world
    * @returns void
    */
-  static RemoveNPCById(npcId = 0, leaveInWorld = false){
+  static RemoveNPCById(npcId = 0, leaveInWorld = false): boolean{
     console.log('RemoveNPCById', npcId, leaveInWorld);
     const partyMember = PartyManager.GetPartyMemberByNPCId(npcId);
     if(!partyMember){
-      return;
+      return false;
     }
 
     const pmIndex = PartyManager.party.indexOf(partyMember);
     if(pmIndex == -1){
-      return;
+      return false;
     }
 
     //Remove the partymember from the module
@@ -561,6 +561,7 @@ export class PartyManager {
     }
     
     PartyManager.RemoveCurrentMemberByNPCId(npcId);
+    return true;
   }
 
   static GetPartyMemberByNPCId(npcId = 0){

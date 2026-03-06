@@ -43,6 +43,7 @@ import { CombatFeatType } from "../enums/combat/CombatFeatType";
 import { TalkVolume } from "../enums/engine/TalkVolume";
 import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
 import { SaveGame } from "../engine/SaveGame";
+import { GameEffectSubType } from "../enums/effects/GameEffectSubType";
 
 /**
  * NWScriptDefK1 class.
@@ -1409,7 +1410,10 @@ NWScriptDefK1.Actions = {
     comment: "105: Get the metamagic type (METAMAGIC_*) of the last spell cast by the caller\n* Return value if the caster is not a valid object: -1\n",
     name: "GetMetaMagicFeat",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return 0;
+    }
   },
   106:{
     comment: "106: Get the object type (OBJECT_TYPE_*) of oTarget\n* Return value if oTarget is not a valid object: -1\n",
@@ -1497,19 +1501,37 @@ NWScriptDefK1.Actions = {
     comment: "112: Set the subtype of eEffect to Magical and return eEffect.\n(Effects default to magical if the subtype is not set)\n",
     name: "MagicalEffect",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.EFFECT]
+    args: [NWScriptDataType.EFFECT],
+    action: function(this: NWScriptInstance, args: [GameEffect]){
+      if(args[0]){
+        args[0].setSubType(GameEffectSubType.MAGICAL);
+      }
+      return args[0];
+    }
   },
   113:{
     comment: "113: Set the subtype of eEffect to Supernatural and return eEffect.\n(Effects default to magical if the subtype is not set)\n",
     name: "SupernaturalEffect",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.EFFECT]
+    args: [NWScriptDataType.EFFECT],
+    action: function(this: NWScriptInstance, args: [GameEffect]){
+      if(args[0]){
+        args[0].setSubType(GameEffectSubType.SUPERNATURAL);
+      }
+      return args[0];
+    }
   },
   114:{
     comment: "114: Set the subtype of eEffect to Extraordinary and return eEffect.\n(Effects default to magical if the subtype is not set)\n",
     name: "ExtraordinaryEffect",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.EFFECT]
+    args: [NWScriptDataType.EFFECT],
+    action: function(this: NWScriptInstance, args: [GameEffect]){
+      if(args[0]){
+        args[0].setSubType(GameEffectSubType.EXTRAORDINARY);
+      }
+      return args[0];
+    }
   },
   115:{
     comment: "115: Create an AC Increase effect\n- nValue: size of AC increase\n- nModifyType: AC_*_BONUS\n- nDamageType: DAMAGE_TYPE_*\n* Default value for nDamageType should only ever be used in this function prototype.\n",
@@ -1707,7 +1729,13 @@ NWScriptDefK1.Actions = {
     comment: "130: Create an Entangle effect\nWhen applied, this effect will restrict the creature's movement and apply a\n(-2) to all attacks and a -4 to AC.\n",
     name: "EffectEntangle",
     type: NWScriptDataType.EFFECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      let effect = new GameState.GameEffectFactory.EffectEntangle();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   131:{
     comment: "131: Cause oObject to run evToRun\n",
@@ -1867,7 +1895,10 @@ NWScriptDefK1.Actions = {
     comment: "141: Output vVector to the logfile.\n- vVector\n- bPrepend: if this is TRUE, the message will be prefixed with 'PRINTVECTOR:'\n",
     name: "PrintVector",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.VECTOR, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.VECTOR, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [any, number]){
+      if(args[0]) console.log(args[1] ? 'PRINTVECTOR:' : '', args[0].x, args[0].y, args[0].z);
+    }
   },
   142:{
     comment: "142: Create a vector with the specified values for x, y and z\n",
@@ -2974,7 +3005,13 @@ NWScriptDefK1.Actions = {
     comment: "224: the effect of body fule.. convers HP -> FP i think\n",
     name: "EffectBodyFuel",
     type: NWScriptDataType.EFFECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   225:{
     comment: "225: Get the orientation value from lLocation.\n",
@@ -3327,7 +3364,10 @@ NWScriptDefK1.Actions = {
     comment: "249: Generate a random name.\n",
     name: "RandomName",
     type: NWScriptDataType.STRING,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return 'Unnamed';
+    }
   },
   250:{
     comment: "250: Create a Poison effect.\n- nPoisonType: POISON_*\n",
@@ -3533,7 +3573,10 @@ NWScriptDefK1.Actions = {
     comment: "264: This returns the creator of oAreaOfEffectObject.\n* Returns OBJECT_INVALID if oAreaOfEffectObject is not a valid Area of Effect object.\n",
     name: "GetAreaOfEffectCreator",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return undefined;
+    }
   },
   265:{
     comment: "265: Brings up the level up GUI for the player.  The GUI will only show up\nif the player has gained enough experience points to level up.\n* Returns TRUE if the GUI was successfully brought up; FALSE if not.\n",
@@ -3553,19 +3596,28 @@ NWScriptDefK1.Actions = {
     comment: "266: Flag the specified item as being non-equippable or not.  Set bNonEquippable\nto TRUE to prevent this item from being equipped, and FALSE to allow\nthe normal equipping checks to determine if the item can be equipped.\nNOTE: This will do nothing if the object passed in is not an item.  Items that\nare already equipped when this is called will not automatically be\nunequipped.  These items will just be prevented from being re-equipped\nshould they be unequipped.\n",
     name: "SetItemNonEquippable",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      // No-op: item equippability flag not yet tracked
+    }
   },
   267:{
     comment: "267: GetButtonMashCheck\nThis function returns whether the button mash check, used for the combat tutorial, is on\n",
     name: "GetButtonMashCheck",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return NW_FALSE;
+    }
   },
   268:{
     comment: "268: SetButtonMashCheck\nThis function sets the button mash check variable, and is used for turning the check on and off\n",
     name: "SetButtonMashCheck",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      // No-op: combat tutorial button mash not implemented
+    }
   },
   269:{
     comment: "269: EffectForcePushTargeted\nThis effect is exactly the same as force push, except it takes a location parameter that specifies\nwhere the location of the force push is to be done from.  All orientations are also based on this location.\nAMF:  The new ignore test direct line variable should be used with extreme caution\nIt overrides geometry checks for force pushes, so that the object that the effect is applied to\nis guaranteed to move that far, ignoring collisions.  It is best used for cutscenes.\n",
@@ -4254,7 +4306,10 @@ NWScriptDefK1.Actions = {
     comment: "321: Get the last command (ASSOCIATE_COMMAND_*) issued to oAssociate.\n",
     name: "GetLastAssociateCommand",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return 0;
+    }
   },
   322:{
     comment: "322: Give nGP gold to oCreature.\n",
@@ -4313,7 +4368,10 @@ NWScriptDefK1.Actions = {
     comment: "327: Initialise oTarget to listen for the standard Associates commands.\n",
     name: "SetAssociateListenPatterns",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      // No-op: associate listen patterns are handled by the perception system
+    }
   },
   328:{
     comment: "328: Get the last weapon that oCreature used in an attack.\n* Returns OBJECT_INVALID if oCreature did not attack, or has no weapon equipped.\n",
@@ -4582,6 +4640,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return this.caller.lastDamageByType[args[0]] || 0;
+      }
       return 0;
     }
   },
@@ -4692,19 +4753,28 @@ NWScriptDefK1.Actions = {
     comment: "355: Set eEffect to be versus a specific alignment.\n- eEffect\n- nLawChaos: ALIGNMENT_LAWFUL/ALIGNMENT_CHAOTIC/ALIGNMENT_ALL\n- nGoodEvil: ALIGNMENT_GOOD/ALIGNMENT_EVIL/ALIGNMENT_ALL\n",
     name: "VersusAlignmentEffect",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.EFFECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.EFFECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [GameEffect, number, number]){
+      return args[0];
+    }
   },
   356:{
     comment: "356: Set eEffect to be versus nRacialType.\n- eEffect\n- nRacialType: RACIAL_TYPE_*\n",
     name: "VersusRacialTypeEffect",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.EFFECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.EFFECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [GameEffect, number]){
+      return args[0];
+    }
   },
   357:{
     comment: "357: Set eEffect to be versus traps.\n",
     name: "VersusTrapEffect",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.EFFECT]
+    args: [NWScriptDataType.EFFECT],
+    action: function(this: NWScriptInstance, args: [GameEffect]){
+      return args[0];
+    }
   },
   358:{
     comment: "358: Get the gender of oCreature.\n",
@@ -4961,7 +5031,10 @@ NWScriptDefK1.Actions = {
     comment: "379:\n",
     name: "ActionSurrenderToEnemies",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // No-op: surrender action not yet implemented
+    }
   },
   380:{
     comment: "380: Get the first member of oMemberOfFaction's faction (start to cycle through\noMemberOfFaction's faction).\n* Returns OBJECT_INVALID if oMemberOfFaction's faction is invalid.\n",
@@ -5094,7 +5167,10 @@ NWScriptDefK1.Actions = {
     comment: "389: This allows you to add a new class to any creature object\n",
     name: "AddMultiClass",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      // No-op: multi-classing not yet implemented
+    }
   },
   390:{
     comment: "390: Tests a linked effect to see if the target is immune to it.\nIf the target is imune to any of the linked effect then he is immune to all of it\n",
@@ -5504,7 +5580,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return 0;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).encounterCreature ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
     }
   },
   410:{
@@ -5520,7 +5599,22 @@ NWScriptDefK1.Actions = {
     comment: "411: Get the starting location of the module.\n",
     name: "GetStartingLocation",
     type: NWScriptDataType.LOCATION,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(GameState.module){
+        const loc = new EngineLocation(
+          GameState.module.entryX || 0,
+          GameState.module.entryY || 0,
+          GameState.module.entryZ || 0,
+        );
+        loc.setFacing(Math.atan2(
+          GameState.module.entryDirectionY || 0,
+          GameState.module.entryDirectionX || 1,
+        ));
+        return loc;
+      }
+      return new EngineLocation(0, 0, 0);
+    }
   },
   412:{
     comment: "412: Make oCreatureToChange join one of the standard factions.\n** This will only work on an NPC **\n- nStandardFaction: STANDARD_FACTION_*\n",
@@ -5604,7 +5698,10 @@ NWScriptDefK1.Actions = {
     comment: "419: Use this in an OnRespawnButtonPressed module script to get the object id of\nthe player who last pressed the respawn button.\n",
     name: "GetLastRespawnButtonPresser",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return undefined;
+    }
   },
   420:{
     comment: "420:\nEffect that will display a visual effect on the specified object's hand to\nindicate a force power has fizzled out.\n",
@@ -5633,7 +5730,10 @@ NWScriptDefK1.Actions = {
     comment: "422: * Returns TRUE if the weapon equipped is capable of damaging oVersus.\n",
     name: "GetIsWeaponEffective",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      return NW_TRUE;
+    }
   },
   423:{
     comment: "423: Use this in a SpellCast script to determine whether the spell was considered\nharmful.\n* Returns TRUE if the last spell cast was harmful.\n",
@@ -6105,7 +6205,13 @@ NWScriptDefK1.Actions = {
     comment: "460: Create a Dispel Magic All effect.\n",
     name: "EffectDispelMagicAll",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   461:{
     comment: "461: Cut immediately to placeable camera 'nCameraId' during dialog.  nCameraId must be\nan existing Placeable Camera ID.  Function only works during Dialog.\n",
@@ -6151,19 +6257,37 @@ NWScriptDefK1.Actions = {
     comment: "465: Create a True Seeing effect.\n",
     name: "EffectTrueSeeing",
     type: NWScriptDataType.EFFECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   466:{
     comment: "466: Create a See Invisible effect.\n",
     name: "EffectSeeInvisible",
     type: NWScriptDataType.EFFECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   467:{
     comment: "467: Create a Time Stop effect.\n",
     name: "EffectTimeStop",
     type: NWScriptDataType.EFFECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   468:{
     comment: "468:\nSet the maximum amount of stealth xp available in the area.\n",
@@ -6218,13 +6342,25 @@ NWScriptDefK1.Actions = {
     comment: "472: Create a Spell Level Absorption effect.\n- nMaxSpellLevelAbsorbed: maximum spell level that will be absorbed by the\neffect\n- nTotalSpellLevelsAbsorbed: maximum number of spell levels that will be\nabsorbed by the effect\n- nSpellSchool: SPELL_SCHOOL_*\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if:\nnMaxSpellLevelAbsorbed is not between -1 and 9 inclusive, or nSpellSchool\nis invalid.\n",
     name: "EffectSpellLevelAbsorption",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, number, number]){
+      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   473:{
     comment: "473: Create a Dispel Magic Best effect.\n",
     name: "EffectDispelMagicBest",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   474:{
     comment: "474:\nReturns the current amount of stealth xp available in the area.\n",
@@ -6252,7 +6388,10 @@ NWScriptDefK1.Actions = {
     comment: "476: Use this on an NPC to cause all creatures within a 10-metre radius to stop\nwhat they are doing and sets the NPC's enemies within this range to be\nneutral towards the NPC. If this command is run on a PC or an object that is\nnot a creature, nothing will happen.\n",
     name: "SurrenderToEnemies",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // No-op: surrender mechanic not yet implemented
+    }
   },
   477:{
     comment: "477: Create a Miss Chance effect.\n- nPercentage: 1-100 inclusive\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nPercentage < 1 or\nnPercentage > 100.\n",
@@ -6351,25 +6490,43 @@ NWScriptDefK1.Actions = {
     comment: "485: Create a Modify Attacks effect to add attacks.\n- nAttacks: maximum is 5, even with the effect stacked\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nAttacks > 5.\n",
     name: "EffectModifyAttacks",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   486:{
     comment: "486: Get the last trap detected by oTarget.\n* Return value on error: OBJECT_INVALID\n",
     name: "GetLastTrapDetected",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return undefined;
+    }
   },
   487:{
     comment: "487: Create a Damage Shield effect which does (nDamageAmount + nRandomAmount)\ndamage to any melee attacker on a successful attack of damage type nDamageType.\n- nDamageAmount: an integer value\n- nRandomAmount: DAMAGE_BONUS_*\n- nDamageType: DAMAGE_TYPE_*\n",
     name: "EffectDamageShield",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, number, number]){
+      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   488:{
     comment: "488: Get the trap nearest to oTarget.\nNote : 'trap objects' are actually any trigger, placeable or door that is\ntrapped in oTarget's area.\n- oTarget\n- nTrapDetected: if this is TRUE, the trap returned has to have been detected\nby oTarget.\n",
     name: "GetNearestTrapToObject",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      return undefined;
+    }
   },
   489:{
     comment: "489: the will get the last attmpted movment target\n",
@@ -6377,7 +6534,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return;
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return this.caller.attemptedMovementTarget;
+      }
+      return undefined;
     }
   },
   490:{
@@ -6438,13 +6598,22 @@ NWScriptDefK1.Actions = {
     comment: "494: Get oCreature's challenge rating.\n* Returns 0.0 if oCreature is invalid.\n",
     name: "GetChallengeRating",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).challengeRating || 0.0;
+      }
+      return 0.0;
+    }
   },
   495:{
     comment: "495: Returns the found enemy creature on a pathfind.\n",
     name: "GetFoundEnemyCreature",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return undefined;
+    }
   },
   496:{
     comment: "496: Get oCreature's movement rate.\n* Returns 0 if oCreature is invalid.\n",
@@ -6572,7 +6741,10 @@ NWScriptDefK1.Actions = {
     comment: "504: Set the camera mode for oPlayer.\n- oPlayer\n- nCameraMode: CAMERA_MODE_*\n* If oPlayer is not player-controlled or nCameraMode is invalid, nothing\nhappens.\n",
     name: "SetCameraMode",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      // Camera mode changes are visual-only; no-op for now
+    }
   },
   505:{
     comment: "505: SetLockOrientationInDialog\nAllows the locking and unlocking of orientation changes for an object in dialog\n- oObject - Object\n- nValue - TRUE or FALSE\n",
@@ -6600,7 +6772,22 @@ NWScriptDefK1.Actions = {
     comment: "507: CutsceneMoveToPoint\nUsed by the cutscene system to allow designers to script combat\n",
     name: "CutsceneMove",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.VECTOR, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.VECTOR, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, any, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) && args[1]){
+        const action = new GameState.ActionFactory.ActionMoveToPoint();
+        action.setParameter(0, ActionParameterType.FLOAT, args[1].x || 0);
+        action.setParameter(1, ActionParameterType.FLOAT, args[1].y || 0);
+        action.setParameter(2, ActionParameterType.FLOAT, args[1].z || 0);
+        action.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id || 0);
+        action.setParameter(4, ActionParameterType.DWORD, 0);
+        action.setParameter(5, ActionParameterType.INT, args[2] ? 1 : 0);
+        action.setParameter(6, ActionParameterType.FLOAT, 0.5);
+        action.setParameter(7, ActionParameterType.INT, 0);
+        action.setParameter(8, ActionParameterType.FLOAT, 30.0);
+        args[0].actionQueue.add(action);
+      }
+    }
   },
   508:{
     comment: "508: EnableVideoEffect\nEnables the video frame buffer effect specified by nEffectType, which is\nan index into VideoEffects.2da. This video effect will apply indefinitely,\nand so it should *always* be cleared by a call to DisableVideoEffect().\n",
@@ -6686,7 +6873,10 @@ NWScriptDefK1.Actions = {
     comment: "516: SetTutorialWindowsEnabled\nSets whether or not the tutorial windows are enabled (ie. whether or not they will\nappear when certain things happen for the first time).\n",
     name: "SetTutorialWindowsEnabled",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      // No-op: tutorial window toggle is visual-only
+    }
   },
   517:{
     comment: "517: ShowTutorialWindow\nPops up the specified tutorial window.  If the tutorial window has already popped\nup once before, this will do nothing.\n",
@@ -6824,13 +7014,19 @@ NWScriptDefK1.Actions = {
     comment: "525: Display floaty text above the specified creature.\nThe text will also appear in the chat buffer of each player that receives the\nfloaty text.\n- nStrRefToDisplay: String ref (therefore text is translated)\n- oCreatureToFloatAbove\n- bBroadcastToFaction: If this is TRUE then only creatures in the same faction\nas oCreatureToFloatAbove\nwill see the floaty text, and only if they are within range (30 metres).\n",
     name: "FloatingTextStrRefOnCreature",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject, number]){
+      // No-op: floating text is visual-only
+    }
   },
   526:{
     comment: "526: Display floaty text above the specified creature.\nThe text will also appear in the chat buffer of each player that receives the\nfloaty text.\n- sStringToDisplay: String\n- oCreatureToFloatAbove\n- bBroadcastToFaction: If this is TRUE then only creatures in the same faction\nas oCreatureToFloatAbove\nwill see the floaty text, and only if they are within range (30 metres).\n",
     name: "FloatingTextStringOnCreature",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [string, ModuleObject, number]){
+      // No-op: floating text is visual-only
+    }
   },
   527:{
     comment: "527: - oTrapObject: a placeable, door or trigger\n* Returns TRUE if oTrapObject is disarmable.\n",
@@ -6860,7 +7056,10 @@ NWScriptDefK1.Actions = {
     comment: "529: - oTrapObject: a placeable, door or trigger\n- oCreature\n* Returns TRUE if oCreature has detected oTrapObject\n",
     name: "GetTrapDetectedBy",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      return NW_FALSE;
+    }
   },
   530:{
     comment: "530: - oTrapObject: a placeable, door or trigger\n* Returns TRUE if oTrapObject has been flagged as visible to all creatures.\n",
@@ -6902,13 +7101,19 @@ NWScriptDefK1.Actions = {
     comment: "533: Get the creator of oTrapObject, the creature that set the trap.\n- oTrapObject: a placeable, door or trigger\n* Returns OBJECT_INVALID if oTrapObject was created in the toolset.\n",
     name: "GetTrapCreator",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return undefined;
+    }
   },
   534:{
     comment: "534: Get the tag of the key that will disarm oTrapObject.\n- oTrapObject: a placeable, door or trigger\n",
     name: "GetTrapKeyTag",
     type: NWScriptDataType.STRING,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return '';
+    }
   },
   535:{
     comment: "535: Get the DC for disarming oTrapObject.\n- oTrapObject: a placeable, door or trigger\n",
@@ -6938,31 +7143,61 @@ NWScriptDefK1.Actions = {
     comment: "537: * Returns TRUE if a specific key is required to open the lock on oObject.\n",
     name: "GetLockKeyRequired",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].keyRequired ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   538:{
     comment: "538: Get the tag of the key that will open the lock on oObject.\n",
     name: "GetLockKeyTag",
-    type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    type: NWScriptDataType.STRING,
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].keyName || '';
+      }
+      return '';
+    }
   },
   539:{
     comment: "539: * Returns TRUE if the lock on oObject is lockable.\n",
     name: "GetLockLockable",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].lockable ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   540:{
     comment: "540: Get the DC for unlocking oObject.\n",
     name: "GetLockUnlockDC",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].openLockDC || 0;
+      }
+      return 0;
+    }
   },
   541:{
     comment: "541: Get the DC for locking oObject.\n",
     name: "GetLockLockDC",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].closeLockDC || 0;
+      }
+      return 0;
+    }
   },
   542:{
     comment: "542: Get the last PC that levelled up.\n",
@@ -6977,19 +7212,35 @@ NWScriptDefK1.Actions = {
     comment: "543: - nFeat: FEAT_*\n- oObject\n* Returns TRUE if oObject has effects on it originating from nFeat.\n",
     name: "GetHasFeatEffect",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        for(const effect of args[1].effects){
+          if(effect.getInt(0) === args[0]){
+            return NW_TRUE;
+          }
+        }
+      }
+      return NW_FALSE;
+    }
   },
   544:{
     comment: "544: Set the status of the illumination for oPlaceable.\n- oPlaceable\n- bIlluminate: if this is TRUE, oPlaceable's illumination will be turned on.\nIf this is FALSE, oPlaceable's illumination will be turned off.\nNote: You must call RecomputeStaticLighting() after calling this function in\norder for the changes to occur visually for the players.\nSetPlaceableIllumination() buffers the illumination changes, which are then\nsent out to the players once RecomputeStaticLighting() is called.  As such,\nit is best to call SetPlaceableIllumination() for all the placeables you wish\nto set the illumination on, and then call RecomputeStaticLighting() once after\nall the placeable illumination has been set.\n* If oPlaceable is not a placeable object, or oPlaceable is a placeable that\ndoesn't have a light, nothing will happen.\n",
     name: "SetPlaceableIllumination",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      // No-op: lighting is visual-only
+    }
   },
   545:{
     comment: "545: * Returns TRUE if the illumination for oPlaceable is on\n",
     name: "GetPlaceableIllumination",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return NW_TRUE;
+    }
   },
   546:{
     comment: "546: - oPlaceable\n- nPlaceableAction: PLACEABLE_ACTION_*\n* Returns TRUE if nPlacebleAction is valid for oPlaceable.\n",
@@ -7045,6 +7296,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
+      this.partyMemberIndex = 0;
       return GameState.PartyManager.party[0];
     }
   },
@@ -7054,14 +7306,22 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return;
+      this.partyMemberIndex++;
+      const party = GameState.PartyManager.party;
+      if(this.partyMemberIndex < party.length){
+        return party[this.partyMemberIndex];
+      }
+      return undefined;
     }
   },
   550:{
     comment: "550: Set oDetector to have detected oTrap.\n",
     name: "SetTrapDetectedBy",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      return NW_TRUE;
+    }
   },
   551:{
     comment: "551: Note: Only placeables, doors and triggers can be trapped.\n* Returns TRUE if oObject is trapped.\n",
@@ -7123,7 +7383,12 @@ NWScriptDefK1.Actions = {
     comment: "555: Disable oTrap.\n- oTrap: a placeable, door or trigger.\n",
     name: "SetTrapDisabled",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        args[0].trapFlag = false;
+      }
+    }
   },
   556:{
     comment: "556: Get the last object that was sent as a GetLastAttacker(), GetLastDamager(),\nGetLastSpellCaster() (for a hostile spell), or GetLastDisturbed() (when a\ncreature is pickpocketed).\nNote: Return values may only ever be:\n1) A Creature\n2) Plot Characters will never have this value set\n3) Area of Effect Objects will return the AOE creator if they are registered\nas this value, otherwise they will return INVALID_OBJECT_ID\n4) Traps will not return the creature that set the trap.\n5) This value will never be overwritten by another non-creature object.\n6) This value will never be a dead/destroyed creature\n",
@@ -7142,7 +7407,10 @@ NWScriptDefK1.Actions = {
     comment: "557: Force all the characters of the players who are currently in the game to\nbe exported to their respective directories i.e. LocalVault/ServerVault/ etc.\n",
     name: "ExportAllCharacters",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // No-op: character export not applicable to single-player
+    }
   },
   558:{
     comment: "558: Get the Day Track for oArea.\n",
@@ -7172,7 +7440,10 @@ NWScriptDefK1.Actions = {
     comment: "560: Write sLogEntry as a timestamped entry into the log file\n",
     name: "WriteTimestampedLogEntry",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.STRING]
+    args: [NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [string]){
+      console.log('[NWScript Log]', args[0]);
+    }
   },
   561:{
     comment: "561: Get the module's name in the language of the server that's running it.\n* If there is no entry for the language of the server, it will return an\nempty string\n",
@@ -7301,7 +7572,10 @@ NWScriptDefK1.Actions = {
     comment: "571: Get the duration (in seconds) of the sound attached to nStrRef\n* Returns 0.0f if no duration is stored or if no sound is attached\n",
     name: "GetStrRefSoundDuration",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      return 0.0;
+    }
   },
   572:{
     comment: "572: Add oPC to oPartyLeader's party.  This will only work on two PCs.\n- oPC: player to add to a party\n- oPartyLeader: player already in the party\n",
@@ -7354,8 +7628,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.PartyManager.RemoveNPCById(args[0], true);
-      return 0;
+      const success = GameState.PartyManager.RemoveNPCById(args[0], true);
+      return success ? NW_TRUE : NW_FALSE;
     }
   },
   576:{
@@ -7601,7 +7875,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      //return GameState.module.area.MiniGame.Enemies.indexOf(args[0]) >= 0;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger)){
+        return NW_TRUE;
+      }
+      return NW_FALSE;
     }
   },
   603:{
@@ -8200,13 +8477,19 @@ NWScriptDefK1.Actions = {
     comment: "677: PlayVisualAreaEffect\n",
     name: "PlayVisualAreaEffect",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION],
+    action: function(this: NWScriptInstance, args: [number, EngineLocation]){
+      // No-op: visual area effects not yet implemented
+    }
   },
   678:{
     comment: "678: SetJournalQuestEntryPicture\nSets the picture for the quest entry on this object (creature)\n",
     name: "SetJournalQuestEntryPicture",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [string, ModuleObject, number, number, number]){
+      // No-op: journal entry pictures are visual-only
+    }
   },
   679:{
     comment: "679. GetLocalBoolean\nThis gets a boolean flag on an object\ncurrently the index is a range between 0 and 63\n",
@@ -8440,7 +8723,13 @@ NWScriptDefK1.Actions = {
     comment: "702. EffectLightsaberThrow\nThis function throws a lightsaber at a target\nIf multiple targets are specified, then the lightsaber travels to them\nsequentially, returning to the first object specified\nThis effect is applied to an object, so an effector is not needed\n",
     name: "EffectLightsaberThrow",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject, ModuleObject, number]){
+      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   703:{
     comment: "703.\ncreates the effect of a whirl wind.\n",
@@ -8707,7 +8996,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return 0;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return args[0].combatData.lastForcePowerSuccess ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
     }
   },
   727:{
@@ -8739,7 +9031,10 @@ NWScriptDefK1.Actions = {
     comment: "729. SetFormation\nPut oCreature into the nFormationPattern about oAnchor at position nPosition\n- oAnchor: The formation is set relative to this object\n- oCreature: This is the creature that you wish to join the formation\n- nFormationPattern: FORMATION_*\n- nPosition: Integer from 1 to 10 to specify which position in the formation\noCreature is supposed to take.\n",
     name: "SetFormation",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject, number, number]){
+      // No-op: party formation is handled by the follow system
+    }
   },
   730:{
     comment: "730. ActionFollowLeader\nthis action has a party member follow the leader.\nDO NOT USE ON A CREATURE THAT IS NOT IN THE PARTY!!\n",
@@ -8762,7 +9057,8 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [AttackResult, ModuleObject]){
       if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)) {
-        args[1].combatData.lastAttackResult = args[0]; 
+        args[1].combatData.lastAttackResult = args[0];
+        args[1].combatData.lastForcePowerSuccess = false;
       }
     }
   },
@@ -8957,7 +9253,10 @@ NWScriptDefK1.Actions = {
     comment: "747: ChangeItemCost\nChange the cost of an item\n",
     name: "ChangeItemCost",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.STRING, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.STRING, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [string, number]){
+      // No-op: item cost modification not yet implemented
+    }
   },
   748:{
     comment: "748: GetIsLiveContentAvailable\nDetermines whether a given live content package is available\nnPkg = LIVE_CONTENT_PKG1, LIVE_CONTENT_PKG2, ..., LIVE_CONTENT_PKG6\n",
@@ -9075,7 +9374,10 @@ NWScriptDefK1.Actions = {
     comment: "757: CancelPostDialogCharacterSwitch()\nIf a dialog has been started by an NPC on a Non PartyMemeberCanInteract object\ncalling this function will cancel the Post Dialog switching back to the NPC\nthat did the initiating.\n",
     name: "CancelPostDialogCharacterSwitch",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // No-op: post-dialog character switching not yet implemented
+    }
   },
   758:{
     comment: "758: SetMaxHitPoints\nSet the maximum hitpoints of oObject\nThe objects maximum AND current hitpoints will be nMaxHP after the function is called\n",
@@ -9119,19 +9421,28 @@ NWScriptDefK1.Actions = {
     comment: "762: SurrenderRetainBuffs()\nThis will do the same as SurrenderToEnemies, except that affected creatures will not\nlose effects which they have put on themselves\n",
     name: "SurrenderRetainBuffs",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // No-op: surrender mechanic not yet implemented
+    }
   },
   763:{
     comment: "763. SuppressStatusSummaryEntry\nThis will prevent the next n entries that should have shown up in the status summary\nfrom being added\nThis will not add on to any existing summary suppressions, but rather replace it.  So\nto clear the supression system pass 0 as the entry value\n",
     name: "SuppressStatusSummaryEntry",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      // No-op: status summary suppression not yet implemented
+    }
   },
   764:{
     comment: "764. GetCheatCode\nReturns true if cheat code has been enabled\n",
     name: "GetCheatCode",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      return NW_FALSE;
+    }
   },
   765:{
     comment: "765. SetMusicVolume\nNEVER USE THIS!\n",
@@ -9182,7 +9493,10 @@ NWScriptDefK1.Actions = {
     comment: "767. SetAvailableNPCId\nThis will set the object id that should be used for a specific available NPC\n",
     name: "SetAvailableNPCId",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // No-op: NPC ID assignment is handled internally by PartyManager
+    }
   },
   768:{
     comment: "768. IsMoviePlaying\nChecks if a movie is currently playing.\n",
@@ -9215,7 +9529,12 @@ NWScriptDefK1.Actions = {
     comment: "771. YavinHackCloseDoor\nThis is an incredibly hacky function to allow the doors to be properly\nclosed on Yavin without running into the problems we've had.  It is too\nlate in development to fix it correctly, so thus we do this.  Life is\nhard.  You'll get over it\n",
     name: "YavinHackCloseDoor",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor)){
+        (args[0] as ModuleDoor).setOpenState(0); // CLOSED
+      }
+    }
   }
 };
 
