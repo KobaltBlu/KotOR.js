@@ -40,6 +40,7 @@ import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 import { CreatureClassType } from "../enums/nwscript/CreatureClassType";
 import { TalkVolume } from "../enums/engine/TalkVolume";
+import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
 
 /**
  * NWScriptDefK1 class.
@@ -3372,7 +3373,15 @@ NWScriptDefK1.Actions = {
     comment: "265: Brings up the level up GUI for the player.  The GUI will only show up\nif the player has gained enough experience points to level up.\n* Returns TRUE if the GUI was successfully brought up; FALSE if not.\n",
     name: "ShowLevelUpGUI",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      const player = GameState.getCurrentPlayer();
+      if(player && player.canLevelUp()){
+        GameState.MenuManager.MenuLevelUp.open();
+        return NW_TRUE;
+      }
+      return NW_FALSE;
+    }
   },
   266:{
     comment: "266: Flag the specified item as being non-equippable or not.  Set bNonEquippable\nto TRUE to prevent this item from being equipped, and FALSE to allow\nthe normal equipping checks to determine if the item can be equipped.\nNOTE: This will do nothing if the object passed in is not an item.  Items that\nare already equipped when this is called will not automatically be\nunequipped.  These items will just be prevented from being re-equipped\nshould they be unequipped.\n",
@@ -3630,7 +3639,10 @@ NWScriptDefK1.Actions = {
     comment: "291: Use this in an OnPlayerDeath module script to get the last player that died.\n",
     name: "GetLastPlayerDied",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module ? GameState.module.lastPlayerDied : undefined;
+    }
   },
   292:{
     comment: "292: Use this in an OnItemLost script to get the item that was lost/dropped.\n* Returns OBJECT_INVALID if the module is not valid.\n",
@@ -4447,8 +4459,19 @@ NWScriptDefK1.Actions = {
     name: "DisplayFeedBackText",
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
-    action: function(this: NWScriptInstance, args: [number]){
-      //TODO
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const feedbacktext = GameState.TwoDAManager.datatables.get('feedbacktext');
+      if(feedbacktext && feedbacktext.rows[args[1]]){
+        const strref = parseInt(feedbacktext.rows[args[1]].strref);
+        if(strref >= 0){
+          const str = GameState.TLKManager.GetStringById(strref);
+          if(str && str.Value){
+            const entry = new FeedbackMessageEntry();
+            entry.message = str.Value;
+            GameState.FeedbackMessageManager.AddEntry(entry);
+          }
+        }
+      }
     }
   },
   367:{
@@ -4995,7 +5018,10 @@ NWScriptDefK1.Actions = {
     comment: "410: Use this in an OnPlayerDying module script to get the last player who is dying.\n",
     name: "GetLastPlayerDying",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module ? GameState.module.lastPlayerDying : undefined;
+    }
   },
   411:{
     comment: "411: Get the starting location of the module.\n",

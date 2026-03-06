@@ -8,6 +8,7 @@ import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
 import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
 import { NWScriptInstance } from "./NWScriptInstance";
+import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
 
 /**
  * NWScriptDefK2 class.
@@ -1900,7 +1901,14 @@ NWScriptDefK2.Actions = {
     name: 'ShowLevelUpGUI',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      const player = GameState.getCurrentPlayer();
+      if(player && player.canLevelUp()){
+        GameState.MenuManager.MenuLevelUp.open();
+        return NW_TRUE;
+      }
+      return NW_FALSE;
+    }
   },
   266: {
     comment: '266: Flag the specified item as being non-equippable or not.  Set bNonEquippable\n     to TRUE to prevent this item from being equipped, and FALSE to allow\n     the normal equipping checks to determine if the item can be equipped.\nNOTE: This will do nothing if the object passed in is not an item.  Items that\n      are already equipped when this is called will not automatically be\n      unequipped.  These items will just be prevented from being re-equipped\n      should they be unequipped.',
@@ -2082,7 +2090,9 @@ NWScriptDefK2.Actions = {
     name: 'GetLastPlayerDied',
     type: NWScriptDataType.OBJECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module ? GameState.module.lastPlayerDied : undefined;
+    }
   },
   292: {
     comment: '292: Use this in an OnItemLost script to get the item that was lost/dropped.\n* Returns OBJECT_INVALID if the module is not valid.',
@@ -2607,7 +2617,20 @@ NWScriptDefK2.Actions = {
     name: 'DisplayFeedBackText',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const feedbacktext = GameState.TwoDAManager.datatables.get('feedbacktext');
+      if(feedbacktext && feedbacktext.rows[args[1]]){
+        const strref = parseInt(feedbacktext.rows[args[1]].strref);
+        if(strref >= 0){
+          const str = GameState.TLKManager.GetStringById(strref);
+          if(str && str.Value){
+            const entry = new FeedbackMessageEntry();
+            entry.message = str.Value;
+            GameState.FeedbackMessageManager.AddEntry(entry);
+          }
+        }
+      }
+    }
   },
   367: {
     comment: '367: Add a journal quest entry to the player.\n- szPlotID: the plot identifier used in the toolset\'s Journal Editor\n- nState: the state of the plot as seen in the toolset\'s Journal Editor\n- bAllowOverrideHigher: If this is TRUE, you can set the state to a lower\n  number than the one it is currently on',
@@ -2915,7 +2938,9 @@ NWScriptDefK2.Actions = {
     name: 'GetLastPlayerDying',
     type: NWScriptDataType.OBJECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module ? GameState.module.lastPlayerDying : undefined;
+    }
   },
   411: {
     comment: '411: Get the starting location of the module.',

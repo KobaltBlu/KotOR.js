@@ -47,6 +47,63 @@ export class MenuStore extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+
+      this.BTN_Cancel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.close();
+      });
+
+      this.BTN_Examine.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.sellMode = !this.sellMode;
+        this.show();
+      });
+
+      this.BTN_Accept.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(!this.sellMode){
+          // Buy mode: transfer item from store to player inventory
+          const selectedNode = this.LB_SHOPITEMS.selectedItem;
+          if(selectedNode && selectedNode.node instanceof Object){
+            const item: ModuleItem = selectedNode.node as ModuleItem;
+            const price = this.getItemBuyPrice(item);
+            if(GameState.PartyManager.Gold >= price){
+              GameState.PartyManager.AddGold(-price);
+              this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
+              GameState.InventoryManager.addItem(item.template, true);
+              if(!item.isInfinite()){
+                item.setStackSize(item.getStackSize() - 1);
+                if(item.getStackSize() <= 0){
+                  const idx = this.storeObject.getInventory().indexOf(item);
+                  if(idx >= 0){
+                    this.storeObject.getInventory().splice(idx, 1);
+                    this.LB_SHOPITEMS.removeItemByIndex(idx);
+                  }
+                }else{
+                  // Refresh display to show updated stack count
+                  this.LB_SHOPITEMS.updateList();
+                }
+              }
+            }
+          }
+        }else{
+          // Sell mode: transfer item from player inventory to store
+          const selectedNode = this.LB_INVITEMS.selectedItem;
+          if(selectedNode && selectedNode.node instanceof Object){
+            const item: ModuleItem = selectedNode.node as ModuleItem;
+            const sellPrice = this.getItemSellPrice(item);
+            GameState.PartyManager.AddGold(sellPrice);
+            this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
+            GameState.InventoryManager.removeItem(item);
+            this.storeObject.getInventory().push(item);
+            const idx = this.LB_INVITEMS.listItems.indexOf(item);
+            if(idx >= 0){
+              this.LB_INVITEMS.removeItemByIndex(idx);
+            }
+          }
+        }
+      });
+
       resolve();
     });
   }

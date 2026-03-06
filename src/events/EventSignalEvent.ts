@@ -9,6 +9,7 @@ import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModuleObject } from "../module/ModuleObject";
 import { ModuleObjectScript, SignalEventType } from "../enums";
+import { GameState } from "../GameState";
 
 /**
  * EventSignalEvent class.
@@ -209,6 +210,27 @@ export class EventSignalEvent extends GameEvent {
             obj.audioEmitter.playSound((obj as any).trapExplosionSound);
           }
           obj.destroy();
+        }
+      break;
+      case SignalEventType.OnPlayerDying:
+        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlayer)){
+          if(typeof (obj as any).onDying === 'function'){
+            (obj as any).onDying();
+          }
+        }
+      break;
+      case SignalEventType.OnRespawnButtonPressed:
+        // Respawn the player at the module entry point or last rest area
+        if(GameState.module){
+          const player = GameState.PartyManager.Player;
+          if(player && player.isDead()){
+            player.setHP(1);
+            player.position.set(
+              GameState.module.entryX,
+              GameState.module.entryY,
+              GameState.module.entryZ
+            );
+          }
         }
       break;
     }

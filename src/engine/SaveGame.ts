@@ -807,7 +807,6 @@ export class SaveGame {
    * // Current game state has been saved
    */
   async Save(){
-    //TODO
     if(!GameState.module){ return; }
     try{
       //Go ahead and run mkdir. It will silently fail if it already exists

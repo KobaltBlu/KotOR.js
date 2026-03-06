@@ -2395,9 +2395,18 @@ export class ModuleCreature extends ModuleObject {
   }
 
   addXP(value = 0, xpType: ExperienceType = ExperienceType.PLOT){
+    const couldLevelBefore = this.canLevelUp();
     this.experience += parseInt(value.toString());
     if(this.isPartyMember()){
       GameState.UINotificationManager.EnableUINotificationIconType(xpType == ExperienceType.PLOT ? UIIconTimerType.PLOT_XP_RECEIVED : UIIconTimerType.STEALTH_XP_RECEIVED);
+      // Notify if the creature crossed the level-up XP threshold
+      if(!couldLevelBefore && this.canLevelUp() && GameState.module){
+        const levelUpScript = GameState.module.scripts[ModuleObjectScript.ModuleOnPlayerLevelUp];
+        if(levelUpScript){
+          const instance = levelUpScript.newInstance();
+          instance.run(GameState.module);
+        }
+      }
     }
   }
 
