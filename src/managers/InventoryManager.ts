@@ -21,6 +21,10 @@ import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
 export class InventoryManager {
   static inventory: ModuleItem[] = [];
 
+  static ClearInventory(){
+    InventoryManager.inventory = [];
+  }
+
   static getInventory( slot = 0, creature?: ModuleCreature ){
     if(!slot){
       return InventoryManager.inventory;

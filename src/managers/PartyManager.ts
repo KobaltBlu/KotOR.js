@@ -259,6 +259,10 @@ export class PartyManager {
       }
     }
 
+    GameState.JournalManager.ClearEntries();
+    GameState.DialogMessageManager.ClearEntries();
+    GameState.FeedbackMessageManager.ClearEntries();
+
     if(gff.RootNode.hasField('JNL_Entries')){
       const entries = gff.RootNode.getFieldByLabel('JNL_Entries').getChildStructs();
       for(let i = 0; i < entries.length; i++){
