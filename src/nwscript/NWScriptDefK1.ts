@@ -2701,7 +2701,13 @@ NWScriptDefK1.Actions = {
     comment: "203: Set the transition bitmap of a player; this should only be called in area\ntransition scripts. This action should be run by the person 'clicking' the\narea transition via AssignCommand.\n- nPredefinedAreaTransition:\n-> To use a predefined area transition bitmap, use one of AREA_TRANSITION_*\n-> To use a custom, user-defined area transition bitmap, use\nAREA_TRANSITION_USER_DEFINED and specify the filename in the second\nparameter\n- sCustomAreaTransitionBMP: this is the filename of a custom, user-defined\narea transition bitmap\n",
     name: "SetAreaTransitionBMP",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [number, string]){
+      // Store for possible future use in transition fade-out; no visual yet.
+      if(GameState.module?.area){
+        (GameState.module.area as any).transitionBMP = args[0] === -1 ? args[1] : args[0];
+      }
+    }
   },
   204:{
     comment: "AMF: APRIL 28, 2003 - I HAVE CHANGED THIS FUNCTION AS PER DAN'S REQUEST\n204: Starts a conversation with oObjectToConverseWith - this will cause their\nOnDialog event to fire.\n- oObjectToConverseWith\n- sDialogResRef: If this is blank, the creature's own dialogue file will be used\n- bPrivateConversation: If this is blank, the default is FALSE.\n- nConversationType - If this is blank the default will be Cinematic, ie. a normal conversation type\nother choices inclue: CONVERSATION_TYPE_COMPUTER\nUPDATE:  nConversationType actually has no meaning anymore.  This has been replaced by a flag in the dialog editor.  However\nfor backwards compatability it has been left here.  So when using this command place CONVERSATION_TYPE_CINEMATIC in here. - DJF\n- bIgnoreStartRange - If this is blank the default will be FALSE, ie. Start conversation ranges are in effect\nSetting this to TRUE will cause creatures to start a conversation without requiring to close\nthe distance between the two object in dialog.\n- sNameObjectToIgnore1-6 - Normally objects in the animation list of the dialog editor have to be available for animations on that node to work\nthese 6 strings are to indicate 6 objects that don�t need to be available for things to proceed.  The string should be EXACTLY\nthe same as the string that it represents in the dialog editor.\n",
@@ -4103,7 +4109,7 @@ NWScriptDefK1.Actions = {
       spellAction.setParameter(2, ActionParameterType.INT, 0);
       spellAction.setParameter(3, ActionParameterType.INT, 0);
       spellAction.setParameter(4, ActionParameterType.INT, 0);
-      spellAction.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+      spellAction.setParameter(5, ActionParameterType.DWORD, 0xFFFFFFFF);
       spellAction.setParameter(6, ActionParameterType.FLOAT, args[1].position.x);
       spellAction.setParameter(7, ActionParameterType.FLOAT, args[1].position.y);
       spellAction.setParameter(8, ActionParameterType.FLOAT, args[1].position.z);

@@ -10,6 +10,8 @@ import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
 import { NWScriptInstance } from "./NWScriptInstance";
 import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
+import EngineLocation from "../engine/EngineLocation";
+import { EngineMode } from "../enums/engine/EngineMode";
 
 /**
  * NWScriptDefK2 class.
@@ -4097,56 +4099,77 @@ NWScriptDefK2.Actions = {
     name: 'AddPartyMember',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        GameState.PartyManager.AddCreatureToParty(args[0], args[1] as ModuleCreature);
+        return NW_TRUE;
+      }
+      return NW_FALSE;    }
   },
   575: {
     comment: '575: Removes a creature from the party\nReturns whether the removal was syccessful\nRemovePartyMember',
     name: 'RemovePartyMember',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.PartyManager.RemoveNPCById(args[0], true);
+      return NW_TRUE;
+    }
   },
   576: {
     comment: '576: Returns whether a specified creature is a party member\nIsObjectPartyMember',
     name: 'IsObjectPartyMember',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return (GameState.PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0 ||
+        args[0] === GameState.PartyManager.Player) ? NW_TRUE : NW_FALSE;
+    }
   },
   577: {
     comment: '577: Returns the party member at a given index in the party.\nThe order of members in the party can vary based on\nwho the current leader is (member 0 is always the current\nparty leader).\nGetPartyMemberByIndex',
     name: 'GetPartyMemberByIndex',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      return GameState.PartyManager.party[args[0]];
+    }
   },
   578: {
     comment: '578: GetGlobalBoolean\nThis function returns the value of a global boolean (TRUE or FALSE) scripting variable.',
     name: 'GetGlobalBoolean',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string]){
+      return GameState.GlobalVariableManager.GetGlobalBoolean(args[0]) ? NW_TRUE : NW_FALSE;
+    }
   },
   579: {
     comment: '579: SetGlobalBoolean\nThis function sets the value of a global boolean (TRUE or FALSE) scripting variable.',
     name: 'SetGlobalBoolean',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string, number]){
+      GameState.GlobalVariableManager.SetGlobalBoolean(args[0], !!args[1]);
+    }
   },
   580: {
     comment: '580: GetGlobalNumber\nThis function returns the value of a global number (-128 to +127) scripting variable.',
     name: 'GetGlobalNumber',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string]){
+      return GameState.GlobalVariableManager.GetGlobalNumber(args[0]);
+    }
   },
   581: {
     comment: '581: SetGlobalNumber\nThis function sets the value of a global number (-128 to +127) scripting variable.',
     name: 'SetGlobalNumber',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string, number]){
+      GameState.GlobalVariableManager.SetGlobalNumber(args[0], args[1]);
+    }
   },
   582: {
     comment: 'post a string to the screen at column nX and row nY for fLife seconds\n582. AurPostString',
@@ -4937,56 +4960,89 @@ NWScriptDefK2.Actions = {
     name: 'AddAvailableNPCByObject',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      return GameState.PartyManager.AddAvailableNPCByObject(args[0], args[1] as ModuleCreature) ? NW_TRUE : NW_FALSE;
+    }
   },
   695: {
     comment: '695. RemoveAvailableNPC\nThis removes a NPC from the list of available party members\nReturns whether it was successful or not',
     name: 'RemoveAvailableNPC',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.PartyManager.RemoveAvailableNPC(args[0]);
+      return NW_TRUE;
+    }
   },
   696: {
     comment: '696. IsAvailableNPC\nThis returns whether a NPC is in the list of available party members',
     name: 'IsAvailableCreature',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      return GameState.PartyManager.IsAvailable(args[0]) ? NW_TRUE : NW_FALSE;
+    }
   },
   697: {
     comment: '697. AddAvailableNPCByTemplate\nThis adds a NPC to the list of available party members using\na template\nReturns if true if successful, false if the NPC had already\nbeen added or the template specified is invalid',
     name: 'AddAvailableNPCByTemplate',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, string]){
+      return GameState.PartyManager.AddAvailableNPCByTemplate(args[0], args[1]) ? NW_TRUE : NW_FALSE;
+    }
   },
   698: {
     comment: '698. SpawnAvailableNPC\nThis spawns a NPC from the list of available creatures\nReturns a pointer to the creature object',
     name: 'SpawnAvailableNPC',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.LOCATION ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, EngineLocation]){
+      const template = GameState.PartyManager.NPCS[args[0]]?.template;
+      if(!template){ return undefined; }
+      const partyMember = new GameState.Module.ModuleArea.ModuleCreature(template);
+      if(args[1]?.area){ args[1].area.attachObject(partyMember); }
+      partyMember.load();
+      partyMember.clearAllActions();
+      partyMember.loadModel().then( (model: any) => {
+        if(model){ model.userData.moduleObject = partyMember; }
+        partyMember.setPosition(args[1].position);
+        partyMember.setFacing(args[1].getFacing(), true);
+        GameState.group.creatures.add(partyMember.container);
+        partyMember.getCurrentRoom();
+        partyMember.onSpawn();
+      });
+      return partyMember;
+    }
   },
   699: {
     comment: '699. IsNPCPartyMember\nReturns if a given NPC constant is in the party currently',
     name: 'IsNPCPartyMember',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      return GameState.PartyManager.IsNPCInParty(args[0]) ? NW_TRUE : NW_FALSE;
+    }
   },
   700: {
     comment: '700. ActionBarkString\nthis will cause a creature to bark the strRef from the talk table.',
     name: 'ActionBarkString',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        GameState.MenuManager.InGameBark.barkFromStringRef(args[0]);
+      }
+    }
   },
   701: {
     comment: '701. GetIsConversationActive\nChecks to see if any conversations are currently taking place',
     name: 'GetIsConversationActive',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      return (GameState.Mode === EngineMode.DIALOG) ? NW_TRUE : NW_FALSE;
+    }
   },
   702: {
     comment: '702. EffectLightsaberThrow\nThis function throws a lightsaber at a target\nIf multiple targets are specified, then the lightsaber travels to them\nsequentially, returning to the first object specified\nThis effect is applied to an object, so an effector is not needed',
