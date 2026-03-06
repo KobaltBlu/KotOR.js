@@ -22,6 +22,7 @@ export * from "./menu/MainMovies";
 export * from "./menu/MainOptions";
 export * from "./menu/MenuAbilities";
 export * from "./menu/MenuAutoPause";
+export * from "./menu/MenuCamp";
 export * from "./menu/MenuCharacter";
 export * from "./menu/MenuContainer";
 export * from "./menu/MenuCredits";

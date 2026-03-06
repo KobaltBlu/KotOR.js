@@ -2616,7 +2616,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getFP(){
-    return this.forcePoints;
+    return (this.maxForcePoints + this.currentForce) - this.forcePoints;
   }
 
   getMaxFP(){

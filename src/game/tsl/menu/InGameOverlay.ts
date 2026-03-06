@@ -389,6 +389,17 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.namePlateArrow.visible = true;
       this.tGuiPanel.widget.add(this.namePlateArrow);
 
+      // Wire up the camp button if it exists in the GUI layout
+      const btnCamp = this.getControlByName('BTN_CAMP');
+      if(btnCamp){
+        btnCamp.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if(this.manager.MenuCamp){
+            this.manager.MenuCamp.open();
+          }
+        });
+      }
+
       resolve();
     });
   }
