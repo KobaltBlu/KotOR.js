@@ -1,4 +1,5 @@
 import { CombatRound } from "../combat/CombatRound";
+import { CombatRoundAction } from "../combat/CombatRoundAction";
 import { ModuleObjectType, SSFType } from "../enums";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
@@ -102,7 +103,14 @@ export class ActionPhysicalAttacks extends Action {
 
           if( !combatRound.engaged ){ //non dueling round
             combatRound.beginCombatRound();
-            combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
+            // Use half the round length when a dedicated off-hand action follows,
+            // so that the off-hand attack fires at the round midpoint (K.11).
+            const hasOffHandPending = combatRound.scheduledActionList.some(a => a.isOffHand);
+            const isOffHandAction = combatRound.action?.isOffHand === true;
+            const pauseTime = (hasOffHandPending || isOffHandAction)
+              ? CombatRound.ROUND_LENGTH / 2
+              : CombatRound.ROUND_LENGTH;
+            combatRound.pauseRound(owner, pauseTime);
             if(combatRound.action){
               combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
             }

@@ -28,6 +28,7 @@ export class CombatRoundAction {
 
   isUserAction: boolean = false; //Was this action created by the player
   isCutsceneAttack: boolean = false;
+  isOffHand: boolean = false; //Whether this action is an off-hand attack in a dual-wield combo
 
   resultsCalculated: boolean = false;
   attackAnimation: number = 10001;

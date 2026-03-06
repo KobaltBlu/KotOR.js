@@ -85,6 +85,7 @@ export class MenuManager {
   static MenuUpgrade: KOTOR.MenuUpgrade;
   static MenuUpgradeItems: KOTOR.MenuUpgradeItems;
   static MenuUpgradeSelect: KOTOR.MenuUpgradeSelect;
+  static MenuPowerLevelUp: KOTOR.MenuPowerLevelUp;
 
   static Init(){
 
@@ -324,6 +325,7 @@ export class MenuManager {
         MenuManager.MenuInventory = await MenuManager.GameMenuLoader(KOTOR.MenuInventory) as KOTOR.MenuInventory;
         MenuManager.MenuJournal = await MenuManager.GameMenuLoader(KOTOR.MenuJournal) as KOTOR.MenuJournal;
         MenuManager.MenuLevelUp = await MenuManager.GameMenuLoader(KOTOR.MenuLevelUp) as KOTOR.MenuLevelUp;
+        MenuManager.MenuPowerLevelUp = await MenuManager.GameMenuLoader(KOTOR.MenuPowerLevelUp) as KOTOR.MenuPowerLevelUp;
         MenuManager.MenuMap = await MenuManager.GameMenuLoader(KOTOR.MenuMap) as KOTOR.MenuMap;
         MenuManager.MenuMessages = await MenuManager.GameMenuLoader(KOTOR.MenuMessages) as KOTOR.MenuMessages;
         MenuManager.MenuOptions = await MenuManager.GameMenuLoader(KOTOR.MenuOptions) as KOTOR.MenuOptions;
@@ -354,6 +356,7 @@ export class MenuManager {
         MenuManager.MenuInventory = await MenuManager.GameMenuLoader(TSL.MenuInventory) as KOTOR.MenuInventory;
         MenuManager.MenuJournal = await MenuManager.GameMenuLoader(TSL.MenuJournal) as KOTOR.MenuJournal;
         MenuManager.MenuLevelUp = await MenuManager.GameMenuLoader(TSL.MenuLevelUp) as KOTOR.MenuLevelUp;
+        MenuManager.MenuPowerLevelUp = await MenuManager.GameMenuLoader(TSL.MenuPowerLevelUp) as KOTOR.MenuPowerLevelUp;
         MenuManager.MenuMap = await MenuManager.GameMenuLoader(TSL.MenuMap) as KOTOR.MenuMap;
         MenuManager.MenuMessages = await MenuManager.GameMenuLoader(TSL.MenuMessages) as KOTOR.MenuMessages;
         MenuManager.MenuOptions = await MenuManager.GameMenuLoader(TSL.MenuOptions) as KOTOR.MenuOptions;

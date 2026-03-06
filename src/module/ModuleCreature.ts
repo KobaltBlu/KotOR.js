@@ -1422,6 +1422,21 @@ export class ModuleCreature extends ModuleObject {
 
     this.combatRound.addAction(combatAction);
 
+    // Schedule a separate off-hand attack when dual-wielding (K.11).
+    // Only one off-hand action is added per round; feat and cutscene attacks
+    // are single-action and do not get an off-hand companion.
+    if(!feat && !isCutsceneAttack && !this.combatRound.offHandTaken &&
+       this.combatRound.isDualWielding(this)){
+      this.combatRound.offHandTaken = true;
+      const offHandAction = new CombatRoundAction();
+      offHandAction.actionType = CombatActionType.ATTACK;
+      offHandAction.target = target;
+      offHandAction.animation = ModuleCreatureAnimState.ATTACK;
+      offHandAction.animationTime = 1500;
+      offHandAction.isOffHand = true;
+      this.combatRound.addAction(offHandAction);
+    }
+
     if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
       const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
       this.actionQueue.add(action);
