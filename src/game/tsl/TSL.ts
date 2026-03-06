@@ -32,6 +32,7 @@ export { InGameDialog } from "./menu/InGameDialog";
 export { MenuEquipment } from "./menu/MenuEquipment";
 export { MenuFeedback } from "./menu/MenuFeedback";
 export { MenuGalaxyMap } from "./menu/MenuGalaxyMap";
+export { MenuGameOver } from "./menu/MenuGameOver";
 export { MenuGameplay } from "./menu/MenuGameplay";
 export { MenuGraphics } from "./menu/MenuGraphics";
 export { MenuGraphicsAdvanced } from "./menu/MenuGraphicsAdvanced";

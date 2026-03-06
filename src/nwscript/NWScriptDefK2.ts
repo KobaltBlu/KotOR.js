@@ -4020,7 +4020,13 @@ NWScriptDefK2.Actions = {
     name: 'EndGame',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      if(args[0]){
+        GameState.MenuManager.MenuGameOver?.open();
+      }else{
+        GameState.MenuManager.MainMenu.Start();
+      }
+    }
   },
   565: {
     comment: '565: Get a variable passed when calling console debug runscript',

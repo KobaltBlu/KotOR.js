@@ -30,6 +30,7 @@ export * from "./menu/InGameDialog";
 export * from "./menu/MenuEquipment";
 export * from "./menu/MenuFeedback";
 export * from "./menu/MenuGalaxyMap";
+export * from "./menu/MenuGameOver";
 export * from "./menu/MenuGameplay";
 export * from "./menu/MenuGraphics";
 export * from "./menu/MenuGraphicsAdvanced";

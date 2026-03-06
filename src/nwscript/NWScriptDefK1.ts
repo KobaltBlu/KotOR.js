@@ -6572,7 +6572,14 @@ NWScriptDefK1.Actions = {
     comment: "564: Immediately ends the currently running game and returns to the start screen.\nnShowEndGameGui: Set TRUE to display the death gui.\n",
     name: "EndGame",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      if(args[0]){
+        GameState.MenuManager.MenuGameOver?.open();
+      }else{
+        GameState.MenuManager.MainMenu.Start();
+      }
+    }
   },
   565:{
     comment: "565: Get a variable passed when calling console debug runscript\n",

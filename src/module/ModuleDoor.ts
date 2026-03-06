@@ -30,8 +30,10 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { GameEffectFactory } from "../effects/GameEffectFactory";
-import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "../enums";.3
+import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "../enums";
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { Dice } from "../utility/Dice";
+import { DiceType } from "../enums/combat/DiceType";
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
@@ -440,7 +442,7 @@ export class ModuleDoor extends ModuleObject {
     
     const nSecuritySkill = object.getSkillLevel(SkillType.SECURITY);
     if(this.isLocked() && !this.keyRequired && nSecuritySkill >= 1){
-      let d20 = 20;//d20 rolls are auto 20's outside of combat
+      const d20 = Dice.roll(1, DiceType.d20);
       let skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
       if(skillCheck >= 1 && nSecuritySkill >= 1){
         this.unlock(object);

@@ -2223,6 +2223,12 @@ export class ModuleCreature extends ModuleObject {
 
   onDeath(){
     this.weaponPowered(false);
+
+    // Check if all party members are dead → show Game Over screen
+    if(GameState.PartyManager.party.length && GameState.PartyManager.party.every(m => m.isDead())){
+      GameState.MenuManager.MenuGameOver?.open();
+    }
+
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnDeath];
     if(!nwscript){ return true; }
     const instance = nwscript.newInstance();
