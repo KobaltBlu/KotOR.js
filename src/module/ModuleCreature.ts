@@ -3406,6 +3406,7 @@ export class ModuleCreature extends ModuleObject {
 
     this.unequipSlot(slot);
     item.onEquip(this);
+    (this as any).lastItemEquipped = item;
     await item.loadModel();
     switch(slot){
       case ModuleCreatureArmorSlot.ARMOR:

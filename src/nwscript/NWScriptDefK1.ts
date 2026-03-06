@@ -801,7 +801,13 @@ NWScriptDefK1.Actions = {
     comment: "52:\nReturns the last item that was equipped by a creature.\n",
     name: "GetLastItemEquipped",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return (this.caller as any).lastItemEquipped;
+      }
+      return undefined;
+    }
   },
   53:{
     comment: "53:\nReturns the ID of the subscreen that is currently onscreen.  This will be one of the\nSUBSCREEN_ID_* constant values.\n",
@@ -2786,7 +2792,14 @@ NWScriptDefK1.Actions = {
     comment: "211: Get the creature that is going to attack oTarget.\nNote: This value is cleared out at the end of every combat round and should\nnot be used in any case except when getting a 'going to be attacked' shout\nfrom the master creature (and this creature is a henchman)\n* Returns OBJECT_INVALID if oTarget is not a valid creature.\n",
     name: "GetGoingToBeAttackedBy",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        // Return the current combat attacker if it targets this creature
+        return (args[0] as any).combatData?.lastAttacker;
+      }
+      return undefined;
+    }
   },
   212:{
     comment: "212: Create a Force Resistance Increase effect.\n- nValue: size of Force Resistance increase\n",
@@ -4080,7 +4093,24 @@ NWScriptDefK1.Actions = {
     comment: "310: Use tChosenTalent at lTargetLocation.\n",
     name: "ActionUseTalentAtLocation",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.TALENT, NWScriptDataType.LOCATION]
+    args: [NWScriptDataType.TALENT, NWScriptDataType.LOCATION],
+    action: function(this: NWScriptInstance, args: [TalentObject, EngineLocation]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) return;
+      if(!args[0] || !args[1]) return;
+      const spellAction = new GameState.ActionFactory.ActionCastSpell();
+      spellAction.setParameter(0, ActionParameterType.INT, args[0].id);
+      spellAction.setParameter(1, ActionParameterType.INT, -1);
+      spellAction.setParameter(2, ActionParameterType.INT, 0);
+      spellAction.setParameter(3, ActionParameterType.INT, 0);
+      spellAction.setParameter(4, ActionParameterType.INT, 0);
+      spellAction.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+      spellAction.setParameter(6, ActionParameterType.FLOAT, args[1].position.x);
+      spellAction.setParameter(7, ActionParameterType.FLOAT, args[1].position.y);
+      spellAction.setParameter(8, ActionParameterType.FLOAT, args[1].position.z);
+      spellAction.setParameter(9, ActionParameterType.INT, 1);    // bInstant
+      spellAction.setParameter(10, ActionParameterType.INT, -1);
+      this.caller.actionQueue.add(spellAction);
+    }
   },
   311:{
     comment: "311: Get the gold piece value of oItem.\n* Returns 0 if oItem is not a valid item.\n",
@@ -4098,7 +4128,13 @@ NWScriptDefK1.Actions = {
     comment: "312: * Returns TRUE if oCreature is of a playable racial type.\n",
     name: "GetIsPlayableRacialType",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){ return NW_FALSE; }
+      // Playable races: Human=6, Wookiee=7, Twi'lek=8, Zabrak=9, Rodian=10, Trandoshan=11, Cathar=12, Ithorian=13, Sullustan=14, Duros=15
+      const race = (args[0] as ModuleCreature).race;
+      return (race >= 6 && race <= 15) ? NW_TRUE : NW_FALSE;
+    }
   },
   313:{
     comment: "313: Jump to lDestination.  The action is added to the TOP of the action queue.\n",
@@ -4570,7 +4606,10 @@ NWScriptDefK1.Actions = {
     comment: "347: Get the last object that disarmed the trap on the caller.\n* Returns OBJECT_INVALID if the caller is not a valid placeable, trigger or\ndoor.\n",
     name: "GetLastDisarmed",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return (this.caller as any).lastUsedBy;
+    }
   },
   348:{
     comment: "348: Get the last object that disturbed the inventory of the caller.\n* Returns OBJECT_INVALID if the caller is not a valid creature or placeable.\n",
@@ -4683,7 +4722,19 @@ NWScriptDefK1.Actions = {
     comment: "360: Causes the action subject to move away from lMoveAwayFrom.\n",
     name: "ActionMoveAwayFromLocation",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [EngineLocation, number, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) return;
+      if(!args[0]) return;
+      const caller = this.caller as ModuleCreature;
+      const fleeRange = typeof args[2] === 'number' && args[2] > 0 ? args[2] : 5;
+      const dir = caller.position.clone().sub(args[0].position);
+      if(dir.lengthSq() === 0) dir.set(1, 0, 0);
+      dir.normalize().multiplyScalar(fleeRange);
+      const dest = caller.position.clone().add(dir);
+      const loc = new EngineLocation(dest.x, dest.y, dest.z, 0, 0, 0);
+      caller.moveToLocation(loc, !!args[1]);
+    }
   },
   361:{
     comment: "361: Get the target that the caller attempted to attack - this should be used in\nconjunction with GetAttackTarget(). This value is set every time an attack is\nmade, and is reset at the end of combat.\n* Returns OBJECT_INVALID if the caller is not a valid creature.\n",
@@ -4999,7 +5050,16 @@ NWScriptDefK1.Actions = {
     comment: "388: Spawn a GUI panel for the client that controls oPC.\n- oPC\n- nGUIPanel: GUI_PANEL_*\n* Nothing happens if oPC is not a player character or if an invalid value is\nused for nGUIPanel.\n",
     name: "PopUpGUIPanel",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      // GUI_PANEL_DEATH = 0; GUI_PANEL_PLAYER_DEATH = 0
+      // Opening the game over / death screen is the main use case here.
+      if(args[1] === 0 || args[1] === 1){
+        if(GameState.MenuManager.MenuGameOver){
+          GameState.MenuManager.MenuGameOver.open();
+        }
+      }
+    }
   },
   389:{
     comment: "389: This allows you to add a new class to any creature object\n",
