@@ -135,6 +135,8 @@ export class ModuleCreature extends ModuleObject {
   declare footstepEmitter: AudioEmitter;
   props: any;
   maxForcePoints: any;
+  bonusForcePoints: number;
+  orientOnClick: boolean;
   bodyModel: any;
   bodyTexture: any;
   headModel: any;
@@ -299,6 +301,8 @@ export class ModuleCreature extends ModuleObject {
     this.feats = [];
     this.firstName = '';
     this.forcePoints = 0;
+    this.bonusForcePoints = 0;
+    this.orientOnClick = true;
     this.gender = 0;
     this.goodEvil = 50;
     this.hitPoints = 0; //Base Maximum Hit Points, not considering any bonuses. See Section 3.4 for more details.   
@@ -2620,7 +2624,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getMaxFP(){
-    return this.maxForcePoints;
+    return this.maxForcePoints + this.bonusForcePoints;
   }
 
   setFP(nAmount = 0){
