@@ -7154,7 +7154,7 @@ NWScriptDefK1.Actions = {
   538:{
     comment: "538: Get the tag of the key that will open the lock on oObject.\n",
     name: "GetLockKeyTag",
-    type: NWScriptDataType.INTEGER,
+    type: NWScriptDataType.STRING,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){

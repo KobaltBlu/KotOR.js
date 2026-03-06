@@ -160,7 +160,7 @@ export class ModuleObject {
   casting: any[] = [];
   damageList: any[] = [];
   lastDamageByType: Record<number, number> = {};
-  attemptedMovementTarget: ModuleObject;
+  attemptedMovementTarget?: ModuleObject;
   _locals: { Booleans: any[]; Numbers: {}; };
   objectsInside: any[];
   lockDialogOrientation: boolean = false;
