@@ -49,9 +49,16 @@ export class EffectDamage extends GameEffect {
     super.onApply();
     
     if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleObject)){
-      this.object.subtractHP(this.getDamageAmount());
+      const amount = this.getDamageAmount();
+      const damageType = this.getDamageType();
+      this.object.subtractHP(amount);
       this.object.combatData.lastDamager = this.creator;
       this.object.combatData.lastAttacker = this.creator;
+      (this.object as any).lastDamageAmount = amount;
+      this.object.lastDamageByType = {};
+      if(damageType >= 0){
+        this.object.lastDamageByType[damageType] = amount;
+      }
     }
   }
 

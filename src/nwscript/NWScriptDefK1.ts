@@ -4582,6 +4582,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return this.caller.lastDamageByType[args[0]] || 0;
+      }
       return 0;
     }
   },
@@ -5504,7 +5507,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return 0;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).encounterCreature ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
     }
   },
   410:{
@@ -6377,7 +6383,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return;
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return this.caller.attemptedMovementTarget;
+      }
+      return undefined;
     }
   },
   490:{
@@ -7045,6 +7054,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
+      this.partyMemberIndex = 0;
       return GameState.PartyManager.party[0];
     }
   },
@@ -7054,7 +7064,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return;
+      this.partyMemberIndex++;
+      const party = GameState.PartyManager.party;
+      if(this.partyMemberIndex < party.length){
+        return party[this.partyMemberIndex];
+      }
+      return undefined;
     }
   },
   550:{
@@ -7601,7 +7616,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      //return GameState.module.area.MiniGame.Enemies.indexOf(args[0]) >= 0;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger)){
+        return NW_TRUE;
+      }
+      return NW_FALSE;
     }
   },
   603:{
@@ -8707,7 +8725,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return 0;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return args[0].combatData.lastForcePowerSuccess ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
     }
   },
   727:{
