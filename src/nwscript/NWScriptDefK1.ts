@@ -3765,7 +3765,13 @@ NWScriptDefK1.Actions = {
     comment: "287: Use nFeat on oTarget.\n- nFeat: FEAT_*\n- oTarget\n",
     name: "ActionUseFeat",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){ return; }
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){ return; }
+      const feat = new GameState.TalentFeat(args[0]);
+      (this.caller as ModuleCreature).attackCreature(args[1], feat);
+    }
   },
   288:{
     comment: "288: Runs the action 'UseSkill' on the current creature\nUse nSkill on oTarget.\n- nSkill: SKILL_*\n- oTarget\n- nSubSkill: SUBSKILL_*\n- oItemUsed: Item to use in conjunction with the skill\n",
@@ -5264,7 +5270,35 @@ NWScriptDefK1.Actions = {
     comment: "404: The creature will equip the armour in its possession that has the highest\narmour class.\n",
     name: "ActionEquipMostEffectiveArmor",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){ return; }
+      const creature = this.caller as ModuleCreature;
+      // Find the armor in inventory with the highest AC value
+      const inventory = creature.getInventory ? creature.getInventory() : [];
+      let bestArmor: any = null;
+      let bestAC = -1;
+      for(const item of inventory){
+        if(!item) continue;
+        const baseItem = GameState.TwoDAManager.datatables.get('baseitems')?.rows[item.getBaseItemId?.()];
+        if(!baseItem) continue;
+        const equipSlots = parseInt(baseItem.equipableslots) || 0;
+        // Check if it equips to body slot (slot 4 = ARMOR/BODY)
+        if(!(equipSlots & 0x10)){ continue; }
+        const ac = parseInt(baseItem.armorclass) || 0;
+        if(ac > bestAC){
+          bestAC = ac;
+          bestArmor = item;
+        }
+      }
+      if(bestArmor){
+        const equipAction = new GameState.ActionFactory.ActionEquipItem();
+        equipAction.setParameter(0, ActionParameterType.DWORD, bestArmor.id);
+        equipAction.setParameter(1, ActionParameterType.DWORD, 0);
+        equipAction.setParameter(2, ActionParameterType.INT, 0);
+        creature.actionQueue.add(equipAction);
+      }
+    }
   },
   405:{
     comment: "405: * Returns TRUE if it is currently day.\n",

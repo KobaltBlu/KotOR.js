@@ -852,6 +852,12 @@ export class ModuleObject {
         return ModuleCreatureAnimState.KNEEL_TALK_SAD;
       case 35: //MEDITATE LOOP
         return ModuleCreatureAnimState.MEDITATE;
+      case 39: //ANIMATION_FIREFORGET_CASTOUT1
+        return ModuleCreatureAnimState.CASTOUT1;
+      case 40: //ANIMATION_FIREFORGET_CASTOUT2
+        return ModuleCreatureAnimState.CASTOUT2;
+      case 41: //ANIMATION_FIREFORGET_CASTOUT_LOOP
+        return ModuleCreatureAnimState.CASTOUT1_LP;
       case 100: //HEAD_TURN_LEFT
         return ModuleCreatureAnimState.HEAD_TURN_LEFT;
       case 101: //HEAD_TURN_RIGHT

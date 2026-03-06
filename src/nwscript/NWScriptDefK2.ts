@@ -5515,7 +5515,17 @@ NWScriptDefK2.Actions = {
     name: 'GetSpellForcePointCost',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // Return the base force point cost of the spell being cast by this caller.
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        const spellId = (this.caller as any).combatData?.currentSpellId;
+        if(spellId != null){
+          const spellRow = GameState.TwoDAManager.datatables.get('spells')?.rows[spellId];
+          if(spellRow){ return parseInt(spellRow.forcepointcost) || 0; }
+        }
+      }
+      return 0;
+    }
   },
   777: {
     comment: 'DJS-OEI 1/2/2004\n777: Create a Fury effect.',
@@ -6260,7 +6270,13 @@ NWScriptDefK2.Actions = {
     name: 'ActionSwitchWeapons',
     type: NWScriptDataType.VOID,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // Toggle the weapon configuration index (0 or 1) on the creature
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        const c = this.caller as any;
+        c.weaponConfig = (c.weaponConfig === 1) ? 0 : 1;
+      }
+    }
   },
   854: {
     comment: '854\nDJS-OEI 8/29/2004\nPlayOverlayAnimation\nThis function will play an overlay animation on a character\neven if the character is moving. This does not cause an action\nto be placed on the queue. The animation passed in must be\ndesignated as an overlay in Animations.2DA.',
@@ -6299,14 +6315,23 @@ NWScriptDefK2.Actions = {
     name: 'DisableHealthRegen',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      // Store disable flag on module for HP regen logic to check
+      if(GameState.module){
+        (GameState.module as any).healthRegenDisabled = !!args[0];
+      }
+    }
   },
   859: {
     comment: '859\nDJS-OEI 9/7/2004\nThis function sets the current Jedi Form on the given creature. This\ncall will do nothing if the target does not know the Form itself.',
     name: 'SetCurrentForm',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as any).currentJediForm = args[1];
+      }
+    }
   },
   860: {
     comment: '860\nRWT-OEI 09/09/04\nThis will disable or enable area transit',

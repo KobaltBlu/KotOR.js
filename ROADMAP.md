@@ -92,10 +92,10 @@ Five webpack entry points are built and deployed:
 | System | Gap | Key Files |
 |--------|-----|-----------|
 | Combat resolution | Attack rolls, sneak attack work; dual-wield off-hand now scheduled; Force powers, critical multipliers incomplete | `src/combat/CombatRound.ts`, `src/actions/ActionCombat.ts` |
-| NWScript standard library | ~80 % of K1 functions wired; ~7 functions have `//TODO` bodies; K2 lib less complete | `src/nwscript/NWScriptDefK1.ts`, `NWScriptDefK2.ts` |
+| NWScript standard library | ~87 % of K1 functions wired; `ActionUseFeat`, `ActionUseSkill`, `ActionEquipMostEffectiveArmor`, `ActionCastFakeSpellAt*` implemented; K2 lib brought from 43→57 implemented actions | `src/nwscript/NWScriptDefK1.ts`, `NWScriptDefK2.ts` |
 | Dialog / conversation system | UI renders; script callbacks for checks & variable writes partial | `src/game/kotor/menu/InGameDialog.ts` |
 | AI / creature behaviour | Basic movement and action execution; enemy AI and party combat AI wired | `src/module/ModuleCreature.ts` |
-| Save / load game | Data model present; serialisation round-trip has one `//TODO` block | `src/engine/SaveGame.ts` |
+| Save / load game | Full round-trip now working; `loadInventory()` enabled; AUTOSAVE slot written on every module transition | `src/engine/SaveGame.ts` |
 | Level-up UI | 5-step navigation wired; skill +/- and manual feat-picker still pending | `src/game/kotor/menu/MenuLevelUp.ts` |
 | Store / merchant transactions | Buy/sell credit deduction and item transfer wired | `src/game/kotor/menu/MenuStore.ts`, `src/module/ModuleStore.ts` |
 | Cutscenes / in-engine camera | Video playback works; animated-camera (`camera_animated`) untested end-to-end | `src/module/ModuleCamera.ts` |
@@ -110,12 +110,12 @@ Five webpack entry points are built and deployed:
 | Companion tactical AI | `src/module/ModuleCreature.ts` |
 | Skill checks (Persuade, Repair, Computer, etc.) | `src/engine/rules/` |
 | Force power full casting pipeline | `src/nwscript/NWScriptDefK1.ts` |
-| Party formation (follow, spread, hold) | `src/managers/PartyManager.ts` |
+| Party formation (follow, spread, hold) | Companion now moves to party group and queues `ActionFollowLeader` when added via `AddCreatureToParty` | `src/managers/PartyManager.ts` |
 | Area transition persistence (state across module loads) | `src/module/Module.ts` |
 | Quest logic / trigger conditions | `src/managers/JournalManager.ts` |
 | Minigames: Swoop Racing, Space Turret | `src/module/ModuleMiniGame.ts` |
 | Character alignment tracking | `src/module/ModuleCreature.ts` |
-| Romance / influence system (K2) | — |
+| Romance / influence system (K2) | `GetInfluence/SetInfluence/ModifyInfluence` wired; basic influence map in `PartyManager` | — |
 | Credits sequence | — |
 
 ---

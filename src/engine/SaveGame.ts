@@ -566,7 +566,7 @@ export class SaveGame {
     console.log('SaveGame', 'Loading Inventory...');
 
     try{
-      const buffer = await GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'inventory.res'));
+      const buffer = await GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res'));
       this.inventory = new GFFObject(buffer);
       let invArr = this.inventory.RootNode.getFieldByLabel('ItemList').getChildStructs();
       for(let i = 0; i < invArr.length; i++){
