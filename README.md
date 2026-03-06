@@ -100,6 +100,16 @@ Without these people below I couldn't have gotten this far.
   
 And many many more!
 
+## Resources
+
+Useful references for engine accuracy and scripting fidelity:
+
+- [KotOR Scripting Tool](https://github.com/KobaltBlu/KotOR-Scripting-Tool) – Script editor and NWScript reference tool for KotOR I & II
+- [xoreos KotOR engine source](https://github.com/xoreos/xoreos/blob/master/src/engines/kotor/kotor.cpp) – Open-source KotOR engine reimplementation
+- [KOTOR Force Powers (swkotorwiki)](https://swkotorwiki.fandom.com/wiki/KOTOR:Force_Powers) – Force power descriptions and game data
+- [Powers and abilities (swtor-archive)](https://swtor-archive.fandom.com/wiki/Powers_and_abilities_(Star_Wars:_Knights_of_the_Old_Republic)) – Complete power/ability reference
+- [Difficulty Classes (strategywiki)](https://strategywiki.org/wiki/Star_Wars:_Knights_of_the_Old_Republic/Difficulty_Classes) – DC formulas for saves and checks
+
 ## License
 
 [GPL 3.0 (GNU General Public License)](LICENSE.md)

@@ -21,6 +21,20 @@
  *  6. EnableRendering (K2 fn 871) – sets model.visible.
  *
  *  7. GetCombatActionsPending (K2 fn 872) – inspects combatData.combatQueue.
+ *
+ *  8. Saving throw fidelity – natural-20 auto-success, natural-1 auto-fail,
+ *     and ">=" DC comparison for FortitudeSave / ReflexSave / WillSave.
+ *
+ *  9. GetSpellSaveDC – 10 + WIS modifier formula (no longer returns hardcoded 10).
+ *
+ * 10. GetReflexAdjustedDamage – full / half / zero damage based on reflex save
+ *     result and Evasion feat.
+ *
+ * References:
+ *  - KotOR Scripting Tool: https://github.com/KobaltBlu/KotOR-Scripting-Tool
+ *  - KOTOR Force Powers:   https://swkotorwiki.fandom.com/wiki/KOTOR:Force_Powers
+ *  - Difficulty Classes:   https://strategywiki.org/wiki/Star_Wars:_Knights_of_the_Old_Republic/Difficulty_Classes
+ *  - xoreos KotOR source:  https://github.com/xoreos/xoreos/blob/master/src/engines/kotor/kotor.cpp
  */
 
 // ---------------------------------------------------------------------------
@@ -361,5 +375,127 @@ describe('GetCombatActionsPending logic (K2 fn 872)', () => {
     const creature = { combatData: { combatQueue: [{}, {}] as any[] } };
     const result = creature.combatData.combatQueue.length > 0 ? NW_TRUE : NW_FALSE;
     expect(result).toBe(NW_TRUE);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 8. Saving throw fidelity – natural-20 / natural-1 / >= comparison
+// ---------------------------------------------------------------------------
+
+/** Mirrors the fixed fortitudeSave / reflexSave / willSave logic in ModuleObject */
+function simulateSave(roll: number, saveBonus: number, abilityMod: number, nDC: number): number {
+  if (roll === 20) return 1;
+  if (roll === 1)  return 0;
+  return (roll + saveBonus + abilityMod) >= nDC ? 1 : 0;
+}
+
+describe('Saving throw fidelity (natural-20, natural-1, >= DC)', () => {
+  it('natural 20 always succeeds regardless of DC', () => {
+    expect(simulateSave(20, -5, -2, 30)).toBe(1);
+  });
+
+  it('natural 1 always fails regardless of bonuses', () => {
+    expect(simulateSave(1, 99, 99, 1)).toBe(0);
+  });
+
+  it('roll equal to DC succeeds (>= comparison)', () => {
+    // roll 10 + saveBonus 2 + abilityMod 3 = 15 vs DC 15 → pass
+    expect(simulateSave(10, 2, 3, 15)).toBe(1);
+  });
+
+  it('roll one below DC fails', () => {
+    // roll 10 + saveBonus 2 + abilityMod 2 = 14 vs DC 15 → fail
+    expect(simulateSave(10, 2, 2, 15)).toBe(0);
+  });
+
+  it('roll comfortably above DC succeeds', () => {
+    expect(simulateSave(15, 3, 2, 15)).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 9. GetSpellSaveDC – 10 + WIS modifier
+// ---------------------------------------------------------------------------
+
+function simulateGetMod(stat: number): number {
+  return Math.floor((stat - 10) / 2);
+}
+
+function simulateGetSpellSaveDC(wis: number): number {
+  return 10 + simulateGetMod(wis);
+}
+
+describe('GetSpellSaveDC (10 + WIS modifier)', () => {
+  it('WIS 10 → DC 10 (modifier 0)', () => {
+    expect(simulateGetSpellSaveDC(10)).toBe(10);
+  });
+
+  it('WIS 14 → DC 12 (modifier +2)', () => {
+    expect(simulateGetSpellSaveDC(14)).toBe(12);
+  });
+
+  it('WIS 18 → DC 14 (modifier +4)', () => {
+    expect(simulateGetSpellSaveDC(18)).toBe(14);
+  });
+
+  it('WIS 8 → DC 9 (modifier -1)', () => {
+    expect(simulateGetSpellSaveDC(8)).toBe(9);
+  });
+
+  it('WIS 20 → DC 15 (modifier +5)', () => {
+    expect(simulateGetSpellSaveDC(20)).toBe(15);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 10. GetReflexAdjustedDamage – full / half / zero based on reflex + evasion
+// ---------------------------------------------------------------------------
+
+const EVASION_FEAT_ID = 125;
+
+function simulateReflexAdjustedDamage(
+  nDamage: number,
+  reflexSaveResult: 0 | 1,
+  hasEvasion: boolean
+): number {
+  if (reflexSaveResult === 1) {
+    if (hasEvasion) return 0;
+    return Math.floor(nDamage / 2);
+  }
+  return nDamage;
+}
+
+describe('GetReflexAdjustedDamage (fn 299)', () => {
+  it('failed reflex save → full damage', () => {
+    expect(simulateReflexAdjustedDamage(20, 0, false)).toBe(20);
+  });
+
+  it('successful reflex save → half damage (rounded down)', () => {
+    expect(simulateReflexAdjustedDamage(20, 1, false)).toBe(10);
+  });
+
+  it('odd damage halves correctly (floor)', () => {
+    expect(simulateReflexAdjustedDamage(15, 1, false)).toBe(7);
+  });
+
+  it('1 damage halved → 0', () => {
+    expect(simulateReflexAdjustedDamage(1, 1, false)).toBe(0);
+  });
+
+  it('Evasion feat + successful reflex save → zero damage', () => {
+    expect(simulateReflexAdjustedDamage(30, 1, true)).toBe(0);
+  });
+
+  it('Evasion feat + failed reflex save → full damage', () => {
+    expect(simulateReflexAdjustedDamage(30, 0, true)).toBe(30);
+  });
+
+  it('zero base damage → zero regardless of save', () => {
+    expect(simulateReflexAdjustedDamage(0, 0, false)).toBe(0);
+    expect(simulateReflexAdjustedDamage(0, 1, false)).toBe(0);
+  });
+
+  it('EVASION feat constant is 125', () => {
+    expect(EVASION_FEAT_ID).toBe(125);
   });
 });
