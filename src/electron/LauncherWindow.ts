@@ -12,11 +12,11 @@ export class LauncherWindow {
       this.browserWindow.focus();
       return;
     }
-    
+
     // Create the browser window.
     this.browserWindow = new BrowserWindow({
-      width: 1200, 
-      height: 600, 
+      width: 1200,
+      height: 600,
       minHeight: 600,
       minWidth: 1000,
       frame: false,
@@ -48,7 +48,7 @@ export class LauncherWindow {
         return { action: 'allow' };
       })
     })
-  
+
     // Emitted when the window is closed.
     this.browserWindow.on('closed', () => {
       // Dereference the window object, usually you would store windows
@@ -56,24 +56,24 @@ export class LauncherWindow {
       // when you should delete the corresponding element.
       // this.browserWindow = undefined;
     });
-  
+
     this.browserWindow.on('minimize', () => {
       if(this.browserWindow) this.browserWindow.hide();
     });
-  
-    this.browserWindow.on('close', (event) => {
+
+    this.browserWindow.on('close', () => {
       /*if(!app.isQuiting){
         event.preventDefault();
         winLauncher.hide();
       }
-  
+
       return false;*/
     });
-    
+
     this.browserWindow.on('show', () => {
       //tray.setHighlightMode('always');
     });
-  
+
     this.browserWindow.on('hide', () => {
       //tray.setHighlightMode('never');
     });
@@ -81,7 +81,7 @@ export class LauncherWindow {
 
   toggleWindow(){
     if(this.browserWindow)
-      this.browserWindow.isVisible() ? 
+      this.browserWindow.isVisible() ?
         this.browserWindow.hide() : this.browserWindow.show();
   }
 

@@ -19,9 +19,9 @@ import { GUIControlType } from "../enums/gui/GUIControlType";
 
 /**
  * GameMenu class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GameMenu.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -57,18 +57,18 @@ export class GameMenu {
 
   /**
    * Panel bit_flags matching the original game's CSWGuiPanel::bit_flags.
-   * 
+   *
    * Original default from CSWGuiPanel::CSWGuiPanel: 0x84 (bits 2,7)
    *   - bit 7 (0x80): visible (Draw checks *(char*)&bit_flags < '\0')
    *   - bit 2 (0x04): initial flag
    * After StartLoadFromLayout: |= 0x02 (loaded)
    * After per-menu LoadFromLayout: |= 0x01 (uses GetExtentAccountingForPanelOffset for hit testing)
-   * 
+   *
    * Centering flags (used by GetExtentAccountingForPanelOffset):
    *   - 0x08: Center panel on screen (left += (vw-w)/2, top += (vh-h)/2) — MUTUALLY EXCLUSIVE with 0x20/0x40
    *   - 0x20: Horizontal offset by (viewportWidth - 640) / 2
    *   - 0x40: Vertical offset by (viewportHeight - 480) / 2
-   * 
+   *
    * KotOR.js default: 0x8F = original 0x87 + 0x08 for centering at arbitrary resolutions.
    * Set to 0x87 for original behavior (no centering, panel at raw extent position).
    */
@@ -120,7 +120,7 @@ export class GameMenu {
     GameState.PerformanceMonitor.start(this.constructor.name+'.buildMenu');
     this.tGuiPanel = new GUIControl(this, gff.RootNode, undefined, this.enablePositionScaling);
     this.tGuiPanel.allowClick = false;
-    
+
     const extent = this.tGuiPanel.extent;
     this.width = extent.width;
     this.height = extent.height;
@@ -134,7 +134,7 @@ export class GameMenu {
     if(this.backgroundSprite){
       this.tGuiPanel.widget.add(this.backgroundSprite);
     }
-    
+
     // Root panel position is now set by calculatePosition() during createControl(),
     // matching the original CSWGuiPanel::GetExtentAccountingForPanelOffset behavior.
     // Do NOT override it here — that would cause an inconsistency between initial
@@ -142,7 +142,7 @@ export class GameMenu {
 
     //This auto assigns references for the controls to the menu object.
     //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
-    //You can just use this.CONTROL_NAME 
+    //You can just use this.CONTROL_NAME
     this.assignChildControlsToMenu(this.tGuiPanel);
 
     await this.menuControlInitializer();
@@ -450,7 +450,7 @@ export class GameMenu {
   }
 
   triggerControllerLStickXPress( positive = false ){
-    
+
   }
 
   triggerControllerLStickYPress( positive = false ){
