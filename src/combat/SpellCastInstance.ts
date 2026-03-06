@@ -166,6 +166,11 @@ export class SpellCastInstance {
     if(this.spell && this.spell.forcepoints > 0 && BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       (this.owner as any).subtractFP(this.spell.forcepoints);
     }
+
+    // Default to successful; impact script may call SetForcePowerUnsuccessful to override
+    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+      this.owner.combatData.lastForcePowerSuccess = true;
+    }
     
     if(this.impactscript != ''){
       console.log('Casting spell', this.impactscript, this);
