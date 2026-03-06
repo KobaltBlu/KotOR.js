@@ -40,6 +40,8 @@ export class ActionUnequipItem extends Action {
 
     if(obj.equipment.HEAD == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.HEAD);
+    }else if(obj.equipment.ARMOR == item){
+      obj.unequipSlot(ModuleCreatureArmorSlot.ARMOR);
     }else if(obj.equipment.ARMS == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.ARMS);
     }else if(obj.equipment.IMPLANT == item){

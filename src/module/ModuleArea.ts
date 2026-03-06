@@ -1018,6 +1018,7 @@ export class ModuleArea extends ModuleObject {
     const areaEffects = this.git.getFieldByLabel('AreaEffectList');
     const cameras = this.git.getFieldByLabel('CameraList');
     const creatures = this.git.getFieldByLabel('Creature List');
+    const groundItems = this.git.getFieldByLabel('List');
     const doors = this.git.getFieldByLabel('Door List');
     const encounters = this.git.getFieldByLabel('Encounter List');
     const placeables = this.git.getFieldByLabel('Placeable List');
@@ -1065,6 +1066,16 @@ export class ModuleArea extends ModuleObject {
       for(let i = 0; i < creatures.childStructs.length; i++){
         const strt = creatures.childStructs[i];
         this.attachObject( new ModuleCreature(GFFObject.FromStruct(strt)) );
+      }
+    }
+
+    //Ground Items (items placed in the world)
+    if(groundItems){
+      for(let i = 0; i < groundItems.childStructs.length; i++){
+        const strt = groundItems.childStructs[i];
+        const item = new ModuleItem(GFFObject.FromStruct(strt));
+        item.placedInWorld = true;
+        this.items.push(item);
       }
     }
 
@@ -1329,6 +1340,7 @@ export class ModuleArea extends ModuleObject {
       try { await this.loadCameras(); } catch(e){ console.error(e); }
 
       try { await this.loadPlaceables(); } catch(e){ console.error(e); }
+      try { await this.loadGroundItems(); } catch(e){ console.error(e); }
 
       GameState.MenuManager.LoadScreen.setProgress(20);
 
@@ -1794,6 +1806,29 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
+   * Load ground items (items placed in the world via CreateItemOnFloor or ActionDropItem)
+   */
+  async loadGroundItems(): Promise<void> {
+    console.log('Loading Ground Items');
+    for(let i = 0; i < this.items.length; i++){
+      const item = this.items[i];
+      try{
+        item.load();
+        // item.load() populates item.position from the template XPosition/YPosition/ZPosition
+        const model = await item.loadModel();
+        if(model){
+          model.userData.moduleObject = item;
+          model.name = item.getTag();
+          GameState.group.placeables.add(model);
+        }
+        item.getCurrentRoom();
+      }catch(e){
+        console.error('loadGroundItems error', e);
+      }
+    }
+  }
+
+  /**
    * Load the area's waypoints
    */
   async loadWaypoints(): Promise<void> {
@@ -2245,8 +2280,11 @@ export class ModuleArea extends ModuleObject {
       encounterList.addChildStruct( this.encounters[i].save().RootNode );
     }
 
-    //Area Items List
+    //Area Ground Items List
     const list = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'List') );
+    for(let i = 0; i < this.items.length; i++){
+      list.addChildStruct( this.items[i].save() );
+    }
 
     const placeableList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Placeable List') );
     for(let i = 0; i < this.placeables.length; i++){

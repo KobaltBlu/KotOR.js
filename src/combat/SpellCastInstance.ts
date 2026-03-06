@@ -6,6 +6,8 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
 import { GameState } from "../GameState";
 import { MDLLoader } from "../loaders";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
 
 /**
  * SpellCastInstance class.
@@ -159,6 +161,11 @@ export class SpellCastInstance {
     //We only want to run the impact script once
     if(this.impacted) return;
     this.impacted = true;
+
+    // Deduct Force Points from the caster for this spell
+    if(this.spell && this.spell.forcepoints > 0 && BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+      (this.owner as any).subtractFP(this.spell.forcepoints);
+    }
     
     if(this.impactscript != ''){
       console.log('Casting spell', this.impactscript, this);

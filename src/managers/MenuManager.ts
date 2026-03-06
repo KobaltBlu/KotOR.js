@@ -51,6 +51,7 @@ export class MenuManager {
   static MainOptions: KOTOR.MainOptions;
   static MenuAbilities: KOTOR.MenuAbilities;
   static MenuAutoPause: KOTOR.MenuAutoPause;
+  static MenuCamp: KOTOR.MenuCamp;
   static MenuCharacter: KOTOR.MenuCharacter;
   static MenuChemicals: TSL.MenuChemicals;
   static MenuContainer: KOTOR.MenuContainer;
@@ -319,6 +320,7 @@ export class MenuManager {
         MenuManager.InGameOverlay = await MenuManager.GameMenuLoader(KOTOR.InGameOverlay) as KOTOR.InGameOverlay;
         MenuManager.InGamePause = await MenuManager.GameMenuLoader(KOTOR.InGamePause) as KOTOR.InGamePause;
         MenuManager.MenuAbilities = await MenuManager.GameMenuLoader(KOTOR.MenuAbilities) as KOTOR.MenuAbilities;
+        MenuManager.MenuCamp = await MenuManager.GameMenuLoader(KOTOR.MenuCamp) as KOTOR.MenuCamp;
         MenuManager.MenuCharacter = await MenuManager.GameMenuLoader(KOTOR.MenuCharacter) as KOTOR.MenuCharacter;
         MenuManager.MenuContainer = await MenuManager.GameMenuLoader(KOTOR.MenuContainer) as KOTOR.MenuContainer;
         MenuManager.MenuEquipment = await MenuManager.GameMenuLoader(KOTOR.MenuEquipment) as KOTOR.MenuEquipment;
@@ -350,6 +352,7 @@ export class MenuManager {
         MenuManager.InGameOverlay = await MenuManager.GameMenuLoader(TSL.InGameOverlay) as KOTOR.InGameOverlay;
         MenuManager.InGamePause = await MenuManager.GameMenuLoader(TSL.InGamePause) as KOTOR.InGamePause;
         MenuManager.MenuAbilities = await MenuManager.GameMenuLoader(TSL.MenuAbilities) as KOTOR.MenuAbilities;
+        MenuManager.MenuCamp = await MenuManager.GameMenuLoader(TSL.MenuCamp) as KOTOR.MenuCamp;
         MenuManager.MenuCharacter = await MenuManager.GameMenuLoader(TSL.MenuCharacter) as KOTOR.MenuCharacter;
         MenuManager.MenuChemicals = await MenuManager.GameMenuLoader(TSL.MenuChemicals) as TSL.MenuChemicals;
         MenuManager.MenuContainer = await MenuManager.GameMenuLoader(TSL.MenuContainer) as KOTOR.MenuContainer;

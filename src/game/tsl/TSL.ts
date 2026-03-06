@@ -23,6 +23,7 @@ export { MainMusic } from "./menu/MainMusic";
 export { MainOptions } from "./menu/MainOptions";
 export { MenuAbilities } from "./menu/MenuAbilities";
 export { MenuAutoPause } from "./menu/MenuAutoPause";
+export { MenuCamp } from "./menu/MenuCamp";
 export { MenuCharacter } from "./menu/MenuCharacter";
 export { MenuChemicals } from "./menu/MenuChemicals";
 export { MenuContainer } from "./menu/MenuContainer";

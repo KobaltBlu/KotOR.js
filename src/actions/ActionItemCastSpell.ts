@@ -1,5 +1,12 @@
+import { GameState } from "../GameState";
 import { ActionStatus } from "../enums/actions/ActionStatus";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionType } from "../enums/actions/ActionType";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { SpellCastInstance } from "../combat";
+import type { ModuleObject } from "../module/ModuleObject";
+import type { ModuleItem } from "../module/ModuleItem";
+import { BitWise } from "../utility/BitWise";
 import { Action } from "./Action";
 
 /**
@@ -19,7 +26,7 @@ export class ActionItemCastSpell extends Action {
     super(actionId, groupId);
     this.type = ActionType.ActionItemCastSpell;
 
-    //PARAMS - need to verify!! https://github.com/nwnxee/unified/blob/2f732e7f5e278e4de848d119bf3689dc928f2ab2/Plugins/Creature/Creature.cpp#L2846
+    //PARAMS
     // 0 - dword: oTarget
     // 1 - dword: oArea
     // 2 - float: x
@@ -32,6 +39,45 @@ export class ActionItemCastSpell extends Action {
     // 9 - int: projectileSpellId
     // 10 - dword: oItem
     // 11 - string: impactScript
+  }
+
+  update(delta: number = 0): ActionStatus {
+    if(!this.owner){ return ActionStatus.FAILED; }
+
+    const oTarget = this.getParameter<ModuleObject>(0);
+    const spellId = this.getParameter<number>(5);
+    const oItem = this.getParameter<ModuleItem>(10);
+
+    // Build the TalentSpell from spellId
+    const spell = new GameState.TalentSpell(spellId);
+    if(!spell){ return ActionStatus.FAILED; }
+
+    // Override the impact script if parameter 11 is provided
+    const overrideScript = this.getParameter<string>(11);
+    if(overrideScript){
+      spell.impactscript = overrideScript;
+    }
+
+    const target = oTarget || (BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature) ? this.owner as ModuleObject : undefined);
+    if(!target){ return ActionStatus.FAILED; }
+
+    // Create and attach the spell cast instance
+    const spellInstance = new SpellCastInstance(this.owner, target, spell);
+    if(this.owner.area){
+      this.owner.area.attachSpellInstance(spellInstance);
+    }
+    spellInstance.init();
+
+    // Consume one use of the item from inventory (party member uses consumable)
+    if(oItem && BitWise.InstanceOfObject(oItem, ModuleObjectType.ModuleItem)){
+      if(oItem.getStackSize() <= 1){
+        GameState.InventoryManager.removeItem(oItem);
+      }else{
+        oItem.setStackSize(oItem.getStackSize() - 1);
+      }
+    }
+
+    return ActionStatus.COMPLETE;
   }
 
 }

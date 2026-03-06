@@ -102,11 +102,13 @@ export class MenuStore extends K1_MenuStore {
   }
 
   getItemSellPrice(item: ModuleItem) {
-    return item.cost + item.cost * this.storeObject.getMarkUp();
+    // Sell price: the store pays (markDown % of base cost) when player sells
+    return Math.floor(item.cost * this.storeObject.getMarkDown());
   }
 
   getItemBuyPrice(item: ModuleItem) {
-    return item.cost + item.cost * this.storeObject.getMarkDown();
+    // Buy price: player pays (base cost + markUp % premium) when buying from store
+    return Math.floor(item.cost * (1 + this.storeObject.getMarkUp()));
   }
 
   open(){ //storeObject: ModuleStore, creature: ModuleCreature, bonusMarkUp = 0, bonusMarkDown = 0) {

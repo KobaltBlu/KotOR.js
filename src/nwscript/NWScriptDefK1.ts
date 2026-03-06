@@ -8791,18 +8791,25 @@ NWScriptDefK1.Actions = {
         item.rotation.set(args[1].getFacing(), Math.PI/2, 0);
         item.load();
         item.loadModel().then( (model: OdysseyModel3D) => {
-          item.model.userData.moduleObject = item;
-          
-          model.name = item.getTag();
-          GameState.group.placeables.add( model );
-          GameState.module.area.items.push(item);
-
-          item.getCurrentRoom();
+          if(model){
+            item.model.userData.moduleObject = item;
+            model.name = item.getTag();
+            GameState.group.placeables.add( model );
+          }
+          if(GameState.module?.area){
+            GameState.module.area.items.push(item);
+            item.getCurrentRoom();
+          }
+        }).catch((e: unknown) => {
+          console.error('CreateItemOnFloor: failed to load model', e);
+          if(GameState.module?.area && !GameState.module.area.items.includes(item)){
+            GameState.module.area.items.push(item);
+          }
         });
-        return true;
+        return item;
       }
       console.error('CreateItemOnFloor', 'Failed to load item template', args);
-      return false;
+      return undefined;
     }
   },
   767:{
