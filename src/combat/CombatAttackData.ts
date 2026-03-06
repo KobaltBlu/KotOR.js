@@ -227,10 +227,37 @@ export class CombatAttackData {
       this.damageList[DamageType.PHYSICAL].addDamage( Math.floor(( creature.getSTR() - 10) / 2) );
     }
 
+    // Sneak attack bonus damage (rolls d6 per tier, not multiplied on crits)
+    if(this.sneakAttack && !creature.isSimpleCreature()){
+      const sneakDice = CombatAttackData.getSneakAttackDiceCount(creature);
+      if(sneakDice > 0){
+        this.damageList[DamageType.PHYSICAL].addDamage(Dice.roll(sneakDice, DiceType.d6));
+      }
+    }
+
     if(this.getTotalDamage() >= this.reactObject.getHP()){
       this.killingBlow = true;
     }
 
+  }
+
+  /**
+   * Return the number of sneak-attack d6 the creature is entitled to (0 if none).
+   * Checks from the highest tier downward so only one feat lookup succeeds.
+   * @param creature - The attacking creature
+   */
+  static getSneakAttackDiceCount(creature: ModuleCreature): number {
+    if(creature.getHasFeat(CombatFeatType.SNEAK_ATTACK_10D6)) return 10;
+    if(creature.getHasFeat(CombatFeatType.SNEAK_ATTACK_9D6))  return 9;
+    if(creature.getHasFeat(CombatFeatType.SNEAK_ATTACK_8D6))  return 8;
+    if(creature.getHasFeat(CombatFeatType.SNEAK_ATTACK_7D6))  return 7;
+    if(creature.getHasFeat(CombatFeatType.SNEAK_ATTACK_6D6))  return 6;
+    if(creature.getHasFeat(CombatFeatType.SNEAK_ATTACK_5D6))  return 5;
+    if(creature.getHasFeat(CombatFeatType.SNEAK_ATTACK_4D6))  return 4;
+    if(creature.getHasFeat(CombatFeatType.SNEAK_ATTACK_3D6))  return 3;
+    if(creature.getHasFeat(CombatFeatType.SNEAK_ATTACK_2D6))  return 2;
+    if(creature.getHasFeat(CombatFeatType.SNEAK_ATTACK_1D6))  return 1;
+    return 0;
   }
 
   /**

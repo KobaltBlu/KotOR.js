@@ -8133,9 +8133,21 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      //TODO move all creatures from current faction to target faction
-      //TODO clear all actions 
-      //TODO clear combat
+      const targetFaction = GameState.FactionManager.factions.get(args[1]);
+      if(!targetFaction) return;
+      const creatures = [
+        ...(GameState.module?.area?.creatures ?? []),
+        ...GameState.PartyManager.party,
+      ];
+      for(const creature of creatures){
+        if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)) continue;
+        if(!creature.faction || creature.faction.id !== args[0]) continue;
+        GameState.FactionManager.RemoveCreatureFromFaction(creature);
+        creature.faction = targetFaction;
+        GameState.FactionManager.AddCreatureToFaction(creature);
+        creature.clearAllActions(true);
+        creature.cancelCombat();
+      }
     }
   },
   737:{
@@ -8144,7 +8156,19 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      //TODO move all creatures from current faction to target faction
+      const targetFaction = GameState.FactionManager.factions.get(args[1]);
+      if(!targetFaction) return;
+      const creatures = [
+        ...(GameState.module?.area?.creatures ?? []),
+        ...GameState.PartyManager.party,
+      ];
+      for(const creature of creatures){
+        if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)) continue;
+        if(!creature.faction || creature.faction.id !== args[0]) continue;
+        GameState.FactionManager.RemoveCreatureFromFaction(creature);
+        creature.faction = targetFaction;
+        GameState.FactionManager.AddCreatureToFaction(creature);
+      }
     }
   },
   738:{
