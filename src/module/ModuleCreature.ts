@@ -48,7 +48,7 @@ import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { PerceptionType } from "../enums/engine/PerceptionType";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { CombatActionType } from "../enums/combat/CombatActionType";
-import { CombatRoundAction } from "../combat";
+import { CombatRound, CombatRoundAction } from "../combat";
 import { GameEffectFactory } from "../effects/GameEffectFactory";
 import type { Action } from "../actions/Action";
 import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
@@ -2800,7 +2800,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getSpellSaveDC(){
-    return 10 + this.getSpellCasterLevel();
+    return 10 + CombatRound.GetMod(this.getWIS());
   }
 
   getSpellCasterLevel(){

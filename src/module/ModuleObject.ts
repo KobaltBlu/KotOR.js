@@ -2466,9 +2466,11 @@ export class ModuleObject {
    */
   fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = Dice.roll(1, DiceType.d20);
+    if(roll === 20) return 1;
+    if(roll === 1)  return 0;
     let bonus = CombatRound.GetMod(this.getCON());
     
-    if((roll + this.getFortitudeSave() + bonus) > nDC){
+    if((roll + this.getFortitudeSave() + bonus) >= nDC){
       return 1
     }
 
@@ -2492,9 +2494,11 @@ export class ModuleObject {
    */
   reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = Dice.roll(1, DiceType.d20);
+    if(roll === 20) return 1;
+    if(roll === 1)  return 0;
     let bonus = CombatRound.GetMod(this.getDEX());
     
-    if((roll + this.getReflexSave() + bonus) > nDC){
+    if((roll + this.getReflexSave() + bonus) >= nDC){
       return 1
     }
 
@@ -2526,9 +2530,11 @@ export class ModuleObject {
    */
   willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = Dice.roll(1, DiceType.d20);
+    if(roll === 20) return 1;
+    if(roll === 1)  return 0;
     let bonus = CombatRound.GetMod(this.getWIS());
 
-    if((roll + this.getWillSave() + bonus) > nDC){
+    if((roll + this.getWillSave() + bonus) >= nDC){
       return 1
     }
 

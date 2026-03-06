@@ -39,6 +39,7 @@ import { ExperienceType } from "../enums/engine/ExperienceType";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 import { CreatureClassType } from "../enums/nwscript/CreatureClassType";
+import { CombatFeatType } from "../enums/combat/CombatFeatType";
 import { TalkVolume } from "../enums/engine/TalkVolume";
 import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
 import { SaveGame } from "../engine/SaveGame";
@@ -1480,7 +1481,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
-        (this.caller as ModuleCreature).getSpellSaveDC();
+        return (this.caller as ModuleCreature).getSpellSaveDC();
       }
 
       return 10;
@@ -3893,9 +3894,28 @@ NWScriptDefK1.Actions = {
     name: "GetReflexAdjustedDamage",
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
-    action: function(this: NWScriptInstance, args: [EngineLocation, EngineLocation]){
-      //todo: currently passing back unmodified damage
-      return args[0];
+    action: function(this: NWScriptInstance, args: [number, ModuleObject, number, number, ModuleObject]){
+      const nDamage = args[0];
+      const oTarget = args[1];
+      const nDC     = args[2];
+      const nSaveType = args[3];
+      const oVersus   = args[4];
+
+      if(!BitWise.InstanceOfObject(oTarget, ModuleObjectType.ModuleObject)){
+        return nDamage;
+      }
+
+      const saveResult = oTarget.reflexSave(nDC, nSaveType, oVersus);
+      if(saveResult === 1){
+        // Evasion: successful reflex save = no damage
+        if(BitWise.InstanceOfObject(oTarget, ModuleObjectType.ModuleCreature) &&
+           (oTarget as ModuleCreature).getHasFeat(CombatFeatType.EVASION)){
+          return 0;
+        }
+        return Math.floor(nDamage / 2);
+      }
+
+      return nDamage;
     }
   },
   300:{
