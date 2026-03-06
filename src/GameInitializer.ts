@@ -273,18 +273,40 @@ export class GameInitializer {
 
   static async LoadGameResources(){
     GameInitializer.SetLoadingMessage("Loading Assets");
-    const promises = [
-      GameInitializer.LoadOverride(), 
-      GameInitializer.LoadRIMs(), 
-      GameInitializer.LoadModules(), 
-      GameInitializer.LoadLips(), 
-      GameInitializer.Load2DAs(), 
-      GameInitializer.LoadTexturePacks(), 
-      GameInitializer.LoadGameAudioResources('streammusic'), 
-      GameInitializer.LoadGameAudioResources('streamsounds'), 
-      GameInitializer.LoadGameAudioResources(GameState.GameKey != GameEngineType.TSL ? 'streamwaves' : 'streamvoice')
+    const resourceLoadTasks = [
+      { name: 'Override', required: false, promise: GameInitializer.LoadOverride() },
+      { name: 'RIMs', required: false, promise: GameInitializer.LoadRIMs() },
+      { name: 'Modules', required: true, promise: GameInitializer.LoadModules() },
+      { name: 'Lips', required: false, promise: GameInitializer.LoadLips() },
+      { name: '2DAs', required: true, promise: GameInitializer.Load2DAs() },
+      { name: 'TexturePacks', required: false, promise: GameInitializer.LoadTexturePacks() },
+      { name: 'Audio[streammusic]', required: false, promise: GameInitializer.LoadGameAudioResources('streammusic') },
+      { name: 'Audio[streamsounds]', required: false, promise: GameInitializer.LoadGameAudioResources('streamsounds') },
+      { name: `Audio[${GameState.GameKey != GameEngineType.TSL ? 'streamwaves' : 'streamvoice'}]`, required: false, promise: GameInitializer.LoadGameAudioResources(GameState.GameKey != GameEngineType.TSL ? 'streamwaves' : 'streamvoice') }
     ];
-    await Promise.all(promises);
+
+    const results = await Promise.allSettled(resourceLoadTasks.map((task) => task.promise));
+    const requiredFailures: string[] = [];
+
+    for(let i = 0, len = results.length; i < len; i++){
+      const result = results[i];
+      const task = resourceLoadTasks[i];
+
+      if(result.status === 'rejected'){
+        const message = `GameInitializer.LoadGameResources: Failed to load ${task.name}`;
+        if(task.required){
+          requiredFailures.push(message);
+          console.error(message, result.reason);
+        }else{
+          console.warn(message);
+          console.error(result.reason);
+        }
+      }
+    }
+
+    if(requiredFailures.length){
+      throw new Error(requiredFailures.join('\n'));
+    }
   }
 
   static async LoadRIMs(){
@@ -299,34 +321,39 @@ export class GameInitializer {
   static async LoadLips(){
     PerformanceMonitor.start('GameInitializer.LoadLips');
     const data_dir = 'lips';
-    const filenames = await GameFileSystem.readdir(data_dir);
-    const modules = filenames.map(function(file) {
-      const filename = file.split(path.sep).pop() as string;
-      const args = filename.split('.');
-      return {
-        ext: args[1].toLowerCase(), 
-        name: args[0], 
-        filename: filename
-      };
-    }).filter(function(file_obj){
-      return file_obj.ext == 'mod';
-    });
-    for(let i = 0, len = modules.length; i < len; i++){
-      const module_obj = modules[i];
-      switch(module_obj.ext){
-        case 'mod':
-          const mod = new ERFObject(path.join(data_dir, module_obj.filename));
-          await mod.load();
-          if(mod instanceof ERFObject){
-            mod.group = 'Lips';
-            ERFManager.addERF(module_obj.name, mod);
-          }
-        break;
-        default:
-          console.warn('GameInitializer.LoadLips: Encountered incorrect filetype');
-          console.log(module_obj);
-        break;
+    try{
+      const filenames = await GameFileSystem.readdir(data_dir);
+      const modules = filenames.map(function(file) {
+        const filename = file.split(path.sep).pop() as string;
+        const args = filename.split('.');
+        return {
+          ext: args[1].toLowerCase(), 
+          name: args[0], 
+          filename: filename
+        };
+      }).filter(function(file_obj){
+        return file_obj.ext == 'mod';
+      });
+      for(let i = 0, len = modules.length; i < len; i++){
+        const module_obj = modules[i];
+        switch(module_obj.ext){
+          case 'mod':
+            const mod = new ERFObject(path.join(data_dir, module_obj.filename));
+            await mod.load();
+            if(mod instanceof ERFObject){
+              mod.group = 'Lips';
+              ERFManager.addERF(module_obj.name, mod);
+            }
+          break;
+          default:
+            console.warn('GameInitializer.LoadLips: Encountered incorrect filetype');
+            console.log(module_obj);
+          break;
+        }
       }
+    }catch(e){
+      console.warn('GameInitializer.LoadLips: Failed to load lips archives');
+      console.error(e);
     }
     PerformanceMonitor.stop('GameInitializer.LoadLips');
   }
