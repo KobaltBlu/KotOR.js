@@ -976,12 +976,13 @@ export class SaveGame {
 
     //Global Booleans
     const catBooleanList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
-    const boolBuffer =  new Uint8Array( ( GameState.GlobalVariableManager.Globals.Boolean.size / 8 ) );
+    const boolCount = GameState.GlobalVariableManager.Globals.Boolean.size;
+    const boolBuffer =  new Uint8Array( Math.ceil( boolCount / 8 ) );
     let i = 0;
     GameState.GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
       let boolean = globBool;
       let byte_offset = Math.floor( i / 8 );
-      let bit_index = (i % 8);
+      let bit_index = 7 - (i % 8);
 
       if(boolean.value){
         boolBuffer[byte_offset] |= 1 << bit_index;
@@ -995,7 +996,7 @@ export class SaveGame {
 
     //Global Locations
     const catLocationList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatLocation'));
-    const locationBuffer = new Uint8Array(24 * 100);
+    const locationBuffer = new Uint8Array(24 * GameState.GlobalVariableManager.Globals.Location.size);
     const locationDataView = new DataView(locationBuffer.buffer);
 
     i = 0;

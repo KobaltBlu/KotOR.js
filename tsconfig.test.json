@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "jest",
+      "@types/wicg-file-system-access",
+      "user-agent-data-types",
+      "node",
+      "offscreencanvas"
+    ]
+  },
+  "include": ["src/**/*.test.ts", "src/tests/**/*.ts"]
+}
