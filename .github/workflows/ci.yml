@@ -137,3 +137,22 @@ jobs:
           path: dist
           if-no-files-found: error
           retention-days: 7
+
+  vscode-extension-compile:
+    name: VS Code extension compile
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install extension dependencies
+        run: npm install --no-package-lock
+
+      - name: Compile extension host + webview + language server
+        run: npm run compile
