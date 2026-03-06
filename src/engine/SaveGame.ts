@@ -853,49 +853,71 @@ export class SaveGame {
     GameState.MenuManager.LoadScreen.open();
     GameState.MenuManager.LoadScreen.showSavingMessage();
 
-    let save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
+    const isOverwrite = replace_id >= 2;
+    const save_id = isOverwrite ? replace_id : SaveGame.NEXT_SAVE_ID;
 
     //Prepare SaveGame directory
-    if(!(await GameFileSystem.exists(SaveGame.base_directory))){
-      await GameFileSystem.mkdir(SaveGame.base_directory);
+    let saveDirCreated = false;
+    const save_dir_name = Utility.PadInt(save_id, 6)+' - Game'+(save_id-1);
+    const save_dir = path.join( SaveGame.base_directory, save_dir_name );
+
+    try{
+      if(!(await GameFileSystem.exists(SaveGame.base_directory))){
+        await GameFileSystem.mkdir(SaveGame.base_directory);
+      }
+
+      if(!(await GameFileSystem.exists(save_dir))){
+        await GameFileSystem.mkdir(save_dir);
+        saveDirCreated = true;
+      }
+
+      GameState.MenuManager.LoadScreen.setProgress(25);
+
+      await GameState.module.save();
+      GameState.MenuManager.LoadScreen.setProgress(50);
+
+      await CurrentGame.ExportToSaveFolder( save_dir );
+      GameState.MenuManager.LoadScreen.setProgress(75);
+
+      await SaveGame.ExportSaveNFO(save_dir, name);
+      await SaveGame.ExportGlobalVars( save_dir );
+      await GameState.PartyManager.Export( save_dir );
+
+      //Get Screenshot
+      const tga = await GameState.GetScreenShot();
+      await tga.export( path.join( save_dir, 'Screen.tga'));
+
+      const newEntry = new SaveGame(save_dir_name);
+      await newEntry.loadNFO();
+
+      const existingIndex = SaveGame.saves.findIndex(s => s.getSaveNumber() === save_id);
+      if(existingIndex >= 0){
+        SaveGame.saves[existingIndex] = newEntry; // overwrite case
+      }else{
+        SaveGame.AddSaveGame(newEntry); // new save case
+      }
+
+      if(!isOverwrite && save_id >= SaveGame.NEXT_SAVE_ID){
+        SaveGame.NEXT_SAVE_ID = save_id + 1;
+      }
+
+      //Save Complete
+      GameState.MenuManager.LoadScreen.setProgress(100);
+    }catch(e){
+      console.error('SaveGame.SaveCurrentGame failed', e);
+
+      if(saveDirCreated){
+        try{
+          await GameFileSystem.rmdir(save_dir, { recursive: true });
+        }catch(cleanupError){
+          console.error('SaveGame.SaveCurrentGame cleanup failed', cleanupError);
+        }
+      }
+
+      throw e;
+    }finally{
+      GameState.MenuManager.LoadScreen.close();
     }
-
-    let save_dir_name = Utility.PadInt(save_id, 6)+' - Game'+(save_id-1);
-    let save_dir = path.join( SaveGame.base_directory, save_dir_name );
-
-    if(!(await GameFileSystem.exists(save_dir))){
-      await GameFileSystem.mkdir(save_dir);
-    }
-
-    GameState.MenuManager.LoadScreen.setProgress(25);
-
-    await GameState.module.save();
-    GameState.MenuManager.LoadScreen.setProgress(50);
-
-    await CurrentGame.ExportToSaveFolder( save_dir );
-    GameState.MenuManager.LoadScreen.setProgress(75);
-
-    await SaveGame.ExportSaveNFO(save_dir, name);
-    await SaveGame.ExportGlobalVars( save_dir );
-    await GameState.PartyManager.Export( save_dir );
-
-    //Get Screenshot
-    const tga = await GameState.GetScreenShot();
-    await tga.export( path.join( save_dir, 'Screen.tga'));
-
-    const newEntry = new SaveGame(save_dir_name);
-    const existingIndex = SaveGame.saves.findIndex(s => s.getSaveNumber() === save_id);
-
-    if (existingIndex >= 0) {
-      SaveGame.saves[existingIndex] = newEntry;  // overwrite case
-  } else {
-      SaveGame.AddSaveGame(newEntry);            // new save case
-            }
-    await newEntry.loadNFO();
-    
-    //Save Complete
-    GameState.MenuManager.LoadScreen.setProgress(100);
-    GameState.MenuManager.LoadScreen.close();
   }
 
   /**
@@ -1083,7 +1105,7 @@ export class SaveGame {
         const saveFolder = savegames[i].replace(/[\\/]SAVEGAME\.sav$/i, '');
         const saveGame = new SaveGame(saveFolder);
 
-        if(SaveGame.FolderNameRegex.test(saveGame.folderName)){
+        if(SaveGame.FolderNameRegex.test(saveGame.folderName) && await SaveGame.isValidSaveDirectory(saveFolder)){
           SaveGame.AddSaveGame(saveGame);
         }
       }
@@ -1149,6 +1171,28 @@ export class SaveGame {
     if(saveNumber >= SaveGame.NEXT_SAVE_ID){
       SaveGame.NEXT_SAVE_ID = saveNumber + 1;
     }
+  }
+
+  /**
+   * Ensures a save folder includes required files before exposing it in Save/Load menus.
+   */
+  static async isValidSaveDirectory(saveFolder: string): Promise<boolean> {
+    const requiredFiles = [
+      'SAVEGAME.sav',
+      'savenfo.res',
+      'GLOBALVARS.res',
+      'PARTYTABLE.res',
+    ];
+
+    for(const fileName of requiredFiles){
+      const fullPath = path.join(saveFolder, fileName);
+      if(!(await GameFileSystem.exists(fullPath))){
+        console.warn('SaveGame: skipping incomplete save directory', saveFolder, 'missing', fileName);
+        return false;
+      }
+    }
+
+    return true;
   }
 
 }
