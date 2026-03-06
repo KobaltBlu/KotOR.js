@@ -59,6 +59,11 @@ export class CharGenManager {
   static creatures: Map<number, ModulePlayer> = new Map();
   static lbl_3d_views: Map<number, LBL_3DView> = new Map();
 
+  /** When true, the ability/skill screens are operating in level-up mode. */
+  static isLevelUpMode: boolean = false;
+  /** Minimum skill ranks the player already had before the new level's points. */
+  static baseSkillValues: number[] = [0, 0, 0, 0, 0, 0, 0, 0];
+
   static cgmain_light: OdysseyModel;
   static cgbody_light: OdysseyModel;
   static cghead_light: OdysseyModel;

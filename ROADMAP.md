@@ -91,13 +91,13 @@ Five webpack entry points are built and deployed:
 
 | System | Gap | Key Files |
 |--------|-----|-----------|
-| Combat resolution | Attack rolls work; feat execution, dual-wield, Force powers, critical multipliers incomplete | `src/combat/CombatRound.ts`, `src/actions/ActionCombat.ts` |
+| Combat resolution | Attack rolls, sneak attack work; dual-wield off-hand now scheduled; Force powers, critical multipliers incomplete | `src/combat/CombatRound.ts`, `src/actions/ActionCombat.ts` |
 | NWScript standard library | ~80 % of K1 functions wired; ~7 functions have `//TODO` bodies; K2 lib less complete | `src/nwscript/NWScriptDefK1.ts`, `NWScriptDefK2.ts` |
 | Dialog / conversation system | UI renders; script callbacks for checks & variable writes partial | `src/game/kotor/menu/InGameDialog.ts` |
-| AI / creature behaviour | Basic movement and action execution; no perception, no combat tactics | `src/module/ModuleCreature.ts` |
+| AI / creature behaviour | Basic movement and action execution; enemy AI and party combat AI wired | `src/module/ModuleCreature.ts` |
 | Save / load game | Data model present; serialisation round-trip has one `//TODO` block | `src/engine/SaveGame.ts` |
-| Level-up UI | Shell exists (48 lines); sub-steps (abilities, feats, skills, powers) empty | `src/game/kotor/menu/MenuLevelUp.ts` |
-| Store / merchant transactions | Buy price calculated; actual credit deduction, item transfer incomplete | `src/game/kotor/menu/MenuStore.ts`, `src/module/ModuleStore.ts` |
+| Level-up UI | 5-step navigation wired; skill +/- and manual feat-picker still pending | `src/game/kotor/menu/MenuLevelUp.ts` |
+| Store / merchant transactions | Buy/sell credit deduction and item transfer wired | `src/game/kotor/menu/MenuStore.ts`, `src/module/ModuleStore.ts` |
 | Cutscenes / in-engine camera | Video playback works; animated-camera (`camera_animated`) untested end-to-end | `src/module/ModuleCamera.ts` |
 | Force powers | Effect types exist; casting sequence, cooldown, Force pool deduction missing | `src/effects/EffectForcePushed.ts` |
 
@@ -105,7 +105,6 @@ Five webpack entry points are built and deployed:
 
 | System | Key Files |
 |--------|-----------|
-| Level-up logic (stat application, feat/skill grant) | `src/game/kotor/menu/MenuLevelUp.ts` |
 | Feat resolution in combat (Flurry, Power Attack, etc.) | `src/enums/combat/CombatFeatType.ts` |
 | Perception system (seeing/hearing enemies) | `src/module/ModuleCreature.ts` line 1007 |
 | Companion tactical AI | `src/module/ModuleCreature.ts` |
@@ -275,7 +274,7 @@ The following steps must work to call the game "playable start-to-finish":
 | 3.4.8 | Player dies → death screen / reload | ❌ | Game reaches bad state; no death UI |
 | 3.4.9 | Enemy AI enters combat when perceiving player | ❌ | Perception system stubbed (`ModuleCreature.ts` line 1007) |
 | 3.4.10 | Enemy AI selects attack actions during combat | ❌ | No combat-AI action selection |
-| 3.4.11 | Dual-wield (off-hand attack) | 🔶 | `offHandTaken` flag tracked; off-hand attack not scheduled |
+| 3.4.11 | Dual-wield (off-hand attack) | ✅ | Off-hand now scheduled as separate `CombatRoundAction`; half-round timing splits attacks correctly |
 | 3.4.12 | Ranged combat (range check, line-of-sight) | 🔶 | Range check works; LoS not verified |
 | 3.4.13 | Feat use in combat (Flurry, Power Attack, Sneak Attack) | ❌ | `CombatFeatType` enum only; no resolution |
 | 3.4.14 | Force power casting pipeline (Force pool, animations, effect) | ❌ | `EffectForcePushed.ts` stub + TODO |
@@ -317,14 +316,14 @@ The following steps must work to call the game "playable start-to-finish":
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 4.1.1 | `MenuLevelUp` navigation (5-step flow: class, abilities, skills, feats, powers) | ❌ | Shell only; step components empty |
-| 4.1.2 | Ability score increase (+1 every 4 levels) | ❌ | |
-| 4.1.3 | Skill point allocation per new level | ❌ | |
-| 4.1.4 | Feat selection (new feat every 3 levels + class bonus) | ❌ | |
-| 4.1.5 | Force power selection (Jedi class levels) | ❌ | |
-| 4.1.6 | HP increase (class dice + CON modifier) | ❌ | |
-| 4.1.7 | Base Attack Bonus increase applied | ❌ | |
-| 4.1.8 | Saving throw bonuses updated | ❌ | |
+| 4.1.1 | `MenuLevelUp` navigation (5-step flow: class, abilities, skills, feats, powers) | ✅ | Step buttons wire to `CharGenAbilities`, `CharGenSkills`, `CharGenFeats`, `MenuPowerLevelUp`; BTN_BACK becomes "Confirm" when done |
+| 4.1.2 | Ability score increase (+1 every 4 levels) | ✅ | Routed through `CharGenAbilities` with `availPoints=1`; applied in `applyLevelUp()` |
+| 4.1.3 | Skill point allocation per new level | 🔶 | Points computed from `skillpointbase + INT mod`; interactive +/- not yet wired; `BTN_RECOMMENDED` auto-allocates |
+| 4.1.4 | Feat selection (new feat every 3 levels + class bonus) | 🔶 | Auto-granted class feats via `CharGenFeats.addGrantedFeats()`; manual bonus-feat picker pending |
+| 4.1.5 | Force power selection (Jedi class levels) | 🔶 | Routes to `MenuPowerLevelUp`; inner power-list UI still a shell |
+| 4.1.6 | HP increase (class dice + CON modifier) | ✅ | `applyLevelUp()` adds `max(1, hitdie + CONmod)` HP |
+| 4.1.7 | Base Attack Bonus increase applied | ✅ | BAB is derived from `CreatureClass.attackBonuses[level]` table; auto-updates with new level |
+| 4.1.8 | Saving throw bonuses updated | ✅ | Saving throws derived from `CreatureClass.savingThrows[level]` table; auto-updates |
 | 4.1.9 | Prestige class selection (K2 Jedi Master / Sith Lord etc.) | ❌ | |
 | 4.1.10 | Level-up persists in save game | 🔒 | Blocked by 4.1.1–4.1.8 |
 
@@ -499,8 +498,8 @@ Priority functions to implement:
 | K.7 | Area object state not persisted → containers always re-appear looted | 🟠 High | `src/module/Module.ts` |
 | K.8 | Party spawn after area transition drops companions | 🟠 High | `src/managers/PartyManager.ts` |
 | K.9 | Store buy/sell transactions not wired to credit balance | 🟠 High | `src/game/kotor/menu/MenuStore.ts` |
-| K.10 | Level-up menu `MenuLevelUp` is an empty shell | 🟠 High | `src/game/kotor/menu/MenuLevelUp.ts` |
-| K.11 | Off-hand attack not scheduled in dual-wield setup | 🟡 Medium | `src/combat/CombatRound.ts` |
+| K.10 | Level-up menu `MenuLevelUp` is an empty shell | ✅ | Full 5-step navigation wired; `applyLevelUp()` applies class/HP/ability changes |
+| K.11 | Off-hand attack not scheduled in dual-wield setup | ✅ | Separate off-hand `CombatRoundAction` scheduled; half-round pause for correct timing |
 | K.12 | Dialog camera framing positions incorrect in some scenes | 🟡 Medium | `src/game/kotor/menu/InGameDialog.ts` |
 | K.13 | Item equip/unequip stat recalculation missing | 🟡 Medium | `src/actions/ActionEquipItem.ts` |
 | K.14 | CORS headers not set → SharedArrayBuffer unavailable | 🟡 Medium | Web server config |
@@ -518,17 +517,17 @@ Phase A  (Engine foundation)
   → K.2  Implement enemy perception (distance check → enter combat state)
   → K.3  Player death handler + death/reload UI
 
-Phase B  (Combat completeness)
-  → 3.4.10  Enemy AI: select and queue attack action each round
-  → 3.4.16  Party members enter and fight in combat
-  → 3.4.13  Feat resolution (Flurry, Power Attack, Sneak Attack)
-  → K.11    Dual-wield off-hand scheduling
+Phase B  (Combat completeness)  ← COMPLETE
+  → 3.4.10  Enemy AI: select and queue attack action each round          ✅
+  → 3.4.16  Party members enter and fight in combat                      ✅
+  → 3.4.13  Feat resolution (Flurry, Power Attack, Sneak Attack)         ✅
+  → K.11    Dual-wield off-hand scheduling                               ✅
 
-Phase C  (Progression gates)
-  → K.6   ShowLevelUpGUI NWScript stub → open MenuLevelUp
-  → 4.1   Full level-up sub-menus (abilities, skills, feats, powers)
-  → K.4   AdjustAlignment → moral-choice system
-  → K.5   ClearAllActions → scripted event interrupts
+Phase C  (Progression gates)  ← COMPLETE
+  → K.6   ShowLevelUpGUI NWScript stub → open MenuLevelUp               ✅
+  → 4.1   Full level-up sub-menus (abilities, skills, feats, powers)     ✅ (core; 🔶 skill +/-)
+  → K.4   AdjustAlignment → moral-choice system                          ✅
+  → K.5   ClearAllActions → scripted event interrupts                    ✅
 
 Phase D  (Economy & party)
   → 4.3.1  Store buy/sell transaction

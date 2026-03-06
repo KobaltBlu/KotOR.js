@@ -378,34 +378,44 @@ export class CombatRound {
       combatAction.attackResult = (hasAssuredHit) ? AttackResult.AUTOMATIC_HIT : AttackResult.MISS;
       combatAction.attackDamage = 0;
       if(creature && !creature.isSimpleCreature()){
-        /**
-         * Unarmed Strike
-         */
-        if(!creature.equipment.RIGHTHAND && !creature.equipment.LEFTHAND){
-          this.calculateWeaponAttack(creature, undefined, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
-        }
+        if(combatAction.isOffHand){
+          /**
+           * Dedicated Off-Hand Attack (dual-wield second action)
+           */
+          if(creature.equipment.LEFTHAND){
+            this.calculateWeaponAttack(creature, creature.equipment.LEFTHAND, ModuleCreatureArmorSlot.LEFTHAND, combatAction);
+          }
+        }else{
+          /**
+           * Unarmed Strike
+           */
+          if(!creature.equipment.RIGHTHAND && !creature.equipment.LEFTHAND){
+            this.calculateWeaponAttack(creature, undefined, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
+          }
 
-        /**
-         * Main Hand Attack
-         */
-        if(creature.equipment.RIGHTHAND){
-          this.calculateWeaponAttack(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
-        }
-
-        /**
-         * Off Hand Attack
-         */
-        if(creature.equipment.LEFTHAND){
-          this.calculateWeaponAttack(creature, creature.equipment.LEFTHAND, ModuleCreatureArmorSlot.LEFTHAND, combatAction);
-        }
-
-        /**
-         * Additional Attacks
-         */
-        if(this.additionalAttacks > 0){
-          for(let i = 0; i < this.additionalAttacks; i++){
-            if(!creature.equipment.RIGHTHAND){ continue; }
+          /**
+           * Main Hand Attack
+           */
+          if(creature.equipment.RIGHTHAND){
             this.calculateWeaponAttack(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
+          }
+
+          /**
+           * Off Hand Attack (inline – only when no dedicated off-hand action is queued)
+           */
+          const hasScheduledOffHand = this.scheduledActionList.some(a => a.isOffHand);
+          if(creature.equipment.LEFTHAND && !hasScheduledOffHand){
+            this.calculateWeaponAttack(creature, creature.equipment.LEFTHAND, ModuleCreatureArmorSlot.LEFTHAND, combatAction);
+          }
+
+          /**
+           * Additional Attacks
+           */
+          if(this.additionalAttacks > 0){
+            for(let i = 0; i < this.additionalAttacks; i++){
+              if(!creature.equipment.RIGHTHAND){ continue; }
+              this.calculateWeaponAttack(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
+            }
           }
         }
       }else if(creature && creature.isSimpleCreature()){
