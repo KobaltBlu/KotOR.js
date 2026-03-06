@@ -54,7 +54,7 @@ export default class EngineLocation {
 
   //Set the facing value and then update the rotation values
   setFacing( facing = 0 ){
-    this.facing = 0;
+    this.facing = facing;
     let theta = facing;
 
     this.rotation.x = 1 * Math.cos(theta);
