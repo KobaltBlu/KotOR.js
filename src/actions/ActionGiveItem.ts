@@ -2,6 +2,7 @@ import { GameState } from "../GameState";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 import type { ModuleObject, ModuleItem } from "../module";
 import { BitWise } from "../utility/BitWise";
 import { Action } from "./Action";
@@ -52,8 +53,29 @@ export class ActionGiveItem extends Action {
 
     if(GameState.PartyManager.party.indexOf(oGiveTo as any) >= 0){
       GameState.InventoryManager.addItem( oItem );
+      // Fire OnAcquireItem when party receives an item
+      if(GameState.module){
+        GameState.lastItemAcquired = oItem;
+        GameState.lastItemAcquiredFrom = this.owner;
+        const acquireScript = GameState.module.scripts[ModuleObjectScript.ModuleOnPlayerAcquireItem];
+        if(acquireScript){
+          const instance = acquireScript.newInstance();
+          instance.run(oGiveTo);
+        }
+      }
     }else{
       oGiveTo.addItem( oItem );
+    }
+
+    // Fire OnUnAcquireItem when the giver is a party member
+    if(GameState.module && GameState.PartyManager.party.indexOf(this.owner as any) >= 0){
+      GameState.lastItemLost = oItem;
+      GameState.lastItemLostBy = this.owner;
+      const unAcquireScript = GameState.module.scripts[ModuleObjectScript.ModuleOnUnAcquireItem];
+      if(unAcquireScript){
+        const instance = unAcquireScript.newInstance();
+        instance.run(this.owner);
+      }
     }
 
     return ActionStatus.COMPLETE;

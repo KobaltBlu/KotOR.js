@@ -2,6 +2,7 @@ import { GameState } from "../GameState";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 import type { ModuleItem } from "../module/ModuleItem";
 import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
@@ -55,6 +56,16 @@ export class ActionTakeItem extends Action {
 
     if(GameState.PartyManager.party.indexOf(this.owner as any) >= 0){
       GameState.InventoryManager.addItem( oItem );
+      // Fire OnAcquireItem when party takes an item
+      if(GameState.module){
+        GameState.lastItemAcquired = oItem;
+        GameState.lastItemAcquiredFrom = oTarget;
+        const acquireScript = GameState.module.scripts[ModuleObjectScript.ModuleOnPlayerAcquireItem];
+        if(acquireScript){
+          const instance = acquireScript.newInstance();
+          instance.run(this.owner);
+        }
+      }
     }{
       this.owner.addItem( oItem );
     }

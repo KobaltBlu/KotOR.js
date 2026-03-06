@@ -68,6 +68,13 @@ export class ActionItemCastSpell extends Action {
     }
     spellInstance.init();
 
+    // Track the spell-casting item so GetSpellCastItem() works in spell scripts
+    if(oItem && BitWise.InstanceOfObject(oItem, ModuleObjectType.ModuleItem)){
+      GameState.lastItemActivated = oItem;
+      GameState.lastItemActivator = this.owner;
+      GameState.lastItemActivatedTarget = target;
+    }
+
     // Consume one use of the item from inventory (party member uses consumable)
     if(oItem && BitWise.InstanceOfObject(oItem, ModuleObjectType.ModuleItem)){
       if(oItem.getStackSize() <= 1){

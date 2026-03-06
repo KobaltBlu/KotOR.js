@@ -2485,6 +2485,7 @@ export class ModuleCreature extends ModuleObject {
       if(!couldLevelBefore && this.canLevelUp() && GameState.module){
         const levelUpScript = GameState.module.scripts[ModuleObjectScript.ModuleOnPlayerLevelUp];
         if(levelUpScript){
+          GameState.lastPCLevellingUp = this;
           const instance = levelUpScript.newInstance();
           instance.run(GameState.module);
         }

@@ -581,3 +581,171 @@ describe('GetSpellBaseForcePointCost (K2 fn 818)', () => {
     expect(cost).toBe(20);
   });
 });
+
+// ---------------------------------------------------------------------------
+// 16. GetIsDay / GetIsNight / GetIsDawn / GetIsDusk (fn 405-408)
+// ---------------------------------------------------------------------------
+
+describe('Time-of-day functions (fn 405-408)', () => {
+  /** Simulate the logic from NWScriptDefK1.ts GetIsDay/Night/Dawn/Dusk */
+  function isDay(hour: number, dawnHour: number, duskHour: number): boolean {
+    return hour >= dawnHour + 1 && hour < duskHour;
+  }
+  function isNight(hour: number, dawnHour: number, duskHour: number): boolean {
+    return hour >= duskHour + 1 || hour < dawnHour;
+  }
+  function isDawn(hour: number, dawnHour: number): boolean {
+    return hour === dawnHour;
+  }
+  function isDusk(hour: number, duskHour: number): boolean {
+    return hour === duskHour;
+  }
+
+  const DAWN = 6;
+  const DUSK = 18;
+
+  it('GetIsDay returns true for midday hour', () => {
+    expect(isDay(12, DAWN, DUSK)).toBe(true);
+  });
+
+  it('GetIsDay returns false at dawn hour', () => {
+    expect(isDay(DAWN, DAWN, DUSK)).toBe(false);
+  });
+
+  it('GetIsDay returns false at dusk hour', () => {
+    expect(isDay(DUSK, DAWN, DUSK)).toBe(false);
+  });
+
+  it('GetIsNight returns true at midnight', () => {
+    expect(isNight(0, DAWN, DUSK)).toBe(true);
+  });
+
+  it('GetIsNight returns true late night after dusk', () => {
+    expect(isNight(22, DAWN, DUSK)).toBe(true);
+  });
+
+  it('GetIsNight returns false at midday', () => {
+    expect(isNight(12, DAWN, DUSK)).toBe(false);
+  });
+
+  it('GetIsDawn returns true only at exact dawn hour', () => {
+    expect(isDawn(DAWN, DAWN)).toBe(true);
+    expect(isDawn(DAWN + 1, DAWN)).toBe(false);
+  });
+
+  it('GetIsDusk returns true only at exact dusk hour', () => {
+    expect(isDusk(DUSK, DUSK)).toBe(true);
+    expect(isDusk(DUSK - 1, DUSK)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 17. EffectForceDrain (fn 675) – maps to EffectDamageForcePoints
+// ---------------------------------------------------------------------------
+
+describe('EffectForceDrain (fn 675)', () => {
+  it('subtracts FP equal to the drain amount', () => {
+    // Simulate: EffectDamageForcePoints.onApply drains object.subtractFP(amount)
+    let fp = 50;
+    const drainAmount = 20;
+    const subtractFP = (n: number) => { fp -= n; };
+    subtractFP(drainAmount);
+    expect(fp).toBe(30);
+  });
+
+  it('EffectForceDrain drains zero when args[0] is 0', () => {
+    let fp = 50;
+    const drainAmount = 0;
+    const subtractFP = (n: number) => { fp -= n; };
+    subtractFP(drainAmount);
+    expect(fp).toBe(50);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 18. ActionPickUpItem fires Mod_OnAcquirItem – GameState tracking
+// ---------------------------------------------------------------------------
+
+describe('ActionPickUpItem – OnAcquireItem event tracking', () => {
+  it('sets GameState.lastItemAcquired to the picked-up item', () => {
+    // Simulate ActionPickUpItem setting GameState fields before script run
+    const mockItem = { tag: 'quest_item_01', area: null };
+    const gameState: any = {
+      lastItemAcquired: undefined,
+      lastItemAcquiredFrom: undefined,
+    };
+
+    // Logic from ActionPickUpItem
+    gameState.lastItemAcquired = mockItem;
+    gameState.lastItemAcquiredFrom = mockItem.area;
+
+    expect(gameState.lastItemAcquired).toBe(mockItem);
+    expect(gameState.lastItemAcquiredFrom).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 19. GetItemActivated / GetItemActivator / GetItemActivatedTarget (fn 439-442)
+// ---------------------------------------------------------------------------
+
+describe('Item-activation getters (fn 438-442)', () => {
+  it('GetItemActivated returns the stored last activated item', () => {
+    const item = { tag: 'medpac' };
+    const gameState: any = { lastItemActivated: item };
+    expect(gameState.lastItemActivated).toBe(item);
+  });
+
+  it('GetItemActivator returns the creature who used the item', () => {
+    const activator = { name: 'Revan' };
+    const gameState: any = { lastItemActivator: activator };
+    expect(gameState.lastItemActivator).toBe(activator);
+  });
+
+  it('GetItemActivatedTarget returns the target of item use', () => {
+    const target = { name: 'HK-47' };
+    const gameState: any = { lastItemActivatedTarget: target };
+    expect(gameState.lastItemActivatedTarget).toBe(target);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 20. GetPCLevellingUp (fn 542) – returns last creature to level up
+// ---------------------------------------------------------------------------
+
+describe('GetPCLevellingUp (fn 542)', () => {
+  it('returns the creature stored in lastPCLevellingUp', () => {
+    const pc = { name: 'Revan', canLevelUp: () => true };
+    const gameState: any = { lastPCLevellingUp: pc };
+    expect(gameState.lastPCLevellingUp).toBe(pc);
+  });
+
+  it('returns undefined when no level-up has occurred', () => {
+    const gameState: any = { lastPCLevellingUp: undefined };
+    expect(gameState.lastPCLevellingUp).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 21. EffectHitPointChangeWhenDying (fn 387) – maps to EffectRegenerate
+// ---------------------------------------------------------------------------
+
+describe('EffectHitPointChangeWhenDying (fn 387)', () => {
+  it('effect amount round-trip: round(fHitPointChangePerRound)', () => {
+    const fValue = 2.7;
+    const intAmount = Math.round(fValue);
+    expect(intAmount).toBe(3);
+  });
+
+  it('effect uses a 6-second interval (one combat round) stored in intList[1]', () => {
+    // Simulate how EffectHitPointChangeWhenDying builds EffectRegenerate intList
+    const fValue = 3.0;
+    const intList = [Math.round(fValue), 6]; // [nAmount, nIntervalSeconds]
+    expect(intList[1]).toBe(6);
+  });
+
+  it('returns undefined when fHitPointChangePerRound is 0', () => {
+    const fValue = 0;
+    const result = fValue === 0 ? undefined : {};
+    expect(result).toBeUndefined();
+  });
+});

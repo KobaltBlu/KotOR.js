@@ -5044,13 +5044,36 @@ NWScriptDefK1.Actions = {
     comment: "386: Set whether oMapPin is enabled.\n- oMapPin\n- nEnabled: 0=Off, 1=On\n",
     name: "SetMapPinEnabled",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)) return;
+      const waypoint = args[0];
+      const enabled = !!args[1];
+      waypoint.mapNoteEnabled = enabled;
+      if(GameState.module?.area?.areaMap){
+        if(enabled){
+          GameState.module.area.areaMap.addMapNote(waypoint as any);
+        } else {
+          GameState.module.area.areaMap.removeMapNote(waypoint as any);
+        }
+      }
+    }
   },
   387:{
     comment: "387: Create a Hit Point Change When Dying effect.\n- fHitPointChangePerRound: this can be positive or negative, but not zero.\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if fHitPointChangePerRound is 0.\n",
     name: "EffectHitPointChangeWhenDying",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [number]){
+      if(args[0] === 0) return undefined;
+      const effect = new GameState.GameEffectFactory.EffectRegenerate();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      // intList[0] = amount per interval, intList[1] = interval in seconds
+      effect.setInt(0, Math.round(args[0]));
+      effect.setInt(1, 6); // one round = 6 seconds
+      return effect.initialize();
+    }
   },
   388:{
     comment: "388: Spawn a GUI panel for the client that controls oPC.\n- oPC\n- nGUIPanel: GUI_PANEL_*\n* Nothing happens if oPC is not a player character or if an invalid value is\nused for nGUIPanel.\n",
@@ -5433,25 +5456,47 @@ NWScriptDefK1.Actions = {
     comment: "405: * Returns TRUE if it is currently day.\n",
     name: "GetIsDay",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(!GameState.module) return 0;
+      const h = GameState.module.timeManager.hour;
+      const dawn = GameState.module.timeManager.dawnHour;
+      const dusk = GameState.module.timeManager.duskHour;
+      return (h >= dawn + 1 && h < dusk) ? 1 : 0;
+    }
   },
   406:{
     comment: "406: * Returns TRUE if it is currently night.\n",
     name: "GetIsNight",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(!GameState.module) return 0;
+      const h = GameState.module.timeManager.hour;
+      const dusk = GameState.module.timeManager.duskHour;
+      const dawn = GameState.module.timeManager.dawnHour;
+      return (h >= dusk + 1 || h < dawn) ? 1 : 0;
+    }
   },
   407:{
     comment: "407: * Returns TRUE if it is currently dawn.\n",
     name: "GetIsDawn",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(!GameState.module) return 0;
+      return GameState.module.timeManager.hour === GameState.module.timeManager.dawnHour ? 1 : 0;
+    }
   },
   408:{
     comment: "408: * Returns TRUE if it is currently dusk.\n",
     name: "GetIsDusk",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(!GameState.module) return 0;
+      return GameState.module.timeManager.hour === GameState.module.timeManager.duskHour ? 1 : 0;
+    }
   },
   409:{
     comment: "409: * Returns TRUE if oCreature was spawned from an encounter.\n",
@@ -5536,7 +5581,15 @@ NWScriptDefK1.Actions = {
     comment: "417: Immediately speak a conversation one-liner.\n- sDialogResRef\n- oTokenTarget: This must be specified if there are creature-specific tokens\nin the string.\n",
     name: "SpeakOneLinerConversation",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [string, ModuleObject]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)) return;
+      if(!args[0]) return;
+      const dlg = DLGObject.FromResRef(args[0]);
+      if(dlg){
+        GameState.CutsceneManager.startConversation(dlg, this.caller, this.caller as any);
+      }
+    }
   },
   418:{
     comment: "418: Get the amount of gold possessed by oTarget.\n",
@@ -5766,31 +5819,46 @@ NWScriptDefK1.Actions = {
     comment: "438: Use this in a spell script to get the item used to cast the spell.\n",
     name: "GetSpellCastItem",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.lastItemActivated || undefined;
+    }
   },
   439:{
     comment: "439: Use this in an OnItemActivated module script to get the item that was activated.\n",
     name: "GetItemActivated",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.lastItemActivated || undefined;
+    }
   },
   440:{
     comment: "440: Use this in an OnItemActivated module script to get the creature that\nactivated the item.\n",
     name: "GetItemActivator",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.lastItemActivator || undefined;
+    }
   },
   441:{
     comment: "441: Use this in an OnItemActivated module script to get the location of the item's\ntarget.\n",
     name: "GetItemActivatedTargetLocation",
     type: NWScriptDataType.LOCATION,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.lastItemActivatedTargetLocation || undefined;
+    }
   },
   442:{
     comment: "442: Use this in an OnItemActivated module script to get the item's target.\n",
     name: "GetItemActivatedTarget",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.lastItemActivatedTarget || undefined;
+    }
   },
   443:{
     comment: "443: * Returns TRUE if oObject (which is a placeable or a door) is currently open.\n",
@@ -6422,7 +6490,24 @@ NWScriptDefK1.Actions = {
     comment: "500:\n",
     name: "DuplicateHeadAppearance",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(
+        !BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) ||
+        !BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)
+      ) return;
+      const dest = args[0] as ModuleCreature;
+      const src  = args[1] as ModuleCreature;
+      if(!src.creatureAppearance || !dest.creatureAppearance) return;
+      const srcHeadId = src.creatureAppearance.normalhead;
+      if(srcHeadId < 0) return;
+      // Clone the DEST appearance (preserving body model) to avoid mutating the shared
+      // 2DA row, then override only the normalhead with the SOURCE creature's head ID.
+      const clonedAppearance = Object.assign(Object.create(Object.getPrototypeOf(dest.creatureAppearance)), dest.creatureAppearance);
+      clonedAppearance.normalhead = srcHeadId;
+      dest.creatureAppearance = clonedAppearance;
+      dest.loadHead();
+    }
   },
   501:{
     comment: "501: The action subject will fake casting a spell at oTarget; the conjure and cast\nanimations and visuals will occur, nothing else.\n- nSpell\n- oTarget\n- nProjectilePathType: PROJECTILE_PATH_TYPE_*\n",
@@ -6883,7 +6968,10 @@ NWScriptDefK1.Actions = {
     comment: "542: Get the last PC that levelled up.\n",
     name: "GetPCLevellingUp",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.lastPCLevellingUp || undefined;
+    }
   },
   543:{
     comment: "543: - nFeat: FEAT_*\n- oObject\n* Returns TRUE if oObject has effects on it originating from nFeat.\n",
@@ -8086,7 +8174,14 @@ NWScriptDefK1.Actions = {
     comment: "675: EffectForceDrain\nThis command will reduce the force points of a creature.\n",
     name: "EffectForceDrain",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      const effect = new GameState.GameEffectFactory.EffectDamageForcePoints();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
   },
   676:{
     comment: "676: EffectTemporaryForcePoints\n\n",
