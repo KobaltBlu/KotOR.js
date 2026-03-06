@@ -76,7 +76,7 @@ export class MenuCamp extends GameMenu {
 
     // Auto-save after resting
     if(GameState.module){
-      GameState.module.save().catch((e: any) => console.error('MenuCamp auto-save error', e));
+      GameState.module.save().catch((e: unknown) => console.error('MenuCamp auto-save error', e));
     }
   }
 

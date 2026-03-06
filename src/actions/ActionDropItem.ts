@@ -64,6 +64,12 @@ export class ActionDropItem extends Action {
         GameState.module.area.items.push(item);
         item.getCurrentRoom();
       }
+    }).catch((e: unknown) => {
+      console.error('ActionDropItem: failed to load item model', e);
+      // Even without a model, track the item in the area for persistence
+      if(GameState.module?.area && !GameState.module.area.items.includes(item)){
+        GameState.module.area.items.push(item);
+      }
     });
 
     return ActionStatus.COMPLETE;
