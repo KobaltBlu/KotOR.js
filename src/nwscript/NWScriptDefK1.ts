@@ -3616,7 +3616,18 @@ NWScriptDefK1.Actions = {
     comment: "274: - oCreature\n- nImmunityType: IMMUNITY_TYPE_*\n- oVersus: if this is specified, then we also check for the race and\nalignment of oVersus\n* Returns TRUE if oCreature has immunity of type nImmunity versus oVersus.\n",
     name: "GetIsImmune",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return NW_FALSE;
+      const creature = args[0] as ModuleCreature;
+      for(let i = 0; i < creature.effects.length; i++){
+        const effect = creature.effects[i];
+        if(effect.type === GameEffectType.EffectImmunity && effect.getInt(0) === args[1]){
+          return NW_TRUE;
+        }
+      }
+      return NW_FALSE;
+    }
   },
   275:{
     comment: "275: Creates a Damage Immunity Increase effect.\n- nDamageType: DAMAGE_TYPE_*\n- nPercentImmunity\n",
@@ -6080,19 +6091,43 @@ NWScriptDefK1.Actions = {
     comment: "491: Get oTarget's base fortitude saving throw value (this will only work for\ncreatures, doors, and placeables).\n* Returns 0 if oTarget is invalid.\n",
     name: "GetFortitudeSavingThrow",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        return args[0].fortitudeSaveThrow || 0;
+      }
+      return 0;
+    }
   },
   492:{
     comment: "492: Get oTarget's base will saving throw value (this will only work for creatures,\ndoors, and placeables).\n* Returns 0 if oTarget is invalid.\n",
     name: "GetWillSavingThrow",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        return args[0].willSaveThrow || 0;
+      }
+      return 0;
+    }
   },
   493:{
     comment: "493: Get oTarget's base reflex saving throw value (this will only work for\ncreatures, doors, and placeables).\n* Returns 0 if oTarget is invalid.\n",
     name: "GetReflexSavingThrow",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        return args[0].reflexSaveThrow || 0;
+      }
+      return 0;
+    }
   },
   494:{
     comment: "494: Get oCreature's challenge rating.\n* Returns 0.0 if oCreature is invalid.\n",
@@ -6110,7 +6145,13 @@ NWScriptDefK1.Actions = {
     comment: "496: Get oCreature's movement rate.\n* Returns 0 if oCreature is invalid.\n",
     name: "GetMovementRate",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).walkRate || 0;
+      }
+      return 0;
+    }
   },
   497:{
     comment: "497: GetSubRace of oCreature\nReturns SUBRACE_*\n",
@@ -6192,7 +6233,12 @@ NWScriptDefK1.Actions = {
     comment: "506: SetLockHeadFollowInDialog\nAllows the locking and undlocking of head following for an object in dialog\n- oObject - Object\n- nValue - TRUE or FALSE\n",
     name: "SetLockHeadFollowInDialog",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        args[0].lockHeadFollowInDialog = args[1] ? true : false;
+      }
+    }
   },
   507:{
     comment: "507: CutsceneMoveToPoint\nUsed by the cutscene system to allow designers to script combat\n",
@@ -6692,7 +6738,16 @@ NWScriptDefK1.Actions = {
     comment: "553: FaceObjectAwayFromObject\nThis will cause the object oFacer to face away from oObjectToFaceAwayFrom.\nThe objects must be in the same area for this to work.\n",
     name: "FaceObjectAwayFromObject",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)) return;
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)) return;
+      // Face away = face the point opposite to the target
+      const dx = args[0].position.x - args[1].position.x;
+      const dy = args[0].position.y - args[1].position.y;
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+      args[0].setFacing(angle);
+    }
   },
   554:{
     comment: "554: Spawn in the Death GUI.\nThe default (as defined by BioWare) can be spawned in by PopUpGUIPanel, but\nif you want to turn off the 'Respawn' or 'Wait for Help' buttons, this is the\nfunction to use.\n- oPC\n- bRespawnButtonEnabled: if this is TRUE, the 'Respawn' button will be enabled\non the Death GUI.\n- bWaitForHelpButtonEnabled: if this is TRUE, the 'Wait For Help' button will\nbe enabled on the Death GUI.\n- nHelpStringReference\n- sHelpString\n",
