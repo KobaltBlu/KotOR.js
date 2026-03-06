@@ -1,9 +1,11 @@
+import { GameState } from "../GameState";
 import { Action } from "./Action";
 import { ActionType } from "../enums/actions/ActionType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModuleCreature } from "../module/ModuleCreature";
+import type { ModuleItem } from "../module/ModuleItem";
 
 /**
  * ActionDropItem class.
@@ -19,6 +21,9 @@ export class ActionDropItem extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionDropItem;
+
+    //PARAMS
+    // 0 - dword: oItem (the item to drop)
   }
 
   update(delta?: number): ActionStatus {
@@ -30,7 +35,36 @@ export class ActionDropItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner: ModuleCreature = this.owner as ModuleCreature;
+    const item = this.getParameter<ModuleItem>(0);
+    if(!BitWise.InstanceOfObject(item, ModuleObjectType.ModuleItem)){
+      return ActionStatus.FAILED;
+    }
+
+    const owner = this.owner as ModuleCreature;
+
+    // Remove from inventory (party member or creature)
+    if(GameState.PartyManager.party.indexOf(owner as any) >= 0){
+      GameState.InventoryManager.removeItem(item);
+    } else {
+      const idx = owner.inventory.indexOf(item);
+      if(idx >= 0) owner.inventory.splice(idx, 1);
+    }
+
+    // Place item at the owner's current position on the ground
+    item.placedInWorld = true;
+    item.position.copy(owner.position);
+    item.area = GameState.module?.area;
+    item.loadModel().then(() => {
+      if(item.model){
+        item.model.userData.moduleObject = item;
+        item.model.name = item.getTag();
+        GameState.group.placeables.add(item.model);
+      }
+      if(GameState.module?.area){
+        GameState.module.area.items.push(item);
+        item.getCurrentRoom();
+      }
+    });
 
     return ActionStatus.COMPLETE;
   }

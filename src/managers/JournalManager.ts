@@ -68,14 +68,11 @@ export class JournalManager {
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.JOURNAL_ENTRY_ADDED);
       let entry = JournalManager.GeJournalEntryByTag(szPlotID);
       if(entry){
-        if(entry.state > state && allowOverrideHigher){
+        // Only update state if the new state is higher, OR if allowOverrideHigher allows going lower
+        if(state > entry.state || allowOverrideHigher){
           entry.state = state;
-        }else {
-          entry.state = state;
+          entry.load();
         }
-        // entry.date; //TODO
-        // entry.time ; //TODO
-        entry.load();
       }else{
         entry = new JournalEntry();
         entry.plot_id = szPlotID;
@@ -83,7 +80,9 @@ export class JournalManager {
         entry.date = 0; //TODO
         entry.time = 0; //TODO
         entry.load();
+        JournalManager.Entries.push(entry);
       }
+      return true;
     }
     return false;
   }

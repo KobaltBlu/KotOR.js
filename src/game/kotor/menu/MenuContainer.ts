@@ -66,7 +66,18 @@ export class MenuContainer extends GameMenu {
           }
           this.close();
         }else{
-
+          // GIVE_ITEMS: transfer all player inventory items to the container
+          if(
+            this.container instanceof GameState.Module.ModuleArea.ModuleCreature ||
+            this.container instanceof GameState.Module.ModuleArea.ModulePlaceable
+          ){
+            const items = GameState.InventoryManager.inventory.slice();
+            for(const item of items){
+              GameState.InventoryManager.removeItem(item);
+              this.container.addItem(item);
+            }
+          }
+          this.close();
         }
       });
       this._button_a = this.BTN_OK;
@@ -87,9 +98,26 @@ export class MenuContainer extends GameMenu {
 
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         if(this.mode == MenuContainerMode.TAKE_ITEMS){
-
+          // Pick up a single item from the container
+          if(
+            this.container instanceof GameState.Module.ModuleArea.ModuleCreature ||
+            this.container instanceof GameState.Module.ModuleArea.ModulePlaceable
+          ){
+            const idx = this.container.inventory.indexOf(item);
+            if(idx >= 0) this.container.inventory.splice(idx, 1);
+            GameState.InventoryManager.addItem(item);
+            this.setMode(MenuContainerMode.TAKE_ITEMS);
+          }
         }else{
-          
+          // Give a single item from player inventory to container
+          if(
+            this.container instanceof GameState.Module.ModuleArea.ModuleCreature ||
+            this.container instanceof GameState.Module.ModuleArea.ModulePlaceable
+          ){
+            GameState.InventoryManager.removeItem(item);
+            this.container.addItem(item);
+            this.setMode(MenuContainerMode.GIVE_ITEMS);
+          }
         }
       }
 
@@ -144,14 +172,20 @@ export class MenuContainer extends GameMenu {
     //Update list items
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
-    if (this.container instanceof GameState.Module.ModuleArea.ModuleCreature || this.container instanceof GameState.Module.ModuleArea.ModulePlaceable) {
+    if(this.mode == MenuContainerMode.GIVE_ITEMS){
+      // Show player inventory so they can choose items to give
+      const playerInventory = GameState.InventoryManager.inventory;
+      for(let i = 0; i < playerInventory.length; i++){
+        this.LB_ITEMS.addItem(playerInventory[i]);
+      }
+    }else if (this.container instanceof GameState.Module.ModuleArea.ModuleCreature || this.container instanceof GameState.Module.ModuleArea.ModulePlaceable) {
       let inventory = this.container.getInventory();
       for (let i = 0; i < inventory.length; i++) {
         let item = inventory[i];
         this.LB_ITEMS.addItem(item);
       }
-      TextureLoader.LoadQueue();
     }
+    TextureLoader.LoadQueue();
 
   }
   
