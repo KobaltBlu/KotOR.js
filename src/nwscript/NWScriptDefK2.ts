@@ -5440,7 +5440,7 @@ NWScriptDefK2.Actions = {
     name: 'CreateItemOnFloor',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.STRING, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: NWScriptDefK1.Actions[766]?.action
   },
   767: {
     comment: '767. SetAvailableNPCId\nThis will set the object id that should be used for a specific available NPC',

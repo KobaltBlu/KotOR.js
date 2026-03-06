@@ -108,8 +108,22 @@ export class NWScript {
   controlFlowGraph: NWScriptControlFlowGraph | null = null;
 
   constructor ( dataOrFile?: string|Uint8Array ){
-    this.actionsMap = (GameState.GameKey == GameEngineType.TSL) ? 
-      NWScriptDefK2.Actions : NWScriptDefK1.Actions;
+    if(GameState.GameKey == GameEngineType.TSL){
+      // For TSL: use K2 actions, but fall back to K1 for any action that is
+      // undefined in K2 so that the large number of shared NWScript functions
+      // don't silently no-op.
+      this.actionsMap = new Proxy(NWScriptDefK2.Actions, {
+        get(target, prop: string | symbol) {
+          const k2 = (target as any)[prop];
+          if(k2 && k2.action) return k2;
+          const k1 = (NWScriptDefK1.Actions as any)[prop];
+          if(k1) return k2 ? { ...k1, ...k2, action: k1.action } : k1;
+          return k2;
+        }
+      });
+    }else{
+      this.actionsMap = NWScriptDefK1.Actions;
+    }
 
     this.instances = [];
     this.isGlobal = false;
