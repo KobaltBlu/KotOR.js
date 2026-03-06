@@ -293,6 +293,14 @@ export class GameState implements EngineContext {
   
   static module: Module;
   static TutorialWindowTracker: number[];
+
+  // NWScript event tracking for module-level item/creature events
+  static lastItemAcquired: any = undefined;
+  static lastItemAcquiredFrom: any = undefined;
+  static lastItemLost: any = undefined;
+  static lastItemLostBy: any = undefined;
+  static creditsSequenceInProgress: boolean = false;
+
   static audioEmitter: AudioEmitter;
   static guiAudioEmitter: AudioEmitter;
   static State: EngineState;
