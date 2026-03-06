@@ -162,6 +162,7 @@ export class ModuleObject {
   _locals: { Booleans: any[]; Numbers: {}; };
   objectsInside: any[];
   lockDialogOrientation: boolean = false;
+  lockHeadFollowInDialog: boolean = false;
   context: any;
 
   heartbeatTimer: any;

@@ -2629,7 +2629,19 @@ NWScriptDefK1.Actions = {
     comment: "198: Get the destination (a waypoint or a door) for a trigger or a door.\n* Returns OBJECT_INVALID if oTransition is not a valid trigger or door.\n",
     name: "GetTransitionTarget",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger)){
+        if(args[0].linkedToObject){
+          return args[0].linkedToObject;
+        }
+        const linkedTo = args[0].getLinkedTo();
+        if(linkedTo){
+          return GameState.ModuleObjectManager.GetObjectByTag(linkedTo);
+        }
+      }
+      return undefined;
+    }
   },
   199:{
     comment: "199: Link the two supplied effects, returning eChildEffect as a child of\neParentEffect.\nNote: When applying linked effects if the target is immune to all valid\neffects all other effects will be removed as well. This means that if you\napply a visual effect and a silence effect (in a link) and the target is\nimmune to the silence effect that the visual effect will get removed as well.\nVisual Effects are not considered 'valid' effects for the purposes of\ndetermining if an effect will be removed or not and as such should never be\npackaged *only* with other visual effects in a link.\n",
@@ -3548,7 +3560,31 @@ NWScriptDefK1.Actions = {
     comment: "271: Give oItem to oGiveTo (instant; for similar Action use ActionGiveItem)\nIf oItem is not a valid item, or oGiveTo is not a valid object, nothing will\nhappen.\n",
     name: "GiveItem",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)) return;
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)) return;
+
+      const item = args[0] as ModuleItem;
+      // Remove from current possessor
+      if(item.possessor && BitWise.InstanceOfObject(item.possessor, ModuleObjectType.ModuleObject)){
+        const possessor = item.possessor as ModuleObject;
+        if(GameState.PartyManager.party.indexOf(possessor as any) >= 0){
+          GameState.InventoryManager.removeItem(item);
+        }else{
+          const idx = possessor.inventory.indexOf(item);
+          if(idx > -1) possessor.inventory.splice(idx, 1);
+        }
+      }
+
+      // Add to target
+      if(GameState.PartyManager.party.indexOf(args[1] as any) >= 0){
+        GameState.InventoryManager.addItem(item);
+      }else{
+        args[1].inventory.push(item);
+        item.possessor = args[1];
+      }
+    }
   },
   272:{
     comment: "272: Convert oObject into a hexadecimal string.\n",
@@ -3580,7 +3616,18 @@ NWScriptDefK1.Actions = {
     comment: "274: - oCreature\n- nImmunityType: IMMUNITY_TYPE_*\n- oVersus: if this is specified, then we also check for the race and\nalignment of oVersus\n* Returns TRUE if oCreature has immunity of type nImmunity versus oVersus.\n",
     name: "GetIsImmune",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return NW_FALSE;
+      const creature = args[0] as ModuleCreature;
+      for(let i = 0; i < creature.effects.length; i++){
+        const effect = creature.effects[i];
+        if(effect.type === GameEffectType.EffectImmunity && effect.getInt(0) === args[1]){
+          return NW_TRUE;
+        }
+      }
+      return NW_FALSE;
+    }
   },
   275:{
     comment: "275: Creates a Damage Immunity Increase effect.\n- nDamageType: DAMAGE_TYPE_*\n- nPercentImmunity\n",
@@ -3666,13 +3713,19 @@ NWScriptDefK1.Actions = {
     comment: "282: Use this in an OnItemAcquired script to get the item that was acquired.\n* Returns OBJECT_INVALID if the module is not valid.\n",
     name: "GetModuleItemAcquired",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.lastItemAcquired || undefined;
+    }
   },
   283:{
     comment: "283: Use this in an OnItemAcquired script to get the creatre that previously\npossessed the item.\n* Returns OBJECT_INVALID if the item was picked up from the ground.\n",
     name: "GetModuleItemAcquiredFrom",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.lastItemAcquiredFrom || undefined;
+    }
   },
   284:{
     comment: "284: Set the value for a custom token.\n",
@@ -3768,13 +3821,19 @@ NWScriptDefK1.Actions = {
     comment: "292: Use this in an OnItemLost script to get the item that was lost/dropped.\n* Returns OBJECT_INVALID if the module is not valid.\n",
     name: "GetModuleItemLost",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.lastItemLost || undefined;
+    }
   },
   293:{
     comment: "293: Use this in an OnItemLost script to get the creature that lost the item.\n* Returns OBJECT_INVALID if the module is not valid.\n",
     name: "GetModuleItemLostBy",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.lastItemLostBy || undefined;
+    }
   },
   294:{
     comment: "294: Do aActionToDo.\n",
@@ -4130,7 +4189,10 @@ NWScriptDefK1.Actions = {
     comment: "326: Use this in a trigger's OnClick event script to get the object that last\nclicked on it.\nThis is identical to GetEnteringObject.\n",
     name: "GetClickingObject",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.enteringObject;
+    }
   },
   327:{
     comment: "327: Initialise oTarget to listen for the standard Associates commands.\n",
@@ -4205,13 +4267,24 @@ NWScriptDefK1.Actions = {
     comment: "332: Determined whether oItem has been identified.\n",
     name: "GetIdentified",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        return (args[0] as ModuleItem).identified ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   333:{
     comment: "333: Set whether oItem has been identified.\n",
     name: "SetIdentified",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        (args[0] as ModuleItem).identified = args[1] ? true : false;
+      }
+    }
   },
   334:{
     comment: "334: Get the distance between lLocationA and lLocationB. in 2D\n",
@@ -4671,7 +4744,14 @@ NWScriptDefK1.Actions = {
     comment: "374: Send a server message (szMessage) to the oPlayer.\n",
     name: "SendMessageToPC",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [ModuleObject, string]){
+      if(args[1]){
+        const entry = new FeedbackMessageEntry();
+        entry.message = args[1];
+        GameState.FeedbackMessageManager.AddEntry(entry);
+      }
+    }
   },
   375:{
     comment: "375: Get the target at which the caller attempted to cast a spell.\nThis value is set every time a spell is cast and is reset at the end of\ncombat.\n* Returns OBJECT_INVALID if the caller is not a valid creature.\n",
@@ -4921,7 +5001,18 @@ NWScriptDefK1.Actions = {
     comment: "398: Determines whether oItem has nProperty.\n- oItem\n- nProperty: ITEM_PROPERTY_*\n* Returns FALSE if oItem is not a valid item, or if oItem does not have\nnProperty.\n",
     name: "GetItemHasItemProperty",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        const item = args[0] as ModuleItem;
+        for(let i = 0; i < item.properties.length; i++){
+          if(item.properties[i].propertyName === args[1]){
+            return NW_TRUE;
+          }
+        }
+      }
+      return NW_FALSE;
+    }
   },
   399:{
     comment: "399: The creature will equip the melee weapon in its possession that can do the\nmost damage. If no valid melee weapon is found, it will equip the most\ndamaging range weapon. This function should only ever be called in the\nEndOfCombatRound scripts, because otherwise it would have to stop the combat\nround to run simulation.\n- oVersus: You can try to get the most damaging weapon against oVersus\n- bOffHand\n",
@@ -5426,7 +5517,13 @@ NWScriptDefK1.Actions = {
     comment: "437: Get the object that killed the caller.\n",
     name: "GetLastKiller",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return this.caller.combatData.lastDamager || this.caller.combatData.lastAttacker || undefined;
+      }
+      return undefined;
+    }
   },
   438:{
     comment: "438: Use this in a spell script to get the item used to cast the spell.\n",
@@ -5994,19 +6091,43 @@ NWScriptDefK1.Actions = {
     comment: "491: Get oTarget's base fortitude saving throw value (this will only work for\ncreatures, doors, and placeables).\n* Returns 0 if oTarget is invalid.\n",
     name: "GetFortitudeSavingThrow",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        return args[0].fortitudeSaveThrow || 0;
+      }
+      return 0;
+    }
   },
   492:{
     comment: "492: Get oTarget's base will saving throw value (this will only work for creatures,\ndoors, and placeables).\n* Returns 0 if oTarget is invalid.\n",
     name: "GetWillSavingThrow",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        return args[0].willSaveThrow || 0;
+      }
+      return 0;
+    }
   },
   493:{
     comment: "493: Get oTarget's base reflex saving throw value (this will only work for\ncreatures, doors, and placeables).\n* Returns 0 if oTarget is invalid.\n",
     name: "GetReflexSavingThrow",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) ||
+         BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        return args[0].reflexSaveThrow || 0;
+      }
+      return 0;
+    }
   },
   494:{
     comment: "494: Get oCreature's challenge rating.\n* Returns 0.0 if oCreature is invalid.\n",
@@ -6024,7 +6145,13 @@ NWScriptDefK1.Actions = {
     comment: "496: Get oCreature's movement rate.\n* Returns 0 if oCreature is invalid.\n",
     name: "GetMovementRate",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).walkRate || 0;
+      }
+      return 0;
+    }
   },
   497:{
     comment: "497: GetSubRace of oCreature\nReturns SUBRACE_*\n",
@@ -6106,7 +6233,12 @@ NWScriptDefK1.Actions = {
     comment: "506: SetLockHeadFollowInDialog\nAllows the locking and undlocking of head following for an object in dialog\n- oObject - Object\n- nValue - TRUE or FALSE\n",
     name: "SetLockHeadFollowInDialog",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        args[0].lockHeadFollowInDialog = args[1] ? true : false;
+      }
+    }
   },
   507:{
     comment: "507: CutsceneMoveToPoint\nUsed by the cutscene system to allow designers to script combat\n",
@@ -6229,13 +6361,19 @@ NWScriptDefK1.Actions = {
     comment: "518: StartCreditSequence\nStarts the credits sequence.  If bTransparentBackground is TRUE, the credits will be displayed\nwith a transparent background, allowing whatever is currently onscreen to show through.  If it\nis set to FALSE, the credits will be displayed on a black background.\n",
     name: "StartCreditSequence",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.creditsSequenceInProgress = true;
+    }
   },
   519:{
     comment: "519: IsCreditSequenceInProgress\nReturns TRUE if the credits sequence is currently in progress, FALSE otherwise.\n",
     name: "IsCreditSequenceInProgress",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.creditsSequenceInProgress ? NW_TRUE : NW_FALSE;
+    }
   },
   520:{
     comment: "520: Sets the minigame lateral acceleration/sec value\n",
@@ -6600,13 +6738,27 @@ NWScriptDefK1.Actions = {
     comment: "553: FaceObjectAwayFromObject\nThis will cause the object oFacer to face away from oObjectToFaceAwayFrom.\nThe objects must be in the same area for this to work.\n",
     name: "FaceObjectAwayFromObject",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)) return;
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)) return;
+      // Face away = face the point opposite to the target
+      const dx = args[0].position.x - args[1].position.x;
+      const dy = args[0].position.y - args[1].position.y;
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+      args[0].setFacing(angle);
+    }
   },
   554:{
     comment: "554: Spawn in the Death GUI.\nThe default (as defined by BioWare) can be spawned in by PopUpGUIPanel, but\nif you want to turn off the 'Respawn' or 'Wait for Help' buttons, this is the\nfunction to use.\n- oPC\n- bRespawnButtonEnabled: if this is TRUE, the 'Respawn' button will be enabled\non the Death GUI.\n- bWaitForHelpButtonEnabled: if this is TRUE, the 'Wait For Help' button will\nbe enabled on the Death GUI.\n- nHelpStringReference\n- sHelpString\n",
     name: "PopUpDeathGUIPanel",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number, string]){
+      if(GameState.MenuManager.MenuGameOver){
+        GameState.MenuManager.MenuGameOver.open();
+      }
+    }
   },
   555:{
     comment: "555: Disable oTrap.\n- oTrap: a placeable, door or trigger.\n",
@@ -6769,7 +6921,22 @@ NWScriptDefK1.Actions = {
     comment: "570: Determine whether oObject has an inventory.\n* Returns TRUE for creatures and stores, and checks to see if an item or placeable object is a container.\n* Returns FALSE for all other object types.\n",
     name: "GetHasInventory",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return NW_TRUE;
+      }
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleStore)){
+        return NW_TRUE;
+      }
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        return (args[0] as ModulePlaceable).hasInventory ? NW_TRUE : NW_FALSE;
+      }
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        return (args[0] as ModuleItem).inventory?.length ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   571:{
     comment: "571: Get the duration (in seconds) of the sound attached to nStrRef\n* Returns 0.0f if no duration is stored or if no sound is attached\n",
@@ -6781,13 +6948,33 @@ NWScriptDefK1.Actions = {
     comment: "572: Add oPC to oPartyLeader's party.  This will only work on two PCs.\n- oPC: player to add to a party\n- oPartyLeader: player already in the party\n",
     name: "AddToParty",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        const creature = args[0] as ModuleCreature;
+        if(GameState.PartyManager.party.indexOf(creature) === -1){
+          GameState.PartyManager.party.push(creature);
+          creature.isPM = true;
+        }
+      }
+    }
   },
   573:{
     comment: "573: Remove oPC from their current party. This will only work on a PC.\n- oPC: removes this player from whatever party they're currently in.\n",
     name: "RemoveFromParty",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        const creature = args[0] as ModuleCreature;
+        const idx = GameState.PartyManager.party.indexOf(creature);
+        if(idx > -1){
+          creature.isPM = false;
+          GameState.PartyManager.party.splice(idx, 1);
+          GameState.PartyManager.RebuildPortraitOrder();
+        }
+      }
+    }
   },
   574:{
     comment: "574: Adds a creature to the party\nReturns whether the addition was successful\nAddPartyMember\n",
@@ -7867,7 +8054,12 @@ NWScriptDefK1.Actions = {
     comment: "700. ActionBarkString\nthis will cause a creature to bark the strRef from the talk table.\n",
     name: "ActionBarkString",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        GameState.MenuManager.InGameBark.barkFromStringRef(args[0]);
+      }
+    }
   },
   701:{
     comment: "701. GetIsConversationActive\nChecks to see if any conversations are currently taking place\n",
