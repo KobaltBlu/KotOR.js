@@ -68,6 +68,11 @@ export class Module {
   transition: any;
   transWP: string;
 
+  /** The last player creature that died (used by GetLastPlayerDied NWScript). */
+  lastPlayerDied: any = undefined;
+  /** The last player creature that is dying (used by GetLastPlayerDying NWScript). */
+  lastPlayerDying: any = undefined;
+
   /**
    * List of Areas in the module
    */
