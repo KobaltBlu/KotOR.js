@@ -1100,12 +1100,12 @@ export class SaveGame {
    * console.log(SaveGame.NEXT_SAVE_ID); // Next available save ID
    */
   static async GetSaveGames(){
+    SaveGame.saves = [];
+    SaveGame.NEXT_SAVE_ID = 2;
+
     try{
       const savegamesRAW = await GameFileSystem.readdir('Saves', {list_dirs: false, recursive: true});
       const savegames = savegamesRAW.filter((entryPath) => /(?:^|[\\/])SAVEGAME\.sav$/i.test(entryPath));
-
-      SaveGame.saves = [];
-      SaveGame.NEXT_SAVE_ID = 2;
 
       for(let i = 0; i < savegames.length; i++){
         const saveFolder = savegames[i].replace(/[\\/]SAVEGAME\.sav$/i, '');
