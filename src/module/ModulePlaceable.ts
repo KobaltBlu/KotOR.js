@@ -31,6 +31,8 @@ import { SkillType } from "../enums/nwscript/SkillType";
 import { ModulePlaceableObjectSound } from "../enums/module/ModulePlaceableObjectSound";
 import { SWBodyBag } from "../engine/rules/SWBodyBag";
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { Dice } from "../utility/Dice";
+import { DiceType } from "../enums/combat/DiceType";
 
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
@@ -517,7 +519,7 @@ export class ModulePlaceable extends ModuleObject {
 
     const nSecuritySkill = object.getSkillLevel(SkillType.SECURITY);
     if(this.isLocked() && !this.keyRequired && nSecuritySkill >= 1){
-      let d20 = 20;//d20 rolls are auto 20's outside of combat
+      const d20 = Dice.roll(1, DiceType.d20);
       let skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
       if(skillCheck >= 1 && nSecuritySkill >= 1){
         this.unlock(object);

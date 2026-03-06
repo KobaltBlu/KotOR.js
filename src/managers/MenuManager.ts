@@ -57,6 +57,7 @@ export class MenuManager {
   static MenuEquipment: KOTOR.MenuEquipment;
   static MenuFeedback: KOTOR.MenuFeedback;
   static MenuGalaxyMap: KOTOR.MenuGalaxyMap;
+  static MenuGameOver: KOTOR.MenuGameOver;
   static MenuGameplay: KOTOR.MenuGameplay;
   static MenuGraphics: KOTOR.MenuGraphics;
   static MenuGraphicsAdvanced: KOTOR.MenuGraphicsAdvanced;
@@ -322,6 +323,7 @@ export class MenuManager {
         MenuManager.MenuContainer = await MenuManager.GameMenuLoader(KOTOR.MenuContainer) as KOTOR.MenuContainer;
         MenuManager.MenuEquipment = await MenuManager.GameMenuLoader(KOTOR.MenuEquipment) as KOTOR.MenuEquipment;
         MenuManager.MenuGalaxyMap = await MenuManager.GameMenuLoader(KOTOR.MenuGalaxyMap) as KOTOR.MenuGalaxyMap;
+        MenuManager.MenuGameOver = await MenuManager.GameMenuLoader(KOTOR.MenuGameOver) as KOTOR.MenuGameOver;
         MenuManager.MenuInventory = await MenuManager.GameMenuLoader(KOTOR.MenuInventory) as KOTOR.MenuInventory;
         MenuManager.MenuJournal = await MenuManager.GameMenuLoader(KOTOR.MenuJournal) as KOTOR.MenuJournal;
         MenuManager.MenuLevelUp = await MenuManager.GameMenuLoader(KOTOR.MenuLevelUp) as KOTOR.MenuLevelUp;
@@ -353,6 +355,7 @@ export class MenuManager {
         MenuManager.MenuContainer = await MenuManager.GameMenuLoader(TSL.MenuContainer) as KOTOR.MenuContainer;
         MenuManager.MenuEquipment = await MenuManager.GameMenuLoader(TSL.MenuEquipment) as KOTOR.MenuEquipment;
         MenuManager.MenuGalaxyMap = await MenuManager.GameMenuLoader(TSL.MenuGalaxyMap) as KOTOR.MenuGalaxyMap;
+        MenuManager.MenuGameOver = await MenuManager.GameMenuLoader(TSL.MenuGameOver) as KOTOR.MenuGameOver;
         MenuManager.MenuInventory = await MenuManager.GameMenuLoader(TSL.MenuInventory) as KOTOR.MenuInventory;
         MenuManager.MenuJournal = await MenuManager.GameMenuLoader(TSL.MenuJournal) as KOTOR.MenuJournal;
         MenuManager.MenuLevelUp = await MenuManager.GameMenuLoader(TSL.MenuLevelUp) as KOTOR.MenuLevelUp;

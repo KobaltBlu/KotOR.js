@@ -986,6 +986,10 @@ export class PartyManager {
         GameState.group.party.add( partyMember.container );
 
         partyMember.onSpawn();
+
+        // Queue a follow-leader action so the companion immediately follows the party leader
+        const followAction = new GameState.ActionFactory.ActionFollowLeader();
+        partyMember.actionQueue.add(followAction);
       }else{
         const spawn = PartyManager.GetSpawnLocation(currentSlot);
         currentSlot.position.copy(spawn.position);
@@ -1215,8 +1219,10 @@ export class PartyManager {
    * @returns void
    */
   static async ExportPlayerCharacter(){
-    if(!GameState.PartyManager.ActualPlayerTemplate){ return; }
-    const gff = GameState.PartyManager.ActualPlayerTemplate;
+    if(!PartyManager.Player){ return; }
+    // Save the live player creature state so stats, XP, equipment, and HP are persisted
+    const gff = PartyManager.Player.save();
+    PartyManager.ActualPlayerTemplate = gff;
     await gff.export( path.join( CurrentGame.gameinprogress_dir, 'pc.utc'));
   }
 
