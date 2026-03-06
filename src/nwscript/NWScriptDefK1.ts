@@ -4915,8 +4915,49 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.EFFECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, GameEffect]){
-      //TODO
-      return 0;
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return NW_FALSE;
+      const creature = args[0] as ModuleCreature;
+
+      // Collect all leaf effects from the linked chain
+      const collectLeafEffects = (effect: GameEffect): GameEffect[] => {
+        if(!effect) return [];
+        if(effect.type === GameEffectType.EffectLink) {
+          const link = effect as any;
+          return [...collectLeafEffects(link.effect1), ...collectLeafEffects(link.effect2)];
+        }
+        return [effect];
+      };
+
+      const leafEffects = collectLeafEffects(args[1]);
+
+      // Map immunity type → the effect types it blocks
+      const IMMUNITY_EFFECT_MAP: {[key: number]: GameEffectType[]} = {
+        1: [GameEffectType.EffectSetState, GameEffectType.EffectEntangle, GameEffectType.EffectSetAIState], // MIND_SPELLS
+        2: [GameEffectType.EffectPoison],    // POISON
+        3: [GameEffectType.EffectDisease],   // DISEASE
+        9: [GameEffectType.EffectNegativeLevel], // NEGATIVE_LEVEL
+        10: [GameEffectType.EffectDeath],    // DEATH
+      };
+
+      // Collect the creature's active immunity types
+      const immunityTypes: number[] = creature.effects
+        .filter(e => e.type === GameEffectType.EffectImmunity)
+        .map(e => e.getInt(0));
+
+      // Check each non-visual leaf effect against the creature's immunities
+      for(const leafEffect of leafEffects) {
+        if(leafEffect.type === GameEffectType.EffectVisualEffect ||
+           leafEffect.type === GameEffectType.EffectIcon) continue;
+
+        for(const immunityType of immunityTypes) {
+          const blocked = IMMUNITY_EFFECT_MAP[immunityType];
+          if(blocked && blocked.includes(leafEffect.type)) {
+            return NW_TRUE;
+          }
+        }
+      }
+
+      return NW_FALSE;
     }
   },
   391:{

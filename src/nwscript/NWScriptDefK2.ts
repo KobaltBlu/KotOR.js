@@ -5647,7 +5647,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      //todo
+      // Mine ownership tracking is not yet implemented; return 0
       return 0;
     }
   },
@@ -5656,35 +5656,56 @@ NWScriptDefK2.Actions = {
     name: 'SetOrientOnClick',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as any).orientOnClick = !!args[1];
+      }
+    }
   },
   795: {
     comment: 'DJS-OEI 1/29/2004\n795: Gets the PC\'s influence on the alignment of a CNPC.\nParameters:\nnNPC - NPC_* constant identifying the CNPC we\'re interested in.\nIf this character is not an available party member, the return\nvalue with be 0. If the character is in the party, but has an\nattitude of Ambivalent, this will be -1.',
     name: 'GetInfluence',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const influence = GameState.PartyManager.InfluenceMap.get(args[0]);
+      return influence !== undefined ? influence : 0;
+    }
   },
   796: {
     comment: 'DJS-OEI 1/29/2004\n796: Sets the PC\'s influence on the alignment of a CNPC.\nParameters:\nnNPC - NPC_* constant identifying the CNPC we\'re interested in.\nIf this character is not an available party member, nothing\nwill happen.\nnInfluence - The new value for the influence on this CNPC.',
     name: 'SetInfluence',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, number]){
+      if(GameState.PartyManager.InfluenceMap.has(args[0])){
+        GameState.PartyManager.InfluenceMap.set(args[0], args[1]);
+      }
+    }
   },
   797: {
     comment: 'DJS-OEI 1/29/2004\n797: Modifies the PC\'s influence on the alignment of a CNPC.\nParameters:\nnNPC - NPC_* constant identifying the CNPC we\'re interested in.\nIf this character is not an available party member, nothing\nwill happen.\nnModifier - The modifier to the current influence on this CNPC.\nThis may be a negative value to reduce the influence.',
     name: 'ModifyInfluence',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, number]){
+      if(GameState.PartyManager.InfluenceMap.has(args[0])){
+        const current = GameState.PartyManager.InfluenceMap.get(args[0]) ?? 0;
+        GameState.PartyManager.InfluenceMap.set(args[0], current + args[1]);
+      }
+    }
   },
   798: {
     comment: 'FAK - OEI 2/3/04\n798: returns the racial sub-type of the oTarget object',
     name: 'GetRacialSubType',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as any).getSubraceIndex();
+      }
+      return 0;
+    }
   },
   799: {
     comment: 'DJS-OEI 2/3/2004\n799: Increases the value of the given global number by the given amount.\nThis function only works with Number type globals, not booleans. It\nwill fail with a warning if the final amount is greater than the max\nof 127.',
@@ -5712,21 +5733,34 @@ NWScriptDefK2.Actions = {
     name: 'SetBonusForcePoints',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as any).bonusForcePoints = args[1];
+      }
+    }
   },
   802: {
     comment: 'RWT-OEI 02/06/04\n802: AddBonusForcePoints - This adds nBonusFP to the current total\n     bonus that the player has. The Bonus Force Points are a pool\n     of force points that will always be added after the player\'s\n     total force points are calculated (based on level, force dice,\n     etc.)',
     name: 'AddBonusForcePoints',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as any).bonusForcePoints += args[1];
+      }
+    }
   },
   803: {
     comment: 'RWT-OEI 02/06/04\n803: GetBonusForcePoints - This returns the total number of bonus\n     force points a player has. Bonus Force Points are a pool of\n     points that are always added to a player\'s Max Force Points.\nST: Please explain how a function returning VOID could return a\n    numerical value? Hope it works changing the return type...\nvoid GetBonusForcePoints( object oCreature );',
     name: 'GetBonusForcePoints',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as any).bonusForcePoints ?? 0;
+      }
+      return 0;
+    }
   },
   804: {
     comment: 'FAK - OEI 2/11/04\n804: SWMG_SetJumpSpeed -- the sets the \'jump speed\' for the swoop\n     bike races. Gravity will act upon this velocity.',
@@ -6244,42 +6278,80 @@ NWScriptDefK2.Actions = {
     name: 'AdjustCreatureSkills',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        const creature = args[0] as any;
+        const skillIndex = args[1];
+        if(creature.skills && creature.skills[skillIndex] !== undefined){
+          creature.skills[skillIndex].rank = Math.max(0, creature.skills[skillIndex].rank + args[2]);
+        }
+      }
+    }
   },
   870: {
     comment: '870\nDJS-OEI 10/10/2004\nThis function returns the base Skill Rank for the requested\nskill. It does not include modifiers from effects/items.\nThe following constants are acceptable for the nSkill parameter:\nSKILL_COMPUTER_USE\nSKILL_DEMOLITIONS\nSKILL_STEALTH\nSKILL_AWARENESS\nSKILL_PERSUADE\nSKILL_REPAIR\nSKILL_SECURITY\nSKILL_TREAT_INJURY\noObject is the creature that will have its skill base returned.',
     name: 'GetSkillRankBase',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        const creature = args[1] as any;
+        if(creature.skills && creature.skills[args[0]] !== undefined){
+          return creature.skills[args[0]].rank;
+        }
+      }
+      return 0;
+    }
   },
   871: {
     comment: '871\nDJS-OEI 10/15/2004\nThis function will allow the caller to modify the rendering behavior\nof the target object.\noObject - The object to change rendering state on.\nbEnable - If 0, the object will stop rendering. Else, the object will render.',
     name: 'EnableRendering',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        args[0].getModel().visible = !!args[1];
+      }
+    }
   },
   872: {
     comment: '872\nRWT-OEI 10/19/04\nThis function returns TRUE if the creature has actions in its\nCombat Action queue.',
     name: 'GetCombatActionsPending',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        const creature = args[0] as any;
+        return (creature.combatData && creature.combatData.combatQueue && creature.combatData.combatQueue.length > 0) ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   873: {
     comment: '873\nRWT-OEI 10/26/04\nThis function saves the party member at that index with the object\nthat is passed in.',
     name: 'SaveNPCByObject',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)) return;
+      const npcIndex = args[0];
+      if(npcIndex < 0 || npcIndex >= GameState.PartyManager.MaxPartyCount) return;
+      const creature = args[1] as any;
+      GameState.PartyManager.NPCS[npcIndex].template = creature.save();
+    }
   },
   874: {
     comment: '874\nRWT-OEI 10/26/04\nThis function saves the party puppet at that index with the object\nthat is passed in. For the Remote, just use \'0\' for nPUP',
     name: 'SavePUPByObject',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)) return;
+      const pupIndex = args[0];
+      if(pupIndex < 0 || pupIndex >= GameState.PartyManager.MaxPuppetCount) return;
+      const creature = args[1] as any;
+      (GameState.PartyManager.Puppets[pupIndex] as any).template = creature.save();
+    }
   },
   875: {
     comment: '875\nRWT-OEI 10/29/04\nReturns TRUE if the object passed in is the character that the player\nmade at the start of the game',
