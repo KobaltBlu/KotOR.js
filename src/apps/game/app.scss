@@ -24,3 +24,9 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+canvas {
+  &:focus {
+    outline: none;
+  }
+}

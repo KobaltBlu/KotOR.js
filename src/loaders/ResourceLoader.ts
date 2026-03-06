@@ -131,11 +131,11 @@ export class ResourceLoader {
       return data;
     }
 
-    data = await this.searchLocal(resId, resRef);
-    if(data){
-      ResourceLoader.setCache(null, resId, resRef, data);
-      return data;
-    }
+    // data = await this.searchLocal(resId, resRef);
+    // if(data){
+    //   ResourceLoader.setCache(null, resId, resRef, data);
+    //   return data;
+    // }
 
     data = await this.searchKeyTable(resId, resRef);
     if(data){
@@ -262,11 +262,13 @@ export class ResourceLoader {
     for(let i = 0; i < archiveCount; i++){
       const archive = this.ModuleArchives[i];
       if(archive instanceof RIMObject){
+        if(!archive.hasResource(resRef, resId)){ continue; }
         const data = await archive.getResourceBufferByResRef(resRef, resId);
         if(data){
           return data;
         }
       }else if(archive instanceof ERFObject){
+        if(!archive.hasResource(resRef, resId)){ continue; }
         const data = await archive.getResourceBufferByResRef(resRef, resId);
         if(data){
           return data;
@@ -290,7 +292,7 @@ export class ResourceLoader {
 
     for(let i = 0; i < rimCount; i++){
       const rim = rims[i];
-      if(!rim){ continue; }
+      if(!rim || !rim.hasResource(resRef, resId)){ continue; }
 
       return await rim.getResourceBufferByResRef(resRef, resId);
     }

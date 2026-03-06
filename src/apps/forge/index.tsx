@@ -42,8 +42,8 @@ const loadReactApplication = () => {
   try {
     await KotOR.ConfigClient.Init();
     const getProfile = () => KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
-    KotOR.ApplicationProfile.InitEnvironment(getProfile());
-    document.body.classList.add(KotOR.ApplicationProfile.GameKey ?? 'kotor');
+    KotOR.ApplicationProfile.SetProfile(getProfile());
+    document.body.classList.add(query.get('key') ?? 'kotor');
   } catch (e) {
     console.error('Forge init error, starting with defaults', e);
     document.body.classList.add('kotor');

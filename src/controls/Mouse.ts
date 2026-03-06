@@ -32,6 +32,7 @@ export class Mouse {
   static CollisionPosition: THREE.Vector3 = new THREE.Vector3();
   static Vector: THREE.Vector2 = new THREE.Vector2();
   static Client: THREE.Vector2 = new THREE.Vector2();
+  static pointerLock: boolean = false;
 
   //button states
   static leftDown: boolean = false;

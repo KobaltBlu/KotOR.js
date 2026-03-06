@@ -165,7 +165,8 @@ export class ActionPhysicalAttacks extends Action {
             owner.position.y - target.position.y,
             owner.position.x - target.position.x
           ) + Math.PI / 2,
-          false
+          false,
+          TURN_SPEED_FAST
         );
 
         const attackSound = THREE.MathUtils.randInt(0, 2);

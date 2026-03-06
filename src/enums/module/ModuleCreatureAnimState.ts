@@ -56,6 +56,8 @@ export enum ModuleCreatureAnimState {
   PAUSE2 = 10052,
   HEAD_TURN_LEFT = 10053,
   HEAD_TURN_RIGHT = 10054,
+  TURN_LEFT = 10509, /** Value Not Confirmed */
+  TURN_RIGHT = 10510, /** Value Not Confirmed */
   PAUSE_SCRATCH_HEAD = 10055,
   PAUSE_BORED = 10056,
   PAUSE_TIRED = 10057,

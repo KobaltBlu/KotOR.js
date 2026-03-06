@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import { 
-  AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
-  ResolutionManager, ShaderManager, TwoDAManager, FactionManager, 
-  VideoEffectManager, PazaakManager, UINotificationManager, CutsceneManager
+import {
+  AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager,
+  ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
+  VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, CutsceneManager, LegalScreenManager
 } from "./managers";
 
 import type { SWRuleSet } from "./engine/rules/SWRuleSet";
@@ -22,7 +22,6 @@ import { IngameControls } from "./controls/IngameControls";
 // import { Mouse } from "./controls/Mouse";
 
 import { INIConfig } from "./engine/INIConfig";
-import { VideoPlayer } from "./engine/VideoPlayer";
 
 // import { OdysseyObject3D } from "./three/odyssey";
 import { AudioEngine, AudioEmitter } from "./audio";
@@ -116,6 +115,13 @@ export class GameState implements EngineContext {
   static PazaakManager: typeof PazaakManager;
   static UINotificationManager: typeof UINotificationManager;
   static CutsceneManager: typeof CutsceneManager;
+  static LegalScreenManager: typeof LegalScreenManager;
+  static lastGameplayThumb?: OffscreenCanvas;
+  static lastGameplayThumbCtx?: OffscreenCanvasRenderingContext2D;
+  static lastGameplayThumbRT?: THREE.WebGLRenderTarget;
+
+  static FollowerCamera: typeof FollowerCamera = FollowerCamera;
+
 
   static SWRuleSet: typeof SWRuleSet;
 
@@ -132,6 +138,7 @@ export class GameState implements EngineContext {
   static GameEffectFactory: typeof GameEffectFactory;
   static GameEventFactory: typeof GameEventFactory;
   static VideoEffectManager: typeof VideoEffectManager;
+  static VideoManager: typeof VideoManager;
 
   static Planetary: typeof Planetary = Planetary;
 
@@ -140,7 +147,6 @@ export class GameState implements EngineContext {
   static GameKey: GameEngineType = GameEngineType.KOTOR;
   static iniConfig: INIConfig;
   
-  static OpeningMoviesComplete = false;
   static Ready = false;
   
   static CameraDebugZoom = 1;
@@ -184,6 +190,7 @@ export class GameState implements EngineContext {
   static AlphaTest = 0.5;
   static noClickTimer = 0;
   static maxSelectableDistance = 20;
+  static maxSelectableDistanceSquared = GameState.maxSelectableDistance * GameState.maxSelectableDistance;
 
   static delta: number = 0;
   static clampedDelta: number = 0;
@@ -221,6 +228,7 @@ export class GameState implements EngineContext {
 
   static scene: THREE.Scene;
   static scene_gui: THREE.Scene;
+  static scene_movie: THREE.Scene;
 
   //Camera properties
   static frustumMat4: THREE.Matrix4;
@@ -571,6 +579,7 @@ export class GameState implements EngineContext {
 
     GameState.scene = new THREE.Scene();
     GameState.scene_gui = new THREE.Scene();
+    GameState.scene_movie = new THREE.Scene();
     GameState.frustumMat4 = new THREE.Matrix4();
     GameState.camera = FollowerCamera.camera;
 
@@ -593,6 +602,7 @@ export class GameState implements EngineContext {
     GameState.camera_gui.position.z = 500;
     GameState.camera_gui.updateProjectionMatrix();
     GameState.scene_gui.add(new THREE.AmbientLight(0x60534A));
+    GameState.scene_movie.add(new THREE.AmbientLight(0x60534A));
 
     FollowerCamera.facing = Math.PI/2;
     FollowerCamera.speed = 0;
@@ -821,6 +831,13 @@ export class GameState implements EngineContext {
       PerformanceMonitor.stop('MenuManager.LoadMainGameMenus');
 
       /**
+       * Preload the legal screen texture
+       */
+      if(GameState.GameKey == GameEngineType.TSL){
+        await GameState.LegalScreenManager.Initialize();
+      }
+
+      /**
        * Preload fx textures
        */
       TextureLoader.enQueue(GameState.preloadTextures,
@@ -831,10 +848,14 @@ export class GameState implements EngineContext {
       await TextureLoader.LoadQueue();
       PerformanceMonitor.stop('TextureLoader.LoadQueue');
 
-      GameState.Ready = true;
-      if(GameState.OpeningMoviesComplete){
-        GameState.Start();
+      if(GameState.GameKey == GameEngineType.KOTOR){
+        GameState.VideoManager.queueMovie('leclogo', true);
+        GameState.VideoManager.queueMovie('biologo', true);
+        GameState.VideoManager.queueMovie('legal', true);
       }
+
+      GameState.Ready = true;
+      GameState.Start();
       console.log(PerformanceMonitor.toString());
     }catch(e){
       console.error(e);
@@ -842,12 +863,35 @@ export class GameState implements EngineContext {
   }
 
   static Start(){
+
     if(GameState.Ready && !GameState.OnReadyCalled){
       GameState.OnReadyCalled = true;
       GameState.processEventListener('ready');
-      GameState.MenuManager.MainMenu.Start();
       window.dispatchEvent(new Event('resize'));
+      
+      if(GameState.GameKey == GameEngineType.TSL){
+        GameState.SetEngineMode(EngineMode.LEGAL);
+        GameState.State = EngineState.RUNNING;
+        GameState.Update();
+        return;
+      }
 
+      GameState.VideoManager.playMovieQueue( () => {
+        window.dispatchEvent(new Event('resize'));
+        GameState.MenuManager.MainMenu.Start();
+        GameState.SetEngineMode(EngineMode.GUI);
+        GameState.State = EngineState.RUNNING;
+        AudioEngine.Unmute(AudioEngineChannel.ALL);
+        AudioEngine.Mute(AudioEngineChannel.MOVIE);
+      }).catch((e) => {
+        console.error(e);
+        window.dispatchEvent(new Event('resize'));
+        GameState.MenuManager.MainMenu.Start();
+        GameState.SetEngineMode(EngineMode.GUI);
+        GameState.State = EngineState.RUNNING;
+        AudioEngine.Unmute(AudioEngineChannel.ALL);
+        AudioEngine.Mute(AudioEngineChannel.MOVIE);
+      });
       //Start the game update loop
       GameState.Update();
     }
@@ -861,7 +905,9 @@ export class GameState implements EngineContext {
     GameState.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
 
     GameState.FadeOverlayManager.plane.scale.set(width, height, 1);
-    
+
+    GameState.VideoManager.resize(width, height);
+
     GameState.camera_gui.left = width / -2;
     GameState.camera_gui.right = width / 2;
     GameState.camera_gui.top = height / 2;
@@ -914,96 +960,6 @@ export class GameState implements EngineContext {
     return p ? p : GameState.PartyManager.Player;
   }
 
-  static tUpdateSelectable = 0;
-
-  public static getSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
-
-    const objects = [
-      ...GameState.module.area.placeables, 
-      ...GameState.module.area.doors, 
-      ...GameState.module.area.creatures,
-      ...GameState.module.area.triggers.filter((trig) => trig.type == ModuleTriggerType.TRAP)
-    ];
-
-    for(let i = 0; i < GameState.PartyManager.party.length; i++){
-      if(!i){ continue; }
-      objects.push(GameState.PartyManager.party[i]);
-    }
-
-    const selectableObjects: ModuleObject[] = [];
-
-    const objCount = objects.length;
-    let obj: ModuleObject;
-    let dir = new THREE.Vector3();
-    const losZ = 1;
-    const playerPosition = player.position.clone();
-    playerPosition.z += losZ;
-
-    const targetPosition = new THREE.Vector3();
-    
-    let distance = 0;
-    for(let i = 0; i < objCount; i++){
-      obj = objects[i];
-
-      if(!obj.isUseable()){ continue; }
-
-      const isDoor = BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor);
-      if(isDoor){
-        if((obj as ModuleDoor).isOpen()){ continue; };
-      }
-
-      targetPosition.copy(obj.position);
-      if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
-        targetPosition.z += losZ;
-      }else{
-        targetPosition.z += 0.1;
-      }
-
-      distance = targetPosition.distanceTo(playerPosition);
-      if(distance > GameState.maxSelectableDistance){
-        continue;
-      }
-
-      dir.copy(targetPosition);
-      dir.sub(playerPosition);
-      // dir.negate();
-      dir.normalize();
-
-      if(obj.model){
-        GameState.raycaster.set(playerPosition, dir);
-
-        //Check that we can see the object
-        let los = GameState.raycaster.intersectObjects([...GameState.group.room_walkmeshes.children, obj.model], true);
-
-        //If the object a door ignore it's walkmesh
-        if(isDoor && los.length){
-          los = los.filter( (intersect) => {
-            intersect.object.uuid != obj.collisionManager.walkmesh.mesh.uuid
-          });
-        }
-
-        const intersect = los[0];
-        if(intersect && Array.isArray(obj.model.userData.uuids) && obj.model.userData.uuids.indexOf(intersect.object.uuid) == -1){
-          continue;
-        }
-      }
-      
-      selectableObjects.push(obj);
-    }
-
-    if(selectableObjects.indexOf(GameState.CursorManager.selectedObject) == -1){
-      GameState.CursorManager.selectedObject = undefined;
-      GameState.CursorManager.selected = undefined;
-    }
-
-    if(selectableObjects.indexOf(GameState.CursorManager.hoveredObject) == -1){
-      GameState.CursorManager.hoveredObject = undefined;
-      GameState.CursorManager.hovered = undefined;
-    }
-
-    return selectableObjects;
-  }
-
   static ResetModuleAudio(){                        
     GameState.CutsceneManager.audioEmitter = 
     this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
@@ -1041,13 +997,13 @@ export class GameState implements EngineContext {
     await GameState.MenuManager.LoadInGameMenus();
     
     GameState.VideoEffectManager.SetVideoEffect(-1);
-    CursorManager.selectableObjects = [];
-    await VideoPlayer.Load(sMovie1);
-    await VideoPlayer.Load(sMovie2);
-    await VideoPlayer.Load(sMovie3);
-    await VideoPlayer.Load(sMovie4);
-    await VideoPlayer.Load(sMovie5);
-    await VideoPlayer.Load(sMovie6);
+    GameState.ModuleObjectManager.playerSelectableObjects = [];
+    GameState.VideoManager.queueMovie(sMovie1);
+    GameState.VideoManager.queueMovie(sMovie2);
+    GameState.VideoManager.queueMovie(sMovie3);
+    GameState.VideoManager.queueMovie(sMovie4);
+    GameState.VideoManager.queueMovie(sMovie5);
+    GameState.VideoManager.queueMovie(sMovie6);
     GameState.SetEngineMode(EngineMode.LOADING);
     
     if(GameState.module){
@@ -1099,8 +1055,8 @@ export class GameState implements EngineContext {
     GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
     
     console.log('ModuleArea.initAreaObjects');
-    await GameState.module.area.initAreaObjects(runSpawnScripts);
     GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
+    await GameState.module.area.initAreaObjects(runSpawnScripts);
     console.log('ModuleArea: ready to play');
     GameState.module.readyToProcessEvents = true;
 
@@ -1122,11 +1078,14 @@ export class GameState implements EngineContext {
   static RestoreEnginePlayMode(): void {
     if(GameState.module){
       if(GameState.module.area.miniGame){
+        console.log('RestoreEnginePlayMode: MINIGAME');
         GameState.SetEngineMode(EngineMode.MINIGAME)
       }else{
+        console.log('RestoreEnginePlayMode: INGAME');
         GameState.SetEngineMode(EngineMode.INGAME);
       }
     }else{
+      console.log('RestoreEnginePlayMode: GUI');
       GameState.SetEngineMode(EngineMode.GUI);
     }
   }
@@ -1135,6 +1094,7 @@ export class GameState implements EngineContext {
     if(GameState.Mode == mode){
       return;
     }
+    console.log('SetEngineMode: ', mode);
     GameState.Mode = mode;
     if(mode == EngineMode.LOADING){
       if(GameState.MenuManager.LoadScreen){
@@ -1238,6 +1198,19 @@ export class GameState implements EngineContext {
     }
 
     GameState.controls.Update(delta);
+    GameState.scene_cursor_holder.visible = GameState.Mode != EngineMode.MOVIE && GameState.Mode != EngineMode.LEGAL;
+    if(GameState.Mode == EngineMode.MOVIE || GameState.VideoManager.isMoviePlaying()){
+      GameState.Mode = EngineMode.MOVIE;
+      GameState.VideoManager.update(delta);
+      GameState.renderer.render(GameState.scene_movie, GameState.camera_gui);
+      return;
+    }
+
+    if(GameState.Mode == EngineMode.LEGAL){
+      GameState.LegalScreenManager.Update(delta);
+      return;
+    }
+
     GameState.VideoEffectManager.Update(delta);
 
     GameState.MenuManager.Update(delta);
@@ -1251,7 +1224,6 @@ export class GameState implements EngineContext {
       });
     } 
 
-    GameState.scene_cursor_holder.visible = true;
     if(GameState.MenuManager.InGamePause)
       GameState.MenuManager.InGamePause.hide();
 
@@ -1264,12 +1236,7 @@ export class GameState implements EngineContext {
 
       //Get Selectable Objects In Range
       if(GameState.Mode == EngineMode.INGAME){
-        GameState.tUpdateSelectable -= delta || 0;
-        if(GameState.tUpdateSelectable <= 0){
-          //Update the cache of selectable objects
-          CursorManager.selectableObjects = GameState.getSelectableObjectsInRange(PartyManager.party[0]);
-          GameState.tUpdateSelectable = 0.5;
-        }
+        GameState.ModuleObjectManager.TickSelectableObjects(delta);
       }
 
       //Update Mode Camera
@@ -1408,31 +1375,6 @@ export class GameState implements EngineContext {
 
     GameState.composer.render(delta);
 
-    //Handle screenshot callback
-    if(typeof GameState.onScreenShot === 'function'){
-      console.log('Screenshot', GameState.onScreenShot);
-      
-      GameState.renderer.clear();
-      GameState.renderer.render(GameState.scene, GameState.currentCamera);
-
-      const screenshot = new Image();
-      screenshot.src = GameState.canvas.toDataURL('image/png');
-      screenshot.onload = function() {
-        const ssCanvas = new OffscreenCanvas(256, 256);
-        const ctx = ssCanvas.getContext('2d');
-        ctx.drawImage(screenshot, 0, 0, 256, 256);
-
-        GameState.onScreenShot(TGAObject.FromCanvas(ssCanvas));
-      };
-      
-      GameState.composer.render(delta);
-      //Remove screenshot callback so it won't be triggered again
-      GameState.onScreenShot = undefined;
-    }
-
-    //CameraShake: After Render
-    GameState.CameraShakeManager.afterRender();
-
     //NoClickTimer: Update
     if( ((GameState.Mode == EngineMode.MINIGAME || GameState.Mode == EngineMode.DIALOG) || (GameState.Mode == EngineMode.INGAME)) && GameState.State != EngineState.PAUSED){
       if(GameState.noClickTimer){
@@ -1454,12 +1396,70 @@ export class GameState implements EngineContext {
       GameState.deltaTime = GameState.deltaTime % 1;
   }
 
-  static async GetScreenShot(){
-    return new Promise<TGAObject>( (resolve, reject) => {
-      GameState.onScreenShot = (tga: TGAObject) => {
-        resolve(tga);
-      };
-    });
+  /**
+   * Get a screenshot of the current game from the view of the player camera
+   * @param width - The width of the screenshot (default: 256)
+   * @param height - The height of the screenshot (default: 256)
+   * @returns A promise that resolves to a TGAObject
+   */
+  static async GetScreenShot(width = 256, height = 256): Promise<TGAObject> {
+
+    if (!GameState.lastGameplayThumb) {
+      GameState.lastGameplayThumb = new OffscreenCanvas(width, height);
+      GameState.lastGameplayThumbCtx = GameState.lastGameplayThumb.getContext('2d')!;
+    }else{
+      GameState.lastGameplayThumb.width = width;
+      GameState.lastGameplayThumb.height = height;
+    }
+
+    /**
+     * Initialize the render target
+     */
+    if (!GameState.lastGameplayThumbRT) {
+      GameState.lastGameplayThumbRT = new THREE.WebGLRenderTarget(width, height, {
+        depthBuffer: true,
+        stencilBuffer: false,
+      });
+    }else{
+      GameState.lastGameplayThumbRT.setSize(width, height);
+      GameState.lastGameplayThumbRT.texture.needsUpdate = true;
+    }
+
+    // Render WORLD ONLY into a tiny RT
+    const prevRT = GameState.renderer.getRenderTarget();
+    GameState.renderer.setRenderTarget(GameState.lastGameplayThumbRT);
+    GameState.renderer.clear(true, true, true);
+    GameState.renderer.render(GameState.scene, GameState.camera); // gameplay world camera
+    GameState.renderer.setRenderTarget(prevRT);
+
+    // Read pixels (small 256x256 so this is quick)
+    const pixels = new Uint8Array(width * height * 4);
+    GameState.renderer.readRenderTargetPixels(GameState.lastGameplayThumbRT, 0, 0, width, height, pixels);
+
+    // Flip Y + force alpha
+    const flipped = new Uint8ClampedArray(pixels.length);
+    const rowBytes = width * 4;
+    for (let y = 0; y < height; y++) {
+      const src = (width - 1 - y) * rowBytes;
+      const dst = y * rowBytes;
+      flipped.set(pixels.subarray(src, src + rowBytes), dst);
+    }
+    for (let i = 3; i < flipped.length; i += 4) flipped[i] = 255;
+
+    // Store into the cached canvas
+    GameState.lastGameplayThumbCtx!.putImageData(new ImageData(flipped, width, height), 0, 0);
+
+    // Prefer the last clean gameplay frame (pre-menu)
+    if (GameState.lastGameplayThumb) {
+      return TGAObject.FromCanvas(GameState.lastGameplayThumb);
+    }
+
+    // Fallback: if no cached frame exists yet, grab current frame
+    const bmp = await createImageBitmap(GameState.canvas);
+    const ssCanvas = new OffscreenCanvas(width, height);
+    const ctx = ssCanvas.getContext('2d')!;
+    ctx.drawImage(bmp, 0, 0, width, height);
+    return TGAObject.FromCanvas(ssCanvas);
   }
 
 }

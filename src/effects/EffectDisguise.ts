@@ -45,8 +45,7 @@ export class EffectDisguise extends GameEffect {
         const creature = this.object as ModuleCreature;
         creature.pm_Appearance = creature.appearance;
         creature.pm_IsDisguised = true;
-        creature.appearance = this.getInt(0);
-        creature.creatureAppearance = disguise_appearance;
+        creature.setAppearance(this.getInt(0));
         console.log('Disguise applying', creature, this);
         creature.loadModel().then( () => {
           console.log('Disguise applied', creature, this);
@@ -61,7 +60,7 @@ export class EffectDisguise extends GameEffect {
       if(creature.pm_IsDisguised){
         creature.appearance = creature.pm_Appearance;
         creature.pm_IsDisguised = false;
-        creature.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+        creature.setAppearance(creature.appearance);
       }
       console.log('Disguise removing', creature, this);
       creature.loadModel().then( () => {

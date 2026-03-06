@@ -2,6 +2,7 @@ import { EditorFile } from "../EditorFile";
 import { EventListenerModel } from "../EventListenerModel";
 import { TabStoreState } from "../interfaces/TabStoreState";
 import {
+  TabBIKPlayerState,
   TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabModelViewerState,
   TabModuleEditorState, TabQuickStartState, TabHelpState, TabTwoDAEditorState,
   TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabUTEEditorState, TabUTSEditorState, TabUTMEditorState, TabUTTEditorState, TabUTWEditorState, TabUTIEditorState,
@@ -198,6 +199,11 @@ export class EditorTabManager extends EventListenerModel {
       case 'TabBinaryViewerState':
         this.addTab(
           new TabBinaryViewerState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabBIKPlayerState':
+        this.addTab(
+          new TabBIKPlayerState({editorFile: tabState.file})
         );
       break;
       case 'TabAREEditorState':

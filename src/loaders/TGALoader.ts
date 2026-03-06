@@ -30,7 +30,7 @@ export class TGALoader {
 		
 		try{
 			const buffer = await ResourceLoader.loadResource(ResourceTypes.tga, resRef);
-			if(!buffer){
+			if(!buffer || buffer.length == 0){
 				return undefined
 			}
 
@@ -46,7 +46,7 @@ export class TGALoader {
 			try{
 				const txiBuffer = await ResourceLoader.loadResource(ResourceTypes.txi, resRef);
 
-				if(typeof txiBuffer !== 'undefined'){
+				if(typeof txiBuffer !== 'undefined' && txiBuffer.length > 0){
 					texture.txi = new TXI(txiBuffer);
 					return texture;
 				}

@@ -242,7 +242,7 @@ export class GameMenu {
     if (!this.tGuiPanel?.getControl()) {
       return;
     }
-    if (!this.isOverlayGUI) {
+    if (!this.isOverlayGUI && GameState.Mode !== EngineMode.MOVIE) {
       GameState.SetEngineMode(this.engineMode);
     }
     this.bVisible = true;

@@ -177,6 +177,27 @@ export class ModuleCreature extends ModuleObject {
   selectedNPC: number;
   creatureAppearance: SWCreatureAppearance;
 
+  /**
+   * Head tracking enabled
+   */
+  headTrackingEnabled: boolean = true;
+  /**
+   * Head tracking angle
+   */
+  headTrackingAngle: number = 0;
+  /**
+   * Head tracking pitch
+   */
+  headTrackingPitch: number = 0;
+  /**
+   * Head max horizontal angle
+   */
+  headMaxHorizontalAngle: number = Math.PI / 6;
+  /**
+   * Head max vertical angle
+   */
+  headMaxVerticalAngle: number = Math.PI / 3;
+
   constructor ( gff = new GFFObject() ) {
     super(gff);
     this.objectType |= ModuleObjectType.ModuleCreature;
@@ -389,6 +410,10 @@ export class ModuleCreature extends ModuleObject {
   update( delta = 0 ){
     
     super.update(delta);
+
+    if(this.willDestroy || this.destroyed){
+      return;
+    }
 
     if(this.audioEmitter){
       this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z + 1.0);
@@ -648,6 +673,8 @@ export class ModuleCreature extends ModuleObject {
             }
           }
         }
+
+        this.updateHeadTracking(delta);
       }
 
       if(this.collisionManager.blockingObject != this.collisionManager.lastBlockingObject){
@@ -670,22 +697,38 @@ export class ModuleCreature extends ModuleObject {
       }
 
       this.turning = 0;
-      if(this.facingAnim){//this.facing != this.rotation.z){
-        this.facingTweenTime += 10*delta;
-        if(this.facingTweenTime >= 1){
-          this.rotation.z = this.facing;
+      if(this.facingAnim){
+        const current = Utility.NormalizeRadian(this.rotation.z);
+        const target = this.facing;
+        const remaining = Utility.NormalizeRadian(target - current);
+        const step = this.facingSpeed * delta;
+        if(Math.abs(remaining) <= step){
+          this.rotation.z = target;
+          this.wasFacing = target;
           this.facingAnim = false;
         }else{
-          let oldFacing = Utility.NormalizeRadian(this.rotation.z);
-          this.rotation.z = Utility.interpolateAngle(this.wasFacing, this.facing, this.facingTweenTime);
-          let diff = oldFacing - Utility.NormalizeRadian(this.rotation.z);
-          this.turning = Math.sign(Utility.NormalizeRadian(oldFacing - Utility.NormalizeRadian(this.rotation.z)));
-          if(diff < 0.0000001 || diff > -0.0000001){
-              this.facingAnim = false;
-              this.rotation.z = Utility.interpolateAngle(this.wasFacing, this.facing, 1);
-              this.wasFacing = this.facing;
-          }
+          this.rotation.z = Utility.NormalizeRadian(current + Math.sign(remaining) * step);
+          this.turning = Math.sign(remaining);
         }
+      }
+
+      // Stationary turn animations (body turn when idle/pause/ready; not head look)
+      const stationaryTurnStates = [
+        ModuleCreatureAnimState.IDLE,
+        ModuleCreatureAnimState.PAUSE,
+        ModuleCreatureAnimState.READY,
+        ModuleCreatureAnimState.TURN_LEFT,
+        ModuleCreatureAnimState.TURN_RIGHT
+      ];
+      if(this.turning !== 0 && stationaryTurnStates.includes(this.animationState.index)){
+        const wantTurnLeft = this.turning < 0;
+        if(wantTurnLeft && this.animationState.index !== ModuleCreatureAnimState.TURN_LEFT){
+          this.setAnimationState(ModuleCreatureAnimState.TURN_LEFT);
+        }else if(!wantTurnLeft && this.animationState.index !== ModuleCreatureAnimState.TURN_RIGHT){
+          this.setAnimationState(ModuleCreatureAnimState.TURN_RIGHT);
+        }
+      }else if(this.turning === 0 && (this.animationState.index === ModuleCreatureAnimState.TURN_LEFT || this.animationState.index === ModuleCreatureAnimState.TURN_RIGHT)){
+        this.setAnimationState(this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE);
       }
 
       //Update equipment
@@ -782,7 +825,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateActionQueue(delta = 0){
-    if(this.isDebilitated())
+    if(this.isDebilitated() && this.area.module.readyToProcessEvents)
       return;
 
     if(!GameState.module.readyToProcessEvents)
@@ -792,18 +835,22 @@ export class ModuleCreature extends ModuleObject {
     this.actionQueue.process( delta );
     this.action = this.actionQueue[0];
     if(!(this.action)){
+      const currentPlayer = GameState.getCurrentPlayer();
       if(
         !this.combatData.combatState && 
         this.isPartyMember() && 
-        this != GameState.getCurrentPlayer()
+        this != currentPlayer && 
+        !this.facingAnim
       ){
-        this.setFacing(
-          Math.atan2(
-            this.position.y - GameState.getCurrentPlayer().position.y,
-            this.position.x - GameState.getCurrentPlayer().position.x
-          ) + Math.PI/2,
-          false
-        );
+        this.lookAtObject = currentPlayer;
+        const targetFacing = Math.atan2(
+          this.position.y - currentPlayer.position.y,
+          this.position.x - currentPlayer.position.x
+        ) + Math.PI/2;
+        const diff = Math.abs(Utility.NormalizeRadian(targetFacing - this.rotation.z));
+        if(diff > Math.PI / 6){
+          this.setFacing(targetFacing, false);
+        }
       }
     }
 
@@ -846,9 +893,6 @@ export class ModuleCreature extends ModuleObject {
     }
 
     this.perceptionTimer = 0;
-
-    //if(!Engine.Flags.CombatEnabled)
-    //  return;
 
     //Check modules creatures
     let creatureLen = GameState.module.area.creatures.length;
@@ -2002,6 +2046,70 @@ export class ModuleCreature extends ModuleObject {
         false
       );
     }
+  }
+
+  lookAt(oObject: ModuleObject){
+    this.lookAtObject = oObject;
+  }
+
+  static readonly HEAD_TRACKING_H_SPEED = Math.PI * 2;
+  static readonly HEAD_TRACKING_V_SPEED = Math.PI * 0.25;
+  lookAtPosition: THREE.Vector3 = new THREE.Vector3();
+
+  updateHeadTracking(delta: number){
+    if(!this.lookAtObject) return;
+    if(this.lookAtObject === this || this.lookAtObject.isDead()){
+      this.lookAtObject = undefined;
+      return;
+    }
+    if(!(this.model instanceof OdysseyModel3D) || !this.model.hturn_g || !this.headTrackingEnabled) return;
+
+    let targetYaw = 0;
+    let targetPitch = 0;
+
+    const reticle = this.lookAtObject.getReticleNode();
+    if(reticle){
+      this.lookAtPosition.copy(reticle.getWorldPosition(this.lookAtPosition));
+    }else if(this.lookAtObject.position){
+      this.lookAtPosition.copy(this.lookAtObject.position);
+    }else{
+      this.lookAtObject = undefined;
+      return;
+    }
+    const dx = this.lookAtPosition.x - this.position.x;
+    const dy = this.lookAtPosition.y - this.position.y;
+    const dz = this.lookAtPosition.z - (this.position.z + this.getCameraHeight());
+    const horizontalDist = Math.sqrt(dx * dx + dy * dy);
+
+    const worldAngleToTarget = Math.atan2(dy, dx);
+    const bodyFacing = this.rotation.z + Math.PI / 2;
+    const relativeYaw = Utility.NormalizeRadian(worldAngleToTarget - bodyFacing);
+    const relativePitch = Math.atan2(dz, horizontalDist);
+
+    if(Math.abs(relativeYaw) <= this.headMaxHorizontalAngle){
+      targetYaw = relativeYaw;
+      targetPitch = THREE.MathUtils.clamp(relativePitch, -this.headMaxVerticalAngle, this.headMaxVerticalAngle);
+    }
+
+    const stepH = ModuleCreature.HEAD_TRACKING_H_SPEED * delta;
+    const stepV = ModuleCreature.HEAD_TRACKING_V_SPEED * delta;
+
+    const yawDiff = Utility.NormalizeRadian(targetYaw - this.headTrackingAngle);
+    if(Math.abs(yawDiff) <= stepH){
+      this.headTrackingAngle = targetYaw;
+    }else{
+      this.headTrackingAngle += Math.sign(yawDiff) * stepH;
+    }
+
+    const pitchDiff = targetPitch - this.headTrackingPitch;
+    if(Math.abs(pitchDiff) <= stepV){
+      this.headTrackingPitch = targetPitch;
+    }else{
+      this.headTrackingPitch += Math.sign(pitchDiff) * stepV;
+    }
+
+    this.model.hturn_g.rotation.z = Math.abs(this.headTrackingAngle) > 0.001 ? this.headTrackingAngle : 0;
+    this.model.hturn_g.rotation.x = Math.abs(this.headTrackingPitch) > 0.001 ? this.headTrackingPitch : 0;
   }
 
   onClick(callee: ModuleObject){
@@ -3452,6 +3560,16 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
+  setAppearance(appearance: number){
+    this.appearance = appearance;
+    this.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(this.appearance);
+    if(!this.creatureAppearance) return;
+
+    this.headTrackingEnabled = this.creatureAppearance.headtrack !== 0;
+    this.headMaxHorizontalAngle = (this.creatureAppearance.head_arc_h * Math.PI) / 180;
+    this.headMaxVerticalAngle = (this.creatureAppearance.head_arc_v * Math.PI) / 180;
+  }
+
   initProperties(){
     try{
       this.classes = [];
@@ -3473,8 +3591,7 @@ export class ModuleCreature extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('Appearance_Type')){
-        this.appearance = this.template.getFieldByLabel('Appearance_Type').getValue();
-        this.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(this.appearance);
+        this.setAppearance(this.template.getFieldByLabel('Appearance_Type').getValue());
       }
 
       if(this.template.RootNode.hasField('BodyBag'))
@@ -3935,11 +4052,25 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  updateDestroyFade(delta: number = 0): void {
+    super.updateDestroyFade(delta);
+    if(this.noFadeOnDestroy || this.destroyed) return;
+    if(this.timeSinceDestroyStarted >= this.delayUntilFade){
+      const fadeElapsed = this.timeSinceDestroyStarted - this.delayUntilFade;
+      const opacity = Math.max(0, 1 - (fadeElapsed / ModuleObject.FADE_TIME));
+      Object.values(this.equipment).forEach(item => {
+        if(item && item.model instanceof OdysseyModel3D){
+          item.model.setOpacity(opacity);
+        }
+      });
+    }
+  }
+
   destroy(): void {
     super.destroy();
     if(this.head instanceof OdysseyModel3D){
       if(this.head.parent instanceof THREE.Object3D){
-        this.head.parent.remove(this.model);
+        this.head.removeFromParent();
       }
       this.head.dispose();
       this.head = undefined;

@@ -299,8 +299,7 @@ export class MenuCharacter extends GameMenu {
       this._3dView.camera.position.z = 1;
       let objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
       let clone = creature;
-      objectCreature.appearance = clone.appearance;
-      objectCreature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(objectCreature.appearance);
+      objectCreature.setAppearance(clone.appearance);
       if (clone.equipment.ARMOR) {
         objectCreature.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(clone.equipment.ARMOR.template);
       }
