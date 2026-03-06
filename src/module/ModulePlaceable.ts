@@ -408,11 +408,13 @@ export class ModulePlaceable extends ModuleObject {
     while(this.inventory.length){
       const item = this.inventory.pop();
       GameState.InventoryManager.addItem(item);
+      const instance = this.scripts[ModuleObjectScript.PlaceableOnInvDisturbed];
+      if(!instance){ continue; }
+      instance.lastDisturbed = GameState.PartyManager.party[0];
+      (instance as any).inventoryDisturbType = 1; // INVENTORY_DISTURB_TYPE_REMOVED
+      (instance as any).inventoryDisturbItem = item;
+      instance.run(this);
     }
-    const instance = this.scripts[ModuleObjectScript.PlaceableOnInvDisturbed];
-    if(!instance){ return; }
-    instance.lastDisturbed = GameState.PartyManager.party[0];
-    instance.run(this);
   }
 
   getModel(){

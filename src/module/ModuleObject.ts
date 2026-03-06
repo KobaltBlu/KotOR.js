@@ -2171,6 +2171,7 @@ export class ModuleObject {
     this.subtractHP(amount);
     this.combatData.lastDamager = oAttacker;
     this.combatData.lastAttacker = oAttacker;
+    (this as any).lastDamageAmount = amount;
     this.onDamaged();
   }
 
