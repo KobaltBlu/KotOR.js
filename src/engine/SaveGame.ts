@@ -96,7 +96,7 @@ export class SaveGame {
   /** Regular expression to match valid save game folder name patterns */
   static FolderNameRegex: RegExp = /^(\d+) - (QUICKSAVE|AUTOSAVE|Game\d+)$/;
   /** The next available save ID for new saves */
-  static NEXT_SAVE_ID: number = 1;
+  static NEXT_SAVE_ID: number = 2;
   /** The ERF object containing the save game data */
   SAVEGAME: ERFObject;
   //NEXT_SAVE_ID - 0 QUICKSAVE
@@ -564,6 +564,7 @@ export class SaveGame {
    */
   async loadInventory(){
     console.log('SaveGame', 'Loading Inventory...');
+    GameState.InventoryManager.ClearInventory();
 
     try{
       const buffer = await GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res'));
@@ -850,6 +851,11 @@ export class SaveGame {
   static async SaveCurrentGame( name = '', replace_id = 0 ){
     if(!GameState.module){ return; }
 
+    if(replace_id === 1){
+      await SaveGame.AutoSave();
+      return;
+    }
+
     GameState.MenuManager.LoadScreen.open();
     GameState.MenuManager.LoadScreen.showSavingMessage();
 
@@ -1094,12 +1100,12 @@ export class SaveGame {
    * console.log(SaveGame.NEXT_SAVE_ID); // Next available save ID
    */
   static async GetSaveGames(){
+    SaveGame.saves = [];
+    SaveGame.NEXT_SAVE_ID = 2;
+
     try{
       const savegamesRAW = await GameFileSystem.readdir('Saves', {list_dirs: false, recursive: true});
       const savegames = savegamesRAW.filter((entryPath) => /(?:^|[\\/])SAVEGAME\.sav$/i.test(entryPath));
-
-      SaveGame.saves = [];
-      SaveGame.NEXT_SAVE_ID = 1;
 
       for(let i = 0; i < savegames.length; i++){
         const saveFolder = savegames[i].replace(/[\\/]SAVEGAME\.sav$/i, '');

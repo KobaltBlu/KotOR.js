@@ -6562,7 +6562,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      SaveGame.SaveCurrentGame('', 1);
+      SaveGame.AutoSave();
     }
   },
   513:{

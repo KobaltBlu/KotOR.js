@@ -35,9 +35,9 @@ const spleep = (time: number = 0) => {
 export class GameFileSystem {
 
   private static normalizePath(filepath: string){
-    filepath = filepath.trim();
-    filepath.replace(/^\/+/, '').replace(/\/+$/, '');
-    filepath.replace(/^\\+/, '').replace(/\\+$/, '');
+    filepath = (filepath || '').trim();
+    filepath = filepath.replace(/\\/g, '/');
+    filepath = filepath.replace(/^\/+/, '').replace(/\/+$/, '');
     return filepath;
   }
 
@@ -347,34 +347,36 @@ export class GameFileSystem {
           return;
         });
       }else{
-        if(dirPath.length){
-          const dirs = dirPath.length ? dirPath.split(path.sep) : [];
-          const cacheKey = dirs.join('/');
-          if(this.directoryCache.has(cacheKey)){
-            return this.directoryCache.get(cacheKey)!;
+        dirPath = this.normalizePath(dirPath);
+        if(!dirPath.length){
+          resolve(false);
+          return;
+        }
+
+        const dirs = dirPath.split('/').filter(Boolean);
+        const cacheKey = dirs.join('/');
+        if(this.directoryCache.has(cacheKey)){
+          resolve(true);
+          return;
+        }
+
+        if(!ApplicationProfile.directoryHandle){
+          resolve(false);
+          return;
+        }
+
+        try{
+          let currentDirHandle = ApplicationProfile.directoryHandle;
+          for(let i = 0, len = dirs.length; i < len; i++){
+            const isTargetDirectory = (i == dirs.length-1);
+            const canCreate = !!opts.recursive || isTargetDirectory;
+            currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: canCreate });
+            const prefix = dirs.slice(0, i + 1).join('/');
+            this.directoryCache.set(prefix, currentDirHandle);
           }
-          try{
-            let currentDirHandle = ApplicationProfile.directoryHandle; 
-            for(let i = 0, len = dirs.length; i < len; i++){
-              const isTargetDirectory = (i == dirs.length-1);
-              const canCreate = (isTargetDirectory || !!opts.recursive);
-              currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: canCreate });
-              console.log('handle', currentDirHandle, isTargetDirectory, canCreate);
-              if(!currentDirHandle && !isTargetDirectory){
-                resolve(false);
-                return;
-              }
-              this.directoryCache.set(cacheKey, currentDirHandle);
-            }
-            console.log('mkdir', currentDirHandle);
-            await spleep(1000);
-            resolve(true);
-          }catch(e){
-            console.error(e);
-            resolve(false);
-            return;
-          }
-        }else{
+          resolve(true);
+        }catch(e){
+          console.error(e);
           resolve(false);
           return;
         }
@@ -546,6 +548,7 @@ export class GameFileSystem {
 
   private static async resolvePathDirectoryHandle(filepath: string, parent = false): Promise<FileSystemDirectoryHandle> {
     if(ApplicationProfile.directoryHandle){
+      filepath = this.normalizePath(filepath);
       const dirs = filepath.length ? filepath.split('/') : [];
       const cacheKey = dirs.join('/');
       if(this.directoryCache.has(cacheKey)){
@@ -577,8 +580,13 @@ export class GameFileSystem {
 
   static directoryCache: Map<string, FileSystemDirectoryHandle> = new Map();
 
+  static clearDirectoryCache(){
+    this.directoryCache.clear();
+  }
+
   private static async resolveFilePathDirectoryHandle(filepath: string): Promise<FileSystemDirectoryHandle> {
     if(ApplicationProfile.directoryHandle){
+      filepath = this.normalizePath(filepath);
       const dirs = filepath.split('/');
       const filename = dirs.pop();
       const cacheKey = dirs.join('/');
