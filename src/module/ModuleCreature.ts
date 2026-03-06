@@ -892,6 +892,11 @@ export class ModuleCreature extends ModuleObject {
 
     this.perceptionTimer = 0;
 
+    // Cache whether this creature is in the party to avoid repeated indexOf calls
+    const isPartyMember = GameState.PartyManager.party.indexOf(this) !== -1;
+    const primaryRange = this.getPerceptionRangePrimary();
+    const secondaryRange = this.getPerceptionRangeSecondary();
+
     //Check modules creatures
     let creatureLen = GameState.module.area.creatures.length;
     for(let i = 0; i < creatureLen; i++ ){
@@ -907,8 +912,8 @@ export class ModuleCreature extends ModuleObject {
       }
 
       let distance = this.position.distanceTo(creature.position);
-      if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
-        if(GameState.PartyManager.party.indexOf(this) == -1){
+      if(distance < primaryRange && this.hasLineOfSight(creature)){
+        if(!isPartyMember){
           if(this.isHostile(creature)){
             this.resetExcitedDuration();
             if(this == GameState.getCurrentPlayer() && !this.combatData.combatState){
@@ -918,7 +923,7 @@ export class ModuleCreature extends ModuleObject {
         }
         
         this.notifyPerceptionSeenObject(creature, true);
-      }else if(distance < this.getPerceptionRangeSecondary() && this.hasLineOfSight(creature)){
+      }else if(distance < secondaryRange && this.hasLineOfSight(creature)){
         this.notifyPerceptionHeardObject(creature, true);
       }
     }
@@ -938,15 +943,15 @@ export class ModuleCreature extends ModuleObject {
       }
 
       let distance = this.position.distanceTo(creature.position);
-      if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
-        if(GameState.PartyManager.party.indexOf(this) == -1){
+      if(distance < primaryRange && this.hasLineOfSight(creature)){
+        if(!isPartyMember){
           if(this.isHostile(creature)){
             this.resetExcitedDuration();
           }
 
           this.notifyPerceptionSeenObject(creature, true);
         }
-      }else if(distance < this.getPerceptionRangeSecondary() && this.hasLineOfSight(creature)){
+      }else if(distance < secondaryRange && this.hasLineOfSight(creature)){
         this.notifyPerceptionHeardObject(creature, true);
       }
     }

@@ -32,7 +32,9 @@ export class LightManager {
   shadowLightCounter: any = {};
   lights: OdysseyLight3D[] = [];
   tmpLights: OdysseyLight3D[];
-  lightsShown: Set<string>;
+  lightsShown: Set<string> = new Set<string>();
+  /** Reusable set used in reclaimLights to avoid per-frame allocation */
+  private _lightsUsed: Set<string> = new Set<string>();
   new_lights: OdysseyLight3D[];
   new_lights_uuids: string[];
   new_lights_spawned: number;
@@ -192,19 +194,21 @@ export class LightManager {
   updateDynamicLights(delta = 0){
     this.animatedLights = [];
     this.tmpLights = [];//this.lights.slice();
-    //let ambientLights = this.lights.filter(light => light.odysseyModel.visible && (light.isAmbient || (light.odysseyModelNode.radius*light.odysseyModelNode.multiplier) > 50));
-    //let shadowLights = this.lights.filter(light => light.odysseyModel.visible && light.castShadow);
-    let fadingLights = this.lights.filter(light => light.odysseyModel.visible);
     
-    //ambientLights.sort(this.sortLights).reverse();
-    //shadowLights.sort(this.sortLights);
+    // Reuse existing array instead of creating a new one via filter() each frame
+    const fadingLights: OdysseyLight3D[] = [];
+    for(let i = 0, l = this.lights.length; i < l; i++){
+      if(this.lights[i].odysseyModel.visible) fadingLights.push(this.lights[i]);
+    }
+    
     fadingLights.sort(this.sortLights);
 
     //this.tmpLights = this.tmpLights.concat(ambientLights, fadingLights);
     //this.tmpLights = this.tmpLights.concat(fadingLights);
     
     //Attempt to reclaim lights that are no longer used
-    this.lightsShown = new Set<string>();
+    // Reuse the Set by clearing it instead of allocating a new one each frame
+    this.lightsShown.clear();
     this.reclaimLights(delta);
     //console.log(this.lightsShown);
     this.new_lights = [];
@@ -380,7 +384,9 @@ export class LightManager {
 
     this.spawned = 0;
 
-    let lightsUsed: Set<string> = new Set<string>();
+    // Reuse the set instead of creating a new one each frame
+    this._lightsUsed.clear();
+    const lightsUsed = this._lightsUsed;
 
     const maxLights = LightManager.MAXLIGHTS;
     for(let i = 0; i < maxLights; i++){
@@ -538,7 +544,8 @@ export class LightManager {
     }
     
     //Attempt to reclaim lights that are no longer used
-    this.lightsShown = new Set<string>();
+    // Reuse the Set by clearing it instead of allocating a new one each frame
+    this.lightsShown.clear();
     this.reclaimShadowLights(delta);
     
     //Try to update lights with the pool of reclaimed lights
