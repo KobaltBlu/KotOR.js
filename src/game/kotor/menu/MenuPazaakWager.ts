@@ -1,12 +1,12 @@
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
 
-/** TLK 32321: "Max wager" label prefix (CSWGuiWagerPopup LBL_MAXIMUM format) */
+/** TLK 32321 (0x7e41): "Max wager" label prefix (CSWGuiWagerPopup LBL_MAXIMUM format) */
 const TLK_MAX_WAGER = 0x7e41;
-/** TLK 38600: "Your credits" label prefix */
+/** TLK 38600 (0x96c8): "Your credits" label prefix */
 const TLK_YOUR_CREDITS = 0x96c8;
-/** TLK 42424: "Quit Pazaak?" confirmation (HandleInputEvent case 0x28/0x2e) */
+/** TLK 42424 (0xa5b8): "Quit Pazaak?" confirmation (HandleInputEvent case 0x28/0x2e) */
 const TLK_QUIT_PAZAAK_CONFIRM = 0xa5b8;
 
 /**

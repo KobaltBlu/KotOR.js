@@ -35,6 +35,7 @@ export * from "./TabSAVEditorState";
 export * from "./TabVISEditorState";
 export * from "./TabERFEditorState";
 export * from "./TabPTHEditorState";
+export * from "./TabBIKPlayerState";
 
 export * from "./TabReferenceFinderState";
 

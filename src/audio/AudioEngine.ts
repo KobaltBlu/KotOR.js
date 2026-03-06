@@ -11,6 +11,8 @@ import { ReverbEngine } from "./ReverbEngine";
 
 class AudioChannel {
 
+  audioCtx: AudioContext;
+
   /* the last gain value before the SFX channel was muted */
   #gainCached: number;
 
@@ -23,6 +25,7 @@ class AudioChannel {
   muted: boolean = false;
 
   constructor(channel: AudioEngineChannel, audioCtx: AudioContext){
+    this.audioCtx = audioCtx;
     this.#channel = channel;
     this.#gain = 0;
     this.#gainCached = 0;
@@ -48,12 +51,14 @@ class AudioChannel {
     this.muted = true;
     this.#gainCached = this.#gain;
     this.#gainNode.gain.value = 0;
+    this.getGainNode().disconnect();
   }
 
   unmute(){
     if(!this.muted){ return; }
     this.muted = false;
     this.#gainNode.gain.value = this.#gainCached;
+    this.getGainNode().connect( this.audioCtx.destination );
   }
 }
 

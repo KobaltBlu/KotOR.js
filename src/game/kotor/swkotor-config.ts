@@ -1,7 +1,31 @@
 export default {
+  "Sound Options": {
+    "Music Volume": "85",
+    "Voiceover Volume": "85",
+    "Sound Effects Volume": "85",
+    "Movie Volume": "100",
+    "Number 3D Voices": "16",
+    "Number 2D Voices": "24",
+    "2D3D Bias": "1.00",
+    "Force Software": "0",
+    "EAX": "0",
+    "Sound Init": "0",
+    "Disable Sound": "0"
+  },
+  "Graphics Options": {
+    "V-Sync": "0",
+    "Anisotropy": "1",
+    "Frame Buffer": "1",
+    "Anti Aliasing": "0",
+    "Texture Quality": "0",
+    "Grass": "1",
+    "Soft Shadows": "1",
+    "Shadows": "1",
+    "Brightness": "57",
+    "EnableHardwareMouse": "1",
+    "FullScreen": "0"
+  },
   "Game Options": {
-    "TooltipDelay Sec": "1",
-    "Disable Intro Movies": "1",
     "Enable Tooltips": "1",
     "Keyboard Camera Deceleration": "2000.000000",
     "Keyboard Camera Acceleration": "500.000000",
@@ -15,7 +39,7 @@ export default {
     "Floating Numbers": "1",
     "Status Summary": "1",
     "Enable Mouse Teleporting To Buttons": "1",
-    "Mouse Sensitivity": "33",
+    "Mouse Sensitivity": "44",
     "Difficulty Level": "1",
     "Auto Level Up NPCs": "0",
     "Mouse Look": "0",
@@ -25,59 +49,7 @@ export default {
     "Reverse Mouse Buttons": "0",
     "Reverse Minigame YAxis": "0",
     "Combat Movement": "1",
-    "EnableCheats": "1"
-  },
-  "Autopause Options": {
-    "End Of Combat Round": "0",
-    "Mine Sighted": "1",
-    "Enemy Sighted": "1",
-    "Party Killed": "1",
-    "Action Menu": "0",
-    "New Target Selected": "1"
-  },
-  "Graphics Options": {
-    "RefreshRate": "60",
-    "Height": "600",
-    "Width": "800",
-    "Disable Intro Movies": "1",
-    "Disable Vertex Buffer Objects": "1",
-    "EnableHardwareMouse": "1",
-    "FullScreen": "1",
-    "V-Sync": "1",
-    "Anisotropy": "16",
-    "Frame Buffer": "0",
-    "Anti Aliasing": "8",
-    "Texture Quality": "2",
-    "Grass": "1",
-    "Soft Shadows": "1",
-    "Shadows": "1",
-    "Brightness": "46"
-  },
-  "Sound Options": {
-    "Number 3D Voices": "16",
-    "Number 2D Voices": "24",
-    "2D3D Bias": "1.00",
-    "Force Software": "1",
-    "EAX": "0",
-    "Sound Init": "0",
-    "Disable Sound": "0",
-    "Music Volume": "21",
-    "Voiceover Volume": "22",
-    "Sound Effects Volume": "22",
-    "Movie Volume": "23"
-  },
-  "Movies Shown": {
-    "Movie10": "0",
-    "Movie 9": "0",
-    "Movie 8": "0",
-    "Movie 7": "0",
-    "Movie 6": "128",
-    "Movie 5": "0",
-    "Movie 4": "7",
-    "Movie 3": "136",
-    "Movie 2": "33",
-    "Movie 1": "239",
-    "Movie 0": "121"
+    "TooltipDelay Sec": "1"
   },
   "Keymapping": {
     "Action286B": "8",
@@ -94,7 +66,6 @@ export default {
     "Action281A": "76",
     "Action280B": "69",
     "Action280A": "73",
-    "Action265": "52",
     "Action264": "57",
     "Action263": "43",
     "Action262": "85",
@@ -143,5 +114,26 @@ export default {
     "Action206": "30",
     "Action205": "55",
     "Action204": "67"
+  },
+  "Autopause Options": {
+    "End Of Combat Round": "0",
+    "Mine Sighted": "1",
+    "Enemy Sighted": "1",
+    "Party Killed": "1",
+    "Action Menu": "0",
+    "New Target Selected": "1"
+  },
+  "Movies Shown": {
+    "Movie10": "0",
+    "Movie 9": "0",
+    "Movie 8": "0",
+    "Movie 7": "0",
+    "Movie 6": "0",
+    "Movie 5": "0",
+    "Movie 4": "0",
+    "Movie 3": "0",
+    "Movie 2": "0",
+    "Movie 1": "0",
+    "Movie 0": "0"
   }
 };

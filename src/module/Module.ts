@@ -25,6 +25,7 @@ import { ModuleArea } from "./ModuleArea";
 import { ModuleTimeManager } from "./ModuleTimeManager";
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GameEngineType } from "../enums/engine/GameEngineType";
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
@@ -435,11 +436,11 @@ export class Module {
       
       GameState.ModuleObjectManager.ResetPlayerId();
 
-      if(this.area.sun.fogOn && this.area.sun.fogColor){
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.sun.fogColor.toString(16)));
-      }else{
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.dynamicAmbientColor.toString(16)));
-      }
+      GameState.globalLight.color.setRGB(
+        (this.area.dynamicAmbientColor & 0xFF) / 255,
+        (this.area.dynamicAmbientColor >> 8 & 0xFF) / 255,
+        (this.area.dynamicAmbientColor >> 16 & 0xFF) / 255
+      );
       
       GameState.globalLight.color.setRGB(
         THREE.MathUtils.clamp(GameState.globalLight.color.r, 0.2, 1),
@@ -807,9 +808,11 @@ export class Module {
       }
 
       //Locate the module's dialog MOD file (TSL)
+      if(GameState.GameKey == GameEngineType.TSL){
       archive = await Module.GetModuleDLG(modName);
-      if(archive instanceof ERFObject){
-        archives.push(archive);
+        if(archive instanceof ERFObject){
+          archives.push(archive);
+        }
       }
     }catch(e){
       console.error(e);

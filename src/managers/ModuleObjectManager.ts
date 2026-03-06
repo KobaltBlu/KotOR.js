@@ -7,8 +7,12 @@ import { ReputationType } from "../enums/nwscript/ReputationType";
 import { BitWise } from "../utility/BitWise";
 import { PartyManager } from "./PartyManager";
 import * as THREE from "three";
-import type { Module, ModuleCreature, ModuleObject } from "../module";
+import type { Module, ModuleCreature, ModuleDoor, ModuleObject } from "../module";
 import { PerceptionMask } from "../enums/engine/PerceptionMask";
+import { GameState } from "../GameState";
+import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
+
+const UPDATE_SELECTABLE_OBJECTS_INTERVAL = 0.5;
 
 /**
  * ModuleObjectManager class.
@@ -71,7 +75,8 @@ export class ModuleObjectManager {
 
   static RemoveObject(object: ModuleObject){
     if(!object) return;
-    this.RemoveObjectById(object?.id);
+    this.RemoveObjectById(object.id);
+    GameState.CursorManager.notifyObjectDestroyed(object);
   }
 
   static RemoveObjectById(id: number): boolean {
@@ -665,9 +670,7 @@ export class ModuleObjectManager {
   }
 
   public static GetAttackerByIndex(oTarget: ModuleObject, index: number = 0): ModuleObject {
-    let object_pool: ModuleObject[] = [];
-    
-    object_pool.concat(
+    return [].concat(
       this.module.area.creatures.filter( 
         (
           creature => 
@@ -679,9 +682,146 @@ export class ModuleObjectManager {
           }
         )
       )
-    );
+    )[index];
+  }
 
-    return object_pool[index];
+  static playerSelectableObjects: ModuleObject[] = [];
+  static playerHoverableObjects: ModuleObject[] = [];
+  static #currentVisibleObject: ModuleObject;
+  static #currentVisibleObjectIndex: number = 0;
+
+  static SetPlayerVisibleObjects(objects: ModuleObject[]){
+    this.playerSelectableObjects = objects;
+    this.#currentVisibleObjectIndex = this.playerSelectableObjects.indexOf(this.#currentVisibleObject);
+    if(this.#currentVisibleObjectIndex == -1){
+      this.#currentVisibleObjectIndex = 0;
+      this.#currentVisibleObject = this.playerSelectableObjects[0];
+    }
+  }
+
+  static GetNextPlayerVisibleObject(){
+    this.#currentVisibleObjectIndex++;
+    if(this.#currentVisibleObjectIndex >= this.playerSelectableObjects.length){
+      this.#currentVisibleObjectIndex = 0;
+    }
+    this.#currentVisibleObject = this.playerSelectableObjects[this.#currentVisibleObjectIndex];
+    return this.#currentVisibleObject;
+  }
+
+  static GetPreviousPlayerVisibleObject(){
+    this.#currentVisibleObjectIndex--;
+    if(this.#currentVisibleObjectIndex < 0){
+      this.#currentVisibleObjectIndex = this.playerSelectableObjects.length - 1;
+    }
+    this.#currentVisibleObject = this.playerSelectableObjects[this.#currentVisibleObjectIndex];
+    return this.#currentVisibleObject;
+  }
+
+  static #tmpPlayerPosition = new THREE.Vector3();
+  static #tmpTargetPosition = new THREE.Vector3();
+  static #losZOffset = 1;
+
+  static GetSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
+
+    const objects = [
+      ...GameState.PartyManager.party,
+      ...GameState.module.area.placeables, 
+      ...GameState.module.area.doors, 
+      ...GameState.module.area.creatures,
+      ...GameState.module.area.triggers.filter((trig) => trig.type == ModuleTriggerType.TRAP)
+    ];
+
+    this.playerSelectableObjects = [];
+    this.playerHoverableObjects = [];
+
+    const objCount = objects.length;
+    this.#tmpPlayerPosition.copy(player.position);
+    this.#tmpPlayerPosition.z += this.#losZOffset;
+
+    this.#tmpTargetPosition.set(0, 0, 0);
+    
+    for(let i = 0; i < objCount; i++){
+      const obj = objects[i];
+
+      //Ignore the player
+      if(obj == player){ continue; }
+
+      //Ignore objects that are not useable
+      if(!obj.isUseable()){ continue; }
+
+      //Ignore doors that are open
+      const isDoor = BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor);
+      if(isDoor){
+        if((obj as ModuleDoor).isOpen()){ continue; };
+      }
+
+      this.#tmpTargetPosition.copy(obj.position);
+      if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        this.#tmpTargetPosition.z += this.#losZOffset;
+      }else{
+        this.#tmpTargetPosition.z += this.#losZOffset;//0.1;
+      }
+
+      const distance = this.#tmpTargetPosition.distanceToSquared(this.#tmpPlayerPosition);
+      if(distance > GameState.maxSelectableDistanceSquared){
+        continue;
+      }
+
+      //Ignore objects that have no area
+      if(!obj.area){
+        continue;
+      }
+
+      //Ignore objects that we don't have line of sight to
+      const hasLineOfSight = obj.hasLineOfSight(player, GameState.maxSelectableDistance);
+      if(!hasLineOfSight){
+        continue;
+      }
+
+      if(GameState.viewportFrustum.containsPoint(obj.position)){
+        this.playerHoverableObjects.push(obj);
+      }
+
+      //Add the object to the selectable objects list
+      this.playerSelectableObjects.push(obj);
+    }
+
+    this.SetPlayerVisibleObjects(this.playerSelectableObjects);
+
+    if(player.force > 0){
+      //get closest object to player
+      const closestObject = this.playerSelectableObjects.sort((a, b) => {
+        return a.position.distanceTo(player.position) - b.position.distanceTo(player.position);
+      })[0];
+      this.#currentVisibleObject = closestObject;
+      this.#currentVisibleObjectIndex = this.playerSelectableObjects.indexOf(closestObject);
+      GameState.CursorManager.setReticleSelectedObject(closestObject);
+    }
+
+    if(this.playerSelectableObjects.indexOf(GameState.CursorManager.selectedObject) == -1){
+      GameState.CursorManager.selectedObject = undefined;
+      GameState.CursorManager.selected = undefined;
+      this.#currentVisibleObject = undefined;
+      this.#currentVisibleObjectIndex = -1;
+      GameState.CursorManager.setReticleSelectedObject(this.#currentVisibleObject);
+    }
+
+    return this.playerSelectableObjects;
+  }
+
+  static tUpdateSelectable = 0;
+
+  /**
+   * Updates the cache of selectable objects
+   * @param delta - The delta time
+   */
+  static TickSelectableObjects(delta: number = 0){
+    this.tUpdateSelectable -= delta;
+    if(this.tUpdateSelectable <= 0){
+      //Update the cache of selectable objects
+      GameState.ModuleObjectManager.GetSelectableObjectsInRange(PartyManager.party[0]);
+      this.tUpdateSelectable = UPDATE_SELECTABLE_OBJECTS_INTERVAL;
+    }
   }
 
 }

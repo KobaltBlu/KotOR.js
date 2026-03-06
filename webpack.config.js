@@ -75,6 +75,9 @@ const libraryConfig = (name, color) => ({
     ],
     server: [
       './src/worker/server.ts'
+    ],
+    'bink-worker': [
+      './src/worker/bink-worker.ts'
     ]
   },
   stats: {

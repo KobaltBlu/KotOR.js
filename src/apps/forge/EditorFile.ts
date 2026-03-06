@@ -270,7 +270,7 @@ export class EditorFile extends EventListenerModel {
               case EditorFileProtocol.RIM:
                 const rim = new KotOR.RIMObject(this.archive_path);
                 rim.load().then( (archive: KotOR.RIMObject) => {
-                  archive.getResourceBuffer(archive.getResource(this.resref, this.reskey)).then( (buffer: Uint8Array) => {
+                  archive.getResourceBuffer(archive.getResourceInfo(this.resref, this.reskey)).then( (buffer: Uint8Array) => {
                     this.buffer = buffer;
                     resolve({
                       buffer: this.buffer,

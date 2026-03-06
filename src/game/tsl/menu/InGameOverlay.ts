@@ -8,6 +8,18 @@ import { ActionMenuManager } from "../../../engine/menu/ActionMenuManager";
 import { TalentObject } from "../../../talents";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
+import type { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+import { TextureLoader } from "../../../loaders/TextureLoader";
+import * as THREE from "three";
+
+const preloadTextures = ['enemy_bar', 'hostilearrow', 'friend_bar', 'friendlyarrow'];
+const preloadTexturesMap = new Map<string, OdysseyTexture>();
+
+const ARROW_SCALE = 32;
+const ARROW_SCALE_HALF = ARROW_SCALE / 2;
+const ARROW_DIR_LEFT = 0;
+const ARROW_DIR_DOWN = Math.PI/2;
+const ARROW_DIR_RIGHT = Math.PI;
 
 /**
  * InGameOverlay class.
@@ -144,7 +156,7 @@ export class InGameOverlay extends K1_InGameOverlay {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>(async (resolve, reject) => {
 
       //Auto scale anchor hack/fix
       this.BTN_ACTION5.anchor = Anchor.BottomLeft;
@@ -360,6 +372,22 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.recalculatePosition();
 
       //this.lbl_combatbg2.visible = false;
+
+      for(const texture of preloadTextures){
+        const tex = await TextureLoader.Load(texture);
+        preloadTexturesMap.set(texture, tex);
+      }
+
+      const arrowGeometry = new THREE.PlaneGeometry( 1, 1, 1 );
+      const arrowMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, transparent: false, blending: THREE.AdditiveBlending } );
+      arrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
+      this.namePlateArrow = new THREE.Mesh( arrowGeometry, arrowMaterial );
+      this.namePlateArrow.scale.x = 32;
+      this.namePlateArrow.scale.y = 32;
+      this.namePlateArrow.position.z = 5;
+      this.namePlateArrow.renderOrder = 5;
+      this.namePlateArrow.visible = true;
+      this.tGuiPanel.widget.add(this.namePlateArrow);
 
       resolve();
     });

@@ -12,6 +12,7 @@ import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 import * as THREE from 'three';
+import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
 
 /**
  * ActionPhysicalAttacks class.

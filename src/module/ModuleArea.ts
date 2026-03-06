@@ -1698,11 +1698,11 @@ export class ModuleArea extends ModuleObject {
           const should_link = room2_links_to_room1 || room1_links_to_room2;
           //console.log('room', room1.roomName, room2.roomName, should_link);
           if(should_link && !room1.linkedRooms.has(room2.roomName)){
-            room1.linkedRooms.set(room2.roomName, room2);
+            room1.addLinkedRoom(room2);
           }
 
           if(should_link && !room2.linkedRooms.has(room1.roomName)){
-            room2.linkedRooms.set(room1.roomName, room1);
+            room2.addLinkedRoom(room1);
           }
         }
       }

@@ -160,7 +160,7 @@ export class RIMObject {
     await GameFileSystem.close(fd);
   }
 
-  getResource(resRef: string, resType: number): IRIMResource {
+  getResourceInfo(resRef: string, resType: number): IRIMResource|undefined {
     let typeMap = this.resourceMap.get(resType);
     if(!typeMap){
       return undefined;
@@ -182,18 +182,23 @@ export class RIMObject {
         const fd = await this.getFileDescription();
         const buffer = new Uint8Array(resource.size);
         await GameFileSystem.read(fd, buffer, 0, buffer.length, resource.offset);
-        await GameFileSystem.close(fd);
+        // await GameFileSystem.close(fd);
         return buffer;
       }
     }
     catch (e) {
+      console.log(`getResourceBuffer: ${this.resource_path} ${resource.resRef} ${ResourceTypes.getKeyByValue(resource.resType)} ${resource.offset} ${resource.size}`);
       console.error(e);
     }
     return new Uint8Array(0);
   }
 
+  hasResource(resRef: string, resType: number): boolean {
+    return this.getResourceInfo(resRef, resType) !== undefined;
+  }
+
   async getResourceBufferByResRef(resRef: string = '', resType: number = 0x000F): Promise<Uint8Array> {
-    const resource = this.getResource(resRef, resType);
+    const resource = this.getResourceInfo(resRef, resType);
     if(!resource){
       return;
     }
@@ -207,7 +212,15 @@ export class RIMObject {
       return this.#fd;
     }
     this.#fd = await GameFileSystem.open(this.resource_path, 'r');
+    console.log(`getFileDescription: ${this.resource_path} ${this.#fd}`);
     return this.#fd;
+  }
+
+  async dispose(){
+    if(this.#fd){
+      await GameFileSystem.close(this.#fd);
+      this.#fd = undefined;
+    }
   }
 
   async exportRawResource(directory: string, resref: string, restype = 0x000F): Promise<Uint8Array> {
@@ -215,7 +228,7 @@ export class RIMObject {
       return new Uint8Array(0);
     }
 
-    const resource = this.getResource(resref, restype);
+    const resource = this.getResourceInfo(resref, restype);
     if(!resource){
       return new Uint8Array(0);
     }

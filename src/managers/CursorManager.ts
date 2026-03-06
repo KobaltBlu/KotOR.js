@@ -76,20 +76,6 @@ export class CursorManager {
 	/** Debug sphere mesh (optional visualization) */
 	static sphere: THREE.Mesh;
 	
-	/** Collection of interactable objects currently considered for ray hits */
-	static selectableObjects: ModuleObject[] = [];
-	
-	/**
-	 * Update the internal selectable object list.
-	 *
-	 * @param objects Array of module objects that can be interacted with
-	 */
-	static updateSelectable( objects: ModuleObject[] = [] ){
-
-
-
-	}
-	
 	/**
 	 * Initializes cursor/reticle materials and sprites, and loads textures.
 	 *
@@ -198,7 +184,7 @@ export class CursorManager {
 	 * @param cursor Cursor material key (e.g., "default", "select", "attack")
 	 */
 	static setCursor(cursor = 'default'){
-		const cursorName = !Mouse.MouseDown ? cursor : cursor+'D';
+		const cursorName = !Mouse.leftDown ? cursor : cursor+'D';
     const cursorMaterial = CursorManager.cursorMaterials.get(cursorName);
     if(CursorManager.cursor.material != cursorMaterial){
       CursorManager.cursor.material = cursorMaterial;
@@ -221,9 +207,13 @@ export class CursorManager {
 		if(CursorManager.hoveredObject == object){
 			CursorManager.hoveredObject = undefined;
 		}
-		const idx = CursorManager.selectableObjects.indexOf(object);
+		const idx = GameState.ModuleObjectManager.playerSelectableObjects.indexOf(object);
 		if(idx >= 0){
-			CursorManager.selectableObjects.splice(idx, 1);
+			GameState.ModuleObjectManager.playerSelectableObjects.splice(idx, 1);
+		}
+		const idx2 = GameState.ModuleObjectManager.playerHoverableObjects.indexOf(object);
+		if(idx2 >= 0){
+			GameState.ModuleObjectManager.playerHoverableObjects.splice(idx2, 1);
 		}
 	}
 
@@ -256,6 +246,7 @@ export class CursorManager {
 	 * @param object The module object to mark as selected
 	 */
 	public static setReticleSelectedObject( object: ModuleObject ){
+		GameState.getCurrentPlayer().lookAt(object);
 		if(object){
 			CursorManager.selected = object.getReticleNode();
 			if(CursorManager.selected){
@@ -450,7 +441,7 @@ export class CursorManager {
 				}else{
 					if(!CursorManager.selectedObject){
 						let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
-						CursorManager.setReticleSelectedObject(closest);
+						// CursorManager.setReticleSelectedObject(closest);
 						CursorManager.setReticleHoveredObject(closest);
 					}
 				}
@@ -498,6 +489,8 @@ export class CursorManager {
 	static pointSize = 0.2;
 	/** Raycaster threshold for points intersections */
 	static pointThreshold = 1;
+	/** Line of sight z offset for the point cloud */
+	static pointLOSOffset = 1;
 
 	/**
 	 * Performs a ray test against interactable objects using a point cloud proxy.
@@ -508,53 +501,54 @@ export class CursorManager {
 	 *
 	 * @returns The hovered `ModuleObject`, or `undefined` if none hit
 	 */
-	public static onMouseHitInteractive(){
+	public static onMouseHitInteractive(): ModuleObject | undefined {
 		
-		const objects = CursorManager.selectableObjects;
+		const objects = GameState.ModuleObjectManager.playerHoverableObjects;
 		const objCount = objects.length;
 		
 		const points: number[] = [];
 		const sizes: number[] = [];
-		let obj;
-		let targetPosition = new THREE.Vector3();
-		const losZ = 1;
+
+		// Line of sight offset for the point cloud
+		const losZ = CursorManager.pointLOSOffset;
 		
 		for(let i = 0; i < objCount; i++){
-			obj = objects[i];
-			
-			targetPosition.copy(obj.position);
-			targetPosition.z += losZ;
-			if(obj.highlightHeight){
-				// targetPosition.z += obj.highlightHeight;
-			}
-			
-			points.push(...targetPosition.toArray());
+			const obj = objects[i];
+			points.push(obj.position.x, obj.position.y, obj.position.z + losZ);
 			sizes.push(CursorManager.pointSize);
 		}
-		
-		CursorManager.pointGeomerty.attributes.position = new THREE.Float32BufferAttribute(points, 3);
-		CursorManager.pointGeomerty.attributes.size = new THREE.Float32BufferAttribute(sizes, 1);
+
+		// resize the point cloud if the number of objects has changed
+		if(objCount != CursorManager.pointGeomerty.attributes.size.count){
+			CursorManager.pointGeomerty.attributes.position = new THREE.Float32BufferAttribute(points, 3);
+			CursorManager.pointGeomerty.attributes.size = new THREE.Float32BufferAttribute(sizes, 1);
+		}else{
+			const positionAttribute = CursorManager.pointGeomerty.attributes.position as THREE.BufferAttribute;
+			const sizeAttribute = CursorManager.pointGeomerty.attributes.size as THREE.BufferAttribute;
+			for(let i = 0; i < objCount; i++){
+				positionAttribute.setX(i*3, objects[i].position.x);
+				positionAttribute.setY(i*3, objects[i].position.y);
+				positionAttribute.setZ(i*3, objects[i].position.z + losZ);
+				sizeAttribute.setX(i, CursorManager.pointSize);
+			}
+		}
+
 		CursorManager.pointGeomerty.computeBoundingBox();
 		CursorManager.pointGeomerty.computeBoundingSphere();
-		
-		const occluders = [
-			CursorManager.testPoints,
-			GameState.module.area.roomWalkmeshes.map( (r) => r.mesh),
-		].flat();
 		
 		const farCache = CursorManager.raycaster.far;
 		const pThresholdCache = CursorManager.raycaster.params.Points.threshold;
 		CursorManager.raycaster.far = GameState.maxSelectableDistance;
 		CursorManager.raycaster.params.Points.threshold = CursorManager.pointThreshold;
 		CursorManager.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
-		const intersectsT = CursorManager.raycaster.intersectObjects( occluders, false );
-		if(intersectsT[0] && intersectsT[0].object?.uuid == CursorManager.testPoints.uuid){
-			// console.log('intersects', intersectsT[0], objects[intersectsT[0]?.index], intersectsT);
-			return objects[intersectsT[0].index];
-		}
+		const intersectsT = CursorManager.raycaster.intersectObject( CursorManager.testPoints, false );
+		const intersect = intersectsT[0];
 		CursorManager.raycaster.params.Points.threshold = pThresholdCache;
 		CursorManager.raycaster.far = farCache;
-		return;
+		if(intersect && intersect.object == CursorManager.testPoints){
+			return objects[intersect.index];
+		}
+		return undefined;
 	}
 
 }

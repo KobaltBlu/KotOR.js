@@ -41,8 +41,6 @@ export class ActionDialogObject extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    //console.log('ActionDialogObject', this);
-
     this.target = this.getParameter<ModuleObject>(0);
     let conversation_resref: string = this.getParameter<string>(1) || '';
     let ignoreStartRange = this.getParameter<number>(4) || 0;

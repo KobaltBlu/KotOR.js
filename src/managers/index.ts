@@ -26,6 +26,8 @@ export * from "./TutorialManager";
 export * from "./TwoDAManager";
 export * from "./ResolutionManager";
 export * from "./VideoEffectManager";
+export * from "./VideoManager";
 export * from "./PazaakManager";
 export * from "./UINotificationManager";
 export * from "./CutsceneManager";
+export * from "./LegalScreenManager";

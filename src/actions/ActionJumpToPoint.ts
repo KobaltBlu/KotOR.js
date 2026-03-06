@@ -5,6 +5,7 @@ import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
 import { Action } from "./Action";
 import * as THREE from "three";
+import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
 
 /**
  * ActionJumpToPoint class.
@@ -60,7 +61,7 @@ export class ActionJumpToPoint extends Action {
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       this.owner.setPosition(new THREE.Vector3(this.x, this.y, this.z));
-      this.owner.setFacing(this.facing, false);
+      this.owner.setFacing(this.facing, false, TURN_SPEED_FAST);
       this.owner.collisionManager.groundFace = undefined;
       this.owner.collisionManager.lastGroundFace = undefined;
       //this.getCurrentRoom();

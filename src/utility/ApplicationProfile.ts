@@ -25,12 +25,26 @@ export class ApplicationProfile {
   static profile: any = {};
   static isMac: boolean = false;
 
-  static InitEnvironment(profile: any){
+  static SetProfile(profile: any){
     if(typeof profile === 'object'){
       ApplicationProfile.profile = profile;
+      ApplicationProfile.InitEnvironment();
     }
+    if(ApplicationProfile.profile){
+      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+        ApplicationProfile.directory = ApplicationProfile.profile.directory;
+      }else{
+        ApplicationProfile.directoryHandle = ApplicationProfile.profile.directory_handle;
+      }
+    }
+  }
+
+  static InitEnvironment(){
     if(window.location.origin === 'file://'){
       ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
+      if(typeof window.electron !== 'undefined'){
+        ApplicationProfile.isMac = window.electron.isMac();
+      }
       if(OSInfo.isWindows()){
         ApplicationProfile.path_sep = '/';
       }else{
@@ -42,14 +56,6 @@ export class ApplicationProfile {
         ApplicationProfile.path_sep = '/';
       }else{
         ApplicationProfile.path_sep = '/';
-      }
-    }
-
-    if(ApplicationProfile.profile){
-      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        ApplicationProfile.directory = ApplicationProfile.profile.directory;
-      }else{
-        ApplicationProfile.directoryHandle = ApplicationProfile.profile.directory_handle;
       }
     }
   }

@@ -144,7 +144,7 @@ export class CutsceneManager {
       this.listener = this.dialog.listener = GameState.PartyManager.party[0];
     }
 
-    if(this.dialog.getConversationType() == DLGConversationType.CONVERSATION){
+    if(this.dialog.getConversationType() != DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameDialog.canLetterbox = true;
     }
 
@@ -224,6 +224,16 @@ export class CutsceneManager {
       GameState.MenuManager.InGameComputer.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
     }else{
       GameState.MenuManager.InGameDialog.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
+    }
+
+    if(BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature)){
+      const creature = this.currentEntry.speaker as ModuleCreature;
+      creature.lookAt(this.currentEntry.listener);
+    }
+    
+    if(BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature)){
+      const creature = this.currentEntry.listener as ModuleCreature;
+      creature.lookAt(this.currentEntry.speaker);
     }
 
     entry.updateJournal();

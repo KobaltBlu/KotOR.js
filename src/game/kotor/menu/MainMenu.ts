@@ -8,6 +8,8 @@ import { MDLLoader, TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { AudioEngine } from "../../../audio/AudioEngine";
+import { ApplicationProfile } from "../../../utility/ApplicationProfile";
+import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
 
 /**
  * MainMenu class.
@@ -85,7 +87,15 @@ export class MainMenu extends GameMenu {
 
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
-        window.close();
+        if (ApplicationProfile.ENV === ApplicationEnvironment.ELECTRON) {
+          window.close();
+        }else{
+          if(window.opener){
+            window.close();
+            return;
+          }
+          alert('To exit the game in your browser, close this tab or window. For the best experience, open the game from the KotOR.js launcher so Exit Game works from the menu.');
+        }
       });
 
       MDLLoader.loader.load('mainmenu').then((mdl: OdysseyModel) => {
