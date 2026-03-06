@@ -920,6 +920,12 @@ export class ModuleCreature extends ModuleObject {
               GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
             }
           }
+        }else if(this != GameState.getCurrentPlayer() && this.isHostile(creature)){
+          // Non-active party member (companion): enter combat state on perceiving a hostile
+          this.resetExcitedDuration();
+          if(!this.combatData.lastAttackTarget || this.combatData.lastAttackTarget.isDead()){
+            this.combatData.lastAttackTarget = creature;
+          }
         }
         
         this.notifyPerceptionSeenObject(creature, true);
