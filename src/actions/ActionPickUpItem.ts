@@ -1,4 +1,5 @@
 import { ActionStatus, ActionType, ModuleObjectType } from "../enums";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 import { GameState } from "../GameState";
 import type { ModuleCreature } from "../module/ModuleCreature";
 import type { ModuleItem } from "../module/ModuleItem";
@@ -52,6 +53,17 @@ export class ActionPickUpItem extends Action {
       GameState.InventoryManager.addItem(item);
     } else {
       (this.owner as ModuleCreature).addItem(item);
+    }
+
+    // Fire the module-level OnAcquireItem script so quest scripts track the pickup
+    if(GameState.module){
+      GameState.lastItemAcquired = item;
+      GameState.lastItemAcquiredFrom = item.area;
+      const acquireScript = GameState.module.scripts[ModuleObjectScript.ModuleOnPlayerAcquireItem];
+      if(acquireScript){
+        const instance = acquireScript.newInstance();
+        instance.run(this.owner);
+      }
     }
 
     return ActionStatus.COMPLETE;

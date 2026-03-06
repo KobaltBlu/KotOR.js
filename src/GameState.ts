@@ -301,6 +301,11 @@ export class GameState implements EngineContext {
   static lastItemAcquiredFrom: any = undefined;
   static lastItemLost: any = undefined;
   static lastItemLostBy: any = undefined;
+  static lastItemActivated: any = undefined;
+  static lastItemActivator: any = undefined;
+  static lastItemActivatedTarget: any = undefined;
+  static lastItemActivatedTargetLocation: any = undefined;
+  static lastPCLevellingUp: any = undefined;
   static creditsSequenceInProgress: boolean = false;
 
   static audioEmitter: AudioEmitter;

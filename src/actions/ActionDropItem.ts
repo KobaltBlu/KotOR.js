@@ -4,6 +4,7 @@ import { ActionType } from "../enums/actions/ActionType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 import type { ModuleCreature } from "../module/ModuleCreature";
 import type { ModuleItem } from "../module/ModuleItem";
 
@@ -71,6 +72,17 @@ export class ActionDropItem extends Action {
         GameState.module.area.items.push(item);
       }
     });
+
+    // Fire the module-level OnUnAcquireItem script
+    if(GameState.module){
+      GameState.lastItemLost = item;
+      GameState.lastItemLostBy = this.owner;
+      const unAcquireScript = GameState.module.scripts[ModuleObjectScript.ModuleOnUnAcquireItem];
+      if(unAcquireScript){
+        const instance = unAcquireScript.newInstance();
+        instance.run(this.owner);
+      }
+    }
 
     return ActionStatus.COMPLETE;
   }
