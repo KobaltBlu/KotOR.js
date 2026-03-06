@@ -996,7 +996,7 @@ export class ModuleCreature extends ModuleObject {
     }
 
     if(this.combatData.combatState){
-      //If creature is being controller by the player, keep at least one basic action in the attack queue while attack target is still alive 
+      //If creature is being controlled by the player, keep at least one basic action in the attack queue while attack target is still alive 
       if(GameState.getCurrentPlayer() == this){
         if(!this.combatRound.scheduledActionList.length && !this.combatRound.action){
           if( this.combatData.lastAttackTarget ){
@@ -1004,7 +1004,24 @@ export class ModuleCreature extends ModuleObject {
           }else if( this.combatData.lastAttacker ){
             this.attackCreature(this.combatData.lastAttacker, undefined);
           }else{
-            //TODO: Attack nearest perceived hostile creature?
+            const target = this.findNearestPerceivedHostile();
+            if(target) this.attackCreature(target, undefined);
+          }
+        }
+      }else{
+        // NPC / non-active party-member: keep attacking a hostile target each round
+        if(!this.combatRound.scheduledActionList.length && !this.combatRound.action){
+          if(this.combatData.lastAttackTarget && !this.combatData.lastAttackTarget.isDead()){
+            this.attackCreature(this.combatData.lastAttackTarget, undefined);
+          }else if(this.combatData.lastAttacker && !this.combatData.lastAttacker.isDead()){
+            this.combatData.lastAttackTarget = this.combatData.lastAttacker;
+            this.attackCreature(this.combatData.lastAttacker, undefined);
+          }else{
+            const target = this.findNearestPerceivedHostile();
+            if(target){
+              this.combatData.lastAttackTarget = target;
+              this.attackCreature(target, undefined);
+            }
           }
         }
       }
@@ -1013,6 +1030,27 @@ export class ModuleCreature extends ModuleObject {
         this.setAnimationState(ModuleCreatureAnimState.PAUSE);
       }
     }
+  }
+
+  /**
+   * Find the nearest perceived hostile creature from this creature's perception list.
+   * Returns the closest alive, hostile, seen object or undefined if none exists.
+   */
+  findNearestPerceivedHostile(): ModuleObject | undefined {
+    let nearest: ModuleObject | undefined;
+    let nearestDist = Infinity;
+    for(const percept of this.perceptionList){
+      const obj = percept.object;
+      if(!obj || !(percept.data & 0x01)) continue; // only seen objects
+      if(obj.isDead()) continue;
+      if(!this.isHostile(obj)) continue;
+      const dist = this.position.distanceTo(obj.position);
+      if(dist < nearestDist){
+        nearestDist = dist;
+        nearest = obj;
+      }
+    }
+    return nearest;
   }
 
   updateCasting(delta = 0){

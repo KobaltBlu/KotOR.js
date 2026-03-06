@@ -577,6 +577,12 @@ export class CombatRound {
     const isCritical = this.isCritical(attackRoll, weapon);
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
     const attack = this.attackList[this.currentAttack];
+
+    // Determine sneak attack eligibility: attacker has sneak feat AND target is
+    // flatfooted (not yet in combat).
+    attack.sneakAttack = CombatAttackData.getSneakAttackDiceCount(creature) > 0 &&
+      !combatAction.target.combatData.combatState;
+
     if(hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC()){
       combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
       attack.reactObject = combatAction.target;
