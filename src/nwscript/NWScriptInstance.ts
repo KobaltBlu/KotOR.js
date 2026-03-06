@@ -96,6 +96,7 @@ export class NWScriptInstance {
   creatureAttackerIndex: Map<number, number> = new Map<number, number>();
   factionMemberIndex: Map<number, number> = new Map<number, number>();
   objectInSphapeIndex: Map<number, number> = new Map<number, number>();
+  matchedSubstrings: string[] = [];
 
   breakPoints: Map<number, boolean> = new Map<number, boolean>();
 
@@ -283,6 +284,7 @@ export class NWScriptInstance {
     this.creatureAttackerIndex = new Map<number, number>();
     this.factionMemberIndex = new Map<number, number>();
     this.objectInSphapeIndex = new Map<number, number>();
+    this.matchedSubstrings = [];
 
     if(this.globalCache != null){
       //I'm trying to cache instructions from the global scope so they are not processed again when the script is run again.

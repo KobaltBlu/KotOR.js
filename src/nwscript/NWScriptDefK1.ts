@@ -41,6 +41,7 @@ import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 import { CreatureClassType } from "../enums/nwscript/CreatureClassType";
 import { TalkVolume } from "../enums/engine/TalkVolume";
 import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
+import { SaveGame } from "../engine/SaveGame";
 
 /**
  * NWScriptDefK1 class.
@@ -320,6 +321,18 @@ NWScriptDefK1.Actions = {
     name: "ActionMoveAwayFromObject",
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) return;
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)) return;
+      const caller = this.caller as ModuleCreature;
+      const fleeRange = typeof args[2] === 'number' && args[2] > 0 ? args[2] : 5;
+      const dir = caller.position.clone().sub(args[0].position);
+      if(dir.lengthSq() === 0) dir.set(1, 0, 0);
+      dir.normalize().multiplyScalar(fleeRange);
+      const dest = caller.position.clone().add(dir);
+      const loc = new EngineLocation(dest.x, dest.y, dest.z, 0, 0, 0);
+      caller.moveToLocation(loc, !!args[1]);
+    }
   },
   24:{
     comment: "24: Get the area that oTarget is currently in\n* Return value on error: OBJECT_INVALID\n",
@@ -377,7 +390,13 @@ NWScriptDefK1.Actions = {
     comment: "29: Get the possessor of oItem\n* Return value on error: OBJECT_INVALID\n",
     name: "GetItemPossessor",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        return (args[0] as ModuleItem).possessor || undefined;
+      }
+      return undefined;
+    }
   },
   30:{
     comment: "30: Get the object possessed by oCreature with the tag sItemTag\n* Return value on error: OBJECT_INVALID\n",
@@ -687,7 +706,12 @@ NWScriptDefK1.Actions = {
     comment: "45: Change the direction in which the camera is facing\n- fDirection is expressed as anticlockwise degrees from Due East.\n(0.0f=East, 90.0f=North, 180.0f=West, 270.0f=South)\nThis can be used to change the way the camera is facing after the player\nemerges from an area transition.\n",
     name: "SetCameraFacing",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [number]){
+      if(typeof args[0] === 'number'){
+        GameState.FollowerCamera.facing = args[0] * Math.PI / 180;
+      }
+    }
   },
   46:{
     comment: "46: Play sSoundName\n- sSoundName: TBD - SS\n",
@@ -1163,7 +1187,13 @@ NWScriptDefK1.Actions = {
     comment: "84: Get the Caster Level of oCreature.\n* Return value on error: 0;\n",
     name: "GetCasterLevel",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).getSpellCasterLevel();
+      }
+      return 0;
+    }
   },
   85:{
     comment: "85: Get the first in-game effect on oCreature.\n",
@@ -1362,7 +1392,11 @@ NWScriptDefK1.Actions = {
     comment: "104: Get the magnitude of vVector; this can be used to determine the\ndistance between two points.\n* Return value on error: 0.0f\n",
     name: "VectorMagnitude",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.VECTOR]
+    args: [NWScriptDataType.VECTOR],
+    action: function(this: NWScriptInstance, args: [THREE.Vector3]){
+      if(!args[0]) return 0.0;
+      return Math.sqrt(args[0].x * args[0].x + args[0].y * args[0].y + args[0].z * args[0].z);
+    }
   },
   105:{
     comment: "105: Get the metamagic type (METAMAGIC_*) of the last spell cast by the caller\n* Return value if the caster is not a valid object: -1\n",
@@ -1374,7 +1408,22 @@ NWScriptDefK1.Actions = {
     comment: "106: Get the object type (OBJECT_TYPE_*) of oTarget\n* Return value if oTarget is not a valid object: -1\n",
     name: "GetObjectType",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)) return -1;
+      const obj = args[0];
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature))   return NWModuleObjectType.CREATURE;
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleItem))       return NWModuleObjectType.ITEM;
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger))    return NWModuleObjectType.TRIGGER;
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor))       return NWModuleObjectType.DOOR;
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleAreaOfEffect)) return NWModuleObjectType.AOE;
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleWaypoint))   return NWModuleObjectType.WAYPOINT;
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable))  return NWModuleObjectType.PLACEABLE;
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleStore))      return NWModuleObjectType.STORE;
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleEncounter))  return NWModuleObjectType.ENCOUNTER;
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleSound))      return NWModuleObjectType.SOUND;
+      return -1;
+    }
   },
   107:{
     comment: "107: Get the racial type (RACIAL_TYPE_*) of oCreature\n* Return value if oCreature is not a valid creature: RACIAL_TYPE_INVALID\n",
@@ -1779,7 +1828,20 @@ NWScriptDefK1.Actions = {
     comment: "139: Get the ability score of type nAbility for a creature (otherwise 0)\n- oCreature: the creature whose ability score we wish to find out\n- nAbilityType: ABILITY_*\nReturn value on error: 0\n",
     name: "GetAbilityScore",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return 0;
+      const creature = args[0] as ModuleCreature;
+      switch(args[1]){
+        case 0: return creature.getSTR();
+        case 1: return creature.getDEX();
+        case 2: return creature.getCON();
+        case 3: return creature.getINT();
+        case 4: return creature.getWIS();
+        case 5: return creature.getCHA();
+        default: return 0;
+      }
+    }
   },
   140:{
     comment: "140: * Returns TRUE if oCreature is a dead NPC, dead PC or a dying PC.\n",
@@ -1824,25 +1886,53 @@ NWScriptDefK1.Actions = {
     comment: "144: Convert fAngle to a vector\n",
     name: "AngleToVector",
     type: NWScriptDataType.VECTOR,
-    args: [NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [number]){
+      const rad = args[0] * Math.PI / 180;
+      return {x: Math.cos(rad), y: Math.sin(rad), z: 0};
+    }
   },
   145:{
     comment: "145: Convert vVector to an angle\n",
     name: "VectorToAngle",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.VECTOR]
+    args: [NWScriptDataType.VECTOR],
+    action: function(this: NWScriptInstance, args: [THREE.Vector3]){
+      if(!args[0]) return 0;
+      return Math.atan2(args[0].y, args[0].x) * 180 / Math.PI;
+    }
   },
   146:{
     comment: "146: The caller will perform a Melee Touch Attack on oTarget\nThis is not an action, and it assumes the caller is already within range of\noTarget\n* Returns 0 on a miss, 1 on a hit and 2 on a critical hit\n",
     name: "TouchAttackMelee",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) return 0;
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return 0;
+      const attacker = this.caller as ModuleCreature;
+      const target = args[0] as ModuleCreature;
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const total = roll + attacker.getBaseAttackBonus();
+      if(roll == 20) return 2;
+      return total > target.getAC() ? 1 : 0;
+    }
   },
   147:{
     comment: "147: The caller will perform a Ranged Touch Attack on oTarget\n* Returns 0 on a miss, 1 on a hit and 2 on a critical hit\n",
     name: "TouchAttackRanged",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) return 0;
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return 0;
+      const attacker = this.caller as ModuleCreature;
+      const target = args[0] as ModuleCreature;
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const total = roll + attacker.getBaseAttackBonus();
+      if(roll == 20) return 2;
+      return total > target.getAC() ? 1 : 0;
+    }
   },
   148:{
     comment: "148: Create a Paralyze effect\n",
@@ -2245,19 +2335,38 @@ NWScriptDefK1.Actions = {
     comment: "177: * Returns TRUE if sStringToTest matches sPattern.\n",
     name: "TestStringAgainstPattern",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.STRING, NWScriptDataType.STRING]
+    args: [NWScriptDataType.STRING, NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [string, string]){
+      if(typeof args[0] !== 'string' || typeof args[1] !== 'string') return NW_FALSE;
+      // Convert NWScript pattern (* wildcard) to regex
+      const regexStr = '^' + args[0].replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$';
+      const matched = new RegExp(regexStr, 'i').test(args[1]);
+      if(matched){
+        this.matchedSubstrings = [args[1]];
+      }
+      return matched ? NW_TRUE : NW_FALSE;
+    }
   },
   178:{
     comment: "178: Get the appropriate matched string (this should only be used in\nOnConversation scripts).\n* Returns the appropriate matched string, otherwise returns ''\n",
     name: "GetMatchedSubstring",
     type: NWScriptDataType.STRING,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      if(this.matchedSubstrings && args[0] >= 0 && args[0] < this.matchedSubstrings.length){
+        return this.matchedSubstrings[args[0]];
+      }
+      return '';
+    }
   },
   179:{
     comment: "179: Get the number of string parameters available.\n* Returns -1 if no string matched (this could be because of a dialogue event)\n",
     name: "GetMatchedSubstringsCount",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.matchedSubstrings ? this.matchedSubstrings.length : -1;
+    }
   },
   180:{
     comment: "180: * Create a Visual Effect that can be applied to an object.\n- nVisualEffectId\n- nMissEffect: if this is TRUE, a random vector near or past the target will\nbe generated, on which to play the effect\n",
@@ -2866,7 +2975,12 @@ NWScriptDefK1.Actions = {
     comment: "228: Get the nNth object nearest to lLocation that is of the specified type.\n- nObjectType: OBJECT_TYPE_*\n- lLocation\n- nNth\n* Return value on error: OBJECT_INVALID\n",
     name: "GetNearestObjectToLocation",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, EngineLocation, number]){
+      if(!args[1]) return undefined;
+      const fakeObj = { position: args[1].position } as any;
+      return GameState.ModuleObjectManager.GetNearestObject(args[0], fakeObj, (args[2] || 1) - 1);
+    }
   },
   229:{
     comment: "229: Get the nth Object nearest to oTarget that has sTag as its tag.\n* Return value on error: OBJECT_INVALID\n",
@@ -3575,7 +3689,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      return 0;
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        return (args[1] as ModuleCreature).getHasFeat(args[0]) ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
     }
   },
   286:{
@@ -3584,7 +3701,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      return 0;
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        return (args[1] as ModuleCreature).getHasSkill(args[0]) ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
     }
   },
   287:{
@@ -6037,7 +6157,10 @@ NWScriptDefK1.Actions = {
     comment: "512: Only if we are in a single player game, AutoSave the game.\n",
     name: "DoSinglePlayerAutoSave",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      SaveGame.SaveCurrentGame('', 1);
+    }
   },
   513:{
     comment: "513: Get the game difficulty (GAME_DIFFICULTY_*).\n",
