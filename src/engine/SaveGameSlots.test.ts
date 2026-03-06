@@ -41,6 +41,19 @@ describe('SaveGame slot semantics', () => {
     expect(SaveGame.NEXT_SAVE_ID).toBe(2);
   });
 
+  it('preserves reserved slot baseline when save scan fails', async () => {
+    SaveGame.NEXT_SAVE_ID = 77;
+    SaveGame.saves = [new SaveGame('000123 - Game122')];
+
+    jest.spyOn(GameFileSystem, 'readdir').mockRejectedValue(new Error('scan failed'));
+    jest.spyOn(GameFileSystem, 'mkdir').mockResolvedValue(true as any);
+
+    await SaveGame.GetSaveGames();
+
+    expect(SaveGame.NEXT_SAVE_ID).toBe(2);
+    expect(SaveGame.saves).toEqual([]);
+  });
+
   it('routes replace_id=1 SaveCurrentGame to AutoSave', async () => {
     const autoSaveSpy = jest.spyOn(SaveGame, 'AutoSave').mockResolvedValue();
 
