@@ -162,6 +162,7 @@ export class AppState {
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       KotOR.ApplicationProfile.directory = AppState.appProfile.directory;
     }else{
+      KotOR.GameFileSystem.clearDirectoryCache();
       KotOR.ApplicationProfile.directoryHandle = AppState.appProfile.directory_handle;
     }
     console.log('loading game...');
@@ -219,6 +220,7 @@ export class AppState {
    * - Used for Browser
    */
   static async attachDirectoryHandle(handle: FileSystemDirectoryHandle){
+    KotOR.GameFileSystem.clearDirectoryCache();
     KotOR.ApplicationProfile.directoryHandle = handle;
     KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory_handle`, handle);
     AppState.directoryLocated = true;
