@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { ModuleObjectScript, ModuleObjectType } from "../enums";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
@@ -9,6 +10,8 @@ import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
 import { NWScriptInstance } from "./NWScriptInstance";
 import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
+import EngineLocation from "../engine/EngineLocation";
+import { EngineMode } from "../enums/engine/EngineMode";
 
 /**
  * NWScriptDefK2 class.
@@ -4096,56 +4099,77 @@ NWScriptDefK2.Actions = {
     name: 'AddPartyMember',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        GameState.PartyManager.AddCreatureToParty(args[0], args[1] as ModuleCreature);
+        return NW_TRUE;
+      }
+      return NW_FALSE;    }
   },
   575: {
     comment: '575: Removes a creature from the party\nReturns whether the removal was syccessful\nRemovePartyMember',
     name: 'RemovePartyMember',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.PartyManager.RemoveNPCById(args[0], true);
+      return NW_TRUE;
+    }
   },
   576: {
     comment: '576: Returns whether a specified creature is a party member\nIsObjectPartyMember',
     name: 'IsObjectPartyMember',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return (GameState.PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0 ||
+        args[0] === GameState.PartyManager.Player) ? NW_TRUE : NW_FALSE;
+    }
   },
   577: {
     comment: '577: Returns the party member at a given index in the party.\nThe order of members in the party can vary based on\nwho the current leader is (member 0 is always the current\nparty leader).\nGetPartyMemberByIndex',
     name: 'GetPartyMemberByIndex',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      return GameState.PartyManager.party[args[0]];
+    }
   },
   578: {
     comment: '578: GetGlobalBoolean\nThis function returns the value of a global boolean (TRUE or FALSE) scripting variable.',
     name: 'GetGlobalBoolean',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string]){
+      return GameState.GlobalVariableManager.GetGlobalBoolean(args[0]) ? NW_TRUE : NW_FALSE;
+    }
   },
   579: {
     comment: '579: SetGlobalBoolean\nThis function sets the value of a global boolean (TRUE or FALSE) scripting variable.',
     name: 'SetGlobalBoolean',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string, number]){
+      GameState.GlobalVariableManager.SetGlobalBoolean(args[0], !!args[1]);
+    }
   },
   580: {
     comment: '580: GetGlobalNumber\nThis function returns the value of a global number (-128 to +127) scripting variable.',
     name: 'GetGlobalNumber',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string]){
+      return GameState.GlobalVariableManager.GetGlobalNumber(args[0]);
+    }
   },
   581: {
     comment: '581: SetGlobalNumber\nThis function sets the value of a global number (-128 to +127) scripting variable.',
     name: 'SetGlobalNumber',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string, number]){
+      GameState.GlobalVariableManager.SetGlobalNumber(args[0], args[1]);
+    }
   },
   582: {
     comment: 'post a string to the screen at column nX and row nY for fLife seconds\n582. AurPostString',
@@ -4936,56 +4960,89 @@ NWScriptDefK2.Actions = {
     name: 'AddAvailableNPCByObject',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      return GameState.PartyManager.AddAvailableNPCByObject(args[0], args[1] as ModuleCreature) ? NW_TRUE : NW_FALSE;
+    }
   },
   695: {
     comment: '695. RemoveAvailableNPC\nThis removes a NPC from the list of available party members\nReturns whether it was successful or not',
     name: 'RemoveAvailableNPC',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.PartyManager.RemoveAvailableNPC(args[0]);
+      return NW_TRUE;
+    }
   },
   696: {
     comment: '696. IsAvailableNPC\nThis returns whether a NPC is in the list of available party members',
     name: 'IsAvailableCreature',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      return GameState.PartyManager.IsAvailable(args[0]) ? NW_TRUE : NW_FALSE;
+    }
   },
   697: {
     comment: '697. AddAvailableNPCByTemplate\nThis adds a NPC to the list of available party members using\na template\nReturns if true if successful, false if the NPC had already\nbeen added or the template specified is invalid',
     name: 'AddAvailableNPCByTemplate',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, string]){
+      return GameState.PartyManager.AddAvailableNPCByTemplate(args[0], args[1]) ? NW_TRUE : NW_FALSE;
+    }
   },
   698: {
     comment: '698. SpawnAvailableNPC\nThis spawns a NPC from the list of available creatures\nReturns a pointer to the creature object',
     name: 'SpawnAvailableNPC',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.LOCATION ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, EngineLocation]){
+      const template = GameState.PartyManager.NPCS[args[0]]?.template;
+      if(!template){ return undefined; }
+      const partyMember = new GameState.Module.ModuleArea.ModuleCreature(template);
+      if(args[1]?.area){ args[1].area.attachObject(partyMember); }
+      partyMember.load();
+      partyMember.clearAllActions();
+      partyMember.loadModel().then( (model: any) => {
+        if(model){ model.userData.moduleObject = partyMember; }
+        partyMember.setPosition(args[1].position);
+        partyMember.setFacing(args[1].getFacing(), true);
+        GameState.group.creatures.add(partyMember.container);
+        partyMember.getCurrentRoom();
+        partyMember.onSpawn();
+      });
+      return partyMember;
+    }
   },
   699: {
     comment: '699. IsNPCPartyMember\nReturns if a given NPC constant is in the party currently',
     name: 'IsNPCPartyMember',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      return GameState.PartyManager.IsNPCInParty(args[0]) ? NW_TRUE : NW_FALSE;
+    }
   },
   700: {
     comment: '700. ActionBarkString\nthis will cause a creature to bark the strRef from the talk table.',
     name: 'ActionBarkString',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        GameState.MenuManager.InGameBark.barkFromStringRef(args[0]);
+      }
+    }
   },
   701: {
     comment: '701. GetIsConversationActive\nChecks to see if any conversations are currently taking place',
     name: 'GetIsConversationActive',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      return (GameState.Mode === EngineMode.DIALOG) ? NW_TRUE : NW_FALSE;
+    }
   },
   702: {
     comment: '702. EffectLightsaberThrow\nThis function throws a lightsaber at a target\nIf multiple targets are specified, then the lightsaber travels to them\nsequentially, returning to the first object specified\nThis effect is applied to an object, so an effector is not needed',
@@ -5514,7 +5571,17 @@ NWScriptDefK2.Actions = {
     name: 'GetSpellForcePointCost',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // Return the base force point cost of the spell being cast by this caller.
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        const spellId = (this.caller as any).combatData?.currentSpellId;
+        if(spellId != null){
+          const spellRow = GameState.TwoDAManager.datatables.get('spells')?.rows[spellId];
+          if(spellRow){ return parseInt(spellRow.forcepointcost) || 0; }
+        }
+      }
+      return 0;
+    }
   },
   777: {
     comment: 'DJS-OEI 1/2/2004\n777: Create a Fury effect.',
@@ -5580,7 +5647,12 @@ NWScriptDefK2.Actions = {
     name: 'GetSpellAcquired',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        return (args[1] as ModuleCreature).getHasSpell(args[0]) ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   785: {
     comment: 'FAK-OEI 1/12/2004\n785: Displays the Swoop Bike upgrade screen.',
@@ -5597,14 +5669,30 @@ NWScriptDefK2.Actions = {
     name: 'GrantFeat',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        (args[1] as ModuleCreature).addFeat(args[0]);
+      }
+    }
   },
   787: {
     comment: 'DJS-OEI 1/13/2004\n787: Grants the target a spell without regard for prerequisites.',
     name: 'GrantSpell',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        const creature = args[1] as ModuleCreature;
+        if(!creature.getHasSpell(args[0])){
+          // Add to the first spellcaster class, or first class if none
+          const classes = (creature as any).classes as any[];
+          const spellcasterClass = classes.find((c: any) => c.spellcaster) || classes[0];
+          if(spellcasterClass){
+            spellcasterClass.addSpell(new GameState.TalentSpell(args[0]));
+          }
+        }
+      }
+    }
   },
   788: {
     comment: 'DJS-OEI 1/13/2004\n788: Places an active mine on the map.\nnMineType - Mine Type from Traps.2DA\nlPoint - The location in the world to place the mine.\nnDetectDCBase - This value, plus the \'DetectDCMod\' column in Traps.2DA\nresults in the final DC for creatures to detect this mine.\nnDisarmDCBase - This value, plus the \'DisarmDCMod\' column in Traps.2DA\nresults in the final DC for creatures to disarm this mine.\noCreator - The object that should be considered the owner of the mine.\nIf oCreator is set to OBJECT_INVALID, the faction of the mine will be\nconsidered Hostile1, meaning the party will be vulnerable to it.',
@@ -5632,7 +5720,16 @@ NWScriptDefK2.Actions = {
     name: 'SetFakeCombatState',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      // Toggle combat animation state for cutscene use without entering real combat
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        if(args[1]){
+          (args[0] as ModuleCreature).combatData.combatState = true;
+        }else{
+          (args[0] as ModuleCreature).combatData.combatState = false;
+        }
+      }
+    }
   },
   792: {
     comment: 'FAK - OEI 1/23/04\n792: minigame function that deletes a minigame object',
@@ -5781,14 +5878,20 @@ NWScriptDefK2.Actions = {
     name: 'QueueMovie',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string, number]){
+      if(args[0]){
+        GameState.VideoManager.queueMovie(args[0]);
+      }
+    }
   },
   807: {
     comment: '807',
     name: 'PlayMovieQueue',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.VideoManager.playMovieQueue(() => {});
+    }
   },
   808: {
     comment: '808',
@@ -5809,7 +5912,10 @@ NWScriptDefK2.Actions = {
     name: 'IsStealthed',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      // Stealth mode is not yet tracked per-creature; always return 0
+      return NW_FALSE;
+    }
   },
   811: {
     comment: '811\nDJS-OEI 3/12/2004\nDetermines if the given creature is using any Meditation Tree\nForce Power.\n0 = Creature is not meditating.\n1 = Creature is meditating.\nThis function will return 0 for any non-creature.',
@@ -5825,7 +5931,9 @@ NWScriptDefK2.Actions = {
     name: 'IsInTotalDefense',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return NW_FALSE;
+    }
   },
   813: {
     comment: '813\nRWT-OEI 03/19/04\nStores a Heal Target for the Healer AI script. Should probably\nnot be used outside of the Healer AI script.',
@@ -5852,14 +5960,27 @@ NWScriptDefK2.Actions = {
     name: 'GetRandomDestination',
     type: NWScriptDataType.VECTOR,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject) || !GameState.module?.area){
+        return new THREE.Vector3();
+      }
+      const range = args[1] || 5;
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Math.random() * range;
+      const candidate = args[0].position.clone().add(new THREE.Vector3(Math.cos(angle) * dist, Math.sin(angle) * dist, 0));
+      const walkable = GameState.module.area.getNearestWalkablePoint(candidate, 1.0) || candidate;
+      return walkable;
+    }
   },
   816: {
     comment: '816\nDJS-OEI 3/25/2004\nReturns whether the given creature is currently in the\nrequested Lightsaber/Consular Form and can make use of\nits benefits. This function will perform trumping checks\nand lightsaber-wielding checks for those Forms that require\nthem.',
     name: 'IsFormActive',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      // Forms are not yet tracked; always return FALSE
+      return NW_FALSE;
+    }
   },
   817: {
     comment: '817\nDJS-OEI 3/28/2004\nReturns the Form Mask of the requested spell. This is used\nto determine if a spell is affected by various Forms, usually\nConsular forms that modify duration/range.',
@@ -5879,7 +6000,11 @@ NWScriptDefK2.Actions = {
     name: 'GetSpellBaseForcePointCost',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const spellRow = GameState.TwoDAManager.datatables.get('spells')?.rows[args[0]];
+      if(!spellRow){ return 0; }
+      return parseInt(spellRow.forcepointcost) || 0;
+    }
   },
   819: {
     comment: '819\nRWT-OEI 04/05/04\nSetting this to TRUE makes it so that the Stealth status is\nleft on characters even when entering cutscenes. By default,\nstealth is removed from anyone taking part in a cutscene.\nALWAYS set this back to FALSE on every End Dialog node in\nthe cutscene you wanted to stay stealthed in. This isn\'t a\nflag that should be left on indefinitely. In fact, it isn\'t\nsaved, so needs to be set/unset on a case by case basis.',
@@ -5893,7 +6018,17 @@ NWScriptDefK2.Actions = {
     name: 'HasLineOfSight',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.VECTOR, NWScriptDataType.VECTOR, NWScriptDataType.OBJECT, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [THREE.Vector3, THREE.Vector3, ModuleObject, ModuleObject]){
+      // Simple walkmesh-based LOS check using the caller's area if available
+      if(!GameState.module?.area){ return NW_FALSE; }
+      if(!args[0] || !args[1]){ return NW_FALSE; }
+      // Use the area walkmesh raycasting helper if available
+      const area = GameState.module.area;
+      if(typeof (area as any).hasLineOfSight === 'function'){
+        return (area as any).hasLineOfSight(args[0], args[1]) ? NW_TRUE : NW_FALSE;
+      }
+      return NW_TRUE; // Assume LOS when we can't check
+    }
   },
   821: {
     comment: '821\nFAK - OEI 5/3/04\nShowDemoScreen, displays a texture, timeout, string and xy for string',
@@ -5907,7 +6042,11 @@ NWScriptDefK2.Actions = {
     name: 'ForceHeartbeat',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).perceptionTimer = 0;
+      }
+    }
   },
   823: {
     comment: '823\nDJS-OEI 5/5/2004\nCreates a Force Sight effect.',
@@ -5954,21 +6093,33 @@ NWScriptDefK2.Actions = {
     name: 'ModifyReflexSavingThrowBase',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).reflexSaveThrow = ((args[0] as ModuleCreature).reflexSaveThrow || 0) + args[1];
+      }
+    }
   },
   829: {
     comment: '829\nAWD-OEI 6/21/2004\nThis function does not return a value.\nThis function modifies the BASE value of the FORTITUDE saving throw for aObject',
     name: 'ModifyFortitudeSavingThrowBase',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).fortitudeSaveThrow = ((args[0] as ModuleCreature).fortitudeSaveThrow || 0) + args[1];
+      }
+    }
   },
   830: {
     comment: '830\nAWD-OEI 6/21/2004\nThis function does not return a value.\nThis function modifies the BASE value of the WILL saving throw for aObject',
     name: 'ModifyWillSavingThrowBase',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).willSaveThrow = ((args[0] as ModuleCreature).willSaveThrow || 0) + args[1];
+      }
+    }
   },
   831: {
     comment: 'DJS-OEI 6/21/2004\n831\nThis function will return the one CExoString parameter\nallowed for the currently running script.',
@@ -5997,7 +6148,19 @@ NWScriptDefK2.Actions = {
     name: 'AdjustCreatureAttributes',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){ return; }
+      const c = args[0] as ModuleCreature;
+      const amount = args[2];
+      switch(args[1]){
+        case 0: (c as any).str  = Math.max(1, ((c as any).str  || 0) + amount); break; // ABILITY_STRENGTH
+        case 1: (c as any).dex  = Math.max(1, ((c as any).dex  || 0) + amount); break; // ABILITY_DEXTERITY
+        case 2: (c as any).con  = Math.max(1, ((c as any).con  || 0) + amount); break; // ABILITY_CONSTITUTION
+        case 3: (c as any).int  = Math.max(1, ((c as any).int  || 0) + amount); break; // ABILITY_INTELLIGENCE
+        case 4: (c as any).wis  = Math.max(1, ((c as any).wis  || 0) + amount); break; // ABILITY_WISDOM
+        case 5: (c as any).cha  = Math.max(1, ((c as any).cha  || 0) + amount); break; // ABILITY_CHARISMA
+      }
+    }
   },
   834: {
     comment: '834\nAWD-OEI 7/08/2004\nThis function raises a creature\'s priority level.',
@@ -6135,7 +6298,12 @@ NWScriptDefK2.Actions = {
     name: 'ChangeObjectAppearance',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as any).appearance = args[1];
+        (args[0] as any).loadModel().catch((e: any) => console.warn('ChangeObjectAppearance loadModel error', e));
+      }
+    }
   },
   851: {
     comment: '851\nGetIsXBox\nReturns TRUE if this script is being executed on the X-Box. Returns FALSE\nif this is the PC build.',
@@ -6158,7 +6326,13 @@ NWScriptDefK2.Actions = {
     name: 'ActionSwitchWeapons',
     type: NWScriptDataType.VOID,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // Toggle the weapon configuration index (0 or 1) on the creature
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        const c = this.caller as any;
+        c.weaponConfig = (c.weaponConfig === 1) ? 0 : 1;
+      }
+    }
   },
   854: {
     comment: '854\nDJS-OEI 8/29/2004\nPlayOverlayAnimation\nThis function will play an overlay animation on a character\neven if the character is moving. This does not cause an action\nto be placed on the queue. The animation passed in must be\ndesignated as an overlay in Animations.2DA.',
@@ -6197,21 +6371,34 @@ NWScriptDefK2.Actions = {
     name: 'DisableHealthRegen',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      // Store disable flag on module for HP regen logic to check
+      if(GameState.module){
+        (GameState.module as any).healthRegenDisabled = !!args[0];
+      }
+    }
   },
   859: {
     comment: '859\nDJS-OEI 9/7/2004\nThis function sets the current Jedi Form on the given creature. This\ncall will do nothing if the target does not know the Form itself.',
     name: 'SetCurrentForm',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as any).currentJediForm = args[1];
+      }
+    }
   },
   860: {
     comment: '860\nRWT-OEI 09/09/04\nThis will disable or enable area transit',
     name: 'SetDisableTransit',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      if(GameState.module?.area){
+        (GameState.module.area as any).transitDisabled = !!args[0];
+      }
+    }
   },
   861: {
     comment: '861\n//RWT-OEI 09/09/04\nThis will set the specific input class.\nThe valid options are:\n0 - Normal PC control\n1 - Mini game control\n2 - GUI control\n3 - Dialog Control\n4 - Freelook control',
@@ -6239,7 +6426,12 @@ NWScriptDefK2.Actions = {
     name: 'DisplayMessageBox',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, string]){
+      // Show the message as a bark from the in-game bark overlay
+      if(GameState.MenuManager.InGameBark && args[0] >= 0){
+        GameState.MenuManager.InGameBark.barkFromStringRef(args[0]);
+      }
+    }
   },
   865: {
     comment: '//865\n//RWT-OEI 09/28/04\n//This function displays a datapad popup. Just pass it the\n//object ID of a datapad.',

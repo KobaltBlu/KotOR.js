@@ -811,6 +811,9 @@ export class ModuleCreature extends ModuleObject {
     if(this.regenTimer <= 0){
       this.regenTimer = this.regenTimerMax;
 
+      // Respect the DisableHealthRegen NWScript flag (fn 858) set on the module.
+      const regenDisabled = GameState.module && (GameState.module as any).healthRegenDisabled;
+
       const regen2DA = GameState.TwoDAManager.datatables.get('regeneration').rows[this.combatData.combatState ? 0 : 1];
       if(regen2DA){
         const regen_force = parseFloat(regen2DA.forceregen);
@@ -818,9 +821,11 @@ export class ModuleCreature extends ModuleObject {
           this.addFP(Math.abs(regen_force));
         }
 
-        const regen_health = parseFloat(regen2DA.healthregen);
-        if(!isNaN(regen_health)){
-          this.addHP(Math.abs(regen_health));
+        if(!regenDisabled){
+          const regen_health = parseFloat(regen2DA.healthregen);
+          if(!isNaN(regen_health)){
+            this.addHP(Math.abs(regen_health));
+          }
         }
       }
     }
@@ -844,14 +849,22 @@ export class ModuleCreature extends ModuleObject {
         this != currentPlayer && 
         !this.facingAnim
       ){
-        this.lookAtObject = currentPlayer;
-        const targetFacing = Math.atan2(
-          this.position.y - currentPlayer.position.y,
-          this.position.x - currentPlayer.position.x
-        ) + Math.PI/2;
-        const diff = Math.abs(Utility.NormalizeRadian(targetFacing - this.rotation.z));
-        if(diff > Math.PI / 6){
-          this.setFacing(targetFacing, false);
+        // If far from the leader, automatically queue a follow action so
+        // companions don't stand frozen when the player walks away.
+        const leaderDist = this.position.distanceTo(currentPlayer.position);
+        if(leaderDist > 5){
+          const followAction = new GameState.ActionFactory.ActionFollowLeader();
+          this.actionQueue.add(followAction);
+        } else {
+          this.lookAtObject = currentPlayer;
+          const targetFacing = Math.atan2(
+            this.position.y - currentPlayer.position.y,
+            this.position.x - currentPlayer.position.x
+          ) + Math.PI/2;
+          const diff = Math.abs(Utility.NormalizeRadian(targetFacing - this.rotation.z));
+          if(diff > Math.PI / 6){
+            this.setFacing(targetFacing, false);
+          }
         }
       }
     }
@@ -3393,6 +3406,7 @@ export class ModuleCreature extends ModuleObject {
 
     this.unequipSlot(slot);
     item.onEquip(this);
+    (this as any).lastItemEquipped = item;
     await item.loadModel();
     switch(slot){
       case ModuleCreatureArmorSlot.ARMOR:

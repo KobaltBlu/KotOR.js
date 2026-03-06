@@ -94,7 +94,21 @@ export class ActionCombat extends Action {
         this.owner.actionQueue.unshift(spellAction);
       break;
       case CombatActionType.ITEM_CAST_SPELL:
-        //TODO
+        //Use ActionItemCastSpell to fire the item's spell effect
+        const itemSpellAction = new GameState.ActionFactory.ActionItemCastSpell();
+        itemSpellAction.setParameter(0, ActionParameterType.DWORD, combatAction.target?.id || ModuleObjectConstant.OBJECT_INVALID);
+        itemSpellAction.setParameter(1, ActionParameterType.DWORD, GameState.module?.area?.id || ModuleObjectConstant.OBJECT_INVALID);
+        itemSpellAction.setParameter(2, ActionParameterType.FLOAT, combatAction.target?.position?.x || 0);
+        itemSpellAction.setParameter(3, ActionParameterType.FLOAT, combatAction.target?.position?.y || 0);
+        itemSpellAction.setParameter(4, ActionParameterType.FLOAT, combatAction.target?.position?.z || 0);
+        itemSpellAction.setParameter(5, ActionParameterType.INT, combatAction.spell ? combatAction.spell.id : 0);
+        itemSpellAction.setParameter(6, ActionParameterType.INT, 0); //casterLevel
+        itemSpellAction.setParameter(7, ActionParameterType.FLOAT, 0); //delay
+        itemSpellAction.setParameter(8, ActionParameterType.INT, combatAction.projectilePath);
+        itemSpellAction.setParameter(9, ActionParameterType.INT, combatAction.spell ? combatAction.spell.id : 0);
+        itemSpellAction.setParameter(10, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
+        itemSpellAction.isUserAction = combatAction.isUserAction;
+        this.owner.actionQueue.unshift(itemSpellAction);
       break;
       case CombatActionType.ITEM_EQUIP:
         const equipAction = new GameState.ActionFactory.ActionEquipItem();

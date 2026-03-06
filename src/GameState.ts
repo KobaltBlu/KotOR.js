@@ -196,8 +196,10 @@ export class GameState implements EngineContext {
   static clampedDelta: number = 0;
 
   static SaveGame: SaveGame;
+
+  /** Callback set at init-time to invoke SaveGame.AutoSave without a circular import. */
+  static AutoSaveFn: () => Promise<void> = async () => {};
   
-  static currentGamepad: Gamepad;
   static videoEffect: number = -1;
   static onScreenShot?: Function;
   static time: number = 0;
@@ -1014,7 +1016,16 @@ export class GameState implements EngineContext {
     GameState.VideoManager.queueMovie(sMovie6);
     GameState.SetEngineMode(EngineMode.LOADING);
     
-    if(GameState.module){
+    if(GameState.module && !GameState.isLoadingSave){
+      // Auto-save before the transition (non-blocking on failure)
+      await GameState.AutoSaveFn();
+      try{ await GameState.module.save(); }catch(e){
+        console.error(e);
+      }
+      try{ GameState.module.dispose(); }catch(e){
+        console.error(e);
+      }
+    } else if(GameState.module){
       try{ await GameState.module.save(); }catch(e){
         console.error(e);
       }

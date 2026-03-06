@@ -349,7 +349,7 @@ export class SaveGame {
     //Load GlobalVars
     await this.loadGlobalVARS();
     //Load Inventory
-    // await this.loadInventory();
+    await this.loadInventory();
     //Load PartyTable
     await this.loadPartyTable();
     //Load PIFO if it exists
@@ -566,7 +566,7 @@ export class SaveGame {
     console.log('SaveGame', 'Loading Inventory...');
 
     try{
-      const buffer = await GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'inventory.res'));
+      const buffer = await GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res'));
       this.inventory = new GFFObject(buffer);
       let invArr = this.inventory.RootNode.getFieldByLabel('ItemList').getChildStructs();
       for(let i = 0; i < invArr.length; i++){
@@ -1142,7 +1142,46 @@ export class SaveGame {
     const existingName = save.getSaveName();
     await SaveGame.SaveCurrentGame(existingName, replaceId);
   }
-  
+
+  /**
+   * Writes the current game state to the dedicated AUTOSAVE slot (000001 - AUTOSAVE).
+   *
+   * Called automatically before every module transition so that the player can
+   * always load back to the beginning of the area they just left.  Silently
+   * swallows errors so that a failed autosave never blocks the transition.
+   */
+  static async AutoSave(): Promise<void> {
+    if(!GameState.module){ return; }
+    const AUTO_DIR_NAME = '000001 - AUTOSAVE';
+    const saveDir = path.join(SaveGame.base_directory, AUTO_DIR_NAME);
+    try{
+      if(!(await GameFileSystem.exists(SaveGame.base_directory))){
+        await GameFileSystem.mkdir(SaveGame.base_directory);
+      }
+      if(!(await GameFileSystem.exists(saveDir))){
+        await GameFileSystem.mkdir(saveDir);
+      }
+
+      await GameState.module.save();
+      await CurrentGame.ExportToSaveFolder(saveDir);
+      await SaveGame.ExportSaveNFO(saveDir, 'AUTOSAVE');
+      await SaveGame.ExportGlobalVars(saveDir);
+      await GameState.PartyManager.Export(saveDir);
+
+      // Refresh/add the entry in the in-memory saves list
+      const entry = new SaveGame(AUTO_DIR_NAME);
+      await entry.loadNFO();
+      const idx = SaveGame.saves.findIndex(s => s.folderName === AUTO_DIR_NAME);
+      if(idx >= 0){
+        SaveGame.saves[idx] = entry;
+      }else{
+        SaveGame.saves.unshift(entry);
+      }
+    }catch(e){
+      console.warn('AutoSave failed (non-fatal):', e);
+    }
+  }
+
   /** The directory path for the current save game (used internally) */
   static directory: string;
 
