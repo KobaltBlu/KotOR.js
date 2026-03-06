@@ -784,6 +784,15 @@ export class PartyManager {
     if(cIdx > -1){
       GameState.module.area.creatures.splice(cIdx, 1);
     }
+    // Move the creature's 3D container from the world creatures group into
+    // the party group so it renders correctly alongside the player.
+    if(creature.container){
+      GameState.group.creatures.remove(creature.container);
+      GameState.group.party.add(creature.container);
+    }
+    // Queue a follow-leader action so the companion immediately trails the party leader.
+    const followAction = new GameState.ActionFactory.ActionFollowLeader();
+    creature.actionQueue.add(followAction);
   }
 
   /**

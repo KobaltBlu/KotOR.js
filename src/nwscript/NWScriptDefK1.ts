@@ -3771,7 +3771,20 @@ NWScriptDefK1.Actions = {
     comment: "288: Runs the action 'UseSkill' on the current creature\nUse nSkill on oTarget.\n- nSkill: SKILL_*\n- oTarget\n- nSubSkill: SUBSKILL_*\n- oItemUsed: Item to use in conjunction with the skill\n",
     name: "ActionUseSkill",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject, number, ModuleObject]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+      // Queue an ActionUseObject targeting the skill target; the target's
+      // use() handler will apply the relevant skill check.
+      const useAction = new GameState.ActionFactory.ActionUseObject();
+      useAction.setParameter(0, ActionParameterType.DWORD, args[1]?.id ?? 0);
+      (useAction as any).skillId = args[0];
+      (useAction as any).subSkillId = args[2];
+      (useAction as any).itemUsed = args[3];
+      this.caller.actionQueue.add(useAction);
+    }
   },
   289:{
     comment: "289: Determine whether oSource sees oTarget.\n",
@@ -6252,13 +6265,47 @@ NWScriptDefK1.Actions = {
     comment: "501: The action subject will fake casting a spell at oTarget; the conjure and cast\nanimations and visuals will occur, nothing else.\n- nSpell\n- oTarget\n- nProjectilePathType: PROJECTILE_PATH_TYPE_*\n",
     name: "ActionCastFakeSpellAtObject",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+      // Face the target
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
+        const dx = args[1].position.x - this.caller.position.x;
+        const dy = args[1].position.y - this.caller.position.y;
+        this.caller.setFacing( Math.atan2(dy, dx) * (180 / Math.PI), true );
+      }
+      // Play the cast animation (fire-and-forget)
+      const castAnim = new GameState.ActionFactory.ActionPlayAnimation();
+      castAnim.setParameter(0, ActionParameterType.INT, this.caller.getAnimationNameById(39)); // 39 = castout1
+      castAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
+      castAnim.setParameter(2, ActionParameterType.FLOAT, 0);
+      this.caller.actionQueue.add(castAnim);
+    }
   },
   502:{
     comment: "502: The action subject will fake casting a spell at lLocation; the conjure and\ncast animations and visuals will occur, nothing else.\n- nSpell\n- lTarget\n- nProjectilePathType: PROJECTILE_PATH_TYPE_*\n",
     name: "ActionCastFakeSpellAtLocation",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, EngineLocation, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+      // Face the target location
+      if(args[1]){
+        const dx = args[1].position.x - this.caller.position.x;
+        const dy = args[1].position.y - this.caller.position.y;
+        this.caller.setFacing( Math.atan2(dy, dx) * (180 / Math.PI), true );
+      }
+      // Play the cast animation (fire-and-forget)
+      const castAnim = new GameState.ActionFactory.ActionPlayAnimation();
+      castAnim.setParameter(0, ActionParameterType.INT, this.caller.getAnimationNameById(39)); // 39 = castout1
+      castAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
+      castAnim.setParameter(2, ActionParameterType.FLOAT, 0);
+      this.caller.actionQueue.add(castAnim);
+    }
   },
   503:{
     comment: "503: CutsceneAttack\nThis function allows the designer to specify exactly what's going to happen in a combat round\nThere are no guarentees made that the animation specified here will be correct - only that it will be played,\nso it is up to the designer to ensure that they have selected the right animation\nIt relies upon constants specified above for the attack result\n",

@@ -268,6 +268,10 @@ export class GameInitializer {
     await SaveGame.GetSaveGames();
     PerformanceMonitor.stop('SaveGame.GetSaveGames');
 
+    // Wire the auto-save callback so that GameState.LoadModule can trigger it
+    // without creating a circular import between GameState and SaveGame.
+    GameState.AutoSaveFn = () => SaveGame.AutoSave();
+
     VideoEffectManager.Init2DA(TwoDAManager.datatables.get('videoeffects') as any);
   }
 
