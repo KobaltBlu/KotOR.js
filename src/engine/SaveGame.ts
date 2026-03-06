@@ -13,7 +13,6 @@ import { Utility } from "../utility/Utility";
 import EngineLocation from "./EngineLocation";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { ResourceTypes } from "../KotOR";
-import { exists } from "fs";
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
 
@@ -474,24 +473,25 @@ export class SaveGame {
       );
     }
 
-    let boolBytes = this.globalVars.RootNode.getFieldByLabel('ValBoolean').getVoid();
-    let catBooleans = this.globalVars.getFieldByLabel('CatBoolean').getChildStructs();
-    let maxBits = boolBytes.length * 8;
-    for(let i = 0; i < maxBits; i++){
-      for(let j = 0; j < 8; j++){
-        let index = (i * 8) + j;
-        let bit = (boolBytes[i] >> 7-j) & 1; //reverse the bit index because of ENDIANS -_-
+    const boolBytes = this.globalVars.RootNode.getFieldByLabel('ValBoolean').getVoid();
+    const catBooleans = this.globalVars.getFieldByLabel('CatBoolean').getChildStructs();
+    const maxBits = boolBytes.length * 8;
+    const boolCount = Math.min(maxBits, catBooleans.length);
 
-        let boolCat = catBooleans[index];
-        if(boolCat){
-          let boolLabel = boolCat.getFieldByLabel('Name').getValue();
-          let value = !!bit;
-          if(GameState.GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
-            GameState.GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
-          }else{
-            GameState.GlobalVariableManager.Globals.Boolean.set(boolLabel.toLowerCase(), {name: boolLabel.toLowerCase(), value: value});
-            console.warn('Global Boolean: missing', boolLabel.toLowerCase(), value);
-          }
+    for(let index = 0; index < boolCount; index++){
+      const byteOffset = Math.floor(index / 8);
+      const bitIndex = 7 - (index % 8);
+      const bit = (boolBytes[byteOffset] >> bitIndex) & 1; // reverse the bit index because of ENDIANS -_-
+      const boolCat = catBooleans[index];
+
+      if(boolCat){
+        const boolLabel = boolCat.getFieldByLabel('Name').getValue();
+        const value = !!bit;
+        if(GameState.GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
+          GameState.GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
+        }else{
+          GameState.GlobalVariableManager.Globals.Boolean.set(boolLabel.toLowerCase(), {name: boolLabel.toLowerCase(), value: value});
+          console.warn('Global Boolean: missing', boolLabel.toLowerCase(), value);
         }
       }
     }
@@ -1074,12 +1074,21 @@ export class SaveGame {
   static async GetSaveGames(){
     try{
       const savegamesRAW = await GameFileSystem.readdir('Saves', {list_dirs: false, recursive: true});
-      const savegames = savegamesRAW.filter((path) => path.includes('SAVEGAME.sav'));
+      const savegames = savegamesRAW.filter((entryPath) => /(?:^|[\\/])SAVEGAME\.sav$/i.test(entryPath));
+
+      SaveGame.saves = [];
+      SaveGame.NEXT_SAVE_ID = 1;
 
       for(let i = 0; i < savegames.length; i++){
-        const saveFolder = savegames[i].replace(path.sep+'SAVEGAME.sav', '');
-        SaveGame.AddSaveGame( new SaveGame(saveFolder) );
+        const saveFolder = savegames[i].replace(/[\\/]SAVEGAME\.sav$/i, '');
+        const saveGame = new SaveGame(saveFolder);
+
+        if(SaveGame.FolderNameRegex.test(saveGame.folderName)){
+          SaveGame.AddSaveGame(saveGame);
+        }
       }
+
+      SaveGame.saves.sort((a, b) => a.getSaveNumber() - b.getSaveNumber());
     }catch(e){
       try{
         //Make the default savegame directory
