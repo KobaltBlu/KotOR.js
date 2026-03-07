@@ -361,7 +361,7 @@ export class SaveGame {
     await this.loadPC();
     //Load The Last Module
     console.log('SaveGame', this.getLastModule(), 'Loading Module...');
-    GameState.LoadModule(this.getLastModule(), null);
+    await GameState.LoadModule(this.getLastModule(), null);
     console.log('SaveGame', 'Load Complete!');
   }
 

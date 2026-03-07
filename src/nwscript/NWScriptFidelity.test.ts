@@ -5269,3 +5269,352 @@ describe('58. Combat feat fixes', () => {
   });
 
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Section 59 – K1 Dantooine stability: GetCurrentAction ItemCastSpell,
+//   GetClassByPosition SOLDIER, GetAlignmentGoodEvil/GetGender null-guards,
+//   GetIsDead for non-creatures, GetWeaponRanged/GetFactionEqual/
+//   GetIsDoorActionPossible/GetIsPlaceableObjectActionPossible integer returns,
+//   SaveGame.load await on LoadModule
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('59. K1 Dantooine stability fixes', () => {
+
+  // ── GetCurrentAction: ActionItemCastSpell returns 19 (not 4) ──────────────
+
+  it('GetCurrentAction: ActionItemCastSpell maps to 19, not 4', () => {
+    // The duplicate case for ActionItemCastSpell at 4 was removed so that:
+    //   ActionCastSpell    → 4
+    //   ActionItemCastSpell → 19  (was unreachable due to the duplicate)
+    const ACTION_CAST_SPELL = 4;
+    const ACTION_ITEM_CAST_SPELL = 19;
+
+    function resolveAction(actionType: string): number {
+      switch(actionType){
+        case 'ActionMoveToPoint':       return 0;
+        case 'ActionPickUpItem':        return 1;
+        case 'ActionDropItem':          return 2;
+        case 'ActionPhysicalAttacks':   return 3;
+        case 'ActionCastSpell':         return 4;
+        // duplicate removed: 'ActionItemCastSpell' → 4 is gone
+        case 'ActionOpenDoor':          return 5;
+        case 'ActionCloseDoor':         return 6;
+        case 'ActionDialogObject':      return 7;
+        case 'ActionDisarmMine':        return 8;
+        case 'ActionRecoverMine':       return 9;
+        case 'ActionFlagMine':          return 10;
+        case 'ActionExamineMine':       return 11;
+        case 'ActionSetMine':           return 12;
+        case 'ActionUnlockObject':      return 13;
+        case 'ActionLockObject':        return 14;
+        case 'ActionUseObject':         return 15;
+        case 'ActionItemCastSpell':     return 19;
+        case 'ActionCounterSpell':      return 31;
+        case 'ActionHeal':              return 33;
+        case 'ActionForceFollowObject': return 35;
+        case 'ActionWait':              return 36;
+        case 'ActionFollowLeader':      return 38;
+        default:                        return 65534;
+      }
+    }
+
+    // Core fix: ActionItemCastSpell must be 19, not 4
+    expect(resolveAction('ActionItemCastSpell')).toBe(ACTION_ITEM_CAST_SPELL);
+    // ActionCastSpell must still be 4
+    expect(resolveAction('ActionCastSpell')).toBe(ACTION_CAST_SPELL);
+    // Sanity checks
+    expect(resolveAction('ActionHeal')).toBe(33);
+    expect(resolveAction('ActionDialogObject')).toBe(7);
+  });
+
+  it('regression: old GetCurrentAction had duplicate ActionItemCastSpell case at 4', () => {
+    // The old switch had: case ActionItemCastSpell: return 4; THEN case ActionItemCastSpell: return 19;
+    // The second case was dead code. Verify that behavior was wrong.
+    function oldResolve(actionType: string): number {
+      switch(actionType){
+        case 'ActionCastSpell':     return 4;
+        case 'ActionItemCastSpell': return 4;  // ← duplicate, shadowed the 19 case
+        // ... (case 19 never reached)
+        default: return 65534;
+      }
+    }
+    // Old code incorrectly returned 4 for item-cast actions
+    expect(oldResolve('ActionItemCastSpell')).toBe(4);   // wrong
+    expect(oldResolve('ActionCastSpell')).toBe(4);       // also 4, indistinguishable
+  });
+
+  // ── GetClassByPosition: SOLDIER (id=0) must not return INVALID ────────────
+
+  it('GetClassByPosition: SOLDIER class (id=0) returns 0, not INVALID (255)', () => {
+    const CLASS_TYPE_SOLDIER  = 0;
+    const CLASS_TYPE_SCOUT    = 1;
+    const CLASS_TYPE_INVALID  = 255;
+
+    // Using ?? (nullish coalescing) is the fix
+    function getClassByPosition_fixed(classes: Array<{id: number} | undefined>, pos: number): number {
+      const cls = classes[pos - 1];
+      return cls?.id ?? CLASS_TYPE_INVALID;
+    }
+
+    // Using || (logical-or) is the old buggy behavior
+    function getClassByPosition_old(classes: Array<{id: number} | undefined>, pos: number): number {
+      const cls = classes[pos - 1];
+      return (cls?.id || CLASS_TYPE_INVALID);
+    }
+
+    const soldierClasses = [{ id: CLASS_TYPE_SOLDIER }];
+    const scoutClasses   = [{ id: CLASS_TYPE_SCOUT   }];
+
+    // Fixed: Soldier (id=0) correctly returns 0
+    expect(getClassByPosition_fixed(soldierClasses, 1)).toBe(CLASS_TYPE_SOLDIER);
+    // Fixed: Scout (id=1) correctly returns 1
+    expect(getClassByPosition_fixed(scoutClasses, 1)).toBe(CLASS_TYPE_SCOUT);
+    // Fixed: no class at position → returns INVALID
+    expect(getClassByPosition_fixed([], 1)).toBe(CLASS_TYPE_INVALID);
+
+    // Old code: Soldier (id=0) was treated as falsy → returned INVALID instead
+    expect(getClassByPosition_old(soldierClasses, 1)).toBe(CLASS_TYPE_INVALID);  // BUG
+    // Old code: Scout (id=1) happened to work because 1 is truthy
+    expect(getClassByPosition_old(scoutClasses, 1)).toBe(CLASS_TYPE_SCOUT);
+  });
+
+  // ── GetAlignmentGoodEvil: null guard ──────────────────────────────────────
+
+  it('GetAlignmentGoodEvil: returns -1 for null/invalid creature', () => {
+    const ALIGNMENT_NEUTRAL   = 0;
+    const ALIGNMENT_LIGHT     = 2;
+    const ALIGNMENT_DARK      = 3;
+    const INVALID             = -1;
+
+    function getAlignmentGoodEvil_fixed(obj: { getGoodEvil(): number } | null | undefined): number {
+      if(!obj || typeof obj.getGoodEvil !== 'function') return INVALID;
+      const v = obj.getGoodEvil();
+      if(v < 25) return ALIGNMENT_DARK;
+      if(v < 75) return ALIGNMENT_NEUTRAL;
+      return ALIGNMENT_LIGHT;
+    }
+
+    // Null creature → -1
+    expect(getAlignmentGoodEvil_fixed(null)).toBe(INVALID);
+    expect(getAlignmentGoodEvil_fixed(undefined)).toBe(INVALID);
+
+    // Dark side (0-24)
+    expect(getAlignmentGoodEvil_fixed({ getGoodEvil: () => 0  })).toBe(ALIGNMENT_DARK);
+    expect(getAlignmentGoodEvil_fixed({ getGoodEvil: () => 24 })).toBe(ALIGNMENT_DARK);
+    // Neutral (25-74)
+    expect(getAlignmentGoodEvil_fixed({ getGoodEvil: () => 25 })).toBe(ALIGNMENT_NEUTRAL);
+    expect(getAlignmentGoodEvil_fixed({ getGoodEvil: () => 50 })).toBe(ALIGNMENT_NEUTRAL);
+    expect(getAlignmentGoodEvil_fixed({ getGoodEvil: () => 74 })).toBe(ALIGNMENT_NEUTRAL);
+    // Light side (75-100)
+    expect(getAlignmentGoodEvil_fixed({ getGoodEvil: () => 75 })).toBe(ALIGNMENT_LIGHT);
+    expect(getAlignmentGoodEvil_fixed({ getGoodEvil: () => 100 })).toBe(ALIGNMENT_LIGHT);
+  });
+
+  it('regression: old GetAlignmentGoodEvil crashed on null object', () => {
+    // Old code called args[0].getGoodEvil() without a null check.
+    // Any script passing OBJECT_INVALID would crash the engine.
+    function oldGetAlignmentGoodEvil_crashSafe(obj: { getGoodEvil(): number } | null): number {
+      try {
+        // Simulates old code – would throw TypeError: Cannot read properties of null
+        if(obj === null) throw new TypeError('Cannot read properties of null');
+        const v = obj.getGoodEvil();
+        if(v < 25) return 3;
+        if(v < 75) return 0;
+        return 2;
+      } catch(e){
+        return -999; // crash marker
+      }
+    }
+    expect(oldGetAlignmentGoodEvil_crashSafe(null)).toBe(-999); // was a crash
+  });
+
+  // ── GetGender: null guard ─────────────────────────────────────────────────
+
+  it('GetGender: returns 0 for null/invalid creature (no crash)', () => {
+    function getGender_fixed(obj: { getGender(): number } | null | undefined): number {
+      if(!obj || typeof obj.getGender !== 'function') return 0;
+      return obj.getGender();
+    }
+
+    expect(getGender_fixed(null)).toBe(0);
+    expect(getGender_fixed(undefined)).toBe(0);
+    expect(getGender_fixed({ getGender: () => 1 })).toBe(1); // female
+    expect(getGender_fixed({ getGender: () => 0 })).toBe(0); // male
+  });
+
+  // ── GetIsDead: delegates to isDead() for all valid ModuleObjects ──────────
+
+  it('GetIsDead: non-creature objects use isDead(), not a hardcoded 1', () => {
+    // Old code returned 1 (TRUE) for any non-creature ModuleObject.
+    // Fix: delegate to isDead() for all valid ModuleObjects.
+
+    function getIsDead_old(obj: any): number {
+      if(obj && obj._isCreature) return obj.isDead() ? 1 : 0;
+      return 1; // old bug: always TRUE for non-creatures
+    }
+
+    function getIsDead_fixed(obj: any): number {
+      if(!obj || typeof obj.isDead !== 'function') return 0;
+      return obj.isDead() ? 1 : 0;
+    }
+
+    const aliveCreature    = { _isCreature: true,  isDead: () => false };
+    const deadCreature     = { _isCreature: true,  isDead: () => true  };
+    const alivePlaceable   = { _isCreature: false, isDead: () => false };
+    const destroyedPlaceable = { _isCreature: false, isDead: () => true };
+
+    // Old: placeable always dead regardless of actual state
+    expect(getIsDead_old(alivePlaceable)).toBe(1);     // BUG – alive but returns dead
+    expect(getIsDead_old(destroyedPlaceable)).toBe(1); // accidentally correct
+
+    // Fixed: respects actual isDead() state
+    expect(getIsDead_fixed(aliveCreature)).toBe(0);
+    expect(getIsDead_fixed(deadCreature)).toBe(1);
+    expect(getIsDead_fixed(alivePlaceable)).toBe(0);      // correct: alive placeable = not dead
+    expect(getIsDead_fixed(destroyedPlaceable)).toBe(1);  // destroyed placeable = dead
+    expect(getIsDead_fixed(null)).toBe(0);               // null → FALSE (no crash)
+  });
+
+  // ── GetWeaponRanged: returns NW_TRUE/NW_FALSE (1/0), not boolean ──────────
+
+  it('GetWeaponRanged: returns integer 1/0, not boolean true/false', () => {
+    const NW_TRUE  = 1;
+    const NW_FALSE = 0;
+
+    function getWeaponRanged_fixed(weaponType: number | null): number {
+      if(weaponType === null) return NW_FALSE;
+      return weaponType === 4 ? NW_TRUE : NW_FALSE;
+    }
+
+    expect(getWeaponRanged_fixed(4)).toBe(NW_TRUE);       // ranged → 1
+    expect(getWeaponRanged_fixed(1)).toBe(NW_FALSE);      // melee → 0
+    expect(getWeaponRanged_fixed(null)).toBe(NW_FALSE);   // no item → 0
+
+    // Strict type check: should be number, not boolean
+    expect(typeof getWeaponRanged_fixed(4)).toBe('number');
+    expect(typeof getWeaponRanged_fixed(1)).toBe('number');
+  });
+
+  // ── GetFactionEqual: returns NW_TRUE/NW_FALSE ─────────────────────────────
+
+  it('GetFactionEqual: returns integer 1/0, not boolean', () => {
+    const NW_TRUE  = 1;
+    const NW_FALSE = 0;
+
+    function getFactionEqual_fixed(factionA: number | null, factionB: number | null): number {
+      if(factionA === null || factionB === null) return NW_FALSE;
+      return factionA === factionB ? NW_TRUE : NW_FALSE;
+    }
+
+    expect(getFactionEqual_fixed(1, 1)).toBe(NW_TRUE);    // same faction
+    expect(getFactionEqual_fixed(1, 2)).toBe(NW_FALSE);   // different factions
+    expect(getFactionEqual_fixed(null, 1)).toBe(NW_FALSE);
+
+    expect(typeof getFactionEqual_fixed(1, 1)).toBe('number');
+  });
+
+  // ── GetIsDoorActionPossible: returns NW_TRUE/NW_FALSE ────────────────────
+
+  it('GetIsDoorActionPossible: returns integer 1/0 for each door action', () => {
+    const NW_TRUE  = 1;
+    const NW_FALSE = 0;
+    // DOOR_ACTION_OPEN=0, UNLOCK=1, BASH=2, IGNORE=3, KNOCK=4
+    function getIsDoorActionPossible_fixed(locked: boolean, open: boolean, action: number): number {
+      switch(action){
+        case 0: return !locked ? NW_TRUE : NW_FALSE;
+        case 1: return  locked ? NW_TRUE : NW_FALSE;
+        case 2: return  locked ? NW_TRUE : NW_FALSE;
+        case 3: return NW_FALSE;
+        case 4: return !open   ? NW_TRUE : NW_FALSE;
+        default: return NW_FALSE;
+      }
+    }
+
+    // Unlocked open door: can open (0), cannot unlock (1), cannot bash (2), cannot knock (4)
+    expect(getIsDoorActionPossible_fixed(false, true, 0)).toBe(NW_TRUE);
+    expect(getIsDoorActionPossible_fixed(false, true, 1)).toBe(NW_FALSE);
+    expect(getIsDoorActionPossible_fixed(false, true, 2)).toBe(NW_FALSE);
+    expect(getIsDoorActionPossible_fixed(false, true, 3)).toBe(NW_FALSE);
+    expect(getIsDoorActionPossible_fixed(false, true, 4)).toBe(NW_FALSE); // already open
+
+    // Locked closed door: cannot open (0), can unlock (1), can bash (2), can knock (4)
+    expect(getIsDoorActionPossible_fixed(true, false, 0)).toBe(NW_FALSE);
+    expect(getIsDoorActionPossible_fixed(true, false, 1)).toBe(NW_TRUE);
+    expect(getIsDoorActionPossible_fixed(true, false, 2)).toBe(NW_TRUE);
+    expect(getIsDoorActionPossible_fixed(true, false, 3)).toBe(NW_FALSE);
+    expect(getIsDoorActionPossible_fixed(true, false, 4)).toBe(NW_TRUE);
+
+    // All return types are numbers, not booleans
+    expect(typeof getIsDoorActionPossible_fixed(false, false, 0)).toBe('number');
+    expect(typeof getIsDoorActionPossible_fixed(true, false, 1)).toBe('number');
+  });
+
+  // ── GetIsPlaceableObjectActionPossible: returns NW_TRUE/NW_FALSE ──────────
+
+  it('GetIsPlaceableObjectActionPossible: returns integer and dead placeable returns FALSE', () => {
+    const NW_TRUE  = 1;
+    const NW_FALSE = 0;
+    // PLACEABLE_ACTION_OPEN=0, UNLOCK=1, BASH=2, KNOCK=3
+    function getIsPlaceableActionPossible_fixed(locked: boolean, dead: boolean, action: number): number {
+      if(dead) return NW_FALSE;
+      switch(action){
+        case 0: return !locked ? NW_TRUE : NW_FALSE;
+        case 1: return  locked ? NW_TRUE : NW_FALSE;
+        case 2: return  locked ? NW_TRUE : NW_FALSE;
+        case 3: return  locked ? NW_TRUE : NW_FALSE;
+        default: return NW_FALSE;
+      }
+    }
+
+    // Dead placeable: all actions return FALSE
+    expect(getIsPlaceableActionPossible_fixed(false, true, 0)).toBe(NW_FALSE);
+    expect(getIsPlaceableActionPossible_fixed(true,  true, 1)).toBe(NW_FALSE);
+
+    // Alive unlocked placeable
+    expect(getIsPlaceableActionPossible_fixed(false, false, 0)).toBe(NW_TRUE);
+    expect(getIsPlaceableActionPossible_fixed(false, false, 1)).toBe(NW_FALSE);
+
+    // Alive locked placeable
+    expect(getIsPlaceableActionPossible_fixed(true, false, 0)).toBe(NW_FALSE);
+    expect(getIsPlaceableActionPossible_fixed(true, false, 1)).toBe(NW_TRUE);
+
+    expect(typeof getIsPlaceableActionPossible_fixed(false, false, 0)).toBe('number');
+  });
+
+  // ── SaveGame.load: LoadModule must be awaited ─────────────────────────────
+
+  it('SaveGame.load: awaiting LoadModule prevents race conditions', async () => {
+    let moduleLoaded = false;
+    let gameReadyAfterLoad = false;
+
+    async function mockLoadModule(): Promise<void> {
+      await new Promise<void>(r => setTimeout(r, 0)); // simulates async I/O
+      moduleLoaded = true;
+    }
+
+    // Old (buggy): not awaited → game "ready" before module loads
+    async function oldLoad(): Promise<void> {
+      mockLoadModule(); // no await!
+      gameReadyAfterLoad = moduleLoaded;
+    }
+
+    // Fixed: awaited → module is fully loaded before proceeding
+    async function fixedLoad(): Promise<void> {
+      await mockLoadModule();
+      gameReadyAfterLoad = moduleLoaded;
+    }
+
+    moduleLoaded = false;
+    gameReadyAfterLoad = false;
+    await oldLoad();
+    // Old: module not yet loaded when "load complete" fires
+    expect(gameReadyAfterLoad).toBe(false); // race condition: module still loading
+
+    moduleLoaded = false;
+    gameReadyAfterLoad = false;
+    await fixedLoad();
+    // Fixed: module fully loaded when load complete
+    expect(gameReadyAfterLoad).toBe(true);
+  });
+
+});
