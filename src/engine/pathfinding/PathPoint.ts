@@ -16,6 +16,15 @@ import type { ModuleObject } from '../../module/ModuleObject';
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class PathPoint {
+  /**
+   * Shared scratch Line3 – avoids a heap allocation on every LOS check.
+   * Safe in single-threaded JS: `hasLOS` and `closestPointFromLine` are not
+   * recursive and are never called from an async context.
+   */
+  private static _tempLine3 = new THREE.Line3();
+  /** Shared scratch Vector3 – used by closestPointFromLine. */
+  private static _tempVec3 = new THREE.Vector3();
+
   id: number;
   connections: PathPoint[];
   first_connection: number;
@@ -79,7 +88,8 @@ export class PathPoint {
     if(!this.area)
       return true;
 
-    const path_line = new THREE.Line3(this.vector, point_b.vector);
+    PathPoint._tempLine3.set(this.vector, point_b.vector);
+    const path_line = PathPoint._tempLine3;
     /**
      * Check line intersects walkable edges
      */
@@ -128,9 +138,8 @@ export class PathPoint {
   }
 
   closestPointFromLine(point_b: PathPoint, target: THREE.Vector3): PathPoint {
-    const _tempPoint= new THREE.Vector3();
-    const line3 = new THREE.Line3(this.vector, point_b.vector)
-    line3.closestPointToPoint(target, true, _tempPoint);
+    PathPoint._tempLine3.set(this.vector, point_b.vector);
+    PathPoint._tempLine3.closestPointToPoint(target, true, PathPoint._tempVec3);
     return PathPoint.FromVector3(target);
   }
 

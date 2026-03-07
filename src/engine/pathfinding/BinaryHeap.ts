@@ -54,6 +54,11 @@ export class BinaryHeap<T> {
     return this.content.length;
   }
 
+  /** Removes all elements from the heap without reallocating the backing array. */
+  clear() {
+    this.content.length = 0;
+  }
+
   rescoreElement(node: T) {
     this.sinkDown(this.content.indexOf(node));
   }
