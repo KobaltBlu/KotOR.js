@@ -1730,7 +1730,6 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [number, number, EngineLocation, number, number, THREE.Vector3]){
       this.objectInSphapeIndex.set(args[0], 0);
       const ls = GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], 0);
-      console.log('GetFirstObjectInShape', ls, args);
       return ls;
     }
   },
@@ -1743,7 +1742,6 @@ NWScriptDefK1.Actions = {
       const nextId = this.objectInSphapeIndex.get(args[0]) + 1;
       this.objectInSphapeIndex.set(args[0], nextId);
       const ls = GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], nextId);
-      console.log('GetNextObjectInShape', ls, args, nextId);
       return ls;
     }
   },
@@ -2372,8 +2370,6 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
         args[0].setListening( args[1] ? true : false );
-      }else{
-        console.log('SetListening', this.name, this.caller, args[0], args[1]);
       }
     }
   },
@@ -2385,8 +2381,6 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, string, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
         args[0].setListeningPattern( args[1], args[2] );
-      }else{
-        console.log('SetListenPattern', this.name, this.caller, args[0], args[1], args[2]);
       }
     }
   },
@@ -2665,7 +2659,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      console.log('ActionJumpToObject')
       if(!(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature))) return;
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))) return;
 
@@ -2785,7 +2778,6 @@ NWScriptDefK1.Actions = {
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
         this.caller.actionQueue.add( new GameState.ActionFactory.ActionPauseDialog() );
       }
-      console.log('script', this.name, 'PauseConversation', this.caller);
     }
   },
   206:{
@@ -2797,7 +2789,6 @@ NWScriptDefK1.Actions = {
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
         this.caller.actionQueue.add( new GameState.ActionFactory.ActionResumeDialog() );
       }
-      console.log('script', this.name, 'ResumeConversation', this.caller);
     }
   },
   207:{
@@ -2890,7 +2881,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.LOCATION],
     action: function(this: NWScriptInstance, args: [EngineLocation]){
-      console.log('ActionJumpToLocation', args, this.caller);
       if(!(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature))) return;
 
       if(!(args[0] instanceof EngineLocation)){
@@ -3232,7 +3222,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
-      console.log("DestroyObject", args[0], args[1], args[2], args[3]);
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
         args[0].setWillDestroy(true);
         args[0].setDelayUntilDestroy(args[1]);
@@ -3828,6 +3817,7 @@ NWScriptDefK1.Actions = {
         return (args[0] as ModuleEncounter).active;
       }
       return NW_FALSE;
+    }
   },
   277:{
     comment: "277: Set oEncounter's active state to nNewValue.\n- nNewValue: TRUE/FALSE\n- oEncounter\n",
@@ -5200,7 +5190,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      console.log('JumpToObject', args);
       if(!(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature))) return;
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))) return;
 
@@ -6244,9 +6233,9 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))
-        return args[0].plot;
+        return args[0].plot ? NW_TRUE : NW_FALSE;
 
-      return 0;
+      return NW_FALSE;
     }
   },
   456:{
@@ -6432,7 +6421,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      console.log('EffectHorrified', this.caller);
       let effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
@@ -9338,7 +9326,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number, number, number, number]){
-      console.log('SetGlobalFadeIn', args[1], args[2], args[3], args[4]);
       GameState.FadeOverlayManager.holdForScript = false;
       GameState.FadeOverlayManager.FadeIn( args[1], args[2], args[3], args[4], args[0]);
     }
@@ -9349,7 +9336,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number, number, number, number]){
-      console.log('SetGlobalFadeOut', args[1], args[2], args[3], args[4]);
       GameState.FadeOverlayManager.holdForScript = false;
       GameState.FadeOverlayManager.FadeOut(args[1], args[2], args[3], args[4], args[0]);
     }
