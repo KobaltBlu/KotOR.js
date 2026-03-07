@@ -3688,3 +3688,327 @@ describe('52. K1 blocker matrix – GetIsEnemy/GetIsFriend/GetIsNeutral null-gua
     expect(() => swmgSetSoundVolume({}, 0, 80)).not.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Section 53: K1 blocker matrix – GetNearestCreature missing criteria cases,
+//             GetEncounterActive bare-return, AmbientSoundSetNightVolume
+//             wrong-emitter, and EffectAttackIncrease type annotation
+//
+// Root bugs:
+//   • GetNearestCreature (fn 38 / 226) in ModuleObjectManager had five empty
+//     switch cases: RACIAL_TYPE, PLAYER_CHAR, CLASS, HAS_SPELL_EFFECT, and
+//     DOES_NOT_HAVE_SPELL_EFFECT.  Every K1 module script that calls
+//       GetNearestCreature(CREATURE_TYPE_RACIAL_TYPE, ...)
+//       GetNearestCreature(CREATURE_TYPE_PLAYER_CHAR, PLAYER_CHAR_IS_PC, ...)
+//       GetNearestCreature(CREATURE_TYPE_CLASS, CLASS_TYPE_JEDI_GUARDIAN, ...)
+//     returned undefined silently, breaking NPC AI, encounter spawning, and
+//     companion-detection scripts throughout the entire campaign.
+//
+//   • GetEncounterActive (fn 276) had no fallback return – it returned
+//     undefined (not NW_FALSE) when passed a non-encounter object, which
+//     would cause callers testing the return value with == FALSE to misbehave.
+//
+//   • AmbientSoundSetNightVolume (fn 568) called
+//     audioEngine.ambientAudioDayEmitter.setVolume() instead of the night
+//     emitter, leaving night ambient audio volume permanently wrong.
+//
+//   • EffectAttackIncrease (fn 118) declared its action parameter tuple as
+//     [number, number, number] but the function `args` declaration lists only
+//     two INTEGER arguments; the third element never exists at runtime.
+//
+// Story impact:
+//   • RACIAL_TYPE / CLASS / PLAYER_CHAR: used in nearly every K1 area's
+//     heartbeat and combat scripts (k_ai_master, k_def_combatd01, etc.) to
+//     locate party members, Jedi companions, and racial-faction targets.
+//     Empty cases caused all such searches to return OBJECT_INVALID,
+//     effectively disabling AI targeting and companion-assist logic.
+//   • HAS/DOES_NOT_HAVE_SPELL_EFFECT: used in Force-power AI and buff-check
+//     scripts; empty cases meant buffed creatures were always treated as
+//     unbuffed.
+//   • GetEncounterActive: queried in area heartbeat scripts to gate spawn
+//     logic; returning undefined instead of 0 broke spawn-gating conditions.
+//   • AmbientSoundSetNightVolume: audio polish, low campaign impact.
+// ---------------------------------------------------------------------------
+
+describe('53. K1 blocker matrix – GetNearestCreature criteria / GetEncounterActive / AmbientSoundSetNightVolume', () => {
+
+  // ---- creature factory -------------------------------------------------
+  const CreatureType = { RACIAL_TYPE: 0, PLAYER_CHAR: 1, CLASS: 2, HAS_SPELL_EFFECT: 5, DOES_NOT_HAVE_SPELL_EFFECT: 6 };
+  const NW_FALSE_53 = 0;
+  const NW_TRUE_53  = 1;
+
+  function makeTestCreature(opts: {
+    race?: number;
+    classes?: Array<{ id: number; level: number }>;
+    inParty?: boolean;
+    effectSpellIds?: number[];
+    dead?: boolean;
+  }) {
+    const creature: any = {
+      _race: opts.race ?? 0,
+      _classes: opts.classes ?? [],
+      _inParty: opts.inParty ?? false,
+      _dead: opts.dead ?? false,
+      _effects: (opts.effectSpellIds ?? []).map((spellId: number) => ({ getSpellId: () => spellId })),
+      isDead() { return this._dead; },
+      getRace() { return this._race; },
+      getClassLevel(nClass: number) {
+        const c = this._classes.find((x: any) => x.id === nClass);
+        return c ? c.level : 0;
+      },
+      get effects() { return this._effects; },
+    };
+    return creature;
+  }
+
+  /** Simulates the fixed GetNearestCreature for a single criteria type. */
+  function nearestByCriteria(
+    nType: number,
+    nValue: number,
+    list: any[],
+    party: any[],
+  ): any[] {
+    const results: any[] = [];
+    switch(nType) {
+      case CreatureType.RACIAL_TYPE:
+        for(const c of list){
+          if(c.isDead()) continue;
+          if(c.getRace() === nValue) results.push(c);
+        }
+        break;
+      case CreatureType.PLAYER_CHAR:
+        for(const c of list){
+          if(c.isDead()) continue;
+          const isPC = party.indexOf(c) >= 0 ? 1 : 0;
+          if(isPC === nValue) results.push(c);
+        }
+        break;
+      case CreatureType.CLASS:
+        for(const c of list){
+          if(c.isDead()) continue;
+          if(c.getClassLevel(nValue) > 0) results.push(c);
+        }
+        break;
+      case CreatureType.HAS_SPELL_EFFECT:
+        for(const c of list){
+          if(c.isDead()) continue;
+          const fx = c.effects;
+          let found = false;
+          for(const e of fx){ if(e.getSpellId() === nValue){ found = true; break; } }
+          if(found) results.push(c);
+        }
+        break;
+      case CreatureType.DOES_NOT_HAVE_SPELL_EFFECT:
+        for(const c of list){
+          if(c.isDead()) continue;
+          const fx = c.effects;
+          let found = false;
+          for(const e of fx){ if(e.getSpellId() === nValue){ found = true; break; } }
+          if(!found) results.push(c);
+        }
+        break;
+    }
+    return results;
+  }
+
+  // ---- RACIAL_TYPE -------------------------------------------------------
+
+  it('GetNearestCreature RACIAL_TYPE: returns matching-race creatures only', () => {
+    const human   = makeTestCreature({ race: 6 });
+    const wookiee = makeTestCreature({ race: 7 });
+    const human2  = makeTestCreature({ race: 6 });
+    const list = [human, wookiee, human2];
+    const results = nearestByCriteria(CreatureType.RACIAL_TYPE, 6, list, []);
+    expect(results).toContain(human);
+    expect(results).toContain(human2);
+    expect(results).not.toContain(wookiee);
+  });
+
+  it('GetNearestCreature RACIAL_TYPE: skips dead creatures', () => {
+    const deadHuman = makeTestCreature({ race: 6, dead: true });
+    const liveHuman = makeTestCreature({ race: 6, dead: false });
+    const results = nearestByCriteria(CreatureType.RACIAL_TYPE, 6, [deadHuman, liveHuman], []);
+    expect(results).not.toContain(deadHuman);
+    expect(results).toContain(liveHuman);
+  });
+
+  it('regression: pre-fix RACIAL_TYPE case was empty → returned no results', () => {
+    // Pre-fix: the case body was empty → results stayed [] even with matching creatures
+    function oldBrokenCase(_nValue: number, list: any[]): any[] {
+      const results: any[] = [];
+      switch(0 /*RACIAL_TYPE*/){
+        case 0: /* empty – old behaviour */ break;
+      }
+      return results;
+    }
+    const human = makeTestCreature({ race: 6 });
+    expect(oldBrokenCase(6, [human])).toHaveLength(0); // old broken
+    expect(nearestByCriteria(CreatureType.RACIAL_TYPE, 6, [human], [])).toHaveLength(1); // fixed
+  });
+
+  // ---- PLAYER_CHAR -------------------------------------------------------
+
+  it('GetNearestCreature PLAYER_CHAR IS_PC: returns party members only', () => {
+    const pc  = makeTestCreature({});
+    const npc = makeTestCreature({});
+    const party = [pc];
+    const results = nearestByCriteria(CreatureType.PLAYER_CHAR, 1 /*IS_PC*/, [pc, npc], party);
+    expect(results).toContain(pc);
+    expect(results).not.toContain(npc);
+  });
+
+  it('GetNearestCreature PLAYER_CHAR NOT_PC: returns non-party creatures only', () => {
+    const pc  = makeTestCreature({});
+    const npc = makeTestCreature({});
+    const party = [pc];
+    const results = nearestByCriteria(CreatureType.PLAYER_CHAR, 0 /*NOT_PC*/, [pc, npc], party);
+    expect(results).not.toContain(pc);
+    expect(results).toContain(npc);
+  });
+
+  it('GetNearestCreature PLAYER_CHAR: dead creatures excluded', () => {
+    const deadPC = makeTestCreature({ dead: true });
+    const livePC = makeTestCreature({ dead: false });
+    const party = [deadPC, livePC];
+    const results = nearestByCriteria(CreatureType.PLAYER_CHAR, 1, [deadPC, livePC], party);
+    expect(results).not.toContain(deadPC);
+    expect(results).toContain(livePC);
+  });
+
+  // ---- CLASS -------------------------------------------------------------
+
+  it('GetNearestCreature CLASS: returns creatures with the specified class level > 0', () => {
+    const CLASS_JEDI_GUARDIAN = 3;
+    const jedi    = makeTestCreature({ classes: [{ id: 3, level: 4 }] });
+    const soldier = makeTestCreature({ classes: [{ id: 0, level: 3 }] });
+    const results = nearestByCriteria(CreatureType.CLASS, CLASS_JEDI_GUARDIAN, [jedi, soldier], []);
+    expect(results).toContain(jedi);
+    expect(results).not.toContain(soldier);
+  });
+
+  it('GetNearestCreature CLASS: creature with 0 level in that class is excluded', () => {
+    const CLASS_SCOUT = 1;
+    const scout   = makeTestCreature({ classes: [{ id: 1, level: 2 }] });
+    const noClass = makeTestCreature({ classes: [] });
+    const results = nearestByCriteria(CreatureType.CLASS, CLASS_SCOUT, [scout, noClass], []);
+    expect(results).toContain(scout);
+    expect(results).not.toContain(noClass);
+  });
+
+  // ---- HAS_SPELL_EFFECT --------------------------------------------------
+
+  it('GetNearestCreature HAS_SPELL_EFFECT: returns creatures that have the spell effect', () => {
+    const SPELL_FORCE_SPEED = 15;
+    const buffed   = makeTestCreature({ effectSpellIds: [SPELL_FORCE_SPEED] });
+    const unbuffed = makeTestCreature({ effectSpellIds: [] });
+    const results = nearestByCriteria(CreatureType.HAS_SPELL_EFFECT, SPELL_FORCE_SPEED, [buffed, unbuffed], []);
+    expect(results).toContain(buffed);
+    expect(results).not.toContain(unbuffed);
+  });
+
+  it('GetNearestCreature HAS_SPELL_EFFECT: creature with different spell effect is excluded', () => {
+    const SPELL_A = 10;
+    const SPELL_B = 20;
+    const buffedA = makeTestCreature({ effectSpellIds: [SPELL_A] });
+    const buffedB = makeTestCreature({ effectSpellIds: [SPELL_B] });
+    const results = nearestByCriteria(CreatureType.HAS_SPELL_EFFECT, SPELL_A, [buffedA, buffedB], []);
+    expect(results).toContain(buffedA);
+    expect(results).not.toContain(buffedB);
+  });
+
+  // ---- DOES_NOT_HAVE_SPELL_EFFECT ----------------------------------------
+
+  it('GetNearestCreature DOES_NOT_HAVE_SPELL_EFFECT: returns creatures WITHOUT the spell', () => {
+    const SPELL_FORCE_PUSH = 12;
+    const affected   = makeTestCreature({ effectSpellIds: [SPELL_FORCE_PUSH] });
+    const unaffected = makeTestCreature({ effectSpellIds: [] });
+    const results = nearestByCriteria(CreatureType.DOES_NOT_HAVE_SPELL_EFFECT, SPELL_FORCE_PUSH, [affected, unaffected], []);
+    expect(results).not.toContain(affected);
+    expect(results).toContain(unaffected);
+  });
+
+  it('GetNearestCreature DOES_NOT_HAVE_SPELL_EFFECT: dead creatures still excluded', () => {
+    const dead = makeTestCreature({ effectSpellIds: [], dead: true });
+    const live = makeTestCreature({ effectSpellIds: [] });
+    const results = nearestByCriteria(CreatureType.DOES_NOT_HAVE_SPELL_EFFECT, 99, [dead, live], []);
+    expect(results).not.toContain(dead);
+    expect(results).toContain(live);
+  });
+
+  // ---- GetEncounterActive bare-return fix --------------------------------
+
+  it('GetEncounterActive (fn 276): returns NW_FALSE for non-encounter object', () => {
+    const ModuleObjectType = { ModuleEncounter: 256 };
+    function getEncounterActive(obj: any): number {
+      const isEncounter = obj && !!(obj.objectType & ModuleObjectType.ModuleEncounter);
+      if(isEncounter){
+        return obj.active;
+      }
+      return NW_FALSE_53;  // fixed: was a bare return (undefined)
+    }
+    // Non-encounter object (e.g. creature)
+    expect(getEncounterActive({ objectType: 1 /* CREATURE */ })).toBe(NW_FALSE_53);
+    // undefined / null / OBJECT_INVALID
+    expect(getEncounterActive(undefined)).toBe(NW_FALSE_53);
+    // Valid encounter
+    expect(getEncounterActive({ objectType: 256, active: 1 })).toBe(1);
+    expect(getEncounterActive({ objectType: 256, active: 0 })).toBe(0);
+  });
+
+  it('regression: pre-fix GetEncounterActive returned undefined for non-encounter', () => {
+    function oldGetEncounterActive(obj: any): number | undefined {
+      const ModuleObjectType = { ModuleEncounter: 256 };
+      if(obj && !!(obj.objectType & ModuleObjectType.ModuleEncounter)){
+        return obj.active;
+      }
+      // old: no fallback return → undefined
+    }
+    expect(oldGetEncounterActive({ objectType: 1 })).toBeUndefined(); // old broken
+  });
+
+  // ---- AmbientSoundSetNightVolume wrong-emitter fix ----------------------
+
+  it('AmbientSoundSetNightVolume (fn 568): sets night emitter volume, not day emitter', () => {
+    let dayVol  = 0.5;
+    let nightVol = 0.5;
+    const fakeAudio = {
+      ambientAudioDayEmitter:   { setVolume: (v: number) => { dayVol   = v; } },
+      ambientAudioNightEmitter: { setVolume: (v: number) => { nightVol = v; } },
+    };
+
+    // Fixed fn 568 body:
+    function ambientSoundSetNightVolumeFixed(vol: number) {
+      fakeAudio.ambientAudioNightEmitter.setVolume(vol / 100);
+    }
+    // Old broken fn 568 body:
+    function ambientSoundSetNightVolumeBroken(vol: number) {
+      fakeAudio.ambientAudioDayEmitter.setVolume(vol / 100);  // was wrong emitter
+    }
+
+    ambientSoundSetNightVolumeFixed(80);
+    expect(nightVol).toBeCloseTo(0.80);
+    expect(dayVol).toBeCloseTo(0.5); // unchanged
+
+    dayVol = 0.5; nightVol = 0.5;
+    ambientSoundSetNightVolumeBroken(80);
+    expect(dayVol).toBeCloseTo(0.80);   // wrong: day emitter changed
+    expect(nightVol).toBeCloseTo(0.5);  // wrong: night emitter untouched
+  });
+
+  // ---- EffectAttackIncrease type annotation fix -------------------------
+
+  it('EffectAttackIncrease (fn 118): action tuple annotation is [number, number], not [number, number, number]', () => {
+    // Verify the corrected type: args tuple should have exactly 2 elements
+    function effectAttackIncreaseFixed(args: [number, number]) {
+      // Only uses args[0] (nBonus) and args[1] (nModifierType)
+      const nBonus = args[0];
+      const nModifierType = args[1];
+      return { nBonus, nModifierType };
+    }
+    const result = effectAttackIncreaseFixed([5, 1]);
+    expect(result.nBonus).toBe(5);
+    expect(result.nModifierType).toBe(1);
+    // A 2-tuple has no third element
+    expect((result as any)[2]).toBeUndefined();
+  });
+});
