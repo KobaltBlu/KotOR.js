@@ -417,6 +417,11 @@ export class CombatRound {
               this.calculateWeaponAttack(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
             }
           }
+
+          // EffectHaste (Force Speed) grants one additional attack per round
+          if(creature.hasEffect(GameEffectType.EffectHaste) && creature.equipment.RIGHTHAND){
+            this.calculateWeaponAttack(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
+          }
         }
       }else if(creature && creature.isSimpleCreature()){
         if(creature.equipment.CLAW1){
