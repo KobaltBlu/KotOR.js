@@ -1,6 +1,6 @@
-import { TXIBlending } from "@/enums/graphics/txi/TXIBlending";
-import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
-import { TXITexType } from "@/enums/graphics/txi/TXITexType";
+import { TXIBlending } from "../enums/graphics/txi/TXIBlending";
+import { TXIPROCEDURETYPE } from "../enums/graphics/txi/TXIPROCEDURETYPE";
+import { TXITexType } from "../enums/graphics/txi/TXITexType";
 
 /**
  * TXI class.
@@ -96,10 +96,10 @@ export class TXI {
   }
 
   ParseInfo(){
-    const lines = this.info.split('\n');
+    let lines = this.info.split('\n');
     for(let i = 0; i < lines.length; i++){
-      const line = lines[i];
-      const args = line.split(' ');
+      let line = lines[i];
+      let args = line.split(' ');
 
       if(typeof args[1] != 'undefined')
         args[1] = args[1].trim();
@@ -218,13 +218,13 @@ export class TXI {
           this.caretindent = parseFloat(args[1]);
         break;
         case 'upperleftcoords':
-          const _num = parseInt(args[1]);
+          let _num = parseInt(args[1]);
 
-          const _max = i + 1 + _num;
+          let _max = i + 1 + _num;
           
           for(let _i = i + 1; _i < _max; _i++){
-            const line = lines[_i];
-            const args = line.split(' ');
+            let line = lines[_i];
+            let args = line.split(' ');
             this.upperleftcoords.push({x: parseFloat(args[0]), y: parseFloat(args[1]), z: parseFloat(args[2])});
           }
 
@@ -232,13 +232,13 @@ export class TXI {
 
         break;
         case 'lowerrightcoords':
-          const _num2 = parseInt(args[1]);
+          let _num2 = parseInt(args[1]);
 
-          const _max2 = i + 1 + _num2;
+          let _max2 = i + 1 + _num2;
           
           for(let _i = i + 1; _i < _max2; _i++){
-            const line = lines[_i];
-            const args = line.split(' ');
+            let line = lines[_i];
+            let args = line.split(' ');
             this.lowerrightcoords.push({x: parseFloat(args[0]), y:parseFloat(args[1]), z:parseFloat(args[2])});
           }
 

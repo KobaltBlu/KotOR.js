@@ -1,16 +1,15 @@
 import React from "react";
-
-import { TabUTMEditor } from "@/apps/forge/components/tabs/tab-utm-editor/TabUTMEditor";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeStore, StoreItemEntry } from "@/apps/forge/module-editor/ForgeStore";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TabState } from "./TabState";
+import { EditorFile } from "../../EditorFile";
+import * as KotOR from "../../KotOR";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { TabUTMEditor } from "../../components/tabs/tab-utm-editor/TabUTMEditor";
+import { ForgeStore, StoreItemEntry } from "../../module-editor/ForgeStore";
 
 export class TabUTMEditorState extends TabState {
   tabName: string = `UTM`;
   store: ForgeStore = new ForgeStore();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.store.blueprint;
   }
@@ -43,12 +42,12 @@ export class TabUTMEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
+
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-  
+
         file.readFile().then( (response) => {
           this.store = new ForgeStore(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
@@ -67,7 +66,7 @@ export class TabUTMEditorState extends TabState {
   }
 
   animate(delta: number = 0){
-    //todo
+    // Store editor has no continuous animation; override for future 3D preview if needed.
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
@@ -79,7 +78,7 @@ export class TabUTMEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-  
+
   updateFile(){
     this.store.exportToBlueprint();
     if(this.file){

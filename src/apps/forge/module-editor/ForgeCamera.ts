@@ -1,7 +1,6 @@
+import { ForgeGameObject } from "./ForgeGameObject";
+import * as KotOR from "../KotOR";
 import * as THREE from "three";
-
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 export class ForgeCamera extends ForgeGameObject {
   aspectRatio: number = 1;
@@ -18,7 +17,7 @@ export class ForgeCamera extends ForgeGameObject {
     super();
     this.aspectRatio = 1920 / 1080;
   }
-
+  
   getEditorName(): string {
     return `Camera ${this.cameraID}`;
   }
@@ -37,7 +36,10 @@ export class ForgeCamera extends ForgeGameObject {
     this.perspectiveCamera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
     this.perspectiveCamera.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
 
-    this.perspectiveCamera.position.copy(this.position as THREE.Vector3);
+    //@ts-ignore
+    this.perspectiveCamera.position.copy(this.position);
+    //@ts-ignore
+    // this.perspectiveCamera.quaternion.copy(this.quaternion);
 
     this.cameraHelper = new THREE.CameraHelper(this.perspectiveCamera);
     this.context.scene.add(this.perspectiveCamera);
@@ -58,12 +60,12 @@ export class ForgeCamera extends ForgeGameObject {
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
-    this.cameraID = strt.getNumberByLabel('CameraID');
-    this.fov = strt.getNumberByLabel('FieldOfView');
-    this.height = strt.getNumberByLabel('Height');
-    this.micRange = strt.getNumberByLabel('MicRange');
+    this.cameraID = strt.getFieldByLabel('CameraID').getValue() as number;
+    this.fov = strt.getFieldByLabel('FieldOfView').getValue() as number;
+    this.height = strt.getFieldByLabel('Height').getValue() as number;
+    this.micRange = strt.getFieldByLabel('MicRange').getValue() as number;
     this.quaternion.copy(strt.getFieldByLabel('Orientation').getOrientation() as THREE.Quaternion);
-    this.pitch = strt.getNumberByLabel('Pitch');
+    this.pitch = strt.getFieldByLabel('Pitch').getValue() as number;
     this.position.copy(strt.getFieldByLabel('Position').getVector() as THREE.Vector3);
   }
 

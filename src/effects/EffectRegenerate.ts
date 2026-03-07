@@ -1,7 +1,7 @@
-import { GameEffect } from "@/effects/GameEffect";
-import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
-import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { GameState } from "@/GameState";
+import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { GameState } from "../GameState";
+import { GameEffect } from "./GameEffect";
 
 /**
  * EffectRegenerate class.

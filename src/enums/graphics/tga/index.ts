@@ -1,2 +1,2 @@
-export * from "@/enums/graphics/tga/TGAOrigin";
-export * from "@/enums/graphics/tga/TGAType";
+export * from "./TGAOrigin";
+export * from "./TGAType";

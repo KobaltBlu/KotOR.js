@@ -17,4 +17,4 @@ export enum OdysseyModelClass {
   LIGHTSABER  = 0x10,
   PLACEABLE   = 0x20,
   FLYER       = 0x40,
-}
+};

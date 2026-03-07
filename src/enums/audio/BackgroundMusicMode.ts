@@ -4,4 +4,4 @@ export enum BackgroundMusicMode {
   BATTLE = 2,
   BATTLE_STINGER = 3,
   DIALOG = 4
-}
+};

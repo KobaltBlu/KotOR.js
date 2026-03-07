@@ -14,4 +14,4 @@ export enum GameEffectSubType {
   EXTRAORDINARY = 24,
 
   MASK = 0x18
-}
+};

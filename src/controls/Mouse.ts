@@ -1,8 +1,8 @@
-﻿import * as THREE from "three";
-import type { GUIControl } from "@/gui";
-import { ResolutionManager } from "@/managers/ResolutionManager";
-import { MouseState } from "@/enums/controls/MouseState";
-import { MouseAxis } from "@/enums/controls/MouseAxis";
+import * as THREE from "three";
+import type { GUIControl } from "../gui";
+import { ResolutionManager } from "../managers/ResolutionManager";
+import { MouseState } from "../enums/controls/MouseState";
+import { MouseAxis } from "../enums/controls/MouseAxis";
 
 /**
  * Mouse class.
@@ -14,8 +14,8 @@ import { MouseAxis } from "@/enums/controls/MouseAxis";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class Mouse {
-  static editor: unknown;
-  static camera: THREE.Camera | undefined;
+  static editor: any;
+  static camera: any;
   static MouseX: number = 0;
   static MouseY: number = 0;
   static OldMouseX: number = 0;
@@ -28,10 +28,11 @@ export class Mouse {
   static ButtonState: MouseState;
   static MiddleMouseDown: boolean = false;
   static Dragging: boolean = false;
-  static target: unknown;
+  static target: any;
   static CollisionPosition: THREE.Vector3 = new THREE.Vector3();
   static Vector: THREE.Vector2 = new THREE.Vector2();
   static Client: THREE.Vector2 = new THREE.Vector2();
+  static pointerLock: boolean = false;
 
   //button states
   static leftDown: boolean = false;
@@ -103,4 +104,3 @@ export class Mouse {
   }
 
 }
-

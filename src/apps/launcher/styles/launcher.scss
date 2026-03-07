@@ -1,16 +1,9 @@
-// Font Awesome: set font path before loading (FA 7 uses $font-path in variables)
-@use "@fortawesome/fontawesome-free/scss/variables" with ($font-path: "./fonts");
-@use "@fortawesome/fontawesome-free/scss/fontawesome" as *;
-@use "@fortawesome/fontawesome-free/scss/solid" as *;
-@use "@fortawesome/fontawesome-free/scss/brands" as *;
+$fa-font-path: "./fonts";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";  
 
-@use "./launcher-menu" as *;
-@use "./tabhost" as *;
-@use "./launcher-profile-nav" as *;
-@use "./promo-items" as *;
-@use "./launch-buttons" as *;
-@use "./lightbox" as *;
-@use "./GOGWidget" as *;
+// our project needs Solid + Brands
+@import "~@fortawesome/fontawesome-free/scss/solid.scss";
+@import "~@fortawesome/fontawesome-free/scss/brands.scss";
 
 @font-face {
 	font-family: 'Trajan';
@@ -73,6 +66,10 @@ div#container:before {
   background: linear-gradient(rgba(0, 0, 0, 0) 50%, #000000 90%);
 }
 
+@import "./launcher-menu";
+@import "./tabhost";
+@import "./launcher-profile-nav";
+
 .logo {
   margin-top: 10px;
   margin-left: 10px;
@@ -83,6 +80,12 @@ div#container:before {
   width: 100%;
   white-space: nowrap;
 }
+
+@import './promo-items';
+@import './launch-buttons';
+@import './lightbox';
+@import './GOGWidget';
+
 
 /* Let's get this party started */
 ::-webkit-scrollbar {
@@ -216,6 +219,5 @@ h3.title:after {
   font-family: sans-serif;
   opacity: 0.5;
   padding: 5px;
-  -webkit-user-select: none;
   user-select: none;
 }

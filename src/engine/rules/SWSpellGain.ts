@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "../../resource/TwoDAObject";
 
 interface ISpellGainClass {
   index: number;
@@ -38,8 +38,8 @@ export class SWSpellGain {
       const row = table.rows[i];
       const columns = Object.keys(row);
 
-      const index = (Object.hasOwn(row,'__index')) ? TwoDAObject.normalizeValue(row.__index, 'number', 0) : 0;
-      const label = (Object.hasOwn(row,'label')) ? TwoDAObject.normalizeValue(row.label, 'number', 0) : 0;
+      const index = (row.hasOwnProperty('__index')) ? TwoDAObject.normalizeValue(row.__index, 'number', 0) : 0;
+      const label = (row.hasOwnProperty('label')) ? TwoDAObject.normalizeValue(row.label, 'number', 0) : 0;
       
       for(let j = 0; j < columns.length; j++){
         const col = columns[j];

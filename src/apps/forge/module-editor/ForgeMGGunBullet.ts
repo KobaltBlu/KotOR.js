@@ -1,4 +1,4 @@
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "../KotOR";
 
 export class ForgeMGGunBullet {
   // Basic properties
@@ -26,25 +26,25 @@ export class ForgeMGGunBullet {
 
     // Load basic properties
     if(struct.hasField('Bullet_Model')){
-      this.bulletModel = struct.getStringByLabel('Bullet_Model');
+      this.bulletModel = struct.getFieldByLabel('Bullet_Model').getValue();
     }
     if(struct.hasField('Collision_Sound')){
-      this.collisionSound = struct.getStringByLabel('Collision_Sound');
+      this.collisionSound = struct.getFieldByLabel('Collision_Sound').getValue();
     }
     if(struct.hasField('Damage')){
-      this.damage = struct.getNumberByLabel('Damage');
+      this.damage = struct.getFieldByLabel('Damage').getValue();
     }
     if(struct.hasField('Lifespan')){
-      this.lifespan = struct.getNumberByLabel('Lifespan');
+      this.lifespan = struct.getFieldByLabel('Lifespan').getValue();
     }
     if(struct.hasField('Rate_Of_Fire')){
-      this.rateOfFire = struct.getNumberByLabel('Rate_Of_Fire');
+      this.rateOfFire = struct.getFieldByLabel('Rate_Of_Fire').getValue();
     }
     if(struct.hasField('Speed')){
-      this.speed = struct.getNumberByLabel('Speed');
+      this.speed = struct.getFieldByLabel('Speed').getValue();
     }
     if(struct.hasField('Target_Type')){
-      this.targetType = struct.getNumberByLabel('Target_Type');
+      this.targetType = struct.getFieldByLabel('Target_Type').getValue();
     }
   }
 

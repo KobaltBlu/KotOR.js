@@ -1,14 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Form, Table, Button, Spinner, Alert } from "react-bootstrap";
-
-import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import type { ReferenceHit, ReferenceScope } from "@/apps/forge/helpers/ReferenceFinder";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalReferenceSearchOptionsState } from "@/apps/forge/states/modal/ModalReferenceSearchOptionsState";
-import { TabReferenceFinderState } from "@/apps/forge/states/tabs/TabReferenceFinderState";
-
-export type TabReferenceFinderEventType = "onResults" | "onSearchState" | "onError";
+import { TabReferenceFinderState } from "../../../states/tabs/TabReferenceFinderState";
+import { ReferenceScope } from "../../../helpers/ReferenceFinder";
+import { FileTypeManager } from "../../../FileTypeManager";
+import { ModalReferenceSearchOptionsState } from "../../../states/modal/ModalReferenceSearchOptionsState";
+import { ForgeState } from "../../../states/ForgeState";
 
 export interface TabReferenceFinderProps {
   tab: TabReferenceFinderState;
@@ -26,18 +22,18 @@ export const TabReferenceFinder = function TabReferenceFinder(props: TabReferenc
   const [error, setError] = useState<string | undefined>(tab.lastError);
 
   useEffect(() => {
-    const onResults: EventListenerCallback = (...args: unknown[]) => setResults([...(args[0] as ReferenceHit[])]);
-    const onSearchState: EventListenerCallback = (...args: unknown[]) => setSearching(!!args[0]);
-    const onError: EventListenerCallback = (...args: unknown[]) => setError(String(args[0]));
+    const onResults = (r: any[]) => setResults([...r]);
+    const onSearchState = (s: boolean) => setSearching(!!s);
+    const onError = (msg: string) => setError(msg);
 
-    tab.addEventListener("onResults" as TabReferenceFinderEventType, onResults);
-    tab.addEventListener("onSearchState" as TabReferenceFinderEventType, onSearchState);
-    tab.addEventListener("onError" as TabReferenceFinderEventType, onError);
+    tab.addEventListener("onResults" as any, onResults);
+    tab.addEventListener("onSearchState" as any, onSearchState);
+    tab.addEventListener("onError" as any, onError);
 
     return () => {
-      tab.removeEventListener("onResults" as TabReferenceFinderEventType, onResults);
-      tab.removeEventListener("onSearchState" as TabReferenceFinderEventType, onSearchState);
-      tab.removeEventListener("onError" as TabReferenceFinderEventType, onError);
+      tab.removeEventListener("onResults" as any, onResults);
+      tab.removeEventListener("onSearchState" as any, onSearchState);
+      tab.removeEventListener("onError" as any, onError);
     };
   }, [tab]);
 

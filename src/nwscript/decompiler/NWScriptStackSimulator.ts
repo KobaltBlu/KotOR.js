@@ -1,7 +1,7 @@
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
-import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import type { NWScriptInstruction } from "../NWScriptInstruction";
+import { NWScriptExpression } from "./NWScriptExpression";
+import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
 import {
   OP_CONST, OP_ACTION, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII,
   OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ,
@@ -11,7 +11,7 @@ import {
   OP_CPTOPBP, OP_CPTOPSP, OP_CPDOWNSP, OP_CPDOWNBP,
   OP_MOVSP, OP_DESTRUCT, OP_RSADD,
   OP_DECISP, OP_INCISP, OP_DECIBP, OP_INCIBP
-} from '@/nwscript/NWScriptOPCodes';
+} from '../NWScriptOPCodes';
 
 /**
  * Represents an item on the stack

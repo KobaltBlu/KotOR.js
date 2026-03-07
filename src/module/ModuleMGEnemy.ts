@@ -1,25 +1,24 @@
+import { ModuleObject } from "./ModuleObject";
+import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
-
-import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
-import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
-import { MDLLoader } from "@/loaders";
-import { ModuleMGGunBank } from "@/module/ModuleMGGunBank";
-import { ModuleObject } from "@/module/ModuleObject";
-import { NWScript } from "@/nwscript/NWScript";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { OdysseyModel, OdysseyModelAnimationManager } from "@/odyssey";
-import { GFFObject } from "@/resource/GFFObject";
-import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyModel3D } from "../three/odyssey";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GameState } from "../GameState";
+import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
+import { NWScript } from "../nwscript/NWScript";
+import { IModelListItem } from "../interface/module/minigame/IModelListItem";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { MDLLoader } from "../loaders";
+import { ModuleMGGunBank } from "./ModuleMGGunBank";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
 /**
 * ModuleMGEnemy class.
-*
+* 
 * Class representing an enemy object found in minigame modules.
-*
+* 
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*
+* 
 * @file ModuleMGEnemy.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -119,7 +118,7 @@ export class ModuleMGEnemy extends ModuleObject {
     }
 
     for(let i = 0; i < this.models.length; i++){
-      const child_model = this.models[i];
+      let child_model = this.models[i];
       if(child_model instanceof OdysseyModel3D && child_model.bonesInitialized && child_model.visible){
 
         if(this.hit_points > 0){
@@ -158,7 +157,7 @@ export class ModuleMGEnemy extends ModuleObject {
       }
       this.track.update(delta);
     }
-
+        
     for(let i = 0; i < this.gunBanks.length; i++){
       this.gunBanks[i].update(delta);
       if(this.alive){
@@ -173,7 +172,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   updatePaused(delta: number = 0){
-
+    
   }
 
   damage(damage = 0){
@@ -226,10 +225,10 @@ export class ModuleMGEnemy extends ModuleObject {
     for(let i = 0; i < this.models.length; i++){
       model = this.models[i];
       if(model instanceof OdysseyModel3D){
-        const anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
+        let anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
 
         if(anim){
-          const animLoopIdx = model.animLoops.indexOf(anim);
+          let animLoopIdx = model.animLoops.indexOf(anim);
           if(animLoopIdx >= 0){
             model.animLoops.splice(animLoopIdx, 1);
           }
@@ -250,7 +249,6 @@ export class ModuleMGEnemy extends ModuleObject {
 
   async load(){
     this.initProperties();
-    this.loadScripts();
     GameState.scene.add(this.sphere_geom);
     return this.template;
   }
@@ -267,17 +265,9 @@ export class ModuleMGEnemy extends ModuleObject {
       });
       try{
         this.models.push(model);
-        this.container.add(model);
+        this.container.add(model);  
         model.name = item.model;
 
-        (model as unknown as { addEventListener: (t: string, fn: (e: { event?: string }) => void) => void }).addEventListener?.('playEvent', (e: { event?: string }) => {
-          const mg = GameState.module?.area?.miniGame;
-          if (mg) {
-            mg.lastAnimEvent = e.event ?? '';
-            mg.lastAnimEventModelName = model.name ?? '';
-          }
-          this.onAnimEvent();
-        });
       }catch(e){
         console.error(e);
       }
@@ -378,9 +368,9 @@ export class ModuleMGEnemy extends ModuleObject {
         const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
         if(!resRef){ continue; }
         const nwscript = GameState.NWScript.Load(resRef);
-        if(!nwscript){
+        if(!nwscript){ 
           console.warn(`ModuleMGEnemy.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-          continue;
+          continue; 
         }
         nwscript.caller = this;
         this.scripts[scriptKey] = nwscript;
@@ -427,9 +417,9 @@ export class ModuleMGEnemy extends ModuleObject {
 
 
     if(this.template.RootNode.hasField('Models')){
-      const models = this.template.getFieldByLabel('Models').getChildStructs();
+      let models = this.template.getFieldByLabel('Models').getChildStructs();
       for(let i = 0; i < models.length; i++){
-        const modelStruct = models[i];
+        let modelStruct = models[i];
         this.modelProps.push({
           model: modelStruct.getFieldByLabel('Model').getValue(),
           rotating: modelStruct.getFieldByLabel('RotatingModel').getValue() ? true : false

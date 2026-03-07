@@ -16,7 +16,7 @@ export class TileColor {
   blue: number = 0;
   color: THREE.Color = new THREE.Color();
 
-  static From2DA(row: Record<string, string | number> = {}): TileColor {
+  static From2DA(row: any = {}){
     const tileColor = new TileColor();
     if(typeof row.red !== 'undefined') tileColor.red = parseFloat(row.red);
     if(typeof row.green !== 'undefined') tileColor.green = parseFloat(row.green);

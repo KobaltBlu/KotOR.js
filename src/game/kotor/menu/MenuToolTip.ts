@@ -1,6 +1,6 @@
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIControl, GUILabel } from "@/gui";
+import { GameState } from "../../../GameState";
+import { GameMenu } from "../../../gui";
+import type { GUIControl, GUILabel } from "../../../gui";
 
 /**
  * MenuToolTip class.
@@ -26,7 +26,7 @@ export class MenuToolTip extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.addEventListener('resize', () => {
         this.width = GameState.ResolutionManager.getViewportWidth();
         this.height = GameState.ResolutionManager.getViewportHeight();
@@ -82,4 +82,3 @@ export class MenuToolTip extends GameMenu {
   }
   
 }
-

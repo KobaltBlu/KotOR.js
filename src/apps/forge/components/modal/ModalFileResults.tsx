@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, ListGroup } from "react-bootstrap";
-
-import { ReferenceSearchResult } from "@/apps/forge/helpers/ReferenceFinder";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ModalFileResultsState } from "@/apps/forge/states/modal/ModalFileResultsState";
+import { ModalFileResultsState } from "../../states/modal/ModalFileResultsState";
+import { ReferenceSearchResult } from "../../helpers/ReferenceFinder";
 
 export const ModalFileResults = (props: BaseModalProps) => {
   const modal = props.modal as ModalFileResultsState;
@@ -47,7 +46,7 @@ export const ModalFileResults = (props: BaseModalProps) => {
               <ListGroup.Item
                 key={`${result.fileResource.resRef}-${result.fieldPath}-${index}`}
                 action
-                onClick={() => { void modal.openResult(result); }}
+                onClick={() => modal.openResult(result)}
                 title={modal.getTooltip(result)}
               >
                 {modal.getDisplayText(result)}

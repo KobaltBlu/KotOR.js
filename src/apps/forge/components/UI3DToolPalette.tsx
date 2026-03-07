@@ -1,7 +1,7 @@
-﻿import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect, useRef, useState } from "react";
-import "@/apps/forge/styles/UI3DToolPalette.scss";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import "../styles/UI3DToolPalette.scss";
 
 /**
  * Sub-tool definition for tools that have a submenu
@@ -208,4 +208,3 @@ export const UI3DToolPalette: React.FC<UI3DToolPaletteProps> = ({
     </div>
   );
 };
-

@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-
-import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
-import { TabState } from "@/apps/forge/states/tabs";
+import { EditorTabManager } from "../managers/EditorTabManager";
+import { TabState } from "../states/tabs";
 
 
 export interface TabManagerProviderValues {

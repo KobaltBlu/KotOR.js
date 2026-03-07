@@ -1,10 +1,10 @@
-import { ADPCMDecoder } from "@/audio/ADPCMDecoder";
-import { AudioFileAudioType } from "@/enums/audio/AudioFileAudioType";
-import { AudioFileWaveEncoding } from "@/enums/audio/AudioFileWaveEncoding";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { Utility } from "@/utility/Utility";
+import { BinaryReader } from "../utility/binary/BinaryReader";
+import { BinaryWriter } from "../utility/binary/BinaryWriter";
+import { AudioFileAudioType } from "../enums/audio/AudioFileAudioType";
+import { AudioFileWaveEncoding } from "../enums/audio/AudioFileWaveEncoding";
+import { GameFileSystem } from "../utility/GameFileSystem";
+import { Utility } from "../utility/Utility";
+import { ADPCMDecoder } from "./ADPCMDecoder";
 
 //Header Tests
 const fakeHeaderTest = [0xFF, 0xF3, 0x60, 0xC4];
@@ -45,7 +45,7 @@ export class AudioFile {
     //String file path
     if(typeof this.data == 'string'){
 
-      const info = Utility.filePathInfo(this.data);
+      let info = Utility.filePathInfo(this.data);
 
       if(info.location == 'local'){
 
@@ -110,8 +110,8 @@ export class AudioFile {
 
   processFile(){
     this.isProcessed = true;
-    const flag = this.reader.readBytes(4);
-    const riffSize = this.reader.readUInt32(); //for an MP3 this will be 50
+    let flag = this.reader.readBytes(4);
+    let riffSize = this.reader.readUInt32(); //for an MP3 this will be 50
     this.reader.seek(0);
 
     if(Utility.ArrayMatch(flag, fakeHeaderTest)) {
@@ -172,15 +172,9 @@ export class AudioFile {
 
     if(this.audioType == AudioFileAudioType.WAVE){
       if(this.header.format == AudioFileWaveEncoding.ADPCM){
-        // Use parsed data chunk offsets/sizes (files can have varying headers/chunks).
-        const dataOffset = typeof this.header.dataOffset === 'number' ? this.header.dataOffset : 60;
-        const dataSize =
-          typeof this.header.dataSize === 'number'
-            ? this.header.dataSize
-            : Math.max(0, this.reader.length() - dataOffset);
-
-        this.reader.seek(dataOffset);
-        const dataADPCM = this.reader.readBytes(dataSize);
+        const RAW_PCM_DATA_OFFSET = 60;
+        this.reader.seek(RAW_PCM_DATA_OFFSET);
+        const dataADPCM = this.reader.readBytes(this.reader.length() - (RAW_PCM_DATA_OFFSET));
         const adpcm = new ADPCMDecoder({
           sampleRate: this.header.sampleRate,
           frameSize: this.header.frameSize,
@@ -215,7 +209,7 @@ export class AudioFile {
   }
 
   waveSubChunkParser (header: any, reader: BinaryReader) {
-    const chunkID = reader.readChars(4);
+    let chunkID = reader.readChars(4);
     switch(chunkID){
       case 'fmt ':
         header.fmt = chunkID;
@@ -270,13 +264,13 @@ export class AudioFile {
 
   buildWave(header: any, data: Uint8Array){
 
-    const riffHeaderLen = 8;
-    const waveHeaderLen = 56;
+    let riffHeaderLen = 8;
+    let waveHeaderLen = 56;
 
-    const buffer = new Uint8Array( data.length + 44 );//data.length + riffHeaderLen + waveHeaderLen );
-    const bWriter = new BinaryWriter(buffer);
+    let buffer = new Uint8Array( data.length + 44 );//data.length + riffHeaderLen + waveHeaderLen );
+    let bWriter = new BinaryWriter(buffer);
 
-    const riffSize = data.length + waveHeaderLen;
+    let riffSize = data.length + waveHeaderLen;
 
     //console.log(header)
     //console.log((header.channels == 2 ? 4 : 2))
@@ -286,9 +280,6 @@ export class AudioFile {
     //header.channels = 2;
 
 	  header.bits = 16;
-    const bytesPerSample = header.bits / 8;
-    const blockAlign = header.channels * bytesPerSample;
-    const byteRate = header.sampleRate * blockAlign;
 
     bWriter.writeChars('RIFF');
     bWriter.writeUInt32(riffSize);
@@ -298,8 +289,8 @@ export class AudioFile {
     bWriter.writeUInt16(1);
     bWriter.writeUInt16(header.channels);
     bWriter.writeUInt32(header.sampleRate);
-    bWriter.writeUInt32(byteRate);
-    bWriter.writeUInt16(blockAlign);
+    bWriter.writeUInt32(header.sampleRate * 4);
+    bWriter.writeUInt16((header.bits * header.channels) / 8);
     bWriter.writeUInt16(header.bits);
     //bWriter.WriteUInt16(0);
     bWriter.writeChars('data');

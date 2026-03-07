@@ -1,11 +1,10 @@
 import * as path from "path";
-
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
-import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
-import { ERFObject } from "@/resource/ERFObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { ApplicationProfile } from "@/utility/ApplicationProfile";
-import { GameFileSystem } from "@/utility/GameFileSystem";
+import { ERFObject } from "../resource/ERFObject";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { GameFileSystem } from "../utility/GameFileSystem";
+import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
+import { IERFKeyEntry } from "../interface/resource/IERFKeyEntry";
 
 /**
  * CurrentGame class.
@@ -23,10 +22,10 @@ export class CurrentGame {
     return new Promise( (resolve, reject) => {
         GameFileSystem.readdir(CurrentGame.gameinprogress_dir).then( (files) => {
           for(let i = 0, len = files.length; i < len; i++){
-            const file = files[i];
-            const file_path = path.join( CurrentGame.gameinprogress_dir, file );
-            const file_info = path.parse(file);
-            const ext = file_info.ext.split('.').pop();
+            let file = files[i];
+            let file_path = path.join( CurrentGame.gameinprogress_dir, file );
+            let file_info = path.parse(file);
+            let ext = file_info.ext.split('.').pop();
             if(file_info.name.toLowerCase() == name.toLowerCase()){
               resolve(true);
               return;
@@ -44,7 +43,7 @@ export class CurrentGame {
     return new Promise( async (resolve, reject) => {
 
       try{
-        const buffer = await GameFileSystem.readFile( 
+        let buffer = await GameFileSystem.readFile( 
           path.join( CurrentGame.gameinprogress_dir, name.toLowerCase()+'.sav') 
         );
         const erf = new ERFObject(buffer);
@@ -65,7 +64,7 @@ export class CurrentGame {
     try{
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         console.log(`CurrentGame.CleanGameInProgressFolder`, `Mode: ELECTRON`);
-        let rm_response: boolean = true;
+        let rm_response: boolean;
         if(await GameFileSystem.exists(CurrentGame.gameinprogress_dir)){
           rm_response = await GameFileSystem.rmdir(CurrentGame.gameinprogress_dir, { recursive: true });
           console.log(
@@ -75,7 +74,7 @@ export class CurrentGame {
         }
         
         if(create){
-          const mkdir_response = await GameFileSystem.mkdir(CurrentGame.gameinprogress_dir);
+          let mkdir_response = await GameFileSystem.mkdir(CurrentGame.gameinprogress_dir);
           console.log(
             `CurrentGame.CleanGameInProgressFolder`, 
             `mkdir ${CurrentGame.gameinprogress_dir} - [${mkdir_response ? 'success' : 'fail'}]`
@@ -89,20 +88,18 @@ export class CurrentGame {
         try{
           const directory_handle = await GameFileSystem.opendir_web(CurrentGame.gameinprogress_dir);
           if(directory_handle instanceof FileSystemDirectoryHandle){
-            for await(const handle of directory_handle.values()){
+            for await(let handle of directory_handle.values()){
               if(handle.kind == 'file'){
                 await directory_handle.removeEntry(handle.name);
               }
             }
           }else if(create){
-            if(!ApplicationProfile.directoryHandle) throw new Error("ApplicationProfile.directoryHandle is not set");
             const directory_handle = await ApplicationProfile.directoryHandle.getDirectoryHandle(CurrentGame.gameinprogress_dir, { create: true });
             console.log('exists', directory_handle);
           }
         }catch(e){
           console.error(e);
           if(create){
-            if(!ApplicationProfile.directoryHandle) throw new Error("ApplicationProfile.directoryHandle is not set");
             const directory_handle = await ApplicationProfile.directoryHandle.getDirectoryHandle(CurrentGame.gameinprogress_dir, { create: true });
             console.log('exists', directory_handle);
           }
@@ -141,7 +138,7 @@ export class CurrentGame {
   }
 
   static async ExportToSaveFolder( folder: string ){
-    const sav = new ERFObject();
+    let sav = new ERFObject();
     try{
       const files = await GameFileSystem.readdir(CurrentGame.gameinprogress_dir);
       for(let i = 0; i < files.length; i++){

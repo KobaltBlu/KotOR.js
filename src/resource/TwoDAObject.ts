@@ -1,6 +1,6 @@
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { BinaryWriter } from '@/utility/binary/BinaryWriter';
-import { GameFileSystem } from '@/utility/GameFileSystem';
+import { BinaryReader } from "../utility/binary/BinaryReader";
+import { GameFileSystem } from '../utility/GameFileSystem';
+import { BinaryWriter } from '../utility/binary/BinaryWriter';
 
 /**
  * TwoDAObject class.
@@ -36,9 +36,9 @@ export class TwoDAObject {
     this.CellCount = 0;
     this.rows = {};
     
-    if(file){
+    if(!!file){
       if(file instanceof Uint8Array) {
-        const br = new BinaryReader(file);
+        let br = new BinaryReader(file);
         this.read2DA(br);
 
         if(onComplete != null)
@@ -46,7 +46,7 @@ export class TwoDAObject {
       }else if(typeof file === "string"){
         this.file = file;
         GameFileSystem.readFile(this.file).then((buffer) => {
-          const br = new BinaryReader(buffer);
+          let br = new BinaryReader(buffer);
           this.read2DA(br);
 
           if(onComplete != null)
@@ -88,7 +88,7 @@ export class TwoDAObject {
     this.RowCount = br.readUInt32();
 
     //Get the row index numbers
-    const RowIndexes = [];
+    let RowIndexes = [];
     for (let i = 0; i < this.RowCount; i++){
       let rowIndex = "";
       let c;
@@ -102,22 +102,22 @@ export class TwoDAObject {
 
     //Get the Row Data Offsets
     this.CellCount = this.ColumnCount * this.RowCount;
-    const offsets = [];
+    let offsets = [];
     for (let i = 0; i < this.CellCount; i++){
       offsets[i] = br.readUInt16();
     }
 
     const dataSize = br.readUInt16();
-    const dataOffset = br.position;
+    let dataOffset = br.position;
 
     //Get the Row Data
     for (let i = 0; i < this.RowCount; i++){
 
-      const row: any = {"__index": i, "__rowlabel": RowIndexes[i] };
+      let row: any = {"__index": i, "__rowlabel": RowIndexes[i] };
 
       for (let j = 0; j < this.ColumnCount; j++){
 
-        const offset = dataOffset + offsets[i * this.ColumnCount + j];
+        let offset = dataOffset + offsets[i * this.ColumnCount + j];
 
         try{
           br.position = offset;
@@ -234,7 +234,7 @@ export class TwoDAObject {
    * @returns The row
    */
   getRowByIndex(index = -1){
-    for (const key of Object.keys(this.rows)) {
+    for (let key of Object.keys(this.rows)) {
       if(this.rows[key]['__index'] == index){
         return this.rows[key];
       }
@@ -247,7 +247,7 @@ export class TwoDAObject {
    * @returns The row
    */
   getByID(index = -1){
-    for (const key of Object.keys(this.rows)) {
+    for (let key of Object.keys(this.rows)) {
       if(this.rows[key]['__rowlabel'] == index){
         return this.rows[key];
       }
@@ -261,7 +261,7 @@ export class TwoDAObject {
    * @returns The row
    */
   getRowByColumnAndValue(column: string = '', value: any = undefined){
-    for (const key of Object.keys(this.rows)) {
+    for (let key of Object.keys(this.rows)) {
       if(this.rows[key][column] == value){
         return this.rows[key];
       }

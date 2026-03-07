@@ -1,11 +1,8 @@
-import React, { useMemo, useState, useEffect } from "react";
-
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import type { GFFFieldValue } from "@/apps/forge/interfaces/GFFFormField";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabIFOEditorState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/components/tabs/tab-ifo-editor/TabIFOEditor.scss";
+import React, { useState, useEffect } from "react";
+import { TabIFOEditorState } from "../../../states/tabs";
+import { MenuBar, MenuItem } from "../../common/MenuBar";
+import * as KotOR from "../../../KotOR";
+import "./TabIFOEditor.scss";
 
 interface BaseTabProps {
   tab: TabIFOEditorState;
@@ -103,70 +100,16 @@ interface TabProps {
   onUpdate: () => void;
 }
 
-interface RootFieldSpec {
-  type: number;
-  defaultValue: GFFFieldValue;
-}
-
-const getRootFieldValue = (ifo: KotOR.GFFObject, label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
-  const v = ifo.RootNode.getFieldByLabel(label)?.getValue();
-  return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
-};
-
-const setRootFieldValue = (
-  ifo: KotOR.GFFObject,
-  label: string,
-  value: GFFFieldValue,
-  onUpdate: () => void,
-  spec?: RootFieldSpec
-) => {
-  let field = ifo.RootNode.getFieldByLabel(label);
-  if(!field && spec){
-    field = ifo.RootNode.addField(new KotOR.GFFField(spec.type, label, spec.defaultValue));
-  }
-
-  if(field){
-    field.setValue(value);
-    onUpdate();
-  }
-};
-
-const formatModIdHex = (ifo: KotOR.GFFObject): string => {
-  const field = ifo.RootNode.getFieldByLabel('Mod_ID');
-  const bytes = field?.getVoid();
-  if(!bytes || bytes.length === 0){
-    return '';
-  }
-
-  return Array.from(bytes).map((value) => value.toString(16).padStart(2, '0')).join(' ');
-};
-
 const BasicTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => getRootFieldValue(ifo, label, defaultVal);
-
-  const setFieldValue = (label: string, value: GFFFieldValue, spec?: RootFieldSpec) => {
-    setRootFieldValue(ifo, label, value, onUpdate, spec);
+  const getFieldValue = (label: string, defaultVal: any = '') => {
+    return ifo.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
   };
 
-  const getLocStringValue = (label: string): KotOR.CExoLocString => {
+  const setFieldValue = (label: string, value: any) => {
     const field = ifo.RootNode.getFieldByLabel(label);
-    return field?.getCExoLocString() || new KotOR.CExoLocString();
-  };
-
-  const generateModuleTag = () => {
-    const moduleName = getLocStringValue('Mod_Name').getValue().trim();
-    const voId = String(getFieldValue('Mod_VO_ID', '') || '').trim();
-    const source = moduleName || voId;
-    if (!source) return;
-
-    const generated = source
-      .toLowerCase()
-      .replace(/[^a-z0-9_]+/g, '_')
-      .replace(/^_+|_+$/g, '')
-      .slice(0, 32);
-
-    if (generated.length > 0) {
-      setFieldValue('Mod_Tag', generated, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' });
+    if(field){
+      field.setValue(value);
+      onUpdate();
     }
   };
 
@@ -177,25 +120,26 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
         <input
           type="text"
           value={getFieldValue('Mod_Tag')}
-          onChange={(e) => setFieldValue('Mod_Tag', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })}
+          onChange={(e) => setFieldValue('Mod_Tag', e.target.value)}
           placeholder="Module tag..."
         />
-        <div className="ifo-inline-actions">
-          <button className="ifo-action-btn" onClick={generateModuleTag}>Generate From Name/VO ID</button>
-        </div>
       </div>
       <div className="property-group">
         <label>Module Name (LocString)</label>
-        <CExoLocStringEditor
-          value={getLocStringValue('Mod_Name')}
-          onChange={(value) => setFieldValue('Mod_Name', value, { type: KotOR.GFFDataType.CEXOLOCSTRING, defaultValue: new KotOR.CExoLocString() })}
+        <input
+          type="text"
+          value={getFieldValue('Mod_Name')}
+          onChange={(e) => setFieldValue('Mod_Name', e.target.value)}
+          placeholder="Module name..."
         />
       </div>
       <div className="property-group">
         <label>Description (LocString)</label>
-        <CExoLocStringEditor
-          value={getLocStringValue('Mod_Description')}
-          onChange={(value) => setFieldValue('Mod_Description', value, { type: KotOR.GFFDataType.CEXOLOCSTRING, defaultValue: new KotOR.CExoLocString() })}
+        <textarea
+          value={getFieldValue('Mod_Description')}
+          onChange={(e) => setFieldValue('Mod_Description', e.target.value)}
+          rows={4}
+          placeholder="Module description..."
         />
       </div>
       <div className="property-group">
@@ -203,7 +147,7 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
         <input
           type="text"
           value={getFieldValue('Mod_VO_ID')}
-          onChange={(e) => setFieldValue('Mod_VO_ID', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })}
+          onChange={(e) => setFieldValue('Mod_VO_ID', e.target.value)}
           placeholder="Voice-over ID..."
         />
       </div>
@@ -212,18 +156,8 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
         <input
           type="text"
           value={getFieldValue('Mod_Hak')}
-          onChange={(e) => setFieldValue('Mod_Hak', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })}
+          onChange={(e) => setFieldValue('Mod_Hak', e.target.value)}
           placeholder="HAK file..."
-        />
-      </div>
-      <div className="property-group">
-        <label>Module ID (Hex)</label>
-        <input
-          title="Module ID"
-          placeholder="Generated module identifier"
-          type="text"
-          value={formatModIdHex(ifo)}
-          readOnly
         />
       </div>
       <div className="property-row">
@@ -234,7 +168,7 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Creator ID"
             type="number"
             value={getFieldValue('Mod_Creator_ID', 0)}
-            onChange={(e) => setFieldValue('Mod_Creator_ID', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.INT, defaultValue: 0 })}
+            onChange={(e) => setFieldValue('Mod_Creator_ID', parseInt(e.target.value) || 0)}
           />
         </div>
         <div className="property-group">
@@ -244,7 +178,7 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Version"
             type="number"
             value={getFieldValue('Mod_Version', 1)}
-            onChange={(e) => setFieldValue('Mod_Version', parseInt(e.target.value) || 1, { type: KotOR.GFFDataType.DWORD, defaultValue: 1 })}
+            onChange={(e) => setFieldValue('Mod_Version', parseInt(e.target.value) || 1)}
           />
         </div>
       </div>
@@ -253,29 +187,16 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
 };
 
 const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => getRootFieldValue(ifo, label, defaultVal);
-
-  const setFieldValue = (label: string, value: GFFFieldValue, spec?: RootFieldSpec) => {
-    setRootFieldValue(ifo, label, value, onUpdate, spec);
+  const getFieldValue = (label: string, defaultVal: any = '') => {
+    return ifo.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
   };
 
-  const getDirectionDegrees = (): number => {
-    const dirX = Number(getFieldValue('Mod_Entry_Dir_X', 0));
-    const dirY = Number(getFieldValue('Mod_Entry_Dir_Y', 0));
-    if (dirX === 0 && dirY === 0) {
-      return 0;
+  const setFieldValue = (label: string, value: any) => {
+    const field = ifo.RootNode.getFieldByLabel(label);
+    if(field){
+      field.setValue(value);
+      onUpdate();
     }
-    const radians = Math.atan2(dirY, dirX);
-    const degrees = (radians * 180) / Math.PI;
-    return ((degrees % 360) + 360) % 360;
-  };
-
-  const setDirectionDegrees = (degrees: number) => {
-    const radians = (degrees * Math.PI) / 180;
-    const dirX = Math.cos(radians);
-    const dirY = Math.sin(radians);
-    setFieldValue('Mod_Entry_Dir_X', dirX, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 });
-    setFieldValue('Mod_Entry_Dir_Y', dirY, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 });
   };
 
   return (
@@ -287,7 +208,7 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
           placeholder="Starting area ResRef..."
           type="text"
           value={getFieldValue('Mod_Entry_Area')}
-          onChange={(e) => setFieldValue('Mod_Entry_Area', e.target.value, { type: KotOR.GFFDataType.RESREF, defaultValue: '' })}
+          onChange={(e) => setFieldValue('Mod_Entry_Area', e.target.value)}
         />
       </div>
       <h4>Position</h4>
@@ -299,7 +220,7 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="X"
             type="number"
             value={getFieldValue('Mod_Entry_X', 0)}
-            onChange={(e) => setFieldValue('Mod_Entry_X', parseFloat(e.target.value) || 0, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 })}
+            onChange={(e) => setFieldValue('Mod_Entry_X', parseFloat(e.target.value) || 0)}
             step="0.1"
           />
         </div>
@@ -310,7 +231,7 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Y"
             type="number"
             value={getFieldValue('Mod_Entry_Y', 0)}
-            onChange={(e) => setFieldValue('Mod_Entry_Y', parseFloat(e.target.value) || 0, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 })}
+            onChange={(e) => setFieldValue('Mod_Entry_Y', parseFloat(e.target.value) || 0)}
             step="0.1"
           />
         </div>
@@ -321,25 +242,12 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Z"
             type="number"
             value={getFieldValue('Mod_Entry_Z', 0)}
-            onChange={(e) => setFieldValue('Mod_Entry_Z', parseFloat(e.target.value) || 0, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 })}
+            onChange={(e) => setFieldValue('Mod_Entry_Z', parseFloat(e.target.value) || 0)}
             step="0.1"
           />
         </div>
       </div>
       <h4>Direction (Facing)</h4>
-      <div className="property-group">
-        <label>Direction (Degrees)</label>
-        <input
-          title="Direction Degrees"
-          placeholder="0-359"
-          type="number"
-          value={getDirectionDegrees()}
-          onChange={(e) => setDirectionDegrees(parseFloat(e.target.value) || 0)}
-          min="0"
-          max="359"
-          step="1"
-        />
-      </div>
       <div className="property-row">
         <div className="property-group">
           <label>Dir X</label>
@@ -348,7 +256,7 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Dir X"
             type="number"
             value={getFieldValue('Mod_Entry_Dir_X', 0)}
-            onChange={(e) => setFieldValue('Mod_Entry_Dir_X', parseFloat(e.target.value) || 0, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 })}
+            onChange={(e) => setFieldValue('Mod_Entry_Dir_X', parseFloat(e.target.value) || 0)}
             step="0.01"
           />
         </div>
@@ -359,7 +267,7 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Dir Y"
             type="number"
             value={getFieldValue('Mod_Entry_Dir_Y', 0)}
-            onChange={(e) => setFieldValue('Mod_Entry_Dir_Y', parseFloat(e.target.value) || 0, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 })}
+            onChange={(e) => setFieldValue('Mod_Entry_Dir_Y', parseFloat(e.target.value) || 0)}
             step="0.01"
           />
         </div>
@@ -369,10 +277,16 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
 };
 
 const ScriptsTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => getRootFieldValue(ifo, label, defaultVal);
+  const getFieldValue = (label: string, defaultVal: any = '') => {
+    return ifo.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  };
 
-  const setFieldValue = (label: string, value: GFFFieldValue) => {
-    setRootFieldValue(ifo, label, value, onUpdate, { type: KotOR.GFFDataType.RESREF, defaultValue: '' });
+  const setFieldValue = (label: string, value: any) => {
+    const field = ifo.RootNode.getFieldByLabel(label);
+    if(field){
+      field.setValue(value);
+      onUpdate();
+    }
   };
 
   const scriptFields = [
@@ -381,41 +295,17 @@ const ScriptsTab = ({ ifo, onUpdate }: TabProps) => {
     { label: 'OnModStart', field: 'Mod_OnModStart' },
     { label: 'OnClientEntr', field: 'Mod_OnClientEntr' },
     { label: 'OnClientLeav', field: 'Mod_OnClientLeav' },
-    { label: 'OnActivateItem', field: 'Mod_OnActvtItem' },
     { label: 'OnPlayerDeath', field: 'Mod_OnPlrDeath' },
     { label: 'OnPlayerDying', field: 'Mod_OnPlrDying' },
     { label: 'OnPlayerLevelUp', field: 'Mod_OnPlrLvlUp' },
-    { label: 'OnPlayerRest', field: 'Mod_OnPlrRest' },
-    { label: 'OnPlayerRespawn (Spawn Button)', field: 'Mod_OnSpawnBtnDn' },
+    { label: 'OnPlayerRest', field: 'Mod_OnSpawnBtnDn' },
     { label: 'OnAcquireItem', field: 'Mod_OnAcquirItem' },
-    { label: 'OnUnacquireItem', field: 'Mod_OnUnAqreItem' },
+    { label: 'OnUnacquireItem', field: 'Mod_OnUsrDefined' },
     { label: 'OnUserDefined', field: 'Mod_OnUsrDefined' },
   ];
 
-  const scriptSuggestions = useMemo(() => {
-    const keyObject = KotOR.KEYManager?.Key;
-    if (!keyObject?.keys?.length) {
-      return [] as string[];
-    }
-
-    const ncsType = KotOR.ResourceTypes['ncs'];
-    const names = keyObject.keys
-      .filter((entry: KotOR.IKEYEntry) => entry.resType === ncsType)
-      .map((entry: KotOR.IKEYEntry) => String(entry.resRef || '').toLowerCase())
-      .filter((name: string) => name.length > 0);
-
-    return Array.from(new Set(names)).sort();
-  }, []);
-
-  const suggestionListId = 'ifo-script-suggestions';
-
   return (
     <div className="ifo-tab-content">
-      <datalist id={suggestionListId}>
-        {scriptSuggestions.map((name) => (
-          <option key={`ifo-script-${name}`} value={name} />
-        ))}
-      </datalist>
       {scriptFields.map(({ label, field }) => (
         <div key={field} className="property-group">
           <label>{label}</label>
@@ -424,8 +314,6 @@ const ScriptsTab = ({ ifo, onUpdate }: TabProps) => {
             value={getFieldValue(field)}
             onChange={(e) => setFieldValue(field, e.target.value)}
             placeholder="Script ResRef..."
-            list={suggestionListId}
-            maxLength={16}
           />
         </div>
       ))}
@@ -433,108 +321,24 @@ const ScriptsTab = ({ ifo, onUpdate }: TabProps) => {
   );
 };
 
-const AreasTab = ({ ifo, onUpdate: _onUpdate }: TabProps) => {
-  const onUpdate = _onUpdate;
-  const [selectedAreaIndex, setSelectedAreaIndex] = useState(0);
-  const [revision, setRevision] = useState(0);
-
-  const ensureAreaList = () => {
-    let areaList = ifo.RootNode.getFieldByLabel('Mod_Area_list');
-    if (!areaList) {
-      areaList = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Mod_Area_list'));
-    }
-    return areaList;
-  };
-
-  const getAreas = () => ensureAreaList()?.getChildStructs() || [];
-  const areas = getAreas();
-  const activeAreaIndex = Math.min(selectedAreaIndex, Math.max(areas.length - 1, 0));
-
-  const bumpRevision = () => setRevision((value) => value + 1);
-
-  const addArea = () => {
-    const areaList = ensureAreaList();
-    const areaStruct = new KotOR.GFFStruct(6);
-    areaStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', ''));
-    areaList.addChildStruct(areaStruct);
-    setSelectedAreaIndex(areaList.getChildStructs().length - 1);
-    onUpdate();
-    bumpRevision();
-  };
-
-  const removeSelectedArea = () => {
-    const areaList = ensureAreaList();
-    const list = areaList.getChildStructs();
-    if (list.length === 0) {
-      return;
-    }
-
-    list.splice(activeAreaIndex, 1);
-    setSelectedAreaIndex(Math.max(0, Math.min(activeAreaIndex, list.length - 1)));
-    onUpdate();
-    bumpRevision();
-  };
-
-  const setAreaName = (index: number, value: string) => {
-    const area = getAreas()[index];
-    if (!area) {
-      return;
-    }
-
-    let areaNameField = area.getFieldByLabel('Area_Name');
-    if (!areaNameField) {
-      areaNameField = area.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', ''));
-    }
-
-    areaNameField.setValue(value);
-    onUpdate();
-    bumpRevision();
-  };
+const AreasTab = ({ ifo, onUpdate }: TabProps) => {
+  const areaList = ifo.RootNode.getFieldByLabel('Mod_Area_list');
+  const areas = areaList?.getChildStructs() || [];
 
   return (
     <div className="ifo-tab-content">
       <h4>Areas ({areas.length})</h4>
-      <div className="ifo-inline-actions">
-        <button className="ifo-action-btn" onClick={addArea}>Add Area</button>
-        <button className="ifo-action-btn ifo-action-btn--danger" onClick={removeSelectedArea} disabled={areas.length === 0}>Remove Selected</button>
-      </div>
       {areas.length === 0 ? (
         <p className="no-data">No areas defined in this module.</p>
       ) : (
-        <div className="areas-list" data-revision={revision}>
-          <div className="property-group">
-            <label>Selected Area</label>
-            <select
-              title="Selected Area"
-              value={activeAreaIndex}
-              onChange={(e) => setSelectedAreaIndex(parseInt(e.target.value) || 0)}
-            >
-              {areas.map((_, index) => (
-                <option key={`area-select-${index}`} value={index}>{`#${index}`}</option>
-              ))}
-            </select>
-          </div>
+        <div className="areas-list">
           {areas.map((area, index) => {
-            const areaName = area.getFieldByLabel('Area_Name')?.getValue() || `Area ${index}`;
-            const objectId = area.getFieldByLabel('ObjectId')?.getValue();
+            const areaFields = area.getFields();
+            const areaName = areaFields.find(f => f.label === 'Area_Name')?.value || `Area ${index}`;
 
             return (
               <div key={index} className="area-item">
                 <strong>{areaName}</strong>
-                {index === activeAreaIndex && (
-                  <div className="property-group">
-                    <label>Area Name (ResRef)</label>
-                    <input
-                      title="Area Name"
-                      type="text"
-                      value={String(area.getFieldByLabel('Area_Name')?.getValue() || '')}
-                      onChange={(e) => setAreaName(index, e.target.value)}
-                      placeholder="e.g. m01aa"
-                      maxLength={16}
-                    />
-                  </div>
-                )}
-                {objectId !== undefined && <span>{`ObjectId: ${objectId}`}</span>}
               </div>
             );
           })}
@@ -545,10 +349,16 @@ const AreasTab = ({ ifo, onUpdate: _onUpdate }: TabProps) => {
 };
 
 const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => getRootFieldValue(ifo, label, defaultVal);
+  const getFieldValue = (label: string, defaultVal: any = '') => {
+    return ifo.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  };
 
-  const setFieldValue = (label: string, value: GFFFieldValue, spec?: RootFieldSpec) => {
-    setRootFieldValue(ifo, label, value, onUpdate, spec);
+  const setFieldValue = (label: string, value: any) => {
+    const field = ifo.RootNode.getFieldByLabel(label);
+    if(field){
+      field.setValue(value);
+      onUpdate();
+    }
   };
 
   return (
@@ -560,7 +370,7 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
           placeholder="Expansion Pack"
           type="number"
           value={getFieldValue('Expansion_Pack', 0)}
-          onChange={(e) => setFieldValue('Expansion_Pack', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.WORD, defaultValue: 0 })}
+          onChange={(e) => setFieldValue('Expansion_Pack', parseInt(e.target.value) || 0)}
         />
       </div>
       <div className="property-group">
@@ -570,7 +380,7 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
           placeholder="e.g. 1.0"
           type="text"
           value={getFieldValue('Mod_MinGameVer')}
-          onChange={(e) => setFieldValue('Mod_MinGameVer', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })}
+          onChange={(e) => setFieldValue('Mod_MinGameVer', e.target.value)}
         />
       </div>
       <div className="property-group">
@@ -580,20 +390,8 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
           placeholder="XP Scale"
           type="number"
           value={getFieldValue('Mod_XPScale', 100)}
-          onChange={(e) => setFieldValue('Mod_XPScale', parseInt(e.target.value) || 100, { type: KotOR.GFFDataType.BYTE, defaultValue: 100 })}
+          onChange={(e) => setFieldValue('Mod_XPScale', parseInt(e.target.value) || 100)}
           min="0"
-        />
-      </div>
-      <div className="property-group">
-        <label>Minutes Per Hour</label>
-        <input
-          title="Minutes Per Hour"
-          placeholder="Minutes Per Hour"
-          type="number"
-          value={getFieldValue('Mod_MinPerHour', 2)}
-          onChange={(e) => setFieldValue('Mod_MinPerHour', parseInt(e.target.value) || 2, { type: KotOR.GFFDataType.BYTE, defaultValue: 2 })}
-          min="1"
-          max="255"
         />
       </div>
       <div className="property-row">
@@ -604,7 +402,7 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Dawn Hour"
             type="number"
             value={getFieldValue('Mod_DawnHour', 6)}
-            onChange={(e) => setFieldValue('Mod_DawnHour', parseInt(e.target.value) || 6, { type: KotOR.GFFDataType.BYTE, defaultValue: 6 })}
+            onChange={(e) => setFieldValue('Mod_DawnHour', parseInt(e.target.value) || 6)}
             min="0"
             max="23"
           />
@@ -616,58 +414,7 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Dusk Hour"
             type="number"
             value={getFieldValue('Mod_DuskHour', 18)}
-            onChange={(e) => setFieldValue('Mod_DuskHour', parseInt(e.target.value) || 18, { type: KotOR.GFFDataType.BYTE, defaultValue: 18 })}
-            min="0"
-            max="23"
-          />
-        </div>
-      </div>
-      <div className="property-row">
-        <div className="property-group">
-          <label>Start Year</label>
-          <input
-            title="Start Year"
-            placeholder="Start Year"
-            type="number"
-            value={getFieldValue('Mod_StartYear', 0)}
-            onChange={(e) => setFieldValue('Mod_StartYear', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.DWORD, defaultValue: 0 })}
-            min="0"
-          />
-        </div>
-        <div className="property-group">
-          <label>Start Month</label>
-          <input
-            title="Start Month"
-            placeholder="Start Month"
-            type="number"
-            value={getFieldValue('Mod_StartMonth', 0)}
-            onChange={(e) => setFieldValue('Mod_StartMonth', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.BYTE, defaultValue: 0 })}
-            min="0"
-            max="12"
-          />
-        </div>
-      </div>
-      <div className="property-row">
-        <div className="property-group">
-          <label>Start Day</label>
-          <input
-            title="Start Day"
-            placeholder="Start Day"
-            type="number"
-            value={getFieldValue('Mod_StartDay', 0)}
-            onChange={(e) => setFieldValue('Mod_StartDay', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.BYTE, defaultValue: 0 })}
-            min="0"
-            max="31"
-          />
-        </div>
-        <div className="property-group">
-          <label>Start Hour</label>
-          <input
-            title="Start Hour"
-            placeholder="Start Hour"
-            type="number"
-            value={getFieldValue('Mod_StartHour', 0)}
-            onChange={(e) => setFieldValue('Mod_StartHour', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.BYTE, defaultValue: 0 })}
+            onChange={(e) => setFieldValue('Mod_DuskHour', parseInt(e.target.value) || 18)}
             min="0"
             max="23"
           />
@@ -680,7 +427,7 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
           placeholder="Movie ResRef..."
           type="text"
           value={getFieldValue('Mod_StartMovie')}
-          onChange={(e) => setFieldValue('Mod_StartMovie', e.target.value, { type: KotOR.GFFDataType.RESREF, defaultValue: '' })}
+          onChange={(e) => setFieldValue('Mod_StartMovie', e.target.value)}
         />
       </div>
     </div>

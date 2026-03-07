@@ -1,56 +1,58 @@
-﻿import * as THREE from "three";
-import type { Action } from "@/actions/Action";
-import { ActionQueue } from "@/actions/ActionQueue";
-import { AudioEmitter } from "@/audio/AudioEmitter";
-import { CollisionData } from "@/engine/CollisionData";
-import { CombatData } from "@/combat/CombatData";
-import type { EffectLink } from "@/effects";
-import type { GameEffect } from "@/effects/GameEffect";
-import EngineLocation from "@/engine/EngineLocation";
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { ModulePlaceableAnimState } from "@/enums/module/ModulePlaceableAnimState";
-import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { IEffectIconListItem } from "@/interface/module/IEffectIconListItem";
-import { SSFType } from "@/enums/resource/SSFType";
-import { NWScriptEvent } from "@/nwscript/events";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { OdysseyModel, OdysseyModelAnimation, OdysseyWalkMesh } from "@/odyssey";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { LIPObject } from "@/resource/LIPObject";
-import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
-import { Utility } from "@/utility/Utility";
-import { ComputedPath } from "@/engine/pathfinding";
-import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleItem, ModuleRoom } from ".";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { DLGObject } from "@/resource/DLGObject";
-import { Faction } from "@/engine/Faction";
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
-import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
-import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
-import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
-import { IDialogAnimationState } from "@/interface/animation/IDialogAnimationState";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import type { IPerceptionInfo } from "@/interface/engine/IPerceptionInfo";
-import { PerceptionMask } from "@/enums/engine/PerceptionMask";
-import { MDLLoader } from "@/loaders";
-import { CombatRound, CombatRoundAction } from "@/combat";
-import { Dice } from "@/utility/Dice";
-import { DiceType } from "@/enums/combat/DiceType";
-import { BitWise } from "@/utility/BitWise";
-import { ActionType } from "@/enums/actions/ActionType";
-import { NWScript } from "@/nwscript/NWScript";
-import { CombatActionType, EngineDebugType, ModuleObjectScript, ModuleTriggerType, SkillType, TalkVolume } from "@/enums";
-import type { SWPortrait } from "@/engine/rules/SWPortrait";
-import type { IHeardString } from "@/interface/dialog/IHeardString";
-import type { SWRange } from "@/engine/rules/SWRange";
+import * as THREE from "three";
+import type { Action } from "../actions/Action";
+import { ActionQueue } from "../actions/ActionQueue";
+import { AudioEmitter } from "../audio/AudioEmitter";
+import { CollisionManager } from "../engine/CollisionManager";
+import { CombatData } from "../combat/CombatData";
+import type { EffectLink } from "../effects";
+import type { GameEffect } from "../effects/GameEffect";
+import EngineLocation from "../engine/EngineLocation";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
+import { NWScriptEventType } from "../enums/nwscript/NWScriptEventType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+import { IEffectIconListItem } from "../interface/module/IEffectIconListItem";
+import { SSFType } from "../enums/resource/SSFType";
+import { NWScriptEvent } from "../nwscript/events";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { OdysseyModel, OdysseyModelAnimation, OdysseyWalkMesh } from "../odyssey";
+import { CExoLocString } from "../resource/CExoLocString";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { LIPObject } from "../resource/LIPObject";
+import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
+import { Utility } from "../utility/Utility";
+import { ComputedPath } from "../engine/pathfinding";
+import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from ".";
+import { EngineMode } from "../enums/engine/EngineMode";
+import { DLGObject } from "../resource/DLGObject";
+import { Faction } from "../engine/Faction";
+import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
+import { SWPlaceableAppearance } from "../engine/rules/SWPlaceableAppearance";
+import { SWCreatureAppearance } from "../engine/rules/SWCreatureAppearance";
+import { SWDoorAppearance } from "../engine/rules/SWDoorAppearance";
+import { IDialogAnimationState } from "../interface/animation/IDialogAnimationState";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
+import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
+import { PerceptionMask } from "../enums/engine/PerceptionMask";
+import { MDLLoader } from "../loaders";
+import { CombatRound, CombatRoundAction } from "../combat";
+import { Dice } from "../utility/Dice";
+import { DiceType } from "../enums/combat/DiceType";
+import { BitWise } from "../utility/BitWise";
+import { ActionType } from "../enums/actions/ActionType";
+import { NWScript } from "../nwscript/NWScript";
+import { CombatActionType, EngineDebugType, ModuleObjectScript, ModuleTriggerType, SkillType, TalkVolume } from "../enums";
+import type { SWPortrait } from "../engine/rules/SWPortrait";
+import type { IHeardString } from "../interface/dialog/IHeardString";
+import type { SWRange } from "../engine/rules/SWRange";
+import { TURN_SPEED_SLOW } from "../engine/TurnSpeeds";
+
 
 /**
 * ModuleObject class.
@@ -65,6 +67,7 @@ import type { SWRange } from "@/engine/rules/SWRange";
 * @memberof KotOR
 */
 export class ModuleObject {
+  facingSpeed: number = TURN_SPEED_SLOW;
   helperColor: THREE.Color = new THREE.Color(0xFFFFFF);
 
   combatOrder: number;
@@ -97,14 +100,13 @@ export class ModuleObject {
   audioEmitter: AudioEmitter;
   footstepEmitter: AudioEmitter;
 
-  collisionData: CollisionData = new CollisionData(this);
+  collisionManager: CollisionManager = new CollisionManager(this);
   invalidateCollision: boolean = false;
   combatData: CombatData = new CombatData(this);
   combatRound = new CombatRound(this);
 
   facing: number;
   wasFacing: number;
-  facingTweenTime: number;
   force: number;
   speed: number;
   movementSpeed: number;
@@ -157,7 +159,7 @@ export class ModuleObject {
   effects: GameEffect[] = [];
   casting: any[] = [];
   damageList: any[] = [];
-  _locals: { Booleans: boolean[]; Numbers: Record<number, number>; };
+  _locals: { Booleans: any[]; Numbers: {}; };
   objectsInside: any[];
   lockDialogOrientation: boolean = false;
   context: any;
@@ -165,9 +167,6 @@ export class ModuleObject {
   heartbeatTimer: any;
   _heartbeatTimerOffset: number;
   _heartbeatTimeout: number;
-
-  /** Feedback string from DisplayFeedBackText (overrides name when set). Reva: CSWCObject::SetFeedbackInfo. */
-  feedbackInfo: string | undefined;
 
   //Perception
   heardStrings: IHeardString[] = [];
@@ -264,8 +263,6 @@ export class ModuleObject {
 
   notBlastable: boolean = false;
 
-  fadeOnDestory: boolean = false;
-  fadeOutTimer: number = 3000;
   linkedToObject: ModuleObject;
 
   constructor (gff = new GFFObject) {
@@ -286,7 +283,6 @@ export class ModuleObject {
     this.sphere = new THREE.Sphere();
     this.facing = 0;
     this.wasFacing = 0;
-    this.facingTweenTime = 0;
     this.force = 0;
     this.speed = 0;
     this.movementSpeed = 1;
@@ -379,6 +375,12 @@ export class ModuleObject {
 
   }
 
+  getScriptInstance(scriptKey: ModuleObjectScript): NWScriptInstance | undefined {
+    const script = this.scripts[scriptKey];
+    if(!script || !script.nwscript){ return undefined; }
+    return this.scripts[scriptKey].newInstance();
+  }
+
   /**
    * Attach to room
    * @param room 
@@ -464,6 +466,14 @@ export class ModuleObject {
    * @param delta 
    */
   update(delta = 0){
+
+    this.updateDestroy(delta);
+    if(this.willDestroy || this.destroyed){
+      if(this.actionQueue && this.actionQueue.length > 0){
+        this.actionQueue.clear();
+      }
+      return;
+    }
     
     //Process the heartbeat timer
     if(this._heartbeatTimeout <= 0){
@@ -487,13 +497,33 @@ export class ModuleObject {
     }
 
     if(this.spawned){
-      this.collisionData.roomCheck(delta);
+      this.collisionManager.roomCheck(delta);
     }
 
 
     this.sphere.center.copy(this.position);
     this.sphere.radius = this.getHitDistance() * 2;
 
+  }
+
+  updateDestroy(delta: number = 0){
+    if(this.willDestroy && !this.destroyed){
+      this.timeSinceDestroyStarted += delta;
+      this.updateDestroyFade(delta);
+      const fadeEndTime = this.noFadeOnDestroy ? 0 : (this.delayUntilFade + ModuleObject.FADE_TIME);
+      const destroyTime = Math.max(this.delayUntilDestroy, fadeEndTime);
+      if(this.timeSinceDestroyStarted >= destroyTime){
+        this.destroy();
+      }
+    }
+  }
+
+  updateDestroyFade(delta: number = 0){
+    if(this.noFadeOnDestroy || this.destroyed) return;
+    if(this.timeSinceDestroyStarted >= this.delayUntilFade){
+      const fadeElapsed = this.timeSinceDestroyStarted - this.delayUntilFade;
+      this.setOpacity(Math.max(0, 1 - (fadeElapsed / ModuleObject.FADE_TIME)));
+    }
   }
 
   /**
@@ -1209,6 +1239,20 @@ export class ModuleObject {
             return animations2DA.rows[10];
           }
         break;
+        case ModuleCreatureAnimState.TURN_LEFT:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[253];
+          }else{
+            return animations2DA.rows[290];
+          }
+        break;
+        case ModuleCreatureAnimState.TURN_RIGHT:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[253];
+          }else{
+            return animations2DA.rows[291];
+          }
+        break;
         case ModuleCreatureAnimState.GET_LOW:
           return animations2DA.rows[40];
         break;
@@ -1468,16 +1512,14 @@ export class ModuleObject {
    * @param facing 
    * @param instant 
    */
-  setFacing(facing = 0, instant = false){
-    let diff = this.rotation.z - facing;
+  setFacing(facing = 0, instant = false, speed = TURN_SPEED_SLOW){
     this.wasFacing = Utility.NormalizeRadian(this.rotation.z);
-    this.facing = Utility.NormalizeRadian(facing);//Utility.NormalizeRadian(this.rotation.z - diff);
-    this.facingTweenTime = 0;
-    this.facingAnim = true;
+    this.facing = Utility.NormalizeRadian(facing);
+    this.facingAnim = !instant;
+    this.facingSpeed = speed;
 
     if(instant){
-      this.rotation.z = this.wasFacing = Utility.NormalizeRadian(this.facing);
-      this.facingAnim = false;
+      this.rotation.z = this.wasFacing = this.facing;
     }
   }
 
@@ -1626,25 +1668,10 @@ export class ModuleObject {
   }
 
   /**
-   * Set feedback text displayed when object is selected (DisplayFeedBackText).
-   * Reversed from CSWCObject::SetFeedbackInfo (0x0063d2d0).
-   */
-  setFeedbackInfo(text: string){
-    this.feedbackInfo = text;
-  }
-
-  /**
-   * Get the display name (feedbackInfo if set, else getName).
-   */
-  getDisplayName(): string {
-    return this.feedbackInfo ?? this.getName();
-  }
-
-  /**
    * Get the name
    * @returns 
    */
-  getName(): string {
+  getName(): any {
     console.warn("Method not implemented.", this.tag);
     return '';
   }
@@ -1653,7 +1680,7 @@ export class ModuleObject {
    * Get the race
    * @returns 
    */
-  getRace(): number {
+  getRace(): any {
     console.warn("Method not implemented.", this.tag);
     return 0;
   }
@@ -2123,7 +2150,7 @@ export class ModuleObject {
    * Set the commadable
    * @param arg0 
    */
-  setCommadable(arg0: any): void {
+  setCommadable(arg0: any) {
     console.warn("Method not implemented.", this.tag);
   }
 
@@ -2145,7 +2172,7 @@ export class ModuleObject {
    * @returns 
    */
   getCurrentRoom(){
-    this.collisionData.findWalkableFace();
+    this.collisionManager.findWalkableFace();
   }
 
   /**
@@ -2199,8 +2226,8 @@ export class ModuleObject {
   //           this.lastGroundFace = this.groundFace;
   //           this.surfaceId = this.groundFace.walkIndex;
   //           this.attachToRoom(room);
-  //           face.triangle.closestPointToPoint(this.position, this.collisionData.wm_c_point);
-  //           this.position.z = this.collisionData.wm_c_point.z + .005;
+  //           face.triangle.closestPointToPoint(this.position, this.collisionManager.wm_c_point);
+  //           this.position.z = this.collisionManager.wm_c_point.z + .005;
   //         }
   //       }
   //     }
@@ -2436,7 +2463,7 @@ export class ModuleObject {
    * @param oVersus 
    * @returns 
    */
-  fortitudeSave(nDC = 0, nSaveType = 0, oVersus?: ModuleObject): number {
+  fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = Dice.roll(1, DiceType.d20);
     let bonus = CombatRound.GetMod(this.getCON());
     
@@ -2462,7 +2489,7 @@ export class ModuleObject {
    * @param oVersus 
    * @returns 
    */
-  reflexSave(nDC = 0, nSaveType = 0, oVersus?: ModuleObject): number {
+  reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = Dice.roll(1, DiceType.d20);
     let bonus = CombatRound.GetMod(this.getDEX());
     
@@ -2496,7 +2523,7 @@ export class ModuleObject {
    * @param oVersus 
    * @returns 
    */
-  willSave(nDC = 0, nSaveType = 0, oVersus?: ModuleObject): number {
+  willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = Dice.roll(1, DiceType.d20);
     let bonus = CombatRound.GetMod(this.getWIS());
 
@@ -2533,10 +2560,8 @@ export class ModuleObject {
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(oCaster, ModuleObjectType.ModuleCreature)){
       //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
       //1d20 + their level vs. a DC of your level plus 10
-      const self = this as unknown as ModuleCreature;
-      const caster = oCaster as unknown as ModuleCreature;
-      const roll = Dice.roll(1, DiceType.d20, self.getTotalClassLevel());
-      return (roll > 10 + caster.getTotalClassLevel());
+      let roll = Dice.roll(1, DiceType.d20, (this as any).getTotalClassLevel());
+      return (roll > 10 + (oCaster as any).getTotalClassLevel());
     }
     return 0;
   }
@@ -2673,8 +2698,8 @@ export class ModuleObject {
       this.computeBoundingBox();
 
       this.setFacing(-Math.atan2(lLocation.rotation.x, lLocation.rotation.y) + Math.PI/2, true);
-      this.collisionData.groundFace = undefined;
-      this.collisionData.lastGroundFace = undefined;
+      this.collisionManager.groundFace = undefined;
+      this.collisionManager.lastGroundFace = undefined;
     }
   }
 
@@ -3039,8 +3064,8 @@ export class ModuleObject {
    * @param index 
    * @param value 
    */
-  setLocalNumber(index: number, value: number): void {
-    this._locals.Numbers[index] = value;
+  setLocalNumber(index: number, value: number){
+    (this._locals.Numbers as any)[index] = value;
   }
 
   /**
@@ -3214,6 +3239,10 @@ export class ModuleObject {
     }
   }
 
+  #tmpPositionA = new THREE.Vector3();
+  #tmpPositionB = new THREE.Vector3();
+  #tmpDirection = new THREE.Vector3();
+
   /**
    * Check if the object has line of sight to another object
    * @param oTarget 
@@ -3228,59 +3257,69 @@ export class ModuleObject {
       return false;
     }
 
-    let position_a = this.position.clone();
-    let position_b = oTarget.position.clone();
-    position_a.z += 1;
-    position_b.z += 1;
-    let direction = position_b.clone().sub(position_a).normalize();
-    let distance = position_a.distanceTo(position_b);
+    this.#tmpPositionA.copy(this.position);
+    this.#tmpPositionB.copy(oTarget.position);
+    this.#tmpPositionA.z += 1;
+    this.#tmpPositionB.z += 1;
+    const distance = this.#tmpPositionA.distanceTo(this.#tmpPositionB);
 
     if(this.perceptionRange){
-      if(distance > this.getPerceptionRangePrimary()){
-        return;
+      const primaryRange = this.getPerceptionRangePrimary();
+      if(distance > primaryRange){
+        return false;
       }
-      max_distance = this.getPerceptionRangePrimary();
+      max_distance = primaryRange;
     }else{
-      if(distance > 50)
-        return;
-    }
-
-    GameState.raycaster.ray.origin.copy(position_a);
-    GameState.raycaster.ray.direction.copy(direction);
-    GameState.raycaster.far = max_distance;
-
-    let aabbFaces = [];
-    let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
-
-    for(let j = 0, jl = this.area.rooms.length; j < jl; j++){
-      let room = this.area.rooms[j];
-      if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
-        aabbFaces.push({
-          object: room, 
-          faces: room.collisionData.walkmesh.faces
-        });
+      if(distance > max_distance){
+        return false;
       }
     }
+
+    this.#tmpDirection.copy(this.#tmpPositionB).sub(this.#tmpPositionA).normalize();
+    GameState.raycaster.ray.origin.copy(this.#tmpPositionA);
+    GameState.raycaster.ray.direction.copy(this.#tmpDirection);
+    GameState.raycaster.far = distance;
 
     for(let j = 0, jl = this.area.doors.length; j < jl; j++){
-      let door = this.area.doors[j];
-      if(door && door != (this as any) && !door.isOpen()){
-        let box3 = door.box;
-        if(box3){
-          if(GameState.raycaster.ray.intersectsBox(box3) || box3.containsPoint(position_a)){
+      const door = this.area.doors[j];
+      if(!door || door == (this as any) || door.isOpen()) continue;
+      const box3 = door.box;
+      if(!box3) continue;
+      if(GameState.raycaster.ray.intersectsBox(box3) || box3.containsPoint(this.#tmpPositionA)){
+        const intersects = door.collisionManager.walkmesh.raycast(GameState.raycaster, door.collisionManager.walkmesh.faces);
+        if(intersects){
+          for(let k = 0; k < intersects.length; k++){
+            if(intersects[k].distance < distance){
+              return false;
+            }
+          }
+        }
+      }
+    }
+
+    if(!this.room) return true;
+
+    //Check the current room walkmesh
+    if(this.room && this.room.collisionManager.walkmesh && this.room.collisionManager.walkmesh.aabbNodes.length){
+      const intersects = this.room.collisionManager.walkmesh.raycast(GameState.raycaster, this.room.collisionManager.walkmesh.faces);
+      if(intersects){
+        for(let k = 0; k < intersects.length; k++){
+          if(intersects[k].distance < distance){
             return false;
           }
         }
       }
     }
 
-
-    for(let i = 0, il = aabbFaces.length; i < il; i++){
-      let castableFaces = aabbFaces[i];
-      intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces);
-      if (intersects && intersects.length > 0 ) {
-        for(let j = 0; j < intersects.length; j++){
-          if(intersects[j].distance < distance){
+    //Check the linked rooms walkmeshes
+    const linkedRooms = this.room.linkedRoomsArray;
+    for(let j = 0, jl = linkedRooms.length; j < jl; j++){
+      const room = linkedRooms[j];
+      if(!room || !room.collisionManager.walkmesh || !room.collisionManager.walkmesh.aabbNodes.length) continue;
+      const intersects = room.collisionManager.walkmesh.raycast(GameState.raycaster, room.collisionManager.walkmesh.faces);
+      if(intersects){
+        for(let k = 0; k < intersects.length; k++){
+          if(intersects[k].distance < distance){
             return false;
           }
         }
@@ -3351,7 +3390,7 @@ export class ModuleObject {
    * @param attackAnimation 
    * @param attackResult 
    */
-  attackCreature(target: ModuleObject, feat?: any, isCutsceneAttack: boolean = false, attackDamage: number = 0, attackAnimation?: any, attackResult?: any): void {
+  attackCreature(target: ModuleObject, feat?: any, isCutsceneAttack: boolean = false, attackDamage:number = 0, attackAnimation?: any, attackResult?: any) {
     console.warn("Method not implemented.", this.tag, target);
   }
   /**
@@ -3619,11 +3658,76 @@ export class ModuleObject {
     return actionList;
   }
 
+  setOpacity(opacity: number){
+    if(this.model instanceof OdysseyModel3D){
+      this.model.setOpacity(opacity);
+    }
+  }
+
+  /**
+   * Destroyed
+   */
+  destroyed: boolean = false;
+
+  /**
+   * Will destroy
+   */
+  willDestroy: boolean = false;
+
+  /**
+   * Time since destroy started in seconds
+   */
+  timeSinceDestroyStarted: number = 0;
+
+  /**
+   * Delay until destroy in seconds
+   */
+  delayUntilDestroy: number = 0;
+
+  /**
+   * Delay until fade in seconds
+   */
+  delayUntilFade: number = 0;
+
+  /**
+   * No fade on destroy
+   */
+  noFadeOnDestroy: boolean = false;
+
+  static FADE_TIME: number = 10.0;
+
+  setWillDestroy(willDestroy: boolean){
+    this.willDestroy = willDestroy;
+    this.timeSinceDestroyStarted = 0;
+  }
+
+  setDelayUntilDestroy(delay: number = ModuleObject.FADE_TIME){
+    this.delayUntilDestroy = delay;
+    this.timeSinceDestroyStarted = 0;
+  }
+
+  setDelayUntilFade(delay: number){
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+      this.delayUntilFade = delay;
+      return;
+    }
+    this.delayUntilFade = 0;
+  }
+
+  setNoFadeOnDestroy(noFade: boolean){
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+      this.noFadeOnDestroy = noFade;
+      return;
+    }
+    this.noFadeOnDestroy = false;
+  }
+
   /**
    * Destroy the object
    */
   destroy(){
-    try{ console.log('destroy', this.getTag(), this);}catch(_e: unknown){}
+    this.destroyed = true;
+    try{ console.log('destroy', this.getTag(), this);}catch(e: any){}
     try{
       this.container.removeFromParent();
 
@@ -3766,4 +3870,3 @@ export class ModuleObject {
   }
 
 }
-

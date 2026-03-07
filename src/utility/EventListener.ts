@@ -32,8 +32,8 @@ export class EventListener {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      const ev = this.#eventListeners[type];
-      const index = ev.indexOf(cb);
+      let ev = this.#eventListeners[type];
+      let index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
@@ -54,8 +54,8 @@ export class EventListener {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      const ev = this.#eventListeners[type];
-      const index = ev.indexOf(cb);
+      let ev = this.#eventListeners[type];
+      let index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
@@ -71,12 +71,12 @@ export class EventListener {
    * @param type 
    * @param args 
    */
-  processEventListener<T extends string>(type: T, args: unknown[] = []): void {
+  processEventListener<T extends string>(type: T, args: any[] = []): void {
     if(!Array.isArray(this.#eventListeners[type])){
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      const ev = this.#eventListeners[type];
+      let ev = this.#eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){

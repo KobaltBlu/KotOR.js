@@ -4,7 +4,7 @@
  * Used when saving a resource as a standalone file (e.g. override/module_name/resref.ext).
  */
 
-import { ResourceTypes } from "@/resource/ResourceTypes";
+import { ResourceTypes } from "../../../resource/ResourceTypes";
 
 export interface SaveToOverrideOptions {
   resref: string;
@@ -37,23 +37,21 @@ export async function saveResourceToOverride(options: SaveToOverrideOptions): Pr
     );
   }
 
-  if (useFs && outputDir) {
-    type FsModule = typeof import("fs");
-    type PathModule = typeof import("path");
-    const fsMod = (await import("fs")) as FsModule;
-    const pathMod = (await import("path")) as PathModule;
-    const fullPath = pathMod.join(outputDir, fileName);
-    if (fsMod.promises?.mkdir) await fsMod.promises.mkdir(outputDir, { recursive: true });
-    await fsMod.promises.writeFile(fullPath, Buffer.from(data));
+  if (useFs) {
+    const fs =
+      (typeof require !== "undefined" && require("fs")) ||
+      (typeof window !== "undefined" && (window as Window & { require?: (id: string) => unknown }).require?.("fs"));
+    if (!fs?.promises?.writeFile) throw new Error("File system write not available.");
+    const pathMod = typeof require !== "undefined" && require("path") ? require("path") : null;
+    const fullPath = pathMod ? pathMod.join(outputDir!, fileName) : `${outputDir}/${fileName}`;
+    if (fs.promises.mkdir) await fs.promises.mkdir(outputDir!, { recursive: true });
+    await fs.promises.writeFile(fullPath, Buffer.from(data));
     return fullPath;
   }
 
-  const handle = outputDirHandle
-    ? await outputDirHandle.getFileHandle(fileName, { create: true })
-    : null;
-  if (!handle) throw new Error("outputDirHandle is required when not using Node fs.");
+  const handle = await outputDirHandle!.getFileHandle(fileName, { create: true });
   const writable = await (handle as FileSystemFileHandle).createWritable();
   await writable.write(data as FileSystemWriteChunkType);
   await writable.close();
-  return outputDirHandle ? `${outputDirHandle.name}/${fileName}` : fileName;
+  return `${outputDirHandle!.name}/${fileName}`;
 }

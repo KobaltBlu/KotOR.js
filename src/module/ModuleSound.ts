@@ -1,22 +1,19 @@
-import { ModuleObject } from "@/module/ModuleObject";
-import { AudioEmitter } from "@/audio/AudioEmitter";
-import { AudioEngine } from "@/audio/AudioEngine";
-// import { ModuleObjectManager } from "@/managers";
-import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
-import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
-
-const log = createScopedLogger(LogScope.Module);
-import { AudioGeneratedType } from "@/enums/audio/AudioGeneratedType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { MDLLoader, ResourceLoader } from "@/loaders";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { ModuleObject } from "./ModuleObject";
+import { AudioEmitter } from "../audio/AudioEmitter";
+import { AudioEngine } from "../audio/AudioEngine";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { MDLLoader, ResourceLoader } from "../loaders";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+// import { ModuleObjectManager } from "../managers";
+import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
+import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
+import { GameState } from "../GameState";
+import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
+import { AudioGeneratedType } from "../enums/audio/AudioGeneratedType";
 
 /**
 * ModuleSound class.
@@ -154,7 +151,7 @@ export class ModuleSound extends ModuleObject {
         this.template.merge(gff);
         this.initProperties();
       }else{
-        log.error('Failed to load ModuleSound template');
+        console.error('Failed to load ModuleSound template');
         if(this.template instanceof GFFObject){
           this.initProperties();
         }
@@ -185,7 +182,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   async loadSound(){
-    const type = this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
+    const type = !!this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
     if(this.audioEmitter){
       this.audioEmitter.destroy();
     }
@@ -266,9 +263,9 @@ export class ModuleSound extends ModuleObject {
     
     if(!this.initialized){
       if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getNumberByLabel('ObjectId');
+        this.id = this.template.getFieldByLabel('ObjectId').getValue();
       }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getNumberByLabel('ID');
+        this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
       GameState.ModuleObjectManager.AddObjectById(this);
@@ -278,94 +275,94 @@ export class ModuleSound extends ModuleObject {
       this.name = this.template.getFieldByLabel('LocName').getCExoLocString().getValue();
 
     if(this.template.RootNode.hasField('Active'))
-      this.active = this.template.getBooleanByLabel('Active');
+      this.active = !!this.template.getFieldByLabel('Active').getValue()
 
     if(this.template.RootNode.hasField('Priority'))
-      this.priority = this.template.getNumberByLabel('Priority');
+      this.priority = this.template.getFieldByLabel('Priority').getValue()
 
     if(this.template.RootNode.hasField('Commandable'))
-      this.commandable = this.template.getBooleanByLabel('Commandable');
+      this.commandable = !!this.template.getFieldByLabel('Commandable').getValue()
 
     if(this.template.RootNode.hasField('FixedVariance'))
-      this.fixedVariance = this.template.getNumberByLabel('FixedVariance');
+      this.fixedVariance = this.template.getFieldByLabel('FixedVariance').getValue()
 
     if(this.template.RootNode.hasField('GeneratedType'))
-      this.generatedType = this.template.getNumberByLabel('GeneratedType');
+      this.generatedType = this.template.getFieldByLabel('GeneratedType').getValue()
 
     if(this.template.RootNode.hasField('Hours'))
-      this.hours = this.template.getNumberByLabel('Hours');
+      this.hours = this.template.getFieldByLabel('Hours').getValue()
 
     if(this.template.RootNode.hasField('Interval'))
-      this.interval = this.template.getNumberByLabel('Interval');
+      this.interval = this.template.getFieldByLabel('Interval').getValue();
 
     if(this.template.RootNode.hasField('IntervalVrtn'))
-      this.intervalVariation = this.template.getNumberByLabel('IntervalVrtn');
+      this.intervalVariation = this.template.getFieldByLabel('IntervalVrtn').getValue();
 
     if(this.template.RootNode.hasField('Looping'))
-      this.looping = this.template.getNumberByLabel('Looping');
+      this.looping = this.template.getFieldByLabel('Looping').getValue();
 
     if(this.template.RootNode.hasField('MaxDistance'))
-      this.maxDistance = this.template.getNumberByLabel('MaxDistance');
-
+      this.maxDistance = this.template.getFieldByLabel('MaxDistance').getValue();
+      
     if(this.template.RootNode.hasField('MinDistance'))
-      this.minDistance = this.template.getNumberByLabel('MinDistance');
+      this.minDistance = this.template.getFieldByLabel('MinDistance').getValue();
 
     if(this.template.RootNode.hasField('PitchVariation'))
-      this.pitchVariation = this.template.getNumberByLabel('PitchVariation');
+      this.pitchVariation = this.template.getFieldByLabel('PitchVariation').getValue();
 
     if(this.template.RootNode.hasField('Positional'))
-      this.positional = this.template.getBooleanByLabel('Positional');
+      this.positional = !!this.template.getFieldByLabel('Positional').getValue();
 
     if(this.template.RootNode.hasField('Random'))
-      this.random = this.template.getNumberByLabel('Random');
+      this.random = this.template.getFieldByLabel('Random').getValue();
 
     if(this.template.RootNode.hasField('RandomPosition'))
-      this.randomPosition = this.template.getBooleanByLabel('RandomPosition');
+      this.randomPosition = !!this.template.getFieldByLabel('RandomPosition').getValue();
 
     if(this.template.RootNode.hasField('RandomRangeX'))
-      this.randomRangeX = this.template.getNumberByLabel('RandomRangeX');
+      this.randomRangeX = this.template.getFieldByLabel('RandomRangeX').getValue();
 
     if(this.template.RootNode.hasField('RandomRangeY'))
-      this.randomRangeY = this.template.getNumberByLabel('RandomRangeY');
+      this.randomRangeY = this.template.getFieldByLabel('RandomRangeY').getValue();
 
     if(this.template.RootNode.hasField('Sounds')){
       const sounds = this.template.getFieldByLabel('Sounds').getChildStructs();
       for(let i = 0; i < sounds.length; i++){
-        this.soundResRefs.push(sounds[i].getStringByLabel('Sound'));
+        this.soundResRefs.push(sounds[i].getFieldByLabel('Sound').getValue());
       }
     }
 
     if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getStringByLabel('Tag');
+      this.tag = this.template.getFieldByLabel('Tag').getValue();
 
     if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getStringByLabel('TemplateResRef');
+      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
 
     if(this.template.RootNode.hasField('Times'))
-      this.times = this.template.getNumberByLabel('Times');
+      this.times = this.template.getFieldByLabel('Times').getValue();
 
     if(this.template.RootNode.hasField('Volume'))
-      this.volume = this.template.getNumberByLabel('Volume');
+      this.volume = this.template.getFieldByLabel('Volume').getValue();
 
     if(this.template.RootNode.hasField('VolumeVrtn'))
-      this.volumeVariation = this.template.getNumberByLabel('VolumeVrtn');
+      this.volumeVariation = this.template.getFieldByLabel('VolumeVrtn').getValue();
 
     if(this.template.RootNode.hasField('XPosition'))
-      this.position.x = this.template.RootNode.getNumberByLabel('XPosition');
+      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
 
     if(this.template.RootNode.hasField('YPosition'))
-      this.position.y = this.template.RootNode.getNumberByLabel('YPosition');
+      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
 
     if(this.template.RootNode.hasField('ZPosition'))
-      this.position.z = this.template.RootNode.getNumberByLabel('ZPosition');
+      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
 
     if(this.template.RootNode.hasField('Elevation'))
-      this.elevation = this.template.RootNode.getNumberByLabel('Elevation');
+      this.elevation = this.template.RootNode.getFieldByLabel('Elevation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0; i < localBools.length; i++){
-        const data = localBools[i].getNumberByLabel('Variable');
+        let data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
@@ -382,7 +379,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   save(){
-    const gff = new GFFObject();
+    let gff = new GFFObject();
     gff.FileType = 'UTS ';
     gff.RootNode.type = 6;
 
@@ -407,13 +404,13 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeY') ).setValue(this.randomRangeY);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Priority') ).setValue(this.priority);
     //SWVarTable
-    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Sounds
-    const sounds = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Sounds') );
+    let sounds = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Sounds') );
     for(let i = 0; i < this.soundResRefs.length; i++){
-      const soundStruct = new GFFStruct();
+      let soundStruct = new GFFStruct();
       soundStruct.addField( new GFFField(GFFDataType.RESREF, 'Sound', this.soundResRefs[i]) );
       sounds.addChildStruct(soundStruct);
     }

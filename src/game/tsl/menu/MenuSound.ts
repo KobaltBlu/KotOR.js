@@ -1,15 +1,15 @@
-import { AudioEngine } from "@/audio/AudioEngine";
-import { MenuSound as K1_MenuSound } from "@/game/kotor/KOTOR";
-import { GameState } from "@/GameState";
-import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "@/gui";
+import { AudioEngine } from "../../../audio/AudioEngine";
+import { GameState } from "../../../GameState";
+import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "../../../gui";
+import { MenuSound as K1_MenuSound } from "../../kotor/KOTOR";
 
 const DEFAULT_GAIN = 0.75;
 
 /**
  * MenuSound class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file MenuSound.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -44,7 +44,7 @@ export class MenuSound extends K1_MenuSound {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    this.BTN_ADVANCED.addEventListener('click', (_e) => {
+    this.BTN_ADVANCED.addEventListener('click', (e) => {
       this.manager.MenuSoundAdvanced.open();
     });
 
@@ -64,20 +64,20 @@ export class MenuSound extends K1_MenuSound {
       this.SLI_MOVIE.setValue(AudioEngine.GAIN_MOVIE = DEFAULT_GAIN);
     });
 
-    this.SLI_MUSIC.onValueChanged = (value: number) => {
+    this.SLI_MUSIC.onValueChanged = (value: any) => {
       AudioEngine.GAIN_MUSIC = value;
     };
 
-    this.SLI_VO.onValueChanged = (value: number) => {
+    this.SLI_VO.onValueChanged = (value: any) => {
       AudioEngine.GAIN_VO = value;
     };
 
-    this.SLI_FX.onValueChanged = (value: number) => {
+    this.SLI_FX.onValueChanged = (value: any) => {
       AudioEngine.GAIN_SFX = value;
       AudioEngine.GAIN_GUI = value;
     };
 
-    this.SLI_MOVIE.onValueChanged = (value: number) => {
+    this.SLI_MOVIE.onValueChanged = (value: any) => {
       AudioEngine.GAIN_MOVIE = value;
     };
 
@@ -87,52 +87,52 @@ export class MenuSound extends K1_MenuSound {
     this.SLI_MOVIE.attachINIProperty('Sound Options.Movie Volume');
 
     this.LBL_MUSIC.addEventListener( 'hover', () => {
-      //log.info(this.LBL_MUSIC.getHintText());
+      //console.log(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_MUSIC.getHintText())
     });
 
     this.SLI_MUSIC.addEventListener( 'hover', () => {
-      //log.info(this.LBL_MUSIC.getHintText());
+      //console.log(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_MUSIC.getHintText())
     });
 
     this.LBL_VO.addEventListener( 'hover', () => {
-      //log.info(this.LBL_MUSIC.getHintText());
+      //console.log(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_VO.getHintText())
     });
 
     this.SLI_VO.addEventListener( 'hover', () => {
-      //log.info(this.LBL_MUSIC.getHintText());
+      //console.log(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_VO.getHintText())
     });
 
     this.LBL_FX.addEventListener( 'hover', () => {
-      //log.info(this.LBL_MUSIC.getHintText());
+      //console.log(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_FX.getHintText())
     });
 
     this.SLI_FX.addEventListener( 'hover', () => {
-      //log.info(this.LBL_MUSIC.getHintText());
+      //console.log(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_FX.getHintText())
     });
 
     this.LBL_MOVIE.addEventListener( 'hover', () => {
-      //log.info(this.LBL_MUSIC.getHintText());
+      //console.log(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_MOVIE.getHintText())
     });
 
     this.SLI_MOVIE.addEventListener( 'hover', () => {
-      //log.info(this.LBL_MUSIC.getHintText());
+      //console.log(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_MOVIE.getHintText())
     });
   }
-
+  
 }

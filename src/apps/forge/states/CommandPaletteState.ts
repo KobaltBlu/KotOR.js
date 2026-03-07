@@ -3,7 +3,7 @@
  * Ported from Holocron Toolset command_palette.py
  */
 
-import type { MenuTopState } from "@/apps/forge/states/MenuTopState";
+import type { MenuTopState } from "./MenuTopState";
 
 export interface CommandPaletteCommand {
   id: string;
@@ -14,8 +14,6 @@ export interface CommandPaletteCommand {
 }
 
 export class CommandPaletteState {
-  private constructor() {}
-  private readonly _staticOnly?: undefined;
   static #commands: Map<string, CommandPaletteCommand> = new Map();
 
   static register(id: string, label: string, category: string, callback?: () => void): void {

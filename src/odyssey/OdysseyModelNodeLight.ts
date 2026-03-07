@@ -1,11 +1,10 @@
 import * as THREE from "three";
-
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
-import { IOdysseyModelFlare } from "@/interface/odyssey/IOdysseyModelFlare";
-import type { OdysseyModel } from "@/odyssey/OdysseyModel";
-import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
-import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { IOdysseyModelFlare } from "../interface/odyssey/IOdysseyModelFlare";
+import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
+import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
+import { OdysseyModelNode } from "./OdysseyModelNode";
+import type { OdysseyModel } from "./OdysseyModel";
+import { OdysseyModelUtility } from "./OdysseyModelUtility";
 
 /**
  * OdysseyModelNodeLight class.
@@ -73,7 +72,7 @@ export class OdysseyModelNodeLight extends OdysseyModelNode {
         //Seek to the location of the textures offset value
         this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.flareTexturesArrayDefinition.offset + (4*i));
         //Read out the offset value
-        const stringOffset = this.odysseyModel.mdlReader.readUInt32();
+        let stringOffset = this.odysseyModel.mdlReader.readUInt32();
         //Seek the reader to where the beginning of the flare texture name should be located
         this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + stringOffset);
         //Read the string and push it to the textures array

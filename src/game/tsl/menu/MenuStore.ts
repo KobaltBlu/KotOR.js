@@ -1,8 +1,8 @@
-import { MenuStore as K1_MenuStore } from "@/game/kotor/KOTOR";
-import { GameState } from "@/GameState";
-import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import { ModuleItem, ModuleStore } from "@/module";
+import { GameState } from "../../../GameState";
+import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
+import { ModuleItem, ModuleStore } from "../../../module";
+import { MenuStore as K1_MenuStore } from "../../kotor/KOTOR";
 
 /**
  * MenuStore class.
@@ -51,7 +51,7 @@ export class MenuStore extends K1_MenuStore {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.BTN_Cancel.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -67,9 +67,9 @@ export class MenuStore extends K1_MenuStore {
         e.stopPropagation();
         if(!this.sellMode){
           if(this.LB_SHOPITEMS.selectedItem.node instanceof ModuleItem){
-            const item = this.LB_SHOPITEMS.selectedItem.node;
+            let item = this.LB_SHOPITEMS.selectedItem.node;
             //Buy Mode
-            const price = this.getItemBuyPrice(item);
+            let price = this.getItemBuyPrice(item);
             if(GameState.PartyManager.Gold >= price){
               GameState.PartyManager.AddGold(-price);
               this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
@@ -79,7 +79,7 @@ export class MenuStore extends K1_MenuStore {
 
                 if(item.getStackSize() <= 0){
                   //Remove this item from the store if there are no more of them in stock
-                  const idx = this.storeObject.getInventory().indexOf(item);
+                  let idx = this.storeObject.getInventory().indexOf(item);
                   if(idx >= 0){
                     this.storeObject.getInventory().splice(idx, 1);
                     this.LB_SHOPITEMS.removeItemByIndex(idx);
@@ -130,10 +130,10 @@ export class MenuStore extends K1_MenuStore {
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.LB_INVITEMS.clearItems();
-        const inv = GameState.InventoryManager.getSellableInventory();
+        let inv = GameState.InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_INVITEMS.addItem(inv[i], { 
-            onClick: (e: MouseEvent, item: ModuleItem) => {
+            onClick: (e, item: any) => {
               this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
               this.LB_DESCRIPTION.clearItems();
               this.LB_DESCRIPTION.addItem(item.getDescription());
@@ -150,10 +150,10 @@ export class MenuStore extends K1_MenuStore {
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.LB_SHOPITEMS.clearItems();
-        const inv = this.storeObject.getInventory();
+        let inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_SHOPITEMS.addItem(inv[i], { 
-            onClick: (e: MouseEvent, item: ModuleItem) => {
+            onClick: (e, item: any) => {
               this.LBL_COST_VALUE.setText(this.getItemBuyPrice(item));
               this.LB_DESCRIPTION.clearItems();
               this.LB_DESCRIPTION.addItem(item.getDescription());
@@ -173,4 +173,3 @@ export class MenuStore extends K1_MenuStore {
   }
   
 }
-

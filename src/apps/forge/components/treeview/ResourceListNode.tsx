@@ -1,9 +1,8 @@
 import React, { useState, useCallback, memo, useMemo } from "react";
-
-import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { FileBrowserNode } from "../../FileBrowserNode";
+import { FileTypeManager } from "../../FileTypeManager";
+import { EditorFile } from "../../EditorFile";
+import { ListItemNode } from "./ListItemNode";
 
 export interface ResourceListNodeProps {
   node: FileBrowserNode;
@@ -66,9 +65,10 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
         depth={depth + 1}
         isSelected={false}
         onSelect={onSelect}
+        onContextMenu={onContextMenu}
       />
     ));
-  }, [openState, hasChildren, node.nodes, depth, onSelect]);
+  }, [openState, hasChildren, node.nodes, depth, onSelect, onContextMenu]);
 
   // Prepare data attributes for the core component
   const dataAttributes = {

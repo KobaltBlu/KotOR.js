@@ -3,13 +3,11 @@
  * Ported from PyKotor toolset clone_module logic.
  */
 
-import { ERFObject } from "@/resource/ERFObject";
-import { GFFObject } from "@/resource/GFFObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { ERFObject } from "../../../resource/ERFObject";
+import { GFFObject } from "../../../resource/GFFObject";
+import { ResourceTypes } from "../../../resource/ResourceTypes";
+import { BinaryWriter } from "../../../utility/binary/BinaryWriter";
 
-const log = createScopedLogger(LogScope.Forge);
 const ERF_HEADER_SIZE = 160;
 
 export interface CloneModuleOptions {
@@ -28,7 +26,6 @@ export interface CloneModuleOptions {
 
 /** Creates an empty ERF file header (160 bytes). For use with File > New > New ERF…. */
 export function createEmptyErfHeader(): Uint8Array {
-  log.trace('CloneModule.createEmptyErfHeader');
   const bw = new BinaryWriter(new Uint8Array(ERF_HEADER_SIZE));
   bw.writeString("ERF ");
   bw.writeString("V1.0");
@@ -47,7 +44,6 @@ export function createEmptyErfHeader(): Uint8Array {
 
 /** Creates an empty MOD file header (160 bytes). For use with File > New > New MOD…. */
 export function createEmptyModHeader(): Uint8Array {
-  log.trace('CloneModule.createEmptyModHeader');
   const bw = new BinaryWriter(new Uint8Array(ERF_HEADER_SIZE));
   bw.writeString("MOD ");
   bw.writeString("V1.0");
@@ -70,7 +66,6 @@ export function createEmptyModHeader(): Uint8Array {
  * when not available they are ignored and only core module resources are cloned.
  */
 export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promise<void> {
-  log.trace('CloneModule.cloneModuleFromBuffer', options.identifier, options.outputPath);
   const {
     sourceBuffer,
     identifier,
@@ -83,14 +78,13 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
     copyTextures: _copyTextures,
     copyLightmaps: _copyLightmaps,
   } = options;
+  // copyTextures/copyLightmaps: full support would need LYT/MDL parsing and game installation texture lookup (see PyKotor module.clone_module)
 
   const sourceErf = new ERFObject(sourceBuffer);
   await sourceErf.load();
-  log.trace('CloneModule.cloneModuleFromBuffer sourceErf loaded');
 
   const ifoBuffer = await sourceErf.getResourceBufferByResRef("module", ResourceTypes.ifo);
   if (!ifoBuffer || ifoBuffer.length === 0) {
-    log.error('CloneModule.cloneModuleFromBuffer no module.ifo');
     throw new Error("Source MOD has no module.ifo");
   }
 
@@ -98,12 +92,10 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
 
   const areaList = ifoGff.RootNode.getFieldByLabel("Mod_Area_list");
   if (!areaList || !areaList.getChildStructs().length) {
-    log.error('CloneModule.cloneModuleFromBuffer no Mod_Area_list');
     throw new Error("Source MOD has no Mod_Area_list");
   }
   const firstArea = areaList.getChildStructs()[0];
   const oldAreaName = firstArea.getFieldByLabel("Area_Name")?.getValue() ?? "module";
-  log.debug('CloneModule.cloneModuleFromBuffer oldAreaName', oldAreaName);
 
   const modResRef = ifoGff.RootNode.getFieldByLabel("Mod_ResRef");
   if (modResRef) modResRef.setValue(identifier);
@@ -115,12 +107,10 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
   if (areaNameField) areaNameField.setValue(identifier);
 
   const newIfoBuffer = ifoGff.getExportBuffer();
-  log.trace('CloneModule.cloneModuleFromBuffer ifo updated');
 
   let areBuffer: Uint8Array;
   const areBuf = await sourceErf.getResourceBufferByResRef(oldAreaName, ResourceTypes.are);
   if (areBuf && areBuf.length > 0) {
-    log.trace('CloneModule.cloneModuleFromBuffer ARE load');
     const areGff = new GFFObject(areBuf);
     const nameField = areGff.RootNode.getFieldByLabel("Name");
     if (nameField && nameField.cexoLocString) {
@@ -130,14 +120,12 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
     }
     areBuffer = areGff.getExportBuffer();
   } else {
-    log.error('CloneModule.cloneModuleFromBuffer no ARE');
     throw new Error("Source MOD has no ARE file");
   }
 
   let gitBuffer: Uint8Array;
   const gitBuf = await sourceErf.getResourceBufferByResRef(oldAreaName, ResourceTypes.git);
   if (gitBuf && gitBuf.length > 0) {
-    log.trace('CloneModule.cloneModuleFromBuffer GIT load');
     const gitGff = new GFFObject(gitBuf);
     if (!keepDoors) {
       const doors = gitGff.RootNode.getFieldByLabel("Door List");
@@ -163,12 +151,10 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
     if (cameras) cameras.childStructs = [];
     gitBuffer = gitGff.getExportBuffer();
   } else {
-    log.error('CloneModule.cloneModuleFromBuffer no GIT');
     throw new Error("Source MOD has no GIT file");
   }
 
   let lytBuffer: Uint8Array | null = null;
-  log.trace('CloneModule.cloneModuleFromBuffer LYT/VIS/PTH');
   let visBuffer: Uint8Array | null = null;
   let pthBuffer: Uint8Array | null = null;
   const lytBuf = await sourceErf.getResourceBufferByResRef(oldAreaName, ResourceTypes.lyt);
@@ -194,15 +180,11 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
   if (pthBuffer) newErf.addResource(identifier, ResourceTypes.pth, pthBuffer);
 
   const outBuffer = newErf.getExportBuffer();
-  log.trace('CloneModule.cloneModuleFromBuffer export buffer size', outBuffer?.length);
 
-  type FsModule = typeof import("fs");
-  const fsMod = (await import("fs")) as FsModule;
-  if (fsMod.promises?.writeFile) {
-    await fsMod.promises.writeFile(outputPath, Buffer.from(outBuffer));
-    log.info('CloneModule.cloneModuleFromBuffer written', outputPath);
+  const fs = (typeof require !== "undefined" && require("fs")) || (typeof window !== "undefined" && (window as any).require?.("fs"));
+  if (fs?.promises?.writeFile) {
+    await fs.promises.writeFile(outputPath, Buffer.from(outBuffer));
   } else {
-    log.error('CloneModule.cloneModuleFromBuffer fs write not available');
     throw new Error("File system write not available (run in Electron for Save dialog).");
   }
 }

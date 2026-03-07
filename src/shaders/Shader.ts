@@ -10,8 +10,7 @@
 export class Shader {
   fragment: string;
   vertex: string;
-  /** Uniforms: merged object from UniformsUtils.merge() or array of uniform objects. */
-  uniforms: { [key: string]: { value: unknown } } | { [key: string]: { value: unknown } }[] = [];
+  uniforms: any[] = [];
   name: string;
 
   getVertex(){
@@ -22,7 +21,7 @@ export class Shader {
     return this.fragment;
   }
 
-  getUniforms(): { [key: string]: { value: unknown } } | { [key: string]: { value: unknown } }[] {
+  getUniforms(): any[] {
     return this.uniforms;
   }
 }

@@ -1,7 +1,7 @@
-import { CurrentGame } from "@/engine/CurrentGame";
-import { CharGenQuickPanel as K1_CharGenQuickPanel } from "@/game/kotor/KOTOR";
-import { GameState } from "@/GameState";
-import type { GUILabel, GUIButton, GUIControl } from "@/gui";
+import { CurrentGame } from "../../../engine/CurrentGame";
+import { GameState } from "../../../GameState";
+import type { GUILabel, GUIButton, GUIControl } from "../../../gui";
+import { CharGenQuickPanel as K1_CharGenQuickPanel } from "../../kotor/KOTOR";
 
 /**
  * CharGenQuickPanel class.
@@ -36,7 +36,7 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.BTN_STEPNAME1.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenPortCust.open();
@@ -77,4 +77,3 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
   }
   
 }
-

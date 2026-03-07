@@ -1,4 +1,4 @@
-import type { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import type { IOdysseyControllerFrameGeneric } from "./IOdysseyControllerFrameGeneric";
 
 /**
  * IOdysseyControllerGeneric interface.
@@ -12,10 +12,10 @@ import type { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/control
  */
 export interface IOdysseyControllerGeneric {
   type: number;
-  nodeType?: number;
+  nodeType: number;
   frameCount: number;
   timeKeyIndex: number;
   dataValueIndex: number;
   columnCount: number;
-  data: IOdysseyControllerFrameGeneric[];
+  data: IOdysseyControllerFrameGeneric[],
 }

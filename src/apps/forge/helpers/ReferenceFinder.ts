@@ -1,6 +1,7 @@
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { EditorFile } from "../EditorFile";
+import { FileBrowserNode } from "../FileBrowserNode";
+import { ProjectFileSystem } from "../ProjectFileSystem";
+import { EditorFileProtocol } from "../enum/EditorFileProtocol";
 import {
   ReferenceFileResource,
   ReferenceSearchResult,
@@ -18,9 +19,7 @@ import {
   findAllReferencesInText,
   getWordAtIndex,
   findStrRefReferences,
-} from "@/apps/forge/helpers/ReferenceFinderCore";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-
+} from "./ReferenceFinderCore";
 
 export type ReferenceScope = "project" | "game" | "both";
 
@@ -140,7 +139,7 @@ export async function searchProjectReferences(
           editorFile,
         });
       }
-    } catch {
+    } catch (e) {
       // ignore unreadable files
     }
   }
@@ -217,13 +216,11 @@ export async function searchReferences(
   return results;
 }
 
-export type {
+export {
   ReferenceFileResource,
   ReferenceSearchResult,
   ReferenceFinderOptions,
   ReferenceFinderResrefOptions,
-};
-export {
   findResrefReferences,
   findFieldValueReferences,
   findScriptReferences,

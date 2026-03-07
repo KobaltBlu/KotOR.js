@@ -1,5 +1,5 @@
-import { TLKManager } from "@/managers/TLKManager";
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TLKManager } from "../../managers/TLKManager";
+import { TwoDAObject } from "../../resource/TwoDAObject";
 
 const RANGE_TYPES = {
   SPELL: 0,
@@ -54,7 +54,7 @@ export class SWRange {
     return RANGE_TYPES.SPELL;
   }
 
-  static From2DA(row: Record<string, unknown> = {}): SWRange {
+  static From2DA(row: any = {}){
     const range = new SWRange();
     range.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     range.label = TwoDAObject.normalizeValue(row.label, 'string', '');

@@ -1,4 +1,4 @@
-import { EventListenerModel } from "@/apps/debugger/EventListenerModel";
+import { EventListenerModel } from "./EventListenerModel";
 
 
 export type MenuTopItemOnClickType = (menuItem: MenuTopItem) => void;

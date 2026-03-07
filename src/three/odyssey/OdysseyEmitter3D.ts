@@ -1,10 +1,9 @@
 import * as THREE from "three";
-
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { TextureLoader } from "@/loaders/TextureLoader";
-import { OdysseyModelNode, OdysseyModelNodeEmitter } from "@/odyssey";
-import type { OdysseyController } from "@/odyssey/controllers";
-import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
+import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
+import { TextureLoader } from "../../loaders/TextureLoader";
+import { OdysseyModelNode, OdysseyModelNodeEmitter } from "../../odyssey";
+import type { OdysseyController } from "../../odyssey/controllers";
+import { OdysseyObject3D } from "./OdysseyObject3D";
 
 /**
  * OdysseyEmitter3D class.
@@ -93,7 +92,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   constructor(odysseyNode: OdysseyModelNode){
     super();
-    (this as { type: string }).type = 'OdysseyEmitter';
+    this.type = 'OdysseyEmitter';
 
     this.isDetonated = false;
     this.particleIndex = 0;
@@ -426,13 +425,13 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   getRandomPosition(){
-    const spread = new THREE.Vector3(0, 0, 0).copy(this.size);//.applyQuaternion(this.parent.quaternion);
-    const quaternion = new THREE.Quaternion(0, 0, 0, 1);
+    let spread = new THREE.Vector3(0, 0, 0).copy(this.size);//.applyQuaternion(this.parent.quaternion);
+    let quaternion = new THREE.Quaternion(0, 0, 0, 1);
     /*if(this.parent)
       this.parent.getWorldQuaternion(parentQuaternion);*/
     
     if(this.node.renderMode == 'Normal' || this.node.renderMode == 'Motion_Blur'){
-      const pos = new THREE.Vector3().copy(this.parent.position);
+      let pos = new THREE.Vector3().copy(this.parent.position);
       this.getWorldQuaternion(quaternion);
       this.getWorldPosition(pos);
       return new THREE.Vector3(
@@ -443,7 +442,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }else if(this.node.renderMode == 'Linked'){
 
       this.getWorldQuaternion(quaternion);
-      const pos = new THREE.Vector3();//.copy(this.parent.position);
+      let pos = new THREE.Vector3();//.copy(this.parent.position);
       this.getWorldPosition(pos);
       return pos;//.applyQuaternion(quaternion);
 
@@ -488,16 +487,16 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(this._birthTimer < 0)
       this._birthTimer = 0;
 
-    const maxParticleCount = this.getMaxParticleCount();
-    const resizeArrays = (maxParticleCount > this.offsets.count);
+    let maxParticleCount = this.getMaxParticleCount();
+    let resizeArrays = (maxParticleCount > this.offsets.count);
     this.maxParticleCount = maxParticleCount;
 
     if(resizeArrays){
       //Create new larger arrays
-      const offsets = new Float32Array(this.maxParticleCount * 3);
-      const velocities = new Float32Array(this.maxParticleCount * 4);
-      const props = new Float32Array(this.maxParticleCount * 4);
-      const ids = new Float32Array(this.maxParticleCount * 1);
+      let offsets = new Float32Array(this.maxParticleCount * 3);
+      let velocities = new Float32Array(this.maxParticleCount * 4);
+      let props = new Float32Array(this.maxParticleCount * 4);
+      let ids = new Float32Array(this.maxParticleCount * 1);
 
       //Copy the existing values into the new arrays
       offsets.set(this.offsets.array);
@@ -580,8 +579,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       if(this.node.renderMode == 'Linked'){
 
         let age = this.props.getX(i * attrPerVertex) || 0;
-        const maxAge = this.props.getY(i * attrPerVertex) || this.lifeExp;
-        const alive = this.props.getZ(i * attrPerVertex) == 1;
+        let maxAge = this.props.getY(i * attrPerVertex) || this.lifeExp;
+        let alive = this.props.getZ(i * attrPerVertex) == 1;
 
         if(i < spawnableParticleCount){
 
@@ -653,8 +652,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }else{
 
         let age = this.props.getX(i) || 0;
-        const maxAge = this.props.getY(i) || (this.lifeExp >= 0 ? this.lifeExp : -1);
-        const alive = this.props.getZ(i) == 1;
+        let maxAge = this.props.getY(i) || (this.lifeExp >= 0 ? this.lifeExp : -1);
+        let alive = this.props.getZ(i) == 1;
 
         if(i < this.maxParticleCount){
 
@@ -772,29 +771,29 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(referenceNode instanceof OdysseyObject3D){
       this.referenceNode = referenceNode;
     }
-  }
+  };
 
   tickLightning(delta: number = 0){
     if(this._lightningDelay == undefined){
       this._lightningDelay = 0.00;
     }
 
-    const lightningZigZag = this.lightningZigZag + 1;
-    const start = new THREE.Vector3(0.0, 0.0, 0.0);
+    let lightningZigZag = this.lightningZigZag + 1;
+    let start = new THREE.Vector3(0.0, 0.0, 0.0);
     this.getWorldPosition(start);
-    const target = new THREE.Vector3(0, 0, 0);
+    let target = new THREE.Vector3(0, 0, 0);
     this.referenceNode.getWorldPosition(target);
 
-    const scale = 0.5;
+    let scale = 0.5;
 
-    const gridX1 = 2;
-    const indices = [];
-    const vertices = [];
-    const normals = [];
-    const uvs = [];
-    const velocities = [];
-    const props = [];
-    const spread = (this.lightningScale || 0);
+    let gridX1 = 2;
+    let indices = [];
+    let vertices = [];
+    let normals = [];
+    let uvs = [];
+    let velocities = [];
+    let props = [];
+    let spread = (this.lightningScale || 0);
     let age = 0;
 
     if(this._lightningDelay >= this.lightningDelay){
@@ -804,7 +803,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
       this._lightningDelay = 0;
       for(let iy = 0; iy < lightningZigZag; iy++){
-        const percentage = iy/lightningZigZag;
+        let percentage = iy/lightningZigZag;
         let x = start.x + ( (target.x - start.x) * percentage);
         let y = start.y - ( (target.y - start.y) * percentage);
         let z = start.z + ( (target.z - start.z) * percentage);
@@ -864,10 +863,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         // indices
         for(let iy = 0; iy < lightningZigZag-1; iy++){
           for ( let ix = 0; ix < 1; ix++ ) {
-            const a = ix + gridX1 * iy;
-            const b = ix + gridX1 * ( iy + 1 );
-            const c = ( ix + 1 ) + gridX1 * ( iy + 1 );
-            const d = ( ix + 1 ) + gridX1 * iy;
+            let a = ix + gridX1 * iy;
+            let b = ix + gridX1 * ( iy + 1 );
+            let c = ( ix + 1 ) + gridX1 * ( iy + 1 );
+            let d = ( ix + 1 ) + gridX1 * iy;
 
             // faces
             indices.push( a, b, d );
@@ -921,15 +920,15 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     this.velocities.setZ(i, 1);
 
     let index = this.geometry.getIndex();
-    const indices = [];
+    let indices = [];
     for ( let oldI = 0; oldI < this.offsets.count; oldI++ ) {
       indices.push( oldI );
     }
     this.geometry.setIndex( indices );
     index = this.geometry.getIndex();
 
-    const newIndices = [];
-    const numberOfTriangles = this.offsets.count - 2;
+    let newIndices = [];
+    let numberOfTriangles = this.offsets.count - 2;
     // gl.TRIANGLE_STRIP
     for ( let newI = 0; newI < numberOfTriangles; newI++ ) {
       if ( newI % 2 === 0 ) {
@@ -949,7 +948,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   spawnParticle(i = 0){
     //Birth and reset the particle
-    const newPosition = this.getRandomPosition();
+    let newPosition = this.getRandomPosition();
     if(this.node.renderMode != 'Linked'){
       this.offsets.setX(i, newPosition.x);
       this.offsets.setY(i, newPosition.y);
@@ -981,7 +980,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         this.velocities.setY(i, this.randomFloat(this.d * this.vy, this.spread));
         this.velocities.setZ(i, this.randomFloat(this.d * this.vz, this.spread));
       }else{
-        const quaternion = new THREE.Quaternion();
+        let quaternion = new THREE.Quaternion();
         this.getWorldQuaternion(quaternion);
         this.vec3.set(
           this.randomFloat(this.d * this.vx, this.d2 * this.vx),
@@ -1003,7 +1002,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
     }
 
-    const maxAge = this.getRandomMaxAge();
+    let maxAge = this.getRandomMaxAge();
     if(this.node.renderMode != 'Linked'){
       this.velocities.setW(i, this.mass);
 
@@ -1043,21 +1042,21 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       // }
     }
 
-    const vector = new THREE.Vector3();
+    let vector = new THREE.Vector3();
 
     // Model View Projection matrix
 
-    const matrix = new THREE.Matrix4();
+    let matrix = new THREE.Matrix4();
     matrix.multiplyMatrices( this.context.currentCamera.projectionMatrix, this.context.currentCamera.matrixWorldInverse );
     matrix.multiply( this.mesh.matrixWorld );
 
     //
 
     let index = this.geometry.getIndex();
-    const positions = (this.geometry.getAttribute( 'position' ) as THREE.BufferAttribute).array;
-    const length = positions.length / 3;
+    let positions = (this.geometry.getAttribute( 'position' ) as THREE.BufferAttribute).array;
+    let length = positions.length / 3;
     if ( index === null ) {
-      const array = new Uint16Array( length );
+      let array = new Uint16Array( length );
       for ( let i = 0; i < length; i ++ ) {
         array[ i ] = i;
       }
@@ -1065,7 +1064,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.geometry.setIndex( index );
     }
 
-    const sortArray = [];
+    let sortArray = [];
     for ( let i = 0; i < length; i ++ ) {
       vector.fromArray( positions, i * 3 );
       vector.applyMatrix4( matrix );
@@ -1077,9 +1076,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
 
     sortArray.sort( numericalSort );
-    const indices = index.array;
+    let indices = index.array;
     for ( let i = 0; i < length; i ++ ) {
-      (indices as unknown as number[])[ i ] = sortArray[ i ][ 1 ];
+      // @ts-expect-error
+      indices[ i ] = sortArray[ i ][ 1 ];
     }
     
     this.geometry.index.needsUpdate = true;
@@ -1089,7 +1089,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   detonate(){
     this.isDetonated = true;
     //this.material.uniforms.mass.value.z = 0;
-    const spawnableParticleCount = this.offsets.count;
+    let spawnableParticleCount = this.offsets.count;
     for(let i = 0; i < spawnableParticleCount; i++){
       this.props.setX(i, 0);
     }
@@ -1105,10 +1105,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   //Disable the emitter
   disable(){
 
-  }
+  };
 
   attributeChanged(attr: any){
-    const quat = new THREE.Quaternion();
+    let quat = new THREE.Quaternion();
     switch(attr){
       case 'mass':
         this.parent.getWorldQuaternion(quat);

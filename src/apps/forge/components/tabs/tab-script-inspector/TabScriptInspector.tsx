@@ -1,10 +1,9 @@
 import React, { useState } from "react";
-
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabTextEditorState } from "@/apps/forge/states/tabs";
-import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP } from "@/nwscript/NWScriptOPCodes";
+import * as KotOR from "../../../KotOR";
+import { TabTextEditorState } from "../../../states/tabs";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP } from "../../../../../nwscript/NWScriptOPCodes";
+import { MenuBar, MenuItem } from "../../common/MenuBar";
 
 export const TabScriptInspector = function(props: any){
   const parentTab: TabTextEditorState = props.parentTab;

@@ -1,4 +1,4 @@
-import { TabState } from "@/apps/forge/states/tabs";
+import { TabState } from "../states/tabs";
 
 export const WIKI_BASE_URL = 'https://github.com/KobaltBlu/KotOR.js/wiki/';
 
@@ -87,7 +87,7 @@ export function getWikiDocForTab(tab?: TabState): string | null {
   }
 
   const ext = tab.file?.ext?.toLowerCase?.();
-  if(ext && Object.hasOwn(EDITOR_WIKI_MAP_BY_EXTENSION, ext)){
+  if(ext && Object.prototype.hasOwnProperty.call(EDITOR_WIKI_MAP_BY_EXTENSION, ext)){
     return EDITOR_WIKI_MAP_BY_EXTENSION[ext];
   }
 

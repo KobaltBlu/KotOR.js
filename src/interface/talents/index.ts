@@ -1,2 +1,2 @@
-export * from "@/interface/talents/ITalentFeatStatus";
-export * from "@/interface/talents/ITalentSpellMode";
+export * from "./ITalentFeatStatus";
+export * from "./ITalentSpellMode";

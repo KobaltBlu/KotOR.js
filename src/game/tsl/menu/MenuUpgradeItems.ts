@@ -1,5 +1,5 @@
-import { MenuUpgradeItems as K1_MenuUpgradeItems } from "@/game/kotor/KOTOR";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { MenuUpgradeItems as K1_MenuUpgradeItems } from "../../kotor/KOTOR";
 
 /**
  * MenuUpgradeItems class.
@@ -28,10 +28,9 @@ export class MenuUpgradeItems extends K1_MenuUpgradeItems {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       resolve();
     });
   }
   
 }
-

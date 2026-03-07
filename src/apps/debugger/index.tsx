@@ -1,11 +1,10 @@
-﻿import React from "react";
+import React from "react";
 import ReactDOM from "react-dom/client";
-
-import '@/apps/debugger/app.scss';
-import { App } from "@/apps/debugger/App";
-import { AppProvider } from "@/apps/debugger/context/AppContext";
-import { DebugApp } from "@/apps/debugger/DebugApp";
-import { DebuggerState } from "@/apps/debugger/states/DebuggerState";
+import './app.scss';
+import { App } from "./App";
+import { AppProvider } from "./context/AppContext";
+import { DebuggerState } from "./states/DebuggerState";
+import { DebugApp } from "./DebugApp";
 
 const params = new URLSearchParams(window.location.search);
 const uuid = params.get('uuid');
@@ -32,4 +31,3 @@ const loadReactApplication = () => {
 ( async () => {
   loadReactApplication();
 })();
-

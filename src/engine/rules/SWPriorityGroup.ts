@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "../../resource/TwoDAObject";
 
 /**
  * SWPriorityGroup class.
@@ -41,10 +41,10 @@ export class SWPriorityGroup {
   /** Pitch variance in octaves when playing sounds of this priority. Range is 0 to 1.0. For placed Sound objects instances, the PitchVariance overrides this 2da value. */
   playbackvariance: number = 0;
 
-  static From2DA(row: Record<string, unknown> = {}): SWPriorityGroup {
+  static From2DA(row: any = {}){
     const group = new SWPriorityGroup();
 
-    group.id = parseInt(String(row.__index ?? ''), 10) || -1;
+    group.id = parseInt(row.__index);
 
     if(row.hasOwnProperty('label'))
       group.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;

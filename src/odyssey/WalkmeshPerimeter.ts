@@ -1,4 +1,4 @@
-import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import { WalkmeshEdge } from "./WalkmeshEdge";
 
 /**
  * WalkmeshPerimeter class.
@@ -14,4 +14,8 @@ export class WalkmeshPerimeter {
   start: number = -1;
   next: number = -1;
   edges: WalkmeshEdge[] = [];
+
+  constructor(){
+
+  }
 }

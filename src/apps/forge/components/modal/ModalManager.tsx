@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalManagerState } from "../../states/modal/ModalManagerState";
+import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { ModalState } from "../../states/modal/ModalState";
 
 export const ModalManager = function(props: any){
   const manager: ModalManagerState = props.manager;

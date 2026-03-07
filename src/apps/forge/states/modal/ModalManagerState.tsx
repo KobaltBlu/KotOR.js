@@ -1,5 +1,5 @@
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { EventListenerModel } from "../../EventListenerModel";
+import { ModalState } from "./ModalState";
 
 export class ModalManagerState extends EventListenerModel {
 

@@ -1,4 +1,4 @@
-import { IPazaakCard } from "@/interface/minigames/IPazaakCard";
+import { IPazaakCard } from "./IPazaakCard";
 
 export interface IPazaakTableSlot {
   card: IPazaakCard;

@@ -1,16 +1,15 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-
-import { LightboxComponent } from "@/apps/launcher/components/LightboxComponenet";
-import { ProfileLaunchButtons } from "@/apps/launcher/components/ProfileLaunchButtons";
-import { ProfilePromoItems } from "@/apps/launcher/components/ProfilePromoItems";
-import { useApp } from "@/apps/launcher/context/AppContext";
-import { ProfileProvider, useProfile } from "@/apps/launcher/context/ProfileContext";
+import { useApp } from "../context/AppContext";
+import { ProfilePromoItems } from "./ProfilePromoItems";
+import { LightboxComponent } from "./LightboxComponenet";
+import { ProfileProvider, useProfile } from "../context/ProfileContext";
+import { ProfileLaunchButtons } from "./ProfileLaunchButtons";
 
 export interface ProfileTabContentProps {
   profile: any;
   active: boolean
   // ref?: React.RefObject<any>;
-}
+};
 
 export const ProfileTabContent = forwardRef(function(props: ProfileTabContentProps, ref: any){
   const appContext = useApp();
@@ -35,7 +34,7 @@ export const ProfileTabContent = forwardRef(function(props: ProfileTabContentPro
 
   
 
-  const onComponentResize = () => {
+  let onComponentResize = () => {
     // updateScroll();
     // updateScrollButtons();
   }

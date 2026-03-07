@@ -1,5 +1,5 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ForgeGameObject } from "./ForgeGameObject";
+import * as KotOR from "../KotOR";
 
 const PRIORITY_LOOPING_AREAWIDE_AMBIENTS = 4;
 const PRIORITY_POSITIONAL_AMBIENTS = 5;

@@ -1,5 +1,5 @@
-import { InGameConfirm as K1_InGameConfirm } from "@/game/kotor/KOTOR";
-import type { GUIListBox, GUIButton } from "@/gui";
+import type { GUIListBox, GUIButton } from "../../../gui";
+import { InGameConfirm as K1_InGameConfirm } from "../../kotor/KOTOR";
 
 /**
  * InGameConfirm class.

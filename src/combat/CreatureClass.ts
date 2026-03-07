@@ -1,12 +1,12 @@
-import { SWAttackBonus } from "@/engine/rules/SWAttackBonus";
-import { SWSavingThrow } from "@/engine/rules/SWSavingThrow";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-// import { TwoDAManager, TLKManager } from "@/managers";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { TwoDAObject } from "@/resource/TwoDAObject";
-import type { TalentSpell } from "@/talents/TalentSpell";
+import { GameState } from "../GameState";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+// import { TwoDAManager, TLKManager } from "../managers";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { TwoDAObject } from "../resource/TwoDAObject";
+import type { TalentSpell } from "../talents/TalentSpell";
+import { SWSavingThrow } from "../engine/rules/SWSavingThrow";
+import { SWAttackBonus } from "../engine/rules/SWAttackBonus";
 
 /**
  * CreatureClass class.
@@ -120,7 +120,7 @@ export class CreatureClass {
 
   isFeatAvailable( feat: any ){
     if(typeof feat != 'undefined'){
-      const status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
+      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
       if(isNaN(status)){
         return false;
       }
@@ -134,7 +134,7 @@ export class CreatureClass {
 
   getFeatStatus( feat: any ){
     if(typeof feat != 'undefined'){
-      const status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
+      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
       if(isNaN(status)){
         return false;
       }
@@ -146,7 +146,7 @@ export class CreatureClass {
 
   getFeatGrantedLevel( feat: any ){
     if(typeof feat != 'undefined'){
-      const granted = parseInt(feat[this.featstable.toLowerCase()+'_granted']);
+      let granted = parseInt(feat[this.featstable.toLowerCase()+'_granted']);
       if(isNaN(granted)){
         return -1;
       }
@@ -158,14 +158,14 @@ export class CreatureClass {
 
   static FromCreatureClassStruct(cls_struct: GFFStruct){
     if(typeof cls_struct != 'undefined'){
-      const cls = new CreatureClass(cls_struct.getFieldByLabel('Class').getValue());
+      let cls = new CreatureClass(cls_struct.getFieldByLabel('Class').getValue());
       cls.setLevel(cls_struct.getFieldByLabel('ClassLevel').getValue());
-      const known_struct = cls_struct.getFieldByLabel('KnownList0');
+      let known_struct = cls_struct.getFieldByLabel('KnownList0');
       if(known_struct){
-        const known_spell_structs = known_struct.getChildStructs();
+        let known_spell_structs = known_struct.getChildStructs();
         for(let i = 0; i < known_spell_structs.length; i++){
 
-          const known_spell_struct = known_spell_structs[i];
+          let known_spell_struct = known_spell_structs[i];
           let spell = undefined;
 
           if(known_spell_struct.hasField('Spell')){
@@ -289,12 +289,12 @@ export class CreatureClass {
       }
     }
 
-    const featGain = GameState.SWRuleSet.featGains;
+    let featGain = GameState.SWRuleSet.featGains;
     if(featGain){
       this.featGainPoints = featGain.getRegular(this.featgain);
     }
 
-    const spellGain = GameState.SWRuleSet.spellGains;
+    let spellGain = GameState.SWRuleSet.spellGains;
     if(spellGain){
       this.spellGainPoints = spellGain.getSpellGain(this.spellgaintable);
     }
@@ -316,20 +316,20 @@ export class CreatureClass {
   }
 
   save(){
-    const _class = new GFFStruct(2);
+    let _class = new GFFStruct(2);
     _class.addField( new GFFField(GFFDataType.INT, 'Class') ).setValue(this.id);
     _class.addField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).setValue(this.level);
 
     //Spell Caster specific data
     if(this.spellcaster){
       //Not sure what this is or if it is used in KOTOR
-      const spellsPerDay = _class.addField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
-      const spellsPerDayStruct = new GFFStruct(17767);
+      let spellsPerDay = _class.addField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
+      let spellsPerDayStruct = new GFFStruct(17767);
       spellsPerDayStruct.addField( new GFFField(GFFDataType.BYTE, "NumSpellsLeft").setValue(0));
       spellsPerDay.addChildStruct(spellsPerDayStruct);
 
       //List of known spells
-      const knownList0 = _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
+      let knownList0 = _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
       for(let i = 0; i < this.spells.length; i++){
         knownList0.addChildStruct(this.spells[i].save());
       }

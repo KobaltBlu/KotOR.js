@@ -1,7 +1,7 @@
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { TalentFeat } from "@/talents";
+import { GameState } from "../../../GameState";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { TalentFeat } from "../../../talents";
 
 /**
  * CharGenQuickOrCustom class.

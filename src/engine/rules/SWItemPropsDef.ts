@@ -1,5 +1,5 @@
-import { TLKManager } from "@/managers/TLKManager";
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TLKManager } from "../../managers/TLKManager";
+import { TwoDAObject } from "../../resource/TwoDAObject";
 
 /**
  * SWItemPropsDef class.
@@ -29,33 +29,33 @@ export class SWItemPropsDef {
     return this.subtyperesref != '';
   }
 
-  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWItemPropsDef {
+  static From2DA(row: any = {}){
     const propsDef = new SWItemPropsDef();
 
     propsDef.id = parseInt(row.__index);
 
-    if(Object.hasOwn(row,'name'))
+    if(row.hasOwnProperty('name'))
       propsDef.name = TwoDAObject.normalizeValue(row.name, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'label'))
+    if(row.hasOwnProperty('label'))
       propsDef.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
     
-    if(Object.hasOwn(row,'subtyperesref'))
+    if(row.hasOwnProperty('subtyperesref'))
       propsDef.subtyperesref = TwoDAObject.normalizeValue(row.subtyperesref, 'string', '') as string;
     
-    if(Object.hasOwn(row,'cost'))
+    if(row.hasOwnProperty('cost'))
       propsDef.cost = TwoDAObject.normalizeValue(row.cost, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'costtableresref'))
+    if(row.hasOwnProperty('costtableresref'))
       propsDef.costtableresref = TwoDAObject.normalizeValue(row.costtableresref, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'param1resref'))
+    if(row.hasOwnProperty('param1resref'))
       propsDef.param1resref = TwoDAObject.normalizeValue(row.param1resref, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'gamestrref'))
+    if(row.hasOwnProperty('gamestrref'))
       propsDef.gamestrref = TwoDAObject.normalizeValue(row.gamestrref, 'number', -1) as number;
     
-    if(Object.hasOwn(row,'description'))
+    if(row.hasOwnProperty('description'))
       propsDef.description = TwoDAObject.normalizeValue(row.description, 'number', -1) as number;
 
     return propsDef;

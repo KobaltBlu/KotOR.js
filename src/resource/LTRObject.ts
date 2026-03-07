@@ -1,4 +1,4 @@
-import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 
 const LTR_HEADER_LENGTH = 9;
 
@@ -134,10 +134,10 @@ export class LTRObject {
     let prob: number = 0;
     let i = 0;
     let wordIndex = 0;
-    const chars = [];
+    let chars = [];
     
     let attempts = 0;
-    const bGetFirstThree = true;
+    let bGetFirstThree = true;
     let bGenerating = false;
     let bDone = false;
 

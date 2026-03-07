@@ -1,11 +1,11 @@
 import React, { useState } from "react";
+import { TabModelViewerState } from "../states/tabs";
+import { useEffectOnce } from "../helpers/UseEffectOnce";
 import { Form } from "react-bootstrap";
+import { SceneGraphTreeView } from "./SceneGraphTreeView";
 
-import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabModelViewerState } from "@/apps/forge/states/tabs";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import * as KotOR from "../KotOR";
+import { UI3DRenderer } from "../UI3DRenderer";
 
 export const ModelViewerSidebarComponent = function(props: any){
   const tab: TabModelViewerState = props.tab as TabModelViewerState;
@@ -35,8 +35,8 @@ export const ModelViewerSidebarComponent = function(props: any){
 
   useEffectOnce( () => { //constructor
 
-    const keys: KotOR.IKEYEntry[] = [];
-    const res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
+    let keys: KotOR.IKEYEntry[] = [];
+    let res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
     res_list.forEach( (res, index) => {
       keys.push(
         KotOR.KEYManager.Key.getFileKeyByRes(res)

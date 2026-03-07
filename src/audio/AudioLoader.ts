@@ -1,10 +1,9 @@
+import { ResourceLoader } from "../loaders";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { AudioFile } from "./AudioFile";
 import * as path from "path";
-
-import { AudioFile } from "@/audio/AudioFile";
-import { ResourceLoader } from "@/loaders";
-import { KEYManager } from "@/managers/KEYManager";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { GameFileSystem } from "@/utility/GameFileSystem";
+import { GameFileSystem } from "../utility/GameFileSystem";
+import { KEYManager } from "../managers/KEYManager";
 
 /**
  * AudioLoader class.
@@ -22,8 +21,8 @@ export class AudioLoader {
   constructor () { }
 
   static toArrayBuffer(buffer: Uint8Array) {
-    const ab = new ArrayBuffer(buffer.length);
-    const view = new Uint8Array(ab);
+    let ab = new ArrayBuffer(buffer.length);
+    let view = new Uint8Array(ab);
     for (let i = 0; i < buffer.length; ++i) {
         view[i] = buffer[i];
     }
@@ -36,7 +35,7 @@ export class AudioLoader {
       return AudioLoader.cache[resRef];
     }else{
       const visKey = KEYManager.Key.getFileKey(resRef, ResourceTypes['wav']);
-      if(visKey){
+      if(!!visKey){
         try{
           const buffer = await KEYManager.Key.getFileBuffer(visKey);
           if(!buffer){ return; }
@@ -78,7 +77,7 @@ export class AudioLoader {
 
   static async LoadStreamWave (ResRef: string) {
     const snd = ResourceLoader.getResource(ResourceTypes['wav'], ResRef);
-    if(snd){
+    if(!!snd){
       try{
         const buffer = await GameFileSystem.readFile(snd.file);
         const af = new AudioFile(buffer);

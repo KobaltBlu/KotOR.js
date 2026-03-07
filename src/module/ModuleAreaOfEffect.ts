@@ -1,13 +1,13 @@
-import { GameEffectFactory } from "@/effects/GameEffectFactory";
-import { AreaOfEffectShape } from "@/enums/module/AreaOfEffectShape";
-import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { ModuleObject } from "@/module/ModuleObject";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { ModuleObject } from "./ModuleObject";
+import { AreaOfEffectShape } from "../enums/module/AreaOfEffectShape";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
+import { GameEffectFactory } from "../effects/GameEffectFactory";
+import { GameState } from "../GameState";
 
 /**
  * ModuleAreaOfEffect class.
@@ -148,38 +148,38 @@ export class ModuleAreaOfEffect extends ModuleObject {
     //ActionList
     try{
       if(this.template.RootNode.hasField('ActionList')){
-        const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
+        let actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
         for(let i = 0, len = actionStructs.length; i < len; i++){
-          const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
+          let action = GameState.ActionFactory.FromStruct(actionStructs[i]);
           if(action){
             this.actionQueue.add(action);
           }
         }
       }
-    }catch(e: unknown){
+    }catch(e: any){
       console.error(e);
     }
 
     //SWVarTable
     if(this.template.RootNode.hasField('SWVarTable')){
-      const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0, len = localBools.length; i < len; i++){
-        const data = localBools[i].getFieldByLabel('Variable').getValue();
+        let data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
       }
-      const localNumbers = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('ByteArray').getChildStructs();
+      let localNumbers = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('ByteArray').getChildStructs();
       for(let i = 0, len = localNumbers.length; i < len; i++){
-        const data = localNumbers[i].getFieldByLabel('Variable').getValue();
+        let data = localNumbers[i].getFieldByLabel('Variable').getValue();
         this.setLocalNumber(i, data);
       }
     }
     
     if(this.template.RootNode.hasField('EffectList')){
-      const effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
+      let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
       for(let i = 0, len = effects.length; i < len; i++){
-        const effect = GameEffectFactory.EffectFromStruct(effects[i]);
+        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
         if(effect){
           effect.setAttachedObject(this);
           effect.loadModel();
@@ -190,7 +190,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
   }
 
   save(): GFFObject {
-    const gff = new GFFObject();
+    let gff = new GFFObject();
     gff.FileType = 'AOE ';
 
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
@@ -255,11 +255,11 @@ export class ModuleAreaOfEffect extends ModuleObject {
     gff.RootNode.addField( this.actionQueueToActionList() );
 
     //SWVarTable
-    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
     
     //Effects
-    const effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
+    let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
     for(let i = 0; i < this.effects.length; i++){
       effectList.addChildStruct( this.effects[i].save() );
     }
@@ -268,7 +268,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue( this.position.y );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue( this.position.z );
 
-    const theta = this.rotation.z * Math.PI;
+    let theta = this.rotation.z * Math.PI;
 
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue( 1 * Math.cos(theta) );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue( 1 * Math.sin(theta) );

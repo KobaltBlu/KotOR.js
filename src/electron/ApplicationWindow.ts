@@ -1,7 +1,7 @@
-﻿import { BrowserWindow } from "electron";
+import { BrowserWindow } from "electron";
 import * as path from "path";
-import { WindowManager } from "@/electron/WindowManager";
-import Main from "@/electron/Main";
+import { WindowManager } from "./WindowManager";
+import Main from "./Main";
 
 export class ApplicationWindow {
 
@@ -11,7 +11,7 @@ export class ApplicationWindow {
   constructor(profile: any = {}){
     // Create the browser window.
     this.browserWindow = new BrowserWindow({
-      width: profile.width ? profile.width : 1200,
+      width: profile.width ? profile.width : 1200, 
       height: profile.height ? profile.height : 600,
       fullscreen: profile.settings?.fullscreen.value != undefined ? profile.settings?.fullscreen.value : profile.settings?.fullscreen.defaultValue,
       frame: !profile.launch.frameless,
@@ -39,7 +39,7 @@ export class ApplicationWindow {
     //     callback({ responseHeaders: details.responseHeaders });
     //   }
     // );
-
+    
     this.profile = profile;
 
     let queryString = new URLSearchParams();
@@ -57,10 +57,10 @@ export class ApplicationWindow {
     this.browserWindow.loadURL(`file://${Main.ApplicationPath}/dist/${profile.launch.path}?${queryString.toString()}`);
     this.browserWindow.setMenuBarVisibility(false);
 
-    // Emitted before the window is closed.
-    this.browserWindow.on('close', () => {
+    // Emitted when the window is closed.
+    this.browserWindow.on('closed', () => {
+      WindowManager.createLauncherWindow();
       WindowManager.removeWindow(this);
-      WindowManager.showLauncher();
     });
 
     this.browserWindow.webContents.on("did-create-window", (window, details) => {
@@ -92,11 +92,10 @@ export class ApplicationWindow {
     WindowManager.hideLauncher();
     WindowManager.addWindow(this);
   }
-
+  
   send(event: string, data: any) {
     if(this.browserWindow)
       this.browserWindow.webContents.send(event, data);
   }
 
 }
-

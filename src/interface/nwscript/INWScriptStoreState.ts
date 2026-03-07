@@ -1,5 +1,5 @@
-import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import type { NWScriptInstance } from "../../nwscript/NWScriptInstance";
+import type { NWScriptInstruction } from "../../nwscript/NWScriptInstruction";
 
 /**
  * INWScriptStoreState interface.

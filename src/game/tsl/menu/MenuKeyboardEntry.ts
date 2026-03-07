@@ -1,5 +1,5 @@
-import { MenuKeyboardEntry as K1_MenuKeyboardEntry } from "@/game/kotor/KOTOR";
-import type { GUILabel, GUIButton } from "@/gui";
+import type { GUILabel, GUIButton } from "../../../gui";
+import { MenuKeyboardEntry as K1_MenuKeyboardEntry } from "../../kotor/KOTOR";
 
 /**
  * MenuKeyboardEntry class.
@@ -30,7 +30,7 @@ export class MenuKeyboardEntry extends K1_MenuKeyboardEntry {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
 
       this.BTN_Cancel.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -42,4 +42,3 @@ export class MenuKeyboardEntry extends K1_MenuKeyboardEntry {
   }
   
 }
-

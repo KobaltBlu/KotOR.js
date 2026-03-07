@@ -1,14 +1,14 @@
-import { MenuPartySelection as K1_MenuPartySelection } from "@/game/kotor/KOTOR";
-import { GameState } from "@/GameState";
-import { LBL_3DView } from "@/gui";
-import type { GUILabel, GUICheckBox, GUIButton } from "@/gui";
-import { MDLLoader, TextureLoader } from "@/loaders";
-import { ModuleCreature } from "@/module";
-import { NWScript } from "@/nwscript/NWScript";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { OdysseyModel } from "@/odyssey";
-import { OdysseyModel3D } from "@/three/odyssey";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameState } from "../../../GameState";
+import { LBL_3DView } from "../../../gui";
+import type { GUILabel, GUICheckBox, GUIButton } from "../../../gui";
+import { MDLLoader, TextureLoader } from "../../../loaders";
+import { ModuleCreature } from "../../../module";
+import { NWScript } from "../../../nwscript/NWScript";
+import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
+import { OdysseyModel } from "../../../odyssey";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+import { OdysseyModel3D } from "../../../three/odyssey";
+import { MenuPartySelection as K1_MenuPartySelection } from "../../kotor/KOTOR";
 
 /**
  * MenuPartySelection class.
@@ -338,7 +338,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       }
       try {
         this.LBL_3D_VIEW.render(delta);
-      } catch (_e: unknown) { }
+      } catch (e: any) { }
     }
   }
 

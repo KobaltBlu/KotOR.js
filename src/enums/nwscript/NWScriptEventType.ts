@@ -13,4 +13,4 @@ export enum NWScriptEventType {
   EventConversation   = 0x07,
   EventUserDefined    = 0x0B,
   EventActivateItem   = 0x12,
-}
+};

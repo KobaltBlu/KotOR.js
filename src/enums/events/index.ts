@@ -1,2 +1,2 @@
-export * from "@/enums/events/GameEventType";
-export * from "@/enums/events/SignalEventType";
+export * from "./GameEventType";
+export * from "./SignalEventType";

@@ -1,17 +1,16 @@
 import React, { useCallback, useEffect, useState } from "react";
-
 // import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify';
-import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
-import { createERFContextMenuItems } from "@/apps/forge/components/tabs/tab-erf-editor/ERFContextMenu";
-import { ERFListNode } from "@/apps/forge/components/treeview/ERFListNode";
-import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabERFEditorState } from "@/apps/forge/states/tabs";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { TabERFEditorState } from "../../../states/tabs";
+import * as KotOR from "../../../KotOR";
+import { FileTypeManager } from "../../../FileTypeManager";
+import { EditorFile } from "../../../EditorFile";
+import { ForgeTreeView } from "../../treeview/ForgeTreeView";
+import { FileBrowserNode } from "../../../FileBrowserNode";
+import { ERFListNode } from "../../treeview/ERFListNode";
+import { useContextMenu } from "../../common/ContextMenu";
+import { createERFContextMenuItems } from "./ERFContextMenu";
 
 const MENU_ID = 'context-tab-erf-editor-entry';
 
@@ -70,7 +69,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
     event.stopPropagation();
     if(!node.data.resource){ return; }
     setSelectedEntry(node);
-    
+
     const contextMenuItems = createERFContextMenuItems({
       archive: node.data.archive,
       resource: node.data.resource

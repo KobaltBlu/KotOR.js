@@ -1,9 +1,8 @@
 import * as THREE from "three";
-
-import { GameState } from "@/GameState";
-import type { GUIControl } from "@/gui/GUIControl";
-import type { LightManager } from "@/managers";
-import { OdysseyModel3D } from "@/three/odyssey";
+import { GameState } from "../GameState";
+import type { LightManager } from "../managers";
+import { OdysseyModel3D } from "../three/odyssey";
+import type { GUIControl } from "./GUIControl";
 
 /**
  * LBL_3DView class.
@@ -133,12 +132,12 @@ export class LBL_3DView {
     if(!this.visible)
       return;
 
-    for(const emitter in this.emitters){
+    for(let emitter in this.emitters){
       this.emitters[emitter].tick(delta);
     }
 
     for(let i = 0; i < this.scene.children.length; i++){
-      const element = this.scene.children[i];
+      let element = this.scene.children[i];
       if(element instanceof OdysseyModel3D){
         element.update(delta);
       }
@@ -150,7 +149,7 @@ export class LBL_3DView {
       this.lightManager.update(delta, this.currentCamera);
     }
 
-    const oldClearColor = new THREE.Color()
+    let oldClearColor = new THREE.Color()
     GameState.renderer.getClearColor(oldClearColor);
     //GameState.renderer.setClearColor(this.clearColor, 1);
     GameState.renderer.setRenderTarget(this.texture);
@@ -161,7 +160,7 @@ export class LBL_3DView {
     //GameState.renderer.setClearColor(oldClearColor, 1);
 
     if(this.control){
-      const material = this.control.getFill().material;
+      let material = this.control.getFill().material;
       if(material instanceof THREE.ShaderMaterial){
         material.uniforms.map.value = this.texture.texture;
         material.transparent = true;

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, Form } from "react-bootstrap";
-
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ModalCloneModuleState } from "@/apps/forge/states/modal/ModalCloneModuleState";
+import { ModalCloneModuleState } from "../../states/modal/ModalCloneModuleState";
 
 export const ModalCloneModule = (props: BaseModalProps) => {
   const modal = props.modal as ModalCloneModuleState;
@@ -59,19 +58,18 @@ export const ModalCloneModule = (props: BaseModalProps) => {
       modal.processEventListener("onStateChange", [modal]);
       return;
     }
-    await import("@/apps/forge/ForgeFileSystem"); // load for side effects if needed
-    type KotORModule = typeof import("@/apps/forge/KotOR");
-    const KotOR = (await import("@/apps/forge/KotOR")) as KotORModule;
+    const { ForgeFileSystem } = await import("../../ForgeFileSystem");
+    const KotOR = await import("../../KotOR");
     let outputPath: string | undefined;
-    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
-      const dialog = (window as Window & { dialog?: { showSaveDialog: (opts: { title?: string; defaultPath?: string; filters?: { name: string; extensions: string[] }[] }) => Promise<{ cancelled?: boolean; filePath?: string }> } }).dialog;
+    if (KotOR.ApplicationProfile.ENV === (KotOR as any).ApplicationEnvironment.ELECTRON) {
+      const dialog = (window as any).dialog;
       if (dialog?.showSaveDialog) {
         const result = await dialog.showSaveDialog({
           title: "Save Cloned Module",
           defaultPath: `${modal.identifier}.mod`,
           filters: [{ name: "Module", extensions: ["mod"] }],
         });
-        if (result?.cancelled || !result?.filePath) return;
+        if (result?.canceled || !result?.filePath) return;
         outputPath = result.filePath;
       }
     }

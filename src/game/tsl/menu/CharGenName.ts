@@ -1,12 +1,12 @@
-import { CharGenName as K1_CharGenName } from "@/game/kotor/KOTOR";
-import { GameState } from "@/GameState";
-import type { GUILabel, GUIButton } from "@/gui";
+import { GameState } from "../../../GameState";
+import type { GUILabel, GUIButton } from "../../../gui";
+import { CharGenName as K1_CharGenName } from "../../kotor/KOTOR";
 
 /**
  * CharGenName class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file CharGenName.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -30,7 +30,7 @@ export class CharGenName extends K1_CharGenName {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.NAME_BOX_EDIT.setEditable(true);
 
       this.BTN_BACK.addEventListener('click', (e) => {
@@ -57,5 +57,5 @@ export class CharGenName extends K1_CharGenName {
     super.show();
     this.NAME_BOX_EDIT.setText(GameState.CharGenManager.selectedCreature.firstName);
   }
-
+  
 }

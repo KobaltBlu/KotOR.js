@@ -1,8 +1,8 @@
-import { JournalCategoryEntry } from "@/engine/JournalCategoryEntry";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { CExoLocString } from "../resource/CExoLocString";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { JournalCategoryEntry } from "./JournalCategoryEntry";
 
 /**
  * JournalCategory class.

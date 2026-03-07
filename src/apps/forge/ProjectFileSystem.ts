@@ -1,13 +1,12 @@
-import * as fs from "fs";
+import { EditorFile } from "./EditorFile";
+import * as KotOR from "./KotOR";
+import { EditorFileProtocol } from "./enum/EditorFileProtocol";
+import { ForgeState } from "./states/ForgeState";
+import { TabProjectExplorerState } from "./states/tabs";
 import * as path from "path";
-
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabProjectExplorerState } from "@/apps/forge/states/tabs";
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
-import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
+import * as fs from "fs";
+import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
+import { IGameFileSystemReadDirOptions } from "../../interface/filesystem/IGameFileSystemReadDirOptions";
 
 const spleep = (time: number = 0) => {
   return new Promise( (resolve, reject) => {
@@ -122,7 +121,7 @@ export class ProjectFileSystem {
       const file = await this.open(filepath);
       if(!file) throw new Error('Failed to read file');
       
-      const handle = await file.getFile();
+      let handle = await file.getFile();
       return new Uint8Array( await handle.arrayBuffer() );
     }
   }
@@ -161,7 +160,7 @@ export class ProjectFileSystem {
         if(!newFile) throw new Error('Failed to create file');
 
         try{
-          const stream = await newFile.createWritable();
+          let stream = await newFile.createWritable();
           await stream.write(data as any);
           await stream.close();
           resolve(true);
@@ -207,9 +206,9 @@ export class ProjectFileSystem {
         const details = path.parse(dirOrFilePath);
         try{
           if(details.ext){
-            const handle = await this.resolveFilePathDirectoryHandleProject(dirOrFilePath);
+            let handle = await this.resolveFilePathDirectoryHandleProject(dirOrFilePath);
             if(handle){
-              const fileHandle = await handle.getFileHandle(details.base);
+              let fileHandle = await handle.getFileHandle(details.base);
               if(fileHandle){
                 resolve(true);
                 return;
@@ -222,7 +221,7 @@ export class ProjectFileSystem {
               return;
             }
           }else{
-            const handle = await this.resolvePathDirectoryHandleProject(dirOrFilePath);
+            let handle = await this.resolvePathDirectoryHandleProject(dirOrFilePath);
             if(handle){
               resolve(true);
               return;
@@ -368,7 +367,7 @@ export class ProjectFileSystem {
           resolve(files);
           return;
         }
-        const dir_path = path.join(this.rootDirectoryPath, resource_path);
+        let dir_path = path.join(this.rootDirectoryPath, resource_path);
         
         if(!(await this.isFSDirectoryProject(resource_path))){
           if(!opts.list_dirs){
@@ -395,8 +394,8 @@ export class ProjectFileSystem {
                 file_path = path.join(resource_path, file.name);
                 is_dir = (await this.isFSDirectoryProject(file_path));
                 try{
-                  if(is_dir){
-                    if(opts.recursive){
+                  if(!!is_dir){
+                    if(!!opts.recursive){
                       await this.readdir_fs_project(file_path, opts, files, depthState);
                     }else{
                       files.push(path.join(file_path));

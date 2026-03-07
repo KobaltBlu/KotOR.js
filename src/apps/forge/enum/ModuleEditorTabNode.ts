@@ -10,4 +10,4 @@ export enum ModuleEditorTabNode {
   TRIGGER = 6,
   SOUND = 7,
   WALKMESH = 8,
-}
+};

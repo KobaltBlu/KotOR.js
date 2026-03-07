@@ -1,4 +1,4 @@
-import { EAXPresets } from "@/audio/EAXPresets";
+import { EAXPresets } from "./EAXPresets";
 
 /**
  * ReverbEngine class.

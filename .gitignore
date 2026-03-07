@@ -64,3 +64,5 @@ scratch/
 *.temp
 .cache/
 .history/
+extensions/
+vendor/WebKotor/

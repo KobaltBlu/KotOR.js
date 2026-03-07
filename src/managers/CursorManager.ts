@@ -1,16 +1,15 @@
 import * as THREE from "three";
-
-import { Mouse } from "@/controls/Mouse";
-import { EngineMode, GameEngineType } from "@/enums/engine";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
-import { TextureLoader } from "@/loaders";
-import type { MenuManager } from "@/managers/MenuManager";
-import type { ModuleObject } from "@/module";
-import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
-import { ApplicationProfile } from "@/utility/ApplicationProfile";
-import { BitWise } from "@/utility/BitWise";
+import { TextureLoader } from "../loaders";
+import { Mouse } from "../controls/Mouse";
+import type { ModuleObject } from "../module";
+import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { EngineMode, GameEngineType } from "../enums/engine";
+import type { MenuManager } from "./MenuManager";
+import { GameState } from "../GameState";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { OdysseyObject3D } from "../three/odyssey/OdysseyObject3D";
 
 /**
  * Manages the in-game cursor, reticles, and selection/hover logic.
@@ -32,10 +31,10 @@ import { BitWise } from "@/utility/BitWise";
 export class CursorManager {
 	/** Reference to the active `MenuManager` type for UI state checks */
 	static MenuManager: typeof MenuManager;
-
+	
 	/** Map of named cursor sprite materials (e.g., "default", "attack") */
 	static cursorMaterials: Map<string, THREE.SpriteMaterial> = new Map();
-
+	
 	/** Main cursor sprite shown in the UI layer */
 	static cursor: THREE.Sprite;
 	/** Primary reticle shown over hovered objects */
@@ -44,7 +43,7 @@ export class CursorManager {
 	static reticle2: THREE.Sprite;
 	/** Directional arrow sprite (friendly/hostile) */
 	static arrow: THREE.Sprite;
-
+	
 	/** Three.js node for the currently selected object (reticle anchor) */
 	static selected: THREE.Object3D;
 	/** Game module object currently selected */
@@ -53,10 +52,10 @@ export class CursorManager {
 	static hovered: THREE.Object3D;
 	/** Game module object currently hovered */
 	static hoveredObject: ModuleObject;
-
+	
 	/** Subset of module objects considered for selection/hover */
 	static visibleObjects: ModuleObject[];
-
+	
 	/** Dynamic geometry used as point proxies for interactable ray tests */
 	static pointGeomerty = new THREE.BufferGeometry();
 	/** Material for point proxy cloud used for raycasting */
@@ -66,17 +65,17 @@ export class CursorManager {
 		fog: false,
 		visible: false
 	});
-
+	
 	/** Points instance used as a single occlusion/raycast target for interactables */
 	static testPoints: THREE.Points;
-
+	
 	/** Debug sphere geometry (optional visualization) */
-	static sphereGeometry = new THREE.SphereGeometry( 1, 16, 8 );
+	static sphereGeometry = new THREE.SphereGeometry( 1, 16, 8 ); 
 	/** Debug sphere material (optional visualization) */
-	static sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
+	static sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } ); 
 	/** Debug sphere mesh (optional visualization) */
 	static sphere: THREE.Mesh;
-
+	
 	/**
 	 * Initializes cursor/reticle materials and sprites, and loads textures.
 	 *
@@ -144,7 +143,7 @@ export class CursorManager {
 		CursorManager.reticle = new THREE.Sprite( CursorManager.cursorMaterials.get('reticleF') );
 		CursorManager.reticle2 = new THREE.Sprite( CursorManager.cursorMaterials.get('reticleF2') );
 		CursorManager.arrow = new THREE.Sprite( CursorManager.cursorMaterials.get('arrowF') );
-
+		
 		CursorManager.reticle.scale.set( 0.5, 0.5, 0.5 );
 		CursorManager.reticle.name = 'reticle';
 		CursorManager.reticle.renderOrder = 1;
@@ -190,7 +189,7 @@ export class CursorManager {
     if(CursorManager.cursor.material != cursorMaterial){
       CursorManager.cursor.material = cursorMaterial;
     }
-
+		
 	}
 
 	/**
@@ -255,12 +254,12 @@ export class CursorManager {
 				CursorManager.selectedObject = object;
 			}
 
-			if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
+			if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){		
 				CursorManager.setReticle2('reticleF2');
 			}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
 				if(!object.isUseable()){
 					return;
-				}
+				}		
 				CursorManager.setReticle2('reticleF2');
 			}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
 				if(object.isHostile(GameState.getCurrentPlayer())){
@@ -289,7 +288,7 @@ export class CursorManager {
 	public static setReticleHoveredObject( object: ModuleObject ){
 		if(!object){ return; }
 
-		const canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
+		let canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
 
 		CursorManager.hovered = object.getReticleNode();
 		if(CursorManager.hovered){
@@ -373,10 +372,10 @@ export class CursorManager {
 
 		CursorManager.MenuManager.hoveredGUIElement = undefined;
 
-		const uiControls = GameState.controls.MenuGetActiveUIElements();
-		const controlCount = uiControls.length;
+		let uiControls = GameState.controls.MenuGetActiveUIElements();
+		let controlCount = uiControls.length;
 		for(let i = 0; i < controlCount; i++){
-			const control = uiControls[i];
+			let control = uiControls[i];
 
 			if(!control.isVisible()){
 				continue;
@@ -391,7 +390,7 @@ export class CursorManager {
 			}
 
 			if(!guiHoverCaptured){
-				const cMenu = control.menu;
+				let cMenu = control.menu;
 				cMenu.setWidgetHoverActive(control, true);
 				guiHoverCaptured = false;
 			}
@@ -435,13 +434,13 @@ export class CursorManager {
 			if(CursorManager.MenuManager.GetCurrentMenu() == CursorManager.MenuManager.InGameOverlay){
 				if(GameState.scene_cursor_holder.visible){
 					const moduleObject = CursorManager.onMouseHitInteractive();
-					// log.info('moduleObject', moduleObject);
+					// console.log('moduleObject', moduleObject);
 					if(moduleObject){
 						CursorManager.setReticleHoveredObject(moduleObject);
 					}
 				}else{
 					if(!CursorManager.selectedObject){
-						const closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
+						let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
 						// CursorManager.setReticleSelectedObject(closest);
 						CursorManager.setReticleHoveredObject(closest);
 					}
@@ -459,17 +458,17 @@ export class CursorManager {
 		if(GameState.Mode == EngineMode.INGAME && CursorManager.selected instanceof OdysseyObject3D && !CursorManager.MenuManager.MenuContainer.bVisible){
 			CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
 			CursorManager.reticle2.visible = true;
-			if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleDoor)){
+			if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleDoor)){		
 				CursorManager.setReticle2('reticleF2');
 			}else if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModulePlaceable)){
 				if(!CursorManager.selectedObject.isUseable()){
 					return;
-				}
+				}		
 				CursorManager.setReticle2('reticleF2');
 			}else if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleTrigger)){
 				if(!CursorManager.selectedObject.isUseable()){
 					return;
-				}
+				}		
 				CursorManager.setReticle2('reticleF2');
 			}else if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleCreature)){
 				if(CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
@@ -503,15 +502,16 @@ export class CursorManager {
 	 * @returns The hovered `ModuleObject`, or `undefined` if none hit
 	 */
 	public static onMouseHitInteractive(): ModuleObject | undefined {
+		
 		const objects = GameState.ModuleObjectManager.playerHoverableObjects;
 		const objCount = objects.length;
-
+		
 		const points: number[] = [];
 		const sizes: number[] = [];
 
 		// Line of sight offset for the point cloud
 		const losZ = CursorManager.pointLOSOffset;
-
+		
 		for(let i = 0; i < objCount; i++){
 			const obj = objects[i];
 			points.push(obj.position.x, obj.position.y, obj.position.z + losZ);
@@ -535,7 +535,7 @@ export class CursorManager {
 
 		CursorManager.pointGeomerty.computeBoundingBox();
 		CursorManager.pointGeomerty.computeBoundingSphere();
-
+		
 		const farCache = CursorManager.raycaster.far;
 		const pThresholdCache = CursorManager.raycaster.params.Points.threshold;
 		CursorManager.raycaster.far = GameState.maxSelectableDistance;

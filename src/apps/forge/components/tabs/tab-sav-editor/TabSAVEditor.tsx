@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabSAVEditorState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/components/tabs/tab-sav-editor/TabSAVEditor.scss";
+import { TabSAVEditorState } from "../../../states/tabs";
+import { MenuBar, MenuItem } from "../../common/MenuBar";
+import * as KotOR from "../../../KotOR";
+import { FileTypeManager } from "../../../FileTypeManager";
+import { ForgeState } from "../../../states/ForgeState";
+import { EditorFile } from "../../../EditorFile";
+import "./TabSAVEditor.scss";
 
 interface BaseTabProps {
   tab: TabSAVEditorState;

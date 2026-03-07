@@ -1,4 +1,4 @@
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { EventListenerModel } from "./EventListenerModel";
 
 export interface SceneGraphNodeOptions {
   uuid?: string;
@@ -7,22 +7,19 @@ export interface SceneGraphNodeOptions {
   nodes?: SceneGraphNode[];
   onClick?: (node: SceneGraphNode) => void;
   parent?: SceneGraphNode;
-  data?: Record<string, unknown>;
+  data?: any;
   open?: boolean;
 }
 
 export type SceneGraphNodeEventListenerTypes =
   'onExpandStateChange'|'onNameChange'|'onNodesChange'|'onParentChanged'|'onSelectStateChange';
 
-/** Callback for scene graph node events (args vary by event). */
-export type SceneGraphNodeEventCallback = (...args: unknown[]) => void;
-
 export interface SceneGraphNodeEventListeners {
-  onExpandStateChange: SceneGraphNodeEventCallback[];
-  onNameChange: SceneGraphNodeEventCallback[];
-  onNodesChange: SceneGraphNodeEventCallback[];
-  onParentChanged: SceneGraphNodeEventCallback[];
-  onSelectStateChange: SceneGraphNodeEventCallback[];
+  onExpandStateChange: Function[],
+  onNameChange: Function[],
+  onNodesChange: Function[],
+  onParentChanged: Function[],
+  onSelectStateChange: Function[],
 }
 
 export class SceneGraphNode extends EventListenerModel {
@@ -33,10 +30,10 @@ export class SceneGraphNode extends EventListenerModel {
   icon: string = '';
   nodes: SceneGraphNode[] = [];
   onClick: (node: SceneGraphNode) => void;
-  data: Record<string, unknown> = {};
+  data: any = {};
   open: boolean = false;
   selected: boolean = false;
-  parent: SceneGraphNode | undefined = undefined;
+  parent: SceneGraphNode;
 
   constructor( props: SceneGraphNodeOptions){
     super();
@@ -52,7 +49,7 @@ export class SceneGraphNode extends EventListenerModel {
 
     this.name = props.name;
     this.icon = props.icon as string;
-    this.parent = props.parent;
+    if(props.parent)  this.parent = props.parent;
     if(props.nodes)   this.nodes = props.nodes;
     if(props.onClick) this.onClick = props.onClick;
     if(props.data)    this.data = props.data;
@@ -102,21 +99,21 @@ export class SceneGraphNode extends EventListenerModel {
     this.processEventListener<SceneGraphNodeEventListenerTypes>('onSelectStateChange', [this.name]);
   }
 
-  traverseAll(cb: SceneGraphNodeEventCallback): void {
+  traverseAll(cb: Function){
     this.traverseChildren(cb);
     this.traverseAncestors(cb);
   }
 
-  traverseChildren(cb: SceneGraphNodeEventCallback): void {
-    if (typeof cb === 'function') cb(this);
-    for (let i = 0; i < this.nodes.length; i++) {
+  traverseChildren(cb: Function){
+    if(typeof cb === 'function') cb(this);
+    for(let i = 0; i < this.nodes.length; i++){
       this.nodes[i].traverseChildren(cb);
     }
   }
 
-  traverseAncestors(cb: SceneGraphNodeEventCallback): void {
-    if (this.parent) {
-      if (typeof cb === 'function') cb(this.parent);
+  traverseAncestors(cb: Function){
+    if(this.parent){
+      if(typeof cb === 'function') cb(this.parent);
       this.parent.traverseAncestors(cb);
       // for(let i = 0; i < this.nodes.length; i++){
       //   if(this.parent.nodes[i] != this){

@@ -1,19 +1,19 @@
-import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
-import { ILayoutObstacle } from "@/interface/resource/ILayoutObstacle";
-import { ModuleObject } from "@/module/ModuleObject";
-import { NWScript } from "@/nwscript/NWScript";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { GFFObject } from "@/resource/GFFObject";
+import { ModuleObject } from "./ModuleObject";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
+import { NWScript } from "../nwscript/NWScript";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFObject } from "../resource/GFFObject";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { GameState } from "../GameState";
 
 /**
 * ModuleMGObstacle class.
-*
+* 
 * Class representing a obstacle found in minigame modules.
-*
+* 
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*
+* 
 * @file ModuleMGObstacle.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -26,13 +26,12 @@ export class ModuleMGObstacle extends ModuleObject {
   invince_period: number;
   layout: ILayoutObstacle;
 
-  constructor(template: GFFObject | undefined, layout: ILayoutObstacle){
+  constructor(template: GFFObject, layout: ILayoutObstacle){
     super(template);
     this.objectType |= ModuleObjectType.ModuleMGObstacle;
     this.name = '';
     this.invince = 0;
     this.layout = layout;
-    if (layout?.position) this.position.copy(layout.position as { x: number; y: number; z: number });
   }
 
   setTemplate(template: GFFObject){
@@ -48,7 +47,7 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   updatePaused(delta: number = 0){
-
+    
   }
 
   damage(damage = 0){
@@ -88,7 +87,6 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   loadScripts(){
-    if (!this.template?.RootNode) return;
     const scriptKeys = [
       ModuleObjectScript.MGObstacleOnAnimEvent,
       ModuleObjectScript.MGObstacleOnCreate,
@@ -96,27 +94,24 @@ export class ModuleMGObstacle extends ModuleObject {
       ModuleObjectScript.MGObstacleOnHitBullet,
       ModuleObjectScript.MGObstacleOnHitFollower,
     ];
-    const scriptsNode = this.template.getFieldByLabel('Scripts')?.getFieldStruct();
-    if (!scriptsNode) return;
-    for (const scriptKey of scriptKeys) {
-      if (!scriptsNode.hasField(scriptKey)) continue;
-      const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
-      if (!resRef) continue;
-      const nwscript = GameState.NWScript.Load(resRef);
-      if (!nwscript) {
-        console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-        continue;
+
+    for(const scriptKey of scriptKeys){
+      if(!scriptKey){ continue; }
+      const nwscript = GameState.NWScript.Load(scriptKey);
+      if(!nwscript){ 
+        console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}] for object ${this.name}`);
+        continue; 
       }
       nwscript.caller = this;
       this.scripts[scriptKey] = nwscript;
     }
+
   }
 
   initProperties(){
-    if (this.template?.RootNode?.hasField('Name'))
+    if(this.template.RootNode.hasField('Name'))
       this.name = this.template.getFieldByLabel('Name').getValue().toLowerCase();
-    if (this.layout?.name) this.name = this.layout.name.toLowerCase();
-    if (this.layout?.position) this.position.copy(this.layout.position as { x: number; y: number; z: number });
+
     this.initialized = true;
   }
 

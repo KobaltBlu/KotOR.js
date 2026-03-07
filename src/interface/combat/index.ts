@@ -1,1 +1,1 @@
-export * from "@/interface/combat/ICombatAction";
+export * from "./ICombatAction";

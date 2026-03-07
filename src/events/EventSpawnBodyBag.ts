@@ -1,10 +1,9 @@
+import { GameEventType } from "../enums/events/GameEventType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { GameEvent } from "./GameEvent";
 import * as THREE from "three";
-
-import { GameEventType } from "@/enums/events/GameEventType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameEvent } from "@/events/GameEvent";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * EventSpawnBodyBag class.
@@ -42,7 +41,7 @@ export class EventSpawnBodyBag extends GameEvent {
   }
 
   saveEventData(){
-    const struct = new GFFStruct(0x5555);
+    let struct = new GFFStruct(0x5555);
     struct.addField( new GFFField(GFFDataType.DWORD, 'BodyBagId' ) ).setValue(this.bodyBagId);
     struct.addField( new GFFField(GFFDataType.DWORD, 'PositionX' ) ).setValue(this.position.x);
     struct.addField( new GFFField(GFFDataType.DWORD, 'PositionY' ) ).setValue(this.position.y);
@@ -51,11 +50,11 @@ export class EventSpawnBodyBag extends GameEvent {
   }
 
   export(){
-    const struct = new GFFStruct( 0xABCD );
+    let struct = new GFFStruct( 0xABCD );
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( this.callerId );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
-    const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
     eventData.addChildStruct( this.saveEventData() );
     struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
     struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( this.objectId );

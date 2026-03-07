@@ -8,4 +8,4 @@ export enum EditorControlsTool {
   CAMERA_ROTATE = 2002,
 
   PLACEABLE = 3001
-}
+};

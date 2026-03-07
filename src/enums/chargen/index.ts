@@ -1,1 +1,1 @@
-export * from "@/enums/chargen/CharGenAttribute";
+export * from "./CharGenAttribute";

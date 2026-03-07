@@ -1,17 +1,16 @@
 import * as THREE from "three";
-
-import { Action } from "@/actions/Action";
-import type { ComputedPath } from "@/engine/pathfinding/ComputedPath";
-import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { ActionStatus } from "@/enums/actions/ActionStatus";
-import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
-import { Utility } from "@/utility/Utility";
+import { ActionStatus } from "../enums/actions/ActionStatus";
+import { ActionType } from "../enums/actions/ActionType";
+import { Action } from "./Action";
+import { Utility } from "../utility/Utility";
+import { GameState } from "../GameState";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import type { ModuleObject } from "../module/ModuleObject";
+import type { ComputedPath } from "../engine/pathfinding/ComputedPath";
+import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
 
 /**
  * ActionMoveToPoint class.
@@ -90,7 +89,7 @@ export class ActionMoveToPoint extends Action {
   
       const point = this.computedPath.points[0];
       if(point){
-        const pointDistance = Utility.Distance2D(this.owner.position, point.vector);
+        let pointDistance = Utility.Distance2D(this.owner.position, point.vector);
         if(pointDistance > (this.computedPath.points.length > 1 ? 0.5 : range)){
           const tangent = point.vector.clone().sub(this.owner.position.clone());
           const atan = Math.atan2(-tangent.y, -tangent.x);

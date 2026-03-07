@@ -20,4 +20,4 @@ export enum GUIControlAlignment {
   VerticalCenter =   0x10,
   VerticalBottom =   0x20,
   VerticalMask =     0x38
-}
+};

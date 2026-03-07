@@ -1,16 +1,15 @@
-﻿import React, { useState, useCallback, memo } from "react";
-
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import * as KotOR from "@/apps/forge/KotOR";
-import { Project } from "@/apps/forge/Project";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { RecentProject } from "@/apps/forge/RecentProject";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import "@/apps/forge/components/tabs/tab-quick-start/TabQuickStart.scss";
-import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
+import React, { useState, useCallback, memo } from "react";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { Project } from "../../../Project";
+import { ProjectFileSystem } from "../../../ProjectFileSystem";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { ForgeState } from "../../../states/ForgeState";
+import { EditorFile } from "../../../EditorFile";
+import { RecentProject } from "../../../RecentProject";
+import { FileTypeManager } from "../../../FileTypeManager";
+import * as KotOR from "../../../KotOR";
+import "./TabQuickStart.scss";
+import { ModalNewProjectState } from "../../../states/modal/ModalNewProjectState";
 
 export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
   const [files, setFiles] = useState<EditorFile[]>(ForgeState.recentFiles);
@@ -52,13 +51,13 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
 
   const onClickRecentProject = useCallback(async (e: React.MouseEvent, recentProject: RecentProject) => {
     e.preventDefault();
-    
+
     if(!recentProject) return;
-    
+
     try{
       // Show loading state
       ForgeState.loaderShow();
-      
+
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         // For Electron, use the stored path
         const projectPath = recentProject.path;
@@ -79,7 +78,7 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
       } else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
         // For browser, try to restore the handle from storage
         let handle = recentProject.handle;
-        
+
         // If handle is not in memory, try to restore from IndexedDB
         if(!handle && recentProject.name){
           const handleKey = `project_handle_${recentProject.getIdentifier()}`;
@@ -90,7 +89,7 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
             console.warn('Failed to restore handle from IndexedDB:', e);
           }
         }
-        
+
         if(handle instanceof FileSystemDirectoryHandle){
           // Verify handle is still valid
           try{
@@ -116,7 +115,7 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
           Project.OpenByDirectory();
         }
       }
-      
+
       ForgeState.loaderHide();
     } catch(e){
       console.error('Error opening recent project:', e);
@@ -136,6 +135,12 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
     e.stopPropagation();
     e.preventDefault();
     ForgeState.removeRecentFile(file);
+  }, []);
+
+  const onClickRemoveRecentProject = useCallback(async (e: React.MouseEvent, project: RecentProject) => {
+    e.stopPropagation();
+    e.preventDefault();
+    await ForgeState.removeRecentProject(project);
   }, []);
 
   return (
@@ -172,9 +177,24 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
 
         {/* Recent Projects */}
         <div className="quick-start-card">
-          <h2 className="quick-start-card-title">
-            <i className="fa-solid fa-clock-rotate-left" />
-            <span>Recent Projects</span>
+          <h2 className="quick-start-card-title d-flex align-items-center justify-content-between">
+            <span>
+              <i className="fa-solid fa-clock-rotate-left" />
+              <span>Recent Projects</span>
+            </span>
+            {projects.length > 0 && (
+              <button
+                type="button"
+                className="btn btn-link btn-sm p-0 text-muted"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await ForgeState.clearRecentProjects();
+                }}
+                title="Clear recent projects"
+              >
+                Clear
+              </button>
+            )}
           </h2>
           {projects.length > 0 ? (
             <ul className="recent-items-list">
@@ -188,6 +208,14 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
                   <div className="item-content">
                     <div className="item-name">{project.getDisplayName()}</div>
                   </div>
+                  <button
+                    className="remove-button"
+                    onClick={(e) => onClickRemoveRecentProject(e, project)}
+                    title="Remove from history"
+                    aria-label="Remove from history"
+                  >
+                    <i className="fa-solid fa-xmark" />
+                  </button>
                 </li>
               ))}
             </ul>
@@ -240,5 +268,4 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
     </div>
   );
 });
-
 

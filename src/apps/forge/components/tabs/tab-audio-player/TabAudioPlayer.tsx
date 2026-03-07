@@ -1,20 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
-
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
-import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
-import * as KotOR from "@/KotOR";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { TabAudioPlayerState } from "../../../states/tabs/TabAudioPlayerState";
+import { AudioPlayerState } from "../../../states/AudioPlayerState";
+import * as KotOR from "../../../../../KotOR";
 
 export const TabAudioPlayer = function(props: BaseTabProps) {
   const tab = props.tab as TabAudioPlayerState;
   
   // Use useRef for mutable variables that we want to persist
   // without triggering a re-render on their change
-  const requestRef = useRef<number>();
-  const previousTimeRef = useRef<number>();
-  const canvasRef = useRef<HTMLCanvasElement>(null as any);
-  const contextRef = useRef<CanvasRenderingContext2D>(null as any);
+  const requestRef = useRef<number | undefined>(undefined);
+  const previousTimeRef = useRef<number | undefined>(undefined);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   
   const [isReady, setIsReady] = useState<boolean>(false);
   const [isDisposed, setIsDisposed] = useState<boolean>(false);

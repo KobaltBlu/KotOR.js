@@ -1,6 +1,4 @@
-import type { LauncherProfile } from '@/apps/launcher/types';
-
-export const LauncherConfig: LauncherProfile = {
+export const LauncherConfig: any = {
   "name": "KotOR Forge",
   "full_name": "KotOR Forge",
   "icon": "./images/icon_forge.png",

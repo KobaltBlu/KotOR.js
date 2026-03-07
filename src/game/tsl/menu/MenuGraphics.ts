@@ -1,12 +1,12 @@
-import { MenuGraphics as K1_MenuGraphics } from "@/game/kotor/KOTOR";
-import { GameState } from "@/GameState";
-import type { GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "@/gui";
+import { GameState } from "../../../GameState";
+import type { GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
+import { MenuGraphics as K1_MenuGraphics } from "../../kotor/KOTOR";
 
 /**
  * MenuGraphics class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file MenuGraphics.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -38,7 +38,7 @@ export class MenuGraphics extends K1_MenuGraphics {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -52,24 +52,24 @@ export class MenuGraphics extends K1_MenuGraphics {
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_ADVANCED.addEventListener('click', (_e) => {
+      this.BTN_ADVANCED.addEventListener('click', (e) => {
         this.manager.MenuGraphicsAdvanced.open();
       });
 
-      this.SLI_GAMMA.onValueChanged = (value: number | boolean) => {
+      this.SLI_GAMMA.onValueChanged = (value: any) => {
         //let gamma = (1.5 * value) + .25;
-        const contrast = (50 * ((value*2) - 1) )*-1;
+        let contrast = (50 * ((value*2) - 1) )*-1;
 
         GameState.canvas.style.filter = 'contrast('+(100 + contrast)+'%)';
       };
 
-      this.BTN_RESOLUTION.addEventListener('click', (_e) => {
+      this.BTN_RESOLUTION.addEventListener('click', (e) => {
         this.manager.MenuResolutions.open();
       });
 
       // this.BTN_RESOLUTION.hide();
 
-      this.CB_GRASS.onValueChanged = (value: number | boolean) => {
+      this.CB_GRASS.onValueChanged = (value: any) => {
         //Toggle Grass
         if(GameState.group.grass){
           GameState.group.grass.visible = !!value;
@@ -89,6 +89,5 @@ export class MenuGraphics extends K1_MenuGraphics {
     super.close();
     GameState.iniConfig.save();
   }
-
+  
 }
-

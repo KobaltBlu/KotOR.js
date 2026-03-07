@@ -1,40 +1,41 @@
-﻿import * as THREE from "three";
+import * as THREE from "three";
 import * as path from "path";
-import { AudioEmitter } from "@/audio/AudioEmitter";
-import { GameEffect } from "@/effects";
-import EngineLocation from "@/engine/EngineLocation";
-import { GameState } from "@/GameState";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { GFFObject } from "@/resource/GFFObject";
-// import { NWScript } from "@/nwscript/NWScript";
-import { GFFField } from "@/resource/GFFField";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { ERFObject } from "@/resource/ERFObject";
-import { CurrentGame } from "@/engine/CurrentGame";
-import { RIMObject } from "@/resource/RIMObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { GameEventFactory } from "@/events/GameEventFactory";
-import { ResourceLoader, TextureLoader } from "@/loaders";
-import { AudioEngine } from "@/audio/AudioEngine";
-import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
-import { IModuleScripts } from "@/interface/module/IModuleScripts";
-import { IAreaListItem } from "@/interface/area/IAreaListItem";
-import type { GameEvent } from "@/events/GameEvent";
-import { ModuleArea } from "@/module/ModuleArea";
-import { ModuleTimeManager } from "@/module/ModuleTimeManager";
-import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { AudioEmitter } from "../audio/AudioEmitter";
+import { GameEffect } from "../effects";
+import EngineLocation from "../engine/EngineLocation";
+import { GameState } from "../GameState";
+import { CExoLocString } from "../resource/CExoLocString";
+import { GFFObject } from "../resource/GFFObject";
+// import { NWScript } from "../nwscript/NWScript";
+import { GFFField } from "../resource/GFFField";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { ERFObject } from "../resource/ERFObject";
+import { CurrentGame } from "../engine/CurrentGame";
+import { RIMObject } from "../resource/RIMObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { GameEventFactory } from "../events/GameEventFactory";
+import { ResourceLoader, TextureLoader } from "../loaders";
+import { AudioEngine } from "../audio/AudioEngine";
+import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
+import { IModuleScripts } from "../interface/module/IModuleScripts";
+import { IAreaListItem } from "../interface/area/IAreaListItem";
+import type { GameEvent } from "../events/GameEvent";
+import { ModuleArea } from "./ModuleArea";
+import { ModuleTimeManager } from "./ModuleTimeManager";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GameEngineType } from "../enums/engine/GameEngineType";
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
 /**
  * Module class.
- *
+ * 
  * Class representing an ingame module.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file Module.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -54,7 +55,7 @@ export class Module {
   entryX: number;
   entryY: number;
   entryZ: number;
-
+  
   scripts: { [key: string]: NWScriptInstance };
   scriptResRefs: Map<ModuleScriptKeys, string> = new Map<ModuleScriptKeys, string>();
 
@@ -115,7 +116,7 @@ export class Module {
   voId: string;
 
   /**
-   * Module version. Is always set to 3.
+   * Module version. Is always set to 3. 
    */
   version: number = 3;
 
@@ -153,28 +154,28 @@ export class Module {
    * ID to use for the next Effect
    */
   effectNextId: number;
-
-  /**
+  
+  /** 
    * @deprecated Deprecated: since NWN
    */
   expansionList: any[] = [];
 
-  /**
+  /** 
    * @deprecated Deprecated: since NWN
    */
   globalVariableList: any[] = [];
 
-  /**
+  /** 
    * @deprecated Obsolete: since NWN
    */
   hak: string;
 
-  /**
+  /** 
    * @deprecated Deprecated: since NWN
    */
   cutSceneList: any[] = [];
 
-  /**
+  /** 
    * always set to 2
    * @deprecated Deprecated: since NWN
    */
@@ -214,7 +215,7 @@ export class Module {
     this.entryX;
     this.entryY;
     this.entryZ;
-
+    
     this.isSaveGame = false;
     this.name = new CExoLocString();
 
@@ -233,21 +234,14 @@ export class Module {
     if(!(ifo instanceof GFFObject)){ return; }
     this.ifo = ifo;
 
-    const getVal = (label: string, def: string | number = ''): string | number => {
-      const f = ifo.getFieldByLabel(label);
-      return f != null ? f.getValue() : def;
-    };
-
     //Setup Module Calendar
     this.timeManager.setFromIFO(ifo);
-
+    
     const areaList = ifo.getFieldByLabel('Mod_Area_list');
-    if (!areaList || !areaList.getChildStructs().length) { return; }
     const areaCount = areaList.getChildStructs().length;
     let Mod_Area = areaList.childStructs[0];
 
-    const areaNameField = Mod_Area ? ifo.getFieldByLabel('Area_Name', Mod_Area.getFields()) : null;
-    this.areaName = areaNameField != null ? areaNameField.getValue() : '';
+    this.areaName = ifo.getFieldByLabel('Area_Name', Mod_Area.getFields()).getValue();
 
     this.areaList = [];
     //KOTOR modules should only ever have one area. But just incase lets loop through the list
@@ -255,45 +249,44 @@ export class Module {
       let Mod_Area = areaList.childStructs[0];
       const area: IAreaListItem = {} as any;
 
-      const areaNameField = Mod_Area?.getFieldByLabel('Area_Name');
-      if (areaNameField != null) area.areaName = areaNameField.getValue();
+      if(Mod_Area.hasField('Area_Name'))
+        area.areaName = Mod_Area.getFieldByLabel('Area_Name').getValue()
 
-      const objectIdField = Mod_Area?.getFieldByLabel('ObjectId');
-      if (objectIdField != null) area.objectId = objectIdField.getValue();
+      if(Mod_Area.hasField('ObjectId'))
+        area.objectId = Mod_Area.getFieldByLabel('ObjectId').getValue()
 
       this.areaList.push(area);
     }
 
     //LISTS
-    const expansionPackField = ifo.getFieldByLabel('Expansion_Pack');
-    this.expansionPack = expansionPackField != null ? expansionPackField.getValue() : 0;
+    if(ifo.RootNode.hasField('Expansion_Pack')){
+      this.expansionPack = ifo.getFieldByLabel('Expansion_Pack').getValue();
+    }else{
+      this.expansionPack = 0;
+    }
 
-    this.creatorId = getVal('Mod_Creator_ID', 0) as number;
-    const descField = ifo.getFieldByLabel('Mod_Description');
-    this.description = descField != null ? descField.getCExoLocString() : null;
+    this.creatorId = ifo.getFieldByLabel('Mod_Creator_ID').getValue();
+    this.description = ifo.getFieldByLabel('Mod_Description').getCExoLocString();
 
-    this.entryArea = getVal('Mod_Entry_Area', '') as string;
-    this.entryDirectionX = getVal('Mod_Entry_Dir_X', 0) as number;
-    this.entryDirectionY = getVal('Mod_Entry_Dir_Y', 0) as number;
-    this.entryX = getVal('Mod_Entry_X', 0) as number;
-    this.entryY = getVal('Mod_Entry_Y', 0) as number;
-    this.entryZ = getVal('Mod_Entry_Z', 0) as number;
+    this.entryArea = ifo.getFieldByLabel('Mod_Entry_Area').getValue();
+    this.entryDirectionX = ifo.getFieldByLabel('Mod_Entry_Dir_X').getValue();
+    this.entryDirectionY = ifo.getFieldByLabel('Mod_Entry_Dir_Y').getValue();
+    this.entryX = ifo.getFieldByLabel('Mod_Entry_X').getValue();
+    this.entryY = ifo.getFieldByLabel('Mod_Entry_Y').getValue();
+    this.entryZ = ifo.getFieldByLabel('Mod_Entry_Z').getValue();
 
-    this.hak = getVal('Mod_Hak', '') as string;
-    const idField = ifo.getFieldByLabel('Mod_ID');
-    this.id = idField != null ? idField.getVoid() : null;
-    const nameField = ifo.getFieldByLabel('Mod_Name');
-    this.name = nameField != null ? nameField.getCExoLocString() : null;
+    this.hak = ifo.getFieldByLabel('Mod_Hak').getValue();
+    this.id = ifo.getFieldByLabel('Mod_ID').getVoid(); //Generated by the toolset (Not sure if it is used in game)
+    this.name = ifo.getFieldByLabel('Mod_Name').getCExoLocString();
 
     //Mod_Tokens
     if(ifo.RootNode.hasField('Mod_Tokens') && isLoadingSave){
       const tokenList = ifo.getFieldByLabel('Mod_Tokens').getChildStructs();
       for(let i = 0, len = tokenList.length; i < len; i++){
-        const numField = tokenList[i].getFieldByLabel('Mod_TokensNumber');
-        const valField = tokenList[i].getFieldByLabel('Mod_TokensValue');
-        if (numField != null && valField != null) {
-          this.setCustomToken(numField.getValue(), valField.getValue());
-        }
+        this.setCustomToken(
+          tokenList[i].getFieldByLabel('Mod_TokensNumber').getValue(),
+          tokenList[i].getFieldByLabel('Mod_TokensValue').getValue()
+        );
       }
     }
 
@@ -310,45 +303,48 @@ export class Module {
       }
     }
 
-    //Scripts (optional in KotOR 1; TSL has full set)
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerAcquireItem,  getVal(ModuleObjectScript.ModuleOnPlayerAcquireItem, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerActivateItem,   getVal(ModuleObjectScript.ModuleOnPlayerActivateItem, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientEnter,  getVal(ModuleObjectScript.ModuleOnPlayerClientEnter, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientLeave,  getVal(ModuleObjectScript.ModuleOnPlayerClientLeave, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnHeartbeat,   getVal(ModuleObjectScript.ModuleOnHeartbeat, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnLoad,     getVal(ModuleObjectScript.ModuleOnLoad, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnStart,    getVal(ModuleObjectScript.ModuleOnStart, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDeath,    getVal(ModuleObjectScript.ModuleOnPlayerDeath, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDying,    getVal(ModuleObjectScript.ModuleOnPlayerDying, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerLevelUp,    getVal(ModuleObjectScript.ModuleOnPlayerLevelUp, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerRest,     getVal(ModuleObjectScript.ModuleOnPlayerRest, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnSpawnButtonDown,  getVal(ModuleObjectScript.ModuleOnSpawnButtonDown, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUnAcquireItem,  getVal(ModuleObjectScript.ModuleOnUnAcquireItem, '') as string);
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUserDefined,  getVal(ModuleObjectScript.ModuleOnUserDefined, '') as string);
+    //Scripts
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerAcquireItem,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerAcquireItem).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerActivateItem,   ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerActivateItem).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientEnter,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerClientEnter).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientLeave,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerClientLeave).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnHeartbeat,   ifo.getFieldByLabel(ModuleObjectScript.ModuleOnHeartbeat).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnLoad,     ifo.getFieldByLabel(ModuleObjectScript.ModuleOnLoad).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnStart,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnStart).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDeath,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerDeath).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDying,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerDying).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerLevelUp,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerLevelUp).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerRest,     ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerRest).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnSpawnButtonDown,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnSpawnButtonDown).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUnAcquireItem,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnUnAcquireItem).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUserDefined,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnUserDefined).getValue());
 
-    const startMovieField = ifo.getFieldByLabel('Mod_StartMovie');
-    this.startMovie = startMovieField != null ? startMovieField.getValue() : '';
-
-    this.tag = getVal('Mod_Tag', '') as string;
-
-    if(ifo.RootNode.hasField('Mod_VO_ID')){
-      this.voId = String(getVal('Mod_VO_ID', ''));
+    if(ifo.RootNode.hasField('Mod_StartMovie')){
+      this.startMovie = ifo.getFieldByLabel('Mod_StartMovie').getValue();
+    }else{
+      this.startMovie = '';
     }
 
-    this.version = getVal('Mod_Version', 0) as number;
-    this.xpScale = getVal('Mod_XPScale', 0) as number;
+    this.tag = ifo.getFieldByLabel('Mod_Tag').getValue();
+
+    if(ifo.RootNode.hasField('Mod_VO_ID')){
+      this.voId = ifo.getFieldByLabel('Mod_VO_ID').getValue();
+    }
+
+    this.version = ifo.getFieldByLabel('Mod_Version').getValue();
+    this.xpScale = ifo.getFieldByLabel('Mod_XPScale').getValue();
 
     if(ifo.RootNode.hasField('Mod_NextCharId0'))
-      this.nextCharId0 = getVal('Mod_NextCharId0', 0) as number;
+      this.nextCharId0 = ifo.getFieldByLabel('Mod_NextCharId0').getValue();
 
     if(ifo.RootNode.hasField('Mod_NextCharId1'))
-      this.nextCharId1 = getVal('Mod_NextCharId1', 0) as number;
+      this.nextCharId1 = ifo.getFieldByLabel('Mod_NextCharId1').getValue();
 
     if(ifo.RootNode.hasField('Mod_NextObjId0'))
-      this.nextObjId0 = getVal('Mod_NextObjId0', 0) as number;
+      this.nextObjId0 = ifo.getFieldByLabel('Mod_NextObjId0').getValue();
 
     if(ifo.RootNode.hasField('Mod_NextObjId1'))
-      this.nextObjId1 = getVal('Mod_NextObjId1', 0) as number;
+      this.nextObjId1 = ifo.getFieldByLabel('Mod_NextObjId1').getValue();
   }
 
   addEffect(effect?: GameEffect, lLocation?: EngineLocation){
@@ -399,7 +395,7 @@ export class Module {
       let eqLen = this.eventQueue.length - 1;
       for(let i = eqLen; i >= 0; i--){
         let event = this.eventQueue[i];
-
+        
         if( this.timeManager.pauseDay >= event.day && this.timeManager.pauseTime >= event.time ){
           event.execute();
           this.eventQueue.splice(i, 1);
@@ -437,15 +433,15 @@ export class Module {
   async loadScene(){
     try{
       GameState.PartyManager.party = [];
-
+      
       GameState.ModuleObjectManager.ResetPlayerId();
 
-      if(this.area.sun.fogOn && this.area.sun.fogColor){
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.sun.fogColor.toString(16)));
-      }else{
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.dynamicAmbientColor.toString(16)));
-      }
-
+      GameState.globalLight.color.setRGB(
+        (this.area.dynamicAmbientColor & 0xFF) / 255,
+        (this.area.dynamicAmbientColor >> 8 & 0xFF) / 255,
+        (this.area.dynamicAmbientColor >> 16 & 0xFF) / 255
+      );
+      
       GameState.globalLight.color.setRGB(
         THREE.MathUtils.clamp(GameState.globalLight.color.r, 0.2, 1),
         THREE.MathUtils.clamp(GameState.globalLight.color.g, 0.2, 1),
@@ -524,7 +520,7 @@ export class Module {
 
   dispose(){
     GameState.collisionList = [];
-
+    
     //Remove all effects
     if(this){
       while(this.effects.length){
@@ -536,7 +532,7 @@ export class Module {
     //Cleanup texture cache
     Array.from(TextureLoader.textures.keys()).forEach( (key) => {
       TextureLoader.textures.get(key).dispose();
-      TextureLoader.textures.delete(key);
+      TextureLoader.textures.delete(key); 
     });
 
     //Clear walkmesh list
@@ -555,7 +551,7 @@ export class Module {
     while (GameState.group.emitters.children.length){
       GameState.group.emitters.remove(GameState.group.emitters.children[0]);
     }
-
+    
     if(this.area){
       this.area.dispose();
     }
@@ -642,7 +638,7 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_XPScale') .setValue(this.xpScale));
     ifo.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
-
+    
     this.ifo = ifo;
 
     const sav = new ERFObject();
@@ -656,7 +652,7 @@ export class Module {
     if(this.includeInSave()){
       await sav.export( path.join(CurrentGame.gameinprogress_dir, this.filename+'.sav') );
     }
-
+    
     console.log('Current Module Exported', this.filename);
 
     await GameState.InventoryManager.Save();
@@ -749,8 +745,8 @@ export class Module {
       await erf.load();
       return erf;
     }catch(e){
-      // KotOR 1: not all modules have a _dlg.erf; missing file is expected
-      console.log('Module.GetModuleDLG failed (optional)', resourcePath);
+      console.log('Module.GetModuleDLG failed', resourcePath);
+      console.error(e);
       return undefined;
     }
   }
@@ -812,14 +808,16 @@ export class Module {
       }
 
       //Locate the module's dialog MOD file (TSL)
+      if(GameState.GameKey == GameEngineType.TSL){
       archive = await Module.GetModuleDLG(modName);
-      if(archive instanceof ERFObject){
-        archives.push(archive);
+        if(archive instanceof ERFObject){
+          archives.push(archive);
+        }
       }
     }catch(e){
       console.error(e);
     }
-
+    
     //Return the archive array
     return archives;
   }
@@ -850,7 +848,7 @@ export class Module {
       }catch(e){
         console.error(e);
       }
-
+      
       //Return the archive array
       resolve(archives);
     });
@@ -897,7 +895,6 @@ export class Module {
     }catch(e){
       console.log(`Module.Load: failed to load module.`);
       console.error(e);
-      return undefined;
     }
   }
 
@@ -940,4 +937,3 @@ export class Module {
   }
 
 }
-

@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, Form } from "react-bootstrap";
-
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ModalResourceComparisonState } from "@/apps/forge/states/modal/ModalResourceComparisonState";
-
-import "@/apps/forge/components/modal/ModalResourceComparison.scss";
+import { ModalResourceComparisonState, ResourceComparisonResource } from "../../states/modal/ModalResourceComparisonState";
+import * as KotOR from "../../KotOR";
+import "./ModalResourceComparison.scss";
 
 const ASCII_MIN_PRINTABLE = 32;
 const ASCII_MAX_PRINTABLE = 127;

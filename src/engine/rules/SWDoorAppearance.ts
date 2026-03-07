@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from "../../resource/TwoDAObject";
 
 /**
  * SWDoorAppearance class.
@@ -22,30 +22,30 @@ export class SWDoorAppearance {
   nobin: boolean = false;
   staticanim: string = '';
 
-  static From2DA (row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWDoorAppearance {
+  static From2DA (row: any = {}): SWDoorAppearance {
     const appearance = new SWDoorAppearance();
     
     appearance.id = parseInt(row.__index);
 
-    if(Object.hasOwn(row,'label'))
+    if(row.hasOwnProperty('label'))
       appearance.label = TwoDAObject.normalizeValue(row.label, 'string', '');
-    if(Object.hasOwn(row,'strref'))
+    if(row.hasOwnProperty('strref'))
       appearance.strref = TwoDAObject.normalizeValue(row.strref, 'number', -1);
-    if(Object.hasOwn(row,'modelname'))
+    if(row.hasOwnProperty('modelname'))
       appearance.modelname = TwoDAObject.normalizeValue(row.modelname, 'string', '');
-    if(Object.hasOwn(row,'blocksight'))
+    if(row.hasOwnProperty('blocksight'))
       appearance.blocksight = TwoDAObject.normalizeValue(row.blocksight, 'boolean', false);
-    if(Object.hasOwn(row,'visiblemodel'))
+    if(row.hasOwnProperty('visiblemodel'))
       appearance.visiblemodel = TwoDAObject.normalizeValue(row.visiblemodel, 'boolean', false);
-    if(Object.hasOwn(row,'soundapptype'))
+    if(row.hasOwnProperty('soundapptype'))
       appearance.soundapptype = TwoDAObject.normalizeValue(row.soundapptype, 'number', -1);
-    if(Object.hasOwn(row,'name'))
+    if(row.hasOwnProperty('name'))
       appearance.name = TwoDAObject.normalizeValue(row.name, 'string', '');
-    if(Object.hasOwn(row,'preciseuse'))
+    if(row.hasOwnProperty('preciseuse'))
       appearance.preciseuse = TwoDAObject.normalizeValue(row.preciseuse, 'boolean', false);
-    if(Object.hasOwn(row,'nobin'))
+    if(row.hasOwnProperty('nobin'))
       appearance.nobin = TwoDAObject.normalizeValue(row.nobin, 'boolean', false);
-    if(Object.hasOwn(row,'staticanim'))
+    if(row.hasOwnProperty('staticanim'))
       appearance.staticanim = TwoDAObject.normalizeValue(row.staticanim, 'string', '');
 
     return appearance;

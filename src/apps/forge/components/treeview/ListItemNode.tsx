@@ -1,5 +1,5 @@
 import React, { useState, useCallback, memo } from "react";
-import "@/apps/forge/components/treeview/ForgeTreeView.scss";
+import "./ForgeTreeView.scss";
 
 export interface ListItemNodeProps {
   // Core node data
@@ -12,24 +12,22 @@ export interface ListItemNodeProps {
   isLoading?: boolean;
   hasContextMenu?: boolean;
   depth?: number;
-
+  
   // Visual properties
   icon?: string;
   iconType?: 'folder' | 'file' | 'expanded';
   fileType?: string;
-  /** Optional URL for resource-type icon (e.g. Holocron icon); when set, shown instead of Font Awesome icon for files. */
-  iconImageUrl?: string;
-
+  
   // Event handlers
   onToggle?: () => void;
   onClick?: () => void;
   onDoubleClick?: () => void;
   onContextMenu?: (event: React.MouseEvent) => void;
   onSelect?: (nodeId: string) => void;
-
+  
   // Data attributes for external use
-  dataAttributes?: Record<string, string | number | boolean | undefined>;
-
+  dataAttributes?: Record<string, any>;
+  
   // Children
   children?: React.ReactNode;
 }
@@ -41,14 +39,13 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
     hasChildren = false,
     isExpanded = false,
     isSelected = false,
-    isFocused: _isFocused = false,
-    isLoading: _isLoading = false,
-    hasContextMenu: _hasContextMenu = false,
-    depth: _depth = 0,
+    isFocused = false,
+    isLoading = false,
+    hasContextMenu = false,
+    depth = 0,
     icon,
     iconType = 'file',
-    fileType: _fileType,
-    iconImageUrl,
+    fileType,
     onToggle,
     onClick,
     onDoubleClick,
@@ -59,8 +56,6 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
   } = props;
 
   const [isHovered, setIsHovered] = useState(false);
-  const [iconImageError, setIconImageError] = useState(false);
-  const showIconImage = iconImageUrl && !iconImageError;
 
   // Get file extension for icon styling
   const getFileExtension = (name: string): string => {
@@ -84,11 +79,11 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
     if (icon) {
       return icon;
     }
-
+    
     if (iconType === 'folder') {
       return isExpanded ? 'fa-folder-open' : 'fa-folder';
     }
-
+    
     if (!name) return 'fa-file';
     const ext = getFileExtension(name);
     switch (ext) {
@@ -172,12 +167,12 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
   const iconClass = getIcon();
 
   return (
-    <li
+    <li 
       className={`tree-item ${fileTypeClass} ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''}`}
       {...dataAttributes}
     >
       {/* Node content wrapper - arrow, icon, and label */}
-      <div
+      <div 
         className="tree-node-content"
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
@@ -188,7 +183,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
       >
         {/* Expand/Collapse Arrow for folders */}
         {hasChildren && (
-          <span
+          <span 
             className={`tree-arrow ${isExpanded ? 'expanded' : ''}`}
             onClick={handleToggle}
             role="button"
@@ -196,27 +191,18 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
             title={isExpanded ? 'Collapse' : 'Expand'}
           />
         )}
-
-        {/* Icon: image (e.g. Holocron resource icon) or Font Awesome fallback */}
+        
+        {/* Icon */}
         <span className={`tree-icon ${iconType}`}>
-          {showIconImage ? (
-            <img
-              src={iconImageUrl}
-              alt=""
-              className="tree-icon-img"
-              onError={() => setIconImageError(true)}
-            />
-          ) : (
-            <i className={`fa-solid ${iconClass}`} />
-          )}
+          <i className={`fa-solid ${iconClass}`} />
         </span>
-
+        
         {/* Label */}
         <span className="tree-label" title={name}>
           {name}
         </span>
       </div>
-
+      
       {/* Children - flows to next line */}
       {hasChildren && children && (
         <ul className={`tree-children ${isExpanded ? 'expanded' : ''}`}>

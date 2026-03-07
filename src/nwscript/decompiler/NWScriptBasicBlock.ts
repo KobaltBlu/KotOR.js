@@ -1,4 +1,4 @@
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import type { NWScriptInstruction } from "../NWScriptInstruction";
 
 /**
  * Represents a basic block in the control flow graph.
@@ -77,12 +77,12 @@ export class NWScriptBasicBlock {
   isUnreachable: boolean = false;
 
   /**
-   * Dominator information for conversion
+   * Dominator information for decompilation
    */
   dominators: Set<NWScriptBasicBlock> = new Set();
 
   /**
-   * Post-dominator information for conversion
+   * Post-dominator information for decompilation
    */
   postDominators: Set<NWScriptBasicBlock> = new Set();
 

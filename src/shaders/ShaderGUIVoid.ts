@@ -1,6 +1,5 @@
+import { Shader } from "./Shader";
 import * as THREE from "three";
-
-import { Shader } from "@/shaders/Shader";
 
 /**
  * ShaderGUIVoid class.
@@ -63,7 +62,7 @@ export class ShaderGUIVoid extends Shader {
         u_colorIntensity: {value: 0.25 },
         u_intensity: {value: 0.15 },
       }
-    ]) as Record<string, THREE.IUniform>
+    ])
   }
 
 }

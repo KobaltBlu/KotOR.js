@@ -1,7 +1,6 @@
 import React from "react";
-
-import { ModalPatcherProject } from "@/apps/forge/components/modal/ModalPatcherProject";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalPatcherProject } from "../../components/modal/ModalPatcherProject";
+import { ModalState } from "./ModalState";
 
 export interface PatcherFile {
   path: string;

@@ -1,13 +1,12 @@
 import * as THREE from "three";
-
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { MiniGameType } from "@/enums/engine/MiniGameType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
-import { ResolutionManager } from "@/managers/ResolutionManager";
-import type { ModuleArea, ModuleMGPlayer, ModuleObject } from "@/module";
-import { BitWise } from "@/utility/BitWise";
-import { Utility } from "@/utility/Utility";
+import { GameState } from "../GameState";
+import { EngineMode } from "../enums/engine/EngineMode";
+import { Utility } from "../utility/Utility";
+import type { ModuleArea, ModuleMGPlayer, ModuleObject } from "../module";
+import { MiniGameType } from "../enums/engine/MiniGameType";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ResolutionManager } from "../managers/ResolutionManager";
 
 const HALF_PI = Math.PI / 2;
 const EASE_THRESHOLD = Math.PI/2;
@@ -15,9 +14,9 @@ const FOCUS_DEAD_ZONE = 0.16;
 
 /**
  * FollowerCamera class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file FollowerCamera.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -48,14 +47,14 @@ export class FollowerCamera {
   static minSpeed: number = 0;
   static rampSpeed: number = 20;
 
-  static cameraStyle: { pitch?: string | number; height?: string | number; distance?: string | number } = {};
+  static cameraStyle: any = {};
 
   static focusObject: ModuleObject | undefined = undefined;
   static focusTurnSpeed: number = 6.0;
 
   static raycaster: THREE.Raycaster = new THREE.Raycaster();
 
-  static setCameraStyle(cameraStyle: { pitch?: string | number; height?: string | number; distance?: string | number } = {}){
+  static setCameraStyle(cameraStyle: any = {}){
     FollowerCamera.cameraStyle = cameraStyle;
     if(typeof cameraStyle.pitch !== 'undefined') FollowerCamera.pitch = cameraStyle.pitch == '****' ? 0 : parseInt(cameraStyle.pitch);
     if(typeof cameraStyle.height !== 'undefined') FollowerCamera.height = cameraStyle.height == '****' ? 0 : parseFloat(cameraStyle.height);
@@ -88,7 +87,7 @@ export class FollowerCamera {
 
     FollowerCamera.turning = false;
 
-    const followee = GameState.getCurrentPlayer();
+    let followee = GameState.getCurrentPlayer();
     if(!followee) return;
 
     if(FollowerCamera.focusObject){
@@ -124,7 +123,7 @@ export class FollowerCamera {
         offsetHeight = followee.getAppearance().cameraheightoffset;
       }
     }
-
+    
     const camHeight = (followeeHeight + FollowerCamera.height) - offsetHeight;
     let distance = FollowerCamera.maxDistance * GameState.CameraDebugZoom;
 
@@ -138,16 +137,16 @@ export class FollowerCamera {
     FollowerCamera.box.min.copy(FollowerCamera.raycaster.ray.origin);
     FollowerCamera.box.max.copy(FollowerCamera.raycaster.ray.origin);
     FollowerCamera.box.expandByScalar(distance * 1.5);
-
+    
     if(followee.room && followee.room.collisionManager.walkmesh && followee.room.collisionManager.walkmesh.aabbNodes.length){
       aabbFaces.push({
-        object: followee.room,
+        object: followee.room, 
         faces: followee.room.collisionManager.walkmesh.getAABBCollisionFaces(FollowerCamera.box)
       });
     }
 
     for(let j = 0, jl = area.doors.length; j < jl; j++){
-      const door = area.doors[j];
+      let door = area.doors[j];
       if(door && door.collisionManager.walkmesh && !door.isOpen()){
         if(door.box.intersectsBox(FollowerCamera.box) || door.box.containsBox(FollowerCamera.box)){
           aabbFaces.push({
@@ -157,9 +156,9 @@ export class FollowerCamera {
         }
       }
     }
-
+    
     for(let k = 0, kl = aabbFaces.length; k < kl; k++){
-      const castableFaces = aabbFaces[k];
+      let castableFaces = aabbFaces[k];
       intersects = castableFaces.object.collisionManager.walkmesh.raycast(FollowerCamera.raycaster, castableFaces.faces) || [];
       if ( intersects.length > 0 ) {
         for(let i = 0; i < intersects.length; i++){
@@ -187,12 +186,12 @@ export class FollowerCamera {
             break;
           }
           FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
-        })(followee as ModuleMGPlayer);
+        })(followee as any);
       }
     }else{
       FollowerCamera.camera.position.copy(followee.position);
 
-      //If the distance is greater than the last distance applied to the camera.
+      //If the distance is greater than the last distance applied to the camera. 
       //Increase the distance by the frame delta so it will grow overtime until it
       //reaches the max allowed distance wether by collision or camera settings.
       if(distance > FollowerCamera.distance){
@@ -202,17 +201,17 @@ export class FollowerCamera {
       if(distance > FollowerCamera.maxDistance * GameState.CameraDebugZoom){
         distance = (FollowerCamera.maxDistance * GameState.CameraDebugZoom);
       }
-
+        
       FollowerCamera.camera.position.x += distance * Math.cos(FollowerCamera.facing);
       FollowerCamera.camera.position.y += distance * Math.sin(FollowerCamera.facing);
       FollowerCamera.camera.position.z += camHeight;
 
       FollowerCamera.distance = distance;
-
+    
       FollowerCamera.camera.rotation.order = 'YZX';
       FollowerCamera.camera.rotation.set(FollowerCamera.pitch, 0, FollowerCamera.facing + HALF_PI);
     }
-
+    
     FollowerCamera.camera.updateProjectionMatrix();
   }
 

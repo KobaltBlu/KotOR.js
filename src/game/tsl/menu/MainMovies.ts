@@ -1,8 +1,8 @@
-import { MainMovies as K1_MainMovies } from "@/game/kotor/KOTOR";
-import { GUIMovieItem } from "@/game/tsl/gui/GUIMovieItem";
-import { GameState } from "@/GameState";
-import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { GameState } from "../../../GameState";
+import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { TwoDAObject } from "../../../resource/TwoDAObject";
+import { MainMovies as K1_MainMovies } from "../../kotor/KOTOR";
+import { GUIMovieItem } from "../gui/GUIMovieItem";
 
 interface MovieItem {
   name: string;

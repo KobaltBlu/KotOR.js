@@ -1,8 +1,7 @@
 import React from "react";
-
-import { ModalSaveToModule } from "@/apps/forge/components/modal/ModalSaveToModule";
-import { SaveDestination } from "@/apps/forge/enum/SaveDestination";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalState } from "./ModalState";
+import { ModalSaveToModule } from "../../components/modal/ModalSaveToModule";
+import { SaveDestination } from "../../enum/SaveDestination";
 
 export interface ModalSaveToModuleStateOptions {
   title?: string;

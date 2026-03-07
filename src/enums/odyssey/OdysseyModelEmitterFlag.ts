@@ -26,4 +26,4 @@ export enum OdysseyModelEmitterFlag {
   _2000          =  0x2000,
   _3000          =  0x4000,
   _4000          =  0x8000,
-}
+};

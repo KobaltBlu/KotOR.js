@@ -1,5 +1,5 @@
-import { InGameBark as K1_InGameBark } from "@/game/kotor/KOTOR";
-import type { GUILabel } from "@/gui";
+import type { GUILabel } from "../../../gui";
+import { InGameBark as K1_InGameBark } from "../../kotor/KOTOR";
 
 /**
  * InGameBark class.
@@ -24,7 +24,7 @@ export class InGameBark extends K1_InGameBark {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.LBL_BARKTEXT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.bHasAudio = false;
@@ -37,4 +37,3 @@ export class InGameBark extends K1_InGameBark {
   }
   
 }
-

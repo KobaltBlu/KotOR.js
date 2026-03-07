@@ -13,4 +13,4 @@ export interface IGUIControlMoveTo {
   down: number,
   left: number,
   right: number
-}
+};

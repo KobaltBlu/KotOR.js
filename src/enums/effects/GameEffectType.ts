@@ -101,4 +101,4 @@ export enum GameEffectType {
   EffectPureGoodPowers = 0x6C,
   EfffectPureEvilPowers = 0x6D,
   EffectInvalidEffect
-}
+};

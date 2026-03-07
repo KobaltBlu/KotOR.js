@@ -1,7 +1,6 @@
+import { OdysseyObject3D } from "./OdysseyObject3D";
 import * as THREE from "three";
-
-import type { OdysseyModelNodeLight } from "@/odyssey";
-import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
+import type { OdysseyModelNodeLight } from "../../odyssey";
 
 /**
  * OdysseyLight3D class.
@@ -42,7 +41,7 @@ export class OdysseyLight3D extends OdysseyObject3D {
 
   constructor(node: OdysseyModelNodeLight){
     super(node);
-    (this as { type: string }).type = 'OdysseyLight';
+    this.type = 'OdysseyLight';
   }
 
   getIntensity(){

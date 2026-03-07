@@ -1,12 +1,11 @@
+import type { ModuleObject } from "../module";
+import type { TalentSpell } from "../talents";
 import * as THREE from "three";
-
-import { GameState } from "@/GameState";
-import { MDLLoader } from "@/loaders";
-import type { ModuleObject } from "@/module";
-import { OdysseyModel } from "@/odyssey";
-import type { TalentSpell } from "@/talents";
-import { OdysseyModel3D } from "@/three/odyssey";
-// import { NWScript } from "@/nwscript/NWScript";
+import { OdysseyModel3D } from "../three/odyssey";
+// import { NWScript } from "../nwscript/NWScript";
+import { OdysseyModel } from "../odyssey";
+import { GameState } from "../GameState";
+import { MDLLoader } from "../loaders";
 
 /**
  * SpellCastInstance class.
@@ -169,7 +168,7 @@ export class SpellCastInstance {
         instance.talent = this.spell;
         //instance.spellTarget = oTarget;
         instance.run(this.owner, 0);
-      }
+      };
     }
 
     if(this.casthandvisual != ''){

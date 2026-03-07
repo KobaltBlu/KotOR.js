@@ -1,5 +1,5 @@
-import { GameMenu } from "@/gui";
-import type { GUIControl, GUIButton } from "@/gui";
+import { GameMenu } from "../../../gui";
+import type { GUIControl, GUIButton } from "../../../gui";
 
 /**
  * MenuTop class.
@@ -39,7 +39,7 @@ export class MenuTop extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.BTN_MSG.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
@@ -107,11 +107,10 @@ export class MenuTop extends GameMenu {
   }
 
   CloseAllOtherMenus() {
-    const currentMenu = this.manager.GetCurrentMenu();
+    let currentMenu = this.manager.GetCurrentMenu();
     if (currentMenu == this.manager.MenuAbilities || currentMenu == this.manager.MenuInventory || currentMenu == this.manager.MenuJournal || currentMenu == this.manager.MenuMap || currentMenu == this.manager.MenuMessages || currentMenu == this.manager.MenuOptions || currentMenu == this.manager.MenuCharacter || currentMenu == this.manager.MenuEquipment) {
       currentMenu.close();
     }
   }
   
 }
-

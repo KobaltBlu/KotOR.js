@@ -1,5 +1,5 @@
-import type { IGFFStructJSON } from "@/interface/resource/IGFFStructJSON";
-import type { GFFField } from "@/resource/GFFField";
+import type { GFFField } from "./GFFField";
+import type { IGFFStructJSON } from "../interface/resource/IGFFStructJSON";
 
 /**
  * Represents a GFF (Generic File Format) structure containing a collection of fields.

@@ -9,16 +9,20 @@
  */
 export class PixelManager {
 
+  constructor(){
+
+  }
+
   static Rotate90deg(buffer: Uint8Array, channels: number = 4, width: number = 0, height: number = 0){
 
     if(!(buffer instanceof Uint8Array))
       throw 'Buffer is not of type Uint8Array';
 
-    const sizeBuffer = width * height * channels;
-    const tempBuffer = new Uint8Array(sizeBuffer);
+    let sizeBuffer = width * height * channels;
+    let tempBuffer = new Uint8Array(sizeBuffer);
 
     for (let y = 0, destinationColumn = height - 1; y < height; ++y, --destinationColumn) {
-        const offset = y * width;
+        let offset = y * width;
 
 
         for (let x = 0; x < width; x++){

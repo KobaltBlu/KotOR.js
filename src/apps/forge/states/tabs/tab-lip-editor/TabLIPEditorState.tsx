@@ -1,25 +1,23 @@
 import React from "react";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "../TabState";
+import BaseTabStateOptions from "../../../interfaces/BaseTabStateOptions";
+import { TabLIPEditor } from "../../../components/tabs/tab-lip-editor/TabLIPEditor";
+import { EditorFile } from "../../../EditorFile";
+import { EditorTabManager } from "../../../managers/EditorTabManager";
+import { UI3DRendererView } from "../../../components/UI3DRendererView";
+import { UI3DRenderer } from "../../../UI3DRenderer";
+import { ILIPKeyFrame } from "../../../../../interface/resource/ILIPKeyFrame";
+import { TabLIPEditorOptionsState } from "./TabLIPEditorOptionsState";
+import { SceneGraphNode } from "../../../SceneGraphNode";
+import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "../../../ForgeFileSystem";
+import * as KotOR from "../../../KotOR";
 import * as THREE from 'three';
-
-import { TabLIPEditor } from "@/apps/forge/components/tabs/tab-lip-editor/TabLIPEditor";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
-import { TabLIPEditorOptionsState } from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorOptionsState";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs/TabState";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { ILIPKeyFrame } from "@/interface/resource/ILIPKeyFrame";
-import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
-
 
 const DEFAULT_HEAD = 'p_bastilah';
 
 export type TabLIPEditorStateEventListenerTypes =
-TabStateEventListenerTypes & 
+TabStateEventListenerTypes &
   ''|'onLIPLoaded'|'onPlay'|'onPause'|'onStop'|'onAudioLoad'|'onHeadChange'|
   'onHeadLoad'|'onKeyFrameSelect'|'onKeyFrameTrackZoomIn'|'onKeyFrameTrackZoomOut'|
   'onAnimate'|'onKeyFramesChange'|'onDurationChange';
@@ -53,7 +51,7 @@ export class TabLIPEditorState extends TabState {
   preview_gain: number = 0.5;
   audio_buffer: AudioBuffer;
   playbackRate: number = 1;
-  
+
   utilitiesTabManager: EditorTabManager = new EditorTabManager();
   lipOptionsTab: TabLIPEditorOptionsState;
 
@@ -76,7 +74,7 @@ export class TabLIPEditorState extends TabState {
   scrubDuration: number|undefined;
 
   head: KotOR.OdysseyModel3D;
-  head_hook: THREE.Object3D<THREE.Event> = new THREE.Object3D();
+  head_hook: THREE.Object3D = new THREE.Object3D();
   pointLight: THREE.PointLight;
 
   ui3DRenderer: UI3DRenderer;
@@ -94,14 +92,14 @@ export class TabLIPEditorState extends TabState {
     if(this.file){
       this.tabName = this.file.getFilename();
     }
-    
+
     //Audio
     this.gainNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createGain();
     this.gainNode.gain.value = this.preview_gain;
     this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
 
     this.current_head = localStorage.getItem('lip_head') !== null ? localStorage.getItem('lip_head') as string : DEFAULT_HEAD;
-    
+
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.scene.add(this.head_hook);
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
@@ -149,7 +147,7 @@ export class TabLIPEditorState extends TabState {
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         file.readFile().then( (response) => {
-          new KotOR.LIPObject(response.buffer, (lip: any) => {
+          new KotOR.LIPObject(response.buffer, (lip: KotOR.LIPObject) => {
             this.lip = lip;
 
             if(typeof this.lip.file != 'string')
@@ -194,7 +192,7 @@ export class TabLIPEditorState extends TabState {
           this.head_hook.add(this.head);
           this.box3.setFromObject(this.head);
 
-          this.head.animations.sort((a: any, b: any) => (a.name.toLowerCase() > b.name.toLowerCase()) ? 1 : ((b.name.toLowerCase() > a.name.toLowerCase()) ? -1 : 0))
+          this.head.odysseyAnimations.sort((a: KotOR.OdysseyModelAnimation, b: KotOR.OdysseyModelAnimation) => (a.name.toLowerCase() > b.name.toLowerCase()) ? 1 : ((b.name.toLowerCase() > a.name.toLowerCase()) ? -1 : 0))
           this.head.playAnimation('tlknorm', true);
 
           this.head.userData.moduleObject = {
@@ -210,14 +208,15 @@ export class TabLIPEditorState extends TabState {
 
   loadSound(sound = 'nm35aabast06217_'){
     return new Promise<void>( (resolve, reject) => {
-      KotOR.AudioLoader.LoadStreamWave(sound).then((data: any) => {
+      KotOR.AudioLoader.LoadStreamWave(sound).then((data: Uint8Array | ArrayBuffer) => {
         this.audio_name = sound;
-        KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data, (buffer: AudioBuffer) => {
+        const arrayBuffer = data instanceof ArrayBuffer ? data : (data as Uint8Array).buffer.slice(0) as ArrayBuffer;
+        KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(arrayBuffer, (buffer: AudioBuffer) => {
           this.audio_buffer = buffer;
           this.processEventListener<TabLIPEditorStateEventListenerTypes>('onAudioLoad', [this, buffer]);
           resolve();
         });
-      }, (e: any) => {
+      }, (_e: unknown) => {
         resolve();
       });
     });
@@ -229,9 +228,9 @@ export class TabLIPEditorState extends TabState {
       this.head.update(delta);
 
       if(this.ui3DRenderer){
-        const center: THREE.Vector3 = new THREE.Vector3;
+        let center: THREE.Vector3 = new THREE.Vector3;
         this.box3.getCenter(center);
-        const size: THREE.Vector3 = new THREE.Vector3;
+        let size: THREE.Vector3 = new THREE.Vector3;
         this.box3.getSize(size);
         //Center the object to 0
         this.head.position.set(-center.x, -center.y, -center.z);
@@ -288,7 +287,7 @@ export class TabLIPEditorState extends TabState {
 
     this.resetAudio();
     this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
-    
+
     try{
       this.source.buffer = this.audio_buffer;
       this.source.connect(this.gainNode);
@@ -302,7 +301,7 @@ export class TabLIPEditorState extends TabState {
         this.source.start(0, 0, duration);
       }
     }catch(e){}
-    
+
     this.poseFrame = true;
     this.playing = true;
     this.scrubDuration = duration;
@@ -331,7 +330,7 @@ export class TabLIPEditorState extends TabState {
 
   seek(time: number = 0){
 
-    const was_playing = this.playing;
+    let was_playing = this.playing;
     this.pause();
 
     if(this.lip instanceof KotOR.LIPObject){
@@ -445,49 +444,49 @@ export class TabLIPEditorState extends TabState {
       const textDecoder = new TextDecoder();
       let data = textDecoder.decode(buffer);
       console.log('phn', data);
-      const eoh = data.indexOf('END OF HEADER');
+      let eoh = data.indexOf('END OF HEADER');
       if(eoh > -1){
         data = data.substr(eoh+14);
-        const keyframes = data.trim().split('\r\n');
+        let keyframes = data.trim().split('\r\n');
 
         console.log(keyframes);
 
         this.lip.keyframes = [];
 
-        const PHN_INVALID = -1;
-        const PHN_EE = 0;
-        const PHN_EH = 1;
-        const PHN_SCHWA = 2;
-        const PHN_AH = 3;
-        const PHN_OH = 4;
-        const PHN_OOH = 5;
-        const PHN_Y = 6;
-        const PHN_S = 7;
-        const PHN_FV = 8;
-        const PHN_NNG = 9;
-        const PHN_TH = 0xA;
-        const PHN_MPB = 0xB;
-        const PHN_TD = 0xC;
-        const PHN_JSH = 0xD;
-        const PHN_L = 0xE;
-        const PHN_KG = 0xF;
-        const PHN_USE_NEXT = 0x10;
+        let PHN_INVALID = -1;
+        let PHN_EE = 0;
+        let PHN_EH = 1;
+        let PHN_SCHWA = 2;
+        let PHN_AH = 3;
+        let PHN_OH = 4;
+        let PHN_OOH = 5;
+        let PHN_Y = 6;
+        let PHN_S = 7;
+        let PHN_FV = 8;
+        let PHN_NNG = 9;
+        let PHN_TH = 0xA;
+        let PHN_MPB = 0xB;
+        let PHN_TD = 0xC;
+        let PHN_JSH = 0xD;
+        let PHN_L = 0xE;
+        let PHN_KG = 0xF;
+        let PHN_USE_NEXT = 0x10;
 
         let last_shape = PHN_INVALID;
 
         for(let i = 0; i < keyframes.length; i++){
 
-          const keyframe_data = keyframes[i].trim().split(' ');
+          let keyframe_data = keyframes[i].trim().split(' ');
 
           if(!keyframe_data.length){
             continue;
           }
 
-          const keyframe:  {shape: number, time: number} = {
+          let keyframe:  {shape: number, time: number} = {
             shape: PHN_INVALID,
             time: parseFloat(keyframe_data[0]) * .001
           };
-          
+
           switch(keyframe_data[2]){
             case "i:":
               keyframe.shape = PHN_EE;
@@ -564,7 +563,7 @@ export class TabLIPEditorState extends TabState {
             case "e&":
               keyframe.shape = PHN_EH;
               break;
-            
+
             case "ph":
               keyframe.shape = PHN_MPB;
               break;

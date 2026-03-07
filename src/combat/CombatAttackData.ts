@@ -1,17 +1,17 @@
-import { CombatAttackDamage } from "@/combat/CombatAttackDamage";
-import { EffectDamage } from "@/effects";
-import { AttackResult } from "@/enums/combat/AttackResult";
-import { CombatFeatType } from "@/enums/combat/CombatFeatType";
-import { DamageType } from "@/enums/combat/DamageType";
-import { DiceType } from "@/enums/combat/DiceType";
-import { WeaponType } from "@/enums/combat/WeaponType";
-import { WeaponWield } from "@/enums/combat/WeaponWield";
-import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
-import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { TalentFeat } from "@/talents";
-import { Dice } from "@/utility/Dice";
+import { CombatAttackDamage } from "./CombatAttackDamage";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "../module";
+import { CExoLocString } from "../resource/CExoLocString";
+import { GFFStruct } from "../resource/GFFStruct";
+import { DamageType } from "../enums/combat/DamageType";
+import { EffectDamage } from "../effects";
+import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
+import { AttackResult } from "../enums/combat/AttackResult";
+import { TalentFeat } from "../talents";
+import { CombatFeatType } from "../enums/combat/CombatFeatType";
+import { WeaponWield } from "../enums/combat/WeaponWield";
+import { Dice } from "../utility/Dice";
+import { DiceType } from "../enums/combat/DiceType";
+import { WeaponType } from "../enums/combat/WeaponType";
 
 /**
  * CombatAttackData class.
@@ -179,7 +179,7 @@ export class CombatAttackData {
       this.damageList[DamageType.BLUDGEONING].addDamage(nDamage * damageMultiplier);
 
       return;
-    }
+    };
 
     const damageMultiplier = isCritial ? this.attackWeapon.baseItem.criticalHitMultiplier : 1.0;
 
@@ -210,7 +210,7 @@ export class CombatAttackData {
         this.damageList[DamageType.BASE].addDamage(10 * damageMultiplier);
       }
 
-      const specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
+      let specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
       if(specBonus > 0){
         this.damageList[DamageType.BASE].addDamage(specBonus * damageMultiplier);
       }

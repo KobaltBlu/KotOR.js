@@ -1,15 +1,15 @@
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { ResourceLoader } from "@/loaders";
-import { ModuleItem } from "@/module/ModuleItem";
-import { ModuleObject } from "@/module/ModuleObject";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-// import { ModuleObjectManager } from "@/managers";
+import { ModuleObject } from "./ModuleObject";
+import { ModuleItem } from "./ModuleItem";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceLoader } from "../loaders";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameState } from "../GameState";
+// import { ModuleObjectManager } from "../managers";
 
 /**
 * ModuleStore class.
@@ -125,12 +125,12 @@ export class ModuleStore extends ModuleObject {
       this.rotation.z = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
       if(swVarTableStruct){
         if(swVarTableStruct.hasField('BitArray')){
-          const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
           for(let i = 0; i < localBools.length; i++){
-            const data = localBools[i].getFieldByLabel('Variable').getValue();
+            let data = localBools[i].getFieldByLabel('Variable').getValue();
             for(let bit = 0; bit < 32; bit++){
               this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
             }
@@ -138,9 +138,9 @@ export class ModuleStore extends ModuleObject {
         }
 
         if(swVarTableStruct.hasField('ByteArray')){
-          const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
           for(let i = 0; i < localNumbers.length; i++){
-            const data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
             this.setLocalNumber(i, data);
           }
         }
@@ -148,7 +148,7 @@ export class ModuleStore extends ModuleObject {
     }
             
     if(this.template.RootNode.hasField('ItemList')){
-      const items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
+      let items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
       for(let i = 0; i < items.length; i++){
         const moduleItem = new ModuleItem(GFFObject.FromStruct(items[i]));
         this.inventory.push(moduleItem)
@@ -174,7 +174,7 @@ export class ModuleStore extends ModuleObject {
   }
 
   save(){
-    const gff = new GFFObject();
+    let gff = new GFFObject();
     gff.FileType = 'UTM ';
     gff.RootNode.type = 6;
 
@@ -186,7 +186,7 @@ export class ModuleStore extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnOpenStore') ).setValue (this.onOpenStore instanceof NWScriptInstance ? this.onOpenStore.name : '' );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BuySellFlag') ).setValue(this.buySellFlag);
 
-    const itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
+    let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.inventory.length; i++){
       itemList.addChildStruct( this.inventory[i].save() );
     }
@@ -199,7 +199,7 @@ export class ModuleStore extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.rotation.z);
 
     //SWVarTable
-    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     gff.RootNode.addField( this.actionQueueToActionList() );

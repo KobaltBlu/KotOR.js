@@ -1,7 +1,7 @@
-import { AudioEngine } from "@/audio/AudioEngine";
-import { AudioLoader } from "@/audio/AudioLoader";
-import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
-import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
+import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
+import { AudioEngine } from "./AudioEngine";
+import { AudioLoader } from "./AudioLoader";
 
 const GAIN_RAMP_TIME = 0.25;
 const PRIORITY_GROUP_DEFAULT = 23;
@@ -201,7 +201,7 @@ export class AudioEmitter {
       (sound as any).name = resRef;
       let buffer: AudioBuffer = (this.buffers.has(resRef)) ? this.buffers.get(resRef) : undefined;
       if(!buffer){
-        const data = await AudioLoader.LoadSound(resRef);
+        let data = await AudioLoader.LoadSound(resRef);
         buffer = await this.addSound(resRef, data);
       }
 
@@ -294,7 +294,7 @@ export class AudioEmitter {
         this.currentSound.connect(this.mainNode);
 
         return this.currentSound;
-      }catch(e: unknown){
+      }catch(e: any){
         console.log('AudioEmitter', 'Sound not added to emitter', resRef);
         throw e;
       }
@@ -402,9 +402,9 @@ export class AudioEmitter {
       const buffer: AudioBuffer = await this.engine.audioCtx.decodeAudioData(data.buffer as ArrayBuffer );
       this.buffers.set(resRef, buffer);
       return buffer;
-    }catch(e: unknown){
+    }catch(e){
       console.error('AudioEmitter.addSound: Failed to decodeAudioData');
-      if (e instanceof Error && e.name === 'DataCloneError') {
+      if (e.name === 'DataCloneError') {
         console.error('AudioEmitter.addSound: ArrayBuffer is detached. This usually happens when the buffer was transferred to another context.');
       }
       console.error(e);
@@ -420,7 +420,7 @@ export class AudioEmitter {
       this.currentSound.onended = undefined;
       this.currentSound.disconnect();
       this.currentSound.stop(0);
-    }catch(e: unknown) { 
+    }catch(e: any) { 
       console.error('Failed to disconnect sound', e);
     }
     this.currentSound = null;

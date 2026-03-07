@@ -1,4 +1,4 @@
-import { Endians } from "@/enums/resource/Endians";
+import { Endians } from "../../enums/resource/Endians";
 
 /**
  * BinaryReader class.
@@ -322,9 +322,9 @@ export class BinaryReader {
    * @returns The sliced buffer.
    */
   slice(offset = 0, end = 0): BinaryReader {
-    end = (end) ? end : this.buffer.length;
+    end = (!!end) ? end : this.buffer.length;
 
-    const buffer = this.buffer.slice(offset, end);
+    let buffer = this.buffer.slice(offset, end);
     return new BinaryReader(buffer, this.endians)
   }
 

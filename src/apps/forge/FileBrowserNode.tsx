@@ -1,22 +1,4 @@
-/** Data payload for a resource node (e.g. path). */
-export interface IFileBrowserNodeData {
-  path?: string;
-  [key: string]: string | number | boolean | undefined;
-}
 
-/** Constructor options for FileBrowserNode. */
-export interface IFileBrowserNodeOptions {
-  name?: string;
-  canOrphan?: boolean;
-  nodes?: FileBrowserNode[];
-  type?: 'group' | 'resource';
-  data?: IFileBrowserNodeData;
-}
-
-/** Nodes array with optional path-index map used during LoadFolderForFileBrowser. */
-export type FileBrowserNodesWithIndex = FileBrowserNode[] & {
-  _indexes?: Record<string, number>;
-};
 
 export class FileBrowserNode {
   static NODE_ID = 0;
@@ -24,27 +6,24 @@ export class FileBrowserNode {
   name: string = '';
   canOrphan: boolean = true;
   nodes: FileBrowserNode[] = [];
-  type: 'group' | 'resource' = 'group';
-  data: IFileBrowserNodeData = {};
+  type: 'group'|'resource' = 'group';
+  data: any = {};
   open: boolean = false;
-  parent!: FileBrowserNode;
+  parent: FileBrowserNode;
 
-  constructor(options: IFileBrowserNodeOptions = {}) {
-    const opts = Object.assign(
-      {
-        name: '',
-        canOrphan: true,
-        nodes: [],
-        type: 'group',
-        data: {},
-      },
-      options
-    );
-    this.name = opts.name ?? '';
-    this.canOrphan = opts.canOrphan ?? true;
-    this.nodes = opts.nodes ?? [];
-    this.type = opts.type ?? 'group';
-    this.data = opts.data ?? {};
+  constructor(options: any = {}){
+    options = Object.assign({
+      name: '',
+      canOrphan: true,
+      nodes: [],
+      type: 'group',
+      data: {}
+    }, options);
+    this.name = options.name;
+    this.canOrphan = options.canOrphan;
+    this.nodes = options.nodes;
+    this.type = options.type;
+    this.data = options.data;
     this.id = FileBrowserNode.NODE_ID++;
   }
 

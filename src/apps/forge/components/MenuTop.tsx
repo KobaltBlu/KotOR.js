@@ -1,13 +1,12 @@
 import React, { useState, useCallback, useMemo, memo } from "react";
 import { Container, Nav, Navbar } from 'react-bootstrap';
-
-import { AudioPlayer } from "@/apps/forge/components/AudioPlayer";
-import { MenuItem } from "@/apps/forge/components/MenuItem";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { MenuTopItem } from "@/apps/forge/MenuTopItem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { MenuTopState } from "@/apps/forge/states/MenuTopState";
+import { useEffectOnce } from "../helpers/UseEffectOnce";
+import { MenuItem } from "./MenuItem";
+import { MenuTopState } from "../states/MenuTopState";
+import { MenuTopItem } from "../MenuTopItem";
+import { ForgeState } from "../states/ForgeState";
+import { AudioPlayer } from "./AudioPlayer";
+import { FileTypeManager } from "../FileTypeManager";
 
 export interface MenuTopProps {
   className?: string;

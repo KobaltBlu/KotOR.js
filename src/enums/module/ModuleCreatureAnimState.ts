@@ -198,4 +198,4 @@ export enum ModuleCreatureAnimState {
   POINT_UP,
   POINT_UP_LOWER,
   DIVE_ROLL
-}
+};

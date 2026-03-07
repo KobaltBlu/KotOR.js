@@ -1,8 +1,7 @@
+import { GameEffect } from "./GameEffect";
+import { GameEffectType } from "../enums/effects/GameEffectType";
 import * as THREE from "three";
-
-import { GameEffect } from "@/effects/GameEffect";
-import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
-import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameEffectSetStateType } from "../enums/effects/GameEffectSetStateType";
 
 /**
  * EffectSetState class.

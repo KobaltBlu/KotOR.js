@@ -1,4 +1,4 @@
-import { ADPCMBlock } from "@/audio/ADPCMBlock";
+import { ADPCMBlock } from "./ADPCMBlock";
 
 interface ADPCMHeader {
 	sampleRate: number;
@@ -61,18 +61,18 @@ export class ADPCMDecoder {
 		this.blocks = [];
 		if(this.adpcm instanceof Uint8Array){
 
-			const blockHeaderSize = 4 * this.header.channels;
+			let blockHeaderSize = 4 * this.header.channels;
 			let count = this.adpcm.length;
 
 			this.pcm = new Uint8Array(0);
-			const chunks: Uint8Array[] = [];
+			let chunks: Uint8Array[] = [];
 
 			console.log('ADPCMDecoder', 'Decode Starting');
 			while( count > 0 ) {
-				const inSamples = (count > this.header.frameSize ? this.header.frameSize : count);
+				let inSamples = (count > this.header.frameSize ? this.header.frameSize : count);
 
-				const samples =  ( (inSamples - blockHeaderSize) * 4 ) + blockHeaderSize / this.header.channels;
-				const buffer = new Uint8Array( samples );
+				let samples =  ( (inSamples - blockHeaderSize) * 4 ) + blockHeaderSize / this.header.channels;
+				let buffer = new Uint8Array( samples );
 				this.decodeBlock( this.adpcm, buffer, this.inputStreamIndex, samples );
 
 				chunks.push(buffer);
@@ -90,7 +90,7 @@ export class ADPCMDecoder {
 
 		let inputIdx = index, outputIdx = 0, outputEnd = count, blockIndex = index / this.header.frameSize;
 
-		const currentBlock = this.blocks[blockIndex] = new ADPCMBlock({channels: this.header.channels});
+		let currentBlock = this.blocks[blockIndex] = new ADPCMBlock({channels: this.header.channels});
 
 		/* Block Header */
 		let byte1, byte2, dummyByte;
@@ -145,7 +145,7 @@ export class ADPCMDecoder {
 		outputIdx = 2 * this.header.channels;
 		sampleIdx = 0;
 
-		const channelMultiplier = (this.header.channels * 2);
+		let channelMultiplier = (this.header.channels * 2);
 		let sIdx = 0, idx1 = 0, idx2 = 0;
 		while( outputIdx < outputEnd ){
 
@@ -166,8 +166,8 @@ export class ADPCMDecoder {
 
 	getNibblesFromByte(input: number, channel: number){
 
-		const sample1 = this.expandNibble(input & 0x0F, channel);
-		const sample2 = this.expandNibble((input >> 4) & 0x0F, channel);
+		let sample1 = this.expandNibble(input & 0x0F, channel);
+		let sample2 = this.expandNibble((input >> 4) & 0x0F, channel);
 
 		return [sample1 & 0xFF, (sample1 >> 8) & 0xFF, sample2 & 0xFF, (sample2 >> 8) & 0xFF];
 
@@ -175,9 +175,9 @@ export class ADPCMDecoder {
 
 	expandNibble(nibble: number, channel = 0){
 
-		const bytecode = nibble & 0xFF;
+		let bytecode = nibble & 0xFF;
 
-		const step = ADPCMDecoder.stepTable[this.stepIdx[channel]];
+		let step = ADPCMDecoder.stepTable[this.stepIdx[channel]];
 		let predictor = this.predictor[channel];
 
 		let diff = step >> 3 ;

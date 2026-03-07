@@ -1,14 +1,14 @@
-import { TPCObject } from "@/resource/TPCObject";
-import { PixelManager } from "@/utility/PixelManager";
+import { PixelManager } from "../utility/PixelManager";
+import { TPCObject } from "../resource/TPCObject";
 
 function concatenate (resultConstructor: any, ...arrays: any) {
   let totalLength = 0;
-  for (const arr of arrays) {
+  for (let arr of arrays) {
     totalLength += arr.length;
   }
-  const result = new resultConstructor(totalLength);
+  let result = new resultConstructor(totalLength);
   let offset = 0;
-  for (const arr of arrays) {
+  for (let arr of arrays) {
     result.set(arr, offset);
     offset += arr.length;
   }
@@ -17,7 +17,7 @@ function concatenate (resultConstructor: any, ...arrays: any) {
 
 onmessage = function (e: any = {}){
   if(!e.data || !e.data.buffer) return;
-  const tpc = new TPCObject({
+  let tpc = new TPCObject({
     file: new Uint8Array(e.data.buffer)
   });
   tpc.header = e.data.Header;

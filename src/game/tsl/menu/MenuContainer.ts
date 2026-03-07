@@ -1,7 +1,7 @@
-﻿import { GameState } from "@/GameState";
-import { GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { ModuleCreature, ModulePlaceable } from "@/module";
-import { MenuContainer as K1_MenuContainer } from "@/game/kotor/KOTOR";
+import { GameState } from "../../../GameState";
+import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { ModuleCreature, ModulePlaceable } from "../../../module";
+import { MenuContainer as K1_MenuContainer } from "../../kotor/KOTOR";
 
 /**
  * MenuContainer class.
@@ -63,7 +63,7 @@ export class MenuContainer extends K1_MenuContainer {
     if (onClosed && this.container instanceof ModulePlaceable) {
       try {
         this.container.close(GameState.getCurrentPlayer() as any);
-      } catch (e: unknown) {
+      } catch (e: any) {
       }
     }
     this.container = undefined as any;
@@ -79,4 +79,3 @@ export class MenuContainer extends K1_MenuContainer {
   }
   
 }
-

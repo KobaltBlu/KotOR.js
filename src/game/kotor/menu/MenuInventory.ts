@@ -1,16 +1,16 @@
 
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
-import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
-import { TextureLoader } from "@/loaders";
-import { ModuleItem } from "@/module";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
+import { ModuleItem } from "../../../module";
+import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
+import { GameState } from "../../../GameState";
 
 /**
  * MenuInventory class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file MenuInventory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -53,26 +53,11 @@ export class MenuInventory extends GameMenu {
       });
       this._button_b = this.BTN_EXIT;
 
-      this.BTN_USEITEM.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.useSelectedItem();
-      });
-
       this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.selected = item;
         this.UpdateSelected();
       }
-      this.LB_ITEMS.onActivated = () => {
-        this.useSelectedItem();
-      };
-
-      this.addEventListener('keydown', (e: KeyboardEvent) => {
-        if(e.key === 'Enter'){
-          e.preventDefault();
-          this.useSelectedItem();
-        }
-      });
 
       this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.offset.x = 0;
@@ -105,16 +90,9 @@ export class MenuInventory extends GameMenu {
     }
   }
 
-  protected useSelectedItem(){
-    const item = this.selected;
-    const player = GameState.getCurrentPlayer();
-    if(!item || !player){ return; }
-    item.useItemOnObject(player, player);
-  }
-
   filterInventory(){
     this.LB_ITEMS.clearItems();
-    const inv = GameState.InventoryManager.getNonQuestInventory();
+    let inv = GameState.InventoryManager.getNonQuestInventory();
     for (let i = 0; i < inv.length; i++) {
       this.LB_ITEMS.addItem(inv[i]);
     }
@@ -169,6 +147,6 @@ export class MenuInventory extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_CHAR.click();
   }
-
+  
 }
 

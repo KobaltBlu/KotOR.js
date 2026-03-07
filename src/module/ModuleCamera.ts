@@ -1,12 +1,9 @@
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-// import { ResolutionManager } from "@/managers";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Module);
+import { GameState } from "../GameState";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+// import { ResolutionManager } from "../managers";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
 
 /**
@@ -26,9 +23,9 @@ import * as THREE from "three";
  * camera.load();
  * 
  * // Access camera properties
- * log.info(camera.cameraID); // Camera identifier
- * log.info(camera.fov); // Field of view
- * log.info(camera.position); // Camera position
+ * console.log(camera.cameraID); // Camera identifier
+ * console.log(camera.fov); // Field of view
+ * console.log(camera.position); // Camera position
  * 
  * // Get the Three.js camera object
  * const threeCamera = camera.perspectiveCamera;
@@ -152,28 +149,28 @@ export class ModuleCamera {
    * ```typescript
    * const camera = new ModuleCamera(cameraGFF);
    * camera.initProperties(); // Loads all properties from GFF data
-   * log.info(camera.cameraID); // Now populated from GFF
+   * console.log(camera.cameraID); // Now populated from GFF
    * ```
    */
   initProperties(){
 
     if(this.template.RootNode.hasField('CameraID'))
-      this.cameraID = this.template.getNumberByLabel('CameraID');
+      this.cameraID = this.template.getFieldByLabel('CameraID').getValue();
 
     if(this.template.RootNode.hasField('FieldOfView'))
-      this.fov = this.template.getNumberByLabel('FieldOfView');
+      this.fov = this.template.getFieldByLabel('FieldOfView').getValue();
 
     if(this.template.RootNode.hasField('Height'))
-      this.height = this.template.getNumberByLabel('Height');
+      this.height = this.template.getFieldByLabel('Height').getValue();
 
     if(this.template.RootNode.hasField('MicRange'))
-      this.micRange = this.template.getNumberByLabel('MicRange');
+      this.micRange = this.template.getFieldByLabel('MicRange').getValue();
 
     if(this.template.RootNode.hasField('Orientation'))
       this.orientation.copy(this.template.getFieldByLabel('Orientation').getOrientation() as THREE.Quaternion);
 
     if(this.template.RootNode.hasField('Pitch'))
-      this.pitch = this.template.getNumberByLabel('Pitch');
+      this.pitch = this.template.getFieldByLabel('Pitch').getValue();
 
     if(this.template.RootNode.hasField('Position')){
       this.position.copy(this.template.getFieldByLabel('Position').getVector() as THREE.Vector3);
@@ -200,11 +197,11 @@ export class ModuleCamera {
    * camera.position.set(10, 5, 10);
    * 
    * const gff = camera.save();
-   * log.info(gff.RootNode.type); // 14 (camera type)
+   * console.log(gff.RootNode.type); // 14 (camera type)
    * ```
    */
   save(){
-    const gff = new GFFObject();
+    let gff = new GFFObject();
     gff.RootNode.type = 14;
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CameraID') ).setValue(this.cameraID);

@@ -14,4 +14,4 @@ export enum ModuleDoorOpenState {
   OPEN1     = 1,
   OPEN2     = 2,
   DESTROYED = 3,
-}
+};

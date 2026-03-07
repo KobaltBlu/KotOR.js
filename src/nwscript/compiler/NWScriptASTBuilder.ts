@@ -1,8 +1,8 @@
-import { ArgumentNode, BlockNode, BreakNode, CaseNode, CommentNode, ContinueNode, DataTypeNode, DefaultNode, DefineNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionNode, IfNode, IncludeNode, ProgramNode, ReturnNode, StatementNode, StructNode, SwitchNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "@/nwscript/compiler/ASTTypes";
-import { NWScriptLexer } from "@/nwscript/compiler/NWScriptLexer";
-import type { Token } from "@/nwscript/compiler/NWScriptToken";
+import { ArgumentNode, BlockNode, BreakNode, CaseNode, CommentNode, ContinueNode, DataTypeNode, DefaultNode, DefineNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionNode, IfNode, IncludeNode, ProgramNode, ReturnNode, StatementNode, StructNode, SwitchNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./ASTTypes";
+import { NWScriptLexer } from "./NWScriptLexer";
+import type { Token } from "./NWScriptToken";
 
-const _NWEngineTypeUnaryTypeOffset = 0x10;
+const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWCompileDataTypes: Record<string, number> = {
   void: 0x00,
   int: 0x03,
@@ -16,10 +16,10 @@ const NWCompileDataTypes: Record<string, number> = {
 
 // Error shape compatible with NWScriptParser error console consumption
 export class NWScriptASTBuilderError extends Error {
-  type = "parse" as const;
-  statement: Token | ExpressionNode | undefined;
-  offender: Token | ExpressionNode | undefined;
-  constructor(message: string, offender: Token | ExpressionNode | undefined = undefined) {
+  type: "parse" = "parse";
+  statement: any;
+  offender: any;
+  constructor(message: string, offender: any = undefined) {
     super(message);
     this.name = "NWScriptASTBuilderError";
     this.offender = offender;
@@ -79,7 +79,7 @@ export class NWScriptASTBuilder {
 
   /**
    * Accepts either a normal name token or a keyword token as an identifier.
-   * Some legacy scripts use keywords (e.g., TRUE) as identifiers in defines or vars.
+   * Some legacy/decompiled scripts use keywords (e.g., TRUE) as identifiers in defines or vars.
    */
   private expectNameToken(): Token {
     if (this.tok.type === "name" || this.tok.type === "keyword") {
@@ -245,7 +245,7 @@ export class NWScriptASTBuilder {
     if (this.is("punct", "{")) {
       this.next(); // consume '{'
 
-      const properties: Array<{ type: "property"; datatype: DataTypeNode; name: string; source: { first_line?: number; first_column?: number } }> = [];
+      const properties: any[] = [];
       while (!this.is("punct", "}")) {
         // datatype name ;
         const propType = this.mustParseDataType();
@@ -292,7 +292,7 @@ export class NWScriptASTBuilder {
         const argType = this.mustParseDataType();
 
         const argNameTok = this.expect("name");
-        let defaultValue: ExpressionNode | undefined = undefined;
+        let defaultValue: any = undefined;
 
         if (this.is("op", "=")) {
           this.next();
@@ -391,10 +391,10 @@ export class NWScriptASTBuilder {
       if (this.ignoreComments) {
         this.skipComments();
       }
-
+      
       // Stop if we encounter closing brace
       if (this.is("punct", "}")) break;
-
+      
       const st = this.parseDeclOrStatement();
       if (st) statements.push(st);
     }
@@ -419,7 +419,7 @@ export class NWScriptASTBuilder {
         this.skipComments();
       }
       if (!this.is("keyword", "ELSEIF")) break;
-
+      
       const e = this.expect("keyword", "ELSEIF");
       // Skip comments if ignoreComments is enabled (e.g., elseif//comment)
       if (this.ignoreComments) {
@@ -701,7 +701,7 @@ export class NWScriptASTBuilder {
     if (this.ignoreComments) {
       this.skipComments();
     }
-
+    
     let left = this.nud();
 
     while (true) {
@@ -709,7 +709,7 @@ export class NWScriptASTBuilder {
       if (this.ignoreComments) {
         this.skipComments();
       }
-
+      
       // postfix call / index handled in led as well
       if (this.is("punct", "(") || this.is("punct", "[")) {
         left = this.ledPostfix(left);
@@ -725,7 +725,7 @@ export class NWScriptASTBuilder {
       // consume operator
       const opTok = this.tok;
       this.next();
-
+      
       // Skip comments if ignoreComments is enabled (comments can appear after operators)
       if (this.ignoreComments) {
         this.skipComments();
@@ -742,7 +742,7 @@ export class NWScriptASTBuilder {
     if (this.ignoreComments) {
       this.skipComments();
     }
-
+    
     // prefix ops
     if (this.is("op", "++")) {
       const t = this.tok; this.next();
@@ -820,11 +820,11 @@ export class NWScriptASTBuilder {
       return e;
     }
 
-    // array literal (non-standard NWScript, but tolerate for legacy input): [a, b, c]
+    // array literal (non-standard NWScript, but tolerate for decompiled/legacy input): [a, b, c]
     if (this.is("punct", "[")) {
       const openTok = this.tok;
       this.next(); // consume '['
-      const elements: ExpressionNode[] = [];
+      const elements: any[] = [];
       if (!this.is("punct", "]")) {
         while (true) {
           elements.push(this.parseExpression(0));
@@ -861,7 +861,7 @@ export class NWScriptASTBuilder {
     // function call: <name>(args)
     if (this.is("punct", "(")) {
       this.expect("punct", "(");
-      const args: ExpressionNode[] = [];
+      const args: any[] = [];
       if (!this.is("punct", ")")) {
         while (true) {
           args.push(this.parseExpression(0));

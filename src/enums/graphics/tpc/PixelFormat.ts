@@ -19,4 +19,4 @@ export enum PixelFormat {
   DXT1 = 8,
   DXT3 = 9,
   DXT5 = 10
-}
+};

@@ -1,16 +1,16 @@
 import React, { ChangeEvent, useEffect, useState } from "react"
+import { BaseTabProps } from "../../../interfaces/BaseTabProps"
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabGUIEditorState, TabGUIEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
+import { TabGUIEditorState, TabGUIEditorStateEventListenerTypes } from "../../../states/tabs";
 
+import * as KotOR from "../../../KotOR";
 // import { Form, InputGroup } from "react-bootstrap";
-import { UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-// import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
+import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
+import { UI3DRendererView } from "../../UI3DRendererView";
+import { UI3DRendererEventListenerTypes } from "../../../UI3DRenderer";
+// import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
 
 export const TabGUIEditor = function(props: BaseTabProps){
 
@@ -30,16 +30,18 @@ export const TabGUIEditor = function(props: BaseTabProps){
     rerender(!render);
   };
 
-  const onNodeAdded = function(arg: any){
-    //todo
+  const onNodeAdded = function(_arg: any){
+    setSelectedNode(null);
+    rerender(!render);
   };
 
-  const onNodeRemoved = function(arg: any){
-    //todo
+  const onNodeRemoved = function(_arg: any){
+    setSelectedNode(null);
+    rerender(!render);
   };
 
   const onMouseWheel = function(e: WheelEvent){
-    if(e.ctrlKey){
+    if(!!e.ctrlKey){
       let tmpCanvasScale = menu?.tGuiPanel.widget.scale.x || 0;
       const maxScale = 5;
       const minScale = 0.1;

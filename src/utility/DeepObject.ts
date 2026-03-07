@@ -13,27 +13,26 @@ export class DeepObject {
    * @param item
    * @returns {boolean}
    */
-  static _isObject(item: unknown): item is Record<string, unknown> {
-    return Boolean(item && typeof item === 'object' && !Array.isArray(item));
+  static _isObject(item: any) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
   }
 
   /**
    * Deep merge two objects.
+   * @param target
+   * @param ...sources
    */
-  static Merge<T extends Record<string, unknown>>(target: T, ...sources: Record<string, unknown>[]): T {
+  static Merge(target: any, ...sources: any): any {
     if (!sources.length) return target;
     const source = sources.shift();
-    if (!source) return target;
 
     if (DeepObject._isObject(target) && DeepObject._isObject(source)) {
       for (const key in source) {
         if (DeepObject._isObject(source[key])) {
-          if (!target[key] || !DeepObject._isObject(target[key])) {
-            (target as Record<string, unknown>)[key] = {};
-          }
-          DeepObject.Merge((target as Record<string, unknown>)[key] as Record<string, unknown>, source[key] as Record<string, unknown>);
+          if (!target[key]) Object.assign(target, { [key]: {} });
+          DeepObject.Merge(target[key], source[key]);
         } else {
-          (target as Record<string, unknown>)[key] = source[key];
+          Object.assign(target, { [key]: source[key] });
         }
       }
     }

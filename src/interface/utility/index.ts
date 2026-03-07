@@ -1,1 +1,1 @@
-export * from "@/interface/utility/IAsyncLoopOptions";
+export * from "./IAsyncLoopOptions";

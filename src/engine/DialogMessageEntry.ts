@@ -1,6 +1,6 @@
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
 
 /**
  * DialogMessageEntry class.
@@ -30,8 +30,8 @@ export class DialogMessageEntry {
   static FromStruct(struct: GFFStruct): DialogMessageEntry {
     const entry = new DialogMessageEntry();
     if(struct instanceof GFFStruct){
-      if(struct.hasField('PT_DLG_MSG_MSG')) entry.message = struct.getStringByLabel('PT_DLG_MSG_MSG');
-      if(struct.hasField('PT_DLG_MSG_SPKR')) entry.speaker = struct.getStringByLabel('PT_DLG_MSG_SPKR');
+      if(struct.hasField('PT_DLG_MSG_MSG')) entry.message = struct.getFieldByLabel('PT_DLG_MSG_MSG')?.getValue();
+      if(struct.hasField('PT_DLG_MSG_SPKR')) entry.speaker = struct.getFieldByLabel('PT_DLG_MSG_SPKR')?.getValue();
     }
     return entry;
   }

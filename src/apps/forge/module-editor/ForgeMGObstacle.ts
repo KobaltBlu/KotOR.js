@@ -1,4 +1,4 @@
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "../KotOR";
 
 export class ForgeMGObstacle {
   // Basic properties
@@ -23,7 +23,7 @@ export class ForgeMGObstacle {
 
     // Load Name field
     if(struct.hasField('Name')){
-      this.name = struct.getStringByLabel('Name');
+      this.name = struct.getFieldByLabel('Name').getValue();
     }
 
     // Load Scripts struct
@@ -40,7 +40,7 @@ export class ForgeMGObstacle {
 
         for(const scriptKey of scriptKeys){
           if(scriptsNode.hasField(scriptKey)){
-            const resRef = scriptsNode.getStringByLabel(scriptKey);
+            const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
             if(resRef){
               this.scripts[scriptKey] = resRef;
             }

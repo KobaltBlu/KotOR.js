@@ -13,4 +13,4 @@ export enum OdysseyModelEmitterUpdateMode {
   Single = 'Single',
   Explosion = 'Explosion',
   Lightning = 'Lightning',
-}
+};

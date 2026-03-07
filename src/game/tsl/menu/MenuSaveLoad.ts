@@ -1,16 +1,16 @@
-import { SaveGame } from "@/engine/SaveGame";
-import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
-import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "@/game/kotor/KOTOR";
-import { GUISaveGameItem } from "@/game/tsl/gui/GUISaveGameItem";
-import { GameState } from "@/GameState";
-import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
+import { GameState } from "../../../GameState";
+import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "../../kotor/KOTOR";
+import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
+import { GUISaveGameItem } from "../../tsl/gui/GUISaveGameItem";
+import { SaveGame } from "../../../engine/SaveGame";
+import { TextureLoader } from "../../../loaders";
 
 /**
  * MenuSaveLoad class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file MenuSaveLoad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -53,7 +53,26 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       this.BTN_SAVELOAD.setText('Load');
       this.BTN_SAVELOAD.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.activateSelectedSave();
+        const savegame = this.selected;
+        if(this.mode == MenuSaveLoadMode.LOADGAME){
+          if(savegame){
+            this.manager.ClearMenus();
+            if(GameState.module){
+              GameState.module.dispose();
+              GameState.module = undefined;
+            }
+            savegame.load()
+          }
+        }else{
+          if(savegame instanceof NewSaveItem){
+            this.manager.MenuSaveName.show();
+            this.manager.MenuSaveName.onSave = ( name = '' ) => {
+              console.log('SaveGame', name);
+            };
+          }else{
+
+          }
+        }
       });
       this._button_a = this.BTN_SAVELOAD;
 
@@ -85,29 +104,13 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
         this.LBL_TIMEPLAYED.setText('');
         if (this.selected instanceof SaveGame) {
           if (this.selected instanceof NewSaveItem) {
-
+    
           }else{
             this.LBL_PCNAME.setText(this.selected.PCNAME);
             this.LBL_TIMEPLAYED.setText(`Time: ${this.selected.getHoursPlayed()}H ${this.selected.getMinutesPlayed()}M`);
           }
         }
       }
-      this.LB_GAMES.onActivated = () => {
-        this.activateSelectedSave();
-      };
-
-      this.addEventListener('keydown', (e: KeyboardEvent) => {
-        if(e.key === 'ArrowUp'){
-          e.preventDefault();
-          this.LB_GAMES.directionalNavigate('up');
-        }else if(e.key === 'ArrowDown'){
-          e.preventDefault();
-          this.LB_GAMES.directionalNavigate('down');
-        }else if(e.key === 'Enter'){
-          e.preventDefault();
-          this.activateSelectedSave();
-        }
-      });
 
       this.tGuiPanel.getFill().position.z = -1;
       resolve();
@@ -125,10 +128,10 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       saves.unshift(new NewSaveItem());
     }else{
       saves = SaveGame.saves.slice();
-      const special = saves.filter(save => {
+      let special = saves.filter(save => {
         return save.getIsQuickSave() || save.getIsAutoSave();
       });
-
+      
       saves = saves.filter(save => {
         return !save.getIsQuickSave() && !save.getIsAutoSave();
       }).reverse();
@@ -151,5 +154,5 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
 
     return saves;
   }
-
+  
 }

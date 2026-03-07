@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { ForgeState } from "../../states/ForgeState";
+import { useApp } from "../../context/AppContext";
 
-import { useApp } from "@/apps/forge/context/AppContext";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-
+import * as KotOR from "../../KotOR";
 
 export interface ModalGrantAccessProps {
   onUserGrant: Function,
@@ -33,7 +32,7 @@ export const ModalGrantAccess = function(props: ModalGrantAccessProps){
   });
 
   const onBtnGrant = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    const handle = await KotOR.GameFileSystem.showRequestDirectoryDialog();
+    let handle = await KotOR.GameFileSystem.showRequestDirectoryDialog();
     if(handle){
       KotOR.ApplicationProfile.directoryHandle = handle;
       KotOR.ConfigClient.set(`Profiles.${KotOR.ApplicationProfile.profile.key}.directory_handle`, handle);

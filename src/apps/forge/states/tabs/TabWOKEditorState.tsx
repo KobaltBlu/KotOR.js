@@ -1,18 +1,17 @@
 import React from "react";
+import { TabState } from "./TabState";
+import { EditorFile } from "../../EditorFile";
+import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
-
-import { TabWOKEditor } from "@/apps/forge/components/tabs/tab-wok-editor/TabWOKEditor";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
+import { TabWOKEditor } from "../../components/tabs/tab-wok-editor/TabWOKEditor";
 
 export enum TabWOKEditorControlMode {
   FACE = 0,
   VERTEX = 1,
   EDGE = 2,
-}
+};
 
 /**
  * Get the complementary color of a given hex color
@@ -248,7 +247,7 @@ export class TabWOKEditorState extends TabState {
   animate(delta: number = 0){
 
     this.vertexHelpersGroup.visible = false;
-    this.ui3DRenderer.transformControls.visible = false;
+    (this.ui3DRenderer.transformControls as unknown as THREE.Object3D).visible = false;
     this.faceHelperMesh.visible = false;
 
     switch(this.controlMode){
@@ -261,10 +260,11 @@ export class TabWOKEditorState extends TabState {
         this.selectFace(undefined);
         this.vertexHelpersGroup.visible = true;
 
-        if(!this.ui3DRenderer.transformControls.object)
-          this.ui3DRenderer.transformControls.visible = false;
+        const tc = this.ui3DRenderer.transformControls as unknown as THREE.Object3D;
+        if(!(this.ui3DRenderer.transformControls as { object: unknown }).object)
+          tc.visible = false;
         else
-          this.ui3DRenderer.transformControls.visible = true;
+          tc.visible = true;
 
         const selectedVertex = this.wok.vertices[this.selectedVertexIndex];
         if(selectedVertex){

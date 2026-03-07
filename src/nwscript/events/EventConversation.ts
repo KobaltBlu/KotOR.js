@@ -1,5 +1,5 @@
-import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
-import { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
+import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
+import { NWScriptEvent } from "./NWScriptEvent";
 
 /**
  * EventConversation class.

@@ -1,6 +1,6 @@
-import EngineLocation from "@/engine/EngineLocation";
-import { IEngineGlobals } from "@/interface/engine/IEngineGlobals";
-import { TwoDAManager } from "@/managers/TwoDAManager";
+import EngineLocation from "../engine/EngineLocation";
+import { IEngineGlobals } from "../interface/engine/IEngineGlobals";
+import { TwoDAManager } from "./TwoDAManager";
 
 /**
  * GlobalVariableManager class.
@@ -21,10 +21,10 @@ export class GlobalVariableManager {
   };
   
   public static Init(){
-    const _initGlobals = TwoDAManager.datatables.get('globalcat').rows;
-    for (const key in _initGlobals) {
+    let _initGlobals = TwoDAManager.datatables.get('globalcat').rows;
+    for (let key in _initGlobals) {
       if (_initGlobals.hasOwnProperty(key)) {
-        const globItem = _initGlobals[key];
+        let globItem = _initGlobals[key];
 
         switch(globItem.type){
           case 'Boolean':
@@ -45,14 +45,14 @@ export class GlobalVariableManager {
   }
   
   public static SetGlobalBoolean(name = '', value = false){
-    const key = GlobalVariableManager.Globals.Boolean.get(name.toLocaleLowerCase());
+    let key = GlobalVariableManager.Globals.Boolean.get(name.toLocaleLowerCase());
     if(key){
       key.value = value ? true : false;
     }
   }
 
   public static GetGlobalBoolean(name = ''): boolean {
-    const key = GlobalVariableManager.Globals.Boolean.get(name.toLocaleLowerCase());
+    let key = GlobalVariableManager.Globals.Boolean.get(name.toLocaleLowerCase());
     if(key){
       return key.value ? true : false;
     }
@@ -61,41 +61,41 @@ export class GlobalVariableManager {
   }
 
   public static SetGlobalNumber(name:string = '', value:number = 0){
-    const key = GlobalVariableManager.Globals.Number.get(name.toLocaleLowerCase());
+    let key = GlobalVariableManager.Globals.Number.get(name.toLocaleLowerCase());
     if(key){
       key.value = Math.floor(value);
     }
   }
 
   public static GetGlobalNumber(name:string = ''): number {
-    const key = GlobalVariableManager.Globals.Number.get(name.toLocaleLowerCase());
+    let key = GlobalVariableManager.Globals.Number.get(name.toLocaleLowerCase());
     if(key) return key.value;
 
     return 0;
   }
 
   public static SetGlobalString(name:string = '', value: string = ''){
-    const key = GlobalVariableManager.Globals.String.get(name.toLocaleLowerCase());
+    let key = GlobalVariableManager.Globals.String.get(name.toLocaleLowerCase());
     if(key){
       key.value = value;
     }
   }
 
   public static GetGlobalString(name:string = ''): string {
-    const key = GlobalVariableManager.Globals.String.get(name.toLocaleLowerCase());
+    let key = GlobalVariableManager.Globals.String.get(name.toLocaleLowerCase());
     if(key) return key.value;
 
     return '';
   }
 
   public static SetGlobalLocation(name = '', value = new EngineLocation){
-    const key = GlobalVariableManager.Globals.Location.get(name.toLocaleLowerCase());
+    let key = GlobalVariableManager.Globals.Location.get(name.toLocaleLowerCase());
     if(key && value instanceof EngineLocation)
       key.value = value;
   }
 
   public static GetGlobalLocation(name = ''): EngineLocation {
-    const key = GlobalVariableManager.Globals.Location.get(name.toLocaleLowerCase());
+    let key = GlobalVariableManager.Globals.Location.get(name.toLocaleLowerCase());
     if(key) return key.value;
 
     return new EngineLocation;

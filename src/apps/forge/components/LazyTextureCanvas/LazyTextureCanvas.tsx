@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-
-import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanvas";
+import { TextureCanvas } from "../TextureCanvas/TextureCanvas";
 
 interface LazyTextureCanvasProps {
   texture: string;

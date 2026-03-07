@@ -15,4 +15,4 @@ export enum TGAOrigin {
 	TOP_RIGHT =    0x03,
 	SHIFT =        0x04,
 	MASK =         0x30
-}
+};

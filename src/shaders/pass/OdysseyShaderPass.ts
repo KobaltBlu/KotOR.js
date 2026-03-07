@@ -1,8 +1,7 @@
 
 import * as THREE from "three";
 import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass";
-
-import { OdysseyShader } from "@/shaders/pass/OdysseyShader";
+import { OdysseyShader } from "./OdysseyShader";
 
 //Extend the default THREE.FilmPass shader pass
 
@@ -17,7 +16,7 @@ import { OdysseyShader } from "@/shaders/pass/OdysseyShader";
  */
 export class OdysseyShaderPass extends Pass {
 
-  uniforms: { [uniform: string]: THREE.IUniform<THREE.Texture | null | number | THREE.Vector3> };
+  uniforms: { [uniform: string]: THREE.IUniform<any>; };
   material: THREE.ShaderMaterial;
   fsQuad: FullScreenQuad;
 

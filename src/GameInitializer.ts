@@ -1,34 +1,34 @@
 import * as path from "path";
-
-import { ActionFactory } from "@/actions/ActionFactory";
-import { GamePad, KeyMapper } from "@/controls";
-import { GameEffectFactory } from "@/effects/GameEffectFactory";
-import { CurrentGame } from "@/engine/CurrentGame";
-import { INIConfig } from "@/engine/INIConfig";
-import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
-import { SWRuleSet } from "@/engine/rules/SWRuleSet";
-import { SaveGame } from "@/engine/SaveGame";
-import { CacheScope } from "@/enums";
-import { GameEngineType } from "@/enums/engine";
-import { GameState } from "@/GameState";
-import { ERFObject } from "@/resource/ERFObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { RIMObject } from "@/resource/RIMObject";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { ConfigClient } from "@/utility/ConfigClient";
+import { GameState } from "./GameState";
+import { ERFObject } from "./resource/ERFObject";
+import { ResourceTypes } from "./resource/ResourceTypes";
+import { RIMObject } from "./resource/RIMObject";
+import { GameFileSystem } from "./utility/GameFileSystem";
+import { GamePad, KeyMapper } from "./controls";
+import { CurrentGame } from "./engine/CurrentGame";
+import { ConfigClient } from "./utility/ConfigClient";
 import { 
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager, KEYManager, RIMManager, ERFManager, VideoEffectManager, PazaakManager, UINotificationManager, CutsceneManager,
   VideoManager,
   LegalScreenManager
-} from "@/managers";
-import { ResourceLoader } from "@/loaders";
-import { Module } from "@/module/Module";
-import { NWScript } from "@/nwscript/NWScript";
-import { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "@/talents";
-import { GameEventFactory } from "@/events/GameEventFactory";
-import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
+} from "./managers";
+import { SWRuleSet } from "./engine/rules/SWRuleSet";
+import { ResourceLoader } from "./loaders";
+import { GameEngineType } from "./enums/engine";
+import { SaveGame } from "./engine/SaveGame";
+import { Module } from "./module/Module";
+import { NWScript } from "./nwscript/NWScript";
+
+import { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
+import { ActionMenuManager } from "./engine/menu/ActionMenuManager";
+import { ActionFactory } from "./actions/ActionFactory";
+import { GameEffectFactory } from "./effects/GameEffectFactory";
+import { GameEventFactory } from "./events/GameEventFactory";
+import { INIConfig } from "./engine/INIConfig";
+import { CacheScope } from "./enums";
+import { PerformanceMonitor } from "./utility/PerformanceMonitor";
 
 /**
  * GameInitializer class.
@@ -60,8 +60,8 @@ export class GameInitializer {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      const ev = this.#eventListeners[type];
-      const index = ev.indexOf(cb);
+      let ev = this.#eventListeners[type];
+      let index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
@@ -82,8 +82,8 @@ export class GameInitializer {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      const ev = this.#eventListeners[type];
-      const index = ev.indexOf(cb);
+      let ev = this.#eventListeners[type];
+      let index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
@@ -104,7 +104,7 @@ export class GameInitializer {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      const ev = this.#eventListeners[type];
+      let ev = this.#eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
@@ -332,20 +332,21 @@ export class GameInitializer {
   }
 
   static async LoadModules(){
-    const data_dir = 'modules';
+    let data_dir = 'modules';
     PerformanceMonitor.start('GameInitializer.LoadModules');
     try{
       const filenames = await GameFileSystem.readdir(data_dir);
       const modules = filenames.map(function(file) {
         const filename = file.split(path.sep).pop() as string;
         const args = filename.split('.');
+        const ext = args.length >= 2 ? args[1].toLowerCase() : '';
         return {
-          ext: args[1].toLowerCase(), 
-          name: args[0], 
+          ext,
+          name: args[0],
           filename: filename
         };
       }).filter(function(file_obj){
-        return file_obj.ext == 'rim' || file_obj.ext == 'mod';
+        return file_obj.ext === 'rim' || file_obj.ext === 'mod';
       });
 
       for(let i = 0, len = modules.length; i < len; i++){
@@ -423,9 +424,9 @@ export class GameInitializer {
     try{
       const files = await GameFileSystem.readdir(folder, {recursive: true})
       for(let i = 0, len = files.length; i < len; i++){
-        const f = files[i];
-        const _parsed = path.parse(f);
-        const ext = _parsed.ext.substr(1,  _parsed.ext.length);
+        let f = files[i];
+        let _parsed = path.parse(f);
+        let ext = _parsed.ext.substr(1,  _parsed.ext.length);
 
         if(typeof ResourceTypes[ext] != 'undefined'){
           ResourceLoader.setResource(ResourceTypes[ext], _parsed.name.toLowerCase(), {
@@ -451,9 +452,9 @@ export class GameInitializer {
     try{
       const files = await GameFileSystem.readdir('Override', {recursive: false});
       for(let i = 0, len = files.length; i < len; i++){
-        const f = files[i];
-        const _parsed = path.parse(f);
-        const ext = _parsed.ext.substr(1,  _parsed.ext.length)?.toLocaleLowerCase();
+        let f = files[i];
+        let _parsed = path.parse(f);
+        let ext = _parsed.ext.substr(1,  _parsed.ext.length)?.toLocaleLowerCase();
         const resId = ResourceTypes[ext];
 
         if(typeof resId === 'undefined'){

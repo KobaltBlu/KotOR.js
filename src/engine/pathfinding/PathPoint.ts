@@ -1,11 +1,10 @@
 import * as THREE from 'three';
-
-import { IPathPointOptions } from "@/interface/engine/pathfinding/IPathPointOptions";
-import type { ModuleArea } from '@/module/ModuleArea';
-import type { ModuleObject } from '@/module/ModuleObject';
-import type { WalkmeshEdge } from '@/odyssey/WalkmeshEdge';
-import type { GFFStruct } from '@/resource/GFFStruct';
-import { Utility } from '@/utility/Utility';
+import { IPathPointOptions } from "../../interface/engine/pathfinding/IPathPointOptions";
+import { Utility } from '../../utility/Utility';
+import type { ModuleArea } from '../../module/ModuleArea';
+import type { GFFStruct } from '../../resource/GFFStruct';
+import type { WalkmeshEdge } from '../../odyssey/WalkmeshEdge';
+import type { ModuleObject } from '../../module/ModuleObject';
 
 /**
  * PathPoint class.

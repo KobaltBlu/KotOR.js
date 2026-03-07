@@ -14,4 +14,4 @@ export enum LightPriority {
   MEDIUM = 3,
   HIGH = 4,
   HIGHEST = 5,
-}
+};

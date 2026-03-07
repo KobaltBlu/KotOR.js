@@ -1,12 +1,11 @@
 import * as THREE from "three";
-
-import { GameEngineType } from "@/enums/engine";
-import { TextureType } from "@/enums/loaders/TextureType";
-import { GameState } from "@/GameState";
-import { GUIButton, GUIListBox, GUIProtoItem } from "@/gui";
-import type { GUIControl, GameMenu } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GUIButton, GUIListBox, GUIProtoItem } from "../../../gui";
+import type { GUIControl, GameMenu } from "../../../gui";
+import { GFFStruct } from "../../../resource/GFFStruct";
+import { TextureLoader } from "../../../loaders";
+import { GameState } from "../../../GameState";
+import { TextureType } from "../../../enums/loaders/TextureType";
+import { GameEngineType } from "../../../enums/engine";
 
 /**
  * GUIInventoryItem class.
@@ -31,20 +30,20 @@ export class GUIInventoryItem extends GUIProtoItem {
   createControl(){
     super.createControl();
     //Create the actual control elements below
-    const button = new GUIButton(this.menu, this.control, this, this.scale);
+    let button = new GUIButton(this.menu, this.control, this, this.scale);
     button.extent.width = 200;
     button.setText(this.node.getName());
     button.text.alignment = 9;
     button.autoCalculatePosition = false;
     this.children.push(button);
 
-    const _buttonWidget = button.createControl();
+    let _buttonWidget = button.createControl();
     _buttonWidget.position.x = (this.extent.width - button.extent.width) / 2;
     _buttonWidget.position.y = 0;
     _buttonWidget.position.z = this.zIndex + 1;
     this.widget.add(_buttonWidget);
 
-    const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
+    let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
     buttonIcon.setText(this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '');
     buttonIcon.text.mesh.scale.setScalar(.9);
     buttonIcon.disableTextAlignment();
@@ -58,7 +57,7 @@ export class GUIInventoryItem extends GUIProtoItem {
     buttonIcon.autoCalculatePosition = false;
     this.children.push(buttonIcon);
 
-    const _buttonIconWidget = buttonIcon.createControl();
+    let _buttonIconWidget = buttonIcon.createControl();
     _buttonIconWidget.position.x = -(this.extent.width/2 - buttonIcon.extent.width/2);
     _buttonIconWidget.position.y = 0;
     _buttonIconWidget.position.z = this.zIndex + 1;

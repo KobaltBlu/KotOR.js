@@ -1,5 +1,5 @@
-import { MenuMouse as K1_MenuMouse } from "@/game/kotor/KOTOR";
-import type { GUILabel, GUIListBox, GUISlider, GUICheckBox, GUIButton } from "@/gui";
+import type { GUILabel, GUIListBox, GUISlider, GUICheckBox, GUIButton } from "../../../gui";
+import { MenuMouse as K1_MenuMouse } from "../../kotor/KOTOR";
 
 /**
  * MenuMouse class.
@@ -34,7 +34,7 @@ export class MenuMouse extends K1_MenuMouse {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -45,4 +45,3 @@ export class MenuMouse extends K1_MenuMouse {
   }
   
 }
-

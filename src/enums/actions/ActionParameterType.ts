@@ -23,4 +23,4 @@ export enum ActionParameterType {
   
   /** Script situation parameter type */
   SCRIPT_SITUATION = 5
-}
+};

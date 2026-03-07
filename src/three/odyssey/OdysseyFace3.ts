@@ -1,8 +1,7 @@
 import * as THREE from "three";
-
-import type { SurfaceMaterial } from "@/engine/SurfaceMaterial";
-import { IAdjacentWalkableFaces } from "@/interface/odyssey";
-import type { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
+import type { OdysseyWalkMesh } from "../../odyssey/OdysseyWalkMesh";
+import type { SurfaceMaterial } from "../../engine/SurfaceMaterial";
+import { IAdjacentWalkableFaces } from "../../interface/odyssey";
 
 /**
  * OdysseyFace3 class.
@@ -103,6 +102,33 @@ export class OdysseyFace3 {
 		a: number,
 		b: number,
 		c: number,
+		normal?: THREE.Vector3,
+		color?: THREE.Color,
+		materialIndex?: number
+	);
+
+	constructor(
+		a: number,
+		b: number,
+		c: number,
+		normal?: THREE.Vector3,
+		vertexColors?: THREE.Color[],
+		materialIndex?: number
+	);
+
+	constructor(
+		a: number,
+		b: number,
+		c: number,
+		vertexNormals?: THREE.Vector3[],
+		color?: THREE.Color,
+		materialIndex?: number
+	);
+
+	constructor(
+		a: number,
+		b: number,
+		c: number,
 		vertexNormals?: THREE.Vector3|THREE.Vector3[],
 		vertexColors?: THREE.Color|THREE.Color[],
 		materialIndex?: number
@@ -125,16 +151,16 @@ export class OdysseyFace3 {
   }
 
 	pointInFace2d(pt: THREE.Vector3){
-    const v1 = this.walkmesh.vertices[this.a];
-    const v2 = this.walkmesh.vertices[this.b];
-    const v3 = this.walkmesh.vertices[this.c];
+    let v1 = this.walkmesh.vertices[this.a];
+    let v2 = this.walkmesh.vertices[this.b];
+    let v3 = this.walkmesh.vertices[this.c];
 
-    const d1 = this.sign(pt, v1, v2);
-    const d2 = this.sign(pt, v2, v3);
-    const d3 = this.sign(pt, v3, v1);
+    let d1 = this.sign(pt, v1, v2);
+    let d2 = this.sign(pt, v2, v3);
+    let d3 = this.sign(pt, v3, v1);
 
-    const has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-    const has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+    let has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+    let has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
 
     return !(has_neg && has_pos);
   }
@@ -161,16 +187,16 @@ export class OdysseyFace3 {
     );
 	}
 
-  sign(p1: THREE.Vector2 | { x: number; y: number }, p2: THREE.Vector2 | { x: number; y: number }, p3: THREE.Vector2 | { x: number; y: number }){
+  sign(p1: any, p2: any, p3: any){
     return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
   }
 
 	clone(): this {
     return this;
-  }
+  };
 
-	copy( _source: OdysseyFace3 ): this {
+	copy( source: OdysseyFace3 ): this {
     return this;
-  }
+  };
 
 }

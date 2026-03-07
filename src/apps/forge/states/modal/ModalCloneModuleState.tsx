@@ -1,10 +1,6 @@
 import React from "react";
-
-import { ModalCloneModule } from "@/apps/forge/components/modal/ModalCloneModule";
-import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
-import { cloneModuleFromBuffer } from "@/apps/forge/helpers/CloneModule";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalState } from "./ModalState";
+import { ModalCloneModule } from "../../components/modal/ModalCloneModule";
 
 export interface ModalCloneModuleStateOptions {
   title?: string;
@@ -79,8 +75,10 @@ export class ModalCloneModuleState extends ModalState {
   }
 
   async browseSource(): Promise<void> {
+    const { ForgeFileSystem } = await import("../../ForgeFileSystem");
     const response = await ForgeFileSystem.OpenFile({ ext: [".mod"] });
-    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
+    const KotOR = await import("../../KotOR");
+    if (KotOR.ApplicationProfile.ENV === (KotOR as any).ApplicationEnvironment.ELECTRON) {
       if (response.paths && response.paths.length > 0) {
         this.sourceModPath = response.paths[0];
       }
@@ -90,7 +88,7 @@ export class ModalCloneModuleState extends ModalState {
         this.sourceModPath = h.name;
       }
     }
-    const buffer = (await ForgeFileSystem.ReadFileBufferFromResponse(response)) as Uint8Array;
+    const buffer = await ForgeFileSystem.ReadFileBufferFromResponse(response);
     if (buffer.length > 0) {
       this.sourceModBuffer = buffer;
       this.error = "";
@@ -102,14 +100,10 @@ export class ModalCloneModuleState extends ModalState {
   }
 
   async runClone(outputPath: string): Promise<boolean> {
-    const sourceBuffer = this.sourceModBuffer;
-    if (!sourceBuffer) {
-      this.error = "No source buffer.";
-      return false;
-    }
+    const { cloneModuleFromBuffer } = await import("../../helpers/CloneModule");
     try {
       await cloneModuleFromBuffer({
-        sourceBuffer,
+        sourceBuffer: this.sourceModBuffer!,
         identifier: this.identifier,
         prefix: this.prefix,
         name: this.name || this.identifier,

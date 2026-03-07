@@ -1,4 +1,4 @@
-import type { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
+import type { IOdysseyArrayDefinition } from "./IOdysseyArrayDefinition";
 
 /**
  * IOdysseyGeometryHeader interface.

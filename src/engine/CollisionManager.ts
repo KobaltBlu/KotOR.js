@@ -1,13 +1,12 @@
+import { GameState } from "../GameState";
+import type { ModuleCreature, ModuleObject, ModuleRoom } from "../module";
+import { OdysseyWalkMesh, WalkmeshEdge } from "../odyssey";
 import * as THREE from "three";
-
-import { EngineDebugType } from "@/enums/engine/EngineDebugType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleObject, ModuleRoom } from "@/module";
-import { OdysseyWalkMesh, WalkmeshEdge } from "@/odyssey";
-import { OdysseyFace3 } from "@/three/odyssey";
-import { BitWise } from "@/utility/BitWise";
-import { Utility } from "@/utility/Utility";
+import { Utility } from "../utility/Utility";
+import { OdysseyFace3 } from "../three/odyssey";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { EngineDebugType } from "../enums/engine/EngineDebugType";
 
 // =============================================
 // TYPE DEFINITIONS
@@ -254,7 +253,7 @@ export class CollisionManager {
     }
 
     // Small separation along averaged normals if still penetrating
-    const sepNormal = new THREE.Vector3(0, 0, 0);
+    let sepNormal = new THREE.Vector3(0, 0, 0);
     let sepCount = 0;
     let totalPenetration = 0;
     for (const collision of collisions) {

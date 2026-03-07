@@ -13,4 +13,4 @@ export enum ITalentSpellMode {
   CONJURING   = 1,
   CASTING     = 2,
   CATCHING    = 3
-}
+};

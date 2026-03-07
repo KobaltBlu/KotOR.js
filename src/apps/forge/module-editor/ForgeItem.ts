@@ -1,7 +1,6 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import { InstallationRegistry } from "@/apps/forge/data/InstallationRegistry";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { ItemPropertyEntry } from "@/apps/forge/states/tabs/TabUTIEditorState";
+import { ForgeGameObject } from "./ForgeGameObject";
+import * as KotOR from "../KotOR";
+import { ItemPropertyEntry } from "../states/tabs/TabUTIEditorState";
 
 export class ForgeItem extends ForgeGameObject {
   //GIT Instance Properties
@@ -143,7 +142,7 @@ export class ForgeItem extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-
+    
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'AddCost', this.addCost) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'BaseItem', this.baseItem) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Charges', this.charges) );
@@ -182,21 +181,13 @@ export class ForgeItem extends ForgeGameObject {
   }
 
   loadBaseItem(){
-    if(!this.baseItem){
+    if(!this.baseItem){ 
       this.kBaseItem = {};
       return this.kBaseItem;
     }
-    const twodaObject = InstallationRegistry.get2DASync(InstallationRegistry.BASEITEMS);
+    const twodaObject = KotOR.TwoDAManager.datatables.get('baseitems');
     if(!twodaObject) return;
     return this.kBaseItem = twodaObject.getRowByIndex(this.baseItem);
-  }
-
-  getIconResRef(): string {
-    const itemclass = this.stringCleaner(this.kBaseItem?.itemclass || '');
-    if(!itemclass){
-      return '';
-    }
-    return `i${itemclass}_${('000' + this.modelVariation).slice(-3)}`;
   }
 
   stringCleaner(str: string = ''){
@@ -204,7 +195,7 @@ export class ForgeItem extends ForgeGameObject {
   }
 
   nthStringConverter(name = '', nth = 1){
-    const value = nth.toString();
+    let value = nth.toString();
     name = name.substr(0, name.length - value.length);
     return name + value;
   }
@@ -215,7 +206,7 @@ export class ForgeItem extends ForgeGameObject {
       try{ this.model.dispose(); }catch(e){}
     }
 
-    if(!this.baseItem){
+    if(!this.baseItem){ 
       this.model = new KotOR.OdysseyModel3D();
       return this.model;
     }
@@ -255,7 +246,6 @@ export class ForgeItem extends ForgeGameObject {
   }
 
   async load(){
-    await InstallationRegistry.get2DA(InstallationRegistry.BASEITEMS);
     this.loadBaseItem();
     await this.loadModel();
     this.updateBoundingBox();

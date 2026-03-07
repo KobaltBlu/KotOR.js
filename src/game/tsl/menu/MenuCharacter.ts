@@ -1,10 +1,10 @@
-import { MenuCharacter as K1_MenuCharacter } from "@/game/kotor/KOTOR";
-import { GameState } from "@/GameState";
-import { LBL_3DView } from "@/gui";
-import type { GUILabel, GUIButton, GUISlider } from "@/gui";
-import { MDLLoader, TextureLoader } from "@/loaders";
-import { OdysseyModel } from "@/odyssey";
-import { OdysseyModel3D } from "@/three/odyssey";
+import { GameState } from "../../../GameState";
+import { LBL_3DView } from "../../../gui";
+import type { GUILabel, GUIButton, GUISlider } from "../../../gui";
+import { MDLLoader, TextureLoader } from "../../../loaders";
+import { OdysseyModel } from "../../../odyssey";
+import { OdysseyModel3D } from "../../../three/odyssey";
+import { MenuCharacter as K1_MenuCharacter } from "../../kotor/KOTOR";
 
 /**
  * MenuCharacter class.
@@ -155,11 +155,11 @@ export class MenuCharacter extends K1_MenuCharacter {
             this._3dViewModel.playAnimation(0, true);
             resolve();
           });
-        }).catch( (e: unknown) => {
+        }).catch( (e: any) => {
           console.error(e);
           resolve();
         });
-      }).catch( (e: unknown) => {
+      }).catch( (e: any) => {
         console.error(e);
         resolve();
       });
@@ -175,7 +175,7 @@ export class MenuCharacter extends K1_MenuCharacter {
     try {
       this._3dView.render(delta);
       (this.LBL_3DCHAR.getFill().material as any).needsUpdate = true;
-    } catch (_e: unknown) { }
+    } catch (e: any) { }
   }
 
   show() {

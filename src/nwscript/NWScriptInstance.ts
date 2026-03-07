@@ -1,23 +1,23 @@
-import type EngineLocation from "@/engine/EngineLocation";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { DebuggerState } from "@/enums/server/DebuggerState";
-import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
-import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
-import type { EventTimedEvent } from "@/events";
-import { GameState } from "@/GameState";
-import type { IPerceptionInfo } from "@/interface/engine/IPerceptionInfo";
-import type { INWScriptStoreState } from "@/interface/nwscript/INWScriptStoreState";
-import type { ModuleObject } from "@/module";
-import type { NWScript } from "@/nwscript/NWScript";
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import { NWScriptStack } from "@/nwscript/NWScriptStack";
-import type { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
-import type { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
-import type { DLGObject } from "@/resource/DLGObject";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
-import type { TalentObject, TalentSpell } from "@/talents";
+import type EngineLocation from "../engine/EngineLocation";
+import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { DebuggerState } from "../enums/server/DebuggerState";
+import { IPCDataType } from "../enums/server/ipc/IPCDataType";
+import { IPCMessageType } from "../enums/server/ipc/IPCMessageType";
+import type { EventTimedEvent } from "../events";
+import { GameState } from "../GameState";
+import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
+import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
+import type { ModuleObject } from "../module";
+import type { DLGObject } from "../resource/DLGObject";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import type { TalentObject, TalentSpell } from "../talents";
+import type { NWScript } from "./NWScript";
+import type { NWScriptInstruction } from "./NWScriptInstruction";
+import { NWScriptStack } from "./NWScriptStack";
+import type { NWScriptStackVariable } from "./NWScriptStackVariable";
+import type { NWScriptSubroutine } from "./NWScriptSubroutine";
 
 /**
  * NWScriptInstance class.
@@ -307,11 +307,11 @@ export class NWScriptInstance {
     //For some reason this is needed for some conditional scripts because the stack pointer is getting set back too far could be a problem with MOVSP?
     try{
       if(this.stack.stack[-1] ? true : false){
-        const _ret = (this.stack.stack[-1]);
+        let _ret = (this.stack.stack[-1]);
         delete this.stack.stack[-1];
         return _ret.value ? 1 : 0;
       }else if(this.stack.stack.length){
-        const _ret = (this.stack.pop());
+        let _ret = (this.stack.pop());
         return _ret.value ? 1 : 0;
       }else{
         return false;
@@ -496,7 +496,7 @@ export class NWScriptInstance {
 
   saveEventSituation(){
     //STORE_STATE
-    const scriptSituation = new GFFStruct(0x7777);
+    let scriptSituation = new GFFStruct(0x7777);
 
     scriptSituation.addField( new GFFField(GFFDataType.DWORD, 'CRC' ) ).setValue(0);
     scriptSituation.addField( new GFFField(GFFDataType.VOID, 'Code' ) ).setData( this.nwscript.code );
@@ -505,7 +505,7 @@ export class NWScriptInstance {
     scriptSituation.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name' ) ).setValue( this.name );
     scriptSituation.addField( new GFFField(GFFDataType.INT, 'SecondaryPtr' ) ).setValue(0);
 
-    const stack = scriptSituation.addField( new GFFField(GFFDataType.STRUCT, 'Stack') );
+    let stack = scriptSituation.addField( new GFFField(GFFDataType.STRUCT, 'Stack') );
     stack.addChildStruct( this.stack.saveForEventSituation() );
 
     return scriptSituation;

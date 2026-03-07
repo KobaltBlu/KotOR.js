@@ -1,23 +1,22 @@
+import * as KotOR from "../KotOR";
+import type { ForgeModule } from "./ForgeModule";
+import { AreaMap } from "../../../module/AreaMap";
+import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
+import { ProjectFileSystem } from "../ProjectFileSystem";
+import { ForgeMiniGame } from "./ForgeMiniGame";
+import { ForgeCreature } from "./ForgeCreature";
+import { ForgeRoom } from "./ForgeRoom";
+import { ForgeGameObject } from "./ForgeGameObject";
+import { ForgeCamera } from "./ForgeCamera";
+import { ForgeDoor } from "./ForgeDoor";
+import { ForgeEncounter } from "./ForgeEncounter";
+import { ForgePlaceable } from "./ForgePlaceable";
+import { ForgeItem } from "./ForgeItem";
+import { ForgeSound } from "./ForgeSound";
+import { ForgeStore } from "./ForgeStore";
+import { ForgeTrigger } from "./ForgeTrigger";
+import { ForgeWaypoint } from "./ForgeWaypoint";
 import * as THREE from 'three';
-
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgeMiniGame } from "@/apps/forge/module-editor/ForgeMiniGame";
-import type { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
-import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
-import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { AreaMap } from "@/module/AreaMap";
 
 export class ForgeArea extends ForgeGameObject{
 
@@ -204,7 +203,7 @@ export class ForgeArea extends ForgeGameObject{
     if(this.are.RootNode.hasField('ObjectId'))
       this.id = this.are.getFieldByLabel('ObjectId').getValue();
 
-    const rooms = this.are.getFieldByLabel('Rooms');
+    let rooms = this.are.getFieldByLabel('Rooms');
 
     this.alphaTest = this.are.getFieldByLabel('AlphaTest').getValue();
     this.cameraStyle = this.are.getFieldByLabel('CameraStyle').getValue();
@@ -238,7 +237,7 @@ export class ForgeArea extends ForgeGameObject{
     this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
     this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
 
-    const map = this.are.getFieldByLabel('Map').getChildStructs()[0];
+    let map = this.are.getFieldByLabel('Map').getChildStructs()[0];
     if(map){
       this.areaMap = AreaMap.FromStruct(map) as AreaMap;
     }
@@ -284,7 +283,7 @@ export class ForgeArea extends ForgeGameObject{
 
     //Rooms
     for(let i = 0; i < rooms.childStructs.length; i++ ){
-      const strt = rooms.childStructs[i];
+      let strt = rooms.childStructs[i];
       const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
       const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
       const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
@@ -462,11 +461,11 @@ export class ForgeArea extends ForgeGameObject{
         this.layout = new KotOR.LYTObject(lyt);
 
         //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
-        const sortedRooms: ForgeRoom[] = [];
+        let sortedRooms: ForgeRoom[] = [];
         for(let i = 0; i < this.layout.rooms.length; i++){
-          const roomLYT = this.layout.rooms[i];
+          let roomLYT = this.layout.rooms[i];
           for(let r = 0; r != this.rooms.length; r++ ){
-            const room = this.rooms[r];
+            let room = this.rooms[r];
             if(room.roomName.toLowerCase() == roomLYT.name.toLowerCase()){
               room.position.copy(roomLYT.position);
               sortedRooms.push(room);
@@ -706,11 +705,11 @@ export class ForgeArea extends ForgeGameObject{
 
     //Room Linking Pass 2
     for(let i = 0, iLen = this.rooms.length; i < iLen; i++ ){
-      const room1 = this.rooms[i];
+      let room1 = this.rooms[i];
       //console.log(room1.linked_rooms);
       //Look for all rooms that can see this room
       for(let j = 0, jLen = this.rooms.length; j < jLen; j++){
-        const room2 = this.rooms[j];
+        let room2 = this.rooms[j];
         //console.log(room2.linked_rooms);
         if(room2 instanceof ForgeRoom){
           const room1_room_links = this.visObject.getRoom(room1.roomName)?.rooms || [];

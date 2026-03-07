@@ -1,9 +1,9 @@
-import { IBIFResource } from "@/interface/resource/IBIFResource";
-import { IKEYEntry } from "@/interface/resource/IKEYEntry";
-import { ResourceLoader } from "@/loaders/ResourceLoader";
-import { KEYManager } from "@/managers/KEYManager";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { ResourceLoader } from "../loaders/ResourceLoader";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { TwoDAObject } from "../resource/TwoDAObject";
+import { KEYManager } from "./KEYManager";
+import { IKEYEntry } from "../interface/resource/IKEYEntry";
+import { IBIFResource } from "../interface/resource/IBIFResource";
 
 /**
  * TwoDAManager class.

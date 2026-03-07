@@ -55,4 +55,4 @@ export enum NWScriptByteCode {
   'STORE_STATE'=    44,
   'NOP'=            45,
   'T'=              46,
-}
+};

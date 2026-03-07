@@ -1,11 +1,11 @@
-import { MenuAbilities as K1_MenuAbilities } from "@/game/kotor/KOTOR";
-import { GUICreatureSkill } from "@/game/tsl/gui/GUICreatureSkill";
-import { GUIFeatItem } from "@/game/tsl/gui/GUIFeatItem";
-import { GUISpellItem } from "@/game/tsl/gui/GUISpellItem";
-import { GameState } from "@/GameState";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { type TalentFeat } from "@/talents/TalentFeat";
+import { GameState } from "../../../GameState";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import type { ModuleCreature } from "../../../module/ModuleCreature";
+import { MenuAbilities as K1_MenuAbilities } from "../../kotor/KOTOR";
+import { GUICreatureSkill } from "../gui/GUICreatureSkill";
+import { GUISpellItem } from "../gui/GUISpellItem";
+import { GUIFeatItem } from "../gui/GUIFeatItem";
+import { type TalentFeat } from "../../../talents/TalentFeat";
 
 enum AbilityFilter {
   SKILLS = 1,
@@ -213,7 +213,7 @@ export class MenuAbilities extends K1_MenuAbilities {
     this.LB_DESC.clearItems();
     this.LB_DESC_FEATS.clearItems();
     this.LB_ABILITY.clearItems();
-    const items = this.getFilteredItems();
+    let items = this.getFilteredItems();
 
     switch(this.filter){
       case AbilityFilter.SKILLS:

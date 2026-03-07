@@ -1,21 +1,20 @@
+import { GameState } from "../GameState";
+import type { ModuleCreature, ModuleObject } from "../module";
+import { OdysseyModel } from "../odyssey";
+import { OdysseyModel3D } from "../three/odyssey";
+import { DLGNode } from "./DLGNode";
+import { GFFObject } from "./GFFObject";
+import { ResourceTypes } from "./ResourceTypes";
 import * as THREE from "three";
-
-import { AudioEngine } from "@/audio/AudioEngine";
-import { AudioLoader } from "@/audio/AudioLoader";
-import { ModuleObjectType } from "@/enums";
-import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
-import { GameState } from "@/GameState";
-import { IDLGStuntActor } from "@/interface/dialog/IDLGStuntActor";
-import { MDLLoader, ResourceLoader } from "@/loaders";
-import type { ModuleCreature, ModuleObject } from "@/module";
-import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { OdysseyModel } from "@/odyssey";
-import { DLGNode } from "@/resource/DLGNode";
-import { GFFObject } from "@/resource/GFFObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { OdysseyModel3D } from "@/three/odyssey";
-// import { NWScript } from "@/nwscript/NWScript";
-import { BitWise } from "@/utility/BitWise";
+import { IDLGStuntActor } from "../interface/dialog/IDLGStuntActor";
+import { DLGNodeType } from "../enums/dialog/DLGNodeType";
+import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
+// import { NWScript } from "../nwscript/NWScript";
+import { MDLLoader, ResourceLoader } from "../loaders";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums";
+import { AudioLoader } from "../audio/AudioLoader";
+import { AudioEngine } from "../audio/AudioEngine";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,
@@ -77,7 +76,7 @@ export class DLGObject {
 
   init(){
 
-    const conversationType = this.gff.RootNode.getFieldByLabel('ConversationType');
+    let conversationType = this.gff.RootNode.getFieldByLabel('ConversationType');
     if(conversationType){
       this.conversationType = conversationType.getValue();
     }
@@ -141,7 +140,7 @@ export class DLGObject {
     if(this.gff.RootNode.hasField('EntryList')){
       const entries = this.gff.RootNode.getFieldByLabel('EntryList').getChildStructs();
       for(let i = 0; i < entries.length; i++){
-        const node = DLGNode.FromDialogStruct(entries[i], this);
+        let node = DLGNode.FromDialogStruct(entries[i], this);
         node.nodeType = DLGNodeType.ENTRY;
         this.entryList.push( node );
       }
@@ -150,7 +149,7 @@ export class DLGObject {
     if(this.gff.RootNode.hasField('ReplyList')){
       const replies = this.gff.RootNode.getFieldByLabel('ReplyList').getChildStructs();
       for(let i = 0; i < replies.length; i++){
-        const node = DLGNode.FromDialogStruct(replies[i], this);
+        let node = DLGNode.FromDialogStruct(replies[i], this);
         node.nodeType = DLGNodeType.REPLY;
         this.replyList.push( node );
       }
@@ -182,8 +181,8 @@ export class DLGObject {
       const startingList = this.gff.RootNode.getFieldByLabel('StartingList').getChildStructs();
 
       for(let i = 0; i < startingList.length; i++){
-        const struct = startingList[i];
-        const linkNode = new DLGNode(this);
+        let struct = startingList[i];
+        let linkNode = new DLGNode(this);
         linkNode.nodeType = DLGNodeType.STARTING;
         
         linkNode.entries = [];
@@ -300,10 +299,10 @@ export class DLGObject {
       return undefined;
     }
 
-    const e_count = entryLinkList.length;
+    let e_count = entryLinkList.length;
     for(let i = 0; i < e_count; i++){
-      const entryLink = entryLinkList[i];
-      const isActive = entryLink.runActiveScripts();
+      let entryLink = entryLinkList[i];
+      let isActive = entryLink.runActiveScripts();
       if(isActive){
         return entryLink.index;
       }
@@ -313,10 +312,10 @@ export class DLGObject {
   }
 
   getAvailableReplies( entry: DLGNode ){
-    const replies: DLGNode[] = [];
-    const replyLinks = entry.getActiveReplies();
+    let replies: DLGNode[] = [];
+    let replyLinks = entry.getActiveReplies();
     for (let i = 0; i < replyLinks.length; i++) {
-      const reply = this.getReplyByIndex(replyLinks[i]);
+      let reply = this.getReplyByIndex(replyLinks[i]);
       if (reply) {
         replies.push(reply);
       } else {
@@ -385,7 +384,7 @@ export class DLGObject {
         resolve();
 
       }else{
-        const creature = GameState.ModuleObjectManager.GetObjectByTag(actor.participant);
+        let creature = GameState.ModuleObjectManager.GetObjectByTag(actor.participant);
         if(creature){
           model = creature.model;
           //Load the actor's supermodel
@@ -421,9 +420,9 @@ export class DLGObject {
   }
 
   async loadStuntActors(){
-    for (const [key, actor] of this.stuntActors.entries()) {
+    for (var [key, actor] of this.stuntActors.entries()) {
       await this.loadStuntActor(actor);
-    }
+    };
   }
 
   releaseStuntActors(){

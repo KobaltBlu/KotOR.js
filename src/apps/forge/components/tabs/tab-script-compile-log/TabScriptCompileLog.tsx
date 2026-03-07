@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabScriptCompileLogState, TabTextEditorState } from "@/apps/forge/states/tabs";
+import { TabScriptCompileLogState, TabTextEditorState } from "../../../states/tabs";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 
 export const TabScriptCompileLog = function(props: any){
   const tab: TabScriptCompileLogState = props.tab;

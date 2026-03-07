@@ -1,13 +1,11 @@
+import { GameMenu, LBL_3DView } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+import { OdysseyModel3D } from "../../../three/odyssey";
+import { CharGenClasses } from "../../CharGenClasses";
 import * as THREE from "three";
-
-import { CharGenClasses } from "@/game/CharGenClasses";
-import { GameState } from "@/GameState";
-import { GameMenu, LBL_3DView } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import { OdysseyModel3D } from "@/three/odyssey";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-
+import { GameState } from "../../../GameState";
 
 /**
  * CharGenPortCust class.
@@ -184,7 +182,7 @@ export class CharGenPortCust extends GameMenu {
   }
 
   Init3D() {
-    const control = this.LBL_HEAD;
+    let control = this.LBL_HEAD;
     const creature = GameState.CharGenManager.selectedCreature;
     if(creature.model){
       creature.model.removeFromParent();
@@ -218,11 +216,11 @@ export class CharGenPortCust extends GameMenu {
       return;
     try {
       const creature = GameState.CharGenManager.selectedCreature;
-      const modelControl = this.LBL_HEAD;
+      let modelControl = this.LBL_HEAD;
       creature.update(delta);
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
-    } catch (e: unknown) {
+    } catch (e: any) {
       console.error(e);
     }
   }
@@ -246,7 +244,7 @@ export class CharGenPortCust extends GameMenu {
     this.portraitId = creature.portraitId;
     try {
       creature.model.removeFromParent();
-    } catch (e: unknown) {
+    } catch (e: any) {
       console.error(e);
     }
     this._3dView.addModel(creature.model);
@@ -264,7 +262,7 @@ export class CharGenPortCust extends GameMenu {
       this._3dView.camera.position.copy(this.sceneModel3D.camerahookf.position);
       this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookf.quaternion);
     }
-    const v3 = new THREE.Vector3();
+    let v3 = new THREE.Vector3();
     creature.model.camerahook.getWorldPosition(v3)
     this._3dView.camera.position.z = v3.z;
   }

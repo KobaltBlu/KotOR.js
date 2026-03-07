@@ -1,18 +1,12 @@
-import React from "react";
-
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Forge);
+import React from "react"
 
 export interface SectionContainerProps {
   name: string;
-  slim?: boolean;
   children?: React.ReactNode;
 }
 
-export const SectionContainer: React.FC<SectionContainerProps> = (props) => {
-  log.trace('SectionContainer render', props.name);
-  const slim = props.slim === true;
+export const SectionContainer = function(props: any){
+  const slim = props.slim ? true : false;
   return (
     <div className="section">
       <div className="section-header">

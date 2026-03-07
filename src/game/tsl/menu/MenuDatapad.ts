@@ -1,5 +1,5 @@
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUIButton } from "@/gui";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUIButton } from "../../../gui";
 
 /**
  * MenuDatapad class.
@@ -26,10 +26,9 @@ export class MenuDatapad extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       resolve();
     });
   }
   
 }
-

@@ -1,11 +1,11 @@
-﻿import { ModuleObject } from "@/module/ModuleObject";
-import { GameState } from "@/GameState";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { MDLLoader } from "@/loaders";
-import { OdysseyModel } from "@/odyssey";
-import { GFFObject } from "@/resource/GFFObject";
-import { OdysseyModel3D } from "@/three/odyssey";
-import { ModuleMGGunBullet } from "@/module/ModuleMGGunBullet";
+import { ModuleObject } from "./ModuleObject";
+import { GameState } from "../GameState";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { MDLLoader } from "../loaders";
+import { OdysseyModel } from "../odyssey";
+import { GFFObject } from "../resource/GFFObject";
+import { OdysseyModel3D } from "../three/odyssey";
+import { ModuleMGGunBullet } from "./ModuleMGGunBullet";
 
 /**
 * ModuleMGGunBank class.
@@ -82,17 +82,12 @@ export class ModuleMGGunBank extends ModuleObject {
     if(!this.proto_bullet.fire_timer){
       this.proto_bullet.fire_timer = this.proto_bullet.rate_of_fire;
 
-      if(this.fire_sound || this.fireSound){
-        GameState.guiAudioEmitter.playSoundFireAndForget(this.fire_sound || this.fireSound);
+      if(this.fire_sound){
+        GameState.guiAudioEmitter.playSoundFireAndForget(this.fire_sound);
       }
 
       if(this.model instanceof OdysseyModel3D){
         this.model.playAnimation('fire', false);
-      }
-
-      if(GameState.module?.area?.miniGame){
-        GameState.module.area.miniGame.lastBulletFiredDamage = this.proto_bullet.damage_amt;
-        GameState.module.area.miniGame.lastBulletFiredTarget = this.proto_bullet.target_type ?? 0;
       }
 
       const bullet = new ModuleMGGunBullet( this.bulletTemplate, this );
@@ -139,10 +134,8 @@ export class ModuleMGGunBank extends ModuleObject {
     if(this.template.RootNode.hasField('BankID'))
       this.bankID = this.template.getFieldByLabel('BankID').getValue()
 
-    if(this.template.RootNode.hasField('Fire_Sound')) {
-      this.fireSound = this.template.getFieldByLabel('Fire_Sound').getValue();
-      this.fire_sound = this.fireSound;
-    }
+    if(this.template.RootNode.hasField('Fire_Sound'))
+      this.fireSound = this.template.getFieldByLabel('Fire_Sound').getValue()
 
     if(this.template.RootNode.hasField('Gun_Model'))
       this.gunModel = this.template.getFieldByLabel('Gun_Model').getValue()
@@ -166,4 +159,3 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
 }
-

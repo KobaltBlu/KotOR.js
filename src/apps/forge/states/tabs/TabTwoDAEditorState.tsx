@@ -1,10 +1,9 @@
 import React from "react";
-
-import { TabTwoDAEditor } from "@/apps/forge/components/tabs/tab-twoda-editor/TabTwoDAEditor";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TabTwoDAEditor } from "../../components/tabs/tab-twoda-editor/TabTwoDAEditor";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { TabState } from "./TabState";
+import { EditorFile } from "../../EditorFile";
+import * as KotOR from "../../KotOR";
 
 export class TabTwoDAEditorState extends TabState {
   tabName: string = `2DA`;

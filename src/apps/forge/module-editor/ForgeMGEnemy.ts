@@ -1,6 +1,6 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeMGGunBank } from "@/apps/forge/module-editor/ForgeMGGunBank";
-import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
+import * as KotOR from "../KotOR";
+import { IModelListItem } from "../../../interface/module/minigame/IModelListItem";
+import { ForgeMGGunBank } from "./ForgeMGGunBank";
 
 export class ForgeMGEnemy {
   // Basic properties
@@ -45,43 +45,43 @@ export class ForgeMGEnemy {
 
     // Load basic properties
     if(struct.hasField('Accel_Secs')){
-      this.accel_secs = struct.getNumberByLabel('Accel_Secs');
+      this.accel_secs = struct.getFieldByLabel('Accel_Secs').getValue();
     }
     if(struct.hasField('Bump_Damage')){
-      this.bump_damage = struct.getNumberByLabel('Bump_Damage');
+      this.bump_damage = struct.getFieldByLabel('Bump_Damage').getValue();
     }
     if(struct.hasField('Camera')){
-      this.cameraName = struct.getStringByLabel('Camera');
+      this.cameraName = struct.getFieldByLabel('Camera').getValue();
     }
     if(struct.hasField('CameraRotate')){
-      this.cameraRotate = struct.getNumberByLabel('CameraRotate');
+      this.cameraRotate = struct.getFieldByLabel('CameraRotate').getValue();
     }
     if(struct.hasField('Hit_Points')){
-      this.hit_points = struct.getNumberByLabel('Hit_Points');
+      this.hit_points = struct.getFieldByLabel('Hit_Points').getValue();
     }
     if(struct.hasField('Invince_Period')){
-      this.invince_period = struct.getNumberByLabel('Invince_Period');
+      this.invince_period = struct.getFieldByLabel('Invince_Period').getValue();
     }
     if(struct.hasField('Max_HPs')){
-      this.max_hps = struct.getNumberByLabel('Max_HPs');
+      this.max_hps = struct.getFieldByLabel('Max_HPs').getValue();
     }
     if(struct.hasField('Maximum_Speed')){
-      this.maximum_speed = struct.getNumberByLabel('Maximum_Speed');
+      this.maximum_speed = struct.getFieldByLabel('Maximum_Speed').getValue();
     }
     if(struct.hasField('Minimum_Speed')){
-      this.minimum_speed = struct.getNumberByLabel('Minimum_Speed');
+      this.minimum_speed = struct.getFieldByLabel('Minimum_Speed').getValue();
     }
     if(struct.hasField('Num_Loops')){
-      this.num_loops = struct.getNumberByLabel('Num_Loops');
+      this.num_loops = struct.getFieldByLabel('Num_Loops').getValue();
     }
     if(struct.hasField('Sphere_Radius')){
-      this.sphere_radius = struct.getNumberByLabel('Sphere_Radius');
+      this.sphere_radius = struct.getFieldByLabel('Sphere_Radius').getValue();
     }
     if(struct.hasField('Track')){
-      this.trackName = struct.getStringByLabel('Track');
+      this.trackName = struct.getFieldByLabel('Track').getValue();
     }
     if(struct.hasField('Trigger')){
-      this.trigger = struct.getNumberByLabel('Trigger');
+      this.trigger = struct.getFieldByLabel('Trigger').getValue();
     }
 
     // Load Models list
@@ -90,8 +90,8 @@ export class ForgeMGEnemy {
       for(let i = 0; i < models.length; i++){
         const modelStruct = models[i];
         this.modelProps.push({
-          model: modelStruct.getStringByLabel('Model'),
-          rotating: modelStruct.getBooleanByLabel('RotatingModel')
+          model: modelStruct.getFieldByLabel('Model').getValue(),
+          rotating: modelStruct.getFieldByLabel('RotatingModel').getValue() ? true : false
         });
       }
     }
@@ -125,7 +125,7 @@ export class ForgeMGEnemy {
 
         for(const scriptKey of scriptKeys){
           if(scriptsNode.hasField(scriptKey)){
-            const resRef = scriptsNode.getStringByLabel(scriptKey);
+            const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
             if(resRef){
               this.scripts[scriptKey] = resRef;
             }
@@ -139,10 +139,10 @@ export class ForgeMGEnemy {
       const soundsNode = struct.getFieldByLabel('Sounds').getFieldStruct();
       if(soundsNode){
         if(soundsNode.hasField('Death')){
-          this.deathSound = soundsNode.getStringByLabel('Death');
+          this.deathSound = soundsNode.getFieldByLabel('Death').getValue() || '';
         }
         if(soundsNode.hasField('Engine')){
-          this.engineSound = soundsNode.getStringByLabel('Engine');
+          this.engineSound = soundsNode.getFieldByLabel('Engine').getValue() || '';
         }
       }
     }

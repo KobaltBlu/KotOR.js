@@ -1,4 +1,4 @@
-import type { IGFFFieldJSON } from "@/interface/resource/IGFFFieldJSON";
+import type { IGFFFieldJSON } from "./IGFFFieldJSON";
 
 export interface IGFFStructJSON {
   type: number;

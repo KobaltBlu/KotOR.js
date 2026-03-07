@@ -1,12 +1,12 @@
-import { SWCostTable } from "@/engine/rules/SWCostTable";
-import { SWItemPropsDef } from "@/engine/rules/SWItemPropsDef";
-import { ModuleItemCostTable } from "@/enums/module/ModuleItemCostTable";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { TwoDAObject } from "@/resource/TwoDAObject";
-import { Dice } from "@/utility/Dice";
+import { GameState } from "../GameState";
+import { ModuleItemCostTable } from "../enums/module/ModuleItemCostTable";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { Dice } from "../utility/Dice";
+import { SWItemPropsDef } from "./rules/SWItemPropsDef";
+import { SWCostTable } from "./rules/SWCostTable";
+import { TwoDAObject } from "../resource/TwoDAObject";
 
 class SWSubTypeBase {
   id: number;
@@ -130,18 +130,18 @@ export class ItemProperty {
   }
 
   costTableRandomCheck(){
-    const costTable = this.getCostTable();
+    let costTable = this.getCostTable();
     //Random Cost Check
     if(this.costValue == 0){
-      const rowCount = costTable.rows.length - 1;
-      const randomCostValue = (Math.floor(Math.random() * rowCount) + 1); 
+      let rowCount = costTable.rows.length - 1;
+      let randomCostValue = (Math.floor(Math.random() * rowCount) + 1); 
       return costTable.rows[randomCostValue];
     }
     return this.getCostTableRow();
   }
 
   getValue(){
-    const costTable = this.getCostTable();
+    let costTable = this.getCostTable();
     let costTableRow = this.getCostTableRow();
     if(costTableRow){
       switch(this.costTable){
@@ -247,7 +247,7 @@ export class ItemProperty {
   }
 
   save(){
-    const propStruct = new GFFStruct(0);
+    let propStruct = new GFFStruct(0);
 
     propStruct.addField( new GFFField(GFFDataType.WORD, 'PropertyName') )?.setValue( this.propertyName == -1 ? 255 : this.propertyName);
     propStruct.addField( new GFFField(GFFDataType.WORD, 'SubType') )?.setValue( this.subType == -1 ? 255 : this.subType);

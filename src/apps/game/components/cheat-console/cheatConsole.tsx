@@ -1,6 +1,8 @@
-﻿import React, { useEffect, useRef, useState } from "react";
-import { useApp } from "@/apps/game/context/AppContext";
-import '@/apps/game/components/cheat-console/cheat-console.scss';
+import React, { useState } from "react";
+import { useApp } from "../../context/AppContext";
+import { EngineDebugType } from "../../../../enums/engine/EngineDebugType";
+import './cheat-console.scss';
+import * as KotOR from "../../KotOR";
 
 export const CheatConsole = () => {
   const appContext = useApp();
@@ -9,23 +11,43 @@ export const CheatConsole = () => {
   const [showCheatConsole, setShowCheatConsole] = appContext.showCheatConsole;
   const [showPerformanceMonitor] = appContext.showPerformanceMonitor;
   const [consoleInput, setConsoleInput] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [debugTick, setDebugTick] = useState(0);
+  const [showDebugMenu, setShowDebugMenu] = useState(false);
 
-  useEffect(() => {
-    if(showCheatConsole){
-      inputRef.current?.focus();
-      inputRef.current?.select();
+  const debugGroups = [
+    {
+      label: 'General',
+      types: [
+        // EngineDebugType.CONTROLS,
+        // EngineDebugType.SELECTED_OBJECT,
+        EngineDebugType.OBJECT_LABELS,
+        EngineDebugType.PATH_FINDING
+      ]
+    },
+    {
+      label: 'Walkmesh',
+      types: [
+        EngineDebugType.ROOM_WALKMESH,
+        EngineDebugType.DOOR_WALKMESH,
+        EngineDebugType.PLACEABLE_WALKMESH,
+        EngineDebugType.COLLISION_HELPERS
+      ]
+    },
+    {
+      label: 'Lighting',
+      types: [
+        EngineDebugType.LIGHT_HELPERS,
+        EngineDebugType.SHADOW_LIGHTS
+      ]
     }
-  }, [showCheatConsole]);
+  ];
 
-  const onConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {  
     setConsoleInput(e.target.value);
   }
 
   const onConsoleSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    e.stopPropagation();
     if (e.key === 'Enter') {
-      e.preventDefault();
       appState.consoleCommand(consoleInput);
       setConsoleInput('');
       setShowCheatConsole(false);
@@ -47,28 +69,50 @@ export const CheatConsole = () => {
     setShowCheatConsole(false);
   }
 
+  const onToggleDebugState = (type: EngineDebugType) => {
+    KotOR.GameState.ToggleDebugState(type);
+    setDebugTick(debugTick + 1);
+  }
+  
+  const onToggleDebugMenu = () => {
+    setShowDebugMenu(!showDebugMenu);
+  }
+
+  const formatDebugLabel = (label: string) => label.replace(/_/g, ' ');
+
   return (
     <div className={`console on ${gameKey}`}>
       <div className="console-buttons">
-        <button type="button" className="console-btn" onClick={onToggleDebugger}>Debugger</button>
-        <button type="button" className="console-btn" onClick={onTogglePerformanceMonitor}>Toggle Stats</button>
-        <button type="button" className="console-btn" onClick={onReloadLastSave}>Reload Last Save</button>
+        <button className="console-btn" onClick={onToggleDebugger}>Debugger</button>
+        <button className="console-btn" onClick={onTogglePerformanceMonitor}>Toggle Stats</button>
+        <button className="console-btn" onClick={onReloadLastSave}>Reload Last Save</button>
+        <div className="console-menu-anchor">
+          <button className="console-btn" onClick={onToggleDebugMenu}>
+            Debug {showDebugMenu ? '▲' : '▼'}
+          </button>
+          {showDebugMenu && (
+            <div className="console-submenu">
+              {debugGroups.map((group) => (
+                <div key={group.label} className="console-submenu-group">
+                  <div className="console-submenu-title">{group.label}</div>
+                  <div className="console-submenu-buttons">
+                    {group.types.map((type) => (
+                      <button
+                        key={type}
+                        className={`console-btn console-btn-small flex-1 ${KotOR.GameState.GetDebugState(type) ? 'on' : 'off'}`}
+                        onClick={() => onToggleDebugState(type)}
+                      >
+                        {formatDebugLabel(type)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-      <label htmlFor="console-input" className="visually-hidden">Console Command Input</label>
-      <input
-        id="console-input"
-        ref={inputRef}
-        className="console-input"
-        type="text"
-        value={consoleInput}
-        onChange={onConsoleInput}
-        onKeyDown={onConsoleSubmit}
-        title="Enter a console command"
-        placeholder="Enter a console command"
-        aria-label="Console Command Input"
-      />
+      <input className="console-input" type="text" value={consoleInput} onChange={onConsoleInput} onKeyDown={onConsoleSubmit} />
     </div>
   );
 };
-
-

@@ -1,20 +1,19 @@
+import { CurrentGame } from "../engine/CurrentGame";
+import type { ModuleCreature, ModuleObject } from "../module";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
 
 import * as path from "path";
-
-import { CurrentGame } from "@/engine/CurrentGame";
-import { Faction } from "@/engine/Faction";
-import { Reputation } from "@/engine/Reputation";
-import { ReputationConstant } from "@/enums/engine/ReputationConstant";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { TwoDAManager } from "@/managers/TwoDAManager";
-import type { ModuleCreature, ModuleObject } from "@/module";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { BitWise } from "@/utility/BitWise";
-import { GameFileSystem } from "@/utility/GameFileSystem";
+import { GFFField } from "../resource/GFFField";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameFileSystem } from "../utility/GameFileSystem";
+import { Faction } from "../engine/Faction";
+import { Reputation } from "../engine/Reputation";
+import { ReputationConstant } from "../enums/engine/ReputationConstant";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameState } from "../GameState";
+import { TwoDAManager } from "./TwoDAManager";
 
 const blacklist = ['(Row Label)', '__index', 'label'];
 
@@ -54,7 +53,7 @@ export class FactionManager {
 
   static RemoveCreatureFromFaction( creature: ModuleObject){
     if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
-      const faction = creature.faction;
+      let faction = creature.faction;
       if(faction){
         faction.removeMember(creature as ModuleCreature);
       }
@@ -66,7 +65,7 @@ export class FactionManager {
       if(creature.faction.id == 0){
         return GameState.PartyManager.party[0];
       }else{
-        const faction = FactionManager.GetCreatureFaction(creature);
+        let faction = FactionManager.GetCreatureFaction(creature);
         if(faction){
           return faction.getStrongestMember();
         }
@@ -86,7 +85,7 @@ export class FactionManager {
   static GetFactionByLabel( label = '' ){
     label = label.toLocaleLowerCase();
     let faction;
-    for (const key of FactionManager.factions.keys()) {
+    for (let key of FactionManager.factions.keys()) {
       faction = FactionManager.factions.get(key);
       if(faction.label.toLocaleLowerCase() == label){
         return faction;
@@ -120,8 +119,8 @@ export class FactionManager {
       return false;
 
     value = Math.max(-100, Math.min(value, 100));
-    const fac1 = oSource.faction;
-    const fac2 = oTarget.faction;
+    let fac1 = oSource.faction;
+    let fac2 = oTarget.faction;
     if(fac1 && fac2){
       fac1.adjustReputation(oTarget.faction.id, value);
       return true;
@@ -134,7 +133,7 @@ export class FactionManager {
   }
 
   static IsNeutral(oSource: ModuleObject, oTarget: ModuleObject): boolean {
-    const rep = FactionManager.GetReputation(oSource, oTarget);
+    let rep = FactionManager.GetReputation(oSource, oTarget);
     return (rep >= 11) && (rep <= 89);
   }
 
@@ -150,7 +149,7 @@ export class FactionManager {
       return 0;
 
     if(oSource.faction){
-      const reputation = oSource.faction.reputations[oTarget.faction.id];
+      let reputation = oSource.faction.reputations[oTarget.faction.id];
       if(reputation instanceof Reputation){
         return reputation.reputation;
       }
@@ -165,12 +164,12 @@ export class FactionManager {
     FactionManager.Init();
 
     //Populate the default factions
-    const repute2DA = TwoDAManager.datatables.get('repute');
+    let repute2DA = TwoDAManager.datatables.get('repute');
     if(repute2DA){
       FactionManager.FACTION_COUNT = repute2DA.RowCount;
-      const twoDA_factions = repute2DA.rows;
+      let twoDA_factions = repute2DA.rows;
       for(let i = 0, len = repute2DA.RowCount; i < len; i++){
-        const faction = Faction.From2DARow(twoDA_factions[i]);
+        let faction = Faction.From2DARow(twoDA_factions[i]);
         if(faction){
           FactionManager.factions.set(faction.id, faction);
           faction.initReputations(ReputationConstant.FRIENDLY);
@@ -180,11 +179,11 @@ export class FactionManager {
 
       //Set all faction reputations to their default values
       FactionManager.factions.forEach( (faction1, faction1_id) => {
-        const twoDA_row = twoDA_factions[faction1_id];
+        let twoDA_row = twoDA_factions[faction1_id];
         for(let faction2_id = 0; faction2_id < FactionManager.FACTION_COUNT; faction2_id++){
           const faction2 = FactionManager.factions.get(faction2_id);
-          const _2DARep = twoDA_row[faction2.label.toLocaleLowerCase()];
-          const reputation = !isNaN(parseInt(_2DARep)) ? parseInt(_2DARep) : 0;
+          let _2DARep = twoDA_row[faction2.label.toLocaleLowerCase()];
+          let reputation = !isNaN(parseInt(_2DARep)) ? parseInt(_2DARep) : 0;
 
           if(faction1_id == 0){ //First row is a special case [player faction]
             if(faction2_id == 0){ //targeting the [player faction] again
@@ -223,28 +222,28 @@ export class FactionManager {
     if(gff instanceof GFFObject){
       FactionManager.Init();
 
-      const factionList = gff.RootNode.getFieldByLabel('FactionList').getChildStructs();
+      let factionList = gff.RootNode.getFieldByLabel('FactionList').getChildStructs();
       FactionManager.FACTION_COUNT = factionList.length;
       for(let i = 0, len = factionList.length; i < len; i++){
-        const factionStruct = factionList[i];
-        const faction = Faction.FromStruct(factionStruct);
+        let factionStruct = factionList[i];
+        let faction = Faction.FromStruct(factionStruct);
         if(faction){
           FactionManager.factions.set(faction.id, faction);
         }
       }
 
-      for (const id of FactionManager.factions.keys()) {
-        const faction = FactionManager.factions.get(id);
+      for (let id of FactionManager.factions.keys()) {
+        let faction = FactionManager.factions.get(id);
         faction.initReputations(ReputationConstant.FRIENDLY);
       }
 
-      const repList = gff.RootNode.getFieldByLabel('RepList').getChildStructs();
+      let repList = gff.RootNode.getFieldByLabel('RepList').getChildStructs();
       for(let i = 0, len = repList.length; i < len; i++){
-        const repStruct = repList[i];
+        let repStruct = repList[i];
         if(repStruct instanceof GFFStruct){
-          const reputation = Reputation.FromStruct(repStruct);
+          let reputation = Reputation.FromStruct(repStruct);
           if(reputation instanceof Reputation){
-            const faction = FactionManager.factions.get(reputation.id1);
+            let faction = FactionManager.factions.get(reputation.id1);
             if(faction){
               faction.setReputation(reputation.id2, reputation.reputation);
             }
@@ -257,7 +256,7 @@ export class FactionManager {
   }
 
   static async Load(){
-    const fac_path = path.join( CurrentGame.gameinprogress_dir, 'repute.fac');
+    let fac_path = path.join( CurrentGame.gameinprogress_dir, 'repute.fac');
     const exists = await GameFileSystem.exists( fac_path );
     try{
       if(exists){
@@ -282,25 +281,25 @@ export class FactionManager {
   }
 
   static Save(){
-    const gff = new GFFObject();
+    let gff = new GFFObject();
     gff.FileType = 'FAC ';
 
-    const factionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'FactionList') );
-    const repList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'RepList') );
+    let factionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'FactionList') );
+    let repList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'RepList') );
 
     let facIdx = 0;
     let repIdx = 0;
 
     FactionManager.factions.forEach( (faction, id) => {
-      const facStruct = faction.toStruct(facIdx++);
+      let facStruct = faction.toStruct(facIdx++);
       if(facStruct instanceof GFFStruct){
         factionList.addChildStruct(facStruct);
       }
 
       for(let i = 0; i < faction.reputations.length; i++){
-        const reputation = faction.reputations[i];
+        let reputation = faction.reputations[i];
         if(reputation.reputation < ReputationConstant.FRIENDLY){
-          const repStruct = reputation.toStruct(repIdx++, id, i);
+          let repStruct = reputation.toStruct(repIdx++, id, i);
           if(repStruct instanceof GFFStruct){
             repList.addChildStruct(repStruct);
           }else{
@@ -318,7 +317,7 @@ export class FactionManager {
   static Export( filename = '' ){
     console.log('FactionManager.Export', filename);
     return new Promise<void>( (resolve, reject) => {
-      const fac = FactionManager.Save();
+      let fac = FactionManager.Save();
       if(fac instanceof GFFObject){
         fac.export( filename, () => {
           resolve();

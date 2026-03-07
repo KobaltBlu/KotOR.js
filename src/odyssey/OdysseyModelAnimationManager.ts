@@ -1,12 +1,11 @@
 import * as THREE from "three";
-
-import { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyModelAnimationManagerState";
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
-import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
-import type { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
-import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
+import type { OdysseyModelAnimation } from "./OdysseyModelAnimation";
+import type { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
+import { OdysseyController } from "./controllers/OdysseyController";
+import { IOdysseyControllerFrameGeneric } from "../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelAnimationManagerState } from "../enums/odyssey/OdysseyModelAnimationManagerState";
 
 /**
  * OdysseyModelAnimationManager class.
@@ -373,7 +372,7 @@ export class OdysseyModelAnimationManager {
     
     //Loop through and animate all the controllers for the current node
     let controller: OdysseyController;
-    for(const c of node.controllers){
+    for(let c of node.controllers){
       controller = c[1];
 
       if(controller.frameCount == 1 && !canTween){
@@ -432,13 +431,13 @@ export class OdysseyModelAnimationManager {
       }
 
       if( controller.type == OdysseyModelControllerType.Position ){
-        const tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
+        let tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
         this._animPosition.copy(this.modelNode.position);
         controller.animate(this, anim, last, next, fl);
         this._animPosition2.copy(this.modelNode.position);
         this.modelNode.position.copy(this._animPosition).lerp(this._animPosition2, tweenFL);
       }else if( controller.type == OdysseyModelControllerType.Orientation ){
-        const tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
+        let tweenFL = Math.min(this.currentAnimation.transition, this.transElapsed ) / this.currentAnimation.transition;
         this._animQuaternion.copy(this.modelNode.quaternion);
         controller.animate(this, anim, last, next, fl);
         this._animQuaternion2.copy(this.modelNode.quaternion);

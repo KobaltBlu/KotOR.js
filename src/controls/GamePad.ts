@@ -1,5 +1,5 @@
-﻿import { AnalogInput } from "@/controls/AnalogInput";
-import { KeyInput } from "@/controls/KeyInput";
+import { AnalogInput } from "./AnalogInput";
+import { KeyInput } from "./KeyInput";
 
 /**
  * GamePad class.
@@ -83,11 +83,11 @@ export class GamePad {
   }
 
   mapKeys(){
-    //A B X Y | X O â—» â–³
+    //A B X Y | X O ◻ △
     this.button_a.buttonIndex = 0; //A | X == 0
     this.button_b.buttonIndex = 1; //B | O == 1
-    this.button_x.buttonIndex = 2; //X | â—» == 2
-    this.button_y.buttonIndex = 3; //Y | â–³ == 3
+    this.button_x.buttonIndex = 2; //X | ◻ == 2
+    this.button_y.buttonIndex = 3; //Y | △ == 3
 
     //Bumpers
     this.button_bumper_l.buttonIndex = 4; //bumper_l == 4
@@ -135,10 +135,10 @@ export class GamePad {
   static Init(){
     GamePad.GamePads = {};
 
-    function gamepadHandler(e: GamepadEvent, connecting: boolean = false): void {
-      const gamepad = e.gamepad;
-      if (!gamepad) return;
-      // Note: gamepad === navigator.getGamepads()[gamepad.index]
+    function gamepadHandler(e: any, connecting: boolean = false) {
+      let gamepad = e.gamepad;
+      // Note:
+      // gamepad === navigator.getGamepads()[gamepad.index]
       console.log('gamepadHandler', e, connecting);
       if (connecting) {
         GamePad.GamePads[gamepad.index] = gamepad;
@@ -155,13 +155,13 @@ export class GamePad {
       }
     }
 
-    global.addEventListener("gamepadconnected", (e: Event) => { gamepadHandler(e as GamepadEvent, true); }, false);
-    global.addEventListener("gamepaddisconnected", (e: Event) => { gamepadHandler(e as GamepadEvent, false); }, false);
+    global.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
+    global.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e, false); }, false);
   }
 
 
-  static CurrentGamePad: Gamepad | undefined;
+  static CurrentGamePad: GamePad;
   static CurrentGamePadIndex: number = -1;
-  static GamePads: Record<number, Gamepad> = {};
+  static GamePads: any = {};
 
 }

@@ -1,5 +1,5 @@
-import { MenuSoundAdvanced as K1_MenuSoundAdvanced } from "@/game/kotor/KOTOR";
-import type { GUILabel, GUIListBox, GUICheckBox, GUIButton } from "@/gui";
+import type { GUILabel, GUIListBox, GUICheckBox, GUIButton } from "../../../gui";
+import { MenuSoundAdvanced as K1_MenuSoundAdvanced } from "../../kotor/KOTOR";
 
 /**
  * MenuSoundAdvanced class.
@@ -36,7 +36,7 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -53,4 +53,3 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
   }
   
 }
-

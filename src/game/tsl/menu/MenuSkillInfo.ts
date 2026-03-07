@@ -1,6 +1,6 @@
 
-import { MenuSkillInfo as K1_MenuSkillInfo } from "@/game/kotor/KOTOR";
-import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { MenuSkillInfo as K1_MenuSkillInfo } from "../../kotor/KOTOR";
 
 /**
  * MenuSkillInfo class.
@@ -27,10 +27,9 @@ export class MenuSkillInfo extends K1_MenuSkillInfo {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       resolve();
     });
   }
   
 }
-

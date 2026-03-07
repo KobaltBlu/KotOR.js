@@ -1,15 +1,15 @@
-import { GameEffectFactory } from "@/effects/GameEffectFactory";
-import EngineLocation from "@/engine/EngineLocation";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-// import { ModuleObjectManager } from "@/managers";
-// import { ModuleObject } from "@/module";
-import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
-import { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
-// import { TalentFeat, TalentSkill, TalentSpell } from "@/talents";
+import { GameEffectFactory } from "../effects/GameEffectFactory";
+import EngineLocation from "../engine/EngineLocation";
+import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+// import { ModuleObjectManager } from "../managers";
+// import { ModuleObject } from "../module";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+// import { TalentFeat, TalentSkill, TalentSpell } from "../talents";
+import { NWScriptEventFactory } from "./events/NWScriptEventFactory";
+import { NWScriptStackVariable } from "./NWScriptStackVariable";
 
 const STACK_PACKET_CONSTANTS = {
   STACK_ELEMENT_SIZE: 8,
@@ -178,9 +178,9 @@ export class NWScriptStack {
 
   storeState(bpO: number = 0, spO: number = 0){
 
-    const stack = [];
+    let stack = [];
     for(let i = 0; i < spO; i++){
-      const tmpPointer = (this.pointer - i);
+      let tmpPointer = (this.pointer - i);
       stack.push(this.stack[tmpPointer])
     }
 
@@ -220,14 +220,14 @@ export class NWScriptStack {
   }
 
   saveForEventSituation(){
-    const struct = new GFFStruct();
+    let struct = new GFFStruct();
 
     struct.addField( new GFFField(GFFDataType.INT, 'BasePointer') ).setValue(this.basePointer);
 
-    const stack = struct.addField( new GFFField(GFFDataType.LIST, 'Stack') ).setValue(this.pointer);
+    let stack = struct.addField( new GFFField(GFFDataType.LIST, 'Stack') ).setValue(this.pointer);
     for(let i = 0; i < this.stack.length; i++){
-      const element = this.stack[i];
-      const elementStruct = new GFFStruct(i);
+      let element = this.stack[i];
+      let elementStruct = new GFFStruct(i);
 
       elementStruct.addField( new GFFField(GFFDataType.CHAR, 'Type') ).setValue( element.type );
       switch(element.type){
@@ -244,7 +244,7 @@ export class NWScriptStack {
           elementStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Value') ).setValue( element.value );
         break;
         case NWScriptDataType.EFFECT:
-          const gameDefinedStruct = new GFFStruct(0);
+          let gameDefinedStruct = new GFFStruct(0);
         break;
       }
       stack.addChildStruct(elementStruct);
@@ -258,21 +258,21 @@ export class NWScriptStack {
 
   static FromActionStruct = function( struct: GFFStruct, object_self?: any ){
 
-    const stack = new NWScriptStack();
+    let stack = new NWScriptStack();
   
     stack.basePointer = struct.getFieldByLabel('BasePointer').getValue() * 4;
     stack.pointer = struct.getFieldByLabel('StackPointer').getValue() * 4;
-    const stackSize = struct.getFieldByLabel('TotalSize').getValue();
+    let stackSize = struct.getFieldByLabel('TotalSize').getValue();
   
     if(stackSize){
-      const stackStructs = struct.getFieldByLabel('Stack').getChildStructs();
+      let stackStructs = struct.getFieldByLabel('Stack').getChildStructs();
   
       for(let i = 0, len = stackStructs.length; i < len; i++){
   
-        const stackElement = stackStructs[i];
+        let stackElement = stackStructs[i];
         if(stackElement.hasField('Value')){
-          const type = stackElement.getFieldByLabel('Value').getType();
-          const value = stackElement.getFieldByLabel('Value').getValue();
+          let type = stackElement.getFieldByLabel('Value').getType();
+          let value = stackElement.getFieldByLabel('Value').getValue();
           switch(type){
             case 4: //Object
               let obj = GameState.ModuleObjectManager.GetObjectById(value);
@@ -297,7 +297,7 @@ export class NWScriptStack {
             break;
           }
         }else if(stackElement.hasField('GameDefinedStrct')){
-          const gameStruct = stackElement.getFieldByLabel('GameDefinedStrct').getChildStructs()[0];
+          let gameStruct = stackElement.getFieldByLabel('GameDefinedStrct').getChildStructs()[0];
   
           switch(gameStruct.getType()){
             case 0: //Effect
@@ -324,7 +324,7 @@ export class NWScriptStack {
   };
   
   static TalentFromStruct = function( struct: GFFStruct ){
-    const talentType = struct.getFieldByLabel('Type').getValue();
+    let talentType = struct.getFieldByLabel('Type').getValue();
     let talent = undefined;
     switch(talentType){
       case 0:
@@ -358,7 +358,7 @@ export class NWScriptStack {
   }
   
   static EventFromStruct = function( struct: GFFStruct ){
-    const event = NWScriptEventFactory.EventFromStruct(struct);
+    let event = NWScriptEventFactory.EventFromStruct(struct);
     console.log('EventFromStruct', event, struct);
     return event;
   }
@@ -372,21 +372,21 @@ export class NWScriptStack {
   
   static FromEventQueueStruct = function( struct: GFFStruct ){
   
-    const stack = new NWScriptStack();
+    let stack = new NWScriptStack();
   
     stack.basePointer = struct.getFieldByLabel('BasePointer').getValue() * 4;
     stack.pointer = struct.getFieldByLabel('StackPointer').getValue() * 4;
-    const stackSize = struct.getFieldByLabel('TotalSize').getValue();
+    let stackSize = struct.getFieldByLabel('TotalSize').getValue();
   
     if(stackSize){
       if(struct.hasField('Stack')){
-        const stackStructs = struct.getFieldByLabel('Stack').getChildStructs();
+        let stackStructs = struct.getFieldByLabel('Stack').getChildStructs();
   
         for(let i = 0, len = stackStructs.length; i < len; i++){
   
-          const stackElement = stackStructs[i];
-          const type = stackElement.getFieldByLabel('Type').getValue();
-          const value = stackElement.getFieldByLabel('Value').getValue();
+          let stackElement = stackStructs[i];
+          let type = stackElement.getFieldByLabel('Type').getValue();
+          let value = stackElement.getFieldByLabel('Value').getValue();
           switch(type){
             case NWScriptDataType.OBJECT: //Object
               let obj = GameState.ModuleObjectManager.GetObjectById(value);
@@ -427,7 +427,7 @@ export class NWScriptStack {
 
     let stringCount = 0;
     let stringDataSize = 0;
-    const stringPacker = [];
+    let stringPacker = [];
     for(let i = 0; i < this.stack.length; i++){
       if(this.stack[i].type != NWScriptDataType.STRING){ continue; }
       stringCount++;

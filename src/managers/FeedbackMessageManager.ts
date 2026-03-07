@@ -1,6 +1,6 @@
-import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
-import type { INIConfig } from "@/engine/INIConfig";
-import { FeedbackOption } from "@/enums/engine/FeedbackOption";
+import type { INIConfig } from "../engine/INIConfig";
+import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
+import { FeedbackOption } from "../enums/engine/FeedbackOption";
 
 /**
  * FeedbackMessageManager class.

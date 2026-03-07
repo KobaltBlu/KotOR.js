@@ -1,12 +1,12 @@
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GameState } from "../../../GameState";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 
 /**
  * MenuMessages class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file MenuMessages.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -32,13 +32,13 @@ export class MenuMessages extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_EXIT;
-      this.BTN_SHOW.addEventListener('click', (_e) => {
+      this.BTN_SHOW.addEventListener('click', (e) => {
         if(this.mode == 0){
           this.mode = 1;
         }else{
@@ -91,5 +91,5 @@ export class MenuMessages extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_JOU.click();
   }
-
+  
 }

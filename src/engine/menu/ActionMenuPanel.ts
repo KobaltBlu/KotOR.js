@@ -1,4 +1,4 @@
-import type { ActionMenuItem } from "@/engine/menu/ActionMenuItem";
+import type { ActionMenuItem } from "./ActionMenuItem";
 
 /**
  * ActionMenuPanel class.
@@ -11,7 +11,11 @@ import type { ActionMenuItem } from "@/engine/menu/ActionMenuItem";
  */
 export class ActionMenuPanel {
   selectedIndex = 0;
-  actions: ActionMenuItem[] = [];
+  actions: any[] = [];
+
+  constructor(){
+
+  }
 
   previousAction(){
     if(this.actions.length){

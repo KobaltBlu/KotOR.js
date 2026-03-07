@@ -1,5 +1,5 @@
-import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
-import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
+import { IPCMessageType } from "../../enums/server/ipc/IPCMessageType";
+import { IPCMessageParam } from "./IPCMessageParam";
 
 /**
  * Represents an IPCMessage.

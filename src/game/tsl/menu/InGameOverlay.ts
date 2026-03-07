@@ -1,18 +1,16 @@
+import { EngineState } from "../../../enums/engine/EngineState";
+import { Anchor } from "../../../enums/gui/Anchor";
+import { GameState } from "../../../GameState";
+import { LBL_MapView } from "../../../gui";
+import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
+import { InGameOverlay as K1_InGameOverlay } from "../../kotor/KOTOR";
+import { ActionMenuManager } from "../../../engine/menu/ActionMenuManager";
+import { TalentObject } from "../../../talents";
+import { EngineMode } from "../../../enums/engine/EngineMode";
+import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
+import type { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+import { TextureLoader } from "../../../loaders/TextureLoader";
 import * as THREE from "three";
-
-import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
-import { AutoPauseState } from "@/enums/engine/AutoPauseState";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { EngineState } from "@/enums/engine/EngineState";
-import { Anchor } from "@/enums/gui/Anchor";
-import { InGameOverlay as K1_InGameOverlay } from "@/game/kotor/KOTOR";
-import { GameState } from "@/GameState";
-import { LBL_MapView } from "@/gui";
-import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
-import { TextureLoader } from "@/loaders/TextureLoader";
-import { TalentObject } from "@/talents";
-import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-
 
 const preloadTextures = ['enemy_bar', 'hostilearrow', 'friend_bar', 'friendlyarrow'];
 const preloadTexturesMap = new Map<string, OdysseyTexture>();
@@ -25,9 +23,9 @@ const ARROW_DIR_RIGHT = Math.PI;
 
 /**
  * InGameOverlay class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file InGameOverlay.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -159,8 +157,6 @@ export class InGameOverlay extends K1_InGameOverlay {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>(async (resolve, reject) => {
-      const getButtonControl = (name: string): GUIButton => this.getControlByName(name) as GUIButton;
-      const fillNode = this.tGuiPanel.widget.userData.fill as { visible?: boolean };
 
       //Auto scale anchor hack/fix
       this.BTN_ACTION5.anchor = Anchor.BottomLeft;
@@ -168,7 +164,7 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.LBL_QUEUE0.anchor = Anchor.BottomCenter;
       this.LBL_QUEUE0.recalculate();
 
-      fillNode.visible = false;
+      this.tGuiPanel.widget.userData.fill.visible = false;
 
       /*this.TB_STEALTH.hideBorder();
       this.TB_PAUSE.hideBorder();
@@ -272,7 +268,7 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
-
+        
         if(GameState.State == EngineState.PAUSED){
           GameState.AutoPauseManager.Unpause();
         }else{
@@ -289,70 +285,59 @@ export class InGameOverlay extends K1_InGameOverlay {
         e.stopPropagation();
       });
 
-      this.BTN_CHAR1.addEventListener('click', (_e) => {
+      this.BTN_CHAR1.addEventListener('click', (e) => {
         this.manager.MenuEquipment.open()
       });
 
-      this.BTN_CHAR2.addEventListener('click', (_e) => {
+      this.BTN_CHAR2.addEventListener('click', (e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
       });
 
-      this.BTN_CHAR3.addEventListener('click', (_e) => {
+      this.BTN_CHAR3.addEventListener('click', (e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
       });
 
       this.BTN_CLEARALL.addEventListener('click', (e) => {
         e.stopPropagation();
-        const currentPlayer = GameState.getCurrentPlayer() as {
-          clearAllActions: () => void;
-          combatData: { combatState: boolean };
-          cancelCombat: () => void;
-          clearCombatAction: () => void;
-          clearCombatActionAtIndex: (index: number) => void;
-        };
-        currentPlayer.clearAllActions();
-        currentPlayer.combatData.combatState = false;
-        currentPlayer.cancelCombat();
+        GameState.getCurrentPlayer().clearAllActions();
+        GameState.getCurrentPlayer().combatData.combatState = false;
+        GameState.getCurrentPlayer().cancelCombat();
       });
 
       this.LBL_QUEUE0.addEventListener('click', (e) => {
         e.stopPropagation();
-        const currentPlayer = GameState.getCurrentPlayer() as { clearCombatAction: () => void };
-        currentPlayer.clearCombatAction();
+        GameState.getCurrentPlayer().clearCombatAction();
       });
 
       this.LBL_QUEUE1.addEventListener('click', (e) => {
         e.stopPropagation();
-        const currentPlayer = GameState.getCurrentPlayer() as { clearCombatActionAtIndex: (index: number) => void };
-        currentPlayer.clearCombatActionAtIndex(0);
+        GameState.getCurrentPlayer().clearCombatActionAtIndex(0);
       });
 
       this.LBL_QUEUE2.addEventListener('click', (e) => {
         e.stopPropagation();
-        const currentPlayer = GameState.getCurrentPlayer() as { clearCombatActionAtIndex: (index: number) => void };
-        currentPlayer.clearCombatActionAtIndex(1);
+        GameState.getCurrentPlayer().clearCombatActionAtIndex(1);
       });
 
       this.LBL_QUEUE3.addEventListener('click', (e) => {
         e.stopPropagation();
-        const currentPlayer = GameState.getCurrentPlayer() as { clearCombatActionAtIndex: (index: number) => void };
-        currentPlayer.clearCombatActionAtIndex(2);
+        GameState.getCurrentPlayer().clearCombatActionAtIndex(2);
       });
 
       for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
 
-        getButtonControl('LBL_TARGET'+i).addEventListener('click', (e) => {
+        this.getControlByName('LBL_TARGET'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.onTargetMenuAction(i);
         });
 
-        getButtonControl('BTN_TARGETUP'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_TARGETUP'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
           this.UpdateTargetUIIcon(i);
         });
 
-        getButtonControl('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
           this.UpdateTargetUIIcon(i);
@@ -362,18 +347,18 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
 
-        getButtonControl('LBL_ACTION'+i).addEventListener('click', (e) => {
+        this.getControlByName('LBL_ACTION'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.onSelfMenuAction(i);
         });
 
-        getButtonControl('BTN_ACTIONUP'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_ACTIONUP'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
           this.UpdateSelfUIIcon(i);
         });
 
-        getButtonControl('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
           this.UpdateSelfUIIcon(i);
@@ -423,6 +408,5 @@ export class InGameOverlay extends K1_InGameOverlay {
   resize() {
     this.recalculatePosition();
   }
-
+  
 }
-

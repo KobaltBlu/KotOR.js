@@ -1,15 +1,15 @@
-import { Action } from "@/actions/Action";
-import { ModuleCreatureAnimState, ModuleItemProperty } from "@/enums";
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { ActionStatus } from "@/enums/actions/ActionStatus";
-import { ActionType } from "@/enums/actions/ActionType";
-import { SignalEventType } from "@/enums/events/SignalEventType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
-import type { ModuleItem } from "@/module/ModuleItem";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
-import { Utility } from "@/utility/Utility";
+import { GameState } from "../GameState";
+import { ModuleCreatureAnimState, ModuleItemProperty } from "../enums";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { ActionStatus } from "../enums/actions/ActionStatus";
+import { ActionType } from "../enums/actions/ActionType";
+import { SignalEventType } from "../enums/events/SignalEventType";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import type { ModuleItem } from "../module/ModuleItem";
+import type { ModuleObject } from "../module/ModuleObject";
+import { BitWise } from "../utility/BitWise";
+import { Utility } from "../utility/Utility";
+import { Action } from "./Action";
 
 /**
  * ActionSetMine class.
@@ -77,7 +77,7 @@ export class ActionSetMine extends Action {
 
       if(this.oItem && !this.usedItem){
         for(let i = 0, len = this.oItem.properties.length; i < len; i++){
-          const property = this.oItem.properties[i];
+          let property = this.oItem.properties[i];
           // if(!property.isUseable()){ continue; }
     
           if(property.is(ModuleItemProperty.Trap)){

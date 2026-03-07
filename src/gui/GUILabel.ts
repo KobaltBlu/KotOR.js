@@ -1,8 +1,8 @@
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import type { GameMenu } from "@/gui/GameMenu";
-import { GUIControl } from "@/gui/GUIControl";
-import { GUIControlEvent } from "@/gui/GUIControlEvent";
-import type { GFFStruct } from "@/resource/GFFStruct";
+import type { GFFStruct } from "../resource/GFFStruct";
+import type { GameMenu } from "./GameMenu";
+import { GUIControl } from "./GUIControl";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { GUIControlEvent } from "./GUIControlEvent";
 
 /**
  * GUILabel class.
@@ -19,7 +19,7 @@ export class GUILabel extends GUIControl {
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUILabel;
 
-    this.onKeyDown = (e: KeyboardEvent) => {
+    this.onKeyDown = (e: any) => {
       // e.stopPropagation();
       // console.log('onKeyDown', e);
 
@@ -61,7 +61,7 @@ export class GUILabel extends GUIControl {
     }
   }
 
-  setText(str: string | number | boolean = '', renderOrder = 5): void {
+  setText(str: any = '', renderOrder = 5){
 
     if(this.editable){
       super.setText(str+'_', renderOrder);

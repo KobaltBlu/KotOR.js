@@ -16,4 +16,4 @@ export enum GameEffectDurationType {
   INNATE    = 0x04,
 
   MASK      = 0x07,
-}
+};

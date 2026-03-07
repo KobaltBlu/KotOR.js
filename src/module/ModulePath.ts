@@ -1,22 +1,16 @@
 import * as THREE from "three";
-
-import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
-import { PathPoint } from "@/engine/pathfinding/PathPoint";
-import { EngineDebugType } from "@/enums";
-import { GameState } from "@/GameState";
-import { IClosestPathPointData } from "@/interface/engine/pathfinding/IClosestPathPointData";
-import { ResourceLoader } from "@/loaders";
-import type { ModuleArea } from "@/module/ModuleArea";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
-import { GFFObject } from "@/resource/GFFObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-import { Utility } from "@/utility/Utility";
-
-
-
-const log = createScopedLogger(LogScope.Module);
+import { ResourceLoader } from "../loaders";
+import { GFFObject } from "../resource/GFFObject";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { GameState } from "../GameState";
+import { PathPoint } from "../engine/pathfinding/PathPoint";
+import { ComputedPath } from "../engine/pathfinding/ComputedPath";
+import { IClosestPathPointData } from "../interface/engine/pathfinding/IClosestPathPointData";
+import type { ModuleArea } from "./ModuleArea";
+import { Utility } from "../utility/Utility";
+import type { WalkmeshEdge } from "../odyssey/WalkmeshEdge";
+import type { ModuleObject } from "./ModuleObject";
+import { EngineDebugType } from "../enums";
 
 /**
 * ModulePath class.
@@ -65,7 +59,7 @@ export class ModulePath {
     if(buffer){
       this.template = new GFFObject(buffer);
     }else{
-      log.error('Failed to load ModulePath template');
+      console.error('Failed to load ModulePath template');
     }
 
     if(this.template instanceof GFFObject){
@@ -103,9 +97,9 @@ export class ModulePath {
         const point = this.points[i];
         if(!point.num_connections) continue;
         
-        const connIdx = point.first_connection;
+        let connIdx = point.first_connection;
         for(let j = 0; j < point.num_connections; j++){
-          const pointIdx = pathConnections[connIdx + j].getNumberByLabel('Destination');
+          const pointIdx = pathConnections[connIdx + j].getFieldByLabel('Destination').getValue();
           point.addConnection(this.points[pointIdx]);
         }
       }
@@ -118,7 +112,7 @@ export class ModulePath {
     try{
       this.generatePathHelper();
     }catch(e){
-      log.error(e);
+      console.error(e);
     }
 
     this.setPathHelpersVisibility(GameState.GetDebugState(EngineDebugType.PATH_FINDING));
@@ -328,7 +322,7 @@ export class ModulePath {
       }
       while(toPrune.length){
         const con = toPrune.pop();
-        log.info('los', 'pruning connection', point, con);
+        console.log('los', 'pruning connection', point, con);
         point.removeConnection(con);
         con.removeConnection(point);
       }

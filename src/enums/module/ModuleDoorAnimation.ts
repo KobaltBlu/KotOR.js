@@ -17,4 +17,4 @@ export enum ModuleDoorAnimation {
   CLOSING2  = 'closing2',
   CLOSED    = 'closed',
   TRANS     = 'trans',
-}
+};

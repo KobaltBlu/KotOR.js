@@ -1,6 +1,5 @@
+import { Shader } from "./Shader";
 import * as THREE from "three";
-
-import { Shader } from "@/shaders/Shader";
 
 /**
  * ShaderAuroraGUI class.
@@ -137,7 +136,7 @@ export class ShaderAuroraGUI extends Shader {
         bounds: { value: new THREE.Vector4(0, 0, 0, 0) },
         scissorBounds: { value: new THREE.Vector4(0, 0, 0, 0) },
       }
-    ]) as Record<string, THREE.IUniform>
+    ])
   }
 
 }

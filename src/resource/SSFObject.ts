@@ -1,5 +1,5 @@
-import { TLKManager } from "@/managers/TLKManager";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
+import { TLKManager } from "../managers/TLKManager";
 
 /**
  * SSFObject class.
@@ -33,12 +33,12 @@ export class SSFObject {
 
     if(this.data instanceof Uint8Array){
 
-      const reader = new BinaryReader(this.data);
+      let reader = new BinaryReader(this.data);
       this.FileType = reader.readChars(4);
       this.FileVersion = reader.readChars(4);
-      const unknown = reader.readUInt32(); //Always 12?
+      let unknown = reader.readUInt32(); //Always 12?
 
-      const soundCount = (this.data.length - 12) / 4;
+      let soundCount = (this.data.length - 12) / 4;
       for(let i = 0; i < soundCount; i++){
         this.sound_refs.push(reader.readUInt32() & 0xFFFFFFFF);
       }
@@ -53,7 +53,7 @@ export class SSFObject {
   GetSoundResRef(type = -1){
 
     if(type > -1 && type < 28){
-      const tlk = TLKManager.TLKStrings[this.sound_refs[type]];
+      let tlk = TLKManager.TLKStrings[this.sound_refs[type]];
       if(tlk){
         return tlk.SoundResRef;
       }

@@ -9,8 +9,7 @@
  * @enum
  */
 export enum GameEffectNWScriptEffectType {
-  /** Sentinel for invalid/unspecified effect type. Use -1 to allow strict enum checks. */
-  EffectInvalidEffect = -1,
+  EffectInvalidEffect =		undefined as any,
   EffectDamageResistance =	1,
   //EFFECT_TYPE_ABILITY_BONUS =		2,
   EffectRegenerate =	      3,

@@ -1,5 +1,5 @@
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
+import { EditorFile } from "./EditorFile";
+import * as KotOR from "./KotOR";
 
 
 export class EditorModule {

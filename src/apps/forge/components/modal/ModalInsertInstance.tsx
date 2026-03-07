@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from "react";
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, Form } from "react-bootstrap";
-
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
 import {
   ModalInsertInstanceState,
   InsertInstanceResourceType,
-} from "@/apps/forge/states/modal/ModalInsertInstanceState";
-import { ModalLoadFromModuleState } from "@/apps/forge/states/modal/ModalLoadFromModuleState";
-
+} from "../../states/modal/ModalInsertInstanceState";
+import { ModalLoadFromModuleState } from "../../states/modal/ModalLoadFromModuleState";
+import { ForgeState } from "../../states/ForgeState";
+import { EditorFile } from "../../EditorFile";
+import { FileTypeManager } from "../../FileTypeManager";
+import * as KotOR from "../../KotOR";
 
 export const ModalInsertInstance = (props: BaseModalProps) => {
   const modal = props.modal as ModalInsertInstanceState;

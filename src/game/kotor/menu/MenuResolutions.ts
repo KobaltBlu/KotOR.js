@@ -1,7 +1,7 @@
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { IScreenResolution } from "@/interface/graphics/IScreenResolution";
+import { GameState } from "../../../GameState";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { IScreenResolution } from "../../../interface/graphics/IScreenResolution";
 
 /**
  * MenuResolutions class.

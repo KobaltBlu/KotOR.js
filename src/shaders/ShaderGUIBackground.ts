@@ -1,6 +1,5 @@
+import { Shader } from "./Shader";
 import * as THREE from "three";
-
-import { Shader } from "@/shaders/Shader";
 
 /**
  * ShaderGUIBackground class.
@@ -66,7 +65,7 @@ export class ShaderGUIBackground extends Shader {
         u_resolution: { value: new THREE.Vector2(1600, 1200) },
         map: { value: null }
       }
-    ]) as Record<string, THREE.IUniform>
+    ])
   }
 
 }

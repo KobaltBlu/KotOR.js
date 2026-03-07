@@ -1,28 +1,27 @@
 import React from "react";
+import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "../../UI3DRenderer";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { TabState } from "./";
 import * as THREE from 'three';
-
-import { TabModuleEditor } from "@/apps/forge/components/tabs/tab-module-editor/TabModuleEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from '@/apps/forge/KotOR';
-import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
-import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
-import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
-import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
-import { Project } from "@/apps/forge/Project";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalBlueprintBrowserState, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { TabState } from "@/apps/forge/states/tabs";
-import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "@/apps/forge/UI3DRenderer";
+import * as KotOR from '../../KotOR';
+import { Project } from "../../Project";
+import { ForgeArea } from "../../module-editor/ForgeArea";
+import { ForgeModule } from "../../module-editor/ForgeModule";
+import { TabModuleEditor } from "../../components/tabs/tab-module-editor/TabModuleEditor";
+import { ForgeGameObject } from "../../module-editor/ForgeGameObject";
+import { ForgeCreature } from "../../module-editor/ForgeCreature";
+import { ForgeCamera } from "../../module-editor/ForgeCamera";
+import { ForgeDoor } from "../../module-editor/ForgeDoor";
+import { ForgeEncounter } from "../../module-editor/ForgeEncounter";
+import { ForgeItem } from "../../module-editor/ForgeItem";
+import { ForgePlaceable } from "../../module-editor/ForgePlaceable";
+import { ForgeSound } from "../../module-editor/ForgeSound";
+import { ForgeStore } from "../../module-editor/ForgeStore";
+import { ForgeTrigger } from "../../module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "../../module-editor/ForgeWaypoint";
+import { ModalBlueprintBrowserState, BlueprintType } from "../../states/modal/ModalBlueprintBrowserState";
+import { ForgeState } from "../../states/ForgeState";
+import { ForgeRoom } from "../../module-editor/ForgeRoom";
 
 export enum TabModuleEditorControlMode {
   SELECT = 0,
@@ -30,7 +29,7 @@ export enum TabModuleEditorControlMode {
   ROTATE_CONTROL = 3,
   SCALE_CONTROL = 4,
   ADD_GAME_OBJECT = 5
-}
+};
 
 export enum GameObjectType {
   ROOM = 'room',
@@ -44,7 +43,7 @@ export enum GameObjectType {
   STORE = 'store',
   TRIGGER = 'trigger',
   WAYPOINT = 'waypoint'
-}
+};
 
 export class TabModuleEditorState extends TabState {
 

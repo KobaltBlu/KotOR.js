@@ -4,10 +4,8 @@
  * RIM format: 160-byte header, then resource table (34 bytes per entry), then resource data.
  */
 
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { BinaryWriter } from "../../../utility/binary/BinaryWriter";
 
-const log = createScopedLogger(LogScope.Forge);
 const RIM_HEADER_LENGTH = 160;
 const RIM_RESOURCE_ENTRY_SIZE = 34;
 
@@ -23,7 +21,6 @@ export interface SaveToRimOptions {
  * Build a RIM buffer with one resource. resRef is truncated/padded to 16 chars (null-padded).
  */
 export function buildRimBuffer(options: SaveToRimOptions): Uint8Array {
-  log.trace('SaveToRim.buildRimBuffer', options.resref, options.resType, options.data?.length);
   const { resref, resType, data } = options;
   const resRef16 = resref.toLowerCase().slice(0, 16).padEnd(16, "\0");
   const resourcesOffset = RIM_HEADER_LENGTH;
@@ -48,7 +45,6 @@ export function buildRimBuffer(options: SaveToRimOptions): Uint8Array {
   bw.writeUInt32(data.length);
   bw.skip(2);
   buffer.set(data, dataOffset);
-  log.trace('SaveToRim.buildRimBuffer done', totalSize);
   return buffer;
 }
 
@@ -56,23 +52,22 @@ export function buildRimBuffer(options: SaveToRimOptions): Uint8Array {
  * Build RIM buffer and write to outputPath. Requires Node/Electron fs.
  */
 export async function saveResourceToRim(options: SaveToRimOptions): Promise<string> {
-  log.trace('SaveToRim.saveResourceToRim', options.outputPath);
   const { outputPath } = options;
   if (!outputPath) {
-    log.error('SaveToRim.saveResourceToRim outputPath required');
     throw new Error("outputPath is required for saveResourceToRim.");
   }
   const rimBuffer = buildRimBuffer(options);
-  type FsModule = typeof import("fs");
-  type PathModule = typeof import("path");
-  const fsMod = (await import("fs")) as FsModule;
-  const pathMod = (await import("path")) as PathModule;
-  const dir = pathMod.dirname(outputPath);
-  if (fsMod.promises?.mkdir) {
-    await fsMod.promises.mkdir(dir, { recursive: true });
-    log.trace('SaveToRim.saveResourceToRim mkdir', dir);
+  const fs =
+    (typeof require !== "undefined" && require("fs")) ||
+    (typeof window !== "undefined" && (window as any).require?.("fs"));
+  if (!fs?.promises?.writeFile) {
+    throw new Error("File system write not available (run in Electron for RIM save).");
   }
-  await fsMod.promises.writeFile(outputPath, Buffer.from(rimBuffer));
-  log.info('SaveToRim.saveResourceToRim written', outputPath);
+  const pathMod = typeof require !== "undefined" && require("path") ? require("path") : null;
+  const dir = pathMod ? pathMod.dirname(outputPath) : outputPath.replace(/[/\\][^/\\]*$/, "");
+  if (fs.promises.mkdir) {
+    await fs.promises.mkdir(dir, { recursive: true });
+  }
+  await fs.promises.writeFile(outputPath, Buffer.from(rimBuffer));
   return outputPath;
 }

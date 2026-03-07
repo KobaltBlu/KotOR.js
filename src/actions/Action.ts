@@ -1,22 +1,19 @@
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { ActionStatus } from "../enums/actions/ActionStatus";
+import { ActionType } from "../enums/actions/ActionType";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
+import { GameState } from "../GameState";
+import { ICombatAction } from "../interface/combat/ICombatAction";
+// import { ModuleObjectManager, PartyManager } from "../managers";
+import { type ModuleCreature, type ModuleObject } from "../module";
+// import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFStruct } from "../resource/GFFStruct";
+import { BitWise } from "../utility/BitWise";
+import { ActionParameter } from "./ActionParameter";
+import { ActionQueue } from "./ActionQueue";
 import * as THREE from "three";
-
-import { ActionParameter } from "@/actions/ActionParameter";
-import { ActionQueue } from "@/actions/ActionQueue";
-import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { ActionStatus } from "@/enums/actions/ActionStatus";
-import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
-import { ICombatAction } from "@/interface/combat/ICombatAction";
-// import { ModuleObjectManager, PartyManager } from "@/managers";
-import { type ModuleCreature, type ModuleObject } from "@/module";
-// import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { BitWise } from "@/utility/BitWise";
-
-
+import { ComputedPath } from "../engine/pathfinding/ComputedPath";
 
 /**
  * Base class for all game actions in the engine.
@@ -398,7 +395,7 @@ export class Action {
    * @returns The parameter value, converted to appropriate type
    */
   getParameter<T>(index = 0): T {
-    const param = this.parameters[index];
+    let param = this.parameters[index];
     if (!param) { return; }
     switch (param.type) {
       case ActionParameterType.DWORD:

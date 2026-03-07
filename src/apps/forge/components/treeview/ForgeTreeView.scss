@@ -1,4 +1,4 @@
-@use "../../styles/variables" as *;
+@import "../../styles/variables";
 
 // =============================================================================
 // TREE VIEW - VS CODE STYLE
@@ -6,24 +6,12 @@
 
 .forgeTreeView {
   font-family: $font-family-primary;
-
-  // Layout modifiers (use instead of inline styles)
-  &--fill {
-    flex: 0.5;
-    height: 100%;
-    overflow: auto;
-  }
-
-  &--fixedHeight {
-    height: 350px;
-    overflow: auto;
-  }
   font-size: 13px;
   line-height: 22px;
   color: $text-primary;
   background: $bg-primary;
-  -webkit-user-select: none;
   user-select: none;
+  -webkit-user-select: none;
   cursor: default;
   padding: 0;
   margin: 0;
@@ -89,12 +77,6 @@
       justify-content: center;
       width: 16px;
       height: 16px;
-
-      .tree-icon-img {
-        width: 16px;
-        height: 16px;
-        object-fit: contain;
-      }
       margin-right: 6px;
       flex-shrink: 0;
       color: $text-quaternary;
@@ -210,7 +192,7 @@
     &.file-jpg .tree-icon { color: #F24E1E; }
     &.file-gif .tree-icon { color: #F24E1E; }
     &.file-svg .tree-icon { color: #FFB000; }
-
+    
     // KotOR specific file types
     &.file-nss .tree-icon { color: #FF6B6B; } // NWScript
     &.file-ncs .tree-icon { color: #4ECDC4; } // Compiled script

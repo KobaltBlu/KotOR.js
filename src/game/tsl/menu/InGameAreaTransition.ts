@@ -1,5 +1,5 @@
-import { InGameAreaTransition as K1_InGameAreaTransition } from "@/game/kotor/KOTOR";
-import type { GUILabel } from "@/gui";
+import type { GUILabel } from "../../../gui";
+import { InGameAreaTransition as K1_InGameAreaTransition } from "../../kotor/KOTOR";
 
 /**
  * InGameAreaTransition class.
@@ -26,10 +26,9 @@ export class InGameAreaTransition extends K1_InGameAreaTransition {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       resolve();
     });
   }
   
 }
-

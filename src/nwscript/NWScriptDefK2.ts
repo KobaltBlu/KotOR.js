@@ -1,54 +1,19 @@
-﻿import { ModuleObjectScript, ModuleObjectType } from "@/enums";
-import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleObject } from "@/module";
-import { TalentSpell } from "@/talents";
-import { BitWise } from "@/utility/BitWise";
-import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
-import { NWScriptDef } from "@/nwscript/NWScriptDef";
-import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { ModuleObjectScript, ModuleObjectType } from "../enums";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
+import { GameState } from "../GameState";
+import type { ModuleCreature, ModuleObject } from "../module";
+import { BitWise } from "../utility/BitWise";
+import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
+import { NWScriptDef } from "./NWScriptDef";
+import { NWScriptDefK1 } from "./NWScriptDefK1";
+import { NWScriptInstance } from "./NWScriptInstance";
 
 /**
- * NWScriptDefK2 â€” KotOR II (TSL) NWScript engine command table (1:1 with swkotor2.exe).
- *
- * PURPOSE
- * --------
- * This map is the canonical NWScript engine command table for Star Wars: KotOR II
- * (The Sith Lords). Action IDs 0..771 are shared with KotOR I (NWScriptDefK1);
- * indices 772..876 are TSL-only. The VM uses the same dispatch: OP_ACTION + UInt16
- * action ID â†’ actionsMap[instruction.action]. Behavior must match the original
- * engine for script compatibility.
- *
- * REVA / Ghidra TARGET (prefix k2_ in Reva)
- * -----------------------------------------
- * Reverse-engineering reference: swkotor2.exe within the Reva Ghidra project.
- * Program path in Reva: /k2_win_gog_aspyr_swkotor2.exe or
- * /k2_win_gog_legacypc_swkotor2.exe (use k2_ prefix when referring to the K2
- * binary in Reva). CSWVirtualMachineCommands::InitializeCommands (0x0077b530)
- * allocates a table of 0x36d (877) function pointers; table[action_id] =
- * *(base + action_id * 4). Action ID = byte_offset / 4 (e.g. offset 0xcd8 â†’
- * action 822 = ExecuteCommandForceHeartbeat). K2-only IDs 772..876 map to
- * offsets 0xC10..0xDB0. Named ExecuteCommand* and FUN_* in Ghidra implement
- * each command; comments below document canonical, reversed behavior for 1:1 parity.
- *
- * INHERITANCE
- * -----------
- * After this map is defined, a loop copies NWScriptDefK1.Actions into
- * NWScriptDefK2.Actions for any shared index where K2's action is undefined,
- * so shared commands (0..771) use K1 implementations and K2-only (772..876)
- * use the entries defined here.
- *
- * COMPLETENESS (1:1 with swkotor2.exe)
- * ------------------------------------
- * A second loop stubs any remaining 772..876 with action === undefined using
- * type-appropriate return values (VOIDâ†’no-op, INTâ†’0, OBJECTâ†’undefined, etc.).
- * At runtime every action ID 0..876 has a callable handler; the VM never
- * invokes undefined. K1 (NWScriptDefK1) has all 0..771 implemented.
- *
+ * NWScriptDefK2 class.
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file NWScriptDefK2.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -1484,18 +1449,18 @@ NWScriptDefK2.Actions = {
     action: undefined
   },
   204: {
-    comment: 'AMF: APRIL 28, 2003 - I HAVE CHANGED THIS FUNCTION AS PER DAN\'S REQUEST\n204: Starts a conversation with oObjectToConverseWith - this will cause their\nOnDialog event to fire.\n- oObjectToConverseWith\n- sDialogResRef: If this is blank, the creature\'s own dialogue file will be used\n- bPrivateConversation: If this is blank, the default is FALSE.\n- nConversationType - If this is blank the default will be Cinematic, ie. a normal conversation type\n                                 other choices inclue: CONVERSATION_TYPE_COMPUTER\n  UPDATE:  nConversationType actually has no meaning anymore.  This has been replaced by a flag in the dialog editor.  However\n               for backwards compatability it has been left here.  So when using this command place CONVERSATION_TYPE_CINEMATIC in here. - DJF\n- bIgnoreStartRange - If this is blank the default will be FALSE, ie. Start conversation ranges are in effect\n                                                                     Setting this to TRUE will cause creatures to start a conversation without requiring to close\n                                                                     the distance between the two object in dialog.\n- sNameObjectToIgnore1-6 - Normally objects in the animation list of the dialog editor have to be available for animations on that node to work\n                                       these 6 strings are to indicate 6 objects that donï¿½t need to be available for things to proceed.  The string should be EXACTLY\n                                       the same as the string that it represents in the dialog editor.\n- nBarkX and nBarkY - These override the left, top corner position for the bark string if the conversation starting is a bark string.\n                      They only happen on a conversation by conversation basis and don\'t stay in effect in subsequent conversations.',
+    comment: 'AMF: APRIL 28, 2003 - I HAVE CHANGED THIS FUNCTION AS PER DAN\'S REQUEST\n204: Starts a conversation with oObjectToConverseWith - this will cause their\nOnDialog event to fire.\n- oObjectToConverseWith\n- sDialogResRef: If this is blank, the creature\'s own dialogue file will be used\n- bPrivateConversation: If this is blank, the default is FALSE.\n- nConversationType - If this is blank the default will be Cinematic, ie. a normal conversation type\n                                 other choices inclue: CONVERSATION_TYPE_COMPUTER\n  UPDATE:  nConversationType actually has no meaning anymore.  This has been replaced by a flag in the dialog editor.  However\n               for backwards compatability it has been left here.  So when using this command place CONVERSATION_TYPE_CINEMATIC in here. - DJF\n- bIgnoreStartRange - If this is blank the default will be FALSE, ie. Start conversation ranges are in effect\n                                                                     Setting this to TRUE will cause creatures to start a conversation without requiring to close\n                                                                     the distance between the two object in dialog.\n- sNameObjectToIgnore1-6 - Normally objects in the animation list of the dialog editor have to be available for animations on that node to work\n                                       these 6 strings are to indicate 6 objects that don�t need to be available for things to proceed.  The string should be EXACTLY\n                                       the same as the string that it represents in the dialog editor.\n- nBarkX and nBarkY - These override the left, top corner position for the bark string if the conversation starting is a bark string.\n                      They only happen on a conversation by conversation basis and don\'t stay in effect in subsequent conversations.',
     name: 'ActionStartConversation',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
     /**
      * TSL made some modifications to this function.
      * 4 additional arguments were added
-     * int bUseLeader = FALSE,
-     * int nBarkX = -1,
-     * int nBarkY = -1,
+     * int bUseLeader = FALSE, 
+     * int nBarkX = -1, 
+     * int nBarkY = -1, 
      * int bDontClearAllActions = 0
-     * nBarkX, and nBarkY override the left, top corner position for the bark string if the conversation starting is a bark string.
+     * nBarkX, and nBarkY override the left, top corner position for the bark string if the conversation starting is a bark string. 
      * They only happen on a conversation by conversation basis and don't stay in effect in subsequent conversations.
      * @param this NWScriptInstance
      * @param args [oObjectToConverse: ModuleObject, sDialogResRef: string = "", bPrivateConversation: boolean = FALSE, nConversationType: number = CONVERSATION_TYPE_CINEMATIC, bIgnoreStartRange: boolean = FALSE, sNameObjectToIgnore1: string = "", sNameObjectToIgnore2: string = "", sNameObjectToIgnore3: string = "", sNameObjectToIgnore4: string = "", sNameObjectToIgnore5: string = "", sNameObjectToIgnore6: string = "", bUseLeader: boolean = FALSE, nBarkX: number = -1, nBarkY: number = -1, bDontClearAllActions: boolean = 0]
@@ -5469,7 +5434,7 @@ NWScriptDefK2.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       GameState.FadeOverlayManager.holdForScript = true;
-    }
+    }	
   },
   770: {
     comment: 'DJS-OEI 12/15/2003\n770: Create a Force Body effect\n- nLevel: The level of the Force Body effect.\n   0 = Force Body\n   1 = Improved Force Body\n   2 = Master Force Body',
@@ -5486,21 +5451,21 @@ NWScriptDefK2.Actions = {
     action: undefined
   },
   772: {
-    comment: '772 (TSL-only). Reva k2_: swkotor2.exe slot 0xC10. FAK-OEI 12/15/2003. Get the number of components for an item in pieces.',
+    comment: 'FAK-OEI 12/15/2003\n771: Get the number of components for an item in pieces',
     name: 'GetItemComponentPieceValue',
     type: NWScriptDataType.INTEGER,
     args: [],
     action: undefined
   },
   773: {
-    comment: '773 (TSL-only). Reva k2_: swkotor2.exe slot 0xC14. FAK-OEI 12/15/2003. Start the GUI for Chemical Workshop.',
+    comment: 'FAK-OEI 12/15/2003\n773: Start the GUI for Chemical Workshop',
     name: 'ShowChemicalUpgradeScreen',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
     action: undefined
   },
   774: {
-    comment: '774 (TSL-only). Reva k2_: swkotor2.exe slot 0xC18. FAK-OEI 12/15/2003. Get the number of chemicals for an item.',
+    comment: 'FAK-OEI 12/15/2003\n774: Get the number of chemicals for an item',
     name: 'GetChemicals',
     type: NWScriptDataType.INTEGER,
     args: [],
@@ -5514,14 +5479,14 @@ NWScriptDefK2.Actions = {
     action: undefined
   },
   776: {
-    comment: '776 (TSL-only). Reva k2_: swkotor2.exe slot 0xC20. DJS-OEI 12/30/2003. Get the number of Force Points that were required to\ncast this spell. This includes modifiers such as Room Force\nRatings and the Force Body power. Return value on error: 0',
+    comment: 'DJS-OEI 12/30/2003\n776: Get the number of Force Points that were required to\ncast this spell. This includes modifiers such as Room Force\nRatings and the Force Body power.\n* Return value on error: 0',
     name: 'GetSpellForcePointCost',
     type: NWScriptDataType.INTEGER,
     args: [],
     action: undefined
   },
   777: {
-    comment: '777 (TSL-only). Reva k2_: swkotor2.exe slot 0xC24. DJS-OEI 1/2/2004. Create a Fury effect.',
+    comment: 'DJS-OEI 1/2/2004\n777: Create a Fury effect.',
     name: 'EffectFury',
     type: NWScriptDataType.EFFECT,
     args: [],
@@ -5570,31 +5535,21 @@ NWScriptDefK2.Actions = {
           return GameState.PartyManager.SwoopUpgrade3;
       }
       return -1;
-    }
+    }	
   },
   783: {
     comment: 'DJS-OEI 1/12/2004\n783: Returns whether or not the target has access to a feat,\neven if they can\'t use it right now due to daily limits or\nother restrictions.',
     name: 'GetFeatAcquired',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      if (BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)) {
-        return (args[1] as ModuleCreature).getHasFeat(args[0]) ? NW_TRUE : NW_FALSE;
-      }
-      return NW_FALSE;
-    }
+    action: undefined
   },
   784: {
     comment: 'DJS-OEI 1/12/2004\n784: Returns whether or not the target has access to a spell,\neven if they can\'t use it right now due to lack of Force Points.',
     name: 'GetSpellAcquired',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      if (BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)) {
-        return (args[1] as ModuleCreature).getHasSpell(args[0]) ? NW_TRUE : NW_FALSE;
-      }
-      return NW_FALSE;
-    }
+    action: undefined
   },
   785: {
     comment: 'FAK-OEI 1/12/2004\n785: Displays the Swoop Bike upgrade screen.',
@@ -5611,24 +5566,14 @@ NWScriptDefK2.Actions = {
     name: 'GrantFeat',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      if (BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)) {
-        (args[1] as ModuleCreature).addFeat(args[0]);
-      }
-    }
+    action: undefined
   },
   787: {
     comment: 'DJS-OEI 1/13/2004\n787: Grants the target a spell without regard for prerequisites.',
     name: 'GrantSpell',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      if (!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)) return;
-      const creature = args[1] as ModuleCreature;
-      if (creature.getHasSpell(args[0])) return;
-      const cls = creature.classes?.[0];
-      if (cls) cls.addSpell(new TalentSpell(args[0]));
-    }
+    action: undefined
   },
   788: {
     comment: 'DJS-OEI 1/13/2004\n788: Places an active mine on the map.\nnMineType - Mine Type from Traps.2DA\nlPoint - The location in the world to place the mine.\nnDetectDCBase - This value, plus the \'DetectDCMod\' column in Traps.2DA\nresults in the final DC for creatures to detect this mine.\nnDisarmDCBase - This value, plus the \'DisarmDCMod\' column in Traps.2DA\nresults in the final DC for creatures to disarm this mine.\noCreator - The object that should be considered the owner of the mine.\nIf oCreator is set to OBJECT_INVALID, the faction of the mine will be\nconsidered Hostile1, meaning the party will be vulnerable to it.',
@@ -5716,12 +5661,10 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [string, number]){
-      const key = args[0].toLowerCase();
-      if (GameState.GlobalVariableManager.Globals.Number.has(key)) {
-        const entry = GameState.GlobalVariableManager.Globals.Number.get(key);
-        if (entry) entry.value += parseInt(args[1] as any);
-      }
-    }
+      
+      if(typeof GameState.GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
+      GameState.GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value += parseInt(args[1] as any);
+    }	
   },
   800: {
     comment: 'DJS-OEI 2/3/2004\n800: Decreases the value of the given global number by the given amount.\nThis function only works with Number type globals, not booleans. It\nwill fail with a warning if the final amount is less than the minimum\nof -128.',
@@ -5729,47 +5672,30 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [string, number]){
-      const key = args[0].toLowerCase();
-      if (GameState.GlobalVariableManager.Globals.Number.has(key)) {
-        const entry = GameState.GlobalVariableManager.Globals.Number.get(key);
-        if (entry) entry.value -= parseInt(args[1] as any);
-      }
-    }
+      if(typeof GameState.GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
+      GameState.GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value -= parseInt(args[1] as any);
+    }	
   },
   801: {
     comment: 'RWT-OEI 02/06/04\n801: SetBonusForcePoints - This sets the number of bonus force points\n     that will always be added to that character\'s total calculated\n     force points.',
     name: 'SetBonusForcePoints',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if (BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) {
-        (args[0] as ModuleCreature).bonusForcePoints = args[1] ?? 0;
-      }
-    }
+    action: undefined
   },
   802: {
     comment: 'RWT-OEI 02/06/04\n802: AddBonusForcePoints - This adds nBonusFP to the current total\n     bonus that the player has. The Bonus Force Points are a pool\n     of force points that will always be added after the player\'s\n     total force points are calculated (based on level, force dice,\n     etc.)',
     name: 'AddBonusForcePoints',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if (BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) {
-        const c = args[0] as ModuleCreature;
-        c.bonusForcePoints = (c.bonusForcePoints ?? 0) + (args[1] ?? 0);
-      }
-    }
+    action: undefined
   },
   803: {
     comment: 'RWT-OEI 02/06/04\n803: GetBonusForcePoints - This returns the total number of bonus\n     force points a player has. Bonus Force Points are a pool of\n     points that are always added to a player\'s Max Force Points.\nST: Please explain how a function returning VOID could return a\n    numerical value? Hope it works changing the return type...\nvoid GetBonusForcePoints( object oCreature );',
     name: 'GetBonusForcePoints',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if (BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) {
-        return (args[0] as ModuleCreature).bonusForcePoints ?? 0;
-      }
-      return 0;
-    }
+    action: undefined
   },
   804: {
     comment: 'FAK - OEI 2/11/04\n804: SWMG_SetJumpSpeed -- the sets the \'jump speed\' for the swoop\n     bike races. Gravity will act upon this velocity.',
@@ -5786,21 +5712,21 @@ NWScriptDefK2.Actions = {
     action: undefined
   },
   806: {
-    comment: '806 (TSL-only). QueueMovie: queue movie for PlayMovieQueue. Target: swkotor2.exe (Reva k2_*).',
+    comment: '806 QueueMovie',
     name: 'QueueMovie',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
     action: undefined
   },
   807: {
-    comment: '807 (TSL-only). PlayMovieQueue: play queued movies. Target: swkotor2.exe (Reva k2_*).',
+    comment: '807',
     name: 'PlayMovieQueue',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
     action: undefined
   },
   808: {
-    comment: '808 (TSL-only). YavinHackDoorClose: Yavin door hack\nThis is an incredibly hacky function to allow the doors to be properly\nclosed on Yavin without running into the problems we\'ve had.  It is too\nlate in development to fix it correctly, so thus we do this.  Life is\nhard.  You\'ll get over it',
+    comment: '808',
     name: 'YavinHackDoorClose',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
@@ -5818,12 +5744,7 @@ NWScriptDefK2.Actions = {
     name: 'IsStealthed',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if (BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) {
-        return (args[0] as ModuleCreature).isStealthed ? NW_TRUE : NW_FALSE;
-      }
-      return NW_FALSE;
-    }
+    action: undefined
   },
   811: {
     comment: '811\nDJS-OEI 3/12/2004\nDetermines if the given creature is using any Meditation Tree\nForce Power.\n0 = Creature is not meditating.\n1 = Creature is meditating.\nThis function will return 0 for any non-creature.',
@@ -5832,7 +5753,7 @@ NWScriptDefK2.Actions = {
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       return 0;
-    }
+    }	
   },
   812: {
     comment: '812\nDJS-OEI 3/16/2004\nDetermines if the given creature is using the Total Defense\nStance.\n0 = Creature is not in Total Defense.\n1 = Creature is in Total Defense.\nThis function will return 0 for any non-creature.',
@@ -5850,7 +5771,7 @@ NWScriptDefK2.Actions = {
       if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleObject)){
         this.healTarget = args[1];
       }
-    }
+    }	
   },
   814: {
     comment: '814\nRWT-OEI 03/19/04\nRetrieves the Heal Target for the Healer AI script. Should probably\nnot be used outside of the Healer AI script.',
@@ -5859,7 +5780,7 @@ NWScriptDefK2.Actions = {
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleCreature]){
       return this.healTarget;
-    }
+    }	
   },
   815: {
     comment: '815\nRWT-OEI 03/23/04\nReturns a vector containing a random destination that the\ngiven creature can walk to that\'s within the range of the\npassed parameter.',
@@ -5881,9 +5802,11 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [number]){
-      const spell = GameState.TwoDAManager.datatables.get('spells')?.rows[args[0]];
-      if (!spell || spell.formmask == null) return 0;
-      return parseInt(String(spell.formmask), 10);
+      const spell = GameState.TwoDAManager.datatables.get('spells').rows[args[0]];
+      if(!spell){
+        return 0;
+      }
+      return parseInt(spell.formmask);
     }
   },
   818: {
@@ -5919,13 +5842,7 @@ NWScriptDefK2.Actions = {
     name: 'ForceHeartbeat',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if (!args[0]) return;
-      if (BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) {
-        args[0].triggerHeartbeat();
-        args[0]._heartbeatTimeout = 3000;
-      }
-    }
+    action: undefined
   },
   823: {
     comment: '823\nDJS-OEI 5/5/2004\nCreates a Force Sight effect.',
@@ -5995,7 +5912,7 @@ NWScriptDefK2.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       return this.paramString;
-    }
+    }	
   },
   832: {
     comment: '832\nAWD-OEI 6/29/2004\nThis function returns the personal space value of an object',
@@ -6008,7 +5925,7 @@ NWScriptDefK2.Actions = {
       }else{
         return 0.0;
       }
-    }
+    }	
   },
   833: {
     comment: '833\nAWD-OEI 7/06/2004\nThis function adjusts a creatures stats.\noObject is the creature that will have it\'s attribute adjusted\nThe following constants are acceptable for the nAttribute parameter:\nABILITY_STRENGTH\nABILITY_DEXTERITY\nABILITY_CONSTITUTION\nABILITY_INTELLIGENCE\nABILITY_WISDOM\nABILITY_CHARISMA\nnAmount is the integer vlaue to adjust the stat by (negative values will work).',
@@ -6093,10 +6010,16 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if (!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)) return NW_FALSE;
-      const leader = GameState.PartyManager.party?.[0];
-      return (leader && args[0] === leader) ? NW_TRUE : NW_FALSE;
-    }
+      if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleObject)){
+        if(args[0] == GameState.PartyManager.party[0]){
+          return 1;
+        }else{
+          return 0;
+        }
+      }else{
+        return 0;
+      }
+    }	
   },
   845: {
     comment: '845\nRWT-OEI 07/21/04\nReturns the object ID of the character that the player\nis actively controlling. This is the \'Party Leader\'.\nReturns object Invalid on error\nNote that this function is *NOT* able to return correct\ninformation during Area Loading since the player is not\nactively controlling anyone at that point.',
@@ -6104,8 +6027,8 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.PartyManager.party?.[0] ?? undefined;
-    }
+      return GameState.PartyManager.party[0];
+    }	
   },
   846: {
     comment: '846\nJAB-OEI 07/22/04\nWill remove the CNPC from the 3 person party, and remove\nhim/her from the area, effectively sending the CNPC back\nto the base. The CNPC data is still stored in the\nparty table, and calling this function will not destroy\nthe CNPC in any way.\nReturns TRUE for success.',
@@ -6115,7 +6038,7 @@ NWScriptDefK2.Actions = {
     action: function(this: NWScriptInstance, args: [number]){
       GameState.PartyManager.RemoveNPCById(args[0], true);
       return 1;
-    }
+    }	
   },
   847: {
     comment: '847\nAWD-OEI 7/22/2004\nThis causes a creature to flourish with it\'s currently equipped weapon.',
@@ -6126,7 +6049,7 @@ NWScriptDefK2.Actions = {
       if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleCreature)){
         (args[0] as ModuleCreature).flourish();
       }
-    }
+    }	
   },
   848: {
     comment: '848\nCreate a Mind Trick effect',
@@ -6156,7 +6079,7 @@ NWScriptDefK2.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       return 0;
-    }
+    }	
   },
   852: {
     comment: '852\nCreate a Droid Scramble effect',
@@ -6170,9 +6093,7 @@ NWScriptDefK2.Actions = {
     name: 'ActionSwitchWeapons',
     type: NWScriptDataType.VOID,
     args: [],
-    action: function(this: NWScriptInstance){
-      // Engine: FUN_007b0f50 toggles caller's weapon set (Config 1/2). No-op until ModuleCreature supports weapon-set toggle.
-    }
+    action: undefined
   },
   854: {
     comment: '854\nDJS-OEI 8/29/2004\nPlayOverlayAnimation\nThis function will play an overlay animation on a character\neven if the character is moving. This does not cause an action\nto be placed on the queue. The animation passed in must be\ndesignated as an overlay in Animations.2DA.',
@@ -6183,7 +6104,7 @@ NWScriptDefK2.Actions = {
       if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleCreature)){
         (args[0] as ModuleCreature).playOverlayAnimation(args[1]);
       }
-    }
+    }	
   },
   855: {
     comment: '855\nRWT-OEI 08/30/04\nUnlockAllSongs\nCalling this will set all songs as having been unlocked.\nIt is INTENDED to be used in the end-game scripts to unlock\nany end-game songs as well as the KotOR1 sound track.',
@@ -6268,10 +6189,10 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if (BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)) {
-        delete args[0].scripts[ModuleObjectScript.PlaceableOnHeartbeat];
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        args[0].scripts[ModuleObjectScript.PlaceableOnHeartbeat] = undefined;
       }
-    }
+    }	
   },
   867: {
     comment: '//867\nJF-OEI 10-07-2004\nRemove an effect by ID',
@@ -6345,46 +6266,14 @@ NWScriptDefK2.Actions = {
     args: [],
     action: undefined
   }
-} as unknown as { [key: number]: import("@/interface/nwscript/INWScriptDefAction").INWScriptDefAction };
+};
 
-/**
- * Inherit K1 implementations for shared action IDs (0..771).
- * Any K2 entry with action === undefined gets the same handler as K1 so compiled
- * NCS runs 1:1 with the engine; TSL-only (772..876) keep their handlers above.
- */
-for (const property in NWScriptDefK1.Actions) {
-  if (Object.prototype.hasOwnProperty.call(NWScriptDefK1.Actions, property)) {
-    const k2Entry = NWScriptDefK2.Actions[property as unknown as number];
-    if (k2Entry && k2Entry.action === undefined) {
-      k2Entry.action = NWScriptDefK1.Actions[property as unknown as number].action;
+for (let property in NWScriptDefK1.Actions) {
+  if (NWScriptDefK1.Actions.hasOwnProperty(property)) {
+    if(NWScriptDefK2.Actions[property]){
+      if(NWScriptDefK2.Actions[property].action === undefined){
+        NWScriptDefK2.Actions[property].action = NWScriptDefK1.Actions[property].action;
+      }
     }
   }
 }
-
-/**
- * Stub any remaining K2-only (772..876) actions so the VM never calls undefined.
- * 1:1 with swkotor2.exe: every action ID that can appear in NCS must have a callable handler.
- */
-const K2_STUB_RETURN: Record<number, () => unknown> = {
-  [NWScriptDataType.VOID]: function() { },
-  [NWScriptDataType.INTEGER]: function() { return 0; },
-  [NWScriptDataType.FLOAT]: function() { return 0; },
-  [NWScriptDataType.STRING]: function() { return ''; },
-  [NWScriptDataType.OBJECT]: function() { return undefined; },
-  [NWScriptDataType.EFFECT]: function() { return undefined; },
-  [NWScriptDataType.EVENT]: function() { return undefined; },
-  [NWScriptDataType.LOCATION]: function() { return undefined; },
-  [NWScriptDataType.TALENT]: function() { return undefined; },
-  [NWScriptDataType.VECTOR]: function() { return { x: 0, y: 0, z: 0 }; },
-  [NWScriptDataType.STRUCTURE]: function() { return undefined; },
-};
-for (let id = 772; id <= 876; id++) {
-  const entry = NWScriptDefK2.Actions[id];
-  if (entry && entry.action === undefined) {
-    const stub = K2_STUB_RETURN[entry.type as number];
-    entry.action = stub
-      ? (function(this: NWScriptInstance) { return stub(); })
-      : (function(this: NWScriptInstance) { });
-  }
-}
-

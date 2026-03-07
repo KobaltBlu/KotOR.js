@@ -1,7 +1,7 @@
-import { AutoPauseState } from "@/enums/engine/AutoPauseState";
-import { MenuAutoPause as K1_MenuAutoPause } from "@/game/kotor/KOTOR";
-import { GameState } from "@/GameState";
-import type { GUILabel, GUICheckBox, GUIListBox, GUIButton } from "@/gui";
+import { GameState } from "../../../GameState";
+import type { GUILabel, GUICheckBox, GUIListBox, GUIButton } from "../../../gui";
+import { MenuAutoPause as K1_MenuAutoPause } from "../../kotor/KOTOR";
+import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
 
 const END_ROUND_DESC = 42445;
 const ENEMY_SIGHTED_DESC = 42446;
@@ -46,7 +46,7 @@ export class MenuAutoPause extends K1_MenuAutoPause {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
 
       this.CB_ENDROUND.attachINIProperty('Autopause Options.End Of Combat Round');
       this.CB_ENEMYSIGHTED.attachINIProperty('Autopause Options.Enemy Sighted');
@@ -153,4 +153,3 @@ export class MenuAutoPause extends K1_MenuAutoPause {
   }
   
 }
-

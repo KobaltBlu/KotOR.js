@@ -1,24 +1,23 @@
+import { EngineMode } from "../enums/engine/EngineMode";
+import { DLGObject } from "../resource/DLGObject";
+import { DLGNode } from "../resource/DLGNode";
+import type { ModuleCreature, ModuleObject } from "../module";
+import { ConversationState } from "../enums/dialog/ConversationState";
+import { GameState } from "../GameState";
+import { DLGConversationType } from "../enums/dialog/DLGConversationType";
+import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
+import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { AudioLoader } from "../audio/AudioLoader";
+import { AudioEngine } from "../audio/AudioEngine";
+import { CutsceneMode } from "../enums/dialog/CutsceneMode";
 import * as THREE from "three";
-
-import { AudioEmitter } from "@/audio/AudioEmitter";
-import { AudioEngine } from "@/audio/AudioEngine";
-import { AudioLoader } from "@/audio/AudioLoader";
-import { CameraMode } from "@/enums/dialog/CameraMode";
-import { ConversationState } from "@/enums/dialog/ConversationState";
-import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
-import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
-import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { DLGNode } from "@/resource/DLGNode";
-import { DLGObject } from "@/resource/DLGObject";
-import type { ModuleCreature, ModuleObject } from "@/module";
-import { GameState } from "@/GameState";
-import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
-import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { ICameraState } from "@/interface/dialog/ICameraState";
-import { ICameraParticipant } from "@/interface/dialog/ICameraParticipant";
+import { CameraMode } from "../enums/dialog/CameraMode";
+import { ICameraState } from "../interface/dialog/ICameraState";
+import { AudioEmitter } from "../audio/AudioEmitter";
+import { ICameraParticipant } from "../interface/dialog/ICameraParticipant";
 
 const ENTRY_DELAY = 3000;
 const HALF_PI = Math.PI / 2;
@@ -384,7 +383,7 @@ export class CutsceneManager {
           this.getCurrentOwner().dialogPlayAnimation(anim);
         }
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       console.error(e);
     }
 
@@ -396,7 +395,7 @@ export class CutsceneManager {
           this.getCurrentListener().dialogPlayAnimation(anim);
         }
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       console.error(e);
     }
 
@@ -474,7 +473,7 @@ export class CutsceneManager {
               creature.dialogPlayOdysseyAnimation(odysseyAnimation);
             }
           }
-        } catch (e: unknown) {
+        } catch (e: any) {
           console.error(e);
         }
       } else {
@@ -704,7 +703,7 @@ export class CutsceneManager {
    * @param nCamera - The camera to set
    */
   static setPlaceableCamera(nCamera: number) {
-    const cam = GameState.getCameraById(nCamera);
+    let cam = GameState.getCameraById(nCamera);
     if (!cam) {
       console.warn(`No placeable camera found for camera [${nCamera}] falling back to dialog camera`);
       this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
@@ -996,7 +995,7 @@ export class CutsceneManager {
     const cameraZ = midpoint.z + 0.3; // Slightly above the midpoint for better framing
     
     // Calculate initial camera position
-    const cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
+    let cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
     
     // Adjust camera distance based on collision detection (similar to FollowerCamera)
     const adjustedDistance = this.adjustCameraDistanceForCollision(cameraPosition, listenerCameraPosition, behindDistance);
@@ -1299,7 +1298,7 @@ export class CutsceneManager {
   }
 
   static removeEventListener(type: string, listener: Function){
-    const listeners = this.#eventListeners.get(type);
+    let listeners = this.#eventListeners.get(type);
     if(!listeners || listeners.indexOf(listener) !== -1){
       return;
     }
@@ -1309,7 +1308,7 @@ export class CutsceneManager {
   }
 
   static dispatchEvent(type: string, ...args: any[]){
-    const listeners = this.#eventListeners.get(type);
+    let listeners = this.#eventListeners.get(type);
     if(listeners){
       listeners.forEach(listener => listener(...args));
     }

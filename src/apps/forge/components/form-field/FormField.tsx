@@ -1,6 +1,5 @@
 import React from "react";
-
-import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
+import { InfoBubble } from "../info-bubble/info-bubble";
 
 
 // Helper component for form fields with info bubbles

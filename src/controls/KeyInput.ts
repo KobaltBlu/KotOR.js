@@ -1,4 +1,4 @@
-import { AnalogInput } from "@/controls/AnalogInput";
+import { AnalogInput } from "./AnalogInput";
 
 /**
  * KeyInput class.

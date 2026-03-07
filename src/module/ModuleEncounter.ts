@@ -1,23 +1,22 @@
 import * as THREE from "three";
-
-import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { ResourceLoader } from "@/loaders";
-import { EncounterCreatureEntry } from "@/module/EncounterCreatureEntry";
-import { EncounterSpawnEntry } from "@/module/EncounterSpawnEntry";
-import { EncounterSpawnPointEntry } from "@/module/EncounterSpawnPointEntry";
-import { ModuleObject } from "@/module/ModuleObject";
-import { NWScript } from "@/nwscript/NWScript";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { OdysseyFace3 } from "@/three/odyssey";
-import { ConfigClient } from "@/utility/ConfigClient";
-// import { ModuleObjectManager, PartyManager, FactionManager } from "@/managers";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+import { NWScript } from "../nwscript/NWScript";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { OdysseyFace3 } from "../three/odyssey";
+import { ConfigClient } from "../utility/ConfigClient";
+import { ResourceLoader } from "../loaders";
+// import { ModuleObjectManager, PartyManager, FactionManager } from "../managers";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleObject } from "./ModuleObject";
+import { EncounterCreatureEntry } from "./EncounterCreatureEntry";
+import { EncounterSpawnPointEntry } from "./EncounterSpawnPointEntry";
+import { EncounterSpawnEntry } from "./EncounterSpawnEntry";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
 /**
 * ModuleEncounter class.
@@ -112,10 +111,10 @@ export class ModuleEncounter extends ModuleObject {
     this.getCurrentRoom();
     
     //Check Module Creatures
-    const creatureLen = GameState.module.area.creatures.length;
+    let creatureLen = GameState.module.area.creatures.length;
     for(let i = 0; i < creatureLen; i++){
-      const creature = GameState.module.area.creatures[i];
-      const pos = creature.position.clone();
+      let creature = GameState.module.area.creatures[i];
+      let pos = creature.position.clone();
       if(this.box.containsPoint(pos)){
         if(this.objectsInside.indexOf(creature) == -1){
           this.objectsInside.push(creature);
@@ -140,10 +139,10 @@ export class ModuleEncounter extends ModuleObject {
     }
 
     //Check Party Members
-    const partyLen = GameState.PartyManager.party.length;
+    let partyLen = GameState.PartyManager.party.length;
     for(let i = 0; i < partyLen; i++){
-      const partymember = GameState.PartyManager.party[i];
-      const pos = partymember.position.clone();
+      let partymember = GameState.PartyManager.party[i];
+      let pos = partymember.position.clone();
       
       if(this.box.containsPoint(pos)){
         if(this.objectsInside.indexOf(partymember) == -1){
@@ -217,9 +216,9 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   buildGeometry(){
-    const trigGeom = this.getGeometry();
+    let trigGeom = this.getGeometry();
 
-    const material = new THREE.MeshBasicMaterial({
+    let material = new THREE.MeshBasicMaterial({
       color: new THREE.Color( 0xFFFFFF ),
       side: THREE.DoubleSide
     });
@@ -236,13 +235,13 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   getGeometry(){
-    const trigGeom = new THREE.BufferGeometry();
-    const vertices = this.vertices.slice();
-    const faces: any[] = [];
+    let trigGeom = new THREE.BufferGeometry();
+    let vertices = this.vertices.slice();
+    let faces: any[] = [];
 
     try{
-      const holes: any = [];
-      const triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
+      let holes: any = [];
+      let triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
       for( let i = 0; i < triangles.length; i++ ){
         faces.push( new OdysseyFace3( triangles[i][0], triangles[i][1], triangles[i][2] ));
       }
@@ -302,7 +301,7 @@ export class ModuleEncounter extends ModuleObject {
 
         //Push verticies
         for(let i = 0; i < this.geometry.length; i++){
-          const tgv = this.geometry[i];
+          let tgv = this.geometry[i];
           this.vertices[i] = new THREE.Vector3( 
             tgv.getFieldByLabel('X').getValue(),
             tgv.getFieldByLabel('Y').getValue(),
@@ -312,10 +311,10 @@ export class ModuleEncounter extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('SWVarTable')){
-        const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+        let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
         //console.log(localBools);
         for(let i = 0; i < localBools.length; i++){
-          const data = localBools[i].getFieldByLabel('Variable').getValue();
+          let data = localBools[i].getFieldByLabel('Variable').getValue();
           for(let bit = 0; bit < 32; bit++){
             this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
           }
@@ -323,7 +322,7 @@ export class ModuleEncounter extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('CreatureList')){
-        const creatures = this.template.RootNode.getFieldByLabel('CreatureList').getChildStructs();
+        let creatures = this.template.RootNode.getFieldByLabel('CreatureList').getChildStructs();
         let entry = undefined;
         for(let i = 0, len = creatures.length; i < len; i++){
           entry = EncounterCreatureEntry.FromStruct(creatures[i]);
@@ -334,7 +333,7 @@ export class ModuleEncounter extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('SpawnPointList')){
-        const spawnPoints = this.template.RootNode.getFieldByLabel('SpawnPointList').getChildStructs();
+        let spawnPoints = this.template.RootNode.getFieldByLabel('SpawnPointList').getChildStructs();
         let entry = undefined;
         for(let i = 0, len = spawnPoints.length; i < len; i++){
           entry = EncounterSpawnPointEntry.FromStruct(spawnPoints[i]);
@@ -345,7 +344,7 @@ export class ModuleEncounter extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('SpawnList')){
-        const spawns = this.template.RootNode.getFieldByLabel('SpawnList').getChildStructs();
+        let spawns = this.template.RootNode.getFieldByLabel('SpawnList').getChildStructs();
         let entry = undefined;
         for(let i = 0, len = spawns.length; i < len; i++){
           entry = EncounterSpawnEntry.FromStruct(spawns[i]);
@@ -469,10 +468,10 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   save(){
-    const gff = new GFFObject();
+    let gff = new GFFObject();
     gff.FileType = 'UTE ';
 
-    const actionList = gff.RootNode.addField( this.actionQueueToActionList() );
+    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Reset') ).setValue( this.reset );
@@ -503,7 +502,7 @@ export class ModuleEncounter extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'AreaListMaxSize') ).setValue(this.areaListMaxSize);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'AreaPoints') ).setValue(this.areaPoints);
 
-    const creatureList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'CreatureList') );
+    let creatureList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'CreatureList') );
     let creature = undefined;
     for(let i = 0; i < this.creatureList.length; i++){
       creature = this.creatureList[i].save();
@@ -511,7 +510,7 @@ export class ModuleEncounter extends ModuleObject {
         creatureList.addChildStruct( creature );
     }
 
-    const spawnPointList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpawnPointList') );
+    let spawnPointList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpawnPointList') );
     let spawnPoint = undefined;
     for(let i = 0; i < this.spawnPointList.length; i++){
       spawnPoint = this.spawnPointList[i].save();
@@ -520,7 +519,7 @@ export class ModuleEncounter extends ModuleObject {
     }
 
     if(this.spawnList.length){
-      const spawnList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpawnList') );
+      let spawnList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpawnList') );
       let spawn = undefined;
       for(let i = 0; i < this.spawnList.length; i++){
         spawn = this.spawnList[i].save();
@@ -529,9 +528,9 @@ export class ModuleEncounter extends ModuleObject {
       }
     }
 
-    const geometry = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Geometry') );
+    let geometry = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Geometry') );
     for(let i = 0; i < this.vertices.length; i++){
-      const vertStruct = new GFFStruct();
+      let vertStruct = new GFFStruct();
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'X') ).setValue(this.vertices[i].x);
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'Y') ).setValue(this.vertices[i].y);
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'Z') ).setValue(this.vertices[i].z);
@@ -539,7 +538,7 @@ export class ModuleEncounter extends ModuleObject {
     }
 
     //SWVarTable
-    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Scripts

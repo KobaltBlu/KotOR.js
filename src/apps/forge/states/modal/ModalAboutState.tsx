@@ -1,8 +1,7 @@
 import React from "react";
-
-import { ModalAbout } from "@/apps/forge/components/modal/ModalAbout";
-import { CURRENT_VERSION, LOCAL_PROGRAM_INFO, getRemoteToolsetUpdateInfo, isRemoteVersionNewer } from "@/apps/forge/config";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalState } from "./ModalState";
+import { ModalAbout } from "../../components/modal/ModalAbout";
+import { CURRENT_VERSION, LOCAL_PROGRAM_INFO, getRemoteToolsetUpdateInfo, isRemoteVersionNewer } from "../../config";
 
 export interface ModalAboutStateOptions {
   title?: string;

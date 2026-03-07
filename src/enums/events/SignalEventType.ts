@@ -55,4 +55,4 @@ export enum SignalEventType {
   OnUnequipItem = 40,
   OnXxx = 41,
   OnLeftClick = 42
-}
+};

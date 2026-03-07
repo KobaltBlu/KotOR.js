@@ -1,8 +1,8 @@
-import { ITGAHeader } from "@/interface/graphics/tga/ITGAHeader";
-import { ITGAObjectOptions } from "@/interface/graphics/tga/ITGAObjectOptions";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { GameFileSystem } from "@/utility/GameFileSystem";
+import { BinaryReader } from "../utility/binary/BinaryReader";
+import { BinaryWriter } from "../utility/binary/BinaryWriter";
+import { ITGAObjectOptions } from "../interface/graphics/tga/ITGAObjectOptions";
+import { ITGAHeader } from "../interface/graphics/tga/ITGAHeader";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /**
  * TGAObject class.
@@ -62,7 +62,7 @@ export class TGAObject {
     } as ITGAHeader;
 
     if(this.file instanceof Uint8Array && !!this.file.length){
-      const reader = new BinaryReader(this.file);
+      let reader = new BinaryReader(this.file);
 
       Header.ID = reader.readByte();
       Header.ColorMapType = reader.readByte();
@@ -94,7 +94,7 @@ export class TGAObject {
 
   getPixelData( onLoad?: Function ){
 
-    const reader = new BinaryReader(this.file);
+    let reader = new BinaryReader(this.file);
     console.log('TGAObject', this.header)
   	reader.seek(this.header.pixelDataOffset);
 
@@ -119,7 +119,7 @@ export class TGAObject {
   }
 
   async toExportBuffer(): Promise<Uint8Array> {
-    const writer = new BinaryWriter();
+    let writer = new BinaryWriter();
 
     writer.writeByte(this.header.ID);
     writer.writeByte(this.header.ColorMapType);
@@ -145,11 +145,11 @@ export class TGAObject {
 
   static FlipY(pixelData: Uint8Array, width = 1, height = 1){
     let offset = 0;
-    const stride = width * 4;
+    let stride = width * 4;
 
     //if(!pixelData) pixelData = this.pixelData;
 
-    const unFlipped = Uint8Array.from(pixelData);
+    let unFlipped = Uint8Array.from(pixelData);
 
     for (let pos = unFlipped.length - stride; pos >= 0; pos -= stride) {
       pixelData.set(unFlipped.slice(pos, pos + stride), offset);
@@ -161,19 +161,19 @@ export class TGAObject {
     const tga = new TGAObject();
     if(canvas instanceof HTMLCanvasElement || canvas instanceof OffscreenCanvas){
 
-      const ctx: CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D = canvas.getContext('2d') as any;
+      let ctx: CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D = canvas.getContext('2d') as any;
       if(ctx){
         tga.header.width = canvas.width;
         tga.header.height = canvas.height;
         tga.header.bitsPerPixel = 32;
         tga.header.FileType = 2;
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
         tga.pixelData = new Uint8Array(data.length);
 
-        const rowByteLength = data.length / tga.header.height;
+        let rowByteLength = data.length / tga.header.height;
         for(let i = 0; i < tga.header.height; i++){
-          const offset = rowByteLength * i;
+          let offset = rowByteLength * i;
           for(let j = 0, k = rowByteLength; j < rowByteLength; j += 4, k -= 4){
             tga.pixelData[offset + j]     = data[offset + j + 2];//(k - 2)]; // red
             tga.pixelData[offset + j + 1] = data[offset + j + 1];//(k - 3)]; // green

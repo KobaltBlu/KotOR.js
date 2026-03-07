@@ -1,8 +1,8 @@
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
-import { ModuleCreature } from "@/module/ModuleCreature";
-// import { PartyManager } from "@/managers/PartyManager";
-import { GFFObject } from "@/resource/GFFObject";
+import { ModuleCreature } from "./ModuleCreature";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+// import { PartyManager } from "../managers/PartyManager";
+import { GFFObject } from "../resource/GFFObject";
+import { GameState } from "../GameState";
 
 /**
 * ModulePlayer class.
@@ -30,7 +30,7 @@ export class ModulePlayer extends ModuleCreature {
   }
 
   save(){
-    const gff = super.save();
+    let gff = super.save();
     GameState.PartyManager.PlayerTemplate = gff;
     this.template = gff;
     return gff;

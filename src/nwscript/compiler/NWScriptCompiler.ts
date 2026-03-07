@@ -1,4 +1,11 @@
 import {
+  OP_CPDOWNSP, OP_RSADD, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_LOGANDII, OP_LOGORII, OP_INCORII, OP_EXCORII,
+  OP_BOOLANDII, OP_EQUAL, OP_NEQUAL, OP_GEQ, OP_GT, OP_LT, OP_LEQ, OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
+  OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII, OP_NEG, OP_COMPI, OP_MOVSP, OP_STORE_STATEALL, OP_JMP,   OP_JSR,
+  OP_JZ, OP_RETN, OP_DESTRUCT, OP_NOTI, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP,
+  OP_SAVEBP, OP_RESTOREBP, OP_STORE_STATE, OP_NOP, OP_T
+} from '../NWScriptOPCodes';
+import {
   CompilerProgramNode,
   CompilerFunctionNode,
   CompilerStatementNode,
@@ -14,14 +21,7 @@ import {
   CompilerSwitchNode,
   CompilerCaseNode,
   CompilerDefaultNode,
-} from '@/nwscript/compiler/CompilerNodeTypes';
-import {
-  OP_CPDOWNSP, OP_RSADD, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_LOGANDII, OP_LOGORII, OP_INCORII, OP_EXCORII,
-  OP_BOOLANDII, OP_EQUAL, OP_NEQUAL, OP_GEQ, OP_GT, OP_LT, OP_LEQ, OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
-  OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII, OP_NEG, OP_COMPI, OP_MOVSP, OP_STORE_STATEALL, OP_JMP,   OP_JSR,
-  OP_JZ, OP_RETN, OP_DESTRUCT, OP_NOTI, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP,
-  OP_SAVEBP, OP_RESTOREBP, OP_STORE_STATE, OP_NOP, OP_T
-} from '@/nwscript/NWScriptOPCodes';
+} from './CompilerNodeTypes';
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
@@ -895,7 +895,7 @@ export class NWScriptCompiler {
       const __arguments = statement.function_reference.arguments.slice(0).reverse();
       let argumentsDataSize = 0;
       for(let i = 0; i < __arguments.length; i++){
-        const arg = _arguments[i];
+        let arg = _arguments[i];
         const arg_ref = __arguments[i];
 
         if(!arg){

@@ -1,5 +1,5 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeMGGunBullet } from "@/apps/forge/module-editor/ForgeMGGunBullet";
+import * as KotOR from "../KotOR";
+import { ForgeMGGunBullet } from "./ForgeMGGunBullet";
 
 export class ForgeMGGunBank {
   // Basic properties
@@ -31,25 +31,25 @@ export class ForgeMGGunBank {
 
     // Load basic properties
     if(struct.hasField('BankID')){
-      this.bankID = struct.getNumberByLabel('BankID');
+      this.bankID = struct.getFieldByLabel('BankID').getValue();
     }
     if(struct.hasField('Fire_Sound')){
-      this.fireSound = struct.getStringByLabel('Fire_Sound');
+      this.fireSound = struct.getFieldByLabel('Fire_Sound').getValue();
     }
     if(struct.hasField('Gun_Model')){
-      this.gunModel = struct.getStringByLabel('Gun_Model');
+      this.gunModel = struct.getFieldByLabel('Gun_Model').getValue();
     }
     if(struct.hasField('Horiz_Spread')){
-      this.horizSpread = struct.getNumberByLabel('Horiz_Spread');
+      this.horizSpread = struct.getFieldByLabel('Horiz_Spread').getValue();
     }
     if(struct.hasField('Inaccuracy')){
-      this.inaccuracy = struct.getNumberByLabel('Inaccuracy');
+      this.inaccuracy = struct.getFieldByLabel('Inaccuracy').getValue();
     }
     if(struct.hasField('Sensing_Radius')){
-      this.sensingRadius = struct.getNumberByLabel('Sensing_Radius');
+      this.sensingRadius = struct.getFieldByLabel('Sensing_Radius').getValue();
     }
     if(struct.hasField('Vert_Spread')){
-      this.vertSpread = struct.getNumberByLabel('Vert_Spread');
+      this.vertSpread = struct.getFieldByLabel('Vert_Spread').getValue();
     }
 
     // Load Bullet struct

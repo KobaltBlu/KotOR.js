@@ -20,4 +20,4 @@ export enum OdysseyModelNodeType {
   Dangly    = 0x0100,
   AABB      = 0x0200,
   Saber     = 0x0800, //2081
-}
+};

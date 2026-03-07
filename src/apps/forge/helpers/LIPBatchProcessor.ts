@@ -10,8 +10,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { LIPShape } from "@/enums/resource/LIPShape";
-import { LIPObject } from "@/resource/LIPObject";
+import { LIPObject } from "../../../resource/LIPObject";
+import { LIPShape } from "../../../enums/resource/LIPShape";
 
 /** Basic lip shapes used for auto-generated LIP (closed -> open -> round -> closed). */
 const DEFAULT_LIP_SHAPES = [
@@ -40,8 +40,7 @@ export interface LIPBatchProcessorResult {
  * Get audio duration from ArrayBuffer using Web Audio API.
  */
 export async function getAudioDuration(audioBuffer: ArrayBuffer): Promise<number> {
-  const AudioContextCtor = window.AudioContext || (window as { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;
-  const audioCtx = new AudioContextCtor();
+  const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
   const buffer = await audioCtx.decodeAudioData(audioBuffer.slice(0));
   return buffer.duration;
 }

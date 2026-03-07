@@ -1,7 +1,7 @@
-import { idctPut, idctAdd, scaleBlock, addPixels8 } from '@/video/bink-idct';
-import { bink_scan, bink_patterns, bink_intra_quant, bink_inter_quant } from '@/video/binkdata';
-import { BitReaderLE } from '@/video/BitReaderLE';
-import { readTree, getHuff, Tree } from '@/video/vlc';
+import { BitReaderLE } from './BitReaderLE';
+import { idctPut, idctAdd, scaleBlock, addPixels8 } from './bink-idct';
+import { bink_scan, bink_patterns, bink_intra_quant, bink_inter_quant } from './binkdata';
+import { readTree, getHuff, Tree } from './vlc';
 
 export class BinkDecodeError extends Error {
     constructor(message: string, public readonly isTruncated: boolean = false) {

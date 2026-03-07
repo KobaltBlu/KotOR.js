@@ -1,28 +1,11 @@
-﻿import React, { useEffect, useRef, useState } from "react";
-import { useLoadingConsole } from "@/apps/common/context/LoadingConsoleContext";
-import type { LoadingConsoleEntry } from "@/apps/common/context/LoadingConsoleContext";
-import '@/apps/common/components/loadingScreen/LoadingScreen.scss';
+import React, { useEffect, useRef, useState } from "react";
+import './LoadingScreen.scss';
 
 export interface ILoadingScreenProps {
   active?: boolean;
   message?: string;
   backgroundURL?: string;
   logoURL?: string;
-}
-
-function formatTime(ms: number): string {
-  const d = new Date(ms);
-  return d.toTimeString().slice(0, 12);
-}
-
-function LogLine({ entry }: { entry: LoadingConsoleEntry }) {
-  const extra = entry.args.length > 0 ? " " + entry.args.join(" ") : "";
-  return (
-    <div className={`loading-console-line loading-console-${entry.severity}`} key={entry.id}>
-      <span className="loading-console-time">[{formatTime(entry.time)}]</span>{" "}
-      <span className="loading-console-text">{entry.message}{extra}</span>
-    </div>
-  );
 }
 
 export const LoadingScreen = (props: ILoadingScreenProps) => {
@@ -40,8 +23,6 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
 
   const fadeInTimeout = useRef<NodeJS.Timeout | null>(null);
   const fadeOutTimeout = useRef<NodeJS.Timeout | null>(null);
-  const consoleEndRef = useRef<HTMLDivElement | null>(null);
-  const loadingConsole = useLoadingConsole();
 
   const onHide = () => {
     clearTimeout(fadeOutTimeout.current as any);
@@ -58,10 +39,13 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
     clearTimeout(fadeInTimeout.current as any);
     setFadeIn(true);
     setFadeOut(false);
-    setVisible(true);
+    // fadeInTimeout.current = setTimeout(() => {
+      setVisible(true);
+    // }, 1000);
   };
 
   useEffect(() => {
+    console.log('active', active);
     setActive(!!props.active);
     if(!!props.active){
       onShow();
@@ -76,18 +60,11 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
     setLogoURL(props.logoURL || '');
   }, [props.message, props.backgroundURL, props.logoURL]);
 
-  useEffect(() => {
-    if (loadingConsole.enabled && loadingConsole.entries.length) {
-      consoleEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [loadingConsole.enabled, loadingConsole.entries.length]);
-
-  const showConsole = loadingConsole.enabled && visible;
-
+  //se-pre-con class
   return (
     <div className={`app-loader ${visible ? 'active' : ''} ${fadeIn ? 'fade-in' : ''} ${fadeOut ? 'fade-out' : ''}`}>
       <div className="background" style={{backgroundImage: (!!backgroundURL) ? `url(${backgroundURL})` : 'initial'}}></div>
-      <div className="logo-wrapper"><img src={logoURL || undefined} style={{display: (!!logoURL) ? 'block' : 'none'}} alt="" /></div>
+      <div className="logo-wrapper"><img src={logoURL} style={{display: (!!logoURL) ? 'block' : 'none'}} /></div>
       <div className="loading-container">
         <div className="spinner-wrapper">
           <div className="ball"></div>
@@ -95,23 +72,7 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
         </div>
         <div className="loading-message">{message}</div>
       </div>
-      {showConsole && (
-        <div className="loading-console">
-          <div className="loading-console-header">
-            <span>Loading log</span>
-            <button type="button" className="loading-console-clear" onClick={loadingConsole.clear}>Clear</button>
-          </div>
-          <div className="loading-console-body">
-            {loadingConsole.entries.map((entry) => (
-              <LogLine key={entry.id} entry={entry} />
-            ))}
-            <div ref={consoleEndRef} />
-          </div>
-        </div>
-      )}
     </div>
   );
 
 };
-
-

@@ -1,9 +1,9 @@
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GameState } from "../GameState";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
 
 /**
  * Represents a parameter for game actions in the engine.
@@ -106,19 +106,19 @@ export class ActionParameter {
         value = struct.getFieldByLabel('Value').getValue();
       break;
       case ActionParameterType.SCRIPT_SITUATION:
-        const scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
-        const script = new GameState.NWScript();
+        let scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
+        let script = new GameState.NWScript();
         script.name = scriptParamStructs.getFieldByLabel('Name').getValue();
         script.init(
           scriptParamStructs.getFieldByLabel('Code').getVoid(),
           scriptParamStructs.getFieldByLabel('CodeSize').getValue()
         );
     
-        const scriptInstance = script.newInstance();
+        let scriptInstance = script.newInstance();
         scriptInstance.isStoreState = true;
         scriptInstance.offset = scriptInstance.address = scriptParamStructs.getFieldByLabel('InstructionPtr').getValue();
     
-        const stackStruct = scriptParamStructs.getFieldByLabel('Stack').getChildStructs()[0];
+        let stackStruct = scriptParamStructs.getFieldByLabel('Stack').getChildStructs()[0];
         scriptInstance.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
 
         value = scriptInstance;

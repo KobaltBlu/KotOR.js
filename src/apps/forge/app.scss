@@ -1,24 +1,25 @@
 // =============================================================================
-// MODULE LOADS (@use first; then CSS imports)
+// IMPORTS
 // =============================================================================
 
-@use "styles/variables" as *;
-@use "styles/bootstrap-theme-overlay" as *;
-@use "styles/layout-default" as *;
-@use "styles/layout-custom" as *;
-@use "../game/styles/grant-access-modal" as *;
-@use "styles/component-keyframe" as *;
-@use "styles/tab-manager" as *;
-@use "styles/tabs/tab-gff-editor" as *;
-@use "styles/audio-player" as *;
-@use "styles/keyframe-track" as *;
-@use "styles/UI3DToolPalette" as *;
-@use "@fortawesome/fontawesome-free/scss/variables" with ($font-path: "fonts");
-@use "@fortawesome/fontawesome-free/scss/fontawesome" as *;
-@use "@fortawesome/fontawesome-free/scss/solid" as *;
-@use "@fortawesome/fontawesome-free/scss/brands" as *;
+// Import our variables first
+@import "styles/variables";
 
-@import "bootstrap/dist/css/bootstrap.css";
+// Override Bootstrap variables before importing Bootstrap
+@import "styles/bootstrap-overrides";
+
+// Now import Bootstrap with our overrides applied
+@import "~bootstrap/scss/bootstrap";
+
+$fa-font-path: "./fonts";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/solid.scss";
+@import "~@fortawesome/fontawesome-free/scss/brands.scss";
+
+@import "styles/layout-default.scss";
+@import "styles/layout-custom.scss";
+@import "../game/styles/grant-access-modal.scss";
+@import "styles/component-keyframe.scss";
 @import "react-contexify/ReactContexify.css";
 
 // =============================================================================
@@ -89,8 +90,7 @@ body {
 
 #container {
   position: absolute;
-  // Top menu removed: do not offset content
-  top: 0;
+  top: $header-height;
   bottom: 0;
   left: 0;
   right: 0;
@@ -721,6 +721,8 @@ button, .btn-default {
 // TABS
 // =============================================================================
 
+@import 'styles/tab-manager';
+
 .nav-tabs {
   border-bottom: $border-width solid $primary-blue-lighter;
 
@@ -1244,7 +1246,7 @@ input[type="range"].volume:before {
       background: $bg-darker;
       display: block;
       padding: $spacing-sm $spacing-md;
-      margin: $spacing-md - $spacing-sm;
+      margin: $spacing-md -$spacing-sm;
       margin-bottom: $spacing-sm;
       font-size: larger;
 
@@ -1534,5 +1536,10 @@ input[type="range"].volume:before {
 }
 
 // =============================================================================
-// ADDITIONAL STYLES (loaded via @use at top)
+// ADDITIONAL IMPORTS
 // =============================================================================
+
+@import 'styles/tabs/tab-gff-editor.scss';
+@import 'styles/audio-player.scss';
+@import "styles/keyframe-track.scss";
+@import "styles/UI3DToolPalette.scss";

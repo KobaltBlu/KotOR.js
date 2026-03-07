@@ -1,3 +1,3 @@
-export * from "@/enums/graphics/txi/TXIBlending";
-export * from "@/enums/graphics/txi/TXIPROCEDURETYPE";
-export * from "@/enums/graphics/txi/TXITexType";
+export * from "./TXIBlending";
+export * from "./TXIPROCEDURETYPE";
+export * from "./TXITexType";

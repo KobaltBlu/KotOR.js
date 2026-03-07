@@ -23,9 +23,7 @@ export interface IOdysseyModelLoaderOptions {
   isChildrenDynamic?: boolean,
   parseChildren?: boolean,
   isHologram?: boolean,
-  /** Caller context (e.g. ModuleArea, placeable) for resource resolution. */
-  context?: import("@/interface/engine/IGameContext").IGameContext;
-  /** Called when the model has finished loading. Passes the loaded model when successful. */
-  onComplete?: (model?: import("@/three/odyssey/OdysseyModel3D").OdysseyModel3D) => void;
-  editorMode?: boolean;
+  context?: any,
+  onComplete?: Function,
+  editorMode?: boolean,
 }

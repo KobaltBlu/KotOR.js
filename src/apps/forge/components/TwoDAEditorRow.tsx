@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from "../KotOR";
 
 
 export const TwoDAEditorRow = function(props: any){
-  const selected = props.selected as boolean;
+  let selected = props.selected as boolean;
   const onCellSelectedCallback = props.onCellSelected as Function;
   const [render, rerender] = useState<boolean>(false);
 

@@ -1,26 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { TabScriptFindReferencesState, TextReferenceMatch } from "../../../states/tabs/TabScriptFindReferencesState";
+import { TabTextEditorState } from "../../../states/tabs/TabTextEditorState";
 
-import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
-import type { TabScriptFindReferencesState, TextReferenceMatch } from '@/apps/forge/states/tabs/TabScriptFindReferencesState';
-import type { TabTextEditorState } from '@/apps/forge/states/tabs/TabTextEditorState';
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Forge);
-
-export interface TabScriptFindReferencesProps {
-  tab: TabScriptFindReferencesState;
-  parentTab: TabTextEditorState | undefined;
-}
-
-export const TabScriptFindReferences: React.FC<TabScriptFindReferencesProps> = (props) => {
-  log.trace('TabScriptFindReferences render');
-  const tab = props.tab;
-  const parentTab = props.parentTab;
+export const TabScriptFindReferences = function(props: any){
+  const tab: TabScriptFindReferencesState = props.tab;
+  const parentTab: TabTextEditorState | undefined = props.parentTab;
 
   const [results, setResults] = useState<TextReferenceMatch[]>([]);
 
   const onSetResults = (matches: TextReferenceMatch[] = []) => {
-    log.debug('TabScriptFindReferences onSetResults', 'matchCount=', matches?.length ?? 0);
     setResults([...(matches || [])]);
   };
 
@@ -32,7 +21,6 @@ export const TabScriptFindReferences: React.FC<TabScriptFindReferencesProps> = (
   });
 
   const onResultClick = (match: TextReferenceMatch) => {
-    log.trace('TabScriptFindReferences onResultClick', 'line=', match.line, 'column=', match.column);
     if (parentTab?.editor) {
       parentTab.editor.setPosition({
         lineNumber: Math.max(1, match.line),

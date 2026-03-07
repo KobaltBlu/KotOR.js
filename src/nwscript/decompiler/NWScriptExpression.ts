@@ -1,4 +1,4 @@
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
 
 /**
  * Represents an expression in NWScript decompilation.

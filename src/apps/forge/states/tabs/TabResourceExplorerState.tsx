@@ -1,15 +1,13 @@
-import * as path from "path";
-
 import React from "react";
-
-import { TabResourceExplorer } from "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { AsyncLoop } from "@/utility/AsyncLoop";
+import { TabState } from "./TabState";
+import { TabResourceExplorer } from "../../components/tabs/tab-resource-explorer/TabResourceExplorer";
+import * as path from "path";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { AsyncLoop } from "../../../../utility/AsyncLoop";
+import * as KotOR from "../../KotOR";
+import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
+import { ForgeState } from "../ForgeState";
+import { FileBrowserNode } from "../../FileBrowserNode";
 
 export class TabResourceExplorerState extends TabState {
 
@@ -97,7 +95,7 @@ export class TabResourceExplorerState extends TabState {
 
   static LoadBifs() {
     return new Promise<FileBrowserNode>( (resolve, reject) => {
-      const bifs: KotOR.BIFObject[] = [];
+      let bifs: KotOR.BIFObject[] = [];
       KotOR.BIFManager.bifs.forEach( (bif: KotOR.BIFObject) => {
         bifs.push(bif);
       })
@@ -109,13 +107,13 @@ export class TabResourceExplorerState extends TabState {
         canOrphan: false,
       });
 
-      const bifLoader = new AsyncLoop({
+      let bifLoader = new AsyncLoop({
         array: bifs,
         onLoop: (bif: KotOR.BIFObject, asyncLoop: AsyncLoop) => {
-          const name = bif.file.split(path.sep).pop()?.split('.')[0];
-          const subTypes: {[key: string]: FileBrowserNode} = {};
+          let name = bif.file.split(path.sep).pop()?.split('.')[0];
+          let subTypes: {[key: string]: FileBrowserNode} = {};
 
-          const node: FileBrowserNode = new FileBrowserNode({
+          let node: FileBrowserNode = new FileBrowserNode({
             name: name,
             type: 'group',
             nodes: [],
@@ -125,8 +123,8 @@ export class TabResourceExplorerState extends TabState {
           bifList.addChildNode(node);
 
           for (let i = 0; i < bif.resources.length; i++) {
-            const resource = bif.resources[i];
-            const resref = KotOR.KEYManager.Key.getFileLabel(resource.Id);
+            let resource = bif.resources[i];
+            let resref = KotOR.KEYManager.Key.getFileLabel(resource.Id);
 
             if (subTypes[resource.resType] == undefined) {
               subTypes[resource.resType] = new FileBrowserNode({
@@ -165,7 +163,7 @@ export class TabResourceExplorerState extends TabState {
 
   static LoadRims() {
 		return new Promise<FileBrowserNode>( (resolve, reject) => {
-      const rims: KotOR.RIMObject[] = [];
+      let rims: KotOR.RIMObject[] = [];
       KotOR.RIMManager.RIMs.forEach( (rim: KotOR.RIMObject) => {
         if(rim.group == "RIMs"){
           rims.push(rim);
@@ -179,13 +177,13 @@ export class TabResourceExplorerState extends TabState {
         canOrphan: false,
       });
 
-      const rimLoader = new AsyncLoop({
+      let rimLoader = new AsyncLoop({
         array: rims,
         onLoop: (rim: KotOR.RIMObject, asyncLoop: AsyncLoop) => {
-          const name = rim.resource_path.split(path.sep).pop()?.split('.')[0];
-          const subTypes: {[key: string]: FileBrowserNode} = {};
+          let name = rim.resource_path.split(path.sep).pop()?.split('.')[0];
+          let subTypes: {[key: string]: FileBrowserNode} = {};
 
-          const node: FileBrowserNode = new FileBrowserNode({
+          let node: FileBrowserNode = new FileBrowserNode({
             name: name,
             type: 'group',
             nodes: [],
@@ -195,8 +193,8 @@ export class TabResourceExplorerState extends TabState {
           rimList.addChildNode(node);
 
           for (let i = 0; i < rim.resources.length; i++) {
-            const resource = rim.resources[i];
-            const resref = resource.resRef;
+            let resource = rim.resources[i];
+            let resref = resource.resRef;
 
             if (subTypes[resource.resType] == undefined) {
               subTypes[resource.resType] = new FileBrowserNode({
@@ -249,8 +247,8 @@ export class TabResourceExplorerState extends TabState {
       
       //Sort the array by filename
       modules = modules.sort( (a: KotOR.ERFObject|KotOR.RIMObject, b: KotOR.ERFObject|KotOR.RIMObject) => {
-        const nameA = a.resource_path.split(path.sep).pop() || '';
-        const nameB = b.resource_path.split(path.sep).pop() || '';
+        let nameA = a.resource_path.split(path.sep).pop() || '';
+        let nameB = b.resource_path.split(path.sep).pop() || '';
         
         if (nameA < nameB) { return -1; }
         if (nameA > nameB) { return 1; }
@@ -264,13 +262,13 @@ export class TabResourceExplorerState extends TabState {
         canOrphan: false,
       });
 
-      const rimLoader = new AsyncLoop({
+      let rimLoader = new AsyncLoop({
         array: modules,
         onLoop: (rim: KotOR.RIMObject|KotOR.ERFObject, asyncLoop: AsyncLoop) => {
-          const name = rim.resource_path.split(path.sep).pop();
-          const subTypes: {[key: string]: FileBrowserNode} = {};
+          let name = rim.resource_path.split(path.sep).pop();
+          let subTypes: {[key: string]: FileBrowserNode} = {};
 
-          const node: FileBrowserNode = new FileBrowserNode({
+          let node: FileBrowserNode = new FileBrowserNode({
             name: name,
             type: 'group',
             nodes: [],
@@ -279,11 +277,11 @@ export class TabResourceExplorerState extends TabState {
 
           rimList.addChildNode(node);
 
-          const files = ((rim as any)?.keyList ? (rim as any).keyList : rim.resources as any);
+          let files = ((rim as any)?.keyList ? (rim as any).keyList : rim.resources as any);
 
           for (let i = 0; i < files.length; i++) {
-            const resource = files[i];
-            const resref = resource.resRef;
+            let resource = files[i];
+            let resref = resource.resRef;
 
             if (subTypes[resource.resType] == undefined) {
               subTypes[resource.resType] = new FileBrowserNode({
@@ -336,8 +334,8 @@ export class TabResourceExplorerState extends TabState {
 			
 			//Sort the array by filename
 			modules = modules.sort( (a: KotOR.ERFObject|KotOR.RIMObject, b: KotOR.ERFObject|KotOR.RIMObject) => {
-				const nameA = a.resource_path.split(path.sep).pop() || '';
-				const nameB = b.resource_path.split(path.sep).pop() || '';
+				let nameA = a.resource_path.split(path.sep).pop() || '';
+				let nameB = b.resource_path.split(path.sep).pop() || '';
 				
 				if (nameA < nameB) { return -1; }
 				if (nameA > nameB) { return 1; }
@@ -351,13 +349,13 @@ export class TabResourceExplorerState extends TabState {
 				canOrphan: false,
 			});
 
-			const rimLoader = new AsyncLoop({
+			let rimLoader = new AsyncLoop({
 				array: modules,
 				onLoop: (rim: KotOR.RIMObject|KotOR.ERFObject, asyncLoop: AsyncLoop) => {
-					const name = rim.resource_path.split(path.sep).pop();
-					const subTypes: {[key: string]: FileBrowserNode} = {};
+					let name = rim.resource_path.split(path.sep).pop();
+					let subTypes: {[key: string]: FileBrowserNode} = {};
 
-					const node: FileBrowserNode = new FileBrowserNode({
+					let node: FileBrowserNode = new FileBrowserNode({
 						name: name,
 						type: 'group',
 						nodes: [],
@@ -366,11 +364,11 @@ export class TabResourceExplorerState extends TabState {
 
 					rimList.addChildNode(node);
 
-					const files = ((rim as any)?.keyList ? (rim as any).keyList : rim.resources as any);
+					let files = ((rim as any)?.keyList ? (rim as any).keyList : rim.resources as any);
 
 					for (let i = 0; i < files.length; i++) {
-						const resource = files[i];
-						const resRef = resource.resRef;
+						let resource = files[i];
+						let resRef = resource.resRef;
 
 						if (subTypes[resource.resType] == undefined) {
 							subTypes[resource.resType] = new FileBrowserNode({
@@ -406,7 +404,7 @@ export class TabResourceExplorerState extends TabState {
 	
   static LoadTextures() {
     return new Promise<FileBrowserNode>( (resolve, reject) => {
-      const texture_packs: any[] = [];
+      let texture_packs: any[] = [];
 
       KotOR.ERFManager.ERFs.forEach( (erf: KotOR.ERFObject) => {
         if(erf.group == "Textures"){
@@ -421,13 +419,13 @@ export class TabResourceExplorerState extends TabState {
         canOrphan: false,
       });
 
-      const erfLoader = new AsyncLoop({
+      let erfLoader = new AsyncLoop({
         array: texture_packs,
         onLoop: (erf: KotOR.ERFObject, asyncLoop: AsyncLoop) => {
-          const name = erf.resource_path.split(path.sep).pop();
-          const subTypes: {[key: string]: FileBrowserNode} = {};
+          let name = erf.resource_path.split(path.sep).pop();
+          let subTypes: {[key: string]: FileBrowserNode} = {};
 
-          const node: FileBrowserNode = new FileBrowserNode({
+          let node: FileBrowserNode = new FileBrowserNode({
             name: name,
             type: 'group',
             nodes: [],
@@ -436,12 +434,12 @@ export class TabResourceExplorerState extends TabState {
 
           erfList.addChildNode(node);
 
-          const files = erf.keyList;
+          let files = erf.keyList;
 
           for (let i = 0; i < files.length; i++) {
-            const resource = files[i];
-            const resref = resource.resRef;
-            const letter = resref[0].toLowerCase();
+            let resource = files[i];
+            let resref = resource.resRef;
+            let letter = resref[0].toLowerCase();
 
             if (subTypes[letter] == undefined) {
               subTypes[letter] = new FileBrowserNode({
@@ -473,7 +471,7 @@ export class TabResourceExplorerState extends TabState {
 	static LoadFolderForFileBrowser(folder_name = '') {
     return new Promise<FileBrowserNode>( (resolve, reject) => {
       //Load StreamWaves
-      const folder: FileBrowserNode =  new FileBrowserNode({ 
+      let folder: FileBrowserNode =  new FileBrowserNode({ 
         name: folder_name, 
         type: 'group', 
         nodes: [] 
@@ -482,11 +480,11 @@ export class TabResourceExplorerState extends TabState {
         (folder.nodes as any)._indexes = {};
 
         for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const parts = file.split(path.sep);
+          let file = files[i];
+          let parts = file.split(path.sep);
           parts.shift();
 
-          const newfile = parts.pop() || '';
+          let newfile = parts.pop() || '';
           let targetFolder = folder;
 
           for (let i = 0; i < parts.length; i++) {
@@ -495,7 +493,7 @@ export class TabResourceExplorerState extends TabState {
               'undefined'
             ) {
               //Push the new folder and get the index
-              const index =
+              let index =
                 targetFolder.addChildNode( new FileBrowserNode({
                   name: parts[i].trim(),
                   type: 'group',
@@ -505,7 +503,7 @@ export class TabResourceExplorerState extends TabState {
               targetFolder = targetFolder.nodes[index];
               (targetFolder.nodes as any)._indexes = {};
             } else {
-              const index = (targetFolder.nodes as any)._indexes[parts[i]];
+              let index = (targetFolder.nodes as any)._indexes[parts[i]];
               targetFolder = targetFolder.nodes[index];
             }
           }
@@ -525,9 +523,9 @@ export class TabResourceExplorerState extends TabState {
         }
 
         folder.nodes.sort((a: any, b: any) => {
-          const compareType =
+          let compareType =
             a.type == 'group' && b.type != 'group' ? -1 : 1;
-          const compareName = a.name.localeCompare(b.name);
+          let compareName = a.name.localeCompare(b.name);
 
           return compareType || compareName;
         });

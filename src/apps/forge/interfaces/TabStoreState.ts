@@ -1,4 +1,4 @@
-import { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorFile } from "../EditorFile";
 
 export interface TabStoreState {
   type: string;

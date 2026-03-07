@@ -1,5 +1,5 @@
-import { GameMenu } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
+import { GameMenu } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
 
 /**
  * MenuStatusSummary class.
@@ -40,10 +40,9 @@ export class MenuStatusSummary extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, _reject) => {
+    return new Promise<void>((resolve, reject) => {
       resolve();
     });
   }
   
 }
-

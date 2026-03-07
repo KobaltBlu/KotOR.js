@@ -21,7 +21,7 @@ export class LoadingScreen {
   loading_container: HTMLElement;
   messageElement: HTMLElement;
 
-  fadeOutTimeout: ReturnType<typeof setTimeout> | undefined;
+  fadeOutTimeout: any;
 
   constructor(parent?: HTMLElement, isGlobal: boolean = true){
     this.message = 'Loading...';

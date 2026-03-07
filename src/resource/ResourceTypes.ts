@@ -331,7 +331,7 @@ export const ResourceTypes: any = {
   "key" : 9999,
 
   getKeyByValue: function( value: any ) {
-    for( const prop in this ) {
+    for( let prop in this ) {
       if( this.hasOwnProperty( prop ) ) {
         if( this[ prop ] == value )
           return prop;

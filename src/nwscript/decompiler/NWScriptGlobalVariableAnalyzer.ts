@@ -1,10 +1,10 @@
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
-import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
-import { EdgeType } from '@/nwscript/decompiler/NWScriptEdge';
-import type { NWScript } from "@/nwscript/NWScript";
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_CPDOWNBP, OP_MOVSP, OP_NEG, OP_ACTION, OP_SAVEBP, OP_JSR, OP_RESTOREBP, OP_RETN } from '@/nwscript/NWScriptOPCodes';
+import type { NWScriptInstruction } from "../NWScriptInstruction";
+import type { NWScript } from "../NWScript";
+import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
+import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
+import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_CPDOWNBP, OP_MOVSP, OP_NEG, OP_ACTION, OP_SAVEBP, OP_JSR, OP_RESTOREBP, OP_RETN } from '../NWScriptOPCodes';
+import { EdgeType } from './NWScriptEdge';
 
 /**
  * Represents a detected global variable initialization
@@ -12,7 +12,7 @@ import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_CPDOWNBP, OP_MOVSP, OP_NEG, OP_ACTI
 export interface NWScriptGlobalInit {
   offset: number; // BP offset for the global variable
   dataType: NWScriptDataType;
-  initialValue: number | string | boolean;
+  initialValue: any;
   hasInitializer: boolean; // Whether this variable has an explicit initializer
   instructionAddress: number; // Address of the RSADD instruction
 }
@@ -20,9 +20,9 @@ export interface NWScriptGlobalInit {
 /**
  * Analyzes global variable initializations from the instruction stream.
  * Detects the pattern: RSADD -> CONST -> CPDOWNSP -> MOVSP
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file NWScriptGlobalVariableAnalyzer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -69,7 +69,7 @@ export class NWScriptGlobalVariableAnalyzer {
 
     // Get instructions to analyze
     let instructionsToAnalyze: NWScriptInstruction[] = [];
-
+    
     if (globalInitBlocks.length > 0) {
       // Only analyze instructions within the global init blocks
       // AND before SAVEBP address (if SAVEBP exists)
@@ -100,7 +100,7 @@ export class NWScriptGlobalVariableAnalyzer {
     for (const rsadd of sortedInstructions) {
       if (rsadd.code !== OP_RSADD) continue;
       allRSADD.push(rsadd);
-
+      
       if (this.processedAddresses.has(rsadd.address)) continue;
 
       // Follow the instruction chain to find the pattern
@@ -134,7 +134,7 @@ export class NWScriptGlobalVariableAnalyzer {
         }
         searchCurrent = searchCurrent.nextInstr;
       }
-
+      
       // If we found an ACTION call, this is NOT a global variable initialization
       // It's a function call that should be in the function body
       if (hasAction) {
@@ -150,7 +150,7 @@ export class NWScriptGlobalVariableAnalyzer {
 
       // Check CPDOWNSP parameters
       // CPDOWNSP FFFFFFF8 means offset -8 (writing to the space reserved by RSADD)
-      // The offset is a signed 32-bit integer (e.g. -8)
+      // The offset is a signed 32-bit integer, so 0xFFFFFFF8 is -8
       const cpdownspOffset = cpdownsp.offset;
       const cpdownspOffsetSigned = cpdownspOffset > 0x7FFFFFFF ? cpdownspOffset - 0x100000000 : cpdownspOffset;
       if (cpdownspOffsetSigned !== -8 || cpdownsp.size !== 4) continue;
@@ -194,22 +194,22 @@ export class NWScriptGlobalVariableAnalyzer {
       // We search within a very limited window and verify the complete pattern
       let hasInitialization = false;
       let current = rsadd.nextInstr;
-
+      
       // Very limited search window - initialization patterns are immediate
       // Stop immediately if we hit another RSADD (new variable declaration)
       const maxSearchDistance = 20; // Only search within immediate initialization context
       let searchLimit = 0;
-
+      
       while (current && searchLimit < maxSearchDistance) {
         // Stop if we hit another RSADD - that's a new variable, not initialization of this one
         if (current.code === OP_RSADD && current.address !== rsadd.address) {
           break;
         }
-
+        
         // Look for the initialization pattern: CONST -> [NEG] -> CPDOWNSP -> MOVSP
         if (current.code === OP_CONST) {
           const constInstr = current;
-
+          
           // Check for NEG after CONST
           let hasNeg = false;
           let nextAfterConst = constInstr.nextInstr;
@@ -217,7 +217,7 @@ export class NWScriptGlobalVariableAnalyzer {
             hasNeg = true;
             nextAfterConst = nextAfterConst.nextInstr;
           }
-
+          
           // CRITICAL FIX: Skip if there's an ACTION call between CONST and CPDOWNSP
           // This indicates a function call, not a constant initialization
           let hasAction = false;
@@ -229,13 +229,13 @@ export class NWScriptGlobalVariableAnalyzer {
             }
             actionCheck = actionCheck.nextInstr;
           }
-
+          
           if (hasAction) {
             // This is a function call pattern, not a global initialization
             current = current.nextInstr;
             continue;
           }
-
+          
           // Look for CPDOWNSP after CONST (or NEG)
           let cpdownspInstr = nextAfterConst;
           let cpdownspSearchLimit = 0;
@@ -243,7 +243,7 @@ export class NWScriptGlobalVariableAnalyzer {
             if (cpdownspInstr.code === OP_CPDOWNSP || cpdownspInstr.code === OP_CPDOWNBP) {
               const offset = cpdownspInstr.offset;
               const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
-
+              
               // CPDOWNSP -8 writes to the space reserved by the most recent RSADD
               // But we need to verify this is actually for our RSADD
               // The pattern should be: RSADD -> CONST -> CPDOWNSP -8 -> MOVSP -4
@@ -255,7 +255,7 @@ export class NWScriptGlobalVariableAnalyzer {
                   if (movspInstr.code === OP_MOVSP && movspInstr.offset !== undefined) {
                     const movspOffset = movspInstr.offset;
                     const movspOffsetSigned = movspOffset > 0x7FFFFFFF ? movspOffset - 0x100000000 : movspOffset;
-
+                    
                     // MOVSP -4 after CPDOWNSP completes the initialization pattern
                     if (movspOffsetSigned === -4) {
                       // Verify this pattern is for our RSADD by checking the sequence
@@ -271,27 +271,27 @@ export class NWScriptGlobalVariableAnalyzer {
                   movspInstr = movspInstr.nextInstr;
                   movspSearchLimit++;
                 }
-
+                
                 if (hasInitialization) {
                   break;
                 }
               }
             }
-
+            
             // Stop if we hit another RSADD or CONST (different pattern)
             if (cpdownspInstr.code === OP_RSADD || cpdownspInstr.code === OP_CONST) {
               break;
             }
-
+            
             cpdownspInstr = cpdownspInstr.nextInstr;
             cpdownspSearchLimit++;
           }
-
+          
           if (hasInitialization) {
             break;
           }
         }
-
+        
         current = current.nextInstr;
         searchLimit++;
       }
@@ -389,9 +389,9 @@ export class NWScriptGlobalVariableAnalyzer {
     }
 
     // Extract value from CONST instruction
-    let initialValue: number | string | undefined;
+    let initialValue: any;
     let hasInitializer = true;
-
+    
     switch (constInstr.type) {
       case 3: // INTEGER
         initialValue = constInstr.integer;
@@ -471,11 +471,11 @@ export class NWScriptGlobalVariableAnalyzer {
    * Identify the global initialization blocks using CFG
    * CRITICAL: SAVEBP is NOT in the entry block. It's inside the first JSR target function,
    * near the end, before JSRing to the real main/StartingConditional.
-   *
+   * 
    * Pattern:
    * - Entry: JSR(first_function) -> RETN
    * - First function: [globals] ... SAVEBP -> JSR(main) -> RESTOREBP -> MOVSP -> RETN
-   *
+   * 
    * Returns blocks from the first JSR target up to (but not including) SAVEBP
    */
   private identifyGlobalInitBlocks(): { blocks: NWScriptBasicBlock[], savebpAddress: number | null } {
@@ -484,7 +484,7 @@ export class NWScriptGlobalVariableAnalyzer {
     }
 
     const entryBlock = this.cfg.entryBlock;
-
+    
     // Get the first JSR from entry block
     let firstJSR: NWScriptInstruction | null = null;
     let current = entryBlock.startInstruction;
@@ -495,35 +495,34 @@ export class NWScriptGlobalVariableAnalyzer {
       }
       current = current.nextInstr;
     }
-
+    
     if (!firstJSR) {
       // No JSR in entry block - no globals
       return { blocks: [], savebpAddress: null };
     }
-
+    
     // Get the first JSR target address
     const firstJSRTarget = firstJSR.address + firstJSR.offset;
     const firstJSRBlock = this.cfg.getBlockForAddress(firstJSRTarget);
-
+    
     if (!firstJSRBlock) {
       return { blocks: [], savebpAddress: null };
     }
-
+    
     // Check if the first JSR target contains SAVEBP -> JSR pattern
     // This indicates it's a global init function
     let savebpAddress: number | null = null;
     let savebpBlock: NWScriptBasicBlock | null = null;
-
+    
     // Search for SAVEBP in blocks reachable from first JSR target
     const visited = new Set<NWScriptBasicBlock>();
     const queue: NWScriptBasicBlock[] = [firstJSRBlock];
-
+    
     while (queue.length > 0 && !savebpAddress) {
-      const block = queue.shift();
-      if (block === undefined) break;
+      const block = queue.shift()!;
       if (visited.has(block)) continue;
       visited.add(block);
-
+      
       // Check if this block contains SAVEBP
       for (const instr of block.instructions) {
         if (instr.code === OP_SAVEBP) {
@@ -531,7 +530,7 @@ export class NWScriptGlobalVariableAnalyzer {
           // JSR might be in the same block or a successor block
           savebpAddress = instr.address;
           savebpBlock = block;
-
+          
           // Search for JSR after SAVEBP
           // First check within the same block
           let foundJSR = false;
@@ -549,18 +548,17 @@ export class NWScriptGlobalVariableAnalyzer {
             }
             next = next.nextInstr;
           }
-
+          
           // If not found in same block, search successor blocks
           if (!foundJSR && savebpAddress) {
             const jsrSearchVisited = new Set<NWScriptBasicBlock>();
             const jsrSearchQueue: NWScriptBasicBlock[] = Array.from(block.successors);
-
+            
             while (jsrSearchQueue.length > 0 && !foundJSR && savebpAddress) {
-              const succBlock = jsrSearchQueue.shift();
-              if (succBlock === undefined) break;
+              const succBlock = jsrSearchQueue.shift()!;
               if (jsrSearchVisited.has(succBlock)) continue;
               jsrSearchVisited.add(succBlock);
-
+              
               // Check if this block contains JSR after SAVEBP
               for (const succInstr of succBlock.instructions) {
                 if (succInstr.code === OP_JSR && succInstr.address > instr.address) {
@@ -575,7 +573,7 @@ export class NWScriptGlobalVariableAnalyzer {
                   break;
                 }
               }
-
+              
               // Continue searching if we haven't found JSR yet
               if (!foundJSR && savebpAddress) {
                 for (const succSucc of succBlock.successors) {
@@ -588,18 +586,18 @@ export class NWScriptGlobalVariableAnalyzer {
                 }
               }
             }
-
+            
             // If we didn't find JSR, invalidate SAVEBP
             if (!foundJSR) {
               savebpAddress = null;
               savebpBlock = null;
             }
           }
-
+          
           if (savebpAddress) break;
         }
       }
-
+      
       // Continue searching if we haven't found SAVEBP yet
       if (!savebpAddress) {
         for (const successor of block.successors) {
@@ -609,7 +607,7 @@ export class NWScriptGlobalVariableAnalyzer {
             if (edge && edge.type === EdgeType.RETURN) {
               continue;
             }
-
+            
             // Stop if we hit a RETN (end of function)
             const hasRetn = successor.instructions.some(instr => instr.code === OP_RETN);
             if (!hasRetn) {
@@ -619,7 +617,7 @@ export class NWScriptGlobalVariableAnalyzer {
         }
       }
     }
-
+    
     // Fallback: linear scan from first JSR target if CFG search failed
     if (!savebpAddress && firstJSRBlock) {
       let instr: NWScriptInstruction | null = firstJSRBlock.startInstruction;
@@ -633,35 +631,33 @@ export class NWScriptGlobalVariableAnalyzer {
         instr = instr.nextInstr;
       }
     }
-
+    
     // If we didn't find SAVEBP, this is not a global init function
     if (!savebpAddress || !savebpBlock) {
       return { blocks: [], savebpAddress: null };
     }
-
+    
     // Collect blocks from first JSR target up to (but not including) SAVEBP block
     // Variables in these blocks are globals
     // CRITICAL: We must only follow execution edges within the function, NOT return edges
     const blocks: NWScriptBasicBlock[] = [];
     const blockVisited = new Set<NWScriptBasicBlock>();
     const blockQueue: NWScriptBasicBlock[] = [firstJSRBlock];
-
+    
     // Get the return point of the entry JSR (the RETN after JSR in entry block)
     // We should NOT follow edges to this block as it's outside the function
     const entryJSRReturnBlock = this.cfg.subroutineReturns.get(firstJSR.address);
 
     while (blockQueue.length > 0) {
-      const block = blockQueue.shift();
-      if (block === undefined) break;
+      const block = blockQueue.shift()!;
       if (blockVisited.has(block)) continue;
       blockVisited.add(block);
-
+      
       // Check if any instruction in this block is at or after SAVEBP address
-      const savebpAddr = savebpAddress;
-      const blockHasSavebp = savebpAddr !== null && block.instructions.some(instr =>
-        instr.address >= savebpAddr
+      const blockHasSavebp = block.instructions.some(instr => 
+        instr.address >= savebpAddress!
       );
-
+      
       if (blockHasSavebp) {
         // This block contains SAVEBP - we still want to include it
         // because it may contain global variable initializations BEFORE SAVEBP
@@ -670,7 +666,7 @@ export class NWScriptGlobalVariableAnalyzer {
         // Don't follow successors from SAVEBP block (they're after globals)
         continue;
       }
-
+      
       // Block is entirely before SAVEBP - include it
       blocks.push(block);
 
@@ -685,12 +681,12 @@ export class NWScriptGlobalVariableAnalyzer {
           if (edge && edge.type === EdgeType.RETURN) {
             continue;
           }
-
+          
           // Skip the entry JSR return point (RETN in entry block) - it's outside the function
           if (entryJSRReturnBlock && successor === entryJSRReturnBlock) {
             continue;
           }
-
+          
           // Skip CALL edges to other functions (though we should stop at SAVEBP before reaching them)
           if (edge && edge.type === EdgeType.CALL) {
             // Only skip if it's not the first JSR target (which we're already in)
@@ -698,11 +694,11 @@ export class NWScriptGlobalVariableAnalyzer {
               continue;
             }
           }
-
+          
           // Check if successor is before SAVEBP or is the SAVEBP block itself
           // We include the SAVEBP block because it may contain globals before SAVEBP
-          const successorBeforeSavebp = successor.instructions.every(instr =>
-            instr.address < savebpAddr
+          const successorBeforeSavebp = successor.instructions.every(instr => 
+            instr.address < savebpAddress!
           );
           const isSavebpBlock = successor === savebpBlock;
           if (successorBeforeSavebp || isSavebpBlock) {

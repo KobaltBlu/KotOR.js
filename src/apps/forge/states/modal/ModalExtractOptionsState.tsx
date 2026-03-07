@@ -1,8 +1,7 @@
 import React from "react";
-
-import { ModalExtractOptions } from "@/apps/forge/components/modal/ModalExtractOptions";
-import { DEFAULT_EXTRACT_OPTIONS } from "@/apps/forge/data/ExtractOptions";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalState } from "./ModalState";
+import { ModalExtractOptions } from "../../components/modal/ModalExtractOptions";
+import { DEFAULT_EXTRACT_OPTIONS } from "../../data/ExtractOptions";
 
 export interface ExtractOptionsStateValues {
   tpcDecompile: boolean;

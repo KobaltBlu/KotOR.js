@@ -1,6 +1,6 @@
-import { GameEffect } from "@/effects/GameEffect";
-import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { GameState } from "@/GameState";
+import { GameState } from "../GameState";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { GameEffect } from "./GameEffect";
 
 /**
  * EffectPoison class.
@@ -47,7 +47,7 @@ export class EffectPoison extends GameEffect {
       return;
 
     //Poison Visual Effect
-    const eVisualEffect = new GameState.GameEffectFactory.EffectVisualEffect();
+    let eVisualEffect = new GameState.GameEffectFactory.EffectVisualEffect();
     eVisualEffect.setCreator(this.getCreator());
     eVisualEffect.setSpellId(this.getSpellId());
     eVisualEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());

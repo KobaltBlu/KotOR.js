@@ -1,7 +1,6 @@
 import React from "react";
-
-import { ModalInsertInstance } from "@/apps/forge/components/modal/ModalInsertInstance";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalState } from "./ModalState";
+import { ModalInsertInstance } from "../../components/modal/ModalInsertInstance";
 
 export type InsertInstanceResourceType = "utc" | "utd" | "utp" | "ute" | "uts" | "utm" | "utt" | "utw";
 

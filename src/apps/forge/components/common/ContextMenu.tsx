@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import "@/apps/forge/components/common/ContextMenu.scss";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import './ContextMenu.scss';
+import { createPortal } from 'react-dom';
 
 export interface ContextMenuItem {
   id: string;
@@ -27,7 +28,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   theme = 'auto'
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [_hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null);
   const [adjustedPosition, setAdjustedPosition] = useState<{ x: number; y: number } | null>(null);
   const [isVisible, setIsVisible] = useState(false);

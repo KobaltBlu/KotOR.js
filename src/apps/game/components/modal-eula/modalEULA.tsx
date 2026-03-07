@@ -1,8 +1,7 @@
 import React, { useEffect } from "react";
-
-import { KotORModal } from "@/apps/game/components/modal/modal";
-import { useApp } from "@/apps/game/context/AppContext";
-import { EULA_VERSION, EULA_DATE, EULA } from "@/apps/game/eula";
+import { KotORModal } from "../modal/modal";
+import { useApp } from "../../context/AppContext";
+import { EULA_VERSION, EULA_DATE, EULA } from "../../eula";
 
 export const ModalEULA = () => {
   const appContext = useApp();

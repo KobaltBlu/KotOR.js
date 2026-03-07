@@ -1,7 +1,7 @@
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import type { IGFFFieldJSON } from "@/interface/resource/IGFFFieldJSON";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { CExoLocString } from "./CExoLocString";
+import { GFFStruct } from "./GFFStruct";
+import type { IGFFFieldJSON } from "../interface/resource/IGFFFieldJSON";
 
 /**
  * Represents a field within a GFF (Generic File Format) structure.
@@ -316,7 +316,7 @@ export class GFFField {
   getFieldByLabel(Label: string): GFFField | null {
     if(this.childStructs.length){
       for(let i = 0; i < this.childStructs[0].fields.length; i++){
-        const field = this.childStructs[0].fields[i];
+        let field = this.childStructs[0].fields[i];
         if (field.label == Label){
           return field;
         }
@@ -479,7 +479,7 @@ export class GFFField {
           val = 0;
         }
         
-        if(val >= -2147483648 && val <= 21474836487){
+        if(val >= -2147483648 && val <= 2147483647){
           this.value = val;
         }else{
           console.error('Field.setValue INT OutOfBounds', val, this);
@@ -670,7 +670,7 @@ export class GFFField {
    * ```
    */
   removeChildStruct(strt: GFFStruct): this {
-    const index = this.childStructs.indexOf(strt);
+    let index = this.childStructs.indexOf(strt);
     if(index >= 0){
       this.childStructs.splice(index, 1);
     }

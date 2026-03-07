@@ -1,6 +1,6 @@
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
 
 /**
  * EncounterSpawnEntry class.
@@ -17,7 +17,7 @@ export class EncounterSpawnEntry {
   spawnCR = 0;
 
   save(){
-    const struct = new GFFStruct();
+    let struct = new GFFStruct();
 
     struct.addField( new GFFField(GFFDataType.RESREF, 'SpawnResRef') ).setValue(this.spawnResref);
     struct.addField( new GFFField(GFFDataType.FLOAT, 'SpawnCR') ).setValue(this.spawnCR);
@@ -27,7 +27,7 @@ export class EncounterSpawnEntry {
 
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
-      const entry = new EncounterSpawnEntry();
+      let entry = new EncounterSpawnEntry();
 
       if(struct.hasField('SpawnResRef'))
         entry.spawnResref = struct.getFieldByLabel('SpawnResRef').getValue();

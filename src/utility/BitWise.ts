@@ -39,8 +39,8 @@ export class BitWise {
    * @param mask - The mask to check against.
    * @returns True if the value is an instance of the mask, false otherwise.
    */
-  static InstanceOfObject<T extends { objectType?: number }>(value: T | null | undefined, mask: number): T | undefined {
-    if (value == null || typeof value !== 'object') return undefined;
-    return ((value as T).objectType & mask) === mask ? value : undefined;
+  static InstanceOfObject(value: any, mask: number): any {
+    if(typeof value !== 'object') return false;
+    return (value?.objectType & mask) == mask ? value : undefined;
   }
 }

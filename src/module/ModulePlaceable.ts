@@ -1,44 +1,43 @@
-import { AudioEmitter } from "@/audio/AudioEmitter";
-import { AudioEngine } from "@/audio/AudioEngine";
-import { GameEffectFactory } from "@/effects/GameEffectFactory";
-import { SWBodyBag } from "@/engine/rules/SWBodyBag";
-import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
-import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { ModulePlaceableAnimState } from "@/enums/module/ModulePlaceableAnimState";
-import { ModulePlaceableObjectSound } from "@/enums/module/ModulePlaceableObjectSound";
-import { ModulePlaceableState } from "@/enums/module/ModulePlaceableState";
-import { SkillType } from "@/enums/nwscript/SkillType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { SSFType } from "@/enums/resource/SSFType";
-import { GameState } from "@/GameState";
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
-import { MDLLoader, ResourceLoader } from "@/loaders";
-import type { ModuleItem } from "@/module/ModuleItem";
-import { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleRoom } from "@/module/ModuleRoom";
-import { OdysseyWalkMesh } from "@/odyssey";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { DLGObject } from "@/resource/DLGObject";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { coerceGFFToNumber } from "@/resource/GFFStruct";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { OdysseyModel3D } from "@/three/odyssey";
-// import { TwoDAManager, InventoryManager, AppearanceManager, MenuManager, ModuleObjectManager, FactionManager } from "@/managers";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
+import type { ModuleRoom } from "./ModuleRoom";
+import { AudioEmitter } from "../audio/AudioEmitter";
+import { BinaryReader } from "../utility/binary/BinaryReader";
+import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
+import { ModulePlaceableState } from "../enums/module/ModulePlaceableState";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+import { SSFType } from "../enums/resource/SSFType";
+import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
+import { NWScript } from "../nwscript/NWScript";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
+import { CExoLocString } from "../resource/CExoLocString";
+import { DLGObject } from "../resource/DLGObject";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { MDLLoader, ResourceLoader } from "../loaders";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { OdysseyModel3D } from "../three/odyssey";
+import { SWPlaceableAppearance } from "../engine/rules/SWPlaceableAppearance";
+// import { TwoDAManager, InventoryManager, AppearanceManager, MenuManager, ModuleObjectManager, FactionManager } from "../managers";
+import { AudioEngine } from "../audio/AudioEngine";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
+import { GameEffectFactory } from "../effects/GameEffectFactory";
+import { ModuleObject } from "./ModuleObject";
+import type { ModuleItem } from "./ModuleItem";
+import { DLGConversationType } from "../enums/dialog/DLGConversationType";
+import { SkillType } from "../enums/nwscript/SkillType";
+import { ModulePlaceableObjectSound } from "../enums/module/ModulePlaceableObjectSound";
+import { SWBodyBag } from "../engine/rules/SWBodyBag";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
   currentAnimState: ModulePlaceableAnimState;
   loop: boolean;
   started: boolean;
-}
+};
 
 enum ModulePlaceableEvent {
   OPEN_START,
@@ -49,11 +48,11 @@ enum ModulePlaceableEvent {
 
 /**
 * ModulePlaceable class.
-*
+* 
 * Class representing placeable objects found in modules areas.
-*
+* 
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*
+* 
 * @file ModulePlaceable.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -62,7 +61,7 @@ enum ModulePlaceableEvent {
 export class ModulePlaceable extends ModuleObject {
   openState: boolean;
   _state: ModulePlaceableState;
-  lastUsedBy: ModuleObject | undefined;
+  lastUsedBy: any;
   state: ModulePlaceableState;
   bodyBag: number;
   closeLockDC: number;
@@ -85,10 +84,10 @@ export class ModulePlaceable extends ModuleObject {
   y: number;
   z: number;
   defaultAnimPlayed: boolean;
-  useable: number;
-  isBodyBag: number;
-  lightState: number;
-  props: Record<string, unknown>;
+  useable: any;
+  isBodyBag: any;
+  lightState: any;
+  props: any;
 
   lastObjectOpened: ModuleObject;
   lastObjectClosed: ModuleObject;
@@ -112,7 +111,7 @@ export class ModulePlaceable extends ModuleObject {
 
     this.state = ModulePlaceableState.DEFAULT;
     this.appearance = 0;
-    this.autoRemoveKey = 0;
+    this.autoRemoveKey = false;
     this.bodyBag = 0;
     this.closeLockDC = 0;
     this.currentHP = 0;
@@ -163,12 +162,12 @@ export class ModulePlaceable extends ModuleObject {
       this.audioEmitter.maxDistance = 50;
       this.audioEmitter.load();
     }catch(e){
-      log.error('AudioEmitter failed to create on object', e as Error);
+      console.error('AudioEmitter failed to create on object', e);
     }
 
   }
 
-  onClick(_callee: ModuleObject){
+  onClick(callee: ModuleObject){
     GameState.getCurrentPlayer().actionUseObject( this );
   }
 
@@ -181,7 +180,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   update(delta = 0){
-
+    
     super.update(delta);
 
     if(this.collisionManager.walkmesh && this.model){
@@ -222,10 +221,10 @@ export class ModulePlaceable extends ModuleObject {
     if(!(this.model instanceof OdysseyModel3D))
       return;
 
-    const currentAnimation = this.model.getAnimationName();
+    let currentAnimation = this.model.getAnimationName();
     if(!this.animStateInfo.currentAnimState) this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
     if(this.animStateInfo.currentAnimState){
-      const animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
+      let animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
       if(animation){
         if(currentAnimation != animation.name?.toLowerCase()){
           if(!this.animStateInfo.started){
@@ -250,7 +249,7 @@ export class ModulePlaceable extends ModuleObject {
           }
         }
       }else{
-        log.error('Animation Missing', this.getTag(), this.getName(), this.animState);
+        console.error('Animation Missing', this.getTag(), this.getName(), this.animState);
         this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
       }
     }
@@ -262,19 +261,31 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   getX(){
-    return this.template.RootNode.hasField('X') ? this.template.RootNode.getNumberByLabel('X') : 0;
+    if(this.template.RootNode.hasField('X')){
+      return this.template.RootNode.getFieldByLabel('X').getValue();
+    }
+    return 0;
   }
 
   getY(){
-    return this.template.RootNode.hasField('Y') ? this.template.RootNode.getNumberByLabel('Y') : 0;
+    if(this.template.RootNode.hasField('Y')){
+      return this.template.RootNode.getFieldByLabel('Y').getValue();
+    }
+    return 0;
   }
 
   getZ(){
-    return this.template.RootNode.hasField('Z') ? this.template.RootNode.getNumberByLabel('Z') : 0;
+    if(this.template.RootNode.hasField('Z')){
+      return this.template.RootNode.getFieldByLabel('Z').getValue();
+    }
+    return 0;
   }
 
   getBearing(){
-    return this.template.RootNode.hasField('Bearing') ? this.template.RootNode.getNumberByLabel('Bearing') : 0;
+    if(this.template.RootNode.hasField('Bearing')){
+      return this.template.RootNode.getFieldByLabel('Bearing').getValue();
+    }
+    return 0;
   }
 
   isLocked(){
@@ -303,8 +314,8 @@ export class ModulePlaceable extends ModuleObject {
     return this.static;
   }
 
-  isUseable(): boolean {
-    return this.useable !== 0;
+  isUseable(){
+    return this.useable;
   }
 
   isOpen(){
@@ -322,9 +333,9 @@ export class ModulePlaceable extends ModuleObject {
     return [];
   }
 
-  getItemByTag(sTag = ''): ModuleItem | undefined {
+  getItemByTag(sTag = ''): ModuleItem {
     for(let i = 0; i < this.inventory.length; i++){
-      const item = this.inventory[i];
+      let item = this.inventory[i];
       if(item.getTag().toLowerCase() == sTag.toLowerCase()){
         return item;
       }
@@ -341,8 +352,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   getObjectSounds(){
-    type PlaceableObjSndRow = { __rowlabel?: number; label?: string; armortype?: string; opened?: string; closed?: string; destroyed?: string; used?: string; locked?: string };
-    let result: PlaceableObjSndRow = {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
+    let result = {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
     const apppearance = this.getAppearance();
     if(!apppearance) return result;
 
@@ -350,7 +360,7 @@ export class ModulePlaceable extends ModuleObject {
     if(!isNaN(soundIdx) && soundIdx >= 0){
       const table = GameState.TwoDAManager.datatables.get('placeableobjsnds');
       if(table && typeof table.rows[soundIdx] !== 'undefined'){
-        result = table.rows[soundIdx] as unknown as PlaceableObjSndRow;
+        result = table.rows[soundIdx];
       }
     }
     return result;
@@ -429,7 +439,7 @@ export class ModulePlaceable extends ModuleObject {
           GameState.MenuManager.MenuContainer.AttachContainer(this);
           GameState.MenuManager.MenuContainer.open();
         }
-
+    
         this.scripts[ModuleObjectScript.PlaceableOnOpen]?.run(this)
       break;
       case ModulePlaceableEvent.CLOSE_START:
@@ -459,7 +469,7 @@ export class ModulePlaceable extends ModuleObject {
         this.triggerEvent(ModulePlaceableEvent.OPEN_END);
       }
     }
-
+  
     const instance = this.scripts[ModuleObjectScript.PlaceableOnUsed];
     if(!instance){ return; }
     instance.run(this);
@@ -482,19 +492,19 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  lock(_object: ModuleObject){
+  lock(object: ModuleObject){
     if(!this.locked){ return; }
     this.locked = true;
-
+    
     const instance = this.scripts[ModuleObjectScript.PlaceableOnLock];
     if(!instance){ return; }
     instance.run(this);
   }
 
-  unlock(_object: ModuleObject){
+  unlock(object: ModuleObject){
     if(!this.locked){ return; }
     this.locked = false;
-
+    
     const instance = this.scripts[ModuleObjectScript.PlaceableOnUnlock];
     if(!instance){ return; }
     instance.run(this);
@@ -507,8 +517,8 @@ export class ModulePlaceable extends ModuleObject {
 
     const nSecuritySkill = object.getSkillLevel(SkillType.SECURITY);
     if(this.isLocked() && !this.keyRequired && nSecuritySkill >= 1){
-      const d20 = 20;//d20 rolls are auto 20's outside of combat
-      const skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
+      let d20 = 20;//d20 rolls are auto 20's outside of combat
+      let skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
       if(skillCheck >= 1 && nSecuritySkill >= 1){
         this.unlock(object);
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
@@ -525,7 +535,7 @@ export class ModulePlaceable extends ModuleObject {
     return true;
   }
 
-  close(_object: ModuleObject){
+  close(object: ModuleObject){
     if(this.isOpen() && this.state == ModulePlaceableState.OPEN){
       this.setAnimationState(ModulePlaceableAnimState.OPEN_CLOSE);
       this.triggerEvent(ModulePlaceableEvent.CLOSE_START);
@@ -536,11 +546,9 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   load(){
-    const templateResRef = this.getTemplateResRef();
-    if(templateResRef){
+    if(this.getTemplateResRef()){
       //Load template and merge fields
-      const resRef = typeof templateResRef === 'string' ? templateResRef : String(templateResRef);
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], resRef);
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], this.getTemplateResRef());
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
@@ -548,7 +556,7 @@ export class ModulePlaceable extends ModuleObject {
         this.loadInventory();
         this.loadScripts();
       }else{
-        log.error('Failed to load ModulePlaceable template');
+        console.error('Failed to load ModulePlaceable template');
         if(this.template instanceof GFFObject){
           this.initProperties();
           this.loadInventory();
@@ -564,8 +572,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   async loadModel(): Promise<OdysseyModel3D> {
-    const appearance = this.getAppearance();
-    const modelName = String(appearance?.modelname ?? '').replace(/\0[\s\S]*$/g,'').toLowerCase();
+    const modelName = this.getAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
     try {
       const mdl = await MDLLoader.loader.load(modelName);
       const plc = await OdysseyModel3D.FromMDL(mdl, {
@@ -580,7 +587,7 @@ export class ModulePlaceable extends ModuleObject {
 
       if(this.model instanceof OdysseyModel3D){
         this.model.removeFromParent();
-        try{ this.model.dispose(); }catch{ /* ignore dispose errors */ }
+        try{ this.model.dispose(); }catch(e){}
       }
 
       this.model = plc;
@@ -591,7 +598,7 @@ export class ModulePlaceable extends ModuleObject {
 
       this.model.disableMatrixUpdate();
     }catch(e){
-      log.error('ModulePlaceable.loadModel', e as Error);
+      console.error(e);
     }
 
     return this.model;
@@ -618,15 +625,15 @@ export class ModulePlaceable extends ModuleObject {
 
     const scriptsNode = this.template?.RootNode;
     if(!scriptsNode){ return; }
-
+    
     for(const scriptKey of scriptKeys){
       if(scriptsNode.hasField(scriptKey)){
-        const resRef = scriptsNode.getStringByLabel(scriptKey);
+        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
         if(!resRef){ continue; }
         const nwscript = GameState.NWScript.Load(resRef);
-        if(!nwscript){
-          log.warn(`ModulePlaceable.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-          continue;
+        if(!nwscript){ 
+          console.warn(`ModulePlaceable.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+          continue; 
         }
         nwscript.caller = this;
         this.scripts[scriptKey] = nwscript;
@@ -635,17 +642,17 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   loadInventory(){
-    const inventory = this.getItemList();
+    let inventory = this.getItemList();
     for(let i = 0; i < inventory.length; i++){
       this.loadItem( GFFObject.FromStruct( inventory[i] ) );
     }
   }
 
   loadItem( template: GFFObject){
-    const item = new GameState.Module.ModuleArea.ModuleItem(template);
+    let item = new GameState.Module.ModuleArea.ModuleItem(template);
     item.initProperties();
     item.load();
-    const hasItem = this.getItemByTag(item.getTag());
+    let hasItem = this.getItemByTag(item.getTag());
     if(hasItem){
       hasItem.setStackSize(hasItem.getStackSize() + 1);
       return hasItem;
@@ -666,7 +673,7 @@ export class ModulePlaceable extends ModuleObject {
 
       return walkmesh;
     }catch(e){
-      log.error('ModulePlaceable.loadWalkmesh', e as Error);
+      console.error(e);
       const walkmesh = new OdysseyWalkMesh();
       walkmesh.name = resRef;
       walkmesh.moduleObject = this;
@@ -677,28 +684,26 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   initProperties(){
-
-    const root = this.template.RootNode;
+    
     if(!this.initialized){
-      if(root.hasField('ObjectId')){
-        this.id = root.getNumberByLabel('ObjectId');
-      }else if(root.hasField('ID')){
-        this.id = root.getNumberByLabel('ID');
+      if(this.template.RootNode.hasField('ObjectId')){
+        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+      }else if(this.template.RootNode.hasField('ID')){
+        this.id = this.template.getFieldByLabel('ID').getValue();
       }
-
+      
       GameState.ModuleObjectManager.AddObjectById(this);
     }
 
-    if(root.hasField('LocName'))
-      this.name = this.template.getFieldByLabel('LocName').getCExoLocString().getValue();
+    if(this.template.RootNode.hasField('LocName'))
+      this.name = this.template.getFieldByLabel('LocName').getCExoLocString().getValue()
 
-    if(root.hasField('Animation')){
-      const animVal = root.getNumberByLabel('Animation');
-      this.setAnimationState(animVal as ModulePlaceableAnimState);
+    if(this.template.RootNode.hasField('Animation')){
+      this.setAnimationState(this.template.getFieldByLabel('Animation').getValue());
     }
 
-    if(root.hasField('AnimationState')){
-      const animState = root.getNumberByLabel('AnimationState');
+    if(this.template.RootNode.hasField('AnimationState')){
+      const animState = this.template.getFieldByLabel('AnimationState').getValue();
       switch(animState){
         case 1:
           this.setAnimationState(ModulePlaceableAnimState.OPEN);
@@ -721,160 +726,167 @@ export class ModulePlaceable extends ModuleObject {
       }
     }
 
-    if(root.hasField('Appearance')){
-      this.appearance = root.getNumberByLabel('Appearance');
+    if(this.template.RootNode.hasField('Appearance')){
+      this.appearance = this.template.getFieldByLabel('Appearance').getValue();
       try{
         this.placeableAppearance = GameState.AppearanceManager.GetPlaceableAppearanceById(this.appearance);
       }catch(e){
-        log.error('ModulePlaceable.initProperties GetPlaceableAppearanceById', e as Error);
+        console.error(e);
       }
     }
 
-    if(root.hasField('AutoRemoveKey'))
-      this.autoRemoveKey = root.getNumberByLabel('AutoRemoveKey');
+    if(this.template.RootNode.hasField('AutoRemoveKey'))
+      this.autoRemoveKey = this.template.getFieldByLabel('AutoRemoveKey').getValue();
 
-    if(root.hasField('BodyBag'))
-      this.bodyBag = root.getNumberByLabel('BodyBag');
+    if(this.template.RootNode.hasField('BodyBag'))
+      this.bodyBag = this.template.getFieldByLabel('BodyBag').getValue();
 
-    if(root.hasField('CloseLockDC'))
-      this.closeLockDC = root.getNumberByLabel('CloseLockDC');
+    if(this.template.RootNode.hasField('CloseLockDC'))
+      this.closeLockDC = this.template.getFieldByLabel('CloseLockDC').getValue();
 
-    if(root.hasField('Conversation')){
-      this.conversation = DLGObject.FromResRef(root.getStringByLabel('Conversation'));
+    if(this.template.RootNode.hasField('Conversation')){
+      this.conversation = DLGObject.FromResRef(this.template.getFieldByLabel('Conversation').getValue());
     }
 
-    if(root.hasField('CurrentHP'))
-      this.currentHP = root.getNumberByLabel('CurrentHP');
+    if(this.template.RootNode.hasField('CurrentHP'))
+      this.currentHP = this.template.getFieldByLabel('CurrentHP').getValue();
 
-    if(root.hasField('DisarmDC'))
-      this.disarmDC = root.getNumberByLabel('DisarmDC');
+    if(this.template.RootNode.hasField('DisarmDC'))
+      this.disarmDC = this.template.getFieldByLabel('DisarmDC').getValue();
 
-    if(root.hasField('Faction')){
-      this.factionId = root.getNumberByLabel('Faction');
-      if((this.factionId & 0xFFFFFFFF) === 0xFFFFFFFF){
+    if(this.template.RootNode.hasField('Faction')){
+      this.factionId = this.template.getFieldByLabel('Faction').getValue();
+      if((this.factionId & 0xFFFFFFFF) == -1){
         this.factionId = 0;
       }
     }
     this.faction = GameState.FactionManager.factions.get(this.factionId);
 
-    if(root.hasField('Fort'))
-      this.fort = root.getNumberByLabel('Fort');
+    if(this.template.RootNode.hasField('Fort'))
+      this.fort = this.template.getFieldByLabel('Fort').getValue();
+        
+    if(this.template.RootNode.hasField('HP'))
+      this.hp = this.template.RootNode.getFieldByLabel('HP').getValue();
 
-    if(root.hasField('HP'))
-      this.hp = root.getNumberByLabel('HP');
+    if(this.template.RootNode.hasField('Hardness'))
+      this.hardness = this.template.RootNode.getFieldByLabel('Hardness').getValue();
+    
+    if(this.template.RootNode.hasField('HasInventory'))
+      this.hasInventory = this.template.RootNode.getFieldByLabel('HasInventory').getValue();
 
-    if(root.hasField('Hardness'))
-      this.hardness = root.getNumberByLabel('Hardness');
+    if(this.template.RootNode.hasField('Interruptable'))
+      this.interruptable = this.template.RootNode.getFieldByLabel('Interruptable').getValue();
+        
+    if(this.template.RootNode.hasField('KeyName'))
+      this.keyName = this.template.RootNode.getFieldByLabel('KeyName').getValue();
+  
+    if(this.template.RootNode.hasField('KeyRequired'))
+      this.keyRequired = this.template.RootNode.getFieldByLabel('KeyRequired').getValue();
 
-    if(root.hasField('HasInventory'))
-      this.hasInventory = root.getBooleanByLabel('HasInventory');
-
-    if(root.hasField('Interruptable'))
-      this.interruptable = root.getBooleanByLabel('Interruptable');
-
-    if(root.hasField('KeyName'))
-      this.keyName = root.getStringByLabel('KeyName');
-
-    if(root.hasField('KeyRequired'))
-      this.keyRequired = root.getBooleanByLabel('KeyRequired');
-
-    if(root.hasField('LocName'))
+    if(this.template.RootNode.hasField('LocName'))
       this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
 
-    if(root.hasField('Locked'))
-      this.locked = root.getBooleanByLabel('Locked');
+    if(this.template.RootNode.hasField('Locked'))
+      this.locked = this.template.getFieldByLabel('Locked').getValue();
 
-    if(root.hasField('Min1HP'))
-      this.min1HP = root.getBooleanByLabel('Min1HP');
+    if(this.template.RootNode.hasField('Min1HP'))
+      this.min1HP = this.template.getFieldByLabel('Min1HP').getValue();
 
-    if(root.hasField('OpenLockDC'))
-      this.openLockDC = root.getNumberByLabel('OpenLockDC');
+    if(this.template.RootNode.hasField('OpenLockDC'))
+      this.openLockDC = this.template.getFieldByLabel('OpenLockDC').getValue();
 
-    if(root.hasField('PaletteID'))
-      this.paletteID = root.getNumberByLabel('PaletteID');
+    if(this.template.RootNode.hasField('PaletteID'))
+      this.paletteID = this.template.getFieldByLabel('PaletteID').getValue();
 
-    if(root.hasField('Plot'))
-      this.plot = root.getBooleanByLabel('Plot');
+    if(this.template.RootNode.hasField('Plot'))
+      this.plot = this.template.getFieldByLabel('Plot').getValue();
 
-    if(root.hasField('PartyInteract'))
-      this.partyInteract = root.getBooleanByLabel('PartyInteract');
+    if(this.template.RootNode.hasField('PartyInteract'))
+      this.partyInteract = this.template.getFieldByLabel('PartyInteract').getValue();
 
-    if(root.hasField('PortraidId')){
-      this.portraitId = root.getNumberByLabel('PortraidId');
+    if(this.template.RootNode.hasField('Plot'))
+      this.plot = this.template.getFieldByLabel('Plot').getValue();
+
+    if(this.template.RootNode.hasField('PortraidId')){
+      this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
       this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
     }
 
-    if(root.hasField('Ref'))
-      this.ref = root.getNumberByLabel('Ref');
+    if(this.template.RootNode.hasField('Ref'))
+      this.ref = this.template.getFieldByLabel('Ref').getValue();
 
-    if(root.hasField('Static'))
-      this.static = root.getBooleanByLabel('Static');
+    if(this.template.RootNode.hasField('Static'))
+      this.static = this.template.getFieldByLabel('Static').getValue();
 
-    if(root.hasField('Tag'))
-      this.tag = root.getStringByLabel('Tag');
+    if(this.template.RootNode.hasField('Tag'))
+      this.tag = this.template.getFieldByLabel('Tag').getValue();
 
-    if(root.hasField('TemplateResRef'))
-      this.templateResRef = root.getStringByLabel('TemplateResRef');
+    if(this.template.RootNode.hasField('TemplateResRef'))
+      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
 
-    if(root.hasField('TrapDetectDC'))
-      this.trapDetectDC = root.getNumberByLabel('TrapDetectDC');
+    if(this.template.RootNode.hasField('TrapDetectDC'))
+      this.trapDetectDC = this.template.getFieldByLabel('TrapDetectDC').getValue();
+  
+    if(this.template.RootNode.hasField('TrapDetectable'))
+      this.trapDetectable = !!this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
 
-    if(root.hasField('TrapDetectable'))
-      this.trapDetectable = root.getBooleanByLabel('TrapDetectable');
+    if(this.template.RootNode.hasField('TrapDisarmable'))
+      this.trapDisarmable = !!this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
+  
+    if(this.template.RootNode.hasField('TrapFlag'))
+      this.trapFlag = !!this.template.RootNode.getFieldByLabel('TrapFlag').getValue();
 
-    if(root.hasField('TrapDisarmable'))
-      this.trapDisarmable = root.getBooleanByLabel('TrapDisarmable');
+    if(this.template.RootNode.hasField('TrapOneShot'))
+      this.trapOneShot = !!this.template.getFieldByLabel('TrapOneShot').getValue();
 
-    if(root.hasField('TrapFlag'))
-      this.trapFlag = root.getBooleanByLabel('TrapFlag');
+    if(this.template.RootNode.hasField('TemplateResRef'))
+      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
 
-    if(root.hasField('TrapOneShot'))
-      this.trapOneShot = root.getBooleanByLabel('TrapOneShot');
+    if(this.template.RootNode.hasField('TrapType'))
+      this.trapType = this.template.getFieldByLabel('TrapType').getValue();
 
-    if(root.hasField('TrapType'))
-      this.trapType = root.getNumberByLabel('TrapType');
+    if(this.template.RootNode.hasField('Useable'))
+      this.useable = this.template.getFieldByLabel('Useable').getValue();
 
-    if(root.hasField('Useable'))
-      this.useable = root.getNumberByLabel('Useable');
+    if(this.template.RootNode.hasField('Will'))
+      this.will = this.template.getFieldByLabel('Will').getValue();
 
-    if(root.hasField('Will'))
-      this.will = root.getNumberByLabel('Will');
+    if(this.template.RootNode.hasField('X'))
+      this.position.x = this.template.RootNode.getFieldByLabel('X').getValue();
 
-    if(root.hasField('X'))
-      this.position.x = root.getNumberByLabel('X');
+    if(this.template.RootNode.hasField('Y'))
+      this.position.y = this.template.RootNode.getFieldByLabel('Y').getValue();
 
-    if(root.hasField('Y'))
-      this.position.y = root.getNumberByLabel('Y');
+    if(this.template.RootNode.hasField('Z'))
+      this.position.z = this.template.RootNode.getFieldByLabel('Z').getValue();
 
-    if(root.hasField('Z'))
-      this.position.z = root.getNumberByLabel('Z');
+    if(this.template.RootNode.hasField('Bearing'))
+      this.bearing = this.template.RootNode.getFieldByLabel('Bearing').getValue();
+    
+    if(this.template.RootNode.hasField('TweakColor'))
+      this.tweakColor = this.template.getFieldByLabel('TweakColor').getValue();
+    
+    if(this.template.RootNode.hasField('UseTweakColor'))
+      this.useTweakColor = this.template.getFieldByLabel('UseTweakColor').getValue();
 
-    if(root.hasField('Bearing'))
-      this.bearing = root.getNumberByLabel('Bearing');
+    if(this.template.RootNode.hasField('NotBlastable'))
+      this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
 
-    if(root.hasField('TweakColor'))
-      this.tweakColor = root.getNumberByLabel('TweakColor');
-
-    if(root.hasField('UseTweakColor'))
-      this.useTweakColor = root.getBooleanByLabel('UseTweakColor');
-
-    if(root.hasField('NotBlastable'))
-      this.notBlastable = root.getBooleanByLabel('NotBlastable');
-
-    if(root.hasField('SWVarTable')){
-      const localBools = root.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+    if(this.template.RootNode.hasField('SWVarTable')){
+      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      //console.log(localBools);
       for(let i = 0; i < localBools.length; i++){
-        const data = localBools[i].getNumberByLabel('Variable');
+        let data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 !== 0);
+          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
       }
     }
 
-    if(root.hasField('EffectList')){
-      const effects = root.getFieldByLabel('EffectList').getChildStructs() || [];
+    if(this.template.RootNode.hasField('EffectList')){
+      let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
       for(let i = 0; i < effects.length; i++){
-        const effect = GameEffectFactory.EffectFromStruct(effects[i]);
+        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
         if(effect){
           effect.setAttachedObject(this);
           this.effects.push(effect);
@@ -882,7 +894,7 @@ export class ModulePlaceable extends ModuleObject {
         }
       }
     }
-
+    
     this.initialized = true;
 
   }
@@ -898,18 +910,18 @@ export class ModulePlaceable extends ModuleObject {
       }
       this.inventory.splice(0, 1);
     }
-
+    
     try{
       const wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
       if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
-    }catch{ /* ignore walkmesh index errors */ }
+    }catch(e){}
   }
 
   save(){
-    const gff = new GFFObject();
+    let gff = new GFFObject();
     gff.FileType = 'UTP ';
 
-    gff.RootNode.addField( this.actionQueueToActionList() );
+    const actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Animation') ).setValue(this.animState);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Appearance') ).setValue(this.appearance);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
@@ -949,12 +961,12 @@ export class ModulePlaceable extends ModuleObject {
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'KeyName') ).setValue(this.keyName);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'KeyRequired') ).setValue(this.keyRequired ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'KeyRequired') ).setValue(this.keyRequired);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'LightState') ).setValue(this.lightState ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') ).setValue(this.locName);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Lockable') ).setValue(this.lockable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Locked') ).setValue(this.locked ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Lockable') ).setValue(this.lockable);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Locked') ).setValue(this.locked);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
     //Scripts
@@ -973,25 +985,25 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnUnlock) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnUnlock]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnUsed) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnUsed]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnUserDefined]?.name || '');
-
+    
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Open') ).setValue(this.isOpen() ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') ).setValue(this.ref);
 
     //SWVarTable
-    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapFlag') ).setValue(this.trapFlag ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapFlag') ).setValue(this.trapFlag);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapType') ).setValue(this.trapType);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Useable') ).setValue(this.useable);
     gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
@@ -1007,55 +1019,53 @@ export class ModulePlaceable extends ModuleObject {
   animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation {
     const animations2DA = GameState.TwoDAManager.datatables.get('animations');
     if(animations2DA){
-      const row = (idx: number): ITwoDAAnimation => animations2DA.rows[idx] as unknown as ITwoDAAnimation;
       switch( animation_constant ){
-        case ModulePlaceableAnimState.DEFAULT:        //10000, //304 -
-          return row(304);
+        case ModulePlaceableAnimState.DEFAULT:        //10000, //304 - 
+          return animations2DA.rows[304];
         case ModulePlaceableAnimState.DAMAGE:         //10014, //305 - damage
-          return row(305);
+          return animations2DA.rows[305];
         case ModulePlaceableAnimState.DEAD: 	        //10072, //307
-          return row(307);
+          return animations2DA.rows[307];
         case ModulePlaceableAnimState.ACTIVATE: 	    //10073, //308 - NWSCRIPT Constant: 200
-          return row(308);
+          return animations2DA.rows[308];
         case ModulePlaceableAnimState.DEACTIVATE:     //10074, //309 - NWSCRIPT Constant: 201
-          return row(309);
+          return animations2DA.rows[309];
         case ModulePlaceableAnimState.OPEN: 			    //10075, //310 - NWSCRIPT Constant: 202
-          return row(310);
+          return animations2DA.rows[310];
         case ModulePlaceableAnimState.CLOSE:          //10076, //311 - NWSCRIPT Constant: 203
-          return row(311);
+          return animations2DA.rows[311];
         case ModulePlaceableAnimState.CLOSE_OPEN: 	  //10077, //312
-          return row(312);
+          return animations2DA.rows[312];
         case ModulePlaceableAnimState.OPEN_CLOSE:     //10078, //313
-          return row(313);
+          return animations2DA.rows[313];
         case ModulePlaceableAnimState.ANIMLOOP01:     //10106, //316 - NWSCRIPT Constant: 204
-          return row(316);
+          return animations2DA.rows[316];
         case ModulePlaceableAnimState.ANIMLOOP02:     //10107, //317 - NWSCRIPT Constant: 205
-          return row(317);
+          return animations2DA.rows[317];
         case ModulePlaceableAnimState.ANIMLOOP03:     //10108, //318 - NWSCRIPT Constant: 206
-          return row(318);
+          return animations2DA.rows[318];
         case ModulePlaceableAnimState.ANIMLOOP04:     //10110, //319 - NWSCRIPT Constant: 207
-          return row(319);
+          return animations2DA.rows[319];
         case ModulePlaceableAnimState.ANIMLOOP05:     //10111, //320 - NWSCRIPT Constant: 208
-          return row(320);
+          return animations2DA.rows[320];
         case ModulePlaceableAnimState.ANIMLOOP06:     //10112, //321 - NWSCRIPT Constant: 209
-          return row(321);
+          return animations2DA.rows[321];
         case ModulePlaceableAnimState.ANIMLOOP07:     //10113, //322 - NWSCRIPT Constant: 210
-          return row(322);
+          return animations2DA.rows[322];
         case ModulePlaceableAnimState.ANIMLOOP08:     //10114, //323 - NWSCRIPT Constant: 211
-          return row(323);
+          return animations2DA.rows[323];
         case ModulePlaceableAnimState.ANIMLOOP09:     //10115, //324 - NWSCRIPT Constant: 212
-          return row(324);
-        case ModulePlaceableAnimState.ANIMLOOP10:     //10116, //325 - NWSCRIPT Constant: 213
-          return row(325);
+          return animations2DA.rows[324];
+        case ModulePlaceableAnimState.ANIMLOOP10:     //10116, //325 - NWSCRIPT Constant: 213 
+          return animations2DA.rows[325];
       }
 
       return super.animationConstantToAnimation( animation_constant );
     }
-    return super.animationConstantToAnimation( animation_constant );
   }
 
   static GenerateTemplate(){
-    const template = new GFFObject();
+    let template = new GFFObject();
     template.FileType = 'UTP ';
 
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AnimationState') );
@@ -1127,7 +1137,7 @@ export class ModulePlaceable extends ModuleObject {
     placeable.hasInventory = true;
     placeable.min1HP = true;
     placeable.partyInteract = true;
-    placeable.isBodyBag = 1;
+    placeable.isBodyBag = true;
     return placeable;
   }
 

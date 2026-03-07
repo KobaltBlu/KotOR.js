@@ -1,18 +1,18 @@
-﻿import * as path from "path";
-import { GFFObject } from "@/resource/GFFObject";
-import { TextureLoader } from "@/loaders";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { CurrentGame } from "@/engine/CurrentGame";
-import { GFFField } from "@/resource/GFFField";
-import { GameState } from "@/GameState";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { ERFObject } from "@/resource/ERFObject";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { Utility } from "@/utility/Utility";
-import EngineLocation from "@/engine/EngineLocation";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { ResourceTypes } from "@/KotOR";
+import * as path from "path";
+import { GFFObject } from "../resource/GFFObject";
+import { TextureLoader } from "../loaders";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
+import { CurrentGame } from "./CurrentGame";
+import { GFFField } from "../resource/GFFField";
+import { GameState } from "../GameState";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ERFObject } from "../resource/ERFObject";
+import { BinaryReader } from "../utility/binary/BinaryReader";
+import { Utility } from "../utility/Utility";
+import EngineLocation from "./EngineLocation";
+import { GameFileSystem } from "../utility/GameFileSystem";
+import { ResourceTypes } from "../KotOR";
 import { exists } from "fs";
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
@@ -253,12 +253,9 @@ export class SaveGame {
    * await saveGame.loadPIFO();
    * // Player template is now available in GameState.PartyManager.PlayerTemplate
    */
-  async loadPIFO(): Promise<void>{
+  async loadPIFO(){
     try{
       const buffer = await GameFileSystem.readFile(path.join(this.directory, 'pifo.ifo'));
-      if (!buffer || buffer.byteLength < 56) {
-        return;
-      }
       this.pifo = new GFFObject(buffer);
       if(!this.pifo.RootNode.hasField('Mod_PlayerList')){ return; }
 
@@ -290,12 +287,10 @@ export class SaveGame {
    * await saveGame.loadPC();
    * // PC data is now available in saveGame.pc
    */
-  async loadPC(): Promise<void>{
+  async loadPC(){
     try{
       const buffer = await this.SAVEGAME.getResourceBufferByResRef('pc', ResourceTypes.utc);
-      if (!buffer || buffer.byteLength < 56) {
-        return;
-      }
+      if(!buffer){ return; }
       this.pc = new GFFObject(buffer);
     }catch(e){
       console.error(e);
@@ -326,7 +321,7 @@ export class SaveGame {
    * await saveGame.load();
    * // Game state is now restored and ready to play
    */
-  async load(): Promise<void>{
+  async load(){
     localStorage.setItem(`${GameState.GameKey}_last_save_id`, SaveGame.saves.indexOf(this).toString());
     GameState.isLoadingSave = true;
     GameState.TutorialWindowTracker = [];
@@ -385,7 +380,7 @@ export class SaveGame {
    * await saveGame.initGameInProgressFolder();
    * // Game resources are now available in the game in progress folder
    */
-  async initGameInProgressFolder(): Promise<void>{
+  async initGameInProgressFolder(){
     await CurrentGame.InitGameInProgressFolder(true);
     await CurrentGame.ExtractERFToGameInProgress( this.SAVEGAME );
   }
@@ -409,7 +404,7 @@ export class SaveGame {
    * await saveGame.initSaveGameResourceLoader();
    * // SAVEGAME.sav is now loaded and ready for resource extraction
    */
-  async initSaveGameResourceLoader(): Promise<void>{
+  async initSaveGameResourceLoader(){
     this.SAVEGAME = new ERFObject(path.join(this.directory, 'SAVEGAME.sav'));
     await this.SAVEGAME.load();
     this.isLoaded = true;
@@ -439,7 +434,7 @@ export class SaveGame {
    * await saveGame.loadGlobalVARS();
    * // Global variables are now available in GameState.GlobalVariableManager
    */
-  async loadGlobalVARS(): Promise<void>{
+  async loadGlobalVARS(){
     console.log('SaveGame', 'Loading GlobalVARS...');
     const data = await GameFileSystem.readFile(path.join(this.directory, 'GLOBALVARS.res'));
     this.globalVars = new GFFObject(data);
@@ -536,7 +531,7 @@ export class SaveGame {
    * await saveGame.loadPartyTable();
    * // Party data is now available in GameState.PartyManager
    */
-  async loadPartyTable(): Promise<void>{
+  async loadPartyTable(){
     console.log('SaveGame', 'Loading Partytable...');
     try{
       const data = await GameFileSystem.readFile(path.join(this.directory, 'PARTYTABLE.res'));
@@ -567,7 +562,7 @@ export class SaveGame {
    * await saveGame.loadInventory();
    * // Inventory items are now available in GameState.InventoryManager
    */
-  async loadInventory(): Promise<void>{
+  async loadInventory(){
     console.log('SaveGame', 'Loading Inventory...');
 
     try{
@@ -591,7 +586,7 @@ export class SaveGame {
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * console.log(saveGame.getAreaName()); // "Endar Spire"
    */
-  getAreaName(): string{
+  getAreaName(){
     return this.AREANAME;
   }
 
@@ -604,7 +599,7 @@ export class SaveGame {
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * console.log(saveGame.getLastModule()); // "001EBO"
    */
-  getLastModule(): string{
+  getLastModule(){
     return this.LASTMODULE;
   }
 
@@ -617,7 +612,7 @@ export class SaveGame {
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * console.log(saveGame.getSaveName()); // "My Save Game" or ""
    */
-  getSaveName(): string{
+  getSaveName(){
     return this.SAVEGAMENAME;
   }
 
@@ -638,7 +633,7 @@ export class SaveGame {
    * customSave.SAVEGAMENAME = 'My Adventure';
    * console.log(customSave.getFullName()); // "Game1 - My Adventure"
    */
-  getFullName(): string{
+  getFullName(){
     if(this.getSaveName() != ''){
       return this.folderName.split(' - ')[1] + ' - ' + this.getSaveName();
     }else{
@@ -658,7 +653,7 @@ export class SaveGame {
    * const manualSave = new SaveGame('000002 - Game1');
    * console.log(manualSave.getIsAutoSave()); // false
    */
-  getIsAutoSave(): boolean{
+  getIsAutoSave(){
     return this.folderName.split(' - ')[1] == 'AUTOSAVE';
   }
 
@@ -674,7 +669,7 @@ export class SaveGame {
    * const manualSave = new SaveGame('000002 - Game1');
    * console.log(manualSave.getIsQuickSave()); // false
    */
-  getIsQuickSave(): boolean{
+  getIsQuickSave(){
     return this.folderName.split(' - ')[1] == 'QUICKSAVE';
   }
 
@@ -690,7 +685,7 @@ export class SaveGame {
    * const quickSave = new SaveGame('000000 - QUICKSAVE');
    * console.log(quickSave.getSaveNumber()); // 0
    */
-  getSaveNumber(): number{
+  getSaveNumber(){
     return parseInt(this.folderName.split(' - ')[0]);
   }
 
@@ -704,7 +699,7 @@ export class SaveGame {
    * saveGame.TIMEPLAYED = 7200; // 2 hours in seconds
    * console.log(saveGame.getHoursPlayed()); // 2
    */
-  getHoursPlayed(): number{
+  getHoursPlayed(){
     return Math.floor(this.TIMEPLAYED / 3600);
   }
 
@@ -718,7 +713,7 @@ export class SaveGame {
    * saveGame.TIMEPLAYED = 7320; // 2 hours and 2 minutes in seconds
    * console.log(saveGame.getMinutesPlayed()); // 2
    */
-  getMinutesPlayed(): number{
+  getMinutesPlayed(){
     return Math.floor(60 * ((this.TIMEPLAYED / 3600) % 1));
   }
 
@@ -740,7 +735,7 @@ export class SaveGame {
    * const thumbnail = await saveGame.getThumbnail();
    * // Use thumbnail in UI
    */
-  async getThumbnail(): Promise<OdysseyTexture>{
+  async getThumbnail(){
     if(this.thumbnail){ return this.thumbnail; }
 
     try{
@@ -779,7 +774,7 @@ export class SaveGame {
    * const playerPortrait = await saveGame.getPortrait(0); // First party member
    * const companionPortrait = await saveGame.getPortrait(1); // Second party member
    */
-  async getPortrait(nth = 0): Promise<OdysseyTexture|undefined>{
+  async getPortrait(nth = 0){
 
     let name = undefined;
 
@@ -797,32 +792,56 @@ export class SaveGame {
   /**
    * Saves the current game state to this save game.
    *
-   * This method exports the current game state including save metadata,
-   * party data, and global variables to the save game directory. It does
-   * not create a new save game, but updates an existing one.
+   * Order matches CServerExoAppInternal::StallEventSaveGame (reva): StoreCurrentModule
+   * (module.save() → gameinprogress), CSWPartyTable::Save, CSWGlobalVariableTable::Save,
+   * SavePrimaryPlayerInfo (if any), savenfo.res (NFO), then CERFFile::ImportFiles from
+   * GAMEINPROGRESS into SAVEGAME.sav. CServerExoAppInternal::SaveGame does CreateDirectory
+   * (or CleanDirectory), optional disk-space check (HasEnoughDiskSpaceForSaveGame), then
+   * DoSaveGameScreenShot before the stall event; we take the screenshot after exports.
    *
    * @async
    * @returns {Promise<void>} Resolves when the save operation is complete.
-   *
    * @throws {Error} Throws an error if the save operation fails.
    *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * await saveGame.Save();
-   * // Current game state has been saved
    */
-  async Save(): Promise<void>{
-    //TODO
-    if(!GameState.module){ return; }
-    try{
-      //Go ahead and run mkdir. It will silently fail if it already exists
-      await GameFileSystem.mkdir(this.directory, { recursive: false });
+  async Save(): Promise<void> {
+    if (!GameState.module) {
+      return;
+    }
+    try {
+      await GameFileSystem.mkdir(this.directory, { recursive: true });
 
+      // 1. StoreCurrentModule equivalent: persist module/area to gameinprogress
+      await GameState.module.save();
+
+      // 2. CSWPartyTable::Save(save_dir, 1)
+      await GameState.PartyManager.Export(this.directory);
+
+      // 3. CSWGlobalVariableTable::Save(save_dir)
+      await SaveGame.ExportGlobalVars(this.directory);
+
+      // 4. savenfo.res (NFO V2.0): AREANAME, LASTMODULE, TIMEPLAYED, CHEATUSED, SAVEGAMENAME, GAMEPLAYHINT, STORYHINT, LIVE*, PORTRAIT*
       await SaveGame.ExportSaveNFO(this.directory, this.SAVEGAMENAME);
-      await GameState.PartyManager.Export( this.directory );
-      await SaveGame.ExportGlobalVars( this.directory );
-    }catch(e){
+
+      // 5. Pack GAMEINPROGRESS into SAVEGAME.sav (CERFFile::ImportFiles from gameinprogress)
+      await CurrentGame.ExportToSaveFolder(this.directory);
+
+      // 6. Screenshot (binary does DoSaveGameScreenShot in SaveGame() before stall event)
+      const tga = await GameState.GetScreenShot();
+      await tga.export(path.join(this.directory, 'Screen.tga'));
+
+      // 7. Refresh metadata on this instance
+      this.AREANAME = GameState.module.area?.areaName?.getValue?.() ?? this.AREANAME;
+      this.LASTMODULE = GameState.module.filename ? GameState.module.filename.toUpperCase() : this.LASTMODULE;
+      this.TIMEPLAYED = GameState.time ?? this.TIMEPLAYED;
+      this.TIMESTAMP = new Date();
+      this.PCNAME = (GameState.PartyManager?.Player as any)?.getName?.() ?? this.PCNAME ?? '';
+    } catch (e) {
       console.error(e);
+      throw e;
     }
   }
 
@@ -853,59 +872,56 @@ export class SaveGame {
    * // Create an autosave
    * await SaveGame.SaveCurrentGame('', 1);
    */
-  static async SaveCurrentGame( name = '', replace_id = 0 ): Promise<void>{
+  static async SaveCurrentGame( name = '', replace_id = 0 ){
     if(!GameState.module){ return; }
 
     GameState.MenuManager.LoadScreen.open();
     GameState.MenuManager.LoadScreen.showSavingMessage();
 
-    let save_id = 0;
-    let save_dir_name = '';
-    if(replace_id === 0){
-      save_id = 0;
-      save_dir_name = `${Utility.PadInt(save_id, 6)} - QUICKSAVE`;
-      if(!name){
-        name = 'QUICKSAVE';
-      }
-    }else if(replace_id === 1){
-      save_id = 1;
-      save_dir_name = `${Utility.PadInt(save_id, 6)} - AUTOSAVE`;
-      if(!name){
-        name = 'AUTOSAVE';
-      }
-    }else{
-      save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
-      save_dir_name = Utility.PadInt(save_id, 6)+' - Game'+(save_id-1);
-    }
+    let save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
 
     //Prepare SaveGame directory
     if(!(await GameFileSystem.exists(SaveGame.base_directory))){
       await GameFileSystem.mkdir(SaveGame.base_directory);
     }
 
+    let save_dir_name = Utility.PadInt(save_id, 6)+' - Game'+(save_id-1);
     let save_dir = path.join( SaveGame.base_directory, save_dir_name );
 
-    if(await GameFileSystem.exists(save_dir)){
-      await GameFileSystem.rmdir(save_dir, { recursive: true });
+    if(!(await GameFileSystem.exists(save_dir))){
+      await GameFileSystem.mkdir(save_dir);
     }
-    await GameFileSystem.mkdir(save_dir);
 
     GameState.MenuManager.LoadScreen.setProgress(25);
 
     await GameState.module.save();
+    GameState.MenuManager.LoadScreen.setProgress(35);
+
+    await GameState.PartyManager.Export(save_dir);
     GameState.MenuManager.LoadScreen.setProgress(50);
 
-    await CurrentGame.ExportToSaveFolder( save_dir );
-    GameState.MenuManager.LoadScreen.setProgress(75);
+    await SaveGame.ExportGlobalVars(save_dir);
+    GameState.MenuManager.LoadScreen.setProgress(65);
 
     await SaveGame.ExportSaveNFO(save_dir, name);
-    await SaveGame.ExportGlobalVars( save_dir );
-    await GameState.PartyManager.Export( save_dir );
+    GameState.MenuManager.LoadScreen.setProgress(75);
 
-    //Get Screenshot
+    await CurrentGame.ExportToSaveFolder(save_dir);
+    GameState.MenuManager.LoadScreen.setProgress(90);
+
     const tga = await GameState.GetScreenShot();
-    await tga.export( path.join( save_dir, 'Screen.tga'));
+    await tga.export(path.join(save_dir, 'Screen.tga'));
 
+    const newEntry = new SaveGame(save_dir_name);
+    const existingIndex = SaveGame.saves.findIndex(s => s.getSaveNumber() === save_id);
+
+    if (existingIndex >= 0) {
+      SaveGame.saves[existingIndex] = newEntry;  // overwrite case
+  } else {
+      SaveGame.AddSaveGame(newEntry);            // new save case
+            }
+    await newEntry.loadNFO();
+    
     //Save Complete
     GameState.MenuManager.LoadScreen.setProgress(100);
     GameState.MenuManager.LoadScreen.close();
@@ -931,7 +947,7 @@ export class SaveGame {
    * await SaveGame.ExportSaveNFO('Saves/000001 - Game1', 'My Adventure');
    * // savenfo.res file created with metadata
    */
-  static async ExportSaveNFO( directory: string, savename: string): Promise<void>{
+  static async ExportSaveNFO( directory: string, savename: string){
     console.log('ExportSaveNFO', directory, savename);
     const nfo = new GFFObject();
     nfo.FileType = 'NFO ';
@@ -956,6 +972,13 @@ export class SaveGame {
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'SAVEGAMENAME')).value = savename;
     nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT')).value = 0;
     nfo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'TIMEPLAYED')).value = GameState.time | 0;
+
+    const pcName = (GameState.PartyManager?.Player as any)?.getName?.() ?? '';
+    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'PCNAME')).value = pcName;
+
+    const now = Date.now();
+    const timestamp100ns = BigInt(Math.floor((now - winEpoch) * 10000));
+    nfo.RootNode.addField(new GFFField(GFFDataType.DWORD64, 'TIMESTAMP')).setValue(timestamp100ns);
 
     await nfo.export(path.join(directory, 'savenfo.res'));
   }
@@ -982,7 +1005,7 @@ export class SaveGame {
    * await SaveGame.ExportGlobalVars('Saves/000001 - Game1');
    * // GLOBALVARS.res file created with current global variables
    */
-  static async ExportGlobalVars( directory: string ): Promise<void>{
+  static async ExportGlobalVars( directory: string ){
     console.log('ExportGlobalVars')
     let gvt = new GFFObject();
     gvt.FileType = 'GVT ';
@@ -1083,7 +1106,7 @@ export class SaveGame {
    * console.log(SaveGame.saves.length); // Number of save games found
    * console.log(SaveGame.NEXT_SAVE_ID); // Next available save ID
    */
-  static async GetSaveGames(): Promise<void>{
+  static async GetSaveGames(){
     try{
       const savegamesRAW = await GameFileSystem.readdir('Saves', {list_dirs: false, recursive: true});
       const savegames = savegamesRAW.filter((path) => path.includes('SAVEGAME.sav'));
@@ -1102,6 +1125,28 @@ export class SaveGame {
     }
   }
 
+  /**
+   * Deletes a save game from disk and removes it from the in-memory save list.
+   *
+   * Used by the Save/Load UI (and any other systems) to implement KotOR-style delete.
+   */
+  static async DeleteSave(save: SaveGame): Promise<void> {
+    if (!(save instanceof SaveGame)) return;
+    if (!save.directory) return;
+    await GameFileSystem.rmdir(save.directory, { recursive: true });
+    SaveGame.saves = SaveGame.saves.filter(s => s !== save);
+  }
+
+  /**
+   * Overwrites an existing save slot without prompting for a new name (vanilla KotOR behavior).
+   */
+  static async OverwriteSave(save: SaveGame): Promise<void> {
+    if (!(save instanceof SaveGame)) return;
+    const replaceId = save.getSaveNumber();
+    const existingName = save.getSaveName();
+    await SaveGame.SaveCurrentGame(existingName, replaceId);
+  }
+  
   /** The directory path for the current save game (used internally) */
   static directory: string;
 
@@ -1121,7 +1166,7 @@ export class SaveGame {
    * SaveGame.AddSaveGame(saveGame);
    * // saveGame is now in SaveGame.saves array
    */
-  static AddSaveGame( savegame: SaveGame ): void{
+  static AddSaveGame( savegame: SaveGame ){
     if(!(savegame instanceof SaveGame)){ return; }
 
     const len = SaveGame.saves.push( savegame );
@@ -1133,4 +1178,3 @@ export class SaveGame {
   }
 
 }
-

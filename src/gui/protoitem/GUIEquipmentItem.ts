@@ -1,15 +1,13 @@
+import { GUIButton, GUIListBox, GUIProtoItem } from "..";
+import { GameState } from "../../GameState";
+import { GameEngineType } from "../../enums/engine";
+import { TextureType } from "../../enums/loaders/TextureType";
+import { TextureLoader } from "../../loaders";
+import { GFFStruct } from "../../resource/GFFStruct";
+import { OdysseyTexture } from "../../three/odyssey/OdysseyTexture";
+import { GUIControl } from "../GUIControl";
+import { GameMenu } from "../GameMenu";
 import * as THREE from "three";
-
-import { GameEngineType } from "@/enums/engine";
-import { TextureType } from "@/enums/loaders/TextureType";
-import { GameState } from "@/GameState";
-import { GUIButton, GUIListBox, GUIProtoItem } from "@/gui";
-import { GameMenu } from "@/gui/GameMenu";
-import { GUIControl } from "@/gui/GUIControl";
-import { TextureLoader } from "@/loaders";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-
 
 /**
  * GUIEquipmentItem class.
@@ -35,19 +33,19 @@ export class GUIEquipmentItem extends GUIProtoItem {
     try{
       super.createControl();
       //Create the actual control elements below
-      const button = new GUIButton(this.menu, this.control, this, this.scale);
+      let button = new GUIButton(this.menu, this.control, this, this.scale);
       button.extent.width = 190;
       button.setText(this.node.getName());
       button.autoCalculatePosition = false;
       this.children.push(button);
 
-      const _buttonWidget = button.createControl();
+      let _buttonWidget = button.createControl();
       _buttonWidget.position.x = (this.extent.width - button.extent.width) / 2;
       _buttonWidget.position.y = 0;
       _buttonWidget.position.z = this.zIndex + 1;
       this.widget.add(_buttonWidget);
 
-      const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
+      let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
       buttonIcon.setText(this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '');
       buttonIcon.disableTextAlignment();
       buttonIcon.extent.width = 55;
@@ -60,7 +58,7 @@ export class GUIEquipmentItem extends GUIProtoItem {
       buttonIcon.autoCalculatePosition = false;
       this.children.push(buttonIcon);
 
-      const _buttonIconWidget = buttonIcon.createControl();
+      let _buttonIconWidget = buttonIcon.createControl();
       _buttonIconWidget.position.x = -(this.extent.width/2 - buttonIcon.extent.width/2);
       _buttonIconWidget.position.y = 0;
       _buttonIconWidget.position.z = this.zIndex + 1;

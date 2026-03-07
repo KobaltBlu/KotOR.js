@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Modal, Form, ListGroup } from "react-bootstrap";
-
-import { CommandPaletteState, CommandPaletteCommand } from "@/apps/forge/states/CommandPaletteState";
-import "@/apps/forge/components/CommandPalette.scss";
+import { CommandPaletteState, CommandPaletteCommand } from "../states/CommandPaletteState";
+import "./CommandPalette.scss";
 
 export interface CommandPaletteProps {
   show: boolean;
@@ -100,7 +99,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ show, onHide }) 
                   <ListGroup.Item className="command-palette-category text-muted small py-1">
                     {cat}
                   </ListGroup.Item>
-                  {cmds.map((cmd, _i) => {
+                  {cmds.map((cmd, i) => {
                     const flatIdx = flatCommands.indexOf(cmd);
                     const isSelected = flatIdx === safeIndex;
                     return (

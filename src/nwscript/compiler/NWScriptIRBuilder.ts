@@ -26,7 +26,7 @@ import {
   SemanticVariableListNode,
   SemanticBreakNode,
   SemanticContinueNode,
-} from "@/nwscript/compiler/ASTSemanticTypes";
+} from "./ASTSemanticTypes";
 import {
   OP_CPDOWNSP,
   OP_RSADD,
@@ -69,7 +69,7 @@ import {
   OP_INCISP,
   OP_NOP,
   OP_STORE_STATE,
-} from "@/nwscript/NWScriptOPCodes";
+} from "../NWScriptOPCodes";
 
 // Minimal IR types: label-based, linear instruction list.
 export type IRProgram = {

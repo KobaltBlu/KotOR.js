@@ -1,15 +1,14 @@
+import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
-
-import { Mouse } from "@/controls/Mouse";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import { GUISliderDirection } from "@/enums/gui/GUISliderDirection";
-import { TextureType } from "@/enums/loaders/TextureType";
-import { GameState } from "@/GameState";
-import type { GameMenu } from "@/gui/GameMenu";
-import { GUIControl } from "@/gui/GUIControl";
-import { TextureLoader } from "@/loaders";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { TextureLoader } from "../loaders";
+import { TextureType } from "../enums/loaders/TextureType";
+import { GameState } from "../GameState";
+import { Mouse } from "../controls/Mouse";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { GUISliderDirection } from "../enums/gui/GUISliderDirection";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
+import { GUIControl } from "./GUIControl";
+import type { GameMenu } from "./GameMenu";
 
 /**
  * GUISlider class.
@@ -55,7 +54,7 @@ export class GUISlider extends GUIControl{
     this.thumb.mesh = new THREE.Sprite( this.thumb.material );
     this.widget.add(this.thumb.mesh);
 
-    (this.thumb.mesh as THREE.Object3D).addEventListener('click' as keyof THREE.Object3DEventMap, (_e: THREE.Event) => {
+    this.thumb.mesh.addEventListener('click', (e) => {
       console.log('hello');
       this.mouseInside();
     });
@@ -68,7 +67,7 @@ export class GUISlider extends GUIControl{
       this.thumb.mesh.scale.x = this.thumb.width;
       this.thumb.mesh.scale.y = this.thumb.height;
 
-      const parentPos = this.widget.getWorldPosition(new THREE.Vector3());
+      let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
 
       this.thumb.mesh.userData.box = new THREE.Box2(
         new THREE.Vector2(
@@ -82,12 +81,7 @@ export class GUISlider extends GUIControl{
       )
 
       if(this.thumbStruct.hasField('IMAGE')){
-        const imageField = this.thumbStruct.getFieldByLabel('IMAGE');
-        const imageName = (imageField != null ? String(imageField.getValue() ?? '') : '').trim();
-        if(!imageName.length){
-          // Some GUIs include the IMAGE field but leave it empty; don't enqueue invalid names.
-        }else{
-          TextureLoader.enQueue(imageName, this.thumb.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+        TextureLoader.enQueue(this.thumbStruct.getFieldByLabel('IMAGE').getValue(), this.thumb.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           this.thumb.material.transparent = false;
           this.thumb.material.alphaTest = 0.5;
           this.thumb.material.needsUpdate = true;
@@ -96,9 +90,8 @@ export class GUISlider extends GUIControl{
             this.thumb.height = texture.header.height;
             this.thumb.mesh.scale.set(texture.header.width, texture.header.height, 1);
           }
-          });
-          TextureLoader.LoadQueue();
-        }
+        });
+        TextureLoader.LoadQueue();
       }
     }
 

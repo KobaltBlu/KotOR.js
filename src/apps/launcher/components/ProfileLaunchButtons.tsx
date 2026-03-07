@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-
-import { useApp } from "@/apps/launcher/context/AppContext";
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
-import { ApplicationProfile } from "@/utility/ApplicationProfile";
-import { ConfigClient } from "@/utility/ConfigClient";
+import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
+import { ApplicationProfile } from "../../../utility/ApplicationProfile";
+import { ConfigClient } from "../../../utility/ConfigClient";
+import { useApp } from "../context/AppContext";
 
 export interface ProfileLaunchButtonsProps {
   profile: any
@@ -53,7 +52,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
           profile.directory = directory;
           rerender(!render);
         }
-      }).catch( (e: unknown) => {
+      }).catch( (e: any) => {
         console.error(e);
       });
     }else{
@@ -71,9 +70,9 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   };
 
   const btnLaunch = () => {
-    const clean_profile = Object.assign({}, profile);
+    let clean_profile = Object.assign({}, profile);
     if(isForge){
-      const clean_game_profile = Object.assign({}, profileCategoriesValue?.game?.profiles.find( (p: any) => {
+      let clean_game_profile = Object.assign({}, profileCategoriesValue?.game?.profiles.find( (p: any) => {
         return p.key == forgeSelectValue;
       }));
       console.log('s', forgeSelectValue, clean_game_profile);

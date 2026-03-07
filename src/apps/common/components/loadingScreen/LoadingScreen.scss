@@ -40,7 +40,7 @@
     font-family: sans-serif;
     text-align: center;
   }
-
+  
   .background {
     display: block;
     position: absolute;
@@ -84,7 +84,7 @@
       animation: spin .5s infinite linear;
       box-sizing: border-box;
     }
-
+    
     .ball1 {
       background-color: rgba(0,0,0,0);
       border: 5px solid rgba(0,183,229,0.9);
@@ -101,112 +101,6 @@
       animation: spinoff .5s infinite linear;
       box-sizing: border-box;
     }
-  }
-
-  .loading-console {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    top: 12px;
-    max-height: 42%;
-    min-height: 120px;
-    z-index: 10;
-    background: rgba(0, 0, 0, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 6px;
-    font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
-    font-size: 11px;
-    line-height: 1.4;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .loading-console-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 10px;
-    background: rgba(255, 255, 255, 0.06);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    flex-shrink: 0;
-  }
-
-  .loading-console-header span {
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 600;
-  }
-
-  .loading-console-clear {
-    padding: 2px 8px;
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.7);
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .loading-console-clear:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-  }
-
-  .loading-console-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 6px 10px;
-    overflow-x: auto;
-  }
-
-  .loading-console-line {
-    word-break: break-word;
-    white-space: pre-wrap;
-    padding: 2px 0;
-    border-left: 3px solid transparent;
-    padding-left: 6px;
-    margin-left: -6px;
-  }
-
-  .loading-console-time {
-    color: rgba(255, 255, 255, 0.45);
-    margin-right: 4px;
-  }
-
-  .loading-console-text {
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .loading-console-log .loading-console-text {
-    color: rgba(255, 255, 255, 0.85);
-  }
-
-  .loading-console-info {
-    border-left-color: #2187e7;
-  }
-
-  .loading-console-info .loading-console-text {
-    color: #7eb8f0;
-  }
-
-  .loading-console-warn {
-    border-left-color: #e7a021;
-  }
-
-  .loading-console-warn .loading-console-text {
-    color: #f0c87e;
-  }
-
-  .loading-console-error {
-    border-left-color: #e74c3c;
-  }
-
-  .loading-console-error .loading-console-text {
-    color: #f08a7e;
-  }
-
-  .loading-console-debug .loading-console-text {
-    color: rgba(255, 255, 255, 0.55);
   }
 }
 

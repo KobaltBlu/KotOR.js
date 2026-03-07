@@ -1,3 +1,3 @@
-export * from "@/interface/animation/ICreatureAnimationState";
-export * from "@/interface/animation/IDialogAnimationState";
-export * from "@/interface/animation/IOverlayAnimationState";
+export * from "./ICreatureAnimationState";
+export * from "./IDialogAnimationState";
+export * from "./IOverlayAnimationState";

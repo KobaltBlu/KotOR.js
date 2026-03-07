@@ -1,11 +1,10 @@
-﻿import * as THREE from "three";
-import { GameMenu, LBL_3DView } from "@/gui";
-import type { GUILabel } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { OdysseyModel3D } from "@/three/odyssey";
-import { CharGenClasses } from "@/game/CharGenClasses";
-import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "../../../gui";
+import type { GUILabel } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+import { OdysseyModel3D } from "../../../three/odyssey";
+import { CharGenClasses } from "../../CharGenClasses";
+import { GameState } from "../../../GameState";
 
 /**
  * CharGenMain class.
@@ -114,7 +113,7 @@ export class CharGenMain extends GameMenu {
       GameState.CharGenManager.selectedCreature.update(delta);
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
-    } catch (e: unknown) {
+    } catch (e: any) {
       console.error(e);
     }
   }
@@ -131,7 +130,7 @@ export class CharGenMain extends GameMenu {
     this.NEW_LBL?.hide();
     try {
       GameState.CharGenManager.selectedCreature.model.parent.remove(GameState.CharGenManager.selectedCreature.model);
-    } catch (e: unknown) {
+    } catch (e: any) {
     }
     this._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
     GameState.CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;
@@ -154,4 +153,3 @@ export class CharGenMain extends GameMenu {
   }
   
 }
-

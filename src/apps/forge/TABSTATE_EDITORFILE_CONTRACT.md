@@ -154,7 +154,7 @@ Updates `tabName` based on `file.resref`, `file.ext`, and `unsaved_changes`:
 #### `setContentView(view: React.ReactElement)`
 Sets the React element to render when tab is visible.
 
-#### `getResourceID(): string | undefined`
+#### `getResourceID(): any`
 **Override in subclasses** to return a unique resource identifier for deduplication.
 - Used by `EditorTabManager.isResourceIdOpenInTab()` to prevent opening same resource twice
 - Default: returns `undefined` (no deduplication)
@@ -222,7 +222,7 @@ export class TabXYZEditorState extends TabState {
   tabName: string = 'XYZ Editor';
   
   // Add editor-specific state here
-  xyzData: KotOR.XYZObject | undefined; // Parsed data from file - replace XYZObject with actual type
+  xyzData: any; // Parsed data from file
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -268,7 +268,7 @@ export class TabXYZEditorState extends TabState {
   }
 
   // Override: return unique ID for deduplication
-  getResourceID(): string | undefined {
+  getResourceID(): any {
     return this.file?.resref + this.file?.reskey;
   }
 }

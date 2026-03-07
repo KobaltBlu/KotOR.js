@@ -1,8 +1,7 @@
+import { ForgeGameObject } from "./ForgeGameObject";
+import * as KotOR from "../KotOR";
 import * as THREE from "three";
-
-import { CreatureListEntry } from "@/apps/forge/interfaces/CreatureListEntry";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { CreatureListEntry } from "../interfaces/CreatureListEntry";
 
 const DEFAULT_OFFSET_Z = 0.01;
 const ENCOUNTER_MATERIAL = new THREE.MeshBasicMaterial({

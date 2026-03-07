@@ -1,25 +1,25 @@
-import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
-import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
-import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-// import { ModuleObjectManager } from "@/managers/ModuleObjectManager";
-import type { Module, ModuleObject } from "@/module";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GameState } from "../GameState";
+import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
+import { GameEffectSubType } from "../enums/effects/GameEffectSubType";
+import { GameEffectType } from "../enums/effects/GameEffectType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+// import { ModuleObjectManager } from "../managers/ModuleObjectManager";
+import type { Module, ModuleObject } from "../module";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
 
 /**
  * GameEffect class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file GameEffect.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  * @see https://github.com/nwnxee/unified/blob/master/NWNXLib/API/Constants/Effect.hpp
  */
 export class GameEffect {
-  creator: ModuleObject | number | undefined;
+  creator: any;
   duration: number;
   expireDay: number;
   expireTime: number;
@@ -36,7 +36,7 @@ export class GameEffect {
   objectList: ModuleObject[] = [];
   object: ModuleObject;
   type: GameEffectType;
-
+  
   constructor(){
     this.creator = undefined;
     this.duration = 0;
@@ -62,7 +62,7 @@ export class GameEffect {
     if(this.initialized)
       return this;
 
-    if(typeof this.creator === 'number'){
+    if(!isNaN(this.creator)){
       this.creator = GameState.ModuleObjectManager.GetObjectById(this.creator);
     }
 
@@ -74,7 +74,7 @@ export class GameEffect {
     return;
   }
 
-  setCreator(oCreator: ModuleObject | number){
+  setCreator(oCreator: ModuleObject){
     this.creator = oCreator;
   }
 
@@ -111,7 +111,8 @@ export class GameEffect {
   }
 
   setNumIntegers( num = 8 ){
-    this.intList = Array.from({ length: num }, () => 0);
+    this.intList = new Array(num);
+    this.intList.fill(0);
   }
 
   setSkipOnLoad( bSkipOnLoad = true ){
@@ -122,7 +123,7 @@ export class GameEffect {
     this.spellId = nSpellId;
   }
 
-  setIntList(intList: number[] = []){
+  setIntList(intList: any[] = []){
     if(Array.isArray(intList)){
       this.intList = intList;
     }
@@ -132,7 +133,7 @@ export class GameEffect {
     this.intList[nOffset] = nValue;
   }
 
-  setFloatList(floatList: number[] = []){
+  setFloatList(floatList: any[] = []){
     if(Array.isArray(floatList)){
       this.floatList = floatList;
     }
@@ -142,7 +143,7 @@ export class GameEffect {
     this.floatList[nOffset] = nValue;
   }
 
-  setStringList(stringList: string[] = []){
+  setStringList(stringList: any[] = []){
     if(Array.isArray(stringList)){
       this.stringList = stringList;
     }
@@ -163,7 +164,7 @@ export class GameEffect {
   }
 
   setAttachedObject( oObject: ModuleObject|Module ){
-    this.object = oObject as ModuleObject;
+    this.object = oObject as any;
   }
 
   getCreator(){
@@ -221,7 +222,7 @@ export class GameEffect {
   }
 
   dispose(){
-
+    
   }
 
   ///////////////
@@ -229,7 +230,7 @@ export class GameEffect {
   ///////////////
 
   //Called when the effect is applied ingame
-  onApply(_object?: ModuleObject){
+  onApply(object?: ModuleObject){
     if(this.applied)
       return;
 
@@ -240,7 +241,7 @@ export class GameEffect {
   onRemove(){
 
   }
-
+  
   //When the effect duration has expired
   onDurationEnd(){
     this.durationEnded = true;
@@ -257,7 +258,7 @@ export class GameEffect {
 
   save(){
 
-    const effectStruct = new GFFStruct(2);
+    let effectStruct = new GFFStruct(2);
     effectStruct.addField( new GFFField(GFFDataType.DWORD64, 'Id') ).setValue(0);
     effectStruct.addField( new GFFField(GFFDataType.WORD, 'Type') ).setValue(this.getSaveType());
     effectStruct.addField( new GFFField(GFFDataType.WORD, 'SubType') ).setValue(this.getSubTypeUnMasked());
@@ -270,30 +271,30 @@ export class GameEffect {
     effectStruct.addField( new GFFField(GFFDataType.INT, 'IsExposed') ).setValue(1);
     effectStruct.addField( new GFFField(GFFDataType.INT, 'NumIntegers') ).setValue(8);
 
-    const intList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'IntList') );
+    let intList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'IntList') );
     for(let i = 0; i < 8; i++){
-      const intStruct = new GFFStruct(3);
+      let intStruct = new GFFStruct(3);
       intStruct.addField( new GFFField(GFFDataType.INT, "Value").setValue(this.getInt(i) || 0));
       intList.addChildStruct(intStruct);
     }
 
-    const floatList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'FloatList') );
+    let floatList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'FloatList') );
     for(let i = 0; i < 4; i++){
-      const floatStruct = new GFFStruct(4);
+      let floatStruct = new GFFStruct(4);
       floatStruct.addField( new GFFField(GFFDataType.FLOAT, "Value").setValue(this.getFloat(i) || 0.0));
       floatList.addChildStruct(floatStruct);
     }
 
-    const stringList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'StringList') );
+    let stringList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'StringList') );
     for(let i = 0; i < 6; i++){
-      const stringStruct = new GFFStruct(5);
+      let stringStruct = new GFFStruct(5);
       stringStruct.addField( new GFFField(GFFDataType.CEXOSTRING, "Value").setValue(this.getString(i) || ''));
       stringList.addChildStruct(stringStruct);
     }
 
-    const objectList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'ObjectList') );
+    let objectList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'ObjectList') );
     for(let i = 0; i < 6; i++){
-      const objectStruct = new GFFStruct(5);
+      let objectStruct = new GFFStruct(5);
       objectStruct.addField( new GFFField(GFFDataType.DWORD, "Value").setValue( this.getObject(i) ? this.getObject(i).id : 2130706432 ));
       objectList.addChildStruct(objectStruct);
     }

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-
-import { TabTextEditorState } from "@/apps/forge/states/tabs";
+import { TabTextEditorState } from "../../../states/tabs";
 
 interface TabTextEditorSidebarProps {
   tab: TabTextEditorState;

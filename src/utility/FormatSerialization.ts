@@ -3,7 +3,7 @@
  * Used by resource *Object classes for toJSON/fromJSON/toXML/fromXML/toYAML/fromYAML/toTOML/fromTOML.
  */
 
-import { parse as tomlParse, stringify as tomlStringify } from '@ltd/j-toml';
+import TOML from '@ltd/j-toml';
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import YAML from 'yaml';
 
@@ -26,58 +26,37 @@ const xmlBuilder = new XMLBuilder({
   suppressEmptyNode: true,
 });
 
-/**
- * Convert a plain object to XML string.
- */
 export function objectToXML(obj: unknown): string {
   const wrapped = { [XML_ROOT]: obj };
   return xmlBuilder.build(wrapped);
 }
 
-/**
- * Parse XML string to plain object.
- * Strips the root wrapper if present.
- */
 export function xmlToObject(xml: string): unknown {
   const parsed = xmlParser.parse(xml) as Record<string, unknown> | undefined;
   const root = parsed?.[XML_ROOT];
   return root !== undefined ? root : parsed;
 }
 
-/**
- * Convert a plain object to YAML string.
- */
 export function objectToYAML(obj: unknown): string {
   return YAML.stringify(obj);
 }
 
-/**
- * Parse YAML string to plain object.
- */
 export function yamlToObject(yaml: string): unknown {
   return YAML.parse(yaml);
 }
 
-/**
- * Convert a plain object to TOML string.
- * TOML has limitations with nested structures; complex objects are wrapped in a [data] section.
- */
-type TomlStringifyTable = Parameters<typeof tomlStringify>[0];
+type TomlStringifyTable = Parameters<typeof TOML.stringify>[0];
 
 export function objectToTOML(obj: unknown): string {
   try {
-    return tomlStringify(obj as TomlStringifyTable, { newline: '\n' });
+    return TOML.stringify(obj as TomlStringifyTable, { newline: '\n' });
   } catch {
-    return tomlStringify({ data: obj } as TomlStringifyTable, { newline: '\n' });
+    return TOML.stringify({ data: obj } as TomlStringifyTable, { newline: '\n' });
   }
 }
 
-/**
- * Parse TOML string to plain object.
- * If the result has a single "data" key (from objectToTOML fallback), unwrap it.
- */
 export function tomlToObject(toml: string): unknown {
-  const parsed = tomlParse(toml) as Record<string, unknown> | undefined;
+  const parsed = TOML.parse(toml) as Record<string, unknown> | undefined;
   if (parsed && typeof parsed === 'object' && Object.keys(parsed).length === 1 && 'data' in parsed) {
     return parsed.data;
   }

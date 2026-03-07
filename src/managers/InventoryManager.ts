@@ -1,14 +1,13 @@
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
 import * as path from "path";
-
-import { CurrentGame } from "@/engine/CurrentGame";
-import { BaseItemType } from "@/enums/combat/BaseItemType";
-import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleItem } from "@/module";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-// import { PartyManager } from "@/managers/PartyManager";
+import { CurrentGame } from "../engine/CurrentGame";
+import type { ModuleCreature, ModuleItem } from "../module";
+import { GameState } from "../GameState";
+import { BaseItemType } from "../enums/combat/BaseItemType";
+import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
+// import { PartyManager } from "./PartyManager";
 
 /**
  * InventoryManager class.
@@ -26,9 +25,9 @@ export class InventoryManager {
     if(!slot){
       return InventoryManager.inventory;
     }else{
-      const equippable = [];
+      let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        const item = InventoryManager.inventory[i];
+        let item = InventoryManager.inventory[i];
         if( InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
           equippable.push(item);
         }
@@ -39,18 +38,18 @@ export class InventoryManager {
 
   static getNonQuestInventory( slot = 0, creature?: ModuleCreature ){
     if(!slot){
-      const equippable = [];
+      let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        const item = InventoryManager.inventory[i];
+        let item = InventoryManager.inventory[i];
         if(!item.plot){
           equippable.push(item);
         }
       }
       return equippable;
     }else{
-      const equippable = [];
+      let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        const item = InventoryManager.inventory[i];
+        let item = InventoryManager.inventory[i];
         if(InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
           equippable.push(item);
         }
@@ -61,18 +60,18 @@ export class InventoryManager {
 
   static getQuestInventory(slot = 0, creature?: ModuleCreature){
     if(!slot){
-      const equippable = [];
+      let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        const item = InventoryManager.inventory[i];
+        let item = InventoryManager.inventory[i];
         if(item.plot){
           equippable.push(item);
         }
       }
       return equippable;
     }else{
-      const equippable = [];
+      let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        const item = InventoryManager.inventory[i];
+        let item = InventoryManager.inventory[i];
         if(InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
           equippable.push(item);
         }
@@ -89,7 +88,7 @@ export class InventoryManager {
     // if(!(item instanceof ModuleItem) || !(creature instanceof ModuleCreature))
       // return false;
 
-    const droidorhuman = item.baseItem.droidOrHuman;
+    let droidorhuman = item.baseItem.droidOrHuman;
     
     return !droidorhuman || (
       (droidorhuman == 1 && creature.getRace() == 6) ||
@@ -99,7 +98,7 @@ export class InventoryManager {
   }
 
   static isItemUsableInSlot( item: ModuleItem, slot: any ): boolean {
-    const baseItem = item.baseItem;
+    let baseItem = item.baseItem;
     return (baseItem.equipableSlots & slot || baseItem.equipableSlots === slot) ? true : false;
   }
 
@@ -126,7 +125,7 @@ export class InventoryManager {
     }else{
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_RECEIVED);
       item.load();
-      const hasItem = InventoryManager.getItemByTag(item.getTag());
+      let hasItem = InventoryManager.getItemByTag(item.getTag());
       if(hasItem){
 
         if(!limitOne){
@@ -149,10 +148,10 @@ export class InventoryManager {
   }
 
   static removeItemByResRef(resRef = '', nCount = 1){
-    const item = InventoryManager.getItemByTag(resRef);
+    let item = InventoryManager.getItemByTag(resRef);
     if(item){
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_LOST);
-      const idx = InventoryManager.inventory.indexOf(item);
+      let idx = InventoryManager.inventory.indexOf(item);
       if(nCount < item.getStackSize()){
         item.setStackSize( (item.getStackSize() - nCount) || 1 );
       }else{
@@ -165,7 +164,7 @@ export class InventoryManager {
     if(typeof item === 'string'){
       InventoryManager.removeItemByResRef(item, nCount);
     }else if(item instanceof GameState.Module.ModuleArea.ModuleItem){
-      const idx = InventoryManager.inventory.indexOf(item);
+      let idx = InventoryManager.inventory.indexOf(item);
       if(idx >= 0){
         GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_LOST);
         if(nCount >= item.getStackSize()){
@@ -183,7 +182,7 @@ export class InventoryManager {
 
   static getItemByTag(sTag = ''){
     for(let i = 0; i < InventoryManager.inventory.length; i++){
-      const item = InventoryManager.inventory[i];
+      let item = InventoryManager.inventory[i];
       if(item.getTag().toLowerCase() == sTag.toLowerCase())
         return item;
     }
@@ -191,10 +190,10 @@ export class InventoryManager {
   }
 
   static itemFromJSON(json: any = {}){
-    const item: any = {};
-    const props = json.fields;
-    for(const fieldName in props){
-      const field = props[fieldName];
+    let item: any = {};
+    let props = json.fields;
+    for(let fieldName in props){
+      let field = props[fieldName];
       if(field.type == 15){
         item[fieldName] = [];
         for(let i = 0; i < field.structs.length; i++){
@@ -210,10 +209,10 @@ export class InventoryManager {
   static Save(){
     return new Promise( async (resolve, reject) => {
       //console.log('InventoryManager.Save()', 'Exporting...');
-      const gff = new GFFObject();
+      let gff = new GFFObject();
       gff.FileType = 'INV ';
 
-      const itemList = gff.RootNode.addField( new GFFField( GFFDataType.LIST, 'ItemList' ));
+      let itemList = gff.RootNode.addField( new GFFField( GFFDataType.LIST, 'ItemList' ));
       for(let i = 0; i < InventoryManager.inventory.length; i++){
         itemList.addChildStruct( InventoryManager.inventory[i].save() );
       }
