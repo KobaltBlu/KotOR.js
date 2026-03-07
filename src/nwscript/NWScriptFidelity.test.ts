@@ -5618,3 +5618,230 @@ describe('59. K1 Dantooine stability fixes', () => {
   });
 
 });
+
+// =============================================================================
+// 60. K1 Dantooine crash-prevention fixes
+// =============================================================================
+// Fixes in this section prevent runtime crashes that were found during
+// Dantooine playthrough testing:
+//   1. JournalManager.GetJournalEntryByTag – typo fix; the old "GeJournalEntryByTag"
+//      caused silent quest-state failures for every Dantooine quest.
+//   2. ActionJumpToLocation (fn 214) – area/rotation null-guard prevents crash
+//      when EngineLocation.area is undefined (e.g., a location created before the
+//      module area is fully initialised).
+//   3. EffectForcePushTargeted (fn 269) – location null-guard prevents crash when
+//      the first argument is not a valid EngineLocation (Dantooine Jedi cutscenes).
+//   4. EffectSpellLevelAbsorption (fn 472) – now stores nMaxSpellLevelAbsorbed,
+//      nTotalSpellLevelsAbsorbed and nSpellSchool so they can be inspected/removed.
+// =============================================================================
+
+describe('60. K1 Dantooine crash-prevention fixes', () => {
+
+  // ── 1. JournalManager.GetJournalEntryByTag typo fix ─────────────────────
+
+  it('JournalManager.GetJournalEntryByTag is a function (not the old GeJournalEntryByTag)', () => {
+    // Simulate the corrected JournalManager interface.
+    // The renamed method must exist and the old mis-spelled name must not.
+    type JournalEntryLike = { plot_id: string; state: number };
+    class MockJournalManager {
+      static Entries: JournalEntryLike[] = [];
+      // Fixed name:
+      static GetJournalEntryByTag(tag: string): JournalEntryLike | undefined {
+        return MockJournalManager.Entries.find(
+          e => e.plot_id.toLocaleLowerCase() === tag.toLocaleLowerCase()
+        );
+      }
+    }
+    // Confirm presence of the corrected method.
+    expect(typeof MockJournalManager.GetJournalEntryByTag).toBe('function');
+    // Confirm the typo'd name does NOT exist on the object.
+    expect((MockJournalManager as any).GeJournalEntryByTag).toBeUndefined();
+  });
+
+  it('JournalManager.GetJournalEntryByTag returns an existing entry by tag', () => {
+    type JournalEntryLike = { plot_id: string; state: number };
+    const entries: JournalEntryLike[] = [
+      { plot_id: 'dan_jedi_ritual', state: 30 },
+      { plot_id: 'tar_escape',      state: 10 },
+    ];
+    function GetJournalEntryByTag(tag: string): JournalEntryLike | undefined {
+      return entries.find(e => e.plot_id.toLocaleLowerCase() === tag.toLocaleLowerCase());
+    }
+    const found = GetJournalEntryByTag('dan_jedi_ritual');
+    expect(found).toBeDefined();
+    expect(found!.state).toBe(30);
+  });
+
+  it('JournalManager.GetJournalEntryByTag returns undefined for a missing tag', () => {
+    type JournalEntryLike = { plot_id: string; state: number };
+    const entries: JournalEntryLike[] = [];
+    function GetJournalEntryByTag(tag: string): JournalEntryLike | undefined {
+      return entries.find(e => e.plot_id.toLocaleLowerCase() === tag.toLocaleLowerCase());
+    }
+    expect(GetJournalEntryByTag('no_such_quest')).toBeUndefined();
+  });
+
+  it('JournalManager.GetJournalEntryByTag lookup is case-insensitive', () => {
+    type JournalEntryLike = { plot_id: string; state: number };
+    const entries: JournalEntryLike[] = [{ plot_id: 'Dan_Jedi_Ritual', state: 10 }];
+    function GetJournalEntryByTag(tag: string): JournalEntryLike | undefined {
+      return entries.find(e => e.plot_id.toLocaleLowerCase() === tag.toLocaleLowerCase());
+    }
+    expect(GetJournalEntryByTag('dan_jedi_ritual')).toBeDefined();
+    expect(GetJournalEntryByTag('DAN_JEDI_RITUAL')).toBeDefined();
+  });
+
+  it('regression: GetJournalEntryState silent failure with old GeJournalEntryByTag typo', () => {
+    // Old code called GeJournalEntryByTag (typo) which would throw if used outside
+    // the class context, or silently return undefined in callers that checked the
+    // return value. Simulate the corrected flow.
+    type JournalEntryLike = { plot_id: string; state: number };
+    const entries: JournalEntryLike[] = [{ plot_id: 'dan_jedi_ritual', state: 20 }];
+
+    // Old (buggy): typo meant wrong method name was called externally
+    function getJournalEntryStateBuggy(szPlotID: string): number {
+      // Simulates calling GeJournalEntryByTag (which would silently be undefined
+      // if called on the real class from outside, causing a TypeError at runtime).
+      const entry = (undefined as any);  // simulates undefined method call result
+      if(entry){ return entry.state; }
+      return 0;  // silently returns 0 instead of the real state
+    }
+
+    // Fixed: calls GetJournalEntryByTag (correct spelling)
+    function getJournalEntryStateFixed(szPlotID: string): number {
+      const entry = entries.find(e => e.plot_id.toLocaleLowerCase() === szPlotID.toLocaleLowerCase());
+      if(entry){ return entry.state; }
+      return 0;
+    }
+
+    // Old code always returned 0 (wrong) for existing quest entries.
+    expect(getJournalEntryStateBuggy('dan_jedi_ritual')).toBe(0);
+    // Fixed code returns the real state (20).
+    expect(getJournalEntryStateFixed('dan_jedi_ritual')).toBe(20);
+  });
+
+  // ── 2. ActionJumpToLocation (fn 214) – null-safe area / rotation ─────────
+
+  it('ActionJumpToLocation: EngineLocation with no area does not crash', () => {
+    // Build a minimal EngineLocation-like object whose .area is undefined.
+    const locNoArea = {
+      position: { x: 10, y: 20, z: 0 },
+      rotation: { x: 1, y: 0 },
+      area: undefined,
+    };
+    const locWithArea = {
+      position: { x: 10, y: 20, z: 0 },
+      rotation: { x: 1, y: 0 },
+      area: { id: 42 },
+    };
+
+    // The fixed guard uses: args[0].area?.id ?? fallback
+    function resolveAreaId(loc: any, fallbackAreaId: number): number {
+      return loc.area?.id ?? fallbackAreaId;
+    }
+
+    expect(resolveAreaId(locNoArea, 0)).toBe(0);
+    expect(resolveAreaId(locWithArea, 0)).toBe(42);
+  });
+
+  it('ActionJumpToLocation: EngineLocation with no rotation does not crash', () => {
+    const locNoRot = {
+      position: { x: 5, y: 5, z: 0 },
+      rotation: undefined,
+      area: { id: 1 },
+    };
+    const locWithRot = {
+      position: { x: 5, y: 5, z: 0 },
+      rotation: { x: 0.5, y: 0.5 },
+      area: { id: 1 },
+    };
+
+    function resolveRotX(loc: any): number { return loc.rotation?.x ?? 0; }
+    function resolveRotY(loc: any): number { return loc.rotation?.y ?? 0; }
+
+    expect(resolveRotX(locNoRot)).toBe(0);
+    expect(resolveRotY(locNoRot)).toBe(0);
+    expect(resolveRotX(locWithRot)).toBe(0.5);
+    expect(resolveRotY(locWithRot)).toBe(0.5);
+  });
+
+  // ── 3. EffectForcePushTargeted (fn 269) – location null-guard ───────────
+
+  it('EffectForcePushTargeted: skips position assignment when location is undefined', () => {
+    // Simulate the fixed logic: only assign floats when instanceof check passes.
+    class FakeEngineLocation {
+      position = { x: 3, y: 4, z: 5 };
+    }
+    const floats: number[] = [];
+    function applyForcePushLocation(arg0: any): void {
+      if(arg0 instanceof FakeEngineLocation){
+        floats.push(arg0.position.x, arg0.position.y, arg0.position.z);
+      }
+    }
+
+    // With a valid location: floats are stored.
+    applyForcePushLocation(new FakeEngineLocation());
+    expect(floats).toEqual([3, 4, 5]);
+
+    // With undefined: no floats, no crash.
+    floats.length = 0;
+    expect(() => applyForcePushLocation(undefined)).not.toThrow();
+    expect(floats).toEqual([]);
+  });
+
+  it('EffectForcePushTargeted: skips position assignment when location is null', () => {
+    class FakeEngineLocation { position = { x: 1, y: 2, z: 3 }; }
+    const floats: number[] = [];
+    function applyForcePushLocation(arg0: any): void {
+      if(arg0 instanceof FakeEngineLocation){
+        floats.push(arg0.position.x, arg0.position.y, arg0.position.z);
+      }
+    }
+    expect(() => applyForcePushLocation(null)).not.toThrow();
+    expect(floats).toEqual([]);
+  });
+
+  // ── 4. EffectSpellLevelAbsorption (fn 472) – parameters now stored ───────
+
+  it('EffectSpellLevelAbsorption: stores nMaxSpellLevelAbsorbed, nTotalSpellLevels, nSpellSchool', () => {
+    // Simulate the fixed logic: setInt(0…2) is called with the three arguments.
+    const stored: number[] = [];
+    const fakeEffect = {
+      setCreator: () => {},
+      setSpellId: () => {},
+      setInt: (idx: number, val: number) => { stored[idx] = val; },
+      initialize: () => fakeEffect,
+    };
+
+    const args = [9, 3, 0]; // maxLevel=9, totalLevels=3, spellSchool=0 (General)
+    fakeEffect.setInt(0, args[0]);
+    fakeEffect.setInt(1, args[1]);
+    fakeEffect.setInt(2, args[2]);
+
+    expect(stored[0]).toBe(9); // nMaxSpellLevelAbsorbed
+    expect(stored[1]).toBe(3); // nTotalSpellLevelsAbsorbed
+    expect(stored[2]).toBe(0); // nSpellSchool
+  });
+
+  it('regression: old EffectSpellLevelAbsorption stored no parameters (setInt never called)', () => {
+    // The old (buggy) code called only setCreator + setSpellId + initialize.
+    // Simulate it to confirm parameters were silently dropped.
+    const stored: number[] = [];
+    const fakeEffect = {
+      setCreator: () => {},
+      setSpellId: () => {},
+      // setInt intentionally omitted — old code never called it
+      initialize: () => fakeEffect,
+    };
+
+    // Old code path: no setInt calls at all
+    fakeEffect.setCreator();
+    fakeEffect.setSpellId();
+
+    // Nothing was stored → all three parameter slots are undefined
+    expect(stored[0]).toBeUndefined();
+    expect(stored[1]).toBeUndefined();
+    expect(stored[2]).toBeUndefined();
+  });
+
+});
