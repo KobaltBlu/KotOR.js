@@ -118,6 +118,15 @@ export class ModuleEncounter extends ModuleObject {
     
     this.getCurrentRoom();
 
+    // Clean up dead/destroyed spawned creatures to prevent stale references
+    if(this.spawnedCreatures.length > 0){
+      this.spawnedCreatures = this.spawnedCreatures.filter(c => c && !c.isDead() && !c.willDestroy);
+      // If all spawned creatures are gone and encounter has started, mark as not started
+      if(this.spawnedCreatures.length === 0 && this.started){
+        this.started = 0;
+      }
+    }
+
     // Reset cooldown: if encounter is inactive and reset is allowed, tick timer and reactivate
     if(!this.active && this.reset && this.resetTime > 0){
       this.resetTimer += delta;
@@ -228,8 +237,8 @@ export class ModuleEncounter extends ModuleObject {
       creature.encounterCreature = true;
 
       // Pick spawn position: use explicit spawn point if available, otherwise encounter centre
-      const ptIdx = spawned % (points.length || 1);
       if(points.length > 0){
+        const ptIdx = spawned % points.length;
         const pt = points[ptIdx];
         creature.position.set(pt.position.x, pt.position.y, pt.position.z);
         creature.setFacing(pt.orientation, true);
