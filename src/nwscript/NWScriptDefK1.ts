@@ -493,16 +493,16 @@ NWScriptDefK1.Actions = {
           slot = ModuleCreatureArmorSlot.CLAW2;
           break;
         case 14:
-          slot = ModuleCreatureArmorSlot.CLAW3;
+          slot = ModuleCreatureArmorSlot.CLAW1;
           break;
         case 15:
-          slot = ModuleCreatureArmorSlot.HIDE;
+          slot = ModuleCreatureArmorSlot.CLAW2;
           break;
         case 16:
-          slot = ModuleCreatureArmorSlot.HEAD;
+          slot = ModuleCreatureArmorSlot.CLAW3;
           break;
         case 17:
-          slot = ModuleCreatureArmorSlot.ARMOR; //Creature Armor
+          slot = ModuleCreatureArmorSlot.HIDE;
           break;
       }
       const action = new GameState.ActionFactory.ActionEquipItem();
@@ -2080,26 +2080,26 @@ NWScriptDefK1.Actions = {
             return obj.getItemInSlot(ModuleCreatureArmorSlot.HEAD);
           case 1:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.ARMOR);
-          case 3:
+          case 2:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.ARMS);
-          case 4:
+          case 3:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
-          case 5:
+          case 4:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
-          case 7:
+          case 5:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.LEFTARMBAND);
-          case 8:
+          case 6:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.RIGHTARMBAND);
-          case 9:
+          case 7:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.IMPLANT);
-          case 10:
+          case 8:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.BELT);
           case 14:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.CLAW1);
           case 15:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.CLAW2);
           case 16:
-            return obj.getItemInSlot(ModuleCreatureArmorSlot.CLAW2);
+            return obj.getItemInSlot(ModuleCreatureArmorSlot.CLAW3);
           case 17:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.HIDE);
         }
@@ -9662,7 +9662,26 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [string, number]){
-      // No-op: item cost modification not yet implemented
+      const tag = args[0];
+      const newCost = Math.round(args[1]);
+      const updateInventory = (inventory: ModuleItem[]) => {
+        for(const item of inventory){
+          if(item?.getTag() === tag){
+            item.cost = newCost;
+          }
+        }
+      };
+      updateInventory(GameState.InventoryManager.inventory);
+      if(GameState.module?.area?.stores){
+        for(const store of GameState.module.area.stores){
+          updateInventory(store.inventory);
+        }
+      }
+      if(GameState.module?.area?.creatures){
+        for(const creature of GameState.module.area.creatures){
+          updateInventory(creature.inventory);
+        }
+      }
     }
   },
   748:{
