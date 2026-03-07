@@ -60,6 +60,7 @@ export class ModuleMGPlayer extends ModuleObject {
   falling: boolean;
   alive: boolean;
   tunnel: { neg: { x: number; y: number; z: number; }; pos: { x: number; y: number; z: number; }; };
+  tunnel_infinite: { x: number; y: number; z: number; };
   hit_points: any;
   max_hps: any;
   onCreateRun: boolean;
@@ -110,6 +111,7 @@ export class ModuleMGPlayer extends ModuleObject {
       neg: {x: 0, y: 0, z: 0},
       pos: {x: 0, y: 0, z: 0}
     }
+    this.tunnel_infinite = {x: 0, y: 0, z: 0};
 
     this.setTrack(this.track);
 

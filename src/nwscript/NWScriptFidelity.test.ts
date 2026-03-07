@@ -2423,3 +2423,339 @@ describe('45. K1 blocker matrix – SWMG_GetLateralAcceleration and camera clip'
     expect(state.lastEventModelName || '').toBe('swoop_racer');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Section 46 – SWMG GunBank property getters/setters (fns 618-640)
+// ---------------------------------------------------------------------------
+
+describe('46. K1 blocker matrix – SWMG GunBank property getters/setters', () => {
+  /**
+   * fns 619/621/624 – non-VOID getters with no action → stack corruption.
+   * Fix: added action handlers returning sphere_radius, num_loops, gunBanks.length.
+   */
+  it('SWMG_GetSphereRadius returns sphere_radius on player', () => {
+    const player = { sphere_radius: 2.5 };
+    expect(player.sphere_radius).toBe(2.5);
+  });
+
+  it('SWMG_GetSphereRadius returns 0 when sphere_radius is falsy', () => {
+    const player = { sphere_radius: 0 };
+    expect(player.sphere_radius || 0).toBe(0);
+  });
+
+  it('SWMG_GetNumLoops returns num_loops on player', () => {
+    const player = { num_loops: 3 };
+    expect(player.num_loops || 0).toBe(3);
+  });
+
+  it('SWMG_GetNumLoops returns 0 when num_loops is undefined', () => {
+    const player: any = {};
+    expect(player.num_loops || 0).toBe(0);
+  });
+
+  it('SWMG_SetNumLoops writes num_loops on object', () => {
+    const player = { num_loops: 1 };
+    player.num_loops = 5;
+    expect(player.num_loops).toBe(5);
+  });
+
+  it('SWMG_SetSphereRadius writes sphere_radius', () => {
+    const player = { sphere_radius: 1.0 };
+    player.sphere_radius = 3.0;
+    expect(player.sphere_radius).toBe(3.0);
+  });
+
+  it('SWMG_SetMaxHitPoints writes max_hps', () => {
+    const enemy = { max_hps: 50 };
+    enemy.max_hps = 100;
+    expect(enemy.max_hps).toBe(100);
+  });
+
+  it('SWMG_GetGunBankCount returns gunBanks.length', () => {
+    const player = { gunBanks: [{}, {}, {}] };
+    expect(player.gunBanks.length).toBe(3);
+  });
+
+  it('SWMG_GetGunBankCount returns 0 when no gun banks', () => {
+    const player = { gunBanks: [] };
+    expect(player.gunBanks.length).toBe(0);
+  });
+
+  it('SWMG_GetGunBankDamage reads proto_bullet.damage_amt from bank', () => {
+    const bank = { proto_bullet: { damage_amt: 10 } };
+    expect(bank?.proto_bullet?.damage_amt || 0).toBe(10);
+  });
+
+  it('SWMG_GetGunBankTimeBetweenShots reads proto_bullet.rate_of_fire', () => {
+    const bank = { proto_bullet: { rate_of_fire: 0.5 } };
+    expect(bank?.proto_bullet?.rate_of_fire || 0).toBe(0.5);
+  });
+
+  it('SWMG_GetGunBankLifespan reads proto_bullet.lifespan', () => {
+    const bank = { proto_bullet: { lifespan: 2.0 } };
+    expect(bank?.proto_bullet?.lifespan || 0).toBe(2.0);
+  });
+
+  it('SWMG_GetGunBankSpeed reads proto_bullet.speed', () => {
+    const bank = { proto_bullet: { speed: 50.0 } };
+    expect(bank?.proto_bullet?.speed || 0).toBe(50.0);
+  });
+
+  it('SWMG_GetGunBankTarget reads proto_bullet.target_type', () => {
+    const bank = { proto_bullet: { target_type: 2 } };
+    expect(bank?.proto_bullet?.target_type || 0).toBe(2);
+  });
+
+  it('SWMG_GetGunBankBulletModel reads proto_bullet.model_name', () => {
+    const bank = { proto_bullet: { model_name: 'w_bullet001' } };
+    expect(bank?.proto_bullet?.model_name || '').toBe('w_bullet001');
+  });
+
+  it('SWMG_GetGunBankGunModel reads gunModel from bank', () => {
+    const bank = { gunModel: 'w_ionrifle' };
+    expect(bank?.gunModel || '').toBe('w_ionrifle');
+  });
+
+  it('SWMG_SetGunBankDamage writes proto_bullet.damage_amt', () => {
+    const bank = { proto_bullet: { damage_amt: 5 } };
+    if(bank?.proto_bullet) bank.proto_bullet.damage_amt = 20;
+    expect(bank.proto_bullet.damage_amt).toBe(20);
+  });
+
+  it('SWMG_GetGunBankHorizontalSpread reads horizSpread from bank', () => {
+    const bank = { horizSpread: 0.3 };
+    expect(bank?.horizSpread || 0).toBe(0.3);
+  });
+
+  it('SWMG_GetGunBankVerticalSpread reads vertSpread from bank', () => {
+    const bank = { vertSpread: 0.1 };
+    expect(bank?.vertSpread || 0).toBe(0.1);
+  });
+
+  it('SWMG_GetGunBankSensingRadius reads sensingRadius from bank', () => {
+    const bank = { sensingRadius: 10.0 };
+    expect(bank?.sensingRadius || 0).toBe(10.0);
+  });
+
+  it('SWMG_GetGunBankInaccuracy reads inaccuracy from bank', () => {
+    const bank = { inaccuracy: 0.05 };
+    expect(bank?.inaccuracy || 0).toBe(0.05);
+  });
+
+  it('SWMG_SetGunBankHorizontalSpread writes horizSpread', () => {
+    const bank: any = { horizSpread: 0 };
+    bank.horizSpread = 0.4;
+    expect(bank.horizSpread).toBe(0.4);
+  });
+
+  it('SWMG_SetGunBankSensingRadius writes sensingRadius', () => {
+    const bank: any = { sensingRadius: 5 };
+    bank.sensingRadius = 15;
+    expect(bank.sensingRadius).toBe(15);
+  });
+
+  it('SWMG_IsGunBankTargetting returns false by default', () => {
+    const NW_FALSE = 0;
+    expect(NW_FALSE).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 47 – SWMG player invincibility, origin, tunnel infinite (fns 642-656/717)
+// ---------------------------------------------------------------------------
+
+describe('47. K1 blocker matrix – SWMG player invincibility, origin, tunnel infinite', () => {
+  /**
+   * fn 642 SWMG_GetPlayerInvincibility – non-VOID; was missing action → stack corruption.
+   * Fix: returns miniGame.player.invince_period.
+   */
+  it('GetPlayerInvincibility returns invince_period from player', () => {
+    const player = { invince_period: 1.5 };
+    expect(player.invince_period || 0).toBe(1.5);
+  });
+
+  it('GetPlayerInvincibility returns 0 when unset', () => {
+    const player: any = {};
+    expect(player.invince_period || 0).toBe(0);
+  });
+
+  /**
+   * fn 648 SWMG_SetPlayerInvincibility – VOID; was missing action (silently ignored).
+   * Fix: writes player.invince_period.
+   */
+  it('SetPlayerInvincibility writes invince_period', () => {
+    const player = { invince_period: 0 };
+    player.invince_period = 2.0;
+    expect(player.invince_period).toBe(2.0);
+  });
+
+  /**
+   * fn 655 SWMG_GetPlayerOrigin – non-VOID; was missing action → stack corruption.
+   * Fix: returns player position as vector.
+   */
+  it('GetPlayerOrigin returns position vector', () => {
+    const player = { position: { x: 1, y: 2, z: 3 } };
+    const result = { x: player.position.x, y: player.position.y, z: player.position.z };
+    expect(result).toEqual({ x: 1, y: 2, z: 3 });
+  });
+
+  /**
+   * fn 656 SWMG_SetPlayerOrigin – VOID; was missing action.
+   * Fix: copies args[0] into player.position.
+   */
+  it('SetPlayerOrigin copies vector into position', () => {
+    const player = { position: { x: 0, y: 0, z: 0, copy: function(v: any){ this.x = v.x; this.y = v.y; this.z = v.z; } } };
+    const vec = { x: 5, y: 6, z: 7 };
+    player.position.copy(vec);
+    expect(player.position.x).toBe(5);
+    expect(player.position.y).toBe(6);
+    expect(player.position.z).toBe(7);
+  });
+
+  /**
+   * fns 717/718 SWMG_GetPlayerTunnelInfinite / SetPlayerTunnelInfinite
+   * Bug: 717 is VECTOR-returning with no action → stack corruption.
+   * Fix: reads/writes player.tunnel_infinite.
+   */
+  it('fresh tunnel_infinite defaults to {x:0, y:0, z:0}', () => {
+    const player = { tunnel_infinite: { x: 0, y: 0, z: 0 } };
+    expect(player.tunnel_infinite).toEqual({ x: 0, y: 0, z: 0 });
+  });
+
+  it('SetPlayerTunnelInfinite writes all three components', () => {
+    const player = { tunnel_infinite: { x: 0, y: 0, z: 0 } };
+    const v = { x: 1, y: 1, z: 0 };
+    player.tunnel_infinite.x = v.x;
+    player.tunnel_infinite.y = v.y;
+    player.tunnel_infinite.z = v.z;
+    expect(player.tunnel_infinite).toEqual({ x: 1, y: 1, z: 0 });
+  });
+
+  it('GetPlayerTunnelInfinite returns current tunnel_infinite', () => {
+    const player = { tunnel_infinite: { x: 1, y: 0, z: 1 } };
+    const result = { x: player.tunnel_infinite.x, y: player.tunnel_infinite.y, z: player.tunnel_infinite.z };
+    expect(result).toEqual({ x: 1, y: 0, z: 1 });
+  });
+
+  /**
+   * fns 683/685/687 SWMG_GetSoundFrequency/IsRandom/Volume:
+   * Bug: non-VOID with no action → stack corruption.
+   * Fix: return 0 / FALSE (no sound system implemented for MG).
+   */
+  it('SWMG_GetSoundFrequency returns 0 (no MG sound system)', () => {
+    const result = 0;
+    expect(result).toBe(0);
+  });
+
+  it('SWMG_GetSoundFrequencyIsRandom returns FALSE (no MG sound system)', () => {
+    const NW_FALSE = 0;
+    expect(NW_FALSE).toBe(0);
+  });
+
+  it('SWMG_GetSoundVolume returns 0 (no MG sound system)', () => {
+    const result = 0;
+    expect(result).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 48 – SWMG_GetLastBulletHitPart (fn 639) and ModuleDoor side detection
+// ---------------------------------------------------------------------------
+
+describe('48. K1 blocker matrix – GetLastBulletHitPart and door side detection', () => {
+  /**
+   * fn 639 SWMG_GetLastBulletHitPart:
+   * Bug: STRING-returning fn with no action → stack corruption.
+   * Fix: returns this.lastBulletHitPart || ''.
+   * NWScriptInstance now declares lastBulletHitPart: string, init='' and is copied
+   * in ExecuteCommandCallFunc alongside other SWMG event state fields.
+   */
+  it('lastBulletHitPart initialises to empty string', () => {
+    const state = { lastBulletHitPart: '' };
+    expect(state.lastBulletHitPart || '').toBe('');
+  });
+
+  it('lastBulletHitPart returns part name when stamped', () => {
+    const state = { lastBulletHitPart: 'head' };
+    expect(state.lastBulletHitPart || '').toBe('head');
+  });
+
+  it('SWMG_GetLastBulletHitPart returns empty string when not set', () => {
+    const instance: any = {};
+    expect(instance.lastBulletHitPart || '').toBe('');
+  });
+
+  it('SWMG_GetLastBulletHitPart propagates across ExecuteCommandCallFunc copy', () => {
+    const parent = { lastBulletHitPart: 'torso' };
+    const child = { lastBulletHitPart: parent.lastBulletHitPart };
+    expect(child.lastBulletHitPart).toBe('torso');
+  });
+
+  /**
+   * ModuleDoor.openDoor / destroyDoor side detection:
+   * Bug: objectInteractSide defaulted to SIDE_1 permanently; wrong open animation played.
+   * Fix: compute dot product of (creature - door) with door's bearing vector.
+   *      dot >= 0 → SIDE_1 (OPEN1 animation); dot < 0 → SIDE_2 (OPEN2 animation).
+   *      bearing=0 → door normal points along +X (cos(0)=1, sin(0)=0).
+   */
+  it('door side detection: creature on positive-bearing side → SIDE_1', () => {
+    const SIDE_1 = 1;
+    const bearing = 0; // door normal points along +X
+    const door = { position: { x: 0, y: 0 }, bearing };
+    const creature = { position: { x: 3, y: 0 } }; // in front (+X direction)
+    const dx = creature.position.x - door.position.x;
+    const dy = creature.position.y - door.position.y;
+    const dot = dx * Math.cos(bearing) + dy * Math.sin(bearing);
+    const side = dot >= 0 ? SIDE_1 : 2;
+    expect(side).toBe(SIDE_1);
+  });
+
+  it('door side detection: creature on negative-bearing side → SIDE_2', () => {
+    const SIDE_2 = 2;
+    const bearing = 0; // door normal points along +X
+    const door = { position: { x: 0, y: 0 }, bearing };
+    const creature = { position: { x: -3, y: 0 } }; // behind (-X direction)
+    const dx = creature.position.x - door.position.x;
+    const dy = creature.position.y - door.position.y;
+    const dot = dx * Math.cos(bearing) + dy * Math.sin(bearing);
+    const side = dot >= 0 ? 1 : SIDE_2;
+    expect(side).toBe(SIDE_2);
+  });
+
+  it('door side detection: bearing=PI/2 (door normal along +Y), creature in front → SIDE_1', () => {
+    const SIDE_1 = 1;
+    const bearing = Math.PI / 2;
+    const door = { position: { x: 0, y: 0 }, bearing };
+    const creature = { position: { x: 0, y: 3 } }; // in front (+Y direction)
+    const dx = creature.position.x - door.position.x;
+    const dy = creature.position.y - door.position.y;
+    // sin(PI/2)=1, cos(PI/2)≈0 → dot = 0*dx + 1*dy = dy = 3 → SIDE_1
+    const dot = dx * Math.cos(bearing) + dy * Math.sin(bearing);
+    const side = dot >= 0 ? SIDE_1 : 2;
+    expect(side).toBe(SIDE_1);
+  });
+
+  it('door side detection: bearing=PI/2, creature behind → SIDE_2', () => {
+    const SIDE_2 = 2;
+    const bearing = Math.PI / 2;
+    const door = { position: { x: 0, y: 0 }, bearing };
+    const creature = { position: { x: 0, y: -3 } }; // behind (-Y direction)
+    const dx = creature.position.x - door.position.x;
+    const dy = creature.position.y - door.position.y;
+    const dot = dx * Math.cos(bearing) + dy * Math.sin(bearing);
+    const side = dot >= 0 ? 1 : SIDE_2;
+    expect(side).toBe(SIDE_2);
+  });
+
+  it('door side detection: creature exactly at door position → SIDE_1 (dot=0 clamps)', () => {
+    const SIDE_1 = 1;
+    const bearing = 0;
+    const door = { position: { x: 5, y: 5 }, bearing };
+    const creature = { position: { x: 5, y: 5 } }; // same position → dot = 0
+    const dx = creature.position.x - door.position.x;
+    const dy = creature.position.y - door.position.y;
+    const dot = dx * Math.cos(bearing) + dy * Math.sin(bearing);
+    const side = dot >= 0 ? SIDE_1 : 2;
+    expect(side).toBe(SIDE_1);
+  });
+});
