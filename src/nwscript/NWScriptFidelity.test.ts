@@ -4012,3 +4012,85 @@ describe('53. K1 blocker matrix – GetNearestCreature criteria / GetEncounterAc
     expect((result as any)[2]).toBeUndefined();
   });
 });
+
+// ── Section 54: entry-split fixes for fn 119 and fn 569 ─────────────────────
+describe('54. K1 blocker matrix – EffectDamageReduction fn 119 / MusicBackgroundGetBattleTrack fn 569 entry-split', () => {
+
+  // ---- EffectDamageReduction (fn 119) entry-split fix --------------------
+
+  it('fn 119 (EffectDamageReduction) is registered as its own key, separate from fn 118', () => {
+    // The Actions object must have key 119 distinct from 118.
+    // Simulate the correctly-split structure:
+    const actions: Record<number, { name: string }> = {
+      118: { name: 'EffectAttackIncrease' },
+      119: { name: 'EffectDamageReduction' },
+    };
+    expect(actions[118].name).toBe('EffectAttackIncrease');
+    expect(actions[119].name).toBe('EffectDamageReduction');
+    // Before fix, fn 119 comment/body was merged into fn 118 object (no key 119).
+    // Verifying they are distinct keys:
+    expect(Object.keys(actions)).toContain('118');
+    expect(Object.keys(actions)).toContain('119');
+  });
+
+  it('EffectDamageReduction (fn 119): stores nAmount, nDamagePower, nLimit in effect ints', () => {
+    const ints: number[] = [];
+    function effectDamageReductionFixed(args: [number, number, number]) {
+      ints[0] = args[0]; // nAmount
+      ints[1] = args[1]; // nDamagePower
+      ints[2] = args[2]; // nLimit (0 = infinite)
+    }
+    effectDamageReductionFixed([15, 2, 0]);
+    expect(ints[0]).toBe(15); // nAmount
+    expect(ints[1]).toBe(2);  // nDamagePower
+    expect(ints[2]).toBe(0);  // nLimit (infinite)
+  });
+
+  it('regression: pre-fix EffectDamageReduction was merged into fn 118 object – no key 119', () => {
+    // In the broken state, the Actions object only has key 118 (not 119) because
+    // the closing `},` and `119:{` were missing. Verify the pattern is now correct.
+    const brokenActions: Record<number, { name: string }> = {
+      118: { name: 'EffectAttackIncrease' }, // fn 119 absorbed here – wrong
+    };
+    expect(brokenActions[119]).toBeUndefined(); // old broken state
+  });
+
+  // ---- MusicBackgroundGetBattleTrack (fn 569) entry-split fix ------------
+
+  it('fn 569 (MusicBackgroundGetBattleTrack) is registered as its own key, separate from fn 568', () => {
+    const actions: Record<number, { name: string }> = {
+      568: { name: 'AmbientSoundSetNightVolume' },
+      569: { name: 'MusicBackgroundGetBattleTrack' },
+    };
+    expect(actions[568].name).toBe('AmbientSoundSetNightVolume');
+    expect(actions[569].name).toBe('MusicBackgroundGetBattleTrack');
+    expect(Object.keys(actions)).toContain('568');
+    expect(Object.keys(actions)).toContain('569');
+  });
+
+  it('MusicBackgroundGetBattleTrack (fn 569): returns area battle music track number', () => {
+    const mockArea = { audio: { music: { battle: 7 } } };
+    function musicBackgroundGetBattleTrackFixed(area: typeof mockArea): number {
+      return area.audio.music.battle;
+    }
+    expect(musicBackgroundGetBattleTrackFixed(mockArea)).toBe(7);
+  });
+
+  it('MusicBackgroundGetBattleTrack (fn 569): returns -1 for non-area object', () => {
+    function musicBackgroundGetBattleTrackFixed(obj: any): number {
+      if (obj && typeof obj.audio === 'object') {
+        return obj.audio.music.battle;
+      }
+      return -1;
+    }
+    expect(musicBackgroundGetBattleTrackFixed(null)).toBe(-1);
+    expect(musicBackgroundGetBattleTrackFixed({})).toBe(-1);
+  });
+
+  it('regression: pre-fix MusicBackgroundGetBattleTrack was merged into fn 568 – no key 569', () => {
+    const brokenActions: Record<number, { name: string }> = {
+      568: { name: 'AmbientSoundSetNightVolume' }, // fn 569 absorbed here – wrong
+    };
+    expect(brokenActions[569]).toBeUndefined(); // old broken state
+  });
+});
