@@ -64,6 +64,7 @@ export class MenuManager {
   static MenuGraphicsAdvanced: KOTOR.MenuGraphicsAdvanced;
   static MenuInventory: KOTOR.MenuInventory;
   static MenuJournal: KOTOR.MenuJournal;
+  static MenuCredits: KOTOR.MenuCredits;
   static MenuLevelUp: KOTOR.MenuLevelUp;
   static MenuMap: KOTOR.MenuMap;
   static MenuMessages: KOTOR.MenuMessages;
@@ -249,6 +250,7 @@ export class MenuManager {
         MenuManager.MenuKeyboardMapping = await MenuManager.GameMenuLoader(KOTOR.MenuKeyboardMapping) as KOTOR.MenuKeyboardMapping;
         MenuManager.MenuKeyboardEntry = await MenuManager.GameMenuLoader(KOTOR.MenuKeyboardEntry) as KOTOR.MenuKeyboardEntry;
         MenuManager.InGameConfirm = await MenuManager.GameMenuLoader(KOTOR.InGameConfirm) as KOTOR.InGameConfirm;
+        MenuManager.MenuCredits = await MenuManager.GameMenuLoader(KOTOR.MenuCredits) as KOTOR.MenuCredits;
       }else if(GameState.GameKey == GameEngineType.TSL){
         MenuManager.LoadScreen = await MenuManager.GameMenuLoader(TSL.LoadScreen) as KOTOR.LoadScreen;
         MenuManager.MainMenu = await MenuManager.GameMenuLoader(TSL.MainMenu) as KOTOR.MainMenu;
@@ -269,6 +271,7 @@ export class MenuManager {
         MenuManager.MenuKeyboardMapping = await MenuManager.GameMenuLoader(TSL.MenuKeyboardMapping) as KOTOR.MenuKeyboardMapping;
         MenuManager.MenuKeyboardEntry = await MenuManager.GameMenuLoader(TSL.MenuKeyboardEntry) as KOTOR.MenuKeyboardEntry;
         MenuManager.InGameConfirm = await MenuManager.GameMenuLoader(TSL.InGameConfirm) as KOTOR.InGameConfirm;
+        MenuManager.MenuCredits = await MenuManager.GameMenuLoader(KOTOR.MenuCredits) as KOTOR.MenuCredits;
       }
     }catch(e){
       console.error(e);

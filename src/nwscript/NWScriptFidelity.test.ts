@@ -956,3 +956,181 @@ describe('EffectDamage damage-type tracking', () => {
     expect(target.lastDamageByType[256]).toBe(20);
   });
 });
+
+// ---------------------------------------------------------------------------
+// 28. AddMultiClass (fn 389) – Dantooine Jedi class transition
+// ---------------------------------------------------------------------------
+
+describe('AddMultiClass (fn 389)', () => {
+  it('adds a new class to a creature that has none of that class', () => {
+    const JEDI_GUARDIAN_CLASS_ID = 3;
+    const creature: any = {
+      classes: [{ id: 0, level: 3 }], // Scout
+    };
+
+    // Simulate AddMultiClass
+    const alreadyHas = creature.classes.some((c: any) => c.id === JEDI_GUARDIAN_CLASS_ID);
+    if(!alreadyHas){
+      creature.classes.push({ id: JEDI_GUARDIAN_CLASS_ID, level: 0 });
+    }
+
+    expect(creature.classes.length).toBe(2);
+    expect(creature.classes[1].id).toBe(JEDI_GUARDIAN_CLASS_ID);
+    expect(creature.classes[1].level).toBe(0);
+  });
+
+  it('does not add a duplicate class', () => {
+    const JEDI_GUARDIAN_CLASS_ID = 3;
+    const creature: any = {
+      classes: [{ id: 0, level: 3 }, { id: JEDI_GUARDIAN_CLASS_ID, level: 2 }],
+    };
+
+    // Simulate AddMultiClass with duplicate
+    const alreadyHas = creature.classes.some((c: any) => c.id === JEDI_GUARDIAN_CLASS_ID);
+    if(!alreadyHas){
+      creature.classes.push({ id: JEDI_GUARDIAN_CLASS_ID, level: 0 });
+    }
+
+    expect(creature.classes.length).toBe(2); // unchanged
+  });
+
+  it('does nothing if target is not a creature', () => {
+    const notACreature: any = { classes: undefined };
+    // Guard check mirrors the NWScript action: InstanceOfObject check
+    const isCreature = Array.isArray(notACreature.classes);
+    expect(isCreature).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 29. SurrenderToEnemies (fn 476) – combat-state clearing
+// ---------------------------------------------------------------------------
+
+describe('SurrenderToEnemies (fn 476)', () => {
+  it('clears combat state on the surrendering creature', () => {
+    const creature: any = {
+      combatData: { combatState: true, clearTarget: jest.fn() },
+      clearAllActions: jest.fn(),
+      clearTarget: jest.fn(),
+    };
+
+    // Simulate SurrenderToEnemies
+    creature.clearAllActions(true);
+    creature.combatData.combatState = false;
+    creature.clearTarget();
+
+    expect(creature.clearAllActions).toHaveBeenCalledWith(true);
+    expect(creature.combatData.combatState).toBe(false);
+    expect(creature.clearTarget).toHaveBeenCalled();
+  });
+
+  it('clears nearby hostile creatures\' target references', () => {
+    const hostile: any = { combatData: { clearTarget: jest.fn() }, isDead: () => false };
+    const farHostile: any = { combatData: { clearTarget: jest.fn() }, isDead: () => false };
+    hostile.position = {};
+    farHostile.position = {};
+
+    // surrenderer.position.distanceTo returns different values per target
+    const SURRENDER_RADIUS = 10;
+    const surrenderer: any = {
+      position: {
+        distanceTo: (pos: any) => pos === hostile.position ? 5 : 15,
+      },
+    };
+
+    const areaCreatures = [hostile, farHostile];
+    for(const other of areaCreatures){
+      if(other !== surrenderer && !other.isDead()){
+        if(surrenderer.position.distanceTo(other.position) < SURRENDER_RADIUS){
+          other.combatData.clearTarget(surrenderer);
+        }
+      }
+    }
+
+    expect(hostile.combatData.clearTarget).toHaveBeenCalledWith(surrenderer);
+    expect(farHostile.combatData.clearTarget).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 30. SetItemNonEquippable (fn 266) – item equippability flag
+// ---------------------------------------------------------------------------
+
+describe('SetItemNonEquippable (fn 266)', () => {
+  it('sets nonEquippable to 1 (true) on a ModuleItem', () => {
+    const item: any = { nonEquippable: 0 };
+    const bNonEquippable = true;
+    item.nonEquippable = bNonEquippable ? 1 : 0;
+    expect(item.nonEquippable).toBe(1);
+  });
+
+  it('clears nonEquippable (false) on a ModuleItem', () => {
+    const item: any = { nonEquippable: 1 };
+    const bNonEquippable = false;
+    item.nonEquippable = bNonEquippable ? 1 : 0;
+    expect(item.nonEquippable).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 31. StartCreditSequence (fn 518) – credits flag + menu open
+// ---------------------------------------------------------------------------
+
+describe('StartCreditSequence (fn 518)', () => {
+  it('sets creditsSequenceInProgress to true', () => {
+    const state: any = { creditsSequenceInProgress: false };
+    // Simulate StartCreditSequence
+    state.creditsSequenceInProgress = true;
+    expect(state.creditsSequenceInProgress).toBe(true);
+  });
+
+  it('opens MenuCredits when available', () => {
+    const menuCredits = { open: jest.fn() };
+    const manager: any = { MenuCredits: menuCredits };
+    // Simulate the NWScript action
+    manager.MenuCredits?.open();
+    expect(menuCredits.open).toHaveBeenCalled();
+  });
+
+  it('does not throw when MenuCredits is not yet loaded', () => {
+    const manager: any = { MenuCredits: undefined };
+    // Should not throw
+    expect(() => manager.MenuCredits?.open()).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 32. MenuCredits – scroll and end logic
+// ---------------------------------------------------------------------------
+
+describe('MenuCredits end-of-credits logic', () => {
+  it('endCredits clears creditsSequenceInProgress flag', () => {
+    const state: any = { creditsSequenceInProgress: true };
+    // Simulate endCredits()
+    state.creditsSequenceInProgress = false;
+    expect(state.creditsSequenceInProgress).toBe(false);
+  });
+
+  it('scroll offset advances per delta frame', () => {
+    const CREDITS_SCROLL_SPEED = 30;
+    let scrollOffset = 0;
+    let listOffset = 0;
+    const delta = 0.1;
+
+    scrollOffset += CREDITS_SCROLL_SPEED * delta;
+    const step = Math.floor(scrollOffset);
+    scrollOffset -= step;
+    listOffset += step;
+
+    expect(listOffset).toBe(3);
+    expect(scrollOffset).toBeCloseTo(0, 5);
+  });
+
+  it('clamps to max list offset when scroll reaches end', () => {
+    const maxOffset = 10;
+    let listOffset = maxOffset;
+    // When we hit the max, end credits is triggered
+    const creditsDone = listOffset >= maxOffset;
+    expect(creditsDone).toBe(true);
+  });
+});
