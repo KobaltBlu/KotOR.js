@@ -5046,6 +5046,8 @@ NWScriptDefK1.Actions = {
       creature.combatData.combatState = false;
       creature.clearTarget();
     }
+  },
+  380:{
     comment: "380: Get the first member of oMemberOfFaction's faction (start to cycle through\noMemberOfFaction's faction).\n* Returns OBJECT_INVALID if oMemberOfFaction's faction is invalid.\n",
     name: "GetFirstFactionMember",
     type: NWScriptDataType.OBJECT,
@@ -9756,6 +9758,8 @@ NWScriptDefK1.Actions = {
         }
       }
     }
+  },
+  763:{
     comment: "763. SuppressStatusSummaryEntry\nThis will prevent the next n entries that should have shown up in the status summary\nfrom being added\nThis will not add on to any existing summary suppressions, but rather replace it.  So\nto clear the supression system pass 0 as the entry value\n",
     name: "SuppressStatusSummaryEntry",
     type: NWScriptDataType.VOID,
