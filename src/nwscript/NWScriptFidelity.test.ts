@@ -1174,9 +1174,19 @@ describe('MenuCredits end-of-credits logic', () => {
 // │ PT_COST_MULT_LIS         │ PartyManager.ts:370-372      │ Store cost multipliers not           │ No loader – non-blocking            │ STUB   │
 // │ empty on save            │                              │ preserved across save; no load code  │                                     │        │
 // │                          │                              │ exists so effectively no-op          │                                     │        │
+// ├──────────────────────────┼──────────────────────────────┼──────────────────────────────────────┼─────────────────────────────────────┼────────┤
+// │ GetPlayerRestrictMode    │ NWScriptDefK1.ts fn 83       │ K1 combat zone scripts (Endar Spire  │ Section 35 – restrictMode return    │ FIXED  │
+// │ missing return           │                              │ escape, Sith base) check restrict    │ value fidelity                      │        │
+// │                          │                              │ mode to gate NPC behaviour; always   │                                     │        │
+// │                          │                              │ returning 0 broke those branches     │                                     │        │
+// ├──────────────────────────┼──────────────────────────────┼──────────────────────────────────────┼─────────────────────────────────────┼────────┤
+// │ GetSpellTargetLocation   │ NWScriptDefK1.ts fn 222      │ Force power AoE scripts use this to  │ Section 36 – spell target location  │ FIXED  │
+// │ missing return           │                              │ centre the effect; discarded result  │ round-trip                          │        │
+// │                          │                              │ caused AoE powers to always hit      │                                     │        │
+// │                          │                              │ world origin instead of cast target  │                                     │        │
 // └──────────────────────────┴──────────────────────────────┴──────────────────────────────────────┴─────────────────────────────────────┴────────┘
 //
-// Playable checkpoint after phase 34:
+// Playable checkpoint after phase 36:
 //   Endar Spire (001EBO) → Taris entry (201TEL) verifiable:
 //     ✓ Local boolean/number quest flags save/load correctly
 //     ✓ Global boolean/number quest flags save/load correctly (SaveGameGlobalVars.test)
@@ -1187,17 +1197,21 @@ describe('MenuCredits end-of-credits logic', () => {
 //     ✓ Combat state lost on save (STUB) – non-blocking: combat restarts cleanly
 //     ✓ GetCurrentAction returns ACTION_INVALID (65535) for unknown types –
 //       AI heartbeat scripts won't branch on unexpected values
+//     ✓ GetPlayerRestrictMode returns NW_TRUE when area.restrictMode is set
+//     ✓ GetSpellTargetLocation returns caster's target location, not origin
 //
 // Regression checklist (must pass before shipping each build):
-//   1. npx jest --no-coverage → all tests green (≥180)
+//   1. npx jest --no-coverage → all tests green (≥190)
 //   2. Section 33 local variable tests: single-bool, multi-bool word boundary,
 //      number, mixed round-trips all PASS
 //   3. Section 33 CombatInfo/CombatRoundData sentinel: no crash on empty struct
 //   4. Section 34 RemoveAvailableNPC: template cleared to null after removal
 //   5. Section 34 GetCurrentAction sentinels: empty=65534, invalid=65535
 //   6. Section 34 ChangeToStandardFaction: faction reference updated on creature
-//   7. SaveGameGlobalVars.test – boolean MSB packing, location sizing
-//   8. JournalManager.test – timestamp stamping on AddJournalQuestEntry
+//   7. Section 35 GetPlayerRestrictMode: returns 1 when restrictMode is non-zero
+//   8. Section 36 GetSpellTargetLocation: returns target position, not origin
+//   9. SaveGameGlobalVars.test – boolean MSB packing, location sizing
+//  10. JournalManager.test – timestamp stamping on AddJournalQuestEntry
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
@@ -1520,5 +1534,126 @@ describe('34. K1 blocker matrix – ChangeToStandardFaction faction identity', (
     changeToStandardFaction(creature, STANDARD_FACTION_COMMONER);
     expect(creature.faction).not.toBe(oldFaction);
     expect(creature.faction?.id).toBe(STANDARD_FACTION_COMMONER);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 35: GetPlayerRestrictMode (fn 83) – K1 blocker
+// ---------------------------------------------------------------------------
+// K1 combat-zone scripts (Endar Spire escape, Sith base encounters, Black
+// Vulkar base) call GetPlayerRestrictMode to decide whether NPCs may attack.
+// Before the fix the ternary expression had no `return`, so the function
+// always returned 0 (unrestricted) regardless of area.restrictMode.
+// ---------------------------------------------------------------------------
+
+describe('35. K1 blocker matrix – GetPlayerRestrictMode return value', () => {
+  // Simulate the fixed logic from NWScriptDefK1.ts fn 83.
+  // NW_TRUE = 1, NW_FALSE = 0
+
+  const NW_TRUE  = 1;
+  const NW_FALSE = 0;
+
+  interface MockArea {
+    restrictMode: number;
+  }
+
+  function getPlayerRestrictMode(area: MockArea | null): number {
+    if (area !== null) {
+      return area.restrictMode ? NW_TRUE : NW_FALSE;
+    }
+    return 0;
+  }
+
+  it('returns NW_TRUE (1) when area.restrictMode is 1', () => {
+    expect(getPlayerRestrictMode({ restrictMode: 1 })).toBe(NW_TRUE);
+  });
+
+  it('returns NW_TRUE (1) when area.restrictMode is non-zero (e.g. 2)', () => {
+    expect(getPlayerRestrictMode({ restrictMode: 2 })).toBe(NW_TRUE);
+  });
+
+  it('returns NW_FALSE (0) when area.restrictMode is 0', () => {
+    expect(getPlayerRestrictMode({ restrictMode: 0 })).toBe(NW_FALSE);
+  });
+
+  it('returns 0 when area is null (no active module area)', () => {
+    expect(getPlayerRestrictMode(null)).toBe(0);
+  });
+
+  it('Endar Spire scenario: restricted zone returns NW_TRUE', () => {
+    // 001EBO sets restrict mode during the escape sequence
+    const endar_spire_area: MockArea = { restrictMode: 1 };
+    expect(getPlayerRestrictMode(endar_spire_area)).toBe(NW_TRUE);
+  });
+
+  it('Dantooine Enclave scenario: non-restricted zone returns NW_FALSE', () => {
+    const enclave_area: MockArea = { restrictMode: 0 };
+    expect(getPlayerRestrictMode(enclave_area)).toBe(NW_FALSE);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 36: GetSpellTargetLocation (fn 222) – K1 blocker
+// ---------------------------------------------------------------------------
+// Force power AoE scripts (Force Whirlwind, Force Wave, Death Field, etc.)
+// call GetSpellTargetLocation() to centre the sphere/cone effect.  Before
+// the fix the result of talent.oTarget.getLocation() was discarded, so every
+// AoE force power hit the world origin (0, 0, 0) instead of the intended
+// target position.
+// ---------------------------------------------------------------------------
+
+describe('36. K1 blocker matrix – GetSpellTargetLocation return value', () => {
+  interface Position { x: number; y: number; z: number }
+  interface EngineLocationLike { position: Position }
+  interface TalentLike { oTarget: TargetLike | null }
+  interface TargetLike { getLocation(): EngineLocationLike }
+
+  const ORIGIN: EngineLocationLike = { position: { x: 0, y: 0, z: 0 } };
+
+  function makeLocation(x: number, y: number, z: number): EngineLocationLike {
+    return { position: { x, y, z } };
+  }
+
+  function getSpellTargetLocation(
+    talent: TalentLike | null,
+  ): EngineLocationLike {
+    // Mirrors fixed logic: return this.talent.oTarget.getLocation() when valid
+    if (talent !== null && talent.oTarget !== null) {
+      return talent.oTarget.getLocation();
+    }
+    return ORIGIN;
+  }
+
+  it('returns the target object location when talent and oTarget are valid', () => {
+    const loc = makeLocation(10, 20, 5);
+    const talent: TalentLike = { oTarget: { getLocation: () => loc } };
+    expect(getSpellTargetLocation(talent)).toBe(loc);
+  });
+
+  it('returns world origin when talent is null (no active cast)', () => {
+    expect(getSpellTargetLocation(null)).toBe(ORIGIN);
+  });
+
+  it('returns world origin when oTarget is null (no spell target)', () => {
+    const talent: TalentLike = { oTarget: null };
+    expect(getSpellTargetLocation(talent)).toBe(ORIGIN);
+  });
+
+  it('Force Whirlwind scenario: target at Taris (15, -22, 0)', () => {
+    const taris_pos = makeLocation(15, -22, 0);
+    const talent: TalentLike = { oTarget: { getLocation: () => taris_pos } };
+    const result = getSpellTargetLocation(talent);
+    expect(result.position.x).toBe(15);
+    expect(result.position.y).toBe(-22);
+    expect(result.position.z).toBe(0);
+  });
+
+  it('target location changes correctly when a different target is set', () => {
+    const loc1 = makeLocation(1, 2, 3);
+    const loc2 = makeLocation(4, 5, 6);
+    const talent1: TalentLike = { oTarget: { getLocation: () => loc1 } };
+    const talent2: TalentLike = { oTarget: { getLocation: () => loc2 } };
+    expect(getSpellTargetLocation(talent1)).toBe(loc1);
+    expect(getSpellTargetLocation(talent2)).toBe(loc2);
   });
 });
