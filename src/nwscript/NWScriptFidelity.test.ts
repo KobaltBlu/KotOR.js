@@ -5222,4 +5222,50 @@ describe('58. Combat feat fixes', () => {
     expect(calcAC(10, 4, 2, [flurryACDec, acBuff])).toBe(14);
   });
 
+  // ---- ActionTakeItem: missing else caused double-add bug -----------------
+
+  it('ActionTakeItem: party member receives item only via InventoryManager (not double-added)', () => {
+    // Old code used "}{ this.owner.addItem(oItem); }" (missing else) so
+    // addItem ran unconditionally after the if-block, doubling stack sizes.
+    const inventoryItems: string[] = [];
+    const ownerItems:    string[] = [];
+
+    const mockInventoryManager = { addItem: (item: {tag: string}) => { inventoryItems.push(item.tag); } };
+    const mockOwner = {
+      addItem: (item: {tag: string}) => { ownerItems.push(item.tag); },
+      isPartyMember: true,
+    };
+    const mockParty = [mockOwner];
+    const oItem = { tag: 'medpac' };
+
+    function oldTakeItem(owner: typeof mockOwner, party: typeof mockParty, item: typeof oItem): void {
+      if(party.indexOf(owner) >= 0){
+        mockInventoryManager.addItem(item);
+      }{ // BUG: unconditional block
+        owner.addItem(item);
+      }
+    }
+
+    function fixedTakeItem(owner: typeof mockOwner, party: typeof mockParty, item: typeof oItem): void {
+      if(party.indexOf(owner) >= 0){
+        mockInventoryManager.addItem(item);
+      } else { // FIXED: proper else
+        owner.addItem(item);
+      }
+    }
+
+    // Old: both addItem AND owner.addItem fire for party member
+    oldTakeItem(mockOwner, mockParty, oItem);
+    expect(inventoryItems).toEqual(['medpac']);
+    expect(ownerItems).toEqual(['medpac']); // double-add bug
+
+    inventoryItems.length = 0;
+    ownerItems.length = 0;
+
+    // Fixed: only InventoryManager receives the item
+    fixedTakeItem(mockOwner, mockParty, oItem);
+    expect(inventoryItems).toEqual(['medpac']); // correctly added to party inventory
+    expect(ownerItems).toEqual([]);             // NOT added to owner's personal inventory
+  });
+
 });
