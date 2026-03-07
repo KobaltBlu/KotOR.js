@@ -4305,12 +4305,16 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).setValue(0);
 
     let combatInfoStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
-
-    //TODO: CombatInfo
+    combatInfoStruct.addField( new GFFField(GFFDataType.BYTE, 'NumAttacks') ).setValue(this.combatRound.onHandAttacks + this.combatRound.additionalAttacks);
+    combatInfoStruct.addField( new GFFField(GFFDataType.BYTE, 'OnHandAttacks') ).setValue(this.combatRound.onHandAttacks);
+    combatInfoStruct.addField( new GFFField(GFFDataType.BYTE, 'AdditionalAttacks') ).setValue(this.combatRound.additionalAttacks);
+    combatInfoStruct.addField( new GFFField(GFFDataType.BYTE, 'OffHandTaken') ).setValue(this.combatRound.offHandTaken ? 1 : 0);
 
     let combatRoundDataStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );
-
-    //TODO: CombatRoundData
+    combatRoundDataStruct.addField( new GFFField(GFFDataType.BYTE, 'RoundStarted') ).setValue(this.combatRound.roundStarted ? 1 : 0);
+    combatRoundDataStruct.addField( new GFFField(GFFDataType.BYTE, 'Engaged') ).setValue(this.combatRound.engaged ? 1 : 0);
+    combatRoundDataStruct.addField( new GFFField(GFFDataType.FLOAT, 'Timer') ).setValue(this.combatRound.timer);
+    combatRoundDataStruct.addField( new GFFField(GFFDataType.FLOAT, 'RoundLength') ).setValue(this.combatRound.roundLength);
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.getCommadable() ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') ).setValue(this.con);

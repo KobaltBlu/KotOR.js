@@ -31,6 +31,7 @@ import { SkillType } from "../enums/nwscript/SkillType";
 import { ModulePlaceableObjectSound } from "../enums/module/ModulePlaceableObjectSound";
 import { SWBodyBag } from "../engine/rules/SWBodyBag";
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { CombatActionType } from "../enums/combat/CombatActionType";
 import { Dice } from "../utility/Dice";
 import { DiceType } from "../enums/combat/DiceType";
 
@@ -93,6 +94,7 @@ export class ModulePlaceable extends ModuleObject {
 
   lastObjectOpened: ModuleObject;
   lastObjectClosed: ModuleObject;
+  deathStarted: boolean = false;
 
   animStateInfo: AnimStateInfo = {
     lastAnimState: ModulePlaceableAnimState.DEFAULT,
@@ -218,6 +220,15 @@ export class ModulePlaceable extends ModuleObject {
     if(this.locked && this.getHP() <= 0){
       this.locked = false;
       this.setAnimationState(ModulePlaceableAnimState.CLOSE_OPEN);
+    }
+
+    if(this.isDead()){
+      if(!this.deathStarted){
+        this.deathStarted = true;
+        this.onDeath();
+      }
+    }else{
+      if(this.deathStarted) this.deathStarted = false;
     }
 
     if(!(this.model instanceof OdysseyModel3D))
@@ -919,6 +930,20 @@ export class ModulePlaceable extends ModuleObject {
       const wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
       if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
     }catch(e){}
+  }
+
+  onDeath(){
+    this.playObjectSound(ModulePlaceableObjectSound.DESTROYED);
+    const instance = this.scripts[ModuleObjectScript.PlaceableOnDeath];
+    if(!instance){ return; }
+    instance.run(this);
+  }
+
+  onAttacked(attackType: CombatActionType){
+    const isSpellAttack = attackType === CombatActionType.CAST_SPELL || attackType === CombatActionType.ITEM_CAST_SPELL;
+    const instance = this.scripts[!isSpellAttack ? ModuleObjectScript.PlaceableOnMeleeAttacked : ModuleObjectScript.PlaceableOnSpellCastAt];
+    if(!instance){ return; }
+    instance.run(this);
   }
 
   save(){

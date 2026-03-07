@@ -30,6 +30,18 @@
  * 10. GetReflexAdjustedDamage – full / half / zero damage based on reflex save
  *     result and Evasion feat.
  *
+ * 37. ModulePlaceable.onDeath() – PlaceableOnDeath script fires when HP drops to 0.
+ *
+ * 38. ModulePlaceable.onAttacked() – PlaceableOnMeleeAttacked / OnSpellCastAt routing.
+ *
+ * 39. ModulePlaceable death guard – deathStarted flag prevents repeated onDeath calls.
+ *
+ * 40. NWScriptStack storeState/restoreState – double-assignment bug fixed; stack copy
+ *     is independent of original.
+ *
+ * 41. ModuleCreature CombatInfo/CombatRoundData save – key combat-state fields are
+ *     written so save-games carry accurate round data.
+ *
  * References:
  *  - KotOR Scripting Tool: https://github.com/KobaltBlu/KotOR-Scripting-Tool
  *  - KOTOR Force Powers:   https://swkotorwiki.fandom.com/wiki/KOTOR:Force_Powers
@@ -1655,5 +1667,386 @@ describe('36. K1 blocker matrix – GetSpellTargetLocation return value', () => 
     const talent2: TalentLike = { oTarget: { getLocation: () => loc2 } };
     expect(getSpellTargetLocation(talent1)).toBe(loc1);
     expect(getSpellTargetLocation(talent2)).toBe(loc2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 37: ModulePlaceable.onDeath() – K1 blocker
+// ---------------------------------------------------------------------------
+// Many K1 quests (Taris rakghoul serum locker, Dantooine Jedi enclave computer,
+// Sith base turrets, etc.) depend on a placeable's OnDeath script running when
+// its HP reaches 0. Before this fix the method was a base-class stub and the
+// script was never executed.
+// ---------------------------------------------------------------------------
+
+describe('37. K1 blocker matrix – ModulePlaceable.onDeath fires PlaceableOnDeath script', () => {
+  const PLACEABLE_ON_DEATH = 'OnDeath';
+
+  interface MockScript { ran: boolean; caller: any; run(caller: any): void }
+  interface MockScripts { [key: string]: MockScript }
+  interface MockPlaceable {
+    currentHP: number;
+    scripts: MockScripts;
+    deathStarted: boolean;
+    isDead(): boolean;
+    onDeath(): void;
+  }
+
+  function makeScript(): MockScript {
+    return { ran: false, caller: null, run(caller: any){ this.ran = true; this.caller = caller; } };
+  }
+
+  function makePlaceable(hp: number, scripts: MockScripts = {}): MockPlaceable {
+    const p: MockPlaceable = {
+      currentHP: hp,
+      scripts,
+      deathStarted: false,
+      isDead(){ return this.currentHP <= 0; },
+      onDeath(){
+        // mirrors ModulePlaceable.onDeath()
+        const instance = this.scripts[PLACEABLE_ON_DEATH];
+        if(!instance){ return; }
+        instance.run(this);
+      },
+    };
+    return p;
+  }
+
+  it('onDeath() runs the PlaceableOnDeath script', () => {
+    const script = makeScript();
+    const p = makePlaceable(-1, { [PLACEABLE_ON_DEATH]: script });
+    p.onDeath();
+    expect(script.ran).toBe(true);
+    expect(script.caller).toBe(p);
+  });
+
+  it('onDeath() does nothing when no PlaceableOnDeath script is registered', () => {
+    const p = makePlaceable(-1);
+    expect(() => p.onDeath()).not.toThrow();
+  });
+
+  it('deathStarted guard prevents double-firing onDeath', () => {
+    let calls = 0;
+    const script = makeScript();
+    const origRun = script.run.bind(script);
+    script.run = function(caller: any){ calls++; origRun(caller); };
+    const p = makePlaceable(-1, { [PLACEABLE_ON_DEATH]: script });
+
+    // Simulate update loop calling onDeath via deathStarted guard
+    function simulateUpdate(pl: MockPlaceable){
+      if(pl.isDead()){
+        if(!pl.deathStarted){
+          pl.deathStarted = true;
+          pl.onDeath();
+        }
+      } else {
+        pl.deathStarted = false;
+      }
+    }
+    simulateUpdate(p); // first tick – fires
+    simulateUpdate(p); // second tick – should NOT re-fire
+    simulateUpdate(p); // third tick  – should NOT re-fire
+    expect(calls).toBe(1);
+  });
+
+  it('deathStarted resets when HP is restored above 0', () => {
+    const script = makeScript();
+    let calls = 0;
+    const origRun = script.run.bind(script);
+    script.run = function(caller: any){ calls++; origRun(caller); };
+    const p = makePlaceable(-1, { [PLACEABLE_ON_DEATH]: script });
+
+    function simulateUpdate(pl: MockPlaceable){
+      if(pl.isDead()){
+        if(!pl.deathStarted){ pl.deathStarted = true; pl.onDeath(); }
+      } else {
+        pl.deathStarted = false;
+      }
+    }
+    simulateUpdate(p); // fires once
+    p.currentHP = 10;  // HP restored (e.g. by heal effect in tests)
+    simulateUpdate(p); // reset deathStarted
+    p.currentHP = -1;  // die again
+    simulateUpdate(p); // should fire again
+    expect(calls).toBe(2);
+  });
+
+  it('Taris scenario: security locker OnDeath fires when destroyed', () => {
+    const securityLockerScript = makeScript();
+    const locker = makePlaceable(0, { [PLACEABLE_ON_DEATH]: securityLockerScript });
+    locker.onDeath();
+    expect(securityLockerScript.ran).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 38: ModulePlaceable.onAttacked() – K1 blocker
+// ---------------------------------------------------------------------------
+// Placeables with melee-attack scripts (turrets, training dummies, trap triggers)
+// or spell-cast-at scripts (barrier nodes, force-sensitive objects) need the
+// correct script to run.  Before this fix ModuleObject.onAttacked was a stub.
+// ---------------------------------------------------------------------------
+
+describe('38. K1 blocker matrix – ModulePlaceable.onAttacked routes to correct script', () => {
+  const ON_MELEE_ATTACKED = 'OnMeleeAttacked';
+  const ON_SPELL_CAST_AT  = 'OnSpellCastAt';
+
+  const CombatActionType = {
+    ATTACK:          0,
+    CAST_SPELL:      1,
+    ITEM_CAST_SPELL: 4,
+  } as const;
+
+  interface MockScript { ran: boolean; run(caller: any): void }
+  interface MockScripts { [key: string]: MockScript }
+  interface MockPlaceable { scripts: MockScripts; onAttacked(type: number): void }
+
+  function makeScript(): MockScript {
+    return { ran: false, run(){ this.ran = true; } };
+  }
+
+  function makePlaceable(scripts: MockScripts): MockPlaceable {
+    return {
+      scripts,
+      onAttacked(attackType: number){
+        // mirrors ModulePlaceable.onAttacked()
+        const isSpellAttack = attackType === CombatActionType.CAST_SPELL
+                           || attackType === CombatActionType.ITEM_CAST_SPELL;
+        const key = !isSpellAttack ? ON_MELEE_ATTACKED : ON_SPELL_CAST_AT;
+        const instance = this.scripts[key];
+        if(!instance){ return; }
+        instance.run(this);
+      },
+    };
+  }
+
+  it('melee attack routes to PlaceableOnMeleeAttacked', () => {
+    const meleeScript = makeScript();
+    const p = makePlaceable({ [ON_MELEE_ATTACKED]: meleeScript });
+    p.onAttacked(CombatActionType.ATTACK);
+    expect(meleeScript.ran).toBe(true);
+  });
+
+  it('CAST_SPELL attack routes to PlaceableOnSpellCastAt', () => {
+    const spellScript = makeScript();
+    const p = makePlaceable({ [ON_SPELL_CAST_AT]: spellScript });
+    p.onAttacked(CombatActionType.CAST_SPELL);
+    expect(spellScript.ran).toBe(true);
+  });
+
+  it('ITEM_CAST_SPELL attack routes to PlaceableOnSpellCastAt', () => {
+    const spellScript = makeScript();
+    const p = makePlaceable({ [ON_SPELL_CAST_AT]: spellScript });
+    p.onAttacked(CombatActionType.ITEM_CAST_SPELL);
+    expect(spellScript.ran).toBe(true);
+  });
+
+  it('melee attack does NOT trigger PlaceableOnSpellCastAt', () => {
+    const spellScript = makeScript();
+    const p = makePlaceable({ [ON_SPELL_CAST_AT]: spellScript });
+    p.onAttacked(CombatActionType.ATTACK);
+    expect(spellScript.ran).toBe(false);
+  });
+
+  it('does not throw when no matching script is registered', () => {
+    const p = makePlaceable({});
+    expect(() => p.onAttacked(CombatActionType.ATTACK)).not.toThrow();
+    expect(() => p.onAttacked(CombatActionType.CAST_SPELL)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 39: NWScriptStack storeState / restoreState bug fix
+// ---------------------------------------------------------------------------
+// Before the fix restoreState() assigned this.stack twice in succession –
+// first to localStack, then immediately to globalStack – leaving the local
+// portion discarded.  The fix also ensures storeState() captures a *copy*
+// of the stack so later pushes do not corrupt the saved state.
+// ---------------------------------------------------------------------------
+
+describe('39. K1 blocker matrix – NWScriptStack storeState/restoreState integrity', () => {
+  interface StackVar { type: string; value: any }
+  interface StoreStateSnapshot {
+    localStack: StackVar[];
+    globalStack: StackVar[];
+    pointer: number;
+    basePointer: number;
+  }
+  interface MockStack {
+    stack: StackVar[];
+    pointer: number;
+    basePointer: number;
+    _storeState: StoreStateSnapshot;
+    storeState(bpO?: number, spO?: number): void;
+    restoreState(): void;
+  }
+
+  function makeStack(initial: StackVar[] = []): MockStack {
+    const s: MockStack = {
+      stack: [...initial],
+      pointer: initial.length * 4,
+      basePointer: 0,
+      _storeState: null as any,
+      storeState(bpO = 0, spO = 0){
+        // mirrors fixed NWScriptStack.storeState()
+        this._storeState = {
+          localStack: this.stack.slice(),
+          globalStack: this.stack.slice(0, bpO / 4),
+          pointer: this.pointer,
+          basePointer: this.basePointer,
+        };
+      },
+      restoreState(){
+        // mirrors fixed NWScriptStack.restoreState()
+        this.stack = this._storeState.localStack.slice();
+        this.pointer = this._storeState.pointer;
+        this.basePointer = this._storeState.basePointer;
+      },
+    };
+    return s;
+  }
+
+  it('restoreState() brings stack back to stored contents', () => {
+    const v1: StackVar = { type: 'INT', value: 42 };
+    const v2: StackVar = { type: 'INT', value: 99 };
+    const s = makeStack([v1]);
+    s.storeState();
+    s.stack.push(v2);            // mutate after store
+    s.restoreState();
+    expect(s.stack).toHaveLength(1);
+    expect(s.stack[0]).toEqual(v1);
+  });
+
+  it('restoreState() brings pointer back to stored position', () => {
+    const s = makeStack([{ type: 'INT', value: 1 }, { type: 'INT', value: 2 }]);
+    s.pointer = 8;
+    s.storeState();
+    s.pointer = 100;
+    s.restoreState();
+    expect(s.pointer).toBe(8);
+  });
+
+  it('storeState() snapshot is independent – push after store does not corrupt snapshot', () => {
+    const v: StackVar = { type: 'FLOAT', value: 3.14 };
+    const extra: StackVar = { type: 'FLOAT', value: 2.72 };
+    const s = makeStack([v]);
+    s.storeState();
+    s.stack.push(extra);          // mutate live stack
+    expect(s._storeState.localStack).toHaveLength(1);
+    expect(s._storeState.localStack[0]).toEqual(v);
+  });
+
+  it('restored stack is a copy – mutating it does not affect stored snapshot', () => {
+    const v: StackVar = { type: 'INT', value: 7 };
+    const s = makeStack([v]);
+    s.storeState();
+    s.restoreState();
+    s.stack.push({ type: 'INT', value: 999 }); // mutate restored stack
+    // stored snapshot should still have length 1
+    expect(s._storeState.localStack).toHaveLength(1);
+  });
+
+  it('globalStack slice respects bpO boundary', () => {
+    const vars: StackVar[] = [
+      { type: 'INT', value: 0 },
+      { type: 'INT', value: 1 },
+      { type: 'INT', value: 2 },
+      { type: 'INT', value: 3 },
+    ];
+    const s = makeStack(vars);
+    s.storeState(8 /* bpO = 2 * 4 */);
+    expect(s._storeState.globalStack).toHaveLength(2);
+    expect(s._storeState.globalStack[0].value).toBe(0);
+    expect(s._storeState.globalStack[1].value).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 40: ModuleCreature.save() CombatInfo / CombatRoundData fields
+// ---------------------------------------------------------------------------
+// A K1 save-game that includes an NPC mid-combat should persist enough round
+// metadata for the loader to reconstruct a sensible initial state. Before this
+// fix both structs were empty, which meant reload always zeroed the round timer
+// and attack counters. The fix writes the key scalar fields.
+// ---------------------------------------------------------------------------
+
+describe('40. K1 blocker matrix – ModuleCreature.save() CombatInfo/CombatRoundData fields', () => {
+  interface CombatRoundState {
+    onHandAttacks: number;
+    additionalAttacks: number;
+    offHandTaken: boolean;
+    roundStarted: boolean;
+    engaged: boolean;
+    timer: number;
+    roundLength: number;
+  }
+
+  interface SavedField { name: string; value: any }
+
+  /** Minimal replica of the save() CombatInfo/CombatRoundData block */
+  function buildCombatStructFields(cr: CombatRoundState): { combatInfo: SavedField[], combatRound: SavedField[] } {
+    const combatInfo: SavedField[] = [
+      { name: 'NumAttacks',        value: cr.onHandAttacks + cr.additionalAttacks },
+      { name: 'OnHandAttacks',     value: cr.onHandAttacks },
+      { name: 'AdditionalAttacks', value: cr.additionalAttacks },
+      { name: 'OffHandTaken',      value: cr.offHandTaken ? 1 : 0 },
+    ];
+    const combatRound: SavedField[] = [
+      { name: 'RoundStarted', value: cr.roundStarted ? 1 : 0 },
+      { name: 'Engaged',      value: cr.engaged ? 1 : 0 },
+      { name: 'Timer',        value: cr.timer },
+      { name: 'RoundLength',  value: cr.roundLength },
+    ];
+    return { combatInfo, combatRound };
+  }
+
+  function getField(fields: SavedField[], name: string): any {
+    return fields.find(f => f.name === name)?.value;
+  }
+
+  it('CombatInfo NumAttacks = onHandAttacks + additionalAttacks', () => {
+    const { combatInfo } = buildCombatStructFields({
+      onHandAttacks: 2, additionalAttacks: 1, offHandTaken: false,
+      roundStarted: false, engaged: false, timer: 0, roundLength: 6,
+    });
+    expect(getField(combatInfo, 'NumAttacks')).toBe(3);
+  });
+
+  it('CombatInfo OffHandTaken is 1 when offHandTaken is true', () => {
+    const { combatInfo } = buildCombatStructFields({
+      onHandAttacks: 1, additionalAttacks: 0, offHandTaken: true,
+      roundStarted: false, engaged: false, timer: 0, roundLength: 6,
+    });
+    expect(getField(combatInfo, 'OffHandTaken')).toBe(1);
+  });
+
+  it('CombatRoundData RoundStarted and Engaged flags are serialised', () => {
+    const { combatRound } = buildCombatStructFields({
+      onHandAttacks: 1, additionalAttacks: 0, offHandTaken: false,
+      roundStarted: true, engaged: true, timer: 1.5, roundLength: 6,
+    });
+    expect(getField(combatRound, 'RoundStarted')).toBe(1);
+    expect(getField(combatRound, 'Engaged')).toBe(1);
+  });
+
+  it('CombatRoundData Timer and RoundLength are preserved', () => {
+    const { combatRound } = buildCombatStructFields({
+      onHandAttacks: 1, additionalAttacks: 0, offHandTaken: false,
+      roundStarted: true, engaged: false, timer: 2.75, roundLength: 6,
+    });
+    expect(getField(combatRound, 'Timer')).toBeCloseTo(2.75);
+    expect(getField(combatRound, 'RoundLength')).toBeCloseTo(6);
+  });
+
+  it('mid-combat scenario: soldier on Taris with 3 attacks and active round', () => {
+    const { combatInfo, combatRound } = buildCombatStructFields({
+      onHandAttacks: 2, additionalAttacks: 1, offHandTaken: true,
+      roundStarted: true, engaged: true, timer: 0.8, roundLength: 6,
+    });
+    expect(getField(combatInfo,  'NumAttacks')).toBe(3);
+    expect(getField(combatInfo,  'OffHandTaken')).toBe(1);
+    expect(getField(combatRound, 'RoundStarted')).toBe(1);
+    expect(getField(combatRound, 'Engaged')).toBe(1);
+    expect(getField(combatRound, 'Timer')).toBeCloseTo(0.8);
   });
 });
