@@ -325,6 +325,8 @@ export class ModuleArea extends ModuleObject {
 
   spellInstances: SpellCastInstance[] = [];
   textSprites: TextSprite3D[] = [];
+  /** Reused each frame to track per-owner text-sprite stacking offsets. */
+  private _textSpriteIndexer: Map<number, number> = new Map();
 
   roomWalkmeshes: OdysseyWalkMesh[] = [];
   doorWalkmeshes: OdysseyWalkMesh[] = [];
@@ -470,7 +472,8 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
-    const textSpriteIndexer = new Map();
+    const textSpriteIndexer = this._textSpriteIndexer;
+    textSpriteIndexer.clear();
     for(let i = 0, textSpriteCount = this.textSprites.length; i < textSpriteCount; i++){
       const sprite = this.textSprites[i];
       if(!sprite) continue;

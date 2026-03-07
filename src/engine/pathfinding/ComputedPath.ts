@@ -12,6 +12,9 @@ export class ComputedPath {
   realtime: boolean = false;
   timer: number = 0;
 
+  /** Reusable A* open-set heap – reset between searches instead of reallocated. */
+  private _heap = new BinaryHeap<PathPoint>(function(node: PathPoint) { return node.f; });
+
   color = new THREE.Color().setRGB(1, 0.6470588235294118, 0);
   helperColors: THREE.Float32BufferAttribute;
   helperPositions: THREE.Float32BufferAttribute;
@@ -48,11 +51,8 @@ export class ComputedPath {
 
   //https://github.com/bgrins/javascript-astar
   search(): ComputedPath {
-    const openHeap = new BinaryHeap<PathPoint>(
-      //scorer
-      function(node: PathPoint) { 
-      return node.f; 
-    });
+    const openHeap = this._heap;
+    openHeap.clear(); // reset without reallocating
     openHeap.push(this.origin);
     while(openHeap.size() > 0){
       const currentNode = openHeap.pop();

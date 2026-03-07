@@ -428,9 +428,9 @@ export class ModulePath {
   }
 
   reset(){
-    this.points.map( (p) => {
-      p.reset();
-    })
+    for(let i = 0, len = this.points.length; i < len; i++){
+      this.points[i].reset();
+    }
   }
 
 }
