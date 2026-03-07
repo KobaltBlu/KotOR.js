@@ -187,6 +187,8 @@ export class ModuleMGEnemy extends ModuleObject {
           }
         }
       }
+      const instance = this.scripts[ModuleObjectScript.MGEnemyOnDamage];
+      if(instance) instance.lastHPChange = -damage;
       this.onDamaged();
     }
   }
@@ -320,9 +322,14 @@ export class ModuleMGEnemy extends ModuleObject {
     onAccelerate.run(this, 0);
   }
 
-  onHitBullet(){
+  onHitBullet(bullet?: any){
     const onHitBullet = this.scripts[ModuleObjectScript.MGEnemyOnHitBullet];
     if(!onHitBullet){ return; }
+    if(bullet){
+      onHitBullet.lastBulletHitDamage = bullet.damage_amt || 0;
+      onHitBullet.lastBulletHitTarget = bullet.target_type || 0;
+      onHitBullet.lastBulletHitShooter = bullet.owner;
+    }
     onHitBullet.run(this, 0);
   }
 

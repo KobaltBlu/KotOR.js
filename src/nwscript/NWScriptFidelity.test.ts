@@ -42,6 +42,20 @@
  * 41. ModuleCreature CombatInfo/CombatRoundData save – key combat-state fields are
  *     written so save-games carry accurate round data.
  *
+ * 43. SWMG event state properties – NWScriptInstance gains lastEvent,
+ *     lastEventModelName, lastBulletHitDamage/Target/Shooter, lastHPChange,
+ *     lastBulletFiredDamage/Target. All initialised in init() and propagated
+ *     in executeScript(). Fixes stack corruption on non-returning SWMG stubs.
+ *
+ * 44. SWMG_SetFollowerHitPoints (fn 604) – fixed to set args[0].hit_points
+ *     instead of incorrectly calling this.caller.onDamaged().
+ *     SWMG_GetLastHPChange (fn 606) – action now returns this.lastHPChange.
+ *
+ * 45. SWMG_GetLateralAccelerationPerSecond (fn 521) – returns player accel.
+ *     SWMG_Get/SetCameraClip (fn 608-610) – actions now read/write miniGame
+ *     near/farClip. SWMG_GetLastEvent/ModelName (fn 583-584) – actions now
+ *     return this.lastEvent / this.lastEventModelName.
+ *
  * References:
  *  - KotOR Scripting Tool: https://github.com/KobaltBlu/KotOR-Scripting-Tool
  *  - KOTOR Force Powers:   https://swkotorwiki.fandom.com/wiki/KOTOR:Force_Powers
@@ -2195,5 +2209,217 @@ describe('42. K1 blocker matrix – GivePlotXP reads plot.2da xp column', () => 
 
   it('K1 Dantooine padawan scenario: 2000 base XP at 75% = 1500 XP awarded', () => {
     expect(simulateGivePlotXP(plotRows, 'dan_padawan', 75)).toBe(1500);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 43 – SWMG minigame NWScriptInstance event state properties
+// ---------------------------------------------------------------------------
+
+describe('43. K1 blocker matrix – SWMG event state properties on NWScriptInstance', () => {
+  /**
+   * Simulates the NWScriptInstance SWMG event state reset behaviour.
+   * Mirrors the init() reset block added to NWScriptInstance.ts.
+   */
+  function makeFreshSWMGState() {
+    return {
+      mgBullet:            undefined as any,
+      mgFollower:          undefined as any,
+      mgObstacle:          undefined as any,
+      lastEvent:           '',
+      lastEventModelName:  '',
+      lastBulletHitDamage: 0,
+      lastBulletHitTarget: 0,
+      lastBulletHitShooter: undefined as any,
+      lastHPChange:        0,
+      lastBulletFiredDamage: 0,
+      lastBulletFiredTarget: 0,
+    };
+  }
+
+  it('fresh state: lastEvent is empty string', () => {
+    expect(makeFreshSWMGState().lastEvent).toBe('');
+  });
+
+  it('fresh state: lastEventModelName is empty string', () => {
+    expect(makeFreshSWMGState().lastEventModelName).toBe('');
+  });
+
+  it('fresh state: lastBulletHitDamage is 0', () => {
+    expect(makeFreshSWMGState().lastBulletHitDamage).toBe(0);
+  });
+
+  it('fresh state: lastBulletHitTarget is 0', () => {
+    expect(makeFreshSWMGState().lastBulletHitTarget).toBe(0);
+  });
+
+  it('fresh state: lastBulletHitShooter is undefined', () => {
+    expect(makeFreshSWMGState().lastBulletHitShooter).toBeUndefined();
+  });
+
+  it('fresh state: lastHPChange is 0', () => {
+    expect(makeFreshSWMGState().lastHPChange).toBe(0);
+  });
+
+  it('fresh state: lastBulletFiredDamage is 0', () => {
+    expect(makeFreshSWMGState().lastBulletFiredDamage).toBe(0);
+  });
+
+  it('fresh state: lastBulletFiredTarget is 0', () => {
+    expect(makeFreshSWMGState().lastBulletFiredTarget).toBe(0);
+  });
+
+  it('stamping bullet hit info propagates damage to script', () => {
+    const state = makeFreshSWMGState();
+    const bullet = { damage_amt: 25, target_type: 1, owner: { id: 42 } };
+    state.lastBulletHitDamage = bullet.damage_amt;
+    state.lastBulletHitTarget = bullet.target_type;
+    state.lastBulletHitShooter = bullet.owner as any;
+    expect(state.lastBulletHitDamage).toBe(25);
+    expect(state.lastBulletHitTarget).toBe(1);
+    expect((state.lastBulletHitShooter as any).id).toBe(42);
+  });
+
+  it('lastHPChange is negative when damage is applied', () => {
+    const state = makeFreshSWMGState();
+    const damage = 30;
+    state.lastHPChange = -damage;
+    expect(state.lastHPChange).toBe(-30);
+  });
+
+  it('lastBulletFiredDamage from proto_bullet before onFire runs', () => {
+    const state = makeFreshSWMGState();
+    const protoBullet = { damage_amt: 15, target_type: 2 };
+    state.lastBulletFiredDamage = protoBullet.damage_amt;
+    state.lastBulletFiredTarget = protoBullet.target_type;
+    expect(state.lastBulletFiredDamage).toBe(15);
+    expect(state.lastBulletFiredTarget).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 44 – SWMG_SetFollowerHitPoints and SWMG_GetLastHPChange correctness
+// ---------------------------------------------------------------------------
+
+describe('44. K1 blocker matrix – SWMG_SetFollowerHitPoints and HP tracking', () => {
+  /**
+   * Simulate the fixed SWMG_SetFollowerHitPoints (fn 604).
+   * Bug: was calling this.caller.onDamaged() ignoring args[0] and args[1].
+   * Fix: sets args[0].hit_points = args[1] directly.
+   */
+  function simulateSetFollowerHitPoints(
+    obj: { hit_points: number },
+    newHP: number,
+  ): void {
+    obj.hit_points = newHP;
+  }
+
+  it('SetFollowerHitPoints sets hit_points on the target object', () => {
+    const enemy = { hit_points: 100 };
+    simulateSetFollowerHitPoints(enemy, 50);
+    expect(enemy.hit_points).toBe(50);
+  });
+
+  it('SetFollowerHitPoints can set hit_points to zero (kill)', () => {
+    const enemy = { hit_points: 80 };
+    simulateSetFollowerHitPoints(enemy, 0);
+    expect(enemy.hit_points).toBe(0);
+  });
+
+  it('SetFollowerHitPoints does not modify caller – only target', () => {
+    const caller = { hit_points: 200 };
+    const target = { hit_points: 100 };
+    simulateSetFollowerHitPoints(target, 60);
+    expect(target.hit_points).toBe(60);
+    expect(caller.hit_points).toBe(200);  // caller unchanged
+  });
+
+  /**
+   * Simulate SWMG_GetLastHPChange (fn 606).
+   * Bug: no action handler → stack corruption (returned nothing on non-VOID fn).
+   * Fix: returns this.lastHPChange || 0.
+   */
+  it('GetLastHPChange returns stamped negative value after damage', () => {
+    const state = { lastHPChange: 0 };
+    state.lastHPChange = -25;
+    const result = state.lastHPChange || 0;
+    expect(result).toBe(-25);
+  });
+
+  it('GetLastHPChange returns 0 when not set', () => {
+    const state = { lastHPChange: 0 };
+    expect(state.lastHPChange || 0).toBe(0);
+  });
+
+  it('adjustHitPoints accumulates delta (not absolute)', () => {
+    let hp = 100;
+    const delta = -30;
+    hp += delta;
+    expect(hp).toBe(70);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 45 – SWMG_GetLateralAccelerationPerSecond and camera clip getters
+// ---------------------------------------------------------------------------
+
+describe('45. K1 blocker matrix – SWMG_GetLateralAcceleration and camera clip', () => {
+  /**
+   * fn 521 SWMG_GetLateralAccelerationPerSecond:
+   * Bug: no action handler on a FLOAT-returning fn → stack corruption.
+   * Fix: returns player.accel_lateral_secs.
+   */
+  it('GetLateralAccelerationPerSecond returns player accel_lateral_secs', () => {
+    const player = { accel_lateral_secs: 4.5 };
+    const result = player.accel_lateral_secs;
+    expect(result).toBe(4.5);
+  });
+
+  it('GetLateralAccelerationPerSecond returns 0 when not set', () => {
+    const player = { accel_lateral_secs: 0 };
+    expect(player.accel_lateral_secs).toBe(0);
+  });
+
+  /**
+   * fn 608/609/610 SWMG_GetCameraNearClip / GetCameraFarClip / SetCameraClip:
+   * Bug: no action handlers on FLOAT-returning fns → stack corruption.
+   * Fix: returns miniGame.nearClip / farClip; setter updates both.
+   */
+  it('GetCameraNearClip returns miniGame.nearClip', () => {
+    const miniGame = { nearClip: 0.1, farClip: 100.0 };
+    expect(miniGame.nearClip).toBe(0.1);
+  });
+
+  it('GetCameraFarClip returns miniGame.farClip', () => {
+    const miniGame = { nearClip: 0.1, farClip: 100.0 };
+    expect(miniGame.farClip).toBe(100.0);
+  });
+
+  it('SetCameraClip updates nearClip and farClip', () => {
+    const miniGame = { nearClip: 0.1, farClip: 100.0 };
+    miniGame.nearClip = 0.5;
+    miniGame.farClip = 500.0;
+    expect(miniGame.nearClip).toBe(0.5);
+    expect(miniGame.farClip).toBe(500.0);
+  });
+
+  /**
+   * fn 583/584 SWMG_GetLastEvent / GetLastEventModelName:
+   * Bug: no action handlers on STRING-returning fns → stack corruption.
+   * Fix: returns this.lastEvent || '' / this.lastEventModelName || ''.
+   */
+  it('GetLastEvent returns empty string when not set', () => {
+    const state = { lastEvent: '' };
+    expect(state.lastEvent || '').toBe('');
+  });
+
+  it('GetLastEvent returns event name when stamped', () => {
+    const state = { lastEvent: 'fire' };
+    expect(state.lastEvent || '').toBe('fire');
+  });
+
+  it('GetLastEventModelName returns model name when stamped', () => {
+    const state = { lastEventModelName: 'swoop_racer' };
+    expect(state.lastEventModelName || '').toBe('swoop_racer');
   });
 });

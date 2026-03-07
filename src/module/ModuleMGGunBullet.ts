@@ -73,6 +73,7 @@ export class ModuleMGGunBullet extends ModuleObject {
           const enemy = enemies[i];
           if(enemy.sphere.containsPoint(this.position)){
             enemy.damage(this.damage_amt);
+            enemy.onHitBullet(this);
             //Set the life to Infinity so it will be culled on the next pass
             this.life = Infinity;
             break;
@@ -82,6 +83,7 @@ export class ModuleMGGunBullet extends ModuleObject {
         const player = GameState.module.area.miniGame.player;
         if(player.sphere.containsPoint(this.position)){
           player.damage(this.damage_amt);
+          player.onHitBullet(this);
           //Set the life to Infinity so it will be culled on the next pass
           this.life = Infinity;
         }
