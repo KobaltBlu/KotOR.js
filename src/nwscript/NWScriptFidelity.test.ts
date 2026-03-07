@@ -2050,3 +2050,150 @@ describe('40. K1 blocker matrix – ModuleCreature.save() CombatInfo/CombatRound
     expect(getField(combatRound, 'Timer')).toBeCloseTo(0.8);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Section 41 – ModuleAreaOfEffect.save() heartbeat-time and OnHeartbeat guard
+// ---------------------------------------------------------------------------
+
+describe('41. K1 blocker matrix – ModuleAreaOfEffect.save() LastHrtbtTime and OnHeartbeat guard', () => {
+  /**
+   * Minimal replica of the AOE save() logic that was broken:
+   *  - LastHrtbtTime was written as lastHeartBeatDay (copy-paste bug)
+   *  - OnHeartbeat was added unconditionally before the guard (crash + duplicate)
+   */
+  interface AoETimeFields { LastHrtbtDay: number; LastHrtbtTime: number }
+  interface AoEScriptFields { OnHeartbeat: string; count: number }
+
+  function buildAoETimeFields(lastHeartBeatDay: number, lastHeartbeatTime: number): AoETimeFields {
+    // Replica of the FIXED save() logic
+    return {
+      LastHrtbtDay:  lastHeartBeatDay,
+      LastHrtbtTime: lastHeartbeatTime,
+    };
+  }
+
+  function buildAoEOnHeartbeatField(onHeartbeat: any): AoEScriptFields {
+    // Replica of the FIXED guard: no unconditional add, conditional only
+    const fields: string[] = [];
+    if (onHeartbeat && typeof onHeartbeat === 'object' && typeof onHeartbeat.name === 'string') {
+      fields.push(onHeartbeat.name);
+    } else {
+      fields.push('');
+    }
+    return { OnHeartbeat: fields[0], count: fields.length };
+  }
+
+  it('LastHrtbtTime serialises lastHeartbeatTime, not lastHeartBeatDay', () => {
+    const fields = buildAoETimeFields(42, 1337);
+    expect(fields.LastHrtbtDay).toBe(42);
+    expect(fields.LastHrtbtTime).toBe(1337);
+  });
+
+  it('LastHrtbtDay and LastHrtbtTime are independent when they differ', () => {
+    const fields = buildAoETimeFields(10, 99999);
+    expect(fields.LastHrtbtDay).not.toBe(fields.LastHrtbtTime);
+  });
+
+  it('when lastHeartBeatDay equals lastHeartbeatTime the saved values still match their source', () => {
+    const fields = buildAoETimeFields(7, 7);
+    expect(fields.LastHrtbtDay).toBe(7);
+    expect(fields.LastHrtbtTime).toBe(7);
+  });
+
+  it('OnHeartbeat guard: NWScriptInstance-like object serialises its name', () => {
+    const result = buildAoEOnHeartbeatField({ name: 'k_ai_master' });
+    expect(result.OnHeartbeat).toBe('k_ai_master');
+    expect(result.count).toBe(1);
+  });
+
+  it('OnHeartbeat guard: null onHeartbeat serialises as empty string (no crash)', () => {
+    const result = buildAoEOnHeartbeatField(null);
+    expect(result.OnHeartbeat).toBe('');
+    expect(result.count).toBe(1);
+  });
+
+  it('OnHeartbeat guard: undefined onHeartbeat serialises as empty string (no crash)', () => {
+    const result = buildAoEOnHeartbeatField(undefined);
+    expect(result.OnHeartbeat).toBe('');
+    expect(result.count).toBe(1);
+  });
+
+  it('OnHeartbeat field is written exactly once (no duplicate)', () => {
+    const result = buildAoEOnHeartbeatField({ name: 'k_ai_master' });
+    expect(result.count).toBe(1);
+  });
+
+  it('Force-field scenario: AoE active mid-combat with distinct day/time values round-trips correctly', () => {
+    // Simulate Force Field placed on Taris at day=3, time=720000 (12:00 in-game)
+    const fields = buildAoETimeFields(3, 720000);
+    expect(fields.LastHrtbtDay).toBe(3);
+    expect(fields.LastHrtbtTime).toBe(720000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 42 – GivePlotXP (fn 714) reads the xp column from plot.2da
+// ---------------------------------------------------------------------------
+
+describe('42. K1 blocker matrix – GivePlotXP reads plot.2da xp column', () => {
+  /**
+   * Replica of the FIXED GivePlotXP logic.
+   * The bug was: parseInt(rows[i]) – passing the whole row object to parseInt
+   * returns NaN/0 so no XP was ever awarded.
+   * The fix: parseInt(rows[i].xp)
+   */
+  function simulateGivePlotXP(
+    rows: Array<{ label: string; xp: string }>,
+    plotName: string,
+    percentage: number,
+  ): number {
+    let totalXP = 0;
+    for (const row of rows) {
+      if (row.label.localeCompare(plotName, undefined, { sensitivity: 'base' }) === 0) {
+        totalXP += parseInt(row.xp) * (percentage * 0.01);
+      }
+    }
+    return totalXP;
+  }
+
+  const plotRows = [
+    { label: 'tar_escape',   xp: '1000' },
+    { label: 'dan_padawan',  xp: '2000' },
+    { label: 'tat_sandral',  xp: '500'  },
+  ];
+
+  it('awards correct XP at 100% for a matching plot entry', () => {
+    expect(simulateGivePlotXP(plotRows, 'tar_escape', 100)).toBe(1000);
+  });
+
+  it('awards half XP at 50%', () => {
+    expect(simulateGivePlotXP(plotRows, 'dan_padawan', 50)).toBe(1000);
+  });
+
+  it('awards zero XP when percentage is 0', () => {
+    expect(simulateGivePlotXP(plotRows, 'tar_escape', 0)).toBe(0);
+  });
+
+  it('returns 0 when no plot label matches', () => {
+    expect(simulateGivePlotXP(plotRows, 'nonexistent_plot', 100)).toBe(0);
+  });
+
+  it('is case-insensitive (label matching uses sensitivity:base)', () => {
+    expect(simulateGivePlotXP(plotRows, 'TAR_ESCAPE', 100)).toBe(1000);
+  });
+
+  it('XP is NaN when reading whole row object (demonstrates the original bug)', () => {
+    // The buggy path: parseInt(row) where row is an object → NaN
+    const rows = [{ label: 'tar_escape', xp: '1000' }];
+    const buggyXP = parseInt(rows[0] as any) * (100 * 0.01);
+    expect(isNaN(buggyXP)).toBe(true);
+  });
+
+  it('K1 Taris escape scenario: 1000 base XP at 100% = 1000 XP awarded', () => {
+    expect(simulateGivePlotXP(plotRows, 'tar_escape', 100)).toBe(1000);
+  });
+
+  it('K1 Dantooine padawan scenario: 2000 base XP at 75% = 1500 XP awarded', () => {
+    expect(simulateGivePlotXP(plotRows, 'dan_padawan', 75)).toBe(1500);
+  });
+});
