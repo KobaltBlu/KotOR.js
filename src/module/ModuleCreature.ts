@@ -3051,11 +3051,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getHasSkill(value: number){
-    return this.skills[value].rank > 0;
+        return this.skills[value]?.rank > 0;
   }
 
   getSkillLevel(value: number){
-    return this.skills[value].rank;
+    return this.skills[value]?.rank || 0;
   }
 
   getHasSpell(id = 0){

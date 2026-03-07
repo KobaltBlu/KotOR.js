@@ -4349,7 +4349,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.FLOAT,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
-        if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
+        if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject) && BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
           return new THREE.Vector2( args[0].position.x, args[0].position.y)
             .distanceTo( new THREE.Vector2( args[1].position.x, args[1].position.y ) );
         }else{
