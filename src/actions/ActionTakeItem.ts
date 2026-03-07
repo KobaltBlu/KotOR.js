@@ -66,7 +66,7 @@ export class ActionTakeItem extends Action {
           instance.run(this.owner);
         }
       }
-    }{
+    } else {
       this.owner.addItem( oItem );
     }
 

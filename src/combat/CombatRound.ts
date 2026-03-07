@@ -417,6 +417,11 @@ export class CombatRound {
               this.calculateWeaponAttack(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
             }
           }
+
+          // EffectHaste (Force Speed) grants one additional attack per round
+          if(creature.hasEffect(GameEffectType.EffectHaste) && creature.equipment.RIGHTHAND){
+            this.calculateWeaponAttack(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
+          }
         }
       }else if(creature && creature.isSimpleCreature()){
         if(creature.equipment.CLAW1){
@@ -486,18 +491,34 @@ export class CombatRound {
    * @returns The attack roll
    */
   calculateAttackRoll(creature: ModuleCreature, weapon: ModuleItem){
-    return Dice.roll(1, DiceType.d20, creature.getBaseAttackBonus() + (weapon?.getAttackBonus() || 0));
+    let bonus = creature.getBaseAttackBonus() + (weapon?.getAttackBonus() || 0);
+    for(const effect of creature.effects){
+      if(effect.type === GameEffectType.EffectAttackIncrease){
+        bonus += effect.getInt(0);
+      }else if(effect.type === GameEffectType.EffectAttackDecrease){
+        bonus -= effect.getInt(0);
+      }
+    }
+    return Dice.roll(1, DiceType.d20, bonus);
   }
 
   /**
-   * Check if the attack roll is a critical hit
+   * Check if the attack roll is a critical hit.
+   * Extends the critical threat range when the active feat is Critical Strike.
    * @param attackRoll - The attack roll to check
    * @param weapon - The weapon to check the critical hit for
+   * @param feat - The active combat feat (used to extend crit range for Critical Strike)
    * @returns True if the attack roll is a critical hit, false otherwise
    */
-  isCritical(attackRoll: number, weapon: ModuleItem | undefined = undefined): boolean {
-    if(!weapon) return attackRoll == 20;
-    return (attackRoll > weapon.getCriticalThreatRangeMin() && attackRoll <= 20);
+  isCritical(attackRoll: number, weapon: ModuleItem | undefined = undefined, feat?: import('../talents').TalentFeat): boolean {
+    let minThreat = weapon ? weapon.getCriticalThreatRangeMin() : 19;
+    if(feat){
+      const featId = feat.getId();
+      if(featId === CombatFeatType.CRITICAL_STRIKE)         minThreat = Math.min(minThreat, 17);
+      else if(featId === CombatFeatType.IMPROVED_CRITICAL_STRIKE) minThreat = Math.min(minThreat, 14);
+      else if(featId === CombatFeatType.MASTER_CRITICAL_STRIKE)   minThreat = Math.min(minThreat, 11);
+    }
+    return attackRoll > minThreat && attackRoll <= 20;
   }
 
   /**
@@ -584,7 +605,7 @@ export class CombatRound {
       const penalty = this.calculateTwoWeaponPenalty(creature, weaponSlot);
       attackRoll -= penalty;
     }
-    const isCritical = this.isCritical(attackRoll, weapon);
+    const isCritical = this.isCritical(attackRoll, weapon, combatAction.feat);
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
     const attack = this.attackList[this.currentAttack];
 

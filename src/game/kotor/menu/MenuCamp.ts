@@ -1,6 +1,7 @@
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIButton, GUILabel } from "../../../gui";
+import { ModuleObjectScript } from "../../../enums/module/ModuleObjectScript";
 
 /**
  * MenuCamp class.
@@ -67,7 +68,7 @@ export class MenuCamp extends GameMenu {
 
     // Fire the module's OnPlayerRest script if present
     if(GameState.module?.scripts){
-      const restScript = GameState.module.scripts[7]; // ModuleOnPlayerRest
+      const restScript = GameState.module.scripts[ModuleObjectScript.ModuleOnPlayerRest];
       if(restScript){
         const instance = restScript.newInstance?.();
         if(instance) instance.run(GameState.PartyManager.party[0], 0);
