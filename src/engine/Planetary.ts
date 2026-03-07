@@ -1,10 +1,10 @@
-import { MDLLoader } from "../loaders/MDLLoader";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { OdysseyModel } from "../odyssey";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { TwoDAObject } from "../resource/TwoDAObject";
-import { GameState } from "../GameState";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { MDLLoader } from "@/loaders/MDLLoader";
+import { OdysseyModel } from "@/odyssey";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 
 /**
@@ -29,7 +29,7 @@ export class Planetary {
     Planetary.selectedIndex = -1;
     const planetary2DA = GameState.TwoDAManager.datatables.get('planetary');
     Planetary.selected = undefined;
-    let planetList = planetary2DA.rows;
+    const planetList = planetary2DA.rows;
     for(let i = 0; i < planetary2DA.RowCount; i++){
       const planet = new Planet(planetList[i]);
       Planetary.planets.push(planet);
@@ -76,13 +76,13 @@ export class Planetary {
   }
 
   static SaveStruct(){
-    let struct = new GFFStruct();
+    const struct = new GFFStruct();
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'GlxyMapNumPnts') ).setValue(Planetary.planets.length);
 
     let planetMask = 0
     for(let i = 0; i < Planetary.planets.length; i++){
-      let planet = Planetary.planets[i];
+      const planet = Planetary.planets[i];
       if(planet.enabled){
         planetMask |= 1 << planet.id;
       }

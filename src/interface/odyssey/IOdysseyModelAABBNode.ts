@@ -22,4 +22,4 @@ export interface IOdysseyModelAABBNode {
   rightNode?: IOdysseyModelAABBNode,
   face: any,
   unknownFixedAt4?: number
-};
+}

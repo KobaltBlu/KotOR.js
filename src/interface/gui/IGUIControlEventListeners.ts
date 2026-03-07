@@ -16,4 +16,4 @@ export interface IGUIControlEventListeners {
   mouseMove:  Function[],
   mouseUp:    Function[],
   hover:      Function[]
-};
+}

@@ -1,17 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
-import './app.scss';
-import { AppProvider, useApp } from "./context/AppContext";
 
-import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
-import { ConfigClient } from "../../utility/ConfigClient";
-import { CategoryMenuItem } from "./components/CategoryMenuItem";
-import { ProfileTabContent } from "./components/ProfileTabContent";
-import { ApplicationProfile } from "../../utility/ApplicationProfile";
-import { Launcher } from "./context/Launcher";
-import { CommunityTabContent } from "./components/CommunityTabContent";
-import { GOGWidget } from "./components/GOGWidget";
-import DiscordWidget from "./components/DiscordWidget";
+import '@/apps/launcher/app.scss';
+import { CategoryMenuItem } from "@/apps/launcher/components/CategoryMenuItem";
+import { CommunityTabContent } from "@/apps/launcher/components/CommunityTabContent";
+import DiscordWidget from "@/apps/launcher/components/DiscordWidget";
+import { GOGWidget } from "@/apps/launcher/components/GOGWidget";
+import { ProfileTabContent } from "@/apps/launcher/components/ProfileTabContent";
+import { AppProvider, useApp } from "@/apps/launcher/context/AppContext";
+import { Launcher } from "@/apps/launcher/context/Launcher";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { ConfigClient } from "@/utility/ConfigClient";
 
 (window as any).Launcher = Launcher;
 
@@ -255,3 +255,4 @@ const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement)
     </React.StrictMode>
   );
 })();
+

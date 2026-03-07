@@ -1,10 +1,10 @@
-import { PazaakCards } from "../../../enums/minigames/PazaakCards";
-import { PazaakSideDeckSlots } from "../../../enums/minigames/PazaakSideDeckSlots";
-import { PazaakCardGUITextures } from "../../../enums/minigames/PazaakCardGUITextures";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIControl } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
+import { PazaakCardGUITextures } from "@/enums/minigames/PazaakCardGUITextures";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
+import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIControl , GUILabel, GUIButton } from "@/gui";
+
 
 const MSG_CONFIRM_SIDE_DECK = 32322;
 const MSG_YOU_WIN = 32334;

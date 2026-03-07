@@ -1,16 +1,17 @@
 import React from "react";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTSEditor } from "../../components/tabs/tab-uts-editor/TabUTSEditor";
-import { ForgeSound } from "../../module-editor/ForgeSound";
+
+import { TabUTSEditor } from "@/apps/forge/components/tabs/tab-uts-editor/TabUTSEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
 
 export class TabUTSEditorState extends TabState {
   tabName: string = `UTS`;
   sound: ForgeSound = new ForgeSound();
-
+  
   get blueprint(): KotOR.GFFObject {
     return this.sound.blueprint;
   }
@@ -45,12 +46,12 @@ export class TabUTSEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-
+  
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-
+  
         file.readFile().then( (response) => {
           this.sound = new ForgeSound(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
@@ -61,7 +62,7 @@ export class TabUTSEditorState extends TabState {
   }
 
   async initializeAudioEmitter(){
-    const type = !!this.sound.positional ? KotOR.AudioEmitterType.POSITIONAL : KotOR.AudioEmitterType.GLOBAL;
+    const type = this.sound.positional ? KotOR.AudioEmitterType.POSITIONAL : KotOR.AudioEmitterType.GLOBAL;
     if(this.audioEmitter){
       this.audioEmitter.destroy();
     }
@@ -109,7 +110,7 @@ export class TabUTSEditorState extends TabState {
       this.processEventListener('onSoundChange', [this]);
     }
   }
-
+  
   moveSoundDown(index: number){
     if(index < this.sound.soundResRefs.length - 1){
       const sound = this.sound.soundResRefs[index];
@@ -132,7 +133,7 @@ export class TabUTSEditorState extends TabState {
   }
 
   animate(delta: number = 0){
-    // Sound editor has no continuous animation; override for future audio preview if needed.
+    //todo
   }
 
   startEmitter(){
@@ -156,7 +157,7 @@ export class TabUTSEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-
+  
   updateFile(){
     this.sound.exportToBlueprint();
   }

@@ -1,5 +1,5 @@
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { MenuMessages as K1_MenuMessages } from "../../kotor/KOTOR";
+import { MenuMessages as K1_MenuMessages } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
 
 enum MessageType {
   DIALOG = 1,
@@ -52,7 +52,7 @@ export class MenuMessages extends K1_MenuMessages {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -118,3 +118,4 @@ export class MenuMessages extends K1_MenuMessages {
   }
   
 }
+

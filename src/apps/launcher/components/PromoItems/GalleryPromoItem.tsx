@@ -1,6 +1,7 @@
 import React, { createRef, useEffect, useState } from "react";
-import { useApp } from "../../context/AppContext";
-import { useProfile } from "../../context/ProfileContext";
+
+import { useApp } from "@/apps/launcher/context/AppContext";
+import { useProfile } from "@/apps/launcher/context/ProfileContext";
 
 export interface ProfilePromoItemProps {
   element: any;
@@ -22,8 +23,8 @@ export const GalleryPromoItem = function(props: ProfilePromoItemProps){
   };
 
   const galleryPreviousImage = () => {
-    let count = element.images.length;
-    let newIndex = index - 1;
+    const count = element.images.length;
+    const newIndex = index - 1;
     setIndex(index - 1);
     if(newIndex < 0){
       setIndex(count - 1);
@@ -31,8 +32,8 @@ export const GalleryPromoItem = function(props: ProfilePromoItemProps){
   }
 
   const galleryNextImage = () => {
-    let count = element.images.length;
-    let newIndex = index + 1;
+    const count = element.images.length;
+    const newIndex = index + 1;
     setIndex(index + 1);
     if(newIndex >= count){
       setIndex(0);

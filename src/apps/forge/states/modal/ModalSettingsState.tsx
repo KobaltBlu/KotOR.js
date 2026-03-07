@@ -1,7 +1,8 @@
 import React from "react";
-import { ModalSettings } from "../../components/modal/ModalSettings";
-import { ModalState } from "./ModalState";
-import * as KotOR from "../../KotOR";
+
+import { ModalSettings } from "@/apps/forge/components/modal/ModalSettings";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
 
 export interface SettingsData {
   // Game installations

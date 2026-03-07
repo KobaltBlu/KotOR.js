@@ -21,4 +21,4 @@ export enum ModuleDoorAnimState {
   CONST1    = 10077, // 328 - damage
   BUSTED    = 10153, // 366 - busted
   TRANS     = 10269, // 344 - trans
-};
+}

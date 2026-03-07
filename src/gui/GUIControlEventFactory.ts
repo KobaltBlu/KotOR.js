@@ -1,4 +1,4 @@
-import { GUIControlEvent } from "./GUIControlEvent";
+import { GUIControlEvent } from "@/gui/GUIControlEvent";
 
 /**
  * GUIControlEventFactory class.
@@ -10,6 +10,7 @@ import { GUIControlEvent } from "./GUIControlEvent";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIControlEventFactory {
+  private constructor() {}
 
   static generateEventObject(): GUIControlEvent{
     return new GUIControlEvent();

@@ -1,6 +1,6 @@
-import * as KotOR from "../KotOR";
-import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
-import { ForgeGameObject } from "./ForgeGameObject";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 
 interface EngineItem {
   baseItem: KotOR.SWBaseItem | undefined;
@@ -59,6 +59,12 @@ export interface CreatureClassEntry {
   knownList0: KnownSpellEntry[];
 }
 
+export interface InventoryItemEntry {
+  resref: string;
+  droppable: boolean;
+  infinite: boolean;
+}
+
 export class ForgeCreature extends ForgeGameObject {
   model: KotOR.OdysseyModel3D;
 
@@ -98,7 +104,7 @@ export class ForgeCreature extends ForgeGameObject {
   int: number = 10;
   interruptable: boolean = true;
   isPC: boolean = false;
-  itemList: string[] = [];
+  itemList: InventoryItemEntry[] = [];
   lastName: KotOR.CExoLocString = new KotOR.CExoLocString();
   lawfulChaotic: number = 0;
   maxHitPoints: number = 0;
@@ -396,8 +402,8 @@ export class ForgeCreature extends ForgeGameObject {
     }
 
     const appearance = this.creatureAppearance;
-    let bodyVariation: string = this.templateSlots.armorItem?.bodyVariation || '';
-    let textureVariation: number = this.templateSlots.armorItem?.textureVariation || 1;
+    const bodyVariation: string = this.templateSlots.armorItem?.bodyVariation || '';
+    const textureVariation: number = this.templateSlots.armorItem?.textureVariation || 1;
     const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(bodyVariation || '', textureVariation || 1);
 
     try{
@@ -612,7 +618,10 @@ export class ForgeCreature extends ForgeGameObject {
     }
     if(root.hasField('ItemList')){
       this.itemList = root.getFieldByLabel('ItemList').getChildStructs().map( (struct) => {
-        return struct.getFieldByLabel('InventoryRes').getValue() || '';
+        const resref: string = struct.hasField('InventoryRes') ? struct.getFieldByLabel('InventoryRes').getValue() || '' : '';
+        const droppable: boolean = struct.hasField('Dropable') ? !!(struct.getFieldByLabel('Dropable').getValue()) : false;
+        const infinite: boolean = struct.hasField('Infinite') ? !!(struct.getFieldByLabel('Infinite').getValue()) : false;
+        return { resref, droppable, infinite };
       }) || [];
     }
     if(root.hasField('LastName')){
@@ -896,7 +905,9 @@ export class ForgeCreature extends ForgeGameObject {
     if(itemList){
       this.itemList.forEach((item, index) => {
         const itemStruct = new KotOR.GFFStruct(index);
-        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'InventoryRes', item) );
+        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'InventoryRes', item.resref) );
+        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Dropable', item.droppable ? 1 : 0) );
+        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Infinite', item.infinite ? 1 : 0) );
         itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Repos_PosX', 0) );
         itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Repos_PosY', index) );
         itemList.addChildStruct(itemStruct);

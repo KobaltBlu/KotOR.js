@@ -1,4 +1,4 @@
-import { GameState } from "../../GameState";
+import { GameState } from "@/GameState";
 
 const STR_NONE = 363;
 
@@ -12,11 +12,7 @@ const STR_NONE = 363;
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIItemNone {
-  constructor(){
-    // super()
-  }
-
-  getIcon(){
+  getIcon(): string {
     return 'inone';
   }
 

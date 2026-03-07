@@ -1,23 +1,23 @@
-import React, { useEffect, useState, ChangeEvent, useCallback } from "react";
-import { TabModuleEditorState } from "../states/tabs";
-import { SceneGraphTreeView } from "./SceneGraphTreeView";
-import { ForgeGameObject } from "../module-editor/ForgeGameObject";
+﻿import React, { useEffect, useState, ChangeEvent, useCallback } from "react";
 import * as THREE from 'three';
-import { ModalBlueprintBrowserState, BlueprintType } from "../states/modal/ModalBlueprintBrowserState";
-import { ForgeState } from "../states/ForgeState";
-import { ForgeCreature } from "../module-editor/ForgeCreature";
-import { ForgeDoor } from "../module-editor/ForgeDoor";
-import { ForgeEncounter } from "../module-editor/ForgeEncounter";
-import { ForgeItem } from "../module-editor/ForgeItem";
-import { ForgePlaceable } from "../module-editor/ForgePlaceable";
-import { ForgeSound } from "../module-editor/ForgeSound";
-import { ForgeStore } from "../module-editor/ForgeStore";
-import { ForgeTrigger } from "../module-editor/ForgeTrigger";
-import { ForgeWaypoint } from "../module-editor/ForgeWaypoint";
 
-import * as KotOR from "../KotOR";
-import { UI3DRenderer } from "../UI3DRenderer";
-import "./ModuleEditorSidebarComponent.scss";
+import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
+import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
+import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
+import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
+import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
+import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
+import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalBlueprintBrowserState, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
+import { TabModuleEditorState } from "@/apps/forge/states/tabs";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import "@/apps/forge/components/ModuleEditorSidebarComponent.scss";
 
 export const ModuleEditorSidebarComponent = function(props: any){
   const tab: TabModuleEditorState = props.tab as TabModuleEditorState;

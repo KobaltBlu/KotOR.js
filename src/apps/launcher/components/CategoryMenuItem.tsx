@@ -1,5 +1,6 @@
 import React from "react";
-import { ProfileMenuItem } from "./ProfileMenuItem";
+
+import { ProfileMenuItem } from "@/apps/launcher/components/ProfileMenuItem";
 
 export interface CategoryMenuItemProps {
   category: any

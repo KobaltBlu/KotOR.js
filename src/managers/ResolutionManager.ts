@@ -1,4 +1,4 @@
-import { IScreenResolution } from "../interface/graphics/IScreenResolution";
+import { IScreenResolution } from "@/interface/graphics/IScreenResolution";
 
 /**
  * ResolutionManager class.
@@ -32,7 +32,7 @@ export class ResolutionManager {
 
   public static get screenResolution(): IScreenResolution {
     return this.#_screenResolution;
-  };
+  }
 
   public static set screenResolution(res: IScreenResolution) {
     const isChanging = this.#_screenResolution != res;
@@ -41,7 +41,7 @@ export class ResolutionManager {
     if(isChanging){
       this.processEventListener('onChange', res, oldRes);
     }
-  };
+  }
 
 
   static #eventListeners: {[key: string]: Function[]} = {

@@ -1,16 +1,16 @@
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import type { ModuleObject } from "../module/ModuleObject";
-import { DLGObject } from "../resource/DLGObject";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
+import { Action } from "@/actions/Action";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { DLGObject } from "@/resource/DLGObject";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
 
 /**
  * ActionDialogObject class.
@@ -42,8 +42,8 @@ export class ActionDialogObject extends Action {
 
   update(delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
-    let conversation_resref: string = this.getParameter<string>(1) || '';
-    let ignoreStartRange = this.getParameter<number>(4) || 0;
+    const conversation_resref: string = this.getParameter<string>(1) || '';
+    const ignoreStartRange = this.getParameter<number>(4) || 0;
 
     if(!this.validate_conversation_resref){
       this.validate_conversation_resref = true;
@@ -63,10 +63,10 @@ export class ActionDialogObject extends Action {
       return ActionStatus.COMPLETE;
     }
 
-    let distance = Utility.Distance2D(this.owner.position, this.target.position);
+    const distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 4.5 && !ignoreStartRange){
       // this.owner.openSpot = undefined;
-      let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+      const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);

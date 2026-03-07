@@ -1,7 +1,7 @@
-import { ActionStatus, ActionType, ModuleObjectType } from "../enums";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import { BitWise } from "../utility/BitWise";
-import { Action } from "./Action";
+import { Action } from "@/actions/Action";
+import { ActionStatus, ActionType, ModuleObjectType } from "@/enums";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionPickUpItem class.

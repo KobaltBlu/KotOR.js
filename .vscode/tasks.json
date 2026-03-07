@@ -1,0 +1,272 @@
+{
+  "options": {
+    "cwd": "${workspaceFolder}",
+    "env": {}
+  },
+  "presentation": {
+    "panel": "shared",
+    "reveal": "silent",
+    "showReuseMessage": false
+  },
+  "tasks": [
+    {
+      "label": "Compile KotOR Forge extension",
+      "detail": "Build extension and LSP server (webpack + tsc). Used as preLaunchTask for extension debugging.",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "compile"],
+      "group": {
+        "isDefault": true,
+        "kind": "build"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "always"
+      },
+      "problemMatcher": [{ "base": "$tsc", "severity": "warning" }]
+    },
+    {
+      "label": "Watch KotOR Forge extension",
+      "detail": "Run webpack in watch mode. Use with 'Launch Extension (watch mode)' for live reload.",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "watch"],
+      "group": "build",
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "clear": true,
+        "panel": "dedicated",
+        "reveal": "silent",
+        "showReuseMessage": false
+      },
+      "problemMatcher": {
+        "owner": "webpack",
+        "severity": "warning",
+        "pattern": {
+          "regexp": "(.)^",
+          "file": 0,
+          "line": 0,
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "webpack\\s+\\d+\\.\\d+\\.\\d+\\s+compiled|compiled\\s+with|Compiled\\s+successfully|compiled\\s+successfully"
+        }
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "Dev: Prepare KotOR Forge extension (server + watch)",
+      "detail": "Dev prep: compile LSP server (best-effort) then start webpack watch (waits for first compile).",
+      "type": "shell",
+      "command": "echo",
+      "args": ["Dev prep"],
+      "dependsOn": [
+        "Compile KotOR Forge extension server only",
+        "Watch KotOR Forge extension"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "Compile KotOR Forge extension server only",
+      "detail": "Compile only the NWScript LSP server (extensions/kotor-forge-vscode/server).",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "compile:server"],
+      "group": "build",
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "silent"
+      },
+      "problemMatcher": [
+        { "base": "$tsc", "severity": "warning" }
+      ]
+    },
+    {
+      "label": "Clean KotOR Forge extension",
+      "detail": "Remove dist/, server/out/, and output/ in the extension folder.",
+      "type": "shell",
+      "command": "npm run clean",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "silent"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lint KotOR Forge extension",
+      "detail": "Run ESLint on extension src.",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "lint"],
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "always"
+      },
+      "problemMatcher": [
+        { "base": "$eslint-stylish", "severity": "warning" }
+      ]
+    },
+    {
+      "type": "shell",
+      "command": "npm run package",
+      "dependsOn": [
+        "Compile KotOR Forge extension"
+      ],
+      "label": "Package KotOR Forge extension",
+      "detail": "Compile then run vsce package to produce .vsix.",
+      "dependsOrder": "sequence",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Install extension dependencies",
+      "detail": "Install extension and server node_modules.",
+      "type": "shell",
+      "command": "npm install",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}/extensions/kotor-forge-vscode",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Install root dependencies",
+      "detail": "Install root package dependencies.",
+      "type": "shell",
+      "command": "npm install",
+      "group": "none",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {}
+      },
+      "presentation": {
+        "panel": "shared",
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Watch web (root)",
+      "detail": "Root: webpack dev watch (KotOR.js / Forge Electron bundle). Background task: use terminal dropdown to Terminate or Rerun.",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "webpack:dev-watch"],
+      "group": "build",
+      "isBackground": true,
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {}
+      },
+      "presentation": {
+        "clear": true,
+        "panel": "dedicated",
+        "reveal": "silent",
+        "showReuseMessage": true
+      },
+      "problemMatcher": {
+        "owner": "webpack",
+        "severity": "warning",
+        "pattern": { "regexp": "(.)^", "file": 0, "line": 0, "message": 1 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "(webpack\\s+\\d+\\.\\d+\\.\\d+\\s+compiled|compiled\\s+with|Compiled\\s+successfully|compiled\\s+successfully|Build\\s+completed|done\\s+in|built\\s+in)"
+        }
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "webpack:dev-watch", "--", "--progress", "--stats", "verbose"],
+      "detail": "Root: webpack dev watch with verbose progress/stats. Background task: use terminal dropdown to Terminate or Rerun.",
+      "group": "build",
+      "isBackground": true,
+      "label": "Watch web verbose (root)",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {}
+      },
+      "presentation": {
+        "clear": true,
+        "panel": "dedicated",
+        "reveal": "always",
+        "showReuseMessage": true
+      },
+      "problemMatcher": {
+        "owner": "webpack",
+        "severity": "warning",
+        "pattern": { "regexp": "(.)^", "file": 0, "line": 0, "message": 1 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "(webpack\\s+\\d+\\.\\d+\\.\\d+\\s+compiled|compiled\\s+with|Compiled\\s+successfully|compiled\\s+successfully|Build\\s+completed|done\\s+in|built\\s+in)"
+        }
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "Build web for serve (root)",
+      "type": "shell",
+      "command": "npm run webpack:dev",
+      "options": { "cwd": "${workspaceFolder}", "env": {} },
+      "group": "build",
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": ["$tsc", { "owner": "webpack", "severity": "warning", "pattern": { "regexp": "(.)^", "file": 0, "line": 0, "message": 1 } }]
+    },
+    {
+      "label": "Clean and build web (root)",
+      "type": "shell",
+      "command": "npx -y rimraf dist && npm run webpack:dev",
+      "options": { "cwd": "${workspaceFolder}", "env": {} },
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": ["$tsc", { "owner": "webpack", "severity": "warning", "pattern": { "regexp": "(.)^", "file": 0, "line": 0, "message": 1 } }]
+    }
+  ],
+  "version": "2.0.0"
+}

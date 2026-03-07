@@ -1,11 +1,13 @@
 import React from "react";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import { TabPTHEditor } from "../../components/tabs/tab-pth-editor/TabPTHEditor";
-import { CameraFocusMode, GroupType, ObjectType, UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
+
+import { TabPTHEditor } from "@/apps/forge/components/tabs/tab-pth-editor/TabPTHEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { CameraFocusMode, GroupType, ObjectType, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
+
 
 const POINT_OFFSET_HEIGHT = 1;
 
@@ -13,7 +15,7 @@ export enum TabPTHEditorControlMode {
   SELECT = 0,
   ADD_POINT = 1,
   ADD_CONNECTION = 2,
-};
+}
 
 export class TabPTHEditorState extends TabState {
   tabName: string = `PTH`;
@@ -181,7 +183,7 @@ export class TabPTHEditorState extends TabState {
         const point = this.points[i];
         if(!point.num_connections) continue;
         
-        let connIdx = point.first_connection;
+        const connIdx = point.first_connection;
         for(let j = 0; j < point.num_connections; j++){
           const pointIdx = pathConnections[connIdx + j].getFieldByLabel('Destination').getValue();
           point.addConnection(this.points[pointIdx]);

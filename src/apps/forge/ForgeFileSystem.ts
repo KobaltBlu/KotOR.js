@@ -1,15 +1,12 @@
 import * as fs from "fs";
-import * as KotOR from "./KotOR";
-/** Electron dialog when ENV is ELECTRON; provided by preload. */
-declare const dialog: {
-  showOpenDialog: (options: { title?: string; defaultPath?: string; buttonLabel?: string; filters?: { name: string; extensions: string[] }[]; properties?: string[]; message?: string; securityScopedBookmarks?: boolean }) => Promise<{ canceled?: boolean; filePaths?: string[] }>;
-  showSaveDialog: (options?: { title?: string; defaultPath?: string; buttonLabel?: string; filters?: { name: string; extensions: string[] }[] }) => Promise<{ canceled?: boolean; filePath?: string }>;
-};
+
+import * as KotOR from "@/apps/forge/KotOR";
+declare const dialog: any;
 
 export enum ForgeFileSystemResponseType {
   FILE_PATH_STRING = 0,
   FILE_SYSTEM_HANDLE = 1,
-}
+} 
 
 export interface ForgeFileSystemResponse {
   type: ForgeFileSystemResponseType;
@@ -65,9 +62,9 @@ export class ForgeFileSystem {
           title: 'Open File',
           filters: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
           properties: ['createDirectory', 'openFile'],
-        }).then( (result: { canceled?: boolean; filePaths?: string[] }) => {
+        }).then( (result: any) => {
           if(!result.canceled){
-            if(result.filePaths?.length){
+            if(result.filePaths.length){
               resolve({
                 type: ForgeFileSystemResponseType.FILE_PATH_STRING,
                 paths: result.filePaths as string[],
@@ -83,7 +80,7 @@ export class ForgeFileSystem {
           });
           // console.log(result.canceled);
           // console.log(result.filePaths);
-        }).catch( (e: unknown) => {
+        }).catch( (e: any) => {
           console.error(e);
           resolve({
             type: ForgeFileSystemResponseType.FILE_PATH_STRING,
@@ -94,13 +91,12 @@ export class ForgeFileSystem {
       }else{
         window.showOpenFilePicker({
           types: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
-          multiple: options.multiple ?? false,
-        }).then( (handles: FileSystemFileHandle | FileSystemFileHandle[]) => {
-          const arr = Array.isArray(handles) ? handles : (handles ? [handles] : []);
-          if(arr.length){
+          multiple: false,
+        }).then( (handles: FileSystemFileHandle[]) => {
+          if(handles.length){
             resolve({
               type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
-              handles: arr,
+              handles: handles,
               multiple: options.multiple,
             });
             return;
@@ -110,7 +106,7 @@ export class ForgeFileSystem {
             handles: [],
             multiple: options.multiple,
           });
-        }).catch((e: unknown) => {
+        }).catch((e: any) => {
           console.error(e);
           resolve({
             type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
@@ -128,31 +124,22 @@ export class ForgeFileSystem {
       exts: []
     }, options);
     try{
-      const response = await ForgeFileSystem.OpenFile(options);
-      return await ForgeFileSystem.ReadFileBufferFromResponse(response);
-    }catch(e: unknown){
-      console.error(e);
-    }
-    return new Uint8Array(0);
-  }
-
-  /** Read file contents from an OpenFile dialog response (Electron path or browser handle). */
-  static async ReadFileBufferFromResponse(response: ForgeFileSystemResponse): Promise<Uint8Array> {
-    try {
-      if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
-        if (response.paths && response.paths.length > 0) {
-          const buf = await fs.promises.readFile(response.paths[0]);
-          return new Uint8Array(buf);
+      const response = await ForgeFileSystem.OpenFile();
+      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        if(Array.isArray(response.paths)){
+          fs.readFile(response.paths[0], (err, buffer) => {
+            if(err) throw err;
+            return new Uint8Array(buffer);
+          });
         }
-      } else {
-        if (response.handles && response.handles.length > 0) {
-          const handle = response.handles[0] as FileSystemFileHandle;
+      }else{
+        if(Array.isArray(response.handles)){
+          const [handle] = response.handles as FileSystemFileHandle[];
           const file = await handle.getFile();
-          const ab = await file.arrayBuffer();
-          return new Uint8Array(ab);
+          return new Uint8Array( await file.arrayBuffer() );
         }
       }
-    } catch (e: unknown) {
+    }catch(e: any){
       console.error(e);
     }
     return new Uint8Array(0);
@@ -188,7 +175,7 @@ export class ForgeFileSystem {
           });
           // console.log(result.canceled);
           // console.log(result.filePaths);
-        }).catch( (e: unknown) => {
+        }).catch( (e: any) => {
           console.error(e);
           resolve({
             type: ForgeFileSystemResponseType.FILE_PATH_STRING,
@@ -198,12 +185,14 @@ export class ForgeFileSystem {
         })
       }else{
         window.showDirectoryPicker({
-          mode: "readwrite" as FileSystemPermissionMode,
+          types: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
+          multiple: false,
+          mode: "readwrite"
         }).then( (handle: FileSystemDirectoryHandle) => {
           if(handle){
             resolve({
               type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
-              handles: [handle],
+              handles: [handle as any],
               multiple: false,
             });
             return;
@@ -213,7 +202,7 @@ export class ForgeFileSystem {
             handles: [],
             multiple: options.multiple,
           });
-        }).catch((e: unknown) => {
+        }).catch((e: any) => {
           console.error(e);
           resolve({
             type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
@@ -228,7 +217,7 @@ export class ForgeFileSystem {
   static GetFilteredFilePickerTypes(ext: string[] = []){
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
       if(ext.length){
-        return supportedFileDialogTypes.filter( (element: { extensions: string[] }) => {
+        return supportedFileDialogTypes.filter( (element: any) => {
           return element.extensions.some( (extension: string)=> ext.includes(extension) )
         });
       }else{
@@ -274,7 +263,7 @@ export class ForgeFileSystem {
             return {
               type: responseType,
               path: result.filePaths[0],
-              handle: undefined as unknown as FileSystemDirectoryHandle,
+              handle: undefined,
             };
           }
         }
@@ -283,11 +272,11 @@ export class ForgeFileSystem {
         cancelled = true;
       }
     }
-
+    
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
       try{
         const result = await window.showDirectoryPicker({
-          mode: (options.mode || "readwrite") as FileSystemPermissionMode,
+          mode: options.mode || "readwrite"
         });
         console.log('result', result);
 
@@ -295,7 +284,7 @@ export class ForgeFileSystem {
           return {
             type: responseType,
             path: result.name,
-            handle: result as FileSystemDirectoryHandle,
+            handle: result,
           };
         }
       }catch(e){
@@ -306,180 +295,180 @@ export class ForgeFileSystem {
     return {
       cancelled: cancelled,
       type: responseType,
-      path: undefined as string | undefined,
-      handle: undefined as FileSystemDirectoryHandle | undefined,
+      path: undefined,
+      handle: undefined,
     };
   }
 
 }
 
-(window as Window & { ForgeFileSystem?: typeof ForgeFileSystem }).ForgeFileSystem = ForgeFileSystem
+(window as any).ForgeFileSystem = ForgeFileSystem
 
 export const supportedFilePickerTypes: any[] = [
   {
-    description: 'All Supported Formats',
+    description: 'All Supported Formats', 
     accept: {
       'application/*': ['.2da', '.tpc', '.tga', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.phn', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
     }
   },
   {
-    description: 'TPC Image',
+    description: 'TPC Image', 
     accept: {
       'application/*': ['.tpc']
     }
   },
   {
-    description: 'TGA Image',
+    description: 'TGA Image', 
     accept: {
       'application/*': ['.tga']
     }
   },
   {
-    description: '.GFF',
+    description: '.GFF', 
     accept: {
       'application/*': ['.gff']
     }
   },
   {
-    description: 'Creature Template',
+    description: 'Creature Template', 
     accept: {
       'application/*': ['.utc']
     }
   },
   {
-    description: 'Door Template',
+    description: 'Door Template', 
     accept: {
       'application/*': ['.utd']
     }
   },
   {
-    description: 'Placeable Template',
+    description: 'Placeable Template', 
     accept: {
       'application/*': ['.utp']
     }
   },
   {
-    description: 'Merchant Template',
+    description: 'Merchant Template', 
     accept: {
       'application/*': ['.utm']
     }
   },
   {
-    description: 'Sound Template',
+    description: 'Sound Template', 
     accept: {
       'application/*': ['.uts']
     }
   },
   {
-    description: 'Trigger Template',
+    description: 'Trigger Template', 
     accept: {
       'application/*': ['.utt']
     }
   },
   {
-    description: 'Waypoint Template',
+    description: 'Waypoint Template', 
     accept: {
       'application/*': ['.utw']
     }
   },
   {
-    description: 'LIP Animation',
+    description: 'LIP Animation', 
     accept: {
       'application/*': ['.lip']
     }
   },
   {
-    description: 'PHN File',
+    description: 'PHN File', 
     accept: {
       'application/*': ['.phn']
     }
   },
   {
-    description: 'Audio File',
+    description: 'Audio File', 
     accept: {
       'application/*': ['.wav', '.mp3']
     }
   },
   {
-    description: 'Video File',
+    description: 'Video File', 
     accept: {
       'application/*': ['.bik']
     }
   },
   {
-    description: 'MOD File',
+    description: 'MOD File', 
     accept: {
       'application/*': ['.mod']
     }
   },
   {
-    description: 'ERF File',
+    description: 'ERF File', 
     accept: {
       'application/*': ['.erf']
     }
   },
   {
-    description: 'RIM File',
+    description: 'RIM File', 
     accept: {
       'application/*': ['.rim']
     }
   },
   {
-    description: 'Model File',
+    description: 'Model File', 
     accept: {
       'application/*': ['.mdl', '.wok', '.pwk', '.dwk']
     }
   },
   {
-    description: 'Module File',
+    description: 'Module File', 
     accept: {
       'application/*': ['.git', '.ifo']
     }
   },
   {
-    description: 'Area File',
+    description: 'Area File', 
     accept: {
       'application/*': ['.are']
     }
   },
   {
-    description: 'Path File',
+    description: 'Path File', 
     accept: {
       'application/*': ['.pth']
     }
   },
   {
-    description: 'Script Source File',
+    description: 'Script Source File', 
     accept: {
       'application/*': ['.ncs']
     }
   },
   {
-    description: 'Script Compiled File',
+    description: 'Script Compiled File', 
     accept: {
       'application/*': ['.nss']
     }
   },
   {
-    description: 'VIS File',
+    description: 'VIS File', 
     accept: {
       'application/*': ['.vis']
     }
   },
   {
-    description: 'Layout File',
+    description: 'Layout File', 
     accept: {
       'application/*': ['.lyt']
     }
   },
   {
-    description: '2D Array File',
+    description: '2D Array File', 
     accept: {
       'application/*': ['.2da']
     }
   },
   // {
-  //   description: 'All Formats',
+  //   description: 'All Formats', 
   //   accept: {
   //     'application/*': ['.*']
   //   }

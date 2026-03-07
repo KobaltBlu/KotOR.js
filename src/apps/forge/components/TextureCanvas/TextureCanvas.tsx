@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
-import * as KotOR from "../../KotOR";
-import { TabImageViewerState } from "../../states/tabs/TabImageViewerState";
-import { PixelManager } from "../../../../utility/PixelManager";
+
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
+import { PixelManager } from "@/utility/PixelManager";
 
 const concatenate = (resultConstructor: any, ...arrays: any) => {
   let totalLength = 0;
-  for (let arr of arrays) {
+  for (const arr of arrays) {
     totalLength += arr.length;
   }
-  let result = new resultConstructor(totalLength);
+  const result = new resultConstructor(totalLength);
   let offset = 0;
-  for (let arr of arrays) {
+  for (const arr of arrays) {
     result.set(arr, offset);
     offset += arr.length;
   }
@@ -156,7 +157,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
         TabImageViewerState.FlipY(processedData, textureWidth, textureHeight);
 
         // Create ImageData and draw to canvas
-        let imageData = ctx.createImageData(textureWidth, textureHeight);
+        const imageData = ctx.createImageData(textureWidth, textureHeight);
         imageData.data.set(processedData);
 
         // If scaling is needed, draw to a temporary canvas first, then scale

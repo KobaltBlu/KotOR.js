@@ -1,4 +1,4 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 export class SWFootStep {
   id: number = -1;
@@ -48,7 +48,7 @@ export class SWFootStep {
 
   getSurfaceSoundResRef(surfaceId: number = 0){
     let sound = '';
-    let sndIdx = Math.round(Math.random()*2);
+    const sndIdx = Math.round(Math.random()*2);
     switch(surfaceId){
       case 1:
         sound = sndIdx == 0 ? this.dirt0 : sndIdx == 1 ? this.dirt1 : this.dirt2;
@@ -85,11 +85,11 @@ export class SWFootStep {
     if(!sound){
       sound = this.rolling;
     }
-    return !!sound ? sound : '';
+    return sound ? sound : '';
   }
 
 
-  static From2DA(row: any = {}){
+  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWFootStep {
     const footStep = new SWFootStep();
     footStep.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     footStep.label = TwoDAObject.normalizeValue(row.label, 'string', '');

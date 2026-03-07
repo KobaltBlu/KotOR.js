@@ -1,10 +1,10 @@
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { GUIFeatItem } from "../gui/GUIFeatItem";
-import type { ModuleCreature } from "../../../module";
-import { TextureLoader } from "../../../loaders";
-import { TalentFeat } from "../../../talents";
-import { GameState } from "../../../GameState";
+import { GUIFeatItem } from "@/game/kotor/gui/GUIFeatItem";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { ModuleCreature } from "@/module";
+import { TalentFeat } from "@/talents";
 
 /**
  * CharGenFeats class.
@@ -62,7 +62,7 @@ export class CharGenFeats extends GameMenu {
 
   addGrantedFeats() {
     const featCount = GameState.SWRuleSet.featCount;
-    let granted = [];
+    const granted = [];
     for (let i = 0; i < featCount; i++) {
       const feat = GameState.SWRuleSet.feats[i];
       if(this.creature){
@@ -86,7 +86,7 @@ export class CharGenFeats extends GameMenu {
   buildFeatList() {
     const feats = GameState.SWRuleSet.feats;
     const featCount = GameState.SWRuleSet.featCount;
-    let list = [];
+    const list = [];
     if(this.creature){
       const mainClass = this.creature.getMainClass();
       if(mainClass){
@@ -103,7 +103,7 @@ export class CharGenFeats extends GameMenu {
         }
       }
     }
-    let groups = [];
+    const groups = [];
     for (let i = 0; i < list.length; i++) {
       const feat = list[i];
       const group = [];

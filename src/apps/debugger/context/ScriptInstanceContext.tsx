@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import * as KotOR from "../KotOR";
-import { useApp } from "./AppContext";
-import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
-import { IPCMessage } from "../../../server/ipc/IPCMessage";
-import { IPCMessageParam } from "../../../server/ipc/IPCMessageParam";
-import { IPCDataType } from "../../../enums/server/ipc/IPCDataType";
-// import { useEffectOnce } from "../../forge/helpers/UseEffectOnce";
+
+import { useApp } from "@/apps/debugger/context/AppContext";
+import * as KotOR from "@/apps/debugger/KotOR";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { IPCMessage } from "@/server/ipc/IPCMessage";
+import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
+// import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
 export interface ScriptInstanceProviderValues {
   instance: [KotOR.NWScriptInstance|undefined, React.Dispatch<KotOR.NWScriptInstance|undefined>];

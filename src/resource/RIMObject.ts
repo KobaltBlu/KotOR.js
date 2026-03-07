@@ -1,19 +1,19 @@
-import * as path from 'path';
-import { BinaryReader } from '../utility/binary/BinaryReader';
-import { GameFileSystem } from '../utility/GameFileSystem';
-import { ResourceTypes } from './ResourceTypes';
-import { IRIMResource } from '../interface/resource/IRIMResource';
-import { IRIMHeader } from '../interface/resource/IRIMHeader';
+﻿import * as path from 'path';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { IRIMResource } from '@/interface/resource/IRIMResource';
+import { IRIMHeader } from '@/interface/resource/IRIMHeader';
 
 const RIM_HEADER_LENGTH = 160;
 
 /**
  * RIMObject class.
- * 
+ *
  * Class representing a RIM archive file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file RIMObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -45,9 +45,9 @@ export class RIMObject {
       this.inMemory = true;
     }
 
-    Object.values(ResourceTypes).forEach((type: number) => {
-      if(typeof type !== 'number'){ return; }
-      this.resourceMap.set(type, new Map());
+    (Object.values(ResourceTypes) as unknown[]).forEach((value: unknown) => {
+      if (typeof value !== 'number') return;
+      this.resourceMap.set(value, new Map());
     });
 
   }
@@ -160,7 +160,7 @@ export class RIMObject {
     await GameFileSystem.close(fd);
   }
 
-  getResourceInfo(resRef: string, resType: number): IRIMResource|undefined {
+  getResource(resRef: string, resType: number): IRIMResource {
     let typeMap = this.resourceMap.get(resType);
     if(!typeMap){
       return undefined;
@@ -182,23 +182,18 @@ export class RIMObject {
         const fd = await this.getFileDescription();
         const buffer = new Uint8Array(resource.size);
         await GameFileSystem.read(fd, buffer, 0, buffer.length, resource.offset);
-        // await GameFileSystem.close(fd);
+        // Do not close fd here: getFileDescription() caches it for reuse; closing caused EBADF on subsequent reads.
         return buffer;
       }
     }
     catch (e) {
-      console.log(`getResourceBuffer: ${this.resource_path} ${resource.resRef} ${ResourceTypes.getKeyByValue(resource.resType)} ${resource.offset} ${resource.size}`);
       console.error(e);
     }
     return new Uint8Array(0);
   }
 
-  hasResource(resRef: string, resType: number): boolean {
-    return this.getResourceInfo(resRef, resType) !== undefined;
-  }
-
   async getResourceBufferByResRef(resRef: string = '', resType: number = 0x000F): Promise<Uint8Array> {
-    const resource = this.getResourceInfo(resRef, resType);
+    const resource = this.getResource(resRef, resType);
     if(!resource){
       return;
     }
@@ -212,15 +207,7 @@ export class RIMObject {
       return this.#fd;
     }
     this.#fd = await GameFileSystem.open(this.resource_path, 'r');
-    console.log(`getFileDescription: ${this.resource_path} ${this.#fd}`);
     return this.#fd;
-  }
-
-  async dispose(){
-    if(this.#fd){
-      await GameFileSystem.close(this.#fd);
-      this.#fd = undefined;
-    }
   }
 
   async exportRawResource(directory: string, resref: string, restype = 0x000F): Promise<Uint8Array> {
@@ -228,11 +215,11 @@ export class RIMObject {
       return new Uint8Array(0);
     }
 
-    const resource = this.getResourceInfo(resref, restype);
+    const resource = this.getResource(resref, restype);
     if(!resource){
       return new Uint8Array(0);
     }
-    
+
     if(this.inMemory){
       const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
       await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
@@ -250,3 +237,4 @@ export class RIMObject {
   }
 
 }
+

@@ -1,9 +1,10 @@
 import React from "react";
-import { TabState } from "./TabState";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 
-import * as KotOR from "../../KotOR";
-import { TabAudioPlayer } from "../../components/tabs/tab-audio-player/TabAudioPlayer";
+import { TabAudioPlayer } from "@/apps/forge/components/tabs/tab-audio-player/TabAudioPlayer";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+
 
 export class TabAudioPlayerState extends TabState {
   tabName: string = `Audio Player`;

@@ -1,7 +1,7 @@
-import { BinkAudioPacket, BinkAudioTrackInfo, BinkFormatError, BinkFrame, BinkFrameIndexEntry, BinkHeader, BinkVideoInfo, BINK_AUD_FLAGS, BINK_FLAGS, Rational } from './binktypes';
-import { readFourCCLE, readU16LE, readU32LE } from './uint';
-import { BitReaderLE } from './BitReaderLE';
-import { readTree } from './vlc';
+import { BinkAudioPacket, BinkAudioTrackInfo, BinkFormatError, BinkFrame, BinkFrameIndexEntry, BinkHeader, BinkVideoInfo, BINK_AUD_FLAGS, BINK_FLAGS, Rational } from '@/video/binktypes';
+import { BitReaderLE } from '@/video/BitReaderLE';
+import { readFourCCLE, readU16LE, readU32LE } from '@/video/uint';
+import { readTree } from '@/video/vlc';
 
 function isSMUS(tag: string): boolean {
   return tag === 'SMUS';
@@ -232,7 +232,7 @@ export class BinkDemuxer {
     }
     const entry = h.index[frameIndex];
     const base = entry.pos + h.video.smushSkips; // account for SMUS wrapper
-    let off = base;
+    const off = base;
     const end = base + entry.size;
 
     const audio: BinkAudioPacket[] = [];

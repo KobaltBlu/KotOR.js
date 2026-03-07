@@ -1,9 +1,12 @@
-import React from "react";
-import { ModalState } from "./ModalState";
-import { ModalFileResults } from "../../components/modal/ModalFileResults";
-import { ReferenceSearchResult } from "../../helpers/ReferenceFinder";
-import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
-import { ResourceTypes } from "../../../../resource/ResourceTypes";
+﻿import React from "react";
+
+import { ModalFileResults } from "@/apps/forge/components/modal/ModalFileResults";
+import type { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { ReferenceSearchResult } from "@/apps/forge/helpers/ReferenceFinder";
+import type { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ResourceTypes } from "@/resource/ResourceTypes";
 
 export interface ModalFileResultsStateOptions {
   results: ReferenceSearchResult[];
@@ -41,7 +44,7 @@ export class ModalFileResultsState extends ModalState {
     return lines.join("\n");
   }
 
-  getEditorFileOptions(result: ReferenceSearchResult): Record<string, any> {
+  getEditorFileOptions(result: ReferenceSearchResult): EditorFileOptions {
     const ext = result.fileResource.extension.toLowerCase();
     const reskey = ResourceTypes[ext];
     const resref = result.fileResource.resRef;
@@ -75,15 +78,20 @@ export class ModalFileResultsState extends ModalState {
     };
   }
 
-  createEditorFile(result: ReferenceSearchResult): any {
-    const { EditorFile } = require("../../EditorFile");
-    return new EditorFile(this.getEditorFileOptions(result));
+  async createEditorFile(result: ReferenceSearchResult): Promise<EditorFile> {
+    // Dynamic import to avoid circular dependency; runtime requires relative path (path alias not resolved in import())
+    // eslint-disable-next-line no-restricted-imports -- dynamic import string not resolved by path alias
+    const mod = await import("@/apps/forge/EditorFile") as { EditorFile: new (opts: EditorFileOptions) => EditorFile };
+    return new mod.EditorFile(this.getEditorFileOptions(result));
   }
 
-  openResult(result: ReferenceSearchResult): void {
-    const editorFile = this.createEditorFile(result);
-    // Lazy import to avoid pulling UI/tab dependencies into test compilation
-    const { FileTypeManager } = require("../../FileTypeManager");
+  async openResult(result: ReferenceSearchResult): Promise<void> {
+    const editorFile = await this.createEditorFile(result);
+    // eslint-disable-next-line no-restricted-imports -- dynamic import string not resolved by path alias
+    const { FileTypeManager } = await import("@/apps/forge/FileTypeManager") as {
+      FileTypeManager: { onOpenResource: (f: EditorFile) => void };
+    };
     FileTypeManager.onOpenResource(editorFile);
   }
 }
+

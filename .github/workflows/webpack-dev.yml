@@ -1,53 +1,35 @@
-name: Deploy Webpack DEV Bundle
+name: NodeJS with Webpack - DEV
 
 on:
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: Build and artifact upload only (skip S3 sync)
-        required: false
-        default: false
-        type: boolean
+  workflow_dispatch
 
 jobs:
-  deploy-dev:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+
+    strategy:
+      matrix:
+        node-version: [22.x]
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v3
 
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build webpack dev bundle
-        run: npm run webpack:dev
-
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-dev
-          path: dist
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Configure AWS credentials
-        if: ${{ !inputs.dry_run }}
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
-        with:
-          aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
-
-      - name: Sync bundle to DEV S3 bucket
-        if: ${{ !inputs.dry_run }}
-        run: |
-          aws s3 sync dist "s3://${{ secrets.AWS_BUCKET }}" --delete
+    - name: Build
+      run: |
+        npm install
+        npm run webpack:dev
+        
+    - name: Upload To S3 Bucket
+      uses: shallwefootball/s3-upload-action@master
+      with:
+        aws_key_id: ${{ secrets.AWS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+        aws_bucket: ${{ secrets.AWS_BUCKET }}
+        source_dir: 'dist'
+        destination_dir: ''

@@ -1,19 +1,21 @@
-import React, { useCallback, useEffect, useState } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTCEditorState } from "../../../states/tabs";
-import type{ CreatureClassEntry, ForgeCreature, KnownSpellEntry, SpecialAbilityEntry } from "../../../module-editor/ForgeCreature";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { SubTabHost, SubTab } from "../../SubTabHost";
-import * as KotOR from "../../../KotOR";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { TextureCanvas } from "../../TextureCanvas/TextureCanvas";
-import { ModalItemBrowserState } from "../../../states/modal/ModalItemBrowserState";
-import { ForgeState } from "../../../states/ForgeState";
-import { InfoBubble } from "../../info-bubble/info-bubble";
 import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import './TabUTCEditor.scss';
+import React, { useCallback, useEffect, useMemo, useState } from "react"
+
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
+import { SubTabHost, SubTab } from "@/apps/forge/components/SubTabHost";
+import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanvas";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import * as KotOR from "@/apps/forge/KotOR";
+import type{ CreatureClassEntry, ForgeCreature, InventoryItemEntry, KnownSpellEntry, SpecialAbilityEntry } from "@/apps/forge/module-editor/ForgeCreature";
+import { ModalInventoryBrowserState } from "@/apps/forge/states/modal/ModalInventoryBrowserState";
+import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
+import { TabUTCEditorState } from "@/apps/forge/states/tabs";
+import '@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor.scss';
 
 export const TabUTCEditor = function(props: BaseTabProps){
 
@@ -95,7 +97,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [int, setInt] = useState<number>(10);
   const [interruptable, setInterruptable] = useState<boolean>(true);
   const [isPC, setIsPC] = useState<boolean>(false);
-  const [itemList, setItemList] = useState<string[]>([]);
+  const [itemList, setItemList] = useState<InventoryItemEntry[]>([]);
   const [lastName, setLastName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
   const [lawfulChaotic, setLawfulChaotic] = useState<number>(0);
   const [maxHitPoints, setMaxHitPoints] = useState<number>(0);
@@ -199,7 +201,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
     setInt(tab.creature.int);
     setInterruptable(tab.creature.interruptable);
     setIsPC(tab.creature.isPC);
-    setItemList([...tab.creature.itemList]);
+    setItemList(tab.creature.itemList.map(i => ({ ...i })));
     setLastName(tab.creature.lastName);
     setLawfulChaotic(tab.creature.lawfulChaotic);
     setMaxHitPoints(tab.creature.maxHitPoints);
@@ -285,25 +287,25 @@ export const TabUTCEditor = function(props: BaseTabProps){
     };
   }, []);
 
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeCreature, parser: (value: number) => number = (v) => v) => 
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeCreature, parser: (value: number) => number = (v) => v) =>
     tab.creature.createNumberFieldHandler(setter, property, tab.creature, tab, parser);
 
-  const onUpdateNumberArrayField = (setter: (value: number[]) => void, index: number, property: keyof ForgeCreature) => 
+  const onUpdateNumberArrayField = (setter: (value: number[]) => void, index: number, property: keyof ForgeCreature) =>
     tab.creature.createNumberArrayFieldHandler(setter, index, property, tab.creature, tab);
 
-  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeCreature) => 
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeCreature) =>
     tab.creature.createBooleanFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeCreature) => 
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeCreature) =>
     tab.creature.createResRefFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeCreature) => 
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeCreature) =>
     tab.creature.createCExoStringFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeCreature) => 
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeCreature) =>
     tab.creature.createCExoLocStringFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeCreature) => 
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeCreature) =>
     tab.creature.createForgeCheckboxFieldHandler(setter, property, tab.creature, tab);
 
   const onUpdateClassListField = (setter: (value: number) => void, property: 'class' | 'level') => {
@@ -461,6 +463,23 @@ export const TabUTCEditor = function(props: BaseTabProps){
     tab.creature.setProperty('specAbilityList', updated);
     tab.updateFile();
   };
+
+  const scriptSuggestions = useMemo(() => {
+    const keyObject = KotOR.KEYManager?.Key;
+    if (!keyObject?.keys?.length) {
+      return [] as string[];
+    }
+
+    const ncsType = KotOR.ResourceTypes['ncs'];
+    const names = keyObject.keys
+      .filter((entry: KotOR.IKEYEntry) => entry.resType === ncsType)
+      .map((entry: KotOR.IKEYEntry) => String(entry.resRef || '').toLowerCase())
+      .filter((name: string) => name.length > 0);
+
+    return Array.from(new Set(names)).sort();
+  }, []);
+
+  const scriptSuggestionListId = 'utc-script-suggestions';
 
   const tabs: SubTab[] = [
     {
@@ -662,7 +681,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
               </tbody>
             </table>
           </fieldset>
-          
+
           <table>
             <tbody>
               <tr>
@@ -687,10 +706,10 @@ export const TabUTCEditor = function(props: BaseTabProps){
                     <legend>Hit Points</legend>
                     <label>Base Hit Points</label>
                     <input type="number" min="0" value={hitPoints} onChange={onUpdateNumberField(setHitPoints, 'hitPoints')} />
-        
+
                     <label>Current Hit Points</label>
                     <input type="number" min="0" value={currentHitPoints} onChange={onUpdateNumberField(setCurrentHitPoints, 'currentHitPoints')} />
-        
+
                     <label>Max Hit Points</label>
                     <input type="number" min="0" value={maxHitPoints} onChange={onUpdateNumberField(setMaxHitPoints, 'maxHitPoints')} />
                   </fieldset>
@@ -833,9 +852,9 @@ export const TabUTCEditor = function(props: BaseTabProps){
         <>
           <div className="feats">
             {feats.map((feat, index) => (
-              <div 
+              <div
                 className="feat-row"
-                key={`feat-${feat.id}`} 
+                key={`feat-${feat.id}`}
               >
                 <div className={`feat-icon ${featList.includes(feat.id) ? 'enabled' : 'disabled'}`} onClick={onFeatClick(feat.id)}>
                   <InfoBubble
@@ -902,9 +921,9 @@ export const TabUTCEditor = function(props: BaseTabProps){
         <>
           <div className="feats">
             {spells.map((spell, index) => (
-              <div 
+              <div
                 className="feat-row"
-                key={`feat-${spell.id}`} 
+                key={`feat-${spell.id}`}
               >
                 <div className={`feat-icon ${knownList0.find(s => s.spell == spell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.id)}>
                   <InfoBubble
@@ -1010,9 +1029,9 @@ export const TabUTCEditor = function(props: BaseTabProps){
         <>
           <div className="feats">
             {specialAbilitiesList.map((specialAbility, index) => (
-              <div 
+              <div
                 className="feat-row"
-                key={`feat-${specialAbility.id}`} 
+                key={`feat-${specialAbility.id}`}
               >
                 <div className={`feat-icon ${specialAbilities.find(s => s.spell == specialAbility.id) ? 'enabled' : 'disabled'}`} onClick={onSpecialAbilityClick(specialAbility.id)}>
                   <InfoBubble
@@ -1077,63 +1096,68 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerTitle: 'Scripts',
       content: (
         <>
+          <datalist id={scriptSuggestionListId}>
+            {scriptSuggestions.map((name) => (
+              <option key={`utc-script-${name}`} value={name} />
+            ))}
+          </datalist>
           <table style={{width: '100%'}}>
             <tbody>
               <tr>
                 <td><label>Attacked</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptAttacked} onChange={onUpdateResRefField(setScriptAttacked, 'scriptAttacked')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptAttacked} onChange={onUpdateResRefField(setScriptAttacked, 'scriptAttacked')} /></td>
               </tr>
               <tr>
                 <td><label>Damaged</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptDamaged} onChange={onUpdateResRefField(setScriptDamaged, 'scriptDamaged')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptDamaged} onChange={onUpdateResRefField(setScriptDamaged, 'scriptDamaged')} /></td>
               </tr>
               <tr>
                 <td><label>Death</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptDeath} onChange={onUpdateResRefField(setScriptDeath, 'scriptDeath')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptDeath} onChange={onUpdateResRefField(setScriptDeath, 'scriptDeath')} /></td>
               </tr>
               <tr>
                 <td><label>Dialogue</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptDialogu} onChange={onUpdateResRefField(setScriptDialogu, 'scriptDialogu')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptDialogu} onChange={onUpdateResRefField(setScriptDialogu, 'scriptDialogu')} /></td>
               </tr>
               <tr>
                 <td><label>Disturbed</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptDisturbed} onChange={onUpdateResRefField(setScriptDisturbed, 'scriptDisturbed')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptDisturbed} onChange={onUpdateResRefField(setScriptDisturbed, 'scriptDisturbed')} /></td>
               </tr>
               <tr>
                 <td><label>End Dialogue</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptEndDialogue} onChange={onUpdateResRefField(setScriptEndDialogue, 'scriptEndDialogue')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptEndDialogue} onChange={onUpdateResRefField(setScriptEndDialogue, 'scriptEndDialogue')} /></td>
               </tr>
               <tr>
                 <td><label>End Round</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptEndRound} onChange={onUpdateResRefField(setScriptEndRound, 'scriptEndRound')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptEndRound} onChange={onUpdateResRefField(setScriptEndRound, 'scriptEndRound')} /></td>
               </tr>
               <tr>
                 <td><label>Heartbeat</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptHeartbeat} onChange={onUpdateResRefField(setScriptHeartbeat, 'scriptHeartbeat')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptHeartbeat} onChange={onUpdateResRefField(setScriptHeartbeat, 'scriptHeartbeat')} /></td>
               </tr>
               <tr>
                 <td><label>On Blocked</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptOnBlocked} onChange={onUpdateResRefField(setScriptOnBlocked, 'scriptOnBlocked')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptOnBlocked} onChange={onUpdateResRefField(setScriptOnBlocked, 'scriptOnBlocked')} /></td>
               </tr>
               <tr>
                 <td><label>On Notice</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptOnNotice} onChange={onUpdateResRefField(setScriptOnNotice, 'scriptOnNotice')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptOnNotice} onChange={onUpdateResRefField(setScriptOnNotice, 'scriptOnNotice')} /></td>
               </tr>
               <tr>
                 <td><label>Rested</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptRested} onChange={onUpdateResRefField(setScriptRested, 'scriptRested')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptRested} onChange={onUpdateResRefField(setScriptRested, 'scriptRested')} /></td>
               </tr>
               <tr>
                 <td><label>Spawn</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptSpawn} onChange={onUpdateResRefField(setScriptSpawn, 'scriptSpawn')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptSpawn} onChange={onUpdateResRefField(setScriptSpawn, 'scriptSpawn')} /></td>
               </tr>
               <tr>
                 <td><label>Spell At</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptSpellAt} onChange={onUpdateResRefField(setScriptSpellAt, 'scriptSpellAt')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptSpellAt} onChange={onUpdateResRefField(setScriptSpellAt, 'scriptSpellAt')} /></td>
               </tr>
               <tr>
                 <td><label>User Define</label></td>
-                <td><input type="text" placeholder="Script ResRef" value={scriptUserDefined} onChange={onUpdateResRefField(setScriptUserDefined, 'scriptUserDefined')} /></td>
+                <td><input type="text" placeholder="Script ResRef" list={scriptSuggestionListId} maxLength={16} value={scriptUserDefined} onChange={onUpdateResRefField(setScriptUserDefined, 'scriptUserDefined')} /></td>
               </tr>
             </tbody>
           </table>
@@ -1158,6 +1182,49 @@ export const TabUTCEditor = function(props: BaseTabProps){
             <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idbelt' : 'ibelt'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.BELT)} />
             <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idweap_r' : 'ihand_r'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.RIGHTHAND)} />
           </div>
+
+          <fieldset>
+            <legend>
+              Inventory Items
+              <button
+                className="btn btn-sm btn-outline-secondary ms-2"
+                onClick={() => {
+                  const modal = new ModalInventoryBrowserState(
+                    tab.creature.itemList,
+                    (updatedInventory) => {
+                      tab.creature.setProperty('itemList', updatedInventory);
+                      setItemList(updatedInventory.map(i => ({ ...i })));
+                      tab.updateFile();
+                    },
+                  );
+                  modal.attachToModalManager(ForgeState.modalManager);
+                  modal.open();
+                }}
+              >
+                Edit Inventory
+              </button>
+            </legend>
+            {itemList.length === 0 ? (
+              <p className="text-muted small">No items in inventory.</p>
+            ) : (
+              <table className="table table-sm table-dark mb-0 utc-inventory-table">
+                <thead>
+                  <tr>
+                    <th>ResRef</th>
+                    <th title="Droppable">Drop</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemList.map((entry, idx) => (
+                    <tr key={`item-${idx}`}>
+                      <td>{entry.resref}</td>
+                      <td>{entry.droppable ? '✓' : ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </fieldset>
         </>
       )
     },

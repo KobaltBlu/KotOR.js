@@ -1,5 +1,5 @@
-import { ArrayLiteralNode, CallNode, IndexNode, LiteralNode } from "./ASTTypes";
-import type { Token } from "./NWScriptToken";
+import { ArrayLiteralNode, CallNode, IndexNode, LiteralNode } from "@/nwscript/compiler/ASTTypes";
+import type { Token } from "@/nwscript/compiler/NWScriptToken";
 
 export type SourceInfo = Token["source"] | undefined;
 
@@ -65,6 +65,7 @@ export interface SemanticFunctionNode extends AnnotatedNode {
   defined?: boolean;
   called?: boolean;
   callIndex?: number;
+  is_engine_action?: boolean;
   returntype: SemanticDataType;
   arguments: SemanticArgumentNode[];
   statements: SemanticStatementNode[];
@@ -125,6 +126,7 @@ export interface EngineActionRef {
   name: string;
   returntype: SemanticDataType;
   arguments: SemanticArgumentNode[];
+  is_engine_action?: boolean;
 }
 
 export interface SemanticPropertyNode extends AnnotatedNode {

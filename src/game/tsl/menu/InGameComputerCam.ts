@@ -1,5 +1,5 @@
-import type { GUILabel } from "../../../gui";
-import { InGameComputerCam as K1_InGameComputerCam } from "../../kotor/KOTOR";
+import { InGameComputerCam as K1_InGameComputerCam } from "@/game/kotor/KOTOR";
+import type { GUILabel } from "@/gui";
 
 /**
  * InGameComputerCam class.
@@ -24,9 +24,10 @@ export class InGameComputerCam extends K1_InGameComputerCam {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
   
 }
+

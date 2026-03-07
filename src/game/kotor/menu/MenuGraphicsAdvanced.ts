@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "../../../gui";
-import { TextureLoaderState } from "../../../loaders/TextureLoaderState";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
+import { TextureLoaderState } from "@/loaders/TextureLoaderState";
 
 /**
  * MenuGraphicsAdvanced class.

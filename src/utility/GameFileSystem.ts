@@ -1,8 +1,8 @@
-import * as path from "path";
+﻿import * as path from "path";
 import * as fs from "fs";
-import { ApplicationProfile } from "./ApplicationProfile";
-import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
-import { IGameFileSystemReadDirOptions } from "../interface/filesystem/IGameFileSystemReadDirOptions";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
 declare const dialog: any;
 
 const spleep = (time: number = 0) => {
@@ -13,21 +13,21 @@ const spleep = (time: number = 0) => {
 
 /**
  * GameFileSystem class.
- * 
+ *
  * Handles file system access for the application.
  * It will use either the File System Access API or the fs module built into node
  * depending on the ENVIRONMENT ( BROWSER|ELECTRON ) the app was loaded under.
- * 
+ *
  * This class should only access the directory that the user supplied and not escape it.
  * Under the web this is forced, but the node implementation is not so strict.
- * 
+ *
  * This class will also be able to access sub files and folders of the supplied directory.
- * 
+ *
  * File access outside of this usecase should be delagated to calling the open/save file dialogs
  * when the user requests them.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GameFileSystem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -47,7 +47,10 @@ export class GameFileSystem {
       return new Promise<number>( (resolve, reject) => {
         fs.open(path.join(ApplicationProfile.directory, filepath), (err, fd) => {
           if(err){
-            console.error(err);
+            const isNotFound = (err as NodeJS.ErrnoException)?.code === 'ENOENT' || String((err as Error)?.message ?? '').includes('ENOENT');
+            if (!isNotFound) {
+              console.error(err);
+            }
             reject(err);
             return;
           }
@@ -70,7 +73,7 @@ export class GameFileSystem {
           throw new Error('Failed to read file');
         }
       }else{
-        throw new Error('Failed to locate file directory');
+        throw new Error('Failed to locate file directory: ApplicationProfile.directoryHandle might be undefined or missing');
       }
     }
   }
@@ -86,9 +89,9 @@ export class GameFileSystem {
       });
     }else{
       if(!(handle)) throw new Error('No file handle supplied!');
-      
+
       if(!(handle instanceof FileSystemFileHandle)) throw new Error('FileSystemFileHandle expected but one was not supplied!');
-      
+
       if(!(output instanceof Uint8Array)) throw new Error('No output buffer supplied!');
 
       const file = await handle.getFile();
@@ -127,7 +130,7 @@ export class GameFileSystem {
     }else{
       const file = await this.open(filepath);
       if(!file) throw new Error('Failed to read file');
-      
+
       let handle = await file.getFile();
       return new Uint8Array( await handle.arrayBuffer() );
     }
@@ -145,9 +148,9 @@ export class GameFileSystem {
         const dirs = filepath.split('/');
         const filename = dirs.pop();
         const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
-        
+
         if(!dirHandle) throw new Error('Failed to locate file directory');
-        
+
         const newFile = await dirHandle.getFileHandle(filename, {
           create: true
         });
@@ -230,7 +233,7 @@ export class GameFileSystem {
 
           // Process all subdirectories in parallel
           const subdirResults = await Promise.all(subdirPromises);
-          
+
           // Flatten results
           for (const subdirFiles of subdirResults) {
             files.push(...subdirFiles);
@@ -251,18 +254,15 @@ export class GameFileSystem {
   }
 
   private static async isFSDirectory(resource_path: string = ''): Promise<boolean> {
-    return new Promise<boolean>( (resolve) => {
+    return new Promise<boolean>( (resolve, reject) => {
       fs.stat(path.join(ApplicationProfile.directory, resource_path), (err, stats) => {
         if(err){
-          // ENOENT = path does not exist (e.g. optional game folders like StreamVoice in K1)
-          if (err.code !== 'ENOENT') {
-            console.error(err);
-          }
-          resolve(false);
+          console.error(err);
+          reject();
           return;
         }
-        resolve((stats.mode & fs.constants.S_IFDIR) === fs.constants.S_IFDIR);
-      });
+        resolve((stats.mode & fs.constants.S_IFDIR) == fs.constants.S_IFDIR)
+      })
     });
   }
 
@@ -277,11 +277,6 @@ export class GameFileSystem {
     }
     return new Promise<string[]>( async (resolve, reject) => {
       try{
-        const exists = await this.exists(resource_path);
-        if (!exists) {
-          resolve(files);
-          return;
-        }
         let dir_path = path.join(ApplicationProfile.directory, resource_path);
 
         if(!(await this.isFSDirectory(resource_path))){
@@ -362,7 +357,7 @@ export class GameFileSystem {
             return this.directoryCache.get(cacheKey)!;
           }
           try{
-            let currentDirHandle = ApplicationProfile.directoryHandle; 
+            let currentDirHandle = ApplicationProfile.directoryHandle;
             for(let i = 0, len = dirs.length; i < len; i++){
               const isTargetDirectory = (i == dirs.length-1);
               const canCreate = (isTargetDirectory || !!opts.recursive);
@@ -395,20 +390,68 @@ export class GameFileSystem {
       dirPath = dirPath.trim();
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         console.log(`fs.rmdir`, path.join(ApplicationProfile.directory, dirPath));
-        fs.rmdir(
-          path.join(ApplicationProfile.directory, dirPath), 
-          {
-            recursive: opts.recursive
-          } as fs.RmDirOptions, 
-          async (err) => {
-            if(err){
+        const fullPath = path.join(ApplicationProfile.directory, dirPath);
+        const rmRecursive = (dir: string, done: (err: NodeJS.ErrnoException | null) => void) => {
+          fs.readdir(dir, (readErr, names) => {
+            if (readErr) {
+              done(readErr);
+              return;
+            }
+            if (!names || names.length === 0) {
+              fs.rmdir(dir, done);
+              return;
+            }
+            let pending = names.length;
+            const onItem = (err: NodeJS.ErrnoException | null) => {
+              if (err) {
+                done(err);
+                return;
+              }
+              if (--pending === 0) {
+                fs.rmdir(dir, done);
+              }
+            };
+            for (const name of names) {
+              const child = path.join(dir, name);
+              fs.stat(child, (statErr, stat) => {
+                if (statErr) {
+                  onItem(statErr);
+                  return;
+                }
+                // Support both fs.Stats (has isDirectory()) and plain objects (e.g. after IPC/serialization)
+                const isDir =
+                  stat &&
+                  (typeof stat.isDirectory === "function"
+                    ? stat.isDirectory()
+                    : (Number((stat as fs.Stats).mode) & 0o170000) === 0o040000);
+                if (isDir && opts.recursive) {
+                  rmRecursive(child, onItem);
+                } else {
+                  fs.unlink(child, onItem);
+                }
+              });
+            }
+          });
+        };
+        if (opts.recursive) {
+          rmRecursive(fullPath, (err) => {
+            if (err) {
               console.error(err);
               resolve(false);
               return;
             }
             resolve(true);
-          }
-        );
+          });
+        } else {
+          fs.rmdir(fullPath, (err) => {
+            if (err) {
+              console.error(err);
+              resolve(false);
+              return;
+            }
+            resolve(true);
+          });
+        }
       }else{
         try{
           const details = path.parse(dirPath);
@@ -446,10 +489,8 @@ export class GameFileSystem {
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         fs.stat(path.join(ApplicationProfile.directory, dirOrFilePath), (err, stats) => {
           if(err){
-            console.log(dirOrFilePath);
-            console.error(err);
             resolve(false);
-            return
+            return;
           }
 
           resolve(true);
@@ -638,8 +679,11 @@ export class GameFileSystem {
   }
 
   static async showRequestDirectoryDialog(){
+    const profileKey = typeof ApplicationProfile.profile?.key === 'string'
+      ? ApplicationProfile.profile.key
+      : undefined;
     let handle = await window.showDirectoryPicker({
-      id: ApplicationProfile.profile?.key,
+      id: profileKey,
       mode: "readwrite"
     });
     if(handle){
@@ -652,3 +696,4 @@ export class GameFileSystem {
 
 
 }
+

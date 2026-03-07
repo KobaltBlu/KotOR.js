@@ -1,15 +1,15 @@
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
-import type { NWScriptControlStructure } from "./NWScriptControlStructureBuilder";
-import { NWScriptStackSimulator } from "./NWScriptStackSimulator";
-import { NWScriptExpressionBuilder } from "./NWScriptExpressionBuilder";
-import { NWScriptORChainDetector } from "./NWScriptORChainDetector";
-import { NWScriptANDChainDetector } from "./NWScriptANDChainDetector";
-import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
-import { OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_RETN, OP_ACTION, OP_JZ, OP_JNZ, OP_CPDOWNSP, OP_RSADD, OP_MOVSP } from '../NWScriptOPCodes';
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { NWScriptANDChainDetector } from "@/nwscript/decompiler/NWScriptANDChainDetector";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import type { NWScriptControlStructure } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
+import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
+import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
+import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import { NWScriptORChainDetector } from "@/nwscript/decompiler/NWScriptORChainDetector";
+import { NWScriptStackSimulator } from "@/nwscript/decompiler/NWScriptStackSimulator";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_RETN, OP_ACTION, OP_JZ, OP_JNZ, OP_CPDOWNSP, OP_RSADD, OP_MOVSP } from '@/nwscript/NWScriptOPCodes';
 
 /**
  * Represents a high-level statement in the decompiled code
@@ -56,7 +56,7 @@ export class NWScriptStatementBuilder {
   private stackSimulator: NWScriptStackSimulator;
   private expressionBuilder: NWScriptExpressionBuilder;
   private globalInits: NWScriptGlobalInit[] = [];
-  private localInits: import('./NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = [];
+  private localInits: import('@/nwscript/decompiler/NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = [];
   
   /**
    * Map from block to structure that contains it
@@ -71,7 +71,7 @@ export class NWScriptStatementBuilder {
   /**
    * Current function parameters (for condition extraction)
    */
-  private currentFunctionParameters: import('./NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = [];
+  private currentFunctionParameters: import('@/nwscript/decompiler/NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = [];
   
   /**
    * OR chain detector for simplifying OR expressions
@@ -87,7 +87,7 @@ export class NWScriptStatementBuilder {
     cfg: NWScriptControlFlowGraph, 
     structures: NWScriptControlStructure[] = [], 
     globalInits: NWScriptGlobalInit[] = [],
-    localInits: import('./NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = []
+    localInits: import('@/nwscript/decompiler/NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = []
   ) {
     this.cfg = cfg;
     this.structures = structures;
@@ -278,7 +278,8 @@ export class NWScriptStatementBuilder {
 
     // IMPROVEMENT: Try OR chain detection
     this.orChainDetector.setFunctionParameters(this.currentFunctionParameters);
-    // OR chain detector doesn't have setGlobalVariables/setLocalVariables yet, but it should use ExpressionBuilder
+    this.orChainDetector.setGlobalVariables(this.stackSimulator.getGlobalVariables());
+    this.orChainDetector.setLocalVariables(this.stackSimulator.getLocalVariables());
     const orChainExpr = this.orChainDetector.detectORChain(headerBlock);
     if (orChainExpr) {
       // Found an OR chain - use it
@@ -349,7 +350,8 @@ export class NWScriptStatementBuilder {
 
     // IMPROVEMENT: Try OR chain detection
     this.orChainDetector.setFunctionParameters(this.currentFunctionParameters);
-    // TODO: Add setGlobalVariables/setLocalVariables to OR chain detector
+    this.orChainDetector.setGlobalVariables(this.stackSimulator.getGlobalVariables());
+    this.orChainDetector.setLocalVariables(this.stackSimulator.getLocalVariables());
     const orChainExpr = this.orChainDetector.detectORChain(block);
     if (orChainExpr) {
       // Found an OR chain - use it
@@ -412,7 +414,7 @@ export class NWScriptStatementBuilder {
    * CRITICAL FIX: Process blocks in CFG execution order (topological/dominance order)
    * to ensure predecessors are processed before successors.
    */
-  processBlocksForFunction(functionBlocks: NWScriptBasicBlock[], parameters: import('./NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = []): void {
+  processBlocksForFunction(functionBlocks: NWScriptBasicBlock[], parameters: import('@/nwscript/decompiler/NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = []): void {
     // Clear stack for new function
     this.stackSimulator.clear();
     this.pendingNestedCalls.clear();

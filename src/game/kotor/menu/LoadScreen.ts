@@ -1,7 +1,8 @@
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu } from "../../../gui";
-import type { GUILabel, GUIProgressBar } from "../../../gui";
+﻿import * as THREE from "three";
+import { GameState } from "@/GameState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameMenu } from "@/gui";
+import type { GUILabel, GUIProgressBar } from "@/gui";
 
 /**
  * LoadScreen class.
@@ -102,3 +103,4 @@ export class LoadScreen extends GameMenu {
   }
   
 }
+

@@ -1,0 +1,338 @@
+{
+  "name": "kotor-forge",
+  "displayName": "KotOR Forge",
+  "description": "Complete modding toolkit for Star Wars: Knights of the Old Republic - edit GFF templates, scripts, dialogs, 3D models, textures, and more",
+  "version": "0.1.0",
+  "publisher": "kotor-community",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KobaltBlu/KotOR.js"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "kotor",
+    "knights of the old republic",
+    "swkotor",
+    "star wars",
+    "modding",
+    "nwscript",
+    "bioware"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "kotor.forge",
+        "displayName": "KotOR Forge Editor",
+        "selector": [
+          { "filenamePattern": "*.2da" },
+          { "filenamePattern": "*.are" },
+          { "filenamePattern": "*.bic" },
+          { "filenamePattern": "*.bwm" },
+          { "filenamePattern": "*.dlg" },
+          { "filenamePattern": "*.dwk" },
+          { "filenamePattern": "*.erf" },
+          { "filenamePattern": "*.fac" },
+          { "filenamePattern": "*.gff" },
+          { "filenamePattern": "*.git" },
+          { "filenamePattern": "*.gui" },
+          { "filenamePattern": "*.ifo" },
+          { "filenamePattern": "*.jrl" },
+          { "filenamePattern": "*.lip" },
+          { "filenamePattern": "*.ltr" },
+          { "filenamePattern": "*.mdl" },
+          { "filenamePattern": "*.mdx" },
+          { "filenamePattern": "*.mod" },
+          { "filenamePattern": "*.mp3" },
+          { "filenamePattern": "*.pth" },
+          { "filenamePattern": "*.pwk" },
+          { "filenamePattern": "*.res" },
+          { "filenamePattern": "*.rim" },
+          { "filenamePattern": "*.sav" },
+          { "filenamePattern": "*.ssf" },
+          { "filenamePattern": "*.tga" },
+          { "filenamePattern": "*.tlk" },
+          { "filenamePattern": "*.tpc" },
+          { "filenamePattern": "*.utc" },
+          { "filenamePattern": "*.utd" },
+          { "filenamePattern": "*.ute" },
+          { "filenamePattern": "*.uti" },
+          { "filenamePattern": "*.utm" },
+          { "filenamePattern": "*.utp" },
+          { "filenamePattern": "*.uts" },
+          { "filenamePattern": "*.utt" },
+          { "filenamePattern": "*.utw" },
+          { "filenamePattern": "*.vis" },
+          { "filenamePattern": "*.wav" },
+          { "filenamePattern": "*.wok" }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.forge.gff",
+        "displayName": "KotOR Forge (Generic GFF)",
+        "selector": [
+          { "filenamePattern": "*.are" },
+          { "filenamePattern": "*.bic" },
+          { "filenamePattern": "*.dlg" },
+          { "filenamePattern": "*.fac" },
+          { "filenamePattern": "*.gff" },
+          { "filenamePattern": "*.git" },
+          { "filenamePattern": "*.gui" },
+          { "filenamePattern": "*.ifo" },
+          { "filenamePattern": "*.jrl" },
+          { "filenamePattern": "*.ltr" },
+          { "filenamePattern": "*.pth" },
+          { "filenamePattern": "*.res" },
+          { "filenamePattern": "*.utc" },
+          { "filenamePattern": "*.utd" },
+          { "filenamePattern": "*.ute" },
+          { "filenamePattern": "*.uti" },
+          { "filenamePattern": "*.utm" },
+          { "filenamePattern": "*.utp" },
+          { "filenamePattern": "*.uts" },
+          { "filenamePattern": "*.utt" },
+          { "filenamePattern": "*.utw" },
+          { "filenamePattern": "*.vis" }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "kotor.forge.json",
+        "displayName": "KotOR Forge (JSON View)",
+        "selector": [
+          { "filenamePattern": "*.2da" },
+          { "filenamePattern": "*.are" },
+          { "filenamePattern": "*.bic" },
+          { "filenamePattern": "*.dlg" },
+          { "filenamePattern": "*.fac" },
+          { "filenamePattern": "*.gff" },
+          { "filenamePattern": "*.git" },
+          { "filenamePattern": "*.gui" },
+          { "filenamePattern": "*.ifo" },
+          { "filenamePattern": "*.jrl" },
+          { "filenamePattern": "*.ltr" },
+          { "filenamePattern": "*.pth" },
+          { "filenamePattern": "*.res" },
+          { "filenamePattern": "*.tlk" },
+          { "filenamePattern": "*.utc" },
+          { "filenamePattern": "*.utd" },
+          { "filenamePattern": "*.ute" },
+          { "filenamePattern": "*.uti" },
+          { "filenamePattern": "*.utm" },
+          { "filenamePattern": "*.utp" },
+          { "filenamePattern": "*.uts" },
+          { "filenamePattern": "*.utt" },
+          { "filenamePattern": "*.utw" },
+          { "filenamePattern": "*.vis" }
+        ],
+        "priority": "option"
+      }
+    ],
+    "languages": [
+      {
+        "id": "nwscript",
+        "aliases": [
+          "NWScript",
+          "nwscript"
+        ],
+        "extensions": [
+          ".nss",
+          ".ncs"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "nwscript",
+        "scopeName": "source.nwscript",
+        "path": "./syntaxes/nwscript.tmLanguage.json"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "kotor-icons",
+        "label": "KotOR File Icons",
+        "path": "./media/icons/kotor-icon-theme.json"
+      }
+    ],
+    "configuration": {
+      "title": "Forge-KotOR.js",
+      "properties": {
+        "kotorForge.kotorPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Knights of the Old Republic installation directory"
+        },
+        "kotorForge.tslPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Knights of the Old Republic II: The Sith Lords installation directory"
+        },
+        "kotorForge.activeGame": {
+          "type": "string",
+          "enum": [
+            "kotor",
+            "tsl"
+          ],
+          "default": "kotor",
+          "description": "Active game for resource lookups and 2DA tables"
+        },
+        "kotorForge.logLevel": {
+          "type": "string",
+          "enum": [
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "default": "info",
+          "description": "Minimum log level for the Forge-KotOR.js output channel (Trace = most verbose, Error = only errors). You can also change the level from the dropdown in the Output panel when viewing 'Forge-KotOR.js'."
+        },
+        "kotorForge.nwscript.maxNumberOfProblems": {
+          "scope": "resource",
+          "type": "number",
+          "default": 100,
+          "description": "Controls the maximum number of problems produced by the Forge-KotOR.js NWScript language server."
+        },
+        "kotorForge.nwscript.builtinScriptsDirectory": {
+          "scope": "resource",
+          "type": "string",
+          "description": "Directory path for builtin KOTOR scripts. Can be absolute path, relative path, or file:// URI. If not set, uses kotor-forge:// virtual scheme."
+        },
+        "kotorForge.nwscript.trace": {
+          "scope": "window",
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the Forge-KotOR.js NWScript language server."
+        }
+      }
+    },
+    "debuggers": [
+    {
+      "type": "nwscript",
+      "label": "NWScript Debugger",
+      "languages": ["nwscript"],
+      "configurationAttributes": {
+        "launch": {
+          "required": ["script"],
+          "properties": {
+            "script": {
+              "type": "string",
+              "description": "Path to the NWScript file to debug",
+              "default": "${file}"
+            },
+            "stopOnEntry": {
+              "type": "boolean",
+              "description": "Automatically stop after launch",
+              "default": true
+            }
+          }
+        }
+      },
+      "initialConfigurations": [
+        {
+          "type": "nwscript",
+          "request": "launch",
+          "name": "Debug NWScript",
+          "script": "${file}",
+          "stopOnEntry": true
+        }
+      ],
+      "configurationSnippets": [
+        {
+          "label": "NWScript: Debug Script",
+          "description": "Debug a NWScript file",
+          "body": {
+            "type": "nwscript",
+            "request": "launch",
+            "name": "${1:Debug NWScript}",
+            "script": "${2:${file}}",
+            "stopOnEntry": true
+          }
+        }
+      ]
+    }
+    ],
+    "commands": [
+      {
+        "command": "nwscript.startDebugging",
+        "title": "Start Debugging",
+        "category": "NWScript"
+      },
+      {
+        "command": "kotorForge.openAsJson",
+        "title": "Open as JSON",
+        "category": "KotOR Forge"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceLangId == nwscript || resourceExtname == .nss",
+          "command": "nwscript.startDebugging",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .2da || resourceExtname == .tlk || resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis",
+          "command": "kotorForge.openAsJson",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "clean": "npx -y rimraf ./dist ./server/out ./output",
+    "compile:server": "cd server && npm install && npx tsc -p .",
+    "compile": "npm run compile:server && webpack --mode production",
+    "lint": "eslint src --ext ts",
+    "package": "npm run compile && npx @vscode/vsce package",
+    "postinstall": "cd server && npm install",
+    "vscode:prepublish": "npm run compile",
+    "watch": "webpack --mode development --watch"
+  },
+  "devDependencies": {
+    "path-browserify": "^1.0.1",
+    "@types/node": "^20.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.182.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vscode/vsce": "^2.22.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.8.1",
+    "esbuild-loader": "^4.0.3",
+    "eslint": "^8.56.0",
+    "mini-css-extract-plugin": "^2.7.6",
+    "sass": "^1.69.5",
+    "sass-loader": "^13.3.2",
+    "style-loader": "^3.3.3",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.2",
+    "react": "^19.0.0",
+    "react-bootstrap": "^2.9.1",
+    "react-dom": "^19.0.0",
+    "three": "^0.149.0",
+    "vscode-languageclient": "^8.1.0",
+    "@vscode/debugadapter": "^1.68.0",
+    "@vscode/debugprotocol": "^1.68.0"
+  }
+}

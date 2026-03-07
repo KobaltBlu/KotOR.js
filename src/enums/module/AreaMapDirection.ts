@@ -13,4 +13,4 @@ export enum AreaMapDirection {
   SOUTH = 1,
   EAST  = 2,
   WEST  = 3
-};
+}

@@ -1,11 +1,12 @@
-import { ModuleObject } from "./ModuleObject";
-import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import { OdysseyModel3D } from "../three/odyssey";
-import { OdysseyModel } from "../odyssey";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { MDLLoader } from "../loaders";
+
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { MDLLoader } from "@/loaders";
+import { ModuleObject } from "@/module/ModuleObject";
+import { OdysseyModel } from "@/odyssey";
+import { GFFObject } from "@/resource/GFFObject";
+import { OdysseyModel3D } from "@/three/odyssey";
 
 /**
 * ModuleMGGunBullet class.
@@ -28,6 +29,8 @@ export class ModuleMGGunBullet extends ModuleObject {
   model_name: string = '';
   collision_sound: string = '';
   rate_of_fire: any;
+  /** Cooldown timer between shots (used by gun bank when this is proto_bullet). */
+  fire_timer: number = 0;
   target_type: any;
   damage_amt: number = 0;
 
@@ -72,17 +75,25 @@ export class ModuleMGGunBullet extends ModuleObject {
         for(let i = 0, len = enemies.length; i < len; i++){
           const enemy = enemies[i];
           if(enemy.sphere.containsPoint(this.position)){
+            GameState.module.area.miniGame.lastHPChange = -this.damage_amt;
+            GameState.module.area.miniGame.lastBulletHitDamage = this.damage_amt;
+            GameState.module.area.miniGame.lastBulletHitTarget = enemy;
+            GameState.module.area.miniGame.lastBulletHitShooter = this.owner;
+            GameState.module.area.miniGame.lastBulletHitPart = '';
             enemy.damage(this.damage_amt);
-            //Set the life to Infinity so it will be culled on the next pass
             this.life = Infinity;
             break;
           }
         }
       }else{
         const player = GameState.module.area.miniGame.player;
-        if(player.sphere.containsPoint(this.position)){
+        if(player && player.sphere.containsPoint(this.position)){
+          GameState.module.area.miniGame.lastHPChange = -this.damage_amt;
+          GameState.module.area.miniGame.lastBulletHitDamage = this.damage_amt;
+          GameState.module.area.miniGame.lastBulletHitTarget = player;
+          GameState.module.area.miniGame.lastBulletHitShooter = this.owner;
+          GameState.module.area.miniGame.lastBulletHitPart = '';
           player.damage(this.damage_amt);
-          //Set the life to Infinity so it will be culled on the next pass
           this.life = Infinity;
         }
       }

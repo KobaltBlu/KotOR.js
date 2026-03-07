@@ -1,14 +1,15 @@
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import { GFFStruct } from "../resource/GFFStruct";
+﻿import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
-import { TextureLoader } from "../loaders";
-import { TextureType } from "../enums/loaders/TextureType";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GameState } from "../GameState";
-import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
-// import { ShaderManager } from "../managers";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { TextureLoader } from "@/loaders";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameState } from "@/GameState";
+import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
+// import { ShaderManager } from "@/managers";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import type { GUIControlEvent } from "@/gui/GUIControlEvent";
 
 /**
  * GUICheckBox class.
@@ -65,13 +66,15 @@ export class GUICheckBox extends GUIControl{
     };
 
     this.borderSelected.geometry = new THREE.BufferGeometry();
-    
+
+    const odysseyGuiShader = GameState.ShaderManager.Shaders.get('odyssey-gui')!;
+    // @ts-expect-error - merge return type inference fails with getUniforms()
+    const odysseyGuiUniforms: Record<string, THREE.IUniform> = THREE.UniformsUtils.merge([odysseyGuiShader.getUniforms()]);
+
     this.borderSelected.edge_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -80,11 +83,9 @@ export class GUICheckBox extends GUIControl{
     this.borderSelected.edge_material.uniforms.diffuse.value = this.borderSelected.color;
 
     this.borderSelected.corner_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -100,11 +101,9 @@ export class GUICheckBox extends GUIControl{
     //---------------//
     
     this.borderSelected.fill.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -144,11 +143,9 @@ export class GUICheckBox extends GUIControl{
     this.highlightSelected.geometry = new THREE.BufferGeometry();
     
     this.highlightSelected.edge_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -157,11 +154,9 @@ export class GUICheckBox extends GUIControl{
     this.highlightSelected.edge_material.uniforms.diffuse.value = this.highlightSelected.color;
 
     this.highlightSelected.corner_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -177,11 +172,9 @@ export class GUICheckBox extends GUIControl{
     //-------------------------//
     
     this.highlightSelected.fill.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -345,14 +338,14 @@ export class GUICheckBox extends GUIControl{
     //Highlight Selected
     this.attachEventListenters( this.highlightSelected.mesh );
 
-    this.addEventListener( 'mouseMove', (e: any) => { });
+    this.addEventListener( 'mouseMove', (_e: GUIControlEvent) => { });
 
     this.addEventListener( 'click', () =>{
       console.log('click', this);
       this.setValue(!this.value);
     });
 
-    this.addEventListener( 'mouseDown', (e: any) => {
+    this.addEventListener( 'mouseDown', (e: GUIControlEvent) => {
       e.stopPropagation();
     });
 
@@ -483,3 +476,4 @@ export class GUICheckBox extends GUIControl{
   }
 
 }
+

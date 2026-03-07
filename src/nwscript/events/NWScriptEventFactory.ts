@@ -1,10 +1,10 @@
-import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
-import { GFFStruct } from "../../resource/GFFStruct";
-import { EventActivateItem } from "./EventActivateItem";
-import { EventConversation } from "./EventConversation";
-import { EventSpellCastAt } from "./EventSpellCastAt";
-import { EventUserDefined } from "./EventUserDefined";
-import { NWScriptEvent } from "./NWScriptEvent";
+import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
+import { EventActivateItem } from "@/nwscript/events/EventActivateItem";
+import { EventConversation } from "@/nwscript/events/EventConversation";
+import { EventSpellCastAt } from "@/nwscript/events/EventSpellCastAt";
+import { EventUserDefined } from "@/nwscript/events/EventUserDefined";
+import { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * NWScriptEventFactory class.
@@ -21,12 +21,12 @@ export class NWScriptEventFactory {
     if(struct instanceof GFFStruct){
       let event: NWScriptEvent = undefined as any;
 
-      let eType = struct.getFieldByLabel('EventType').getValue();
+      const eType = struct.getFieldByLabel('EventType').getValue();
 
-      let intList: number[] = [];
-      let floatList: number[] = [];
-      let stringList: string[] = [];
-      let objectList: number[] = [];
+      const intList: number[] = [];
+      const floatList: number[] = [];
+      const stringList: string[] = [];
+      const objectList: number[] = [];
 
       let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){

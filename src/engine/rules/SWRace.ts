@@ -1,5 +1,5 @@
-import { TLKManager } from "../../managers/TLKManager";
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { TLKManager } from "@/managers/TLKManager";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
  * SWRace class.
@@ -40,10 +40,10 @@ export class SWRace {
     return this.name != -1 ? TLKManager.GetStringById(this.name).Value : this.label;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: Record<string, unknown> = {}): SWRace {
     const race = new SWRace();
 
-    race.id = parseInt(row.__index);
+    race.id = parseInt(String(row.__index ?? ''), 10) || -1;
 
     if(row.hasOwnProperty('label'))
       race.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;

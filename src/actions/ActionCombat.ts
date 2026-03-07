@@ -1,12 +1,12 @@
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { Action } from "./Action";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ModuleObjectConstant, ModuleObjectType } from "../enums";
-import { BitWise } from "../utility/BitWise";
-import { GameState } from "../GameState";
-import { ActionQueue } from "./ActionQueue";
+import { Action } from "@/actions/Action";
+import { ActionQueue } from "@/actions/ActionQueue";
+import { ModuleObjectConstant, ModuleObjectType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { GameState } from "@/GameState";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionCombat class.
@@ -94,25 +94,23 @@ export class ActionCombat extends Action {
         this.owner.actionQueue.unshift(spellAction);
       break;
       case CombatActionType.ITEM_CAST_SPELL: {
-        const itemCastSpellAction = new GameState.ActionFactory.ActionItemCastSpell();
+        const itemSpellAction = new GameState.ActionFactory.ActionItemCastSpell();
         const target = combatAction.target;
-        const targetId = target?.id ?? ModuleObjectConstant.OBJECT_INVALID;
-        const targetPos = target?.position ?? { x: 0, y: 0, z: 0 };
-        const areaId = target?.area?.id ?? this.owner?.area?.id ?? ModuleObjectConstant.OBJECT_INVALID;
-        itemCastSpellAction.setParameter(0, ActionParameterType.DWORD, targetId);
-        itemCastSpellAction.setParameter(1, ActionParameterType.DWORD, areaId);
-        itemCastSpellAction.setParameter(2, ActionParameterType.FLOAT, targetPos.x);
-        itemCastSpellAction.setParameter(3, ActionParameterType.FLOAT, targetPos.y);
-        itemCastSpellAction.setParameter(4, ActionParameterType.FLOAT, targetPos.z);
-        itemCastSpellAction.setParameter(5, ActionParameterType.INT, combatAction.spell ? combatAction.spell.id : -1);
-        itemCastSpellAction.setParameter(6, ActionParameterType.INT, 1);
-        itemCastSpellAction.setParameter(7, ActionParameterType.FLOAT, 1.0);
-        itemCastSpellAction.setParameter(8, ActionParameterType.INT, combatAction.projectilePath ?? -1);
-        itemCastSpellAction.setParameter(9, ActionParameterType.INT, combatAction.overrideSpell ? combatAction.overrideSpell.id : -1);
-        itemCastSpellAction.setParameter(10, ActionParameterType.DWORD, combatAction.item?.id ?? ModuleObjectConstant.OBJECT_INVALID);
-        itemCastSpellAction.setParameter(11, ActionParameterType.STRING, '');
-        itemCastSpellAction.isUserAction = combatAction.isUserAction;
-        this.owner.actionQueue.unshift(itemCastSpellAction);
+        const area = target?.area ?? GameState.module?.area;
+        itemSpellAction.setParameter(0, ActionParameterType.DWORD, target?.id ?? ModuleObjectConstant.OBJECT_INVALID);
+        itemSpellAction.setParameter(1, ActionParameterType.DWORD, area?.id ?? 0);
+        itemSpellAction.setParameter(2, ActionParameterType.FLOAT, target?.position?.x ?? 0);
+        itemSpellAction.setParameter(3, ActionParameterType.FLOAT, target?.position?.y ?? 0);
+        itemSpellAction.setParameter(4, ActionParameterType.FLOAT, target?.position?.z ?? 0);
+        itemSpellAction.setParameter(5, ActionParameterType.INT, combatAction.spell?.id ?? 0);
+        itemSpellAction.setParameter(6, ActionParameterType.INT, 1);
+        itemSpellAction.setParameter(7, ActionParameterType.FLOAT, 1.0);
+        itemSpellAction.setParameter(8, ActionParameterType.INT, combatAction.projectilePath ?? -1);
+        itemSpellAction.setParameter(9, ActionParameterType.INT, -1);
+        itemSpellAction.setParameter(10, ActionParameterType.DWORD, combatAction.item?.id ?? ModuleObjectConstant.OBJECT_INVALID);
+        itemSpellAction.setParameter(11, ActionParameterType.STRING, '');
+        itemSpellAction.isUserAction = combatAction.isUserAction;
+        this.owner.actionQueue.unshift(itemSpellAction);
       }
       break;
       case CombatActionType.ITEM_EQUIP:
@@ -120,7 +118,7 @@ export class ActionCombat extends Action {
         equipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
         equipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
         equipAction.setParameter(2, ActionParameterType.INT, combatAction.equipInstant ? 1 : 0);
-        attackAction.isUserAction = combatAction.isUserAction;
+        equipAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(equipAction);
       break;
       case CombatActionType.ITEM_UNEQUIP:
@@ -128,7 +126,7 @@ export class ActionCombat extends Action {
         unequipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
         unequipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
         unequipAction.setParameter(2, ActionParameterType.INT, combatAction.equipInstant ? 1 : 0);
-        attackAction.isUserAction = combatAction.isUserAction;
+        unequipAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(unequipAction);
       break;
     }

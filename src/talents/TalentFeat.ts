@@ -1,16 +1,16 @@
-import { CombatRound } from "../combat/CombatRound";
-import { type CreatureClass } from "../combat/CreatureClass";
-import { EffectACDecrease, EffectAttackDecrease } from "../effects";
-import { ModuleObjectType, TalentObjectType } from "../enums";
-import { GameEffectDurationType } from "../enums/effects";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { TwoDAManager } from "../managers/TwoDAManager";
-import type { ModuleObject } from "../module";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { TwoDAObject } from "../resource/TwoDAObject";
-import { BitWise } from "../utility/BitWise";
-import { TalentObject } from "./TalentObject";
+import { CombatRound } from "@/combat/CombatRound";
+import { type CreatureClass } from "@/combat/CreatureClass";
+import { EffectACDecrease, EffectAttackDecrease } from "@/effects";
+import { ModuleObjectType, TalentObjectType } from "@/enums";
+import { GameEffectDurationType } from "@/enums/effects";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import type { ModuleObject } from "@/module";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TalentObject } from "@/talents/TalentObject";
+import { BitWise } from "@/utility/BitWise";
 
 const FEAT_PENALTY_DURATION = CombatRound.ROUND_LENGTH;
 
@@ -169,8 +169,8 @@ export class TalentFeat extends TalentObject {
     if(oTarget == oCaster){
       return true;
     }
-    let distance = oCaster.position.distanceTo(oTarget.position);
-    let rangeTolerance = 0.25;
+    const distance = oCaster.position.distanceTo(oTarget.position);
+    const rangeTolerance = 0.25;
 
     //MELEE
     if(this.category == 0x1104){
@@ -669,7 +669,7 @@ export class TalentFeat extends TalentObject {
   }
 
   save(){
-    let featStruct = new GFFStruct(1);
+    const featStruct = new GFFStruct(1);
     featStruct.addField( new GFFField(GFFDataType.WORD, 'Feat') ).setValue(this.getId());
     return featStruct;
   }

@@ -1,13 +1,14 @@
-import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager";
-import { EventListenerModel } from "./EventListenerModel";
-import * as KotOR from "./KotOR";
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
-import { ForgeModule } from "./module-editor/ForgeModule";
-import { ForgeGameObject } from "./module-editor/ForgeGameObject";
+
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 
 export enum CameraView {
   Top = 'top',
@@ -290,7 +291,7 @@ export class UI3DRenderer extends EventListenerModel {
   buildTransformControls() {
     if(this.transformControls){
       this.transformControls.dispose();
-      (this.transformControls as unknown as THREE.Object3D).removeFromParent();
+      this.transformControls.removeFromParent();
     }
     if(this.canvas){
       if(this.orbitControls){
@@ -303,15 +304,14 @@ export class UI3DRenderer extends EventListenerModel {
       this.orbitControls.enableRotate = true;
       this.orbitControls.panSpeed = 2;
       this.transformControls = new TransformControls(this.currentCamera, this.canvas);
-      const tcObj = this.transformControls as unknown as THREE.Object3D;
-      tcObj.visible = false;
-      this.unselectable.add(tcObj);
-      tcObj.userData.uuids = [];
-      tcObj.traverse( (obj: THREE.Object3D) => {
-        tcObj.userData.uuids.push(obj.uuid);
+      this.transformControls.visible = false;
+      this.unselectable.add(this.transformControls);
+      this.transformControls.userData.uuids = [];
+      this.transformControls.traverse( (obj) => {
+        this.transformControls.userData.uuids.push(obj.uuid);
       });
 
-      this.transformControls.addEventListener('dragging-changed', (event: { value: unknown }) => {
+      this.transformControls.addEventListener('dragging-changed', (event: any) => {
         this.transformControlsDragging = event.value === true;  
         if (this.orbitControls) {
           this.orbitControls.enabled = !this.transformControlsDragging;
@@ -1181,8 +1181,8 @@ export class UI3DRenderer extends EventListenerModel {
             hiddenHelpers.push(camera.cameraHelper);
           }
         }
-        const wasTransformControlsVisible = (this.transformControls as unknown as THREE.Object3D).visible;
-        (this.transformControls as unknown as THREE.Object3D).visible = false;
+        const wasTransformControlsVisible = this.transformControls.visible;
+        this.transformControls.visible = false;
         // Update preview camera aspect ratio (square preview)
         this.previewCamera.aspect = 1.0;
         this.previewCamera.updateProjectionMatrix();
@@ -1205,7 +1205,7 @@ export class UI3DRenderer extends EventListenerModel {
         for(const helper of hiddenHelpers){
           helper.visible = true;
         }
-        (this.transformControls as unknown as THREE.Object3D).visible = wasTransformControlsVisible;
+        this.transformControls.visible = wasTransformControlsVisible;
         // Restore viewport and scissor
         this.renderer.setViewport(currentViewport);
         this.renderer.setScissor(currentScissor);

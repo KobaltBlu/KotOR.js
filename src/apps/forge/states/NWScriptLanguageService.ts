@@ -1,14 +1,15 @@
-import { EditorFile } from "../EditorFile";
-import { FileTypeManager } from "../FileTypeManager";
-import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
-import { NWScriptASTBuilder } from "../../../nwscript/compiler/NWScriptASTBuilder";
-import { NWScriptASTCodeGen } from "../../../nwscript/compiler/NWScriptASTCodeGen";
-import { ForgeState } from "./ForgeState";
-import * as KotOR from '../KotOR';
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import type { TabState } from "./tabs/TabState";
-import { FunctionNode, StructNode, VariableListNode, VariableNode } from "../../../nwscript/compiler/ASTTypes";
-import type { TabTextEditorState } from "./tabs/TabTextEditorState";
+
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import * as KotOR from '@/apps/forge/KotOR';
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import type { TabState } from "@/apps/forge/states/tabs/TabState";
+import type { TabTextEditorState } from "@/apps/forge/states/tabs/TabTextEditorState";
+import { FunctionNode, StructNode, VariableListNode, VariableNode } from "@/nwscript/compiler/ASTTypes";
+import { NWScriptASTBuilder } from "@/nwscript/compiler/NWScriptASTBuilder";
+import { NWScriptASTCodeGen } from "@/nwscript/compiler/NWScriptASTCodeGen";
+import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
 
 // Format NWScript code using AST
 function formatNWScript(code: string, options: monacoEditor.languages.FormattingOptions = { tabSize: 2, insertSpaces: true }): string {
@@ -32,12 +33,11 @@ function formatNWScript(code: string, options: monacoEditor.languages.Formatting
     });
     
     return codeGen.generate(ast);
-  } catch (error: unknown) {
+  } catch (error: any) {
     // If anything goes wrong, return original code
     // Don't log parse errors - they're expected when formatting incomplete/incorrect code
     // Only log unexpected errors (not parse errors)
-    const err = error as { name?: string; type?: string };
-    if (err?.name !== 'NWScriptASTBuilderError' && err?.type !== 'parse') {
+    if (error?.name !== 'NWScriptASTBuilderError' && error?.type !== 'parse') {
       console.warn('AST formatting failed, returning original code:', error);
     }
     console.error(error);
@@ -561,22 +561,27 @@ export class NWScriptLanguageService {
             };
           }
 
-          const action = nw_actions.find( (obj: { name: string }) => obj.name == wordObject.word );
+          const action = nw_actions.find( (obj) => obj[1].name == wordObject.word );
           if(action){
+            // console.log(action);
             let args = '';
-            const function_definition = ForgeState.nwScriptParser.engine_actions.find((a) =>
-              a.name === wordObject.word || a.name === action.name
+            // Match by function name - try wordObject.word first, then action[1].name, then action[0] as fallback
+            const function_definition = ForgeState.nwScriptParser.engine_actions.find((a) => 
+              a.name === wordObject.word || 
+              a.name === action[1].name || 
+              a.name === action[0]
             );
             if(!function_definition) {
+              // If we can't find the definition, still show the hover with info from NWScriptDef
               let args_fallback = '';
-              for(let i = 0; i < action.arguments.length; i++){
-                const arg = action.arguments[i];
+              for(let i = 0; i < action[1].args.length; i++){
+                const arg = action[1].args[i];
                 if(i > 0) args_fallback += ', ';
-                args_fallback += arg.name;
+                args_fallback += arg;
               }
-              let hoverContent = `\`\`\`nwscript\n${action.name}(${args_fallback})\n\`\`\``;
-              if (action.comment && action.comment.trim()) {
-                hoverContent += `\n\n**Documentation:**\n\`\`\`\n${action.comment.trim()}\n\`\`\``;
+              let hoverContent = `\`\`\`nwscript\n${action[1].name}(${args_fallback})\n\`\`\``;
+              if (action[1].comment && action[1].comment.trim()) {
+                hoverContent += `\n\n**Documentation:**\n\`\`\`\n${action[1].comment.trim()}\n\`\`\``;
               }
               return {
                 contents: [
@@ -585,26 +590,31 @@ export class NWScriptLanguageService {
                 ]
               };
             }
-            for(let i = 0; i < action.arguments.length; i++){
-              const arg = action.arguments[i];
+            // console.log(function_definition);
+            for(let i = 0; i < action[1].args.length; i++){
+              const arg = action[1].args[i];
               const def_arg = function_definition.arguments[i];
               if(i > 0) args += ', ';
               if(def_arg){
                 if(def_arg.value){
                   const value = arg_value_parser(def_arg.value);
-                  args += `${arg.name} ${def_arg.name} = ${value}`;
+                  args += `${arg} ${def_arg.name} = ${value}`;
                 }else{
-                  args += `${arg.name} ${def_arg.name}`;
+                  args += `${arg} ${def_arg.name}`;
                 }
               }else{
                 console.warn('invalid argument', i, function_definition)
               }
             }
-            let hoverContent = `\`\`\`nwscript\n${function_definition.returntype.value} ${action.name}(${args})\n\`\`\``;
+            // Build hover content with comment from nwscript.nss
+            let hoverContent = `\`\`\`nwscript\n${function_definition.returntype.value} ${action[1].name}(${args})\n\`\`\``;
+            
+            // Add comment from nwscript.nss if available
             if (function_definition.comment && function_definition.comment.trim()) {
               hoverContent += `\n\n**Documentation:**\n\`\`\`\n${function_definition.comment.trim()}\n\`\`\``;
-            } else if (action.comment && action.comment.trim()) {
-              hoverContent += `\n\n**Documentation:**\n\`\`\`\n${action.comment.trim()}\n\`\`\``;
+            } else if (action[1].comment && action[1].comment.trim()) {
+              // Fallback to comment from NWScriptDef if nwscript.nss comment not available
+              hoverContent += `\n\n**Documentation:**\n\`\`\`\n${action[1].comment.trim()}\n\`\`\``;
             }
             
             return {
@@ -629,7 +639,7 @@ export class NWScriptLanguageService {
               const structPropertyName = parts[1];
               if(structName){
                 //Local Variables
-                const l_struct = (parser.local_variables || []).find( (obj: { name: string }) => obj.name == structName );
+                const l_struct = (parser.local_variables || []).find( (obj) => obj.name == structName );
                 if(l_struct?.datatype?.value == 'struct'){
                   const struct_ref = (l_struct.type == 'variable') ? l_struct.struct_reference : l_struct ;
                   for(let i = 0; i < struct_ref.properties.length; i++){
@@ -650,7 +660,7 @@ export class NWScriptLanguageService {
 
 
             //Local Variables
-            const l_variable = (parser.local_variables || []).find( (obj: { name: string }) => obj.name == wordObject.word );
+            const l_variable = (parser.local_variables || []).find( (obj) => obj.name == wordObject.word );
             if(l_variable){
               // console.log(l_variable);
               return {
@@ -662,9 +672,9 @@ export class NWScriptLanguageService {
             }
 
             //Local Function - check both local_functions (if exists) and program.functions
-            let l_function = (parser.local_functions || []).find( (obj: { name: string }) => obj.name == wordObject.word );
+            let l_function = (parser.local_functions || []).find( (obj) => obj.name == wordObject.word );
             if(!l_function && parser.program && parser.program.functions) {
-              l_function = parser.program.functions.find( (obj: { name: string }) => obj.name == wordObject.word );
+              l_function = parser.program.functions.find( (obj) => obj.name == wordObject.word );
             }
             
             if(l_function){
@@ -676,7 +686,7 @@ export class NWScriptLanguageService {
                 const funcLine = l_function.source.first_line - 1; // Convert to 0-based index
                 
                 // Look backwards for comment blocks (similar to engine actions)
-                let commentLines: string[] = [];
+                const commentLines: string[] = [];
                 let inBlockComment = false;
                 
                 for (let i = funcLine - 1; i >= 0; i--) {
@@ -868,9 +878,9 @@ export class NWScriptLanguageService {
                     endLineNumber: prop.source?.last_line || struct.source?.first_line || 1,
                     endColumn: prop.source?.last_column || struct.source?.first_column || 1,
                   },
-                  tags: [] as number[]
+                  tags: []
                 })) || [],
-                tags: [] as number[]
+                tags: []
               });
             } else if (statement.type === 'variableList') {
               const variable = statement as VariableListNode;
@@ -891,7 +901,7 @@ export class NWScriptLanguageService {
                     endLineNumber: nameInfo.source?.last_line || nameInfo.source?.last_line || 1,
                     endColumn: nameInfo.source?.last_column || nameInfo.source?.last_column || 1,
                   },
-                  tags: [] as number[]
+                  tags: []
                 });
               }
             } else if (statement.type === 'variable') {
@@ -1070,7 +1080,7 @@ export class NWScriptLanguageService {
             const column = nw_constant.source.first_column || 1;
             
             // Check if nwscript.nss is already open
-            let nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
+            const nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
               tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
             ) as any;
             
@@ -1149,7 +1159,7 @@ export class NWScriptLanguageService {
             const column = nw_action.source.first_column || 1;
             
             // Check if nwscript.nss is already open
-            let nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
+            const nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
               tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
             ) as any;
             
@@ -1219,7 +1229,7 @@ export class NWScriptLanguageService {
           }
 
           // Check local variables
-          const l_variable = (parser.local_variables || []).find((obj: { name: string }) => obj.name === word);
+          const l_variable = (parser.local_variables || []).find((obj) => obj.name === word);
           if (l_variable && l_variable.source) {
             const fileInfo = getFileForLine(l_variable.source.first_line);
             const lineNumber = fileInfo.adjustedLine;
@@ -1249,9 +1259,9 @@ export class NWScriptLanguageService {
           }
 
           // Check local functions
-          let l_function = (parser.local_functions || []).find((obj: { name: string }) => obj.name === word);
+          let l_function = (parser.local_functions || []).find((obj) => obj.name === word);
           if (!l_function && parser.program && parser.program.functions) {
-            l_function = parser.program.functions.find((obj: { name: string }) => obj.name === word);
+            l_function = parser.program.functions.find((obj) => obj.name === word);
           }
 
           if (l_function && l_function.source) {

@@ -1,5 +1,5 @@
-import type { OdysseyModelClass } from "../../enums/odyssey/OdysseyModelClass";
-import type { IOdysseyArrayDefinition } from "./IOdysseyArrayDefinition";
+import type { OdysseyModelClass } from "@/enums/odyssey/OdysseyModelClass";
+import type { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
 
 /**
  * IOdysseyModelHeader interface.

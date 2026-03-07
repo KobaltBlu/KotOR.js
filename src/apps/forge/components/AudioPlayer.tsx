@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useEffectOnce } from "../helpers/UseEffectOnce";
-import { AudioPlayerState } from "../states/AudioPlayerState";
+
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 
 export const AudioPlayer = function(props: any){
 

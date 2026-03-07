@@ -1,15 +1,15 @@
-import { GameState } from "../../../GameState";
-import type { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import type { ModuleCreature } from "../../../module/ModuleCreature";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { MenuTop as K1_MenuTop } from "../../kotor/KOTOR";
+import { MenuTop as K1_MenuTop } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 /**
  * MenuTop class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuTop.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -66,7 +66,7 @@ export class MenuTop extends K1_MenuTop {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       this.LBLH_OPT.widget.position.z = 5;
       this.LBLH_MAP.widget.position.z = 5;
@@ -129,15 +129,15 @@ export class MenuTop extends K1_MenuTop {
         this.manager.MenuEquipment.open();
       });
 
-      this.BTN_CHANGE2.addEventListener('click', (e) => {
+      this.BTN_CHANGE2.addEventListener('click', (_e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
       });
 
-      this.BTN_CHANGE3.addEventListener('click', (e) => {
+      this.BTN_CHANGE3.addEventListener('click', (_e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
       });
 
-      GameState.PartyManager.AddEventListener('change', (pm: ModuleCreature) => {
+      GameState.PartyManager.AddEventListener('change', (_pm: ModuleCreature) => {
         this.UpdatePartyUI();
       });
 
@@ -198,9 +198,9 @@ export class MenuTop extends K1_MenuTop {
         continue;
       }
       const portTextureRef = partyMember.getPortraitResRef();
-      
+
       this.TogglePartyMember(i, true);
-      let pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
+      const pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
       if (pmBG.getFillTextureName() != portTextureRef) {
         pmBG.setFillTextureName(portTextureRef);
         TextureLoader.Load(portTextureRef).then((texture: OdysseyTexture) => {
@@ -273,10 +273,11 @@ export class MenuTop extends K1_MenuTop {
   }
 
   CloseAllOtherMenus() {
-    let currentMenu = this.manager.GetCurrentMenu();
+    const currentMenu = this.manager.GetCurrentMenu();
     if (currentMenu == this.manager.MenuAbilities || currentMenu == this.manager.MenuInventory || currentMenu == this.manager.MenuJournal || currentMenu == this.manager.MenuMap || currentMenu == this.manager.MenuMessages || currentMenu == this.manager.MenuFeedback || currentMenu == this.manager.MenuOptions || currentMenu == this.manager.MenuCharacter || currentMenu == this.manager.MenuPartySelection || currentMenu == this.manager.MenuEquipment) {
       currentMenu.close();
     }
   }
-  
+
 }
+

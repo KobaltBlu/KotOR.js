@@ -39,3 +39,24 @@ export function isCapsuleFile(filepath: string): boolean {
   const ext = getExt(filepath);
   return ext === ".erf" || ext === ".mod" || ext === ".sav" || ext === ".rim";
 }
+
+/**
+ * Returns the module root name from a module/capsule filename.
+ * Strips .mod, .erf, .rim extensions and _s / _dlg suffixes (case-insensitive).
+ * Ported from PyKotor Installation.get_module_root().
+ */
+export function getModuleRoot(moduleName: string): string {
+  let name = moduleName.trim();
+  if (!name) return name;
+  const lower = name.toLowerCase();
+  if (lower.endsWith(".mod") || lower.endsWith(".erf") || lower.endsWith(".rim")) {
+    name = name.slice(0, -4);
+  }
+  if (name.toLowerCase().endsWith("_s")) {
+    name = name.slice(0, -2);
+  }
+  if (name.toLowerCase().endsWith("_dlg")) {
+    name = name.slice(0, -4);
+  }
+  return name;
+}

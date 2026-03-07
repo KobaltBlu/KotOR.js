@@ -1,13 +1,14 @@
 import * as THREE from "three";
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import { TextureType } from "../enums/loaders/TextureType";
-import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
-import { TextureLoader } from "../loaders";
-import { ShaderManager } from "../managers/ShaderManager";
-import type { GFFStruct } from "../resource/GFFStruct";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { TextureType } from "@/enums/loaders/TextureType";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
+import { TextureLoader } from "@/loaders";
+import { ShaderManager } from "@/managers/ShaderManager";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 /**
  * GUIProgressBar class.
@@ -63,13 +64,15 @@ export class GUIProgressBar extends GUIControl {
     };
 
     this.progress.geometry = new THREE.BufferGeometry();
-    
+
+    const odysseyGuiShader = ShaderManager.Shaders.get('odyssey-gui')!;
+    // @ts-expect-error - merge return type inference fails with getUniforms()
+    const odysseyGuiUniforms: Record<string, THREE.IUniform> = THREE.UniformsUtils.merge([odysseyGuiShader.getUniforms()]);
+
     this.progress.edge_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -78,11 +81,9 @@ export class GUIProgressBar extends GUIControl {
     this.progress.edge_material.uniforms.diffuse.value = this.progress.color;
 
     this.progress.corner_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -98,11 +99,9 @@ export class GUIProgressBar extends GUIControl {
     //---------------//
     
     this.progress.fill.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -120,10 +119,10 @@ export class GUIProgressBar extends GUIControl {
       //Progress
       this.hasProgress = control.hasField('PROGRESS');
       if(this.hasProgress){
-        let progress = control.getFieldByLabel('PROGRESS')?.getChildStructs()[0];
+        const progress = control.getFieldByLabel('PROGRESS')?.getChildStructs()[0];
         if(progress){
           if(progress.hasField('COLOR')){
-            let color = progress.getFieldByLabel('COLOR')?.getVector();
+            const color = progress.getFieldByLabel('COLOR')?.getVector();
             if(color){
               this.progress.color.setRGB(color.x, color.y, color.z)
             }
@@ -191,21 +190,21 @@ export class GUIProgressBar extends GUIControl {
     this.curValue = val < 0 ? 0 : val;
     this.curValue = !this.curValue ? 0.000000000000001 : this.curValue;
     
-    let value = Math.min(this.curValue / this.maxValue, 1);
+    const value = Math.min(this.curValue / this.maxValue, 1);
 
-    let extent = this.getFillExtent();
-    let sprite = this.progress.fill.mesh;
+    const extent = this.getFillExtent();
+    const sprite = this.progress.fill.mesh;
 
     if(extent.width > extent.height){
       sprite.scale.set( extent.width * value, extent.height, 1.0 );
-      let offsetX = (extent.width -(extent.width * value))/2;
+      const offsetX = (extent.width -(extent.width * value))/2;
       if(this.startFromLeft)
         sprite.position.x = -offsetX;
       else
         sprite.position.x = +offsetX;
     }else{
       sprite.scale.set( extent.width, extent.height * value, 1.0 );
-      let offsetY = (extent.height -(extent.height * value))/2;
+      const offsetY = (extent.height -(extent.height * value))/2;
       if(this.startFromLeft)
         sprite.position.y = +offsetY;
       else

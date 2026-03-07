@@ -1,14 +1,14 @@
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import type { ModuleCreature } from "../../../module";
-import { CharGenAttribute } from "../../../enums/chargen/CharGenAttribute";
-import { GameMenu } from "../../../gui";
-import { GameState } from "../../../GameState";
+import { CharGenAttribute } from "@/enums/chargen/CharGenAttribute";
+import { GameState } from "@/GameState";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GameMenu } from "@/gui";
+import type { ModuleCreature } from "@/module";
 
 /**
  * CharGenAbilities class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenAbilities.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -65,7 +65,7 @@ export class CharGenAbilities extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       //this.lbl_hint = this.getControlByName('LBL_HINT');
 
       this.BTN_BACK.addEventListener('click', (e) => {
@@ -90,15 +90,18 @@ export class CharGenAbilities extends GameMenu {
         this.close();
       });
 
-      this.BTN_RECOMMENDED.addEventListener('click', (e) => {
+      this.BTN_RECOMMENDED.addEventListener('click', (_e) => {
         GameState.CharGenManager.availPoints = 0;
         if(this.creature){
-          GameState.CharGenManager.str = parseInt(this.creature.classes[0].str as any);
-          GameState.CharGenManager.dex = parseInt(this.creature.classes[0].dex as any);
-          GameState.CharGenManager.con = parseInt(this.creature.classes[0].con as any);
-          GameState.CharGenManager.wis = parseInt(this.creature.classes[0].wis as any);
-          GameState.CharGenManager.int = parseInt(this.creature.classes[0].int as any);
-          GameState.CharGenManager.cha = parseInt(this.creature.classes[0].cha as any);
+          const c = this.creature.classes[0];
+          if (c) {
+            GameState.CharGenManager.str = Number(c.str) || 10;
+            GameState.CharGenManager.dex = Number(c.dex) || 10;
+            GameState.CharGenManager.con = Number(c.con) || 10;
+            GameState.CharGenManager.wis = Number(c.wis) || 10;
+            GameState.CharGenManager.int = Number(c.int) || 10;
+            GameState.CharGenManager.cha = Number(c.cha) || 10;
+          }
         }
 
         this.updateButtonStates();
@@ -109,7 +112,7 @@ export class CharGenAbilities extends GameMenu {
         e.stopPropagation();
 
         if(this.creature && GameState.CharGenManager.str > this.creature.str && GameState.CharGenManager.str > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.STR);
+          const cost = this.getAttributeCost(CharGenAttribute.STR);
           GameState.CharGenManager.str -= 1;
           GameState.CharGenManager.availPoints += cost;
         }
@@ -119,17 +122,17 @@ export class CharGenAbilities extends GameMenu {
       this.DEX_MINUS_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.creature && GameState.CharGenManager.dex > this.creature.dex && GameState.CharGenManager.dex > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.DEX);
+          const cost = this.getAttributeCost(CharGenAttribute.DEX);
           GameState.CharGenManager.dex -= 1;
           GameState.CharGenManager.availPoints += cost;
         }
         this.updateButtonStates();
       });
-      
+
       this.CON_MINUS_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.creature && GameState.CharGenManager.con > this.creature.con && GameState.CharGenManager.con > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.CON);
+          const cost = this.getAttributeCost(CharGenAttribute.CON);
           GameState.CharGenManager.con -= 1;
           GameState.CharGenManager.availPoints += cost;
         }
@@ -139,7 +142,7 @@ export class CharGenAbilities extends GameMenu {
       this.WIS_MINUS_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.creature && GameState.CharGenManager.wis > this.creature.wis && GameState.CharGenManager.wis > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.WIS);
+          const cost = this.getAttributeCost(CharGenAttribute.WIS);
           GameState.CharGenManager.wis -= 1;
           GameState.CharGenManager.availPoints += cost;
         }
@@ -149,7 +152,7 @@ export class CharGenAbilities extends GameMenu {
       this.INT_MINUS_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.creature && GameState.CharGenManager.int > this.creature.int && GameState.CharGenManager.int > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.INT);
+          const cost = this.getAttributeCost(CharGenAttribute.INT);
           GameState.CharGenManager.int -= 1;
           GameState.CharGenManager.availPoints += cost;
         }
@@ -159,19 +162,19 @@ export class CharGenAbilities extends GameMenu {
       this.CHA_MINUS_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.creature && GameState.CharGenManager.cha > this.creature.cha && GameState.CharGenManager.cha > 8){
-          let cost = this.getAttributeCost(CharGenAttribute.CHA);
+          const cost = this.getAttributeCost(CharGenAttribute.CHA);
           GameState.CharGenManager.cha -= 1;
           GameState.CharGenManager.availPoints += cost;
         }
         this.updateButtonStates();
       });
-      
+
       //PLUS Buttons
       this.STR_PLUS_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.creature && this.getAttributeCost(CharGenAttribute.STR) <= GameState.CharGenManager.availPoints){
           GameState.CharGenManager.str += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.STR);
+          const cost = this.getAttributeCost(CharGenAttribute.STR);
           GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
@@ -181,7 +184,7 @@ export class CharGenAbilities extends GameMenu {
         e.stopPropagation();
         if(this.creature && this.getAttributeCost(CharGenAttribute.DEX) <= GameState.CharGenManager.availPoints){
           GameState.CharGenManager.dex += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.DEX);
+          const cost = this.getAttributeCost(CharGenAttribute.DEX);
           GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
@@ -191,7 +194,7 @@ export class CharGenAbilities extends GameMenu {
         e.stopPropagation();
         if(this.creature && this.getAttributeCost(CharGenAttribute.CON) <= GameState.CharGenManager.availPoints){
           GameState.CharGenManager.con += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.CON);
+          const cost = this.getAttributeCost(CharGenAttribute.CON);
           GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
@@ -201,7 +204,7 @@ export class CharGenAbilities extends GameMenu {
         e.stopPropagation();
         if(this.creature && this.getAttributeCost(CharGenAttribute.WIS) <= GameState.CharGenManager.availPoints){
           GameState.CharGenManager.wis += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.WIS);
+          const cost = this.getAttributeCost(CharGenAttribute.WIS);
           GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
@@ -211,7 +214,7 @@ export class CharGenAbilities extends GameMenu {
         e.stopPropagation();
         if(this.creature && this.getAttributeCost(CharGenAttribute.INT) <= GameState.CharGenManager.availPoints){
           GameState.CharGenManager.int += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.INT);
+          const cost = this.getAttributeCost(CharGenAttribute.INT);
           GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
@@ -221,7 +224,7 @@ export class CharGenAbilities extends GameMenu {
         e.stopPropagation();
         if(this.creature && this.getAttributeCost(CharGenAttribute.CHA) <= GameState.CharGenManager.availPoints){
           GameState.CharGenManager.cha += 1;
-          let cost = this.getAttributeCost(CharGenAttribute.CHA);
+          const cost = this.getAttributeCost(CharGenAttribute.CHA);
           GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
@@ -343,5 +346,5 @@ export class CharGenAbilities extends GameMenu {
       this.creature.cha = 8;
     }
   }
-  
+
 }

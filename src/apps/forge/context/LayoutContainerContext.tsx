@@ -1,29 +1,33 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect } from 'react';
 
+import { createScopedLogger, LogScope } from '@/utility/Logger';
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface LayoutContainerProviderValues {
-
+  readonly _brand?: 'LayoutContainer';
 }
-export const LayoutContainerContext = createContext<LayoutContainerProviderValues>({} as any);
 
-export function useLayoutContext(){
+const defaultLayoutValue: LayoutContainerProviderValues = {};
+
+export const LayoutContainerContext = createContext<LayoutContainerProviderValues>(defaultLayoutValue);
+
+export function useLayoutContext(): LayoutContainerProviderValues {
   return useContext(LayoutContainerContext);
 }
 
 export interface LayoutContainerProviderProps {
-  children: any;
+  children: React.ReactNode;
 }
 
-export const LayoutContainerProvider = (props: LayoutContainerProviderProps) => {
-
-  // const [parent, setParent] = useState(useContext(LayoutContainerContext));
+export const LayoutContainerProvider: React.FC<LayoutContainerProviderProps> = (props) => {
+  log.trace('LayoutContainerProvider render');
 
   useEffect(() => {
+    log.trace('LayoutContainerProvider mount');
   }, []);
 
-  const providerValue: LayoutContainerProviderValues = {
-    // parent: [parent, setParent],
-  };
+  const providerValue: LayoutContainerProviderValues = {};
 
   return (
     <LayoutContainerContext.Provider value={providerValue}>

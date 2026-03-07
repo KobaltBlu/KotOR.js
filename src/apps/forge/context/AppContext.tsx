@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { ForgeState } from "../states/ForgeState";
-import { EditorTabManager } from "../managers/EditorTabManager";
-import { LoadingScreenProvider } from "./LoadingScreenContext";
 
-import * as KotOR from "../KotOR";
+import { LoadingScreenProvider } from "@/apps/forge/context/LoadingScreenContext";
+import * as KotOR from "@/apps/forge/KotOR";
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 
 export interface AppProviderValues {
   // someValue: [any, React.Dispatch<any>];

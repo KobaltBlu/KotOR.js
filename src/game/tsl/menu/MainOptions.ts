@@ -1,6 +1,6 @@
-import { GameState } from "../../../GameState";
-import type { GUIButton, GUILabel, GUIListBox } from "../../../gui";
-import { MainOptions as K1_MainOptions } from "../../kotor/KOTOR";
+import { MainOptions as K1_MainOptions } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUIButton, GUILabel, GUIListBox } from "@/gui";
 
 /**
  * MainOptions class.
@@ -35,7 +35,7 @@ export class MainOptions extends K1_MainOptions {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -97,3 +97,4 @@ export class MainOptions extends K1_MainOptions {
   }
   
 }
+

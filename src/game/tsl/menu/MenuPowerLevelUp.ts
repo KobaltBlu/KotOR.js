@@ -1,5 +1,5 @@
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { MenuPowerLevelUp as K1_MenuPowerLevelUp } from "../../kotor/KOTOR";
+import { MenuPowerLevelUp as K1_MenuPowerLevelUp } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
 
 /**
  * MenuPowerLevelUp class.
@@ -36,9 +36,10 @@ export class MenuPowerLevelUp extends K1_MenuPowerLevelUp {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
   
 }
+

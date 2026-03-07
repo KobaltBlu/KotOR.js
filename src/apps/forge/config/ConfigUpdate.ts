@@ -3,7 +3,11 @@
  * Uses fetch for GitHub API; no Qt/widgets.
  */
 
-import { LOCAL_PROGRAM_INFO } from "./ConfigInfo";
+import { LOCAL_PROGRAM_INFO } from "@/apps/forge/config/ConfigInfo";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface RemoteUpdateInfo {
   currentVersion?: string;
@@ -13,6 +17,17 @@ export interface RemoteUpdateInfo {
   toolsetLatestBetaNotes?: string;
   toolsetDownloadLink?: string;
   [key: string]: unknown;
+}
+
+/** Parse response body as JSON; returns unknown to satisfy no-unsafe-* */
+async function fetchJsonAsUnknown(res: Response): Promise<unknown> {
+  const text: string = await res.text();
+  return parseJsonAsUnknown(text);
+}
+
+/** Parse JSON string to unknown; use to avoid assigning from JSON.parse's any return type. */
+function parseJsonAsUnknown(text: string): unknown {
+  return JSON.parse(text) as unknown;
 }
 
 /**
@@ -28,23 +43,29 @@ export async function fetchUpdateInfo(
   try {
     const res = await fetch(updateLink, { signal: controller.signal });
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    const data = await res.json();
-    if (data && typeof data.content === "string") {
-      const decoded = atob(data.content.replace(/\s/g, ""));
-      const str = new TextDecoder("utf-8").decode(Uint8Array.from(decoded, (c) => c.charCodeAt(0)));
-      const jsonMatch = str.match(/<---JSON_START--->\s*#\s*(\{[\s\S]*?\})\s*#\s*<---JSON_END--->/);
-      if (jsonMatch) {
-        const cleaned = jsonMatch[1].replace(/,(\s*[}\]])/g, "$1");
-        return JSON.parse(cleaned) as RemoteUpdateInfo;
+    const data = await fetchJsonAsUnknown(res);
+    if (data && typeof data === "object" && data !== null) {
+      const obj = data as Record<string, unknown>;
+      if (typeof obj.content === "string") {
+        const decoded = atob(obj.content.replace(/\s/g, ""));
+        const str = new TextDecoder("utf-8").decode(Uint8Array.from(decoded, (c: string) => c.charCodeAt(0)));
+        const jsonMatch = str.match(/<---JSON_START--->\s*#\s*(\{[\s\S]*?\})\s*#\s*<---JSON_END--->/);
+        if (jsonMatch && jsonMatch[1]) {
+          const cleaned = jsonMatch[1].replace(/,(\s*[}\]])/g, "$1");
+          const parsed = parseJsonAsUnknown(cleaned);
+          return parsed as RemoteUpdateInfo;
+        }
+        const parsed = parseJsonAsUnknown(str);
+        const rec = parsed as Record<string, unknown>;
+        if (typeof rec.version === "string") {
+          return { toolsetLatestVersion: rec.version, currentVersion: rec.version };
+        }
+        return parsed as RemoteUpdateInfo;
       }
-      const parsed = JSON.parse(str) as Record<string, unknown>;
-      if (typeof parsed.version === "string") {
-        return { toolsetLatestVersion: parsed.version, currentVersion: parsed.version };
+      if (typeof obj.version === "string") {
+        const v = obj.version;
+        return { toolsetLatestVersion: v, currentVersion: v };
       }
-      return parsed as RemoteUpdateInfo;
-    }
-    if (data && typeof data.version === "string") {
-      return { toolsetLatestVersion: data.version, currentVersion: data.version };
     }
     return data as RemoteUpdateInfo;
   } finally {
@@ -68,7 +89,7 @@ export async function getRemoteToolsetUpdateInfo(
     const info = await fetchUpdateInfo(updateLink, timeout);
     return (info && typeof info === "object" ? info : LOCAL_PROGRAM_INFO) as RemoteUpdateInfo;
   } catch (e) {
-    if (!silent) console.warn("Update check failed:", e);
+    if (!silent) log.warn("Update check failed:", e);
     return e instanceof Error ? e : new Error(String(e));
   }
 }

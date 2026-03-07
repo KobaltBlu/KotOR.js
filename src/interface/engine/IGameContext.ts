@@ -1,6 +1,7 @@
 import type * as THREE from "three";
-import type { LightManager } from "../../managers/LightManager";
-import type { IGameStateGroups } from "./IGameStateGroups";
+
+import type { IGameStateGroups } from "@/interface/engine/IGameStateGroups";
+import type { LightManager } from "@/managers/LightManager";
 
 export interface IGameContext {
   camera: THREE.Camera;

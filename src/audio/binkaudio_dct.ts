@@ -1,4 +1,4 @@
-import { BitReaderLE } from '../video/BitReaderLE';
+import { BitReaderLE } from '@/video/BitReaderLE';
 
 /**
  * BinkAudioDCTDecoder class.

@@ -1,8 +1,8 @@
-import { GameState } from "../../../GameState";
-import { GameEngineType } from "../../../enums/engine";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUIButton } from "../../../gui";
-import { TwoDAObject } from "../../../resource/TwoDAObject";
+import { GameEngineType } from "@/enums/engine";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUIButton } from "@/gui";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
  * InGameConfirm class.

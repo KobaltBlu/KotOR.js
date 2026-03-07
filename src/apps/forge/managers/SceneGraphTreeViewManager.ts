@@ -1,11 +1,11 @@
-import { EventListenerModel } from "../EventListenerModel";
-import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from "../KotOR";
-import { SceneGraphNode } from "../SceneGraphNode";
-import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
-import { ForgeEncounter } from "../module-editor/ForgeEncounter";
-import { ForgeGameObject } from "../module-editor/ForgeGameObject";
-import { ForgeRoom } from "../module-editor/ForgeRoom";
-import { ForgeTrigger } from "../module-editor/ForgeTrigger";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from "@/apps/forge/KotOR";
+import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
+import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 
 export interface IModuleGroupNode {
   key: GroupType;

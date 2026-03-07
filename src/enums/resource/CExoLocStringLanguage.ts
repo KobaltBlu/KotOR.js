@@ -19,4 +19,4 @@ export enum CExoLocStringLanguage {
   'Chinese Traditional' = 129,
   'Chinese Simplified' = 130,
   'Japanese' = 131
-};
+}

@@ -1,12 +1,13 @@
-import { TPCObject } from "../resource/TPCObject";
 import * as path from "path";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { ERFManager } from "../managers/ERFManager";
-import { KEYManager } from "../managers/KEYManager";
-import { OdysseyCompressedTexture } from "../three/odyssey";
-import { IFindTPCResult } from "../interface/graphics/IFindTPCResult";
-import { TextureLoaderState } from "./TextureLoaderState";
+
+import { IFindTPCResult } from "@/interface/graphics/IFindTPCResult";
+import { TextureLoaderState } from "@/loaders/TextureLoaderState";
+import { ERFManager } from "@/managers/ERFManager";
+import { KEYManager } from "@/managers/KEYManager";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TPCObject } from "@/resource/TPCObject";
+import { OdysseyCompressedTexture } from "@/three/odyssey";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * TPCLoader class.
@@ -71,7 +72,7 @@ export class TPCLoader {
         pack: result.pack,
       });
 
-      let texture = tpc.toCompressedTexture();
+      const texture = tpc.toCompressedTexture();
       //console.log("loaded texture", resRef);
 
       return texture;
@@ -101,7 +102,7 @@ export class TPCLoader {
     }catch(e){
 
     }
-  };
+  }
   
   /*fetchLocal( resRef = '', onLoad?: Function, onProgress?: Function, onError?: Function ) {
   

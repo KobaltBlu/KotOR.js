@@ -1,8 +1,9 @@
 import * as THREE from "three";
-import { GUIControlAlignment } from "../enums/gui/GUIControlAlignment";
-import { TXI } from "../resource/TXI";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { createQuadElements as createIndicies } from "../utility/QuadIndices";
+
+import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
+import { TXI } from "@/resource/TXI";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
 
 interface Line {
   chars: GUIFontChar[];
@@ -35,7 +36,8 @@ export class GUIFont {
       this.txi = this.texture.txi;
       this.scale = 1;
   
-      this.ratio = texture.image.width / texture.image.height;
+      const img = texture.image as HTMLImageElement | undefined;
+      this.ratio = img && img.width && img.height ? img.width / img.height : 1;
   
       this.height = this.txi.fontheight     * 100;
       this.bsline = this.txi.baselineheight * 100;
@@ -68,14 +70,14 @@ export class GUIFont {
   }
 
   buildGeometry(geometry: THREE.BufferGeometry, text: string, alignment: GUIControlAlignment, maxWidth: number = 0): void {
-    let lines: string[] = text.split('\n');
-    let lineCount: number = lines.length;
-    let spaceChar = this.chars[32];
-    let lines2: Line[] = [];
+    const lines: string[] = text.split('\n');
+    const lineCount: number = lines.length;
+    const spaceChar = this.chars[32];
+    const lines2: Line[] = [];
 
     let lineY = 0
     for(let l = 0; l < lineCount; l++){
-      let words: string[] = lines[l].split(' ');
+      const words: string[] = lines[l].split(' ');
       let newLine: Line = {chars: [], width: 0, y: lineY};
 
       for(let w = 0; w < words.length; w++){
@@ -214,7 +216,9 @@ export class GUIFontChar {
     // this.ul.y = Math.min(Math.max(this.ul.y, 0), 1);
     // this.lr.x = Math.min(Math.max(this.lr.x, 0), 1);
     // this.lr.y = Math.min(Math.max(this.lr.y, 0), 1);
-    this.width = ((this.lr.x - this.ul.x) * font.texture.image.width) * this.font.scale;
-    this.height = ((this.ul.y - this.lr.y) * font.texture.image.height) * this.font.scale;
+    const img = font.texture.image as HTMLImageElement | undefined;
+    const w = img?.width ?? 1, h = img?.height ?? 1;
+    this.width = ((this.lr.x - this.ul.x) * w) * this.font.scale;
+    this.height = ((this.ul.y - this.lr.y) * h) * this.font.scale;
   }
 }

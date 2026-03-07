@@ -1,16 +1,16 @@
-import { PazaakTurnMode } from "../../../enums/minigames/PazaakTurnMode";
-import { PazaakHandSlots } from "../../../enums/minigames/PazaakHandSlots";
-import { PazaakTableSlots } from "../../../enums/minigames/PazaakTableSlots";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { PazaakTurnState } from "../../../enums/minigames/PazaakTurnState";
+import { PazaakHandSlots } from "@/enums/minigames/PazaakHandSlots";
+import { PazaakTableSlots } from "@/enums/minigames/PazaakTableSlots";
+import { PazaakTurnMode } from "@/enums/minigames/PazaakTurnMode";
+import { PazaakTurnState } from "@/enums/minigames/PazaakTurnState";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * MenuPazaakGame class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuPazaakGame.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -102,7 +102,7 @@ export class MenuPazaakGame extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       /**
        * Flip hand cards
        */
@@ -151,7 +151,7 @@ export class MenuPazaakGame extends GameMenu {
           return;
         }
         this.playHandCard(0, 1);
-      }); 
+      });
 
       this.BTN_PLRSIDE2.swapBorderAndHighliteOnHover = false;
       this.BTN_PLRSIDE2.addEventListener('click', () => {
@@ -173,7 +173,7 @@ export class MenuPazaakGame extends GameMenu {
       this.BTN_NPCSIDE1.swapBorderAndHighliteOnHover = false;
       this.BTN_NPCSIDE2.swapBorderAndHighliteOnHover = false;
       this.BTN_NPCSIDE3.swapBorderAndHighliteOnHover = false;
-      
+
       /**
        * End turn
        */
@@ -288,7 +288,7 @@ export class MenuPazaakGame extends GameMenu {
     if(tableIndex == PazaakTurnMode.PLAYER){
       this.LBL_PLRTOTAL.setText(score.toString());
       for(let i = 0; i < 3; i++){
-        this.getControlByName(`LBL_PLRSCORE${i}`)?.setFillTextureName(i >= winCount ? 'lbl_winmark01' : 'lbl_winmark02'); 
+        this.getControlByName(`LBL_PLRSCORE${i}`)?.setFillTextureName(i >= winCount ? 'lbl_winmark01' : 'lbl_winmark02');
       }
     }else{
       this.LBL_NPCTOTAL.setText(score.toString());
@@ -304,7 +304,7 @@ export class MenuPazaakGame extends GameMenu {
    */
   noClicks(){
     return (
-      GameState.PazaakManager.Actions.length > 0 || 
+      GameState.PazaakManager.Actions.length > 0 ||
       GameState.PazaakManager.TurnMode != PazaakTurnMode.PLAYER
     );
   }
@@ -384,7 +384,7 @@ export class MenuPazaakGame extends GameMenu {
           tableCardButton.hide();
           tableCardLabel.hide();
           continue;
-        };
+        }
 
         tableCardButton.show();
         tableCardButton.setFillTextureName(slot.textures[!slot.flipped ? 0 : 1]);
@@ -402,7 +402,7 @@ export class MenuPazaakGame extends GameMenu {
         const handCardLabel = this.getHandCardLabel(i, j);
         const handCardFlipButton = this.getHandCardFlipButton(i, j);
         const flipped = table.flipCards.get(j);
-        const swapped = table.swapValueCards.get(j);
+        const _swapped = table.swapValueCards.get(j);
         if(slot == undefined || slot == -1){
           handCardButton.hide();
           handCardLabel.hide();
@@ -426,7 +426,7 @@ export class MenuPazaakGame extends GameMenu {
           handCardButton.disableSelection = true;
         }
         handCardButton.show();
-        
+
         if(handCardFlipButton){
           if(card.reversible){
             handCardFlipButton.show();
@@ -439,5 +439,5 @@ export class MenuPazaakGame extends GameMenu {
     }
 
   }
-  
+
 }

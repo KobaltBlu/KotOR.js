@@ -1,7 +1,8 @@
 import React from "react";
-import { TabState } from ".";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabScriptErrorLog } from "../../components/tabs/tab-script-error-log/TabScriptErrorLog";
+
+import { TabScriptErrorLog } from "@/apps/forge/components/tabs/tab-script-error-log/TabScriptErrorLog";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@/apps/forge/states/tabs";
 
 export class TabScriptErrorLogState extends TabState {
 

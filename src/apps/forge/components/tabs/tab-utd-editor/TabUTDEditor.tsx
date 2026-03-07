@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTDEditorState } from "../../../states/tabs";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { SubTabHost, SubTab } from "../../SubTabHost";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor";
-import * as KotOR from "../../../KotOR";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { InfoBubble } from "../../info-bubble/info-bubble";
-import { FormField } from "../../form-field/FormField";
-import { ForgeDoor } from "../../../module-editor/ForgeDoor";
+
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
+import { SubTabHost, SubTab } from "@/apps/forge/components/SubTabHost";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
+import { TabUTDEditorState } from "@/apps/forge/states/tabs";
 
 export const TabUTDEditor = function(props: BaseTabProps){
 
@@ -118,13 +119,13 @@ export const TabUTDEditor = function(props: BaseTabProps){
   const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeDoor, parser: (value: number) => number = (v) => v) => 
     tab.door.createNumberFieldHandler(setter, property, tab.door, tab, parser);
   
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeDoor) => 
+  const _onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeDoor) => 
     tab.door.createByteFieldHandler(setter, property, tab.door, tab);
   
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeDoor) => 
+  const _onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeDoor) => 
     tab.door.createWordFieldHandler(setter, property, tab.door, tab);
   
-  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeDoor) => 
+  const _onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeDoor) => 
     tab.door.createBooleanFieldHandler(setter, property, tab.door, tab);
   
   const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeDoor) => 

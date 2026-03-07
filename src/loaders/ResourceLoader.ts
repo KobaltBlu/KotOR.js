@@ -1,14 +1,15 @@
 import * as path from "path";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { ERFObject } from "../resource/ERFObject";
-import { RIMObject } from "../resource/RIMObject";
-import { CacheScope } from "../enums/resource/CacheScope";
-import { IResourceCacheScopes } from "../interface/resource/IResourceCacheScopes";
-import { KEYManager } from "../managers/KEYManager";
-import { RIMManager } from "../managers/RIMManager";
-import { IRIMResource } from "../interface/resource/IRIMResource";
-import { IERFResource } from "../interface/resource/IERFResource";
-import { GameFileSystem } from "../utility/GameFileSystem";
+
+import { CacheScope } from "@/enums/resource/CacheScope";
+import { IERFResource } from "@/interface/resource/IERFResource";
+import { IResourceCacheScopes } from "@/interface/resource/IResourceCacheScopes";
+import { IRIMResource } from "@/interface/resource/IRIMResource";
+import { KEYManager } from "@/managers/KEYManager";
+import { RIMManager } from "@/managers/RIMManager";
+import { ERFObject } from "@/resource/ERFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { RIMObject } from "@/resource/RIMObject";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * ResourceLoader class.
@@ -73,7 +74,7 @@ export class ResourceLoader {
     ResourceLoader.ClearCache(CacheScope.MODULE);
     this.ModuleArchives = archives;
 
-    let start = Date.now();
+    const start = Date.now();
     console.log(`InitModuleCache: Start`);
 
     const scope = ResourceLoader.CacheScopes[CacheScope.MODULE];
@@ -103,13 +104,13 @@ export class ResourceLoader {
       }
     }));
 
-    let end = Date.now();
+    const end = Date.now();
     console.log(`InitModuleCache: End - ${((end-start)/1000)}s`);
 
   }
 
   static ClearCache(scope: CacheScope){
-    if(!!ResourceLoader.CacheScopes[scope])
+    if(ResourceLoader.CacheScopes[scope])
       ResourceLoader.CacheScopes[scope].forEach( cacheType => {
         cacheType.clear();
       });
@@ -217,7 +218,7 @@ export class ResourceLoader {
   }
 
   static async searchLocal(resId: number, resRef = ''): Promise<Uint8Array> {
-    let data = await this.searchOverride(resId, resRef);
+    const data = await this.searchOverride(resId, resRef);
     if(data){
       return data;
     }

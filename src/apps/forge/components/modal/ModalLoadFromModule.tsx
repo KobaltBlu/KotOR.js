@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, Form, ListGroup } from "react-bootstrap";
-import { ModalLoadFromModuleState } from "../../states/modal/ModalLoadFromModuleState";
-import { CapsuleResourceEntry } from "../../helpers/LoadFromCapsule";
-import { listModuleFiles, type ModuleFileEntry } from "../../helpers/ListModuleFiles";
-import * as KotOR from "../../KotOR";
+
+import { listModuleFiles, type ModuleFileEntry } from "@/apps/forge/helpers/ListModuleFiles";
+import { CapsuleResourceEntry } from "@/apps/forge/helpers/LoadFromCapsule";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ModalLoadFromModuleState } from "@/apps/forge/states/modal/ModalLoadFromModuleState";
+
 
 export const ModalLoadFromModule = (props: BaseModalProps) => {
   const modal = props.modal as ModalLoadFromModuleState;
@@ -50,8 +52,8 @@ export const ModalLoadFromModule = (props: BaseModalProps) => {
 
   useEffect(() => {
     if (!show) return;
-    const dir = (KotOR.ApplicationProfile as any).directory;
-    if (dir && typeof (KotOR.ApplicationProfile as any).directory === "string") {
+    const dir = KotOR.ApplicationProfile.directory;
+    if (dir && typeof KotOR.ApplicationProfile.directory === 'string') {
       import("path").then((pathMod) => {
         const modulesDir = pathMod.join(dir, "modules");
         listModuleFiles(modulesDir).then(setGameModules);

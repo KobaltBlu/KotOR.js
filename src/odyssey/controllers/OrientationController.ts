@@ -1,9 +1,9 @@
-import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
-import { OdysseyController } from "./OdysseyController";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
 
 /**
  * OrientationController class.
@@ -18,6 +18,7 @@ export class OrientationController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Orientation;
 
+  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }
@@ -25,7 +26,7 @@ export class OrientationController extends OdysseyController {
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     //Cache the orientation controller
     if(manager.modelNode.controllerHelpers.hasOrientation === undefined){
-      let _controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Orientation);
+      const _controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Orientation);
       if(typeof _controller != 'undefined'){
         manager.modelNode.controllerHelpers.hasOrientation = true;
         manager.modelNode.controllerHelpers.orientation = _controller;
@@ -41,7 +42,8 @@ export class OrientationController extends OdysseyController {
       //   manager.modelNode.transitionState.quaternion.copy(manager.modelNode.quaternion);
       //   anim._quaternion.copy(manager.modelNode.transitionState.quaternion);
       // }else{
-        anim._quaternion.copy(manager.modelNode.controllerHelpers.orientation.data[0] as any);
+        const o0 = manager.modelNode.controllerHelpers.orientation.data[0];
+        anim._quaternion.set(o0.x, o0.y, o0.z, o0.w);
       // }
 
     }
@@ -67,7 +69,8 @@ export class OrientationController extends OdysseyController {
       // if(manager.trans && manager.lastFrame == 0){
       //   manager.modelNode.position.copy(manager.modelNode.transitionState.position);
       // }
-      manager._quat.slerp(next as any, fl);
+      manager._animQuaternion2.set(next.x, next.y, next.z, next.w);
+      manager._quat.slerp(manager._animQuaternion2, fl);
   
       //manager.modelNode.emitter.velocity.value.copy(manager.modelNode.emitterOptions.velocity.value.copy().applyQuaternion(manager._quat));
       //manager.modelNode.emitter.velocity.spread.copy(manager.modelNode.emitterOptions.velocity.spread.copy().applyQuaternion(manager._quat));
@@ -76,18 +79,18 @@ export class OrientationController extends OdysseyController {
       manager.modelNode.rotation.z = 0;
   
     }else{
-      manager._quat.copy(next as any);
+      manager._quat.set(next.x, next.y, next.z, next.w);
   
       if(next != last){
         // if(manager.trans && manager.lastFrame == 0){
         //   manager.modelNode.quaternion.copy(manager.modelNode.transitionState.quaternion);
         //   manager.modelNode.transitionState.quaternion.copy(manager.modelNode.quaternion.slerp(manager._quat, fl));
         // }else{
-          manager.modelNode.quaternion.copy(last as any);
+          manager.modelNode.quaternion.set(last.x, last.y, last.z, last.w);
           manager.modelNode.quaternion.slerp(manager._quat, fl);
         // }
       }else{
-        manager.modelNode.quaternion.copy(last as any);
+        manager.modelNode.quaternion.set(last.x, last.y, last.z, last.w);
       }
       //manager.modelNode.quaternion.copy(last);
     }

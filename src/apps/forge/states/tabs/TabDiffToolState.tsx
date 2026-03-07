@@ -1,7 +1,11 @@
 import React from "react";
-import { TabDiffTool } from "../../components/tabs/tab-diff-tool/TabDiffTool";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
+import { TabDiffTool } from "@/apps/forge/components/tabs/tab-diff-tool/TabDiffTool";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabDiffToolState extends TabState {
   tabName: string = 'Diff Tool';
@@ -16,13 +20,16 @@ export class TabDiffToolState extends TabState {
   rightExt: string = '';
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace('TabDiffToolState constructor entry');
     super(options);
 
-    this.singleInstance = true; // Only one diff tool tab at a time
+    this.singleInstance = true;
     this.setContentView(<TabDiffTool tab={this}></TabDiffTool>);
+    log.trace('TabDiffToolState constructor exit');
   }
 
   setLeftResource(path: string, buffer: Uint8Array, resref: string, ext: string) {
+    log.trace('TabDiffToolState setLeftResource', resref, ext);
     this.leftPath = path;
     this.leftBuffer = buffer;
     this.leftResRef = resref;
@@ -31,6 +38,7 @@ export class TabDiffToolState extends TabState {
   }
 
   setRightResource(path: string, buffer: Uint8Array, resref: string, ext: string) {
+    log.trace('TabDiffToolState setRightResource', resref, ext);
     this.rightPath = path;
     this.rightBuffer = buffer;
     this.rightResRef = resref;
@@ -39,6 +47,7 @@ export class TabDiffToolState extends TabState {
   }
 
   clearLeft() {
+    log.trace('TabDiffToolState clearLeft');
     this.leftPath = '';
     this.leftBuffer = undefined;
     this.leftResRef = '';
@@ -47,6 +56,7 @@ export class TabDiffToolState extends TabState {
   }
 
   clearRight() {
+    log.trace('TabDiffToolState clearRight');
     this.rightPath = '';
     this.rightBuffer = undefined;
     this.rightResRef = '';

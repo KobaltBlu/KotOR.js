@@ -10,7 +10,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { GFFDataType } from "../../../enums/resource/GFFDataType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
 
 // Field types to search for each reference type
 export const SCRIPT_FIELD_TYPES = new Set<GFFDataType>([GFFDataType.RESREF]);

@@ -1,12 +1,13 @@
 import * as THREE from "three";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GameState } from "../GameState";
-import { TextureLoader } from "../loaders/TextureLoader";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { EngineState } from "../enums/engine/EngineState";
-import { AudioEngine } from "../audio/AudioEngine";
-import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
-import { TextureType } from "../enums/loaders/TextureType";
+
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { EngineState } from "@/enums/engine/EngineState";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GameState } from "@/GameState";
+import { TextureLoader } from "@/loaders/TextureLoader";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 const LEGAL_TIME = 3;
 const FADE_TIME = 1;
@@ -46,7 +47,7 @@ export class LegalScreenManager {
     const scale = Math.min(width / this.width, height / this.height);
     this.plane.scale.set(this.width * scale, this.height * scale, 1);
     this.timer += delta;
-    let opacity = this.timer < FADE_TIME ? this.timer / FADE_TIME : this.timer > LEGAL_TIME - FADE_TIME ? (LEGAL_TIME - this.timer) / FADE_TIME : 1;
+    const opacity = this.timer < FADE_TIME ? this.timer / FADE_TIME : this.timer > LEGAL_TIME - FADE_TIME ? (LEGAL_TIME - this.timer) / FADE_TIME : 1;
     this.material.opacity = opacity;
     if(this.timer >= LEGAL_TIME){
       this.timer = 0;

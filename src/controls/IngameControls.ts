@@ -1,30 +1,34 @@
-import * as THREE from "three";
-import { GameState } from "../GameState";
-import type { GUIControl, GUIListBox, GUIScrollBar } from "../gui";
-import { Utility } from "../utility/Utility";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { EngineState } from "../enums/engine/EngineState";
-import { KeyMapAction } from "../enums/controls/KeyMapAction";
-import { MiniGameType } from "../enums/engine/MiniGameType";
-import { FollowerCamera } from "../engine/FollowerCamera";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GUIControlEventFactory } from "../gui/GUIControlEventFactory";
-import { Keyboard } from "./Keyboard";
-import { GamePad } from "./GamePad";
-import { Mouse } from "./Mouse";
-import { KeyMapper } from "./KeyMapper";
-import { AnalogInput } from "./AnalogInput";
-import { TGAObject } from "../resource/TGAObject";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
+﻿import * as THREE from "three";
+import { GameState } from "@/GameState";
+import type { GUIControl, GUIListBox, GUIScrollBar } from "@/gui";
+import { Utility } from "@/utility/Utility";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { EngineState } from "@/enums/engine/EngineState";
+import type { ModuleObject } from "@/module";
+import { Module } from "@/module";
+import { KeyMapAction } from "@/enums/controls/KeyMapAction";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { FollowerCamera } from "@/engine/FollowerCamera";
+// import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "@/managers";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
+import { MouseState } from "@/enums/controls/MouseState";
+import { Keyboard } from "@/controls/Keyboard";
+import { GamePad } from "@/controls/GamePad";
+import { Mouse } from "@/controls/Mouse";
+import { KeyMapper } from "@/controls/KeyMapper";
+import { AnalogInput } from "@/controls/AnalogInput";
+import { TGAObject } from "@/resource/TGAObject";
+import { SaveGame } from "@/engine/SaveGame";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * IngameControls class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file IngameControls.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -42,7 +46,7 @@ export class IngameControls {
 
   gamePadMovement: boolean = false;
 
-  plMoveEvent: (e: any) => void;
+  plMoveEvent: (e: MouseEvent) => void;
 
   constructor(camera: THREE.Camera, element: HTMLElement){
 
@@ -56,6 +60,9 @@ export class IngameControls {
     this.element.requestPointerLock = this.element.requestPointerLock;
 
     window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if(e.key === 'F4' || e.key === 'F5'){
+        e.preventDefault();
+      }
       this.keyboard.onKeyDown(e);
 
       if(GameState.MenuManager.activeGUIElement){
@@ -82,6 +89,9 @@ export class IngameControls {
        */
       if(e.key == 'PrintScreen'){
         if(GameState.iniConfig.getProperty('Game Options.EnableScreenShot') != 1){
+          return;
+        }
+        if(!GameState.composer || !GameState.renderer){
           return;
         }
         /**
@@ -150,141 +160,176 @@ export class IngameControls {
     document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
 
     window.addEventListener('mousedown', (event: MouseEvent) => {
-      // Block GUI selection while a movie is playing
-      if(GameState.VideoManager.isMoviePlaying()){
-        return;
-      }
-
-      if(!Mouse.pointerLock){
-        Mouse.Update(event.clientX, event.clientY);
-      }
+      Mouse.Update(event.clientX, event.clientY);
       if(event.target == this.element){
         GameState.MenuManager.activeGUIElement = undefined;
+        if(GameState.debug.CONTROLS)
+          console.log('Valid Mouse Target');
+        Mouse.ButtonState = event.which;
+        Mouse.MouseDown = true;
+        // let parentOffset = this.editor.canvas.offset();
+        Mouse.MouseDownX = event.pageX - this.element.offsetLeft;
+        Mouse.MouseDownY = event.pageY - this.element.offsetTop;
 
-        if(event.button == 0){
+        if(Mouse.ButtonState == MouseState.LEFT){
 
-        }else if(event.button == 2){
+        }else{
           // Ask the browser to lock the pointer
-          // this.element.requestPointerLock();
+          this.element.requestPointerLock();
         }
+      }else{
+        //console.log('Invalid Mouse Target', this.element);
       }
 
+      if(GameState.debug.CONTROLS)
+        console.log('DOWN');
+
+      // GameState.mouse.x = ( event.clientX / ResolutionManager.getViewportWidth() ) * 2 - 1;
+      // GameState.mouse.y = - ( event.clientY / ResolutionManager.getViewportHeight() ) * 2 + 1;
+
       GameState.raycaster.setFromCamera( GameState.mouse, GameState.camera_gui );
-      
+
       let clickCaptured = false;
 
-      const customEvent = GUIControlEventFactory.generateEventObject();
+      let customEvent = GUIControlEventFactory.generateEventObject();
 
       Mouse.downItem = null;
       Mouse.clickItem = null;
 
-      // Block GUI selection while a movie is playing
-      if(!GameState.VideoManager.isMoviePlaying() && event.button == 0){
-        const uiControls = this.MenuGetActiveUIElements();
-        for(let i = 0; i < uiControls.length; i++){
-          if(!customEvent.propagate)
-            break;
-          
-          const control = uiControls[i];
-          if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
-            clickCaptured = true;
-            if(GameState.debug.CONTROLS)
-              console.log('uiControls', control)
-            try{
-              if(control.processEventListener('mouseDown', [customEvent])){
-                Mouse.downItem = control;
-                customEvent.propagate = false;
-              }
+      let uiControls = this.MenuGetActiveUIElements();
+      for(let i = 0; i < uiControls.length; i++){
+        if(!customEvent.propagate)
+          break;
 
-              if(control.eventListeners['click'].length){
-                Mouse.clickItem = control;
-                customEvent.propagate = false;
-              }
-            }catch(e){
-
+        let control = uiControls[i];
+        if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
+          clickCaptured = true;
+          if(GameState.debug.CONTROLS)
+            console.log('uiControls', control)
+          try{
+            if(control.processEventListener('mouseDown', [customEvent])){
+              Mouse.downItem = control;
+              customEvent.propagate = false;
+              //control.onMouseDown(customEvent);
             }
+
+            if(control.eventListeners['click'].length){
+              Mouse.clickItem = control;
+              customEvent.propagate = false;
+            }
+
+            //GameState.guiAudioEmitter.playSound('gui_click');
+            if(GameState.debug.CONTROLS)
+              console.log('MouseDown', control, Mouse.downItem, Mouse.clickItem, typeof control.onClick);
+          }catch(e){
+
           }
         }
       }
-
-      if(event.button == 0){
-        Mouse.leftDown = true;
-      }else if(event.button == 1){
-        Mouse.rightDown = true;
-      }
+      Mouse.leftDown = (event.buttons & 1) === 1;
+      Mouse.rightDown = (event.buttons & 2) === 2;
     });
 
     window.addEventListener('mousemove', (event: MouseEvent) => {
-      // Block GUI selection while a movie is playing
-      if(GameState.VideoManager.isMoviePlaying()){
-        return;
-      }
-
       GameState.scene_cursor_holder.visible = true;
 
-      if(Mouse.pointerLock){
-        Mouse.Update( Mouse.positionWindow.x + event.movementX, Mouse.positionWindow.y + event.movementY );
-      }else{
-        Mouse.Update( event.clientX, event.clientY );
-      }
-      
+      Mouse.Update( event.clientX, event.clientY );
+
+      // Keep leftDown/rightDown in sync with actual button state (critical for both-buttons = move forward)
+      Mouse.leftDown = (event.buttons & 1) === 1;
+      Mouse.rightDown = (event.buttons & 2) === 2;
+
+      //onMouseMove events HERE
+      //console.log('move', Mouse.downItem, Mouse.leftDown);
       if(Mouse.downItem && Mouse.leftDown){
         if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
-          if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
-            Mouse.downItem.processEventListener('mouseMove', [])
-          }
+          //if(typeof Mouse.downItem.widget.parent !== 'undefined'){
+            if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
+              Mouse.downItem.processEventListener('mouseMove', [])
+              /*if(typeof Mouse.downItem.onMouseMove === 'function'){
+                //console.log('Dragging');
+                Mouse.downItem.onMouseMove();
+              }*/
+            }
+          //}
         }
       }
-      if(event.movementX || event.movementY){
-        Mouse.MouseX += event.movementX;
-        Mouse.MouseY += event.movementY;
-      }else{
-        Mouse.MouseX = event.pageX - this.element.offsetLeft;
-        Mouse.MouseY = event.pageY - this.element.offsetTop;
+
+      // let parentOffset = this.element.offset();
+      Mouse.MouseX = event.pageX - this.element.offsetLeft;
+      Mouse.MouseY = event.pageY - this.element.offsetTop;
+
+      if(Mouse.MouseDown && !Mouse.Dragging && Mouse.ButtonState == MouseState.RIGHT){
+        Mouse.Dragging = true;
+      }else if(Mouse.MouseDown && !Mouse.Dragging && Mouse.ButtonState == MouseState.LEFT){
+        Mouse.Dragging = true;
       }
     });
 
     window.addEventListener('mouseup', (event: MouseEvent) => {
-      // Block GUI and in-game selection while a movie is playing
-      if(GameState.VideoManager.isMoviePlaying() && event.button == 0){
-        GameState.VideoManager.skipMovie();
-        return;
-      }
+      Mouse.MouseDown = false;
+      Mouse.Dragging = false;
+      Mouse.ButtonState = MouseState.NONE;
+      const isLeftButton = event.button === 0;
+      const isRightButton = event.button === 2;
 
-      Mouse.leftClick = true;
+      // Update button states from event.buttons (which button was released affects remaining held state)
+      Mouse.leftDown = (event.buttons & 1) === 1;
+      Mouse.rightDown = (event.buttons & 2) === 2;
 
-      if(Mouse.leftDown){
-        if(!Mouse.pointerLock){
-          Mouse.Update( event.clientX, event.clientY );
-        }
+      // Click flags are edge-triggered on mouseup.
+      Mouse.leftClick = isLeftButton;
+      Mouse.rightClick = isRightButton;
+
+      // Ask the browser to release the pointer
+      document.exitPointerLock();
+
+      //event.preventDefault();
+      if(GameState.debug.CONTROLS)
+        console.log('UP');
+
+      // Dispatch UI click on left-button release (event.buttons is 0 here, so don't gate on Mouse.leftDown).
+      if(isLeftButton){
+        Mouse.Update( event.clientX, event.clientY );
+        // GameState.mouse.x = ( event.clientX / ResolutionManager.getViewportWidth() ) * 2 - 1;
+        // GameState.mouse.y = - ( event.clientY / ResolutionManager.getViewportHeight() ) * 2 + 1;
 
         //If the NoClickTimer is active then we will return out of this function
         if(GameState.noClickTimer){
           return;
         }
-        
+
         let clickCaptured = false;
 
-        const customEvent = GUIControlEventFactory.generateEventObject();
+        let customEvent = GUIControlEventFactory.generateEventObject();
+
+        //GameState.selected = undefined;
 
         //Try to fire mouse up regardless if mouse is still inside object
         if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
-          if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
-            try{
-              Mouse.downItem.processEventListener('mouseUp', [customEvent]);
-              Mouse.leftClick = false;
-            }catch(e){
-              console.error(e);
+          //if(typeof Mouse.downItem.widget.parent !== 'undefined'){
+            if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
+              try{
+                Mouse.downItem.processEventListener('mouseUp', [customEvent]);
+                //Mouse.downItem.onMouseUp(customEvent);
+                //GameState.guiAudioEmitter.playSound('gui_click');
+                if(GameState.debug.CONTROLS)
+                  console.log('MouseUp', Mouse.downItem, Mouse.downItem.name);
+                Mouse.leftClick = false;
+              }catch(e){
+                console.error(e);
+              }
+
             }
-          }
+          //}
         }
 
-        const uiControls = this.MenuGetActiveUIElements();
+        let uiControls = this.MenuGetActiveUIElements();
         for(let i = 0; i < uiControls.length; i++){
           if(!customEvent.propagate)
             break;
 
-          const control = uiControls[i];
+          let control = uiControls[i];
           if(control === Mouse.clickItem){
             if(typeof control.widget.parent !== 'undefined'){
               if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
@@ -295,6 +340,8 @@ export class IngameControls {
                   GameState.MenuManager.activeGUIElement = control;
                   control.processEventListener('click', [customEvent]);
                   GameState.guiAudioEmitter.playSoundFireAndForget('gui_click');
+                  if(GameState.debug.CONTROLS)
+                    console.log('MouseClick', control, control.name);
                   Mouse.leftClick = false;
                 }catch(e){
                   console.error(e);
@@ -305,7 +352,7 @@ export class IngameControls {
         }
 
         let selectedObject = clickCaptured;
-  
+
         if(!clickCaptured && (GameState.Mode != EngineMode.DIALOG)){
           if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
             const moduleObject = GameState.CursorManager.onMouseHitInteractive();
@@ -314,8 +361,8 @@ export class IngameControls {
 
                 selectedObject = true;
 
-                const distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
-                const distanceThreshold = 20;
+                let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
+                let distanceThreshold = 20;
 
                 if(GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
                   if(typeof moduleObject.onClick === 'function'){
@@ -346,13 +393,9 @@ export class IngameControls {
           }
         }
       }
-      if(event.button == 0){
-        Mouse.leftDown = false;
-        Mouse.downItem = undefined;
-        Mouse.clickItem = undefined;
-      }else if(event.button == 1){
-        Mouse.rightDown = false;
-      }
+      Mouse.downItem = undefined;
+      Mouse.clickItem = undefined;
+      // Do NOT reset leftDown/rightDown here; they were already set from event.buttons above
     });
 
     document.body.addEventListener('wheel', (e: WheelEvent) => {
@@ -392,10 +435,9 @@ export class IngameControls {
 
       followee.clearAllActions(true);
       followee.force = 1;
-      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI/2), false, TURN_SPEED_FAST);
+      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI/2));
       followee.controlled = true;
       GameState.scene_cursor_holder.visible = true;
-      FollowerCamera.clearFocusObject();
     });
 
     //S
@@ -406,13 +448,12 @@ export class IngameControls {
       const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       if(!followee.canMove()) return;
-      
+
       followee.clearAllActions(true);
       followee.force = 1;
-      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing - Math.PI/2), false, TURN_SPEED_FAST);
+      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing - Math.PI/2));
       followee.controlled = true;
       GameState.scene_cursor_holder.visible = true;
-      FollowerCamera.clearFocusObject();
     });
 
     //Z
@@ -438,10 +479,9 @@ export class IngameControls {
       // if(GameState.State == EngineState.PAUSED) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       if(
-        (keymap.keyboardInput.down || 
+        (keymap.keyboardInput.down ||
         (keymap.gamepadInput as AnalogInput).value < 0)
       ){
-        FollowerCamera.clearFocusObject();
         FollowerCamera.turning = true;
         if(this.gamePad.stick_r_x.value){
           GameState.scene_cursor_holder.visible = false;
@@ -458,10 +498,9 @@ export class IngameControls {
       // if(GameState.State == EngineState.PAUSED) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       if(
-        (keymap.keyboardInput.down || 
+        (keymap.keyboardInput.down ||
         (keymap.gamepadInput as AnalogInput).value > 0)
       ){
-        FollowerCamera.clearFocusObject();
         FollowerCamera.turning = true;
         if(this.gamePad.stick_r_x.value){
           GameState.scene_cursor_holder.visible = false;
@@ -479,9 +518,51 @@ export class IngameControls {
       GameState.PartyManager.ShiftLeader();
     });
 
+    KeyMapper.Actions[KeyMapAction.Quicksave].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      SaveGame.SaveCurrentGame('QUICKSAVE', 0);
+    });
+
+    KeyMapper.Actions[KeyMapAction.QUICKLOAD].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      const quickSave = SaveGame.saves.find((save) => save.getIsQuickSave());
+      if(!quickSave){ return; }
+      GameState.MenuManager.ClearMenus();
+      if(GameState.module instanceof Module){
+        GameState.module.dispose();
+        GameState.module = undefined;
+      }
+      quickSave.load();
+    });
+
+    KeyMapper.Actions[KeyMapAction.PrevMenu].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.MenuManager.CyclePrimaryMenu(-1);
+    });
+
+    KeyMapper.Actions[KeyMapAction.NextMenu].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.MenuManager.CyclePrimaryMenu(1);
+    });
+
+    KeyMapper.Actions[KeyMapAction.CancleCombat].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.getCurrentPlayer()?.cancelCombat();
+    });
+
     KeyMapper.Actions[KeyMapAction.Freelook].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      GameState.SetEngineMode(GameState.Mode == EngineMode.FREELOOK ? EngineMode.INGAME : EngineMode.FREELOOK);
+      const nextMode = GameState.Mode == EngineMode.FREELOOK ? EngineMode.INGAME : EngineMode.FREELOOK;
+      GameState.SetEngineMode(nextMode);
+      if(nextMode == EngineMode.FREELOOK){
+        this.element.requestPointerLock();
+        Mouse.Dragging = true;
+      }else{
+        document.exitPointerLock();
+        Mouse.Dragging = false;
+      }
     });
 
     KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
@@ -568,24 +649,6 @@ export class IngameControls {
       }
     })
 
-    KeyMapper.Actions[KeyMapAction.SelectNext].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      const nextObject = GameState.ModuleObjectManager.GetNextPlayerVisibleObject();
-      if(nextObject){
-        GameState.CursorManager.setReticleSelectedObject(nextObject);
-        FollowerCamera.setFocusObject(nextObject);
-      }
-    });
-
-    KeyMapper.Actions[KeyMapAction.SelectPrev].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      const previousObject = GameState.ModuleObjectManager.GetPreviousPlayerVisibleObject();
-      if(previousObject){
-        GameState.CursorManager.setReticleSelectedObject(previousObject);
-        FollowerCamera.setFocusObject(previousObject);
-      }
-    });
-
     KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       if(GameState.State != EngineState.RUNNING) return;
@@ -604,7 +667,7 @@ export class IngameControls {
       if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
         case MiniGameType.SWOOPRACE:
-        
+
         break;
         case MiniGameType.TURRET:
           GameState.module.area.miniGame.player.rotate('x', -1 * delta);
@@ -661,7 +724,7 @@ export class IngameControls {
       const currentMenu = GameState.MenuManager.GetCurrentMenu();
       switch(GameState.Mode){
         case EngineMode.GUI:
-          if(currentMenu.userCanClose){
+          if(currentMenu?.userCanClose){
             currentMenu.close();
           }
         break;
@@ -736,53 +799,44 @@ export class IngameControls {
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuInventory.open();
     });
-    
+
     KeyMapper.Actions[KeyMapAction.Character].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuCharacter.open();
     });
-    
+
     KeyMapper.Actions[KeyMapAction.SkillsAndFeats].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuAbilities.open();
     });
-    
-    
+
+
     KeyMapper.Actions[KeyMapAction.Messages].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuMessages.open();
     });
-    
-    
+
+
     KeyMapper.Actions[KeyMapAction.Quests].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuJournal.open();
     });
-    
-    
+
+
     KeyMapper.Actions[KeyMapAction.Map].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuMap.open();
     });
-    
+
     KeyMapper.Actions[KeyMapAction.Options].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuOptions.open();
-    });
-
-      // Handle movie skipping
-    KeyMapper.Actions[KeyMapAction.MovieSkip].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-
-      if(GameState.VideoManager.isMoviePlaying()){
-        GameState.VideoManager.skipMovie();
-      }
     });
   }
 
@@ -792,7 +846,7 @@ export class IngameControls {
     for(let i = 0, len = GameState.MenuManager.activeModals.length; i < len; i++){
       const activeMenu = GameState.MenuManager.activeModals[i];
       if(!activeMenu.isVisible()) continue;
-      
+
       elements = elements.concat(activeMenu.getActiveControls());
     }
 
@@ -827,6 +881,30 @@ export class IngameControls {
       KeyMapper.BindGamepad(this.gamePad);
     }
     this.gamePad.updateState(delta);
+
+    if(Mouse.Dragging){
+      xoffset = Mouse.OffsetX || 0;
+      yoffset = Mouse.OffsetY || 0;
+      //Reset the offset value to fix the lingering drag effect
+      Mouse.OffsetX = Mouse.OffsetY = 0;
+    }
+
+    if(
+      Mouse.Dragging &&
+      (
+        (GameState.Mode == EngineMode.INGAME && Mouse.ButtonState == MouseState.RIGHT) ||
+        (GameState.Mode == EngineMode.FREELOOK)
+      )
+    ){
+      const rotateSpeed = 0.005;
+      FollowerCamera.facing = Utility.NormalizeRadian(FollowerCamera.facing + (xoffset * rotateSpeed));
+      if(yoffset){
+        const pitchSpeed = 0.002;
+        const minPitch = -1.2;
+        const maxPitch = 0.2;
+        FollowerCamera.pitch = THREE.MathUtils.clamp(FollowerCamera.pitch + (yoffset * pitchSpeed), minPitch, maxPitch);
+      }
+    }
 
     if(currentMenu){
       if(this.gamePad.button_a.pressed){
@@ -863,17 +941,24 @@ export class IngameControls {
     if(GameState.State == EngineState.RUNNING){
 
       if(
-        (GameState.Mode == EngineMode.INGAME) && 
-        currentMenu != GameState.MenuManager.InGameConfirm && 
+        (GameState.Mode == EngineMode.INGAME) &&
+        currentMenu != GameState.MenuManager.InGameConfirm &&
         currentMenu != GameState.MenuManager.MenuContainer
       ){
         const followee = GameState.PartyManager.party[0];
         if(followee){
           if(followee.canMove()){
+            if(Mouse.leftDown && Mouse.rightDown){
+              followee.clearAllActions(true);
+              followee.force = 1;
+              followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI/2));
+              followee.controlled = true;
+              GameState.scene_cursor_holder.visible = false;
+            }
             if( this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value ){
               followee.clearAllActions(true);
               followee.force = 1;
-              followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + FollowerCamera.facing + Math.PI/2 ) , false, TURN_SPEED_FAST);
+              followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + FollowerCamera.facing + Math.PI/2 ) , false);
               followee.controlled = true;
               GameState.scene_cursor_holder.visible = false;
               this.gamePadMovement = true;
@@ -882,7 +967,7 @@ export class IngameControls {
         }
       }
     }
-    
+
     KeyMapper.ProcessMappings(GameState.Mode, delta);
 
     //Keyboard: onFrameEnd
@@ -895,12 +980,24 @@ export class IngameControls {
     Mouse.OldMouseY = Mouse.MouseY;
   }
 
-  plChangeCallback(e: any){
+  plChangeCallback(_e: Event): void {
     if(document.pointerLockElement === this.element) {
-      Mouse.pointerLock = true;
+      this.element.addEventListener("mousemove", this.plMoveEvent = (e: MouseEvent) => { this.plMouseMove(e); }, true);
+      Mouse.Dragging = true;
     } else {
-      Mouse.pointerLock = false;
+      //console.log('The pointer lock status is now unlocked');
+      this.element.removeEventListener("mousemove", this.plMoveEvent, true);
+      Mouse.Dragging = false;
     }
   }
 
+  /** Pointer-lock mousemove: strictly typed (MouseEvent); use ?? so null/undefined fast-fail at compile. */
+  plMouseMove(event: MouseEvent): void {
+    Mouse.OffsetX = event.movementX ?? 0;
+    Mouse.OffsetY = (event.movementY ?? 0) * -1.0;
+    Mouse.leftDown = (event.buttons & 1) === 1;
+    Mouse.rightDown = (event.buttons & 2) === 2;
+  }
+
 }
+

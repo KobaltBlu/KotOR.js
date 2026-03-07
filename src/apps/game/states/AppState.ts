@@ -1,5 +1,5 @@
-import * as KotOR from "../KotOR";
-import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
+import * as KotOR from "@/apps/game/KotOR";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 
 export class AppState {
   static eulaAccepted: boolean = false;
@@ -15,7 +15,22 @@ export class AppState {
   static async getProfile(){
     const query = new URLSearchParams(window.location.search);
     await KotOR.ConfigClient.Init();
-    return KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
+    const key = query.get('key') || 'kotor';
+    const profile = KotOR.ConfigClient.get(`Profiles.${key}`);
+    if(profile) return profile;
+    // No profile found in ConfigClient — return a minimal default so the app can render.
+    // This happens when accessing the game URL directly without going through the launcher.
+    console.warn(`AppState.getProfile: no profile found for key "${key}", using defaults.`);
+    return {
+      key,
+      name: key === 'tsl' ? 'KotOR II' : 'KotOR',
+      full_name: key === 'tsl'
+        ? 'Star Wars Knights of the Old Republic II: The Sith Lords'
+        : 'Star Wars: Knights of the Old Republic',
+      launch: {
+        args: { gameChoice: key === 'tsl' ? 2 : 1 }
+      }
+    };
   }
 
   /**
@@ -33,8 +48,8 @@ export class AppState {
     KotOR.ApplicationProfile.InitEnvironment();
 
     document.title = `${AppState.appProfile?.full_name ? AppState.appProfile?.full_name : 'N/A' }`;
-    
-    switch(AppState.appProfile.launch.args.gameChoice){
+
+    switch(AppState.appProfile?.launch?.args?.gameChoice){
       case 2:
         AppState.gameKey = KotOR.GameEngineType.TSL;
       break;
@@ -81,7 +96,7 @@ export class AppState {
   static async loadGameDirectory(){
     AppState.loaderShow();
     KotOR.GameInitializer.SetLoadingMessage('Locating Game Directory...');
-  
+
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       if(await KotOR.GameFileSystem.exists('chitin.key')){
         AppState.directoryLocated = true;
@@ -162,7 +177,8 @@ export class AppState {
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       KotOR.ApplicationProfile.directory = AppState.appProfile.directory;
     }else{
-      KotOR.ApplicationProfile.directoryHandle = AppState.appProfile.directory_handle;
+      // Preserve handle selected at runtime when profile cache has not persisted yet.
+      KotOR.ApplicationProfile.directoryHandle = AppState.appProfile?.directory_handle || KotOR.ApplicationProfile.directoryHandle;
     }
     console.log('loading game...');
     AppState.loaderInit(AppState.appProfile.background, AppState.appProfile.logo);
@@ -195,7 +211,7 @@ export class AppState {
     });
 
     AppState.processEventListener('on-game-loaded', []);
-    
+
     AppState.loaderMessage('GameState: Initializing...');
     await KotOR.GameState.Init();
     document.body.append(KotOR.GameState.stats.domElement);
@@ -220,6 +236,9 @@ export class AppState {
    */
   static async attachDirectoryHandle(handle: FileSystemDirectoryHandle){
     KotOR.ApplicationProfile.directoryHandle = handle;
+    if(AppState.appProfile){
+      AppState.appProfile.directory_handle = handle;
+    }
     KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory_handle`, handle);
     AppState.directoryLocated = true;
     AppState.loadGameDirectory();
@@ -283,8 +302,8 @@ export class AppState {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
@@ -297,8 +316,8 @@ export class AppState {
 
   static removeEventListener<T>(type: T, cb: Function): void {
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
@@ -311,7 +330,7 @@ export class AppState {
 
   static processEventListener<T>(type: T, args: any[] = []): void {
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
+      const ev = this.#eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){

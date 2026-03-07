@@ -1,62 +1,74 @@
-import { GFFObject } from "../resource/GFFObject";
+﻿import { GFFObject } from "@/resource/GFFObject";
 import * as THREE from "three";
-import { ModuleObject } from "./ModuleObject";
-import type { ModuleItem } from "./ModuleItem";
-import type { ModuleRoom } from "./ModuleRoom";
+import { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleRoom } from "@/module/ModuleRoom";
 
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { CreatureClass } from "../combat/CreatureClass";
-import { EffectRacialType } from "../effects";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { SSFObject } from "../resource/SSFObject";
-import { TalentFeat } from "../talents/TalentFeat";
-import { TalentObject } from "../talents/TalentObject";
-import { TalentSkill } from "../talents/TalentSkill";
-import { TalentSpell } from "../talents/TalentSpell";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { OdysseyModel, OdysseyModelAnimation } from "../odyssey";
-import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { LIPObject } from "../resource/LIPObject";
-import { Utility } from "../utility/Utility";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { SSFType } from "../enums/resource/SSFType";
-import { ActionType } from "../enums/actions/ActionType";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import EngineLocation from "../engine/EngineLocation";
-import { AttackResult } from "../enums/combat/AttackResult";
-// import { ICombatAction } from "../interface/combat/ICombatAction";
-import { DLGObject } from "../resource/DLGObject";
-import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { SWCreatureAppearance } from "../engine/rules/SWCreatureAppearance";
-import { ICreatureAnimationState } from "../interface/animation/ICreatureAnimationState";
-import { IOverlayAnimationState } from "../interface/animation/IOverlayAnimationState";
-import { WeaponWield } from "../enums/combat/WeaponWield";
-import { AutoPauseState } from "../enums/engine/AutoPauseState";
-import { AudioEngine } from "../audio/AudioEngine";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { PerceptionType } from "../enums/engine/PerceptionType";
-import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { CombatRoundAction } from "../combat";
-import { GameEffectFactory } from "../effects/GameEffectFactory";
-import type { Action } from "../actions/Action";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import { EngineDebugType } from "../enums/engine/EngineDebugType";
-import { TextSprite3D } from "../engine/TextSprite3D";
-import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
-import { ExperienceType } from "../enums/engine/ExperienceType";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { CreatureClass } from "@/combat/CreatureClass";
+import { EffectRacialType } from "@/effects";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { SSFObject } from "@/resource/SSFObject";
+import { TalentFeat } from "@/talents/TalentFeat";
+import { TalentObject } from "@/talents/TalentObject";
+import { TalentSkill } from "@/talents/TalentSkill";
+import { TalentSpell } from "@/talents/TalentSpell";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { OdysseyModel, OdysseyModelAnimation } from "@/odyssey";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { LIPObject } from "@/resource/LIPObject";
+import { Utility } from "@/utility/Utility";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { SSFType } from "@/enums/resource/SSFType";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import EngineLocation from "@/engine/EngineLocation";
+import { AttackResult } from "@/enums/combat/AttackResult";
+// import { ICombatAction } from "@/interface/combat/ICombatAction";
+import { DLGObject } from "@/resource/DLGObject";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
+import { ICreatureAnimationState } from "@/interface/animation/ICreatureAnimationState";
+import { IOverlayAnimationState } from "@/interface/animation/IOverlayAnimationState";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { PerceptionType } from "@/enums/engine/PerceptionType";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { CombatRoundAction } from "@/combat";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import type { Action } from "@/actions/Action";
+import type { EffectLink } from "@/effects";
+import type { GameEffect } from "@/effects/GameEffect";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import { TextSprite3D } from "@/engine/TextSprite3D";
+import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { ExperienceType } from "@/enums/engine/ExperienceType";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+
+/** Entry for a slot around a creature that another object can claim (e.g. for formation). */
+export interface TargetPositionEntry {
+  angle: number;
+  object: ModuleObject | undefined;
+  cos: number;
+  sin: number;
+  owner: ModuleCreature;
+  targetVector: THREE.Vector3;
+}
 
 /**
 * ModuleCreature class.
@@ -74,7 +86,7 @@ export class ModuleCreature extends ModuleObject {
   debugLabel: TextSprite3D;
   pm_IsDisguised: boolean; //polymorphIsDisguised
   pm_Appearance: number; //polymorphAppearance
-  anim: any;
+  anim: OdysseyModelAnimation | null;
   head: OdysseyModel3D;
   aiStyle: number;
   isCommandable: boolean;
@@ -98,8 +110,6 @@ export class ModuleCreature extends ModuleObject {
   currentHitPoints: number;
   deity: string;
   disarmable: number;
-  /** Set while examine-mine delay (4s) is queued; cleared when examine check completes (binary field359_0x97c). */
-  examineMineInProgress: boolean = false;
   isHologram: boolean;
   experience: number;
   feats: TalentFeat[];
@@ -137,6 +147,10 @@ export class ModuleCreature extends ModuleObject {
   declare footstepEmitter: AudioEmitter;
   props: any;
   maxForcePoints: any;
+  /** TSL: bonus force points added to max FP (SetBonusForcePoints / AddBonusForcePoints). */
+  bonusForcePoints: number;
+  /** TSL: whether creature is currently in stealth mode (IsStealthed). */
+  isStealthed: boolean;
   bodyModel: any;
   bodyTexture: any;
   headModel: any;
@@ -176,27 +190,6 @@ export class ModuleCreature extends ModuleObject {
   animSpeed: number;
   selectedNPC: number;
   creatureAppearance: SWCreatureAppearance;
-
-  /**
-   * Head tracking enabled
-   */
-  headTrackingEnabled: boolean = true;
-  /**
-   * Head tracking angle
-   */
-  headTrackingAngle: number = 0;
-  /**
-   * Head tracking pitch
-   */
-  headTrackingPitch: number = 0;
-  /**
-   * Head max horizontal angle
-   */
-  headMaxHorizontalAngle: number = Math.PI / 6;
-  /**
-   * Head max vertical angle
-   */
-  headMaxVerticalAngle: number = Math.PI / 3;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -268,6 +261,8 @@ export class ModuleCreature extends ModuleObject {
     this.classes = [];
     this.comment = '';
     this.currentForce = 0;
+    this.bonusForcePoints = 0;
+    this.isStealthed = false;
     this.currentHitPoints = 0; //The Creature's current hit points, not counting any bonuses. This value may be higher or lower than the creature's maximum hit points.
     this.regenTimer = 0;
     this.regenTimerMax = 6;
@@ -357,7 +352,7 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.combatActionTimer = 3; 
     this.combatData.combatState = false;
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
-    this.collisionManager.blockingTimer = 0;
+    this.collisionData.blockingTimer = 0;
 
     this.fp_push_played = false;
     this.fp_land_played = false;
@@ -410,10 +405,6 @@ export class ModuleCreature extends ModuleObject {
   update( delta = 0 ){
     
     super.update(delta);
-
-    if(this.willDestroy || this.destroyed){
-      return;
-    }
 
     if(this.audioEmitter){
       this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z + 1.0);
@@ -673,18 +664,16 @@ export class ModuleCreature extends ModuleObject {
             }
           }
         }
-
-        this.updateHeadTracking(delta);
       }
 
-      if(this.collisionManager.blockingObject != this.collisionManager.lastBlockingObject){
-        this.collisionManager.lastBlockingObject = this.collisionManager.blockingObject;
+      if(this.collisionData.blockingObject != this.collisionData.lastBlockingObject){
+        this.collisionData.lastBlockingObject = this.collisionData.blockingObject;
         //console.log('blocking script', this.blocking);
         this.onBlocked();
       }
 
       if(this.forceVector.length())
-        this.collisionManager.updateCollision(delta);
+        this.collisionData.updateCollision(delta);
 
       this.updatePerceptionList(delta);
       this.updateListeningPatterns();
@@ -697,38 +686,22 @@ export class ModuleCreature extends ModuleObject {
       }
 
       this.turning = 0;
-      if(this.facingAnim){
-        const current = Utility.NormalizeRadian(this.rotation.z);
-        const target = this.facing;
-        const remaining = Utility.NormalizeRadian(target - current);
-        const step = this.facingSpeed * delta;
-        if(Math.abs(remaining) <= step){
-          this.rotation.z = target;
-          this.wasFacing = target;
+      if(this.facingAnim){//this.facing != this.rotation.z){
+        this.facingTweenTime += 10*delta;
+        if(this.facingTweenTime >= 1){
+          this.rotation.z = this.facing;
           this.facingAnim = false;
         }else{
-          this.rotation.z = Utility.NormalizeRadian(current + Math.sign(remaining) * step);
-          this.turning = Math.sign(remaining);
+          let oldFacing = Utility.NormalizeRadian(this.rotation.z);
+          this.rotation.z = Utility.interpolateAngle(this.wasFacing, this.facing, this.facingTweenTime);
+          let diff = oldFacing - Utility.NormalizeRadian(this.rotation.z);
+          this.turning = Math.sign(Utility.NormalizeRadian(oldFacing - Utility.NormalizeRadian(this.rotation.z)));
+          if(diff < 0.0000001 || diff > -0.0000001){
+              this.facingAnim = false;
+              this.rotation.z = Utility.interpolateAngle(this.wasFacing, this.facing, 1);
+              this.wasFacing = this.facing;
+          }
         }
-      }
-
-      // Stationary turn animations (body turn when idle/pause/ready; not head look)
-      const stationaryTurnStates = [
-        ModuleCreatureAnimState.IDLE,
-        ModuleCreatureAnimState.PAUSE,
-        ModuleCreatureAnimState.READY,
-        ModuleCreatureAnimState.TURN_LEFT,
-        ModuleCreatureAnimState.TURN_RIGHT
-      ];
-      if(this.turning !== 0 && stationaryTurnStates.includes(this.animationState.index)){
-        const wantTurnLeft = this.turning < 0;
-        if(wantTurnLeft && this.animationState.index !== ModuleCreatureAnimState.TURN_LEFT){
-          this.setAnimationState(ModuleCreatureAnimState.TURN_LEFT);
-        }else if(!wantTurnLeft && this.animationState.index !== ModuleCreatureAnimState.TURN_RIGHT){
-          this.setAnimationState(ModuleCreatureAnimState.TURN_RIGHT);
-        }
-      }else if(this.turning === 0 && (this.animationState.index === ModuleCreatureAnimState.TURN_LEFT || this.animationState.index === ModuleCreatureAnimState.TURN_RIGHT)){
-        this.setAnimationState(this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE);
       }
 
       //Update equipment
@@ -825,7 +798,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateActionQueue(delta = 0){
-    if(this.isDebilitated() && this.area.module.readyToProcessEvents)
+    if(this.isDebilitated())
       return;
 
     if(!GameState.module.readyToProcessEvents)
@@ -835,22 +808,18 @@ export class ModuleCreature extends ModuleObject {
     this.actionQueue.process( delta );
     this.action = this.actionQueue[0];
     if(!(this.action)){
-      const currentPlayer = GameState.getCurrentPlayer();
       if(
         !this.combatData.combatState && 
         this.isPartyMember() && 
-        this != currentPlayer && 
-        !this.facingAnim
+        this != GameState.getCurrentPlayer()
       ){
-        this.lookAtObject = currentPlayer;
-        const targetFacing = Math.atan2(
-          this.position.y - currentPlayer.position.y,
-          this.position.x - currentPlayer.position.x
-        ) + Math.PI/2;
-        const diff = Math.abs(Utility.NormalizeRadian(targetFacing - this.rotation.z));
-        if(diff > Math.PI / 6){
-          this.setFacing(targetFacing, false);
-        }
+        this.setFacing(
+          Math.atan2(
+            this.position.y - GameState.getCurrentPlayer().position.y,
+            this.position.x - GameState.getCurrentPlayer().position.x
+          ) + Math.PI/2,
+          false
+        );
       }
     }
 
@@ -893,6 +862,9 @@ export class ModuleCreature extends ModuleObject {
     }
 
     this.perceptionTimer = 0;
+
+    //if(!Engine.Flags.CombatEnabled)
+    //  return;
 
     //Check modules creatures
     let creatureLen = GameState.module.area.creatures.length;
@@ -1001,7 +973,8 @@ export class ModuleCreature extends ModuleObject {
           }else if( this.combatData.lastAttacker ){
             this.attackCreature(this.combatData.lastAttacker, undefined);
           }else{
-            //TODO: Attack nearest perceived hostile creature?
+            const nearest = this.getNearestEnemy(30);
+            if (nearest) this.attackCreature(nearest, undefined);
           }
         }
       }
@@ -1033,6 +1006,36 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.lastDamager = undefined;
   }
 
+  /**
+   * Pacify creatures in the area that are targeting this creature.
+   * Reversed from CSWSCreature::PacifyCreature (0x004fd960).
+   * Clears their combat state and hostile actions vs this creature.
+   */
+  pacifyCreature(){
+    const area = GameState.module?.area;
+    if (!area?.creatures?.length) return;
+    const selfId = this.id;
+    for (let i = 0, len = area.creatures.length; i < len; i++) {
+      const other = area.creatures[i];
+      if (other === this || !(other instanceof ModuleCreature)) continue;
+      const cd = other.combatData;
+      const targetsThis =
+        cd?.lastAttackTarget?.id === selfId ||
+        cd?.lastAttacker?.id === selfId ||
+        cd?.lastDamager?.id === selfId ||
+        cd?.lastAttemptedAttackTarget?.id === selfId ||
+        cd?.lastAttemptedSpellTarget?.id === selfId ||
+        cd?.lastSpellAttacker?.id === selfId;
+      if (targetsThis) {
+        other.combatData.combatState = false;
+        other.clearTarget();
+        other.combatRound.clearActionsByTarget(this);
+        other.combatRound.clearActions();
+        other.actionQueue?.clear?.();
+      }
+    }
+  }
+
   actionInRange(action: Action): boolean {
     if(action){
       if(action.type == ActionType.ActionCastSpell){
@@ -1044,8 +1047,8 @@ export class ModuleCreature extends ModuleObject {
           return true;
         }
       }else if(action.type == ActionType.ActionItemCastSpell){
-        const spell = new TalentSpell( action.getParameter(5) );
-        const target: ModuleObject = action.getParameter(0);
+        const spell = new TalentSpell( action.getParameter(0) );
+        const target: ModuleObject = action.getParameter(5);
         if(target instanceof ModuleObject){
           return spell.inRange(target, this);
         }else{
@@ -1193,12 +1196,12 @@ export class ModuleCreature extends ModuleObject {
 
   randomWalk(){
 
-    if(this.room && this.room.collisionManager.walkmesh){
+    if(this.room && this.room.collisionData.walkmesh){
       let run = false;
       let maxDistance = 1.5
       let position = new THREE.Vector3();
 
-      const faces = this.room.collisionManager.walkmesh.walkableFaces;
+      const faces = this.room.collisionData.walkmesh.walkableFaces;
       const face = faces[Math.floor(Math.random()*faces.length)];
       if(face){
         position.copy(face.centroid);
@@ -1343,6 +1346,41 @@ export class ModuleCreature extends ModuleObject {
 
   isDuelingObject( oObject: ModuleObject ){
     return (oObject instanceof ModuleObject && this.combatData.lastAttackTarget == oObject && oObject.combatData.lastAttackTarget == this && oObject.combatData.getEquippedWeaponType() == 1 && this.combatData.getEquippedWeaponType() == 1);
+  }
+
+  /**
+   * Get the nearest perceived hostile creature within range.
+   * Reversed from CSWSCreature::GetNearestEnemy (0x004f2de0).
+   * @param maxRange Maximum distance to consider (e.g. 30.0 for Rest/SetExcitedState).
+   * @param excludeId Object ID to exclude (ModuleObjectConstant.OBJECT_INVALID to exclude none).
+   * @returns Nearest hostile ModuleCreature or undefined if none.
+   */
+  getNearestEnemy(
+    maxRange = 30,
+    excludeId: number = ModuleObjectConstant.OBJECT_INVALID
+  ): ModuleCreature | undefined {
+    const area = GameState.module?.area;
+    if (!area?.creatures?.length) return undefined;
+
+    let nearest: ModuleCreature | undefined;
+    let nearestDist = maxRange + 1;
+
+    for (let i = 0, len = area.creatures.length; i < len; i++) {
+      const creature = area.creatures[i];
+      if (creature === this) continue;
+      if (excludeId !== ModuleObjectConstant.OBJECT_INVALID && creature.id === excludeId) continue;
+      if (!(creature instanceof ModuleCreature)) continue;
+      if (creature.isDead()) continue;
+      if (!this.isHostile(creature)) continue;
+      if (!this.hasLineOfSight(creature, maxRange)) continue;
+
+      const dist = this.position.distanceTo(creature.position);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearest = creature;
+      }
+    }
+    return nearest;
   }
 
   attackCreature(
@@ -1866,11 +1904,12 @@ export class ModuleCreature extends ModuleObject {
     let footstepSoundResRef = '';
     let footstepIsLooping = false;
 
-    switch(event.event){
+    const ev = event as THREE.Event & { event: string };
+    switch(ev.event){
       case 'snd_footstep':
         if(footstepSounds){
           const isRolling = footstepSounds.isRolling();
-          footstepSoundResRef = isRolling ? footstepSounds.getRollingResRef() : footstepSounds.getSurfaceSoundResRef(this.collisionManager.surfaceId);
+          footstepSoundResRef = isRolling ? footstepSounds.getRollingResRef() : footstepSounds.getSurfaceSoundResRef(this.collisionData.surfaceId);
           footstepIsLooping = isRolling;
         }
       break;
@@ -2019,7 +2058,7 @@ export class ModuleCreature extends ModuleObject {
     this.props['YOrientation'] = facing.y;
 
     if(this.model instanceof OdysseyModel3D)
-      this.model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(this.props['XOrientation'], this.props['YOrientation']));
+      this.model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(Number(this.props['XOrientation']), Number(this.props['YOrientation'])));
 
   }
 
@@ -2046,70 +2085,6 @@ export class ModuleCreature extends ModuleObject {
         false
       );
     }
-  }
-
-  lookAt(oObject: ModuleObject){
-    this.lookAtObject = oObject;
-  }
-
-  static readonly HEAD_TRACKING_H_SPEED = Math.PI * 2;
-  static readonly HEAD_TRACKING_V_SPEED = Math.PI * 0.25;
-  lookAtPosition: THREE.Vector3 = new THREE.Vector3();
-
-  updateHeadTracking(delta: number){
-    if(!this.lookAtObject) return;
-    if(this.lookAtObject === this || this.lookAtObject.isDead()){
-      this.lookAtObject = undefined;
-      return;
-    }
-    if(!(this.model instanceof OdysseyModel3D) || !this.model.hturn_g || !this.headTrackingEnabled) return;
-
-    let targetYaw = 0;
-    let targetPitch = 0;
-
-    const reticle = this.lookAtObject.getReticleNode();
-    if(reticle){
-      this.lookAtPosition.copy(reticle.getWorldPosition(this.lookAtPosition));
-    }else if(this.lookAtObject.position){
-      this.lookAtPosition.copy(this.lookAtObject.position);
-    }else{
-      this.lookAtObject = undefined;
-      return;
-    }
-    const dx = this.lookAtPosition.x - this.position.x;
-    const dy = this.lookAtPosition.y - this.position.y;
-    const dz = this.lookAtPosition.z - (this.position.z + this.getCameraHeight());
-    const horizontalDist = Math.sqrt(dx * dx + dy * dy);
-
-    const worldAngleToTarget = Math.atan2(dy, dx);
-    const bodyFacing = this.rotation.z + Math.PI / 2;
-    const relativeYaw = Utility.NormalizeRadian(worldAngleToTarget - bodyFacing);
-    const relativePitch = Math.atan2(dz, horizontalDist);
-
-    if(Math.abs(relativeYaw) <= this.headMaxHorizontalAngle){
-      targetYaw = relativeYaw;
-      targetPitch = THREE.MathUtils.clamp(relativePitch, -this.headMaxVerticalAngle, this.headMaxVerticalAngle);
-    }
-
-    const stepH = ModuleCreature.HEAD_TRACKING_H_SPEED * delta;
-    const stepV = ModuleCreature.HEAD_TRACKING_V_SPEED * delta;
-
-    const yawDiff = Utility.NormalizeRadian(targetYaw - this.headTrackingAngle);
-    if(Math.abs(yawDiff) <= stepH){
-      this.headTrackingAngle = targetYaw;
-    }else{
-      this.headTrackingAngle += Math.sign(yawDiff) * stepH;
-    }
-
-    const pitchDiff = targetPitch - this.headTrackingPitch;
-    if(Math.abs(pitchDiff) <= stepV){
-      this.headTrackingPitch = targetPitch;
-    }else{
-      this.headTrackingPitch += Math.sign(pitchDiff) * stepV;
-    }
-
-    this.model.hturn_g.rotation.z = Math.abs(this.headTrackingAngle) > 0.001 ? this.headTrackingAngle : 0;
-    this.model.hturn_g.rotation.x = Math.abs(this.headTrackingPitch) > 0.001 ? this.headTrackingPitch : 0;
   }
 
   onClick(callee: ModuleObject){
@@ -2543,7 +2518,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getMaxFP(){
-    return this.maxForcePoints;
+    const base = (typeof this.maxForcePoints === 'number') ? this.maxForcePoints : 0;
+    return base + (this.bonusForcePoints ?? 0);
   }
 
   setFP(nAmount = 0){
@@ -2791,6 +2767,53 @@ export class ModuleCreature extends ModuleObject {
 
   getMovementSpeed(){
     return (this.isWalking() ? this.getWalkSpeed() : this.getRunSpeed()) * this.movementSpeed;
+  }
+
+  /**
+   * Check if creature has immunity of given type (Reva: CSWSCreatureStats::GetEffectImmunity).
+   * When oVersus is null, only immunityType is checked (race/alignment filters treated as wildcard).
+   */
+  getEffectImmunity(immunityType: number, oVersus?: ModuleCreature): number {
+    const effects = this.effects ?? [];
+    for (let i = 0; i < effects.length; i++) {
+      const e = effects[i];
+      if (e?.type !== GameEffectType.EffectImmunity) continue;
+      const immType = e.getInt?.(0) ?? e.intList?.[0];
+      if (immType !== immunityType) continue;
+      return 1;
+    }
+    return 0;
+  }
+
+  /**
+   * Check if creature is immune to a (possibly linked) effect (Reva: CSWSCreatureStats::GetEffectLinkImmunity).
+   * Returns 1 if immune, 0 otherwise.
+   */
+  getEffectLinkImmunity(effect: GameEffect): number {
+    if (!effect) return 0;
+    if (effect.type === GameEffectType.EffectLink) {
+      const link = effect as EffectLink;
+      if (link.effect1 && this.getEffectLinkImmunity(link.effect1)) return 1;
+      if (link.effect2 && this.getEffectLinkImmunity(link.effect2)) return 1;
+      return 0;
+    }
+    if (effect.type === GameEffectType.EffectVisualEffect) return 0;
+    const gameeffects2DA = GameState.TwoDAManager?.datatables?.get('gameeffects');
+    if (!gameeffects2DA?.rows) return 0;
+    const rowKey = effect.type;
+    const row = gameeffects2DA.rows[rowKey] ?? gameeffects2DA.getRowByIndex?.(rowKey);
+    if (!row) return 0;
+    const cols = gameeffects2DA.columns ?? [];
+    for (let c = 1; c < cols.length; c++) {
+      const colName = cols[c];
+      if (!colName || colName === '__rowlabel' || colName === '__index') continue;
+      const val = row[colName];
+      const numVal = val != null ? (typeof val === 'number' ? val : parseInt(String(val), 10)) : 0;
+      if (numVal === 0 || isNaN(numVal)) continue;
+      const immIdx = (typeof colName === 'string' && /^\d+$/.test(colName)) ? parseInt(colName, 10) : c - 1;
+      if (this.getEffectImmunity(immIdx)) return 1;
+    }
+    return 0;
   }
 
   getHitDistance(){
@@ -3207,7 +3230,7 @@ export class ModuleCreature extends ModuleObject {
         try{ this.model.dispose(); }catch(e){}
       }
       
-      model.addEventListener('playEvent', this.playEvent.bind(this));
+      (model as THREE.Object3D).addEventListener('playEvent' as keyof THREE.Object3DEventMap, this.playEvent.bind(this) as (e: THREE.Event) => void);
 
       this.model = model;
       this.model.userData.moduleObject = this;
@@ -3560,16 +3583,6 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  setAppearance(appearance: number){
-    this.appearance = appearance;
-    this.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(this.appearance);
-    if(!this.creatureAppearance) return;
-
-    this.headTrackingEnabled = this.creatureAppearance.headtrack !== 0;
-    this.headMaxHorizontalAngle = (this.creatureAppearance.head_arc_h * Math.PI) / 180;
-    this.headMaxVerticalAngle = (this.creatureAppearance.head_arc_v * Math.PI) / 180;
-  }
-
   initProperties(){
     try{
       this.classes = [];
@@ -3591,7 +3604,8 @@ export class ModuleCreature extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('Appearance_Type')){
-        this.setAppearance(this.template.getFieldByLabel('Appearance_Type').getValue());
+        this.appearance = this.template.getFieldByLabel('Appearance_Type').getValue();
+        this.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(this.appearance);
       }
 
       if(this.template.RootNode.hasField('BodyBag'))
@@ -3846,7 +3860,7 @@ export class ModuleCreature extends ModuleObject {
             }
           }
         }
-      }catch(e: any){
+      }catch(e: unknown){
         console.error(e);
       }
 
@@ -3917,7 +3931,7 @@ export class ModuleCreature extends ModuleObject {
             }
           }
         }
-      }catch(e: any){
+      }catch(e: unknown){
         console.error(e);
       }
 
@@ -3942,7 +3956,7 @@ export class ModuleCreature extends ModuleObject {
             }
           }
         }
-      }catch(e: any){
+      }catch(e: unknown){
         console.error(e);
       }
 
@@ -3967,10 +3981,10 @@ export class ModuleCreature extends ModuleObject {
             });
           }
         }
-      }catch(e: any){
+      }catch(e: unknown){
         console.error(e);
       }
-    }catch(e: any){
+    }catch(e: unknown){
       console.error(e);
     }
 
@@ -4052,25 +4066,11 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  updateDestroyFade(delta: number = 0): void {
-    super.updateDestroyFade(delta);
-    if(this.noFadeOnDestroy || this.destroyed) return;
-    if(this.timeSinceDestroyStarted >= this.delayUntilFade){
-      const fadeElapsed = this.timeSinceDestroyStarted - this.delayUntilFade;
-      const opacity = Math.max(0, 1 - (fadeElapsed / ModuleObject.FADE_TIME));
-      Object.values(this.equipment).forEach(item => {
-        if(item && item.model instanceof OdysseyModel3D){
-          item.model.setOpacity(opacity);
-        }
-      });
-    }
-  }
-
   destroy(): void {
     super.destroy();
     if(this.head instanceof OdysseyModel3D){
       if(this.head.parent instanceof THREE.Object3D){
-        this.head.removeFromParent();
+        this.head.parent.remove(this.model);
       }
       this.head.dispose();
       this.head = undefined;
@@ -4207,8 +4207,34 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).setValue(0);
 
     let combatInfoStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
-
-    //TODO: CombatInfo
+    const combatInfoContent = new GFFStruct(0xcaaa);
+    const bab = this.getBaseAttackBonus?.() ?? 0;
+    const rHand = this.equipment?.RIGHTHAND;
+    const lHand = this.equipment?.LEFTHAND;
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'NumAttacks') ).setValue(this.combatRound?.onHandAttacks ?? 1);
+    combatInfoContent.addField( new GFFField(GFFDataType.CHAR, 'OnHandAttackMod') ).setValue(bab + (rHand?.getAttackBonus?.() ?? 0));
+    combatInfoContent.addField( new GFFField(GFFDataType.CHAR, 'OnHandDamageMod') ).setValue(0);
+    combatInfoContent.addField( new GFFField(GFFDataType.CHAR, 'OffHandAttackMod') ).setValue(lHand ? Math.floor(bab / 2) + (lHand.getAttackBonus?.() ?? 0) : 0);
+    combatInfoContent.addField( new GFFField(GFFDataType.CHAR, 'OffHandDamageMod') ).setValue(0);
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'ForceResistance') ).setValue(0);
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'ArcaneSpellFail') ).setValue(0);
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'ArmorCheckPen') ).setValue(0);
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'UnarmedDamDice') ).setValue(1);
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'UnarmedDamDie') ).setValue(4);
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'OnHandCritRng') ).setValue(rHand?.getCriticalThreatRangeMin?.() ?? 20);
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'OnHandCritMult') ).setValue(rHand?.baseItem?.criticalHitMultiplier ?? 2);
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'OffHandWeaponEq') ).setValue(lHand ? 1 : 0);
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'OffHandCritRng') ).setValue(lHand?.getCriticalThreatRangeMin?.() ?? 20);
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'OffHandCritMult') ).setValue(lHand?.baseItem?.criticalHitMultiplier ?? 2);
+    combatInfoContent.addField( new GFFField(GFFDataType.DWORD, 'LeftEquip') ).setValue(lHand?.id ?? 0);
+    combatInfoContent.addField( new GFFField(GFFDataType.DWORD, 'RightEquip') ).setValue(rHand?.id ?? 0);
+    combatInfoContent.addField( new GFFField(GFFDataType.CEXOSTRING, 'LeftString') ).setValue('');
+    combatInfoContent.addField( new GFFField(GFFDataType.CEXOSTRING, 'RightString') ).setValue('');
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'DamageDice') ).setValue(1);
+    combatInfoContent.addField( new GFFField(GFFDataType.BYTE, 'DamageDie') ).setValue(4);
+    combatInfoContent.addField( new GFFField(GFFDataType.LIST, 'AttackList') );
+    combatInfoContent.addField( new GFFField(GFFDataType.LIST, 'DamageList') );
+    combatInfoStruct.addChildStruct(combatInfoContent);
 
     let combatRoundDataStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );
 
@@ -4547,3 +4573,4 @@ export class ModuleCreature extends ModuleObject {
   }
 
 }
+

@@ -1,14 +1,15 @@
 import React from "react";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabGUIEditor } from "../../components/tabs/tab-gui-editor/TabGUIEditor";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
+
+import { TabGUIEditor } from "@/apps/forge/components/tabs/tab-gui-editor/TabGUIEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
 
 
 export type TabGUIEditorStateEventListenerTypes =
-TabStateEventListenerTypes &
+TabStateEventListenerTypes & 
   ''|'onEditorFileLoad'|'onNodeSelected'|'onNodeAdded'|'onNodeRemoved'|'onAnimate';
 
 export interface TabGUIEditorStateEventListeners extends TabStateEventListeners {
@@ -64,6 +65,7 @@ export class TabGUIEditorState extends TabState {
   }
 
   animate(delta: number = 0){
+    //todo
     this.menu?.update(delta);
     this.processEventListener('onAnimate', [delta]);
   }
@@ -73,11 +75,11 @@ export class TabGUIEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-
+  
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
-
+  
         file.readFile().then( async (response) => {
           this.gff = new KotOR.GFFObject(response.buffer);
           this.menu = new KotOR.GameMenu();

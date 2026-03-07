@@ -1,0 +1,263 @@
+// DLG Tree View Styles
+// Based on PyKotor's DLG editor tree view styling
+
+.dlg-tree-view {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg-primary, #1e1e1e);
+  color: var(--text-primary, #e0e0e0);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 0.9rem;
+  user-select: none;
+
+  .dlg-tree-empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-secondary, #888);
+    font-style: italic;
+  }
+
+  .dlg-tree-nodes {
+    padding: 0.5rem 0;
+  }
+
+  .dlg-tree-node-container {
+    position: relative;
+  }
+
+  .dlg-tree-node {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.5rem;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    position: relative;
+
+    &:hover {
+      background-color: var(--bg-hover, #2a2a2a);
+    }
+
+    &.selected {
+      background-color: var(--accent-bg, #264f78);
+      border-left-color: var(--accent-color, #4da6ff);
+
+      .node-label {
+        font-weight: 500;
+      }
+    }
+
+    &.hovered:not(.selected) {
+      background-color: var(--bg-hover, #2a2a2a);
+    }
+
+    &.orphan {
+      opacity: 0.6;
+      font-style: italic;
+
+      .node-label::after {
+        content: ' (orphan)';
+        color: var(--warning-color, #e2c08d);
+        font-size: 0.85em;
+      }
+    }
+
+    &.copy {
+      opacity: 0.8;
+      border-left-color: var(--info-color, #6cb6ff);
+
+      &::before {
+        content: '📋';
+        margin-right: 0.25rem;
+      }
+    }
+
+    // Drop target indicators
+    &.drop-target-before::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: var(--accent-color, #4da6ff);
+    }
+
+    &.drop-target-after::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: var(--accent-color, #4da6ff);
+    }
+
+    &.drop-target-child {
+      background-color: rgba(77, 166, 255, 0.2);
+      border-left-color: var(--accent-color, #4da6ff);
+    }
+  }
+
+  .dlg-tree-node-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 0.5rem;
+  }
+
+  .expand-toggle {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #aaa);
+    cursor: pointer;
+    padding: 0.2rem;
+    font-size: 0.75rem;
+    width: 1.2rem;
+    height: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease, transform 0.15s ease;
+    flex-shrink: 0;
+
+    &:hover {
+      color: var(--text-primary, #e0e0e0);
+      transform: scale(1.1);
+    }
+
+    &:focus {
+      outline: 1px solid var(--accent-color, #4da6ff);
+      outline-offset: 2px;
+    }
+  }
+
+  .expand-spacer {
+    width: 1.2rem;
+    height: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .node-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .node-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+
+  .dlg-tree-node-children {
+    // Children are rendered with increased padding via inline styles
+  }
+
+  // Scrollbar styling
+  &::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, #1e1e1e);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, #555);
+    border-radius: 6px;
+
+    &:hover {
+      background: var(--scrollbar-thumb-hover, #666);
+    }
+  }
+}
+
+// Node type specific styling
+.dlg-tree-node {
+  // Starting nodes
+  &[data-node-type="0"] {
+    .node-icon {
+      color: #4da6ff; // Blue for starting
+    }
+  }
+
+  // Entry nodes (NPC)
+  &[data-node-type="1"] {
+    .node-icon {
+      color: #73c991; // Green for entries
+    }
+  }
+
+  // Reply nodes (Player)
+  &[data-node-type="2"] {
+    .node-icon {
+      color: #dcdcaa; // Yellow for replies
+    }
+  }
+}
+
+// Visual indicators for node states
+.node-label {
+  position: relative;
+
+  // Conditional script indicator
+  &:has(~ .node-has-conditions) {
+    &::before {
+      content: '🔒';
+      margin-right: 0.25rem;
+    }
+  }
+}
+
+// Animation for expand/collapse
+@keyframes expandCollapse {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dlg-tree-node-children {
+  animation: expandCollapse 0.2s ease;
+}
+
+// Drag preview
+.dlg-tree-node.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+// Selection focus ring
+.dlg-tree-view:focus-within {
+  .dlg-tree-node.selected {
+    outline: 2px solid var(--accent-color, #4da6ff);
+    outline-offset: -2px;
+  }
+}
+
+// Compact mode (optional)
+.dlg-tree-view.compact {
+  font-size: 0.85rem;
+
+  .dlg-tree-node {
+    padding: 0.25rem 0.5rem;
+  }
+
+  .expand-toggle {
+    font-size: 0.7rem;
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .expand-spacer {
+    width: 1rem;
+    height: 1rem;
+  }
+}

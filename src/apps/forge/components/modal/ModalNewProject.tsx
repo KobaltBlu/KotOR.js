@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { Button, FormControl, FormSelect, InputGroup, Modal } from "react-bootstrap";
-import * as KotOR from "../../KotOR";
-import { ProjectType } from "../../enum/ProjectType";
-import { ForgeFileSystem, ForgeFileSystemResponseType } from "../../ForgeFileSystem";
-import { ForgeState } from "../../states/ForgeState";
-import { ProjectFileSystem } from "../../ProjectFileSystem";
-import { Project } from "../../Project";
 import path from "path";
+
+import React, { useEffect, useState } from "react";
+import { Button, FormControl, FormSelect, InputGroup, Modal } from "react-bootstrap";
+
+import { ProjectType } from "@/apps/forge/enum/ProjectType";
+import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { Project } from "@/apps/forge/Project";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 
 type GameModule = {
   moduleName: string;

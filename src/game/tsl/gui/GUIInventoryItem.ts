@@ -1,11 +1,12 @@
-import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "../../../gui";
-import { GameEngineType } from "../../../enums/engine";
-import { GameState } from "../../../GameState";
-import { TextureLoader } from "../../../loaders";
-import { GFFStruct } from "../../../resource/GFFStruct";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import * as THREE from "three";
-import { GUIControlAlignment } from "../../../enums/gui/GUIControlAlignment";
+
+import { GameEngineType } from "@/enums/engine";
+import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
+import { GameState } from "@/GameState";
+import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 /**
  * GUIInventoryItem class.

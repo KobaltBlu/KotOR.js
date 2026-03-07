@@ -1,4 +1,4 @@
-import { IAsyncLoopOptions } from "../interface/utility/IAsyncLoopOptions";
+import { IAsyncLoopOptions } from "@/interface/utility/IAsyncLoopOptions";
 
 /**
  * AsyncLoop class.
@@ -36,7 +36,7 @@ export class AsyncLoop {
     if(this.index < this.array.length){
       const index = this.index;
       const count = this.array.length;
-      let obj = this.array[this.index++];
+      const obj = this.array[this.index++];
 
       if(typeof this.onLoop === 'function')
         this.onLoop(obj, this, index, count);

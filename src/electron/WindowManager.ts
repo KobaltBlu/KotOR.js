@@ -1,9 +1,11 @@
-import { BrowserWindow, dialog } from "electron";
-import { ApplicationWindow } from "./ApplicationWindow";
-import { LauncherWindow } from "./LauncherWindow";
-import * as path from "path";
-//exec & execFile are used for launching the original games from the launcher
 import { execFile, exec } from "child_process";
+import * as path from "path";
+
+import { BrowserWindow, dialog } from "electron";
+
+import { ApplicationWindow } from "@/electron/ApplicationWindow";
+import { LauncherWindow } from "@/electron/LauncherWindow";
+//exec & execFile are used for launching the original games from the launcher
 
 export class WindowManager {
 
@@ -11,14 +13,14 @@ export class WindowManager {
   static windows: ApplicationWindow[] = [];
 
   static createLauncherWindow(){
-    if(!WindowManager.launcherWindow){
+    if(!WindowManager.launcherWindow?.browserWindow || WindowManager.launcherWindow.browserWindow.isDestroyed()){
       WindowManager.launcherWindow = new LauncherWindow();
     }
     WindowManager.launcherWindow.show();
   }
 
   static toggleLauncherWindow(){
-    if(!WindowManager.launcherWindow){
+    if(!WindowManager.launcherWindow?.browserWindow || WindowManager.launcherWindow.browserWindow.isDestroyed()){
       this.createLauncherWindow();
     }else{
       WindowManager.launcherWindow.toggleWindow();
@@ -26,27 +28,27 @@ export class WindowManager {
   }
 
   static addWindow(window: ApplicationWindow){
-    let index = WindowManager.windows.indexOf(window);
+    const index = WindowManager.windows.indexOf(window);
     if(index < 0){
       WindowManager.windows.push(window);
     }
   }
 
   static removeWindow(window: ApplicationWindow){
-    let index = WindowManager.windows.indexOf(window);
+    const index = WindowManager.windows.indexOf(window);
     if(index >= 0){
       WindowManager.windows.splice(index, 1);
     }
   }
 
   static hideLauncher(){
-    if(WindowManager.launcherWindow){
+    if(WindowManager.launcherWindow?.browserWindow && !WindowManager.launcherWindow.browserWindow.isDestroyed()){
       WindowManager.launcherWindow.hide();
     }
   }
 
   static showLauncher(){
-    if(!WindowManager.launcherWindow){
+    if(!WindowManager.launcherWindow?.browserWindow || WindowManager.launcherWindow.browserWindow.isDestroyed()){
       WindowManager.createLauncherWindow();
     }else{
       WindowManager.launcherWindow.show();
@@ -62,18 +64,18 @@ export class WindowManager {
         WindowManager.launcherWindow.send('config-changed', data);
       }
     });
-    
+
     ipcMain.handle('win-minimize', (event, data) => {
-      let win = BrowserWindow.getFocusedWindow();
+      const win = BrowserWindow.getFocusedWindow();
       if(win){
         win.minimize();
         return true;
       }
       return false;
     });
-    
+
     ipcMain.handle('win-maximize', (event, data) => {
-      let win = BrowserWindow.getFocusedWindow();
+      const win = BrowserWindow.getFocusedWindow();
       if(win){
         console.log(win.isMaximized());
         if(win.isMaximized()){
@@ -82,11 +84,11 @@ export class WindowManager {
         }else{
           win.maximize();
           return true;
-        } 
+        }
       }
       return false;
     });
-    
+
     ipcMain.handle('locate-game-directory', (event, data) => {
       return new Promise( (resolve, reject) => {
         dialog.showOpenDialog({title: 'KotOR Game Install Folder', properties: ['openDirectory', 'createDirectory']}).then(result => {
@@ -98,7 +100,7 @@ export class WindowManager {
         });
       });
     });
-    
+
     ipcMain.handle('open-file-dialog', (event, data: Electron.OpenDialogOptions) => {
       return new Promise( (resolve, reject) => {
         dialog.showOpenDialog(data).then(result => {
@@ -108,8 +110,8 @@ export class WindowManager {
         });
       });
     });
-    
-    ipcMain.handle('save-file-dialog', (event, data: Electron.SaveDialogOptions) => {
+
+    ipcMain.handle('save-file-dialog', (event, data: [Electron.SaveDialogOptions?]) => {
       return new Promise( (resolve, reject) => {
         console.log('save-file-dialog2', event, data[0]);
         dialog.showSaveDialog(data[0]).then(result => {
@@ -119,16 +121,16 @@ export class WindowManager {
         });
       });
     });
-    
+
     ipcMain.on('launch_profile', (event, profile) => {
       const window = new ApplicationWindow(profile);
       WindowManager.addWindow(window);
       WindowManager.hideLauncher();
     });
-    
+
     ipcMain.on('launch_executable', (event, exe_path) => {
       WindowManager.hideLauncher();
-      let cwd = path.parse(exe_path);
+      const cwd = path.parse(exe_path);
       if(process.platform == 'linux'){
         //Attempt to find wine so we can run the exe
         exec(`which wine`, (error) => {

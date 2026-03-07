@@ -1,10 +1,11 @@
 import * as THREE from "three";
-import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
-import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
-import { OdysseyController } from "./OdysseyController";
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
+
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
 
 /**
  * AlphaController class.
@@ -42,7 +43,7 @@ export class AlphaController extends OdysseyController {
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.userData.mesh){
       if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
-        manager.modelNode.userData.mesh.material.uniforms.opacity.value = ((next.value - last.value) * fl + last.value);;
+        manager.modelNode.userData.mesh.material.uniforms.opacity.value = ((next.value - last.value) * fl + last.value);
         manager.modelNode.userData.mesh.material.uniformsNeedUpdate = true;
       }
       manager.modelNode.userData.mesh.material.opacity = ((next.value - last.value) * fl + last.value);

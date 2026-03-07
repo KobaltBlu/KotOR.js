@@ -1,21 +1,21 @@
-import { GameState } from "../../../GameState";
-import { LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { MenuGalaxyMap as K1_MenuGalaxyMap } from "../../kotor/KOTOR";
-import { Planetary } from "../../../engine/Planetary";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { NWScript } from "../../../nwscript/NWScript";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { MDLLoader, TextureLoader } from "../../../loaders";
+import { Planetary } from "@/engine/Planetary";
+import { MenuGalaxyMap as K1_MenuGalaxyMap } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import { LBL_3DView } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
 
 const STR_ALREADY_AT_THAT_LOCATION = 125629;
 
 /**
  * MenuGalaxyMap class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuGalaxyMap.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -53,7 +53,7 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -92,13 +92,13 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
         this._3dView.visible = true;
         this._3dView.setControl(this._3D_PlanetDisplay);
         this._3D_PlanetDisplay.setText('');
-        
+
         OdysseyModel3D.FromMDL(mdl, {
           context: this._3dView
         }).then((model: OdysseyModel3D) => {
-          //console.log('Model Loaded', model);
+          //log.info('Model Loaded', model);
           this._3dViewModel = model;
-          
+
           this._3dView.camera.position.copy(model.camerahook.position);
           this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
@@ -110,5 +110,6 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
       }).catch(resolve);
     });
   }
-  
+
 }
+

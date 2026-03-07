@@ -1,21 +1,21 @@
-import * as THREE from "three";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameState } from "../GameState";
-import { EngineMode } from "../enums/engine/EngineMode";
-import type { MenuManager } from "../managers/MenuManager";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import { ShaderManager } from "../managers/ShaderManager"
-import { ResourceLoader, TextureLoader } from "../loaders";
-import { GUIControl } from "./GUIControl";
-import { GUIControlFactory } from "./GUIControlFactory";
-import { BitWise } from "../utility/BitWise";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { Mouse } from "../controls/Mouse";
-import { KeyMapper } from "../controls";
-import type { GUIProtoItem } from "./GUIProtoItem";
-import { GUIControlType } from "../enums/gui/GUIControlType";
+﻿import * as THREE from "three";
+import { GFFObject } from "@/resource/GFFObject";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { GameState } from "@/GameState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import type { MenuManager } from "@/managers/MenuManager";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import { ShaderManager } from "@/managers/ShaderManager"
+import { ResourceLoader, TextureLoader } from "@/loaders";
+import { GUIControl } from "@/gui/GUIControl";
+import { GUIControlFactory } from "@/gui/GUIControlFactory";
+import { BitWise } from "@/utility/BitWise";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { Mouse } from "@/controls/Mouse";
+import { KeyMapper } from "@/controls";
+import type { GUIProtoItem } from "@/gui/GUIProtoItem";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
 
 /**
  * GameMenu class.
@@ -55,25 +55,6 @@ export class GameMenu {
   width: number = 640;
   height: number = 480;
 
-  /**
-   * Panel bit_flags matching the original game's CSWGuiPanel::bit_flags.
-   *
-   * Original default from CSWGuiPanel::CSWGuiPanel: 0x84 (bits 2,7)
-   *   - bit 7 (0x80): visible (Draw checks *(char*)&bit_flags < '\0')
-   *   - bit 2 (0x04): initial flag
-   * After StartLoadFromLayout: |= 0x02 (loaded)
-   * After per-menu LoadFromLayout: |= 0x01 (uses GetExtentAccountingForPanelOffset for hit testing)
-   *
-   * Centering flags (used by GetExtentAccountingForPanelOffset):
-   *   - 0x08: Center panel on screen (left += (vw-w)/2, top += (vh-h)/2) — MUTUALLY EXCLUSIVE with 0x20/0x40
-   *   - 0x20: Horizontal offset by (viewportWidth - 640) / 2
-   *   - 0x40: Vertical offset by (viewportHeight - 480) / 2
-   *
-   * KotOR.js default: 0x8F = original 0x87 + 0x08 for centering at arbitrary resolutions.
-   * Set to 0x87 for original behavior (no centering, panel at raw extent position).
-   */
-  panelBitFlags: number = 0x8F;
-
   background: string;
   backgroundSprite: THREE.Mesh;
   backgroundMaterial: THREE.ShaderMaterial;
@@ -85,6 +66,7 @@ export class GameMenu {
   engineMode: EngineMode = EngineMode.GUI;
 
   eventListenters: Map<String, Function[]> = new Map<String, Function[]>();
+  /** Runtime context (GameState in game, UI3DRenderer in Forge GUI editor). */
   context: any = GameState;
 
   constructor(){
@@ -135,10 +117,8 @@ export class GameMenu {
       this.tGuiPanel.widget.add(this.backgroundSprite);
     }
 
-    // Root panel position is now set by calculatePosition() during createControl(),
-    // matching the original CSWGuiPanel::GetExtentAccountingForPanelOffset behavior.
-    // Do NOT override it here — that would cause an inconsistency between initial
-    // load and resize (recalculatePosition sets the correct position on resize).
+    panelControl.position.x = 0;
+    panelControl.position.y = 0;
 
     //This auto assigns references for the controls to the menu object.
     //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
@@ -162,7 +142,7 @@ export class GameMenu {
     for(let i = 0, len = object.children.length; i < len; i++){
       const ctrl = object.children[i];
       if(!!ctrl && !isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_'+ctrl.name;
-      (this as any)[ctrl.name] = ctrl;
+      (this as unknown as Record<string, GUIControl>)[ctrl.name] = ctrl;
       this.assignChildControlsToMenu(ctrl);
     }
   }
@@ -177,7 +157,7 @@ export class GameMenu {
       this.backgroundVoidMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
           ShaderManager.Shaders.get('void-gui').getUniforms()
-        ]),
+        ] as unknown as { [uniform: string]: THREE.IUniform }[]),
         vertexShader: ShaderManager.Shaders.get('void-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('void-gui').getFragment(),
       })
@@ -199,7 +179,7 @@ export class GameMenu {
       this.backgroundMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
           ShaderManager.Shaders.get('background-gui').getUniforms()
-        ]),
+        ] as unknown as { [uniform: string]: THREE.IUniform }[]),
         vertexShader: ShaderManager.Shaders.get('background-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('background-gui').getFragment(),
       });
@@ -215,71 +195,53 @@ export class GameMenu {
     return await TextureLoader.Load(resRef);
   }
 
-  /**
-   * Get a control by its GFF/layout name (e.g. BTN_QUIT, LBL_TITLE).
-   * Controls are assigned to the menu instance during buildMenu.
-   */
   getControlByName(name: string): GUIControl | undefined {
-    const ctrl = (this as any)[name];
-    if (ctrl === undefined) {
+    try{
+      return (this as any)[name];//this.tGuiPanel.getControl().getObjectByName(name).userData.control;
+    }catch(e){
       console.error('getControlByName', 'Control not found', name);
-      return undefined;
     }
-    return ctrl as GUIControl;
+    return undefined;
   }
 
-  hide(): void {
+  hide(){
     this.bVisible = false;
-    if (this.tGuiPanel?.getControl()) {
-      GameState.scene_gui.remove(this.tGuiPanel.getControl());
-    }
-    if (this.childMenu instanceof GameMenu) {
+    GameState.scene_gui.remove(this.tGuiPanel.getControl());
+
+    //Handle the child menu if it is set
+    if(this.childMenu instanceof GameMenu)
       this.childMenu.hide();
-    }
   }
 
-  show(): void {
-    if (!this.tGuiPanel?.getControl()) {
-      return;
-    }
-    if (!this.isOverlayGUI && GameState.Mode !== EngineMode.MOVIE) {
+  show(){
+    // this.Hide();
+    if(!this.isOverlayGUI)
       GameState.SetEngineMode(this.engineMode);
-    }
+
     this.bVisible = true;
+    this.resize();
     GameState.scene_gui.add(this.tGuiPanel.getControl());
-    if (this.childMenu instanceof GameMenu) {
+
+    //Handle the child menu if it is set
+    if(this.childMenu instanceof GameMenu)
       this.childMenu.show();
-      this.childMenu.tGuiPanel?.updateBoundsRecursive?.();
-    }
   }
 
-  /**
-   * Close this menu: hide it and remove it from the manager stack.
-   * Restores the menu below (if any) as current.
-   */
-  close(): void {
+  close(){
     this.hide();
-    if (this.manager?.Remove) {
-      this.manager.Remove(this);
-    }
+    this.manager.Remove(this);
+    // if(!this.isOverlayGUI){
+    //   GameState.RestoreEnginePlayMode();
+    // }
   }
 
-  /**
-   * Open this menu: add it to the manager stack and show it.
-   */
-  open(): void {
-    if (this.manager?.Add) {
-      this.manager.Add(this);
-    }
+  open(){
+    this.manager.Add(this);
     this.show();
   }
 
-  /**
-   * Remove this menu from the manager stack and hide it.
-   * Same effect as close(); provided for API clarity (e.g. "remove" from stack).
-   */
-  remove(): void {
-    this.close();
+  remove(){
+    //TODO
   }
 
   isVisible(){
@@ -294,7 +256,8 @@ export class GameMenu {
     if(this.voidFill){
       this.backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
       this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
-      this.backgroundVoidSprite.scale.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), 1);
+      // Void in design space so root panel scale maps it to viewport
+      this.backgroundVoidSprite.scale.set(this.width, this.height, 1);
     }
 
     if(this.background){
@@ -364,7 +327,7 @@ export class GameMenu {
       controls = this.tGuiPanel.getActiveControls();
     }
     if(this.childMenu){
-      controls = controls.concat(this.childMenu.getActiveControls());
+      controls = controls.concat(controls, this.childMenu.getActiveControls());
     }
     return controls;
   }
@@ -381,10 +344,18 @@ export class GameMenu {
 
   }
 
+  /**
+   * Scale root panel so design space (menu.width x menu.height) maps to viewport.
+   * Ensures GUI fills the viewport and mouse hit-testing stays in sync.
+   * Called on show() and when resolution changes (MenuManager.Resize).
+   */
   resize(){
-    if (this.tGuiPanel) {
-      this.recalculatePosition();
-    }
+    if(!this.tGuiPanel || this.width <= 0 || this.height <= 0)
+      return;
+    const scaleX = ResolutionManager.getViewportWidth() / this.width;
+    const scaleY = ResolutionManager.getViewportHeight() / this.height;
+    this.tGuiPanel.widget.scale.set(scaleX, scaleY, 1.0);
+    this.tGuiPanel.recalculate();
   }
 
   triggerControllerAPress(){
@@ -489,7 +460,7 @@ export class GameMenu {
     }
   }
 
-  triggerEventListener(name: string, ...args: any){
+  triggerEventListener(name: string, ...args: unknown[]): void {
     name = name.toUpperCase().trim();
     let listeners = this.eventListenters.get(name);
     if(Array.isArray(listeners)){
@@ -517,3 +488,4 @@ export class GameMenu {
   }
 
 }
+

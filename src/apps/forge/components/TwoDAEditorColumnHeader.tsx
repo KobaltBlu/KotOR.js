@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import * as KotOR from "../KotOR";
+import * as KotOR from "@/apps/forge/KotOR";
 
 
 export const TwoDAEditorColumnHeader = function(props: any){

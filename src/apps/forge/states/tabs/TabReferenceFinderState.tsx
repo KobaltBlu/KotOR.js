@@ -1,9 +1,13 @@
 import React from "react";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
-import { TabReferenceFinder } from "../../components/tabs/tab-reference-finder/TabReferenceFinder";
-import { ReferenceHit, ReferenceScope, searchReferences } from "../../helpers/ReferenceFinder";
-import { TabResourceExplorerState } from "./TabResourceExplorerState";
+
+import { TabReferenceFinder } from "@/apps/forge/components/tabs/tab-reference-finder/TabReferenceFinder";
+import { ReferenceHit, ReferenceScope, searchReferences } from "@/apps/forge/helpers/ReferenceFinder";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabResourceExplorerState } from "@/apps/forge/states/tabs/TabResourceExplorerState";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface TabReferenceFinderStateOptions extends BaseTabStateOptions {
   query?: string;
@@ -30,6 +34,7 @@ export class TabReferenceFinderState extends TabState {
   lastError?: string;
 
   constructor(options: TabReferenceFinderStateOptions = {}) {
+    log.trace('TabReferenceFinderState constructor entry');
     super(options);
 
     this.query = options.query ?? "";
@@ -40,11 +45,14 @@ export class TabReferenceFinderState extends TabState {
     this.fileTypes = options.fileTypes ?? null;
 
     this.setContentView(<TabReferenceFinder tab={this} />);
+    log.trace('TabReferenceFinderState constructor exit');
   }
 
   async runSearch() {
+    log.trace('TabReferenceFinderState runSearch entry');
     const query = (this.query ?? "").trim();
     if (!query.length) {
+      log.trace('TabReferenceFinderState runSearch empty query');
       this.results = [];
       this.lastError = undefined;
       this.searching = false;
@@ -57,6 +65,7 @@ export class TabReferenceFinderState extends TabState {
     this.processEventListener("onSearchState", [true]);
 
     try {
+      log.debug('TabReferenceFinderState runSearch query', query, 'scope', this.scope);
       const results = await searchReferences({
         query,
         scope: this.scope,
@@ -67,12 +76,15 @@ export class TabReferenceFinderState extends TabState {
       });
       this.results = results;
       this.processEventListener("onResults", [this.results]);
+      log.trace('TabReferenceFinderState runSearch results', this.results.length);
     } catch (e: unknown) {
       this.lastError = e instanceof Error ? e.message : "Search failed";
+      log.warn('TabReferenceFinderState runSearch error', this.lastError);
       this.processEventListener("onError", [this.lastError]);
     } finally {
       this.searching = false;
       this.processEventListener("onSearchState", [false]);
+      log.trace('TabReferenceFinderState runSearch exit');
     }
   }
 }

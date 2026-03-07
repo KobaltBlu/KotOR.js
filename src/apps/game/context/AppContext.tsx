@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { AppState } from "../states/AppState";
-import * as KotOR from "../KotOR";
+
+import * as KotOR from "@/apps/game/KotOR";
+import { AppState } from "@/apps/game/states/AppState";
 
 export interface AppProviderValues {
   appState: [typeof AppState];

@@ -1,8 +1,9 @@
 
 import * as THREE from "three";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { GameState } from "../GameState";
-import { TwoDAManager } from "./TwoDAManager";
+
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { TwoDAManager } from "@/managers/TwoDAManager";
 
 interface RumbleSample {
   magnitude: number;
@@ -37,16 +38,16 @@ export class CameraShakeManager {
       CameraShakeManager.cache.position.copy(GameState.currentCamera.position);
       //CameraShakeManager.cache.quaternion.copy(GameState.currentCamera.quaternion);
     }
-  };
+  }
 
   static playRumblePattern(idx = 0) {
     CameraShakeManager.lsamples = [];
     CameraShakeManager.rsamples = [];
     CameraShakeManager.time = 0;
-    let rumble = TwoDAManager.datatables.get('rumble').rows[idx];
+    const rumble = TwoDAManager.datatables.get('rumble').rows[idx];
     if(rumble){
-      let lsamples = parseInt(rumble.lsamples);
-      let rsamples = parseInt(rumble.rsamples);
+      const lsamples = parseInt(rumble.lsamples);
+      const rsamples = parseInt(rumble.rsamples);
       
       // Debug: Log the rumble data to understand the time units
       console.log('Rumble data for index', idx, ':', rumble);
@@ -117,14 +118,14 @@ export class CameraShakeManager {
       let lLeft = CameraShakeManager.lsamples.length;
       let rRight = CameraShakeManager.rsamples.length;
       while(lLeft--){
-        let sample = CameraShakeManager.lsamples[lLeft];
+        const sample = CameraShakeManager.lsamples[lLeft];
         if(!sample){ continue; }
         if(sample.time > 0){ continue; }
         CameraShakeManager.lsamples.splice(lLeft, 1);
       }
       
       while(rRight--){
-        let sample = CameraShakeManager.rsamples[rRight];
+        const sample = CameraShakeManager.rsamples[rRight];
         if(!sample){ continue; }
         if(sample.time > 0){ continue; }
         CameraShakeManager.rsamples.splice(rRight, 1);

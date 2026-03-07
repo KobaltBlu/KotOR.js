@@ -1,11 +1,12 @@
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton, GUISlider, GUIControl } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import type { ModuleCreature, ModuleItem } from "../../../module";
-import { OdysseyModel3D } from "../../../three/odyssey";
 import * as THREE from "three";
-import { OdysseyModel } from "../../../odyssey";
+
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUILabel, GUIButton, GUISlider, GUIControl } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import type { ModuleCreature, ModuleItem } from "@/module";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
 
 /**
  * MenuCharacter class.
@@ -188,10 +189,10 @@ export class MenuCharacter extends GameMenu {
             resolve();
           });
 
-        }).catch((e: any) => {
+        }).catch((_e: unknown) => {
           resolve();
         });
-      }).catch((e: any) => {
+      }).catch((_e: unknown) => {
         resolve();
       });
     });
@@ -205,7 +206,7 @@ export class MenuCharacter extends GameMenu {
       this.char.update(delta);
     try {
       this._3dView.render(delta);
-    } catch (e: any) {
+    } catch (e: unknown) {
     }
   }
 
@@ -297,8 +298,8 @@ export class MenuCharacter extends GameMenu {
     }
     if(creature){
       this._3dView.camera.position.z = 1;
-      let objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
-      let clone = creature;
+      const objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
+      const clone = creature;
       objectCreature.setAppearance(clone.appearance);
       if (clone.equipment.ARMOR) {
         objectCreature.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(clone.equipment.ARMOR.template);

@@ -1,17 +1,17 @@
-import { GameState } from "../GameState";
-import { ModuleTriggerType } from "../enums";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { SkillType } from "../enums/nwscript/SkillType";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import type { ModuleObject } from "../module/ModuleObject";
-import type { ModuleTrigger } from "../module/ModuleTrigger";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
+import { Action } from "@/actions/Action";
+import { ModuleTriggerType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleTrigger } from "@/module/ModuleTrigger";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
 
 /**
  * ActionDisarmMine class.
@@ -41,11 +41,11 @@ export class ActionDisarmMine extends Action {
     }
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
-      let distance = Utility.Distance2D(this.owner.position, this.target.position);
+      const distance = Utility.Distance2D(this.owner.position, this.target.position);
             
       if(distance > 3){
         // this.owner.openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -66,30 +66,9 @@ export class ActionDisarmMine extends Action {
           return ActionStatus.FAILED;
         }
 
-        if(!trap.trapDisarmable){
-          return ActionStatus.FAILED;
-        }
+        //todo: disarm skill check
 
-        const ownerCreature = this.owner as ModuleCreature;
-        let disarmSuccess = false;
-
-        if(trap.creatorId !== undefined && trap.creatorId !== ModuleObjectConstant.OBJECT_INVALID && trap.creatorId === ownerCreature.id){
-          disarmSuccess = true;
-        }else{
-          const disarmDC = Math.max(1, trap.trapDisarmDC || trap.trapDetectDC || 1);
-          if(disarmDC > 35){
-            return ActionStatus.FAILED;
-          }
-          const skillRank = ownerCreature.getSkillLevel(SkillType.DEMOLITIONS);
-          const d20Roll = Math.floor(Math.random() * 20) + 1;
-          disarmSuccess = (skillRank + d20Roll) >= disarmDC;
-        }
-
-        if(disarmSuccess){
-          trap.destroy();
-        }else{
-          return ActionStatus.FAILED;
-        }
+        trap.destroy();
       }
 
       return ActionStatus.COMPLETE;

@@ -1,10 +1,11 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { useApp } from "../context/AppContext";
-import { CommunityProvider, useCommunity } from "../context/CommunityContext";
-import { ProfilePromoItems } from "./ProfilePromoItems";
-import { LightboxComponent } from "./LightboxComponenet";
 
-export interface CommunityTabContentProps {};
+import { LightboxComponent } from "@/apps/launcher/components/LightboxComponenet";
+import { ProfilePromoItems } from "@/apps/launcher/components/ProfilePromoItems";
+import { useApp } from "@/apps/launcher/context/AppContext";
+import { CommunityProvider, useCommunity } from "@/apps/launcher/context/CommunityContext";
+
+export interface CommunityTabContentProps {}
 
 export const CommunityTabContent = forwardRef(function(props: CommunityTabContentProps, ref: any){
   const appContext = useApp();

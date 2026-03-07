@@ -1,15 +1,15 @@
-import * as THREE from "three";
-import type { ModuleArea, ModuleObject } from "../module";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { IGUIControlText } from "../interface/gui/IGUIControlText";
-import { ShaderManager } from "../managers/ShaderManager";
-import { createQuadElements as createIndicies } from "../utility/QuadIndices";
-import { TLKManager } from "../managers/TLKManager";
-import { TextureLoader } from "../loaders/TextureLoader";
-import { TextureType } from "../enums/loaders/TextureType";
-import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
-import { GUIFont } from "../gui/GUIFont";
-import { GUIControlAlignment } from "../enums";
+﻿import * as THREE from "three";
+import type { ModuleArea, ModuleObject } from "@/module";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { IGUIControlText } from "@/interface/gui/IGUIControlText";
+import { ShaderManager } from "@/managers/ShaderManager";
+import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
+import { TLKManager } from "@/managers/TLKManager";
+import { TextureLoader } from "@/loaders/TextureLoader";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { TextSprite3DType } from "@/enums/engine/TextSprite3DType";
+import { GUIFont } from "@/gui/GUIFont";
+import { GUIControlAlignment } from "@/enums";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -93,12 +93,13 @@ export class TextSprite3D {
     this.text.geometry.attributes.position.needsUpdate = true;
     this.text.geometry.attributes.uv.needsUpdate = true;
 
+    const odysseyGuiShader = ShaderManager.Shaders.get('odyssey-gui')!;
+    // @ts-expect-error - merge return type inference fails with getUniforms()
+    const odysseyGuiUniforms: Record<string, THREE.IUniform> = THREE.UniformsUtils.merge([odysseyGuiShader.getUniforms()]);
     this.text.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui')?.getUniforms()
-      ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui')?.getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui')?.getFragment(),
+      uniforms: odysseyGuiUniforms,
+      vertexShader: odysseyGuiShader.getVertex(),
+      fragmentShader: odysseyGuiShader.getFragment(),
       side: THREE.DoubleSide,
       transparent: true,
       fog: false,
@@ -238,7 +239,7 @@ export class TextSprite3D {
     this.guiFont.buildGeometry(this.text.geometry, text, this.text.alignment);
   }
 
-  bounds(positions: number[] = []) {
+  bounds(positions: ArrayLike<number> = []) {
     let count = positions.length / itemSize
     box.min[0] = positions[0]
     box.min[1] = positions[1]
@@ -255,7 +256,7 @@ export class TextSprite3D {
     }
   }
 
-  computeBox(positions: number[] = [], output: THREE.Box3) {
+  computeBox(positions: ArrayLike<number> = [], output: THREE.Box3) {
     this.bounds(positions)
     output.min.set(box.min[0], box.min[1], 0)
     output.max.set(box.max[0], box.max[1], 0)
