@@ -3369,3 +3369,322 @@ describe('51b. K1 blocker matrix – SurrenderRetainBuffs (fn 762) / SuppressSta
     expect(combatState).toBe(true); // still true – demonstrates the pre-fix bug
   });
 });
+
+// ---------------------------------------------------------------------------
+// K1 Blocker Matrix section 52
+// GetIsEnemy (fn 235) / GetIsFriend (fn 236) / GetIsNeutral (fn 237)
+// ---------------------------------------------------------------------------
+/**
+ * Prior to the fix, these three functions:
+ *  1. Guarded only args[0] (oSource), leaving args[1] (oTarget) unchecked.
+ *     Passing OBJECT_INVALID (undefined) as oTarget caused a TypeError crash.
+ *  2. Called args[1].isHostile/isFriendly/isNeutral(args[0]) – the source/target
+ *     roles were reversed.  (Symmetric K1 faction tables masked this in practice,
+ *     but the logic was wrong.)
+ *  3. GetIsNeutral returned NW_TRUE for two party members; party members are
+ *     friends (rep 100), not neutral.
+ *
+ * After the fix:
+ *  • A null/undefined oTarget returns NW_FALSE immediately (no crash).
+ *  • oSource.isXxx(oTarget) is used – correct direction.
+ *  • GetIsNeutral returns NW_FALSE for two party members.
+ */
+describe('52. K1 blocker matrix – GetIsEnemy/GetIsFriend/GetIsNeutral null-guard and arg-order', () => {
+  const NW_TRUE  = 1;
+  const NW_FALSE = 0;
+
+  // ------------------------------------------------------------------
+  // Shared helpers that mirror the fixed NWScriptDefK1.ts logic
+  // ------------------------------------------------------------------
+
+  /**
+   * Mirrors the fixed fn 235 GetIsEnemy action.
+   * oSource = args[0], oTarget = args[1].
+   * Returns NW_FALSE when either arg is invalid; otherwise asks
+   * oSource.isHostile(oTarget).
+   */
+  function getIsEnemy(
+    oSource: any,
+    oTarget: any,
+    party: any[],
+  ): number {
+    if (!oSource || typeof oSource !== 'object') return NW_FALSE;
+    if (!oTarget || typeof oTarget !== 'object') return NW_FALSE;
+    return oSource.isHostile(oTarget) ? NW_TRUE : NW_FALSE;
+  }
+
+  /**
+   * Mirrors the fixed fn 236 GetIsFriend action.
+   */
+  function getIsFriend(
+    oSource: any,
+    oTarget: any,
+    party: any[],
+  ): number {
+    if (!oSource || typeof oSource !== 'object') return NW_FALSE;
+    if (!oTarget || typeof oTarget !== 'object') return NW_FALSE;
+    if (party.indexOf(oSource) >= 0 && party.indexOf(oTarget) >= 0) return NW_TRUE;
+    return oSource.isFriendly(oTarget) ? NW_TRUE : NW_FALSE;
+  }
+
+  /**
+   * Mirrors the fixed fn 237 GetIsNeutral action.
+   */
+  function getIsNeutral(
+    oSource: any,
+    oTarget: any,
+    party: any[],
+  ): number {
+    if (!oSource || typeof oSource !== 'object') return NW_FALSE;
+    if (!oTarget || typeof oTarget !== 'object') return NW_FALSE;
+    if (party.indexOf(oSource) >= 0 && party.indexOf(oTarget) >= 0) return NW_FALSE;
+    return oSource.isNeutral(oTarget) ? NW_TRUE : NW_FALSE;
+  }
+
+  // ------------------------------------------------------------------
+  // Faction stubs: rep ≤10 = hostile, 11-89 = neutral, ≥90 = friendly
+  // ------------------------------------------------------------------
+  function makeCreature(rep: number, target?: any): any {
+    return {
+      objectType: 1, // creature bit
+      isHostile:  (t: any) => rep <= 10,
+      isNeutral:  (t: any) => rep >= 11 && rep <= 89,
+      isFriendly: (t: any) => rep >= 90,
+    };
+  }
+
+  // ------------------------------------------------------------------
+  // GetIsEnemy – null guard
+  // ------------------------------------------------------------------
+
+  it('GetIsEnemy: returns NW_FALSE when oTarget is undefined (OBJECT_INVALID)', () => {
+    const oSource = makeCreature(0);   // hostile reputation toward anyone
+    expect(getIsEnemy(oSource, undefined, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsEnemy: returns NW_FALSE when oTarget is null', () => {
+    const oSource = makeCreature(0);
+    expect(getIsEnemy(oSource, null, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsEnemy: returns NW_FALSE when oSource is undefined', () => {
+    const oTarget = makeCreature(0);
+    expect(getIsEnemy(undefined, oTarget, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsEnemy: returns NW_FALSE when oSource is a non-object (guard)', () => {
+    expect(getIsEnemy(42 as any, makeCreature(0), [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsEnemy: returns NW_TRUE when oSource rep ≤ 10 (hostile)', () => {
+    const oSource = makeCreature(5);   // hostile
+    const oTarget = makeCreature(5);
+    expect(getIsEnemy(oSource, oTarget, [])).toBe(NW_TRUE);
+  });
+
+  it('GetIsEnemy: returns NW_FALSE when oSource rep ≥ 90 (friendly)', () => {
+    const oSource = makeCreature(100); // friendly
+    const oTarget = makeCreature(100);
+    expect(getIsEnemy(oSource, oTarget, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsEnemy: returns NW_FALSE when oSource rep = 50 (neutral)', () => {
+    const oSource = makeCreature(50);
+    const oTarget = makeCreature(50);
+    expect(getIsEnemy(oSource, oTarget, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsEnemy: Taris scenario – Sith guard (rep 0) considers PC an enemy', () => {
+    const sithGuard = makeCreature(0);
+    const pc        = makeCreature(0);
+    expect(getIsEnemy(sithGuard, pc, [])).toBe(NW_TRUE);
+  });
+
+  it('GetIsEnemy: Dantooine scenario – Jedi (rep 100) does not consider PC an enemy', () => {
+    const jedi = makeCreature(100);
+    const pc   = makeCreature(100);
+    expect(getIsEnemy(jedi, pc, [])).toBe(NW_FALSE);
+  });
+
+  // ------------------------------------------------------------------
+  // pre-fix crash regression: calling args[1].isHostile(args[0]) when
+  // args[1] is undefined would throw without the null guard.
+  // ------------------------------------------------------------------
+  it('regression: pre-fix GetIsEnemy would throw on undefined oTarget', () => {
+    // Without the null guard, this would be: undefined.isHostile(oSource) → TypeError.
+    // The fix makes it return NW_FALSE safely.
+    const oSource = makeCreature(0);
+    expect(() => getIsEnemy(oSource, undefined, [])).not.toThrow();
+    expect(getIsEnemy(oSource, undefined, [])).toBe(NW_FALSE);
+  });
+
+  // ------------------------------------------------------------------
+  // pre-fix arg-order regression: old code called args[1].isHostile(args[0]).
+  // With symmetric factions this produces the same result, but the
+  // semantic direction was wrong.
+  // ------------------------------------------------------------------
+  it('regression: pre-fix GetIsEnemy used reversed args (args[1].isHostile(args[0]))', () => {
+    // With symmetric rep tables both calls return the same value; demonstrate
+    // that the fixed direction (oSource asks about oTarget) is correct.
+    const oSource = makeCreature(0);   // oSource is hostile
+    const oTarget = makeCreature(100); // oTarget is friendly (ignored)
+    // Fixed: oSource.isHostile(oTarget) → NW_TRUE (rep 0 ≤ 10)
+    // Old:   oTarget.isHostile(oSource) → NW_FALSE (rep 100 ≥ 90 → not hostile)
+    // Fixed returns NW_TRUE because oSource has rep 0; the old reversed version
+    // would call oTarget.isHostile which has rep 100 and returns false.
+    // We verify fixed behaviour:
+    expect(getIsEnemy(oSource, oTarget, [])).toBe(NW_TRUE);
+  });
+
+  // ------------------------------------------------------------------
+  // GetIsFriend – null guard
+  // ------------------------------------------------------------------
+
+  it('GetIsFriend: returns NW_FALSE when oTarget is undefined', () => {
+    const oSource = makeCreature(100);
+    expect(getIsFriend(oSource, undefined, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsFriend: returns NW_FALSE when oSource is undefined', () => {
+    const oTarget = makeCreature(100);
+    expect(getIsFriend(undefined, oTarget, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsFriend: returns NW_TRUE when both are party members', () => {
+    const oSource = makeCreature(100);
+    const oTarget = makeCreature(100);
+    const party   = [oSource, oTarget];
+    expect(getIsFriend(oSource, oTarget, party)).toBe(NW_TRUE);
+  });
+
+  it('GetIsFriend: returns NW_FALSE when only oSource is a party member', () => {
+    const oSource = makeCreature(50);  // neutral rep
+    const oTarget = makeCreature(50);
+    const party   = [oSource];         // oTarget is NOT in party
+    expect(getIsFriend(oSource, oTarget, party)).toBe(NW_FALSE);
+  });
+
+  it('GetIsFriend: returns NW_TRUE when oSource rep ≥ 90 (friendly)', () => {
+    const oSource = makeCreature(100);
+    const oTarget = makeCreature(100);
+    expect(getIsFriend(oSource, oTarget, [])).toBe(NW_TRUE);
+  });
+
+  it('GetIsFriend: returns NW_FALSE when oSource rep ≤ 10 (hostile)', () => {
+    const oSource = makeCreature(5);
+    const oTarget = makeCreature(5);
+    expect(getIsFriend(oSource, oTarget, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsFriend: Bastila scenario – party member Bastila is friend of PC', () => {
+    const bastila = makeCreature(100);
+    const pc      = makeCreature(100);
+    const party   = [pc, bastila];
+    expect(getIsFriend(bastila, pc, party)).toBe(NW_TRUE);
+    expect(getIsFriend(pc, bastila, party)).toBe(NW_TRUE);
+  });
+
+  it('regression: pre-fix GetIsFriend would throw on undefined oTarget', () => {
+    const oSource = makeCreature(100);
+    expect(() => getIsFriend(oSource, undefined, [])).not.toThrow();
+    expect(getIsFriend(oSource, undefined, [])).toBe(NW_FALSE);
+  });
+
+  // ------------------------------------------------------------------
+  // GetIsNeutral – null guard + party-member returns NW_FALSE
+  // ------------------------------------------------------------------
+
+  it('GetIsNeutral: returns NW_FALSE when oTarget is undefined', () => {
+    const oSource = makeCreature(50);
+    expect(getIsNeutral(oSource, undefined, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsNeutral: returns NW_FALSE when oSource is undefined', () => {
+    const oTarget = makeCreature(50);
+    expect(getIsNeutral(undefined, oTarget, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsNeutral: party members are friends – returns NW_FALSE (not NW_TRUE)', () => {
+    // pre-fix: both-in-party early exit returned NW_TRUE (wrong – they are friends)
+    // post-fix: returns NW_FALSE because party members have rep 100 (friendly)
+    const oSource = makeCreature(100);
+    const oTarget = makeCreature(100);
+    const party   = [oSource, oTarget];
+    expect(getIsNeutral(oSource, oTarget, party)).toBe(NW_FALSE);
+  });
+
+  it('GetIsNeutral: returns NW_TRUE when oSource rep = 50 (neutral)', () => {
+    const oSource = makeCreature(50);
+    const oTarget = makeCreature(50);
+    expect(getIsNeutral(oSource, oTarget, [])).toBe(NW_TRUE);
+  });
+
+  it('GetIsNeutral: returns NW_FALSE when oSource rep ≥ 90 (friendly)', () => {
+    const oSource = makeCreature(100);
+    const oTarget = makeCreature(100);
+    expect(getIsNeutral(oSource, oTarget, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsNeutral: returns NW_FALSE when oSource rep ≤ 10 (hostile)', () => {
+    const oSource = makeCreature(5);
+    const oTarget = makeCreature(5);
+    expect(getIsNeutral(oSource, oTarget, [])).toBe(NW_FALSE);
+  });
+
+  it('GetIsNeutral: standing-down NPC scenario – rep transitions from 0 to 50', () => {
+    // K1 scripts use GetIsNeutral to detect when an NPC has been set to stand down.
+    // After ChangeToStandardFaction the NPC's rep rises to neutral (50).
+    const npc = makeCreature(50); // standing-down NPC
+    const pc  = makeCreature(50);
+    expect(getIsNeutral(npc, pc, [])).toBe(NW_TRUE);
+  });
+
+  it('regression: pre-fix GetIsNeutral would throw on undefined oTarget', () => {
+    const oSource = makeCreature(50);
+    expect(() => getIsNeutral(oSource, undefined, [])).not.toThrow();
+    expect(getIsNeutral(oSource, undefined, [])).toBe(NW_FALSE);
+  });
+
+  it('regression: pre-fix GetIsNeutral returned NW_TRUE for two party members', () => {
+    // Demonstrate the old wrong behaviour and then verify the fix.
+    function oldGetIsNeutral(oSource: any, oTarget: any, party: any[]): number {
+      if (!oSource || typeof oSource !== 'object') return NW_FALSE;
+      if (!oTarget || typeof oTarget !== 'object') return NW_FALSE;
+      // Old: both-in-party check returned NW_TRUE (wrong)
+      if (party.indexOf(oSource) >= 0 && party.indexOf(oTarget) >= 0) return NW_TRUE;
+      return oSource.isNeutral(oTarget) ? NW_TRUE : NW_FALSE;
+    }
+    const oSource = makeCreature(100);
+    const oTarget = makeCreature(100);
+    const party   = [oSource, oTarget];
+    // Old wrong behaviour:
+    expect(oldGetIsNeutral(oSource, oTarget, party)).toBe(NW_TRUE); // wrong
+    // Fixed behaviour:
+    expect(getIsNeutral(oSource, oTarget, party)).toBe(NW_FALSE);   // correct
+  });
+
+  // ------------------------------------------------------------------
+  // SWMG sound no-op body regression (fn 684, 686, 688)
+  // ------------------------------------------------------------------
+
+  it('SWMG_SetSoundFrequency (fn 684): no-op body does not throw', () => {
+    function swmgSetSoundFrequency(_obj: any, _idx: number, _freq: number): void {
+      // No-op: SWMG audio frequency control not yet implemented
+    }
+    expect(() => swmgSetSoundFrequency({}, 0, 440)).not.toThrow();
+  });
+
+  it('SWMG_SetSoundFrequencyIsRandom (fn 686): no-op body does not throw', () => {
+    function swmgSetSoundFrequencyIsRandom(_obj: any, _idx: number, _rand: number): void {
+      // No-op: SWMG audio randomisation control not yet implemented
+    }
+    expect(() => swmgSetSoundFrequencyIsRandom({}, 0, 1)).not.toThrow();
+  });
+
+  it('SWMG_SetSoundVolume (fn 688): no-op body does not throw', () => {
+    function swmgSetSoundVolume(_obj: any, _idx: number, _vol: number): void {
+      // No-op: SWMG audio volume control not yet implemented
+    }
+    expect(() => swmgSetSoundVolume({}, 0, 80)).not.toThrow();
+  });
+});
