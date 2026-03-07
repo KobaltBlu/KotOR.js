@@ -1590,7 +1590,7 @@ NWScriptDefK1.Actions = {
     name: "EffectAttackIncrease",
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
-    action: function(this: NWScriptInstance, args: [number, number, number]){
+    action: function(this: NWScriptInstance, args: [number, number]){
       let effect = new GameState.GameEffectFactory.EffectAttackIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
@@ -1598,8 +1598,6 @@ NWScriptDefK1.Actions = {
       effect.setInt(1, args[1]); //nModifierType
       return effect.initialize();
     }
-  },
-  119:{
     comment: "119: Create a Damage Reduction effect\n- nAmount: amount of damage reduction\n- nDamagePower: DAMAGE_POWER_*\n- nLimit: How much damage the effect can absorb before disappearing.\nSet to zero for infinite\n",
     name: "EffectDamageReduction",
     type: NWScriptDataType.EFFECT,
@@ -3747,7 +3745,7 @@ NWScriptDefK1.Actions = {
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleEncounter)){
         return (args[0] as ModuleEncounter).active;
       }
-    }
+      return NW_FALSE;
   },
   277:{
     comment: "277: Set oEncounter's active state to nNewValue.\n- nNewValue: TRUE/FALSE\n- oEncounter\n",
@@ -7578,11 +7576,9 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
         const audioEngine = AudioEngine.GetAudioEngine();
-        audioEngine.ambientAudioDayEmitter.setVolume(args[1] / 100);
+        audioEngine.ambientAudioNightEmitter.setVolume(args[1] / 100);
       }
     }
-  },
-  569:{
     comment: "569: Get the Battle Track for oArea.\n",
     name: "MusicBackgroundGetBattleTrack",
     type: NWScriptDataType.INTEGER,

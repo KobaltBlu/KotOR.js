@@ -488,13 +488,29 @@ export class ModuleObjectManager {
     
     switch(nFirstCriteriaType){
       case CreatureType.RACIAL_TYPE:
-
+        for(let i = 0; i < list.length; i++){
+          if(list[i].isDead()){ continue; }
+          if(list[i].getRace() === nFirstCriteriaValue){
+            results.push(list[i]);
+          }
+        }
       break;
       case CreatureType.PLAYER_CHAR:
-
+        for(let i = 0; i < list.length; i++){
+          if(list[i].isDead()){ continue; }
+          const isPC = (GameState.PartyManager.party.indexOf(list[i] as any) >= 0 || GameState.PartyManager.Player === list[i]) ? 1 : 0;
+          if(isPC === nFirstCriteriaValue){
+            results.push(list[i]);
+          }
+        }
       break;
       case CreatureType.CLASS:
-
+        for(let i = 0; i < list.length; i++){
+          if(list[i].isDead()){ continue; }
+          if(list[i].getClassLevel(nFirstCriteriaValue) > 0){
+            results.push(list[i]);
+          }
+        }
       break;
       case CreatureType.REPUTATION:
         switch(nFirstCriteriaValue){
@@ -531,10 +547,26 @@ export class ModuleObjectManager {
         }
       break;
       case CreatureType.HAS_SPELL_EFFECT:
-
+        for(let i = 0; i < list.length; i++){
+          if(list[i].isDead()){ continue; }
+          const fx = list[i].effects;
+          let found = false;
+          for(let j = 0; j < fx.length; j++){
+            if(fx[j].getSpellId() === nFirstCriteriaValue){ found = true; break; }
+          }
+          if(found) results.push(list[i]);
+        }
       break;
       case CreatureType.DOES_NOT_HAVE_SPELL_EFFECT:
-
+        for(let i = 0; i < list.length; i++){
+          if(list[i].isDead()){ continue; }
+          const fx = list[i].effects;
+          let found = false;
+          for(let j = 0; j < fx.length; j++){
+            if(fx[j].getSpellId() === nFirstCriteriaValue){ found = true; break; }
+          }
+          if(!found) results.push(list[i]);
+        }
       break;
       case CreatureType.PERCEPTION:
         for(let i = 0; i < list.length; i++){
