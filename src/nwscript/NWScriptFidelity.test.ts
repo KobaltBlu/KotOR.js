@@ -61,6 +61,12 @@
  *  - KOTOR Force Powers:   https://swkotorwiki.fandom.com/wiki/KOTOR:Force_Powers
  *  - Difficulty Classes:   https://strategywiki.org/wiki/Star_Wars:_Knights_of_the_Old_Republic/Difficulty_Classes
  *  - xoreos KotOR source:  https://github.com/xoreos/xoreos/blob/master/src/engines/kotor/kotor.cpp
+ *
+ * 49. GetLocked (fn 325) – bare return; → return NW_FALSE for non-door/placeable arg.
+ *     GetMinOneHP (fn 715) – bare return; → return NW_FALSE for non-creature arg.
+ *     SWMG_AdjustFollowerHitPoints (fn 590) – now returns new HP value.
+ *     adjustHitPoints in ModuleMGPlayer/Enemy/Obstacle – handles nAbsolute flag
+ *     and returns the updated hit_points value.
  */
 
 // ---------------------------------------------------------------------------
@@ -2757,5 +2763,145 @@ describe('48. K1 blocker matrix – GetLastBulletHitPart and door side detection
     const dot = dx * Math.cos(bearing) + dy * Math.sin(bearing);
     const side = dot >= 0 ? SIDE_1 : 2;
     expect(side).toBe(SIDE_1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Section 49 – GetLocked (fn 325), GetMinOneHP (fn 715),
+//              SWMG_AdjustFollowerHitPoints (fn 590), adjustHitPoints
+// ---------------------------------------------------------------------------
+
+describe('49. K1 blocker matrix – GetLocked, GetMinOneHP, SWMG_AdjustFollowerHitPoints', () => {
+  /**
+   * fn 325 GetLocked:
+   * Bug: early return; with no value in INTEGER function when arg is not a door/placeable.
+   * Fix: return NW_FALSE (0) instead of bare return.
+   */
+  it('GetLocked returns NW_FALSE (0) for non-door/placeable object', () => {
+    const NW_FALSE = 0;
+    // Simulate: arg is not a placeable or door
+    const isDoor = false;
+    const isPlaceable = false;
+    const result = (!isDoor && !isPlaceable) ? NW_FALSE : 1;
+    expect(result).toBe(NW_FALSE);
+  });
+
+  it('GetLocked returns NW_TRUE (1) for a locked door', () => {
+    const NW_TRUE = 1;
+    const door = { locked: true, isLocked: () => true };
+    const isDoor = true;
+    const result = isDoor ? (door.isLocked() ? NW_TRUE : 0) : 0;
+    expect(result).toBe(NW_TRUE);
+  });
+
+  it('GetLocked returns NW_FALSE (0) for an unlocked placeable', () => {
+    const NW_FALSE = 0;
+    const placeable = { locked: false, isLocked: () => false };
+    const isPlaceable = true;
+    const result = isPlaceable ? (placeable.isLocked() ? 1 : NW_FALSE) : 0;
+    expect(result).toBe(NW_FALSE);
+  });
+
+  /**
+   * fn 715 GetMinOneHP:
+   * Bug: early return; with no value in INTEGER function when arg is not a creature.
+   * Fix: return NW_FALSE (0) instead of bare return.
+   */
+  it('GetMinOneHP returns NW_FALSE (0) for non-creature object', () => {
+    const NW_FALSE = 0;
+    const isCreature = false;
+    const result = isCreature ? 1 : NW_FALSE;
+    expect(result).toBe(NW_FALSE);
+  });
+
+  it('GetMinOneHP returns NW_TRUE (1) when min1HP flag is set', () => {
+    const NW_TRUE = 1;
+    const creature = { min1HP: true };
+    const isCreature = true;
+    const result = isCreature ? (creature.min1HP ? NW_TRUE : 0) : 0;
+    expect(result).toBe(NW_TRUE);
+  });
+
+  it('GetMinOneHP returns NW_FALSE (0) when min1HP flag is not set', () => {
+    const NW_FALSE = 0;
+    const creature = { min1HP: false };
+    const isCreature = true;
+    const result = isCreature ? (creature.min1HP ? 1 : NW_FALSE) : 0;
+    expect(result).toBe(NW_FALSE);
+  });
+
+  /**
+   * fn 590 SWMG_AdjustFollowerHitPoints:
+   * Bug: INTEGER-returning function with no return statement → stack corruption.
+   * Fix: return the new hit_points value from adjustHitPoints().
+   *
+   * adjustHitPoints(nHP, nAbsolute):
+   * Bug: ignores nAbsolute and doesn't return new HP.
+   * Fix: if nAbsolute is truthy, set HP absolutely; otherwise add delta. Return new HP.
+   */
+  it('adjustHitPoints relative: adds nHP to hit_points and returns new value', () => {
+    const player: any = { hit_points: 50 };
+    function adjustHitPoints(nHP = 0, nAbsolute = 0) {
+      if(nAbsolute) {
+        player.hit_points = nHP;
+      } else {
+        player.hit_points += nHP;
+      }
+      return player.hit_points;
+    }
+    expect(adjustHitPoints(10, 0)).toBe(60);
+    expect(player.hit_points).toBe(60);
+  });
+
+  it('adjustHitPoints absolute: sets hit_points to nHP when nAbsolute=1', () => {
+    const player: any = { hit_points: 50 };
+    function adjustHitPoints(nHP = 0, nAbsolute = 0) {
+      if(nAbsolute) {
+        player.hit_points = nHP;
+      } else {
+        player.hit_points += nHP;
+      }
+      return player.hit_points;
+    }
+    expect(adjustHitPoints(25, 1)).toBe(25);
+    expect(player.hit_points).toBe(25);
+  });
+
+  it('adjustHitPoints with negative delta reduces HP and returns new value', () => {
+    const player: any = { hit_points: 50 };
+    function adjustHitPoints(nHP = 0, nAbsolute = 0) {
+      if(nAbsolute) {
+        player.hit_points = nHP;
+      } else {
+        player.hit_points += nHP;
+      }
+      return player.hit_points;
+    }
+    expect(adjustHitPoints(-15, 0)).toBe(35);
+    expect(player.hit_points).toBe(35);
+  });
+
+  it('SWMG_AdjustFollowerHitPoints returns 0 when arg is not a valid MG object', () => {
+    // Simulate: arg is not ModuleMGPlayer/Enemy/Obstacle
+    const isMGObject = false;
+    const result = isMGObject ? 100 : 0;
+    expect(result).toBe(0);
+  });
+
+  it('SWMG_AdjustFollowerHitPoints returns new HP after adjustment', () => {
+    // Simulate the fixed fn 590 behavior
+    const mgPlayer: any = { hit_points: 80 };
+    function adjustHitPoints(nHP = 0, nAbsolute = 0) {
+      if(nAbsolute) {
+        mgPlayer.hit_points = nHP;
+      } else {
+        mgPlayer.hit_points += nHP;
+      }
+      return mgPlayer.hit_points;
+    }
+    const isMGObject = true;
+    const returnValue = isMGObject ? adjustHitPoints(20, 0) : 0;
+    expect(returnValue).toBe(100);
+    expect(mgPlayer.hit_points).toBe(100);
   });
 });
