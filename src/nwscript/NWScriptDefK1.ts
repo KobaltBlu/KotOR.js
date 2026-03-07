@@ -6969,7 +6969,10 @@ NWScriptDefK1.Actions = {
     comment: "521: Returns the minigame lateral acceleration/sec value\n",
     name: "SWMG_GetLateralAccelerationPerSecond",
     type: NWScriptDataType.FLOAT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module.area.miniGame.player.accel_lateral_secs;
+    }
   },
   522:{
     comment: "522: Get the current action (ACTION_*) that oObject is executing.\n",
@@ -7516,7 +7519,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number]){
-        //TODO
+      //Speed blur is a visual-only post-process effect; no-op in this engine context
     }
   },
   564:{
@@ -7745,13 +7748,19 @@ NWScriptDefK1.Actions = {
     comment: "583: OnAnimKey\nget the event and the name of the model on which the event happened\nSWMG_GetLastEvent\n",
     name: "SWMG_GetLastEvent",
     type: NWScriptDataType.STRING,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.lastEvent || '';
+    }
   },
   584:{
     comment: "584: SWMG_GetLastEventModelName\n",
     name: "SWMG_GetLastEventModelName",
     type: NWScriptDataType.STRING,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.lastEventModelName || '';
+    }
   },
   585:{
     comment: "585: gets an object by its name (duh!)\nSWMG_GetObjectByName\n",
@@ -7788,19 +7797,28 @@ NWScriptDefK1.Actions = {
     comment: "587: OnHitBullet\nget the damage, the target type (see TARGETflags), and the shooter\nSWMG_GetLastBulletHitDamage\n",
     name: "SWMG_GetLastBulletHitDamage",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.lastBulletHitDamage || 0;
+    }
   },
   588:{
     comment: "588: SWMG_GetLastBulletHitTarget\n",
     name: "SWMG_GetLastBulletHitTarget",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.lastBulletHitTarget || 0;
+    }
   },
   589:{
     comment: "589: SWMG_GetLastBulletHitShooter\n",
     name: "SWMG_GetLastBulletHitShooter",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.lastBulletHitShooter || undefined;
+    }
   },
   590:{
     comment: "590: adjusts a followers hit points, can specify the absolute value to set to\nSWMG_AdjustFollowerHitPoints\n",
@@ -7819,8 +7837,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        //return this.caller.onBulletHit();
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGPlayer)){
+        (this.caller as ModuleMGPlayer).onHitBullet(this.mgBullet as any);
+      } else if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGEnemy)){
+        (this.caller as ModuleMGEnemy).onHitBullet(this.mgBullet as any);
       }
     }
   },
@@ -7831,7 +7851,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGObstacle)){
-        //return this.caller.onObstacleHit();
+        (this.caller as ModuleMGObstacle).onHitBullet();
       }
     }
   },
@@ -7857,13 +7877,19 @@ NWScriptDefK1.Actions = {
     comment: "595: gets information about the last bullet fired\nSWMG_GetLastBulletFiredDamage\n",
     name: "SWMG_GetLastBulletFiredDamage",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.lastBulletFiredDamage || 0;
+    }
   },
   596:{
     comment: "596: SWMG_GetLastBulletFiredTarget\n",
     name: "SWMG_GetLastBulletFiredTarget",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.lastBulletFiredTarget || 0;
+    }
   },
   597:{
     comment: "597: gets an objects name\nSWMG_GetObjectName\n",
@@ -7942,8 +7968,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        this.caller.onDamaged();
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer)){
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).hit_points = args[1];
       }
     }
   },
@@ -7953,8 +7979,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        //this.caller.onDamaged();
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGPlayer)){
+        (this.caller as ModuleMGPlayer).onDamaged();
+      } else if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGEnemy)){
+        (this.caller as ModuleMGEnemy).onDamaged();
       }
     }
   },
@@ -7962,7 +7990,10 @@ NWScriptDefK1.Actions = {
     comment: "606: SWMG_GetLastHPChange\n",
     name: "SWMG_GetLastHPChange",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.lastHPChange || 0;
+    }
   },
   607:{
     comment: "607: SWMG_RemoveAnimation\n",
@@ -7979,19 +8010,29 @@ NWScriptDefK1.Actions = {
     comment: "608: SWMG_GetCameraNearClip\n",
     name: "SWMG_GetCameraNearClip",
     type: NWScriptDataType.FLOAT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module.area.miniGame.nearClip;
+    }
   },
   609:{
     comment: "609: SWMG_GetCameraFarClip\n",
     name: "SWMG_GetCameraFarClip",
     type: NWScriptDataType.FLOAT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module.area.miniGame.farClip;
+    }
   },
   610:{
     comment: "610: SWMG_SetCameraClip\n",
     name: "SWMG_SetCameraClip",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [number, number]){
+      GameState.module.area.miniGame.nearClip = args[0];
+      GameState.module.area.miniGame.farClip = args[1];
+    }
   },
   611:{
     comment: "611: SWMG_GetPlayer\n",

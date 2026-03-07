@@ -297,6 +297,8 @@ export class ModuleMGPlayer extends ModuleObject {
           }
         }
       }
+      const instance = this.scripts[ModuleObjectScript.MGPlayerOnDamage];
+      if(instance) instance.lastHPChange = -damage;
       this.onDamaged();
     }
   }
@@ -333,6 +335,17 @@ export class ModuleMGPlayer extends ModuleObject {
     if(this.gunBanks.length){
       for(let i = 0; i < this.gunBanks.length; i++){
         this.gunBanks[i].fire();
+      }
+    }
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnFire];
+    if(instance && this.gunBanks.length){
+      // Use gunBanks[0] proto_bullet for lastBulletFiredDamage/Target.
+      // In K1 the swoop racer and turret each have a single gun bank,
+      // so this reflects the canonical fired bullet for the OnFire script.
+      const pb = this.gunBanks[0].proto_bullet;
+      if(pb){
+        instance.lastBulletFiredDamage = pb.damage_amt || 0;
+        instance.lastBulletFiredTarget = pb.target_type || 0;
       }
     }
     this.onFire();
@@ -796,6 +809,11 @@ export class ModuleMGPlayer extends ModuleObject {
     const instance = this.scripts[ModuleObjectScript.MGPlayerOnHitBullet];
     if(!instance){ return; }
     instance.mgBullet = bullet;
+    if(bullet){
+      instance.lastBulletHitDamage = bullet.damage_amt || 0;
+      instance.lastBulletHitTarget = bullet.target_type || 0;
+      instance.lastBulletHitShooter = bullet.owner as any;
+    }
     instance.run(this, 0);
   }
 

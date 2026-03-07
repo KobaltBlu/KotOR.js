@@ -89,6 +89,16 @@ export class NWScriptInstance {
   mgObstacle: ModuleObject;
   mgBullet: ModuleObject;
 
+  //MiniGame event state
+  lastEvent: string;
+  lastEventModelName: string;
+  lastBulletHitDamage: number;
+  lastBulletHitTarget: number;
+  lastBulletHitShooter: ModuleObject;
+  lastHPChange: number;
+  lastBulletFiredDamage: number;
+  lastBulletFiredTarget: number;
+
   //ITERATE POINTERS
   persistentObjectIndex: Map<number, number> = new Map<number, number>();
   objectInventoryIndex: Map<number, number> = new Map<number, number>();
@@ -253,6 +263,15 @@ export class NWScriptInstance {
     this.mgBullet = undefined;
     this.mgFollower = undefined;
     this.mgObstacle = undefined;
+
+    this.lastEvent = '';
+    this.lastEventModelName = '';
+    this.lastBulletHitDamage = 0;
+    this.lastBulletHitTarget = 0;
+    this.lastBulletHitShooter = undefined;
+    this.lastHPChange = 0;
+    this.lastBulletFiredDamage = 0;
+    this.lastBulletFiredTarget = 0;
 
   }
 
@@ -454,6 +473,14 @@ export class NWScriptInstance {
     instance.mgFollower = parentInstance.mgFollower;
     instance.mgObstacle = parentInstance.mgObstacle;
     instance.mgBullet = parentInstance.mgBullet;
+    instance.lastEvent = parentInstance.lastEvent;
+    instance.lastEventModelName = parentInstance.lastEventModelName;
+    instance.lastBulletHitDamage = parentInstance.lastBulletHitDamage;
+    instance.lastBulletHitTarget = parentInstance.lastBulletHitTarget;
+    instance.lastBulletHitShooter = parentInstance.lastBulletHitShooter;
+    instance.lastHPChange = parentInstance.lastHPChange;
+    instance.lastBulletFiredDamage = parentInstance.lastBulletFiredDamage;
+    instance.lastBulletFiredTarget = parentInstance.lastBulletFiredTarget;
     instance.talent = parentInstance.talent;
     instance.enteringObject = parentInstance.enteringObject;
     instance.exitingObject = parentInstance.exitingObject;
