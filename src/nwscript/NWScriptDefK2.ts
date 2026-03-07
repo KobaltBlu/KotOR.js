@@ -2717,7 +2717,15 @@ NWScriptDefK2.Actions = {
     name: 'OpenStore',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: any, args: [any, any, number, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleStore)){
+        GameState.MenuManager.MenuStore.setStoreObject(args[0]);
+        GameState.MenuManager.MenuStore.setCustomerObject(args[1]);
+        GameState.MenuManager.MenuStore.setBonusMarkUp(args[2]);
+        GameState.MenuManager.MenuStore.setBonusMarkDown(args[3]);
+        GameState.MenuManager.MenuStore.open();
+      }
+    }
   },
   379: {
     comment: '379:',

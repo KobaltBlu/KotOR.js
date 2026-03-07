@@ -5098,6 +5098,7 @@ NWScriptDefK1.Actions = {
         GameState.MenuManager.MenuStore.setCustomerObject(args[1]);
         GameState.MenuManager.MenuStore.setBonusMarkUp(args[2]);
         GameState.MenuManager.MenuStore.setBonusMarkDown(args[3]);
+        GameState.MenuManager.MenuStore.open();
       }
     }
   },
