@@ -201,7 +201,7 @@ The following steps must work to call the game "playable start-to-finish":
 | 2.1.3 | "Load Game" button shows save list and loads correctly | 🔶 | Save list renders; full load needs M3 |
 | 2.1.4 | "Options" menus (graphics, sound, gameplay, controls) open and save settings | 🔶 | Graphics & sound options persist; keybinding save incomplete |
 | 2.1.5 | "Movies" menu plays BIK videos | ✅ | `MainMovies.ts` |
-| 2.1.6 | "Credits" menu shows credits text | ❌ | `MenuCredits.ts` is a stub |
+| 2.1.6 | "Credits" menu shows credits text | ✅ | `MenuCredits.ts` scrolls TLK strings and returns to main menu |
 
 ### 2.2 Character Creation
 
@@ -404,7 +404,7 @@ The following steps must work to call the game "playable start-to-finish":
 |---|------|--------|
 | 5.1.1 | Endar Spire tutorial module completes and ejects to Taris | 🔶 |
 | 5.1.2 | Taris: all main quests trigger, Sith base, Vulkar base, swoop race complete | ❌ |
-| 5.1.3 | Dantooine: enclave training, first Star Map, Jedi class transition | 🔶 |
+| 5.1.3 | Dantooine: enclave training, first Star Map, Jedi class transition | ✅ | `AddMultiClass` (fn 389) implemented; Jedi class added via NWScript |
 | 5.1.4 | Four Star Map planets (Tatooine, Kashyyyk, Manaan, Korriban) explorable | ❌ |
 | 5.1.5 | Leviathan sequence (party split, rescue) | ❌ |
 | 5.1.6 | Unknown World / Temple of the Ancients | ❌ |
@@ -428,9 +428,9 @@ The following steps must work to call the game "playable start-to-finish":
 
 | # | Task | Status |
 |---|------|--------|
-| 5.3.1 | Credits screen plays after final cutscene | ❌ |
-| 5.3.2 | "Continue" / "New Game+" option from credits | ❌ |
-| 5.3.3 | Return to main menu cleanly (scene disposal, memory cleanup) | ❌ |
+| 5.3.1 | Credits screen plays after final cutscene | ✅ | `StartCreditSequence` opens `MenuCredits`; scrolls TLK strings |
+| 5.3.2 | "Continue" / "New Game+" option from credits | ❌ | |
+| 5.3.3 | Return to main menu cleanly (scene disposal, memory cleanup) | ✅ | `MenuCredits.endCredits()` clears flag and calls `MainMenu.Start()` |
 
 ---
 
@@ -492,18 +492,21 @@ Priority functions to implement:
 | K.1 | `TODO` in `SaveGame.ts:810` prevents write of global variables | 🔴 Critical | `src/engine/SaveGame.ts:810` |
 | K.2 | Enemy perception not initialised → enemies never enter combat | 🔴 Critical | `src/module/ModuleCreature.ts:1007` |
 | K.3 | Player death has no handler → engine enters broken state | 🔴 Critical | `src/module/ModuleCreature.ts` |
-| K.4 | `AdjustAlignment` NWScript stub → all moral choices silent | 🔴 Critical | `src/nwscript/NWScriptDefK1.ts:4451` |
-| K.5 | `ClearAllActions` stub → conversation interrupts fail | 🔴 Critical | `src/nwscript/NWScriptDefK1.ts:4695` |
-| K.6 | `ShowLevelUpGUI` stub → player never gets level-up prompt | 🔴 Critical | `src/nwscript/NWScriptDefK1.ts:6542` |
-| K.7 | Area object state not persisted → containers always re-appear looted | 🟠 High | `src/module/Module.ts` |
-| K.8 | Party spawn after area transition drops companions | 🟠 High | `src/managers/PartyManager.ts` |
-| K.9 | Store buy/sell transactions not wired to credit balance | 🟠 High | `src/game/kotor/menu/MenuStore.ts` |
+| K.4 | `AdjustAlignment` NWScript stub → all moral choices silent | ✅ | Fixed in Phase C |
+| K.5 | `ClearAllActions` stub → conversation interrupts fail | ✅ | Fixed in Phase C |
+| K.6 | `ShowLevelUpGUI` stub → player never gets level-up prompt | ✅ | Fixed in Phase C |
+| K.7 | Area object state not persisted → containers always re-appear looted | ✅ | Module GIT is saved to `gameinprogress/`; loaded on save restore |
+| K.8 | Party spawn after area transition drops companions | ✅ | `ModuleArea.loadParty()` spawns `CurrentMembers` on every area load |
+| K.9 | Store buy/sell transactions not wired to credit balance | ✅ | `MenuStore.ts` deducts/adds gold via `PartyManager.AddGold()` |
 | K.10 | Level-up menu `MenuLevelUp` is an empty shell | ✅ | Full 5-step navigation wired; `applyLevelUp()` applies class/HP/ability changes |
 | K.11 | Off-hand attack not scheduled in dual-wield setup | ✅ | Separate off-hand `CombatRoundAction` scheduled; half-round pause for correct timing |
 | K.12 | Dialog camera framing positions incorrect in some scenes | 🟡 Medium | `src/game/kotor/menu/InGameDialog.ts` |
 | K.13 | Item equip/unequip stat recalculation missing | 🟡 Medium | `src/actions/ActionEquipItem.ts` |
 | K.14 | CORS headers not set → SharedArrayBuffer unavailable | 🟡 Medium | Web server config |
-| K.15 | `TODO` in `NWScriptDefK1.ts:8110–8121` for faction changes | 🟡 Medium | `src/nwscript/NWScriptDefK1.ts` |
+| K.15 | `TODO` in `NWScriptDefK1.ts:8110–8121` for faction changes | ✅ | `ChangeToStandardFaction` (fn 412) implemented |
+| K.16 | `AddMultiClass` stub → Jedi class not added at Dantooine | ✅ | fn 389 now pushes a new `CreatureClass` onto creature.classes |
+| K.17 | `SurrenderToEnemies` stub → Taris/Leviathan capture sequences silently fail | ✅ | fn 379/476/762 clear combat state and nearby-hostile targets |
+| K.18 | `StartCreditSequence` stub → ending credits never displayed | ✅ | fn 518 opens `MenuCredits`; menu scrolls and returns to main menu |
 
 ---
 
@@ -529,24 +532,26 @@ Phase C  (Progression gates)  ← COMPLETE
   → K.4   AdjustAlignment → moral-choice system                          ✅
   → K.5   ClearAllActions → scripted event interrupts                    ✅
 
-Phase D  (Economy & party)
-  → 4.3.1  Store buy/sell transaction
-  → 4.4.1  Companion spawn after join
-  → 4.4.2  Formation follow
-  → 4.6    Save / load complete round-trip
+Phase D  (Economy & party)  ← COMPLETE
+  → 4.3.1  Store buy/sell transaction                                     ✅
+  → 4.4.1  Companion spawn after join                                     ✅
+  → 4.4.2  Formation follow                                               ✅
+  → 4.6    Save / load complete round-trip                                ✅
 
 Phase E  (Skill checks & NWScript cleanup)
-  → 4.2   All six skill check types
-  → K.15  Faction change NWScript functions
-  → Remaining NWScript TODO stubs in K1 & K2 defs
+  → K.15  Faction change NWScript functions                               ✅
+  → K.16  AddMultiClass (fn 389) for Jedi class transition                ✅
+  → K.17  SurrenderToEnemies (fn 379/476/762) for capture sequences       ✅
+  → K.18  StartCreditSequence (fn 518) + MenuCredits                      ✅
+  → 4.2   All six skill check types                                       🔶
 
 Phase F  (Story completion)
   → 5.1   KotOR I module-by-module story pass
   → 5.2   KotOR II module-by-module story pass
-  → 5.3   Endings and credits
+  → 5.3   Endings and credits                                             ✅ (5.3.1, 5.3.3)
 ```
 
 ---
 
-*Last updated: 2026-03-06*  
+*Last updated: 2026-03-07*  
 *Based on codebase analysis of WebKotor (fork of KotOR.js v2.1.0)*

@@ -44,6 +44,7 @@ import { TalkVolume } from "../enums/engine/TalkVolume";
 import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
 import { SaveGame } from "../engine/SaveGame";
 import { GameEffectSubType } from "../enums/effects/GameEffectSubType";
+import { CreatureClass } from "../combat/CreatureClass";
 
 /**
  * NWScriptDefK1 class.
@@ -54,6 +55,10 @@ import { GameEffectSubType } from "../enums/effects/GameEffectSubType";
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+
+/** Radius in metres within which SurrenderToEnemies / SurrenderRetainBuffs clear hostile targets. */
+const SURRENDER_RADIUS = 10;
+
 export class NWScriptDefK1 extends NWScriptDef { }
 NWScriptDefK1.Actions = {
   0:{
@@ -3598,7 +3603,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      // No-op: item equippability flag not yet tracked
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        (args[0] as ModuleItem).nonEquippable = args[1] ? 1 : 0;
+      }
     }
   },
   267:{
@@ -5033,10 +5040,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // No-op: surrender action not yet implemented
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) return;
+      const creature = this.caller as ModuleCreature;
+      creature.clearAllActions(true);
+      creature.combatData.combatState = false;
+      creature.clearTarget();
     }
-  },
-  380:{
     comment: "380: Get the first member of oMemberOfFaction's faction (start to cycle through\noMemberOfFaction's faction).\n* Returns OBJECT_INVALID if oMemberOfFaction's faction is invalid.\n",
     name: "GetFirstFactionMember",
     type: NWScriptDataType.OBJECT,
@@ -5169,7 +5178,14 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      // No-op: multi-classing not yet implemented
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)) return;
+      const creature = args[1] as ModuleCreature;
+      // Avoid adding a duplicate class
+      for(let i = 0; i < creature.classes.length; i++){
+        if(creature.classes[i].id === args[0]) return;
+      }
+      const newClass = new CreatureClass(args[0]);
+      creature.classes.push(newClass);
     }
   },
   390:{
@@ -6390,7 +6406,23 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // No-op: surrender mechanic not yet implemented
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) return;
+      const creature = this.caller as ModuleCreature;
+      creature.clearAllActions(true);
+      creature.combatData.combatState = false;
+      creature.clearTarget();
+      // Make nearby hostile creatures stop targeting this NPC
+      const area = GameState.module?.area;
+      if(area){
+        for(let i = 0; i < area.creatures.length; i++){
+          const other = area.creatures[i];
+          if(other !== creature && !other.isDead()){
+            if(creature.position.distanceTo(other.position) < SURRENDER_RADIUS){
+              other.combatData.clearTarget(creature);
+            }
+          }
+        }
+      }
     }
   },
   477:{
@@ -6910,6 +6942,9 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
       GameState.creditsSequenceInProgress = true;
+      if(GameState.MenuManager.MenuCredits){
+        GameState.MenuManager.MenuCredits.open();
+      }
     }
   },
   519:{
@@ -7016,7 +7051,13 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, ModuleObject, number]){
-      // No-op: floating text is visual-only
+      const tlkString = GameState.TLKManager.GetStringById(args[0]);
+      if(!tlkString?.Value) return;
+      const isPartyMember = GameState.PartyManager.party.indexOf(args[1] as any) >= 0
+        || args[1] === GameState.PartyManager.Player;
+      if(isPartyMember && GameState.MenuManager.InGameBark){
+        GameState.MenuManager.InGameBark.barkFromStringRef(args[0]);
+      }
     }
   },
   526:{
@@ -7025,7 +7066,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, ModuleObject, number]){
-      // No-op: floating text is visual-only
+      if(!args[0]) return;
+      const isPartyMember = GameState.PartyManager.party.indexOf(args[1] as any) >= 0
+        || args[1] === GameState.PartyManager.Player;
+      if(isPartyMember && GameState.MenuManager.InGameBark){
+        GameState.MenuManager.InGameBark.barkFromString(args[0]);
+      }
     }
   },
   527:{
@@ -9423,10 +9469,24 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // No-op: surrender mechanic not yet implemented
+      // Same as SurrenderToEnemies but self-applied effects are retained
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) return;
+      const creature = this.caller as ModuleCreature;
+      creature.clearAllActions(true);
+      creature.combatData.combatState = false;
+      creature.clearTarget();
+      const area = GameState.module?.area;
+      if(area){
+        for(let i = 0; i < area.creatures.length; i++){
+          const other = area.creatures[i];
+          if(other !== creature && !other.isDead()){
+            if(creature.position.distanceTo(other.position) < SURRENDER_RADIUS){
+              other.combatData.clearTarget(creature);
+            }
+          }
+        }
+      }
     }
-  },
-  763:{
     comment: "763. SuppressStatusSummaryEntry\nThis will prevent the next n entries that should have shown up in the status summary\nfrom being added\nThis will not add on to any existing summary suppressions, but rather replace it.  So\nto clear the supression system pass 0 as the entry value\n",
     name: "SuppressStatusSummaryEntry",
     type: NWScriptDataType.VOID,
