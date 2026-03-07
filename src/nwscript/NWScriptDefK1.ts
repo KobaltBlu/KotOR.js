@@ -1146,7 +1146,7 @@ NWScriptDefK1.Actions = {
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
 
-      let damageTypeIndex = Math.log2(args[1]);
+      let damageTypeIndex = args[1] > 0 ? Math.log2(args[1]) : 0;
       effect.setInt( damageTypeIndex , args[0]);
 
       effect.setInt(14, args[0]);
@@ -8908,7 +8908,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-      args[0].setLocalBoolean( args[1], !!args[2] )
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        args[0].setLocalBoolean( args[1], !!args[2] );
+      }
     }
   },
   681:{
@@ -8930,10 +8932,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-    args[0].setLocalNumber(
-      args[1],
-      args[2]
-      )
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        args[0].setLocalNumber(args[1], args[2]);
+      }
     }
   },
   683:{

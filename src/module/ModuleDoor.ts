@@ -394,10 +394,12 @@ export class ModuleDoor extends ModuleObject {
             object.removeItem(keyItem);
           }
           object.playSoundSet(SSFType.UNLOCK_SUCCESS);
+        } else {
+          object.playSoundSet(SSFType.UNLOCK_FAIL);
         }
+      } else {
+        object.playSoundSet(SSFType.UNLOCK_FAIL);
       }
-
-      object.playSoundSet(SSFType.UNLOCK_FAIL);
     }
 
     // If the door is still locked, run the on fail to open script
@@ -569,6 +571,11 @@ export class ModuleDoor extends ModuleObject {
     }
 
     this.setOpenState(ModuleDoorOpenState.CLOSED);
+
+    const onClosed = this.scripts[ModuleObjectScript.DoorOnClosed];
+    if(onClosed){
+      onClosed.run(this);
+    }
 
   }
 
