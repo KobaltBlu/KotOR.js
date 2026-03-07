@@ -8905,7 +8905,7 @@ NWScriptDefK1.Actions = {
       let count = GameState.TwoDAManager.datatables.get('plot').RowCount;
       for(let i = 0; i < count; i++){
         if(GameState.TwoDAManager.datatables.get('plot').rows[i].label.localeCompare(args[0], undefined, { sensitivity: 'base' }) === 0){
-          GameState.PartyManager.GiveXP( parseInt(GameState.TwoDAManager.datatables.get('plot').rows[i]) * (args[1] * 0.01) );
+          GameState.PartyManager.GiveXP( parseInt(GameState.TwoDAManager.datatables.get('plot').rows[i].xp) * (args[1] * 0.01) );
         }
       }
     }
