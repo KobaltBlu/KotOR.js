@@ -437,6 +437,16 @@ NWScriptDefK1.Actions = {
           GameState.InventoryManager.addItem(item);
         }else{
           args[1].addItem(item);
+          // Fire ScriptDisturbed for non-party creatures so quest scripts can track item additions
+          if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+            const instance = (args[1] as any).scripts?.['ScriptDisturbed'];
+            if(instance){
+              instance.lastDisturbed = GameState.PartyManager.party[0];
+              (instance as any).inventoryDisturbType = 0; // INVENTORY_DISTURB_TYPE_ADDED
+              (instance as any).inventoryDisturbItem = item;
+              instance.run(args[1]);
+            }
+          }
         }
         return item;
       }

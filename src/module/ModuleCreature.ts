@@ -2316,7 +2316,14 @@ export class ModuleCreature extends ModuleObject {
 
   retrieveInventory(){
     while(this.inventory.length){
-      GameState.InventoryManager.addItem(this.inventory.pop())
+      const item = this.inventory.pop();
+      GameState.InventoryManager.addItem(item);
+      const instance = this.scripts[ModuleObjectScript.CreatureOnDisturbed];
+      if(!instance){ continue; }
+      instance.lastDisturbed = GameState.PartyManager.party[0];
+      (instance as any).inventoryDisturbType = 1; // INVENTORY_DISTURB_TYPE_REMOVED
+      (instance as any).inventoryDisturbItem = item;
+      instance.run(this);
     }
   }
 
