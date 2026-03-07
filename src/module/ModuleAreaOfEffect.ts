@@ -189,6 +189,70 @@ export class ModuleAreaOfEffect extends ModuleObject {
     }
   }
 
+  /**
+   * Track which creatures and party members are inside this AOE and fire
+   * OnObjectEnter / OnObjectExit events as objects enter or leave.
+   */
+  update(delta = 0){
+    super.update(delta);
+
+    if(!GameState.module?.area) return;
+
+    const candidates: ModuleObject[] = [
+      ...GameState.module.area.creatures,
+      ...GameState.PartyManager.party,
+    ];
+
+    for(const obj of candidates){
+      if(!obj || obj.isDead()) continue;
+
+      const inside = this._isObjectInsideAOE(obj);
+      const wasInside = this.objectsInside.indexOf(obj) >= 0;
+
+      if(inside && !wasInside){
+        this.objectsInside.push(obj);
+        this.lastEntered = obj;
+        this._fireAOEEnterEvent(obj);
+      } else if(!inside && wasInside){
+        this.objectsInside.splice(this.objectsInside.indexOf(obj), 1);
+        this.lastLeft = obj;
+        this._fireAOEExitEvent(obj);
+      }
+    }
+  }
+
+  /** Returns true when obj's position is within this AOE's shape. */
+  private _isObjectInsideAOE(obj: ModuleObject): boolean {
+    if(this.shape === AreaOfEffectShape.RECTANGLE){
+      const halfLen = (this.length || 0) / 2;
+      const halfWid = (this.width  || 0) / 2;
+      const dx = obj.position.x - this.position.x;
+      const dy = obj.position.y - this.position.y;
+      return Math.abs(dx) <= halfLen && Math.abs(dy) <= halfWid;
+    }
+    // Default: sphere / circle
+    const r = this.radius || 0;
+    const dx = obj.position.x - this.position.x;
+    const dy = obj.position.y - this.position.y;
+    return (dx * dx + dy * dy) <= (r * r);
+  }
+
+  /** Fires the onObjectEnter script for this AOE. */
+  private _fireAOEEnterEvent(obj: ModuleObject): void {
+    if(this.onObjectEnter instanceof NWScriptInstance){
+      this.onObjectEnter.enteringObject = obj;
+      this.onObjectEnter.run(this);
+    }
+  }
+
+  /** Fires the onObjectExit script for this AOE. */
+  private _fireAOEExitEvent(obj: ModuleObject): void {
+    if(this.onObjectExit instanceof NWScriptInstance){
+      this.onObjectExit.exitingObject = obj;
+      this.onObjectExit.run(this);
+    }
+  }
+
   save(): GFFObject {
     let gff = new GFFObject();
     gff.FileType = 'AOE ';
