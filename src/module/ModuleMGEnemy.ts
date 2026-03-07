@@ -194,7 +194,12 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   adjustHitPoints(nHP = 0, nAbsolute = 0){
-    this.hit_points += nHP;
+    if(nAbsolute){
+      this.hit_points = nHP;
+    } else {
+      this.hit_points += nHP;
+    }
+    return this.hit_points;
   }
 
   startInvulnerability(){

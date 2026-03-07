@@ -4358,7 +4358,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)) && !(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor))) return;
+      if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)) && !(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor))) return NW_FALSE;
       return (args[0] as ModuleDoor|ModulePlaceable).isLocked() ? NW_TRUE : NW_FALSE;
     }
   },
@@ -5003,7 +5003,7 @@ NWScriptDefK1.Actions = {
       if(
         !(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModulePlaceable)) && 
         !(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleDoor))
-      ) return;
+      ) return undefined;
       return (this.caller as ModuleDoor|ModulePlaceable).lastObjectOpened;
     }
   },
@@ -7827,8 +7827,9 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer)){
-        (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).adjustHitPoints(args[1], args[2]);
+        return (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).adjustHitPoints(args[1], args[2]);
       }
+      return 0;
     }
   },
   591:{
@@ -9171,7 +9172,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature))) return;
+      if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature))) return NW_FALSE;
       if(args[0]){
         return args[0].min1HP ? NW_TRUE : NW_FALSE;
       }
@@ -9322,7 +9323,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))) return;
+      if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))) return undefined;
 
       this.creatureAttackerIndex.set(args[0].id, 0);
       return GameState.ModuleObjectManager.GetAttackerByIndex(args[0], 0);
@@ -9334,7 +9335,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))) return;
+      if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))) return undefined;
 
       const nextId = this.creatureAttackerIndex.get(args[0].id) + 1;
       this.creatureAttackerIndex.set(args[0].id, nextId);
