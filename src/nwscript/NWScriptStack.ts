@@ -177,29 +177,18 @@ export class NWScriptStack {
   }
 
   storeState(bpO: number = 0, spO: number = 0){
-
-    let stack = [];
-    for(let i = 0; i < spO; i++){
-      let tmpPointer = (this.pointer - i);
-      stack.push(this.stack[tmpPointer])
-    }
-
     this._storeState = {
-      localStack: this.stack,//stack.reverse(),
-      globalStack: this.stack,//globalStack.reverse(),
+      localStack: this.stack.slice(),
+      globalStack: this.stack.slice(0, bpO / 4),
       pointer: this.pointer,
       basePointer: this.basePointer
     };
-    //TODO:: Actually implement this properly
-
   }
 
   restoreState(){
-    this.stack = this._storeState.localStack;
-    this.stack = this._storeState.globalStack;
+    this.stack = this._storeState.localStack.slice();
     this.pointer = this._storeState.pointer;
     this.basePointer = this._storeState.basePointer;
-    //TODO:: Actually implement this properly
   }
 
   saveBP() {

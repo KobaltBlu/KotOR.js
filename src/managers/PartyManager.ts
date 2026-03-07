@@ -355,7 +355,6 @@ export class PartyManager {
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_AISTATE')).setValue(0);
       let availNPCSList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_AVAIL_NPCS'));
 
-      //TODO: Party Available NPCS
       let maxPartyMembers = (GameState.GameKey == GameEngineType.KOTOR) ? 9 : 12;
       for(let i = 0; i < maxPartyMembers; i++){
         let pm = GameState.PartyManager.NPCS[i];
@@ -368,8 +367,6 @@ export class PartyManager {
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CHEAT_USED')).setValue(0);
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NP')).setValue( GameState.getCurrentPlayer() == GameState.PartyManager.Player ? -1 : GameState.PartyManager.party.indexOf(GameState.getCurrentPlayer()) );
       partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_COST_MULT_LIS'));
-
-      //TODO: COST MULT LIST
 
       const dlg_list = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_DLG_MSG_LIST'));
 

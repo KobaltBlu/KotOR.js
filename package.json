@@ -66,6 +66,7 @@
     "scss-loader": "^0.0.1",
     "stream-browserify": "^3.0.0",
     "style-loader": "^4.0.0",
+    "ts-jest": "^29.4.6",
     "ts-loader": "^9.5.4",
     "tsc-watch": "^7.2.0",
     "typedoc": "^0.28.15",
@@ -88,7 +89,6 @@
     "bootstrap": "^5.3.8",
     "jest": "^30.2.0",
     "monaco-editor": "^0.52.0",
-    "three": "^0.149.0",
-    "ts-jest": "^29.4.6"
+    "three": "^0.149.0"
   }
 }
