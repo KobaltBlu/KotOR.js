@@ -245,7 +245,7 @@ Supported platforms:
 
 | Tool | Version | Notes |
 |------|---------|-------|
-| [Node.js](https://nodejs.org/) | ≥ 18 | Includes npm |
+| [Node.js](https://nodejs.org/) | ≥ 22 | Includes npm |
 | [npm](https://www.npmjs.com/) | ≥ 9 | Bundled with Node.js |
 | A modern web browser | latest | Chrome recommended for browser play |
 
@@ -383,7 +383,7 @@ KotOR.js uses **Jest** with `ts-jest` for its test suite.
 npm run test
 ```
 
-This runs all 11 test files and generates a coverage report in `./coverage/`.
+This runs all 11 test files (165 tests total) and generates a coverage report in `./coverage/`.
 
 ### Run Tests Without Coverage (faster)
 
@@ -395,7 +395,7 @@ npx jest --no-coverage
 
 | File | Description |
 |------|-------------|
-| `src/nwscript/NWScriptFidelity.test.ts` | NWScript VM fidelity tests (70+ tests) |
+| `src/nwscript/NWScriptFidelity.test.ts` | NWScript VM fidelity tests (117 tests) |
 | `src/combat/CombatRound.test.ts` | Combat round mechanics |
 | `src/combat/CombatAttackData.test.ts` | Attack data structures |
 | `src/actions/ActionCombat.test.ts` | Combat action handling |
@@ -485,7 +485,7 @@ A: Yes. KotOR.js reads assets from a valid installation of KotOR I or KotOR II. 
 A: Chrome (latest) is strongly recommended. The web version requires HTTPS — it cannot be served over plain HTTP.
 
 **Q: The game crashes immediately on startup.**  
-A: Make sure you pointed the Launcher at the correct game installation folder containing the `chitin.key` file. Verify your Node.js version is ≥ 18.
+A: Make sure you pointed the Launcher at the correct game installation folder containing the `chitin.key` file. Verify your Node.js version is ≥ 22.
 
 **Q: I get a blank screen / nothing loads.**  
 A: Check the browser or Electron DevTools console for errors. Common causes: wrong game path, unsupported browser, or missing HTTPS on the web version.
