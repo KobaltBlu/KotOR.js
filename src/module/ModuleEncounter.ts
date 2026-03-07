@@ -8,11 +8,13 @@ import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyFace3 } from "../three/odyssey";
+import type { OdysseyModel3D } from "../three/odyssey";
 import { ConfigClient } from "../utility/ConfigClient";
 import { ResourceLoader } from "../loaders";
 // import { ModuleObjectManager, PartyManager, FactionManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObject } from "./ModuleObject";
+import type { ModuleCreature } from "./ModuleCreature";
 import { EncounterCreatureEntry } from "./EncounterCreatureEntry";
 import { EncounterSpawnPointEntry } from "./EncounterSpawnPointEntry";
 import { EncounterSpawnEntry } from "./EncounterSpawnEntry";
@@ -63,6 +65,10 @@ export class ModuleEncounter extends ModuleObject {
   customScriptId: any;
   areaListMaxSize: any;
   spawnPoolActive: any;
+  /** Creatures spawned by this encounter; tracked for reset/exhaustion logic. */
+  spawnedCreatures: ModuleCreature[];
+  /** Elapsed time (seconds) since the encounter was exhausted, for reset cooldown. */
+  private resetTimer: number;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -88,6 +94,8 @@ export class ModuleEncounter extends ModuleObject {
     this.resetTime = 32000; //Seconds before encounter respawns
     this.spawnOption = 0; //0: Continuous Spawn | 1: Single-Shot Spawn
     this.started = 0; //0: if there are no creatures currently belonging to the encounter. | 1: if any creatures currently exist that belong to the encounter.
+    this.spawnedCreatures = [];
+    this.resetTimer = 0;
 
     this.scripts = {
       onEntered: undefined,
@@ -109,6 +117,17 @@ export class ModuleEncounter extends ModuleObject {
     super.update(delta);
     
     this.getCurrentRoom();
+
+    // Reset cooldown: if encounter is inactive and reset is allowed, tick timer and reactivate
+    if(!this.active && this.reset && this.resetTime > 0){
+      this.resetTimer += delta;
+      if(this.resetTimer >= this.resetTime){
+        this.resetTimer = 0;
+        this.active = 1;
+        this.started = 0;
+        this.spawnedCreatures = [];
+      }
+    }
     
     //Check Module Creatures
     let creatureLen = GameState.module.area.creatures.length;
@@ -147,29 +166,103 @@ export class ModuleEncounter extends ModuleObject {
       if(this.box.containsPoint(pos)){
         if(this.objectsInside.indexOf(partymember) == -1){
           this.objectsInside.push(partymember);
-          if(this.isHostile(partymember)){
-            partymember.lastTriggerEntered = this;
-            this.lastObjectEntered = partymember;
-
-            this.onEnter(partymember);
-            this.triggered = true;
-          }
+          // Party members always trigger encounter spawn (engine-level behaviour)
+          partymember.lastTriggerEntered = this;
+          this.lastObjectEntered = partymember;
+          this.triggerEncounterEntry(partymember);
         }
       }else{
         if(this.objectsInside.indexOf(partymember) >= 0){
           this.objectsInside.splice(this.objectsInside.indexOf(partymember), 1);
-          if(this.isHostile(partymember)){
-            partymember.lastTriggerExited = this;
-            this.lastObjectExited = partymember;
-
-            this.onExit(partymember);
-          }
+          partymember.lastTriggerExited = this;
+          this.lastObjectExited = partymember;
+          this.onExit(partymember);
         }
       }
     }
 
     this.mesh.visible = ConfigClient.get('Game.debug.trigger_geometry_show') ? true : false;
 
+  }
+
+  /**
+   * Handle a party member entering the encounter zone.
+   * Spawns creatures from the creature list (engine-level) then runs the
+   * OnEntered NWScript.
+   */
+  triggerEncounterEntry(entering: ModuleObject){
+    // Spawn creatures only when encounter is active and not yet started
+    if(this.active && !this.started && this.creatureList.length > 0){
+      this.spawnEncounterCreatures();
+    }
+    this.onEnter(entering);
+    this.triggered = true;
+  }
+
+  /**
+   * Spawn creatures from the creature list at the designated spawn points.
+   * The number spawned is capped at recCreatures (or maxCreatures as fallback).
+   */
+  spawnEncounterCreatures(){
+    if(!GameState.module?.area) return;
+    const area = GameState.module.area;
+
+    const targetCount = this.recCreatures > 0 ? this.recCreatures : this.maxCreatures;
+    let spawned = 0;
+
+    // Build a shuffled copy of spawn points so we cycle through them
+    const points = this.spawnPointList.slice();
+
+    for(let i = 0; i < this.creatureList.length && spawned < targetCount; i++){
+      const entry = this.creatureList[i];
+      if(!entry.resref) continue;
+
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], entry.resref);
+      if(!buffer){
+        console.error('ModuleEncounter: failed to load creature template', entry.resref);
+        continue;
+      }
+
+      const creature = new GameState.Module.ModuleArea.ModuleCreature(new GFFObject(buffer)) as ModuleCreature;
+      creature.load();
+      creature.encounterCreature = true;
+
+      // Pick spawn position: use explicit spawn point if available, otherwise encounter centre
+      const ptIdx = spawned % (points.length || 1);
+      if(points.length > 0){
+        const pt = points[ptIdx];
+        creature.position.set(pt.position.x, pt.position.y, pt.position.z);
+        creature.setFacing(pt.orientation, true);
+      } else {
+        // Fall back to encounter bounding-box centre
+        const centre = new THREE.Vector3();
+        this.box.getCenter(centre);
+        creature.position.copy(centre);
+      }
+
+      area.attachObject(creature);
+      this.spawnedCreatures.push(creature);
+
+      creature.loadModel().then((model: OdysseyModel3D) => {
+        if(!model) return;
+        model.userData.moduleObject = creature;
+        model.hasCollision = true;
+        model.name = creature.getTag();
+        GameState.group.creatures.add(creature.container);
+        creature.getCurrentRoom();
+        creature.onSpawn();
+      }).catch((e: any) => console.error('ModuleEncounter: creature model load error', e));
+
+      spawned++;
+    }
+
+    if(spawned > 0){
+      this.started = 1;
+      // Single-shot spawn: deactivate after first wave
+      if(this.spawnOption === 1){
+        this.active = 0;
+      }
+    }
   }
 
   onEnter(object: ModuleObject){

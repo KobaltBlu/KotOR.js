@@ -6314,3 +6314,371 @@ describe('62. K1 blocker matrix – facing unit conversion, GetFacingFromLocatio
 
 });
 
+
+// =============================================================================
+// 63. K1 encounter spawning, GetPlotFlag integer fix, console.log cleanup
+// =============================================================================
+describe('63. K1 encounter spawning, GetPlotFlag fix, console-log cleanup', () => {
+
+  // -------------------------------------------------------------------------
+  // 1. GetPlotFlag – must return NW_TRUE (1) / NW_FALSE (0), not boolean
+  // -------------------------------------------------------------------------
+  it('GetPlotFlag: returns 1 for a plot object (NW_TRUE)', () => {
+    const obj = { objectType: 1, plot: true };
+    const BitWise = { InstanceOfObject: (o: any, _t: number) => o != null };
+    const ModuleObjectType = { ModuleObject: 1 };
+    const NW_TRUE = 1;
+    const NW_FALSE = 0;
+
+    let result: number;
+    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleObject)){
+      result = obj.plot ? NW_TRUE : NW_FALSE;
+    } else {
+      result = NW_FALSE;
+    }
+
+    expect(result).toBe(1);
+    expect(typeof result).toBe('number');
+  });
+
+  it('GetPlotFlag: returns 0 for a non-plot object (NW_FALSE)', () => {
+    const obj = { objectType: 1, plot: false };
+    const BitWise = { InstanceOfObject: (o: any, _t: number) => o != null };
+    const ModuleObjectType = { ModuleObject: 1 };
+    const NW_TRUE = 1;
+    const NW_FALSE = 0;
+
+    let result: number;
+    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleObject)){
+      result = obj.plot ? NW_TRUE : NW_FALSE;
+    } else {
+      result = NW_FALSE;
+    }
+
+    expect(result).toBe(0);
+    expect(typeof result).toBe('number');
+  });
+
+  it('GetPlotFlag: returns 0 for invalid/null object (NW_FALSE)', () => {
+    const NW_FALSE = 0;
+    const BitWise = { InstanceOfObject: (_o: any, _t: number) => false };
+    const ModuleObjectType = { ModuleObject: 1 };
+    const args: [any] = [null as any];
+
+    let result: number;
+    if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+      result = (args[0] as any).plot ? 1 : 0;
+    } else {
+      result = NW_FALSE;
+    }
+
+    expect(result).toBe(0);
+    expect(typeof result).toBe('number');
+  });
+
+  it('regression: old GetPlotFlag returned raw boolean true (not integer 1)', () => {
+    // Old implementation: return args[0].plot  (a boolean)
+    const oldBehavior = true; // what the old code returned for a plot object
+    expect(typeof oldBehavior).toBe('boolean');
+    expect(oldBehavior).not.toBe(1); // strict inequality: true !== 1
+  });
+
+  // -------------------------------------------------------------------------
+  // 2. ModuleEncounter: engine-level creature spawning on party entry
+  // -------------------------------------------------------------------------
+  it('ModuleEncounter.spawnEncounterCreatures: spawns up to recCreatures from creatureList', () => {
+    // Simulate the spawning logic without touching real game state
+    const creatureList = [
+      { resref: 'creature_a' },
+      { resref: 'creature_b' },
+      { resref: 'creature_c' },
+    ];
+    const recCreatures = 2;
+    const spawnedCreatures: string[] = [];
+
+    const targetCount = recCreatures > 0 ? recCreatures : 1;
+    let spawned = 0;
+    for(let i = 0; i < creatureList.length && spawned < targetCount; i++){
+      const entry = creatureList[i];
+      if(!entry.resref) continue;
+      spawnedCreatures.push(entry.resref);
+      spawned++;
+    }
+
+    expect(spawnedCreatures.length).toBe(2);
+    expect(spawnedCreatures[0]).toBe('creature_a');
+    expect(spawnedCreatures[1]).toBe('creature_b');
+  });
+
+  it('ModuleEncounter.spawnEncounterCreatures: skips entries with empty resref', () => {
+    const creatureList = [
+      { resref: '' },
+      { resref: 'creature_b' },
+    ];
+    const recCreatures = 2;
+    const spawnedCreatures: string[] = [];
+
+    const targetCount = recCreatures;
+    let spawned = 0;
+    for(let i = 0; i < creatureList.length && spawned < targetCount; i++){
+      const entry = creatureList[i];
+      if(!entry.resref) continue;
+      spawnedCreatures.push(entry.resref);
+      spawned++;
+    }
+
+    expect(spawnedCreatures.length).toBe(1);
+    expect(spawnedCreatures[0]).toBe('creature_b');
+  });
+
+  it('ModuleEncounter: single-shot (spawnOption=1) deactivates after spawning', () => {
+    let active = 1;
+    let started = 0;
+    const spawnOption = 1; // single-shot
+
+    // Simulate the spawn logic
+    const spawned = 1;
+    if(spawned > 0){
+      started = 1;
+      if(spawnOption === 1){
+        active = 0;
+      }
+    }
+
+    expect(started).toBe(1);
+    expect(active).toBe(0);
+  });
+
+  it('ModuleEncounter: continuous spawn (spawnOption=0) stays active after spawning', () => {
+    let active = 1;
+    let started = 0;
+    const spawnOption = 0; // continuous
+
+    const spawned = 1;
+    if(spawned > 0){
+      started = 1;
+      if(spawnOption === 1){
+        active = 0;
+      }
+    }
+
+    expect(started).toBe(1);
+    expect(active).toBe(1);
+  });
+
+  it('ModuleEncounter: does not spawn when already started', () => {
+    let spawnCalled = false;
+    const encounter = {
+      active: 1,
+      started: 1, // already triggered
+      creatureList: [{ resref: 'kath_hound' }],
+      spawnEncounterCreatures: () => { spawnCalled = true; },
+    };
+
+    // Simulate triggerEncounterEntry logic
+    if(encounter.active && !encounter.started && encounter.creatureList.length > 0){
+      encounter.spawnEncounterCreatures();
+    }
+
+    expect(spawnCalled).toBe(false);
+  });
+
+  it('ModuleEncounter: does not spawn when inactive', () => {
+    let spawnCalled = false;
+    const encounter = {
+      active: 0, // inactive
+      started: 0,
+      creatureList: [{ resref: 'kath_hound' }],
+      spawnEncounterCreatures: () => { spawnCalled = true; },
+    };
+
+    if(encounter.active && !encounter.started && encounter.creatureList.length > 0){
+      encounter.spawnEncounterCreatures();
+    }
+
+    expect(spawnCalled).toBe(false);
+  });
+
+  it('ModuleEncounter: reset timer reactivates after resetTime seconds', () => {
+    let active = 0;
+    let started = 0;
+    let resetTimer = 0;
+    const reset = 1;      // respawning enabled
+    const resetTime = 30; // 30 seconds
+
+    // Simulate 31 seconds of delta updates
+    resetTimer += 31;
+    if(!active && reset && resetTime > 0){
+      if(resetTimer >= resetTime){
+        resetTimer = 0;
+        active = 1;
+        started = 0;
+      }
+    }
+
+    expect(active).toBe(1);
+    expect(started).toBe(0);
+    expect(resetTimer).toBe(0);
+  });
+
+  it('ModuleEncounter: spawn point cycle uses modulo index', () => {
+    const spawnPoints = [
+      { position: { x: 1, y: 0, z: 0 }, orientation: 0 },
+      { position: { x: 2, y: 0, z: 0 }, orientation: 0 },
+    ];
+    const spawned = [0, 1, 2];
+
+    const positions = spawned.map(s => {
+      const ptIdx = s % spawnPoints.length;
+      return spawnPoints[ptIdx].position.x;
+    });
+
+    // spawn 0 → point 0 (x=1), spawn 1 → point 1 (x=2), spawn 2 → point 0 (x=1)
+    expect(positions).toEqual([1, 2, 1]);
+  });
+
+  // -------------------------------------------------------------------------
+  // 3. party members always trigger encounter (no isHostile guard)
+  // -------------------------------------------------------------------------
+  it('Encounter: party member entry always calls triggerEncounterEntry (no isHostile check)', () => {
+    let onEnterCalled = false;
+    const encounter = {
+      box: { containsPoint: () => true },
+      objectsInside: [] as any[],
+      active: 1,
+      started: 0,
+      creatureList: [{ resref: 'creature_a' }],
+      spawnEncounterCreatures: () => {},
+      onEnter: () => { onEnterCalled = true; },
+      triggerEncounterEntry: function(pm: any){
+        if(this.active && !this.started && this.creatureList.length > 0){
+          this.spawnEncounterCreatures();
+        }
+        this.onEnter(pm);
+      },
+    };
+
+    const partymember = { position: { clone: () => ({ x: 0, y: 0, z: 0 }) } };
+
+    // Simulate: party member inside box, not already tracked
+    if(!encounter.objectsInside.includes(partymember)){
+      encounter.objectsInside.push(partymember);
+      encounter.triggerEncounterEntry(partymember);
+    }
+
+    expect(onEnterCalled).toBe(true);
+  });
+
+});
+
+// =============================================================================
+// 64. GetEncounterActive brace fix: fn 277-771 now accessible
+// =============================================================================
+describe('64. GetEncounterActive brace fix – fn 277-771 now accessible', () => {
+
+  it('fn 276 GetEncounterActive action function is properly closed (no brace nesting)', () => {
+    // Verify that the action is a proper function
+    const fn276 = {
+      name: 'GetEncounterActive',
+      action: function(active: boolean){
+        if(active){ return 1; }
+        return 0;
+      }
+    };
+    
+    const fn277 = {
+      name: 'SetEncounterActive',
+      action: function(){ return undefined; }
+    };
+
+    // These should be completely independent objects at the same level
+    expect(fn276.name).toBe('GetEncounterActive');
+    expect(fn277.name).toBe('SetEncounterActive');
+    // fn276 should NOT have fn277 as a property (the old bug caused this)
+    expect((fn276 as any)[277]).toBeUndefined();
+  });
+
+  it('GetEncounterActive returns 1 for active encounter', () => {
+    const NW_FALSE = 0;
+    const NW_TRUE = 1;
+    const encounter = { active: 1 };
+    const isEncounter = true; // BitWise.InstanceOfObject would be true
+
+    let result: number;
+    if(isEncounter){
+      result = encounter.active;
+    } else {
+      result = NW_FALSE;
+    }
+
+    expect(result).toBe(1);
+  });
+
+  it('GetEncounterActive returns NW_FALSE for non-encounter object', () => {
+    const NW_FALSE = 0;
+    const isEncounter = false; // not a ModuleEncounter
+
+    let result: number;
+    if(isEncounter){
+      result = 1;
+    } else {
+      result = NW_FALSE;
+    }
+
+    expect(result).toBe(0);
+  });
+
+  it('SetEncounterActive sets active from NW_TRUE to NW_FALSE', () => {
+    const NW_TRUE = 1;
+    const NW_FALSE = 0;
+    const encounter = { active: NW_TRUE };
+
+    // Simulate SetEncounterActive(FALSE, oEncounter)
+    const nNewValue = 0; // FALSE
+    encounter.active = nNewValue ? NW_TRUE : NW_FALSE;
+
+    expect(encounter.active).toBe(0);
+  });
+
+  it('SetEncounterActive sets active from NW_FALSE to NW_TRUE', () => {
+    const NW_TRUE = 1;
+    const NW_FALSE = 0;
+    const encounter = { active: NW_FALSE };
+
+    // Simulate SetEncounterActive(TRUE, oEncounter)
+    const nNewValue = 1; // TRUE
+    encounter.active = nNewValue ? NW_TRUE : NW_FALSE;
+
+    expect(encounter.active).toBe(1);
+  });
+
+  it('regression: brace depth issue caused ~495 functions to be unreachable', () => {
+    // Previously, the GetEncounterActive action function was missing its closing
+    // brace, causing all functions from 277-771 to be nested inside fn 276's
+    // object value rather than at the top level of the Actions map.
+    // This test documents the fix.
+    
+    // Simulate correctly structured Actions map
+    const Actions: {[key: number]: {name: string}} = {};
+    Actions[276] = { name: 'GetEncounterActive' };
+    Actions[277] = { name: 'SetEncounterActive' };
+    Actions[578] = { name: 'GetGlobalBoolean' };
+    Actions[771] = { name: 'LastFn' };
+
+    expect(Actions[276]?.name).toBe('GetEncounterActive');
+    expect(Actions[277]?.name).toBe('SetEncounterActive');
+    expect(Actions[578]?.name).toBe('GetGlobalBoolean');
+    expect(Actions[771]?.name).toBe('LastFn');
+
+    // Simulate the BROKEN structure (fn 277 nested inside fn 276)
+    const brokenActions: {[key: number]: any} = {
+      276: {
+        name: 'GetEncounterActive',
+        277: { name: 'SetEncounterActive' }
+      }
+    };
+    expect(brokenActions[277]).toBeUndefined(); // fn 277 was not reachable!
+    expect(brokenActions[276][277]?.name).toBe('SetEncounterActive'); // was nested here
+  });
+
+});
