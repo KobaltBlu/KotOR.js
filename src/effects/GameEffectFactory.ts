@@ -129,7 +129,6 @@ export class GameEffectFactory {
   // static EffectSetWalkAnimation: typeof EffectSetWalkAnimation = EffectSetWalkAnimation;
   // static EffectLimitMovementSpeed: typeof EffectLimitMovementSpeed = EffectLimitMovementSpeed;
   static EffectForcePushed: typeof EffectForcePushed = EffectForcePushed;
-  // static EffectDamageShield: typeof EffectDamageShield = EffectDamageShield;
   static EffectDamageShield: typeof EffectDamageShield = EffectDamageShield;
   static EffectDisguise: typeof EffectDisguise = EffectDisguise;
   /*static EffectSanctuary: typeof EffectSanctuary = EffectSanctuary;
