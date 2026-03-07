@@ -77,8 +77,8 @@ export class JournalManager {
         entry = new JournalEntry();
         entry.plot_id = szPlotID;
         entry.state = state;
-        entry.date = 0; //TODO
-        entry.time = 0; //TODO
+        entry.date = GameState.module?.timeManager?.pauseDay ?? 0;
+        entry.time = GameState.module?.timeManager?.pauseTime ?? 0;
         entry.load();
         JournalManager.Entries.push(entry);
       }
