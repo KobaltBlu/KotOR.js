@@ -42,14 +42,14 @@ export class JournalManager {
     });
   }
 
-  static GeJournalEntryByTag(tag: string = ''): JournalEntry {
+  static GetJournalEntryByTag(tag: string = ''): JournalEntry {
     return JournalManager.Entries.find( (entry: JournalEntry) => {
       return entry.plot_id.toLocaleLowerCase() == tag.toLocaleLowerCase();
     });
   }
 
   static GetJournalEntryState(szPlotID: string = ''): number {
-    const entry = JournalManager.GeJournalEntryByTag(szPlotID);
+    const entry = JournalManager.GetJournalEntryByTag(szPlotID);
     if(entry){
       return entry.state;
     }
@@ -68,7 +68,7 @@ export class JournalManager {
   static AddJournalQuestEntry(szPlotID: string = '', state: number = 0, allowOverrideHigher: boolean = false): boolean {
     if(JournalManager.PlotExists(szPlotID)){
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.JOURNAL_ENTRY_ADDED);
-      let entry = JournalManager.GeJournalEntryByTag(szPlotID);
+      let entry = JournalManager.GetJournalEntryByTag(szPlotID);
       if(entry){
         // Only update state if the new state is higher, OR if allowOverrideHigher allows going lower
         if(state > entry.state || allowOverrideHigher){
@@ -90,7 +90,7 @@ export class JournalManager {
   }
 
   static RemoveJournalQuestEntry(szPlotID: string = ''): boolean {
-    const entry = JournalManager.GeJournalEntryByTag(szPlotID);
+    const entry = JournalManager.GetJournalEntryByTag(szPlotID);
     const index = JournalManager.Entries.indexOf(entry);
     if(index >= 0){
       JournalManager.Entries.splice(index, 1);

@@ -2899,11 +2899,11 @@ NWScriptDefK1.Actions = {
       action.setParameter(0, ActionParameterType.FLOAT, args[0].position.x);
       action.setParameter(1, ActionParameterType.FLOAT, args[0].position.y);
       action.setParameter(2, ActionParameterType.FLOAT, args[0].position.z);
-      action.setParameter(3, ActionParameterType.DWORD, args[0].area.id);
+      action.setParameter(3, ActionParameterType.DWORD, args[0].area?.id ?? GameState.module?.area?.id ?? 0);
       action.setParameter(4, ActionParameterType.INT, 0);
       action.setParameter(5, ActionParameterType.FLOAT, 20.0);
-      action.setParameter(6, ActionParameterType.FLOAT, args[0].rotation.x);
-      action.setParameter(7, ActionParameterType.FLOAT, args[0].rotation.y);
+      action.setParameter(6, ActionParameterType.FLOAT, args[0].rotation?.x ?? 0);
+      action.setParameter(7, ActionParameterType.FLOAT, args[0].rotation?.y ?? 0);
       this.caller.actionQueue.add(action);
     }
   },
@@ -3709,9 +3709,11 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 1);
       effect.setInt(1, args[1]);
-      effect.setFloat(0, args[0].position.x);
-      effect.setFloat(1, args[0].position.y);
-      effect.setFloat(2, args[0].position.z);
+      if(args[0] instanceof EngineLocation){
+        effect.setFloat(0, args[0].position.x);
+        effect.setFloat(1, args[0].position.y);
+        effect.setFloat(2, args[0].position.z);
+      }
       return effect.initialize();
     }
   },
@@ -6445,6 +6447,9 @@ NWScriptDefK1.Actions = {
       let effect = new GameState.GameEffectFactory.EffectVisualEffect();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
+      effect.setInt(2, args[2]);
       return effect.initialize();
     }
   },
