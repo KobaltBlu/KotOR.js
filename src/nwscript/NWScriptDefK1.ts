@@ -199,7 +199,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      this.caller.setFacing(args[0]);   
+      this.caller.setFacing(args[0] * Math.PI / 180);
     }
   },
   11:{
@@ -391,9 +391,11 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
-        return args[0].rotation.z;
+        // rotation.z is in radians; NWScript expects anticlockwise degrees from East (0-360)
+        const deg = args[0].rotation.z * 180 / Math.PI;
+        return ((deg % 360) + 360) % 360;
       }else{
-        return 0.0;
+        return -1.0;
       }
     }
   },
@@ -3038,8 +3040,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.FLOAT,
     args: [NWScriptDataType.LOCATION],
     action: function(this: NWScriptInstance, args: [EngineLocation]){
-      if(location instanceof EngineLocation){
-        return location.getFacing();
+      if(args[0] instanceof EngineLocation){
+        return args[0].getBearing();
       }
       return 0;
     }
@@ -9262,7 +9264,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
-        return typeof args[0].faction == 'number' ? args[0].faction : -1;
+        return args[0].faction?.id ?? -1;
       }
       return -1;
     }
@@ -9825,7 +9827,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // No-op: post-dialog character switching not yet implemented
+      GameState.CutsceneManager.cancelPostDialogSwitch = true;
     }
   },
   758:{
@@ -9958,9 +9960,11 @@ NWScriptDefK1.Actions = {
     comment: "767. SetAvailableNPCId\nThis will set the object id that should be used for a specific available NPC\n",
     name: "SetAvailableNPCId",
     type: NWScriptDataType.VOID,
-    args: [],
-    action: function(this: NWScriptInstance, args: []){
-      // No-op: NPC ID assignment is handled internally by PartyManager
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(GameState.PartyManager.NPCS[args[0]] && BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        GameState.PartyManager.NPCS[args[0]].moduleObject = args[1] as ModuleCreature;
+      }
     }
   },
   768:{

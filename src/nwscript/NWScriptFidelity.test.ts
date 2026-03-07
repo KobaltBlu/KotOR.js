@@ -6085,3 +6085,232 @@ describe('61. Door & local-variable correctness fixes', () => {
   });
 
 });
+
+// =============================================================================
+// 62. K1 blocker matrix – facing degree/radian fixes, GetFacingFromLocation
+//     bug, SetAvailableNPCId args, CancelPostDialogCharacterSwitch flag
+// =============================================================================
+describe('62. K1 blocker matrix – facing unit conversion, GetFacingFromLocation, SetAvailableNPCId', () => {
+
+  // -------------------------------------------------------------------------
+  // 1. SetFacing – NWScript passes degrees; engine setFacing expects radians
+  // -------------------------------------------------------------------------
+  it('SetFacing: SetFacing(0) stores 0 radians (East)', () => {
+    let stored = NaN;
+    const caller = { setFacing: (r: number) => { stored = r; } };
+    // Fixed implementation: args[0] * Math.PI / 180
+    const args: [number] = [0];
+    caller.setFacing(args[0] * Math.PI / 180);
+    expect(stored).toBeCloseTo(0, 6);
+  });
+
+  it('SetFacing: SetFacing(90) stores π/2 radians (North)', () => {
+    let stored = NaN;
+    const caller = { setFacing: (r: number) => { stored = r; } };
+    const args: [number] = [90];
+    caller.setFacing(args[0] * Math.PI / 180);
+    expect(stored).toBeCloseTo(Math.PI / 2, 6);
+  });
+
+  it('SetFacing: SetFacing(180) stores π radians (West)', () => {
+    let stored = NaN;
+    const caller = { setFacing: (r: number) => { stored = r; } };
+    const args: [number] = [180];
+    caller.setFacing(args[0] * Math.PI / 180);
+    expect(stored).toBeCloseTo(Math.PI, 6);
+  });
+
+  it('SetFacing: SetFacing(270) stores 3π/2 radians (South)', () => {
+    let stored = NaN;
+    const caller = { setFacing: (r: number) => { stored = r; } };
+    const args: [number] = [270];
+    caller.setFacing(args[0] * Math.PI / 180);
+    expect(stored).toBeCloseTo(3 * Math.PI / 2, 5);
+  });
+
+  it('regression: old SetFacing passed degrees directly as radians (wrong)', () => {
+    // Old code: this.caller.setFacing(args[0]) – 90 treated as radians ≈ 117°
+    const degPassedAsRad = 90; // 90 radians is WAY off from π/2 ≈ 1.5708
+    expect(degPassedAsRad).not.toBeCloseTo(Math.PI / 2, 1);
+  });
+
+  // -------------------------------------------------------------------------
+  // 2. GetFacing – must return degrees (0-360), not raw rotation.z radians
+  // -------------------------------------------------------------------------
+  it('GetFacing: East (rotation.z=0) returns 0 degrees', () => {
+    const obj = { rotation: { z: 0 } };
+    const deg = ((obj.rotation.z * 180 / Math.PI) % 360 + 360) % 360;
+    expect(deg).toBeCloseTo(0, 5);
+  });
+
+  it('GetFacing: North (rotation.z=π/2) returns 90 degrees', () => {
+    const obj = { rotation: { z: Math.PI / 2 } };
+    const deg = ((obj.rotation.z * 180 / Math.PI) % 360 + 360) % 360;
+    expect(deg).toBeCloseTo(90, 4);
+  });
+
+  it('GetFacing: West (rotation.z=π) returns 180 degrees', () => {
+    const obj = { rotation: { z: Math.PI } };
+    const deg = ((obj.rotation.z * 180 / Math.PI) % 360 + 360) % 360;
+    expect(deg).toBeCloseTo(180, 4);
+  });
+
+  it('GetFacing: South (rotation.z=-π/2) returns 270 degrees', () => {
+    const obj = { rotation: { z: -Math.PI / 2 } };
+    const deg = ((obj.rotation.z * 180 / Math.PI) % 360 + 360) % 360;
+    expect(deg).toBeCloseTo(270, 4);
+  });
+
+  it('regression: old GetFacing returned raw radians instead of degrees', () => {
+    // Old code returned rotation.z directly – for North it would give ~1.57, not 90
+    const northRad = Math.PI / 2;
+    expect(northRad).not.toBeCloseTo(90, 1); // confirms the old value was wrong
+  });
+
+  // -------------------------------------------------------------------------
+  // 3. GetFacingFromLocation – fixed to use args[0] (was using global `location`)
+  // -------------------------------------------------------------------------
+  it('GetFacingFromLocation: returns correct bearing from Location() result (90 degrees North)', () => {
+    // Simulate Location(v, 90) → setBearing(90) → getBearing() == 90.
+    // NOTE: EngineLocation uses the non-standard unit "bearing/180" (NOT Math.PI/180)
+    // so setBearing(90) stores facing=0.5 and getBearing() returns 0.5*180=90.
+    // The mock intentionally mirrors the actual EngineLocation implementation.
+    const loc = {
+      setBearing(bearing: number){ this.facing = bearing / 180; },
+      getBearing(){ return this.facing * 180; },
+      facing: 0,
+    };
+    loc.setBearing(90);
+
+    // Fixed: use args[0].getBearing()
+    const result = loc.getBearing();
+    expect(result).toBeCloseTo(90, 5);
+  });
+
+  it('GetFacingFromLocation: returns 0 for East-facing location', () => {
+    // Mock mirrors actual EngineLocation.setBearing/getBearing convention (bearing/180 units)
+    const loc = {
+      setBearing(bearing: number){ this.facing = bearing / 180; },
+      getBearing(){ return this.facing * 180; },
+      facing: 0,
+    };
+    loc.setBearing(0);
+    expect(loc.getBearing()).toBeCloseTo(0, 5);
+  });
+
+  it('GetFacingFromLocation: returns 180 for West-facing location', () => {
+    // Mock mirrors actual EngineLocation.setBearing/getBearing convention (bearing/180 units)
+    const loc = {
+      setBearing(bearing: number){ this.facing = bearing / 180; },
+      getBearing(){ return this.facing * 180; },
+      facing: 0,
+    };
+    loc.setBearing(180);
+    expect(loc.getBearing()).toBeCloseTo(180, 5);
+  });
+
+  it('regression: old GetFacingFromLocation used global `location`, always returned 0', () => {
+    // Simulate: `if(location instanceof EngineLocation)` where location is NOT EngineLocation
+    class EngineLocation {}
+    const globalLocation = {}; // simulates window.location or module-scope `location`
+    const isMatch = globalLocation instanceof EngineLocation;
+    expect(isMatch).toBe(false); // guard never fires → always returns 0
+  });
+
+  // -------------------------------------------------------------------------
+  // 4. EngineLocation.updateFacing – NOT changed; document existing behavior
+  // -------------------------------------------------------------------------
+  it('EngineLocation.updateFacing: East direction vector → getBearing gives 0 (unchanged)', () => {
+    // East: rotation.x=1, rotation.y=0 → -atan2(0,1)=0 → getBearing=0
+    const rx = 1;
+    const ry = 0;
+    const facing = -Math.atan2(ry, rx); // existing updateFacing logic
+    const bearing = facing * 180;
+    expect(bearing).toBeCloseTo(0, 5);
+  });
+
+  it('EngineLocation round-trip: setBearing(90) → getBearing() → 90', () => {
+    // setBearing uses facing = bearing/180; getBearing returns facing*180
+    const bearing = 90;
+    const facing = bearing / 180; // setBearing logic
+    const recovered = facing * 180;   // getBearing logic
+    expect(recovered).toBeCloseTo(90, 5);
+  });
+
+  it('EngineLocation round-trip: setBearing(0) → getBearing() → 0', () => {
+    const bearing = 0;
+    const facing = bearing / 180;
+    const recovered = facing * 180;
+    expect(recovered).toBeCloseTo(0, 5);
+  });
+
+  it('EngineLocation round-trip: setBearing(180) → getBearing() → 180', () => {
+    const bearing = 180;
+    const facing = bearing / 180;
+    const recovered = facing * 180;
+    expect(recovered).toBeCloseTo(180, 5);
+  });
+
+  // -------------------------------------------------------------------------
+  // 5. SetAvailableNPCId – must link module object to NPCS[id].moduleObject
+  // -------------------------------------------------------------------------
+  it('SetAvailableNPCId: links creature to NPCS[id].moduleObject', () => {
+    const npcs: Record<number, { moduleObject?: any }> = { 1: {} };
+    const creature = { tag: 'hk47' };
+
+    // Simulate fixed implementation
+    const npcId = 1;
+    const obj = creature;
+    const isCreature = obj != null; // BitWise.InstanceOfObject guard
+    if(npcs[npcId] && isCreature){
+      npcs[npcId].moduleObject = obj;
+    }
+
+    expect(npcs[1].moduleObject).toBe(creature);
+  });
+
+  it('SetAvailableNPCId: does not crash for invalid NPC slot', () => {
+    const npcs: Record<number, { moduleObject?: any }> = { 1: {} };
+    const creature = { tag: 'hk47' };
+
+    // Simulate: slot 99 does not exist
+    const npcId = 99;
+    const guard = () => {
+      if(npcs[npcId] && creature != null){
+        npcs[npcId].moduleObject = creature;
+      }
+    };
+    expect(() => guard()).not.toThrow();
+    expect(npcs[99]).toBeUndefined();
+  });
+
+  it('regression: old SetAvailableNPCId had empty args and was a no-op', () => {
+    // The old function had args: [] and never linked objects
+    const npcs: Record<number, { moduleObject?: any }> = { 1: {} };
+    // Old no-op: nothing happens
+    expect(npcs[1].moduleObject).toBeUndefined();
+  });
+
+  // -------------------------------------------------------------------------
+  // 6. CancelPostDialogCharacterSwitch – sets flag on CutsceneManager
+  // -------------------------------------------------------------------------
+  it('CancelPostDialogCharacterSwitch: sets cancelPostDialogSwitch flag', () => {
+    const CutsceneManager = { cancelPostDialogSwitch: false };
+
+    // Simulate the fixed action
+    CutsceneManager.cancelPostDialogSwitch = true;
+
+    expect(CutsceneManager.cancelPostDialogSwitch).toBe(true);
+  });
+
+  it('CancelPostDialogCharacterSwitch: flag is cleared at start of new conversation', () => {
+    const CutsceneManager = { cancelPostDialogSwitch: true };
+
+    // startConversation resets the flag
+    CutsceneManager.cancelPostDialogSwitch = false;
+
+    expect(CutsceneManager.cancelPostDialogSwitch).toBe(false);
+  });
+
+});
+

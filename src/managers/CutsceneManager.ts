@@ -51,6 +51,13 @@ export class CutsceneManager {
 
   static paused: boolean = false;
 
+  /**
+   * When TRUE the post-dialog character switch (back to the NPC that initiated)
+   * is suppressed.  Set by CancelPostDialogCharacterSwitch (fn 757).
+   * Cleared automatically at the start of each new conversation.
+   */
+  static cancelPostDialogSwitch: boolean = false;
+
   static cameraState: ICameraState = {
     mode: CameraMode.DIALOG,
     cameraAngle: DLGCameraAngle.ANGLE_SPEAKER,
@@ -92,6 +99,7 @@ export class CutsceneManager {
     }
     this.unequipHeadItem = false;
     this.unequipItems = false;
+    this.cancelPostDialogSwitch = false;
     GameState.SetEngineMode(EngineMode.DIALOG);
     this.isListening = true;
     this.startingEntry = null;
