@@ -1191,7 +1191,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(GameState.module.area, ModuleObjectType.ModuleArea)){
-        GameState.module.area.restrictMode ? NW_TRUE : NW_FALSE;
+        return GameState.module.area.restrictMode ? NW_TRUE : NW_FALSE;
       }
       return 0;
     }
@@ -2989,7 +2989,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(BitWise.InstanceOfObject(this.talent, TalentObjectType.TalentObject) && BitWise.InstanceOfObject(this.talent.oTarget, ModuleObjectType.ModuleObject)){
-        this.talent.oTarget.getLocation();
+        return this.talent.oTarget.getLocation();
       }
       return new EngineLocation();
     }
