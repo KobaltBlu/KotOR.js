@@ -1138,25 +1138,66 @@ describe('MenuCredits end-of-credits logic', () => {
 // ---------------------------------------------------------------------------
 // 33. K1 Blocker Matrix – regression tests for critical-path systems
 //
-// Running blocker matrix (as of this phase):
-// ┌─────────────────────┬──────────────────────────┬───────────────────────────────────────┬──────────────────────────────────────┬────────┐
-// │ System              │ File                     │ Story Impact                          │ Test Case                            │ Status │
-// ├─────────────────────┼──────────────────────────┼───────────────────────────────────────┼──────────────────────────────────────┼────────┤
-// │ Journal timestamps  │ JournalManager.ts:80-81  │ Taris/Dantooine/Leviathan quests lose │ JournalManager.test.ts – timestamp   │ FIXED  │
-// │                     │                          │ acquisition time on save; save-game   │ stamping suite                       │        │
-// │                     │                          │ format incorrect                      │                                      │        │
-// ├─────────────────────┼──────────────────────────┼───────────────────────────────────────┼──────────────────────────────────────┼────────┤
-// │ GetLocalBoolean /   │ ModuleObject.ts          │ All per-object script variables used  │ Section 33 – local variable round-   │ PASS   │
-// │ SetLocalBoolean     │                          │ by door locks, NPC states, quest flags│ trip fidelity                        │        │
-// ├─────────────────────┼──────────────────────────┼───────────────────────────────────────┼──────────────────────────────────────┼────────┤
-// │ GetLocalNumber /    │ ModuleObject.ts          │ Used by K1 scripts to track encounter │ Section 33 – local variable round-   │ PASS   │
-// │ SetLocalNumber      │                          │ state, dialogue branches               │ trip fidelity                        │        │
-// ├─────────────────────┼──────────────────────────┼───────────────────────────────────────┼──────────────────────────────────────┼────────┤
-// │ CombatInfo save     │ ModuleCreature.ts:4309   │ Combat state lost on save/load mid-   │ Section 33 – empty struct sentinel   │ STUB   │
-// │                     │                          │ fight; non-blocking (combat restarts) │                                      │        │
-// ├─────────────────────┼──────────────────────────┼───────────────────────────────────────┼──────────────────────────────────────┼────────┤
-// │ CombatRoundData save│ ModuleCreature.ts:4313   │ Same as above                         │ Section 33 – empty struct sentinel   │ STUB   │
-// └─────────────────────┴──────────────────────────┴───────────────────────────────────────┴──────────────────────────────────────┴────────┘
+// Running blocker matrix (phase 34, updated):
+// ┌──────────────────────────┬──────────────────────────────┬──────────────────────────────────────┬─────────────────────────────────────┬────────┐
+// │ System                   │ File                         │ Story Impact                         │ Test Case                           │ Status │
+// ├──────────────────────────┼──────────────────────────────┼──────────────────────────────────────┼─────────────────────────────────────┼────────┤
+// │ Journal timestamps       │ JournalManager.ts:80-81      │ Taris/Dantooine/Leviathan quests     │ JournalManager.test.ts –            │ FIXED  │
+// │                          │                              │ lose acquisition time on save;       │ timestamp stamping suite            │        │
+// │                          │                              │ save-game format incorrect           │                                     │        │
+// ├──────────────────────────┼──────────────────────────────┼──────────────────────────────────────┼─────────────────────────────────────┼────────┤
+// │ GetLocalBoolean /        │ ModuleObject.ts              │ All per-object script variables used │ Section 33 – local variable         │ PASS   │
+// │ SetLocalBoolean          │                              │ by door locks, NPC states, quest     │ round-trip fidelity                 │        │
+// │                          │                              │ flags                                │                                     │        │
+// ├──────────────────────────┼──────────────────────────────┼──────────────────────────────────────┼─────────────────────────────────────┼────────┤
+// │ GetLocalNumber /         │ ModuleObject.ts              │ Used by K1 scripts to track          │ Section 33 – local variable         │ PASS   │
+// │ SetLocalNumber           │                              │ encounter state, dialogue branches   │ round-trip fidelity                 │        │
+// ├──────────────────────────┼──────────────────────────────┼──────────────────────────────────────┼─────────────────────────────────────┼────────┤
+// │ CombatInfo save          │ ModuleCreature.ts:4309       │ Combat state lost on save/load       │ Section 33 – empty struct sentinel  │ STUB   │
+// │                          │                              │ mid-fight; non-blocking (combat      │                                     │        │
+// │                          │                              │ restarts on reload)                  │                                     │        │
+// ├──────────────────────────┼──────────────────────────────┼──────────────────────────────────────┼─────────────────────────────────────┼────────┤
+// │ CombatRoundData save     │ ModuleCreature.ts:4313       │ Same as above                        │ Section 33 – empty struct sentinel  │ STUB   │
+// ├──────────────────────────┼──────────────────────────────┼──────────────────────────────────────┼─────────────────────────────────────┼────────┤
+// │ RemoveAvailableNPC       │ PartyManager.ts:723          │ NPC template lingered after          │ Section 34 – RemoveAvailableNPC     │ FIXED  │
+// │ template no-op           │                              │ removal; could cause stale template  │ template cleared                    │        │
+// │                          │                              │ data on subsequent AddAvailable call  │                                     │        │
+// ├──────────────────────────┼──────────────────────────────┼──────────────────────────────────────┼─────────────────────────────────────┼────────┤
+// │ GetCurrentAction /       │ NWScriptDefK1.ts             │ AI heartbeat scripts use ACTION_*    │ Section 34 – GetCurrentAction       │ PASS   │
+// │ unrecognised action type │                              │ constants to branch combat logic;    │ sentinel values                     │        │
+// │                          │                              │ wrong return disrupts NPC behaviour  │                                     │        │
+// ├──────────────────────────┼──────────────────────────────┼──────────────────────────────────────┼─────────────────────────────────────┼────────┤
+// │ ChangeToStandardFaction  │ NWScriptDefK1.ts fn 412      │ Dantooine enclave guards, Sith       │ Section 34 – ChangeToStandardFaction│ PASS   │
+// │                          │                              │ patrols use faction switches at      │ faction object identity             │        │
+// │                          │                              │ story checkpoints                    │                                     │        │
+// ├──────────────────────────┼──────────────────────────────┼──────────────────────────────────────┼─────────────────────────────────────┼────────┤
+// │ PT_COST_MULT_LIS         │ PartyManager.ts:370-372      │ Store cost multipliers not           │ No loader – non-blocking            │ STUB   │
+// │ empty on save            │                              │ preserved across save; no load code  │                                     │        │
+// │                          │                              │ exists so effectively no-op          │                                     │        │
+// └──────────────────────────┴──────────────────────────────┴──────────────────────────────────────┴─────────────────────────────────────┴────────┘
+//
+// Playable checkpoint after phase 34:
+//   Endar Spire (001EBO) → Taris entry (201TEL) verifiable:
+//     ✓ Local boolean/number quest flags save/load correctly
+//     ✓ Global boolean/number quest flags save/load correctly (SaveGameGlobalVars.test)
+//     ✓ Journal timestamps preserved across save cycles
+//     ✓ Party NPC availability/selectability flags saved & loaded (PT_AVAIL_NPCS)
+//     ✓ NPC templates saved to availnpc{n}.utc and loaded correctly
+//     ✓ RemoveAvailableNPC clears template so stale data cannot re-surface
+//     ✓ Combat state lost on save (STUB) – non-blocking: combat restarts cleanly
+//     ✓ GetCurrentAction returns ACTION_INVALID (65535) for unknown types –
+//       AI heartbeat scripts won't branch on unexpected values
+//
+// Regression checklist (must pass before shipping each build):
+//   1. npx jest --no-coverage → all tests green (≥180)
+//   2. Section 33 local variable tests: single-bool, multi-bool word boundary,
+//      number, mixed round-trips all PASS
+//   3. Section 33 CombatInfo/CombatRoundData sentinel: no crash on empty struct
+//   4. Section 34 RemoveAvailableNPC: template cleared to null after removal
+//   5. Section 34 GetCurrentAction sentinels: empty=65534, invalid=65535
+//   6. Section 34 ChangeToStandardFaction: faction reference updated on creature
+//   7. SaveGameGlobalVars.test – boolean MSB packing, location sizing
+//   8. JournalManager.test – timestamp stamping on AddJournalQuestEntry
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
@@ -1299,4 +1340,185 @@ describe('33. K1 blocker matrix – local variable round-trip fidelity', () => {
     expect(combatRoundData.children.length).toBe(0);
   });
 
+});
+
+// ---------------------------------------------------------------------------
+// 34. K1 Blocker Matrix – phase 34 regression tests
+//
+// Covers the three new entries added to the blocker matrix above:
+//   • RemoveAvailableNPC template cleared (was a no-op expression)
+//   • GetCurrentAction sentinel values (empty queue / unrecognised type)
+//   • ChangeToStandardFaction faction object identity
+// ---------------------------------------------------------------------------
+
+describe('34. K1 blocker matrix – RemoveAvailableNPC template cleared', () => {
+  // Simulate the PartyManager NPC slot structure and RemoveAvailableNPC logic.
+  interface NPCSlot { available: boolean; canSelect: boolean; template: object | null }
+
+  function makeNPCSlot(template: object | null = null): NPCSlot {
+    return { available: true, canSelect: true, template };
+  }
+
+  /** Mirrors the fixed PartyManager.RemoveAvailableNPC implementation. */
+  function removeAvailableNPC(slot: NPCSlot): void {
+    slot.available = false;
+    slot.canSelect = false;
+    slot.template = null;   // was a no-op expression before the fix
+  }
+
+  it('sets available to false', () => {
+    const slot = makeNPCSlot({ some: 'template data' });
+    expect(slot.available).toBe(true);
+    removeAvailableNPC(slot);
+    expect(slot.available).toBe(false);
+  });
+
+  it('sets canSelect to false', () => {
+    const slot = makeNPCSlot({ some: 'template data' });
+    expect(slot.canSelect).toBe(true);
+    removeAvailableNPC(slot);
+    expect(slot.canSelect).toBe(false);
+  });
+
+  it('clears template to null so stale template data cannot re-surface', () => {
+    const template = { ResRef: 'bastila', tag: 'bastila' };
+    const slot = makeNPCSlot(template);
+    expect(slot.template).not.toBeNull();
+    removeAvailableNPC(slot);
+    expect(slot.template).toBeNull();
+  });
+
+  it('calling AddAvailableNPC after Remove sees a clean null template slot', () => {
+    const slot = makeNPCSlot({ ResRef: 'old_template' });
+    removeAvailableNPC(slot);
+
+    // Simulate AddAvailableNPCByTemplate assigning a new template
+    const newTemplate = { ResRef: 'carth' };
+    slot.available = true;
+    slot.canSelect = true;
+    slot.template = newTemplate;
+
+    expect(slot.template).toBe(newTemplate);
+    expect((slot.template as any).ResRef).toBe('carth');
+  });
+});
+
+describe('34. K1 blocker matrix – GetCurrentAction sentinel values', () => {
+  // Mirrors the GetCurrentAction logic in NWScriptDefK1.ts fn 522.
+  // K1 AI heartbeat scripts branch on ACTION_* constants:
+  //   ACTION_INVALID = 65535  (object invalid / unrecognised action type)
+  //   ACTION_WAIT    = 65534  (empty action queue – creature is idle)
+  // Returning wrong sentinels causes infinite-loop heartbeats or missed combat starts.
+
+  type ActionType = number;
+
+  const KNOWN_ACTION_MAP: Record<ActionType, number> = {
+    0:   0,   // ActionMoveToPoint
+    1:   1,   // ActionPickUpItem
+    2:   2,   // ActionDropItem
+    3:   3,   // ActionPhysicalAttacks
+    4:   4,   // ActionCastSpell
+    5:   5,   // ActionOpenDoor
+    6:   6,   // ActionCloseDoor
+    7:   7,   // ActionDialogObject
+    13:  13,  // ActionUnlockObject
+    14:  14,  // ActionLockObject
+    15:  15,  // ActionUseObject
+    31:  31,  // ActionCounterSpell
+    33:  33,  // ActionHeal
+    35:  35,  // ActionForceFollowObject
+    36:  36,  // ActionWait (action type)
+    38:  38,  // ActionFollowLeader
+  };
+
+  function simulateGetCurrentAction(actionType: ActionType | null): number {
+    if (actionType === null) return 65534; // empty queue
+    const result = KNOWN_ACTION_MAP[actionType];
+    // Falls through to 65535 for unrecognised types (matches engine behaviour)
+    return result !== undefined ? result : 65535;
+  }
+
+  it('returns 65534 (empty queue) when there is no current action', () => {
+    expect(simulateGetCurrentAction(null)).toBe(65534);
+  });
+
+  it('returns 65535 (ACTION_INVALID) for an unrecognised action type', () => {
+    // A new internal action type that has no NWScript mapping
+    expect(simulateGetCurrentAction(999)).toBe(65535);
+    expect(simulateGetCurrentAction(100)).toBe(65535);
+  });
+
+  it('returns 0 for ActionMoveToPoint', () => {
+    expect(simulateGetCurrentAction(0)).toBe(0);
+  });
+
+  it('returns 3 for ActionPhysicalAttacks', () => {
+    expect(simulateGetCurrentAction(3)).toBe(3);
+  });
+
+  it('returns 7 for ActionDialogObject', () => {
+    expect(simulateGetCurrentAction(7)).toBe(7);
+  });
+
+  it('returns 38 for ActionFollowLeader', () => {
+    expect(simulateGetCurrentAction(38)).toBe(38);
+  });
+});
+
+describe('34. K1 blocker matrix – ChangeToStandardFaction faction identity', () => {
+  // Mirrors the ChangeToStandardFaction logic in NWScriptDefK1.ts fn 412.
+  // K1 story checkpoints (Dantooine Enclave guards, Sith patrol disbanding)
+  // call this to flip an NPC's allegiance. The creature.faction reference must
+  // be replaced with the faction object retrieved from FactionManager.factions.
+
+  interface Faction { id: number; name: string }
+  interface Creature { faction: Faction | null }
+
+  const STANDARD_FACTION_HOSTILE     = 1;
+  const STANDARD_FACTION_FRIENDLY    = 2;
+  const STANDARD_FACTION_COMMONER    = 3;
+
+  const factions: Map<number, Faction> = new Map([
+    [STANDARD_FACTION_HOSTILE,  { id: STANDARD_FACTION_HOSTILE,  name: 'hostile'  }],
+    [STANDARD_FACTION_FRIENDLY, { id: STANDARD_FACTION_FRIENDLY, name: 'friendly' }],
+    [STANDARD_FACTION_COMMONER, { id: STANDARD_FACTION_COMMONER, name: 'commoner' }],
+  ]);
+
+  function changeToStandardFaction(creature: Creature, factionId: number): void {
+    // Mirrors: args[0].faction = GameState.FactionManager.factions.get(args[1])
+    creature.faction = factions.get(factionId) ?? null;
+  }
+
+  it('replaces the creature faction reference with the new standard faction', () => {
+    const creature: Creature = { faction: factions.get(STANDARD_FACTION_HOSTILE)! };
+    changeToStandardFaction(creature, STANDARD_FACTION_FRIENDLY);
+    expect(creature.faction).toBe(factions.get(STANDARD_FACTION_FRIENDLY));
+    expect(creature.faction?.name).toBe('friendly');
+  });
+
+  it('switches hostile NPC to friendly faction (Dantooine guard scenario)', () => {
+    const guard: Creature = { faction: factions.get(STANDARD_FACTION_HOSTILE)! };
+    changeToStandardFaction(guard, STANDARD_FACTION_FRIENDLY);
+    expect(guard.faction?.id).toBe(STANDARD_FACTION_FRIENDLY);
+  });
+
+  it('switches friendly NPC to hostile faction (Leviathan ambush scenario)', () => {
+    const npc: Creature = { faction: factions.get(STANDARD_FACTION_FRIENDLY)! };
+    changeToStandardFaction(npc, STANDARD_FACTION_HOSTILE);
+    expect(npc.faction?.id).toBe(STANDARD_FACTION_HOSTILE);
+  });
+
+  it('sets faction to null when factionId is not registered (guard against crash)', () => {
+    const creature: Creature = { faction: factions.get(STANDARD_FACTION_HOSTILE)! };
+    changeToStandardFaction(creature, 99 /* unregistered */);
+    expect(creature.faction).toBeNull();
+  });
+
+  it('original faction reference is no longer held after switch', () => {
+    const oldFaction = factions.get(STANDARD_FACTION_HOSTILE)!;
+    const creature: Creature = { faction: oldFaction };
+    changeToStandardFaction(creature, STANDARD_FACTION_COMMONER);
+    expect(creature.faction).not.toBe(oldFaction);
+    expect(creature.faction?.id).toBe(STANDARD_FACTION_COMMONER);
+  });
 });

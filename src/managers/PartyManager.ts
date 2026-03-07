@@ -720,7 +720,7 @@ export class PartyManager {
   static RemoveAvailableNPC(npcId = 0){
     PartyManager.NPCS[npcId].available = false;
     PartyManager.NPCS[npcId].canSelect = false;
-    PartyManager.NPCS[npcId].template;
+    PartyManager.NPCS[npcId].template = null;
   }
 
 
