@@ -481,11 +481,7 @@ export class ModuleDoor extends ModuleObject {
 
     this.playObjectSound(ModulePlaceableObjectSound.OPENED);
 
-    // if(GameState.selectedObject == this){
-    //   GameState.selectedObject = GameState.selected = undefined;
-    // }
-    
-    //TODO: detect the correct side that the creature interacted from
+    this.objectInteractSide = this.calcInteractSide(object);
     switch(this.objectInteractSide){
       case ModuleDoorInteractSide.SIDE_1:
         this.setOpenState(ModuleDoorOpenState.OPEN1);
@@ -522,6 +518,21 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
+  /**
+   * Determine which side of the door the interacting object is on.
+   * Uses the door's bearing (yaw in radians): bearing=0 → normal along +X.
+   * dot >= 0 → SIDE_1; dot < 0 → SIDE_2.
+   */
+  calcInteractSide(object: ModuleObject): ModuleDoorInteractSide {
+    if(object instanceof ModuleObject){
+      const dx = object.position.x - this.position.x;
+      const dy = object.position.y - this.position.y;
+      const dot = dx * Math.cos(this.bearing) + dy * Math.sin(this.bearing);
+      return dot >= 0 ? ModuleDoorInteractSide.SIDE_1 : ModuleDoorInteractSide.SIDE_2;
+    }
+    return this.objectInteractSide;
+  }
+
   destroyDoor(object: ModuleObject){
 
     const onDeath = this.scripts[ModuleObjectScript.DoorOnDeath];
@@ -529,7 +540,7 @@ export class ModuleDoor extends ModuleObject {
       onDeath.run(this);
     }
     
-    //TODO: detect the correct side that the creature interacted from
+    this.objectInteractSide = this.calcInteractSide(object);
     switch(this.objectInteractSide){
       case ModuleDoorInteractSide.SIDE_1:
         this.setOpenState(ModuleDoorOpenState.OPEN1);

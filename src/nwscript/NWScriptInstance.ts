@@ -95,6 +95,7 @@ export class NWScriptInstance {
   lastBulletHitDamage: number;
   lastBulletHitTarget: number;
   lastBulletHitShooter: ModuleObject;
+  lastBulletHitPart: string;
   lastHPChange: number;
   lastBulletFiredDamage: number;
   lastBulletFiredTarget: number;
@@ -269,6 +270,7 @@ export class NWScriptInstance {
     this.lastBulletHitDamage = 0;
     this.lastBulletHitTarget = 0;
     this.lastBulletHitShooter = undefined;
+    this.lastBulletHitPart = '';
     this.lastHPChange = 0;
     this.lastBulletFiredDamage = 0;
     this.lastBulletFiredTarget = 0;
@@ -478,6 +480,7 @@ export class NWScriptInstance {
     instance.lastBulletHitDamage = parentInstance.lastBulletHitDamage;
     instance.lastBulletHitTarget = parentInstance.lastBulletHitTarget;
     instance.lastBulletHitShooter = parentInstance.lastBulletHitShooter;
+    instance.lastBulletHitPart = parentInstance.lastBulletHitPart;
     instance.lastHPChange = parentInstance.lastHPChange;
     instance.lastBulletFiredDamage = parentInstance.lastBulletFiredDamage;
     instance.lastBulletFiredTarget = parentInstance.lastBulletFiredTarget;
