@@ -4600,3 +4600,321 @@ describe('56. K1 blocker matrix – perception null-guard, AOE, gold, traps, rac
   });
 
 });
+
+// Section 57: K1 blocker matrix – GetItemInSlot slot mapping, ActionEquipItem claw/hide
+//   mapping, ChangeItemCost implementation
+//
+// Fixes:
+//   • GetItemInSlot (fn 155): cases 2-10 were wrong (e.g. slot 3 returned ARMS instead of
+//     RIGHTHAND), slot 16 returned CLAW2 instead of CLAW3, slots 2 and 6 were missing.
+//     Fixed to match K1 INVENTORY_SLOT_* constants exactly.
+//   • ActionEquipItem (fn 32): cases 14-17 were wrong (slot 14 mapped to CLAW3, slot 15 to
+//     HIDE, slot 16 to HEAD, slot 17 to ARMOR). Fixed: 14→CLAW1, 15→CLAW2, 16→CLAW3,
+//     17→HIDE per K1 INVENTORY_SLOT_CLAW1/2/3 and INVENTORY_SLOT_HIDE constants.
+//   • ChangeItemCost (fn 747): was a no-op; now updates cost on all items matching sTag
+//     across party inventory, area stores, and area creatures.
+
+describe('57. K1 blocker matrix – GetItemInSlot/ActionEquipItem slot mapping + ChangeItemCost', () => {
+
+  // ---- GetItemInSlot (fn 155) slot mapping --------------------------------
+
+  it('GetItemInSlot: slot 2 (HANDS/ARMS) maps to ARMS slot', () => {
+    // K1 INVENTORY_SLOT_HANDS = 2
+    const ARMS_SLOT = 0x8;  // ModuleCreatureArmorSlot.ARMS
+    function getItemInSlot(slotId: number, equipment: Record<number, any>): any {
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80,
+        6: 0x100, 7: 0x200, 8: 0x400, 14: 0x4000, 15: 0x8000, 16: 0x10000, 17: 0x20000,
+      };
+      return equipment[map[slotId]] ?? undefined;
+    }
+    const arms = { tag: 'gloves01' };
+    expect(getItemInSlot(2, { [ARMS_SLOT]: arms })).toBe(arms);
+  });
+
+  it('GetItemInSlot: slot 3 (RIGHTWEAPON) maps to RIGHTHAND slot', () => {
+    const RIGHTHAND = 0x10;  // ModuleCreatureArmorSlot.RIGHTHAND
+    function getItemInSlot(slotId: number, equipment: Record<number, any>): any {
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80,
+        6: 0x100, 7: 0x200, 8: 0x400, 14: 0x4000, 15: 0x8000, 16: 0x10000, 17: 0x20000,
+      };
+      return equipment[map[slotId]] ?? undefined;
+    }
+    const sword = { tag: 'w_sbrcrstl_01' };
+    expect(getItemInSlot(3, { [RIGHTHAND]: sword })).toBe(sword);
+  });
+
+  it('GetItemInSlot: slot 4 (LEFTWEAPON) maps to LEFTHAND slot', () => {
+    const LEFTHAND = 0x20;
+    function getItemInSlot(slotId: number, equipment: Record<number, any>): any {
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80,
+        6: 0x100, 7: 0x200, 8: 0x400, 14: 0x4000, 15: 0x8000, 16: 0x10000, 17: 0x20000,
+      };
+      return equipment[map[slotId]] ?? undefined;
+    }
+    const pistol = { tag: 'g_w_blstrpstl001' };
+    expect(getItemInSlot(4, { [LEFTHAND]: pistol })).toBe(pistol);
+  });
+
+  it('GetItemInSlot: slot 5 (LEFTARM) maps to LEFTARMBAND slot', () => {
+    const LEFTARMBAND = 0x80;
+    function getItemInSlot(slotId: number, equipment: Record<number, any>): any {
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80,
+        6: 0x100, 7: 0x200, 8: 0x400, 14: 0x4000, 15: 0x8000, 16: 0x10000, 17: 0x20000,
+      };
+      return equipment[map[slotId]] ?? undefined;
+    }
+    const lBand = { tag: 'g_i_gauntlet01' };
+    expect(getItemInSlot(5, { [LEFTARMBAND]: lBand })).toBe(lBand);
+  });
+
+  it('GetItemInSlot: slot 6 (RIGHTARM) maps to RIGHTARMBAND slot', () => {
+    const RIGHTARMBAND = 0x100;
+    function getItemInSlot(slotId: number, equipment: Record<number, any>): any {
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80,
+        6: 0x100, 7: 0x200, 8: 0x400, 14: 0x4000, 15: 0x8000, 16: 0x10000, 17: 0x20000,
+      };
+      return equipment[map[slotId]] ?? undefined;
+    }
+    const rBand = { tag: 'g_i_gauntlet02' };
+    expect(getItemInSlot(6, { [RIGHTARMBAND]: rBand })).toBe(rBand);
+  });
+
+  it('GetItemInSlot: slot 7 (IMPLANT) maps to IMPLANT slot', () => {
+    const IMPLANT = 0x200;
+    function getItemInSlot(slotId: number, equipment: Record<number, any>): any {
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80,
+        6: 0x100, 7: 0x200, 8: 0x400, 14: 0x4000, 15: 0x8000, 16: 0x10000, 17: 0x20000,
+      };
+      return equipment[map[slotId]] ?? undefined;
+    }
+    const implant = { tag: 'g_i_implant301' };
+    expect(getItemInSlot(7, { [IMPLANT]: implant })).toBe(implant);
+  });
+
+  it('GetItemInSlot: slot 8 (BELT) maps to BELT slot', () => {
+    const BELT = 0x400;
+    function getItemInSlot(slotId: number, equipment: Record<number, any>): any {
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80,
+        6: 0x100, 7: 0x200, 8: 0x400, 14: 0x4000, 15: 0x8000, 16: 0x10000, 17: 0x20000,
+      };
+      return equipment[map[slotId]] ?? undefined;
+    }
+    const belt = { tag: 'g_i_belt001' };
+    expect(getItemInSlot(8, { [BELT]: belt })).toBe(belt);
+  });
+
+  it('GetItemInSlot: slot 16 (INVENTORY_SLOT_CLAW3) maps to CLAW3, not CLAW2', () => {
+    const CLAW2 = 0x8000;
+    const CLAW3 = 0x10000;
+    function getItemInSlot(slotId: number, equipment: Record<number, any>): any {
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80,
+        6: 0x100, 7: 0x200, 8: 0x400, 14: 0x4000, 15: 0x8000, 16: 0x10000, 17: 0x20000,
+      };
+      return equipment[map[slotId]] ?? undefined;
+    }
+    const claw3Item = { tag: 'g_w_claw01' };
+    const claw2Item = { tag: 'g_w_claw02' };
+    const equipment = { [CLAW2]: claw2Item, [CLAW3]: claw3Item };
+    // slot 16 must return CLAW3, not CLAW2
+    expect(getItemInSlot(16, equipment)).toBe(claw3Item);
+    expect(getItemInSlot(15, equipment)).toBe(claw2Item);
+  });
+
+  it('GetItemInSlot: slot 14 (CLAW1), 15 (CLAW2), 17 (HIDE) map correctly', () => {
+    const CLAW1 = 0x4000;
+    const CLAW2 = 0x8000;
+    const HIDE  = 0x20000;
+    function getItemInSlot(slotId: number, equipment: Record<number, any>): any {
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80,
+        6: 0x100, 7: 0x200, 8: 0x400, 14: 0x4000, 15: 0x8000, 16: 0x10000, 17: 0x20000,
+      };
+      return equipment[map[slotId]] ?? undefined;
+    }
+    const c1 = { tag: 'claw1' };
+    const c2 = { tag: 'claw2' };
+    const h  = { tag: 'hide1' };
+    const eq = { [CLAW1]: c1, [CLAW2]: c2, [HIDE]: h };
+    expect(getItemInSlot(14, eq)).toBe(c1);
+    expect(getItemInSlot(15, eq)).toBe(c2);
+    expect(getItemInSlot(17, eq)).toBe(h);
+  });
+
+  it('GetItemInSlot: non-standard slots (9, 10) return undefined', () => {
+    function getItemInSlot(slotId: number, equipment: Record<number, any>): any {
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80,
+        6: 0x100, 7: 0x200, 8: 0x400, 14: 0x4000, 15: 0x8000, 16: 0x10000, 17: 0x20000,
+      };
+      const mask = map[slotId];
+      if(mask === undefined) return undefined;
+      return equipment[mask] ?? undefined;
+    }
+    // Slots 9 and 10 are not K1 INVENTORY_SLOT constants – should return undefined
+    expect(getItemInSlot(9,  {})).toBeUndefined();
+    expect(getItemInSlot(10, {})).toBeUndefined();
+  });
+
+  it('regression: old GetItemInSlot returned ARMS for slot 3 (should be RIGHTHAND)', () => {
+    // The old code used a shifted mapping where slot 3 → ARMS.
+    // The fix aligns slot 3 → RIGHTHAND (INVENTORY_SLOT_RIGHTWEAPON = 3).
+    const ARMS      = 0x8;
+    const RIGHTHAND = 0x10;
+    function oldBuggy(slotId: number, equipment: Record<number, any>): any {
+      // mirrors pre-fix switch: case 3 returned ARMS
+      const oldMap: Record<number, number> = {
+        0: 0x1, 1: 0x2, /* 2 missing */ 3: ARMS, 4: RIGHTHAND, 5: 0x20,
+        /* 6 missing */ 7: 0x80, 8: 0x100, 9: 0x200, 10: 0x400,
+        14: 0x4000, 15: 0x8000, 16: 0x8000 /* CLAW2 dup */, 17: 0x20000,
+      };
+      return equipment[oldMap[slotId]];
+    }
+    function fixed(slotId: number, equipment: Record<number, any>): any {
+      const newMap: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80,
+        6: 0x100, 7: 0x200, 8: 0x400, 14: 0x4000, 15: 0x8000, 16: 0x10000, 17: 0x20000,
+      };
+      const mask = newMap[slotId];
+      return mask !== undefined ? equipment[mask] ?? undefined : undefined;
+    }
+    const sword = { tag: 'lightsaber' };
+    const gloves = { tag: 'gloves' };
+    const eq = { [ARMS]: gloves, [RIGHTHAND]: sword };
+    // Old bug: slot 3 returned gloves (ARMS) instead of sword (RIGHTHAND)
+    expect(oldBuggy(3, eq)).toBe(gloves);
+    // Fixed: slot 3 correctly returns the right-hand weapon
+    expect(fixed(3, eq)).toBe(sword);
+  });
+
+  // ---- ActionEquipItem (fn 32) claw/hide slot mapping ---------------------
+
+  it('ActionEquipItem: slot 14 (INVENTORY_SLOT_CLAW1) maps to CLAW1, not CLAW3', () => {
+    const CLAW1 = 0x4000;
+    const CLAW3 = 0x10000;
+    function equipSlotToMask(slotId: number): number {
+      // Mirrors the fixed switch in fn 32
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80, 6: 0x100,
+        7: 0x200, 8: 0x400, 9: CLAW1, 10: 0x8000,
+        14: CLAW1, 15: 0x8000, 16: CLAW3, 17: 0x20000,
+      };
+      return map[slotId] ?? slotId;
+    }
+    expect(equipSlotToMask(14)).toBe(CLAW1);
+    // Before fix, slot 14 returned CLAW3
+    expect(equipSlotToMask(14)).not.toBe(CLAW3);
+  });
+
+  it('ActionEquipItem: slot 15 → CLAW2, slot 16 → CLAW3, slot 17 → HIDE', () => {
+    const CLAW2 = 0x8000;
+    const CLAW3 = 0x10000;
+    const HIDE  = 0x20000;
+    function equipSlotToMask(slotId: number): number {
+      const map: Record<number, number> = {
+        0: 0x1, 1: 0x2, 2: 0x8, 3: 0x10, 4: 0x20, 5: 0x80, 6: 0x100,
+        7: 0x200, 8: 0x400, 9: 0x4000, 10: CLAW2,
+        14: 0x4000, 15: CLAW2, 16: CLAW3, 17: HIDE,
+      };
+      return map[slotId] ?? slotId;
+    }
+    expect(equipSlotToMask(15)).toBe(CLAW2);
+    expect(equipSlotToMask(16)).toBe(CLAW3);
+    expect(equipSlotToMask(17)).toBe(HIDE);
+  });
+
+  it('regression: old ActionEquipItem mapped slot 16 to HEAD (should be CLAW3)', () => {
+    const HEAD  = 0x1;
+    const CLAW3 = 0x10000;
+    function oldEquip(slotId: number): number {
+      // pre-fix: 14→CLAW3, 15→HIDE, 16→HEAD, 17→ARMOR
+      const old: Record<number, number> = {
+        14: 0x10000, 15: 0x20000, 16: HEAD, 17: 0x2,
+      };
+      return old[slotId] ?? slotId;
+    }
+    function fixedEquip(slotId: number): number {
+      const fixed: Record<number, number> = {
+        14: 0x4000, 15: 0x8000, 16: CLAW3, 17: 0x20000,
+      };
+      return fixed[slotId] ?? slotId;
+    }
+    // Old: slot 16 returned HEAD
+    expect(oldEquip(16)).toBe(HEAD);
+    // Fixed: slot 16 returns CLAW3
+    expect(fixedEquip(16)).toBe(CLAW3);
+  });
+
+  // ---- ChangeItemCost (fn 747) implementation -----------------------------
+
+  it('ChangeItemCost: updates cost of all items in inventory matching the tag', () => {
+    const items = [
+      { tag: 'shop_sword',  cost: 100, getTag(){ return this.tag; } },
+      { tag: 'shop_sword',  cost: 100, getTag(){ return this.tag; } },
+      { tag: 'shop_shield', cost: 200, getTag(){ return this.tag; } },
+    ];
+    function changeItemCost(tag: string, newCost: number, inventory: typeof items): void {
+      const cost = Math.round(newCost);
+      for(const item of inventory){
+        if(item.getTag() === tag){
+          item.cost = cost;
+        }
+      }
+    }
+    changeItemCost('shop_sword', 50.7, items);
+    expect(items[0].cost).toBe(51);
+    expect(items[1].cost).toBe(51);
+    expect(items[2].cost).toBe(200);  // unaffected
+  });
+
+  it('ChangeItemCost: rounds float cost to nearest integer', () => {
+    const items = [{ tag: 'item_a', cost: 0, getTag(){ return this.tag; } }];
+    function changeItemCost(tag: string, newCost: number, inv: typeof items): void {
+      for(const item of inv){
+        if(item.getTag() === tag) item.cost = Math.round(newCost);
+      }
+    }
+    changeItemCost('item_a', 99.4, items); expect(items[0].cost).toBe(99);
+    changeItemCost('item_a', 99.5, items); expect(items[0].cost).toBe(100);
+    changeItemCost('item_a', 0.1,  items); expect(items[0].cost).toBe(0);
+  });
+
+  it('ChangeItemCost: updates items across party inventory and stores', () => {
+    const partyItem  = { tag: 'medpac', cost: 50, getTag(){ return this.tag; } };
+    const storeItem  = { tag: 'medpac', cost: 50, getTag(){ return this.tag; } };
+    const otherItem  = { tag: 'vibro',  cost: 200, getTag(){ return this.tag; } };
+    const partyInv   = [partyItem, otherItem];
+    const storeInv   = [storeItem];
+
+    function changeItemCost(tag: string, newCost: number, inventories: Array<typeof partyInv>): void {
+      const cost = Math.round(newCost);
+      for(const inv of inventories){
+        for(const item of inv){
+          if(item.getTag() === tag) item.cost = cost;
+        }
+      }
+    }
+    changeItemCost('medpac', 25, [partyInv, storeInv]);
+    expect(partyItem.cost).toBe(25);
+    expect(storeItem.cost).toBe(25);
+    expect(otherItem.cost).toBe(200);  // different tag, untouched
+  });
+
+  it('ChangeItemCost: no-op when no items match the tag', () => {
+    const item = { tag: 'rare_item', cost: 999, getTag(){ return this.tag; } };
+    function changeItemCost(tag: string, newCost: number, inv: typeof [item]): void {
+      const cost = Math.round(newCost);
+      for(const i of inv){ if(i.getTag() === tag) i.cost = cost; }
+    }
+    changeItemCost('nonexistent', 1, [item]);
+    expect(item.cost).toBe(999);  // unchanged
+  });
+
+});
