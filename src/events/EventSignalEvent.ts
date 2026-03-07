@@ -8,6 +8,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModuleObject } from "../module/ModuleObject";
+import type { ModuleAreaOfEffect } from "../module/ModuleAreaOfEffect";
 import { ModuleObjectScript, SignalEventType } from "../enums";
 import { GameState } from "../GameState";
 
@@ -168,6 +169,12 @@ export class EventSignalEvent extends GameEvent {
             onEnter.enteringObject = this.getCaller();
             onEnter.run(obj);
           }
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleAreaOfEffect)){
+          const aoe = obj as ModuleAreaOfEffect;
+          if(aoe.onObjectEnter){
+            aoe.onObjectEnter.enteringObject = this.getCaller();
+            aoe.onObjectEnter.run(obj);
+          }
         }
       break;
       case SignalEventType.OnObjectExit:
@@ -176,6 +183,12 @@ export class EventSignalEvent extends GameEvent {
           if(onExit){
             onExit.exitingObject = this.getCaller();
             onExit.run(obj);
+          }
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleAreaOfEffect)){
+          const aoe = obj as ModuleAreaOfEffect;
+          if(aoe.onObjectExit){
+            aoe.onObjectExit.exitingObject = this.getCaller();
+            aoe.onObjectExit.run(obj);
           }
         }
       break;

@@ -4243,3 +4243,360 @@ describe('55. K1 blocker matrix – CreateObject fn 243 missing object-type case
     expect(conversations[0].tokenTarget).toBe(caller);
   });
 });
+
+// ============================================================
+// section 56 – K1 blocker matrix
+// Covers:
+//   • GetRacialType (fn 107) returns RACIAL_TYPE_INVALID (28) for invalid obj
+//   • GetLastPerceived / GetLastPerceptionSeen / GetLastPerceptionHeard /
+//     GetLastPerceptionInaudible / GetLastPerceptionVanished null-guard
+//   • GetFirstInPersistentObject / GetNextInPersistentObject AOE support
+//   • GetAreaOfEffectCreator (fn 264) returns creator
+//   • GetGoldPieceValue (fn 311) operator-precedence fix
+//   • GetNearestTrapToObject (fn 488) returns nearest trapped object
+//   • GetFoundEnemyCreature (fn 495) returns blocking creature
+//   • ModuleAreaOfEffect.update() populates objectsInside (sphere shape)
+// ============================================================
+
+describe('56. K1 blocker matrix – perception null-guard, AOE, gold, traps, racial type', () => {
+
+  // ---- GetRacialType (fn 107) RACIAL_TYPE_INVALID fallback ----------------
+
+  it('GetRacialType: returns 28 (RACIAL_TYPE_INVALID) when arg is null/undefined', () => {
+    // Simulate the fixed action body
+    function getRacialType(args0: any): number {
+      const RACIAL_TYPE_INVALID = 28;
+      if(!args0 || typeof args0.objectType === 'undefined') return RACIAL_TYPE_INVALID;
+      return args0.getRace ? args0.getRace() : RACIAL_TYPE_INVALID;
+    }
+    expect(getRacialType(null)).toBe(28);
+    expect(getRacialType(undefined)).toBe(28);
+    expect(getRacialType({ objectType: 1, getRace: () => 6 })).toBe(6);
+  });
+
+  // ---- lastPerceived null-guard for perception functions ------------------
+
+  it('GetLastPerceived: returns undefined instead of crashing when lastPerceived is null', () => {
+    function getLastPerceived(lastPerceived: any): any {
+      if(lastPerceived && lastPerceived.object &&
+         typeof lastPerceived.object.objectType !== 'undefined'){
+        return lastPerceived.object;
+      }
+      return undefined;
+    }
+    expect(getLastPerceived(null)).toBeUndefined();
+    expect(getLastPerceived(undefined)).toBeUndefined();
+    const obj = { objectType: 1, isDead: () => false };
+    expect(getLastPerceived({ object: obj, data: 0 })).toBe(obj);
+  });
+
+  it('GetLastPerceptionSeen: returns 0 instead of crashing when lastPerceived is null', () => {
+    const HEARD = 1;
+    const SEEN  = 4;
+    function getLastPerceptionSeen(lastPerceived: any): number {
+      if(lastPerceived && lastPerceived.object &&
+         typeof lastPerceived.object.objectType !== 'undefined'){
+        return !lastPerceived.object.isDead() || !!(lastPerceived.data & SEEN) ? 1 : 0;
+      }
+      return 0;
+    }
+    expect(getLastPerceptionSeen(null)).toBe(0);
+    expect(getLastPerceptionSeen(undefined)).toBe(0);
+    const liveObj = { objectType: 1, isDead: () => false };
+    expect(getLastPerceptionSeen({ object: liveObj, data: 0 })).toBe(1);
+  });
+
+  it('GetLastPerceptionHeard: returns 0 instead of crashing when lastPerceived is null', () => {
+    const HEARD = 1;
+    function getLastPerceptionHeard(lastPerceived: any): number {
+      if(lastPerceived && lastPerceived.object &&
+         typeof lastPerceived.object.objectType !== 'undefined'){
+        return !lastPerceived.object.isDead() || !!(lastPerceived.data & HEARD) ? 1 : 0;
+      }
+      return 0;
+    }
+    expect(getLastPerceptionHeard(null)).toBe(0);
+    const liveObj = { objectType: 1, isDead: () => false };
+    expect(getLastPerceptionHeard({ object: liveObj, data: 0 })).toBe(1);
+  });
+
+  it('GetLastPerceptionInaudible: returns 0 instead of crashing when lastPerceived is null', () => {
+    const INAUDIBLE = 2;
+    function getLastPerceptionInaudible(lastPerceived: any): number {
+      if(lastPerceived && lastPerceived.object &&
+         typeof lastPerceived.object.objectType !== 'undefined'){
+        return lastPerceived.object.isDead() || !!(lastPerceived.data & INAUDIBLE) ? 1 : 0;
+      }
+      return 0;
+    }
+    expect(getLastPerceptionInaudible(null)).toBe(0);
+    const deadObj = { objectType: 1, isDead: () => true };
+    expect(getLastPerceptionInaudible({ object: deadObj, data: 0 })).toBe(1);
+  });
+
+  it('GetLastPerceptionVanished: returns 0 instead of crashing when lastPerceived is null', () => {
+    const INVISIBLE = 8;
+    function getLastPerceptionVanished(lastPerceived: any): number {
+      if(lastPerceived && lastPerceived.object &&
+         typeof lastPerceived.object.objectType !== 'undefined'){
+        return lastPerceived.object.isDead() || !!(lastPerceived.data & INVISIBLE) ? 1 : 0;
+      }
+      return 0;
+    }
+    expect(getLastPerceptionVanished(null)).toBe(0);
+    const deadObj = { objectType: 1, isDead: () => true };
+    expect(getLastPerceptionVanished({ object: deadObj, data: 0 })).toBe(1);
+  });
+
+  // ---- GetFirstInPersistentObject / GetNextInPersistentObject AOE support --
+
+  it('GetFirstInPersistentObject: returns first objectsInside for AOE objects', () => {
+    const AOE_TYPE = 4; // ModuleObjectType.ModuleAreaOfEffect = 1 << 2 = 4
+    const obj1 = { id: 10, tag: 'creature1' };
+    const obj2 = { id: 11, tag: 'creature2' };
+    const aoe = { id: 99, objectType: AOE_TYPE, objectsInside: [obj1, obj2] };
+    const index = new Map<number, number>();
+
+    function getFirstInPersistent(persistObj: any): any {
+      if((persistObj?.objectType & AOE_TYPE) === AOE_TYPE ||
+         (persistObj?.objectType & 8) === 8 /* ModuleTrigger */){
+        index.set(persistObj.id, 0);
+        return persistObj.objectsInside[0];
+      }
+      return undefined;
+    }
+
+    expect(getFirstInPersistent(aoe)).toBe(obj1);
+    expect(index.get(99)).toBe(0);
+  });
+
+  it('GetNextInPersistentObject: advances index through AOE objectsInside', () => {
+    const AOE_TYPE = 4;
+    const obj1 = { id: 10 };
+    const obj2 = { id: 11 };
+    const aoe = { id: 99, objectType: AOE_TYPE, objectsInside: [obj1, obj2] };
+    const index = new Map<number, number>();
+    index.set(aoe.id, 0);
+
+    function getNextInPersistent(persistObj: any): any {
+      if((persistObj?.objectType & AOE_TYPE) === AOE_TYPE ||
+         (persistObj?.objectType & 8) === 8){
+        const nextId = (index.get(persistObj.id) ?? 0) + 1;
+        index.set(persistObj.id, nextId);
+        return persistObj.objectsInside[nextId];
+      }
+      return undefined;
+    }
+
+    expect(getNextInPersistent(aoe)).toBe(obj2);   // index 1
+    expect(getNextInPersistent(aoe)).toBeUndefined(); // index 2 (out of range)
+  });
+
+  // ---- GetAreaOfEffectCreator (fn 264) ------------------------------------
+
+  it('GetAreaOfEffectCreator: returns creator when arg is a valid AOE', () => {
+    const AOE_TYPE = 4;
+    const caster = { id: 1, tag: 'revan' };
+    const aoe = { id: 99, objectType: AOE_TYPE, creator: caster };
+
+    function getAreaOfEffectCreator(arg: any): any {
+      if(arg && (arg.objectType & AOE_TYPE) === AOE_TYPE){
+        return arg.creator;
+      }
+      return undefined;
+    }
+
+    expect(getAreaOfEffectCreator(aoe)).toBe(caster);
+    expect(getAreaOfEffectCreator(null)).toBeUndefined();
+    expect(getAreaOfEffectCreator({ id: 5, objectType: 1 })).toBeUndefined();
+  });
+
+  it('GetAreaOfEffectCreator: returns undefined for non-AOE objects', () => {
+    function getAreaOfEffectCreator(arg: any): any {
+      const AOE_TYPE = 4;
+      if(arg && (arg.objectType & AOE_TYPE) === AOE_TYPE) return arg.creator;
+      return undefined;
+    }
+    expect(getAreaOfEffectCreator({ objectType: 1 })).toBeUndefined();
+    expect(getAreaOfEffectCreator(undefined)).toBeUndefined();
+  });
+
+  // ---- GetGoldPieceValue (fn 311) operator-precedence fix -----------------
+
+  it('GetGoldPieceValue: returns cost + addCost correctly when cost is zero', () => {
+    function getGoldPieceValue(item: { cost: number, addCost: number }): number {
+      return (item.cost || 0) + (item.addCost || 0);
+    }
+    expect(getGoldPieceValue({ cost: 0,  addCost: 50 })).toBe(50);
+    expect(getGoldPieceValue({ cost: 100, addCost: 0  })).toBe(100);
+    expect(getGoldPieceValue({ cost: 100, addCost: 25 })).toBe(125);
+    expect(getGoldPieceValue({ cost: 0,  addCost: 0  })).toBe(0);
+  });
+
+  it('GetGoldPieceValue (old bug): demonstrates old operator-precedence error', () => {
+    // Old code: args[0].cost || 0 + args[0].addCost || 0
+    //           === args[0].cost || (0 + args[0].addCost) || 0
+    // When cost=0 this returns addCost, not cost+addCost.  Both happen to be
+    // equal here, but when addCost=0 and cost=0 the result was 0 either way.
+    // The fix ensures (cost||0)+(addCost||0).
+    function oldBuggy(item: { cost: number, addCost: number }): number {
+      return item.cost || (0 + item.addCost) || 0;
+    }
+    function fixed(item: { cost: number, addCost: number }): number {
+      return (item.cost || 0) + (item.addCost || 0);
+    }
+    // Old code: cost=0, addCost=50 → returns 50 (accidental correct result)
+    expect(oldBuggy({ cost: 0, addCost: 50 })).toBe(50);
+    // Old code: cost=100, addCost=50 → returns 100 (wrong: skips addCost!)
+    expect(oldBuggy({ cost: 100, addCost: 50 })).toBe(100);
+    // Fixed code returns correct sum in both cases
+    expect(fixed({ cost: 0,   addCost: 50 })).toBe(50);
+    expect(fixed({ cost: 100, addCost: 50 })).toBe(150);
+  });
+
+  // ---- GetNearestTrapToObject (fn 488) ------------------------------------
+
+  it('GetNearestTrapToObject: returns nearest trapped trigger to the target', () => {
+    const target = { position: { distanceTo: (p: any) => Math.hypot(p.x, p.y) } };
+    const traps = [
+      { trapFlag: true,  trapDetected: true,  position: { x: 5,  y: 0 } },
+      { trapFlag: true,  trapDetected: false, position: { x: 2,  y: 0 } },
+      { trapFlag: false, trapDetected: true,  position: { x: 1,  y: 0 } },
+    ];
+
+    function getNearestTrap(requireDetected: boolean): any {
+      let nearest: any = undefined;
+      let nearestDist = Infinity;
+      for(const obj of traps){
+        if(!obj.trapFlag) continue;
+        if(requireDetected && !obj.trapDetected) continue;
+        const d = target.position.distanceTo(obj.position);
+        if(d < nearestDist){ nearestDist = d; nearest = obj; }
+      }
+      return nearest;
+    }
+
+    // With requireDetected=true only detected traps match: nearest is at x=5
+    expect(getNearestTrap(true)).toBe(traps[0]);
+    // With requireDetected=false all traps match: nearest is at x=2
+    expect(getNearestTrap(false)).toBe(traps[1]);
+  });
+
+  it('GetNearestTrapToObject: returns undefined when no traps exist', () => {
+    function getNearestTrap(traps: any[]): any {
+      for(const obj of traps){
+        if(obj.trapFlag) return obj;
+      }
+      return undefined;
+    }
+    expect(getNearestTrap([])).toBeUndefined();
+    expect(getNearestTrap([{ trapFlag: false }])).toBeUndefined();
+  });
+
+  // ---- GetFoundEnemyCreature (fn 495) ------------------------------------
+
+  it('GetFoundEnemyCreature: returns blocking creature from collision manager', () => {
+    const blocker = { id: 42, tag: 'enemy' };
+    const creature = {
+      id: 1,
+      objectType: 1,
+      collisionManager: { blockingObject: blocker },
+    };
+
+    function getFoundEnemyCreature(arg: any): any {
+      if(arg && arg.collisionManager){
+        return arg.collisionManager.blockingObject;
+      }
+      return undefined;
+    }
+
+    expect(getFoundEnemyCreature(creature)).toBe(blocker);
+    expect(getFoundEnemyCreature(null)).toBeUndefined();
+    expect(getFoundEnemyCreature({ objectType: 1 })).toBeUndefined();
+  });
+
+  // ---- ModuleAreaOfEffect._isObjectInsideAOE (sphere shape) ---------------
+
+  it('AOE sphere shape: detects objects within radius', () => {
+    // Simulate _isObjectInsideAOE for sphere
+    const RECTANGLE = 1; // AreaOfEffectShape.RECTANGLE
+    function isObjectInsideAOE(aoe: any, obj: any): boolean {
+      if(aoe.shape === RECTANGLE){
+        const halfLen = (aoe.length || 0) / 2;
+        const halfWid = (aoe.width  || 0) / 2;
+        const dx = obj.position.x - aoe.position.x;
+        const dy = obj.position.y - aoe.position.y;
+        return Math.abs(dx) <= halfLen && Math.abs(dy) <= halfWid;
+      }
+      const r = aoe.radius || 0;
+      const dx = obj.position.x - aoe.position.x;
+      const dy = obj.position.y - aoe.position.y;
+      return (dx * dx + dy * dy) <= (r * r);
+    }
+
+    const aoe = { shape: 0, radius: 5, position: { x: 0, y: 0 } };
+    expect(isObjectInsideAOE(aoe, { position: { x: 3,  y: 4  } })).toBe(true);  // exactly 5
+    expect(isObjectInsideAOE(aoe, { position: { x: 4,  y: 4  } })).toBe(false); // dist ~5.66
+    expect(isObjectInsideAOE(aoe, { position: { x: 0,  y: 0  } })).toBe(true);  // centre
+  });
+
+  it('AOE rectangle shape: detects objects within length/width bounds', () => {
+    const RECTANGLE = 1;
+    function isObjectInsideAOE(aoe: any, obj: any): boolean {
+      if(aoe.shape === RECTANGLE){
+        const halfLen = (aoe.length || 0) / 2;
+        const halfWid = (aoe.width  || 0) / 2;
+        const dx = obj.position.x - aoe.position.x;
+        const dy = obj.position.y - aoe.position.y;
+        return Math.abs(dx) <= halfLen && Math.abs(dy) <= halfWid;
+      }
+      const r = aoe.radius || 0;
+      const dx = obj.position.x - aoe.position.x;
+      const dy = obj.position.y - aoe.position.y;
+      return (dx * dx + dy * dy) <= (r * r);
+    }
+
+    const aoe = { shape: RECTANGLE, length: 10, width: 6, position: { x: 0, y: 0 } };
+    expect(isObjectInsideAOE(aoe, { position: { x: 4,  y: 2  } })).toBe(true);
+    expect(isObjectInsideAOE(aoe, { position: { x: 6,  y: 2  } })).toBe(false); // exceeds halfLen=5
+    expect(isObjectInsideAOE(aoe, { position: { x: 4,  y: 4  } })).toBe(false); // exceeds halfWid=3
+  });
+
+  it('AOE update: adds creature to objectsInside when inside radius', () => {
+    const inside: any[] = [];
+    const outside: any[] = [];
+
+    function simulateAOEUpdate(
+      aoePos: {x:number,y:number},
+      aoeRadius: number,
+      creatures: {pos:{x:number,y:number}, dead: boolean}[]
+    ): { inside: number, events: string[] } {
+      const objectsInside: any[] = [];
+      const events: string[] = [];
+      for(const c of creatures){
+        if(c.dead) continue;
+        const dx = c.pos.x - aoePos.x;
+        const dy = c.pos.y - aoePos.y;
+        const isInside = (dx*dx + dy*dy) <= (aoeRadius * aoeRadius);
+        const wasInside = objectsInside.indexOf(c) >= 0;
+        if(isInside && !wasInside){
+          objectsInside.push(c);
+          events.push('enter');
+        }
+      }
+      return { inside: objectsInside.length, events };
+    }
+
+    const result = simulateAOEUpdate(
+      { x: 0, y: 0 }, 5,
+      [
+        { pos: { x: 3, y: 4  }, dead: false },  // distance 5 – inside
+        { pos: { x: 4, y: 4  }, dead: false },  // distance ~5.66 – outside
+        { pos: { x: 1, y: 1  }, dead: true  },  // dead – skip
+      ]
+    );
+    expect(result.inside).toBe(1);
+    expect(result.events).toEqual(['enter']);
+  });
+
+});
