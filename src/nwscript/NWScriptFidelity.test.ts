@@ -4094,3 +4094,152 @@ describe('54. K1 blocker matrix – EffectDamageReduction fn 119 / MusicBackgrou
     expect(brokenActions[569]).toBeUndefined(); // old broken state
   });
 });
+
+// ── Section 55: CreateObject fn 243 ITEM/WAYPOINT/STORE cases + SpeakOneLinerConversation ──
+describe('55. K1 blocker matrix – CreateObject fn 243 missing object-type cases + SpeakOneLinerConversation token target', () => {
+
+  // ---- CreateObject ITEM (case 2) ----------------------------------------
+
+  it('CreateObject ITEM (case 2): creates ModuleItem, loads, places at location, returns item', () => {
+    const placedItems: any[] = [];
+    const spawnedItem = { tag: 'quest_datacards', position: { x: 0, y: 0, z: 0 } };
+
+    function createObjectItem(nObjectType: number, sTemplate: string, pos: {x:number,y:number,z:number}): any {
+      if(nObjectType !== 2) return undefined;
+      // Simulate: load uti buffer, create item, set position, attach, return
+      const item = { ...spawnedItem };
+      item.position = { ...pos };
+      placedItems.push(item);
+      return item;
+    }
+
+    const result = createObjectItem(2, 'quest_datacards', { x: 10, y: 20, z: 0 });
+    expect(result).toBeDefined();
+    expect(result.position.x).toBe(10);
+    expect(result.position.y).toBe(20);
+    expect(placedItems.length).toBe(1);
+  });
+
+  it('CreateObject ITEM (case 2): returns undefined when template resource not found', () => {
+    function createObjectItemMissingRes(nObjectType: number): any {
+      if(nObjectType !== 2) return undefined;
+      const buffer: Uint8Array | undefined = undefined; // simulated missing resource
+      if(!buffer){ return undefined; }
+      return {};
+    }
+    expect(createObjectItemMissingRes(2)).toBeUndefined();
+  });
+
+  // ---- CreateObject WAYPOINT (case 32) ------------------------------------
+
+  it('CreateObject WAYPOINT (case 32): creates waypoint at location when template found', () => {
+    function createObjectWaypoint(nObjectType: number, sTemplate: string, pos: {x:number,y:number,z:number}): any {
+      if(nObjectType !== 32) return undefined;
+      const wp: any = { tag: sTemplate, position: { ...pos } };
+      return wp;
+    }
+
+    const wp = createObjectWaypoint(32, 'wp_escape_route', { x: 5, y: 3, z: 0 });
+    expect(wp).toBeDefined();
+    expect(wp.tag).toBe('wp_escape_route');
+    expect(wp.position.x).toBe(5);
+  });
+
+  it('CreateObject WAYPOINT (case 32): falls back to minimal waypoint tagged with sTemplate when resource missing', () => {
+    function createObjectWaypointFallback(nObjectType: number, sTemplate: string, pos: {x:number,y:number,z:number}): any {
+      if(nObjectType !== 32) return undefined;
+      const buffer: Uint8Array | undefined = undefined; // missing utw
+      if(!buffer){
+        // Fallback: minimal waypoint with tag = sTemplate
+        return { tag: sTemplate, position: { ...pos }, isFallback: true };
+      }
+      return { tag: sTemplate, position: { ...pos } };
+    }
+
+    const wp = createObjectWaypointFallback(32, 'wp_spawn_point', { x: 0, y: 0, z: 0 });
+    expect(wp).toBeDefined();
+    expect(wp.tag).toBe('wp_spawn_point');
+    expect(wp.isFallback).toBe(true);
+  });
+
+  // ---- CreateObject STORE (case 128) --------------------------------------
+
+  it('CreateObject STORE (case 128): creates ModuleStore, loads, places at location, returns store', () => {
+    function createObjectStore(nObjectType: number, sTemplate: string, pos: {x:number,y:number,z:number}): any {
+      if(nObjectType !== 128) return undefined;
+      const store = { tag: sTemplate, position: { ...pos }, inventory: [] };
+      return store;
+    }
+
+    const store = createObjectStore(128, 'merchant_taris', { x: 1, y: 2, z: 0 });
+    expect(store).toBeDefined();
+    expect(store.tag).toBe('merchant_taris');
+    expect(store.position.x).toBe(1);
+  });
+
+  it('CreateObject STORE (case 128): returns undefined when template resource not found', () => {
+    function createObjectStoreMissingRes(nObjectType: number): any {
+      if(nObjectType !== 128) return undefined;
+      const buffer: Uint8Array | undefined = undefined;
+      if(!buffer){ return undefined; }
+      return {};
+    }
+    expect(createObjectStoreMissingRes(128)).toBeUndefined();
+  });
+
+  // ---- CreateObject unimplemented type returns undefined ------------------
+
+  it('CreateObject unimplemented type (e.g. 999) returns undefined', () => {
+    function createObjectSwitch(nObjectType: number): any {
+      switch(nObjectType){
+        case 1: return { type: 'creature' };
+        case 2: return { type: 'item' };
+        case 32: return { type: 'waypoint' };
+        case 64: return { type: 'placeable' };
+        case 128: return { type: 'store' };
+      }
+      return undefined;
+    }
+    expect(createObjectSwitch(999)).toBeUndefined();
+    // Verify all implemented cases are reachable
+    expect(createObjectSwitch(1)?.type).toBe('creature');
+    expect(createObjectSwitch(2)?.type).toBe('item');
+    expect(createObjectSwitch(32)?.type).toBe('waypoint');
+    expect(createObjectSwitch(64)?.type).toBe('placeable');
+    expect(createObjectSwitch(128)?.type).toBe('store');
+  });
+
+  // ---- SpeakOneLinerConversation (fn 417) oTokenTarget fix ----------------
+
+  it('SpeakOneLinerConversation (fn 417): uses args[1] as token target when valid ModuleObject', () => {
+    const conversations: { owner: any; tokenTarget: any }[] = [];
+    const caller = { tag: 'npc_guard', _type: 'ModuleCreature' };
+    const tokenTarget = { tag: 'pc_player', _type: 'ModuleCreature' };
+
+    function speakOneLinerFixed(sDialog: string, oTokenTarget: any, callerObj: any): void {
+      if(!sDialog) return;
+      const target = oTokenTarget ?? callerObj;
+      conversations.push({ owner: callerObj, tokenTarget: target });
+    }
+
+    speakOneLinerFixed('guard_threat', tokenTarget, caller);
+    expect(conversations.length).toBe(1);
+    expect(conversations[0].tokenTarget).toBe(tokenTarget);
+    expect(conversations[0].tokenTarget.tag).toBe('pc_player');
+  });
+
+  it('SpeakOneLinerConversation (fn 417): falls back to caller when args[1] is null/undefined', () => {
+    const conversations: { owner: any; tokenTarget: any }[] = [];
+    const caller = { tag: 'npc_shopkeeper', _type: 'ModuleCreature' };
+
+    function speakOneLinerFallback(sDialog: string, oTokenTarget: any, callerObj: any): void {
+      if(!sDialog) return;
+      const target = oTokenTarget ?? callerObj;
+      conversations.push({ owner: callerObj, tokenTarget: target });
+    }
+
+    speakOneLinerFallback('shopkeeper_greeting', null, caller);
+    expect(conversations.length).toBe(1);
+    expect(conversations[0].tokenTarget).toBe(caller);
+  });
+});

@@ -8,7 +8,7 @@ import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { NWModuleObjectType } from "../enums/nwscript/NWModuleObjectType";
 import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject, ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "../module";
+import type { ModuleCreature, ModuleObject, ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint } from "../module";
 import type { TalentObject } from "../talents/TalentObject";
 import type { GameEffect } from "../effects/GameEffect";
 import type { GameEvent } from "../events/GameEvent";
@@ -3307,6 +3307,63 @@ NWScriptDefK1.Actions = {
             return undefined;
           }
         break;
+        case 2: //Item
+          buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], args[1]);
+          if(buffer){
+            const item = new GameState.Module.ModuleArea.ModuleItem(new GFFObject(buffer));
+            item.load();
+            item.placedInWorld = true;
+            item.position.copy(args[2].position);
+            args[2].area.attachObject(item);
+
+            item.loadModel().then( (model: OdysseyModel3D) => {
+              if(model){
+                model.userData.moduleObject = item;
+                model.name = item.getTag();
+                GameState.group.items.add( item.container );
+                item.getCurrentRoom();
+                item.onSpawn();
+              }
+            });
+            return item;
+          }else{
+            console.error('Failed to load item template', args);
+            return undefined;
+          }
+        break;
+        case 32: //Waypoint
+          buffer = ResourceLoader.loadCachedResource(ResourceTypes['utw'], args[1]);
+          if(buffer){
+            const wp = new GameState.Module.ModuleArea.ModuleWaypoint(new GFFObject(buffer));
+            wp.load();
+            wp.position.copy(args[2].position);
+            wp.setFacing(args[2].getFacing(), true);
+            args[2].area.attachObject(wp);
+            return wp;
+          }else{
+            // Waypoint template not found – create minimal waypoint tagged with args[1]
+            const wp = new GameState.Module.ModuleArea.ModuleWaypoint();
+            (wp as any).tag = args[1];
+            wp.position.copy(args[2].position);
+            wp.setFacing(args[2].getFacing(), true);
+            args[2].area.attachObject(wp);
+            return wp;
+          }
+        break;
+        case 128: //Store
+          buffer = ResourceLoader.loadCachedResource(ResourceTypes['utm'], args[1]);
+          if(buffer){
+            const store = new GameState.Module.ModuleArea.ModuleStore(new GFFObject(buffer));
+            store.load();
+            store.position.copy(args[2].position);
+            args[2].area.attachObject(store);
+            store.onSpawn();
+            return store;
+          }else{
+            console.error('Failed to load store template', args);
+            return undefined;
+          }
+        break;
       }
       return undefined;
     }
@@ -5695,7 +5752,8 @@ NWScriptDefK1.Actions = {
       if(!args[0]) return;
       const dlg = DLGObject.FromResRef(args[0]);
       if(dlg){
-        GameState.CutsceneManager.startConversation(dlg, this.caller, this.caller as any);
+        const tokenTarget = BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject) ? args[1] : this.caller;
+        GameState.CutsceneManager.startConversation(dlg, this.caller, tokenTarget as any);
       }
     }
   },

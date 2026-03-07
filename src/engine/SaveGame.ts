@@ -13,6 +13,7 @@ import { Utility } from "../utility/Utility";
 import EngineLocation from "./EngineLocation";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { ResourceTypes } from "../KotOR";
+import { JournalManager } from "../managers/JournalManager";
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
 
@@ -348,6 +349,8 @@ export class SaveGame {
     await this.initGameInProgressFolder();
     //Load GlobalVars
     await this.loadGlobalVARS();
+    //Load Journal
+    await JournalManager.LoadJournalFromSave(this.directory);
     //Load Inventory
     await this.loadInventory();
     //Load PartyTable
@@ -816,6 +819,7 @@ export class SaveGame {
       await SaveGame.ExportSaveNFO(this.directory, this.SAVEGAMENAME);
       await GameState.PartyManager.Export( this.directory );
       await SaveGame.ExportGlobalVars( this.directory );
+      await JournalManager.ExportJournal( this.directory );
     }catch(e){
       console.error(e);
     }
@@ -887,6 +891,7 @@ export class SaveGame {
 
       await SaveGame.ExportSaveNFO(save_dir, name);
       await SaveGame.ExportGlobalVars( save_dir );
+      await JournalManager.ExportJournal( save_dir );
       await GameState.PartyManager.Export( save_dir );
 
       //Get Screenshot
@@ -1172,6 +1177,7 @@ export class SaveGame {
       await CurrentGame.ExportToSaveFolder(saveDir);
       await SaveGame.ExportSaveNFO(saveDir, 'AUTOSAVE');
       await SaveGame.ExportGlobalVars(saveDir);
+      await JournalManager.ExportJournal(saveDir);
       await GameState.PartyManager.Export(saveDir);
 
       // Refresh/add the entry in the in-memory saves list
