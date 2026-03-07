@@ -6601,9 +6601,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      let effect = new GameState.GameEffectFactory.EffectModifyNumAttacks();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, Math.min(5, Math.max(1, args[0])));
       return effect.initialize();
     }
   },
@@ -6622,9 +6623,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      let effect = new GameState.GameEffectFactory.EffectDamageShield();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setInt(1, args[1]);
+      effect.setInt(2, args[2]);
       return effect.initialize();
     }
   },
@@ -7253,6 +7257,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return (args[0] as any).trapCreator ?? undefined;
+      }
       return undefined;
     }
   },
@@ -7262,6 +7269,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.STRING,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return (args[0] as any).keyName ?? '';
+      }
       return '';
     }
   },

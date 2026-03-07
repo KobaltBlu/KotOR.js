@@ -21,6 +21,7 @@ import { EffectDamageImmunityIncrease } from "./EffectDamageImmunityIncrease";
 import { EffectDamageIncrease } from "./EffectDamageIncrease";
 import { EffectDamageReduction } from "./EffectDamageReduction";
 import { EffectDamageResistance } from "./EffectDamageResistance";
+import { EffectDamageShield } from "./EffectDamageShield";
 import { EffectDeath } from "./EffectDeath";
 import { EffectDisease } from "./EffectDisease";
 import { EffectDisguise } from "./EffectDisguise";
@@ -40,6 +41,7 @@ import { EffectInvisibility } from "./EffectInvisibility";
 import { EffectKnockdown } from "./EffectKnockdown";
 import { EffectLink } from "./EffectLink";
 import { EffectMissChance } from "./EffectMissChance";
+import { EffectModifyNumAttacks } from "./EffectModifyNumAttacks";
 import { EffectMovementSpeedDecrease } from "./EffectMovementSpeedDecrease";
 import { EffectMovementSpeedIncrease } from "./EffectMovementSpeedIncrease";
 import { EffectPoison } from "./EffectPoison";
@@ -111,7 +113,7 @@ export class GameEffectFactory {
   static EffectDamage: typeof EffectDamage = EffectDamage;
   static EffectHeal: typeof EffectHeal = EffectHeal;
   static EffectLink: typeof EffectLink = EffectLink;
-  // static EffectModifyNumAttacks: typeof EffectModifyNumAttacks = EffectModifyNumAttacks;
+  static EffectModifyNumAttacks: typeof EffectModifyNumAttacks = EffectModifyNumAttacks;
   // static EffectCurse: typeof EffectCurse = EffectCurse;
   // static EffectSilence: typeof EffectSilence = EffectSilence;
   static EffectInvisibility: typeof EffectInvisibility = EffectInvisibility;
@@ -128,6 +130,7 @@ export class GameEffectFactory {
   // static EffectLimitMovementSpeed: typeof EffectLimitMovementSpeed = EffectLimitMovementSpeed;
   static EffectForcePushed: typeof EffectForcePushed = EffectForcePushed;
   // static EffectDamageShield: typeof EffectDamageShield = EffectDamageShield;
+  static EffectDamageShield: typeof EffectDamageShield = EffectDamageShield;
   static EffectDisguise: typeof EffectDisguise = EffectDisguise;
   /*static EffectSanctuary: typeof EffectSanctuary = EffectSanctuary;
   static EffectTimeStop: typeof EffectTimeStop = EffectTimeStop;
@@ -310,6 +313,9 @@ export class GameEffectFactory {
       case GameEffectType.EffectLink: //Link
         effect = new EffectLink();
       break;
+      case GameEffectType.EffectModifyNumAttacks: //ModifyNumAttacks
+        effect = new EffectModifyNumAttacks();
+      break;
       case GameEffectType.EffectACIncrease: //ACIncrease
         effect = new EffectACIncrease();
       break;
@@ -335,7 +341,7 @@ export class GameEffectFactory {
 
       break;
       case GameEffectType.EffectDamageShield: //DamageShield
-
+        effect = new EffectDamageShield();
       break;
       case GameEffectType.EffectDisguise: //Disguise
         effect = new EffectDisguise();

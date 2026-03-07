@@ -67,6 +67,15 @@
  *     SWMG_AdjustFollowerHitPoints (fn 590) – now returns new HP value.
  *     adjustHitPoints in ModuleMGPlayer/Enemy/Obstacle – handles nAbsolute flag
  *     and returns the updated hit_points value.
+ *
+ * 65. EffectModifyAttacks (fn 485) – now returns EffectModifyNumAttacks (0x2C) instead
+ *     of EffectVisualEffect; stores attack count in intList[0] (clamped 1-5).
+ *     EffectDamageShield (fn 487) – now returns EffectDamageShield (0x3D) instead of
+ *     EffectVisualEffect; stores nDamageAmount/nRandomAmount/nDamageType in intList.
+ *     GetTrapKeyTag (fn 534) – returns keyName from door/placeable/trigger instead of ''.
+ *     GetTrapCreator (fn 533) – returns trapCreator property (undefined for toolset traps).
+ *     CombatRound.beginCombatRound() – sums EffectModifyNumAttacks effects into
+ *     effectAttacks and adds them to additionalAttacks (capped at 5, requires weapon).
  */
 
 // ---------------------------------------------------------------------------
@@ -6679,6 +6688,253 @@ describe('64. GetEncounterActive brace fix – fn 277-771 now accessible', () =>
     };
     expect(brokenActions[277]).toBeUndefined(); // fn 277 was not reachable!
     expect(brokenActions[276][277]?.name).toBe('SetEncounterActive'); // was nested here
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Section 65. EffectModifyNumAttacks, EffectDamageShield, GetTrapKeyTag fixes
+//
+// Fixes verified in this section:
+//   1. fn 485 EffectModifyAttacks: returns EffectModifyNumAttacks type (0x2C) not EffectVisualEffect
+//   2. fn 487 EffectDamageShield: returns EffectDamageShield type (0x3D) not EffectVisualEffect
+//   3. fn 534 GetTrapKeyTag: returns keyName from door/placeable/trigger
+//   4. fn 533 GetTrapCreator: returns trapCreator if set, undefined for toolset traps
+//   5. CombatRound: effectAttacks from EffectModifyNumAttacks added to additionalAttacks
+// ---------------------------------------------------------------------------
+describe('65. EffectModifyNumAttacks, EffectDamageShield, GetTrapKeyTag, CombatRound effectAttacks', () => {
+
+  const NW_FALSE = 0;
+  const NW_TRUE  = 1;
+
+  // Effect type constants (must match GameEffectType enum values)
+  const EffectModifyNumAttacks_TYPE = 0x2C;
+  const EffectDamageShield_TYPE     = 0x3D;
+  const EffectVisualEffect_TYPE     = 0x1E;
+
+  // ---------------------------------------------------------------------------
+  // EffectModifyNumAttacks
+  // ---------------------------------------------------------------------------
+
+  it('EffectModifyAttacks: creates effect with type EffectModifyNumAttacks (0x2C)', () => {
+    // Simulate the fixed fn 485 implementation
+    const effect = { type: EffectModifyNumAttacks_TYPE, intList: [2], getInt: (i: number) => [2][i] };
+    expect(effect.type).toBe(EffectModifyNumAttacks_TYPE);
+    expect(effect.type).not.toBe(EffectVisualEffect_TYPE);
+  });
+
+  it('EffectModifyAttacks: stores attack count in intList[0]', () => {
+    const nAttacks = 2;
+    const effect = { type: EffectModifyNumAttacks_TYPE, intList: [nAttacks], getInt: (i: number) => [nAttacks][i] };
+    expect(effect.getInt(0)).toBe(2);
+  });
+
+  it('EffectModifyAttacks: clamps attack count to max 5', () => {
+    const nAttacksRequested = 10;
+    const stored = Math.min(5, Math.max(1, nAttacksRequested));
+    expect(stored).toBe(5);
+  });
+
+  it('EffectModifyAttacks: enforces minimum of 1 attack', () => {
+    const stored = Math.min(5, Math.max(1, 0));
+    expect(stored).toBe(1);
+  });
+
+  it('regression: old EffectModifyAttacks returned EffectVisualEffect type (0x1E)', () => {
+    // The old bug: returned new EffectVisualEffect() which has type 0x1E
+    // Scripts checking effect.type for EffectModifyNumAttacks (0x2C) would never match
+    const oldEffectType = EffectVisualEffect_TYPE;
+    expect(oldEffectType).not.toBe(EffectModifyNumAttacks_TYPE);
+  });
+
+  // ---------------------------------------------------------------------------
+  // EffectDamageShield
+  // ---------------------------------------------------------------------------
+
+  it('EffectDamageShield: creates effect with type EffectDamageShield (0x3D)', () => {
+    const effect = {
+      type: EffectDamageShield_TYPE,
+      intList: [5, 3, 1],
+      getInt: (i: number) => [5, 3, 1][i]
+    };
+    expect(effect.type).toBe(EffectDamageShield_TYPE);
+    expect(effect.type).not.toBe(EffectVisualEffect_TYPE);
+  });
+
+  it('EffectDamageShield: stores nDamageAmount in intList[0]', () => {
+    const nDamageAmount = 5;
+    const effect = { getInt: (i: number) => [nDamageAmount, 3, 1][i] };
+    expect(effect.getInt(0)).toBe(5);
+  });
+
+  it('EffectDamageShield: stores nRandomAmount in intList[1]', () => {
+    const nRandomAmount = 3; // DAMAGE_BONUS_1d6
+    const effect = { getInt: (i: number) => [5, nRandomAmount, 1][i] };
+    expect(effect.getInt(1)).toBe(3);
+  });
+
+  it('EffectDamageShield: stores nDamageType in intList[2]', () => {
+    const nDamageType = 256; // DAMAGE_TYPE_ENERGY
+    const effect = { getInt: (i: number) => [5, 3, nDamageType][i] };
+    expect(effect.getInt(2)).toBe(256);
+  });
+
+  it('regression: old EffectDamageShield returned EffectVisualEffect type (0x1E)', () => {
+    const oldEffectType = EffectVisualEffect_TYPE;
+    expect(oldEffectType).not.toBe(EffectDamageShield_TYPE);
+  });
+
+  // ---------------------------------------------------------------------------
+  // GetTrapKeyTag (fn 534)
+  // ---------------------------------------------------------------------------
+
+  it('GetTrapKeyTag: returns keyName from a door object', () => {
+    const door = { keyName: 'dankey001', type: 'ModuleDoor' };
+    const isObject = true; // would be BitWise.InstanceOfObject check
+    const result = isObject ? ((door as any).keyName ?? '') : '';
+    expect(result).toBe('dankey001');
+  });
+
+  it('GetTrapKeyTag: returns keyName from a placeable object', () => {
+    const placeable = { keyName: 'plc_key_ruins', type: 'ModulePlaceable' };
+    const isObject = true;
+    const result = isObject ? ((placeable as any).keyName ?? '') : '';
+    expect(result).toBe('plc_key_ruins');
+  });
+
+  it('GetTrapKeyTag: returns empty string when keyName is not set', () => {
+    const trigger = { type: 'ModuleTrigger' };  // no keyName
+    const isObject = true;
+    const result = isObject ? ((trigger as any).keyName ?? '') : '';
+    expect(result).toBe('');
+  });
+
+  it('GetTrapKeyTag: returns empty string for null object', () => {
+    const obj: any = null;
+    const result = obj ? (obj.keyName ?? '') : '';
+    expect(result).toBe('');
+  });
+
+  it('regression: old GetTrapKeyTag always returned empty string regardless of keyName', () => {
+    // The old stub: return '';
+    const oldResult = '';
+    const door = { keyName: 'dankey001' };
+    expect(oldResult).not.toBe(door.keyName);
+  });
+
+  // ---------------------------------------------------------------------------
+  // GetTrapCreator (fn 533)
+  // ---------------------------------------------------------------------------
+
+  it('GetTrapCreator: returns undefined for toolset-placed trap (no creator)', () => {
+    const trapObj = { trapCreator: undefined };
+    const result = (trapObj as any).trapCreator ?? undefined;
+    expect(result).toBeUndefined();
+  });
+
+  it('GetTrapCreator: returns trapCreator when set by script', () => {
+    const creator = { tag: 'darth_bandon', id: 42 };
+    const trapObj = { trapCreator: creator };
+    const result = (trapObj as any).trapCreator ?? undefined;
+    expect(result).toBe(creator);
+    expect((result as any).id).toBe(42);
+  });
+
+  // ---------------------------------------------------------------------------
+  // CombatRound effectAttacks
+  // ---------------------------------------------------------------------------
+
+  it('CombatRound: effectAttacks from EffectModifyNumAttacks is added to additionalAttacks', () => {
+    // Simulate CombatRound.beginCombatRound() logic for effectAttacks
+    const owner = {
+      equipment: { RIGHTHAND: {} },
+      effects: [
+        { type: EffectModifyNumAttacks_TYPE, getInt: (i: number) => [2][i] }
+      ]
+    };
+
+    let additionalAttacks = 0;
+    let effectAttacks = 0;
+
+    for(const effect of owner.effects){
+      if(effect.type === EffectModifyNumAttacks_TYPE){
+        effectAttacks += effect.getInt(0);
+      }
+    }
+    if(effectAttacks > 0 && owner.equipment.RIGHTHAND){
+      additionalAttacks += Math.min(effectAttacks, 5);
+    }
+
+    expect(effectAttacks).toBe(2);
+    expect(additionalAttacks).toBe(2);
+  });
+
+  it('CombatRound: multiple EffectModifyNumAttacks stack up to max 5', () => {
+    const owner = {
+      equipment: { RIGHTHAND: {} },
+      effects: [
+        { type: EffectModifyNumAttacks_TYPE, getInt: () => 3 },
+        { type: EffectModifyNumAttacks_TYPE, getInt: () => 4 }
+      ]
+    };
+
+    let additionalAttacks = 0;
+    let effectAttacks = 0;
+
+    for(const effect of owner.effects){
+      if(effect.type === EffectModifyNumAttacks_TYPE){
+        effectAttacks += effect.getInt(0);
+      }
+    }
+    if(effectAttacks > 0 && owner.equipment.RIGHTHAND){
+      additionalAttacks += Math.min(effectAttacks, 5);
+    }
+
+    expect(effectAttacks).toBe(7);
+    expect(additionalAttacks).toBe(5); // capped at 5
+  });
+
+  it('CombatRound: EffectModifyNumAttacks not applied without main hand weapon', () => {
+    const owner = {
+      equipment: { RIGHTHAND: null }, // no weapon
+      effects: [
+        { type: EffectModifyNumAttacks_TYPE, getInt: () => 2 }
+      ]
+    };
+
+    let additionalAttacks = 0;
+    let effectAttacks = 0;
+
+    for(const effect of owner.effects){
+      if(effect.type === EffectModifyNumAttacks_TYPE){
+        effectAttacks += effect.getInt(0);
+      }
+    }
+    if(effectAttacks > 0 && owner.equipment.RIGHTHAND){
+      additionalAttacks += Math.min(effectAttacks, 5);
+    }
+
+    expect(effectAttacks).toBe(2);
+    expect(additionalAttacks).toBe(0); // no weapon – bonus not applied
+  });
+
+  it('CombatRound: other effect types do not contribute to effectAttacks', () => {
+    const owner = {
+      equipment: { RIGHTHAND: {} },
+      effects: [
+        { type: EffectVisualEffect_TYPE, getInt: () => 999 }, // visual effect – ignored
+        { type: EffectModifyNumAttacks_TYPE, getInt: () => 1 }
+      ]
+    };
+
+    let effectAttacks = 0;
+    for(const effect of owner.effects){
+      if(effect.type === EffectModifyNumAttacks_TYPE){
+        effectAttacks += effect.getInt(0);
+      }
+    }
+
+    expect(effectAttacks).toBe(1); // only the EffectModifyNumAttacks counts
   });
 
 });

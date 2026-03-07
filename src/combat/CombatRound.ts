@@ -192,6 +192,17 @@ export class CombatRound {
         }
       }
     }
+
+    // Apply EffectModifyNumAttacks bonus attacks from active effects
+    this.effectAttacks = 0;
+    for(const effect of owner.effects){
+      if(effect.type === GameEffectType.EffectModifyNumAttacks){
+        this.effectAttacks += effect.getInt(0);
+      }
+    }
+    if(this.effectAttacks > 0 && owner.equipment.RIGHTHAND){
+      this.additionalAttacks += Math.min(this.effectAttacks, 5);
+    }
   }
 
   /**
