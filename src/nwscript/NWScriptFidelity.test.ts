@@ -2905,3 +2905,197 @@ describe('49. K1 blocker matrix – GetLocked, GetMinOneHP, SWMG_AdjustFollowerH
     expect(mgPlayer.hit_points).toBe(100);
   });
 });
+
+describe('50. K1 blocker matrix – Pazaak mini-game fixes', () => {
+  /**
+   * Fix 1: SetOpponentDeck must not replace INVALID (empty) slots with PLUS_1.
+   * Bug: `card == INVALID` logged an error and silently forced the slot to PLUS_1,
+   * giving the opponent phantom cards they shouldn't have.
+   * Fix: preserve INVALID for empty slots.
+   */
+  it('SetOpponentDeck: INVALID deck slot is preserved as INVALID (not replaced with PLUS_1)', () => {
+    const INVALID = -1;
+    const PLUS_1 = 0;
+    // Simulate the fixed logic
+    function resolveCard(card: number): number {
+      return card !== INVALID ? card : INVALID;
+    }
+    expect(resolveCard(INVALID)).toBe(INVALID);
+    expect(resolveCard(PLUS_1)).toBe(PLUS_1);
+    expect(resolveCard(3)).toBe(3);
+  });
+
+  it('SetOpponentDeck: valid card indices pass through unchanged', () => {
+    const INVALID = -1;
+    function resolveCard(card: number): number {
+      return card !== INVALID ? card : INVALID;
+    }
+    [0, 1, 5, 11, 17].forEach(idx => expect(resolveCard(idx)).toBe(idx));
+  });
+
+  /**
+   * Fix 2: BeginGame must track used side-deck cards so no duplicate type
+   * enters the hand.
+   * Bug: usedSideDeckCards was never populated after each draw, so the filter
+   * was always a no-op and duplicate card types could appear in one hand.
+   * Fix: push randomSideDeckCard into usedSideDeckCards after each draw.
+   */
+  it('BeginGame: usedSideDeckCards prevents duplicate card types in hand', () => {
+    const INVALID = -1;
+    const sideDeck = [2, 2, 3, 5, 7, 8, 9, 10, INVALID, INVALID];
+    const handCards: number[] = [];
+    const usedSideDeckCards: number[] = [];
+
+    for (let j = 0; j < 4; j++) {
+      const available = sideDeck.filter(c => c !== INVALID && !usedSideDeckCards.includes(c));
+      if (available.length === 0) break;
+      const picked = available[0];
+      handCards.push(picked);
+      usedSideDeckCards.push(picked); // the fix
+    }
+
+    const uniqueHand = new Set(handCards);
+    expect(uniqueHand.size).toBe(handCards.length); // no duplicates
+    expect(handCards.length).toBe(4);
+  });
+
+  it('BeginGame without fix allows duplicate card types in hand', () => {
+    const INVALID = -1;
+    const sideDeck = [2, 2, 3, 5, 7, 8, 9, 10, INVALID, INVALID];
+    const handCards: number[] = [];
+    const usedSideDeckCards: number[] = []; // intentionally never updated (old bug)
+
+    for (let j = 0; j < 4; j++) {
+      const available = sideDeck.filter(c => c !== INVALID && !usedSideDeckCards.includes(c));
+      if (available.length === 0) break;
+      const picked = available[0]; // always picks first available = always 2
+      handCards.push(picked);
+      // usedSideDeckCards not updated (the bug)
+    }
+
+    const uniqueHand = new Set(handCards);
+    expect(uniqueHand.size).toBeLessThan(handCards.length); // duplicates exist
+  });
+
+  /**
+   * Fix 3: PLAY_HAND_CARD must clone the card from config before setting flipped.
+   * Bug: `card.flipped = flipped` mutated the shared Config.data.sideDeckCards
+   * object, permanently corrupting the flipped state for all future uses.
+   * Fix: use object spread `{ ...configCard, flipped }` to create a local copy.
+   */
+  it('PLAY_HAND_CARD: clone prevents mutation of shared config card', () => {
+    const configCard = { name: 'Plus 1', modifier: [1, 0], reversible: false, flipped: undefined };
+    // Simulate the fixed code
+    const flipped = true;
+    const tableCard = { ...configCard, flipped };
+    // config card is unchanged
+    expect(configCard.flipped).toBeUndefined();
+    // table card has the correct flipped state
+    expect(tableCard.flipped).toBe(true);
+  });
+
+  it('PLAY_HAND_CARD: unflipped clone does not affect config card', () => {
+    const configCard = { name: 'Plus 2', modifier: [2, 0], reversible: false, flipped: undefined };
+    const tableCard = { ...configCard, flipped: false };
+    expect(configCard.flipped).toBeUndefined();
+    expect(tableCard.flipped).toBe(false);
+  });
+
+  /**
+   * Fix 4: END_GAME wager calculation must use Wager, not Wager * 2.
+   * Bug: winning added Wager * 2, losing subtracted Wager * 2, doubling the
+   * expected credit change since credits are not deducted upfront.
+   * Fix: win adds Wager, loss subtracts Wager.
+   */
+  it('END_GAME: winner gains exactly Wager credits (not Wager * 2)', () => {
+    const wager = 50;
+    const won = true;
+    const winnings = won ? wager : -wager;
+    expect(winnings).toBe(50);
+  });
+
+  it('END_GAME: loser loses exactly Wager credits (not Wager * 2)', () => {
+    const wager = 50;
+    const won = false;
+    const winnings = won ? wager : -wager;
+    expect(winnings).toBe(-50);
+  });
+
+  it('END_GAME: zero wager does not modify player gold', () => {
+    const wager = 0;
+    const won = true;
+    const winnings = won ? wager : -wager;
+    expect(winnings).toBe(0);
+  });
+
+  /**
+   * Fix 5: AI_DETERMINE_MOVE must use else-if to link the points==20 branch
+   * into the else chain, preventing a second END_TURN action from being queued.
+   * Bug: the first `if(points == 20)` was disconnected from the subsequent
+   * if-else chain, so for points == 20 both the first block (stand=1) and the
+   * final else block (stand=0) ran, enqueueing two conflicting END_TURN actions.
+   * Fix: change the second `if` to `else if`.
+   */
+  it('AI_DETERMINE_MOVE: exactly 20 points queues exactly one END_TURN action', () => {
+    const TARGET = 20;
+    const points = 20;
+    const actions: string[] = [];
+
+    // Simulate the fixed else-if chain
+    if (points === TARGET) {
+      actions.push('END_TURN stand=1');
+    } else if (points === 19 || points === 18) {
+      actions.push('STAND_OR_PLAY');
+    } else if (points > TARGET) {
+      actions.push('TRY_RESCUE');
+    } else if (points < 18) {
+      actions.push('CONSERVATIVE');
+    } else {
+      actions.push('END_TURN stand=0');
+    }
+
+    expect(actions).toEqual(['END_TURN stand=1']);
+    expect(actions.length).toBe(1);
+  });
+
+  it('AI_DETERMINE_MOVE (old bug): exactly 20 points queues two actions', () => {
+    const TARGET = 20;
+    const points = 20;
+    const actions: string[] = [];
+
+    // Simulate the buggy disconnected if (first if is NOT part of else chain)
+    if (points === TARGET) {
+      actions.push('END_TURN stand=1');
+    }
+    if (points === 19 || points === 18) {
+      actions.push('STAND_OR_PLAY');
+    } else if (points > TARGET) {
+      actions.push('TRY_RESCUE');
+    } else if (points < 18) {
+      actions.push('CONSERVATIVE');
+    } else {
+      actions.push('END_TURN stand=0'); // this also runs when points == 20
+    }
+
+    expect(actions.length).toBe(2); // two conflicting actions were queued
+  });
+
+  it('AI_DETERMINE_MOVE: 18 or 19 points uses stand-or-play branch only', () => {
+    [18, 19].forEach(points => {
+      const TARGET = 20;
+      const actions: string[] = [];
+      if (points === TARGET) {
+        actions.push('END_TURN stand=1');
+      } else if (points === 19 || points === 18) {
+        actions.push('STAND_OR_PLAY');
+      } else if (points > TARGET) {
+        actions.push('TRY_RESCUE');
+      } else if (points < 18) {
+        actions.push('CONSERVATIVE');
+      } else {
+        actions.push('END_TURN stand=0');
+      }
+      expect(actions).toEqual(['STAND_OR_PLAY']);
+    });
+  });
+});

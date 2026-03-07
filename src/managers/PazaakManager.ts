@@ -261,10 +261,7 @@ export class PazaakManager {
     const deck = new Map<PazaakSideDeckSlots, PazaakCards>();
     for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
       const card = deckConfig.cards[i];
-      if(card == PazaakCards.INVALID){
-        console.error(`PazaakManager: Invalid card modifier ${deckConfig.cards[i]} for deck ${deckIndex}`);
-      }
-      deck.set(i, card != PazaakCards.INVALID ? card : PazaakCards.PLUS_1);
+      deck.set(i, card != PazaakCards.INVALID ? card : PazaakCards.INVALID);
     }
     this.OpponentSideDeck = deck;
   }
@@ -546,7 +543,7 @@ export class PazaakManager {
     else if(action.type == PazaakActionType.END_GAME){
       const winner = this.GetActionPropertyAsNumber(0, 0);
       this.Won = winner == PazaakTurnMode.PLAYER;
-      const winnings = this.Won ? this.Wager * 2 : -this.Wager * 2;
+      const winnings = this.Won ? this.Wager : -this.Wager;
       if(GameState.PartyManager.Player){
         GameState.PartyManager.Player.addGold(winnings);
       }
@@ -667,8 +664,7 @@ export class PazaakManager {
           continue;
         }
         console.log(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${i + 1} ${flipped ? 'flipped' : 'not flipped'}`);
-        const card: IPazaakCard = this.Config.data.sideDeckCards[cardIndex];
-        card.flipped = flipped;
+        const card: IPazaakCard = { ...this.Config.data.sideDeckCards[cardIndex], flipped };
         //Play the card
         table.cardArea.set(i, card);
         //Remove the card from the player's hand
@@ -744,7 +740,7 @@ export class PazaakManager {
        * unless they have a better card to play that will put them equal to 20
        * to consolidate their potential win
        */
-      if((aiTable.points == 19 || aiTable.points == 18)){
+      else if((aiTable.points == 19 || aiTable.points == 18)){
         if(bestCardIndex > -1){
           this.AddActionFront(tableIndex, PazaakActionType.PLAY_HAND_CARD, [tableIndex, bestCardIndex, bestCardFlipped ? 1 : 0]);
         }else{
@@ -895,6 +891,8 @@ export class PazaakManager {
 
         //Add the card to the player's hand
         table.handCards.set(j, randomSideDeckCard);
+        //Track this card so it won't be drawn again for this hand
+        usedSideDeckCards.push(randomSideDeckCard);
         //Set the card to not flipped
         table.flipCards.set(j, false);
         //Set the card to not swapped
