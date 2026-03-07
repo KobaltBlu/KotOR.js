@@ -3143,11 +3143,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        return args[1].isHostile(args[0]) ? NW_TRUE : NW_FALSE;
-      }else{
-        return 0;
-      }
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return NW_FALSE;
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)) return NW_FALSE;
+      return args[0].isHostile(args[1]) ? NW_TRUE : NW_FALSE;
     }
   },
   236:{
@@ -3156,13 +3154,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        if( ( GameState.PartyManager.party.indexOf(args[0] as any) >= 0 ? NW_TRUE : NW_FALSE ) && ( GameState.PartyManager.party.indexOf(args[1] as any) >= 0 ? NW_TRUE : NW_FALSE ) ){
-          return NW_TRUE;
-        }
-        return args[1].isFriendly(args[0]) ? NW_TRUE : NW_FALSE;
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return NW_FALSE;
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)) return NW_FALSE;
+      if( GameState.PartyManager.party.indexOf(args[0] as any) >= 0 && GameState.PartyManager.party.indexOf(args[1] as any) >= 0 ){
+        return NW_TRUE;
       }
-      return NW_FALSE;
+      return args[0].isFriendly(args[1]) ? NW_TRUE : NW_FALSE;
     }
   },
   237:{
@@ -3171,13 +3168,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        if( ( GameState.PartyManager.party.indexOf(args[0] as any) >= 0 ? NW_TRUE : NW_FALSE ) && ( GameState.PartyManager.party.indexOf(args[1] as any) >= 0 ? NW_TRUE : NW_FALSE ) ){
-          return NW_TRUE;
-        }
-        return args[1].isFriendly(args[0]) || args[1].isNeutral(args[0]) ? NW_TRUE : NW_FALSE;
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return NW_FALSE;
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)) return NW_FALSE;
+      if( GameState.PartyManager.party.indexOf(args[0] as any) >= 0 && GameState.PartyManager.party.indexOf(args[1] as any) >= 0 ){
+        return NW_FALSE;
       }
-      return NW_FALSE;
+      return args[0].isNeutral(args[1]) ? NW_TRUE : NW_FALSE;
     }
   },
   238:{
@@ -8842,6 +8838,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      // No-op: SWMG audio frequency control not yet implemented
     }
   },
   685:{
@@ -8859,6 +8856,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      // No-op: SWMG audio randomisation control not yet implemented
     }
   },
   687:{
@@ -8876,6 +8874,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      // No-op: SWMG audio volume control not yet implemented
     }
   },
   689:{
