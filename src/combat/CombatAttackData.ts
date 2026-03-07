@@ -189,25 +189,17 @@ export class CombatAttackData {
         this.damageList[this.attackWeapon.getDamageBonusType()].addDamage(this.attackWeapon.getDamageBonus() * damageMultiplier);
       }
 
-      if( 
-        creature.getHasFeat(CombatFeatType.POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.POWER_BLAST)
-      ){
-        this.damageList[DamageType.BASE].addDamage(5 * damageMultiplier);
-      }
-
-      if( 
-        creature.getHasFeat(CombatFeatType.IMPROVED_POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.IMPROVED_POWER_BLAST)
-      ){
-        this.damageList[DamageType.BASE].addDamage(8 * damageMultiplier);
-      }
-
-      if( 
-        creature.getHasFeat(CombatFeatType.MASTER_POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.MASTER_POWER_BLAST) 
-      ){
-        this.damageList[DamageType.BASE].addDamage(10 * damageMultiplier);
+      // Power Attack / Power Blast damage bonus only applies when the feat
+      // is the active combat mode for this attack round (checked via feat param).
+      if(feat){
+        const featId = feat.getId();
+        if(featId === CombatFeatType.POWER_ATTACK || featId === CombatFeatType.POWER_BLAST){
+          this.damageList[DamageType.BASE].addDamage(5 * damageMultiplier);
+        }else if(featId === CombatFeatType.IMPROVED_POWER_ATTACK || featId === CombatFeatType.IMPROVED_POWER_BLAST){
+          this.damageList[DamageType.BASE].addDamage(8 * damageMultiplier);
+        }else if(featId === CombatFeatType.MASTER_POWER_ATTACK || featId === CombatFeatType.MASTER_POWER_BLAST){
+          this.damageList[DamageType.BASE].addDamage(10 * damageMultiplier);
+        }
       }
 
       let specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);

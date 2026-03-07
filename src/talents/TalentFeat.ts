@@ -3,6 +3,7 @@ import { type CreatureClass } from "../combat/CreatureClass";
 import { EffectACDecrease, EffectAttackDecrease } from "../effects";
 import { ModuleObjectType, TalentObjectType } from "../enums";
 import { GameEffectDurationType } from "../enums/effects";
+import { CombatFeatType } from "../enums/combat/CombatFeatType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { TwoDAManager } from "../managers/TwoDAManager";
 import type { ModuleObject } from "../module";
@@ -201,46 +202,38 @@ export class TalentFeat extends TalentObject {
 
   getArmorClassPenalty(){
     switch(this.id){
-      case 11: //FLURRY
-      case 30: //RAPID SHOT
+      case CombatFeatType.FLURRY:
+      case CombatFeatType.RAPID_SHOT:
         return 4;
-      case 91: //IMPROVED FLURRY
-      case 92: //IMPROVED RAPID SHOT
+      case CombatFeatType.IMPROVED_FLURRY:
+      case CombatFeatType.IMPROVED_RAPID_SHOT:
         return 2;
-      case 51: //MASTER FLURRY
-      case 21: //MASTER RAPID SHOT
-        return 1;
-      case 28: //CRITICAL STRIKE
-      case 19: //IMPROVED CRITICAL STRIKE
-      case 81: //MASTER CRITICAL STRIKE
-        return 5;
+      // Master Flurry (53) and Master Rapid Shot (26) have no AC penalty
     }
     return 0;
   }
 
   getAttackPenalty(){
     switch(this.id){
-      case 11: //FLURRY
-      case 30: //RAPID SHOT
+      case CombatFeatType.FLURRY:
+      case CombatFeatType.RAPID_SHOT:
         return 4;
-      case 91: //IMPROVED FLURRY
-      case 92: //IMPROVED RAPID SHOT
+      case CombatFeatType.IMPROVED_FLURRY:
+      case CombatFeatType.IMPROVED_RAPID_SHOT:
         return 2;
-      case 51: //MASTER FLURRY
-      case 21: //MASTER RAPID SHOT
-        return 1;
-      case 8: //POWER ATTACK
+      // Master Flurry (53) and Master Rapid Shot (26) have no attack penalty
+      case CombatFeatType.CRITICAL_STRIKE:
+      case CombatFeatType.POWER_ATTACK:
+      case CombatFeatType.POWER_BLAST:
         return 3;
-      case 17: //IMPROVED POWER ATTACK
-        return 3;
-      case 83: //MASTER POWER ATTACK
-        return 3;
-      case 29: //POWER BLAST
-        return 3;
-      case 18: //IMPROVED POWER BLAST
-        return 3;
-      case 82: //MASTER POWER BLAST
-        return 3;
+      case CombatFeatType.IMPROVED_CRITICAL_STRIKE:
+      case CombatFeatType.IMPROVED_POWER_ATTACK:
+      case CombatFeatType.IMPROVED_POWER_BLAST:
+        return 6;
+      case CombatFeatType.MASTER_CRITICAL_STRIKE:
+      case CombatFeatType.MASTER_POWER_ATTACK:
+      case CombatFeatType.MASTER_POWER_BLAST:
+        return 9;
     }
     return 0;
   }

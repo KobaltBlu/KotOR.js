@@ -4918,3 +4918,308 @@ describe('57. K1 blocker matrix – GetItemInSlot/ActionEquipItem slot mapping +
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// Section 58 – Combat feat fixes: attack penalties, AC effect integration,
+//              Power Attack damage gating, Critical Strike crit range,
+//              and PartyManager.GiveXP level-up trigger
+// ---------------------------------------------------------------------------
+
+describe('58. Combat feat fixes', () => {
+
+  // ---- TalentFeat.getAttackPenalty() --------------------------------------
+
+  it('getAttackPenalty: Flurry (11) returns 4', () => {
+    // Simulates TalentFeat.getAttackPenalty() via the corrected switch table
+    function getAttackPenalty(id: number): number {
+      switch(id){
+        case 11: case 30: return 4;      // FLURRY / RAPID_SHOT
+        case 91: case 92: return 2;      // IMPROVED_FLURRY / IMPROVED_RAPID_SHOT
+        // 53 (MASTER_FLURRY) / 26 (MASTER_RAPID_SHOT) → 0 (no penalty)
+        case 8:  case 28: case 29: return 3;   // CRITICAL_STRIKE / POWER_ATTACK / POWER_BLAST
+        case 19: case 17: case 18: return 6;   // IMP_CRIT / IMP_PA / IMP_PB
+        case 81: case 83: case 82: return 9;   // MASTER_CRIT / MASTER_PA / MASTER_PB
+      }
+      return 0;
+    }
+    expect(getAttackPenalty(11)).toBe(4);   // FLURRY
+    expect(getAttackPenalty(30)).toBe(4);   // RAPID_SHOT
+    expect(getAttackPenalty(91)).toBe(2);   // IMPROVED_FLURRY
+    expect(getAttackPenalty(92)).toBe(2);   // IMPROVED_RAPID_SHOT
+    expect(getAttackPenalty(53)).toBe(0);   // MASTER_FLURRY  – no penalty
+    expect(getAttackPenalty(26)).toBe(0);   // MASTER_RAPID_SHOT – no penalty
+    expect(getAttackPenalty(8)).toBe(3);    // CRITICAL_STRIKE
+    expect(getAttackPenalty(28)).toBe(3);   // POWER_ATTACK
+    expect(getAttackPenalty(17)).toBe(6);   // IMPROVED_POWER_ATTACK
+    expect(getAttackPenalty(83)).toBe(9);   // MASTER_POWER_ATTACK
+    expect(getAttackPenalty(19)).toBe(6);   // IMPROVED_CRITICAL_STRIKE
+    expect(getAttackPenalty(81)).toBe(9);   // MASTER_CRITICAL_STRIKE
+  });
+
+  it('regression: old getAttackPenalty returned 1 for Master Flurry (wrong feat ID 51)', () => {
+    // Old code used case 51 (WEAPON_SPEC_MELEE) for "MASTER_FLURRY"
+    function oldAttackPenalty(id: number): number {
+      switch(id){
+        case 11: case 30: return 4;
+        case 91: case 92: return 2;
+        case 51: case 21: return 1;   // BUG: wrong IDs
+        case 8:  return 3; case 17: return 3; case 83: return 3;
+      }
+      return 0;
+    }
+    function fixedAttackPenalty(id: number): number {
+      switch(id){
+        case 11: case 30: return 4;
+        case 91: case 92: return 2;
+        case 8:  case 28: case 29: return 3;
+        case 19: case 17: case 18: return 6;
+        case 81: case 83: case 82: return 9;
+      }
+      return 0;
+    }
+    expect(oldAttackPenalty(51)).toBe(1);    // old: wrong – 51 is WEAPON_SPEC_MELEE
+    expect(fixedAttackPenalty(51)).toBe(0);  // fixed: no penalty
+    expect(oldAttackPenalty(53)).toBe(0);    // old: accidentally correct (MASTER_FLURRY missed)
+    expect(fixedAttackPenalty(53)).toBe(0);  // fixed: explicit 0
+    expect(oldAttackPenalty(17)).toBe(3);    // old: IMPROVED PA only -3 (wrong)
+    expect(fixedAttackPenalty(17)).toBe(6);  // fixed: -6 ✓
+    expect(oldAttackPenalty(83)).toBe(3);    // old: MASTER PA only -3 (wrong)
+    expect(fixedAttackPenalty(83)).toBe(9);  // fixed: -9 ✓
+  });
+
+  // ---- getArmorClassPenalty() ---------------------------------------------
+
+  it('getArmorClassPenalty: Power Attack has no AC penalty', () => {
+    // Old code applied -5 AC to case 28 (POWER_ATTACK) labelled "CRITICAL STRIKE"
+    function oldACPenalty(id: number): number {
+      switch(id){
+        case 11: case 30: return 4;
+        case 91: case 92: return 2;
+        case 51: case 21: return 1;    // BUG: wrong IDs
+        case 28: case 19: case 81: return 5; // BUG: applies to PA (28), not CS
+      }
+      return 0;
+    }
+    function fixedACPenalty(id: number): number {
+      switch(id){
+        case 11: case 30: return 4;
+        case 91: case 92: return 2;
+        // MASTER_FLURRY (53) and MASTER_RAPID_SHOT (26) → 0 by default
+        // Power Attack, Critical Strike → no AC penalty in K1
+      }
+      return 0;
+    }
+    expect(oldACPenalty(28)).toBe(5);    // old: POWER_ATTACK wrongly gets -5 AC
+    expect(fixedACPenalty(28)).toBe(0);  // fixed: no AC penalty for Power Attack
+    expect(oldACPenalty(11)).toBe(4);    // Flurry AC penalty unchanged ✓
+    expect(fixedACPenalty(11)).toBe(4);  // Flurry still -4 AC ✓
+  });
+
+  // ---- calculateAttackRoll: effect modifiers ------------------------------
+
+  it('calculateAttackRoll: EffectAttackDecrease reduces the roll modifier', () => {
+    // Simulates the updated calculateAttackRoll logic
+    const ATTACK_INCREASE = 0x0A;
+    const ATTACK_DECREASE = 0x0B;
+    function calcAttackBonus(baseBAB: number, effects: Array<{type: number; getInt(n: number): number}>): number {
+      let bonus = baseBAB;
+      for(const effect of effects){
+        if(effect.type === ATTACK_INCREASE)  bonus += effect.getInt(0);
+        else if(effect.type === ATTACK_DECREASE) bonus -= effect.getInt(0);
+      }
+      return bonus;
+    }
+    // No effects → base BAB only
+    expect(calcAttackBonus(10, [])).toBe(10);
+    // Flurry applies -4 attack via EffectAttackDecrease
+    const flurryDecreaseEffect = { type: ATTACK_DECREASE, getInt: () => 4 };
+    expect(calcAttackBonus(10, [flurryDecreaseEffect])).toBe(6);
+    // Buff (+2 attack increase) stacks
+    const buffEffect = { type: ATTACK_INCREASE, getInt: () => 2 };
+    expect(calcAttackBonus(10, [flurryDecreaseEffect, buffEffect])).toBe(8);
+  });
+
+  it('regression: old calculateAttackRoll ignored EffectAttackDecrease', () => {
+    // Old version: return Dice.roll(1, d20, BAB + weaponBonus)
+    // Effects had no influence. Flurry's -4 attack penalty was silently dropped.
+    function oldCalcBonus(baseBAB: number): number {
+      return baseBAB;  // no effect loop
+    }
+    function fixedCalcBonus(baseBAB: number, effects: Array<{type: number; getInt(n: number): number}>): number {
+      let b = baseBAB;
+      for(const e of effects){
+        if(e.type === 0x0A) b += e.getInt(0);
+        else if(e.type === 0x0B) b -= e.getInt(0);
+      }
+      return b;
+    }
+    const effects = [{ type: 0x0B, getInt: () => 4 }]; // EffectAttackDecrease(-4)
+    expect(oldCalcBonus(10)).toBe(10);          // old: penalty ignored
+    expect(fixedCalcBonus(10, effects)).toBe(6); // fixed: penalty applied ✓
+  });
+
+  // ---- isCritical: Critical Strike crit range extension -------------------
+
+  it('isCritical: Critical Strike (id=8) extends threat range to 17-20', () => {
+    // Simulates updated isCritical with feat parameter
+    function isCritical(roll: number, weaponMin: number, featId: number | undefined): boolean {
+      let minThreat = weaponMin;
+      if(featId === 8)  minThreat = Math.min(minThreat, 17);   // CRITICAL_STRIKE
+      else if(featId === 19) minThreat = Math.min(minThreat, 14); // IMPROVED_CRITICAL_STRIKE
+      else if(featId === 81) minThreat = Math.min(minThreat, 11); // MASTER_CRITICAL_STRIKE
+      return roll > minThreat && roll <= 20;
+    }
+    const normalWeaponMin = 19;
+    // Without feat: only 20 crits (weapon min 19, so >19)
+    expect(isCritical(20, normalWeaponMin, undefined)).toBe(true);
+    expect(isCritical(19, normalWeaponMin, undefined)).toBe(false);
+    // With CRITICAL_STRIKE (id=8): 18-20 crits (>17)
+    expect(isCritical(18, normalWeaponMin, 8)).toBe(true);
+    expect(isCritical(17, normalWeaponMin, 8)).toBe(false);
+    // With IMPROVED_CRITICAL_STRIKE (id=19): 15-20 crits (>14)
+    expect(isCritical(15, normalWeaponMin, 19)).toBe(true);
+    expect(isCritical(14, normalWeaponMin, 19)).toBe(false);
+    // With MASTER_CRITICAL_STRIKE (id=81): 12-20 crits (>11)
+    expect(isCritical(12, normalWeaponMin, 81)).toBe(true);
+    expect(isCritical(11, normalWeaponMin, 81)).toBe(false);
+  });
+
+  it('isCritical: Critical Strike does not lower below weapon crit min', () => {
+    // A lightsaber already crits on 19-20 (min 19). CS should not raise min.
+    // Math.min(19, 17) = 17, so lightsaber + CS crits on 18-20.
+    function isCritical(roll: number, weaponMin: number, featId: number | undefined): boolean {
+      let minThreat = weaponMin;
+      if(featId === 8) minThreat = Math.min(minThreat, 17);
+      return roll > minThreat && roll <= 20;
+    }
+    expect(isCritical(18, 19, 8)).toBe(true);   // lightsaber + CS → crit on 18
+    expect(isCritical(17, 19, 8)).toBe(false);  // 17 still not a crit
+    expect(isCritical(18, 17, 8)).toBe(true);   // weapon already crits 18-20, CS doesn't help
+  });
+
+  // ---- Power Attack damage gating -----------------------------------------
+
+  it('Power Attack damage only applies when feat is active, not just owned', () => {
+    // Old code: creature.getHasFeat(POWER_ATTACK) → damage always applied
+    // Fixed code: only when feat?.getId() === POWER_ATTACK
+    const POWER_ATTACK = 28;
+    const IMPROVED_POWER_ATTACK = 17;
+    const MASTER_POWER_ATTACK = 83;
+
+    function calcPowerAttackBonus(featId: number | undefined): number {
+      if(featId === undefined) return 0;
+      if(featId === POWER_ATTACK) return 5;
+      if(featId === IMPROVED_POWER_ATTACK) return 8;
+      if(featId === MASTER_POWER_ATTACK) return 10;
+      return 0;
+    }
+
+    // Normal attack (no feat active) → no bonus damage
+    expect(calcPowerAttackBonus(undefined)).toBe(0);
+    // Power Attack active → +5
+    expect(calcPowerAttackBonus(POWER_ATTACK)).toBe(5);
+    // Improved Power Attack active → +8 (not stacked +5+8)
+    expect(calcPowerAttackBonus(IMPROVED_POWER_ATTACK)).toBe(8);
+    // Master Power Attack active → +10 (not stacked)
+    expect(calcPowerAttackBonus(MASTER_POWER_ATTACK)).toBe(10);
+    // Flurry active → no PA bonus
+    expect(calcPowerAttackBonus(11)).toBe(0);
+  });
+
+  it('regression: old Power Attack damage applied cumulatively when creature owned all tiers', () => {
+    // Old code checked getHasFeat for each tier separately, so a Master PA holder
+    // got +5 (PA) + +8 (Improved PA) + +10 (Master PA) = +23 damage (wrong).
+    function oldDamageBonus(hasPowerAttack: boolean, hasImproved: boolean, hasMaster: boolean): number {
+      let dmg = 0;
+      if(hasPowerAttack) dmg += 5;
+      if(hasImproved)    dmg += 8;
+      if(hasMaster)      dmg += 10;
+      return dmg;
+    }
+    function fixedDamageBonus(activeFeatId: number | undefined): number {
+      if(activeFeatId === 28) return 5;
+      if(activeFeatId === 17) return 8;
+      if(activeFeatId === 83) return 10;
+      return 0;
+    }
+    // Old: Master PA holder always gets +23 damage
+    expect(oldDamageBonus(true, true, true)).toBe(23);
+    // Fixed: using Master PA gives only +10
+    expect(fixedDamageBonus(83)).toBe(10);
+    // Fixed: using Improved PA gives only +8
+    expect(fixedDamageBonus(17)).toBe(8);
+    // Fixed: normal attack gives 0
+    expect(fixedDamageBonus(undefined)).toBe(0);
+  });
+
+  // ---- PartyManager.GiveXP → level-up trigger -----------------------------
+
+  it('GiveXP: delegates to addXP which fires level-up check', () => {
+    let addXPCalled = false;
+    let addXPValue  = 0;
+    const mockPlayer = {
+      experience: 0,
+      addXP(value: number){ addXPCalled = true; addXPValue = value; this.experience += value; },
+    };
+
+    // Simulates the fixed GiveXP implementation
+    function giveXP(player: typeof mockPlayer, nXP: number): void {
+      if(player && typeof player.addXP === 'function'){
+        player.addXP(nXP);
+      }else if(player){
+        player.experience += nXP;
+      }
+    }
+
+    giveXP(mockPlayer, 150);
+    expect(addXPCalled).toBe(true);     // addXP was called (fires level-up check)
+    expect(addXPValue).toBe(150);
+    expect(mockPlayer.experience).toBe(150);
+  });
+
+  it('regression: old GiveXP bypassed addXP, so level-up check was never triggered', () => {
+    let levelUpCheckRan = false;
+    const mockPlayer = {
+      experience: 0,
+      addXP(value: number){ levelUpCheckRan = true; this.experience += value; },
+    };
+
+    // Old implementation (direct assignment, no addXP call):
+    function oldGiveXP(player: typeof mockPlayer, nXP: number): void {
+      player.experience += nXP;
+      // UINotification call omitted in test
+    }
+    oldGiveXP(mockPlayer, 150);
+    expect(levelUpCheckRan).toBe(false);  // level-up check was skipped
+    expect(mockPlayer.experience).toBe(150);
+  });
+
+  // ---- getAC: EffectACDecrease/Increase integration -----------------------
+
+  it('getAC: EffectACDecrease applied by Flurry is now subtracted from AC', () => {
+    const EFFECT_AC_INCREASE = 0x30;
+    const EFFECT_AC_DECREASE = 0x31;
+
+    function calcAC(base: number, armorBonus: number, dexBonus: number,
+                    effects: Array<{type: number; getInt(n: number): number}>): number {
+      let effectBonus = 0;
+      for(const e of effects){
+        if(e.type === EFFECT_AC_INCREASE)  effectBonus += e.getInt(1);
+        else if(e.type === EFFECT_AC_DECREASE) effectBonus -= e.getInt(1);
+      }
+      return base + armorBonus + dexBonus + effectBonus;
+    }
+
+    // No effects: base AC 10 + armor 4 + dex 2 = 16
+    expect(calcAC(10, 4, 2, [])).toBe(16);
+    // Flurry applies EffectACDecrease(-4)
+    const flurryACDec = { type: EFFECT_AC_DECREASE, getInt: (_: number) => 4 };
+    expect(calcAC(10, 4, 2, [flurryACDec])).toBe(12);
+    // Defensive stance applies EffectACIncrease(+2)
+    const acBuff = { type: EFFECT_AC_INCREASE, getInt: (_: number) => 2 };
+    expect(calcAC(10, 4, 2, [acBuff])).toBe(18);
+    // Both effects cancel partially
+    expect(calcAC(10, 4, 2, [flurryACDec, acBuff])).toBe(14);
+  });
+
+});

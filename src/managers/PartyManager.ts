@@ -1183,8 +1183,12 @@ export class PartyManager {
    * @returns void
    */
   static GiveXP(nXP = 0){
-    this.Player.experience += nXP;
-    GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.PLOT_XP_RECEIVED);
+    if(this.Player && typeof this.Player.addXP === 'function'){
+      this.Player.addXP(nXP);
+    }else if(this.Player){
+      this.Player.experience += nXP;
+      GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.PLOT_XP_RECEIVED);
+    }
   }
 
   /**

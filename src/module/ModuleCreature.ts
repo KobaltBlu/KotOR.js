@@ -2692,7 +2692,16 @@ export class ModuleCreature extends ModuleObject {
 
     let dexBonus = Math.floor((this.getDEX() - 10) / 2);
 
-    return baseac + classBonus + armorAC + dexBonus;
+    let effectBonus = 0;
+    for(const effect of this.effects){
+      if(effect.type === GameEffectType.EffectACIncrease){
+        effectBonus += effect.getInt(1);
+      }else if(effect.type === GameEffectType.EffectACDecrease){
+        effectBonus -= effect.getInt(1);
+      }
+    }
+
+    return baseac + classBonus + armorAC + dexBonus + effectBonus;
   }
 
   getSTR(calculateBonuses = true){
