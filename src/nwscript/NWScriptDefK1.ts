@@ -45,6 +45,7 @@ import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
 import { SaveGame } from "../engine/SaveGame";
 import { GameEffectSubType } from "../enums/effects/GameEffectSubType";
 import { CreatureClass } from "../combat/CreatureClass";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 
 /**
  * NWScriptDefK1 class.
@@ -763,10 +764,10 @@ NWScriptDefK1.Actions = {
       action.setParameter(2, ActionParameterType.INT, args[4]); //DomainLevel
       action.setParameter(3, ActionParameterType.INT, 0);
       action.setParameter(4, ActionParameterType.INT, 0);
-      action.setParameter(5, ActionParameterType.DWORD, args[1].id); //Target Object
-      action.setParameter(6, ActionParameterType.FLOAT, args[1].position.x); //Target X
-      action.setParameter(7, ActionParameterType.FLOAT, args[1].position.y); //Target Y
-      action.setParameter(8, ActionParameterType.FLOAT, args[1].position.z); //Target Z
+      action.setParameter(5, ActionParameterType.DWORD, args[1]?.id || ModuleObjectConstant.OBJECT_INVALID); //Target Object
+      action.setParameter(6, ActionParameterType.FLOAT, args[1]?.position.x || 0); //Target X
+      action.setParameter(7, ActionParameterType.FLOAT, args[1]?.position.y || 0); //Target Y
+      action.setParameter(8, ActionParameterType.FLOAT, args[1]?.position.z || 0); //Target Z
       action.setParameter(9, ActionParameterType.INT, args[5]); //ProjectilePath
       action.setParameter(10, ActionParameterType.INT, -1);
       action.setParameter(11, ActionParameterType.INT, -1);
@@ -3131,9 +3132,9 @@ NWScriptDefK1.Actions = {
       action.setParameter(3, ActionParameterType.INT, 0);
       action.setParameter(4, ActionParameterType.INT, 0);
       action.setParameter(5, ActionParameterType.DWORD, -1); //Target Object
-      action.setParameter(6, ActionParameterType.FLOAT, args[1].position.x); //Target X
-      action.setParameter(7, ActionParameterType.FLOAT, args[1].position.y); //Target Y
-      action.setParameter(8, ActionParameterType.FLOAT, args[1].position.z); //Target Z
+      action.setParameter(6, ActionParameterType.FLOAT, args[1]?.position?.x || 0); //Target X
+      action.setParameter(7, ActionParameterType.FLOAT, args[1]?.position?.y || 0); //Target Y
+      action.setParameter(8, ActionParameterType.FLOAT, args[1]?.position?.z || 0); //Target Z
       action.setParameter(9, ActionParameterType.INT, args[5]); //ProjectilePath
       action.setParameter(10, ActionParameterType.INT, -1);
       action.setParameter(11, ActionParameterType.INT, -1);
@@ -4669,6 +4670,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [number, ModuleCreature]){
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)) return CreatureClassType.INVALID;
       const creature = args[1] as ModuleCreature;
       switch(args[0]){
         case 1: return creature.classes[0]?.id || CreatureClassType.INVALID;
@@ -4684,6 +4686,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [number, ModuleCreature]){
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)) return 0;
       const creature = args[1] as ModuleCreature;
       switch(args[0]){
         case 1: return creature.classes[0]?.level || 0;
@@ -4699,7 +4702,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [number, ModuleCreature]){
-      return args[1].getClassLevel( args[0] );
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        return args[1].getClassLevel( args[0] );
+      }
+      return 0;
     }
   },
   344:{
