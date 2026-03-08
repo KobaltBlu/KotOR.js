@@ -1769,7 +1769,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, GameEvent]){
       //This needs to happen once the script has completed
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))){
-        args[0] = GameState.module.area;
+        args[0] = GameState.module?.area;
       }
 
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
