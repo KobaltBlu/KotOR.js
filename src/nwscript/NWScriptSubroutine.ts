@@ -26,6 +26,7 @@ export class NWScriptSubroutine {
   }
 
   onEnd(){
+    if(!GameState.module) return;
     for(let i = 0, len = this.delayCommands.length; i < len; i++){
       GameState.module.eventQueue.push(this.delayCommands[i]);
     }

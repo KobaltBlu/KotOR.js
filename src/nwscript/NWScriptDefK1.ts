@@ -147,7 +147,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.FLOAT, NWScriptDataType.ACTION],
     action: function(this: NWScriptInstance, args: [number, any]){
       if(args[1] == null || !args[1].script) return;
-      let futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(args[0])
+      let futureTime = GameState.module?.timeManager?.getFutureTimeFromSeconds(args[0])
       let timedEvent = new GameState.GameEventFactory.EventTimedEvent();
       timedEvent.setCaller(this.caller);
       timedEvent.setObject(this.caller);
@@ -219,7 +219,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number, number]){
-      GameState.module.timeManager.setTime(args[0], args[1], args[2], args[3]);
+      GameState.module?.timeManager?.setTime(args[0], args[1], args[2], args[3]);
     }
   },
   13:{
@@ -263,7 +263,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.timeManager.hour | 0;
+      return GameState.module?.timeManager?.hour | 0;
     }
   },
   17:{
@@ -272,7 +272,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.timeManager.minute | 0;
+      return GameState.module?.timeManager?.minute | 0;
     }
   },
   18:{
@@ -281,7 +281,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.timeManager.second | 0;
+      return GameState.module?.timeManager?.second | 0;
     }
   },
   19:{
@@ -290,7 +290,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.timeManager.milisecond | 0;
+      return GameState.module?.timeManager?.milisecond | 0;
     }
   },
   20:{
@@ -2055,7 +2055,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      GameState.module.setReturnStrRef(!!args[0], args[1], args[2]);
+      GameState.module?.setReturnStrRef?.(!!args[0], args[1], args[2]);
     }
   },
   153:{
@@ -2841,7 +2841,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.STRING,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.filename;
+      return GameState.module?.filename ?? "";
     }
   },
   211:{
@@ -2927,7 +2927,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [number, GameEffect, EngineLocation, number]){
       args[1].setDurationType(args[0]);
       args[1].setDuration(args[3]);
-      GameState.module.addEffect(args[1], args[2]);
+      GameState.module?.addEffect?.(args[1], args[2]);
     }
   },
   217:{
@@ -2968,7 +2968,7 @@ NWScriptDefK1.Actions = {
           args[1].setDurationType(args[0]);
           args[1].setDuration(args[3]);
           if(args[0] == GameEffectDurationType.TEMPORARY){
-            const future = GameState.module.timeManager.getFutureTimeFromSeconds(args[3]);
+            const future = GameState.module?.timeManager?.getFutureTimeFromSeconds(args[3]);
             args[1].setExpireDay(future.pauseDay);
             args[1].setExpireTime(future.pauseTime);
           }
@@ -3906,7 +3906,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [number, string]){
-      GameState.module.setCustomToken(args[0], args[1]);
+      GameState.module?.setCustomToken?.(args[0], args[1]);
     }
   },
   285:{
@@ -5650,9 +5650,9 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(!GameState.module) return 0;
-      const h = GameState.module.timeManager.hour;
-      const dawn = GameState.module.timeManager.dawnHour;
-      const dusk = GameState.module.timeManager.duskHour;
+      const h = GameState.module?.timeManager?.hour;
+      const dawn = GameState.module?.timeManager?.dawnHour;
+      const dusk = GameState.module?.timeManager?.duskHour;
       return (h >= dawn + 1 && h < dusk) ? 1 : 0;
     }
   },
@@ -5663,9 +5663,9 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(!GameState.module) return 0;
-      const h = GameState.module.timeManager.hour;
-      const dusk = GameState.module.timeManager.duskHour;
-      const dawn = GameState.module.timeManager.dawnHour;
+      const h = GameState.module?.timeManager?.hour;
+      const dusk = GameState.module?.timeManager?.duskHour;
+      const dawn = GameState.module?.timeManager?.dawnHour;
       return (h >= dusk + 1 || h < dawn) ? 1 : 0;
     }
   },
@@ -5676,7 +5676,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(!GameState.module) return 0;
-      return GameState.module.timeManager.hour === GameState.module.timeManager.dawnHour ? 1 : 0;
+      return GameState.module?.timeManager?.hour === GameState.module?.timeManager?.dawnHour ? 1 : 0;
     }
   },
   408:{
@@ -5686,7 +5686,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(!GameState.module) return 0;
-      return GameState.module.timeManager.hour === GameState.module.timeManager.duskHour ? 1 : 0;
+      return GameState.module?.timeManager?.hour === GameState.module?.timeManager?.duskHour ? 1 : 0;
     }
   },
   409:{
@@ -7644,7 +7644,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.STRING,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.name.getValue();
+      return GameState.module?.name?.getValue() ?? '';
     }
   },
   562:{

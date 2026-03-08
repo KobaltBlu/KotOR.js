@@ -120,7 +120,7 @@ export class ActionUnlockObject extends Action {
 
       if(this.timer <= 0){
         const unlocked = (this.target as any).attemptUnlock(this.owner);
-        if(!unlocked){
+        if(!unlocked && GameState.module){
           const event = new GameState.GameEventFactory.EventSignalEvent();
           event.setCaller(this.getOwner());
           event.setObject(this.target);

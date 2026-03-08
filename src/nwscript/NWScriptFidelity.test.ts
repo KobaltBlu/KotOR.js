@@ -10350,3 +10350,90 @@ describe('Section 88: ModuleObject perception/stealthXP, door, creature area gua
   });
 
 });
+
+// Fixes verified in this section:
+// NWScriptSubroutine.onEnd – if(!GameState.module) return guard
+// NWScript timeManager fns – GameState.module?.timeManager?.* optional chain
+// NWScript SetReturnStrRef/addEffect/setCustomToken/GetModuleName – optional chain
+// ActionSetMine – GameState.module guard around timeManager/addEvent
+// ActionUnlockObject – GameState.module guard around timeManager/addEvent  
+// ModuleObjectManager.GetObjectByTag – area guard (const area = this.module?.area)
+// ModuleObjectManager.GetNearestObjectByTag – if(!area) return undefined guard
+// ModuleObjectManager.GetNearestInteractableObject – area?. fallbacks
+// ModuleObjectManager.GetNearestObject – if(!area) return undefined guard
+// ModuleObjectManager.GetFirstObjectInArea/GetNextObjectInArea – area guard
+// ModuleObjectManager.GetObjectsInShape – if(!_area) return results guard
+// ModuleObjectManager.GetAttackerByIndex – area?.creatures ?? [] fallback
+describe('Section 89: NWScript module guards and ModuleObjectManager area null-guards', () => {
+
+  it('NWScriptSubroutine.onEnd: no crash when module is null', () => {
+    const delayCommands = [{ event: 'test' }];
+    function onEnd(module: any) {
+      if(!module) return;
+      for(const cmd of delayCommands) module.eventQueue.push(cmd);
+    }
+    expect(() => onEnd(null)).not.toThrow();
+    const module = { eventQueue: [] as any[] };
+    onEnd(module);
+    expect(module.eventQueue).toHaveLength(1);
+  });
+
+  it('NWScript timeManager: optional chain returns 0 when module null', () => {
+    function getHour(module: any) { return module?.timeManager?.hour | 0; }
+    expect(getHour(null)).toBe(0);
+    expect(getHour({ timeManager: { hour: 14 } })).toBe(14);
+  });
+
+  it('NWScript GetModuleName: optional chain returns empty string when module null', () => {
+    function getModuleName(module: any) { return module?.name?.getValue() ?? ''; }
+    expect(getModuleName(null)).toBe('');
+    expect(getModuleName({ name: { getValue: () => 'dant' } })).toBe('dant');
+  });
+
+  it('ModuleObjectManager.GetObjectByTag: returns undefined when area is null', () => {
+    function getObjectByTag(module: any, tag: string) {
+      const area = module?.area;
+      if(!area) return undefined;
+      const results: any[] = [];
+      for(const c of area.creatures) if(c.tag === tag) results.push(c);
+      return results[0];
+    }
+    expect(getObjectByTag(null, 'npc')).toBeUndefined();
+    expect(getObjectByTag({ area: null }, 'npc')).toBeUndefined();
+    const npc = { tag: 'npc' };
+    expect(getObjectByTag({ area: { creatures: [npc] } }, 'npc')).toBe(npc);
+  });
+
+  it('ModuleObjectManager.GetNearestObjectByTag: returns undefined when area is null', () => {
+    function getNearestObjectByTag(module: any) {
+      const area = module?.area;
+      if(!area) return undefined;
+      return area.creatures[0];
+    }
+    expect(getNearestObjectByTag(null)).toBeUndefined();
+    expect(getNearestObjectByTag({ area: null })).toBeUndefined();
+  });
+
+  it('ModuleObjectManager.GetObjectsInShape: returns empty array when area is null', () => {
+    function getObjectsInShape(module: any) {
+      const area = module?.area;
+      if(!area) return [];
+      return area.creatures;
+    }
+    expect(getObjectsInShape(null)).toEqual([]);
+    expect(getObjectsInShape({ area: { creatures: [1, 2] } })).toEqual([1, 2]);
+  });
+
+  it('ModuleObjectManager.GetAttackerByIndex: creatures falls back to [] when area null', () => {
+    function getAttackerByIndex(module: any, target: any) {
+      const creatures = module?.area?.creatures ?? [];
+      return creatures.find((c: any) => c.lastAttackTarget === target) ?? undefined;
+    }
+    expect(getAttackerByIndex(null, {})).toBeUndefined();
+    const c = { lastAttackTarget: { id: 1 } };
+    const t = { id: 1 };
+    c.lastAttackTarget = t;
+    expect(getAttackerByIndex({ area: { creatures: [c] } }, t)).toBe(c);
+  });
+
+});

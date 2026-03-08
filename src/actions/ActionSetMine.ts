@@ -90,15 +90,16 @@ export class ActionSetMine extends Action {
         this.usedItem = true;
         console.log('ActionSetMine', 'ITEM_USED');
 
-        const futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(3);
-
-        const event = new GameState.GameEventFactory.EventSignalEvent();
-        event.setCaller(this.getOwner());
-        event.setObject(this.getTarget());
-        event.setDay(futureTime.pauseDay);
-        event.setTime(futureTime.pauseTime);
-        event.eventType = SignalEventType.OnTrapTriggered;
-        GameState.module.addEvent(event);
+        if(GameState.module){
+          const futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(3);
+          const event = new GameState.GameEventFactory.EventSignalEvent();
+          event.setCaller(this.getOwner());
+          event.setObject(this.getTarget());
+          event.setDay(futureTime.pauseDay);
+          event.setTime(futureTime.pauseTime);
+          event.eventType = SignalEventType.OnTrapTriggered;
+          GameState.module.addEvent(event);
+        }
         
         //If we have more charges, reduce the charges count by 1
         if(this.oItem.charges > 1){
