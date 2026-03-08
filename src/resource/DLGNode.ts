@@ -818,7 +818,7 @@ export class DLGNode {
       text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
       text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('LastName')?.getValue());
       text = text.replace(/<CUSTOM(\d+)>/gm, function(match, p1, offset, string){
-        return GameState.module.getCustomToken(parseInt(p1));
+        return GameState.module?.getCustomToken(parseInt(p1)) ?? '';
       });
     //}
 

@@ -554,7 +554,7 @@ export class PartyManager {
         partyMember.container.removeFromParent();
       }
       GameState.group.creatures.add(partyMember.container);
-      GameState.module.area.attachObject(partyMember);
+      if(GameState.module?.area) GameState.module.area.attachObject(partyMember);
     }
     
     PartyManager.RemoveCurrentMemberByNPCId(npcId);
@@ -782,9 +782,12 @@ export class PartyManager {
     //Add the creature to the party array
     PartyManager.party.push(creature);
     //Check to see if the creature needs to be removed from the creatures array
-    let cIdx = GameState.module.area.creatures.indexOf(creature);
-    if(cIdx > -1){
-      GameState.module.area.creatures.splice(cIdx, 1);
+    const areaCreatures = GameState.module?.area?.creatures;
+    if(areaCreatures){
+      let cIdx = areaCreatures.indexOf(creature);
+      if(cIdx > -1){
+        areaCreatures.splice(cIdx, 1);
+      }
     }
     // Move the creature's 3D container from the world creatures group into
     // the party group so it renders correctly alongside the player.
@@ -1066,12 +1069,13 @@ export class PartyManager {
           creature.getYOrientation(), 
           creature.getZOrientation()
         );
-      }else if( GameState.module.area.transWP ){
-        if( GameState.module.area.transWP ){
-          //console.log('TransWP - PM', GameState.module.area.transWP);
+      }else if( GameState.module?.area?.transWP ){
+        if( GameState.module?.area?.transWP ){
+          //console.log('TransWP - PM', GameState.module?.area?.transWP);
         }
         let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
-        let spawnLoc = GameState.module.area.getSpawnLocation();
+        let spawnLoc = GameState.module?.area?.getSpawnLocation();
+        if(!spawnLoc) return undefined;
         let facing = -Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y);
         switch(index){
           case 0:
@@ -1104,7 +1108,8 @@ export class PartyManager {
         }
       }else{
         let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
-        let spawnLoc = GameState.module.area.getSpawnLocation();
+        let spawnLoc = GameState.module?.area?.getSpawnLocation();
+        if(!spawnLoc) return undefined;
         let facing = spawnLoc.getFacing();
         switch(index){
           case 0:
@@ -1138,7 +1143,7 @@ export class PartyManager {
       }
     }
     
-    return GameState.module.area.getSpawnLocation();
+    return GameState.module?.area?.getSpawnLocation();
 
   }
 

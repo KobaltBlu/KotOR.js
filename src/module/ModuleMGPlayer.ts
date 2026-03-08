@@ -206,7 +206,7 @@ export class ModuleMGPlayer extends ModuleObject {
     //this.animationManagers
     this.forceVector.set(0, 0, 0);
 
-    switch(GameState.module.area.miniGame.type){
+    switch(GameState.module?.area?.miniGame?.type){
       case 1:
 
         if(this.speed_min || this.speed){
@@ -234,7 +234,7 @@ export class ModuleMGPlayer extends ModuleObject {
         this.track.position.add(this.forceVector);
         //this.model.box.setFromObject(this.model);
 
-        const enemies = GameState.module.area.miniGame.enemies;
+        const enemies = GameState.module?.area?.miniGame?.enemies ?? [];
         for(let i = 0; i < enemies.length; i++){
           const enemy = enemies[i];
           if(enemy.sphere.containsPoint(this.sphere.center)){
@@ -319,7 +319,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   shoot(){
-    switch(GameState.module.area.miniGame.type){
+    switch(GameState.module?.area?.miniGame?.type){
       case MiniGameType.SWOOPRACE:
         this.jump();
       break;
@@ -627,6 +627,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   getCurrentRoom(){
+    if(!GameState.module?.area) return;
     if(this instanceof ModuleObject){
       this.room = undefined;
       let aabbFaces = [];

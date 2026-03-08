@@ -834,10 +834,10 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateActionQueue(delta = 0){
-    if(this.isDebilitated() && this.area.module.readyToProcessEvents)
+    if(this.isDebilitated() && this.area?.module?.readyToProcessEvents)
       return;
 
-    if(!GameState.module.readyToProcessEvents)
+    if(!GameState.module?.readyToProcessEvents)
       return;
 
       
@@ -900,7 +900,7 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    if(!this.spawned || !GameState.module.readyToProcessEvents){
+    if(!this.spawned || !GameState.module?.readyToProcessEvents){
       return;
     }
 
@@ -991,8 +991,9 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    for(let i = 0, triglen = this.area.triggers.length; i < triglen; i++){
-      const trig = this.area.triggers[i];
+    const areaTriggers = this.area?.triggers ?? [];
+    for(let i = 0, triglen = areaTriggers.length; i < triglen; i++){
+      const trig = areaTriggers[i];
       if(trig.type != ModuleTriggerType.TRAP){ continue; }
       if(trig.trapDetected){ continue; }
       const actionFlag = new GameState.ActionFactory.ActionFlagMine();
@@ -1251,7 +1252,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
-      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      action.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
       action.setParameter(4, ActionParameterType.DWORD, target.id);
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
       action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, distance));
@@ -1285,7 +1286,7 @@ export class ModuleCreature extends ModuleObject {
         action.setParameter(0, ActionParameterType.FLOAT, position.x);
         action.setParameter(1, ActionParameterType.FLOAT, position.y);
         action.setParameter(2, ActionParameterType.FLOAT, position.z);
-        action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+        action.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
         action.setParameter(4, ActionParameterType.DWORD, 0xFFFFFFFF);
         action.setParameter(5, ActionParameterType.INT, run ? 1 : 0);
         action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, maxDistance));
@@ -1303,7 +1304,7 @@ export class ModuleCreature extends ModuleObject {
     if(target instanceof EngineLocation || target instanceof ModuleObject){
 
       let distance = 0.1;
-      let creatures = GameState.module.area.creatures;
+      let creatures = GameState.module?.area?.creatures ?? [];
 
       //Check if creatures are too close to location
       for(let i = 0; i < creatures.length; i++){
@@ -1335,7 +1336,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
-      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      action.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
       action.setParameter(4, ActionParameterType.DWORD, target instanceof EngineLocation ? ModuleObjectConstant.OBJECT_INVALID : target.id );
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
       action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, distance));
@@ -1367,7 +1368,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
-      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      action.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
       action.setParameter(4, ActionParameterType.INT, 0);
       action.setParameter(5, ActionParameterType.FLOAT, 20.0);
       action.setParameter(6, ActionParameterType.FLOAT, target.rotation.x);
@@ -4009,19 +4010,22 @@ export class ModuleCreature extends ModuleObject {
 
 
       if(this.template.RootNode.hasField('SWVarTable')){
-        let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-        //console.log(localBools);
-        for(let i = 0; i < localBools.length; i++){
-          let data = localBools[i].getFieldByLabel('Variable').getValue();
-          for(let bit = 0; bit < 32; bit++){
-            this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+        const swVarStructs = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs();
+        if(swVarStructs && swVarStructs.length > 0){
+          let localBools = swVarStructs[0].getFieldByLabel('BitArray').getChildStructs();
+          //console.log(localBools);
+          for(let i = 0; i < localBools.length; i++){
+            let data = localBools[i].getFieldByLabel('Variable').getValue();
+            for(let bit = 0; bit < 32; bit++){
+              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+            }
           }
-        }
-        let localNumbers = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('ByteArray').getChildStructs();
-        //console.log(localNumbers);
-        for(let i = 0; i < localNumbers.length; i++){
-          let data = localNumbers[i].getFieldByLabel('Variable').getValue();
-          this.setLocalNumber(i, data);
+          let localNumbers = swVarStructs[0].getFieldByLabel('ByteArray').getChildStructs();
+          //console.log(localNumbers);
+          for(let i = 0; i < localNumbers.length; i++){
+            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            this.setLocalNumber(i, data);
+          }
         }
       }
 

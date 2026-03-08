@@ -81,7 +81,7 @@ export class ActionPhysicalAttacks extends Action {
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);
-        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, (target.area ?? GameState.module.area).id);
+        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, (target.area ?? GameState.module?.area)?.id ?? 0);
         actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, target.id);
         actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
         actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, range );

@@ -305,6 +305,7 @@ export class ModuleDoor extends ModuleObject {
 
   updateCollisionState(): void {
     // if(!this.collisionManager?.walkmesh?.mesh){ return; }
+    if(!this.area) return;
 
     let idx = -1;
     switch(this.openState){

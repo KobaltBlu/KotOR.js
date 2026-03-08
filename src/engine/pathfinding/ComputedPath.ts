@@ -337,7 +337,7 @@ export class ComputedPath {
   }
 
   fixWalkEdges(safeDistance = 1.5){
-    if(!this.owner) return;
+    if(!this.owner || !this.owner.area) return;
     for(let i = 0; i < this.points.length; i++){
       this.points[i].vector.copy(
         this.owner.area.getNearestWalkablePoint(this.points[i].vector, safeDistance)
@@ -358,7 +358,7 @@ export class ComputedPath {
     const safeDistance = this.owner?.getHitDistance();
 
     this.points = curve.getPoints( divisions ).map( (v) => {
-      return PathPoint.FromVector3(this.owner ? this.owner.area.getNearestWalkablePoint(v, safeDistance) : v);
+      return PathPoint.FromVector3(this.owner?.area ? this.owner.area.getNearestWalkablePoint(v, safeDistance) : v);
     });
   }
 

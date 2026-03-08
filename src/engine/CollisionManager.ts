@@ -406,7 +406,7 @@ export class CollisionManager {
 
   private handleCreatureCollisions(delta: number): void {
     // Handle both area creatures and party members
-    this.handleObjectGroupCollisions(GameState.module.area.creatures, CollisionType.CREATURE, delta);
+    this.handleObjectGroupCollisions(GameState.module?.area?.creatures ?? [], CollisionType.CREATURE, delta);
     this.handleObjectGroupCollisions(GameState.PartyManager.party, CollisionType.CREATURE, delta);
   }
 
@@ -893,7 +893,7 @@ export class CollisionManager {
         edge.line.end.x,
         edge.line.end.y
       )) {
-        this.object.attachToRoom(this.object.area.rooms[edge.transition]);
+        this.object.attachToRoom(this.object.area?.rooms[edge.transition]);
         break;
       }
     }

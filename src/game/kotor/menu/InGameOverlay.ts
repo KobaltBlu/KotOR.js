@@ -942,7 +942,7 @@ export class InGameOverlay extends GameMenu {
     if (!this.bVisible)
       return;
 
-    if (GameState.module.area.miniGame) { return; }
+    if (GameState.module?.area?.miniGame) { return; }
 
     const oPC = GameState.getCurrentPlayer();
     GameState.ActionMenuManager.SetPC(oPC);

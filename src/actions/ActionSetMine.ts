@@ -52,7 +52,7 @@ export class ActionSetMine extends Action {
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
         actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
         actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
         actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 2 );
@@ -90,15 +90,16 @@ export class ActionSetMine extends Action {
         this.usedItem = true;
         console.log('ActionSetMine', 'ITEM_USED');
 
-        const futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(3);
-
-        const event = new GameState.GameEventFactory.EventSignalEvent();
-        event.setCaller(this.getOwner());
-        event.setObject(this.getTarget());
-        event.setDay(futureTime.pauseDay);
-        event.setTime(futureTime.pauseTime);
-        event.eventType = SignalEventType.OnTrapTriggered;
-        GameState.module.addEvent(event);
+        if(GameState.module){
+          const futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(3);
+          const event = new GameState.GameEventFactory.EventSignalEvent();
+          event.setCaller(this.getOwner());
+          event.setObject(this.getTarget());
+          event.setDay(futureTime.pauseDay);
+          event.setTime(futureTime.pauseTime);
+          event.eventType = SignalEventType.OnTrapTriggered;
+          GameState.module.addEvent(event);
+        }
         
         //If we have more charges, reduce the charges count by 1
         if(this.oItem.charges > 1){

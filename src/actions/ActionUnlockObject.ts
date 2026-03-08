@@ -67,7 +67,7 @@ export class ActionUnlockObject extends Action {
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
       actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
       actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
       actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 1.5 );
@@ -120,7 +120,7 @@ export class ActionUnlockObject extends Action {
 
       if(this.timer <= 0){
         const unlocked = (this.target as any).attemptUnlock(this.owner);
-        if(!unlocked){
+        if(!unlocked && GameState.module){
           const event = new GameState.GameEventFactory.EventSignalEvent();
           event.setCaller(this.getOwner());
           event.setObject(this.target);

@@ -1930,7 +1930,7 @@ export class ModuleObject {
 
     trigger.load();
 
-    this.area.triggers.push(trigger);
+    if(this.area) this.area.triggers.push(trigger);
   }
 
   //---------------//
@@ -3179,12 +3179,12 @@ export class ModuleObject {
       if(heard){
         existingObject.data |= 0x02;
         if(object.isPlayer && this.isHostile(object)){
-          this.area.subtractStealthXP();
+          this.area?.subtractStealthXP();
         }
       }else{
         existingObject.data &= ~0x02;
         if(object.isPlayer && this.isHostile(object)){
-          this.area.addStealthXP();
+          this.area?.addStealthXP();
         }
       }
       perceptionObject = existingObject;
@@ -3199,11 +3199,11 @@ export class ModuleObject {
         perceptionObject = newObject;
         triggerOnNotice = true;
         if(object.isPlayer && this.isHostile(object)){
-          this.area.subtractStealthXP();
+          this.area?.subtractStealthXP();
         }
       }else{
         if(object.isPlayer && this.isHostile(object)){
-          this.area.addStealthXP();
+          this.area?.addStealthXP();
         }
       }
     }
@@ -3239,12 +3239,12 @@ export class ModuleObject {
       if(seen){
         existingObject.data |= 0x01;
         if(object.isPlayer && this.isHostile(object)){
-          this.area.subtractStealthXP();
+          this.area?.subtractStealthXP();
         }
       }else{
         existingObject.data &= ~0x01;
         if(object.isPlayer && this.isHostile(object)){
-          this.area.addStealthXP();
+          this.area?.addStealthXP();
         }
       }
       perceptionObject = existingObject;
@@ -3259,11 +3259,11 @@ export class ModuleObject {
         perceptionObject = newObject;
         triggerOnNotice = true;
         if(object.isPlayer && this.isHostile(object)){
-          this.area.subtractStealthXP();
+          this.area?.subtractStealthXP();
         }
       }else{
         if(object.isPlayer && this.isHostile(object)){
-          this.area.addStealthXP();
+          this.area?.addStealthXP();
         }
       }
     }
@@ -3322,6 +3322,7 @@ export class ModuleObject {
     GameState.raycaster.ray.direction.copy(this.#tmpDirection);
     GameState.raycaster.far = distance;
 
+    if(!this.area) return true;
     for(let j = 0, jl = this.area.doors.length; j < jl; j++){
       const door = this.area.doors[j];
       if(!door || door == (this as any) || door.isOpen()) continue;
