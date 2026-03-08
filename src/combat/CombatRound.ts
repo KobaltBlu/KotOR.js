@@ -177,8 +177,10 @@ export class CombatRound {
       ){
         this.spellCastRound = true;
       }else if(this.action.actionType == CombatActionType.ATTACK_USE_FEAT){
-        this.action.feat.impactCaster(owner);
-        this.action.feat.impactTarget(this.action.target);
+        if(this.action.feat){
+          this.action.feat.impactCaster(owner);
+          this.action.feat.impactTarget(this.action.target);
+        }
         switch(this.action.featId){
           case CombatFeatType.FLURRY:
           case CombatFeatType.IMPROVED_FLURRY:

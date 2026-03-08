@@ -5488,7 +5488,7 @@ NWScriptDefK1.Actions = {
       }
 
       if(weapon == equipped){
-        return;
+        return false;
       }
       
       const action = new GameState.ActionFactory.ActionEquipItem();
@@ -8311,7 +8311,7 @@ NWScriptDefK1.Actions = {
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
         const vec3 = new THREE.Vector3();
         if(args[0].model) args[0].model.getWorldPosition(vec3);
-        else args[0].position ? vec3.copy(args[0].position) : undefined;
+        else if(args[0].position) vec3.copy(args[0].position);
         return vec3;
       }
       return {x: 0, y: 0, z: 0};
