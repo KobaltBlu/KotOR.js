@@ -775,7 +775,8 @@ export class ModuleObjectManager {
     this.#tmpTargetPosition.set(0, 0, 0);
 
     // Iterate over each pool directly to avoid spread/filter array allocations
-    const area = GameState.module.area;
+    const area = GameState.module?.area;
+    if(!area) return this.playerSelectableObjects;
     const sources: ModuleObject[][] = [
       GameState.PartyManager.party,
       area.placeables,

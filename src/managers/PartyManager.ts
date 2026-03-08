@@ -554,7 +554,7 @@ export class PartyManager {
         partyMember.container.removeFromParent();
       }
       GameState.group.creatures.add(partyMember.container);
-      GameState.module.area.attachObject(partyMember);
+      if(GameState.module?.area) GameState.module.area.attachObject(partyMember);
     }
     
     PartyManager.RemoveCurrentMemberByNPCId(npcId);

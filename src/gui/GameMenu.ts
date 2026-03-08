@@ -468,7 +468,7 @@ export class GameMenu {
     });
 
     text = text.replace(/<CUSTOM(\d+)>/gm, function(match, p1, offset, string){
-      return GameState.module.getCustomToken(parseInt(p1));
+      return GameState.module?.getCustomToken(parseInt(p1)) ?? '';
     });
 
     return text;
