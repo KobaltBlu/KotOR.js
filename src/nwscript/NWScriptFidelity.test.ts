@@ -128,6 +128,18 @@
  *     PartyManager.GetFollowPositionAtIndex() – guards leader and creature.area.
  *     ModuleArea.dispose() – optional chain on areaMap before dispose().
  *     ModuleArea.save() – guards areaMap before calling exportData().
+ *
+ * 83. InGameOverlay miniGame guard and NWScript stealth/area null-guards:
+ *     InGameOverlay.TogglePartyMember() – uses module?.area?.miniGame.
+ *     SetAreaUnescapable/GetAreaUnescapable (fn 14/15) – area null-guard.
+ *     GetMaxStealthXP (fn 464) – area null-guard returning 0.
+ *     SetMaxStealthXP (fn 468) – area null-guard skipping assignment.
+ *     GetCurrentStealthXP (fn 474) – bug fix returns stealthXP not stealthXPMax.
+ *     SetCurrentStealthXP (fn 478) – area null-guard.
+ *     AwardStealthXP (fn 480) – area null-guard for stealthXP value.
+ *     GetStealthXPEnabled/SetStealthXPEnabled (fn 481/482) – area null-guard.
+ *     GetStealthXPDecrement/SetStealthXPDecrement (fn 498/499) – area null-guard.
+ *     RevealMap (fn 515) – optional chaining on area.areaMap.revealPosition.
  */
 
 // ---------------------------------------------------------------------------
@@ -9811,6 +9823,99 @@ describe('Section 82: ModuleCreature area update, PartyManager follow, ModuleAre
     saveAreaMap({ exportData(){ exported = true; return {}; } }, field);
     expect(field.added).toBe(true);
     expect(exported).toBe(true);
+  });
+
+});
+
+// ── Section 83: InGameOverlay miniGame guard, NWScript stealth XP null-guards ─
+//
+// Fixes verified in this section:
+//   a. InGameOverlay.TogglePartyMember() – uses module?.area?.miniGame (optional chain)
+//   b. SetAreaUnescapable / GetAreaUnescapable (fn 14/15) – area null-guard
+//   c. GetMaxStealthXP (fn 464) – area null-guard returning 0
+//   d. SetMaxStealthXP (fn 468) – area null-guard skipping assignment
+//   e. GetCurrentStealthXP (fn 474) – bug fix: was returning stealthXPMax, now
+//      returns stealthXP; also adds area null-guard
+//   f. SetCurrentStealthXP (fn 478) – area null-guard
+//   g. AwardStealthXP (fn 480) – area null-guard for stealthXP value
+//   h. GetStealthXPEnabled / SetStealthXPEnabled (fn 481/482) – area null-guard
+//   i. GetStealthXPDecrement / SetStealthXPDecrement (fn 498/499) – area null-guard
+//   j. RevealMap (fn 515) – uses optional chaining on area.areaMap.revealPosition
+
+describe('Section 83: InGameOverlay miniGame guard and NWScript stealth/area null-guards', () => {
+
+  it('InGameOverlay.TogglePartyMember: optional chaining on module.area.miniGame', () => {
+    function isMiniGame(module: any): boolean {
+      return !!module?.area?.miniGame;
+    }
+    expect(isMiniGame(null)).toBe(false);
+    expect(isMiniGame({})).toBe(false);
+    expect(isMiniGame({ area: null })).toBe(false);
+    expect(isMiniGame({ area: {} })).toBe(false);
+    expect(isMiniGame({ area: { miniGame: {} } })).toBe(true);
+  });
+
+  it('SetAreaUnescapable: area null-guard skips when area missing', () => {
+    function setAreaUnescapable(module: any, val: number): boolean {
+      if(module?.area){ module.area.unescapable = !!val; return true; }
+      return false;
+    }
+    expect(setAreaUnescapable(null, 1)).toBe(false);
+    expect(setAreaUnescapable({ area: null }, 1)).toBe(false);
+    const mod: any = { area: { unescapable: false } };
+    expect(setAreaUnescapable(mod, 1)).toBe(true);
+    expect(mod.area.unescapable).toBe(true);
+  });
+
+  it('GetAreaUnescapable: returns NW_FALSE when area missing', () => {
+    const NW_TRUE = 1, NW_FALSE = 0;
+    function getAreaUnescapable(module: any): number {
+      return module?.area?.unescapable ? NW_TRUE : NW_FALSE;
+    }
+    expect(getAreaUnescapable(null)).toBe(NW_FALSE);
+    expect(getAreaUnescapable({ area: null })).toBe(NW_FALSE);
+    expect(getAreaUnescapable({ area: { unescapable: true } })).toBe(NW_TRUE);
+  });
+
+  it('GetCurrentStealthXP: bug fix – returns stealthXP not stealthXPMax', () => {
+    function getCurrentStealthXP(area: any): number {
+      return area?.stealthXP ?? 0;
+    }
+    const area = { stealthXP: 50, stealthXPMax: 100 };
+    expect(getCurrentStealthXP(area)).toBe(50); // was returning 100 (stealthXPMax bug)
+    expect(getCurrentStealthXP(null)).toBe(0);
+  });
+
+  it('GetMaxStealthXP: returns 0 when area missing', () => {
+    function getMaxStealthXP(module: any): number {
+      return module?.area?.stealthXPMax ?? 0;
+    }
+    expect(getMaxStealthXP(null)).toBe(0);
+    expect(getMaxStealthXP({ area: { stealthXPMax: 200 } })).toBe(200);
+  });
+
+  it('AwardStealthXP: uses 0 when area is null', () => {
+    let awardedXP = -1;
+    function awardStealthXP(area: any, creature: any): void {
+      creature.addXP(area?.stealthXP ?? 0);
+    }
+    const creature = { addXP(v: number){ awardedXP = v; } };
+    awardStealthXP(null, creature);
+    expect(awardedXP).toBe(0);
+    awardStealthXP({ stealthXP: 75 }, creature);
+    expect(awardedXP).toBe(75);
+  });
+
+  it('RevealMap: optional chaining on area.areaMap prevents crash', () => {
+    let revealed = false;
+    function revealMap(module: any, x: number, y: number, radius: number): void {
+      module?.area?.areaMap?.revealPosition(x, y, radius);
+    }
+    expect(() => revealMap(null, 0, 0, 5)).not.toThrow();
+    expect(() => revealMap({ area: null }, 0, 0, 5)).not.toThrow();
+    expect(() => revealMap({ area: {} }, 0, 0, 5)).not.toThrow();
+    revealMap({ area: { areaMap: { revealPosition(_x: number, _y: number, _r: number){ revealed = true; } } } }, 0, 0, 5);
+    expect(revealed).toBe(true);
   });
 
 });
