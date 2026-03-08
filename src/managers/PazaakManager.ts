@@ -618,10 +618,15 @@ export class PazaakManager {
         this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
       }
       /**
-       * If the player has more than 20 points, they will end their turn because they busted
+       * If the player has more than 20 points, they will end their turn because they busted.
+       * The AI gets a chance to play a recovery side-deck card before the round ends.
        */
       else if(table.points > this.TargetPoints){
-        this.AddActionFront(tableIndex, PazaakActionType.END_ROUND);
+        if(tableIndex == PazaakTurnMode.OPPONENT){
+          this.AddActionFront(tableIndex, PazaakActionType.AI_DETERMINE_MOVE, [tableIndex]);
+        }else{
+          this.AddActionFront(tableIndex, PazaakActionType.END_ROUND);
+        }
       }
       /**
        * If the player has no space left on the table, they will end their turn

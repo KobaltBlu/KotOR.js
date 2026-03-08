@@ -8058,7 +8058,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.module.area.miniGame.enemies.indexOf(args[0] as ModuleMGEnemy) >= 0;
+      return GameState.module.area.miniGame.enemies.indexOf(args[0] as ModuleMGEnemy) >= 0 ? NW_TRUE : NW_FALSE;
     }
   },
   602:{
@@ -8079,7 +8079,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.module.area.miniGame.obstacles.indexOf(args[0] as ModuleMGObstacle) >= 0;
+      return GameState.module.area.miniGame.obstacles.indexOf(args[0] as ModuleMGObstacle) >= 0 ? NW_TRUE : NW_FALSE;
     }
   },
   604:{

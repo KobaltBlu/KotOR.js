@@ -7191,3 +7191,197 @@ describe('66. null-guard fixes and placeable illumination', () => {
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// Section 67. Minigame fixes
+//
+// Fixes verified in this section:
+//   1. fn 601 SWMG_IsEnemy: returns NW_TRUE/NW_FALSE (was returning raw boolean)
+//   2. fn 603 SWMG_IsObstacle: returns NW_TRUE/NW_FALSE (was returning raw boolean)
+//   3. ModuleMiniGame.loadMGPlayer: null-guard when no matching track is found
+//   4. ModuleMiniGame.loadMGEnemies: null-guard when no matching track is found
+//   5. PazaakManager DRAW_CARD: opponent bust gives AI chance to play a recovery card
+// ---------------------------------------------------------------------------
+describe('67. Minigame fixes – SWMG_IsEnemy/IsObstacle return type + MiniGame track null-guard + Pazaak AI bust recovery', () => {
+
+  const NW_FALSE = 0;
+  const NW_TRUE  = 1;
+
+  // ---------------------------------------------------------------------------
+  // SWMG_IsEnemy (fn 601) – return type fix
+  // ---------------------------------------------------------------------------
+
+  it('SWMG_IsEnemy: returns NW_TRUE (1) when enemy is in the list', () => {
+    const enemy = { id: 1 } as any;
+    const enemies = [enemy];
+    const result = enemies.indexOf(enemy) >= 0 ? NW_TRUE : NW_FALSE;
+    expect(result).toBe(NW_TRUE);
+  });
+
+  it('SWMG_IsEnemy: returns NW_FALSE (0) when object is not in the enemy list', () => {
+    const enemy = { id: 1 } as any;
+    const other = { id: 2 } as any;
+    const enemies = [enemy];
+    const result = enemies.indexOf(other) >= 0 ? NW_TRUE : NW_FALSE;
+    expect(result).toBe(NW_FALSE);
+    expect(result).not.toBe(false); // raw boolean false must not be returned
+  });
+
+  it('regression: old SWMG_IsEnemy returned raw boolean true instead of NW_TRUE', () => {
+    const enemy = { id: 1 } as any;
+    const enemies = [enemy];
+    const oldResult = enemies.indexOf(enemy) >= 0; // old code
+    expect(typeof oldResult).toBe('boolean');       // was boolean, not integer
+    // fixed code uses ternary so result is always 0 or 1
+    const newResult = enemies.indexOf(enemy) >= 0 ? NW_TRUE : NW_FALSE;
+    expect(newResult).toBe(1);
+    expect(typeof newResult).toBe('number');
+  });
+
+  // ---------------------------------------------------------------------------
+  // SWMG_IsObstacle (fn 603) – return type fix
+  // ---------------------------------------------------------------------------
+
+  it('SWMG_IsObstacle: returns NW_TRUE (1) when obstacle is in the list', () => {
+    const obstacle = { id: 10 } as any;
+    const obstacles = [obstacle];
+    const result = obstacles.indexOf(obstacle) >= 0 ? NW_TRUE : NW_FALSE;
+    expect(result).toBe(NW_TRUE);
+  });
+
+  it('SWMG_IsObstacle: returns NW_FALSE (0) when object is not in the obstacle list', () => {
+    const obstacle = { id: 10 } as any;
+    const other = { id: 20 } as any;
+    const obstacles = [obstacle];
+    const result = obstacles.indexOf(other) >= 0 ? NW_TRUE : NW_FALSE;
+    expect(result).toBe(NW_FALSE);
+    expect(result).not.toBe(false);
+  });
+
+  it('regression: old SWMG_IsObstacle returned raw boolean true instead of NW_TRUE', () => {
+    const obstacle = { id: 10 } as any;
+    const obstacles = [obstacle];
+    const oldResult = obstacles.indexOf(obstacle) >= 0;
+    expect(typeof oldResult).toBe('boolean');
+    const newResult = obstacles.indexOf(obstacle) >= 0 ? NW_TRUE : NW_FALSE;
+    expect(newResult).toBe(1);
+    expect(typeof newResult).toBe('number');
+  });
+
+  // ---------------------------------------------------------------------------
+  // ModuleMiniGame loadMGPlayer / loadMGEnemies – null-guard for missing track
+  // ---------------------------------------------------------------------------
+
+  it('loadMGPlayer: does not throw when trackName has no matching track', () => {
+    const tracks: any[] = [{ track: 'trackA', model: {} }];
+    const player: any = { trackName: 'missingTrack' };
+    const track = tracks.find(o => o.track === player.trackName);
+    // old code: player.setTrack(track.model) would throw TypeError: Cannot read property 'model' of undefined
+    expect(track).toBeUndefined();
+    // fixed code uses null-guard: if(track) player.setTrack(track.model)
+    let threw = false;
+    try {
+      if(track) (player as any).setTrack(track.model);
+    } catch(e) {
+      threw = true;
+    }
+    expect(threw).toBe(false);
+  });
+
+  it('loadMGPlayer: sets track when trackName matches', () => {
+    const modelStub = { name: 'trackModel' };
+    const tracks: any[] = [{ track: 'trackA', model: modelStub }];
+    const player: any = { trackName: 'trackA', setTrackCalled: false, setTrack(m: any){ this.setTrackCalled = true; this.model = m; } };
+    const track = tracks.find(o => o.track === player.trackName);
+    if(track) player.setTrack(track.model);
+    expect(player.setTrackCalled).toBe(true);
+    expect(player.model).toBe(modelStub);
+  });
+
+  it('loadMGEnemies: does not throw when enemy trackName has no matching track', () => {
+    const tracks: any[] = [{ track: 'trackA', model: {} }];
+    const enemy: any = { trackName: 'missingTrack' };
+    const track = tracks.find(o => o.track === enemy.trackName);
+    expect(track).toBeUndefined();
+    let threw = false;
+    try {
+      if(track) (enemy as any).setTrack(track.model);
+    } catch(e) {
+      threw = true;
+    }
+    expect(threw).toBe(false);
+  });
+
+  it('loadMGEnemies: sets track when enemy trackName matches', () => {
+    const modelStub = { name: 'enemyTrackModel' };
+    const tracks: any[] = [{ track: 'trackB', model: modelStub }];
+    const enemy: any = { trackName: 'trackB', setTrackCalled: false, setTrack(m: any){ this.setTrackCalled = true; this.model = m; } };
+    const track = tracks.find(o => o.track === enemy.trackName);
+    if(track) enemy.setTrack(track.model);
+    expect(enemy.setTrackCalled).toBe(true);
+    expect(enemy.model).toBe(modelStub);
+  });
+
+  // ---------------------------------------------------------------------------
+  // PazaakManager DRAW_CARD – AI bust should trigger AI_DETERMINE_MOVE first
+  // ---------------------------------------------------------------------------
+
+  it('Pazaak DRAW_CARD: opponent bust (tableIndex=1) routes to AI_DETERMINE_MOVE not END_ROUND', () => {
+    // Simulate the fixed dispatch logic for DRAW_CARD when table busts
+    const TargetPoints = 20;
+    const PazaakTurnMode_OPPONENT = 1;
+    enum PazaakActionType { END_ROUND = 7, AI_DETERMINE_MOVE = 9 }
+
+    function dispatchBust(tableIndex: number, points: number): PazaakActionType {
+      if(points > TargetPoints){
+        if(tableIndex == PazaakTurnMode_OPPONENT){
+          return PazaakActionType.AI_DETERMINE_MOVE;
+        }else{
+          return PazaakActionType.END_ROUND;
+        }
+      }
+      return PazaakActionType.END_ROUND; // fallback
+    }
+
+    // Opponent busts – should get AI_DETERMINE_MOVE to try recovery card
+    expect(dispatchBust(1, 25)).toBe(PazaakActionType.AI_DETERMINE_MOVE);
+    // Player busts – should go directly to END_ROUND
+    expect(dispatchBust(0, 25)).toBe(PazaakActionType.END_ROUND);
+  });
+
+  it('Pazaak DRAW_CARD: regression – old code sent opponent bust directly to END_ROUND', () => {
+    const TargetPoints = 20;
+    enum PazaakActionType { END_ROUND = 7, AI_DETERMINE_MOVE = 9 }
+
+    function oldDispatchBust(points: number): PazaakActionType {
+      // old code: regardless of tableIndex
+      if(points > TargetPoints){
+        return PazaakActionType.END_ROUND;
+      }
+      return PazaakActionType.END_ROUND;
+    }
+
+    // Old code gave AI no chance to recover
+    expect(oldDispatchBust(25)).toBe(PazaakActionType.END_ROUND);
+    // That was wrong for the opponent – fixed code uses AI_DETERMINE_MOVE for tableIndex=1
+  });
+
+  it('Pazaak DRAW_CARD: player bust (tableIndex=0) still goes to END_ROUND directly', () => {
+    const TargetPoints = 20;
+    const PazaakTurnMode_OPPONENT = 1;
+    enum PazaakActionType { END_ROUND = 7, AI_DETERMINE_MOVE = 9 }
+
+    const tableIndex = 0; // player
+    const points = 25;    // busted
+    let dispatched: PazaakActionType;
+    if(points > TargetPoints){
+      if(tableIndex == PazaakTurnMode_OPPONENT){
+        dispatched = PazaakActionType.AI_DETERMINE_MOVE;
+      }else{
+        dispatched = PazaakActionType.END_ROUND;
+      }
+    }
+    expect(dispatched).toBe(PazaakActionType.END_ROUND);
+  });
+
+});

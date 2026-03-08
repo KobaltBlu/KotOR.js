@@ -122,7 +122,7 @@ export class ModuleMiniGame {
       await player.loadModel();
       await player.loadGunBanks();
       const track = this.tracks.find(o => o.track === player.trackName);
-      player.setTrack(track.model);
+      if(track) player.setTrack(track.model);
       player.getCurrentRoom();
   }
 
@@ -150,7 +150,7 @@ export class ModuleMiniGame {
       await enemy.loadModel();
       await enemy.loadGunBanks();
       const track = this.tracks.find(o => o.track === enemy.trackName);
-      enemy.setTrack(track.model);
+      if(track) enemy.setTrack(track.model);
       enemy.computeBoundingBox();
       enemy.getCurrentRoom();
     }
