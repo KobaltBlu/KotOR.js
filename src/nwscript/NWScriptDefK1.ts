@@ -5352,7 +5352,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleCreature, number]){
-      args[0].addXP(args[1], ExperienceType.PLOT);
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        args[0].addXP(args[1], ExperienceType.PLOT);
+      }
     }
   },
   394:{
@@ -5361,7 +5363,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleCreature, number]){
-      args[0].setXP(args[1])
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        args[0].setXP(args[1]);
+      }
     }
   },
   395:{
@@ -5370,7 +5374,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleCreature]){
-      return args[0].getXP();
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return args[0].getXP();
+      }
+      return 0;
     }
   },
   396:{
@@ -5790,11 +5797,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return args[0].getGold();
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].getGold();
+      }
+      return 0;
     }
   },
-  419:{
-    comment: "419: Use this in an OnRespawnButtonPressed module script to get the object id of\nthe player who last pressed the respawn button.\n",
     name: "GetLastRespawnButtonPresser",
     type: NWScriptDataType.OBJECT,
     args: [],

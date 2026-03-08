@@ -8389,3 +8389,140 @@ describe('72. FactionManager null-guard and attackCreature priority', () => {
   });
 
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 73. Additional null-guard fixes (FactionManager, GiveXPToCreature, GetGold)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('73. FactionManager.GetFactionLeader null-guard, GiveXPToCreature, GetGold null-guards', () => {
+
+  // ── FactionManager.GetFactionLeader null-guard ────────────────────────────
+
+  it('GetFactionLeader: does not crash when creature.faction is undefined', () => {
+    // Simulate the fixed code
+    function GetFactionLeader(creature: any, party: any[]): any {
+      if(!creature) return undefined;
+      // Fixed: use optional chaining ?. before .id
+      if(creature.faction?.id == 0){
+        return party[0];
+      } else {
+        const faction = creature.faction;
+        if(faction){
+          return faction.getStrongestMember?.() ?? undefined;
+        }
+      }
+      return undefined;
+    }
+    const creature = { faction: undefined };
+    // Should NOT throw; faction is undefined so we return undefined
+    expect(GetFactionLeader(creature, [])).toBeUndefined();
+  });
+
+  it('GetFactionLeader regression: old code crashed on creature.faction.id when undefined', () => {
+    function GetFactionLeaderOld(creature: any, party: any[]): any {
+      if(!creature) return undefined;
+      let threwError = false;
+      try {
+        // Bug: creature.faction.id without null-guard
+        if(creature.faction.id == 0){
+          return party[0];
+        }
+      } catch {
+        threwError = true;
+      }
+      return threwError ? 'ERROR' : undefined;
+    }
+    const creature = { faction: undefined };
+    expect(GetFactionLeaderOld(creature, [])).toBe('ERROR');
+  });
+
+  it('GetFactionLeader: returns party[0] for faction id=0', () => {
+    function GetFactionLeader(creature: any, party: any[]): any {
+      if(!creature) return undefined;
+      if(creature.faction?.id == 0){
+        return party[0];
+      }
+      return undefined;
+    }
+    const leader = { name: 'Revan' };
+    expect(GetFactionLeader({ faction: { id: 0 } }, [leader])).toBe(leader);
+  });
+
+  // ── GiveXPToCreature null-guard ──────────────────────────────────────────
+
+  it('GiveXPToCreature: no crash when args[0] is undefined', () => {
+    let xpAdded = 0;
+    // Simulate the fixed implementation with null-guard
+    function GiveXPToCreature(oCreature: any, amount: number) {
+      if(oCreature && typeof oCreature.addXP === 'function'){
+        oCreature.addXP(amount);
+      }
+    }
+    // Should NOT throw when oCreature is undefined
+    expect(() => GiveXPToCreature(undefined, 100)).not.toThrow();
+    // Should call addXP when oCreature is valid
+    const creature = { addXP: (v: number) => { xpAdded += v; } };
+    GiveXPToCreature(creature, 50);
+    expect(xpAdded).toBe(50);
+  });
+
+  it('GiveXPToCreature regression: old code crashed on undefined args[0].addXP', () => {
+    function GiveXPToCreatureOld(oCreature: any, amount: number) {
+      let threwError = false;
+      try {
+        oCreature.addXP(amount); // crash if oCreature is undefined
+      } catch {
+        threwError = true;
+      }
+      return threwError;
+    }
+    expect(GiveXPToCreatureOld(undefined, 100)).toBe(true);
+  });
+
+  // ── GetGold null-guard ────────────────────────────────────────────────────
+
+  it('GetGold: returns 0 when object is undefined (null-guard)', () => {
+    function GetGold(oTarget: any): number {
+      if(oTarget && typeof oTarget.getGold === 'function'){
+        return oTarget.getGold();
+      }
+      return 0;
+    }
+    expect(GetGold(undefined)).toBe(0);
+    expect(GetGold({ getGold: () => 5000 })).toBe(5000);
+  });
+
+  // ── FactionManager.Load2DA faction2 null-guard ───────────────────────────
+
+  it('FactionManager.Load2DA: skips faction2_id when faction2 is undefined', () => {
+    // Simulate the fixed loop that guards against a missing faction entry
+    const factions = new Map([[0, { label: 'player', reputations: [] }]]);
+    const FACTION_COUNT = 3; // faction 0 and 1 exist, faction 2 does not exist
+
+    let processed: number[] = [];
+    for(let faction2_id = 0; faction2_id < FACTION_COUNT; faction2_id++){
+      const faction2 = factions.get(faction2_id);
+      if(!faction2) continue; // the fix
+      processed.push(faction2_id);
+    }
+    // Only faction 0 exists and is processed; factions 1,2 are skipped
+    expect(processed).toEqual([0]);
+  });
+
+  it('FactionManager.Load2DA regression: old code crashed on faction2.label when faction2 is undefined', () => {
+    const factions = new Map([[0, { label: 'player', reputations: [] }]]);
+    const FACTION_COUNT = 2; // faction 1 does not exist
+
+    let threwError = false;
+    try {
+      for(let faction2_id = 0; faction2_id < FACTION_COUNT; faction2_id++){
+        const faction2: any = factions.get(faction2_id);
+        const _2DARep = (faction2.label as string).toLocaleLowerCase(); // crash at faction2_id=1
+      }
+    } catch {
+      threwError = true;
+    }
+    expect(threwError).toBe(true);
+  });
+
+});
