@@ -3265,7 +3265,7 @@ NWScriptDefK1.Actions = {
             creature.clearAllActions();
             creature.position.copy(args[2].position);
             creature.setFacing(args[2].getFacing(), true);
-            args[2].area.attachObject(creature);
+            args[2].area?.attachObject(creature);
             
             creature.loadModel().then( (model: OdysseyModel3D) => {
               model.userData.moduleObject = creature;
@@ -3296,7 +3296,7 @@ NWScriptDefK1.Actions = {
                 model.hasCollision = true;
                 model.name = plc.getTag();
                 GameState.group.placeables.add( model );
-                args[2].area.attachObject(plc);
+                args[2].area?.attachObject(plc);
 
                 try{
                   if(pwk.mesh instanceof THREE.Object3D)
@@ -3327,7 +3327,7 @@ NWScriptDefK1.Actions = {
             item.load();
             item.placedInWorld = true;
             item.position.copy(args[2].position);
-            args[2].area.attachObject(item);
+            args[2].area?.attachObject(item);
 
             item.loadModel().then( (model: OdysseyModel3D) => {
               if(model){
@@ -3351,7 +3351,7 @@ NWScriptDefK1.Actions = {
             wp.load();
             wp.position.copy(args[2].position);
             wp.setFacing(args[2].getFacing(), true);
-            args[2].area.attachObject(wp);
+            args[2].area?.attachObject(wp);
             return wp;
           }else{
             // Waypoint template not found – create minimal waypoint tagged with args[1]
@@ -3359,7 +3359,7 @@ NWScriptDefK1.Actions = {
             (wp as any).tag = args[1];
             wp.position.copy(args[2].position);
             wp.setFacing(args[2].getFacing(), true);
-            args[2].area.attachObject(wp);
+            args[2].area?.attachObject(wp);
             return wp;
           }
         break;
@@ -3369,7 +3369,7 @@ NWScriptDefK1.Actions = {
             const store = new GameState.Module.ModuleArea.ModuleStore(new GFFObject(buffer));
             store.load();
             store.position.copy(args[2].position);
-            args[2].area.attachObject(store);
+            args[2].area?.attachObject(store);
             store.onSpawn();
             return store;
           }else{
@@ -9141,7 +9141,7 @@ NWScriptDefK1.Actions = {
       if(!template){ return undefined; }
       
       const partyMember = new GameState.Module.ModuleArea.ModuleCreature(template);
-      args[1].area.attachObject(partyMember);
+      args[1].area?.attachObject(partyMember);
       partyMember.load();
       partyMember.clearAllActions();
       partyMember.loadModel().then( (model: OdysseyModel3D) => {
