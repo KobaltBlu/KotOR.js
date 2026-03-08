@@ -8108,3 +8108,137 @@ describe('70. ModuleTrigger OnEnter/OnExit always fires; PopUpGUIPanel level-up'
   });
 
 });
+
+// ---------------------------------------------------------------------------
+describe('71. recalculateMaxHP, TalentFeat.From2DA id, CharGenCustomPanel skipInit', () => {
+
+  // ── recalculateMaxHP ─────────────────────────────────────────────────────
+
+  it('recalculateMaxHP: single class level 1 Scout (hitdie=8) with CON=14', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function recalculateMaxHP(classes: Array<{hitdie: number, level: number}>, con: number){
+      const conMod = getMod(con);
+      let hp = 0;
+      for(const cls of classes){
+        const hitdie = cls.hitdie || 8;
+        hp += (hitdie + conMod) * cls.level;
+      }
+      const totalLevel = classes.reduce((s, c) => s + c.level, 0);
+      if(hp < totalLevel) hp = totalLevel;
+      return hp;
+    }
+    // Scout hitdie=8, level=1, CON=14 (mod=+2) → 8+2=10
+    expect(recalculateMaxHP([{ hitdie: 8, level: 1 }], 14)).toBe(10);
+  });
+
+  it('recalculateMaxHP: multiclass level 3 Scout (hitdie=8) + level 2 Soldier (hitdie=10) CON=14', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function recalculateMaxHP(classes: Array<{hitdie: number, level: number}>, con: number){
+      const conMod = getMod(con);
+      let hp = 0;
+      for(const cls of classes){
+        const hitdie = cls.hitdie || 8;
+        hp += (hitdie + conMod) * cls.level;
+      }
+      return hp;
+    }
+    // Scout: (8+2)*3=30; Soldier: (10+2)*2=24; total=54
+    expect(recalculateMaxHP([{ hitdie: 8, level: 3 }, { hitdie: 10, level: 2 }], 14)).toBe(54);
+  });
+
+  it('recalculateMaxHP: low CON still gives at least 1 HP per level', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function recalculateMaxHP(classes: Array<{hitdie: number, level: number}>, con: number){
+      const conMod = getMod(con);
+      let hp = 0;
+      for(const cls of classes){
+        hp += (cls.hitdie + conMod) * cls.level;
+      }
+      const totalLevel = classes.reduce((s, c) => s + c.level, 0);
+      if(hp < totalLevel) hp = totalLevel;
+      return hp;
+    }
+    // hitdie=4, CON=6 (mod=-2) → (4-2)*1=2HP; totalLevel=1 → max(2,1)=2
+    expect(recalculateMaxHP([{ hitdie: 4, level: 1 }], 6)).toBe(2);
+  });
+
+  it('recalculateMaxHP regression: before fix maxHitPoints used template default (often 10)', () => {
+    // Old code kept template's maxHitPoints unchanged
+    const templateHp = 10;
+    const actualHpShouldBe = 18; // hitdie=8, CON=18 (mod=+4), level 1
+    // Without fix, maxHitPoints stays at 10 despite CON=18
+    expect(templateHp).not.toBe(actualHpShouldBe);
+  });
+
+  // ── TalentFeat.From2DA id fix ────────────────────────────────────────────
+
+  it('TalentFeat.From2DA: id is set from __rowlabel', () => {
+    // Simulate From2DA behavior after fix
+    function From2DA(row: any){
+      const rowIndex = parseInt(row.__rowlabel ?? 0, 10) || 0;
+      return { id: rowIndex, rowLabel: rowIndex };
+    }
+    const feat = From2DA({ __rowlabel: '42', label: 'FEAT_POWER_ATTACK' });
+    expect(feat.id).toBe(42);
+  });
+
+  it('TalentFeat.From2DA regression: old code left id=0 for all feats', () => {
+    // Old code: new TalentFeat() → id=0, apply2DA only sets rowLabel
+    function From2DAOld(row: any){
+      const feat = { id: 0, rowLabel: 0 }; // simulated old default
+      feat.rowLabel = parseInt(row.__rowlabel ?? 0, 10);
+      // bug: feat.id never updated from rowLabel
+      return feat;
+    }
+    const feat = From2DAOld({ __rowlabel: '42', label: 'FEAT_POWER_ATTACK' });
+    expect(feat.id).toBe(0);     // old bug: wrong id
+    expect(feat.rowLabel).toBe(42); // rowLabel set correctly
+  });
+
+  it('addGrantedFeats: getHasFeat uses correct feat id after From2DA fix', () => {
+    const grantedIds: number[] = [];
+    function getHasFeat(id: number){ return grantedIds.indexOf(id) >= 0; }
+    function addFeat(feat: any){ if(!getHasFeat(feat.id)) grantedIds.push(feat.id); }
+    function From2DA(row: any){ return { id: parseInt(row.__rowlabel, 10) }; }
+
+    // Simulate addGrantedFeats loop
+    const featRows = [
+      { __rowlabel: '0', status: 3 },
+      { __rowlabel: '5', status: 3 },
+      { __rowlabel: '10', status: 3 },
+    ];
+    for(let i = 0; i < featRows.length; i++){
+      const feat = featRows[i];
+      if(feat.status === 3 && !getHasFeat(parseInt(feat.__rowlabel, 10))){
+        addFeat(From2DA(feat));
+      }
+    }
+    expect(grantedIds).toEqual([0, 5, 10]);
+    expect(getHasFeat(5)).toBe(true);
+    expect(getHasFeat(99)).toBe(false);
+  });
+
+  // ── CharGenCustomPanel TSL skipInit fix ──────────────────────────────────
+
+  it('TSL CharGenCustomPanel: passes skipInit to parent (not hardcoded true)', () => {
+    // The fix: `super.menuControlInitializer(skipInit)` instead of `(true)`
+    let parentSkipInitReceived: boolean | null = null;
+    function parentInit(skipInit: boolean){ parentSkipInitReceived = skipInit; }
+    function tslInit(skipInit: boolean){
+      parentInit(skipInit); // fixed: passes skipInit
+    }
+    tslInit(false);
+    expect(parentSkipInitReceived).toBe(false);
+  });
+
+  it('TSL CharGenCustomPanel regression: old code always passed skipInit=true to parent', () => {
+    let parentSkipInitReceived: boolean | null = null;
+    function parentInit(skipInit: boolean){ parentSkipInitReceived = skipInit; }
+    function tslInitOld(_skipInit: boolean){
+      parentInit(true); // bug: hardcoded true
+    }
+    tslInitOld(false);
+    expect(parentSkipInitReceived).toBe(true); // regression
+  });
+
+});

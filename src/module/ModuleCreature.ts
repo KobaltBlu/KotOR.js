@@ -3013,7 +3013,28 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  getBaseAttackBonus(){
+  /**
+   * Recalculates maxHitPoints from scratch based on current class levels and CON modifier.
+   * Level 1 always gets the maximum hit die roll.  This should be called when the player
+   * finishes character creation or after manual ability-score changes.
+   */
+  recalculateMaxHP(){
+    const conMod = Math.floor((this.getCON() - 10) / 2);
+    let hp = 0;
+    for(let i = 0, len = this.classes.length; i < len; i++){
+      const cls = this.classes[i];
+      if(!cls) continue;
+      const hitdie = cls.hitdie || 8;
+      hp += (hitdie + conMod) * cls.level;
+    }
+    // Each level contributes at least 1 HP
+    const totalLevel = this.getTotalClassLevel();
+    if(hp < totalLevel) hp = totalLevel;
+    this.maxHitPoints = hp;
+    this.currentHitPoints = hp;
+  }
+
+
     let bab = 0;
     for(let i = 0, len = this.classes.length; i < len; i++){
       bab += this.classes[i].getBaseAttackBonus();

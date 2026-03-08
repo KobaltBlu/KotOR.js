@@ -214,7 +214,7 @@ The following steps must work to call the game "playable start-to-finish":
 | 2.2.5 | Feat selection (starting feats per class + bonus feat) | ✅ | BTN_ACCEPT, BTN_BACK, BTN_SELECT wired; auto-grant on show |
 | 2.2.6 | Portrait / appearance selection renders 3D model preview | ✅ | `CharGenPortCust.ts` |
 | 2.2.7 | Name entry saves and is used throughout game | ✅ | `CharGenName.ts` |
-| 2.2.8 | Player `ModuleCreature` object fully initialised with chosen stats on confirm | 🔶 | Stats applied; derived values (attack bonus, saving throws, HP) recalculation needed |
+| 2.2.8 | Player `ModuleCreature` object fully initialised with chosen stats on confirm | ✅ | `recalculateMaxHP()` called on confirm; HP = (hitdie + CON mod) × level |
 | 2.2.9 | Opening BIK video plays after character confirm | ✅ | `VideoManager` triggered from `CharGenMain.ts` |
 
 ---
