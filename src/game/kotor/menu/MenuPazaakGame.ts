@@ -381,16 +381,20 @@ export class MenuPazaakGame extends GameMenu {
         const tableCardButton = this.getTableCardButton(i, j);
         const tableCardLabel = this.getTableCardLabel(i, j);
         if(slot == undefined){
-          tableCardButton.hide();
-          tableCardLabel.hide();
+          if(tableCardButton) tableCardButton.hide();
+          if(tableCardLabel) tableCardLabel.hide();
           continue;
         };
 
-        tableCardButton.show();
-        tableCardButton.setFillTextureName(slot.textures[!slot.flipped ? 0 : 1]);
+        if(tableCardButton){
+          tableCardButton.show();
+          tableCardButton.setFillTextureName(slot.textures[!slot.flipped ? 0 : 1]);
+        }
 
-        tableCardLabel.show();
-        tableCardLabel.setText(slot.modifierLabel);
+        if(tableCardLabel){
+          tableCardLabel.show();
+          tableCardLabel.setText(slot.modifierLabel);
+        }
       }
 
       /**
@@ -404,8 +408,8 @@ export class MenuPazaakGame extends GameMenu {
         const flipped = table.flipCards.get(j);
         const swapped = table.swapValueCards.get(j);
         if(slot == undefined || slot == -1){
-          handCardButton.hide();
-          handCardLabel.hide();
+          if(handCardButton) handCardButton.hide();
+          if(handCardLabel) handCardLabel.hide();
           if(handCardFlipButton){
             handCardFlipButton.hide();
           }
@@ -415,17 +419,25 @@ export class MenuPazaakGame extends GameMenu {
         const card = GameState.PazaakManager.Config.data.sideDeckCards[slot];
 
         if(i == PazaakTurnMode.PLAYER){
-          handCardButton.setFillTextureName(card.textures[!flipped ? 0 : 1], false);
-          handCardLabel.show();
-          handCardLabel.setText(card.modifierLabel);
-          handCardButton.disableSelection = this.noClicks() || table.handCardPlayed;
+          if(handCardButton){
+            handCardButton.setFillTextureName(card.textures[!flipped ? 0 : 1], false);
+            handCardButton.disableSelection = this.noClicks() || table.handCardPlayed;
+          }
+          if(handCardLabel){
+            handCardLabel.show();
+            handCardLabel.setText(card.modifierLabel);
+          }
         }else{
-          handCardButton.setFillTextureName('lbl_cardback', false);
-          handCardLabel.hide();
-          handCardLabel.setText('');
-          handCardButton.disableSelection = true;
+          if(handCardButton){
+            handCardButton.setFillTextureName('lbl_cardback', false);
+            handCardButton.disableSelection = true;
+          }
+          if(handCardLabel){
+            handCardLabel.hide();
+            handCardLabel.setText('');
+          }
         }
-        handCardButton.show();
+        if(handCardButton) handCardButton.show();
         
         if(handCardFlipButton){
           if(card.reversible){

@@ -278,6 +278,7 @@ export class PazaakManager {
     }
 
     const card = this.Cards.get(cardIndex);
+    if(!card) return false;
     card.count += count;
     return true;
   }
@@ -294,6 +295,7 @@ export class PazaakManager {
     }
 
     const card = this.Cards.get(cardIndex);
+    if(!card) return false;
     card.count -= count;
     //If the card count is less than 0, set it to 0
     if(card.count <= 0){

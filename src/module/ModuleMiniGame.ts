@@ -28,7 +28,7 @@ export class ModuleMiniGame {
   cameraViewAngle: number = 0;
   dof: number = 0;
   doBumping: number = 0;
-  player: ModuleMGPlayer;
+  player: ModuleMGPlayer | undefined;
 
   farClip: number = 0;
   lateralAccel: number = 0;
@@ -42,23 +42,26 @@ export class ModuleMiniGame {
   tracks: ModuleMGTrack[] = [];
 
   constructor(struct: GFFStruct){
-    this.bumpPlane = struct.getFieldByLabel('Bump_Plane').getValue();
-    this.cameraViewAngle = struct.getFieldByLabel('CameraViewAngle').getValue();
-    this.dof = struct.getFieldByLabel('DOF').getValue();
-    this.doBumping = struct.getFieldByLabel('DoBumping').getValue();
-    this.farClip = struct.getFieldByLabel('Far_Clip').getValue();
-    this.lateralAccel = struct.getFieldByLabel('LateralAccel').getValue();
-    this.movementPerSec = struct.getFieldByLabel('MovementPerSec').getValue();
-    this.music = struct.getFieldByLabel('Music').getValue();
-    this.nearClip = struct.getFieldByLabel('Near_Clip').getValue();
-    this.type = struct.getFieldByLabel('Type').getValue();
-    this.useInertia = struct.getFieldByLabel('UseInertia').getValue();
+    this.bumpPlane = struct.getFieldByLabel('Bump_Plane')?.getValue() ?? 0;
+    this.cameraViewAngle = struct.getFieldByLabel('CameraViewAngle')?.getValue() ?? 0;
+    this.dof = struct.getFieldByLabel('DOF')?.getValue() ?? 0;
+    this.doBumping = struct.getFieldByLabel('DoBumping')?.getValue() ?? 0;
+    this.farClip = struct.getFieldByLabel('Far_Clip')?.getValue() ?? 0;
+    this.lateralAccel = struct.getFieldByLabel('LateralAccel')?.getValue() ?? 0;
+    this.movementPerSec = struct.getFieldByLabel('MovementPerSec')?.getValue() ?? 0;
+    this.music = struct.getFieldByLabel('Music')?.getValue() ?? 0;
+    this.nearClip = struct.getFieldByLabel('Near_Clip')?.getValue() ?? 0;
+    this.type = struct.getFieldByLabel('Type')?.getValue() ?? 0;
+    this.useInertia = struct.getFieldByLabel('UseInertia')?.getValue() ?? 0;
 
-    this.player = new GameState.Module.ModuleArea.ModuleMGPlayer(
-      GFFObject.FromStruct(struct.getFieldByLabel('Player').getChildStructs()[0])
-    );
+    const playerStructs = struct.getFieldByLabel('Player')?.getChildStructs() ?? [];
+    if(playerStructs.length){
+      this.player = new GameState.Module.ModuleArea.ModuleMGPlayer(
+        GFFObject.FromStruct(playerStructs[0])
+      );
+    }
 
-    const enemies = struct.getFieldByLabel('Enemies').getChildStructs();
+    const enemies = struct.getFieldByLabel('Enemies')?.getChildStructs() ?? [];
     for(let i = 0; i < enemies.length; i++){
       this.enemies.push(
         new ModuleMGEnemy(
@@ -69,7 +72,7 @@ export class ModuleMiniGame {
   }
 
   tick(delta: number = 0){
-    this.player.update(delta);
+    if(this.player) this.player.update(delta);
 
     for(let i = 0; i < this.enemies.length; i++){
       this.enemies[i].update(delta);
@@ -81,7 +84,7 @@ export class ModuleMiniGame {
   }
 
   tickPaused(delta: number = 0){
-    this.player.updatePaused(delta);
+    if(this.player) this.player.updatePaused(delta);
     
     for(let i = 0; i < this.enemies.length; i++){
       this.enemies[i].updatePaused(delta);
@@ -111,12 +114,13 @@ export class ModuleMiniGame {
       }
     }
 
-    this.player.onCreate();
+    if(this.player) this.player.onCreate();
   }
 
   async loadMGPlayer(): Promise<void> {
     console.log('Loading MG Player')
-    const player: ModuleMGPlayer = this.player;
+    const player: ModuleMGPlayer | undefined = this.player;
+    if(!player) return;
       await player.load();
       await player.loadCamera();
       await player.loadModel();
