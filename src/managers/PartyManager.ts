@@ -880,6 +880,7 @@ export class PartyManager {
    * @returns void
    */
   static UpdateLeader(){
+    if(!PartyManager.party.length) return;
     for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
       const isLeader = (PartyManager.party[0].npcId == PartyManager.CurrentMembers[i].memberID);
       PartyManager.CurrentMembers[i].isLeader = isLeader;
@@ -893,7 +894,7 @@ export class PartyManager {
    * @returns boolean
    */
   static IsPartyMemberLeader(){
-    return (PartyManager.party[0].npcId >= 0);
+    return !!(PartyManager.party[0]?.npcId >= 0);
   }
 
   /**

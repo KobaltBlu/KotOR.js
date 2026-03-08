@@ -3631,7 +3631,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger) ||
          BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleAreaOfEffect)){
-        const nextId = this.persistentObjectIndex.get(args[0].id) + 1;
+        const nextId = (this.persistentObjectIndex.get(args[0].id) ?? 0) + 1;
         this.persistentObjectIndex.set(args[0].id, nextId);
         return args[0].objectsInside[nextId];
       }else{
@@ -4661,11 +4661,11 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
         if(GameState.PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0){
-          const nextId = this.objectInventoryIndex.get(-1) + 1;
+          const nextId = (this.objectInventoryIndex.get(-1) ?? 0) + 1;
           this.objectInventoryIndex.set(-1, nextId);
           return GameState.InventoryManager.inventory[nextId];
         }else{
-          const nextId = this.objectInventoryIndex.get(args[0].id) + 1;
+          const nextId = (this.objectInventoryIndex.get(args[0].id) ?? 0) + 1;
           this.objectInventoryIndex.set(args[0].id, nextId);
           return args[0].inventory[nextId];
         }
@@ -5488,7 +5488,7 @@ NWScriptDefK1.Actions = {
       }
 
       if(weapon == equipped){
-        return false;
+        return;
       }
       
       const action = new GameState.ActionFactory.ActionEquipItem();
@@ -8310,7 +8310,8 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
         const vec3 = new THREE.Vector3();
-        args[0].model.getWorldPosition(vec3)
+        if(args[0].model) args[0].model.getWorldPosition(vec3);
+        else args[0].position ? vec3.copy(args[0].position) : undefined;
         return vec3;
       }
       return {x: 0, y: 0, z: 0};
@@ -9480,7 +9481,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))) return undefined;
 
-      const nextId = this.creatureAttackerIndex.get(args[0].id) + 1;
+      const nextId = (this.creatureAttackerIndex.get(args[0].id) ?? 0) + 1;
       this.creatureAttackerIndex.set(args[0].id, nextId);
       return GameState.ModuleObjectManager.GetAttackerByIndex(args[0], nextId);
     }

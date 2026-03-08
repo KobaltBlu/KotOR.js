@@ -68,7 +68,8 @@ export class ActionOpenDoor extends Action {
 
         this.owner.setFacingObject( this.target );
 
-        this.target.use(GameState.PartyManager.party[0]);
+        const opener = GameState.PartyManager.party[0] ?? this.owner;
+        this.target.use(opener);
         return ActionStatus.COMPLETE;
         
       }
