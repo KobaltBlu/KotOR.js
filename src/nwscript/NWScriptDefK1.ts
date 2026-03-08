@@ -351,7 +351,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.module.area;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject) && args[0].area){
+        return args[0].area;
+      }
+      return GameState.module?.area;
     }
   },
   25:{

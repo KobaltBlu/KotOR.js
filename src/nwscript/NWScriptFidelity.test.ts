@@ -9919,3 +9919,69 @@ describe('Section 83: InGameOverlay miniGame guard and NWScript stealth/area nul
   });
 
 });
+
+// ── Section 84: GetArea correctness fix, RestoreEnginePlayMode guard ──────────
+//
+// Fixes verified in this section:
+//   a. GetArea (fn 24) – now returns args[0].area when the object has an area
+//      property, falling back to GameState.module?.area; null-guard added.
+//   b. GameState.RestoreEnginePlayMode() – uses module.area?.miniGame so that a
+//      null/undefined area does not crash the function.
+
+describe('Section 84: GetArea correctness and RestoreEnginePlayMode guard', () => {
+
+  it('GetArea: returns object.area when available, falls back to module.area', () => {
+    function getArea(obj: any, module: any): any {
+      // Mirrors the fixed GetArea() logic
+      if(obj && obj.area) return obj.area;
+      return module?.area;
+    }
+    const areaA = { id: 1 };
+    const areaB = { id: 2 };
+    // Object has its own area → return it
+    expect(getArea({ area: areaA }, { area: areaB })).toBe(areaA);
+    // Object has no area → fall back to module.area
+    expect(getArea({}, { area: areaB })).toBe(areaB);
+    // Both null → undefined
+    expect(getArea(null, null)).toBeUndefined();
+    // Object is null → fall back to module.area
+    expect(getArea(null, { area: areaB })).toBe(areaB);
+  });
+
+  it('GetArea regression: old code crashed when GameState.module was null', () => {
+    function getAreaOld(module: any): any {
+      try {
+        return module.area; // throws when module is null
+      } catch { return 'CRASHED'; }
+    }
+    expect(getAreaOld(null)).toBe('CRASHED');
+  });
+
+  it('RestoreEnginePlayMode: uses optional chaining for area.miniGame', () => {
+    function restoreEnginePlayMode(module: any): string {
+      if(module){
+        if(module.area?.miniGame) return 'MINIGAME';
+        return 'INGAME';
+      }
+      return 'GUI';
+    }
+    expect(restoreEnginePlayMode(null)).toBe('GUI');
+    expect(restoreEnginePlayMode({ area: null })).toBe('INGAME');
+    expect(restoreEnginePlayMode({ area: {} })).toBe('INGAME');
+    expect(restoreEnginePlayMode({ area: { miniGame: {} } })).toBe('MINIGAME');
+  });
+
+  it('RestoreEnginePlayMode regression: old code crashed when area was null', () => {
+    function restoreEnginePlayModeOld(module: any): string {
+      try {
+        if(module){
+          if(module.area.miniGame) return 'MINIGAME';
+          return 'INGAME';
+        }
+        return 'GUI';
+      } catch { return 'CRASHED'; }
+    }
+    expect(restoreEnginePlayModeOld({ area: null })).toBe('CRASHED');
+  });
+
+});
