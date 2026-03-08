@@ -499,12 +499,14 @@ export class CombatRound {
   }
 
   /**
-   * Calculate the attack roll for the given creature and weapon
+   * Calculate the attack roll for the given creature and weapon.
+   * Applies feat-based attack roll penalties (Flurry, Power Attack, etc.).
    * @param creature - The creature to calculate the attack roll for
    * @param weapon - The weapon to calculate the attack roll for
+   * @param feat - Optional active combat feat that may modify the attack roll
    * @returns The attack roll
    */
-  calculateAttackRoll(creature: ModuleCreature, weapon: ModuleItem){
+  calculateAttackRoll(creature: ModuleCreature, weapon: ModuleItem, feat?: import('../talents').TalentFeat){
     let bonus = creature.getBaseAttackBonus() + (weapon?.getAttackBonus() || 0);
     for(const effect of creature.effects){
       if(effect.type === GameEffectType.EffectAttackIncrease){
@@ -512,6 +514,25 @@ export class CombatRound {
       }else if(effect.type === GameEffectType.EffectAttackDecrease){
         bonus -= effect.getInt(0);
       }
+    }
+    // Apply feat-based attack roll penalties
+    if(feat){
+      const featId = feat.getId();
+      // Power Attack line: -3/-6/-9 attack in exchange for +5/+8/+10 damage
+      if(featId === CombatFeatType.POWER_ATTACK || featId === CombatFeatType.POWER_BLAST){
+        bonus -= 3;
+      }else if(featId === CombatFeatType.IMPROVED_POWER_ATTACK || featId === CombatFeatType.IMPROVED_POWER_BLAST){
+        bonus -= 6;
+      }else if(featId === CombatFeatType.MASTER_POWER_ATTACK || featId === CombatFeatType.MASTER_POWER_BLAST){
+        bonus -= 9;
+      }
+      // Flurry line: extra attack at -4/-2/0 attack penalty
+      else if(featId === CombatFeatType.FLURRY || featId === CombatFeatType.RAPID_SHOT){
+        bonus -= 4;
+      }else if(featId === CombatFeatType.IMPROVED_FLURRY || featId === CombatFeatType.IMPROVED_RAPID_SHOT){
+        bonus -= 2;
+      }
+      // Master Flurry / Master Rapid Shot: no attack penalty (extra attack is free)
     }
     return Dice.roll(1, DiceType.d20, bonus);
   }
@@ -610,8 +631,8 @@ export class CombatRound {
    * @param combatAction - The combat action to calculate the attack for
    */
   calculateWeaponAttack(creature: ModuleCreature, weapon: ModuleItem | undefined = undefined, weaponSlot: ModuleCreatureArmorSlot, combatAction: CombatRoundAction) {
-    //Roll to hit
-    let attackRoll = this.calculateAttackRoll(creature, weapon);
+    //Roll to hit – pass the active feat so that Power Attack / Flurry penalties are applied
+    let attackRoll = this.calculateAttackRoll(creature, weapon, combatAction.feat);
     const isDualWielding = this.isDualWielding(creature);
     const isMainHand = weapon && weaponSlot == ModuleCreatureArmorSlot.RIGHTHAND;
     const isOffHand = weapon && weaponSlot == ModuleCreatureArmorSlot.LEFTHAND;
