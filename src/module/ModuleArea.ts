@@ -633,7 +633,9 @@ export class ModuleArea extends ModuleObject {
     const audioEngine = AudioEngine.GetAudioEngine();
     //Load the background music
     const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
+    if(!ambientmusic2DA) return;
     const bgMusic = ambientmusic2DA.rows[index];
+    if(!bgMusic) return;
     this.audio.music.day = index;
     try{
       if(bgMusic.resource != '****'){
@@ -651,7 +653,9 @@ export class ModuleArea extends ModuleObject {
     const audioEngine = AudioEngine.GetAudioEngine();
     //Load the battle music
     const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
+    if(!ambientmusic2DA) return;
     const bgMusic = ambientmusic2DA.rows[index];
+    if(!bgMusic) return;
     this.audio.music.night = index;
     try{
       if(bgMusic.resource != '****'){
@@ -679,7 +683,9 @@ export class ModuleArea extends ModuleObject {
     const audioEngine = AudioEngine.GetAudioEngine();
     //Load the battle music
     const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
+    if(!ambientmusic2DA) return;
     const battleMusic = ambientmusic2DA.rows[index];
+    if(!battleMusic) return;
     this.audio.music.battle = index;
     try{
       if(battleMusic.resource != '****'){
@@ -1196,9 +1202,9 @@ export class ModuleArea extends ModuleObject {
   getCameraStyle(){
     const cameraStyle2DA = GameState.TwoDAManager.datatables.get('camerastyle');
     if(cameraStyle2DA){
-      return cameraStyle2DA.rows[this.cameraStyle];
+      return cameraStyle2DA.rows[this.cameraStyle] ?? cameraStyle2DA.rows[0];
     }
-    return cameraStyle2DA.rows[0];
+    return undefined;
   }
 
   async loadPath(){
@@ -1765,7 +1771,7 @@ export class ModuleArea extends ModuleObject {
           door.box.setFromObject(door.model);
         }
 
-        if(door.openState){
+        if(door.openState && door.model){
           door.model.playAnimation('opened1', true);
         }
         door.getCurrentRoom();
@@ -1782,29 +1788,35 @@ export class ModuleArea extends ModuleObject {
   async loadPlaceables(): Promise<void> {
     console.log('Loading Placeables');
     for(let i = 0; i < this.placeables.length; i++){
-      const plc = this.placeables[i];
-      plc.load();
-      plc.position.set(plc.getX(), plc.getY(), plc.getZ());
-      plc.rotation.set(0, 0, plc.getBearing());
-      const model = await plc.loadModel();
-      GameState.group.placeables.add( plc.container );
-      const pwk = await plc.loadWalkmesh(model.name);
-      GameState.walkmeshList.push( pwk.mesh );
-      plc.computeBoundingBox();
+      try{
+        const plc = this.placeables[i];
+        plc.load();
+        plc.position.set(plc.getX(), plc.getY(), plc.getZ());
+        plc.rotation.set(0, 0, plc.getBearing());
+        const model = await plc.loadModel();
+        GameState.group.placeables.add( plc.container );
+        if(model){
+          const pwk = await plc.loadWalkmesh(model.name);
+          GameState.walkmeshList.push( pwk.mesh );
+          plc.computeBoundingBox();
 
-      if(pwk.mesh instanceof THREE.Object3D){
-        pwk.mat4.makeRotationFromEuler(plc.rotation);
-        pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
-        pwk.mesh.geometry.applyMatrix4(pwk.mat4);
-        pwk.updateMatrix();
-        pwk.buildEdgeNormalHelpers();
-        //pwk.mesh.position.copy(plc.position);
-        GameState.group.room_walkmeshes.add( pwk.mesh );
+          if(pwk.mesh instanceof THREE.Object3D){
+            pwk.mat4.makeRotationFromEuler(plc.rotation);
+            pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
+            pwk.mesh.geometry.applyMatrix4(pwk.mat4);
+            pwk.updateMatrix();
+            pwk.buildEdgeNormalHelpers();
+            //pwk.mesh.position.copy(plc.position);
+            GameState.group.room_walkmeshes.add( pwk.mesh );
+          }
+        }
+
+        plc.getCurrentRoom();
+        plc.position.set(plc.getX(), plc.getY(), plc.getZ());
+        plc.computeBoundingBox();
+      }catch(e){
+        console.error('loadPlaceables error', e);
       }
-
-      plc.getCurrentRoom();
-      plc.position.set(plc.getX(), plc.getY(), plc.getZ());
-      plc.computeBoundingBox();
     }
   }
 
@@ -1957,7 +1969,9 @@ export class ModuleArea extends ModuleObject {
         const creature = this.creatures[i];
         creature.load();
         const model = await creature.loadModel();
-        creature.model.userData.moduleObject = creature;
+        if(creature.model){
+          creature.model.userData.moduleObject = creature;
+        }
         
         //creature.setFacing(Math.atan2(creature.getXOrientation(), creature.getYOrientation()) + Math.PI/2, true);
         creature.setFacing(-Math.atan2(creature.getXOrientation(), creature.getYOrientation()), true);

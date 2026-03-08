@@ -900,6 +900,7 @@ export class Module {
     }catch(e){
       console.log(`Module.Load: failed to load module.`);
       console.error(e);
+      throw e;
     }
   }
 
