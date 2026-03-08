@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
-import * as KotOR from "../../KotOR";
-import "./TLKSearchModal.scss";
+﻿import React, { useState, useEffect } from "react";
+
+import * as KotOR from "@/apps/forge/KotOR";
+import "@/apps/forge/components/TLKSearchModal/TLKSearchModal.scss";
 
 export interface TLKSearchModalProps {
   isOpen: boolean;
@@ -76,7 +77,7 @@ export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
             className="tlk-search-modal-close"
             title="Close"
           >
-            ×
+            Ã—
           </button>
         </div>
 
@@ -170,4 +171,5 @@ export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
     </div>
   );
 };
+
 

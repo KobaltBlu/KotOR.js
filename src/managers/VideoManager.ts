@@ -1,9 +1,10 @@
 import * as THREE from "three";
-import { BIKObject } from "../resource/BIKObject";
-import { GameState } from "../GameState";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { AudioEngine } from "../audio/AudioEngine";
-import { YUVFrame } from "../video/binkvideo";
+
+import { AudioEngine } from "@/audio/AudioEngine";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { BIKObject } from "@/resource/BIKObject";
+import { YUVFrame } from "@/video/binkvideo";
 
 /**
  * VideoManager class.
@@ -293,7 +294,7 @@ export class VideoManager {
         onComplete();
       }
       return false;
-    };
+    }
     const movie = this.movieQueue.shift()!;
     console.log('VideoManager.playNextMovie: Playing movie:', movie);
     try {

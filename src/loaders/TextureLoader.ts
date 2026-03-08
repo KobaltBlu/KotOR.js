@@ -1,15 +1,17 @@
-import * as THREE from 'three';
 import * as path from "path";
-import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
-import { TextureType } from '../enums/loaders/TextureType';
-import { ITextureLoaderQueuedRef } from '../interface/loaders/ITextureLoaderQueuedRef';
-import { TXIBlending } from '../enums/graphics/txi/TXIBlending';
-import { TPCLoader } from './TPCLoader';
-import { TGALoader } from './TGALoader';
-import { OdysseyTexture } from '../three/odyssey/OdysseyTexture';
-import { GameFileSystem } from '../utility/GameFileSystem';
-import { TXIPROCEDURETYPE } from '../enums/graphics/txi/TXIPROCEDURETYPE';
-import { GameEngineType } from '../enums/engine';
+
+import * as THREE from 'three';
+
+import { GameEngineType } from '@/enums/engine';
+import { PixelFormat } from '@/enums/graphics/tpc/PixelFormat';
+import { TXIBlending } from '@/enums/graphics/txi/TXIBlending';
+import { TXIPROCEDURETYPE } from '@/enums/graphics/txi/TXIPROCEDURETYPE';
+import { TextureType } from '@/enums/loaders/TextureType';
+import { ITextureLoaderQueuedRef } from '@/interface/loaders/ITextureLoaderQueuedRef';
+import { TGALoader } from '@/loaders/TGALoader';
+import { TPCLoader } from '@/loaders/TPCLoader';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { GameFileSystem } from '@/utility/GameFileSystem';
 
 type onProgressCallback = (ref: ITextureLoaderQueuedRef, index: number, total: number) => void;
 
@@ -52,7 +54,7 @@ export class TextureLoader {
     }
 
     const tga = await TextureLoader.tgaLoader.fetch(resRef);
-    if(!!tga){
+    if(tga){
       tga.anisotropy = TextureLoader.Anisotropy;
       tga.wrapS = tga.wrapT = THREE.RepeatWrapping;
 
@@ -61,7 +63,7 @@ export class TextureLoader {
     }
     
     const texture = await TextureLoader.tpcLoader.fetch(resRef);
-    if(!!texture){
+    if(texture){
       texture.anisotropy = TextureLoader.Anisotropy;
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
@@ -81,7 +83,7 @@ export class TextureLoader {
 
   static async LoadLocal(resRef: string, noCache: boolean = false): Promise<OdysseyTexture> {
 
-    let dir = resRef;
+    const dir = resRef;
     const tga_exists = await GameFileSystem.exists(path.join(dir, resRef));
     if(!tga_exists){ return undefined; }
 
@@ -159,7 +161,7 @@ export class TextureLoader {
   }
 
   static async LoadQueue(onProgress?: onProgressCallback){
-    let queue = TextureLoader.queue.slice(0);
+    const queue = TextureLoader.queue.slice(0);
     TextureLoader.queue = [];
     const promises = queue.map(tex => TextureLoader.UpdateMaterial(tex));
     await Promise.all(promises);
@@ -173,7 +175,7 @@ export class TextureLoader {
   static async UpdateMaterial(tex: ITextureLoaderQueuedRef){
     switch(tex.type){
       case TextureType.TEXTURE:
-        let texture: OdysseyTexture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
+        const texture: OdysseyTexture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
         if(!!texture && tex.material instanceof THREE.Material){
 
           if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
@@ -232,7 +234,7 @@ export class TextureLoader {
           if(typeof tex.onLoad == 'function')
             tex.onLoad(texture, tex)
         }else if(!texture && !!tex.fallback){
-          let fallback: OdysseyTexture = await TextureLoader.Load(tex.fallback, TextureLoader.CACHE);
+          const fallback: OdysseyTexture = await TextureLoader.Load(tex.fallback, TextureLoader.CACHE);
           if(!!fallback && tex.material instanceof THREE.Material){
 
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
@@ -285,8 +287,8 @@ export class TextureLoader {
         }
       break;
       case TextureType.LIGHTMAP:
-        let lightmap: OdysseyTexture = await TextureLoader.LoadLightmap(tex.name, TextureLoader.CACHE);
-        if(!!lightmap){
+        const lightmap: OdysseyTexture = await TextureLoader.LoadLightmap(tex.name, TextureLoader.CACHE);
+        if(lightmap){
           if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
             tex.material.uniforms.lightMap.value = lightmap;
             (tex.material as any).lightMap = lightmap;
@@ -320,8 +322,8 @@ export class TextureLoader {
           tex.onLoad(lightmap, tex)
       break;
       case TextureType.PARTICLE:
-        let particle_texture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
-        if(!!particle_texture){
+        const particle_texture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
+        if(particle_texture){
           if(tex.partGroup?.type == 'OdysseyEmitter'){
             tex.partGroup.material.uniforms.map.value = particle_texture;
             (tex.partGroup.material as any).map = particle_texture;
@@ -351,9 +353,9 @@ export class TextureLoader {
     return new Promise<void>( async (resolve, reject) => {
       try{
         //ENVMAP
-        if(!!texture.txi.envMapTexture){
-          let envmap: OdysseyTexture = await TextureLoader.Load(texture.txi.envMapTexture, TextureLoader.NOCACHE);
-          if(!!envmap){
+        if(texture.txi.envMapTexture){
+          const envmap: OdysseyTexture = await TextureLoader.Load(texture.txi.envMapTexture, TextureLoader.NOCACHE);
+          if(envmap){
             envmap.wrapS = envmap.wrapT = THREE.RepeatWrapping;
 
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
@@ -401,9 +403,9 @@ export class TextureLoader {
         }
 
         //BUMPMAP
-        if(!!texture.txi.bumpMapTexture){
-          let bumpMap: OdysseyTexture = await TextureLoader.Load(texture.txi.bumpMapTexture, TextureLoader.CACHE);
-          if(!!bumpMap){
+        if(texture.txi.bumpMapTexture){
+          const bumpMap: OdysseyTexture = await TextureLoader.Load(texture.txi.bumpMapTexture, TextureLoader.CACHE);
+          if(bumpMap){
             bumpMap.wrapS = bumpMap.wrapT = THREE.RepeatWrapping;
             
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){

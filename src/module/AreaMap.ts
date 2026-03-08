@@ -1,9 +1,10 @@
 import * as THREE from "three";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
-import type { ModuleWaypoint } from "./ModuleWaypoint";
+
+import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
 * AreaMap class.
@@ -315,7 +316,7 @@ export class AreaMap {
   }
 
   export(): GFFStruct {
-    let mapStruct = new GFFStruct(14);
+    const mapStruct = new GFFStruct(14);
 
     mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt1X') ).setValue(this.mapPt1X);
     mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt1Y') ).setValue(this.mapPt1Y);
@@ -333,7 +334,7 @@ export class AreaMap {
   }
 
   exportData(){
-    let dataStruct = new GFFStruct(14);
+    const dataStruct = new GFFStruct(14);
 
     let byteIndex = 0;
     for(let i = 0; i < this.fogAlphaPixelData.length; i++){
@@ -386,7 +387,7 @@ export class AreaMap {
 
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
-      let areaMap = new AreaMap();
+      const areaMap = new AreaMap();
 
       areaMap.mapPt1X = struct.getFieldByLabel('MapPt1X').getValue();
       areaMap.mapPt1Y = struct.getFieldByLabel('MapPt1Y').getValue();

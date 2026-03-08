@@ -1,5 +1,5 @@
-import type { GUILabel, GUIListBox } from "../../../gui";
-import { MenuDebug as K1_MenuDebug } from "../../kotor/KOTOR";
+import { MenuDebug as K1_MenuDebug } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIListBox } from "@/gui";
 
 /**
  * MenuDebug class.
@@ -25,9 +25,10 @@ export class MenuDebug extends K1_MenuDebug {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
   
 }
+

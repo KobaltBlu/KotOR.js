@@ -1,15 +1,32 @@
-import { EditorFile } from "./EditorFile";
-import { Project } from "./Project";
-import { EditorFileOptions } from "./interfaces/EditorFileOptions";
-import { AudioPlayerState } from "./states/AudioPlayerState";
-import { ForgeState } from "./states/ForgeState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
+import { Project } from "@/apps/forge/Project";
+import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 import {
   TabBIKPlayerState,
-  TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabPTHEditorState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState,
-  TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState, TabBinaryViewerState,
-  TabAREEditorState, TabIFOEditorState, TabJRLEditorState, TabSSFEditorState, TabTLKEditorState, TabFACEditorState, TabLTREditorState, TabDLGEditorState, TabGITEditorState, TabSAVEditorState, TabVISEditorState
-} from "./states/tabs";
-import { ResourceTypes } from "../../KotOR";
+  TabERFEditorState,
+  TabGFFEditorState,
+  TabGUIEditorState,
+  TabImageViewerState,
+  TabLIPEditorState,
+  TabModelViewerState,
+  TabPTHEditorState,
+  TabTextEditorState,
+  TabTwoDAEditorState,
+  TabUTCEditorState,
+  TabUTDEditorState,
+  TabUTEEditorState,
+  TabUTIEditorState,
+  TabUTMEditorState,
+  TabUTPEditorState,
+  TabUTSEditorState,
+  TabUTTEditorState,
+  TabUTWEditorState,
+  TabVISEditorState,
+  TabWOKEditorState,
+} from "@/apps/forge/states/tabs";
+import { ResourceTypes } from "@/KotOR";
 
 /**
  * FileTypeManager class.
@@ -54,17 +71,16 @@ export class FileTypeManager {
         ForgeState.tabManager.addTab(new TabTwoDAEditorState({editorFile: res}));
       break;
       case 'dlg':
-        ForgeState.tabManager.addTab(new TabDLGEditorState({editorFile: res}));
+        ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
+        // ForgeState.tabManager.addTab(new TabDLGEditorState({editorFile: res}));
       break;
       case 'lip':
         ForgeState.tabManager.addTab(new TabLIPEditorState({editorFile: res}));
       break;
       case 'erf':
       case 'mod':
-        ForgeState.tabManager.addTab(new TabERFEditorState({editorFile: res}));
-      break;
       case 'sav':
-        ForgeState.tabManager.addTab(new TabSAVEditorState({editorFile: res}));
+        ForgeState.tabManager.addTab(new TabERFEditorState({editorFile: res}));
       break;
       case 'mdl':
       case 'mdx':
@@ -73,7 +89,6 @@ export class FileTypeManager {
       case 'dwk':
       case 'pwk':
       case 'wok':
-      case 'bwm':
         ForgeState.tabManager.addTab(new TabWOKEditorState({editorFile: res}));
       break;
       case 'nss':
@@ -87,18 +102,6 @@ export class FileTypeManager {
       case 'tpc':
       case 'tga':
         ForgeState.tabManager.addTab(new TabImageViewerState({editorFile: res}));
-      break;
-      case 'ltr':
-        ForgeState.tabManager.addTab(new TabLTREditorState({editorFile: res}));
-      break;
-      case 'ssf':
-        ForgeState.tabManager.addTab(new TabSSFEditorState({editorFile: res}));
-      break;
-      case 'fac':
-        ForgeState.tabManager.addTab(new TabFACEditorState({editorFile: res}));
-      break;
-      case 'tlk':
-        ForgeState.tabManager.addTab(new TabTLKEditorState({editorFile: res}));
       break;
       case 'utc':
         ForgeState.tabManager.addTab(new TabUTCEditorState({editorFile: res}));
@@ -133,20 +136,11 @@ export class FileTypeManager {
       case 'pth':
         ForgeState.tabManager.addTab(new TabPTHEditorState({editorFile: res}));
       break;
-      case 'are':
-        ForgeState.tabManager.addTab(new TabAREEditorState({editorFile: res}));
-      break;
       case 'ifo':
-        ForgeState.tabManager.addTab(new TabIFOEditorState({editorFile: res}));
-      break;
-      case 'jrl':
-        ForgeState.tabManager.addTab(new TabJRLEditorState({editorFile: res}));
-      break;
+      case 'are':
       case 'git':
-        ForgeState.tabManager.addTab(new TabGITEditorState({editorFile: res}));
-      break;
       case 'res':
-      case 'gff':
+      case 'fac':
         ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
       break;
       case 'vis':
@@ -166,7 +160,6 @@ export class FileTypeManager {
         // }
       break;
       default:
-        ForgeState.tabManager.addTab(new TabBinaryViewerState({editorFile: res}));
         // NotificationManager.Notify(NotificationManager.Types.WARNING, `File Type: (${ext}) not yet supported`);
         // console.warn('FileTypeManager.onOpenResource', 'Unknown FileType', ext, res);
 

@@ -1,13 +1,13 @@
-import { ILIPHeader } from "../interface/resource/ILIPHeader";
-import { ILIPKeyFrame } from "../interface/resource/ILIPKeyFrame";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { ResourceLoader } from "../loaders";
-import { ResourceTypes } from "./ResourceTypes";
-import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { OdysseyModel3D } from "../three/odyssey";
-import { OdysseyModelAnimation } from "../odyssey";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { ILIPHeader } from "@/interface/resource/ILIPHeader";
+import { ILIPKeyFrame } from "@/interface/resource/ILIPKeyFrame";
+import { ResourceLoader } from "@/loaders";
+import { OdysseyModelAnimation } from "@/odyssey";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * LIPObject class.
@@ -99,7 +99,7 @@ export class LIPObject {
   readBinary(buffer: Uint8Array, onComplete?: Function){
     if(buffer instanceof Uint8Array){
 
-      let reader = new BinaryReader(buffer);
+      const reader = new BinaryReader(buffer);
 
       const fileType = reader.readChars(4);
       const fileVersion = reader.readChars(4);
@@ -125,7 +125,7 @@ export class LIPObject {
   }
 
   addKeyFrame(time: number = 0, shape: number = 0){
-    let keyframe: ILIPKeyFrame = {
+    const keyframe: ILIPKeyFrame = {
       uuid: crypto.randomUUID(),
       time: time,
       shape: shape,
@@ -139,7 +139,7 @@ export class LIPObject {
     if(model){
 
       let lastFrame = 0;
-      let framesLen = this.keyframes.length;
+      const framesLen = this.keyframes.length;
       for(let f = 0; f < framesLen; f++){
         if(this.keyframes[f].time <= this.elapsed){
           lastFrame = f;
@@ -180,8 +180,8 @@ export class LIPObject {
 
         for(let i = 0; i < this.anim.nodes.length; i++){
 
-          let node = this.anim.nodes[i];
-          let modelNode = model.nodes.get(node.name);
+          const node = this.anim.nodes[i];
+          const modelNode = model.nodes.get(node.name);
       
           if(typeof modelNode != 'undefined'){
             
@@ -234,7 +234,7 @@ export class LIPObject {
         if(this.anim){
           for(let i = 0; i < this.anim.nodes.length; i++){
   
-            let modelNode: any = model.animNodeCache[this.anim.nodes[i].name];
+            const modelNode: any = model.animNodeCache[this.anim.nodes[i].name];
             if(typeof modelNode != 'undefined'){
               modelNode.lipping = false;
             }
@@ -254,7 +254,7 @@ export class LIPObject {
   }
 
   toExportBuffer(): Uint8Array {
-    let writer = new BinaryWriter();
+    const writer = new BinaryWriter();
 
     //Write the header to the buffer
     writer.writeChars(LIPObject.FILE_TYPE);
@@ -264,7 +264,7 @@ export class LIPObject {
 
     //Write the keyframe data to the buffer
     for (let i = 0; i < this.keyframes.length; i++) {
-      let keyframe = this.keyframes[i];
+      const keyframe = this.keyframes[i];
       writer.writeSingle(keyframe.time);
       writer.writeByte(keyframe.shape);
     }

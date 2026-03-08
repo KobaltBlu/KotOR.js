@@ -329,13 +329,15 @@ export const ResourceTypeInfo = {
     "bif" : 'BIF Archive',
     "key" : 'BIF Archive KEY',
 
-    getKeyByValue: function( value: any ) {
-        for( let prop in this ) {
-            if( this.hasOwnProperty( prop ) ) {
-                 if( this[ prop ] === value )
-                     return prop;
+    getKeyByValue(value: string): string | undefined {
+        const self = this as Record<string, unknown>;
+        for (const prop in self) {
+            if (Object.prototype.hasOwnProperty.call(self, prop) && prop !== 'getKeyByValue') {
+                const v = self[prop];
+                if (typeof v === 'string' && v === value) return prop;
             }
         }
+        return undefined;
     }
 
 }

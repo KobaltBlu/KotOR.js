@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, Alert, Spinner } from "react-bootstrap";
-import { ModalAboutState } from "../../states/modal/ModalAboutState";
+
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { ModalAboutState } from "@/apps/forge/states/modal/ModalAboutState";
 
 export const ModalAbout = (props: BaseModalProps) => {
   const modal = props.modal as ModalAboutState;

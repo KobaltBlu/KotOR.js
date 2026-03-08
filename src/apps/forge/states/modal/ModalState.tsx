@@ -1,6 +1,7 @@
 import React from "react";
-import { EventListenerModel } from "../../EventListenerModel";
-import { ModalManagerState } from "./ModalManagerState";
+
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
 
 export class ModalState extends EventListenerModel {
 
@@ -12,7 +13,7 @@ export class ModalState extends EventListenerModel {
   title: string = '';
 
   #manager: ModalManagerState;
-  #modalView: React.ReactElement = (<></>);
+  #modalView: JSX.Element = (<></>);
 
   constructor(){
     super();
@@ -20,7 +21,7 @@ export class ModalState extends EventListenerModel {
 
   }
 
-  setView(view: React.ReactElement){
+  setView(view: JSX.Element){
     this.#modalView = view;
   }
 
@@ -54,16 +55,12 @@ export class ModalState extends EventListenerModel {
   close(){
     this.hide();
     this.processEventListener('onClose', [this]);
-    if(this.#manager){
-      this.#manager.removeModal(this);
-    }
+    this.#manager.removeModal(this);
   }
 
   destroy(){
     this.close();
-    if(this.#manager){
-      this.#manager.removeModal(this);
-    }
+    this.#manager.removeModal(this);
     this.processEventListener('onDestory', [this]);
   }
 

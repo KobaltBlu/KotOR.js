@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import type { GUIButton, GUIListBox, GUILabel } from "../../../gui";
-import { IScreenResolution } from "../../../interface/graphics/IScreenResolution";
-import { MenuResolutions as K1_MenuResolutions } from "../../kotor/KOTOR";
+import { MenuResolutions as K1_MenuResolutions } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUIButton, GUIListBox, GUILabel } from "@/gui";
+import { IScreenResolution } from "@/interface/graphics/IScreenResolution";
 
 /**
  * MenuResolutions class.

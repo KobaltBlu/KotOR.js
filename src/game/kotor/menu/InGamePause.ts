@@ -1,13 +1,13 @@
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * InGamePause class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGamePause.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -30,8 +30,8 @@ export class InGamePause extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      this.BTN_UNPAUSE.addEventListener('click', (e) => {
+    return new Promise<void>((resolve, _reject) => {
+      this.BTN_UNPAUSE.addEventListener('click', (_e) => {
         GameState.AutoPauseManager.Unpause();
       });
       resolve();
@@ -51,5 +51,5 @@ export class InGamePause extends GameMenu {
     this.tGuiPanel.extent.top = (-GameState.ResolutionManager.getViewportHeight() / 2) + (this.tGuiPanel.extent.height / 2) + 36;
     this.recalculatePosition();
   }
-  
+
 }

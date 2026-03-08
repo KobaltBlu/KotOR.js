@@ -1,28 +1,24 @@
-@import "~bootstrap/scss/bootstrap";
+@use "@fortawesome/fontawesome-free/scss/fontawesome" as *;
+@use "@fortawesome/fontawesome-free/scss/solid" as *;
+@use "@fortawesome/fontawesome-free/scss/brands" as *;
+@use "styles/menu-top" as *;
+@use "styles/jquery-layout" as *;
+@use "styles/layout-default" as *;
+@use "styles/layout-custom" as *;
+@use "styles/scrollbar" as *;
 
-$fa-font-path: "./fonts";
-@import "~@fortawesome/fontawesome-free/scss/fontawesome";  
+// Use pre-built Bootstrap CSS to avoid Sass deprecation warnings from Bootstrap's source
+@import "bootstrap/dist/css/bootstrap.css";
 
-// our project needs Solid + Brands
-@import "~@fortawesome/fontawesome-free/scss/solid.scss";
-@import "~@fortawesome/fontawesome-free/scss/brands.scss";
-
-@import "styles/menu-top.scss";
-@import "styles/jquery-layout.scss";
-@import "styles/layout-default.scss";
-@import "styles/layout-custom.scss";
-@import "styles/scrollbar.scss";
-
-html, body {
+html,
+body {
   background-color: #242424;
   color: #fff;
   // font-family: Arial, Helvetica, sans-serif;
   font-family: sans-serif;
 }
 
-.app-container {
-
-}
+.app-container {}
 
 #container {
   position: absolute;
@@ -51,7 +47,7 @@ html, body {
     width: 100%;
     height: 50px;
   }
-  
+
   .script-debugger-container {
     position: relative;
     // display: flex;
@@ -69,6 +65,7 @@ html, body {
       box-sizing: border-box;
       height: 100%;
       position: relative;
+
       .title {
         position: absolute;
         top: 0;
@@ -84,20 +81,49 @@ html, body {
         flex-wrap: wrap;
         align-content: space-between;
         flex-direction: column;
+
         .title-buttons {
           // float: right;
         }
       }
-      .content {
-        padding: 5px;
+
+      .script-browser-toolbar {
         position: absolute;
         top: 25px;
         left: 0;
+        right: 0;
+        height: 36px;
+        display: flex;
+        gap: 4px;
+        padding: 4px 5px;
+        background-color: #3a3a3a;
+        border-bottom: 1px solid #4a4a4a;
+        align-items: center;
+        box-sizing: border-box;
+
+        .debugger-button {
+          padding: 4px 8px;
+          min-width: 28px;
+          min-height: 24px;
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+        }
+      }
+
+      .content {
+        padding: 5px;
+        position: absolute;
+        top: 61px;
+        left: 0;
         width: 100%;
-        height: calc(100% - 25px);
+        height: calc(100% - 61px);
         overflow-y: scroll;
         overflow-x: auto;
         box-sizing: border-box;
+
         .content-inner {
           position: relative;
           width: 100%;
@@ -105,13 +131,14 @@ html, body {
         }
       }
     }
-    
+
     .script-debugger-instance {
       // flex: 0.5;
       border: 2px solid #4a4a4a;
       box-sizing: border-box;
       height: 100%;
       position: relative;
+
       .title {
         position: absolute;
         top: 0;
@@ -124,6 +151,7 @@ html, body {
         font-weight: bold;
         box-sizing: border-box;
       }
+
       .content {
         padding: 5px;
         position: absolute;
@@ -145,18 +173,22 @@ html, body {
           font-family: monospace;
           font-size: 14pt;
           min-height: 100%;
+
           .instruction-node {
             position: relative;
             list-style-type: none;
             line-height: 14pt;
             height: 14pt;
             white-space: nowrap;
+
             &.selected {
               background-color: #373c45;
             }
+
             &.seeked {
               background-color: purple;
             }
+
             // &.breakpoint::marker {
             //   color: red;
             // }
@@ -164,7 +196,7 @@ html, body {
             &::before {
               content: '';
               position: absolute;
-              top:0;
+              top: 0;
               left: -18pt;
               font-size: 14pt;
               color: grey;
@@ -175,12 +207,12 @@ html, body {
               color: red;
             }
 
-            &::hover::before {
+            &:hover::before {
               content: '\2299';
               color: grey;
             }
 
-            &.breakpoint::hover::before {
+            &.breakpoint:hover::before {
               content: '\2299';
               color: rgb(255, 45, 45);
             }
@@ -201,30 +233,39 @@ html, body {
 
             .instruction-codeName {
               font-weight: bold;
+
               &.JMP {
                 color: green;
               }
+
               &.JSR {
                 color: olive;
-              } 
+              }
+
               &.JZ {
                 color: magenta;
-              } 
+              }
+
               &.RSADD {
                 color: pink
               }
+
               &.CONST {
                 color: white;
               }
+
               &.CPDOWNSP {
                 color: #2f2ff1;
               }
+
               &.CPDOWNBP {
                 color: blue;
               }
+
               &.CPTOPSP {
                 color: violet;
               }
+
               &.MOVSP {
                 color: red;
               }
@@ -236,6 +277,7 @@ html, body {
               &.ACTION {
                 color: cyan;
               }
+
               &.EQUAL {
                 color: orange;
               }
@@ -245,18 +287,23 @@ html, body {
               &.STRING {
                 color: purple;
               }
+
               &.INTEGER {
                 color: orange;
               }
+
               &.FLOAT {
                 color: yellow;
               }
+
               &.OBJECT {
                 color: green;
               }
+
               &.VECTOR {
                 color: blue;
               }
+
               &.STRUCTURE {
                 color: red;
               }
@@ -266,8 +313,8 @@ html, body {
       }
     }
   }
-  
-  
+
+
 }
 
 .debugger-buttons {
@@ -281,6 +328,7 @@ html, body {
   color: white;
   text-align: center;
   gap: 10px;
+
   svg {
     width: 12pt;
     color: white;
@@ -298,11 +346,13 @@ html, body {
     font-weight: normal;
   }
 
-  > .script-browser-list-item {
+  >.script-browser-list-item {
     // font-weight: bold;
   }
 
   .script-browser-list-instance-item {
+    cursor: pointer;
+
     &.selected {
       color: rgb(10 88 202);
     }

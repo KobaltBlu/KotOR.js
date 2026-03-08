@@ -1,2 +1,2 @@
-export * from './DebuggerState';  
-export * from './ipc';
+export * from '@/enums/server/DebuggerState';  
+export * from '@/enums/server/ipc';

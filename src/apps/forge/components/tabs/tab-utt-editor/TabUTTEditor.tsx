@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTTEditorState } from "../../../states/tabs";
-import * as KotOR from "../../../KotOR";
-import { FormField } from "../../form-field/FormField";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { SubTab, SubTabHost } from "../../SubTabHost";
-import { ForgeTrigger } from "../../../module-editor/ForgeTrigger";
+import React, { useMemo, useState, useEffect, useCallback } from "react"
+
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import { TabUTTEditorState } from "@/apps/forge/states/tabs";
 
 export const TabUTTEditor = function(props: BaseTabProps){
 
@@ -72,29 +73,46 @@ export const TabUTTEditor = function(props: BaseTabProps){
   }, [tab]);
 
   // Helper functions using ForgeTrigger methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeTrigger, parser: (value: number) => number = (v) => v) => 
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeTrigger, parser: (value: number) => number = (v) => v) =>
     tab.trigger.createNumberFieldHandler(setter, property, tab.trigger, tab, parser);
-  
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createByteFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createWordFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) => 
+
+  const _onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createBooleanFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createResRefFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createCExoStringFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createCExoLocStringFieldHandler(setter, property, tab.trigger, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) => 
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createForgeCheckboxFieldHandler(setter, property, tab.trigger, tab);
+
+  const scriptSuggestions = useMemo(() => {
+    const keyObject = KotOR.KEYManager?.Key;
+    if (!keyObject?.keys?.length) {
+      return [] as string[];
+    }
+
+    const ncsType = KotOR.ResourceTypes['ncs'];
+    const names = keyObject.keys
+      .filter((entry: KotOR.IKEYEntry) => entry.resType === ncsType)
+      .map((entry: KotOR.IKEYEntry) => String(entry.resRef || '').toLowerCase())
+      .filter((name: string) => name.length > 0);
+
+    return Array.from(new Set(names)).sort();
+  }, []);
+
+  const scriptSuggestionListId = 'utt-script-suggestions';
 
   useEffect(() => {
     if(!tab) return;
@@ -172,28 +190,33 @@ export const TabUTTEditor = function(props: BaseTabProps){
       headerTitle: 'Scripts',
       content: (
         <>
+          <datalist id={scriptSuggestionListId}>
+            {scriptSuggestions.map((name) => (
+              <option key={`utt-script-${name}`} value={name} />
+            ))}
+          </datalist>
           <table style={{ width: '100%' }}>
             <tbody>
               <FormField label="On Click" info="ResRef of script executed when clicked.">
-                <input type="text" value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} maxLength={16} />
+                <input type="text" value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On Heartbeat" info="ResRef of ScriptOnHeartbeat.">
-                <input type="text" value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} maxLength={16} />
+                <input type="text" value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On Enter" info="ResRef of ScriptOnEnter.">
-                <input type="text" value={onEnter} onChange={onUpdateResRefField(setOnEnter, 'onEnter')} maxLength={16} />
+                <input type="text" value={onEnter} onChange={onUpdateResRefField(setOnEnter, 'onEnter')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On Exit" info="ResRef of ScriptOnExit.">
-                <input type="text" value={onExit} onChange={onUpdateResRefField(setOnExit, 'onExit')} maxLength={16} />
+                <input type="text" value={onExit} onChange={onUpdateResRefField(setOnExit, 'onExit')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On User Defined" info="ResRef of ScriptOnUserDefine.">
-                <input type="text" value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} maxLength={16} />
+                <input type="text" value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On Disarm" info="ResRef executed when trap is disarmed.">
-                <input type="text" value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} maxLength={16} />
+                <input type="text" value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
               <FormField label="On Trap Triggered" info="ResRef fired when trap trips.">
-                <input type="text" value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} maxLength={16} />
+                <input type="text" value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} maxLength={16} list={scriptSuggestionListId} />
               </FormField>
             </tbody>
           </table>

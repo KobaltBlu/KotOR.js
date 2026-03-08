@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { JournalEntry } from "../../../engine/JournalEntry";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { JournalEntry } from "@/engine/JournalEntry";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 enum JournalSort {
   RECIEVED = 0,
@@ -15,7 +15,7 @@ enum JournalQuestMode {
   COMPLETED = 1,
 }
 
-const STRREF_TITLE = 32178;
+const _STRREF_TITLE = 32178;
 
 const STRREF_BY_RECIEVED  = 32173;
 const STRREF_BY_NAME      = 32174;
@@ -27,9 +27,9 @@ const STRREF_MODE_COMPLETED = 32178;
 
 /**
  * MenuJournal class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuJournal.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -59,7 +59,7 @@ export class MenuJournal extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -140,11 +140,11 @@ export class MenuJournal extends GameMenu {
   }
 
   GetMenuTitle(): string {
-    let questModeLabel = (
+    const questModeLabel = (
       this.mode == JournalQuestMode.ACTIVE ? GameState.TLKManager.GetStringById(STRREF_MODE_ACTIVE).Value :
       this.mode == JournalQuestMode.COMPLETED ? GameState.TLKManager.GetStringById(STRREF_MODE_COMPLETED).Value : ''
     );
-    let sortModeLabel = (
+    const sortModeLabel = (
       this.sort == JournalSort.RECIEVED ? GameState.TLKManager.GetStringById(STRREF_BY_RECIEVED).Value :
       this.sort == JournalSort.NAME ? GameState.TLKManager.GetStringById(STRREF_BY_NAME).Value :
       this.sort == JournalSort.PRIORITY ? GameState.TLKManager.GetStringById(STRREF_BY_PRIORITY).Value :
@@ -182,15 +182,15 @@ export class MenuJournal extends GameMenu {
 
     return entries.sort( (a, b) => {
       if(this.sort == JournalSort.NAME){
-        let nameA = a.category.name.getTLKValue().toLocaleLowerCase();
-        let nameB = b.category.name.getTLKValue().toLocaleLowerCase();
+        const nameA = a.category.name.getTLKValue().toLocaleLowerCase();
+        const nameB = b.category.name.getTLKValue().toLocaleLowerCase();
         if (nameA < nameB) {
           return -1;
         }
         if (nameA > nameB) {
           return 1;
         }
-        
+
         return 0;
       }else if(this.sort == JournalSort.RECIEVED){
         if (a.date < b.date) {
@@ -199,7 +199,7 @@ export class MenuJournal extends GameMenu {
         if (a.date > b.date) {
           return 1;
         }
-        
+
         return 0;
       }else if(this.sort == JournalSort.PRIORITY){
         if (a.category.priority < b.category.priority) {
@@ -208,7 +208,7 @@ export class MenuJournal extends GameMenu {
         if (a.category.priority > b.category.priority) {
           return 1;
         }
-        
+
         return 0;
       }else if(this.sort == JournalSort.PLANET){
         if (a.category.planet_id < b.category.planet_id) {
@@ -217,7 +217,7 @@ export class MenuJournal extends GameMenu {
         if (a.category.planet_id > b.category.planet_id) {
           return 1;
         }
-        
+
         return 0;
       }
 
@@ -232,5 +232,5 @@ export class MenuJournal extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_MAP.click();
   }
-  
+
 }

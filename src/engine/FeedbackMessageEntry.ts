@@ -1,7 +1,7 @@
-import { FeebackMessageColor } from "../enums/engine/FeedbackMessageColor";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
+import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * FeedbackMessageEntry class.
@@ -17,11 +17,7 @@ export class FeedbackMessageEntry {
   message: string = '';
   type: number = 0;
 
-  constructor(){
-    
-  }
-
-  toStruct(){
+  toStruct(): GFFStruct {
     const struct = new GFFStruct(0);
     struct.addField(new GFFField(GFFDataType.BYTE, 'PT_FB_MSG_COLOR', this.color));
     struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'PT_FB_MSG_MSG', this.message));
@@ -32,9 +28,9 @@ export class FeedbackMessageEntry {
   static FromStruct(struct: GFFStruct): FeedbackMessageEntry {
     const entry = new FeedbackMessageEntry();
     if(struct instanceof GFFStruct){
-      if(struct.hasField('PT_FB_MSG_COLOR')) entry.color = struct.getFieldByLabel('PT_FB_MSG_COLOR')?.getValue();
-      if(struct.hasField('PT_FB_MSG_MSG')) entry.message = struct.getFieldByLabel('PT_FB_MSG_MSG')?.getValue();
-      if(struct.hasField('PT_FB_MSG_TYPE')) entry.type = struct.getFieldByLabel('PT_FB_MSG_TYPE')?.getValue();
+      if(struct.hasField('PT_FB_MSG_COLOR')) entry.color = struct.getNumberByLabel('PT_FB_MSG_COLOR') as FeebackMessageColor;
+      if(struct.hasField('PT_FB_MSG_MSG')) entry.message = struct.getStringByLabel('PT_FB_MSG_MSG');
+      if(struct.hasField('PT_FB_MSG_TYPE')) entry.type = struct.getNumberByLabel('PT_FB_MSG_TYPE');
     }
     return entry;
   }

@@ -1,37 +1,37 @@
-import { ModuleObject } from "./ModuleObject";
-import type { ModuleRoom } from "./ModuleRoom";
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { GameState } from "../GameState";
-import { SSFType } from "../enums/resource/SSFType";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { CExoLocString } from "../resource/CExoLocString";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyModel3D } from "../three/odyssey";
+﻿import { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleRoom } from "@/module/ModuleRoom";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { GameState } from "@/GameState";
+import { SSFType } from "@/enums/resource/SSFType";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { GFFObject } from "@/resource/GFFObject";
+import { OdysseyModel3D } from "@/three/odyssey";
 
 import * as THREE from "three";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
-import { NWScript } from "../nwscript/NWScript";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ModuleDoorAnimState } from "../enums/module/ModuleDoorAnimState";
-import { ModuleDoorOpenState } from "../enums/module/ModuleDoorOpenState";
-import { ModuleDoorInteractSide } from "../enums/module/ModuleDoorInteractSide";
-// import { AppearanceManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "../managers";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { DLGObject } from "../resource/DLGObject";
-import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { SWDoorAppearance } from "../engine/rules/SWDoorAppearance";
-import { AudioEngine } from "../audio/AudioEngine";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { BitWise } from "../utility/BitWise";
-import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
-import { GameEffectFactory } from "../effects/GameEffectFactory";
-import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "../enums";.3
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel, OdysseyWalkMesh } from "@/odyssey";
+import { NWScript } from "@/nwscript/NWScript";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ModuleDoorAnimState } from "@/enums/module/ModuleDoorAnimState";
+import { ModuleDoorOpenState } from "@/enums/module/ModuleDoorOpenState";
+import { ModuleDoorInteractSide } from "@/enums/module/ModuleDoorInteractSide";
+// import { AppearanceManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "@/managers";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { DLGObject } from "@/resource/DLGObject";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { BitWise } from "@/utility/BitWise";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums";.3
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
@@ -301,21 +301,21 @@ export class ModuleDoor extends ModuleObject {
   }
 
   updateCollisionState(): void {
-    // if(!this.collisionManager?.walkmesh?.mesh){ return; }
+    // if(!this.collisionData?.walkmesh?.mesh){ return; }
 
     let idx = -1;
     switch(this.openState){
       case ModuleDoorOpenState.DESTROYED:
       case ModuleDoorOpenState.OPEN1:
       case ModuleDoorOpenState.OPEN2:
-        GameState.group.room_walkmeshes.remove( this.collisionManager.walkmesh.mesh );
-        idx = this.area.doorWalkmeshes.indexOf(this.collisionManager.walkmesh);
+        GameState.group.room_walkmeshes.remove( this.collisionData.walkmesh.mesh );
+        idx = this.area.doorWalkmeshes.indexOf(this.collisionData.walkmesh);
         if(idx >= 0){ this.area.doorWalkmeshes.splice(idx, 1); }
       break;
       default:
-        GameState.group.room_walkmeshes.add( this.collisionManager.walkmesh.mesh );
-        idx = this.area.doorWalkmeshes.indexOf(this.collisionManager.walkmesh);
-        if(idx == -1){ this.area.doorWalkmeshes.push(this.collisionManager.walkmesh); }
+        GameState.group.room_walkmeshes.add( this.collisionData.walkmesh.mesh );
+        idx = this.area.doorWalkmeshes.indexOf(this.collisionData.walkmesh);
+        if(idx == -1){ this.area.doorWalkmeshes.push(this.collisionData.walkmesh); }
       break;
     }
   }
@@ -458,6 +458,40 @@ export class ModuleDoor extends ModuleObject {
     return true;
   }
 
+  /**
+   * Determines which side of the door the interacting object is on.
+   * Reversed from Reva: CSWSDoor::OpenDoor @ 0x00589c70 (k1_win_gog_swkotor.exe)
+   *
+   * Original logic (decompiled):
+   *   bVar5 = 2;  // default SIDE_2
+   *   pCVar1 = CServerExoApp::GetGameObject(AppManager->server, param_1);
+   *   if (pCVar1 != 0) {
+   *     pCVar2 = (*pCVar1->vtable->AsSWSObject)(pCVar1);
+   *     // Dot product: (creature_pos - door_pos) Â· door_orientation
+   *     if (0 < (pos.x - door.x)*orient.x + (pos.y - door.y)*orient.y + (pos.z - door.z)*orient.z)
+   *       bVar5 = 1;  // SIDE_1
+   *   }
+   *   SetOpenState(this, bVar5, 1);
+   *
+   * CSWSObject has Vector orientation at +0x9C (GFF Orientation / facing direction).
+   * KotOR.js uses getRotationFromBearing() for the 2D forward vector (cos Î¸, sin Î¸, 0).
+   *
+   * @param object - The ModuleObject that interacted (opener, damager). If null/this, uses combatData.lastDamager.
+   * @returns SIDE_1 if object is in the positive orientation direction, SIDE_2 otherwise.
+   */
+  detectInteractSide(object: ModuleObject): ModuleDoorInteractSide {
+    let interactor = object && object !== this ? object : this.combatData?.lastDamager;
+    if (!interactor?.position) {
+      return ModuleDoorInteractSide.SIDE_2;
+    }
+    const orient = this.getRotationFromBearing();
+    const dx = interactor.position.x - this.position.x;
+    const dy = interactor.position.y - this.position.y;
+    const dz = interactor.position.z - this.position.z;
+    const dot = dx * orient.x + dy * orient.y + dz * orient.z;
+    return dot > 0 ? ModuleDoorInteractSide.SIDE_1 : ModuleDoorInteractSide.SIDE_2;
+  }
+
   openDoor(object: ModuleObject){
 
     /*
@@ -483,7 +517,7 @@ export class ModuleDoor extends ModuleObject {
     //   GameState.selectedObject = GameState.selected = undefined;
     // }
     
-    //TODO: detect the correct side that the creature interacted from
+    this.objectInteractSide = this.detectInteractSide(object);
     switch(this.objectInteractSide){
       case ModuleDoorInteractSide.SIDE_1:
         this.setOpenState(ModuleDoorOpenState.OPEN1);
@@ -493,8 +527,8 @@ export class ModuleDoor extends ModuleObject {
       break;
     }
 
-    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh){
-      this.collisionManager.walkmesh.mesh.removeFromParent();
+    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
+      this.collisionData.walkmesh.mesh.removeFromParent();
     }
 
     //Notice all creatures within range that someone opened this door
@@ -527,7 +561,8 @@ export class ModuleDoor extends ModuleObject {
       onDeath.run(this);
     }
     
-    //TODO: detect the correct side that the creature interacted from
+    // Use lastDamager when object is this (self-destroy from isDead), per Reva OpenDoor/OnApplyDeath
+    this.objectInteractSide = this.detectInteractSide(object !== this ? object : this.combatData?.lastDamager);
     switch(this.objectInteractSide){
       case ModuleDoorInteractSide.SIDE_1:
         this.setOpenState(ModuleDoorOpenState.OPEN1);
@@ -537,8 +572,8 @@ export class ModuleDoor extends ModuleObject {
       break;
     }
 
-    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh){
-      this.collisionManager.walkmesh.mesh.removeFromParent();
+    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
+      this.collisionData.walkmesh.mesh.removeFromParent();
     }
 
   }
@@ -551,8 +586,8 @@ export class ModuleDoor extends ModuleObject {
 
     this.playObjectSound(ModulePlaceableObjectSound.CLOSED);
 
-    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh){
-      this.collisionManager.walkmesh.mesh.removeFromParent();
+    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
+      this.collisionData.walkmesh.mesh.removeFromParent();
     }
 
     this.setOpenState(ModuleDoorOpenState.CLOSED);
@@ -609,8 +644,8 @@ export class ModuleDoor extends ModuleObject {
       GameState.group.light_helpers.add( this.boxHelper );
     }
 
-    if(this.collisionManager.walkmesh && this.model){
-      this.collisionManager.walkmesh.matrixWorld.copy(this.model.matrix);
+    if(this.collisionData.walkmesh && this.model){
+      this.collisionData.walkmesh.matrixWorld.copy(this.model.matrix);
     }
   }
 
@@ -792,10 +827,10 @@ export class ModuleDoor extends ModuleObject {
     if(box){
       for(let j = 0, jl = this.roomIds.length; j < jl; j++){
         let room = GameState.module.area.rooms[this.roomIds[j]];
-        if(room && room.collisionManager.walkmesh && room.collisionManager.walkmesh.aabbNodes.length){
+        if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
           aabbFaces.push({
             object: room, 
-            faces: room.collisionManager.walkmesh.getAABBCollisionFaces(box)
+            faces: room.collisionData.walkmesh.getAABBCollisionFaces(box)
           });
         }
       }
@@ -808,7 +843,7 @@ export class ModuleDoor extends ModuleObject {
     
     for(let j = 0, jl = aabbFaces.length; j < jl; j++){
       let castableFaces = aabbFaces[j];
-      intersects = castableFaces.object.collisionManager.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
+      intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
       
       if(intersects.length){
         if(intersects[0].object.userData.moduleObject){
@@ -1001,14 +1036,13 @@ export class ModuleDoor extends ModuleObject {
   async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {
     try{
       const buffer = await ResourceLoader.loadResource(ResourceTypes['dwk'], resRef+'0');
-      const walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
-      walkmesh.mesh.name = walkmesh.name = resRef;
-      walkmesh.mesh.userData.moduleObject = walkmesh.moduleObject = this;
-      this.collisionManager.setWalkmesh(walkmesh);
+      this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
+      this.collisionData.walkmesh.mesh.name = this.collisionData.walkmesh.name = resRef;
+      this.collisionData.walkmesh.mesh.userData.moduleObject = this.collisionData.walkmesh.moduleObject = this;
   
       this.updateCollisionState();
   
-      return this.collisionManager.walkmesh;
+      return this.collisionData.walkmesh;
     }catch(e){
       console.error(e);
     }
@@ -1212,7 +1246,7 @@ export class ModuleDoor extends ModuleObject {
     super.destroy();
     GameState.MenuManager.InGameAreaTransition.unsetTransitionObject(this);
     try{
-      const wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
+      const wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
       if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
     }catch(e){}
   }
@@ -1394,3 +1428,4 @@ export class ModuleDoor extends ModuleObject {
   }
 
 }
+

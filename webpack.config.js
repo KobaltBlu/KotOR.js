@@ -1,19 +1,18 @@
 const path = require('path');
+
+const _CircularDependencyPlugin = require('circular-dependency-plugin');
+const CopyPlugin = require("copy-webpack-plugin");
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const webpack = require('webpack');
 const WebpackBar = require('webpackbar');
-const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin')
-const CopyPlugin = require("copy-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const CircularDependencyPlugin = require('circular-dependency-plugin');
 
 // Read version from package.json
 const packageJson = require('./package.json');
 const version = packageJson.version;
 
 const isProd = (process.env.NODE_ENV?.trim() === 'production');
-console.log('NODE_ENV', process.env.NODE_ENV);
-console.log('isProd', isProd ? 'true' : 'false');
 
 // Common SCSS rule for all configs
 const scssRule = {
@@ -30,7 +29,10 @@ const scssRule = {
     {
       loader: 'sass-loader',
       options: {
-        sourceMap: !isProd
+        sourceMap: !isProd,
+        sassOptions: {
+          loadPaths: [path.join(__dirname, 'node_modules')]
+        }
       }
     }
   ]
@@ -68,7 +70,7 @@ const assetRules = [
 ];
 
 const libraryConfig = (name, color) => ({
-  mode: isProd ? 'production': 'development',
+  mode: isProd ? 'production' : 'development',
   entry: {
     KotOR: [
       './src/KotOR.ts'
@@ -95,6 +97,12 @@ const libraryConfig = (name, color) => ({
     errorDetails: false,
     warnings: false,
     publicPath: false
+  },
+  devServer: {
+    port: 8081,
+    hot: true,
+    open: ['/launcher/'],
+    historyApiFallback: false,
   },
   devtool: !isProd ? 'eval-source-map' : 'source-map',
   module: {
@@ -128,7 +136,7 @@ const libraryConfig = (name, color) => ({
     new HtmlWebpackPlugin({
       filename: 'index.html',
       inject: false,
-      templateContent: ({ htmlWebpackPlugin }) => `<!DOCTYPE html>
+      templateContent: ({ htmlWebpackPlugin: _htmlWebpackPlugin }) => `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -155,6 +163,7 @@ const libraryConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -170,12 +179,13 @@ const libraryConfig = (name, color) => ({
     library: 'KotOR',
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist'),
+    publicPath: '/',
     pathinfo: false,
   },
 });
 
 const launcherConfig = (name, color) => ({
-  mode: isProd ? 'production': 'development',
+  mode: isProd ? 'production' : 'development',
   entry: {
     launcher: [
       './src/apps/launcher/index.tsx'
@@ -241,6 +251,7 @@ const launcherConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -255,11 +266,12 @@ const launcherConfig = (name, color) => ({
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/launcher'),
+    publicPath: '/launcher/',
   },
 });
 
 const gameConfig = (name, color) => ({
-  mode: isProd ? 'production': 'development',
+  mode: isProd ? 'production' : 'development',
   entry: {
     game: [
       './src/apps/game/index.tsx'
@@ -324,6 +336,7 @@ const gameConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -339,23 +352,24 @@ const gameConfig = (name, color) => ({
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/game'),
-    globalObject: 'this', 
+    publicPath: '/game/',
+    globalObject: 'this',
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
       if (filename.endsWith('.ts')) {
-          return '[name].js';
+        return '[name].js';
       } else {
-          return '[name][ext]';
+        return '[name][ext]';
       }
     },
   },
 });
 
 const forgeConfig = (name, color) => ({
-  mode: isProd ? 'production': 'development',
+  mode: isProd ? 'production' : 'development',
   entry: {
     forge: [
-      './src/apps/forge/index.tsx', 
+      './src/apps/forge/index.tsx',
       './src/worker/worker-tex.ts'
     ]
   },
@@ -424,7 +438,10 @@ const forgeConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       three: path.resolve('./node_modules/three'),
+      '@kotor': path.resolve('./src'),
+      '@forge': path.resolve('./src/apps/forge'),
     },
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
@@ -439,20 +456,21 @@ const forgeConfig = (name, color) => ({
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/forge'),
-    globalObject: 'this', 
+    publicPath: '/forge/',
+    globalObject: 'this',
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
       if (filename.endsWith('.ts')) {
-          return '[name].js';
+        return '[name].js';
       } else {
-          return '[name][ext]';
+        return '[name][ext]';
       }
     },
   },
 });
 
 const debuggerConfig = (name, color) => ({
-  mode: isProd ? 'production': 'development',
+  mode: isProd ? 'production' : 'development',
   entry: {
     debugger: [
       './src/apps/debugger/index.tsx'
@@ -517,6 +535,7 @@ const debuggerConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, 'src'),
       three: path.resolve('./node_modules/three'),
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -532,13 +551,14 @@ const debuggerConfig = (name, color) => ({
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/debugger'),
-    globalObject: 'this', 
+    publicPath: '/debugger/',
+    globalObject: 'this',
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
       if (filename.endsWith('.ts')) {
-          return '[name].js';
+        return '[name].js';
       } else {
-          return '[name][ext]';
+        return '[name][ext]';
       }
     },
   },

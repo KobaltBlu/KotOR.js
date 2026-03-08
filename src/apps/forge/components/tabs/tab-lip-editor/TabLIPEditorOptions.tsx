@@ -1,14 +1,12 @@
 import React, { NewLifecycle, useEffect, useState } from "react";
-import { SceneGraphTreeView } from "../../SceneGraphTreeView";
-import { SceneGraphNode } from "../../../SceneGraphNode";
-import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes, TabLIPEditorOptionsState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import { Button, Form } from "react-bootstrap";
-import { SectionContainer } from "../../SectionContainer";
 
-import * as KotOR from "../../../KotOR";
-import { ForgeState } from "../../../states/ForgeState";
-import { ModalLIPBatchProcessorState } from "../../../states/modal/ModalLIPBatchProcessorState";
+import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
+import { SectionContainer } from "@/apps/forge/components/SectionContainer";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import * as KotOR from "@/apps/forge/KotOR";
+import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
+import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes, TabLIPEditorOptionsState } from "@/apps/forge/states/tabs";
 
 export const TabLIPEditorOptions = function(props: any){
   const tab: TabLIPEditorOptionsState = props.tab;
@@ -53,13 +51,13 @@ export const TabLIPEditorOptions = function(props: any){
   }, [duration]);
 
   const onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let shape = parseInt(e.target.value);
+    const shape = parseInt(e.target.value);
     parentTab.selected_frame.shape = !isNaN(shape) ? shape : 0;
     parentTab.selectKeyFrame(parentTab.selected_frame);
   }
 
   const onPreviewHeadChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let head = (e.target.value);
+    const head = (e.target.value);
     parentTab.loadHead(head);
   }
 
@@ -102,7 +100,7 @@ export const TabLIPEditorOptions = function(props: any){
       </SectionContainer> */}
       <SectionContainer name="Preview Head" slim={true}>
         {
-          !!selectedFrame ? (
+          selectedFrame ? (
             <div className="selected-keyframe-head-options">
               <b>Heads</b>
               <Form.Select onChange={onPreviewHeadChange} value={selectedHead}>
@@ -120,12 +118,7 @@ export const TabLIPEditorOptions = function(props: any){
         }
       </SectionContainer>
       <SectionContainer name="Utilities">
-        <Button onClick={onImportPHNClick} className="me-2">Import PHN</Button>
-        <Button variant="outline-secondary" onClick={() => {
-          const lipBatchModal = new ModalLIPBatchProcessorState();
-          ForgeState.modalManager.addModal(lipBatchModal);
-          lipBatchModal.open();
-        }}>LIP Batch Processor…</Button>
+        <Button onClick={onImportPHNClick}>Import PHN</Button>
       </SectionContainer>
     </>
   );

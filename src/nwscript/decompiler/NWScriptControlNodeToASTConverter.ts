@@ -1,18 +1,17 @@
-import type { ControlNode, BasicBlockNode, IfNode, IfElseNode, WhileNode, DoWhileNode, ForNode, SwitchNode, SequenceNode } from "./NWScriptControlStructureBuilder";
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptFunction } from "./NWScriptFunctionAnalyzer";
-import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
-import type { NWScriptLocalInit } from "./NWScriptLocalVariableAnalyzer";
-import type { NWScriptControlStructureBuilder } from "./NWScriptControlStructureBuilder";
-import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptProgramNode, type NWScriptFunctionNode, type NWScriptBlockNode, type NWScriptIfNode, type NWScriptIfElseNode, type NWScriptWhileNode, type NWScriptDoWhileNode, type NWScriptForNode, type NWScriptSwitchNode, type NWScriptSwitchCaseNode, type NWScriptSwitchDefaultNode, type NWScriptExpressionStatementNode, type NWScriptAssignmentNode, type NWScriptReturnNode, type NWScriptBreakNode, type NWScriptContinueNode, NWScriptGlobalVariableDeclarationNode, NWScriptVariableDeclarationNode } from "./NWScriptAST";
-import { NWScriptExpressionBuilder } from "./NWScriptExpressionBuilder";
-import { NWScriptStackSimulator } from "./NWScriptStackSimulator";
-import { NWScriptExpression } from "./NWScriptExpression";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import { OP_RETN, OP_JMP, OP_CPDOWNSP, OP_MOVSP, OP_RSADD, OP_CPTOPSP, OP_CPTOPBP, OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_LOGANDII, OP_LOGORII, OP_JSR, OP_JZ, OP_JNZ, OP_CONST, OP_ACTION } from '../NWScriptOPCodes';
-import type { NWScriptInstruction } from '../NWScriptInstruction';
-import { NWScriptANDChainDetector } from "./NWScriptANDChainDetector";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { NWScriptANDChainDetector } from "@/nwscript/decompiler/NWScriptANDChainDetector";
+import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptProgramNode, type NWScriptFunctionNode, type NWScriptBlockNode, type NWScriptIfNode, type NWScriptIfElseNode, type NWScriptWhileNode, type NWScriptDoWhileNode, type NWScriptForNode, type NWScriptSwitchNode, type NWScriptSwitchCaseNode, type NWScriptSwitchDefaultNode, type NWScriptExpressionStatementNode, type NWScriptAssignmentNode, type NWScriptReturnNode, type NWScriptBreakNode, type NWScriptContinueNode, NWScriptGlobalVariableDeclarationNode, NWScriptVariableDeclarationNode } from "@/nwscript/decompiler/NWScriptAST";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import type { ControlNode, BasicBlockNode, IfNode, IfElseNode, WhileNode, DoWhileNode, ForNode, SwitchNode, SequenceNode , NWScriptControlStructureBuilder } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
+import { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
+import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
+import type { NWScriptFunction } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import type { NWScriptLocalInit } from "@/nwscript/decompiler/NWScriptLocalVariableAnalyzer";
+import { NWScriptStackSimulator } from "@/nwscript/decompiler/NWScriptStackSimulator";
+import type { NWScriptInstruction } from '@/nwscript/NWScriptInstruction';
+import { OP_RETN, OP_JMP, OP_CPDOWNSP, OP_MOVSP, OP_RSADD, OP_CPTOPSP, OP_CPTOPBP, OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_LOGANDII, OP_LOGORII, OP_JSR, OP_JZ, OP_JNZ, OP_CONST, OP_ACTION } from '@/nwscript/NWScriptOPCodes';
 
 /**
  * Converts ControlNode tree to NWScriptASTNode tree.
@@ -480,7 +479,7 @@ export class NWScriptControlNodeToASTConverter {
     
     // Track if we're processing a return value assignment
     let returnValueExpr: NWScriptExpression | undefined = undefined;
-    let retnBlock: NWScriptBasicBlock | null = null;
+    const retnBlock: NWScriptBasicBlock | null = null;
     
     console.log(`[Block] Block ${block.id} instructions:`, block.instructions.map(instr => `0x${instr.address.toString(16).padStart(8, '0')} ${instr.code === OP_RSADD ? 'RSADD' : instr.code === OP_CPDOWNSP ? 'CPDOWNSP' : 'other'}`).join(', '));
     
@@ -841,7 +840,7 @@ export class NWScriptControlNodeToASTConverter {
     
     // Check if the body contains a LOGANDII that combines with the outer condition
     // This handles cross-block AND chains where the LOGANDII is in the body block
-    let actualBodyNode: ControlNode = node.body;
+    const actualBodyNode: ControlNode = node.body;
     if (node.body.type === 'basic_block') {
       const bodyBlock = node.body.block;
       // Check if body block contains LOGANDII

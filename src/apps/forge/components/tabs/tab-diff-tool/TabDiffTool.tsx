@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { TabDiffToolState } from "../../../states/tabs/TabDiffToolState";
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-import { ForgeFileSystem } from "../../../ForgeFileSystem";
-import { ForgeState } from "../../../states/ForgeState";
-import { ModalResourceComparisonState } from "../../../states/modal/ModalResourceComparisonState";
-import * as KotOR from "../../../KotOR";
-import "./TabDiffTool.scss";
+
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalResourceComparisonState } from "@/apps/forge/states/modal/ModalResourceComparisonState";
+import { TabDiffToolState } from "@/apps/forge/states/tabs/TabDiffToolState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import "@/apps/forge/components/tabs/tab-diff-tool/TabDiffTool.scss";
+
+const log = createScopedLogger(LogScope.Forge);
 
 interface BaseTabProps {
   tab: TabDiffToolState;
@@ -48,8 +51,8 @@ export const TabDiffTool = function(props: BaseTabProps){
       const name = pathStr ? pathStr.replace(/^.*[\\/]/, '') : '';
       const ext = pathStr && pathStr.includes('.') ? pathStr.slice(pathStr.lastIndexOf('.')) : '';
       tab.setLeftResource(pathStr || name, buffer, name, ext);
-    } catch(e) {
-      console.error('Failed to open left file:', e);
+    } catch (_e) {
+      log.error('Failed to open left file:', _e as Error);
     }
   };
 
@@ -63,8 +66,8 @@ export const TabDiffTool = function(props: BaseTabProps){
       const name = pathStr ? pathStr.replace(/^.*[\\/]/, '') : '';
       const ext = pathStr && pathStr.includes('.') ? pathStr.slice(pathStr.lastIndexOf('.')) : '';
       tab.setRightResource(pathStr || name, buffer, name, ext);
-    } catch(e) {
-      console.error('Failed to open right file:', e);
+    } catch (_e) {
+      log.error('Failed to open right file:', _e as Error);
     }
   };
 

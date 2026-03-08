@@ -1,6 +1,7 @@
 import React, { ComponentProps, ReactEventHandler, useState } from "react";
 import { Container, Dropdown, Nav, NavDropdown, Navbar } from 'react-bootstrap';
-import { useEffectOnce } from "../helpers/UseEffectOnce";
+
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
 export const MenuItem = function(props: any){
   const item = props.item;
@@ -14,32 +15,28 @@ export const MenuItem = function(props: any){
   };
 
   useEffectOnce( () => { //constructor
-    if (item) {
-      item.addEventListener('onRebuild', onRebuild);
-      return () => { //deconstructor
-        item.removeEventListener('onRebuild', onRebuild);
-      };
+    item.addEventListener('onRebuild', onRebuild);
+    return () => { //deconstructor
+      item.removeEventListener('onRebuild', onRebuild);
     }
   });
 
   const onClick = (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
-    if (item && typeof item.onClick === 'function'){
+    if(typeof item.onClick === 'function'){
       item.onClick(e, item);
     }
-  };
-
-  if (!item) return null;
+  }
 
   if(item.type === 'separator' || item.type === 'sep'){
     return (
       <Dropdown.Divider></Dropdown.Divider>
     );
-  }else if(item.items?.length){
+  }else if(item.items.length){
     return (
       <NavDropdown title={item.name}>
-        {item.items.map((child: any, i: number) =>
+        {item.items.map((child: any, i: any) => 
           (
-            <MenuItem key={`menu-item-${child?.uuid ?? child?.name ?? i}`} item={child} parent={item}></MenuItem>
+            <MenuItem key={(`menu-item-${child.uuid}`)} item={child} parent={item}></MenuItem>
           )
         )}
       </NavDropdown>

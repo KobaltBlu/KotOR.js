@@ -78,6 +78,7 @@
 
     input[type="text"],
     input[type="number"],
+    select,
     textarea {
       width: 100%;
       padding: 0.5rem;
@@ -121,6 +122,39 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .ifo-inline-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .ifo-action-btn {
+    padding: 0.45rem 0.7rem;
+    border: 1px solid #3a4763;
+    background: #20283a;
+    color: #d8e0ef;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:hover {
+      background: #2a3651;
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    &--danger {
+      border-color: #6b3941;
+      background: #3a2126;
+
+      &:hover {
+        background: #4a2a31;
+      }
+    }
   }
 
   .area-item {

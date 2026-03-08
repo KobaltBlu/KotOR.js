@@ -84,7 +84,7 @@ npm install
 1. **Start development build** (in one terminal):
 
 ```bash
-npm run webpack:dev-watch
+npm run watch
 ```
 
 1. **Start the application** (in another terminal):
@@ -99,29 +99,28 @@ npm start
 
 #### Development
 
-- `npm start` - Compile and start Electron application
-- `npm run start-watch` - Start with auto-reload on changes
-- `npm run webpack:dev` - Build once in development mode
-- `npm run webpack:dev-watch` - Build in watch mode (auto-rebuild on changes)
+- `npm start` - Compile main process and start Electron application
+- `npm run dev` - Watch main process and auto-restart Electron on changes
+- `npm run watch` - Build web bundle in watch mode (auto-rebuild on changes)
+- `npm run build:web:dev` - Build web bundle once in development mode
 
 #### Building
 
-- `npm run webpack:prod` - Build for production
-- `npm run electron:compile` - Compile Electron TypeScript files
-- `npm run electron:build` - Build complete Electron application
+- `npm run build` - Full production build (webpack + Electron)
+- `npm run build:dev` - Full development build (faster, for local run)
+- `npm run build:web` - Production webpack bundle only
+- `npm run build:electron` - Compile Electron main process only
+- `npm run pack` - Build and package Electron app (electron-builder)
 
 #### Testing
 
 - `npm test` - Run all tests with coverage
 - `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Generate coverage report
+- `npm run test:quick` - Run tests without coverage (faster)
 
 #### Code Quality
 
 - `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint issues automatically
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
 
 #### Documentation
 
@@ -131,12 +130,14 @@ npm start
 
 For a typical development session:
 
-1. **Terminal 1**: Run `npm run webpack:dev-watch` to automatically rebuild on file changes
-2. **Terminal 2**: Run `npm start` to launch the Electron application
+1. **Terminal 1**: Run `npm run watch` to automatically rebuild the web bundle on file changes
+2. **Terminal 2**: Run `npm start` to launch the Electron application (or `npm run dev` for main-process watch + auto-restart)
 3. **Make changes** in the `src/` directory
 4. **Test your changes** - the application will reload automatically
 5. **Run tests** before committing: `npm test`
-6. **Check code quality**: `npm run lint && npm run format:check`
+6. **Check code quality**: `npm run lint`
+
+Other useful commands: `npm run clean` (remove `dist/`), `npm run rebuild` (clean + build).
 
 ### Project Structure
 

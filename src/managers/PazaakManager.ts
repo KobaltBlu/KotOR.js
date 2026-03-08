@@ -1,20 +1,20 @@
-import { GameState } from "../GameState";
-import { PazaakCards } from "../enums/minigames/PazaakCards";
-import { PazaakHandSlots } from "../enums/minigames/PazaakHandSlots";
-import { PazaakSideDeckSlots } from "../enums/minigames/PazaakSideDeckSlots";
-import { PazaakTableSlots } from "../enums/minigames/PazaakTableSlots";
-import { PazaakTurnMode } from "../enums/minigames/PazaakTurnMode";
-import { PazaakTurnState } from "../enums/minigames/PazaakTurnState";
-import { IPTPazaakCard } from "../interface/minigames/IPTPazaakCard";
-import { IPazaakTable } from "../interface/minigames/IPazaakTable";
-import { ModuleCreature } from "../module/ModuleCreature";
-import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { PazaakConfig as PazaakConfig_TSL } from "../game/tsl/minigames/mg-pazaak-config";
-import { PazaakConfig as PazaakConfig_KOTOR } from "../game/kotor/minigames/mg-pazaak-config";
-import { GameEngineType } from "../enums/engine/GameEngineType";
-import { IPazaakCard } from "../interface/minigames/IPazaakCard";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import type { PazaakDeck } from "../engine/minigames/PazaakDeck";
+import type { PazaakDeck } from "@/engine/minigames/PazaakDeck";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
+import { PazaakHandSlots } from "@/enums/minigames/PazaakHandSlots";
+import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
+import { PazaakTableSlots } from "@/enums/minigames/PazaakTableSlots";
+import { PazaakTurnMode } from "@/enums/minigames/PazaakTurnMode";
+import { PazaakTurnState } from "@/enums/minigames/PazaakTurnState";
+import { PazaakConfig as PazaakConfig_KOTOR } from "@/game/kotor/minigames/mg-pazaak-config";
+import { PazaakConfig as PazaakConfig_TSL } from "@/game/tsl/minigames/mg-pazaak-config";
+import { GameState } from "@/GameState";
+import { IPazaakCard } from "@/interface/minigames/IPazaakCard";
+import { IPazaakTable } from "@/interface/minigames/IPazaakTable";
+import { IPTPazaakCard } from "@/interface/minigames/IPTPazaakCard";
+import { ModuleCreature } from "@/module/ModuleCreature";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 
 const MSG_CONFIRM_SIDE_DECK = 32322;
 const MSG_YOU_WIN = 32334;
@@ -824,7 +824,7 @@ export class PazaakManager {
   static BuildAction(tableIndex: number, actionType: PazaakActionType, properties: any[] = []){
     const props: IPazaakActionProperty[] = [];
     for(let i = 0; i < properties.length; i++){
-      let type = typeof properties[i] === 'string' ? PazaakActionPropertyType.STRING : PazaakActionPropertyType.NUMBER;
+      const type = typeof properties[i] === 'string' ? PazaakActionPropertyType.STRING : PazaakActionPropertyType.NUMBER;
       props.push({
         type: type,
         value: properties[i]

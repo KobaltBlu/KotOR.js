@@ -1,8 +1,8 @@
-import { GameState } from "../GameState";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { TalkVolume } from "../enums/engine/TalkVolume";
-import { Action } from "./Action";
+import { Action } from "@/actions/Action";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { TalkVolume } from "@/enums/engine/TalkVolume";
+import { GameState } from "@/GameState";
 
 /**
  * ActionSpeak class.

@@ -1,13 +1,13 @@
-import { ModuleCalendar } from "./ModuleCalendar";
-import { GFFObject } from "../resource/GFFObject";
+﻿import { ModuleCalendar } from "@/module/ModuleCalendar";
+import { GFFObject } from "@/resource/GFFObject";
 
 /**
 * ModuleTimeManager class.
-* 
+*
 * Class representing the time manager for a game module.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleTimeManager.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -50,8 +50,8 @@ export class ModuleTimeManager {
     second = (second % 60) | 0;
     milisecond = (milisecond % 1000) | 0;
 
-    const time = ( hour * this.minutesPerHour * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) + 
-      ( minute * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) + 
+    const time = ( hour * this.minutesPerHour * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) +
+      ( minute * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND ) +
       ( second * ModuleCalendar.MILISECONDS_IN_SECOND ) + milisecond;
 
     let advanceDay = 0;
@@ -120,53 +120,46 @@ export class ModuleTimeManager {
 
   setFromIFO(ifo: GFFObject){
     if(ifo instanceof GFFObject){
-      if(ifo.RootNode.hasField('Mod_PauseDay')){
-        this.pauseDay = ifo.getFieldByLabel('Mod_PauseDay').getValue();
-      }
+      const getVal = (label: string): number | undefined => {
+        const f = ifo.getFieldByLabel(label);
+        return f != null ? f.getValue() : undefined;
+      };
 
-      if(ifo.RootNode.hasField('Mod_PauseTime')){
-        this.pauseTime = ifo.getFieldByLabel('Mod_PauseTime').getValue();
-      }
+      const pauseDayVal = getVal('Mod_PauseDay');
+      if (pauseDayVal !== undefined) this.pauseDay = pauseDayVal;
 
-      if(ifo.RootNode.hasField('Mod_DawnHour')){
-        this.dawnHour = ifo.getFieldByLabel('Mod_DawnHour').getValue();
-      }
+      const pauseTimeVal = getVal('Mod_PauseTime');
+      if (pauseTimeVal !== undefined) this.pauseTime = pauseTimeVal;
 
-      if(ifo.RootNode.hasField('Mod_DuskHour')){
-        this.duskHour = ifo.getFieldByLabel('Mod_DuskHour').getValue();
-      }
+      const dawnHourVal = getVal('Mod_DawnHour');
+      if (dawnHourVal !== undefined) this.dawnHour = dawnHourVal;
 
-      if(ifo.RootNode.hasField('Mod_MinPerHour')){
-        this.minutesPerHour = ifo.getFieldByLabel('Mod_MinPerHour').getValue();
-      }
+      const duskHourVal = getVal('Mod_DuskHour');
+      if (duskHourVal !== undefined) this.duskHour = duskHourVal;
 
-      if(ifo.RootNode.hasField('Mod_StartYear')){
-        this.year = ifo.getFieldByLabel('Mod_StartYear').getValue();
-      }
+      const minPerHourVal = getVal('Mod_MinPerHour');
+      if (minPerHourVal !== undefined) this.minutesPerHour = minPerHourVal;
 
-      if(ifo.RootNode.hasField('Mod_StartMonth')){
-        this.month = ifo.getFieldByLabel('Mod_StartMonth').getValue();
-      }
+      const yearVal = getVal('Mod_StartYear');
+      if (yearVal !== undefined) this.year = yearVal;
 
-      if(ifo.RootNode.hasField('Mod_StartDay')){
-        this.day = ifo.getFieldByLabel('Mod_StartDay').getValue();
-      }
+      const monthVal = getVal('Mod_StartMonth');
+      if (monthVal !== undefined) this.month = monthVal;
 
-      if(ifo.RootNode.hasField('Mod_StartHour')){
-        this.hour = ifo.getFieldByLabel('Mod_StartHour').getValue();
-      }
+      const dayVal = getVal('Mod_StartDay');
+      if (dayVal !== undefined) this.day = dayVal;
 
-      if(ifo.RootNode.hasField('Mod_StartMinute')){
-        this.minute = ifo.getFieldByLabel('Mod_StartMinute').getValue();
-      }
+      const hourVal = getVal('Mod_StartHour');
+      if (hourVal !== undefined) this.hour = hourVal;
 
-      if(ifo.RootNode.hasField('Mod_StartSecond')){
-        this.second = ifo.getFieldByLabel('Mod_StartSecond').getValue();
-      }
+      const minuteVal = getVal('Mod_StartMinute');
+      if (minuteVal !== undefined) this.minute = minuteVal;
 
-      if(ifo.RootNode.hasField('Mod_StartMiliSec')){
-        this.milisecond = ifo.getFieldByLabel('Mod_StartMiliSec').getValue();
-      }
+      const secondVal = getVal('Mod_StartSecond');
+      if (secondVal !== undefined) this.second = secondVal;
+
+      const milisecondVal = getVal('Mod_StartMiliSec');
+      if (milisecondVal !== undefined) this.milisecond = milisecondVal;
     }
   }
 
@@ -255,3 +248,4 @@ export class ModuleTimeManager {
   }
 
 }
+

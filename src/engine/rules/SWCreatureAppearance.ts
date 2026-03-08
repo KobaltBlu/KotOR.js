@@ -1,5 +1,5 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
-import { Utility } from "../../utility/Utility";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+import { Utility } from "@/utility/Utility";
 
 /**
  * SWCreatureAppearance class.
@@ -180,13 +180,13 @@ export class SWCreatureAppearance {
       break;
     }
 
-    if(!!bodyTexture){
+    if(bodyTexture){
       bodyTexture += Utility.PadInt( textureVariation, 2);
     }
 
     return {
-      model: !!bodyModel ? bodyModel.toLowerCase() : defaultModel.toLowerCase(), 
-      texture: !!bodyTexture ? bodyTexture.toLowerCase() : defaultTexture.toLowerCase()
+      model: bodyModel ? bodyModel.toLowerCase() : defaultModel.toLowerCase(), 
+      texture: bodyTexture ? bodyTexture.toLowerCase() : defaultTexture.toLowerCase()
     };
   }
 

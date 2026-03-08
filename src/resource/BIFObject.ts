@@ -1,9 +1,10 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
 import * as path from 'path';
-import { KEYManager } from "../managers/KEYManager";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { IResourceDiskInfo } from "../interface/resource/IResourceDiskInfo";
-import { IBIFResource } from "../interface/resource/IBIFResource";
+
+import { IBIFResource } from "@/interface/resource/IBIFResource";
+import { IResourceDiskInfo } from "@/interface/resource/IResourceDiskInfo";
+import { KEYManager } from "@/managers/KEYManager";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 const BIF_HEADER_SIZE = 20;
 
@@ -122,7 +123,7 @@ export class BIFObject {
   }
 
   getResourcesByType(ResType: number){
-    let arr: IBIFResource[] = []
+    const arr: IBIFResource[] = []
     if(ResType != null){
       for(let i = 0; i < this.variableResourceCount; i++){
         if(this.resources[i].resType == ResType){
@@ -140,10 +141,10 @@ export class BIFObject {
 
     const len = KEYManager.Key.keys.length;
     for(let i = 0; i < len; i++){
-      let key = KEYManager.Key.keys[i];
+      const key = KEYManager.Key.keys[i];
       if(key.resRef == resRef && key.resType == ResType){
         for(let j = 0; j != this.resources.length; j++){
-          let res = this.resources[j];
+          const res = this.resources[j];
           if(res.Id == key.resId && res.resType == ResType){
             return res;
           }
@@ -190,7 +191,7 @@ export class BIFObject {
           this.getResourceBuffer(res).then( (buffer: Uint8Array) => {
             if(typeof onLoad === 'function')
               onLoad(buffer);
-          }, (e: any) => {
+          }, (_e: unknown) => {
             if(typeof onError === 'function')
               onError('Resource not found in BIF archive '+pathInfo.archive.name);
           });

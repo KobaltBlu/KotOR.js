@@ -1,5 +1,5 @@
-import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
-import { CharGenSkills as K1_CharGenSkills } from "../../kotor/KOTOR";
+import { CharGenSkills as K1_CharGenSkills } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
 
 /**
  * CharGenSkills class.
@@ -68,9 +68,10 @@ export class CharGenSkills extends K1_CharGenSkills {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
   
 }
+

@@ -1,6 +1,6 @@
-import * as KotOR from "../KotOR";
-import { IModelListItem } from "../../../interface/module/minigame/IModelListItem";
-import { ForgeMGGunBank } from "./ForgeMGGunBank";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeMGGunBank } from "@/apps/forge/module-editor/ForgeMGGunBank";
+import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
 
 export class ForgeMGPlayer {
   // Basic properties
@@ -63,86 +63,86 @@ export class ForgeMGPlayer {
 
     // Load basic properties
     if(struct.hasField('Accel_Secs')){
-      this.accel_secs = struct.getFieldByLabel('Accel_Secs').getValue();
+      this.accel_secs = struct.getNumberByLabel('Accel_Secs');
     }
     if(struct.hasField('Bump_Damage')){
-      this.bump_damage = struct.getFieldByLabel('Bump_Damage').getValue();
+      this.bump_damage = struct.getNumberByLabel('Bump_Damage');
     }
     if(struct.hasField('Camera')){
-      this.cameraName = struct.getFieldByLabel('Camera').getValue();
+      this.cameraName = struct.getStringByLabel('Camera');
     }
     if(struct.hasField('CameraRotate')){
-      this.cameraRotate = struct.getFieldByLabel('CameraRotate').getValue();
+      this.cameraRotate = struct.getNumberByLabel('CameraRotate');
     }
     if(struct.hasField('Hit_Points')){
-      this.hit_points = struct.getFieldByLabel('Hit_Points').getValue();
+      this.hit_points = struct.getNumberByLabel('Hit_Points');
     }
     if(struct.hasField('Invince_Period')){
-      this.invince_period = struct.getFieldByLabel('Invince_Period').getValue();
+      this.invince_period = struct.getNumberByLabel('Invince_Period');
     }
     if(struct.hasField('Max_HPs')){
-      this.max_hps = struct.getFieldByLabel('Max_HPs').getValue();
+      this.max_hps = struct.getNumberByLabel('Max_HPs');
     }
     if(struct.hasField('Maximum_Speed')){
-      this.maximum_speed = struct.getFieldByLabel('Maximum_Speed').getValue();
+      this.maximum_speed = struct.getNumberByLabel('Maximum_Speed');
     }
     if(struct.hasField('Minimum_Speed')){
-      this.minimum_speed = struct.getFieldByLabel('Minimum_Speed').getValue();
+      this.minimum_speed = struct.getNumberByLabel('Minimum_Speed');
     }
     if(struct.hasField('Num_Loops')){
-      this.num_loops = struct.getFieldByLabel('Num_Loops').getValue();
+      this.num_loops = struct.getNumberByLabel('Num_Loops');
     }
     if(struct.hasField('Sphere_Radius')){
-      this.sphere_radius = struct.getFieldByLabel('Sphere_Radius').getValue();
+      this.sphere_radius = struct.getNumberByLabel('Sphere_Radius');
     }
     if(struct.hasField('Track')){
-      this.trackName = struct.getFieldByLabel('Track').getValue();
+      this.trackName = struct.getStringByLabel('Track');
     }
     if(struct.hasField('Type')){
-      this.type = struct.getFieldByLabel('Type').getValue();
+      this.type = struct.getNumberByLabel('Type');
     }
     if(struct.hasField('Uselnertia')){
-      this.useInertia = struct.getFieldByLabel('Uselnertia').getValue();
+      this.useInertia = struct.getNumberByLabel('Uselnertia');
     }
 
     // Load offset properties
     if(struct.hasField('Start_Offset_X')){
-      this.startOffsetX = struct.getFieldByLabel('Start_Offset_X').getValue();
+      this.startOffsetX = struct.getNumberByLabel('Start_Offset_X');
     }
     if(struct.hasField('Start_Offset_Y')){
-      this.startOffsetY = struct.getFieldByLabel('Start_Offset_Y').getValue();
+      this.startOffsetY = struct.getNumberByLabel('Start_Offset_Y');
     }
     if(struct.hasField('Start_Offset_Z')){
-      this.startOffsetZ = struct.getFieldByLabel('Start_Offset_Z').getValue();
+      this.startOffsetZ = struct.getNumberByLabel('Start_Offset_Z');
     }
     if(struct.hasField('Target_Offset_X')){
-      this.targetOffsetX = struct.getFieldByLabel('Target_Offset_X').getValue();
+      this.targetOffsetX = struct.getNumberByLabel('Target_Offset_X');
     }
     if(struct.hasField('Target_Offset_Y')){
-      this.targetOffsetY = struct.getFieldByLabel('Target_Offset_Y').getValue();
+      this.targetOffsetY = struct.getNumberByLabel('Target_Offset_Y');
     }
     if(struct.hasField('Target_Offset_Z')){
-      this.targetOffsetZ = struct.getFieldByLabel('Target_Offset_Z').getValue();
+      this.targetOffsetZ = struct.getNumberByLabel('Target_Offset_Z');
     }
 
     // Load tunnel properties
     if(struct.hasField('TunnelXNeg')){
-      this.tunnelXNeg = struct.getFieldByLabel('TunnelXNeg').getValue();
+      this.tunnelXNeg = struct.getNumberByLabel('TunnelXNeg');
     }
     if(struct.hasField('TunneXPos')){
-      this.tunnelXPos = struct.getFieldByLabel('TunneXPos').getValue();
+      this.tunnelXPos = struct.getNumberByLabel('TunneXPos');
     }
     if(struct.hasField('TunnelYNeg')){
-      this.tunnelYNeg = struct.getFieldByLabel('TunnelYNeg').getValue();
+      this.tunnelYNeg = struct.getNumberByLabel('TunnelYNeg');
     }
     if(struct.hasField('TunnelYPos')){
-      this.tunnelYPos = struct.getFieldByLabel('TunnelYPos').getValue();
+      this.tunnelYPos = struct.getNumberByLabel('TunnelYPos');
     }
     if(struct.hasField('TunneZNeg')){
-      this.tunnelZNeg = struct.getFieldByLabel('TunneZNeg').getValue();
+      this.tunnelZNeg = struct.getNumberByLabel('TunneZNeg');
     }
     if(struct.hasField('TunnelZPos')){
-      this.tunnelZPos = struct.getFieldByLabel('TunnelZPos').getValue();
+      this.tunnelZPos = struct.getNumberByLabel('TunnelZPos');
     }
     if(struct.hasField('Tunnellnfinite')){
       const tunnelInfiniteField = struct.getFieldByLabel('Tunnellnfinite');
@@ -157,8 +157,8 @@ export class ForgeMGPlayer {
       for(let i = 0; i < models.length; i++){
         const modelStruct = models[i];
         this.modelProps.push({
-          model: modelStruct.getFieldByLabel('Model').getValue(),
-          rotating: modelStruct.getFieldByLabel('RotatingModel').getValue() ? true : false
+          model: modelStruct.getStringByLabel('Model'),
+          rotating: modelStruct.getBooleanByLabel('RotatingModel')
         });
       }
     }
@@ -192,7 +192,7 @@ export class ForgeMGPlayer {
 
         for(const scriptKey of scriptKeys){
           if(scriptsNode.hasField(scriptKey)){
-            const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+            const resRef = scriptsNode.getStringByLabel(scriptKey);
             if(resRef){
               this.scripts[scriptKey] = resRef;
             }
@@ -206,10 +206,10 @@ export class ForgeMGPlayer {
       const soundsNode = struct.getFieldByLabel('Sounds').getFieldStruct();
       if(soundsNode){
         if(soundsNode.hasField('Death')){
-          this.deathSound = soundsNode.getFieldByLabel('Death').getValue() || '';
+          this.deathSound = soundsNode.getStringByLabel('Death');
         }
         if(soundsNode.hasField('Engine')){
-          this.engineSound = soundsNode.getFieldByLabel('Engine').getValue() || '';
+          this.engineSound = soundsNode.getStringByLabel('Engine');
         }
       }
     }

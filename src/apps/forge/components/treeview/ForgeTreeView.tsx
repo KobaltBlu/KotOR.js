@@ -1,10 +1,10 @@
 import React from "react";
-import "./ForgeTreeView.scss";
+import "@/apps/forge/components/treeview/ForgeTreeView.scss";
 
-export const ForgeTreeView = ({ children, style }: { children: React.ReactNode, style?: React.CSSProperties }) => {
+export const ForgeTreeView = ({ children, className }: { children: React.ReactNode; className?: string }) => {
   return (
-    <ul className="forgeTreeView" style={style}>
+    <ul className={["forgeTreeView", className].filter(Boolean).join(" ")}>
       {children}
     </ul>
-  )
-}
+  );
+};

@@ -1,5 +1,5 @@
-import type { GUILabel, GUIButton } from "../../../gui";
-import { MenuStatusSummary as K1_MenuStatusSummary } from "../../kotor/KOTOR";
+import { MenuStatusSummary as K1_MenuStatusSummary } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * MenuStatusSummary class.
@@ -50,9 +50,10 @@ export class MenuStatusSummary extends K1_MenuStatusSummary {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
   
 }
+

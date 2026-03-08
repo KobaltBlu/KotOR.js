@@ -1,7 +1,8 @@
 import React from "react";
-import { KotORModal } from "../modal/modal";
-import { useApp } from "../../context/AppContext";
-import { ApplicationEnvironment } from "../../KotOR";
+
+import { KotORModal } from "@/apps/game/components/modal/modal";
+import { useApp } from "@/apps/game/context/AppContext";
+import { ApplicationEnvironment } from "@/apps/game/KotOR";
 
 export const ModalGrantAccess = () => {
   const appContext = useApp();
@@ -14,7 +15,7 @@ export const ModalGrantAccess = () => {
   }
   
   const showBrowserDirectoryPicker = async () => {
-    let handle = await window.showDirectoryPicker({
+    const handle = await window.showDirectoryPicker({
       mode: "readwrite"
     });
     if(!handle) return;

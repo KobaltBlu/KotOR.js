@@ -1,8 +1,8 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { TLKString } from "./TLKString";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "../utility/FormatSerialization";
+import { TLKString } from "@/resource/TLKString";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 
 export interface TLKJSONEntry {
   index: number;
@@ -24,11 +24,11 @@ export interface TLKJSONData {
 
 /**
  * TLKObject class.
- * 
+ *
  * Class representing a Talk Table file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TLKObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -72,7 +72,7 @@ export class TLKObject {
         console.log('TLKObject', 'Reading');
         this.reader = new BinaryReader(buffer);
         this.reader.seek(0);
-        
+
         this.FileType = this.reader.readChars(4);
         this.FileVersion = this.reader.readChars(4);
         this.LanguageID = this.reader.readUInt32();
@@ -241,6 +241,12 @@ export class TLKObject {
     return tlk;
   }
 
+  /**
+   * Serialize the TLK to a buffer (TLK file format).
+   * Header: FileType(4), FileVersion(4), LanguageID(4), StringCount(4), StringEntriesOffset(4).
+   * Then StringCount entries of 40 bytes each: flags(4), SoundResRef(16), VolumeVariance(4), PitchVariance(4), StringOffset(4), StringLength(4), SoundLength(4).
+   * Then string data block starting at StringEntriesOffset.
+   */
   toBuffer(): Uint8Array {
     const stringCount = this.TLKStrings.length;
     const headerSize = 20;
@@ -286,3 +292,4 @@ export class TLKObject {
   }
 
 }
+

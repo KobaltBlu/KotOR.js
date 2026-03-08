@@ -1,8 +1,12 @@
 import React from "react";
-import { TabVISEditor } from "../../components/tabs/tab-vis-editor/TabVISEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
-import * as KotOR from "../../KotOR";
+
+import { TabVISEditor } from "@/apps/forge/components/tabs/tab-vis-editor/TabVISEditor";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabVISEditorState extends TabState {
   tabName: string = 'VIS Editor';
@@ -10,10 +14,14 @@ export class TabVISEditorState extends TabState {
   selectedRoomName?: string;
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace("TabVISEditorState constructor entry");
     super(options);
 
     if(this.file){
       this.tabName = this.file.getFilename();
+      log.debug("TabVISEditorState constructor tabName", this.tabName);
+    } else {
+      log.trace("TabVISEditorState constructor no file");
     }
 
     this.saveTypes = [
@@ -24,58 +32,57 @@ export class TabVISEditorState extends TabState {
         }
       }
     ];
+    log.trace("TabVISEditorState constructor saveTypes set");
 
     this.setContentView(<TabVISEditor tab={this}></TabVISEditor>);
+    log.trace("TabVISEditorState constructor setContentView");
     this.openFile();
+    log.trace("TabVISEditorState constructor exit");
   }
 
   async openFile() {
+    log.trace("TabVISEditorState openFile entry");
     if(this.file){
+      log.trace("TabVISEditorState openFile readFile");
       const response = await this.file.readFile();
+      log.debug("TabVISEditorState openFile buffer length", response?.buffer?.length);
       this.vis = new KotOR.VISObject(response.buffer);
       this.vis.read();
+      log.trace("TabVISEditorState openFile VIS read");
       this.processEventListener('onEditorFileLoad', [this]);
+      log.info("TabVISEditorState openFile loaded");
+    } else {
+      log.trace("TabVISEditorState openFile no file");
     }
+    log.trace("TabVISEditorState openFile exit");
   }
 
   selectRoom(roomName: string | undefined) {
+    log.trace("TabVISEditorState selectRoom entry", roomName);
     this.selectedRoomName = roomName;
     this.processEventListener('onRoomSelected', [roomName]);
+    log.trace("TabVISEditorState selectRoom exit");
   }
 
-  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(this.vis){
-      // Use VISObject export logic
-      const writer = new KotOR.BinaryWriter();
-      const rooms = Array.from(this.vis.rooms.values());
-      
-      for(let i = 0; i < rooms.length; i++){
-        const room = rooms[i];
-        const roomCount = room.rooms.length;
-        
-        writer.writeChars(room.name + ' ' + roomCount);
-        writer.writeByte(13); // CR
-        writer.writeByte(10); // LF
-        
-        for(let j = 0; j < roomCount; j++){
-          writer.writeChars('  ' + room.rooms[j]);
-          if(i < (rooms.length - 1) || j < (roomCount - 1)){
-            writer.writeByte(13); // CR
-            writer.writeByte(10); // LF
-          }
-        }
-      }
-      
-      return new Uint8Array(writer.buffer);
+  async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
+    log.trace("TabVISEditorState getExportBuffer entry");
+    if (this.vis) {
+      const buf = this.vis.toBuffer();
+      log.trace("TabVISEditorState getExportBuffer length", buf?.length);
+      return buf;
     }
+    log.trace("TabVISEditorState getExportBuffer no vis return empty");
     return new Uint8Array(0);
   }
 
   updateFile() {
-    // VIS changes are in vis.rooms map
+    log.trace("TabVISEditorState updateFile (no-op)");
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    log.trace("TabVISEditorState getResourceID");
+    const id = this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
+    log.trace("TabVISEditorState getResourceID", id);
+    return id;
   }
 }

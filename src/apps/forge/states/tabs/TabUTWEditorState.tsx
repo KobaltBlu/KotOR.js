@@ -1,16 +1,17 @@
 import React from "react";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTWEditor } from "../../components/tabs/tab-utw-editor/TabUTWEditor";
-import { ForgeWaypoint } from "../../module-editor/ForgeWaypoint";
+
+import { TabUTWEditor } from "@/apps/forge/components/tabs/tab-utw-editor/TabUTWEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
 
 export class TabUTWEditorState extends TabState {
   tabName: string = `UTW`;
   waypoint: ForgeWaypoint = new ForgeWaypoint();
-
+  
   get blueprint(): KotOR.GFFObject {
     return this.waypoint.blueprint;
   }
@@ -30,7 +31,7 @@ export class TabUTWEditorState extends TabState {
     ];
 
     this.addEventListener('onTabRemoved', (tab: TabState) => {
-
+      
     });
   }
 
@@ -39,12 +40,12 @@ export class TabUTWEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-
+  
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-
+  
         file.readFile().then( (response) => {
           this.waypoint = new ForgeWaypoint(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
@@ -63,7 +64,7 @@ export class TabUTWEditorState extends TabState {
   }
 
   animate(delta: number = 0){
-    // Waypoint editor has no continuous animation; override is for future 3D preview if needed.
+    //todo
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
@@ -74,7 +75,7 @@ export class TabUTWEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-
+  
   updateFile(){
     this.waypoint.exportToBlueprint();
   }

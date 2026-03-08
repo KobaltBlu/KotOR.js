@@ -1,8 +1,9 @@
-import { EditorFile } from "../EditorFile";
 import * as fs from "fs";
-import * as KotOR from "../KotOR";
-import { ForgeState } from "./ForgeState";
-import { TabAudioPlayerState } from "./tabs/TabAudioPlayerState";
+
+import { EditorFile } from "@/apps/forge/EditorFile";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
 
 declare const dialog: any;
 
@@ -53,8 +54,8 @@ export class AudioPlayerState {
 
   static AddEventListener(type: AudioPlayerEventListenerTypes, cb: Function){
     if(Array.isArray(AudioPlayerState.eventListeners[type])){
-      let ev = AudioPlayerState.eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = AudioPlayerState.eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
@@ -67,8 +68,8 @@ export class AudioPlayerState {
 
   static RemoveEventListener(type: AudioPlayerEventListenerTypes, cb: Function){
     if(Array.isArray(AudioPlayerState.eventListeners[type])){
-      let ev = AudioPlayerState.eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = AudioPlayerState.eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
@@ -81,7 +82,7 @@ export class AudioPlayerState {
 
   static ProcessEventListener(type: AudioPlayerEventListenerTypes, args: any[] = []){
     if(Array.isArray(AudioPlayerState.eventListeners[type])){
-      let ev = AudioPlayerState.eventListeners[type];
+      const ev = AudioPlayerState.eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
@@ -184,7 +185,7 @@ export class AudioPlayerState {
       AudioPlayerState.GetAudioBuffer((data: any) => {
         if(AudioPlayerState.source){
           AudioPlayerState.loading = false;
-          let offset = AudioPlayerState.pausedAt;
+          const offset = AudioPlayerState.pausedAt;
           AudioPlayerState.source.buffer = AudioPlayerState.buffer;
           AudioPlayerState.analyser = KotOR.AudioEngine.GetAudioEngine().audioCtx.createAnalyser();
           AudioPlayerState.analyser.fftSize = 128; 
@@ -227,7 +228,7 @@ export class AudioPlayerState {
   }
 
   static Pause(){
-    let elapsed = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
+    const elapsed = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
     AudioPlayerState.pausedAt = elapsed;
     AudioPlayerState.ProcessEventListener('onPause');
     AudioPlayerState.Stop();
@@ -250,7 +251,7 @@ export class AudioPlayerState {
 
   static async ExportAudio() {
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-      let payload = await dialog.showSaveDialog({
+      const payload = await dialog.showSaveDialog({
         title: 'Export Audio File',
         defaultPath: AudioPlayerState.audioFile.filename,
         properties: ['createDirectory'],
@@ -324,9 +325,9 @@ export class AudioPlayerState {
 
   static SecondsToTimeString(time: number){
     time = time | 0
-    let h = Math.floor(time / 3600);
-    let m = Math.floor(time % 3600 / 60);
-    let s = Math.floor(time % 3600 % 60);
+    const h = Math.floor(time / 3600);
+    const m = Math.floor(time % 3600 / 60);
+    const s = Math.floor(time % 3600 % 60);
     return ((h > 0 ? h + ":" + (m < 10 ? "0" : "") : "") + m + ":" + (s < 10 ? "0" : "") + s);
   }
 

@@ -1,5 +1,5 @@
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { MenuScriptSelect as K1_MenuScriptSelect } from "../../kotor/KOTOR";
+import { MenuScriptSelect as K1_MenuScriptSelect } from "@/game/kotor/KOTOR";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 /**
  * MenuScriptSelect class.
@@ -28,9 +28,10 @@ export class MenuScriptSelect extends K1_MenuScriptSelect {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
   
 }
+

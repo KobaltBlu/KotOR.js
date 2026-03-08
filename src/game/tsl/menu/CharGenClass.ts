@@ -1,10 +1,11 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { ModulePlayer } from "../../../module";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { CharGenClass as K1_CharGenClass } from "../../kotor/KOTOR";
+﻿import * as THREE from "three";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { ModulePlayer } from "@/module";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { CharGenClass as K1_CharGenClass } from "@/game/kotor/KOTOR";
 
 /**
  * CharGenClass class.
@@ -175,3 +176,4 @@ export class CharGenClass extends K1_CharGenClass {
   }
   
 }
+

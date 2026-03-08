@@ -1,33 +1,47 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
+import { createScopedLogger, LogScope } from '@/utility/Logger';
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface LoadingScreenProviderProps {
-  enabled: [boolean, React.Dispatch<any>];
-  message: [string, React.Dispatch<any>];
-  backgroundURL: [string, React.Dispatch<any>];
-  logoURL: [string, React.Dispatch<any>];
+  enabled: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
+  message: [string, React.Dispatch<React.SetStateAction<string>>];
+  backgroundURL: [string, React.Dispatch<React.SetStateAction<string>>];
+  logoURL: [string, React.Dispatch<React.SetStateAction<string>>];
 }
-export const LoadingScreenContext = createContext<LoadingScreenProviderProps>({} as any);
 
-export function useLoadingScreen(){
+function noopLoadingScreenDispatch(): void {
+  log.warn('LoadingScreen setState called outside LoadingScreenProvider');
+}
+
+const defaultLoadingScreenValue: LoadingScreenProviderProps = {
+  enabled: [false, noopLoadingScreenDispatch],
+  message: ['Loading...', noopLoadingScreenDispatch],
+  backgroundURL: ['', noopLoadingScreenDispatch],
+  logoURL: ['', noopLoadingScreenDispatch],
+};
+
+export const LoadingScreenContext = createContext<LoadingScreenProviderProps>(defaultLoadingScreenValue);
+
+export function useLoadingScreen(): LoadingScreenProviderProps {
   return useContext(LoadingScreenContext);
 }
 
 export interface LoadingScreenProps {
-  children: any;
+  children: React.ReactNode;
 }
 
-export const LoadingScreenProvider = (props: LoadingScreenProps) => {
+export const LoadingScreenProvider: React.FC<LoadingScreenProps> = (props) => {
+  log.trace('LoadingScreenProvider render');
   const [enabled, setEnabled] = useState<boolean>(false);
   const [message, setMessage] = useState<string>('Loading...');
   const [backgroundURL, setBackgroundURL] = useState<string>('');
   const [logoURL, setLogoURL] = useState<string>('');
 
   useEffect(() => {
-    //Constructor
-    () => {
-      //Destructor
-    }
+    log.trace('LoadingScreenProvider mount');
+    return () => log.trace('LoadingScreenProvider unmount');
   }, []);
 
   const providerValue: LoadingScreenProviderProps = {

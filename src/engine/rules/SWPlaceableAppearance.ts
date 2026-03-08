@@ -1,4 +1,4 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
  * SWPlaceableAppearance class.
@@ -30,46 +30,46 @@ export class SWPlaceableAppearance {
   ignorestatichitcheck: boolean = false;
   usesearch: boolean = false; //TSL
 
-  static From2DA (row: any = {}): SWPlaceableAppearance {
+  static From2DA (row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWPlaceableAppearance {
     const appearance = new SWPlaceableAppearance();
 
     appearance.id = parseInt(row.__index);
 
-    if(row.hasOwnProperty('label'))
+    if(Object.hasOwn(row,'label'))
       appearance.label = TwoDAObject.normalizeValue(row.label, 'string', '');
-    if(row.hasOwnProperty('strref'))
+    if(Object.hasOwn(row,'strref'))
       appearance.strref = TwoDAObject.normalizeValue(row.strref, 'number', -1);
-    if(row.hasOwnProperty('modelname'))
+    if(Object.hasOwn(row,'modelname'))
       appearance.modelname = TwoDAObject.normalizeValue(row.modelname, 'string', '');
-    if(row.hasOwnProperty('lightcolor'))
+    if(Object.hasOwn(row,'lightcolor'))
       appearance.lightcolor = TwoDAObject.normalizeValue(row.lightcolor, 'number', 0xFFFFFF);
-    if(row.hasOwnProperty('lightoffsetx'))
+    if(Object.hasOwn(row,'lightoffsetx'))
       appearance.lightoffsetx = TwoDAObject.normalizeValue(row.lightoffsetx, 'number', 0);
-    if(row.hasOwnProperty('lightoffsety'))
+    if(Object.hasOwn(row,'lightoffsety'))
       appearance.lightoffsety = TwoDAObject.normalizeValue(row.lightoffsety, 'number', 0);
-    if(row.hasOwnProperty('lightoffsetz'))
+    if(Object.hasOwn(row,'lightoffsetz'))
       appearance.lightoffsetz = TwoDAObject.normalizeValue(row.lightoffsetz, 'number', 0);
-    if(row.hasOwnProperty('soundapptype'))
+    if(Object.hasOwn(row,'soundapptype'))
       appearance.soundapptype = TwoDAObject.normalizeValue(row.soundapptype, 'number', -1);
-    if(row.hasOwnProperty('shadowsize'))
+    if(Object.hasOwn(row,'shadowsize'))
       appearance.shadowsize = TwoDAObject.normalizeValue(row.shadowsize, 'number', 1);
-    if(row.hasOwnProperty('bodybag'))
+    if(Object.hasOwn(row,'bodybag'))
       appearance.bodybag = TwoDAObject.normalizeValue(row.bodybag, 'number', 0);
-    if(row.hasOwnProperty('lowgore'))
+    if(Object.hasOwn(row,'lowgore'))
       appearance.lowgore = TwoDAObject.normalizeValue(row.lowgore, 'boolean', false);
-    if(row.hasOwnProperty('preciseuse'))
+    if(Object.hasOwn(row,'preciseuse'))
       appearance.preciseuse = TwoDAObject.normalizeValue(row.preciseuse, 'boolean', false);
-    if(row.hasOwnProperty('hitcheck'))
+    if(Object.hasOwn(row,'hitcheck'))
       appearance.hitcheck = TwoDAObject.normalizeValue(row.hitcheck, 'boolean', false);
-    if(row.hasOwnProperty('canseeheight'))
+    if(Object.hasOwn(row,'canseeheight'))
       appearance.canseeheight = TwoDAObject.normalizeValue(row.canseeheight, 'number', 1.5);
-    if(row.hasOwnProperty('hostile'))
+    if(Object.hasOwn(row,'hostile'))
       appearance.hostile = TwoDAObject.normalizeValue(row.hostile, 'boolean', false);
-    if(row.hasOwnProperty('nocull'))
+    if(Object.hasOwn(row,'nocull'))
       appearance.nocull = TwoDAObject.normalizeValue(row.nocull, 'boolean', false);
-    if(row.hasOwnProperty('ignorestatichitcheck'))
+    if(Object.hasOwn(row,'ignorestatichitcheck'))
       appearance.ignorestatichitcheck = TwoDAObject.normalizeValue(row.ignorestatichitcheck, 'boolean', false);
-    if(row.hasOwnProperty('usesearch'))
+    if(Object.hasOwn(row,'usesearch'))
       appearance.usesearch = TwoDAObject.normalizeValue(row.usesearch, 'boolean', false);
     
     return appearance;

@@ -1,26 +1,26 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { Endians } from "../enums/resource/Endians";
-import { ResourceLoader } from "../loaders";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { NWScriptInstance } from "./NWScriptInstance";
-import { NWScriptInstruction } from "./NWScriptInstruction";
-import { NWScriptStack } from "./NWScriptStack";
-import { NWScriptControlFlowGraph } from "./decompiler/NWScriptControlFlowGraph";
-import { NWScriptDecompiler } from "./decompiler/NWScriptDecompiler";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { Endians } from "@/enums/resource/Endians";
 
 import {
   OP_CPDOWNSP, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_EQUAL, OP_NEQUAL, OP_MOVSP, OP_JMP, OP_JSR, OP_JZ, OP_RETN, 
   OP_DESTRUCT, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP, OP_STORE_STATE, OP_T
-} from './NWScriptOPCodes';
+} from '@/nwscript/NWScriptOPCodes';
 
-import { IPCMessageType } from "../enums/server/ipc/IPCMessageType";
-import { GameState } from "../GameState";
-import { GameEngineType } from "../enums/engine/GameEngineType";
-import { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
-import { NWScriptDefK2 } from "./NWScriptDefK2";
-import { NWScriptDefK1 } from "./NWScriptDefK1";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { GameState } from "@/GameState";
+import { INWScriptDefAction } from "@/interface/nwscript/INWScriptDefAction";
+import { ResourceLoader } from "@/loaders";
+import { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import { NWScriptDecompiler } from "@/nwscript/decompiler/NWScriptDecompiler";
+import { NWScriptDefK2 } from "@/nwscript/NWScriptDefK2";
+import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { NWScriptStack } from "@/nwscript/NWScriptStack";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * NWScript class.
@@ -185,7 +185,7 @@ export class NWScript {
     let lastInstruction: NWScriptInstruction = null;
     while ( reader.position < this.progSize ){
       lastInstruction = this.parseIntruction(reader, lastInstruction, instrIdx++);
-    };
+    }
     
     reader.position = 0;
     reader = null;
@@ -387,7 +387,7 @@ export class NWScript {
    */
   disposeInstance( instance: NWScriptInstance ){
     if(instance instanceof NWScriptInstance){
-      let idx = this.instances.indexOf(instance);
+      const idx = this.instances.indexOf(instance);
       if(idx >= 0){
         this.instances.splice(idx, 1);
         instance.dispose();
@@ -401,7 +401,7 @@ export class NWScript {
   disposeInstances(){
     let i = this.instances.length;
     while(i--){
-      let instance = this.instances.splice(i, 1)[0];
+      const instance = this.instances.splice(i, 1)[0];
       if(instance instanceof NWScriptInstance){
         instance.dispose();
       }

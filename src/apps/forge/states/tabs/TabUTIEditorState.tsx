@@ -1,12 +1,13 @@
 import React from "react";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTIEditor } from "../../components/tabs/tab-uti-editor/TabUTIEditor";
-import { UI3DRenderer } from "../../UI3DRenderer";
 import * as THREE from "three";
-import { ForgeItem } from "../../module-editor/ForgeItem";
+
+import { TabUTIEditor } from "@/apps/forge/components/tabs/tab-uti-editor/TabUTIEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 
 export interface ItemPropertyEntry {
   chanceAppear: number;
@@ -21,7 +22,7 @@ export interface ItemPropertyEntry {
 export class TabUTIEditorState extends TabState {
   tabName: string = `UTI`;
   item: ForgeItem = new ForgeItem();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.item.blueprint;
   }
@@ -35,6 +36,14 @@ export class TabUTIEditorState extends TabState {
   }
 
   ui3DRenderer: UI3DRenderer;
+
+  private bindItemEvents(item: ForgeItem) {
+    item.addEventListener('onPropertyChange', (property: string, newValue: any, oldValue: any) => {
+      if(property === 'baseItem' || property === 'modelVariation'){
+        this.processEventListener('onModelChange', [this]);
+      }
+    });
+  }
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -51,12 +60,17 @@ export class TabUTIEditorState extends TabState {
         }
       }
     ];
-    
-    this.item.addEventListener('onPropertyChange', (property: string, newValue: any, oldValue: any) => {
-      if(property === 'baseItem' || property === 'modelVariation'){
-        this.processEventListener('onModelChange', [this]);
-      }
-    });
+
+    this.bindItemEvents(this.item);
+  }
+
+  async importFromBuffer(buffer: Uint8Array): Promise<void> {
+    this.item = new ForgeItem(buffer);
+    this.item.setContext(this.ui3DRenderer);
+    this.bindItemEvents(this.item);
+    await this.item.load();
+    this.ui3DRenderer.attachObject(this.item.container, false);
+    this.processEventListener('onEditorFileChange', [this]);
   }
 
   public openFile(file?: EditorFile){
@@ -64,15 +78,16 @@ export class TabUTIEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
+
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-  
+
         file.readFile().then( async (response) => {
           this.item = new ForgeItem(response.buffer);
           this.item.setContext(this.ui3DRenderer);
+          this.bindItemEvents(this.item);
           await this.item.load();
           this.ui3DRenderer.attachObject(this.item.container, false);
           this.processEventListener('onEditorFileLoad', [this]);
@@ -131,7 +146,7 @@ export class TabUTIEditorState extends TabState {
     super.hide();
     this.ui3DRenderer.enabled = false;
   }
-  
+
   updateFile(){
     this.item.exportToBlueprint();
   }

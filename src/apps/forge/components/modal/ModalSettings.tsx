@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "react-bootstrap";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { ModalSettingsState } from "../../states/modal/ModalSettingsState";
-import { ForgeFileSystem } from "../../ForgeFileSystem";
-import * as KotOR from "../../KotOR";
-import "./ModalSettings.scss";
 
-declare const dialog: any;
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import * as KotOR from '@/apps/forge/KotOR';
+import { ModalSettingsState } from "@/apps/forge/states/modal/ModalSettingsState";
 
-export const ModalSettings = (props: BaseModalProps) => {
+import "@/apps/forge/components/modal/ModalSettings.scss";
+
+export const ModalSettings: React.FC<BaseModalProps> = (props) => {
   const modal = props.modal as ModalSettingsState;
   const [show, setShow] = useState(modal.visible);
   const [activeTab, setActiveTab] = useState(modal.activeTab);
@@ -44,7 +43,7 @@ export const ModalSettings = (props: BaseModalProps) => {
 
   const browseKotorPath = async () => {
     if(KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON){
-      const result = await dialog.locateDirectoryDialog();
+      const result = await window.dialog.locateDirectoryDialog();
       if(result){
         modal.updateSetting('kotorPath', result);
       }
@@ -53,7 +52,7 @@ export const ModalSettings = (props: BaseModalProps) => {
 
   const browseKotor2Path = async () => {
     if(KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON){
-      const result = await dialog.locateDirectoryDialog();
+      const result = await window.dialog.locateDirectoryDialog();
       if(result){
         modal.updateSetting('kotor2Path', result);
       }

@@ -1,15 +1,16 @@
-import React from "react";
-import { EditorFile, EditorFileEventListenerTypes } from "../../EditorFile";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import type { EditorTabManager } from "../../managers/EditorTabManager";
-import { GetNewTabID } from "../../managers/TabIdGenerator";
 import * as fs from "fs";
-import { EventListenerModel } from "../../EventListenerModel";
-import { supportedFileDialogTypes, supportedFilePickerTypes } from "../../ForgeFileSystem";
 
-import * as KotOR from "../../KotOR";
-import { TabStoreState } from "../../interfaces/TabStoreState";
-import { pathParse } from "../../helpers/PathParse";
+import React from "react";
+
+import { EditorFile, EditorFileEventListenerTypes } from "@/apps/forge/EditorFile";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { supportedFileDialogTypes, supportedFilePickerTypes } from "@/apps/forge/ForgeFileSystem";
+import { pathParse } from "@/apps/forge/helpers/PathParse";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
+import * as KotOR from "@/apps/forge/KotOR";
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -43,8 +44,8 @@ export class TabState extends EventListenerModel {
 
   file: EditorFile;
   saveTypes: FilePickerAcceptType[] = [];
-
-  #tabContentView: React.ReactElement = (<></>);
+  
+  #tabContentView: JSX.Element = (<></>);
 
   #_onSaveStateChanged: (file: EditorFile) => void;
   #_onNameChanged: (file: EditorFile) => void;
@@ -62,7 +63,7 @@ export class TabState extends EventListenerModel {
       singleInstance: false,
     }, options);
 
-    this.id = GetNewTabID();
+    this.id = EditorTabManager.GetNewTabID();
 
     if(options.singleInstance){
       this.singleInstance = true;
@@ -73,7 +74,7 @@ export class TabState extends EventListenerModel {
     }
 
     this.visible = false;
-
+    
     if(options.closeable){
       this.isClosable = options.closeable;
     }
@@ -90,15 +91,15 @@ export class TabState extends EventListenerModel {
       this.file.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
       this.file.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
     }
-
+    
     this.#_onKeyDown = (e: KeyboardEvent) => {
       this.processEventListener('onKeyDown', [e, this]);
     };
-
+    
     this.#_onKeyUp = (e: KeyboardEvent) => {
       this.processEventListener('onKeyUp', [e, this]);
     };
-
+    
     this.editorFileUpdated();
   }
 
@@ -137,7 +138,7 @@ export class TabState extends EventListenerModel {
     return this.#tabContentView;
   }
 
-  setContentView(tabContentView: React.ReactElement){
+  setContentView(tabContentView: JSX.Element){
     this.#tabContentView = tabContentView;
   }
 
@@ -165,7 +166,7 @@ export class TabState extends EventListenerModel {
     this.#tabManager.currentTab = this;
     this.#tabManager.triggerEventListener('onTabShow', [this]);
     this.processEventListener('onTabShow', [this]);
-
+    
     // Attach keyboard event listeners
     window.addEventListener('keydown', this.#_onKeyDown);
     window.addEventListener('keyup', this.#_onKeyUp);
@@ -175,7 +176,7 @@ export class TabState extends EventListenerModel {
     this.visible = false;
     this.#tabManager.triggerEventListener('onTabHide', [this]);
     this.processEventListener('onTabHide', [this]);
-
+    
     // Remove keyboard event listeners
     window.removeEventListener('keydown', this.#_onKeyDown);
     window.removeEventListener('keyup', this.#_onKeyUp);
@@ -198,13 +199,13 @@ export class TabState extends EventListenerModel {
 
   destroy() {
     this.isDestroyed = true;
-
+    
     // Remove keyboard event listeners if tab is still visible
     if(this.visible){
       window.removeEventListener('keydown', this.#_onKeyDown);
       window.removeEventListener('keyup', this.#_onKeyUp);
     }
-
+    
     this.processEventListener('onTabDestroyed', [this]);
   }
 
@@ -217,12 +218,12 @@ export class TabState extends EventListenerModel {
   }
 
 
-  /** Sync tab state to file buffer. Override in subclasses (e.g. GFF editors). */
   updateFile(){
+    //stub method to be overridden by subclasses
   }
 
   async save() {
-    let currentFile = this.getFile();
+    const currentFile = this.getFile();
     if(currentFile.archive_path || currentFile.archive_path2){
       return this.saveAs();
     }
@@ -234,7 +235,7 @@ export class TabState extends EventListenerModel {
             //trigger a Save
             try{
               const pathInfo = pathParse(currentFile.path);
-              let saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+              const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
               fs.writeFile(currentFile.path, saveBuffer, () => {
                 currentFile.buffer = saveBuffer;
                 currentFile.unsaved_changes = false;
@@ -259,8 +260,8 @@ export class TabState extends EventListenerModel {
               if(granted){
                 try{
                   const pathInfo = pathParse(currentFile.handle.name);
-                  let saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-                  let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
+                  const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+                  const ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
                   await ws.write(saveBuffer as any);
                   currentFile.buffer = saveBuffer;
                   currentFile.unsaved_changes = false;
@@ -275,14 +276,14 @@ export class TabState extends EventListenerModel {
                 resolve(false);
               }
             }else{
-              let newHandle = await window.showSaveFilePicker({
+              const newHandle = await window.showSaveFilePicker({
                 suggestedName: currentFile.getFilename(),
                 types: this.saveTypes.length ? this.saveTypes : undefined
               });
               if(newHandle){
                 currentFile.handle = newHandle;
                 try{
-                  let ws: FileSystemWritableFileStream = await newHandle.createWritable();
+                  const ws: FileSystemWritableFileStream = await newHandle.createWritable();
                   const pathInfo = pathParse(newHandle.name);
                   const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
                   await ws.write(saveBuffer as any || new Uint8Array(0) as any);
@@ -314,12 +315,10 @@ export class TabState extends EventListenerModel {
   getSaveTypes(): any {
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
       return this.saveTypes.length ? Object.values(this.saveTypes.map( (type) => {
-        const accept = type.accept as Record<string, string | string[]>;
         return {
           name: type.description,
-          extensions: Object.keys(accept).map( (node) => {
-            const accepted = accept[node];
-            return typeof accepted === 'string' ? accepted.replace('.', '') : accepted.map( (entry) => entry.replace('.', ''));
+          extensions: Object.keys(type.accept).map( (node) => {
+            return typeof type.accept[node] === 'string' ? type.accept[node].replace('.', '') : type.accept[node].map( (type) => type.replace('.', ''));
           }).flat()
         }
       })) : [
@@ -397,16 +396,15 @@ export class TabState extends EventListenerModel {
             resolve(false);
           }
         }
-      }catch(e: unknown){
+      }catch(e: any){
         console.error(e);
         resolve(false);
       }
     });
   }
 
-  /** Compile (e.g. NSS to NCS). Override in TabTextEditorState; base returns false. */
-  async compile(): Promise<boolean> {
-    return false;
+  async compile() {
+    throw new Error("Method not implemented.");
   }
 
   storeState(): TabStoreState {

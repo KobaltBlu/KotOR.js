@@ -1,37 +1,36 @@
-import type { ModuleCreature, ModuleItem, ModuleObject } from "../module";
-import { GFFStruct } from "../resource/GFFStruct";
-import { Dice } from "../utility/Dice";
-import { OdysseyModelAnimation } from "../odyssey";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { CombatFeatType } from "../enums/combat/CombatFeatType";
-import { AttackResult } from "../enums/combat/AttackResult";
-import { WeaponWield } from "../enums/combat/WeaponWield";
-import { ActionType } from "../enums/actions/ActionType";
-import { WeaponSize } from "../enums/combat/WeaponSize";
-import { DamageType } from "../enums/combat/DamageType";
-import { DiceType } from "../enums/combat/DiceType";
-import { TextSprite3D } from "../engine/TextSprite3D";
-import { BitWise } from "../utility/BitWise";
-import { CombatAttackData } from "./CombatAttackData";
-import type { CombatRoundAction } from "./CombatRoundAction";
-import { GameState } from "../GameState";
-import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
-import { FeebackMessageColor } from "../enums/engine/FeedbackMessageColor";
+﻿import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { Dice } from "@/utility/Dice";
+import { OdysseyModelAnimation } from "@/odyssey";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { TextSprite3DType } from "@/enums/engine/TextSprite3DType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { ActionType } from "@/enums/actions/ActionType";
+import { WeaponSize } from "@/enums/combat/WeaponSize";
+import { DamageType } from "@/enums/combat/DamageType";
+import { DiceType } from "@/enums/combat/DiceType";
+import { TextSprite3D } from "@/engine/TextSprite3D";
+import { BitWise } from "@/utility/BitWise";
+import { GameState } from "@/GameState";
+import { CombatAttackData } from "@/combat/CombatAttackData";
+import type { CombatRoundAction } from "@/combat/CombatRoundAction";
+import { getCombatMessageText, COMBAT_MESSAGE_DURATION_MS } from "@/combat/CombatMessageTLK";
 
 /**
  * CombatRound class.
- *
+ * 
  * The CombatRound class manages a single combat round for a ModuleObject (typically a ModuleCreature)
  * It handles the timing and execution of combat actions, including attack rolls, damage calculations, and animations.
  * It also manages the dueling/engagement state between creatures, as well as the pause/resume mechanics.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file CombatRound.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -206,7 +205,7 @@ export class CombatRound {
 
     if(this.action){
       if(
-        this.action.actionType == CombatActionType.ATTACK ||
+        this.action.actionType == CombatActionType.ATTACK || 
         this.action.actionType == CombatActionType.ATTACK_USE_FEAT
       ){
         combatData.lastAttackAction = ActionType.ActionPhysicalAttacks;
@@ -398,7 +397,7 @@ export class CombatRound {
         if(creature.equipment.LEFTHAND){
           this.calculateWeaponAttack(creature, creature.equipment.LEFTHAND, ModuleCreatureArmorSlot.LEFTHAND, combatAction);
         }
-
+        
         /**
          * Additional Attacks
          */
@@ -437,9 +436,9 @@ export class CombatRound {
       if(attack){
         attack.attackResult = combatAction.attackResult;
         if(
-          attack.attackResult == AttackResult.HIT_SUCCESSFUL ||
-          attack.attackResult == AttackResult.CRITICAL_HIT ||
-          attack.attackResult == AttackResult.AUTOMATIC_HIT
+          attack.attackResult == AttackResult.HIT_SUCCESSFUL || 
+          attack.attackResult == AttackResult.CRITICAL_HIT || 
+          attack.attackResult == AttackResult.AUTOMATIC_HIT 
         ){
           attack.attackWeapon = creature.equipment.RIGHTHAND;
           attack.attackResult = combatAction.attackResult
@@ -451,13 +450,13 @@ export class CombatRound {
       //process attack results
       for(let i = 0; i < this.currentAttack; i++){
         const attack = this.attackList[i];
-        if(!attack)
+        if(!attack) 
           continue;
 
         if(
-          attack.attackResult == AttackResult.HIT_SUCCESSFUL ||
-          attack.attackResult == AttackResult.CRITICAL_HIT ||
-          attack.attackResult == AttackResult.AUTOMATIC_HIT
+          attack.attackResult == AttackResult.HIT_SUCCESSFUL || 
+          attack.attackResult == AttackResult.CRITICAL_HIT || 
+          attack.attackResult == AttackResult.AUTOMATIC_HIT 
         ){
           attack.applyDamageEffectToCreature(creature, this.action.target as ModuleCreature);
           TextSprite3D.CreateOnObject(this.action.target, attack.getTotalDamage().toString(), TextSprite3DType.HOSTILE, 1500);
@@ -499,7 +498,7 @@ export class CombatRound {
     const rightHand = creature.equipment.RIGHTHAND;
     const leftHand = creature.equipment.LEFTHAND;
     return (
-      rightHand && ( rightHand.getBaseItem().weaponWield != WeaponWield.STUN_BATON ) &&
+      rightHand && ( rightHand.getBaseItem().weaponWield != WeaponWield.STUN_BATON ) && 
       leftHand && ( leftHand.getBaseItem().weaponWield != WeaponWield.STUN_BATON )
     );
   }
@@ -528,14 +527,14 @@ export class CombatRound {
         penalty = 4;
       }
       if(
-        rightHand.getBaseItem().weaponWield == WeaponWield.TWO_HANDED_SWORD ||
+        rightHand.getBaseItem().weaponWield == WeaponWield.TWO_HANDED_SWORD || 
         rightHand.getBaseItem().weaponWield == WeaponWield.BLASTER_PISTOL
       ){
         penalty -= 2;
       }
       return Math.max(penalty, 0);
     }
-
+    
     /**
      * Off Hand Penalty
      */
@@ -555,6 +554,23 @@ export class CombatRound {
     }
 
     return 0;
+  }
+
+  /**
+   * Log attack result to the in-game combat message label.
+   * Reva: CSWPartyMemberData::SetCombatMessage only updates GUI when creature is player (GetPlayerCreatureId).
+   * So we only log for the party leader's attacks.
+   */
+  private logAttackToCombatMenu(creature: ModuleCreature, combatAction: CombatRoundAction) {
+    const party = GameState.PartyManager?.party;
+    if (!party?.length || creature !== party[0]) return;
+    const overlay = GameState.MenuManager?.InGameOverlay;
+    if (!overlay?.setCombatMessage) return;
+    const text = getCombatMessageText(
+      combatAction.attackResult,
+      (id: number) => GameState.TLKManager?.GetStringById?.(id) ?? { Value: "" }
+    );
+    if (text) overlay.setCombatMessage(text, COMBAT_MESSAGE_DURATION_MS);
   }
 
   /**
@@ -590,8 +606,7 @@ export class CombatRound {
       attack.attackResult = combatAction.attackResult;
     }
 
-    // Log to combat menu - create feedback message for the attack result
-    this.logAttackResult(creature, weapon, combatAction, isCritical, hasAssuredHit);
+    this.logAttackToCombatMenu(creature, combatAction);
 
     this.currentAttack++;
   }
@@ -620,7 +635,7 @@ export class CombatRound {
     this.action.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(this.action.animationName);
 
     if(combatAction.isCutsceneAttack){
-
+      
       if(creature){
         creature.playTwoDAAnimation(combatAction.twoDAAnimation);
         creature.animationState.index = ModuleCreatureAnimState.ATTACK;
@@ -647,9 +662,9 @@ export class CombatRound {
       }
 
     }else{
-
+      
       if(
-        combatAction.attackResult == AttackResult.HIT_SUCCESSFUL ||
+        combatAction.attackResult == AttackResult.HIT_SUCCESSFUL || 
         combatAction.attackResult == AttackResult.CRITICAL_HIT
       ){
 
@@ -661,7 +676,7 @@ export class CombatRound {
         if(combatAction.target && BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)){
           const target: ModuleCreature = combatAction.target as any;
           if(
-            target.animationState.index == ModuleCreatureAnimState.IDLE ||
+            target.animationState.index == ModuleCreatureAnimState.IDLE || 
             target.animationState.index == ModuleCreatureAnimState.READY
           ){
             if(target.combatData.lastAttackTarget == creature){
@@ -672,9 +687,9 @@ export class CombatRound {
             }
           }
         }
-
+        
       }else{
-
+        
         if(creature){
           creature.playTwoDAAnimation( combatAction.twoDAAnimation );
           creature.animationState.index = ModuleCreatureAnimState.ATTACK;
@@ -683,7 +698,7 @@ export class CombatRound {
         if(combatAction.target && BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)){
           const target: ModuleCreature = combatAction.target as any;
           if(
-            target.animationState.index == ModuleCreatureAnimState.IDLE ||
+            target.animationState.index == ModuleCreatureAnimState.IDLE || 
             target.animationState.index == ModuleCreatureAnimState.READY
           ){
             if(combatAction.target.combatData.lastAttackTarget == creature){
@@ -719,88 +734,6 @@ export class CombatRound {
     const struct = new GFFStruct(structIdx);
 
     return struct;
-  }
-
-  /**
-   * Log the attack result to the combat feedback system
-   * @param creature - The creature performing the attack
-   * @param weapon - The weapon used in the attack
-   * @param combatAction - The combat action containing the result
-   * @param isCritical - Whether the attack was a critical hit
-   * @param hasAssuredHit - Whether the attack had assured hit effect
-   */
-  logAttackResult(creature: ModuleCreature, weapon: ModuleItem | undefined, combatAction: CombatRoundAction, isCritical: boolean, hasAssuredHit: boolean) {
-    const { FeedbackMessageManager } = GameState;
-
-    let message = '';
-    let color = FeebackMessageColor.ATTACK;
-
-    // Get weapon name for display
-    const weaponName = weapon ? weapon.getName() : 'Unarmed';
-
-    // Format message based on attack result
-    switch (combatAction.attackResult) {
-      case AttackResult.CRITICAL_HIT:
-        if (hasAssuredHit) {
-          message = `${creature.getName()}: *Assured Hit* Critical Hit with ${weaponName}!`;
-        } else {
-          message = `${creature.getName()}: Critical Hit with ${weaponName}!`;
-        }
-        break;
-
-      case AttackResult.HIT_SUCCESSFUL:
-        if (hasAssuredHit) {
-          message = `${creature.getName()}: *Assured Hit* Hit with ${weaponName}!`;
-        } else {
-          message = `${creature.getName()}: Hit with ${weaponName}!`;
-        }
-        break;
-
-      case AttackResult.AUTOMATIC_HIT:
-        message = `${creature.getName()}: Automatic Hit with ${weaponName}!`;
-        break;
-
-      case AttackResult.MISS:
-        message = `${creature.getName()}: Miss with ${weaponName}!`;
-        color = FeebackMessageColor.INFO; // Use info color for misses
-        break;
-
-      case AttackResult.ATTACK_RESISTED:
-        message = `${creature.getName()}: Attack Resisted with ${weaponName}!`;
-        color = FeebackMessageColor.INFO;
-        break;
-
-      case AttackResult.ATTACK_FAILED:
-        message = `${creature.getName()}: Attack Failed with ${weaponName}!`;
-        color = FeebackMessageColor.INFO;
-        break;
-
-      case AttackResult.PARRIED:
-        message = `${creature.getName()}: Attack Parried with ${weaponName}!`;
-        color = FeebackMessageColor.INFO;
-        break;
-
-      case AttackResult.DEFLECTED:
-        message = `${creature.getName()}: Attack Deflected with ${weaponName}!`;
-        color = FeebackMessageColor.INFO;
-        break;
-
-      default:
-        message = `${creature.getName()}: Unknown attack result with ${weaponName}!`;
-        color = FeebackMessageColor.INFO;
-        break;
-    }
-
-    // Create and add the feedback message entry
-    const entry = new FeedbackMessageEntry();
-    entry.message = message;
-    entry.color = color;
-    entry.type = 0; // Standard combat feedback type
-
-    FeedbackMessageManager.AddEntry(entry);
-
-    // Also log to console for debugging
-    console.log(`Combat Log: ${message}`);
   }
 
   /**

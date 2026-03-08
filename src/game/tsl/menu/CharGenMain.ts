@@ -1,5 +1,6 @@
-import { LBL_3DView, type GUILabel } from "../../../gui";
-import { CharGenMain as K1_CharGenMain } from "../../kotor/KOTOR";
+﻿import * as THREE from "three";
+import { LBL_3DView, type GUILabel } from "@/gui";
+import { CharGenMain as K1_CharGenMain } from "@/game/kotor/KOTOR";
 
 /**
  * CharGenMain class.
@@ -74,3 +75,4 @@ export class CharGenMain extends K1_CharGenMain {
   }
   
 }
+

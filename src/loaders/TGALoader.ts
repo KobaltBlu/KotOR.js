@@ -1,10 +1,11 @@
 import * as path from "path";
-import { ResourceLoader } from "./ResourceLoader";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { TXI } from "../resource/TXI";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import type { TextureLoader } from "./TextureLoader";
-import { GameFileSystem } from "../utility/GameFileSystem";
+
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import type { TextureLoader } from "@/loaders/TextureLoader";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TXI } from "@/resource/TXI";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * TGALoader class.
@@ -138,7 +139,7 @@ export class TGALoader {
 	parse( buffer: Uint8Array, name: string ) {
 
 		// TGA Constants
-		let TGA_TYPE_NO_DATA = 0,
+		const TGA_TYPE_NO_DATA = 0,
 		TGA_TYPE_INDEXED = 1,
 		TGA_TYPE_RGB = 2,
 		TGA_TYPE_GREY = 3,
@@ -305,7 +306,7 @@ export class TGALoader {
 
 				let c, count, i;
 				let shift = 0;
-				let pixels = new Uint8Array( pixel_size );
+				const pixels = new Uint8Array( pixel_size );
 
 				while ( shift < pixel_total ) {
 
@@ -364,9 +365,9 @@ export class TGALoader {
 
 		function tgaGetImageData8bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any, palettes: any ) {
 
-			let colormap = palettes;
+			const colormap = palettes;
 			let color, i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -389,7 +390,7 @@ export class TGALoader {
 		function tgaGetImageData16bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any ) {
 
 			let color, i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -412,7 +413,7 @@ export class TGALoader {
 		function tgaGetImageData24bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any ) {
 
 			let i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -434,7 +435,7 @@ export class TGALoader {
 		function tgaGetImageData32bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any ) {
 
 			let i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -456,7 +457,7 @@ export class TGALoader {
 		function tgaGetImageDataGrey8bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any ) {
 
 			let color, i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -479,7 +480,7 @@ export class TGALoader {
 		function tgaGetImageDataGrey16bits( imageData: any, y_start: any, y_step: any, y_end: any, x_start: any, x_step: any, x_end: any, image: any ) {
 
 			let i = 0, x, y;
-			let width = header.width;
+			const width = header.width;
 
 			for ( y = y_start; y !== y_end; y += y_step ) {
 
@@ -595,34 +596,34 @@ export class TGALoader {
 		}
 
 		let canvas: HTMLCanvasElement;
-		let faces = (header.height / header.width) == 6 ? 6 : 1;
+		const faces = (header.height / header.width) == 6 ? 6 : 1;
 
 		if(faces == 1){
 			canvas = document.createElement( 'canvas' );
 			canvas.width = header.width;
 			canvas.height = header.height;
 
-			let context = canvas.getContext( '2d' );
-			let imageData = context.createImageData( header.width, header.height );
+			const context = canvas.getContext( '2d' );
+			const imageData = context.createImageData( header.width, header.height );
 
-			let result = tgaParse( use_rle, use_pal, header, offset, content, 0 );
-			let rgbaData = getTgaRGBA( imageData.data, header.width, header.height, result.pixel_data, result.palettes );
+			const result = tgaParse( use_rle, use_pal, header, offset, content, 0 );
+			const rgbaData = getTgaRGBA( imageData.data, header.width, header.height, result.pixel_data, result.palettes );
 
 			context.putImageData( imageData, 0, 0 );
 			return canvas;
 		}
 
-		let canvases = [];
+		const canvases = [];
 		for(let i = 0; i < faces; i++){
 			canvas = document.createElement( 'canvas' );
 			canvas.width = header.width;
 			canvas.height = header.width;
 			header.height = header.width;
 
-			let context = canvas.getContext( '2d' );
-			let imageData = context.createImageData( header.width, header.width );
-			let result = tgaParse( use_rle, use_pal, header, offset, content, i );
-			let rgbaData = getTgaRGBA( imageData.data, header.width, header.width, result.pixel_data, result.palettes );
+			const context = canvas.getContext( '2d' );
+			const imageData = context.createImageData( header.width, header.width );
+			const result = tgaParse( use_rle, use_pal, header, offset, content, i );
+			const rgbaData = getTgaRGBA( imageData.data, header.width, header.width, result.pixel_data, result.palettes );
 
 			context.putImageData( imageData, 0, 0 );
 

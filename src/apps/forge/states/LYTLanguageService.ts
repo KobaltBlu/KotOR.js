@@ -1,5 +1,6 @@
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import { LYTObject } from "../../../resource/LYTObject";
+
+import { LYTObject } from "@/resource/LYTObject";
 
 /**
  * LYTLanguageService class.
@@ -193,9 +194,9 @@ export class LYTLanguageService {
         }
       }
       
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Parse error occurred
-      const message = (error instanceof Error ? error.message : 'Parse error');
+      const message = error?.message || 'Parse error';
       
       // Try to extract line number from error message
       const lineMatch = message.match(/line (\d+)/i);

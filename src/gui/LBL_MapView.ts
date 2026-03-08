@@ -1,13 +1,16 @@
-import { GameState } from "../GameState";
-import { AreaMap, ModuleWaypoint } from "../module";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import type { GUIControl, GUILabel } from ".";
-import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
-import { MapMode } from "../enums/engine/MapMode";
 import * as THREE from "three";
-import { GameEngineType } from "../enums/engine";
-import { TextureLoader } from "../loaders";
-// import { ShaderManager, MenuManager, PartyManager } from "../managers";
+
+import { GameEngineType } from "@/enums/engine";
+import { MapMode } from "@/enums/engine/MapMode";
+import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
+import { GameState } from "@/GameState";
+import type { GUIControl, GUILabel } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { AreaMap, ModuleWaypoint } from "@/module";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+
+
+// import { ShaderManager, MenuManager, PartyManager } from "@/managers";
 
 const FOG_SIZE = 64;
 const FOG_SIZE_HALF = FOG_SIZE/2;
@@ -116,12 +119,13 @@ export class LBL_MapView {
     this.mapGroup.add(this.mapPlane);
 
     //FOG
+    const odysseyFowShader = GameState.ShaderManager.Shaders.get('odyssey-fow')!;
+    // @ts-expect-error - merge return type inference fails with getUniforms()
+    const odysseyFowUniforms: Record<string, THREE.IUniform> = THREE.UniformsUtils.merge([odysseyFowShader.getUniforms()]);
     const fogPlaneMaterial = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-fow').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-fow').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-fow').getFragment(),
+      uniforms: odysseyFowUniforms,
+      vertexShader: odysseyFowShader.getVertex(),
+      fragmentShader: odysseyFowShader.getFragment(),
     });
     fogPlaneMaterial.defines.USE_MAP = '';
     fogPlaneMaterial.defines.USE_UV = '';
@@ -406,7 +410,7 @@ export class LBL_MapView {
       }
     }
 
-    let oldClearColor = new THREE.Color();
+    const oldClearColor = new THREE.Color();
     GameState.renderer.getClearColor(oldClearColor);
     GameState.renderer.setClearColor(this.clearColor, 1);
     GameState.renderer.setRenderTarget(this.texture);
@@ -417,7 +421,7 @@ export class LBL_MapView {
     GameState.renderer.setClearColor(oldClearColor, 1);
 
     if(this.control){
-      let material = this.control.getFill().material;
+      const material = this.control.getFill().material;
       if(material instanceof THREE.Material){
         if(material instanceof THREE.ShaderMaterial){
           material.uniforms.map.value = this.texture.texture;
@@ -451,8 +455,9 @@ export class LBL_MapView {
       texWidth = this.mapTexture.mipmaps[0].width;
       texHeight = this.mapTexture.mipmaps[0].height;
     }else if(this.mapTexture.source.data){
-      texWidth = this.mapTexture.source.data.width;
-      texHeight = this.mapTexture.source.data.height;
+      const data = this.mapTexture.source.data as { width: number; height: number };
+      texWidth = data.width;
+      texHeight = data.height;
     }
 
     return { width: texWidth, height: texHeight };

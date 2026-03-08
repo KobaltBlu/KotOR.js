@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "react-bootstrap";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { ModalUpdateCheckState } from "../../states/modal/ModalUpdateCheckState";
-import { getRemoteToolsetUpdateInfo, isRemoteVersionNewer } from "../../config/ConfigUpdate";
-import { CURRENT_VERSION } from "../../config";
-import "./ModalUpdateCheck.scss";
+
+import { CURRENT_VERSION } from "@/apps/forge/config";
+import { getRemoteToolsetUpdateInfo, isRemoteVersionNewer } from "@/apps/forge/config/ConfigUpdate";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { ModalUpdateCheckState } from "@/apps/forge/states/modal/ModalUpdateCheckState";
+
+import "@/apps/forge/components/modal/ModalUpdateCheck.scss";
 
 export const ModalUpdateCheck = (props: BaseModalProps) => {
   const modal = props.modal as ModalUpdateCheckState;

@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Button, Form, FormControl } from "react-bootstrap";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { ModalHelpBrowserState } from "../../states/modal/ModalHelpBrowserState";
-import { type HelpDocument } from "../../data";
+
+import { type HelpDocument } from "@/apps/forge/data";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { ModalHelpBrowserState } from "@/apps/forge/states/modal/ModalHelpBrowserState";
+
 
 interface FilteredFolder {
   name: string;

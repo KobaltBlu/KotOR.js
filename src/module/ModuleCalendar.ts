@@ -22,7 +22,7 @@ export class ModuleCalendar {
   pauseTime = 0;
 
   clone(){
-    let calendar = new ModuleCalendar();
+    const calendar = new ModuleCalendar();
     calendar.year = this.year;
     calendar.month = this.month;
     calendar.day = this.day;

@@ -1,7 +1,7 @@
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import type { ModuleObject } from "../module";
-import type { Action } from "./Action";
+import type { Action } from "@/actions/Action";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import type { ModuleObject } from "@/module";
 
 /**
  * ActionQueue class.
@@ -144,10 +144,10 @@ export class ActionQueue extends Array {
    *
    */
   process( delta: number = 0 ){
-    let action = this[0];
+    const action = this[0];
     if(!action){ return; }
     action.owner = this.owner;
-    let status = action.update( delta );
+    const status = action.update( delta );
     if(status != ActionStatus.IN_PROGRESS){
       this.shift();
     }

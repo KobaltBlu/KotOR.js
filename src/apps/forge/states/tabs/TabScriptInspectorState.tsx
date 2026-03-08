@@ -1,7 +1,8 @@
 import React from "react";
-import { TabState } from ".";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabScriptInspector } from "../../components/tabs/tab-script-inspector/TabScriptInspector";
+
+import { TabScriptInspector } from "@/apps/forge/components/tabs/tab-script-inspector/TabScriptInspector";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@/apps/forge/states/tabs";
 
 export class TabScriptInspectorState extends TabState {
 

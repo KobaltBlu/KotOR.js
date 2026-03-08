@@ -1,18 +1,18 @@
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { Action } from "./Action";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ModuleObjectConstant, ModuleObjectType } from "../enums";
-import { BitWise } from "../utility/BitWise";
-import { GameState } from "../GameState";
-import { ActionQueue } from "./ActionQueue";
+import { Action } from "@/actions/Action";
+import { ActionQueue } from "@/actions/ActionQueue";
+import { ModuleObjectConstant, ModuleObjectType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { GameState } from "@/GameState";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionCombat class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionCombat.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -27,13 +27,13 @@ export class ActionCombat extends Action {
     // 0 - int: (?) 1 or 0
 
   }
-  
+
   /**
    * Updates the combat action state.
-   * 
+   *
    * Processes the combat round and executes scheduled combat actions like attacks and spells.
    * Adds appropriate actions to the owner's action queue based on the combat action type.
-   * 
+   *
    * @param delta - Time elapsed since last update in seconds
    * @returns ActionStatus indicating the current state of the combat action:
    *          - FAILED if owner is not a creature
@@ -120,7 +120,7 @@ export class ActionCombat extends Action {
         equipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
         equipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
         equipAction.setParameter(2, ActionParameterType.INT, combatAction.equipInstant ? 1 : 0);
-        attackAction.isUserAction = combatAction.isUserAction;
+        equipAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(equipAction);
       break;
       case CombatActionType.ITEM_UNEQUIP:
@@ -128,7 +128,7 @@ export class ActionCombat extends Action {
         unequipAction.setParameter(0, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
         unequipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
         unequipAction.setParameter(2, ActionParameterType.INT, combatAction.equipInstant ? 1 : 0);
-        attackAction.isUserAction = combatAction.isUserAction;
+        unequipAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(unequipAction);
       break;
     }

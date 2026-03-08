@@ -3,7 +3,7 @@
  * convert to RGB in fragment shader. No CPU-side pixel loop.
  */
 
-import type { YUVFrame } from "../../../../../video/binkvideo";
+import type { YUVFrame } from "@/video/binkvideo";
 
 const VERTEX_SHADER = `
   attribute vec2 a_position;

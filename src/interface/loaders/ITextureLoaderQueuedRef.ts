@@ -1,5 +1,6 @@
 import type * as THREE from "three";
-import type { TextureType } from "../../enums/loaders/TextureType";
+
+import type { TextureType } from "@/enums/loaders/TextureType";
 
 /**
  * ITextureLoaderQueuedRef interface.

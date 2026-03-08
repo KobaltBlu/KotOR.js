@@ -3,6 +3,8 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "ms-vscode.vscode-typescript-next",
-    "orta.vscode-jest"
+    "orta.vscode-jest",
+    "kotor-community.kotor-forge",
+    "wix.vscode-import-cost"
   ]
 }

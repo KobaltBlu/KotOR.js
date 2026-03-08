@@ -1,5 +1,6 @@
 import { app } from 'electron';
-import Main from "./Main";
+
+import Main from "@/electron/Main";
 
 console.log('args', process.argv, __dirname, app.getAppPath());
 

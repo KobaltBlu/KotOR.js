@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import {Shader} from "./Shader";
+
+import {Shader} from "@/shaders/Shader";
 
 /**
  * ShaderFogOfWar class.
@@ -73,7 +74,7 @@ export class ShaderFogOfWar extends Shader {
         alphaMap: { value: null },
         mapRes: { value: new THREE.Vector2(0, 0) },
       }
-    ]);
+    ]) as Record<string, THREE.IUniform>;
 
   }
 }

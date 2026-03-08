@@ -64,5 +64,13 @@ scratch/
 *.temp
 .cache/
 .history/
-extensions/
 vendor/WebKotor/
+
+# Lint output files
+eslint-creature.txt
+eslint-compact.txt
+.tmp_lint_batch.txt
+eslint-moduleobject.json
+module-creature-errors.txt
+module-creature-eslint-errors.txt
+agentdecompile_projects/

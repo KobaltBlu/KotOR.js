@@ -1,6 +1,7 @@
 import React from "react";
-import { ModalUpdateCheck } from "../../components/modal/ModalUpdateCheck";
-import { ModalState } from "./ModalState";
+
+import { ModalUpdateCheck } from "@/apps/forge/components/modal/ModalUpdateCheck";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
 
 export class ModalUpdateCheckState extends ModalState {
   title: string = "Check for Updates";

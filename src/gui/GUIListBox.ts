@@ -1,17 +1,17 @@
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import type { GFFStruct } from "../resource/GFFStruct";
+﻿import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import type { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
-import { TextureLoader } from "../loaders/TextureLoader";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GameState } from "../GameState";
-import { GameEngineType } from "../enums/engine";
-import { Mouse } from "../controls/Mouse";
-import { GUIControlType } from "../enums/gui/GUIControlType";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GUIProtoItem } from "./GUIProtoItem";
-import type { GUIScrollBar } from "./GUIScrollBar";
-import { GUIControlEvent } from "./GUIControlEvent";
+import { TextureLoader } from "@/loaders/TextureLoader";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameState } from "@/GameState";
+import { GameEngineType } from "@/enums/engine";
+import { Mouse } from "@/controls/Mouse";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GUIProtoItem } from "@/gui/GUIProtoItem";
+import type { GUIScrollBar } from "@/gui/GUIScrollBar";
+import { GUIControlEvent } from "@/gui/GUIControlEvent";
 
 interface GUIListItemCallbacks {
   onClick?: (e: GUIControlEvent, ...args: any) => void;
@@ -39,7 +39,7 @@ export class GUIListBox extends GUIControl {
   maxScroll: number;
   GUIProtoItemClass: typeof GUIProtoItem;
   onSelected: (node: any, control: GUIControl, index: number) => void;
-  onClicked: (node: any, control: GUIControl, index: number) => void;
+  onActivated?: (node: any, control: GUIControl, index: number) => void;
   hasProtoItem: boolean;
   protoItem: GUIControl;
   hasScrollBar: boolean;
@@ -66,6 +66,10 @@ export class GUIListBox extends GUIControl {
   
   static hexTextures: Map<string, OdysseyTexture>;
   static InitTextures: () => void;
+
+  private lastClickTime = 0;
+  private lastClickItem: GUIControl;
+  private doubleClickThreshold = 350;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
@@ -266,9 +270,6 @@ export class GUIListBox extends GUIControl {
           ctrl.buildText();
 
           this.itemGroup.add(widget);
-
-          ctrl.setHighlightColor(ctrl.defaultHighlightColor.r, ctrl.defaultHighlightColor.g, ctrl.defaultHighlightColor.b);
-          ctrl.setBorderColor(ctrl.defaultColor.r, ctrl.defaultColor.g, ctrl.defaultColor.b);
           
           if(typeof options.onClick === 'function'){
             ctrl.addEventListener('click', (e) => {
@@ -318,8 +319,8 @@ export class GUIListBox extends GUIControl {
             ctrl.setList( this );
             idx = this.children.push(ctrl) - 1;
 
-            ctrl.setHighlightColor(ctrl.defaultHighlightColor.r, ctrl.defaultHighlightColor.g, ctrl.defaultHighlightColor.b);
-            ctrl.setBorderColor(ctrl.defaultColor.r, ctrl.defaultColor.g, ctrl.defaultColor.b);
+            ctrl.highlight.color = new THREE.Color(0.83203125, 1, 0.83203125);
+            ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
 
             widget = ctrl.createControl();
             ctrl.setText(node.getName());
@@ -369,7 +370,7 @@ export class GUIListBox extends GUIControl {
 
     if(ctrl){
       ctrl.addEventListener('click', (e) => {
-        this.select(ctrl);
+        this.handleItemClick(ctrl);
       });
     }
 
@@ -426,15 +427,30 @@ export class GUIListBox extends GUIControl {
           control.onSelect.call(this);
           // item.processEventListener('select');
         }
-
         if(!bWasItemSelected && typeof this.onSelected === 'function')
           this.onSelected(control.node, control, this.children.indexOf(control));
       }
-        
-      if(control instanceof GUIControl && typeof this.onClicked === 'function')
-        this.onClicked(control.node, control, this.children.indexOf(control));
     }catch(e){
       console.error(e);
+    }
+  }
+
+  activateSelected(){
+    if(this.selectedItem && typeof this.onActivated === 'function'){
+      this.onActivated(this.selectedItem.node, this.selectedItem, this.children.indexOf(this.selectedItem));
+    }
+  }
+
+  private handleItemClick(control: GUIControl){
+    this.select(control);
+    const now = performance.now();
+    const isDoubleClick =
+      this.lastClickItem === control &&
+      (now - this.lastClickTime) <= this.doubleClickThreshold;
+    this.lastClickTime = now;
+    this.lastClickItem = control;
+    if(isDoubleClick && typeof this.onActivated === 'function'){
+      this.onActivated(control.node, control, this.children.indexOf(control));
     }
   }
 
@@ -808,3 +824,4 @@ GUIListBox.InitTextures = function(){
     });
   }
 }
+

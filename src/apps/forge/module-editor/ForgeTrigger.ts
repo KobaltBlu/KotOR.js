@@ -1,6 +1,7 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
 import * as THREE from "three";
+
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 const DEFAULT_OFFSET_Z = 0.01;
 const TRIGGER_MATERIAL = new THREE.MeshBasicMaterial({

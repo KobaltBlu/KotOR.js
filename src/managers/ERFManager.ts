@@ -1,6 +1,7 @@
-import { AsyncLoop } from "../utility/AsyncLoop";
 import * as path from 'path';
-import { ERFObject } from "../resource/ERFObject";
+
+import { ERFObject } from "@/resource/ERFObject";
+import { AsyncLoop } from "@/utility/AsyncLoop";
 
 /**
  * ERFManager class.
@@ -16,7 +17,7 @@ export class ERFManager {
   static ERFs: Map<string, ERFObject> = new Map();
 
   static Load( keyPaths: any[], onComplete?: Function  ){
-    let data_dir = 'modules';
+    const data_dir = 'modules';
     new AsyncLoop({
       array: keyPaths,
       onLoop: (erf_obj: any, asyncLoop: AsyncLoop) => {

@@ -1,10 +1,16 @@
-import { GameState } from "../GameState";
-import { OdysseyModel } from "../odyssey";
-import { OdysseyModel3D } from "../three/odyssey";
-import { ModuleArea } from "./ModuleArea";
-import { WeatherCondition } from "../enums/module/WeatherCondition";
 import * as THREE from "three";
-import { MDLLoader } from "../loaders";
+
+import { WeatherCondition } from "@/enums/module/WeatherCondition";
+import { GameState } from "@/GameState";
+import { ModuleArea } from "@/module/ModuleArea";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+
+const log = createScopedLogger(LogScope.Module);
+import { MDLLoader } from "@/loaders";
 
 /**
 * AreaWeather class.
@@ -90,7 +96,7 @@ export class AreaWeather {
         GameState.group.weather_effects.add(model);
       }
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
   }
 

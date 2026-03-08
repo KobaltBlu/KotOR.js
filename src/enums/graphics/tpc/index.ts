@@ -1,2 +1,2 @@
-export * from "./Encoding";
-export * from "./PixelFormat";
+export * from "@/enums/graphics/tpc/Encoding";
+export * from "@/enums/graphics/tpc/PixelFormat";

@@ -1,7 +1,10 @@
-import React from "react";
-import { TabState } from ".";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabScriptFindReferences } from "../../components/tabs/tab-script-find-references/TabScriptFindReferences";
+﻿import React from "react";
+
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+
+import { TabScriptFindReferences } from "@/apps/forge/components/tabs/tab-script-find-references/TabScriptFindReferences";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+
 
 export interface TextReferenceMatch {
   line: number;
@@ -34,3 +37,4 @@ export class TabScriptFindReferencesState extends TabState {
     this.processEventListener("onSetResults", [this.results]);
   }
 }
+

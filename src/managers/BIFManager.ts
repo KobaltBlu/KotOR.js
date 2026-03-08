@@ -1,6 +1,6 @@
-import { BIFObject } from "../resource/BIFObject";
-import { KEYObject } from "../resource/KEYObject";
-import { IBIFResource } from "../interface/resource/IBIFResource";
+import { IBIFResource } from "@/interface/resource/IBIFResource";
+import { BIFObject } from "@/resource/BIFObject";
+import { KEYObject } from "@/resource/KEYObject";
 
 /**
  * BIFManager class.

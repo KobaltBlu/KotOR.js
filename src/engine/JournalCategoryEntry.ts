@@ -1,7 +1,7 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { CExoLocString } from "../resource/CExoLocString";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 export class JournalCategoryEntry {
   end: number = 0;
@@ -21,10 +21,10 @@ export class JournalCategoryEntry {
   static FromStruct(struct: GFFStruct): JournalCategoryEntry {
     const entry = new JournalCategoryEntry();
     if(struct instanceof GFFStruct){
-      if(struct.hasField('End'))            entry.end           = struct.getFieldByLabel('End')?.getValue();
-      if(struct.hasField('ID'))             entry.id            = struct.getFieldByLabel('ID')?.getValue();
+      if(struct.hasField('End'))            entry.end           = struct.getNumberByLabel('End');
+      if(struct.hasField('ID'))             entry.id            = struct.getNumberByLabel('ID');
       if(struct.hasField('Text'))           entry.text          = struct.getFieldByLabel('Text')?.getCExoLocString();
-      if(struct.hasField('XP_Percentage'))  entry.xp_percentage = struct.getFieldByLabel('XP_Percentage')?.getValue();
+      if(struct.hasField('XP_Percentage'))  entry.xp_percentage = struct.getNumberByLabel('XP_Percentage');
     }
     return entry;
   }

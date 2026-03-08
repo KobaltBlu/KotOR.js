@@ -1,5 +1,5 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 export class ForgeWaypoint extends ForgeGameObject {
   //GIT Instance Properties

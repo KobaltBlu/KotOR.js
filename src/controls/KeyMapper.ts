@@ -1,20 +1,20 @@
-
-import { EngineMode } from "../enums/engine/EngineMode";
-import { AnalogInput } from "./AnalogInput";
-import { GamePad } from "./GamePad";
-import { KeyInput } from "./KeyInput";
-import { Keyboard } from "./Keyboard";
-import { KeyMapAction } from "../enums/controls/KeyMapAction";
-import { TwoDAManager } from "../managers/TwoDAManager";
-import type { INIConfig } from "../engine/INIConfig";
+﻿
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { AnalogInput } from "@/controls/AnalogInput";
+import { GamePad } from "@/controls/GamePad";
+import { KeyInput } from "@/controls/KeyInput";
+import { Keyboard } from "@/controls/Keyboard";
+import { KeyMapAction } from "@/enums/controls/KeyMapAction";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import type { INIConfig } from "@/engine/INIConfig";
 
 type KeymapProcessorCallback = (map: Keymap, delta: number) => void;
 
 /**
  * Keymap class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file Keymap.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -57,33 +57,34 @@ export class Keymap {
     this.processCallback = callback;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: Record<string, unknown> = {}): Keymap {
     const keymap = new Keymap();
+    const s = (v: unknown) => (v == null || v === undefined) ? '' : String(v);
 
-    if(typeof row.disabled !== 'undefined')     keymap.disabled     = row.disabled      == '****' ? false : parseInt(row.disabled) ? true : false;
-    if(typeof row.actionstrref !== 'undefined') keymap.actionstrref = row.actionstrref  == '****' ? -1    : parseInt(row.actionstrref);
-    if(typeof row.descstrref !== 'undefined')   keymap.descstrref   = row.descstrref    == '****' ? -1    : parseInt(row.descstrref);
-    if(typeof row.language0 !== 'undefined')    keymap.language0    = row.language0     == '****' ? -1    : parseInt(row.language0);
-    if(typeof row.character !== 'undefined')    keymap.character    = row.label         == '****' ? ''    : row.character;
-    if(typeof row.page !== 'undefined')         keymap.page         = row.label         == '****' ? 0     : parseInt(row.page);
-    if(typeof row.sortpos !== 'undefined')      keymap.sortpos      = row.label         == '****' ? -1    : parseInt(row.sortpos);
-    if(typeof row.name !== 'undefined')         keymap.name         = row.label         == '****' ? ''    : row.name;
-    if(typeof row.remappable !== 'undefined')   keymap.remappable   = row.remappable    == '****' ? false : parseInt(row.remappable) ? true : false;
-    if(typeof row.forcedisplay !== 'undefined') keymap.forcedisplay = row.forcedisplay  == '****' ? false : parseInt(row.forcedisplay) ? true : false;
+    if (typeof row.disabled !== 'undefined')     keymap.disabled     = row.disabled      == '****' ? false : !!parseInt(s(row.disabled), 10);
+    if (typeof row.actionstrref !== 'undefined') keymap.actionstrref = row.actionstrref  == '****' ? -1    : parseInt(s(row.actionstrref), 10);
+    if (typeof row.descstrref !== 'undefined')   keymap.descstrref   = row.descstrref    == '****' ? -1    : parseInt(s(row.descstrref), 10);
+    if (typeof row.language0 !== 'undefined')   keymap.language0    = row.language0     == '****' ? -1    : parseInt(s(row.language0), 10);
+    if (typeof row.character !== 'undefined')    keymap.character    = row.label         == '****' ? ''   : s(row.character);
+    if (typeof row.page !== 'undefined')         keymap.page         = row.label         == '****' ? 0    : parseInt(s(row.page), 10);
+    if (typeof row.sortpos !== 'undefined')      keymap.sortpos      = row.label         == '****' ? -1   : parseInt(s(row.sortpos), 10);
+    if (typeof row.name !== 'undefined')        keymap.name         = row.label         == '****' ? ''   : s(row.name);
+    if (typeof row.remappable !== 'undefined')  keymap.remappable   = row.remappable    == '****' ? false : !!parseInt(s(row.remappable), 10);
+    if (typeof row.forcedisplay !== 'undefined') keymap.forcedisplay = row.forcedisplay  == '****' ? false : !!parseInt(s(row.forcedisplay), 10);
 
-    if(typeof row.icpc !== 'undefined')         keymap.icpc         = row.icpc          == '****' ? false : parseInt(row.icpc) ? true : false;
-    if(typeof row.icminigame !== 'undefined')   keymap.icminigame   = row.icminigame    == '****' ? false : parseInt(row.icminigame) ? true : false;
-    if(typeof row.icpcgui !== 'undefined')      keymap.icpcgui      = row.icpcgui       == '****' ? false : parseInt(row.icpcgui) ? true : false;
-    if(typeof row.icdialog !== 'undefined')     keymap.icdialog     = row.icdialog      == '****' ? false : parseInt(row.icdialog) ? true : false;
-    if(typeof row.icfreelook !== 'undefined')   keymap.icfreelook   = row.icfreelook    == '****' ? false : parseInt(row.icfreelook) ? true : false;
-    if(typeof row.icmovie !== 'undefined')      keymap.icmovie      = row.icmovie       == '****' ? false : parseInt(row.icmovie) ? true : false;
+    if (typeof row.icpc !== 'undefined')        keymap.icpc         = row.icpc          == '****' ? false : !!parseInt(s(row.icpc), 10);
+    if (typeof row.icminigame !== 'undefined')  keymap.icminigame   = row.icminigame    == '****' ? false : !!parseInt(s(row.icminigame), 10);
+    if (typeof row.icpcgui !== 'undefined')     keymap.icpcgui      = row.icpcgui       == '****' ? false : !!parseInt(s(row.icpcgui), 10);
+    if (typeof row.icdialog !== 'undefined')    keymap.icdialog     = row.icdialog      == '****' ? false : !!parseInt(s(row.icdialog), 10);
+    if (typeof row.icfreelook !== 'undefined')  keymap.icfreelook   = row.icfreelook    == '****' ? false : !!parseInt(s(row.icfreelook), 10);
+    if (typeof row.icmovie !== 'undefined')     keymap.icmovie      = row.icmovie       == '****' ? false : !!parseInt(s(row.icmovie), 10);
 
-    if(typeof row.repeatwait !== 'undefined')   keymap.repeatwait   = row.repeatwait    == '****' ? -1    : parseInt(row.repeatwait);
-    if(typeof row.repeatrate !== 'undefined')   keymap.repeatrate   = row.repeatrate    == '****' ? -1    : parseInt(row.repeatrate);
-    if(typeof row.scale !== 'undefined')        keymap.scale        = row.scale         == '****' ?  0    : parseInt(row.scale);
-    if(typeof row.scalemag !== 'undefined')     keymap.scalemag     = row.scalemag      == '****' ? -1    : parseInt(row.scalemag);
-    if(typeof row.scaleexp !== 'undefined')     keymap.scaleexp     = row.scaleexp      == '****' ? -1    : parseInt(row.scaleexp);
-    if(typeof row.__rowlabel !== 'undefined')   keymap.label        = row.__rowlabel;
+    if (typeof row.repeatwait !== 'undefined')  keymap.repeatwait   = row.repeatwait    == '****' ? -1   : parseInt(s(row.repeatwait), 10);
+    if (typeof row.repeatrate !== 'undefined')  keymap.repeatrate   = row.repeatrate    == '****' ? -1   : parseInt(s(row.repeatrate), 10);
+    if (typeof row.scale !== 'undefined')       keymap.scale        = row.scale         == '****' ? 0   : parseInt(s(row.scale), 10);
+    if (typeof row.scalemag !== 'undefined')    keymap.scalemag     = row.scalemag      == '****' ? -1  : parseInt(s(row.scalemag), 10);
+    if (typeof row.scaleexp !== 'undefined')    keymap.scaleexp     = row.scaleexp      == '****' ? -1  : parseInt(s(row.scaleexp), 10);
+    if (typeof row.__rowlabel !== 'undefined')   keymap.label        = s(row.__rowlabel);
 
     keymap.tokenRegEx = new RegExp(`<${keymap.name}>`, 'gm');
 
@@ -183,8 +184,6 @@ interface KeyMapperActions {
   action1003: Keymap;
   action1004: Keymap;
   action1005: Keymap;
-
-  action901m: Keymap;
 }
 
 export class KeyMapper {
@@ -281,7 +280,6 @@ export class KeyMapper {
     action1003: undefined,
     action1004: undefined,
     action1005: undefined,
-    action901m: undefined,
   };
 
   static ACTIONS_ALL: Keymap[] = [];
@@ -301,11 +299,12 @@ export class KeyMapper {
       KeyMapper.ACTIONS_DIALOG = [];
       KeyMapper.ACTIONS_FREELOOK = [];
       KeyMapper.ACTIONS_MOVIE = [];
-      const rows = Object.values(keymap_table.rows);
-      for(let i = 0; i < rows.length; i++){
-        const row: any = rows[i];
+      const rows = Object.values(keymap_table.rows) as Record<string, unknown>[];
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
         const map = Keymap.From2DA(row);
-        (KeyMapper.Actions as any)[row.__rowlabel.toLowerCase()] = map;
+        const key = typeof row.__rowlabel === 'string' ? row.__rowlabel.toLowerCase() : '';
+        (KeyMapper.Actions as unknown as Record<string, Keymap | undefined>)[key] = map;
                             KeyMapper.ACTIONS_ALL.push(map);
         if(map.icpc)        KeyMapper.ACTIONS_INGAME.push(map);
         if(map.icminigame)  KeyMapper.ACTIONS_MINIGAME.push(map);
@@ -365,16 +364,10 @@ export class KeyMapper {
         remappable: 0,
         icpc: 1,
       });
-
-      this.CreateCustomAction(KeyMapAction.MovieSkip, {
-        name: 'MovieSkip',
-        remappable: 0,
-        icmovie: 1,
-      });
     }
   }
 
-  static CreateCustomAction(action: KeyMapAction, props: any = {}){
+  static CreateCustomAction(action: KeyMapAction, props: Record<string, unknown> = {}): void {
     KeyMapper.Actions[action] = Keymap.From2DA(props);
     if(KeyMapper.Actions[action].icpc)        KeyMapper.ACTIONS_INGAME.push(KeyMapper.Actions[action]);
     if(KeyMapper.Actions[action].icminigame)  KeyMapper.ACTIONS_MINIGAME.push(KeyMapper.Actions[action]);
@@ -446,6 +439,25 @@ export class KeyMapper {
       if(action){
         keyMap.keyboardInput = action;
       }
+    }
+
+    if(!KeyMapper.Actions[KeyMapAction.WALKMODIFY].keyboardInput){
+      KeyMapper.Actions[KeyMapAction.WALKMODIFY].keyboardInput = keyboard.action.KeyB;
+    }
+    if(!KeyMapper.Actions[KeyMapAction.Quicksave].keyboardInput){
+      KeyMapper.Actions[KeyMapAction.Quicksave].keyboardInput = keyboard.action.F4;
+    }
+    if(!KeyMapper.Actions[KeyMapAction.QUICKLOAD].keyboardInput){
+      KeyMapper.Actions[KeyMapAction.QUICKLOAD].keyboardInput = keyboard.action.F5;
+    }
+    if(!KeyMapper.Actions[KeyMapAction.PrevMenu].keyboardInput){
+      KeyMapper.Actions[KeyMapAction.PrevMenu].keyboardInput = keyboard.action.KeyQ;
+    }
+    if(!KeyMapper.Actions[KeyMapAction.NextMenu].keyboardInput){
+      KeyMapper.Actions[KeyMapAction.NextMenu].keyboardInput = keyboard.action.KeyE;
+    }
+    if(!KeyMapper.Actions[KeyMapAction.CancleCombat].keyboardInput){
+      KeyMapper.Actions[KeyMapAction.CancleCombat].keyboardInput = keyboard.action.KeyF;
     }
 
     //Movement
@@ -526,9 +538,6 @@ export class KeyMapper {
     KeyMapper.Actions[KeyMapAction.ResolutionScaleDown].keyboardInput = keyboard.action.NumpadSubtract;
     KeyMapper.Actions[KeyMapAction.ResolutionScaleReset].keyboardInput = keyboard.action.Numpad0;
 
-    //Movie
-    KeyMapper.Actions[KeyMapAction.MovieSkip].keyboardInput = keyboard.action.Space;
-
   }
 
   static BindGamepad(gamepad: GamePad){
@@ -555,7 +564,7 @@ export class KeyMapper {
     this.Actions[KeyMapAction.ActionRight].gamepadInput = gamepad.button_d_right;
     this.Actions[KeyMapAction.CancleCombat].gamepadInput = gamepad.button_b;
     this.Actions[KeyMapAction.AlternateActions].gamepadInput = gamepad.button_x;
-    
+
     //GUI
     this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
     this.Actions[KeyMapAction.NextMenu].gamepadInput = gamepad.button_bumper_r;
@@ -567,9 +576,6 @@ export class KeyMapper {
     this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
     this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
 
-    //Movie
-    this.Actions[KeyMapAction.MovieSkip].gamepadInput = gamepad.button_y;
-    
   }
 
 }
@@ -577,181 +583,181 @@ export class KeyMapper {
 export function language0ToKeyCode(language0: number): string {
   switch(language0){
     case 9:
-      return 'UpArrow'; 
+      return 'UpArrow';
     case 7:
-      return 'LeftArrow'; 
+      return 'LeftArrow';
     case 8:
-      return 'RightArrow'; 
+      return 'RightArrow';
     case 10:
-      return 'DownArrow'; 
+      return 'DownArrow';
     case 11:
-      return 'Numpad1'; 
+      return 'Numpad1';
     case 12:
-      return 'Numpad2'; 
+      return 'Numpad2';
     case 13:
-      return 'Numpad3'; 
+      return 'Numpad3';
     case 14:
-      return 'Numpad4'; 
+      return 'Numpad4';
     case 15:
-      return 'Numpad5'; 
+      return 'Numpad5';
     case 16:
-      return 'Numpad6'; 
+      return 'Numpad6';
     case 17:
-      return 'Numpad7'; 
+      return 'Numpad7';
     case 18:
-      return 'Numpad8'; 
+      return 'Numpad8';
     case 19:
-      return 'Numpad9'; 
+      return 'Numpad9';
     case 20:
-      return 'Numpad0'; 
+      return 'Numpad0';
     case 21:
-      return 'NumpadDecimal'; 
+      return 'NumpadDecimal';
     case 22:
-      return 'NumpadSubtract'; 
+      return 'NumpadSubtract';
     case 23:
-      return 'NumpadAdd'; 
+      return 'NumpadAdd';
     case 24:
-      return 'ShiftLeft'; 
+      return 'ShiftLeft';
     case 25:
-      return 'ShiftRight'; 
+      return 'ShiftRight';
     case 28:
-      return 'ControlLeft'; 
+      return 'ControlLeft';
     case 29:
-      return 'ControlRight'; 
+      return 'ControlRight';
     case 30:
-      return 'Tab'; 
+      return 'Tab';
     case 31:
-      return 'Escape'; 
+      return 'Escape';
     case 32:
-      return 'Home'; 
+      return 'Home';
     case 33:
-      return 'End';  
+      return 'End';
     case 34:
-      return 'PageUp'; 
+      return 'PageUp';
     case 35:
-      return 'PageDown'; 
+      return 'PageDown';
     case 36:
-      return 'Insert'; 
+      return 'Insert';
     case 37:
-      return 'Delete'; 
+      return 'Delete';
     case 39:
-      return 'F1'; 
+      return 'F1';
     case 40:
-      return 'F2'; 
+      return 'F2';
     case 41:
-      return 'F3'; 
+      return 'F3';
     case 42:
-      return 'F4'; 
+      return 'F4';
     case 43:
-      return 'F5'; 
+      return 'F5';
     case 44:
-      return 'F6'; 
+      return 'F6';
     case 45:
-      return 'F7'; 
+      return 'F7';
     case 46:
-      return 'F8'; 
+      return 'F8';
     case 47:
-      return 'F9'; 
+      return 'F9';
     case 48:
-      return 'F10'; 
+      return 'F10';
     case 49:
-      return 'F11'; 
+      return 'F11';
     case 50:
-      return 'F12'; 
+      return 'F12';
     case 51:
-      return 'KeyA'; 
+      return 'KeyA';
     case 52:
-      return 'KeyB'; 
+      return 'KeyB';
     case 53:
-      return 'KeyC'; 
+      return 'KeyC';
     case 54:
-      return 'KeyD'; 
+      return 'KeyD';
     case 55:
-      return 'KeyE'; 
+      return 'KeyE';
     case 56:
-      return 'KeyF'; 
+      return 'KeyF';
     case 57:
-      return 'KeyG'; 
+      return 'KeyG';
     case 58:
-      return 'KeyH'; 
+      return 'KeyH';
     case 59:
-      return 'KeyI'; 
+      return 'KeyI';
     case 60:
-      return 'KeyJ'; 
+      return 'KeyJ';
     case 61:
-      return 'KeyK'; 
+      return 'KeyK';
     case 62:
-      return 'KeyL'; 
+      return 'KeyL';
     case 63:
-      return 'KeyM'; 
+      return 'KeyM';
     case 64:
-      return 'KeyN'; 
+      return 'KeyN';
     case 65:
-      return 'KeyO'; 
+      return 'KeyO';
     case 66:
-      return 'KeyP'; 
+      return 'KeyP';
     case 67:
-      return 'KeyQ'; 
+      return 'KeyQ';
     case 68:
-      return 'KeyR'; 
+      return 'KeyR';
     case 69:
-      return 'KeyS'; 
+      return 'KeyS';
     case 70:
-      return 'KeyT'; 
+      return 'KeyT';
     case 71:
-      return 'KeyU'; 
+      return 'KeyU';
     case 72:
-      return 'KeyV'; 
+      return 'KeyV';
     case 73:
-      return 'KeyW'; 
+      return 'KeyW';
     case 74:
-      return 'KeyX'; 
+      return 'KeyX';
     case 75:
-      return 'KeyY'; 
+      return 'KeyY';
     case 76:
-      return 'KeyZ'; 
+      return 'KeyZ';
     case 77:
-      return 'Digit1'; 
+      return 'Digit1';
     case 78:
-      return 'Digit2'; 
+      return 'Digit2';
     case 79:
-      return 'Digit3'; 
+      return 'Digit3';
     case 80:
-      return 'Digit4'; 
+      return 'Digit4';
     case 81:
-      return 'Digit5'; 
+      return 'Digit5';
     case 82:
-      return 'Digit6'; 
+      return 'Digit6';
     case 83:
-      return 'Digit7'; 
+      return 'Digit7';
     case 84:
-      return 'Digit8'; 
+      return 'Digit8';
     case 85:
-      return 'Digit9'; 
+      return 'Digit9';
     case 86:
-      return 'Digit0'; 
+      return 'Digit0';
     case 87:
-      return 'Space'; 
+      return 'Space';
     case 88:
       return 'NumpadEnter';
     case 89:
-      return 'CapsLock'; 
+      return 'CapsLock';
     case 90:
       return 'Pause';
     case 94:
-      return 'Minus'; 
+      return 'Minus';
     case 96:
-      return 'Backspace'; 
+      return 'Backspace';
     case 97:
-      return 'BracketRight'; 
+      return 'BracketRight';
     case 98:
       return 'Backslash';
     case 99:
-      return 'Semicolon'; 
+      return 'Semicolon';
     case 103:
-      return 'Comma'; 
+      return 'Comma';
     case 104:
-      return 'Period'; 
+      return 'Period';
     case 105:
       return 'Slash';
     case 106:
@@ -768,8 +774,8 @@ export enum KeyCodeToLanguage0 {
   AltRight =        undefined, //UNUSED
   NumLock =         undefined, //UNUSED
   MetaLeft =        undefined, //UNUSED
-  BracketLeft =     undefined, 
-  Quote =           undefined, 
+  BracketLeft =     undefined,
+  Quote =           undefined,
   Equal =           undefined,
   UpArrow =         9,  //Up
   LeftArrow =       7, //Left
@@ -783,84 +789,85 @@ export enum KeyCodeToLanguage0 {
   Numpad6 =         16, //NUM 6
   Numpad7 =         17, //NUM 7
   Numpad8 =         18, //NUM 8
-  Numpad9 =         19, //NUM 9 
+  Numpad9 =         19, //NUM 9
   Numpad0 =         20, //NUM 0
   NumpadDecimal =   21, //Num Del
-  NumpadSubtract =  22, //- 
+  NumpadSubtract =  22, //-
   NumpadAdd =       23, //+
-  ShiftLeft =       24, 
-  ShiftRight =      25, 
-  ControlLeft =     28, 
-  ControlRight =    29, 
-  Tab =             30, 
-  Escape =          31, 
-  Home =            32, 
-  End =             33,  
-  PageUp =          34, 
-  PageDown =        35, 
-  Insert =          36, 
-  Delete =          37, 
-  F1 =              39, 
-  F2 =              40, 
-  F3 =              41, 
-  F4 =              42, 
-  F5 =              43, 
-  F6 =              44, 
-  F7 =              45, 
-  F8 =              46, 
-  F9 =              47, 
-  F10 =             48, 
-  F11 =             49, 
-  F12 =             50, 
-  KeyA =            51, 
-  KeyB =            52, 
-  KeyC =            53, 
-  KeyD =            54, 
-  KeyE =            55, 
-  KeyF =            56, 
-  KeyG =            57, 
-  KeyH =            58, 
-  KeyI =            59, 
-  KeyJ =            60, 
-  KeyK =            61, 
-  KeyL =            62, 
-  KeyM =            63, 
-  KeyN =            64, 
-  KeyO =            65, 
-  KeyP =            66, 
-  KeyQ =            67, 
-  KeyR =            68, 
-  KeyS =            69, 
-  KeyT =            70, 
-  KeyU =            71, 
-  KeyV =            72, 
-  KeyW =            73, 
-  KeyX =            74, 
-  KeyY =            75, 
-  KeyZ =            76, 
-  Digit1 =          77, 
-  Digit2 =          78, 
-  Digit3 =          79, 
-  Digit4 =          80, 
-  Digit5 =          81, 
-  Digit6 =          82, 
-  Digit7 =          83, 
-  Digit8 =          84, 
-  Digit9 =          85, 
-  Digit0 =          86, 
-  Space =           87, 
-  NumpadEnter =     88, //NUM Enter 
-  // Enter =        88, 
-  CapsLock =        89, 
+  ShiftLeft =       24,
+  ShiftRight =      25,
+  ControlLeft =     28,
+  ControlRight =    29,
+  Tab =             30,
+  Escape =          31,
+  Home =            32,
+  End =             33,
+  PageUp =          34,
+  PageDown =        35,
+  Insert =          36,
+  Delete =          37,
+  F1 =              39,
+  F2 =              40,
+  F3 =              41,
+  F4 =              42,
+  F5 =              43,
+  F6 =              44,
+  F7 =              45,
+  F8 =              46,
+  F9 =              47,
+  F10 =             48,
+  F11 =             49,
+  F12 =             50,
+  KeyA =            51,
+  KeyB =            52,
+  KeyC =            53,
+  KeyD =            54,
+  KeyE =            55,
+  KeyF =            56,
+  KeyG =            57,
+  KeyH =            58,
+  KeyI =            59,
+  KeyJ =            60,
+  KeyK =            61,
+  KeyL =            62,
+  KeyM =            63,
+  KeyN =            64,
+  KeyO =            65,
+  KeyP =            66,
+  KeyQ =            67,
+  KeyR =            68,
+  KeyS =            69,
+  KeyT =            70,
+  KeyU =            71,
+  KeyV =            72,
+  KeyW =            73,
+  KeyX =            74,
+  KeyY =            75,
+  KeyZ =            76,
+  Digit1 =          77,
+  Digit2 =          78,
+  Digit3 =          79,
+  Digit4 =          80,
+  Digit5 =          81,
+  Digit6 =          82,
+  Digit7 =          83,
+  Digit8 =          84,
+  Digit9 =          85,
+  Digit0 =          86,
+  Space =           87,
+  NumpadEnter =     88, //NUM Enter
+  // Enter =        88,
+  CapsLock =        89,
   Pause =           90,
-  Minus =           94, 
-  Backspace =       96, 
-  BracketRight =    97, 
-  Backslash =       98, // \ 
-  Semicolon =       99, 
-  Comma =           103, 
-  Period =          104, 
+  Minus =           94,
+  Backspace =       96,
+  BracketRight =    97,
+  Backslash =       98, // \
+  Semicolon =       99,
+  Comma =           103,
+  Period =          104,
   Slash =           105, // /
   NumpadMultiply =  106,  //*
   NumpadDivide =    108,  //Num /
 }
+

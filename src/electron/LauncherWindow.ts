@@ -1,6 +1,6 @@
-import { BrowserWindow, shell } from "electron";
+﻿import { BrowserWindow, shell } from "electron";
 import * as path from "path";
-import Main from "./Main";
+import Main from "@/electron/Main";
 
 export class LauncherWindow {
 
@@ -51,13 +51,10 @@ export class LauncherWindow {
 
     // Emitted when the window is closed.
     this.browserWindow.on('closed', () => {
-      // Dereference the window object, usually you would store windows
-      // in an array if your app supports multi windows, this is the time
-      // when you should delete the corresponding element.
-      // this.browserWindow = undefined;
+      this.browserWindow = undefined;
     });
 
-    this.browserWindow.on('minimize', () => {
+    this.browserWindow.on('minimize',() => {
       if(this.browserWindow) this.browserWindow.hide();
     });
 
@@ -80,22 +77,25 @@ export class LauncherWindow {
   }
 
   toggleWindow(){
-    if(this.browserWindow)
+    if(this.browserWindow && !this.browserWindow.isDestroyed())
       this.browserWindow.isVisible() ?
         this.browserWindow.hide() : this.browserWindow.show();
   }
 
   hide(){
-    if(this.browserWindow) this.browserWindow.hide();
+    if(this.browserWindow && !this.browserWindow.isDestroyed())
+      this.browserWindow.hide();
   }
 
   show(){
-    if(this.browserWindow) this.browserWindow.show();
+    if(this.browserWindow && !this.browserWindow.isDestroyed())
+      this.browserWindow.show();
   }
 
   send(event: string, data: any) {
-    if(this.browserWindow)
+    if(this.browserWindow && !this.browserWindow.isDestroyed())
       this.browserWindow.webContents.send(event, data);
   }
 
 }
+

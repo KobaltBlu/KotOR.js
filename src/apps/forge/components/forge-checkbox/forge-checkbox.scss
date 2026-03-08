@@ -1,4 +1,4 @@
-@import "../../styles/variables";
+@use "../../styles/variables" as *;
 
 input[type=checkbox].ui {
   visibility: hidden;
@@ -10,6 +10,7 @@ input[type=checkbox].ui {
     @include border-radius-form;
     cursor: pointer;
     vertical-align: middle;
+    -webkit-user-select: none;
     user-select: none;
 
     &:before {
@@ -24,6 +25,7 @@ input[type=checkbox].ui {
       vertical-align: middle;
       margin-left: -$spacing-sm;
       margin-right: $spacing-sm;
+      -webkit-user-select: none;
       user-select: none;
     }
   }
@@ -32,6 +34,7 @@ input[type=checkbox].ui {
     background: radial-gradient(ellipse at center, $primary-blue 0%, $primary-blue-lighter 100%);
     border: $border-width-thick solid $primary-blue-dark;
     box-shadow: 1px 1px 5px #307592;
+    -webkit-user-select: none;
     user-select: none;
   }
 }

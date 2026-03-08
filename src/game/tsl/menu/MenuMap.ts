@@ -1,15 +1,15 @@
-import { MapMode } from "../../../enums/engine/MapMode";
-import { LBL_MapView } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import type { ModuleWaypoint } from "../../../module";
-import { CExoLocString } from "../../../resource/CExoLocString";
-import { MenuMap as K1_MenuMap } from "../../kotor/KOTOR";
+import { MapMode } from "@/enums/engine/MapMode";
+import { MenuMap as K1_MenuMap } from "@/game/kotor/KOTOR";
+import { LBL_MapView } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
+import type { ModuleWaypoint } from "@/module";
+import { CExoLocString } from "@/resource/CExoLocString";
 
 /**
  * MenuMap class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuMap.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -40,11 +40,11 @@ export class MenuMap extends K1_MenuMap {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LBL_MapNote.setText('');
       this.LBL_Map.addEventListener('click', (e) => {
         e.stopPropagation();
-        const mapNote: ModuleWaypoint = this.miniMap.onClick();
+        const mapNote = this.miniMap.onClick() as ModuleWaypoint | undefined;
         if(mapNote && mapNote.mapNote instanceof CExoLocString){
           this.LBL_MapNote.setText(mapNote.mapNote.getValue())
         }
@@ -71,5 +71,6 @@ export class MenuMap extends K1_MenuMap {
       resolve();
     });
   }
-  
+
 }
+

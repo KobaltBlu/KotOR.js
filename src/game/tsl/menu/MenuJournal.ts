@@ -1,6 +1,6 @@
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { MenuJournal as K1_MenuJournal } from "../../kotor/KOTOR";
-import { GUIJournalItem } from "../gui/GUIJournalItem";
+import { MenuJournal as K1_MenuJournal } from "@/game/kotor/KOTOR";
+import { GUIJournalItem } from "@/game/tsl/gui/GUIJournalItem";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 enum JournalSort {
   RECIEVED = 0,

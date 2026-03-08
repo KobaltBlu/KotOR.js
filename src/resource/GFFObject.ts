@@ -1,22 +1,22 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { CExoLocString } from "./CExoLocString";
-import { CExoLocSubString } from "./CExoLocSubString";
-import { GFFField } from "./GFFField";
-import { GFFStruct } from "./GFFStruct";
+﻿import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { CExoLocSubString } from "@/resource/CExoLocSubString";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 import * as path from "path";
-import { GameFileSystem } from "../utility/GameFileSystem";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 export type GFFObjectOnCompleteCallback = (gff: GFFObject) => void;
 
 /**
  * GFFObject class.
- * 
+ *
  * Class representing a "Generic File Format" file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GFFObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -150,6 +150,14 @@ export class GFFObject {
   }
 
   parse(binary: Uint8Array, onComplete?: Function){
+    const GFF_HEADER_SIZE = 56;
+    if (!binary || binary.length < GFF_HEADER_SIZE) {
+      if (typeof onComplete === 'function') {
+        onComplete(this, this.RootNode);
+      }
+      return;
+    }
+
     this.reader = new BinaryReader(binary);
 
     this.FileType = this.reader.readChars(4);
@@ -175,8 +183,8 @@ export class GFFObject {
     this.reader.seek(this.StructOffset);
     for (let i = 0; i < this.StructCount; i++) {
       this.tmpStructArray[i] = {
-        Type: this.reader.readInt32(), 
-        DataOrDataOffset: this.reader.readInt32(), 
+        Type: this.reader.readInt32(),
+        DataOrDataOffset: this.reader.readInt32(),
         FieldCount: this.reader.readInt32()
       };
     }
@@ -193,16 +201,18 @@ export class GFFObject {
     this.reader.seek(this.FieldOffset);
     for (let i = 0; i < this.FieldCount; i++) {
       this.tmpFieldsArray[i] = {
-        Type: this.reader.readInt32(), 
-        Label: this.reader.readInt32(), 
-        Data: this.reader.readBytes(4), 
+        Type: this.reader.readInt32(),
+        Label: this.reader.readInt32(),
+        Data: this.reader.readBytes(4),
         Val: "", Index: i
       };
     }
     //End Fields
 
     try{
-      this.RootNode = this.buildStruct(this.tmpStructArray[0]);
+      if (this.StructCount > 0 && this.tmpStructArray[0] != null) {
+        this.RootNode = this.buildStruct(this.tmpStructArray[0]);
+      }
     }catch(e){
       console.error(e);
     }
@@ -226,6 +236,9 @@ export class GFFObject {
 
   buildStruct(struct: any){
     let strt = new GFFStruct();
+    if (!struct || typeof struct !== 'object') {
+      return strt;
+    }
 
     strt.setType(struct.Type);
     if (struct.FieldCount == 1){
@@ -564,7 +577,7 @@ export class GFFObject {
         reject(err);
 
       });
-      
+
     });
   }
 
@@ -705,7 +718,7 @@ export class GFFObject {
         this.FieldCount++;
 
         let labelSearchIndex = this.exportedLabels.indexOf(field.getLabel());
-        field.labelIndex = labelSearchIndex >= 0 ? labelSearchIndex : this.exportedLabels.push(field.getLabel()) - 1;   
+        field.labelIndex = labelSearchIndex >= 0 ? labelSearchIndex : this.exportedLabels.push(field.getLabel()) - 1;
 
         let childStructs = field.getChildStructs() || [];
         let childStructCount = childStructs.length;
@@ -869,3 +882,4 @@ export class GFFObject {
   }
 
 }
+

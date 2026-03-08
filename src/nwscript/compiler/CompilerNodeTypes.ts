@@ -32,7 +32,7 @@ import type {
   SemanticCallNode,
   SemanticExpressionNode,
   SemanticStatementNode,
-} from "./ASTSemanticTypes";
+} from "@/nwscript/compiler/ASTSemanticTypes";
 
 type WithCompilerMeta<T> = T & { block_start?: number; block_end?: number };
 

@@ -39,6 +39,6 @@ export enum PazaakCards {
   MAIN_CARD_8 = 108,
   MAIN_CARD_9 = 109,
   MAIN_CARD_10 = 110
-};
+}
   
   

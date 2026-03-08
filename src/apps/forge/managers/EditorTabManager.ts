@@ -1,18 +1,46 @@
-import { EditorFile } from "../EditorFile";
-import { EventListenerModel } from "../EventListenerModel";
-import { TabStoreState } from "../interfaces/TabStoreState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import {
-  TabBIKPlayerState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabModelViewerState,
-  TabModuleEditorState, TabQuickStartState, TabHelpState, TabTwoDAEditorState,
-  TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabUTEEditorState, TabUTSEditorState, TabUTMEditorState, TabUTTEditorState, TabUTWEditorState, TabUTIEditorState,
-  TabBinaryViewerState, TabAREEditorState, TabIFOEditorState, TabJRLEditorState, TabSSFEditorState, TabTLKEditorState, TabFACEditorState, TabLTREditorState,
-  TabDLGEditorState, TabGITEditorState, TabSAVEditorState, TabVISEditorState, TabState,
-  TabERFEditorState, TabTextEditorState, TabLIPEditorState, TabPTHEditorState, TabWOKEditorState, TabDiffToolState,
-} from "../states/tabs";
-
-import { TabReferenceFinderState } from "../states/tabs/TabReferenceFinderState";
-import { TabScriptFindReferencesState } from "../states/tabs/TabScriptFindReferencesState";
-import { GetNewTabID } from "./TabIdGenerator";
+  TabAREEditorState,
+  TabBIKPlayerState,
+  TabBinaryViewerState,
+  TabDiffToolState,
+  TabDLGEditorState,
+  TabERFEditorState,
+  TabFACEditorState,
+  TabGFFEditorState,
+  TabGITEditorState,
+  TabGUIEditorState,
+  TabIFOEditorState,
+  TabImageViewerState,
+  TabJRLEditorState,
+  TabLIPEditorState,
+  TabLTREditorState,
+  TabModelViewerState,
+  TabModuleEditorState,
+  TabPTHEditorState,
+  TabQuickStartState,
+  TabSAVEditorState,
+  TabSSFEditorState,
+  TabState,
+  TabTextEditorState,
+  TabTLKEditorState,
+  TabTwoDAEditorState,
+  TabUTCEditorState,
+  TabUTDEditorState,
+  TabUTEEditorState,
+  TabUTIEditorState,
+  TabUTMEditorState,
+  TabUTPEditorState,
+  TabUTSEditorState,
+  TabUTTEditorState,
+  TabUTWEditorState,
+  TabVISEditorState,
+  TabWOKEditorState,
+} from "@/apps/forge/states/tabs";
+import { TabReferenceFinderState } from "@/apps/forge/states/tabs/TabReferenceFinderState";
+import { TabScriptFindReferencesState } from "@/apps/forge/states/tabs/TabScriptFindReferencesState";
 
 export type TabManagerEventListenerTypes =
   'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide';
@@ -28,8 +56,10 @@ export class EditorTabManager extends EventListenerModel {
   currentTab?: TabState;
   tabs: TabState[] = [];
 
+  static __tabId: number = 0;
+
   static GetNewTabID(): number {
-    return GetNewTabID();
+    return EditorTabManager.__tabId++;
   }
 
   constructor(){
@@ -47,14 +77,14 @@ export class EditorTabManager extends EventListenerModel {
       }
     }
 
-    let alreadyAdded = this.tabs.find( (_tab: TabState) => _tab.id == tab.id) ? true : false;
+    const alreadyAdded = this.tabs.find( (_tab: TabState) => _tab.id == tab.id) ? true : false;
     if(alreadyAdded){
       console.warn('Tab already added to the TabManager', tab);
       return;
     }
 
     //Check to see if a tab is already editing this resource
-    let alreadyOpen = this.isResourceIdOpenInTab(tab.getResourceID());
+    const alreadyOpen = this.isResourceIdOpenInTab(tab.getResourceID());
     if(alreadyOpen != null){
       //Show the tab that is already open
       alreadyOpen.show();
@@ -127,7 +157,7 @@ export class EditorTabManager extends EventListenerModel {
   }
 
   tabTypeExists(tab: TabState){
-    let tabClass = tab.constructor.name;
+    const tabClass = tab.constructor.name;
     for(let i = 0; i < this.tabs.length; i++){
       if(this.tabs[i].constructor.name === tabClass)
         return true;
@@ -151,9 +181,6 @@ export class EditorTabManager extends EventListenerModel {
         this.addTab(
           new TabQuickStartState({editorFile: tabState.file})
         );
-      break;
-      case 'TabHelpState':
-        this.addTab(new TabHelpState());
       break;
       case 'TabImageViewerState':
         this.addTab(

@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { TwoDAObject } from "../../../resource/TwoDAObject";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 interface MovieItem {
   name: string;
@@ -46,9 +46,9 @@ class GUIMovieItem implements MovieItem {
 
 /**
  * MainMovies class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMovies.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -71,7 +71,7 @@ export class MainMovies extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -114,5 +114,5 @@ export class MainMovies extends GameMenu {
     this.LB_MOVIES.updateList();
     this.LB_MOVIES.show();
   }
-  
+
 }

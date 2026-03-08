@@ -1,10 +1,11 @@
-import { GameState } from "../../../GameState";
-import { GameMenu, GUIControl } from "../../../gui";
-import type { GUILabel, GUIButton, GUICheckBox } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+﻿import * as THREE from "three";
+import { GameState } from "@/GameState";
+import { GameMenu, GUIControl } from "@/gui";
+import type { GUILabel, GUIButton, GUICheckBox } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 const TLK_REMOVE = 38456;
 const TLK_ADD = 38455;
@@ -301,9 +302,11 @@ export class MenuPartySelection extends GameMenu {
     for (let i = 0; i < GameState.PartyManager.MaxPartyCount; i++) {
       const btn = this.getControlByName('BTN_NPC' + i);
       if (GameState.PartyManager.IsNPCInParty(i)) {
-        btn.setHighlightColor(0, 1, 0);
+        btn.highlight.edge_material.uniforms.diffuse.value.setRGB(0, 1, 0);
+        btn.highlight.corner_material.uniforms.diffuse.value.setRGB(0, 1, 0);
       } else {
-        btn.setHighlightColor(1, 1, 0);
+        btn.highlight.edge_material.uniforms.diffuse.value.setRGB(1, 1, 0);
+        btn.highlight.corner_material.uniforms.diffuse.value.setRGB(1, 1, 0);
       }
       btn.disableBorder();
       btn.disableHighlight();
@@ -447,3 +450,4 @@ export class MenuPartySelection extends GameMenu {
   }
   
 }
+

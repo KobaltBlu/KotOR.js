@@ -1,30 +1,30 @@
-import { ModuleObject } from "./ModuleObject";
-import { GFFObject } from "../resource/GFFObject";
+﻿import { ModuleObject } from "@/module/ModuleObject";
+import { GFFObject } from "@/resource/GFFObject";
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { Utility } from "../utility/Utility";
-import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-// import { NWScript } from "../nwscript/NWScript";
-import { IModelListItem } from "../interface/module/minigame/IModelListItem";
-import { MiniGameType } from "../enums/engine/MiniGameType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { MDLLoader } from "../loaders";
-import type { ModuleRoom } from "./ModuleRoom";
-import { ModuleMGGunBank } from "./ModuleMGGunBank";
-import type { ModuleMGGunBullet } from "./ModuleMGGunBullet";
-import type { ModuleMGEnemy } from "./ModuleMGEnemy";
-import type { ModuleMGObstacle } from "./ModuleMGObstacle";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { GameState } from "@/GameState";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { Utility } from "@/utility/Utility";
+import { OdysseyModel, OdysseyModelAnimationManager } from "@/odyssey";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+// import { NWScript } from "@/nwscript/NWScript";
+import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { MDLLoader } from "@/loaders";
+import type { ModuleRoom } from "@/module/ModuleRoom";
+import { ModuleMGGunBank } from "@/module/ModuleMGGunBank";
+import type { ModuleMGGunBullet } from "@/module/ModuleMGGunBullet";
+import type { ModuleMGEnemy } from "@/module/ModuleMGEnemy";
+import type { ModuleMGObstacle } from "@/module/ModuleMGObstacle";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 /**
 * ModuleMGPlayer class.
-* 
+*
 * Class representing the player in minigame modules.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMGPlayer.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -187,7 +187,7 @@ export class ModuleMGPlayer extends ModuleObject {
     for(let i = 0; i < this.animationManagers.length; i++){
       const aManager = this.animationManagers[i];
       if(
-        aManager.currentAnimationState.loop || 
+        aManager.currentAnimationState.loop ||
         ( !aManager.currentAnimationState.loop && !aManager.currentAnimationState.elapsedCount )
       ){
         aManager.updateAnimation(aManager.currentAnimation, aManager.currentAnimationState, delta);
@@ -243,6 +243,21 @@ export class ModuleMGPlayer extends ModuleObject {
           }
         }
 
+        const obstacles = GameState.module.area.miniGame.obstacles;
+        for (let i = 0; i < obstacles.length; i++) {
+          const obstacle = obstacles[i];
+          const dist = this.position.distanceTo(obstacle.position);
+          const obstacleRadius = (obstacle as { sphere_radius?: number }).sphere_radius ?? 1;
+          const overlapping = dist < this.sphere_radius + obstacleRadius;
+          const hit = (obstacle as { _playerCollided?: boolean })._playerCollided;
+          if (overlapping && !hit) {
+            (obstacle as { _playerCollided?: boolean })._playerCollided = true;
+            this.onHitObstacle(obstacle);
+          } else if (!overlapping) {
+            (obstacle as { _playerCollided?: boolean })._playerCollided = false;
+          }
+        }
+
         if(this.jumpVelcolity > 0){
           this.jumpVelcolity -= (2 *delta);
         }else{
@@ -260,11 +275,11 @@ export class ModuleMGPlayer extends ModuleObject {
 
       break;
     }
-        
+
     for(let i = 0; i < this.gunBanks.length; i++){
       this.gunBanks[i].update(delta);
     }
-    
+
     // this.model.parent.getWorldPosition(this.position);
 
     this.sphere.center.copy(this.position);
@@ -278,7 +293,7 @@ export class ModuleMGPlayer extends ModuleObject {
       if(camerahook)
         this.camera = camerahook.parent.parent as OdysseyModel3D;
     }
-    
+
   }
 
   updatePaused(delta: number = 0){
@@ -484,15 +499,15 @@ export class ModuleMGPlayer extends ModuleObject {
       }*/
 
       //END: PLACEABLE COLLISION
-      
+
       //START: ROOM COLLISION
-      if(!this.collisionManager.groundFace){
+      if(!this.collisionData.groundFace){
         this.findWalkableFace();
       }
 
       //room walkable edge check
       let roomCollision = false;
-      for (const [index, edge] of this.room.collisionManager.walkmesh.edges) {
+      for (const [index, edge] of this.room.collisionData.walkmesh.edges) {
         if(edge && edge.transition == -1){
           edge.line.closestPointToPoint(this.tmpPos, true, closestPoint);
           distance = closestPoint.distanceTo(this.tmpPos);
@@ -510,8 +525,8 @@ export class ModuleMGPlayer extends ModuleObject {
         }
       }
 
-      
-        
+
+
       if(!(plcCollision && roomCollision)){
         if(plcEdgeLines.length){
           plcEdgeLines.sort((a, b) => (a.distance > b.distance) ? -1 : 1)
@@ -540,9 +555,9 @@ export class ModuleMGPlayer extends ModuleObject {
         this.tmpPos.copy(this.position).add(this.forceVector);
         for(let j = 0, jl = this.room.placeables.length; j < jl; j++){
           obj = this.room.placeables[j];
-          if(obj && obj.collisionManager.walkmesh && obj.model && obj.model.visible){
-            for(let i = 0, iLen = obj.collisionManager.walkmesh.faces.length; i < iLen; i++){
-              face = obj.collisionManager.walkmesh.faces[i];
+          if(obj && obj.collisionData.walkmesh && obj.model && obj.model.visible){
+            for(let i = 0, iLen = obj.collisionData.walkmesh.faces.length; i < iLen; i++){
+              face = obj.collisionData.walkmesh.faces[i];
               if(face.triangle.containsPoint(this.tmpPos) && face.surfacemat.walk){
                 //bail we should not be here
                 this.forceVector.set(0, 0, 0);
@@ -551,9 +566,9 @@ export class ModuleMGPlayer extends ModuleObject {
             }
           }
         }
-      
+
         //DETECT: ROOM TRANSITION
-        for (const [index, edge] of this.room.collisionManager.walkmesh.edges) {
+        for (const [index, edge] of this.room.collisionData.walkmesh.edges) {
           if(edge && edge.transition >= 0){
             if(
               Utility.LineLineIntersection(
@@ -577,7 +592,7 @@ export class ModuleMGPlayer extends ModuleObject {
         this.position.add(this.forceVector);
         //DETECT: GROUND FACE
         this.lastRoom = this.room;
-        this.collisionManager.lastGroundFace = this.collisionManager.groundFace;
+        this.collisionData.lastGroundFace = this.collisionData.groundFace;
         //this.groundFace = undefined;
         if(this.room){
           let face = this.room.findWalkableFace(this);
@@ -586,10 +601,10 @@ export class ModuleMGPlayer extends ModuleObject {
           }
         }
 
-        if(!this.collisionManager.groundFace){
+        if(!this.collisionData.groundFace){
           this.forceVector.set(0, 0, 0);
           this.position.copy(_oPosition);
-          this.collisionManager.groundFace = this.collisionManager.lastGroundFace;
+          this.collisionData.groundFace = this.collisionData.lastGroundFace;
           this.attachToRoom(this.lastRoom);
           this.forceVector.set(0, 0, 0);
         }
@@ -627,24 +642,24 @@ export class ModuleMGPlayer extends ModuleObject {
       if(box){
         for(let j = 0, jl = this.rooms.length; j < jl; j++){
           let room = GameState.module.area.rooms[this.roomIds[j]];
-          if(room && room.collisionManager.walkmesh && room.collisionManager.walkmesh.aabbNodes.length){
+          if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
             aabbFaces.push({
-              object: room, 
-              faces: room.collisionManager.walkmesh.getAABBCollisionFaces(box)
+              object: room,
+              faces: room.collisionData.walkmesh.getAABBCollisionFaces(box)
             });
           }
         }
       }
-      
+
       let scratchVec3 = new THREE.Vector3(0, 0, 2);
       let playerFeetRay = this.position.clone().add(scratchVec3);
       GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
       GameState.raycaster.ray.direction.set(0, 0,-1);
-      
+
       for(let j = 0, jl = aabbFaces.length; j < jl; j++){
         let castableFaces = aabbFaces[j];
-        intersects = castableFaces.object.collisionManager.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
-        
+        intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
+
         if(intersects.length){
           if(intersects[0].object.userData.moduleObject){
             this.attachToRoom(intersects[0].object.userData.moduleObject);
@@ -665,16 +680,16 @@ export class ModuleMGPlayer extends ModuleObject {
     let room;
     for(let i = 0, il = GameState.module.area.rooms.length; i < il; i++){
       room = GameState.module.area.rooms[i];
-      if(room.collisionManager.walkmesh){
-        for(let j = 0, jl = room.collisionManager.walkmesh.walkableFaces.length; j < jl; j++){
-          face = room.collisionManager.walkmesh.walkableFaces[j];
+      if(room.collisionData.walkmesh){
+        for(let j = 0, jl = room.collisionData.walkmesh.walkableFaces.length; j < jl; j++){
+          face = room.collisionData.walkmesh.walkableFaces[j];
           if(face.triangle.containsPoint(this.position)){
-            this.collisionManager.groundFace = face;
-            this.collisionManager.lastGroundFace = this.collisionManager.groundFace;
-            this.collisionManager.surfaceId = this.collisionManager.groundFace.walkIndex;
+            this.collisionData.groundFace = face;
+            this.collisionData.lastGroundFace = this.collisionData.groundFace;
+            this.collisionData.surfaceId = this.collisionData.groundFace.walkIndex;
             this.attachToRoom(room);
-            face.triangle.closestPointToPoint(this.position, this.collisionManager.wm_c_point);
-            this.position.z = this.collisionManager.wm_c_point.z + .005;
+            face.triangle.closestPointToPoint(this.position, this.collisionData.wm_c_point);
+            this.position.z = this.collisionData.wm_c_point.z + .005;
           }
         }
       }
@@ -684,6 +699,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   load(){
     this.initProperties();
+    this.loadScripts();
     GameState.scene.add(this.sphere_geom);
   }
 
@@ -740,6 +756,15 @@ export class ModuleMGPlayer extends ModuleObject {
 
         if(this.camera && model.name == this.camera.name)
           model.visible = false;
+
+        (model as unknown as { addEventListener: (t: string, fn: (e: { event?: string }) => void) => void }).addEventListener?.('playEvent', (e: { event?: string }) => {
+          const mg = GameState.module?.area?.miniGame;
+          if (mg) {
+            mg.lastAnimEvent = e.event ?? '';
+            mg.lastAnimEventModelName = model.name ?? '';
+          }
+          this.onAnimEvent();
+        });
       }catch(e){
         console.error(e);
       }
@@ -843,9 +868,9 @@ export class ModuleMGPlayer extends ModuleObject {
           const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
           if(!resRef){ continue; }
           const nwscript = GameState.NWScript.Load(resRef);
-          if(!nwscript){ 
+          if(!nwscript){
             console.warn(`ModuleMGPlayer.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-            continue; 
+            continue;
           }
           nwscript.caller = this;
           this.scripts[scriptKey] = nwscript;
@@ -896,7 +921,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
     if(this.template.RootNode.hasField('TunnelXPos'))
       this.tunnel.pos.x = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelXPos').getValue());
-    
+
     if(this.template.RootNode.hasField('TunnelYNeg'))
       this.tunnel.neg.y = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelYNeg').getValue());
 
@@ -957,3 +982,4 @@ export class ModuleMGPlayer extends ModuleObject {
 
 
 }
+

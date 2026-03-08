@@ -1,39 +1,39 @@
-import * as THREE from "three";
-import { Anchor } from "../enums/gui/Anchor";
-import { GUIControlAlignment } from "../enums/gui/GUIControlAlignment";
-import { IDPadTarget } from "../interface/gui/IDPadTarget";
-import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
-import { IGUIControlEventListeners } from "../interface/gui/IGUIControlEventListeners";
-import { IGUIControlExtent } from "../interface/gui/IGUIControlExtent";
-import { IGUIControlMoveTo } from "../interface/gui/IGUIControlMoveTo";
-import { IGUIControlText } from "../interface/gui/IGUIControlText";
-import { GFFStruct } from "../resource/GFFStruct";
-import { GameState } from "../GameState";
-import { TextureLoader } from "../loaders";
-import { TextureType } from "../enums/loaders/TextureType";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GameEngineType } from "../enums/engine";
-import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { KeyMapper, Mouse } from "../controls";
-import { IGUIControlColors } from "../interface/gui/IGUIControlColors";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GUIControlEventFactory } from "./GUIControlEventFactory";
-import type { GameMenu } from "./GameMenu";
-import { BitWise } from "../utility/BitWise";
-import { GUIListBox } from "./GUIListBox";
-import { GUIFont } from "./GUIFont";
-import { GUIControlEvent } from "./GUIControlEvent";
-import { GUIControlType } from "../enums/gui/GUIControlType";
-import { KeyMapAction } from "../enums/controls/KeyMapAction";
+﻿import * as THREE from "three";
+import { Anchor } from "@/enums/gui/Anchor";
+import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
+import { IDPadTarget } from "@/interface/gui/IDPadTarget";
+import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
+import { IGUIControlEventListeners } from "@/interface/gui/IGUIControlEventListeners";
+import { IGUIControlExtent } from "@/interface/gui/IGUIControlExtent";
+import { IGUIControlMoveTo } from "@/interface/gui/IGUIControlMoveTo";
+import { IGUIControlText } from "@/interface/gui/IGUIControlText";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { GameState } from "@/GameState";
+import { TextureLoader } from "@/loaders";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameEngineType } from "@/enums/engine";
+import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { KeyMapper, Mouse } from "@/controls";
+import { IGUIControlColors } from "@/interface/gui/IGUIControlColors";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
+import type { GameMenu } from "@/gui/GameMenu";
+import { BitWise } from "@/utility/BitWise";
+import { GUIListBox } from "@/gui/GUIListBox";
+import { GUIFont } from "@/gui/GUIFont";
+import { GUIControlEvent } from "@/gui/GUIControlEvent";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { KeyMapAction } from "@/enums/controls/KeyMapAction";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
 
 /**
  * GUIControl class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIControl.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -50,7 +50,7 @@ export class GUIControl {
   calculateBox() {
     return;
   }
-  
+
   static COLORS: IGUIControlColors = {
     BORDER: new THREE.Color(1, 1, 1),
     BORDER_HOVER: new THREE.Color(1, 1, 1),
@@ -160,7 +160,7 @@ export class GUIControl {
   onSelect: Function;
 
   userData: any = {};
-  
+
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl|undefined, scale: boolean = false){
 
     this.menu = menu;
@@ -218,6 +218,13 @@ export class GUIControl {
   }
 
   initObjects(){
+    const odysseyGuiUniforms = (() => {
+      const u = GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms();
+      return THREE.UniformsUtils.merge(
+        (Array.isArray(u) ? u : [u]) as { [uniform: string]: THREE.IUniform<unknown> }[]
+      );
+    })();
+
     //--------//
     // Extent
     //--------//
@@ -255,11 +262,9 @@ export class GUIControl {
     };
 
     this.border.geometry = new THREE.BufferGeometry();
-    
+
     this.border.edge_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
+      uniforms: odysseyGuiUniforms,
       vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
@@ -271,9 +276,7 @@ export class GUIControl {
     this.border.edge_material.uniforms.diffuse.value = this.border.color;
 
     this.border.corner_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
+      uniforms: odysseyGuiUniforms,
       vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
@@ -290,11 +293,9 @@ export class GUIControl {
     //-------------//
     // Border Fill
     //-------------//
-    
+
     this.border.fill.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
+      uniforms: odysseyGuiUniforms,
       vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
@@ -337,9 +338,7 @@ export class GUIControl {
     this.highlight.geometry = new THREE.BufferGeometry();
 
     this.highlight.edge_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
+      uniforms: odysseyGuiUniforms,
       vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
@@ -350,9 +349,7 @@ export class GUIControl {
     this.highlight.edge_material.uniforms.diffuse.value = this.highlight.color;
 
     this.highlight.corner_material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
+      uniforms: odysseyGuiUniforms,
       vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
@@ -368,11 +365,9 @@ export class GUIControl {
     //----------------//
     // Highlight Fill
     //----------------//
-    
+
     this.highlight.fill.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
+      uniforms: odysseyGuiUniforms,
       vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
@@ -416,9 +411,7 @@ export class GUIControl {
     this.text.geometry.attributes.uv.needsUpdate = true;
 
     this.text.material = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
-      ]),
+      uniforms: odysseyGuiUniforms,
       vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.DoubleSide,
@@ -482,7 +475,7 @@ export class GUIControl {
     //----------------//
     // Highlight Fill
     //----------------//
-    
+
     if(this.highlight.fill.mesh){
       this.highlight.fill.mesh.renderOrder = this.id;
       this.attachEventListenters( this.highlight.fill.mesh );
@@ -498,7 +491,7 @@ export class GUIControl {
       this.text.mesh.renderOrder = 5;
       this.attachEventListenters( this.text.mesh );
     }
-    
+
   }
 
   attachEventListenters( object: THREE.Object3D ){
@@ -522,7 +515,7 @@ export class GUIControl {
       object.userData.onMouseUp = (e: any) => {
         this.processEventListener('mouseUp', [e]);
       };
-      
+
       object.userData.onHover = (e: any) => {
         this.processEventListener('hover', [e]);
       };
@@ -543,9 +536,9 @@ export class GUIControl {
       this.objectLocked = ( control.hasField('Obj_Locked') ? control.getFieldByLabel('Obj_Locked')?.getValue() : -1 );
       this.objectParent = ( control.hasField('Obj_Parent') ? control.getFieldByLabel('Obj_Parent')?.getValue() : -1 );
       this.objectParentId = ( control.hasField('Obj_ParentID') ? control.getFieldByLabel('Obj_ParentID')?.getValue() : -1 );
-  
+
       this.padding = ( control.hasField('PADDING') ? control.getFieldByLabel('PADDING')?.getValue() : 0 );
-  
+
       //Extent
       this.hasExtent = control.hasField('EXTENT');
       if(this.hasExtent){
@@ -557,7 +550,7 @@ export class GUIControl {
           this.extent.height = extent.getFieldByLabel('HEIGHT')?.getValue();
         }
       }
-  
+
       //Border
       this.hasBorder = control.hasField('BORDER');
       if(this.hasBorder){
@@ -572,11 +565,11 @@ export class GUIControl {
               }
             }
           }
-  
+
           if(typeof this.border.color === 'undefined'){
             this.border.color = new THREE.Color(1, 1, 1); //this.defaultColor;
           }
-    
+
           this.border.dimension = border.getFieldByLabel('DIMENSION')?.getValue() || 0;
           this.border.corner = border.getFieldByLabel('CORNER')?.getValue();
           this.border.edge = border.getFieldByLabel('EDGE')?.getValue();
@@ -591,7 +584,7 @@ export class GUIControl {
         }
 
       }
-  
+
       //Text
       this.hasText = control.hasField('TEXT');
       if(this.hasText){
@@ -620,7 +613,7 @@ export class GUIControl {
           }
         }
       }
-  
+
       //Highlight
       this.hasHighlight = control.hasField('HILIGHT');
       if(this.hasHighlight){
@@ -635,7 +628,7 @@ export class GUIControl {
               }
             }
           }
-    
+
           if(typeof this.highlight.color === 'undefined'){
             this.highlight.color = new THREE.Color(1, 1, 1); //this.defaultColor;
           }
@@ -653,7 +646,7 @@ export class GUIControl {
           this.highlight.pulsing = highlight.getFieldByLabel('PULSING')?.getValue() || 0;
         }
       }
-  
+
       //Moveto
       this.hasMoveTo = control.hasField('MOVETO');
       if(this.hasMoveTo){
@@ -933,7 +926,7 @@ export class GUIControl {
 
     this.processEventListener('hover');
     this.processEventListener('mouseIn');
-    
+
     // this.setTooltipVisible(true);
   }
 
@@ -966,7 +959,7 @@ export class GUIControl {
     if(this.widget instanceof THREE.Object3D && this.widget.parent){
       this.widget.parent.remove(this.widget);
     }
-    
+
     //if(this.parent === undefined){
     //  this.widget.add(this.menu.backgroundSprite);
     //}
@@ -978,7 +971,7 @@ export class GUIControl {
     this.buildHighlightFill();
 
     this.hideHighlight();
-    
+
     this._onCreate();
     //Calculate the widget screen position
     this.calculatePosition();
@@ -1000,7 +993,7 @@ export class GUIControl {
 
     if(this.menu.tGuiPanel.control.hasField('CONTROLS')){
       let children = this.menu.tGuiPanel.control.getFieldByLabel('CONTROLS')?.getChildStructs() || [];
-      
+
       for(let i = 0; i < children.length; i++){
         let childParent = ( children[i].hasField('Obj_Parent') ? children[i].getFieldByLabel('Obj_Parent')?.getValue() : '' );
         if(childParent == this.name){
@@ -1013,7 +1006,7 @@ export class GUIControl {
 
           let _cWidget = control.createControl();
           _cWidget.position.z = control.zIndex;
-          
+
           //this.widget.add(_cWidget);
           this.menu.tGuiPanel.widget.add(_cWidget);
 
@@ -1027,7 +1020,7 @@ export class GUIControl {
     if(typeof this.parent != 'undefined'){
       this.parent.widget.remove(this.widget);
     }
-    
+
     this.parent = parent;
     this.parent.widget.add(this.widget);
   }
@@ -1059,7 +1052,7 @@ export class GUIControl {
       if(this.border.corner_material){
         this.border.corner_material.uniforms.opacity.value = this.hover ? 1 : pulseOpacity;
       }
-  
+
       if(this.border.fill.material){
         this.border.fill.material.uniforms.opacity.value = this.hover ? 1 : pulseOpacity;
       }
@@ -1099,11 +1092,11 @@ export class GUIControl {
       this.highlight.edge_material.visible = this.highlightEnabled ? true : false;
       this.highlight.corner_material.visible = this.highlightEnabled ? true : false;
     }
-    
+
     if(this.border.fill.material){
       this.border.fill.material.visible = this.borderFillEnabled;
     }
-    
+
     if(this.highlight.fill.material){
       this.highlight.fill.material.visible = this.highlightFillEnabled;
     }
@@ -1142,10 +1135,10 @@ export class GUIControl {
       this.text.material.uniforms.opacity.value = 1 * opacity;
       this.setTextColor(this.text.color.r, this.text.color.g, this.text.color.b);
     }
-    
+
     if(this.border.fill.material)
       this.border.fill.material.uniforms.opacity.value = 1 * opacity;
-    
+
     if(this.disableSelection){
       this.hideHighlight();
     }
@@ -1262,7 +1255,7 @@ export class GUIControl {
   }
 
   setFillTexture(map: THREE.Texture){
-    
+
     if(!(map instanceof THREE.Texture)){
       map = TextureLoader.textures.get('fx_static');
     }
@@ -1295,7 +1288,7 @@ export class GUIControl {
     this.border.fill.texture = name;
     this.borderFillEnabled = true;
     if(!name.length){ return; }
-    
+
     if(bUpdateHighlight) this.highlightFillEnabled = true;
     if(bUpdateHighlight) this.highlight.fill.texture = name;
     TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
@@ -1383,7 +1376,7 @@ export class GUIControl {
 
       this.widget.position.x = this.offset.x + (posX);
       this.widget.position.y = (-posY);
-      
+
       this.updateBounds();
 
       return;
@@ -1451,7 +1444,7 @@ export class GUIControl {
         if(this.extent.left < (halfX)){
           this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
         }else{
-          this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));  
+          this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
         }
       break;
       case Anchor.BottomRight:
@@ -1487,7 +1480,7 @@ export class GUIControl {
         controls = controls.concat( control.getActiveControls() );
       }
     }
-    
+
     return controls;
   }
 
@@ -1500,7 +1493,7 @@ export class GUIControl {
       this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
       this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
       this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
-      
+
       for(let i = 0; i < this.children.length; i++){
         this.children[i].updateBounds();
       }
@@ -1553,8 +1546,11 @@ export class GUIControl {
   }
 
   getInnerSize(){
-    let width = Math.max(0, this.extent.width - this.border.dimension);
-    let height = Math.max(0, this.extent.height - this.border.dimension);
+    let width = this.extent.width - this.border.dimension;
+    if(width < this.border.dimension) width = this.border.dimension;
+
+    let height = this.extent.height - this.border.dimension;
+    if(height < this.border.dimension) height = this.border.dimension;
 
     return {
       width: width,
@@ -1581,15 +1577,25 @@ export class GUIControl {
 
   getFillExtent(){
     let extent = this.getControlExtent();
+    let inner = this.getInnerSize();
+    //console.log('size', extent, inner);
+
     let shrinkWidth = this.getShrinkWidth();
 
-    const borderSize = Math.min(this.getBorderSize(), this.extent.width / 2, this.extent.height / 2);
-    let width = Math.max(0.00001, this.extent.width - 2 * borderSize - shrinkWidth);
-    let height = Math.max(0.00001, this.extent.height - 2 * borderSize);
+    let width = inner.width - this.border.dimension - shrinkWidth;
+    let height = inner.height - this.border.dimension;
+
+    if(width < 0){
+      width = 0.00001;
+    }
+
+    if(height < 0){
+      height = 0.00001;
+    }
 
     return {
-      top: extent.top, 
-      left: extent.left, 
+      top: extent.top,
+      left: extent.left,
       width: width,
       height: height
     };
@@ -1620,72 +1626,76 @@ export class GUIControl {
   }
 
   getBorderExtent(side: string){
-    const shrinkWidth = this.getShrinkWidth();
-    const borderSize = Math.min(this.getBorderSize(), this.extent.width / 2, this.extent.height / 2);
-
-    let innerW = Math.max(0, this.extent.width - borderSize);
-    let innerH = Math.max(0, this.extent.height - borderSize);
+    // let extent = this.getControlExtent();
+    let inner = this.getInnerSize();
 
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
-      innerW += this.parent.border.inneroffset * 2;
-      innerW = Math.min(this.extent.width, innerW);
+      inner.width += this.parent.border.inneroffset * 2;
+      inner.width = Math.min(this.extent.width, inner.width);
     }
 
     let top = 0, left = 0, width = 0, height = 0;
 
+    let shrinkWidth = this.getShrinkWidth();
+
     switch(side){
       case 'top':
-        top = -(innerH / 2);
-        left = -shrinkWidth / 2;
-        width = innerW - borderSize - shrinkWidth;
-        height = borderSize;
+        top = -(inner.height/2);
+        left =  -shrinkWidth/2;
+        width = inner.width - (this.getBorderSize()) - shrinkWidth;
+        height = this.getBorderSize();
       break;
       case 'bottom':
-        top = (innerH / 2);
-        left = -shrinkWidth / 2;
-        width = innerW - borderSize - shrinkWidth;
-        height = borderSize;
+        top = (inner.height/2);
+        left = -shrinkWidth/2;
+        width = inner.width - (this.getBorderSize()) - shrinkWidth;
+        height = this.getBorderSize();
       break;
       case 'left':
-        top = 0;
-        left = -(innerW / 2);
-        width = innerH - borderSize;
-        height = borderSize;
+        top = 0
+        left = -(inner.width/2);
+        width = inner.height - (this.getBorderSize()) < 0 ? 0.000001 : inner.height - (this.getBorderSize());
+        height = this.getBorderSize();
       break;
       case 'right':
         top = 0;
-        left = (innerW / 2) - shrinkWidth;
-        width = innerH - borderSize;
-        height = borderSize;
+        left = (inner.width/2) - shrinkWidth;
+        width = inner.height - (this.getBorderSize()) < 0 ? 0.000001 : inner.height - (this.getBorderSize());
+        height = this.getBorderSize();
       break;
       case 'topLeft':
-        top = (innerH / 2);
-        left = -(innerW / 2);
-        width = borderSize;
-        height = borderSize;
+        top = ((inner.height/2));
+        left = -((inner.width/2));
+        width = this.getBorderSize();
+        height = this.getBorderSize();
       break;
       case 'topRight':
-        top = (innerH / 2);
-        left = (innerW / 2) - shrinkWidth;
-        width = borderSize;
-        height = borderSize;
+        top = (inner.height/2);
+        left = (inner.width/2) - shrinkWidth;
+        width = this.getBorderSize();
+        height = this.getBorderSize();
       break;
       case 'bottomLeft':
-        top = -(innerH / 2);
-        left = -(innerW / 2);
-        width = borderSize;
-        height = borderSize;
+        top = -((inner.height/2));
+        left = -((inner.width/2));
+        width = this.getBorderSize();
+        height = this.getBorderSize();
       break;
       case 'bottomRight':
-        top = -(innerH / 2);
-        left = (innerW / 2) - shrinkWidth;
-        width = borderSize;
-        height = borderSize;
+        top = -((inner.height/2));
+        left = ((inner.width / 2)) - shrinkWidth;
+        width = this.getBorderSize();
+        height = this.getBorderSize();
       break;
     }
 
-    if(width < 0) width = 0.00001;
-    if(height < 0) height = 0.00001;
+    if(width < 0){
+      width = 0.00001;
+    }
+
+    if(height < 0){
+      height = 0.00001;
+    }
 
     return {
       top: top,
@@ -1697,72 +1707,76 @@ export class GUIControl {
   }
 
   getHighlightExtent(side: string){
-    const shrinkWidth = this.getShrinkWidth();
-    const highlightSize = Math.min(this.getHightlightSize(), this.extent.width / 2, this.extent.height / 2);
-
-    let innerW = Math.max(0, this.extent.width - highlightSize);
-    let innerH = Math.max(0, this.extent.height - highlightSize);
-
-    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
-      innerW += this.parent.border.inneroffset * 2;
-      innerW = Math.min(this.extent.width, innerW);
-    }
+    let extent = this.getControlExtent();
+    let inner = this.getInnerSize();
 
     let top = 0, left = 0, width = 0, height = 0;
 
+    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
+      inner.width += this.parent.border.inneroffset * 2;
+      inner.width = Math.min(this.extent.width, inner.width);
+    }
+
+    let shrinkWidth = this.getShrinkWidth();
+
     switch(side){
       case 'top':
-        top = -(innerH / 2);
-        left = -shrinkWidth / 2;
-        width = innerW - highlightSize - shrinkWidth;
-        height = highlightSize;
+        top = -( (inner.height/2) );
+        left = -shrinkWidth/2;
+        width = inner.width - (this.getHightlightSize()) - shrinkWidth;
+        height = this.getHightlightSize();
       break;
       case 'bottom':
-        top = (innerH / 2);
-        left = -shrinkWidth / 2;
-        width = innerW - highlightSize - shrinkWidth;
-        height = highlightSize;
+        top = (inner.height/2);
+        left = -shrinkWidth/2;
+        width = inner.width - (this.getHightlightSize()) - shrinkWidth;
+        height = this.getHightlightSize();
       break;
       case 'left':
         top = 0;
-        left = -(innerW / 2);
-        width = innerH - highlightSize;
-        height = highlightSize;
+        left = -(inner.width/2);
+        width = inner.height - (this.getHightlightSize());
+        height = this.getHightlightSize();
       break;
       case 'right':
         top = 0;
-        left = (innerW / 2) - shrinkWidth;
-        width = innerH - highlightSize;
-        height = highlightSize;
+        left = (inner.width/2);
+        width = inner.height - (this.getHightlightSize());
+        height = this.getHightlightSize();
       break;
       case 'topLeft':
-        top = (innerH / 2);
-        left = -(innerW / 2);
-        width = highlightSize;
-        height = highlightSize;
+        top = ((inner.height/2));
+        left = -((inner.width/2));
+        width = this.getHightlightSize();
+        height = this.getHightlightSize();
       break;
       case 'topRight':
-        top = (innerH / 2);
-        left = (innerW / 2) - shrinkWidth;
-        width = highlightSize;
-        height = highlightSize;
+        top = (inner.height/2);
+        left = (inner.width/2) - shrinkWidth;
+        width = this.getHightlightSize();
+        height = this.getHightlightSize();
       break;
       case 'bottomLeft':
-        top = -(innerH / 2);
-        left = -(innerW / 2);
-        width = highlightSize;
-        height = highlightSize;
+        top = -((inner.height/2));
+        left = -((inner.width/2));
+        width = this.getHightlightSize();
+        height = this.getHightlightSize();
       break;
       case 'bottomRight':
-        top = -(innerH / 2);
-        left = (innerW / 2) - shrinkWidth;
-        width = highlightSize;
-        height = highlightSize;
+        top = -((inner.height/2));
+        left = ((inner.width / 2)) - shrinkWidth;
+        width = this.getHightlightSize();
+        height = this.getHightlightSize();
       break;
     }
 
-    if(width < 0) width = 0.00001;
-    if(height < 0) height = 0.00001;
+    if(width < 0){
+      width = 0.00001;
+    }
+
+    if(height < 0){
+      height = 0.00001;
+    }
 
     return {
       top: top,
@@ -1774,7 +1788,7 @@ export class GUIControl {
 
   buildFill(){
     const extent = this.getFillExtent();
-    
+
     if(this.border.fill.mesh){
       this.border.fill.mesh.name = this.widget.name+' center fill';
       this.border.fill.mesh.scale.x = extent.width || 0.000001;
@@ -1849,7 +1863,7 @@ export class GUIControl {
     if(this.border.geometry instanceof THREE.BufferGeometry)
       this.border.geometry.dispose();
 
-    this.border.geometry = BufferGeometryUtils.mergeBufferGeometries(planes, false);
+    this.border.geometry = mergeBufferGeometries(planes, false);
     this.border.geometry.computeBoundingBox();
 
     //Edge Group
@@ -1934,7 +1948,7 @@ export class GUIControl {
     if(this.highlight.geometry instanceof THREE.BufferGeometry)
       this.highlight.geometry.dispose();
 
-    this.highlight.geometry = BufferGeometryUtils.mergeBufferGeometries(planes, false);
+    this.highlight.geometry = mergeBufferGeometries(planes, false);
     this.highlight.geometry.computeBoundingBox();
 
     //Edge Group
@@ -1976,7 +1990,7 @@ export class GUIControl {
       this.text.mesh.parent.remove(this.text.mesh);
 
     this.widget.userData.text.add(this.text.mesh);
-    
+
     let texture = this.text.texture;
     texture.flipY = false;
     texture.anisotropy = 1;
@@ -1986,12 +2000,12 @@ export class GUIControl {
 
     if(this.text.text != '' || (this.text.strref != 0 && typeof GameState.TLKManager.TLKStrings[this.text.strref] != 'undefined'))
       this.updateTextGeometry(this.text.text != '' ? this.menu.gameStringParse(this.text.text) : this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref].Value));
-    
+
     this.text.geometry.computeBoundingSphere = function () {
       if (this.boundingSphere === null) {
         this.boundingSphere = new THREE.Sphere()
       }
-    
+
       let positions = this.attributes.position.array
       let itemSize = this.attributes.position.itemSize
       if (!positions || !itemSize || positions.length < 2) {
@@ -2006,12 +2020,12 @@ export class GUIControl {
           '"position" attribute is likely to have NaN values.')
       }
     }
-    
+
     this.text.geometry.computeBoundingBox = function () {
       if (this.boundingBox === null) {
         this.boundingBox = new THREE.Box3()
       }
-    
+
       let bbox = this.boundingBox
       let positions = this.attributes.position.array
       let itemSize = this.attributes.position.itemSize
@@ -2037,14 +2051,14 @@ export class GUIControl {
       return;
 
     if(this.guiFont){
-      this.guiFont.buildGeometry(this.text.geometry, this.text.text, this.text.alignment, this.getInnerSize().width);
+      this.guiFont.buildGeometry(this.text.geometry, this.text.text, this.text.alignment, this.getOuterSize().width);
       this.alignText();
     }
-    
+
     if(this.text.geometry && this.text.geometry.boundingBox){
       this.text.geometry.boundingBox.getSize(this.textSize);
     }
-    
+
   }
 
   textSize: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
@@ -2080,7 +2094,7 @@ export class GUIControl {
       this.resizeControl();
       this.list.updateList();
     }
-    
+
   }
 
   disableBorder(){
@@ -2164,7 +2178,7 @@ export class GUIControl {
 
     if(typeof this.text.geometry !== 'object')
       this.buildText();
-    
+
     if(this.text.mesh){
       this.text.mesh.renderOrder = undefined;//renderOrder;
     }
@@ -2173,7 +2187,7 @@ export class GUIControl {
       //console.log('updateText', this.text.text);
       this.updateTextGeometry(this.text.text);
     }
-    
+
     if(this.text.geometry && this.text.geometry.boundingBox){
       this.text.geometry.boundingBox.getSize(this.textSize);
     }
@@ -2248,7 +2262,7 @@ export class GUIControl {
   }
 
   resizeCorner(side: string){
-    
+
     let extent = this.getBorderExtent(side);
 
     switch(side){
@@ -2277,7 +2291,7 @@ export class GUIControl {
   }
 
   resizeHighlight(side: string){
-    
+
     /*let extent = this.getHighlightExtent(side);
 
     let geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
@@ -2329,7 +2343,7 @@ export class GUIControl {
       if(typeof this.onMouseUp == 'function')
         this.onMouseUp(e: any);
     };
-    
+
     sprite.onHover = (e: any) => {
       if(typeof this.onMouseIn == 'function')
         this.onMouseIn(e: any);
@@ -2342,7 +2356,7 @@ export class GUIControl {
   }
 
   resizeHighlightCorner(side: string){
-    
+
     /*let extent = this.getHighlightExtent(side);
 
     let geometry = new THREE.PlaneGeometry( extent.width, extent.height, 1 );
@@ -2498,7 +2512,7 @@ export class GUIControl {
 
   }
 
-  bounds(positions: number[] = []) {
+  bounds(positions: ArrayLike<number> = []) {
     let count = positions.length / itemSize
     box.min[0] = positions[0]
     box.min[1] = positions[1]
@@ -2515,13 +2529,13 @@ export class GUIControl {
     }
   }
 
-  computeBox(positions: number[] = [], output: THREE.Box3) {
+  computeBox(positions: ArrayLike<number> = [], output: THREE.Box3) {
     this.bounds(positions)
     output.min.set(box.min[0], box.min[1], 0)
     output.max.set(box.max[0], box.max[1], 0)
   }
 
-  computeSphere (positions: number[] = [], output: THREE.Sphere) {
+  computeSphere (positions: ArrayLike<number> = [], output: THREE.Sphere) {
     this.bounds(positions)
     let minX = box.min[0]
     let minY = box.min[1]
@@ -2535,3 +2549,4 @@ export class GUIControl {
   }
 
 }
+

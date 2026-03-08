@@ -1,11 +1,11 @@
-import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
-import { CharGenCustomPanel as K1_CharGenCustomPanel } from "../../kotor/KOTOR";
+import { CharGenCustomPanel as K1_CharGenCustomPanel } from "@/game/kotor/KOTOR";
+import type { GUIControl, GUILabel, GUIButton } from "@/gui";
 
 /**
  * CharGenCustomPanel class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenCustomPanel.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -39,13 +39,13 @@ export class CharGenCustomPanel extends K1_CharGenCustomPanel {
     this.background = '';
     this.voidFill = false;
   }
-  
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
-  
+
 }

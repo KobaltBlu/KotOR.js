@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabImageViewerState } from "../../../states/tabs";
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
 
-import * as KotOR from "../../../KotOR";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabImageViewerState } from "@/apps/forge/states/tabs";
 
 export const TabImageViewer = function(props: BaseTabProps){
 
@@ -14,7 +14,7 @@ export const TabImageViewer = function(props: BaseTabProps){
   const [canvasWidth, setCanvasWidth] = useState<number>(512);
   const [canvasHeight, setCanvasHeight] = useState<number>(512);
   const [txiObject, setTXIObject] = useState<object>();
-  const [txiPane, setTXIPane] = useState<React.ReactElement | undefined>();
+  const [txiPane, setTXIPane] = useState<JSX.Element>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -24,7 +24,7 @@ export const TabImageViewer = function(props: BaseTabProps){
       const canvas = canvasRef.current;
       tab.getPixelData().then( (pixelData) => {
         console.log('pixel data', pixelData);
-        let ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d');
         if(ctx){
           // let data = pixelData;
           tab.workingData = pixelData;
@@ -51,7 +51,7 @@ export const TabImageViewer = function(props: BaseTabProps){
           canvas.width = width;
           canvas.height = height;
 
-          let imageData = ctx.getImageData(0, 0, width, height);
+          const imageData = ctx.getImageData(0, 0, width, height);
           if(image instanceof KotOR.TPCObject){
 
             if(tab.bitsPerPixel == 24)
@@ -99,7 +99,7 @@ export const TabImageViewer = function(props: BaseTabProps){
 
   const onMouseWheel = (e: WheelEvent) => {
     // let tmpCanvasScale = canvasScale;
-    if(!!e.ctrlKey){
+    if(e.ctrlKey){
       if(e.deltaY < 0){
         tmpCanvasScale -= 0.25;
       }else{
@@ -138,32 +138,15 @@ export const TabImageViewer = function(props: BaseTabProps){
     }
   }, [containerRef]);
 
-  const formatTxiValue = (value: unknown): string => {
-    if (value == null) return String(value);
-    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
-    if (Array.isArray(value)) {
-      return value.map((item) => {
-        if (item != null && typeof item === 'object' && 'x' in item && 'y' in item && 'z' in item) {
-          return `(${item.x}, ${item.y}, ${item.z})`;
-        }
-        return typeof item === 'object' ? JSON.stringify(item) : String(item);
-      }).join(', ');
-    }
-    if (typeof value === 'object' && value !== null && 'x' in value && 'y' in value && 'z' in value) {
-      return `(${(value as {x: number; y: number; z: number}).x}, ${(value as {x: number; y: number; z: number}).y}, ${(value as {x: number; y: number; z: number}).z})`;
-    }
-    return JSON.stringify(value);
-  };
-
   const eastContent = (
     (tab.image instanceof KotOR.TPCObject) ? (
       <div className="txi-pane">
         {
-          Object.entries(tab.image.txi).map( (element: [string, unknown]) => {
+          Object.entries(tab.image.txi).map( (element: [string, any]) => {
             return (
               <div className="txi-element" key={element[0]}>
                 <span className="txi-property">{element[0]}</span>
-                <span className="txi-value">{formatTxiValue(element[1])}</span>
+                <span className="txi-value">{element[1]}</span>
               </div>
             )
           })

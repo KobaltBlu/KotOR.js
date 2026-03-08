@@ -1,13 +1,13 @@
-import type { AudioEngine } from "./AudioEngine";
-import { EventListener } from "../utility/EventListener";
+import type { AudioEngine } from "@/audio/AudioEngine";
+import { EventListener } from "@/utility/EventListener";
 
 /**
  * AmbientAudioEmitter class.
- * 
+ *
  * The AmbientAudioEmitter class is used to play ambient audio in the game.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AmbientAudioEmitter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -29,6 +29,12 @@ export class AmbientAudioEmitter extends EventListener {
 
   volume: number = 1;
 
+  /** Used to avoid calling start() more than once when play() is invoked concurrently. */
+  private _playToken: number = 0;
+
+  /** True after dispose(); any in-flight play() must bail. */
+  private _disposed: boolean = false;
+
   constructor(engine: AudioEngine){
     super();
     this.engine = engine;
@@ -45,16 +51,17 @@ export class AmbientAudioEmitter extends EventListener {
 
   /**
    * Set the data for the audio
-   * @param data 
+   * @param data
    */
   setData(data: ArrayBuffer){
     this.data = data;
+    this._disposed = false;
     return this;
   }
 
   /**
    * Set the destination for the audio
-   * @param destination 
+   * @param destination
    */
   setDestination(destination: AudioNode){
     this.destination = destination;
@@ -64,8 +71,8 @@ export class AmbientAudioEmitter extends EventListener {
 
   /**
    * Play the audio data
-   * @param loop 
-   * @returns 
+   * @param loop
+   * @returns
    */
   async play(loop = false){
     if(!this.data){
@@ -79,7 +86,9 @@ export class AmbientAudioEmitter extends EventListener {
     }
 
     if(this.node || this.playing){
-      this.node.onended = undefined;
+      if(this.node){
+        this.node.onended = undefined;
+      }
       this.stop();
     }
 
@@ -89,12 +98,31 @@ export class AmbientAudioEmitter extends EventListener {
       this.gainNode = this.engine.audioCtx.createGain();
     }
 
+    const playToken = ++this._playToken;
     this.onendedFired = false;
     this.loaded = false;
-    this.node = this.engine.audioCtx.createBufferSource();
-    this.node.buffer = await this.engine.audioCtx.decodeAudioData(this.data.slice(0));
+
+    const node = this.engine.audioCtx.createBufferSource();
+    node.buffer = await this.engine.audioCtx.decodeAudioData(this.data.slice(0));
+
+    if(playToken !== this._playToken || this._disposed || !this.data || !this.destination){
+      return this;
+    }
+    if(!this.gainNode){
+      this.gainNode = this.engine.audioCtx.createGain();
+    }
+
+    this.node = node;
     this.node.loop = loop;
-    this.node.start(0, 0);
+    try {
+      this.node.start(0, 0);
+    } catch (e) {
+      if ((e as DOMException)?.name === 'InvalidStateError' && (e as DOMException)?.message?.includes('start')) {
+        this.node = null;
+        return this;
+      }
+      throw e;
+    }
     this.node.connect(this.gainNode);
     this.gainNode.connect(this.destination);
     this.gainNode.gain.value = this.volume;
@@ -147,7 +175,7 @@ export class AmbientAudioEmitter extends EventListener {
 
     const currentTime = this.engine.audioCtx.currentTime;
     const currentGain = this.gainNode.gain.value;
-    
+
     // Set up the fade out curve
     this.gainNode.gain.setValueAtTime(currentGain, currentTime);
     this.gainNode.gain.linearRampToValueAtTime(0, currentTime + duration);
@@ -165,7 +193,7 @@ export class AmbientAudioEmitter extends EventListener {
 
     const currentTime = this.engine.audioCtx.currentTime;
     const currentGain = this.gainNode.gain.value;
-    
+
     // Set up the fade in curve
     this.gainNode.gain.setValueAtTime(currentGain, currentTime);
     this.gainNode.gain.linearRampToValueAtTime(this.volume, currentTime + duration);
@@ -176,13 +204,15 @@ export class AmbientAudioEmitter extends EventListener {
    * Dispose of the audio
    */
   dispose(){
+    this._disposed = true;
+    this._playToken += 1;
     this.playing = false;
     this.loaded = false;
     this.data = null;
     if(this.node){
       this.node.onended = undefined;
       this.node.disconnect();
-      try{ this.node.stop(0); }catch(e){}
+      try{ this.node.stop(0); }catch(_){}
       this.node = null;
     }
     if(this.gainNode){

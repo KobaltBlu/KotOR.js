@@ -1,6 +1,6 @@
-import { OdysseyModel } from "../odyssey";
-import { ResourceLoader } from "./ResourceLoader";
-import { ResourceTypes } from "../resource/ResourceTypes";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import { OdysseyModel } from "@/odyssey";
+import { ResourceTypes } from "@/resource/ResourceTypes";
 
 /**
  * Interface defining the structure of the model cache.
@@ -116,7 +116,7 @@ export class MDLLoader {
       const model = OdysseyModel.FromBuffers(mdl_buffer, mdx_buffer);
       ModelCache.models.set(resref, model);
       return model;
-    }catch(e: any){
+    }catch(e: unknown){
       console.warn('MD(L|X) 404', resref);
       console.error(e);
       return undefined;

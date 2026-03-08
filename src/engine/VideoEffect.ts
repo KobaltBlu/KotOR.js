@@ -22,10 +22,10 @@ export class VideoEffect {
   saturation: number = 0;
   modulation = {red: 0, blue: 0, green: 0};
 
-  static From2DA(effect: any){
+  static From2DA(effect: Record<string, string | number>): VideoEffect {
     const vEffect = new VideoEffect();
     vEffect.id = parseInt(effect.__rowlabel);
-    vEffect.label = effect.label;
+    vEffect.label = String(effect.label ?? '');
     vEffect.saturation = parseFloat(typeof effect.saturation != 'undefined' ? effect.saturation : effect.saturation_pc);
     vEffect.modulation.red = parseFloat(typeof effect.modulationred != 'undefined' ? effect.modulationred : effect.modulationred_pc);
     vEffect.modulation.green = parseFloat(typeof effect.modulationgreen != 'undefined' ? effect.modulationgreen : effect.modulationgreen_pc);

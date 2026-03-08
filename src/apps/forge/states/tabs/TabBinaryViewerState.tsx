@@ -1,8 +1,12 @@
 import React from "react";
-import { TabBinaryViewer } from "../../components/tabs/tab-binary-viewer/TabBinaryViewer";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
+
+import { TabBinaryViewer } from "@/apps/forge/components/tabs/tab-binary-viewer/TabBinaryViewer";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 interface BinaryRow {
   offset: string;
@@ -18,18 +22,22 @@ export class TabBinaryViewerState extends TabState {
   dataLength: number = 0;
 
   constructor(options: BaseTabStateOptions = {}){
+    log.trace('TabBinaryViewerState constructor entry');
     super(options);
 
     if(this.file){
       this.tabName = this.file.getFilename();
+      log.debug('TabBinaryViewerState constructor tabName', this.tabName);
     }
 
     this.setContentView(<TabBinaryViewer tab={this}></TabBinaryViewer>);
     this.openFile();
+    log.trace('TabBinaryViewerState constructor exit');
   }
 
   openFile(file?: EditorFile){
-    return new Promise<void>( (resolve, reject) => {
+    log.trace('TabBinaryViewerState openFile entry', !!file);
+    return new Promise<void>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
@@ -40,13 +48,17 @@ export class TabBinaryViewerState extends TabState {
           this.dataLength = this.data.length;
           this.rows = this.buildRows();
           this.processEventListener('onEditorFileLoad');
+          log.trace('TabBinaryViewerState openFile loaded', this.dataLength);
           resolve();
         });
+      } else {
+        log.trace('TabBinaryViewerState openFile no file');
       }
     });
   }
 
   setBytesPerRow(value: number){
+    log.trace('TabBinaryViewerState setBytesPerRow', value);
     this.bytesPerRow = value;
     this.rows = this.buildRows();
     this.processEventListener('onEditorFileLoad');

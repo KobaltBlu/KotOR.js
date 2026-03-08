@@ -1,14 +1,15 @@
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
-import * as KotOR from "../../KotOR";
-import * as THREE from 'three';
 import React from "react";
-import { TabModelViewer } from "../../components/tabs/tab-model-viewer/TabModelViewer";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
-import { EditorFile } from "../../EditorFile";
-import { BinaryReader } from "../../../../utility/binary/BinaryReader";
-import { SceneGraphNode } from "../../SceneGraphNode";
-import { UI3DOverlayComponent } from "../../components/UI3DOverlayComponent";
+import * as THREE from 'three';
+
+import { TabModelViewer } from "@/apps/forge/components/tabs/tab-model-viewer/TabModelViewer";
+import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
 
 export type TabModelViewerStateEventListenerTypes =
 TabStateEventListenerTypes & 
@@ -313,11 +314,11 @@ export class TabModelViewerState extends TabState {
         const lyt = new KotOR.LYTObject(data);
         this.layout = lyt;
         for(let i = 0, len = this.layout.rooms.length; i < len; i++){
-          let room = this.layout.rooms[i];
+          const room = this.layout.rooms[i];
           // this.tabLoader.SetMessage(`Loading: ${room.name}`);
-          let mdl = await KotOR.MDLLoader.loader.load(room.name);
+          const mdl = await KotOR.MDLLoader.loader.load(room.name);
           if(mdl){
-            let model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
+            const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
               // manageLighting: false,
               context: this.ui3DRenderer, 
               mergeStatic: false,
@@ -365,7 +366,7 @@ export class TabModelViewerState extends TabState {
       if(this.layout_group.children.length){
         let modelIndex = this.layout_group.children.length - 1;
         while(modelIndex >= 0){
-          let model = this.layout_group.children[modelIndex] as KotOR.OdysseyModel3D;
+          const model = this.layout_group.children[modelIndex] as KotOR.OdysseyModel3D;
           if(model){
             model.dispose();
             this.layout_group.remove(model);

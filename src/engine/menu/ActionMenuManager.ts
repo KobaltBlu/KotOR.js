@@ -1,20 +1,20 @@
-import { GameState } from "../../GameState";
-import { ActionMenuPanel } from "./ActionMenuPanel";
-import { ActionMenuItem } from "./ActionMenuItem";
-import type { ModuleObject } from "../../module/ModuleObject";
-import type { ModuleCreature } from "../../module/ModuleCreature";
-import { IActionPanelLists } from "../../interface/gui/IActionPanelLists";
-import { GameEngineType } from "../../enums/engine/GameEngineType";
-import { ActionType } from "../../enums/actions/ActionType";
-import { SkillType } from "../../enums/nwscript/SkillType";
-import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "../../enums";
-import { TalentObject } from "../../talents/TalentObject";
+import { ActionMenuItem } from "@/engine/menu/ActionMenuItem";
+import { ActionMenuPanel } from "@/engine/menu/ActionMenuPanel";
+import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "@/enums";
+import { ActionType } from "@/enums/actions/ActionType";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import { GameState } from "@/GameState";
+import { IActionPanelLists } from "@/interface/gui/IActionPanelLists";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { TalentObject } from "@/talents/TalentObject";
 
 /**
  * ActionMenuManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionMenuManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -34,11 +34,11 @@ export class ActionMenuManager {
     targetPanels: [],
     selfPanels: [],
   };
-  
+
   static SetPC(oPC: ModuleCreature){
     ActionMenuManager.oPC = oPC;
   }
-  
+
   static SetTarget(oTarget: ModuleObject){
     ActionMenuManager.oTarget = oTarget;
   }
@@ -50,11 +50,11 @@ export class ActionMenuManager {
       targetPanels: [],
       selfPanels: [],
     };
-    
+
     for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.targetPanels[i] = new GameState.ActionMenuManager.ActionMenuPanel();
     }
-    
+
     for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.selfPanels[i] = new GameState.ActionMenuManager.ActionMenuPanel();
     }
@@ -64,7 +64,7 @@ export class ActionMenuManager {
     for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.targetPanels[i].clearActions();
     }
-    
+
     for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.selfPanels[i].clearActions();
     }
@@ -94,7 +94,7 @@ export class ActionMenuManager {
 
           if(securityTunnelers.length){
             const item = securityTunnelers[0];
-            
+
             const action = new GameState.ActionFactory.ActionUnlockObject();
             action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
@@ -104,7 +104,7 @@ export class ActionMenuManager {
               icon: item.getIcon()
             }));
           }
-          
+
           if(!this.oTarget?.notBlastable){
             ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: {
@@ -157,7 +157,7 @@ export class ActionMenuManager {
 
           if(securityTunnelers.length){
             const item = securityTunnelers[0];
-            
+
             const action = new GameState.ActionFactory.ActionUnlockObject();
             action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
@@ -167,7 +167,7 @@ export class ActionMenuManager {
               icon: item.getIcon()
             }));
           }
-          
+
           if(!this.oTarget?.notBlastable){
             ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: {
@@ -213,11 +213,11 @@ export class ActionMenuManager {
 
         if(ActionMenuManager.oPC.getEquippedWeaponType() == 1){
           //category = 0x1104
-          const feats = ActionMenuManager.oPC.getFeats().filter( (f: any, i:number, array: any[]) => { 
+          const feats = ActionMenuManager.oPC.getFeats().filter( (f: any, i:number, array: any[]) => {
             return f.category == 0x1104 && (
-              f.successor == '****' || 
+              f.successor == '****' ||
               (!array.find( (f2: any) => f2.__index == f.successor))
-            ) 
+            )
           });
 
           for(let i = 0, len = feats.length; i < len; i++){
@@ -232,11 +232,11 @@ export class ActionMenuManager {
 
         if(ActionMenuManager.oPC.getEquippedWeaponType() == 4){
           //category = 0x1111
-          const feats = ActionMenuManager.oPC.getFeats().filter( (f: any, i:number, array: any[]) => { 
+          const feats = ActionMenuManager.oPC.getFeats().filter( (f: any, i:number, array: any[]) => {
             return f.category == 0x1111 && (
-              f.successor == '****' || 
+              f.successor == '****' ||
               (!array.find( (f2: any) => f2.__index == f.successor))
-            ) 
+            )
           });
 
           for(let i = 0, len = feats.length; i < len; i++){
@@ -294,7 +294,9 @@ export class ActionMenuManager {
     }
 
     const friendlySpells = ActionMenuManager.oPC.getSpells().filter( (s: any) => {
-      return !isNaN(parseInt(s.forcefriendly));
+      const friendly = parseInt(s.forcefriendly);
+      const hostile = parseInt(s.forcehostile);
+      return friendly === 1 && (isNaN(hostile) || hostile === 0);
     });
 
     for(let i = 0; i < friendlySpells.length; i++){
@@ -336,7 +338,7 @@ export class ActionMenuManager {
           console.log('onTargetMenuAction', action);
           ActionMenuManager.oPC.actionQueue.addFront(
             action.action
-          ); 
+          );
         }else if(action.talent instanceof TalentObject){
           action.talent.useTalentOnObject(action.target, ActionMenuManager.oPC);
         }
@@ -353,7 +355,7 @@ export class ActionMenuManager {
 
   static onSelfMenuAction(index: number = 0){
     if(!ActionMenuManager.oPC){ return; }
-    
+
     const action = ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
     if(!action){ return; }
 

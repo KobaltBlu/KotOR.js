@@ -1,9 +1,9 @@
-import { BaseItemType } from "../../../enums";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
-import type { ModuleItem } from "../../../module/ModuleItem";
+import { BaseItemType } from "@/enums";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import type { ModuleItem } from "@/module/ModuleItem";
 
 const MELEE_ITEMS = [BaseItemType.QUARTER_STAFF, BaseItemType.STUN_BATON, BaseItemType.LONG_SWORD, BaseItemType.VIBRO_SWORD, BaseItemType.SHORT_SWORD, BaseItemType.VIBRO_BLADE, BaseItemType.DOUBLE_BLADED_SWORD, BaseItemType.VIBRO_DOUBLE_BLADE, BaseItemType.WOKIE_WARBLADE];
 const RANGED_ITEMS = [BaseItemType.BLASTER_PISTOL, BaseItemType.HEAVY_BLASTER, BaseItemType.HOLD_OUT_BLASTER, BaseItemType.ION_BLASTER, BaseItemType.DISRUPTER_PISTOL, BaseItemType.SONIC_PISTOL, BaseItemType.ION_RIFLE, BaseItemType.BOWCASTER, BaseItemType.BLASTER_CARBINE, BaseItemType.DISRUPTER_RIFLE, BaseItemType.SONIC_RIFLE, BaseItemType.REPEATING_BLASTER, BaseItemType.HEAVY_REPEATING_BLASTER];
@@ -42,7 +42,7 @@ export class MenuUpgradeItems extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _reject) => {
       this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.setSelected(item);
@@ -103,3 +103,4 @@ export class MenuUpgradeItems extends GameMenu {
   }
   
 }
+
