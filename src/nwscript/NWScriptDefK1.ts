@@ -949,7 +949,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
       if(BitWise.InstanceOfObject(GameState.module?.area, ModuleObjectType.ModuleArea)){
-        GameState.module!.area.setRestrictMode(args[0]);
+        GameState.module?.area?.setRestrictMode(args[0]);
       }
     }
   },
@@ -1212,7 +1212,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(GameState.module?.area, ModuleObjectType.ModuleArea)){
-        return GameState.module!.area.restrictMode ? NW_TRUE : NW_FALSE;
+        return GameState.module?.area?.restrictMode ? NW_TRUE : NW_FALSE;
       }
       return 0;
     }

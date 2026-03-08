@@ -137,7 +137,7 @@ export class ModuleWaypoint extends ModuleObject {
 
     if(this.hasMapNote){
       if(GameState.module?.area?.areaMap){
-        GameState.module.area.areaMap.removeMapNote(this);
+        GameState.module?.area?.areaMap?.removeMapNote(this);
       }
     }
   }

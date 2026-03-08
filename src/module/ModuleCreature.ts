@@ -991,8 +991,9 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    for(let i = 0, triglen = this.area?.triggers.length ?? 0; i < triglen; i++){
-      const trig = this.area!.triggers[i];
+    const areaTriggers = this.area?.triggers ?? [];
+    for(let i = 0, triglen = areaTriggers.length; i < triglen; i++){
+      const trig = areaTriggers[i];
       if(trig.type != ModuleTriggerType.TRAP){ continue; }
       if(trig.trapDetected){ continue; }
       const actionFlag = new GameState.ActionFactory.ActionFlagMine();
