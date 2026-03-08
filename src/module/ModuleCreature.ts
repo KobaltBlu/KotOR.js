@@ -1471,7 +1471,12 @@ export class ModuleCreature extends ModuleObject {
 
     if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
       const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
-      this.actionQueue.add(action);
+      // For NPCs and companions, combat must take priority over any follow/walk actions
+      if(GameState.getCurrentPlayer() === this){
+        this.actionQueue.add(action);
+      }else{
+        this.actionQueue.addFront(action);
+      }
     }
 
   }

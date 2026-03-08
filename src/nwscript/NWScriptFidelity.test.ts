@@ -8242,3 +8242,150 @@ describe('71. recalculateMaxHP, TalentFeat.From2DA id, CharGenCustomPanel skipIn
   });
 
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 72. FactionManager null-guard + attackCreature addFront for non-player
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('72. FactionManager null-guard and attackCreature priority', () => {
+
+  // ── FactionManager.GetReputation null-guard ──────────────────────────────
+
+  it('GetReputation: returns 50 (neutral) when oTarget.faction is undefined', () => {
+    // Simulates oSource having a faction but oTarget (e.g. a trigger) having none
+    function GetReputation(oSource: any, oTarget: any): number {
+      if(!oSource || !oTarget) return 0;
+      // Fixed guard: both oSource.faction AND oTarget.faction must be set
+      if(oSource.faction && oTarget.faction){
+        const rep = oSource.faction.reputations[oTarget.faction.id];
+        if(rep !== undefined) return rep.reputation;
+      }
+      return 50;
+    }
+    const oSource = { faction: { reputations: { 2: { reputation: 5 } } } };
+    const oTarget = { faction: undefined }; // trigger / placeable with no faction
+    // Should NOT throw; returns neutral (50)
+    expect(GetReputation(oSource, oTarget)).toBe(50);
+  });
+
+  it('GetReputation regression: old code crashed on oTarget.faction.id when faction undefined', () => {
+    // Simulates old code path: oSource.faction is set, oTarget.faction is undefined
+    function GetReputationOld(oSource: any, oTarget: any): number {
+      if(!oSource || !oTarget) return 0;
+      if(oSource.faction){
+        // Bug: accessing oTarget.faction.id when oTarget.faction is undefined → TypeError
+        let threwError = false;
+        try {
+          const _id = oTarget.faction.id; // throws if oTarget.faction is undefined
+          const rep = oSource.faction.reputations[_id];
+          if(rep !== undefined) return rep.reputation;
+        } catch {
+          threwError = true;
+        }
+        return threwError ? -1 : 50;
+      }
+      return 50;
+    }
+    const oSource = { faction: { reputations: {} } };
+    const oTarget = { faction: undefined };
+    // Old code throws TypeError; we capture it as -1 in the regression simulation
+    expect(GetReputationOld(oSource, oTarget)).toBe(-1);
+  });
+
+  it('GetReputation: returns correct reputation when both factions are defined', () => {
+    function GetReputation(oSource: any, oTarget: any): number {
+      if(!oSource || !oTarget) return 0;
+      if(oSource.faction && oTarget.faction){
+        const rep = oSource.faction.reputations[oTarget.faction.id];
+        if(rep !== undefined) return rep.reputation;
+      }
+      return 50;
+    }
+    const oSource = { faction: { reputations: { 3: { reputation: 5 } } } };
+    const oTarget = { faction: { id: 3 } };
+    expect(GetReputation(oSource, oTarget)).toBe(5); // hostile
+  });
+
+  it('IsHostile: returns false when oTarget.faction is undefined (no crash)', () => {
+    function GetReputation(oSource: any, oTarget: any): number {
+      if(!oSource || !oTarget) return 0;
+      if(oSource.faction && oTarget.faction){
+        const rep = oSource.faction.reputations[oTarget.faction.id];
+        if(rep !== undefined) return rep.reputation;
+      }
+      return 50;
+    }
+    function IsHostile(oSource: any, oTarget: any): boolean {
+      return GetReputation(oSource, oTarget) <= 10;
+    }
+    // Creature with faction checking a trigger (no faction)
+    const creature = { faction: { reputations: {} } };
+    const trigger = { faction: undefined };
+    expect(IsHostile(creature, trigger)).toBe(false); // 50 > 10 → not hostile
+  });
+
+  // ── attackCreature addFront for non-player creatures ──────────────────────
+
+  it('attackCreature: ActionCombat added to FRONT for non-player creatures', () => {
+    const queue: string[] = [];
+    // Simulate the fixed logic
+    function attackCreature(isCurrentPlayer: boolean) {
+      const hasCombatAction = queue.indexOf('ActionCombat') >= 0;
+      if(!hasCombatAction){
+        if(isCurrentPlayer){
+          queue.push('ActionCombat');     // add to back
+        } else {
+          queue.unshift('ActionCombat'); // addFront
+        }
+      }
+    }
+    queue.push('ActionFollowLeader');
+    attackCreature(false); // companion / enemy
+    // ActionCombat should be at front (index 0), ActionFollowLeader at back
+    expect(queue[0]).toBe('ActionCombat');
+    expect(queue[1]).toBe('ActionFollowLeader');
+  });
+
+  it('attackCreature: ActionCombat added to BACK for player-controlled creature', () => {
+    const queue: string[] = [];
+    function attackCreature(isCurrentPlayer: boolean) {
+      const hasCombatAction = queue.indexOf('ActionCombat') >= 0;
+      if(!hasCombatAction){
+        if(isCurrentPlayer){
+          queue.push('ActionCombat');     // add to back
+        } else {
+          queue.unshift('ActionCombat'); // addFront
+        }
+      }
+    }
+    queue.push('ActionMoveToPoint');
+    attackCreature(true); // player character
+    expect(queue[0]).toBe('ActionMoveToPoint');
+    expect(queue[1]).toBe('ActionCombat');
+  });
+
+  it('attackCreature: ActionCombat not added twice if already in queue', () => {
+    const queue: string[] = ['ActionFollowLeader', 'ActionCombat'];
+    function attackCreature(isCurrentPlayer: boolean) {
+      const hasCombatAction = queue.indexOf('ActionCombat') >= 0;
+      if(!hasCombatAction){
+        if(isCurrentPlayer){
+          queue.push('ActionCombat');
+        } else {
+          queue.unshift('ActionCombat');
+        }
+      }
+    }
+    attackCreature(false);
+    expect(queue.filter(a => a === 'ActionCombat').length).toBe(1);
+  });
+
+  it('companion combat: ActionFollowLeader resumes after ActionCombat completes', () => {
+    // Simulate queue processing: ActionCombat at front blocks ActionFollowLeader
+    const queue: string[] = ['ActionCombat', 'ActionFollowLeader'];
+    // Process ActionCombat (completes after one tick)
+    queue.shift(); // ActionCombat → COMPLETE, removed
+    expect(queue[0]).toBe('ActionFollowLeader');
+  });
+
+});

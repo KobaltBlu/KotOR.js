@@ -148,7 +148,7 @@ export class FactionManager {
     if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
       return 0;
 
-    if(oSource.faction){
+    if(oSource.faction && oTarget.faction){
       let reputation = oSource.faction.reputations[oTarget.faction.id];
       if(reputation instanceof Reputation){
         return reputation.reputation;
