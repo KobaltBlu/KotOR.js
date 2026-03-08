@@ -834,7 +834,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateActionQueue(delta = 0){
-    if(this.isDebilitated() && this.area.module.readyToProcessEvents)
+    if(this.isDebilitated() && this.area?.module?.readyToProcessEvents)
       return;
 
     if(!GameState.module.readyToProcessEvents)
@@ -991,8 +991,8 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    for(let i = 0, triglen = this.area.triggers.length; i < triglen; i++){
-      const trig = this.area.triggers[i];
+    for(let i = 0, triglen = this.area?.triggers.length ?? 0; i < triglen; i++){
+      const trig = this.area!.triggers[i];
       if(trig.type != ModuleTriggerType.TRAP){ continue; }
       if(trig.trapDetected){ continue; }
       const actionFlag = new GameState.ActionFactory.ActionFlagMine();
@@ -1251,7 +1251,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
-      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      action.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
       action.setParameter(4, ActionParameterType.DWORD, target.id);
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
       action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, distance));
@@ -1285,7 +1285,7 @@ export class ModuleCreature extends ModuleObject {
         action.setParameter(0, ActionParameterType.FLOAT, position.x);
         action.setParameter(1, ActionParameterType.FLOAT, position.y);
         action.setParameter(2, ActionParameterType.FLOAT, position.z);
-        action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+        action.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
         action.setParameter(4, ActionParameterType.DWORD, 0xFFFFFFFF);
         action.setParameter(5, ActionParameterType.INT, run ? 1 : 0);
         action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, maxDistance));
@@ -1303,7 +1303,7 @@ export class ModuleCreature extends ModuleObject {
     if(target instanceof EngineLocation || target instanceof ModuleObject){
 
       let distance = 0.1;
-      let creatures = GameState.module.area.creatures;
+      let creatures = GameState.module?.area?.creatures ?? [];
 
       //Check if creatures are too close to location
       for(let i = 0; i < creatures.length; i++){
@@ -1335,7 +1335,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
-      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      action.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
       action.setParameter(4, ActionParameterType.DWORD, target instanceof EngineLocation ? ModuleObjectConstant.OBJECT_INVALID : target.id );
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
       action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, distance));
@@ -1367,7 +1367,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
-      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      action.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
       action.setParameter(4, ActionParameterType.INT, 0);
       action.setParameter(5, ActionParameterType.FLOAT, 20.0);
       action.setParameter(6, ActionParameterType.FLOAT, target.rotation.x);
