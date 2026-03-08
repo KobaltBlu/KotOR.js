@@ -3104,6 +3104,7 @@ export class ModuleCreature extends ModuleObject {
         abilityScore = this.getCHA();
         break;
       default:
+        console.warn(`getSkillModifier: unknown skillId ${skillId}, defaulting to 10 for ability score`);
         abilityScore = 10;
     }
     return rank + CombatRound.GetMod(abilityScore);

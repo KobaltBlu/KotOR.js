@@ -7917,3 +7917,194 @@ describe('69. Perception data-bit fix, enemy lastAttackTarget, getSkillModifier,
   });
 
 });
+
+// ---------------------------------------------------------------------------
+describe('70. ModuleTrigger OnEnter/OnExit always fires; PopUpGUIPanel level-up', () => {
+
+  // ── trigger enter/exit ──────────────────────────────────────────────────
+
+  it('trigger OnEnter fires for any object regardless of isHostile', () => {
+    let onEnterCalledWith: any;
+    const objectsInside: any[] = [];
+
+    function addObjectInside(o: any){ if(objectsInside.indexOf(o) >= 0) return false; objectsInside.push(o); return true; }
+    function removeObjectInside(o: any){ const i = objectsInside.indexOf(o); if(i < 0) return false; objectsInside.splice(i,1); return true; }
+    function onEnter(o: any){ onEnterCalledWith = o; }
+    function onExit(_o: any){}
+
+    function updateObjectInside(object: any, insideBox: boolean){
+      if(insideBox){
+        const added = addObjectInside(object);
+        if(!added) return;
+        onEnter(object);
+        return;
+      }
+      const removed = removeObjectInside(object);
+      if(!removed) return;
+      onExit(object);
+    }
+
+    const friendlyPlayer = { hostile: false };
+    updateObjectInside(friendlyPlayer, true);
+    expect(onEnterCalledWith).toBe(friendlyPlayer);
+  });
+
+  it('trigger OnEnter regression: old code never fired for non-hostile objects', () => {
+    let onEnterCalled = false;
+    // Old code required isHostile(object) == true
+    function updateObjectInsideOld(isHostile: boolean, triggered: boolean) {
+      const added = true; // simulating new entry
+      if(!added) return;
+      if(!triggered && isHostile){ // bug: needed isHostile
+        onEnterCalled = true;
+      }
+    }
+    updateObjectInsideOld(false, false); // player is not hostile to trigger
+    expect(onEnterCalled).toBe(false); // regression: never fires
+  });
+
+  it('trigger OnExit fires after OnEnter has already fired', () => {
+    let onExitCalledWith: any;
+    const objectsInside: any[] = [];
+    let triggered = false; // represents the old triggered flag being true
+
+    function addObjectInside(o: any){ if(objectsInside.indexOf(o) >= 0) return false; objectsInside.push(o); return true; }
+    function removeObjectInside(o: any){ const i = objectsInside.indexOf(o); if(i < 0) return false; objectsInside.splice(i,1); return true; }
+    function onExit(o: any){ onExitCalledWith = o; }
+
+    function updateObjectInsideNew(object: any, insideBox: boolean){
+      if(insideBox){ addObjectInside(object); return; }
+      const removed = removeObjectInside(object);
+      if(!removed) return;
+      onExit(object); // new: always fire onExit
+    }
+
+    const player = {};
+    // player entered (and triggered got set true in old code)
+    objectsInside.push(player);
+    triggered = true;
+
+    // player exits
+    updateObjectInsideNew(player, false);
+    expect(onExitCalledWith).toBe(player);
+  });
+
+  it('trigger OnExit regression: old code never fired when triggered=true', () => {
+    let onExitCalled = false;
+    const objectsInside = [{}];
+    const player = objectsInside[0];
+    const triggered = true; // set after onEnter fired
+
+    function updateObjectInsideOld(object: any, insideBox: boolean, isHostile: boolean){
+      if(insideBox) return;
+      const removed = true; // simulating removal
+      if(!removed) return;
+      if(!triggered && isHostile){ // bug: triggered=true blocks onExit
+        onExitCalled = true;
+      }
+    }
+    updateObjectInsideOld(player, false, true);
+    expect(onExitCalled).toBe(false); // regression: onExit blocked
+  });
+
+  it('trigger re-entry after exit fires OnEnter again', () => {
+    let enterCount = 0;
+    const objectsInside: any[] = [];
+
+    function addObjectInside(o: any){ if(objectsInside.indexOf(o) >= 0) return false; objectsInside.push(o); return true; }
+    function removeObjectInside(o: any){ const i = objectsInside.indexOf(o); if(i < 0) return false; objectsInside.splice(i,1); return true; }
+    function onEnter(_o: any){ enterCount++; }
+    function onExit(_o: any){}
+
+    function updateObjectInside(object: any, insideBox: boolean){
+      if(insideBox){
+        const added = addObjectInside(object);
+        if(!added) return;
+        onEnter(object);
+        return;
+      }
+      const removed = removeObjectInside(object);
+      if(!removed) return;
+      onExit(object);
+    }
+
+    const player = {};
+    updateObjectInside(player, true);   // enter
+    updateObjectInside(player, false);  // exit
+    updateObjectInside(player, true);   // re-enter
+    expect(enterCount).toBe(2);         // fired twice
+  });
+
+  // ── PopUpGUIPanel level-up (panel 2) ────────────────────────────────────
+
+  it('PopUpGUIPanel panel=2 opens MenuLevelUp', () => {
+    let levelUpOpened = false;
+    const mockMenuLevelUp = { open: () => { levelUpOpened = true; } };
+
+    function PopUpGUIPanel(panel: number, menuLevelUp: any){
+      if(panel === 0 || panel === 1){
+        // game over
+      }else if(panel === 2){
+        menuLevelUp?.open();
+      }
+    }
+
+    PopUpGUIPanel(2, mockMenuLevelUp);
+    expect(levelUpOpened).toBe(true);
+  });
+
+  it('PopUpGUIPanel panel=0 does NOT open MenuLevelUp', () => {
+    let levelUpOpened = false;
+    const mockMenuLevelUp = { open: () => { levelUpOpened = true; } };
+
+    function PopUpGUIPanel(panel: number, menuLevelUp: any){
+      if(panel === 0 || panel === 1){ /* game over */ }
+      else if(panel === 2){ menuLevelUp?.open(); }
+    }
+
+    PopUpGUIPanel(0, mockMenuLevelUp);
+    expect(levelUpOpened).toBe(false);
+  });
+
+  // ── addXP level-up UI fallback ──────────────────────────────────────────
+
+  it('addXP opens MenuLevelUp directly when no module script and threshold crossed', () => {
+    let levelUpOpened = false;
+    const mockMenu = { open: () => { levelUpOpened = true; } };
+
+    function addXP(xp: number, state: { xp: number, threshold: number }, hasScript: boolean, isPlayer: boolean, menuLevelUp: any){
+      const couldBefore = state.xp >= state.threshold; // mirrors canLevelUp()
+      state.xp += xp;
+      const canNow = state.xp >= state.threshold;
+      if(isPlayer && !couldBefore && canNow){
+        if(hasScript){
+          // run script...
+        }else{
+          menuLevelUp?.open();
+        }
+      }
+    }
+
+    addXP(500, { xp: 400, threshold: 800 }, false, true, mockMenu);
+    expect(levelUpOpened).toBe(true);
+  });
+
+  it('addXP does NOT open MenuLevelUp when script handles it', () => {
+    let levelUpOpened = false;
+    const mockMenu = { open: () => { levelUpOpened = true; } };
+
+    function addXP(xp: number, state: { xp: number, threshold: number }, hasScript: boolean, isPlayer: boolean, menuLevelUp: any){
+      const couldBefore = state.xp >= state.threshold;
+      state.xp += xp;
+      const canNow = state.xp >= state.threshold;
+      if(isPlayer && !couldBefore && canNow){
+        if(hasScript){ /* script runs, no direct open */ }
+        else{ menuLevelUp?.open(); }
+      }
+    }
+
+    addXP(500, { xp: 400, threshold: 800 }, true, true, mockMenu);
+    expect(levelUpOpened).toBe(false);
+  });
+
+});

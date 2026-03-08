@@ -1,5 +1,6 @@
 import { ModuleObject } from "./ModuleObject";
 import type { ModuleRoom } from "./ModuleRoom";
+import type { ModuleCreature } from "./ModuleCreature";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { GameState } from "../GameState";
 import { SSFType } from "../enums/resource/SSFType";
@@ -446,7 +447,7 @@ export class ModuleDoor extends ModuleObject {
     if(this.isLocked() && !this.keyRequired && nSecuritySkill >= 1){
       const d20 = Dice.roll(1, DiceType.d20);
       const skillTotal = BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)
-        ? (object as any).getSkillModifier(SkillType.SECURITY)
+        ? (object as ModuleCreature).getSkillModifier(SkillType.SECURITY)
         : nSecuritySkill;
       let skillCheck = (skillTotal + d20) - this.openLockDC;
       if(skillCheck >= 1 && nSecuritySkill >= 1){

@@ -394,24 +394,20 @@ export class ModuleTrigger extends ModuleObject {
       //If the creature is inside the bounding box, attempt to add it to the objectsInside array
       const added = this.addObjectInside(object);
       if(!added){ return; }
-      if(!this.triggered && this.isHostile(object)){
-        object.lastTriggerEntered = this;
-        this.lastObjectEntered = object;
-
-        this.onEnter(object);
-        this.triggered = true;
-      }
+      // Fire OnEnter for any entering object (trap: only one-shot via trapTriggered flag)
+      object.lastTriggerEntered = this;
+      this.lastObjectEntered = object;
+      this.onEnter(object);
       return;
     }
 
     //If the creature is not inside the bounding box, attempt to remove it from the objectsInside array
     const removed = this.removeObjectInside(object);
     if(!removed){ return; }
-    if(!this.triggered && this.isHostile(object)){
-      object.lastTriggerExited = this;
-      this.lastObjectExited = object;
-      this.onExit(object);
-    }
+    // Fire OnExit for any leaving object (trap: guarded internally by trapTriggered)
+    object.lastTriggerExited = this;
+    this.lastObjectExited = object;
+    this.onExit(object);
   }
 
   onEnter(object?: ModuleObject){

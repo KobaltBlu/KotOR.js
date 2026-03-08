@@ -62,12 +62,14 @@ export class CharGenFeats extends GameMenu {
         if(!selectedItem) return;
         const group: any[] = selectedItem.node as any[];
         if(!group || !group.length) return;
-        // Find the highest unlocked tier in the chain that the creature doesn't yet have
+        // Find the highest unlocked tier in the chain that the creature doesn't yet have.
+        // feat.__rowlabel is the 2DA row index (= feat ID used by getHasFeat/addFeat).
         let featToGrant: any;
         for(let i = group.length - 1; i >= 0; i--){
           const feat = group[i];
           if(!feat) continue;
-          if(!this.creature.getHasFeat(feat.rowIndex ?? i)){
+          const featId = parseInt(feat.__rowlabel ?? feat.rowLabel ?? 0, 10) || 0;
+          if(!this.creature.getHasFeat(featId)){
             featToGrant = feat;
             break;
           }

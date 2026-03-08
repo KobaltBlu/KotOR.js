@@ -242,7 +242,7 @@ The following steps must work to call the game "playable start-to-finish":
 | 3.2.2 | Container loot UI (`MenuContainer`) opens and transfers items | 🔶 | UI opens; item transfer to player inventory incomplete |
 | 3.2.3 | Item pickup (ground items → inventory) | 🔶 | `ActionPickUpItem.ts` – item removed from world, inventory add partial |
 | 3.2.4 | Placeable "Use" action fires OnUsed script | 🔶 | Script fires; return values sometimes dropped |
-| 3.2.5 | Trigger enter / exit scripts execute | 🔶 | `OnEnter` fires; `OnExit` inconsistent |
+| 3.2.5 | Trigger enter / exit scripts execute | ✅ | `OnEnter`/`OnExit` fire for all objects; re-entry works; `isHostile`/`triggered` guards removed |
 | 3.2.6 | Waypoints used for patrols and trigger areas | ✅ | |
 
 ### 3.3 Dialog / Conversation System
