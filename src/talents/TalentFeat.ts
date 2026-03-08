@@ -656,7 +656,9 @@ export class TalentFeat extends TalentObject {
   }
 
   static From2DA(row: any = {}) {
-    const talentFeat = new TalentFeat();
+    const rowIndex = parseInt(row.__rowlabel ?? 0, 10) || 0;
+    // Use the row-label as the feat ID so getHasFeat()/addFeat() work correctly.
+    const talentFeat = new TalentFeat(rowIndex);
     talentFeat.apply2DA(row);
     return talentFeat;
   }

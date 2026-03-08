@@ -41,7 +41,7 @@ export class CharGenCustomPanel extends K1_CharGenCustomPanel {
   }
   
   async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
+    await super.menuControlInitializer(skipInit);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();

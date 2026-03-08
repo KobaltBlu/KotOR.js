@@ -297,6 +297,37 @@ export class CharGenManager {
     return CharGenManager.selectedCreature.classes[0].skillstable.toLowerCase() + '_reco';
   }
 
+  /**
+   * Returns true if the given skill (by 0-based index) is a class skill for the
+   * creature's primary class.  Class skills cost 1 point per rank; cross-class
+   * skills cost 2 points per rank.
+   */
+  static isClassSkill(skillIndex: number): boolean {
+    const table = TwoDAManager.datatables.get('skills');
+    if(!table) return true; // safe default
+    const col = CharGenManager.getSkillTableColumn();
+    const row = table.rows[skillIndex];
+    if(!row) return true;
+    const val = row[col];
+    return val === '1' || val === 1;
+  }
+
+  /**
+   * Returns the skill-point cost to add one rank to the skill at skillIndex.
+   * Class skills cost 1 point; cross-class skills cost 2 points.
+   */
+  static getSkillCost(skillIndex: number): number {
+    return CharGenManager.isClassSkill(skillIndex) ? 1 : 2;
+  }
+
+  /**
+   * Returns the skill-point refund when removing one rank from the skill at skillIndex.
+   * Mirrors getSkillCost().
+   */
+  static getSkillRefund(skillIndex: number): number {
+    return CharGenManager.getSkillCost(skillIndex);
+  }
+
   static getRecommendedOrder() {
     let skillOrder: any = {
       '0': -1,

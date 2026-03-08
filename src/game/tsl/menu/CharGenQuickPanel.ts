@@ -51,6 +51,8 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
         e.stopPropagation();
         GameState.CharGenManager.selectedCreature.equipment.ARMOR = undefined;
         GameState.CharGenManager.selectedCreature.template.getFieldByLabel('Equip_ItemList').childStructs = [];
+        // Recalculate HP from class hitdie + CON modifier before saving the template
+        GameState.CharGenManager.selectedCreature.recalculateMaxHP();
         GameState.GlobalVariableManager.Init();
         GameState.PartyManager.PlayerTemplate = GameState.CharGenManager.selectedCreature.save();
         GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;

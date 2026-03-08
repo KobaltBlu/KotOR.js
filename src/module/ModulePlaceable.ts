@@ -1,4 +1,5 @@
 import type { ModuleRoom } from "./ModuleRoom";
+import type { ModuleCreature } from "./ModuleCreature";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { BinaryReader } from "../utility/binary/BinaryReader";
 import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
@@ -533,7 +534,10 @@ export class ModulePlaceable extends ModuleObject {
     const nSecuritySkill = object.getSkillLevel(SkillType.SECURITY);
     if(this.isLocked() && !this.keyRequired && nSecuritySkill >= 1){
       const d20 = Dice.roll(1, DiceType.d20);
-      let skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
+      const skillTotal = BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)
+        ? (object as ModuleCreature).getSkillModifier(SkillType.SECURITY)
+        : nSecuritySkill;
+      let skillCheck = (skillTotal + d20) - this.openLockDC;
       if(skillCheck >= 1 && nSecuritySkill >= 1){
         this.unlock(object);
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){

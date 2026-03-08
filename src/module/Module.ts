@@ -578,9 +578,11 @@ export class Module {
     }
 
     const areaList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Area_list') );
+    // Save current area state (git/are) keyed by area name for the ERF below.
+    const areaSaveData = new Map<string, { git: GFFObject, are: GFFObject }>();
     if(this.area){
       areaList.addChildStruct( this.area.saveAreaListStruct() );
-      this.area.save();
+      areaSaveData.set(this.area.name, this.area.save());
     }
 
     ifo.RootNode.addField( new GFFField(GFFDataType.INT, 'Mod_Creator_ID') ).setValue(this.creatorId);
@@ -650,8 +652,11 @@ export class Module {
     sav.addResource('module', ResourceTypes['ifo'], this.ifo.getExportBuffer());
     for(let i = 0; i < this.areas.length; i++){
       const area = this.areas[i];
-      sav.addResource(area.name, ResourceTypes['are'], area.are.getExportBuffer());
-      sav.addResource(area.name, ResourceTypes['git'], area.git.getExportBuffer());
+      const saved = areaSaveData.get(area.name);
+      // Use the freshly serialised git/are if available, fall back to the
+      // original in-memory buffers for areas that aren't currently loaded.
+      sav.addResource(area.name, ResourceTypes['are'], saved ? saved.are.getExportBuffer() : area.are.getExportBuffer());
+      sav.addResource(area.name, ResourceTypes['git'], saved ? saved.git.getExportBuffer() : area.git.getExportBuffer());
     }
 
     if(this.includeInSave()){

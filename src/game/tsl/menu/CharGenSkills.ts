@@ -66,7 +66,7 @@ export class CharGenSkills extends K1_CharGenSkills {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
+    await super.menuControlInitializer(skipInit);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();

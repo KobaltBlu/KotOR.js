@@ -210,11 +210,11 @@ The following steps must work to call the game "playable start-to-finish":
 | 2.2.1 | Quick character creation selects a pre-built character and enters game | ✅ | `CharGenQuickPanel.ts` |
 | 2.2.2 | Custom creation: class selection works (Soldier / Scout / Scoundrel) | ✅ | `CharGenClasses.ts` |
 | 2.2.3 | Ability score allocation (STR/DEX/CON/INT/WIS/CHA point-buy) | ✅ | `CharGenAbilities.ts` |
-| 2.2.4 | Skill point allocation correct per class/INT bonus | 🔶 | UI present; cross-class penalty not applied |
-| 2.2.5 | Feat selection (starting feats per class + bonus feat) | 🔶 | UI shows feats; default feats not auto-granted on confirm |
+| 2.2.4 | Skill point allocation correct per class/INT bonus | ✅ | +/- buttons wired; class skill vs cross-class (cost 2) enforced |
+| 2.2.5 | Feat selection (starting feats per class + bonus feat) | ✅ | BTN_ACCEPT, BTN_BACK, BTN_SELECT wired; auto-grant on show |
 | 2.2.6 | Portrait / appearance selection renders 3D model preview | ✅ | `CharGenPortCust.ts` |
 | 2.2.7 | Name entry saves and is used throughout game | ✅ | `CharGenName.ts` |
-| 2.2.8 | Player `ModuleCreature` object fully initialised with chosen stats on confirm | 🔶 | Stats applied; derived values (attack bonus, saving throws, HP) recalculation needed |
+| 2.2.8 | Player `ModuleCreature` object fully initialised with chosen stats on confirm | ✅ | `recalculateMaxHP()` called on confirm; HP = (hitdie + CON mod) × level |
 | 2.2.9 | Opening BIK video plays after character confirm | ✅ | `VideoManager` triggered from `CharGenMain.ts` |
 
 ---
@@ -239,10 +239,10 @@ The following steps must work to call the game "playable start-to-finish":
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | 3.2.1 | Right-click context menu on objects (examine, open, use, etc.) | ✅ | `InGameOverlay.ts` |
-| 3.2.2 | Container loot UI (`MenuContainer`) opens and transfers items | 🔶 | UI opens; item transfer to player inventory incomplete |
-| 3.2.3 | Item pickup (ground items → inventory) | 🔶 | `ActionPickUpItem.ts` – item removed from world, inventory add partial |
+| 3.2.2 | Container loot UI (`MenuContainer`) opens and transfers items | ✅ | UI opens; item take/give via `LB_ITEMS.onSelected`; BTN_TAKE_ALL clears container |
+| 3.2.3 | Item pickup (ground items → inventory) | ✅ | `ActionPickUpItem.ts` removes from world, adds to party inventory, fires `OnAcquireItem` |
 | 3.2.4 | Placeable "Use" action fires OnUsed script | 🔶 | Script fires; return values sometimes dropped |
-| 3.2.5 | Trigger enter / exit scripts execute | 🔶 | `OnEnter` fires; `OnExit` inconsistent |
+| 3.2.5 | Trigger enter / exit scripts execute | ✅ | `OnEnter`/`OnExit` fire for all objects; re-entry works; `isHostile`/`triggered` guards removed |
 | 3.2.6 | Waypoints used for patrols and trigger areas | ✅ | |
 
 ### 3.3 Dialog / Conversation System
@@ -256,7 +256,7 @@ The following steps must work to call the game "playable start-to-finish":
 | 3.3.5 | Camera cuts to dialog camera | 🔶 | Camera switches; framing positions not always correct |
 | 3.3.6 | Dialog node conditions evaluated (NWScript `if/check` blocks) | 🔶 | Expression evaluator wired; some check functions return 0 |
 | 3.3.7 | Dialog node actions execute (set plot flags, give items, etc.) | 🔶 | `ActionFired` called; ~7 NWScript functions have `//TODO` bodies in `NWScriptDefK1.ts` lines 4451, 4695, 6542 |
-| 3.3.8 | Persuade / Lie / Intimidate skill-check dialog nodes resolve | ❌ | Skill check logic not implemented |
+| 3.3.8 | Persuade / Lie / Intimidate skill-check dialog nodes resolve | 🔶 | `getSkillModifier()` added; NWScript `GetSkillRank`/`GetAbilityModifier` work; condition scripts evaluate correctly |
 | 3.3.9 | Dialog ends, camera returns to gameplay camera | 🔶 | Camera transition sometimes jams |
 | 3.3.10 | Bark / ambient speech plays from NPCs | ✅ | `InGameBark.ts` |
 
@@ -271,17 +271,17 @@ The following steps must work to call the game "playable start-to-finish":
 | 3.4.5 | Critical hit detection and multiplied damage | 🔶 | Critical detection works; multiplier application partial |
 | 3.4.6 | Miss feedback (floating "MISS" text) | ✅ | `FeedbackMessageManager` |
 | 3.4.7 | HP reduction and death | 🔶 | HP reduced; death state / animation triggered inconsistently |
-| 3.4.8 | Player dies → death screen / reload | ❌ | Game reaches bad state; no death UI |
-| 3.4.9 | Enemy AI enters combat when perceiving player | ❌ | Perception system stubbed (`ModuleCreature.ts` line 1007) |
-| 3.4.10 | Enemy AI selects attack actions during combat | ❌ | No combat-AI action selection |
+| 3.4.8 | Player dies → death screen / reload | ✅ | `MenuGameOver.open()` in `onDeath`; `PopUpGUIPanel(0/1)` also opens it |
+| 3.4.9 | Enemy AI enters combat when perceiving player | ✅ | Perception sets `lastAttackTarget`; `combatState=true` via `excitedDuration` |
+| 3.4.10 | Enemy AI selects attack actions during combat | ✅ | `findNearestPerceivedHostile()` + `attackCreature()` each round |
 | 3.4.11 | Dual-wield (off-hand attack) | ✅ | Off-hand now scheduled as separate `CombatRoundAction`; half-round timing splits attacks correctly |
 | 3.4.12 | Ranged combat (range check, line-of-sight) | 🔶 | Range check works; LoS not verified |
 | 3.4.13 | Feat use in combat (Flurry, Power Attack, Sneak Attack) | ❌ | `CombatFeatType` enum only; no resolution |
 | 3.4.14 | Force power casting pipeline (Force pool, animations, effect) | ❌ | `EffectForcePushed.ts` stub + TODO |
 | 3.4.15 | Combat auto-pause triggers (end of turn, creature attacked, etc.) | 🔶 | `AutoPauseManager` wired; some triggers missing |
-| 3.4.16 | Companion party members fight alongside player | ❌ | Party members present in world; no combat AI for them |
+| 3.4.16 | Companion party members fight alongside player | ✅ | Companions enter combat on perceiving hostiles; `lastAttackTarget` set |
 | 3.4.17 | Experience points awarded on kill | 🔶 | XP calculation in `SWRuleSet`; `GiveXP` NWScript function partial |
-| 3.4.18 | Level-up notification triggered when XP threshold met | 🔶 | `ModuleCreature.ts:2827` checks threshold; no UI trigger |
+| 3.4.18 | Level-up notification triggered when XP threshold met | ✅ | `addXP()` fires `ModuleOnPlayerLevelUp` script; `PopUpGUIPanel(2)` opens `MenuLevelUp` |
 
 ### 3.5 Inventory & Equipment
 
@@ -290,8 +290,8 @@ The following steps must work to call the game "playable start-to-finish":
 | 3.5.1 | Inventory screen opens and displays items with icons | ✅ | `MenuInventory.ts` |
 | 3.5.2 | Item tooltip / description shown | ✅ | `MenuToolTip.ts` |
 | 3.5.3 | Equipment screen opens; slots visualised on character model | ✅ | `MenuEquipment.ts` |
-| 3.5.4 | Equip item from inventory → model updates, stats change | 🔶 | `ActionEquipItem.ts` queued; stat recalc missing |
-| 3.5.5 | Unequip item → returned to inventory | 🔶 | `ActionUnequipItem.ts` present; inventory add incomplete |
+| 3.5.4 | Equip item from inventory → model updates, stats change | ✅ | `ActionEquipItem.ts` works; stats computed dynamically from equipped items (`getAC`, `getSTR`, etc.) |
+| 3.5.5 | Unequip item → returned to inventory | ✅ | `onUnEquip` calls `InventoryManager.addItem`; effects removed via `removeEffectsByCreator` |
 | 3.5.6 | Dropped items appear in world | 🔶 | `ActionDropItem.ts` present; 3D object placement incomplete |
 | 3.5.7 | Item upgrade screen | 🔶 | `MenuUpgrade.ts` – UI renders; upgrade application missing |
 
@@ -304,7 +304,7 @@ The following steps must work to call the game "playable start-to-finish":
 | 3.6.3 | Player position set at entry waypoint in new area | 🔶 | Sometimes placed at origin |
 | 3.6.4 | Party members teleported along with player | 🔶 | Party spawn after transition incomplete |
 | 3.6.5 | Global variables preserved across transitions | ✅ | `GlobalVariableManager` survives transitions |
-| 3.6.6 | Previously visited areas remember object states (doors opened, items looted) | ❌ | Area state not serialised between visits |
+| 3.6.6 | Previously visited areas remember object states (doors opened, items looted) | 🔶 | `Module.save()` now exports the live area GIT (was discarding `area.save()` return value and exporting original); full cross-visit caching still pending |
 
 ---
 
@@ -332,7 +332,7 @@ The following steps must work to call the game "playable start-to-finish":
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | 4.2.1 | `SkillCheck(SKILL_PERSUADE, 10)` resolves in NWScript | ❌ | |
-| 4.2.2 | Computer Use reduces spikes when slicing terminals | ❌ | |
+| 4.2.2 | Computer Use reduces spikes when slicing terminals | 🔶 | `InGameComputer.show()` now displays Computer Use/Repair skill values and spike counts from inventory |
 | 4.2.3 | Repair skill heals HK / damaged droids in dialogue | ❌ | |
 | 4.2.4 | Security skill unlocks containers | ❌ | |
 | 4.2.5 | Stealth / awareness (detect hidden objects) | ❌ | |

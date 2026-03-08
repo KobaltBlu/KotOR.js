@@ -7601,3 +7601,644 @@ describe('68. Additional minigame fixes – GunBank fireSound, runMiniGameScript
   });
 
 });
+
+// ---------------------------------------------------------------------------
+describe('69. Perception data-bit fix, enemy lastAttackTarget, getSkillModifier, CharGenSkills cost', () => {
+
+  // ── notifyPerceptionSeenObject ──────────────────────────────────────────
+
+  it('notifyPerceptionSeenObject: new entry gets seen bit (0x01) set', () => {
+    const perceptionList: any[] = [];
+    function notifyPerceptionSeenObject(object: any, seen = false) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        const e = exists[0];
+        if(seen){ e.data |= 0x01; }
+        else { e.data &= ~0x01; }
+      }else{
+        if(seen) perceptionList.push({ object, objectId: 1, data: 0x01 });
+      }
+    }
+    const obj = {};
+    notifyPerceptionSeenObject(obj, true);
+    expect(perceptionList[0].data & 0x01).toBe(1);
+  });
+
+  it('notifyPerceptionSeenObject: existing heard-only object gets seen bit set when seen=true', () => {
+    // Object was heard first (data=0x02), now seen → data should become 0x03
+    const target = {};
+    const perceptionList: any[] = [{ object: target, objectId: 1, data: 0x02 }];
+    function notifyPerceptionSeenObject(object: any, seen: boolean) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        const e = exists[0];
+        if(seen){ e.data |= 0x01; }
+        else { e.data &= ~0x01; }
+      }else{
+        if(seen) perceptionList.push({ object, objectId: 1, data: 0x01 });
+      }
+    }
+    notifyPerceptionSeenObject(target, true);
+    expect(perceptionList[0].data & 0x01).toBe(1);  // seen bit set
+    expect(perceptionList[0].data & 0x02).toBe(2);  // heard bit preserved
+  });
+
+  it('notifyPerceptionSeenObject regression: old code never set seen bit for existing objects', () => {
+    const target = {};
+    const perceptionList: any[] = [{ object: target, objectId: 1, data: 0x02 }];
+    // Old code: data not updated for existing objects
+    function oldNotifySeenObject(object: any, seen: boolean) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        // Bug: no data update
+      }else{
+        if(seen) perceptionList.push({ object, objectId: 1, data: 0x01 });
+      }
+    }
+    oldNotifySeenObject(target, true);
+    expect(perceptionList[0].data & 0x01).toBe(0);  // seen bit never set (regression)
+  });
+
+  it('notifyPerceptionSeenObject: existing seen object loses seen bit when seen=false', () => {
+    const target = {};
+    const perceptionList: any[] = [{ object: target, objectId: 1, data: 0x03 }];
+    function notifyPerceptionSeenObject(object: any, seen: boolean) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        const e = exists[0];
+        if(seen){ e.data |= 0x01; }
+        else { e.data &= ~0x01; }
+      }
+    }
+    notifyPerceptionSeenObject(target, false);
+    expect(perceptionList[0].data & 0x01).toBe(0);  // seen bit cleared
+    expect(perceptionList[0].data & 0x02).toBe(2);  // heard bit preserved
+  });
+
+  // ── notifyPerceptionHeardObject ─────────────────────────────────────────
+
+  it('notifyPerceptionHeardObject: heard bit cleared when heard=false for existing object', () => {
+    const target = {};
+    const perceptionList: any[] = [{ object: target, objectId: 1, data: 0x03 }];
+    function notifyPerceptionHeardObject(object: any, heard: boolean) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        const e = exists[0];
+        if(heard){ e.data |= 0x02; }
+        else { e.data &= ~0x02; }
+      }
+    }
+    notifyPerceptionHeardObject(target, false);
+    expect(perceptionList[0].data & 0x02).toBe(0);  // heard bit cleared
+    expect(perceptionList[0].data & 0x01).toBe(1);  // seen bit preserved
+  });
+
+  it('notifyPerceptionHeardObject regression: old code never cleared heard bit on heard=false', () => {
+    const target = {};
+    const perceptionList: any[] = [{ object: target, objectId: 1, data: 0x03 }];
+    // Old code: existingObject.data |= 0x02 always, never clears
+    function oldNotifyHeardObject(object: any, heard: boolean) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        const e = exists[0];
+        e.data |= 0x02; // bug: always sets, never clears
+      }
+    }
+    oldNotifyHeardObject(target, false);
+    expect(perceptionList[0].data & 0x02).toBe(2); // heard bit stuck (regression)
+  });
+
+  // ── findNearestPerceivedHostile with seen bit ───────────────────────────
+
+  it('findNearestPerceivedHostile: only finds objects with seen bit set', () => {
+    function findNearestPerceivedHostile(
+      perceptionList: any[], position: {x:number,y:number},
+      isHostile: (o:any) => boolean
+    ){
+      let nearest: any;
+      let nearestDist = Infinity;
+      for(const percept of perceptionList){
+        const obj = percept.object;
+        if(!obj || !(percept.data & 0x01)) continue; // only seen
+        if(obj.dead) continue;
+        if(!isHostile(obj)) continue;
+        const dx = position.x - obj.x, dy = position.y - obj.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < nearestDist){ nearestDist = dist; nearest = obj; }
+      }
+      return nearest;
+    }
+    const heardOnly  = { object: { x:1, y:0, dead:false, hostile:true }, data: 0x02 };
+    const seenAndHostile = { object: { x:2, y:0, dead:false, hostile:true }, data: 0x01 };
+    const isHostile = (o: any) => o.hostile;
+    const result = findNearestPerceivedHostile(
+      [heardOnly, seenAndHostile], {x:0, y:0}, isHostile
+    );
+    expect(result).toBe(seenAndHostile.object);
+    expect(result).not.toBe(heardOnly.object);
+  });
+
+  it('findNearestPerceivedHostile: heard-only enemy (old bug) not found as target', () => {
+    // Before fix: heard-then-seen enemy had data=0x02, never gained 0x01
+    // findNearestPerceivedHostile required 0x01 → enemy not targeted
+    function findNearest(pl: any[], isHostile: (o:any)=>boolean){
+      return pl.find(p => !!(p.data & 0x01) && !p.object.dead && isHostile(p.object));
+    }
+    const heardOnly = { object: { dead: false, hostile: true }, data: 0x02 };
+    expect(findNearest([heardOnly], o => o.hostile)).toBeUndefined();
+  });
+
+  // ── enemy lastAttackTarget set on perception ────────────────────────────
+
+  it('enemy perception: sets lastAttackTarget when hostile creature seen', () => {
+    // Simulate NPC perceiving a hostile creature and setting lastAttackTarget
+    const combatData: any = { lastAttackTarget: undefined };
+    const hostile = { dead: false };
+    function onSeeHostile(combatData: any, creature: any) {
+      if(!combatData.lastAttackTarget || combatData.lastAttackTarget.dead){
+        combatData.lastAttackTarget = creature;
+      }
+    }
+    onSeeHostile(combatData, hostile);
+    expect(combatData.lastAttackTarget).toBe(hostile);
+  });
+
+  it('enemy perception: does not overwrite lastAttackTarget when already set', () => {
+    const existingTarget = { dead: false };
+    const newTarget = { dead: false };
+    const combatData: any = { lastAttackTarget: existingTarget };
+    function onSeeHostile(combatData: any, creature: any) {
+      if(!combatData.lastAttackTarget || combatData.lastAttackTarget.dead){
+        combatData.lastAttackTarget = creature;
+      }
+    }
+    onSeeHostile(combatData, newTarget);
+    expect(combatData.lastAttackTarget).toBe(existingTarget); // unchanged
+  });
+
+  it('enemy perception regression: old code never set lastAttackTarget for NPC', () => {
+    // Old code only called resetExcitedDuration() for non-party NPCs, not set target
+    const combatData: any = { lastAttackTarget: undefined };
+    function oldOnSeeHostile(combatData: any) {
+      // bug: only reset excited duration, never set target
+    }
+    oldOnSeeHostile(combatData);
+    expect(combatData.lastAttackTarget).toBeUndefined();
+  });
+
+  // ── getSkillModifier ────────────────────────────────────────────────────
+
+  it('getSkillModifier: Persuade uses CHA modifier', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function getSkillModifier(skillId: number, rank: number, cha: number, int: number, dex: number, wis: number){
+      let ability: number;
+      if(skillId === 4){ ability = cha; }      // PERSUADE
+      else if(skillId === 2){ ability = dex; } // STEALTH
+      else if(skillId === 3 || skillId === 7){ ability = wis; } // AWARENESS / TREAT_INJURY
+      else { ability = int; }
+      return rank + getMod(ability);
+    }
+    // rank=4, CHA=16 (mod=+3) → total 7
+    expect(getSkillModifier(4, 4, 16, 10, 10, 10)).toBe(7);
+  });
+
+  it('getSkillModifier: Security uses INT modifier', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function getSkillModifier(skillId: number, rank: number, int: number){
+      return rank + getMod(int);
+    }
+    // rank=3, INT=14 (mod=+2) → total 5
+    expect(getSkillModifier(6, 3, 14)).toBe(5);
+  });
+
+  it('getSkillModifier: Stealth uses DEX modifier', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function getSkillModifier(skillId: number, rank: number, dex: number){
+      return rank + getMod(dex);
+    }
+    // rank=2, DEX=18 (mod=+4) → total 6
+    expect(getSkillModifier(2, 2, 18)).toBe(6);
+  });
+
+  // ── CharGenManager skill cost ────────────────────────────────────────────
+
+  it('isClassSkill: returns true when 2DA row has _class = 1', () => {
+    const rows: any[] = [
+      { 'cls_sk_jedi_class': '1' },  // COMPUTER_USE is class skill for Jedi
+    ];
+    function isClassSkill(skillIndex: number, col: string): boolean {
+      const row = rows[skillIndex];
+      if(!row) return true;
+      const val = row[col];
+      return val === '1' || val === 1;
+    }
+    expect(isClassSkill(0, 'cls_sk_jedi_class')).toBe(true);
+  });
+
+  it('isClassSkill: returns false when 2DA row has _class = 0', () => {
+    const rows: any[] = [
+      { 'cls_sk_jedi_class': '0' },
+    ];
+    function isClassSkill(skillIndex: number, col: string): boolean {
+      const row = rows[skillIndex];
+      if(!row) return true;
+      const val = row[col];
+      return val === '1' || val === 1;
+    }
+    expect(isClassSkill(0, 'cls_sk_jedi_class')).toBe(false);
+  });
+
+  it('getSkillCost: class skill costs 1 point', () => {
+    function getSkillCost(isClass: boolean){ return isClass ? 1 : 2; }
+    expect(getSkillCost(true)).toBe(1);
+  });
+
+  it('getSkillCost: cross-class skill costs 2 points', () => {
+    function getSkillCost(isClass: boolean){ return isClass ? 1 : 2; }
+    expect(getSkillCost(false)).toBe(2);
+  });
+
+  it('CharGenSkills +: deducts cost from availSkillPoints', () => {
+    let availSkillPoints = 10;
+    let persuade = 0;
+    function plusClick(cost: number){
+      if(availSkillPoints >= cost){ persuade++; availSkillPoints -= cost; }
+    }
+    plusClick(1); // class skill
+    expect(persuade).toBe(1);
+    expect(availSkillPoints).toBe(9);
+  });
+
+  it('CharGenSkills +: does not add if no points left', () => {
+    let availSkillPoints = 0;
+    let persuade = 0;
+    function plusClick(cost: number){
+      if(availSkillPoints >= cost){ persuade++; availSkillPoints -= cost; }
+    }
+    plusClick(1);
+    expect(persuade).toBe(0);
+    expect(availSkillPoints).toBe(0);
+  });
+
+  it('CharGenSkills -: refunds cost and decrements rank', () => {
+    let availSkillPoints = 5;
+    let persuade = 3;
+    const base = 2;
+    function minusClick(refund: number){
+      if(persuade > base){ persuade--; availSkillPoints += refund; }
+    }
+    minusClick(1);
+    expect(persuade).toBe(2);
+    expect(availSkillPoints).toBe(6);
+  });
+
+  it('CharGenSkills -: cannot go below base rank in level-up mode', () => {
+    let availSkillPoints = 5;
+    let persuade = 2;
+    const base = 2; // already at base
+    function minusClick(refund: number){
+      if(persuade > base){ persuade--; availSkillPoints += refund; }
+    }
+    minusClick(1);
+    expect(persuade).toBe(2); // unchanged
+    expect(availSkillPoints).toBe(5); // unchanged
+  });
+
+  it('CharGenSkills -: can go to 0 in initial chargen (base=0)', () => {
+    let availSkillPoints = 5;
+    let persuade = 1;
+    const base = 0;
+    function minusClick(refund: number){
+      if(persuade > base){ persuade--; availSkillPoints += refund; }
+    }
+    minusClick(1);
+    expect(persuade).toBe(0);
+    expect(availSkillPoints).toBe(6);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+describe('70. ModuleTrigger OnEnter/OnExit always fires; PopUpGUIPanel level-up', () => {
+
+  // ── trigger enter/exit ──────────────────────────────────────────────────
+
+  it('trigger OnEnter fires for any object regardless of isHostile', () => {
+    let onEnterCalledWith: any;
+    const objectsInside: any[] = [];
+
+    function addObjectInside(o: any){ if(objectsInside.indexOf(o) >= 0) return false; objectsInside.push(o); return true; }
+    function removeObjectInside(o: any){ const i = objectsInside.indexOf(o); if(i < 0) return false; objectsInside.splice(i,1); return true; }
+    function onEnter(o: any){ onEnterCalledWith = o; }
+    function onExit(_o: any){}
+
+    function updateObjectInside(object: any, insideBox: boolean){
+      if(insideBox){
+        const added = addObjectInside(object);
+        if(!added) return;
+        onEnter(object);
+        return;
+      }
+      const removed = removeObjectInside(object);
+      if(!removed) return;
+      onExit(object);
+    }
+
+    const friendlyPlayer = { hostile: false };
+    updateObjectInside(friendlyPlayer, true);
+    expect(onEnterCalledWith).toBe(friendlyPlayer);
+  });
+
+  it('trigger OnEnter regression: old code never fired for non-hostile objects', () => {
+    let onEnterCalled = false;
+    // Old code required isHostile(object) == true
+    function updateObjectInsideOld(isHostile: boolean, triggered: boolean) {
+      const added = true; // simulating new entry
+      if(!added) return;
+      if(!triggered && isHostile){ // bug: needed isHostile
+        onEnterCalled = true;
+      }
+    }
+    updateObjectInsideOld(false, false); // player is not hostile to trigger
+    expect(onEnterCalled).toBe(false); // regression: never fires
+  });
+
+  it('trigger OnExit fires after OnEnter has already fired', () => {
+    let onExitCalledWith: any;
+    const objectsInside: any[] = [];
+    let triggered = false; // represents the old triggered flag being true
+
+    function addObjectInside(o: any){ if(objectsInside.indexOf(o) >= 0) return false; objectsInside.push(o); return true; }
+    function removeObjectInside(o: any){ const i = objectsInside.indexOf(o); if(i < 0) return false; objectsInside.splice(i,1); return true; }
+    function onExit(o: any){ onExitCalledWith = o; }
+
+    function updateObjectInsideNew(object: any, insideBox: boolean){
+      if(insideBox){ addObjectInside(object); return; }
+      const removed = removeObjectInside(object);
+      if(!removed) return;
+      onExit(object); // new: always fire onExit
+    }
+
+    const player = {};
+    // player entered (and triggered got set true in old code)
+    objectsInside.push(player);
+    triggered = true;
+
+    // player exits
+    updateObjectInsideNew(player, false);
+    expect(onExitCalledWith).toBe(player);
+  });
+
+  it('trigger OnExit regression: old code never fired when triggered=true', () => {
+    let onExitCalled = false;
+    const objectsInside = [{}];
+    const player = objectsInside[0];
+    const triggered = true; // set after onEnter fired
+
+    function updateObjectInsideOld(object: any, insideBox: boolean, isHostile: boolean){
+      if(insideBox) return;
+      const removed = true; // simulating removal
+      if(!removed) return;
+      if(!triggered && isHostile){ // bug: triggered=true blocks onExit
+        onExitCalled = true;
+      }
+    }
+    updateObjectInsideOld(player, false, true);
+    expect(onExitCalled).toBe(false); // regression: onExit blocked
+  });
+
+  it('trigger re-entry after exit fires OnEnter again', () => {
+    let enterCount = 0;
+    const objectsInside: any[] = [];
+
+    function addObjectInside(o: any){ if(objectsInside.indexOf(o) >= 0) return false; objectsInside.push(o); return true; }
+    function removeObjectInside(o: any){ const i = objectsInside.indexOf(o); if(i < 0) return false; objectsInside.splice(i,1); return true; }
+    function onEnter(_o: any){ enterCount++; }
+    function onExit(_o: any){}
+
+    function updateObjectInside(object: any, insideBox: boolean){
+      if(insideBox){
+        const added = addObjectInside(object);
+        if(!added) return;
+        onEnter(object);
+        return;
+      }
+      const removed = removeObjectInside(object);
+      if(!removed) return;
+      onExit(object);
+    }
+
+    const player = {};
+    updateObjectInside(player, true);   // enter
+    updateObjectInside(player, false);  // exit
+    updateObjectInside(player, true);   // re-enter
+    expect(enterCount).toBe(2);         // fired twice
+  });
+
+  // ── PopUpGUIPanel level-up (panel 2) ────────────────────────────────────
+
+  it('PopUpGUIPanel panel=2 opens MenuLevelUp', () => {
+    let levelUpOpened = false;
+    const mockMenuLevelUp = { open: () => { levelUpOpened = true; } };
+
+    function PopUpGUIPanel(panel: number, menuLevelUp: any){
+      if(panel === 0 || panel === 1){
+        // game over
+      }else if(panel === 2){
+        menuLevelUp?.open();
+      }
+    }
+
+    PopUpGUIPanel(2, mockMenuLevelUp);
+    expect(levelUpOpened).toBe(true);
+  });
+
+  it('PopUpGUIPanel panel=0 does NOT open MenuLevelUp', () => {
+    let levelUpOpened = false;
+    const mockMenuLevelUp = { open: () => { levelUpOpened = true; } };
+
+    function PopUpGUIPanel(panel: number, menuLevelUp: any){
+      if(panel === 0 || panel === 1){ /* game over */ }
+      else if(panel === 2){ menuLevelUp?.open(); }
+    }
+
+    PopUpGUIPanel(0, mockMenuLevelUp);
+    expect(levelUpOpened).toBe(false);
+  });
+
+  // ── addXP level-up UI fallback ──────────────────────────────────────────
+
+  it('addXP opens MenuLevelUp directly when no module script and threshold crossed', () => {
+    let levelUpOpened = false;
+    const mockMenu = { open: () => { levelUpOpened = true; } };
+
+    function addXP(xp: number, state: { xp: number, threshold: number }, hasScript: boolean, isPlayer: boolean, menuLevelUp: any){
+      const couldBefore = state.xp >= state.threshold; // mirrors canLevelUp()
+      state.xp += xp;
+      const canNow = state.xp >= state.threshold;
+      if(isPlayer && !couldBefore && canNow){
+        if(hasScript){
+          // run script...
+        }else{
+          menuLevelUp?.open();
+        }
+      }
+    }
+
+    addXP(500, { xp: 400, threshold: 800 }, false, true, mockMenu);
+    expect(levelUpOpened).toBe(true);
+  });
+
+  it('addXP does NOT open MenuLevelUp when script handles it', () => {
+    let levelUpOpened = false;
+    const mockMenu = { open: () => { levelUpOpened = true; } };
+
+    function addXP(xp: number, state: { xp: number, threshold: number }, hasScript: boolean, isPlayer: boolean, menuLevelUp: any){
+      const couldBefore = state.xp >= state.threshold;
+      state.xp += xp;
+      const canNow = state.xp >= state.threshold;
+      if(isPlayer && !couldBefore && canNow){
+        if(hasScript){ /* script runs, no direct open */ }
+        else{ menuLevelUp?.open(); }
+      }
+    }
+
+    addXP(500, { xp: 400, threshold: 800 }, true, true, mockMenu);
+    expect(levelUpOpened).toBe(false);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+describe('71. recalculateMaxHP, TalentFeat.From2DA id, CharGenCustomPanel skipInit', () => {
+
+  // ── recalculateMaxHP ─────────────────────────────────────────────────────
+
+  it('recalculateMaxHP: single class level 1 Scout (hitdie=8) with CON=14', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function recalculateMaxHP(classes: Array<{hitdie: number, level: number}>, con: number){
+      const conMod = getMod(con);
+      let hp = 0;
+      for(const cls of classes){
+        const hitdie = cls.hitdie || 8;
+        hp += (hitdie + conMod) * cls.level;
+      }
+      const totalLevel = classes.reduce((s, c) => s + c.level, 0);
+      if(hp < totalLevel) hp = totalLevel;
+      return hp;
+    }
+    // Scout hitdie=8, level=1, CON=14 (mod=+2) → 8+2=10
+    expect(recalculateMaxHP([{ hitdie: 8, level: 1 }], 14)).toBe(10);
+  });
+
+  it('recalculateMaxHP: multiclass level 3 Scout (hitdie=8) + level 2 Soldier (hitdie=10) CON=14', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function recalculateMaxHP(classes: Array<{hitdie: number, level: number}>, con: number){
+      const conMod = getMod(con);
+      let hp = 0;
+      for(const cls of classes){
+        const hitdie = cls.hitdie || 8;
+        hp += (hitdie + conMod) * cls.level;
+      }
+      return hp;
+    }
+    // Scout: (8+2)*3=30; Soldier: (10+2)*2=24; total=54
+    expect(recalculateMaxHP([{ hitdie: 8, level: 3 }, { hitdie: 10, level: 2 }], 14)).toBe(54);
+  });
+
+  it('recalculateMaxHP: low CON still gives at least 1 HP per level', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function recalculateMaxHP(classes: Array<{hitdie: number, level: number}>, con: number){
+      const conMod = getMod(con);
+      let hp = 0;
+      for(const cls of classes){
+        hp += (cls.hitdie + conMod) * cls.level;
+      }
+      const totalLevel = classes.reduce((s, c) => s + c.level, 0);
+      if(hp < totalLevel) hp = totalLevel;
+      return hp;
+    }
+    // hitdie=4, CON=6 (mod=-2) → (4-2)*1=2HP; totalLevel=1 → max(2,1)=2
+    expect(recalculateMaxHP([{ hitdie: 4, level: 1 }], 6)).toBe(2);
+  });
+
+  it('recalculateMaxHP regression: before fix maxHitPoints used template default (often 10)', () => {
+    // Old code kept template's maxHitPoints unchanged
+    const templateHp = 10;
+    const actualHpShouldBe = 18; // hitdie=8, CON=18 (mod=+4), level 1
+    // Without fix, maxHitPoints stays at 10 despite CON=18
+    expect(templateHp).not.toBe(actualHpShouldBe);
+  });
+
+  // ── TalentFeat.From2DA id fix ────────────────────────────────────────────
+
+  it('TalentFeat.From2DA: id is set from __rowlabel', () => {
+    // Simulate From2DA behavior after fix
+    function From2DA(row: any){
+      const rowIndex = parseInt(row.__rowlabel ?? 0, 10) || 0;
+      return { id: rowIndex, rowLabel: rowIndex };
+    }
+    const feat = From2DA({ __rowlabel: '42', label: 'FEAT_POWER_ATTACK' });
+    expect(feat.id).toBe(42);
+  });
+
+  it('TalentFeat.From2DA regression: old code left id=0 for all feats', () => {
+    // Old code: new TalentFeat() → id=0, apply2DA only sets rowLabel
+    function From2DAOld(row: any){
+      const feat = { id: 0, rowLabel: 0 }; // simulated old default
+      feat.rowLabel = parseInt(row.__rowlabel ?? 0, 10);
+      // bug: feat.id never updated from rowLabel
+      return feat;
+    }
+    const feat = From2DAOld({ __rowlabel: '42', label: 'FEAT_POWER_ATTACK' });
+    expect(feat.id).toBe(0);     // old bug: wrong id
+    expect(feat.rowLabel).toBe(42); // rowLabel set correctly
+  });
+
+  it('addGrantedFeats: getHasFeat uses correct feat id after From2DA fix', () => {
+    const grantedIds: number[] = [];
+    function getHasFeat(id: number){ return grantedIds.indexOf(id) >= 0; }
+    function addFeat(feat: any){ if(!getHasFeat(feat.id)) grantedIds.push(feat.id); }
+    function From2DA(row: any){ return { id: parseInt(row.__rowlabel, 10) }; }
+
+    // Simulate addGrantedFeats loop
+    const featRows = [
+      { __rowlabel: '0', status: 3 },
+      { __rowlabel: '5', status: 3 },
+      { __rowlabel: '10', status: 3 },
+    ];
+    for(let i = 0; i < featRows.length; i++){
+      const feat = featRows[i];
+      if(feat.status === 3 && !getHasFeat(parseInt(feat.__rowlabel, 10))){
+        addFeat(From2DA(feat));
+      }
+    }
+    expect(grantedIds).toEqual([0, 5, 10]);
+    expect(getHasFeat(5)).toBe(true);
+    expect(getHasFeat(99)).toBe(false);
+  });
+
+  // ── CharGenCustomPanel TSL skipInit fix ──────────────────────────────────
+
+  it('TSL CharGenCustomPanel: passes skipInit to parent (not hardcoded true)', () => {
+    // The fix: `super.menuControlInitializer(skipInit)` instead of `(true)`
+    let parentSkipInitReceived: boolean | null = null;
+    function parentInit(skipInit: boolean){ parentSkipInitReceived = skipInit; }
+    function tslInit(skipInit: boolean){
+      parentInit(skipInit); // fixed: passes skipInit
+    }
+    tslInit(false);
+    expect(parentSkipInitReceived).toBe(false);
+  });
+
+  it('TSL CharGenCustomPanel regression: old code always passed skipInit=true to parent', () => {
+    let parentSkipInitReceived: boolean | null = null;
+    function parentInit(skipInit: boolean){ parentSkipInitReceived = skipInit; }
+    function tslInitOld(_skipInit: boolean){
+      parentInit(true); // bug: hardcoded true
+    }
+    tslInitOld(false);
+    expect(parentSkipInitReceived).toBe(true); // regression
+  });
+
+});

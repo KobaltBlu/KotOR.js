@@ -138,8 +138,56 @@ export class CharGenSkills extends GameMenu {
         this.updateButtonStates();
 
       });
+
+      // Wire up individual skill +/- buttons
+      this.wireSkillButtons();
+
       resolve();
     });
+  }
+
+  /**
+   * Wire up the +/- buttons for each skill.
+   * Plus adds one rank (deducting cost from availSkillPoints).
+   * Minus removes one rank (refunding cost to availSkillPoints),
+   * but never drops below the base value (existing rank before this level-up).
+   */
+  wireSkillButtons() {
+    const pairs: [GUIButton, GUIButton, () => number, (v: number) => void, number][] = [
+      [this.COM_PLUS_BTN,  this.COM_MINUS_BTN,  () => GameState.CharGenManager.computerUse,  (v) => { GameState.CharGenManager.computerUse = v; },  0],
+      [this.DEM_PLUS_BTN,  this.DEM_MINUS_BTN,  () => GameState.CharGenManager.demolitions,   (v) => { GameState.CharGenManager.demolitions = v; },   1],
+      [this.STE_PLUS_BTN,  this.STE_MINUS_BTN,  () => GameState.CharGenManager.stealth,       (v) => { GameState.CharGenManager.stealth = v; },       2],
+      [this.AWA_PLUS_BTN,  this.AWA_MINUS_BTN,  () => GameState.CharGenManager.awareness,     (v) => { GameState.CharGenManager.awareness = v; },     3],
+      [this.PER_PLUS_BTN,  this.PER_MINUS_BTN,  () => GameState.CharGenManager.persuade,      (v) => { GameState.CharGenManager.persuade = v; },      4],
+      [this.REP_PLUS_BTN,  this.REP_MINUS_BTN,  () => GameState.CharGenManager.repair,        (v) => { GameState.CharGenManager.repair = v; },        5],
+      [this.SEC_PLUS_BTN,  this.SEC_MINUS_BTN,  () => GameState.CharGenManager.security,      (v) => { GameState.CharGenManager.security = v; },      6],
+      [this.TRE_PLUS_BTN,  this.TRE_MINUS_BTN,  () => GameState.CharGenManager.treatInjury,   (v) => { GameState.CharGenManager.treatInjury = v; },   7],
+    ];
+
+    for(const [plusBtn, minusBtn, getter, setter, skillIndex] of pairs){
+      plusBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const cost = GameState.CharGenManager.getSkillCost(skillIndex);
+        if(GameState.CharGenManager.availSkillPoints >= cost){
+          setter(getter() + 1);
+          GameState.CharGenManager.availSkillPoints -= cost;
+          this.updateButtonStates();
+        }
+      });
+
+      minusBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const floor = GameState.CharGenManager.isLevelUpMode
+          ? (GameState.CharGenManager.baseSkillValues[skillIndex] ?? 0)
+          : 0;
+        if(getter() > floor){
+          const refund = GameState.CharGenManager.getSkillRefund(skillIndex);
+          setter(getter() - 1);
+          GameState.CharGenManager.availSkillPoints += refund;
+          this.updateButtonStates();
+        }
+      });
+    }
   }
 
   show() {

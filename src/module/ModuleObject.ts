@@ -3176,7 +3176,17 @@ export class ModuleObject {
     if(exists.length){
       let existingObject = exists[0];
       triggerOnNotice = (!!(existingObject.data & 0x02) != heard);
-      existingObject.data |= 0x02;
+      if(heard){
+        existingObject.data |= 0x02;
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.subtractStealthXP();
+        }
+      }else{
+        existingObject.data &= ~0x02;
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.addStealthXP();
+        }
+      }
       perceptionObject = existingObject;
     }else{
       if(heard){
@@ -3226,6 +3236,17 @@ export class ModuleObject {
     if(exists.length){
       let existingObject = exists[0];
       triggerOnNotice = (!!(existingObject.data & 0x01) != seen);
+      if(seen){
+        existingObject.data |= 0x01;
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.subtractStealthXP();
+        }
+      }else{
+        existingObject.data &= ~0x01;
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.addStealthXP();
+        }
+      }
       perceptionObject = existingObject;
     }else{
       if(seen){
