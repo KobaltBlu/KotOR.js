@@ -239,8 +239,8 @@ The following steps must work to call the game "playable start-to-finish":
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | 3.2.1 | Right-click context menu on objects (examine, open, use, etc.) | ✅ | `InGameOverlay.ts` |
-| 3.2.2 | Container loot UI (`MenuContainer`) opens and transfers items | 🔶 | UI opens; item transfer to player inventory incomplete |
-| 3.2.3 | Item pickup (ground items → inventory) | 🔶 | `ActionPickUpItem.ts` – item removed from world, inventory add partial |
+| 3.2.2 | Container loot UI (`MenuContainer`) opens and transfers items | ✅ | UI opens; item take/give via `LB_ITEMS.onSelected`; BTN_TAKE_ALL clears container |
+| 3.2.3 | Item pickup (ground items → inventory) | ✅ | `ActionPickUpItem.ts` removes from world, adds to party inventory, fires `OnAcquireItem` |
 | 3.2.4 | Placeable "Use" action fires OnUsed script | 🔶 | Script fires; return values sometimes dropped |
 | 3.2.5 | Trigger enter / exit scripts execute | ✅ | `OnEnter`/`OnExit` fire for all objects; re-entry works; `isHostile`/`triggered` guards removed |
 | 3.2.6 | Waypoints used for patrols and trigger areas | ✅ | |
@@ -290,8 +290,8 @@ The following steps must work to call the game "playable start-to-finish":
 | 3.5.1 | Inventory screen opens and displays items with icons | ✅ | `MenuInventory.ts` |
 | 3.5.2 | Item tooltip / description shown | ✅ | `MenuToolTip.ts` |
 | 3.5.3 | Equipment screen opens; slots visualised on character model | ✅ | `MenuEquipment.ts` |
-| 3.5.4 | Equip item from inventory → model updates, stats change | 🔶 | `ActionEquipItem.ts` queued; stat recalc missing |
-| 3.5.5 | Unequip item → returned to inventory | 🔶 | `ActionUnequipItem.ts` present; inventory add incomplete |
+| 3.5.4 | Equip item from inventory → model updates, stats change | ✅ | `ActionEquipItem.ts` works; stats computed dynamically from equipped items (`getAC`, `getSTR`, etc.) |
+| 3.5.5 | Unequip item → returned to inventory | ✅ | `onUnEquip` calls `InventoryManager.addItem`; effects removed via `removeEffectsByCreator` |
 | 3.5.6 | Dropped items appear in world | 🔶 | `ActionDropItem.ts` present; 3D object placement incomplete |
 | 3.5.7 | Item upgrade screen | 🔶 | `MenuUpgrade.ts` – UI renders; upgrade application missing |
 
@@ -304,7 +304,7 @@ The following steps must work to call the game "playable start-to-finish":
 | 3.6.3 | Player position set at entry waypoint in new area | 🔶 | Sometimes placed at origin |
 | 3.6.4 | Party members teleported along with player | 🔶 | Party spawn after transition incomplete |
 | 3.6.5 | Global variables preserved across transitions | ✅ | `GlobalVariableManager` survives transitions |
-| 3.6.6 | Previously visited areas remember object states (doors opened, items looted) | ❌ | Area state not serialised between visits |
+| 3.6.6 | Previously visited areas remember object states (doors opened, items looted) | 🔶 | `Module.save()` now exports the live area GIT (was discarding `area.save()` return value and exporting original); full cross-visit caching still pending |
 
 ---
 
@@ -332,7 +332,7 @@ The following steps must work to call the game "playable start-to-finish":
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | 4.2.1 | `SkillCheck(SKILL_PERSUADE, 10)` resolves in NWScript | ❌ | |
-| 4.2.2 | Computer Use reduces spikes when slicing terminals | ❌ | |
+| 4.2.2 | Computer Use reduces spikes when slicing terminals | 🔶 | `InGameComputer.show()` now displays Computer Use/Repair skill values and spike counts from inventory |
 | 4.2.3 | Repair skill heals HK / damaged droids in dialogue | ❌ | |
 | 4.2.4 | Security skill unlocks containers | ❌ | |
 | 4.2.5 | Stealth / awareness (detect hidden objects) | ❌ | |

@@ -4,12 +4,15 @@ import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel } from "../../../gui";
 import { ModuleObject } from "../../../module";
+import type { ModuleCreature } from "../../../module/ModuleCreature";
 import { DLGObject } from "../../../resource/DLGObject";
 import { DLGNode } from "../../../resource/DLGNode";
 import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
 import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
 import { AudioEngine } from "../../../audio/AudioEngine";
 import { ConversationState } from "../../../enums/dialog/ConversationState";
+import { SkillType } from "../../../enums/nwscript/SkillType";
+import { BaseItemType } from "../../../enums/combat/BaseItemType";
 
 /**
  * InGameComputer class.
@@ -79,6 +82,45 @@ export class InGameComputer extends GameMenu {
   show(){
     super.show();
     GameState.SetEngineMode(EngineMode.DIALOG);
+    this.updateSkillDisplay();
+  }
+
+  /**
+   * Update the skill / spike count labels shown in the computer UI.
+   * Uses the party leader's Computer Use and Repair skill values, and
+   * counts the Programming Spikes in the shared party inventory.
+   */
+  updateSkillDisplay(){
+    const player = GameState.PartyManager.party[0] as ModuleCreature | undefined;
+
+    // Computer Use skill (rank + INT modifier)
+    const compSkill = player ? player.getSkillModifier(SkillType.COMPUTER_USE) : 0;
+    this.LBL_COMP_SKILL_VAL?.setText(String(compSkill));
+
+    // Repair skill (rank + INT modifier)
+    const repSkill = player ? player.getSkillModifier(SkillType.REPAIR) : 0;
+    this.LBL_REP_SKILL_VAL?.setText(String(repSkill));
+
+    // Programming spikes in party inventory
+    let spikeCount = 0;
+    for(const item of GameState.InventoryManager.inventory){
+      if(
+        item.getBaseItemId() === BaseItemType.PROGRAMMING_SPIKES ||
+        item.getBaseItemId() === BaseItemType.SECURITY_SPIKES
+      ){
+        spikeCount += item.getStackSize();
+      }
+    }
+    this.LBL_COMP_SPIKES_VAL?.setText(String(spikeCount));
+
+    // Repair units: scan for droid repair items
+    let repairUnits = 0;
+    for(const item of GameState.InventoryManager.inventory){
+      if(item.getBaseItemId() === BaseItemType.DROID_REPAIR_EQUIPMENT){
+        repairUnits += item.getStackSize();
+      }
+    }
+    this.LBL_REP_UNITS_VAL?.setText(String(repairUnits));
   }
 
   setReplies(replies: DLGNode[]) {
