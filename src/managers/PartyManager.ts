@@ -1075,6 +1075,7 @@ export class PartyManager {
         }
         let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
         let spawnLoc = GameState.module?.area?.getSpawnLocation();
+        if(!spawnLoc) return undefined;
         let facing = -Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y);
         switch(index){
           case 0:
@@ -1108,6 +1109,7 @@ export class PartyManager {
       }else{
         let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
         let spawnLoc = GameState.module?.area?.getSpawnLocation();
+        if(!spawnLoc) return undefined;
         let facing = spawnLoc.getFacing();
         switch(index){
           case 0:

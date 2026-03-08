@@ -837,7 +837,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.isDebilitated() && this.area?.module?.readyToProcessEvents)
       return;
 
-    if(!GameState.module.readyToProcessEvents)
+    if(!GameState.module?.readyToProcessEvents)
       return;
 
       
@@ -900,7 +900,7 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    if(!this.spawned || !GameState.module.readyToProcessEvents){
+    if(!this.spawned || !GameState.module?.readyToProcessEvents){
       return;
     }
 
