@@ -58,6 +58,7 @@ export class JournalManager {
 
   static GetJournalQuestExperience(szPlotID: string = ''): number {
     const plotTable = TwoDAManager.datatables.get('plot');
+    if(!plotTable) return 0;
     const plot = plotTable.getRowByColumnAndValue('label', szPlotID.toLocaleLowerCase());
     if(plot){
       return parseInt(plot.xp);
@@ -101,6 +102,7 @@ export class JournalManager {
 
   static PlotExists(szPlotID: string = ''): boolean {
     const plotTable = TwoDAManager.datatables.get('plot');
+    if(!plotTable) return false;
     const plot = plotTable.getRowByColumnAndValue('label', szPlotID.toLocaleLowerCase());
     if(plot){
       return true;

@@ -210,6 +210,7 @@ export class TalentSpell extends TalentObject {
   }
 
   inRange(oTarget: ModuleObject, oCaster: ModuleObject){
+    if(!oTarget || !oCaster) return true;
     if(oTarget == oCaster){
       return true;
     }

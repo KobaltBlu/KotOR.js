@@ -151,6 +151,7 @@ export class CombatRound {
 
     if(this.action){
       const target = this.action.target;
+      if(!target) return;
       const targetCombatRound = target.combatRound;
       if(this.action.actionType == CombatActionType.ATTACK){
         combatData.lastAttackTarget = target;

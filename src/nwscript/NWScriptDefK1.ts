@@ -434,15 +434,17 @@ NWScriptDefK1.Actions = {
       if(buffer){
         const item = new GameState.Module.ModuleArea.ModuleItem(new GFFObject(buffer));
         item.initProperties();
-        item.setStackSize(args[2]);
-        if(GameState.PartyManager.party.indexOf(args[1] as any) > -1){
+        item.setStackSize(args[2] || 1);
+        if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
+          GameState.InventoryManager.addItem(item);
+        }else if(GameState.PartyManager.party.indexOf(args[1] as any) > -1){
           GameState.InventoryManager.addItem(item);
         }else{
           args[1].addItem(item);
           // Fire ScriptDisturbed for non-party creatures so quest scripts can track item additions
           if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
             const instance = (args[1] as any).scripts?.['ScriptDisturbed'];
-            if(instance){
+            if(instance && GameState.PartyManager.party.length){
               instance.lastDisturbed = GameState.PartyManager.party[0];
               (instance as any).inventoryDisturbType = 0; // INVENTORY_DISTURB_TYPE_ADDED
               (instance as any).inventoryDisturbItem = item;
@@ -3224,6 +3226,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)) return;
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
         args[0].setWillDestroy(true);
         args[0].setDelayUntilDestroy(args[1]);
@@ -5148,7 +5151,7 @@ NWScriptDefK1.Actions = {
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          const nextId = this.factionMemberIndex.get(faction.id) + 1;
+          const nextId = (this.factionMemberIndex.get(faction.id) ?? 0) + 1;
           this.factionMemberIndex.set(faction.id, nextId);
           return faction.getFactionMemberByIndex(nextId, !!args[1]);
         }
