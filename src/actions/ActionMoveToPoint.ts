@@ -124,7 +124,7 @@ export class ActionMoveToPoint extends Action {
         fallback_action.setParameter(0, ActionParameterType.FLOAT, this.real_target_position.x);
         fallback_action.setParameter(1, ActionParameterType.FLOAT, this.real_target_position.y);
         fallback_action.setParameter(2, ActionParameterType.FLOAT, this.real_target_position.z);
-        fallback_action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+        fallback_action.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
         fallback_action.setParameter(4, ActionParameterType.INT, 0);
         fallback_action.setParameter(5, ActionParameterType.FLOAT, 20.0);
         fallback_action.setParameter(6, ActionParameterType.FLOAT, 0);//target.rotation.x);

@@ -245,7 +245,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.unescapable = args[0] ? true : false;
+      if(GameState.module?.area) GameState.module.area.unescapable = args[0] ? true : false;
     }
   },
   15:{
@@ -254,7 +254,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.unescapable ? NW_TRUE : NW_FALSE;
+      return GameState.module?.area?.unescapable ? NW_TRUE : NW_FALSE;
     }
   },
   16:{
@@ -351,7 +351,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.module.area;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject) && args[0].area){
+        return args[0].area;
+      }
+      return GameState.module?.area;
     }
   },
   25:{
@@ -6365,7 +6368,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.stealthXPMax || 0;
+      return GameState.module?.area?.stealthXPMax ?? 0;
     }
   },
   465:{
@@ -6410,7 +6413,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.stealthXPMax = args[0] || 0;
+      if(GameState.module?.area) GameState.module.area.stealthXPMax = args[0] || 0;
     }
   },
   469:{
@@ -6485,7 +6488,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.stealthXPMax || 0;
+      return GameState.module?.area?.stealthXP ?? 0;
     }
   },
   475:{
@@ -6546,7 +6549,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.stealthXP = args[0] || 0;
+      if(GameState.module?.area) GameState.module.area.stealthXP = args[0] || 0;
     }
   },
   479:{
@@ -6567,7 +6570,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        (args[0] as ModuleCreature).addXP(GameState.module.area.stealthXP, ExperienceType.STEALTH);
+        (args[0] as ModuleCreature).addXP(GameState.module?.area?.stealthXP ?? 0, ExperienceType.STEALTH);
       }
     }
   },
@@ -6577,7 +6580,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.stealthXPEnabled ? 1 : 0;
+      return GameState.module?.area?.stealthXPEnabled ? 1 : 0;
     }
   },
   482:{
@@ -6586,7 +6589,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.setStealthXPEnabled(!!args[0]);
+      if(GameState.module?.area) GameState.module.area.setStealthXPEnabled(!!args[0]);
     }
   },
   483:{
@@ -6805,7 +6808,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.stealthXPLoss || 0;
+      return GameState.module?.area?.stealthXPLoss ?? 0;
     }
   },
   499:{
@@ -6814,7 +6817,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.stealthXPLoss = args[0] || 0;
+      if(GameState.module?.area) GameState.module.area.stealthXPLoss = args[0] || 0;
     }
   },
   500:{
@@ -7028,7 +7031,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.VECTOR, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [THREE.Vector3, number]){
-      GameState.module.area.areaMap.revealPosition(args[0].x, args[0].y, args[1]);
+      GameState.module?.area?.areaMap?.revealPosition(args[0]?.x ?? 0, args[0]?.y ?? 0, args[1]);
     }
   },
   516:{
@@ -9631,8 +9634,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, number]){
-      for(let i = 0, len = GameState.module.area.rooms.length; i < len; i++){
-        let room = GameState.module.area.rooms[i];
+      const rooms = GameState.module?.area?.rooms;
+      if(!rooms) return;
+      for(let i = 0, len = rooms.length; i < len; i++){
+        let room = rooms[i];
         if(room.roomName.toLowerCase() == args[0].toLowerCase()){
           if(room.model){
             room.model.playAnimation( 'scriptloop'+Utility.PadInt(args[1], 2) );

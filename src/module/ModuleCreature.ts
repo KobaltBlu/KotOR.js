@@ -445,7 +445,7 @@ export class ModuleCreature extends ModuleObject {
       //Get the first action in the queue
       this.action = this.actionQueue[0];
 
-      this.area = GameState.module.area;
+      this.area = GameState.module?.area;
 
       /*if(this == GameState.getCurrentPlayer() && this.room instanceof ModuleRoom){
         //this.room.show(true);
@@ -904,6 +904,10 @@ export class ModuleCreature extends ModuleObject {
       return;
     }
 
+    if(!GameState.module.area){
+      return;
+    }
+
     if(this.perceptionTimer < 3){
       this.perceptionTimer += 1 * delta;
       return;
@@ -1087,7 +1091,9 @@ export class ModuleCreature extends ModuleObject {
   updateCasting(delta = 0){
     //Update active spells
     for(let i = 0, len = this.casting.length; i < len; i++){
-      this.casting[i].spell.update(this.casting[i].target, this, this.casting[i], delta);
+      if(this.casting[i]?.spell){
+        this.casting[i].spell.update(this.casting[i].target, this, this.casting[i], delta);
+      }
     }
 
     //Remove completed spells
@@ -2085,8 +2091,11 @@ export class ModuleCreature extends ModuleObject {
         }
       }
       if(typeof closest != 'undefined'){
-        for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-          GameState.module.area.creatures[i].removeObjectFromTargetPositions(oObject);
+        const areaCreatures = GameState.module?.area?.creatures;
+        if(areaCreatures){
+          for(let i = 0, len = areaCreatures.length; i < len; i++){
+            areaCreatures[i].removeObjectFromTargetPositions(oObject);
+          }
         }
 
         for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
@@ -2236,7 +2245,8 @@ export class ModuleCreature extends ModuleObject {
   onPositionChanged(){
     this.positionChanged = false;
     //check if the creature is inside a trigger
-    const triggers = GameState.module.area.triggers;
+    const triggers = GameState.module?.area?.triggers;
+    if(!triggers) return;
     const tLen = triggers.length;
     for(let i = 0; i < tLen; i++){
       triggers[i].updateObjectInside(this);

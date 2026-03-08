@@ -1162,7 +1162,7 @@ export class PartyManager {
     const leader = PartyManager.party[0];
     const creature = PartyManager.party[idx];
 
-    if(!creature)
+    if(!creature || !leader)
       return new THREE.Vector3();
 
     const targetOffset = (idx == 2) ? -1.5 :1.5;
@@ -1174,8 +1174,8 @@ export class PartyManager {
     );
     this.#tmpFollowPosition.copy(leader.position).sub(this.#tmpFollowPositionTarget);
 
-    return (creature.area.isPointWalkable(this.#tmpFollowPosition)) ?
-      this.#tmpFollowPosition : creature.area.getNearestWalkablePoint(this.#tmpFollowPosition, creature.getHitDistance());
+    return (creature.area?.isPointWalkable(this.#tmpFollowPosition)) ?
+      this.#tmpFollowPosition : (creature.area?.getNearestWalkablePoint(this.#tmpFollowPosition, creature.getHitDistance()) ?? this.#tmpFollowPosition);
   }
 
   /**
