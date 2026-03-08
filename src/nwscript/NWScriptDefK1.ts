@@ -128,7 +128,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.ACTION],
     action: function(this: NWScriptInstance, args: [ModuleObject, any]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
-        if(typeof args[1] === 'object'){
+        if(args[1] != null && typeof args[1] === 'object'){
           args[1].script.caller = args[0];
           args[1].script.seekTo(args[1].offset);
           args[1].script.runScript();
@@ -146,7 +146,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT, NWScriptDataType.ACTION],
     action: function(this: NWScriptInstance, args: [number, any]){
-      
+      if(args[1] == null || !args[1].script) return;
       let futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(args[0])
       let timedEvent = new GameState.GameEventFactory.EventTimedEvent();
       timedEvent.setCaller(this.caller);
@@ -1245,7 +1245,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        const nextId = this.creatureEffectIndex.get(args[0].id) + 1;
+        const nextId = (this.creatureEffectIndex.get(args[0].id) ?? 0) + 1;
         this.creatureEffectIndex.set(args[0].id, nextId);
         return args[0].effects[nextId];
       }else{
@@ -1259,7 +1259,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.EFFECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, GameEffect]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) && typeof args[1] === 'object'){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) && args[1] != null && typeof args[1] === 'object'){
         args[0].removeEffect(args[1]);
       }
     }
@@ -1728,6 +1728,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [number, number, EngineLocation, number, number, THREE.Vector3]){
+      if(!(args[2] instanceof EngineLocation)) return undefined;
       this.objectInSphapeIndex.set(args[0], 0);
       const ls = GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], 0);
       return ls;
@@ -1739,7 +1740,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [number, number, EngineLocation, number, number, THREE.Vector3]){
-      const nextId = this.objectInSphapeIndex.get(args[0]) + 1;
+      if(!(args[2] instanceof EngineLocation)) return undefined;
+      const nextId = (this.objectInSphapeIndex.get(args[0]) ?? 0) + 1;
       this.objectInSphapeIndex.set(args[0], nextId);
       const ls = GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], nextId);
       return ls;
@@ -4025,6 +4027,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.ACTION],
     action: function(this: NWScriptInstance, args: [any]){
+      if(args[0] == null || !args[0].script) return;
       this.caller.doCommand( args[0].script );
     }
   },
@@ -7390,7 +7393,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      // No-op: lighting is visual-only
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        (args[0] as ModulePlaceable).lightState = !!args[1];
+      }
     }
   },
   545:{
@@ -7399,6 +7404,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        return (args[0] as ModulePlaceable).lightState ? NW_TRUE : NW_FALSE;
+      }
       return NW_TRUE;
     }
   },

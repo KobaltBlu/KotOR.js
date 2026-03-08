@@ -863,6 +863,9 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('Useable'))
       this.useable = this.template.getFieldByLabel('Useable').getValue();
 
+    if(this.template.RootNode.hasField('LightState'))
+      this.lightState = !!this.template.getFieldByLabel('LightState').getValue();
+
     if(this.template.RootNode.hasField('Will'))
       this.will = this.template.getFieldByLabel('Will').getValue();
 
