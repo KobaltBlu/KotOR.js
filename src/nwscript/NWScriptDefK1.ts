@@ -7899,6 +7899,7 @@ NWScriptDefK1.Actions = {
           return enemy;
         }
       }
+      return undefined;
     }
   },
   586:{

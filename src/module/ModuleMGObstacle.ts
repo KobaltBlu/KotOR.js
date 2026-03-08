@@ -1,8 +1,6 @@
 import { ModuleObject } from "./ModuleObject";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
-import { NWScript } from "../nwscript/NWScript";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFObject } from "../resource/GFFObject";
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 import { GameState } from "../GameState";
@@ -51,7 +49,7 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   damage(damage = 0){
-
+    this.hit_points -= damage;
   }
 
   adjustHitPoints(nHP = 0, nAbsolute = 0){
@@ -100,15 +98,20 @@ export class ModuleMGObstacle extends ModuleObject {
       ModuleObjectScript.MGObstacleOnHitFollower,
     ];
 
-    for(const scriptKey of scriptKeys){
-      if(!scriptKey){ continue; }
-      const nwscript = GameState.NWScript.Load(scriptKey);
-      if(!nwscript){ 
-        console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}] for object ${this.name}`);
-        continue; 
+    const scriptsNode = this.template.getFieldByLabel('Scripts')?.getFieldStruct();
+    if(scriptsNode){
+      for(const scriptKey of scriptKeys){
+        if(!scriptsNode.hasField(scriptKey)){ continue; }
+        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+        if(!resRef){ continue; }
+        const nwscript = GameState.NWScript.Load(resRef);
+        if(!nwscript){ 
+          console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+          continue; 
+        }
+        nwscript.caller = this;
+        this.scripts[scriptKey] = nwscript;
       }
-      nwscript.caller = this;
-      this.scripts[scriptKey] = nwscript;
     }
 
   }

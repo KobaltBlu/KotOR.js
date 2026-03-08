@@ -24,7 +24,6 @@ export class ModuleMGGunBank extends ModuleObject {
   owner: ModuleObject;
   isPlayer: boolean = false;
   proto_bullet: any;
-  fire_sound: any;
   bulletTemplate: any;
   bullet_hook: any;
   gunModel: any;
@@ -82,8 +81,8 @@ export class ModuleMGGunBank extends ModuleObject {
     if(!this.proto_bullet.fire_timer){
       this.proto_bullet.fire_timer = this.proto_bullet.rate_of_fire;
 
-      if(this.fire_sound){
-        GameState.guiAudioEmitter.playSoundFireAndForget(this.fire_sound);
+      if(this.fireSound){
+        GameState.guiAudioEmitter.playSoundFireAndForget(this.fireSound);
       }
 
       if(this.model instanceof OdysseyModel3D){
