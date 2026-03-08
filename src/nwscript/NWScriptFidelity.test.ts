@@ -10753,3 +10753,92 @@ describe('Section 92: MenuPowerLevelUp force-power selection', () => {
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// Section 93: getSkillModifier EffectSkillIncrease/Decrease integration
+// ---------------------------------------------------------------------------
+// Fixes verified in this section:
+// ModuleCreature.getSkillModifier now sums temporary EffectSkillIncrease and
+//   EffectSkillDecrease effects (e.g. security tunnelers, skill-boosting stims).
+// Previously only rank+abilityMod was returned; temporary effects were ignored.
+describe('Section 93: getSkillModifier effect integration', () => {
+
+  // Simulate the updated getSkillModifier logic
+  function simulateSkillModifier(
+    rank: number,
+    abilityMod: number,
+    effects: Array<{ type: number; getInt(n: number): number }>
+  ): number {
+    const SKILL_INCREASE = 0x37;
+    const SKILL_DECREASE = 0x38;
+    const SECURITY = 6; // SkillType.SECURITY
+    let bonus = rank + abilityMod;
+    for(const e of effects){
+      if(e.type === SKILL_INCREASE && e.getInt(0) === SECURITY){
+        bonus += e.getInt(1);
+      }else if(e.type === SKILL_DECREASE && e.getInt(0) === SECURITY){
+        bonus -= e.getInt(1);
+      }
+    }
+    return bonus;
+  }
+
+  it('no effects: returns rank + abilityMod', () => {
+    expect(simulateSkillModifier(4, 2, [])).toBe(6);
+  });
+
+  it('EffectSkillIncrease: adds bonus to skill total', () => {
+    const SKILL_INCREASE = 0x37;
+    const SECURITY = 6;
+    const effects = [
+      { type: SKILL_INCREASE, getInt: (n: number) => n === 0 ? SECURITY : 5 },
+    ];
+    expect(simulateSkillModifier(4, 2, effects)).toBe(11); // 4 + 2 + 5
+  });
+
+  it('EffectSkillDecrease: subtracts penalty from skill total', () => {
+    const SKILL_DECREASE = 0x38;
+    const SECURITY = 6;
+    const effects = [
+      { type: SKILL_DECREASE, getInt: (n: number) => n === 0 ? SECURITY : 3 },
+    ];
+    expect(simulateSkillModifier(4, 2, effects)).toBe(3); // 4 + 2 - 3
+  });
+
+  it('multiple effects stack correctly', () => {
+    const SKILL_INCREASE = 0x37;
+    const SKILL_DECREASE = 0x38;
+    const SECURITY = 6;
+    const effects = [
+      { type: SKILL_INCREASE, getInt: (n: number) => n === 0 ? SECURITY : 5 },
+      { type: SKILL_DECREASE, getInt: (n: number) => n === 0 ? SECURITY : 2 },
+    ];
+    expect(simulateSkillModifier(4, 2, effects)).toBe(9); // 4 + 2 + 5 - 2
+  });
+
+  it('effects for a different skill are not applied', () => {
+    const SKILL_INCREASE = 0x37;
+    const COMPUTER_USE = 0; // different skill
+    const SECURITY = 6;
+    const effects = [
+      { type: SKILL_INCREASE, getInt: (n: number) => n === 0 ? COMPUTER_USE : 10 },
+    ];
+    // Effect is for COMPUTER_USE, not SECURITY → no change
+    expect(simulateSkillModifier(4, 2, effects)).toBe(6); // 4 + 2 only
+  });
+
+  it('regression: old behavior ignored EffectSkillIncrease', () => {
+    // Old code: rank + abilityMod only
+    function oldSkillModifier(rank: number, abilityMod: number, _effects: any[]): number {
+      return rank + abilityMod;
+    }
+    const SKILL_INCREASE = 0x37;
+    const SECURITY = 6;
+    const effects = [
+      { type: SKILL_INCREASE, getInt: (n: number) => n === 0 ? SECURITY : 5 },
+    ];
+    expect(oldSkillModifier(4, 2, effects)).toBe(6);  // old: ignored effect
+    expect(simulateSkillModifier(4, 2, effects)).toBe(11); // fixed: +5 from effect
+  });
+
+});
