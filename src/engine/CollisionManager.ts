@@ -893,7 +893,7 @@ export class CollisionManager {
         edge.line.end.x,
         edge.line.end.y
       )) {
-        this.object.attachToRoom(this.object.area.rooms[edge.transition]);
+        this.object.attachToRoom(this.object.area?.rooms[edge.transition]);
         break;
       }
     }
