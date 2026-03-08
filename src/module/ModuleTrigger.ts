@@ -113,6 +113,7 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   getCurrentRoom(){
+    if(!GameState.module?.area) return;
     let _distance = 1000000000;
     for(let i = 0; i < GameState.module.area.rooms.length; i++){
       let room = GameState.module.area.rooms[i];
@@ -370,7 +371,7 @@ export class ModuleTrigger extends ModuleObject {
     this.#autoObjectsInsideTimer = 0;
 
     const creaturesToCheck = [
-      ...GameState.module.area.creatures.filter(object => this.box.containsPoint(object.position)), 
+      ...(GameState.module?.area?.creatures ?? []).filter(object => this.box.containsPoint(object.position)), 
       ...GameState.PartyManager.party.filter(object => this.box.containsPoint(object.position))
     ];
 

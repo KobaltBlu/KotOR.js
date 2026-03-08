@@ -139,28 +139,31 @@ export class ModuleEncounter extends ModuleObject {
     }
     
     //Check Module Creatures
-    let creatureLen = GameState.module.area.creatures.length;
-    for(let i = 0; i < creatureLen; i++){
-      let creature = GameState.module.area.creatures[i];
-      let pos = creature.position.clone();
-      if(this.box.containsPoint(pos)){
-        if(this.objectsInside.indexOf(creature) == -1){
-          this.objectsInside.push(creature);
-          if(this.isHostile(creature)){
-            creature.lastTriggerEntered = this;
-            this.lastObjectEntered = creature;
+    const areaCreatures = GameState.module?.area?.creatures;
+    if(areaCreatures){
+      let creatureLen = areaCreatures.length;
+      for(let i = 0; i < creatureLen; i++){
+        let creature = areaCreatures[i];
+        let pos = creature.position.clone();
+        if(this.box.containsPoint(pos)){
+          if(this.objectsInside.indexOf(creature) == -1){
+            this.objectsInside.push(creature);
+            if(this.isHostile(creature)){
+              creature.lastTriggerEntered = this;
+              this.lastObjectEntered = creature;
 
-            this.onEnter(creature);
-            this.triggered = true;
+              this.onEnter(creature);
+              this.triggered = true;
+            }
           }
-        }
-      }else{
-        if(this.objectsInside.indexOf(creature) >= 0){
-          this.objectsInside.splice(this.objectsInside.indexOf(creature), 1);
-          if(this.isHostile(creature)){
-            creature.lastTriggerExited = this;
-            this.lastObjectExited = creature;
-            this.onExit(creature);
+        }else{
+          if(this.objectsInside.indexOf(creature) >= 0){
+            this.objectsInside.splice(this.objectsInside.indexOf(creature), 1);
+            if(this.isHostile(creature)){
+              creature.lastTriggerExited = this;
+              this.lastObjectExited = creature;
+              this.onExit(creature);
+            }
           }
         }
       }

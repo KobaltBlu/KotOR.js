@@ -156,7 +156,7 @@ export class CombatRound {
       if(this.action.actionType == CombatActionType.ATTACK){
         combatData.lastAttackTarget = target;
         if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
-          if(owner.isDuelingObject(target)){
+          if(owner.isDuelingObject(target) && targetCombatRound){
             this.engaged = true;
             if(!this.masterID && !targetCombatRound.masterID){
               this.masterID = targetCombatRound.masterID = owner;
@@ -169,7 +169,7 @@ export class CombatRound {
           }
         }else if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
           this.master = true;
-          targetCombatRound.master = !this.master;
+          if(targetCombatRound) targetCombatRound.master = !this.master;
         }
       }else if(
         this.action.actionType == CombatActionType.CAST_SPELL ||

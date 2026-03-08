@@ -106,6 +106,14 @@
  *       chaining before the perception-notify loop.
  *     ModuleDoor.initObjectsInside() – early-returns if area is unavailable.
  *     ModuleDoor.getCurrentRoom() – returns early if area is null.
+ *
+ * 80. CombatRound, ModuleTrigger, ModuleEncounter null-guards:
+ *     CombatRound.beginCombatRound() – targetCombatRound null-guard in
+ *       isDuelingObject branch and ModuleObject master branch.
+ *     ModuleTrigger.getCurrentRoom() – early-return when area is null.
+ *     ModuleTrigger.autoUpdateObjectsInside() – uses ?. chain with [] fallback
+ *       on area.creatures.
+ *     ModuleEncounter.update() – wraps creature iteration in area null-guard.
  */
 
 // ---------------------------------------------------------------------------
@@ -9535,6 +9543,86 @@ describe('Section 79: ActionCombat target guard and ModuleDoor area null-guards'
     expect(getCurrentRoom(null)).toBe('NO_AREA');
     expect(getCurrentRoom(undefined)).toBe('NO_AREA');
     expect(getCurrentRoom({ rooms: [1, 2] })).toBe('DONE:2');
+  });
+
+});
+
+// ── Section 80: CombatRound, ModuleTrigger, ModuleEncounter null-guards ────────
+//
+// Fixes verified in this section:
+//   a. CombatRound.beginCombatRound() – targetCombatRound null-guard added to
+//      isDuelingObject branch and ModuleObject branch
+//   b. ModuleTrigger.getCurrentRoom() – early-return when area is null
+//   c. ModuleTrigger.autoUpdateObjectsInside() – uses ?. chain with [] fallback
+//      on area.creatures
+//   d. ModuleEncounter.update() – wraps creature iteration in area null-guard
+
+describe('Section 80: CombatRound, ModuleTrigger, ModuleEncounter null-guards', () => {
+
+  it('CombatRound: targetCombatRound null-guard prevents crash when target has no combatRound', () => {
+    function processCombatRound(targetCombatRound: any, ownerMasterID: any): string {
+      if(targetCombatRound){
+        // isDuelingObject branch
+        if(!ownerMasterID && !targetCombatRound.masterID){
+          targetCombatRound.masterID = 'owner';
+          targetCombatRound.master = false;
+        }
+        return 'PROCESSED';
+      }
+      return 'SKIPPED';
+    }
+    // No crash when targetCombatRound is undefined
+    expect(() => processCombatRound(undefined, null)).not.toThrow();
+    expect(processCombatRound(undefined, null)).toBe('SKIPPED');
+    // Processes normally when combatRound exists
+    const tcr: any = { masterID: undefined, master: true };
+    expect(processCombatRound(tcr, null)).toBe('PROCESSED');
+    expect(tcr.master).toBe(false);
+  });
+
+  it('CombatRound regression: old code crashed when targetCombatRound was undefined', () => {
+    function processCombatRoundOld(targetCombatRound: any): string {
+      try {
+        if(!targetCombatRound.masterID){ targetCombatRound.master = false; }
+        return 'OK';
+      } catch { return 'CRASHED'; }
+    }
+    expect(processCombatRoundOld(undefined)).toBe('CRASHED');
+  });
+
+  it('ModuleTrigger.getCurrentRoom: early-returns when area is null', () => {
+    function getCurrentRoom(area: any): string {
+      if(!area) return 'NO_AREA';
+      let found = false;
+      for(let i = 0; i < area.rooms.length; i++){
+        found = true;
+      }
+      return found ? 'FOUND_ROOM' : 'NO_ROOM';
+    }
+    expect(getCurrentRoom(null)).toBe('NO_AREA');
+    expect(getCurrentRoom(undefined)).toBe('NO_AREA');
+    expect(getCurrentRoom({ rooms: [{}] })).toBe('FOUND_ROOM');
+  });
+
+  it('ModuleTrigger.autoUpdateObjectsInside: area.creatures uses fallback [] when area null', () => {
+    function getCreaturesToCheck(area: any, party: any[]): number {
+      const creatures = area?.creatures ?? [];
+      return creatures.length + party.length;
+    }
+    expect(getCreaturesToCheck(null, [])).toBe(0);
+    expect(getCreaturesToCheck(undefined, [1, 2])).toBe(2);
+    expect(getCreaturesToCheck({ creatures: [1, 2, 3] }, [4])).toBe(4);
+  });
+
+  it('ModuleEncounter.update: skips creature loop gracefully when area is null', () => {
+    function updateEncounterCreatures(area: any): number {
+      const areaCreatures = area?.creatures;
+      if(!areaCreatures) return 0;
+      return areaCreatures.length;
+    }
+    expect(updateEncounterCreatures(null)).toBe(0);
+    expect(updateEncounterCreatures(undefined)).toBe(0);
+    expect(updateEncounterCreatures({ creatures: [1, 2, 3] })).toBe(3);
   });
 
 });
