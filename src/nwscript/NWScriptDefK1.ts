@@ -5217,9 +5217,9 @@ NWScriptDefK1.Actions = {
       waypoint.mapNoteEnabled = enabled;
       if(GameState.module?.area?.areaMap){
         if(enabled){
-          GameState.module.area.areaMap.addMapNote(waypoint as any);
+          GameState.module?.area?.areaMap?.addMapNote(waypoint as any);
         } else {
-          GameState.module.area.areaMap.removeMapNote(waypoint as any);
+          GameState.module?.area?.areaMap?.removeMapNote(waypoint as any);
         }
       }
     }
