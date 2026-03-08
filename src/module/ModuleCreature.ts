@@ -1429,6 +1429,8 @@ export class ModuleCreature extends ModuleObject {
     if(target == this)
       target = GameState.PartyManager.party[0];
 
+    if(!target) return;
+
     if(target.isDead())
       return;
 
@@ -2329,9 +2331,11 @@ export class ModuleCreature extends ModuleObject {
   retrieveInventory(){
     while(this.inventory.length){
       const item = this.inventory.pop();
+      if(!item) continue;
       GameState.InventoryManager.addItem(item);
       const instance = this.scripts[ModuleObjectScript.CreatureOnDisturbed];
       if(!instance){ continue; }
+      if(!GameState.PartyManager.party.length){ continue; }
       instance.lastDisturbed = GameState.PartyManager.party[0];
       (instance as any).inventoryDisturbType = 1; // INVENTORY_DISTURB_TYPE_REMOVED
       (instance as any).inventoryDisturbItem = item;

@@ -135,6 +135,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   getBodyVariation(){
+    if(!this.baseItem) return 0;
     return this.baseItem.bodyVar;
   }
 
@@ -147,18 +148,22 @@ export class ModuleItem extends ModuleObject {
   }
 
   getIcon(){
+    if(!this.baseItem) return '';
     return 'i'+this.baseItem.itemClass+'_'+("000" + this.getModelVariation()).slice(-3);
   }
 
   getWeaponWield(): WeaponWield{
+    if(!this.baseItem) return WeaponWield.INVALID;
     return this.baseItem.weaponWield;
   }
 
   getWeaponType(): WeaponType {
+    if(!this.baseItem) return WeaponType.INVALID;
     return this.baseItem.weaponType;
   }
 
   isRangedWeapon(){
+    if(!this.baseItem) return false;
     return this.baseItem.rangedWeapon;
   }
 
@@ -247,7 +252,7 @@ export class ModuleItem extends ModuleObject {
         bonus += property.getValue();
       }
     }
-    return this.baseItem.baseAC + bonus;
+    return (this.baseItem?.baseAC ?? 0) + bonus;
   }
 
   getDexBonus(){
@@ -302,10 +307,10 @@ export class ModuleItem extends ModuleObject {
   }
 
   getBaseDamage(){
-    if(this.baseItem.numDice){
-      return Dice.roll(this.baseItem.numDice, this.baseItem.die);
+    if(!this.baseItem || !this.baseItem.numDice){
+      return 0;
     }
-    return 0;
+    return Dice.roll(this.baseItem.numDice, this.baseItem.die);
   }
 
   getBaseDamageType(): number {
@@ -356,11 +361,11 @@ export class ModuleItem extends ModuleObject {
   }
 
   getDamageFlags(): number {
-    return this.baseItem.damageFlags;
+    return this.baseItem?.damageFlags ?? 0;
   }
 
   getCriticalThreatRangeMin(){
-    return 20 - this.baseItem.criticalThreat;
+    return 20 - (this.baseItem?.criticalThreat ?? 0);
   }
 
   getCriticalThreatRangeMax(){
@@ -439,7 +444,7 @@ export class ModuleItem extends ModuleObject {
 
   castAmmunitionAtTarget(oCaster: ModuleObject, oTarget: ModuleObject){
     if(typeof oTarget != 'undefined'){
-      let ammunitiontype = this.baseItem.ammunitionType;
+      let ammunitiontype = this.baseItem?.ammunitionType ?? 0;
       if( ammunitiontype >= 1 ){
         const _2DA = GameState.TwoDAManager.datatables.get('ammunitiontypes');
         if(_2DA){

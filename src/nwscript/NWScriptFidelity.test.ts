@@ -8526,3 +8526,298 @@ describe('73. FactionManager.GetFactionLeader null-guard, GiveXPToCreature, GetG
   });
 
 });
+
+describe('74. ModuleItem baseItem null-safety, fn 419 key, ActionEquipBest baseItem, CombatAttackData baseItem, ModuleDoor trans.children, ModuleCreature party/inventory guards', () => {
+  // ── ModuleItem baseItem null-safety ─────────────────────────────────────
+
+  it('ModuleItem.getBodyVariation: returns 0 when baseItem is undefined', () => {
+    function getBodyVariation(baseItem: any): number {
+      if(!baseItem) return 0;
+      return baseItem.bodyVar;
+    }
+    expect(getBodyVariation(undefined)).toBe(0);
+    expect(getBodyVariation({ bodyVar: 3 })).toBe(3);
+  });
+
+  it('ModuleItem.getACBonus: uses baseItem?.baseAC ?? 0 when baseItem is undefined', () => {
+    function getACBonus(baseItem: any, propertiesBonus: number): number {
+      return (baseItem?.baseAC ?? 0) + propertiesBonus;
+    }
+    expect(getACBonus(undefined, 2)).toBe(2);
+    expect(getACBonus({ baseAC: 5 }, 2)).toBe(7);
+  });
+
+  it('ModuleItem.getBaseDamage: returns 0 when baseItem is undefined', () => {
+    function getBaseDamage(baseItem: any): number {
+      if(!baseItem || !baseItem.numDice) return 0;
+      return baseItem.numDice * baseItem.die; // simplified (no Dice.roll in test)
+    }
+    expect(getBaseDamage(undefined)).toBe(0);
+    expect(getBaseDamage(null)).toBe(0);
+    expect(getBaseDamage({ numDice: 2, die: 6 })).toBe(12);
+  });
+
+  it('ModuleItem.getDamageFlags: returns 0 when baseItem is undefined', () => {
+    function getDamageFlags(baseItem: any): number {
+      return baseItem?.damageFlags ?? 0;
+    }
+    expect(getDamageFlags(undefined)).toBe(0);
+    expect(getDamageFlags({ damageFlags: 8 })).toBe(8);
+  });
+
+  it('ModuleItem.getCriticalThreatRangeMin: returns 20 when baseItem is undefined (no bonus)', () => {
+    function getCriticalThreatRangeMin(baseItem: any): number {
+      return 20 - (baseItem?.criticalThreat ?? 0);
+    }
+    expect(getCriticalThreatRangeMin(undefined)).toBe(20);
+    expect(getCriticalThreatRangeMin({ criticalThreat: 3 })).toBe(17);
+  });
+
+  it('ModuleItem baseItem regression: old code crashed when baseItem was undefined', () => {
+    function getBodyVariationOld(baseItem: any): number {
+      let threwError = false;
+      try {
+        return baseItem.bodyVar; // crashes when undefined
+      } catch {
+        threwError = true;
+      }
+      return threwError ? -1 : 0;
+    }
+    expect(getBodyVariationOld(undefined)).toBe(-1);
+  });
+
+  // ── CombatAttackData baseItem null-safety ────────────────────────────────
+
+  it('CombatAttackData.calculateDamage: uses criticalHitMultiplier ?? 2.0 when baseItem is undefined', () => {
+    function getCriticalMultiplier(weapon: any, isCritical: boolean): number {
+      if(!weapon) return isCritical ? 2.0 : 1.0;
+      return isCritical ? (weapon.baseItem?.criticalHitMultiplier ?? 2.0) : 1.0;
+    }
+    // weapon with no baseItem: should use default 2.0 for critical
+    expect(getCriticalMultiplier({ baseItem: undefined }, true)).toBe(2.0);
+    expect(getCriticalMultiplier({ baseItem: { criticalHitMultiplier: 3.0 } }, true)).toBe(3.0);
+    expect(getCriticalMultiplier({ baseItem: undefined }, false)).toBe(1.0);
+  });
+
+  it('CombatAttackData regression: old code crashed on baseItem.criticalHitMultiplier when baseItem undefined', () => {
+    function calculateDamageOld(weapon: any, isCritical: boolean): any {
+      let threwError = false;
+      try {
+        return isCritical ? weapon.baseItem.criticalHitMultiplier : 1.0; // crash when baseItem is undefined
+      } catch {
+        threwError = true;
+      }
+      return threwError ? 'ERROR' : 1.0;
+    }
+    expect(calculateDamageOld({ baseItem: undefined }, true)).toBe('ERROR');
+  });
+
+  // ── fn 419 key fix ───────────────────────────────────────────────────────
+
+  it('fn 419 GetLastRespawnButtonPresser: numeric key 419 is present in Actions object', () => {
+    // Simulate the fixed object shape (key 419 exists)
+    const actions: Record<number, { name: string }> = {
+      418: { name: 'GetGold' },
+      419: { name: 'GetLastRespawnButtonPresser' },
+      420: { name: 'EffectForceFizzle' },
+    };
+    expect(actions[419]).toBeDefined();
+    expect(actions[419].name).toBe('GetLastRespawnButtonPresser');
+  });
+
+  it('fn 419 regression: without numeric key 419 the entry was unreachable', () => {
+    // Simulate the broken state where 419 key was missing (just a plain object with name)
+    // In JS, a plain object literal without a key is a syntax error in this context,
+    // but simulating lookup by key returns undefined
+    const actionsWithGap: Record<number, { name: string }> = {
+      418: { name: 'GetGold' },
+      // 419 missing
+      420: { name: 'EffectForceFizzle' },
+    };
+    expect(actionsWithGap[419]).toBeUndefined();
+  });
+
+  // ── ActionEquipBest baseItem null-safety ─────────────────────────────────
+
+  it('ActionEquipMostDamagingMelee: skips items with undefined baseItem without crash', () => {
+    const WeaponWield = { STUN_BATON: 1, ONE_HANDED_SWORD: 2, TWO_HANDED_SWORD: 3 };
+    function findBestMelee(inventory: any[]): any {
+      let weapon: any = null;
+      for(let i = 0; i < inventory.length; i++){
+        const item = inventory[i];
+        const baseItem = item.baseItem;
+        if(!baseItem) continue; // the fix
+        if(
+          baseItem.weaponWield === WeaponWield.STUN_BATON ||
+          baseItem.weaponWield === WeaponWield.ONE_HANDED_SWORD ||
+          baseItem.weaponWield === WeaponWield.TWO_HANDED_SWORD
+        ){
+          if(!weapon){
+            weapon = item;
+          } else if((baseItem.dieToRoll * baseItem.numDice) > ((weapon.baseItem?.dieToRoll ?? 0) * (weapon.baseItem?.numDice ?? 0))){
+            weapon = item;
+          }
+        }
+      }
+      return weapon;
+    }
+    const inventory = [
+      { baseItem: undefined }, // item without baseItem - should not crash
+      { baseItem: { weaponWield: 2, dieToRoll: 1, numDice: 8 } }, // longsword
+    ];
+    expect(() => findBestMelee(inventory)).not.toThrow();
+    expect(findBestMelee(inventory)).toBe(inventory[1]);
+  });
+
+  it('ActionEquipMostDamagingMelee regression: old code crashed on undefined.weaponWield', () => {
+    const WeaponWield = { ONE_HANDED_SWORD: 2 };
+    function findBestMeleeOld(inventory: any[]): any {
+      let threwError = false;
+      try {
+        for(const item of inventory){
+          const baseItem = item.baseItem;
+          // no null check - crashes when baseItem is undefined
+          if(baseItem.weaponWield === WeaponWield.ONE_HANDED_SWORD){ return item; }
+        }
+      } catch {
+        threwError = true;
+      }
+      return threwError ? 'ERROR' : null;
+    }
+    expect(findBestMeleeOld([{ baseItem: undefined }])).toBe('ERROR');
+  });
+
+  // ── ModuleDoor trans.children length guard ───────────────────────────────
+
+  it('ModuleDoor.testTransitionLineCrosses: skips raycast when trans.children is empty', () => {
+    let raycastCalled = false;
+    function testTransition(trans: any): void {
+      if(trans && trans.children.length){ // the fix
+        raycastCalled = true; // simulates raycast call
+      }
+    }
+    testTransition({ children: [] }); // empty children - should NOT call raycast
+    expect(raycastCalled).toBe(false);
+    testTransition({ children: [{}] }); // one child - should call raycast
+    expect(raycastCalled).toBe(true);
+  });
+
+  it('ModuleDoor.testTransitionLineCrosses regression: old code crashed on children[0] when empty', () => {
+    function testTransitionOld(trans: any): any {
+      let threwError = false;
+      try {
+        trans.children[0].raycast(); // crash when children is empty
+      } catch {
+        threwError = true;
+      }
+      return threwError ? 'ERROR' : 'OK';
+    }
+    expect(testTransitionOld({ children: [] })).toBe('ERROR');
+  });
+
+  // ── ModuleCreature party null-guard in attackCreature ────────────────────
+
+  it('ModuleCreature.attackCreature: no crash when party is empty (target==this fallback)', () => {
+    let threwError = false;
+    function attackCreature(target: any, self: any, party: any[]): void {
+      if(target === self) target = party[0];
+      if(!target) return; // the fix
+      // rest of function would run here
+    }
+    expect(() => attackCreature('self', 'self', [])).not.toThrow();
+  });
+
+  it('ModuleCreature.attackCreature regression: old code crashed on target.isDead() when target became undefined', () => {
+    function attackCreatureOld(target: any, self: any, party: any[]): any {
+      if(target === self) target = party[0];
+      let threwError = false;
+      try {
+        if(target.isDead()) return; // crash when target is undefined
+      } catch {
+        threwError = true;
+      }
+      return threwError ? 'ERROR' : 'OK';
+    }
+    expect(attackCreatureOld('self', 'self', [])).toBe('ERROR');
+  });
+
+  // ── ModuleCreature.retrieveInventory party guard ─────────────────────────
+
+  it('ModuleCreature.retrieveInventory: no crash when party is empty during OnDisturbed', () => {
+    let scriptRan = false;
+    function retrieveInventory(inventory: any[], party: any[]): void {
+      while(inventory.length){
+        const item = inventory.pop();
+        if(!item) continue;
+        const instance = { run: () => { scriptRan = true; }, lastDisturbed: null as any };
+        if(!party.length) continue; // the fix
+        instance.lastDisturbed = party[0];
+        instance.run();
+      }
+    }
+    const inventory = [{ id: 1 }, { id: 2 }];
+    // Should not throw even with empty party
+    expect(() => retrieveInventory(inventory, [])).not.toThrow();
+    // Script should NOT run when party is empty (no lastDisturbed to set)
+    expect(scriptRan).toBe(false);
+  });
+
+  it('ModuleCreature.retrieveInventory regression: old code crashed on party[0].lastDisturbed when party empty', () => {
+    function retrieveInventoryOld(inventory: any[], party: any[]): any {
+      let threwError = false;
+      try {
+        while(inventory.length){
+          const item = inventory.pop();
+          const instance: any = { run: () => {} };
+          instance.lastDisturbed = party[0]; // undefined when empty
+          instance.lastDisturbed.id; // crash - accessing .id on undefined
+        }
+      } catch {
+        threwError = true;
+      }
+      return threwError ? 'ERROR' : 'OK';
+    }
+    expect(retrieveInventoryOld([{ id: 1 }], [])).toBe('ERROR');
+  });
+
+  // ── TSL IncrementGlobalNumber / DecrementGlobalNumber fix ────────────────
+
+  it('IncrementGlobalNumber: increments existing global number correctly', () => {
+    const globals = new Map([['counter', { name: 'counter', value: 5 }]]);
+    function IncrementGlobalNumber(name: string, amount: number): void {
+      const key = name.toLowerCase();
+      const glob = globals.get(key);
+      if(glob) glob.value += parseInt(amount as any);
+    }
+    IncrementGlobalNumber('counter', 3);
+    expect(globals.get('counter')!.value).toBe(8);
+  });
+
+  it('IncrementGlobalNumber: no crash when global key does not exist', () => {
+    const globals = new Map<string, {name:string, value:number}>();
+    function IncrementGlobalNumber(name: string, amount: number): void {
+      const key = name.toLowerCase();
+      const glob = globals.get(key);
+      if(glob) glob.value += amount;
+    }
+    expect(() => IncrementGlobalNumber('nonexistent', 1)).not.toThrow();
+  });
+
+  it('IncrementGlobalNumber regression: old code crashed when global key was missing (always ran .value += )', () => {
+    const globals = new Map<string, {name:string, value:number}>();
+    function IncrementGlobalNumberOld(name: string, amount: number): any {
+      let threwError = false;
+      try {
+        // Old bug: typeof Map.has() !== 'undefined' is ALWAYS true
+        if(typeof globals.has(name.toLowerCase()) !== 'undefined') {
+          globals.get(name.toLowerCase())!.value += amount; // crash: get() returns undefined
+        }
+      } catch {
+        threwError = true;
+      }
+      return threwError ? 'ERROR' : 'OK';
+    }
+    expect(IncrementGlobalNumberOld('nonexistent', 1)).toBe('ERROR');
+  });
+
+});

@@ -841,7 +841,7 @@ export class ModuleDoor extends ModuleObject {
         }
       }
     }
-    if(this.rooms.length){
+    if(this.rooms.length && this.roomIds.length){
       this.attachToRoom(GameState.module.area.rooms[this.roomIds[0]]);
       return;
     }
@@ -871,7 +871,9 @@ export class ModuleDoor extends ModuleObject {
         GameState.raycaster.ray.origin.z += 1;
         GameState.raycaster.ray.direction.copy(object.forceVector);
         const intersections: THREE.Intersection[] =[];
-        trans.children[0].raycast(GameState.raycaster, intersections);
+        if(trans.children.length){
+          trans.children[0].raycast(GameState.raycaster, intersections);
+        }
         if(intersections.length){
           this.transitNPC(object);
         }

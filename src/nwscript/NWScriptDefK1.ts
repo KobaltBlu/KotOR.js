@@ -5450,6 +5450,7 @@ NWScriptDefK1.Actions = {
       for(let i = 0, len = inventory.length; i < len; i++){
         let item = inventory[i];
         let baseItem = item.baseItem;
+        if(!baseItem) continue;
         if(
           baseItem.weaponWield == WeaponWield.STUN_BATON || 
           baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
@@ -5457,7 +5458,7 @@ NWScriptDefK1.Actions = {
         ){
           if(!weapon){
             weapon = item;
-          }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+          }else if((baseItem.dieToRoll * baseItem.numDice) > ((weapon.baseItem?.dieToRoll ?? 0) * (weapon.baseItem?.numDice ?? 0))){
             weapon = item;
           }
         }
@@ -5468,6 +5469,7 @@ NWScriptDefK1.Actions = {
         for(let i = 0, len = inventory.length; i < len; i++){
           let item = inventory[i];
           let baseItem = item.baseItem;
+          if(!baseItem) continue;
           if(
             baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
             baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
@@ -5475,7 +5477,7 @@ NWScriptDefK1.Actions = {
           ){
             if(!weapon){
               weapon = item;
-            }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+            }else if((baseItem.dieToRoll * baseItem.numDice) > ((weapon.baseItem?.dieToRoll ?? 0) * (weapon.baseItem?.numDice ?? 0))){
               weapon = item;
             }
           }
@@ -5520,6 +5522,7 @@ NWScriptDefK1.Actions = {
       for(let i = 0, len = inventory.length; i < len; i++){
         const item = inventory[i];
         const baseItem = item.baseItem;
+        if(!baseItem) continue;
         if(
           baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
           baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
@@ -5527,7 +5530,7 @@ NWScriptDefK1.Actions = {
         ){
           if(!weapon){
             weapon = item;
-          }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+          }else if((baseItem.dieToRoll * baseItem.numDice) > ((weapon.baseItem?.dieToRoll ?? 0) * (weapon.baseItem?.numDice ?? 0))){
             weapon = item;
           }
         }
@@ -5538,6 +5541,7 @@ NWScriptDefK1.Actions = {
         for(let i = 0, len = inventory.length; i < len; i++){
           const item = inventory[i];
           const baseItem = item.baseItem;
+          if(!baseItem) continue;
           if(
             baseItem.weaponWield == WeaponWield.STUN_BATON || 
             baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
@@ -5545,7 +5549,7 @@ NWScriptDefK1.Actions = {
           ){
             if(!weapon){
               weapon = item;
-            }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+            }else if((baseItem.dieToRoll * baseItem.numDice) > ((weapon.baseItem?.dieToRoll ?? 0) * (weapon.baseItem?.numDice ?? 0))){
               weapon = item;
             }
           }
@@ -5803,6 +5807,7 @@ NWScriptDefK1.Actions = {
       return 0;
     }
   },
+  419:{
     name: "GetLastRespawnButtonPresser",
     type: NWScriptDataType.OBJECT,
     args: [],
