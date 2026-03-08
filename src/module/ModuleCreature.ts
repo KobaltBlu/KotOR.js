@@ -3937,6 +3937,10 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('Plot'))
         this.plot = this.template.getFieldByLabel('Plot').getValue();
 
+      // Plot-flagged creatures are immune to death: enforce Min1HP so they
+      // cannot be reduced below 1 HP during combat.
+      if(this.plot) this.min1HP = true;
+
       if(this.template.RootNode.hasField('PortraitId')){
         this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
         this.portrait = GameState.SWRuleSet.portraits[this.portraitId];

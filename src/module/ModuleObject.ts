@@ -2880,6 +2880,8 @@ export class ModuleObject {
    * @param value 
    */
   setHP(value = 0){
+    // Respect the min-1-HP flag: plot-critical objects never drop to 0 or below.
+    if(this.min1HP && value < 1) value = 1;
     this.currentHP = value;
   }
 

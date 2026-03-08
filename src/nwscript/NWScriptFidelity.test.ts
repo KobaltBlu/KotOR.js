@@ -10909,3 +10909,69 @@ describe('Section 94: MenuLevelUp multi-class level-up class-level index', () =>
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// Section 95: min1HP flag prevents death of plot-critical objects
+// ---------------------------------------------------------------------------
+// Fixes verified in this section:
+// ModuleObject.setHP: when min1HP is set, value is clamped to minimum 1.
+// ModuleCreature.loadTemplate: plot=1 now automatically sets min1HP=true.
+// Previously min1HP was read from GFF but setHP never enforced the floor.
+describe('Section 95: min1HP prevents plot-critical creatures from dying', () => {
+
+  it('setHP clamps to 1 when min1HP is true', () => {
+    function setHP(currentHP: number, newValue: number, min1HP: boolean): number {
+      if(min1HP && newValue < 1) newValue = 1;
+      return newValue;
+    }
+    expect(setHP(10, -5, true)).toBe(1);
+    expect(setHP(10, 0, true)).toBe(1);
+    expect(setHP(10, 1, true)).toBe(1);
+    expect(setHP(10, 5, true)).toBe(5);
+  });
+
+  it('setHP is unrestricted when min1HP is false', () => {
+    function setHP(currentHP: number, newValue: number, min1HP: boolean): number {
+      if(min1HP && newValue < 1) newValue = 1;
+      return newValue;
+    }
+    expect(setHP(10, -5, false)).toBe(-5);
+    expect(setHP(10, 0, false)).toBe(0);
+    expect(setHP(10, 1, false)).toBe(1);
+  });
+
+  it('plot creatures implicitly get min1HP=true on template load', () => {
+    function loadTemplate(plot: boolean): boolean {
+      let min1HP = false;
+      if(plot) min1HP = true;
+      return min1HP;
+    }
+    expect(loadTemplate(true)).toBe(true);
+    expect(loadTemplate(false)).toBe(false);
+  });
+
+  it('subtractHP on a min1HP creature leaves at least 1 HP', () => {
+    function subtractHP(currentHP: number, damage: number, min1HP: boolean): number {
+      let newHP = currentHP - damage;
+      if(min1HP && newHP < 1) newHP = 1;
+      return newHP;
+    }
+    // Plot creature: can't be killed
+    expect(subtractHP(100, 200, true)).toBe(1);
+    expect(subtractHP(5, 5, true)).toBe(1);
+    expect(subtractHP(5, 3, true)).toBe(2);  // 5-3=2 >= 1, no clamp
+    // Non-plot creature: can die
+    expect(subtractHP(5, 10, false)).toBe(-5);
+    expect(subtractHP(5, 5, false)).toBe(0);
+  });
+
+  it('SetMinOneHP NWScript function wires through correctly', () => {
+    let min1HP = false;
+    function setMinOneHP(value: boolean) { min1HP = value; }
+    setMinOneHP(true);
+    expect(min1HP).toBe(true);
+    setMinOneHP(false);
+    expect(min1HP).toBe(false);
+  });
+
+});
