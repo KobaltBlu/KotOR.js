@@ -39,6 +39,10 @@ export class ActionFollowLeader extends Action {
 
       this.target = GameState.PartyManager.party[0];
 
+      if(!this.target){
+        return ActionStatus.FAILED;
+      }
+
       const follow_destination = GameState.PartyManager.GetFollowPosition(this.owner as any);
       const distance = Utility.Distance2D(this.owner.position, this.target.position.clone());
       if(distance > 5){

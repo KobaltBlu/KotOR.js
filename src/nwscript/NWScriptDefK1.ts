@@ -434,15 +434,17 @@ NWScriptDefK1.Actions = {
       if(buffer){
         const item = new GameState.Module.ModuleArea.ModuleItem(new GFFObject(buffer));
         item.initProperties();
-        item.setStackSize(args[2]);
-        if(GameState.PartyManager.party.indexOf(args[1] as any) > -1){
+        item.setStackSize(args[2] || 1);
+        if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
+          GameState.InventoryManager.addItem(item);
+        }else if(GameState.PartyManager.party.indexOf(args[1] as any) > -1){
           GameState.InventoryManager.addItem(item);
         }else{
           args[1].addItem(item);
           // Fire ScriptDisturbed for non-party creatures so quest scripts can track item additions
           if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
             const instance = (args[1] as any).scripts?.['ScriptDisturbed'];
-            if(instance){
+            if(instance && GameState.PartyManager.party.length){
               instance.lastDisturbed = GameState.PartyManager.party[0];
               (instance as any).inventoryDisturbType = 0; // INVENTORY_DISTURB_TYPE_ADDED
               (instance as any).inventoryDisturbItem = item;
@@ -1767,7 +1769,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, GameEvent]){
       //This needs to happen once the script has completed
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))){
-        args[0] = GameState.module.area;
+        args[0] = GameState.module?.area;
       }
 
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
@@ -3224,6 +3226,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)) return;
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
         args[0].setWillDestroy(true);
         args[0].setDelayUntilDestroy(args[1]);
@@ -3628,7 +3631,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger) ||
          BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleAreaOfEffect)){
-        const nextId = this.persistentObjectIndex.get(args[0].id) + 1;
+        const nextId = (this.persistentObjectIndex.get(args[0].id) ?? 0) + 1;
         this.persistentObjectIndex.set(args[0].id, nextId);
         return args[0].objectsInside[nextId];
       }else{
@@ -4658,11 +4661,11 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
         if(GameState.PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0){
-          const nextId = this.objectInventoryIndex.get(-1) + 1;
+          const nextId = (this.objectInventoryIndex.get(-1) ?? 0) + 1;
           this.objectInventoryIndex.set(-1, nextId);
           return GameState.InventoryManager.inventory[nextId];
         }else{
-          const nextId = this.objectInventoryIndex.get(args[0].id) + 1;
+          const nextId = (this.objectInventoryIndex.get(args[0].id) ?? 0) + 1;
           this.objectInventoryIndex.set(args[0].id, nextId);
           return args[0].inventory[nextId];
         }
@@ -5148,7 +5151,7 @@ NWScriptDefK1.Actions = {
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          const nextId = this.factionMemberIndex.get(faction.id) + 1;
+          const nextId = (this.factionMemberIndex.get(faction.id) ?? 0) + 1;
           this.factionMemberIndex.set(faction.id, nextId);
           return faction.getFactionMemberByIndex(nextId, !!args[1]);
         }
@@ -5450,6 +5453,7 @@ NWScriptDefK1.Actions = {
       for(let i = 0, len = inventory.length; i < len; i++){
         let item = inventory[i];
         let baseItem = item.baseItem;
+        if(!baseItem) continue;
         if(
           baseItem.weaponWield == WeaponWield.STUN_BATON || 
           baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
@@ -5457,7 +5461,7 @@ NWScriptDefK1.Actions = {
         ){
           if(!weapon){
             weapon = item;
-          }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+          }else if((baseItem.dieToRoll * baseItem.numDice) > ((weapon.baseItem?.dieToRoll ?? 0) * (weapon.baseItem?.numDice ?? 0))){
             weapon = item;
           }
         }
@@ -5468,6 +5472,7 @@ NWScriptDefK1.Actions = {
         for(let i = 0, len = inventory.length; i < len; i++){
           let item = inventory[i];
           let baseItem = item.baseItem;
+          if(!baseItem) continue;
           if(
             baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
             baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
@@ -5475,7 +5480,7 @@ NWScriptDefK1.Actions = {
           ){
             if(!weapon){
               weapon = item;
-            }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+            }else if((baseItem.dieToRoll * baseItem.numDice) > ((weapon.baseItem?.dieToRoll ?? 0) * (weapon.baseItem?.numDice ?? 0))){
               weapon = item;
             }
           }
@@ -5520,6 +5525,7 @@ NWScriptDefK1.Actions = {
       for(let i = 0, len = inventory.length; i < len; i++){
         const item = inventory[i];
         const baseItem = item.baseItem;
+        if(!baseItem) continue;
         if(
           baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
           baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
@@ -5527,7 +5533,7 @@ NWScriptDefK1.Actions = {
         ){
           if(!weapon){
             weapon = item;
-          }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+          }else if((baseItem.dieToRoll * baseItem.numDice) > ((weapon.baseItem?.dieToRoll ?? 0) * (weapon.baseItem?.numDice ?? 0))){
             weapon = item;
           }
         }
@@ -5538,6 +5544,7 @@ NWScriptDefK1.Actions = {
         for(let i = 0, len = inventory.length; i < len; i++){
           const item = inventory[i];
           const baseItem = item.baseItem;
+          if(!baseItem) continue;
           if(
             baseItem.weaponWield == WeaponWield.STUN_BATON || 
             baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
@@ -5545,7 +5552,7 @@ NWScriptDefK1.Actions = {
           ){
             if(!weapon){
               weapon = item;
-            }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+            }else if((baseItem.dieToRoll * baseItem.numDice) > ((weapon.baseItem?.dieToRoll ?? 0) * (weapon.baseItem?.numDice ?? 0))){
               weapon = item;
             }
           }
@@ -5803,6 +5810,7 @@ NWScriptDefK1.Actions = {
       return 0;
     }
   },
+  419:{
     name: "GetLastRespawnButtonPresser",
     type: NWScriptDataType.OBJECT,
     args: [],
@@ -8302,7 +8310,8 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
         const vec3 = new THREE.Vector3();
-        args[0].model.getWorldPosition(vec3)
+        if(args[0].model) args[0].model.getWorldPosition(vec3);
+        else if(args[0].position) vec3.copy(args[0].position);
         return vec3;
       }
       return {x: 0, y: 0, z: 0};
@@ -9472,7 +9481,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))) return undefined;
 
-      const nextId = this.creatureAttackerIndex.get(args[0].id) + 1;
+      const nextId = (this.creatureAttackerIndex.get(args[0].id) ?? 0) + 1;
       this.creatureAttackerIndex.set(args[0].id, nextId);
       return GameState.ModuleObjectManager.GetAttackerByIndex(args[0], nextId);
     }

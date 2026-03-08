@@ -5818,9 +5818,9 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [string, number]){
-      
-      if(typeof GameState.GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
-      GameState.GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value += parseInt(args[1] as any);
+      const key = args[0].toLowerCase();
+      const glob = GameState.GlobalVariableManager.Globals.Number.get(key);
+      if(glob) glob.value += parseInt(args[1] as any);
     }	
   },
   800: {
@@ -5829,8 +5829,9 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [string, number]){
-      if(typeof GameState.GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
-      GameState.GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value -= parseInt(args[1] as any);
+      const key = args[0].toLowerCase();
+      const glob = GameState.GlobalVariableManager.Globals.Number.get(key);
+      if(glob) glob.value -= parseInt(args[1] as any);
     }	
   },
   801: {

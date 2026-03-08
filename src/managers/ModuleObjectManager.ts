@@ -477,7 +477,7 @@ export class ModuleObjectManager {
     
     if(!list){
       // Avoid concat allocation by building a combined list inline
-      const creatures = this.module.area.creatures;
+      const creatures = this.module?.area?.creatures ?? [];
       const party = PartyManager.party as ModuleCreature[];
       list = new Array(creatures.length + party.length);
       for(let i = 0, l = creatures.length; i < l; i++) list[i] = creatures[i];

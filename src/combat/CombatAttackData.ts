@@ -181,7 +181,7 @@ export class CombatAttackData {
       return;
     };
 
-    const damageMultiplier = isCritial ? this.attackWeapon.baseItem.criticalHitMultiplier : 1.0;
+    const damageMultiplier = isCritial ? (this.attackWeapon.baseItem?.criticalHitMultiplier ?? 2.0) : 1.0;
 
     if(!creature.isSimpleCreature()){
       this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(this.attackWeapon.getBaseDamage() * damageMultiplier);

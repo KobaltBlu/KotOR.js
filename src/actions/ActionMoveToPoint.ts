@@ -73,7 +73,9 @@ export class ActionMoveToPoint extends Action {
     }
 
     if(!this.computedPath){
-      this.target_position.copy(this.owner.area.getNearestWalkablePoint(this.target_position, this.owner.getHitDistance()));
+      if(this.owner.area){
+        this.target_position.copy(this.owner.area.getNearestWalkablePoint(this.target_position, this.owner.getHitDistance()));
+      }
       this.calculatePath();
     }
 
@@ -147,6 +149,7 @@ export class ActionMoveToPoint extends Action {
 
   calculatePath(){
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
+    if(!GameState.module?.area?.path) return;
 
     const path = GameState.module.area.path.traverseToPoint(this.owner, this.owner.position, this.target_position);
     path.fixWalkEdges(this.owner.getHitDistance());

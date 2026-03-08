@@ -419,9 +419,11 @@ export class ModulePlaceable extends ModuleObject {
   retrieveInventory(){
     while(this.inventory.length){
       const item = this.inventory.pop();
+      if(!item) continue;
       GameState.InventoryManager.addItem(item);
       const instance = this.scripts[ModuleObjectScript.PlaceableOnInvDisturbed];
       if(!instance){ continue; }
+      if(!GameState.PartyManager.party.length){ continue; }
       instance.lastDisturbed = GameState.PartyManager.party[0];
       (instance as any).inventoryDisturbType = 1; // INVENTORY_DISTURB_TYPE_REMOVED
       (instance as any).inventoryDisturbItem = item;
