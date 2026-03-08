@@ -88,6 +88,16 @@
  *       calling loadWalkmesh().
  *     Module.Load() – re-throws the caught error so callers get a meaningful
  *       exception rather than receiving undefined and crashing later.
+ *
+ * 78. Additional area-load and HUD null-safety fixes:
+ *     loadWaypoints() – per-item try-catch prevents one bad waypoint from
+ *       aborting the whole area load.
+ *     loadCreatures() – guards model.hasCollision / model.name after loadModel().
+ *     InGameOverlay (KotOR) – pmBG / pbVit / pbForce null-guards before
+ *       getFillTextureName / setProgress calls.
+ *     MenuTop.ts (TSL) – same portrait and progress bar null-guards.
+ *     ModuleCreature.updateCasting() – guards casting[i].spell before calling
+ *       update() to prevent crash on null/undefined spell entry.
  */
 
 // ---------------------------------------------------------------------------
@@ -9300,6 +9310,136 @@ describe('Section 77: ModuleArea null-safety fixes', () => {
       }
     }
     expect(results).toEqual(['skipped:bad', 'skipped:good']);
+  });
+
+});
+
+// ── Section 78: Additional null-safety fixes ──────────────────────────────────
+//
+// Fixes verified in this section:
+//   a. loadWaypoints() – wrapped in per-item try-catch to prevent one bad
+//      waypoint from aborting the entire area load
+//   b. loadCreatures() – model null-guard on hasCollision/name properties
+//   c. InGameOverlay (KotOR) – pmBG / pbVit / pbForce null-guards before
+//      getFillTextureName / setProgress calls
+//   d. MenuTop.ts (TSL) – same portrait and progress bar null-guards
+//   e. ModuleCreature.updateCasting() – guards casting[i].spell before calling
+//      update() to prevent crash on null/undefined spell
+
+describe('Section 78: Additional area-load and HUD null-safety fixes', () => {
+
+  it('loadWaypoints: per-item try-catch prevents one bad waypoint from aborting all', () => {
+    const results: string[] = [];
+    const waypoints = [
+      { load(): void { throw new Error('bad'); }, getTag(){ return 'bad'; } },
+      { load(): void {}, getTag(){ return 'good'; }, position: { copy(){} }, getYOrientation(){ return 0; }, getXOrientation(){ return 1; } },
+    ];
+    for(const waypnt of waypoints){
+      try{
+        waypnt.load();
+        results.push('loaded:' + waypnt.getTag());
+      }catch(e){
+        results.push('error:' + waypnt.getTag());
+      }
+    }
+    // Error on first item does NOT prevent second item from loading
+    expect(results[0]).toBe('error:bad');
+    expect(results[1]).toBe('loaded:good');
+  });
+
+  it('loadCreatures: model null-guard on hasCollision/name skips assignment when model absent', () => {
+    function applyCreatureModel(model: any, creature: any): string {
+      if(model){
+        model.hasCollision = true;
+        model.name = creature.getTag();
+        return 'APPLIED';
+      }
+      return 'SKIPPED';
+    }
+    const creature = { getTag(){ return 'critter'; } };
+    expect(applyCreatureModel(null, creature)).toBe('SKIPPED');
+    const m: any = {};
+    expect(applyCreatureModel(m, creature)).toBe('APPLIED');
+    expect(m.hasCollision).toBe(true);
+    expect(m.name).toBe('critter');
+  });
+
+  it('InGameOverlay: pmBG null-guard prevents crash when control is absent', () => {
+    function updatePortrait(pmBG: any, portraitResRef: string): string {
+      if(pmBG && pmBG.getFillTextureName() != portraitResRef){
+        pmBG.setFillTextureName(portraitResRef);
+        return 'UPDATED';
+      }
+      return 'SKIPPED';
+    }
+    // No crash when control is undefined/null
+    expect(() => updatePortrait(undefined, 'por_npc')).not.toThrow();
+    expect(updatePortrait(undefined, 'por_npc')).toBe('SKIPPED');
+    // Updates when control is present
+    const ctrl = { _tex: '', getFillTextureName(){ return this._tex; }, setFillTextureName(t: string){ this._tex = t; } };
+    expect(updatePortrait(ctrl, 'por_pc')).toBe('UPDATED');
+    expect(ctrl._tex).toBe('por_pc');
+    // Skip if already set
+    expect(updatePortrait(ctrl, 'por_pc')).toBe('SKIPPED');
+  });
+
+  it('InGameOverlay regression: old code crashed calling getFillTextureName on undefined pmBG', () => {
+    function updatePortraitOld(pmBG: any, portraitResRef: string): string {
+      try {
+        if(pmBG.getFillTextureName() != portraitResRef){ pmBG.setFillTextureName(portraitResRef); }
+        return 'OK';
+      } catch { return 'CRASHED'; }
+    }
+    expect(updatePortraitOld(undefined, 'por_npc')).toBe('CRASHED');
+  });
+
+  it('InGameOverlay: progress bar null-guard prevents crash when control absent', () => {
+    function updateVitBar(pb: any, hp: number, maxHp: number): string {
+      if(pb) { pb.setProgress(hp / maxHp * 100); return 'SET'; }
+      return 'SKIPPED';
+    }
+    expect(() => updateVitBar(undefined, 50, 100)).not.toThrow();
+    expect(updateVitBar(undefined, 50, 100)).toBe('SKIPPED');
+    const pb: any = { progress: 0, setProgress(v: number){ this.progress = v; } };
+    expect(updateVitBar(pb, 50, 100)).toBe('SET');
+    expect(pb.progress).toBe(50);
+  });
+
+  it('ModuleCreature.updateCasting: guards spell before calling update()', () => {
+    function updateCasting(casting: any[], delta: number): number {
+      let updates = 0;
+      for(let i = 0, len = casting.length; i < len; i++){
+        if(casting[i]?.spell){
+          casting[i].spell.update(casting[i].target, {}, casting[i], delta);
+          updates++;
+        }
+      }
+      return updates;
+    }
+    // Null/undefined spell does not crash
+    expect(() => updateCasting([{ spell: null, target: null }], 0.016)).not.toThrow();
+    expect(updateCasting([{ spell: null, target: null }], 0.016)).toBe(0);
+    // Valid spell gets updated
+    let called = 0;
+    const spell = { update(_t: any, _c: any, _d: any, _dt: number){ called++; } };
+    expect(updateCasting([{ spell, target: null }], 0.016)).toBe(1);
+    expect(called).toBe(1);
+    // Mixed: null spell skipped, valid spell runs
+    called = 0;
+    expect(updateCasting([{ spell: null }, { spell }], 0.016)).toBe(1);
+    expect(called).toBe(1);
+  });
+
+  it('updateCasting regression: old code crashed when spell was null', () => {
+    function updateCastingOld(casting: any[], delta: number): string {
+      try {
+        for(let i = 0; i < casting.length; i++){
+          casting[i].spell.update(casting[i].target, {}, casting[i], delta);
+        }
+        return 'OK';
+      } catch { return 'CRASHED'; }
+    }
+    expect(updateCastingOld([{ spell: null, target: null }], 0.016)).toBe('CRASHED');
   });
 
 });

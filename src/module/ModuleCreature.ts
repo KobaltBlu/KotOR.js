@@ -1087,7 +1087,9 @@ export class ModuleCreature extends ModuleObject {
   updateCasting(delta = 0){
     //Update active spells
     for(let i = 0, len = this.casting.length; i < len; i++){
-      this.casting[i].spell.update(this.casting[i].target, this, this.casting[i], delta);
+      if(this.casting[i]?.spell){
+        this.casting[i].spell.update(this.casting[i].target, this, this.casting[i], delta);
+      }
     }
 
     //Remove completed spells

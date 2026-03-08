@@ -201,15 +201,17 @@ export class MenuTop extends K1_MenuTop {
       
       this.TogglePartyMember(i, true);
       let pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
-      if (pmBG.getFillTextureName() != portTextureRef) {
+      if (pmBG && pmBG.getFillTextureName() != portTextureRef) {
         pmBG.setFillTextureName(portTextureRef);
         TextureLoader.Load(portTextureRef).then((texture: OdysseyTexture) => {
           pmBG.setFillTexture(texture);
         });
       }
       if (i == 0) {
-        (this.getControlByName('PB_VIT' + (i + 1)) as GUIProgressBar).setProgress(partyMember.getHP() / partyMember.getMaxHP() * 100);
-        (this.getControlByName('PB_FORCE' + (i + 1)) as GUIProgressBar).setProgress(partyMember.getFP() / partyMember.getMaxFP() * 100);
+        const pbVit = this.getControlByName('PB_VIT' + (i + 1)) as GUIProgressBar;
+        if(pbVit) pbVit.setProgress(partyMember.getHP() / partyMember.getMaxHP() * 100);
+        const pbForce = this.getControlByName('PB_FORCE' + (i + 1)) as GUIProgressBar;
+        if(pbForce) pbForce.setProgress(partyMember.getFP() / partyMember.getMaxFP() * 100);
       }
     }
   }

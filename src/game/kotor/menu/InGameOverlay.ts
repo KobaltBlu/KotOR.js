@@ -975,14 +975,16 @@ export class InGameOverlay extends GameMenu {
       this.TogglePartyMember(id, true);
       let pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
       const portraitResRef = partyMember.getPortraitResRef();
-      if (pmBG.getFillTextureName() != portraitResRef) {
+      if (pmBG && pmBG.getFillTextureName() != portraitResRef) {
         pmBG.setFillTextureName(portraitResRef);
         TextureLoader.tpcLoader.fetch(portraitResRef).then((texture: OdysseyTexture) => {
           pmBG.setFillTexture(texture);
         });
       }
-      (this.getControlByName('PB_VIT' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getHP() / partyMember.getMaxHP(), 0), 1) * 100);
-      (this.getControlByName('PB_FORCE' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getFP() / partyMember.getMaxFP(), 0), 1) * 100);
+      const pbVit = this.getControlByName('PB_VIT' + (id + 1)) as GUIProgressBar;
+      if(pbVit) pbVit.setProgress(Math.min(Math.max(partyMember.getHP() / partyMember.getMaxHP(), 0), 1) * 100);
+      const pbForce = this.getControlByName('PB_FORCE' + (id + 1)) as GUIProgressBar;
+      if(pbForce) pbForce.setProgress(Math.min(Math.max(partyMember.getFP() / partyMember.getMaxFP(), 0), 1) * 100);
       if (partyMember.isDebilitated()) {
         this.getControlByName('LBL_DEBILATATED' + (id + 1))?.show();
       } else {

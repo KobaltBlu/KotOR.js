@@ -1849,33 +1849,37 @@ export class ModuleArea extends ModuleObject {
   async loadWaypoints(): Promise<void> {
     console.log('Loading Waypoints');
     for(let i = 0; i < this.waypoints.length; i++){
-      const waypnt = this.waypoints[i];
-      waypnt.load();
-      const wpObj = new THREE.Object3D();
-      wpObj.name = waypnt.getTag();
-      wpObj.position.copy(waypnt.position);
-      wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
-      waypnt.rotation.z = Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()) + Math.PI/2;
-      GameState.group.waypoints.add(wpObj);
+      try{
+        const waypnt = this.waypoints[i];
+        waypnt.load();
+        const wpObj = new THREE.Object3D();
+        wpObj.name = waypnt.getTag();
+        wpObj.position.copy(waypnt.position);
+        wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
+        waypnt.rotation.z = Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()) + Math.PI/2;
+        GameState.group.waypoints.add(wpObj);
 
-      let _distance = 1000000000;
-      let _currentRoom = null;
-      let roomCenter = new THREE.Vector3();
-      for(let i = 0; i < GameState.group.rooms.children.length; i++){
-        let room = GameState.group.rooms.children[i];
-        if(room instanceof OdysseyModel3D){
-          if(room.box.containsPoint(wpObj.position)){
-            room.box.getCenter(roomCenter);
-            let distance = wpObj.position.distanceTo(roomCenter);
-            if(distance < _distance){
-              _distance = distance;
-              _currentRoom = room;
+        let _distance = 1000000000;
+        let _currentRoom = null;
+        let roomCenter = new THREE.Vector3();
+        for(let i = 0; i < GameState.group.rooms.children.length; i++){
+          let room = GameState.group.rooms.children[i];
+          if(room instanceof OdysseyModel3D){
+            if(room.box.containsPoint(wpObj.position)){
+              room.box.getCenter(roomCenter);
+              let distance = wpObj.position.distanceTo(roomCenter);
+              if(distance < _distance){
+                _distance = distance;
+                _currentRoom = room;
+              }
             }
           }
         }
+        wpObj.userData.area = _currentRoom;
+        this.areaMap.addMapNote(waypnt);
+      }catch(e){
+        console.error('loadWaypoints error', e);
       }
-      wpObj.userData.area = _currentRoom;
-      this.areaMap.addMapNote(waypnt);
     }
   }
 
@@ -1976,8 +1980,10 @@ export class ModuleArea extends ModuleObject {
         //creature.setFacing(Math.atan2(creature.getXOrientation(), creature.getYOrientation()) + Math.PI/2, true);
         creature.setFacing(-Math.atan2(creature.getXOrientation(), creature.getYOrientation()), true);
 
-        model.hasCollision = true;
-        model.name = creature.getTag();
+        if(model){
+          model.hasCollision = true;
+          model.name = creature.getTag();
+        }
         GameState.group.creatures.add( creature.container );
 
         creature.getCurrentRoom();
