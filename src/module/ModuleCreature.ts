@@ -3148,7 +3148,17 @@ export class ModuleCreature extends ModuleObject {
         console.warn(`getSkillModifier: unknown skillId ${skillId}, defaulting to 10 for ability score`);
         abilityScore = 10;
     }
-    return rank + CombatRound.GetMod(abilityScore);
+    let bonus = rank + CombatRound.GetMod(abilityScore);
+    // Apply temporary skill increase/decrease effects (e.g. security tunnelers)
+    for(let i = 0; i < this.effects.length; i++){
+      const e = this.effects[i];
+      if(e.type === GameEffectType.EffectSkillIncrease && e.getInt(0) === skillId){
+        bonus += e.getInt(1);
+      }else if(e.type === GameEffectType.EffectSkillDecrease && e.getInt(0) === skillId){
+        bonus -= e.getInt(1);
+      }
+    }
+    return bonus;
   }
 
   getHasSpell(id = 0){
@@ -3926,6 +3936,10 @@ export class ModuleCreature extends ModuleObject {
 
       if(this.template.RootNode.hasField('Plot'))
         this.plot = this.template.getFieldByLabel('Plot').getValue();
+
+      // Plot-flagged creatures are immune to death: enforce Min1HP so they
+      // cannot be reduced below 1 HP during combat.
+      if(this.plot) this.min1HP = true;
 
       if(this.template.RootNode.hasField('PortraitId')){
         this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();

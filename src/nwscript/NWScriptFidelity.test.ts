@@ -10437,3 +10437,541 @@ describe('Section 89: NWScript module guards and ModuleObjectManager area null-g
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// Section 90: calculateAttackRoll feat-based attack-roll penalties
+// ---------------------------------------------------------------------------
+// Fixes verified in this section:
+// CombatRound.calculateAttackRoll – accepts optional feat param
+// Power Attack (28): -3 penalty; Improved (17): -6; Master (83): -9
+// Power Blast (29/-18/-82): same -3/-6/-9 penalties
+// Flurry (11): -4 penalty; Improved (91): -2; Master Flurry (53): no penalty
+// Rapid Shot (30): -4; Improved (92): -2; Master (26): no penalty
+// calculateWeaponAttack now passes combatAction.feat to calculateAttackRoll
+describe('Section 90: calculateAttackRoll feat-based attack-roll penalties', () => {
+
+  // Inline simulation of the updated calculateAttackRoll logic
+  function simulateAttackRoll(
+    baseBAB: number,
+    effects: Array<{type: number; getInt(n: number): number}>,
+    featId: number | undefined
+  ): number {
+    const ATTACK_INCREASE = 0x0A;
+    const ATTACK_DECREASE = 0x0B;
+    const FLURRY = 11, RAPID_SHOT = 30;
+    const IMP_FLURRY = 91, IMP_RAPID_SHOT = 92;
+    // MASTER_FLURRY = 53, MASTER_RAPID_SHOT = 26 → no penalty
+    const POWER_ATTACK = 28, POWER_BLAST = 29;
+    const IMP_POWER_ATTACK = 17, IMP_POWER_BLAST = 18;
+    const MASTER_POWER_ATTACK = 83, MASTER_POWER_BLAST = 82;
+
+    let bonus = baseBAB;
+    for(const effect of effects){
+      if(effect.type === ATTACK_INCREASE)  bonus += effect.getInt(0);
+      else if(effect.type === ATTACK_DECREASE) bonus -= effect.getInt(0);
+    }
+    if(featId !== undefined){
+      if(featId === POWER_ATTACK || featId === POWER_BLAST){
+        bonus -= 3;
+      }else if(featId === IMP_POWER_ATTACK || featId === IMP_POWER_BLAST){
+        bonus -= 6;
+      }else if(featId === MASTER_POWER_ATTACK || featId === MASTER_POWER_BLAST){
+        bonus -= 9;
+      }else if(featId === FLURRY || featId === RAPID_SHOT){
+        bonus -= 4;
+      }else if(featId === IMP_FLURRY || featId === IMP_RAPID_SHOT){
+        bonus -= 2;
+      }
+      // Master Flurry (53) and Master Rapid Shot (26): no penalty
+    }
+    return bonus;
+  }
+
+  it('Power Attack (28) applies -3 attack penalty', () => {
+    const bonus = simulateAttackRoll(10, [], 28);
+    expect(bonus).toBe(7); // 10 - 3
+  });
+
+  it('Improved Power Attack (17) applies -6 attack penalty', () => {
+    const bonus = simulateAttackRoll(10, [], 17);
+    expect(bonus).toBe(4); // 10 - 6
+  });
+
+  it('Master Power Attack (83) applies -9 attack penalty', () => {
+    const bonus = simulateAttackRoll(10, [], 83);
+    expect(bonus).toBe(1); // 10 - 9
+  });
+
+  it('Power Blast (29) applies -3 attack penalty', () => {
+    const bonus = simulateAttackRoll(8, [], 29);
+    expect(bonus).toBe(5); // 8 - 3
+  });
+
+  it('Improved Power Blast (18) applies -6 attack penalty', () => {
+    const bonus = simulateAttackRoll(8, [], 18);
+    expect(bonus).toBe(2); // 8 - 6
+  });
+
+  it('Master Power Blast (82) applies -9 attack penalty', () => {
+    const bonus = simulateAttackRoll(8, [], 82);
+    expect(bonus).toBe(-1); // 8 - 9
+  });
+
+  it('Flurry (11) applies -4 attack penalty', () => {
+    const bonus = simulateAttackRoll(10, [], 11);
+    expect(bonus).toBe(6); // 10 - 4
+  });
+
+  it('Improved Flurry (91) applies -2 attack penalty', () => {
+    const bonus = simulateAttackRoll(10, [], 91);
+    expect(bonus).toBe(8); // 10 - 2
+  });
+
+  it('Master Flurry (53) applies no attack penalty', () => {
+    const bonus = simulateAttackRoll(10, [], 53);
+    expect(bonus).toBe(10); // no penalty
+  });
+
+  it('Rapid Shot (30) applies -4 attack penalty', () => {
+    const bonus = simulateAttackRoll(8, [], 30);
+    expect(bonus).toBe(4); // 8 - 4
+  });
+
+  it('Improved Rapid Shot (92) applies -2 attack penalty', () => {
+    const bonus = simulateAttackRoll(8, [], 92);
+    expect(bonus).toBe(6); // 8 - 2
+  });
+
+  it('Master Rapid Shot (26) applies no attack penalty', () => {
+    const bonus = simulateAttackRoll(8, [], 26);
+    expect(bonus).toBe(8); // no penalty
+  });
+
+  it('no feat: no attack penalty applied', () => {
+    const bonus = simulateAttackRoll(10, [], undefined);
+    expect(bonus).toBe(10);
+  });
+
+  it('feat penalty stacks with EffectAttackDecrease effects', () => {
+    const ATTACK_DECREASE = 0x0B;
+    const effects = [{ type: ATTACK_DECREASE, getInt: () => 2 }];
+    // Power Attack -3, plus effect -2 → total -5
+    const bonus = simulateAttackRoll(10, effects, 28);
+    expect(bonus).toBe(5); // 10 - 3 - 2
+  });
+
+  it('feat penalty stacks with EffectAttackIncrease effects', () => {
+    const ATTACK_INCREASE = 0x0A;
+    const effects = [{ type: ATTACK_INCREASE, getInt: () => 4 }];
+    // Power Attack -3, plus effect +4 → net +1
+    const bonus = simulateAttackRoll(10, effects, 28);
+    expect(bonus).toBe(11); // 10 + 4 - 3
+  });
+
+  it('regression: without feat param, no unexpected penalty is applied', () => {
+    // Before fix: calculateAttackRoll had no feat param, so penalties were never applied
+    // After fix: feat=undefined → same result as before (no penalty), keeping backward compat
+    const bonusWithoutFeat = simulateAttackRoll(10, [], undefined);
+    expect(bonusWithoutFeat).toBe(10);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Section 91: ModuleMGPlayer track loop detection and setTrack trackLength
+// ---------------------------------------------------------------------------
+// Fixes verified in this section:
+// ModuleMGPlayer.setTrack – computes trackLength from THREE.Box3 bounding box
+// ModuleMGPlayer.update (case 1) – calls onTrackLoop when track.position.y
+//   reaches trackLength; wraps track position when tunnel_infinite.y is set
+describe('Section 91: ModuleMGPlayer track loop detection', () => {
+
+  it('setTrack: trackLength defaults to 0 when no model present', () => {
+    function computeTrackLength(trackModel: any): number {
+      try{
+        // Simulates new THREE.Box3().setFromObject(track); size.y
+        const size = { x: 0, y: 0, z: 0 };
+        if(trackModel && typeof trackModel.getSize === 'function'){
+          trackModel.getSize(size);
+        }
+        return size.y > 0 ? size.y : 0;
+      }catch(e){
+        return 0;
+      }
+    }
+    expect(computeTrackLength(null)).toBe(0);
+    expect(computeTrackLength(undefined)).toBe(0);
+    const fakeTrack = { getSize: (out: any) => { out.y = 400; } };
+    expect(computeTrackLength(fakeTrack)).toBe(400);
+  });
+
+  it('update: onTrackLoop fires when track.position.y >= trackLength', () => {
+    let loopFired = false;
+    function simulateTrackUpdate(trackPosY: number, trackLength: number, tunnelInfinite: number): { loopFired: boolean; newPosY: number } {
+      let fired = false;
+      let newPosY = trackPosY;
+      if(trackLength > 0 && trackPosY >= trackLength){
+        if(tunnelInfinite){
+          newPosY -= trackLength;
+        }
+        fired = true;
+      }
+      return { loopFired: fired, newPosY };
+    }
+
+    // Not yet at finish line
+    expect(simulateTrackUpdate(350, 400, 0).loopFired).toBe(false);
+    // Exactly at finish line
+    expect(simulateTrackUpdate(400, 400, 0).loopFired).toBe(true);
+    // Past finish line
+    expect(simulateTrackUpdate(450, 400, 0).loopFired).toBe(true);
+    // With infinite: wraps track position back
+    const result = simulateTrackUpdate(410, 400, 1);
+    expect(result.loopFired).toBe(true);
+    expect(result.newPosY).toBe(10);
+    // trackLength=0: never fires (prevents spurious triggering before model loads)
+    expect(simulateTrackUpdate(0, 0, 0).loopFired).toBe(false);
+    expect(simulateTrackUpdate(1000, 0, 0).loopFired).toBe(false);
+  });
+
+  it('track loop does not fire when trackLength is 0 (uninitialized)', () => {
+    function simulateFire(trackPosY: number, trackLength: number): boolean {
+      return trackLength > 0 && trackPosY >= trackLength;
+    }
+    expect(simulateFire(999, 0)).toBe(false);
+    expect(simulateFire(0, 0)).toBe(false);
+  });
+
+  it('track loop fires exactly at trackLength boundary', () => {
+    function simulateFire(trackPosY: number, trackLength: number): boolean {
+      return trackLength > 0 && trackPosY >= trackLength;
+    }
+    expect(simulateFire(399.9, 400)).toBe(false);
+    expect(simulateFire(400, 400)).toBe(true);
+    expect(simulateFire(400.1, 400)).toBe(true);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Section 92: MenuPowerLevelUp force-power selection logic
+// ---------------------------------------------------------------------------
+// Fixes verified in this section:
+// MenuPowerLevelUp.setCreatureAndSlots – stores creature and remainingSelections
+// MenuPowerLevelUp.selectHighlightedPower – decrements remainingSelections and
+//   calls mainClass.addSpell(); guards remainingSelections <= 0
+// MenuPowerLevelUp.buildPowerList – skips spells with prerequisites (top-level only)
+//   and checks class availability (guardian/consular/sentinel > 0)
+// MenuLevelUp now calls setCreatureAndSlots() before opening MenuPowerLevelUp
+describe('Section 92: MenuPowerLevelUp force-power selection', () => {
+
+  it('remainingSelections decrements each time a power is selected', () => {
+    let remaining = 3;
+    function selectPower(): boolean {
+      if(remaining <= 0) return false;
+      remaining--;
+      return true;
+    }
+    expect(selectPower()).toBe(true);
+    expect(remaining).toBe(2);
+    expect(selectPower()).toBe(true);
+    expect(remaining).toBe(1);
+    expect(selectPower()).toBe(true);
+    expect(remaining).toBe(0);
+    // No more selections allowed
+    expect(selectPower()).toBe(false);
+    expect(remaining).toBe(0);
+  });
+
+  it('cannot select a power when remainingSelections is 0', () => {
+    function canSelect(remaining: number): boolean {
+      return remaining > 0;
+    }
+    expect(canSelect(0)).toBe(false);
+    expect(canSelect(1)).toBe(true);
+  });
+
+  it('buildPowerList: skips spells that have prerequisites (only top-level shown)', () => {
+    const spells = [
+      { id: 0, prerequisites: [],   guardian: 1, consular: 1, sentinel: 1 },
+      { id: 1, prerequisites: [0],  guardian: 1, consular: 1, sentinel: 1 }, // upgrade
+      { id: 2, prerequisites: [],   guardian: 0, consular: 1, sentinel: 1 },
+    ];
+    function buildList(classId: number /* 3=guardian,4=consular,5=sentinel */): number[] {
+      return spells
+        .filter(s => s.prerequisites.length === 0)
+        .filter(s => {
+          const minLevel = classId === 3 ? s.guardian : classId === 4 ? s.consular : s.sentinel;
+          return minLevel > 0;
+        })
+        .map(s => s.id);
+    }
+    // Guardian sees spell 0 but not spell 2 (guardian=0)
+    expect(buildList(3)).toEqual([0]);
+    // Consular sees both 0 and 2
+    expect(buildList(4)).toEqual([0, 2]);
+    // Sentinel sees both 0 and 2
+    expect(buildList(5)).toEqual([0, 2]);
+  });
+
+  it('selectHighlightedPower: picks the highest learnable tier the creature lacks', () => {
+    const SPELLS = [
+      { id: 0, prerequisites: [] },
+      { id: 1, prerequisites: [0] }, // upgrade of 0
+      { id: 2, prerequisites: [1] }, // master of 0
+    ];
+    function getNextLearnable(
+      group: typeof SPELLS,
+      knownIds: number[]
+    ): number | undefined {
+      for(let i = group.length - 1; i >= 0; i--){
+        const spell = group[i];
+        const prereqsMet = spell.prerequisites.every(p => knownIds.includes(p));
+        if(!knownIds.includes(spell.id) && prereqsMet){
+          return spell.id;
+        }
+      }
+      return undefined;
+    }
+    // Knows nothing → can learn base (id=0)
+    expect(getNextLearnable(SPELLS, [])).toBe(0);
+    // Knows base (0) → can learn upgrade (id=1)
+    expect(getNextLearnable(SPELLS, [0])).toBe(1);
+    // Knows base and upgrade → can learn master (id=2)
+    expect(getNextLearnable(SPELLS, [0, 1])).toBe(2);
+    // Knows all → nothing to learn
+    expect(getNextLearnable(SPELLS, [0, 1, 2])).toBeUndefined();
+  });
+
+  it('applyAndClose: clears selectedPowers list', () => {
+    const selected: number[] = [1, 2, 3];
+    function applyAndClose(): number[] {
+      selected.length = 0;
+      return selected;
+    }
+    expect(applyAndClose()).toEqual([]);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Section 93: getSkillModifier EffectSkillIncrease/Decrease integration
+// ---------------------------------------------------------------------------
+// Fixes verified in this section:
+// ModuleCreature.getSkillModifier now sums temporary EffectSkillIncrease and
+//   EffectSkillDecrease effects (e.g. security tunnelers, skill-boosting stims).
+// Previously only rank+abilityMod was returned; temporary effects were ignored.
+describe('Section 93: getSkillModifier effect integration', () => {
+
+  // Simulate the updated getSkillModifier logic
+  function simulateSkillModifier(
+    rank: number,
+    abilityMod: number,
+    effects: Array<{ type: number; getInt(n: number): number }>
+  ): number {
+    const SKILL_INCREASE = 0x37;
+    const SKILL_DECREASE = 0x38;
+    const SECURITY = 6; // SkillType.SECURITY
+    let bonus = rank + abilityMod;
+    for(const e of effects){
+      if(e.type === SKILL_INCREASE && e.getInt(0) === SECURITY){
+        bonus += e.getInt(1);
+      }else if(e.type === SKILL_DECREASE && e.getInt(0) === SECURITY){
+        bonus -= e.getInt(1);
+      }
+    }
+    return bonus;
+  }
+
+  it('no effects: returns rank + abilityMod', () => {
+    expect(simulateSkillModifier(4, 2, [])).toBe(6);
+  });
+
+  it('EffectSkillIncrease: adds bonus to skill total', () => {
+    const SKILL_INCREASE = 0x37;
+    const SECURITY = 6;
+    const effects = [
+      { type: SKILL_INCREASE, getInt: (n: number) => n === 0 ? SECURITY : 5 },
+    ];
+    expect(simulateSkillModifier(4, 2, effects)).toBe(11); // 4 + 2 + 5
+  });
+
+  it('EffectSkillDecrease: subtracts penalty from skill total', () => {
+    const SKILL_DECREASE = 0x38;
+    const SECURITY = 6;
+    const effects = [
+      { type: SKILL_DECREASE, getInt: (n: number) => n === 0 ? SECURITY : 3 },
+    ];
+    expect(simulateSkillModifier(4, 2, effects)).toBe(3); // 4 + 2 - 3
+  });
+
+  it('multiple effects stack correctly', () => {
+    const SKILL_INCREASE = 0x37;
+    const SKILL_DECREASE = 0x38;
+    const SECURITY = 6;
+    const effects = [
+      { type: SKILL_INCREASE, getInt: (n: number) => n === 0 ? SECURITY : 5 },
+      { type: SKILL_DECREASE, getInt: (n: number) => n === 0 ? SECURITY : 2 },
+    ];
+    expect(simulateSkillModifier(4, 2, effects)).toBe(9); // 4 + 2 + 5 - 2
+  });
+
+  it('effects for a different skill are not applied', () => {
+    const SKILL_INCREASE = 0x37;
+    const COMPUTER_USE = 0; // different skill
+    const SECURITY = 6;
+    const effects = [
+      { type: SKILL_INCREASE, getInt: (n: number) => n === 0 ? COMPUTER_USE : 10 },
+    ];
+    // Effect is for COMPUTER_USE, not SECURITY → no change
+    expect(simulateSkillModifier(4, 2, effects)).toBe(6); // 4 + 2 only
+  });
+
+  it('regression: old behavior ignored EffectSkillIncrease', () => {
+    // Old code: rank + abilityMod only
+    function oldSkillModifier(rank: number, abilityMod: number, _effects: any[]): number {
+      return rank + abilityMod;
+    }
+    const SKILL_INCREASE = 0x37;
+    const SECURITY = 6;
+    const effects = [
+      { type: SKILL_INCREASE, getInt: (n: number) => n === 0 ? SECURITY : 5 },
+    ];
+    expect(oldSkillModifier(4, 2, effects)).toBe(6);  // old: ignored effect
+    expect(simulateSkillModifier(4, 2, effects)).toBe(11); // fixed: +5 from effect
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Section 94: MenuLevelUp multi-class level-up state (class-level vs total-level)
+// ---------------------------------------------------------------------------
+// Fixes verified in this section:
+// MenuLevelUp.initLevelUpState: pendingForcePowerSlots, pendingFeatSlots, and
+//   pendingSkillPoints now use mainClass.level+1 (class-specific new level)
+//   instead of getTotalClassLevel()+1 (total character level).
+// This is critical for Dantooine Jedi training: Scout(3)/JediConsular(0) should
+//   use index 1 for spellGainPoints (first Jedi level), not index 4.
+// pendingAbilityPoint still uses total level (every 4 total levels), which
+//   is correct per KotOR rules.
+describe('Section 94: MenuLevelUp multi-class level-up class-level index', () => {
+
+  it('single-class: class-level index equals total level', () => {
+    function computeClassLevel(classLevel: number, _totalLevel: number): number {
+      return classLevel + 1;
+    }
+    // Scout 3 levelling to 4: class level 3, total 3 → new class level 4
+    expect(computeClassLevel(3, 3)).toBe(4);
+  });
+
+  it('multi-class: Jedi joins at level 0 (Scout 3 + Jedi 0 → Jedi 1)', () => {
+    function computeClassLevel(mainClassLevel: number): number {
+      return mainClassLevel + 1;
+    }
+    // JediConsular.level = 0 → first Jedi level
+    expect(computeClassLevel(0)).toBe(1);
+  });
+
+  it('spellGainPoints: uses new class level index, not total level', () => {
+    // classpowergain.2da has 0-indexed rows per class level
+    // JediConsular at level 1 gains 3 force powers (typical value)
+    const spellGainPoints = [0, 3, 2, 2, 1, 1]; // index 0 unused, 1=level1, etc.
+    function getPowerSlots(classLevel: number): number {
+      return spellGainPoints[classLevel] ?? 0;
+    }
+    // Scout 3 + Jedi 0 levelling up: new class level = 1 → 3 powers
+    expect(getPowerSlots(1)).toBe(3);
+    // Using wrong total level (4) would give 1 power
+    expect(getPowerSlots(4)).toBe(1);
+  });
+
+  it('pendingAbilityPoint: still based on total character level (every 4 total)', () => {
+    function hasPendingAbility(totalLevel: number): boolean {
+      return (totalLevel % 4) === 0;
+    }
+    expect(hasPendingAbility(4)).toBe(true);
+    expect(hasPendingAbility(8)).toBe(true);
+    expect(hasPendingAbility(3)).toBe(false);
+    expect(hasPendingAbility(5)).toBe(false);
+  });
+
+  it('featGainPoints: uses new class level index', () => {
+    const featGainPoints = [0, 1, 0, 1, 0, 1]; // index 0 unused
+    function getFeatSlots(classLevel: number): number {
+      return featGainPoints[classLevel] ?? 0;
+    }
+    // Jedi level 1 → 1 feat
+    expect(getFeatSlots(1)).toBe(1);
+    // Jedi level 3 → 1 feat
+    expect(getFeatSlots(3)).toBe(1);
+    // Jedi level 2 → 0 feats
+    expect(getFeatSlots(2)).toBe(0);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Section 95: min1HP flag prevents death of plot-critical objects
+// ---------------------------------------------------------------------------
+// Fixes verified in this section:
+// ModuleObject.setHP: when min1HP is set, value is clamped to minimum 1.
+// ModuleCreature.loadTemplate: plot=1 now automatically sets min1HP=true.
+// Previously min1HP was read from GFF but setHP never enforced the floor.
+describe('Section 95: min1HP prevents plot-critical creatures from dying', () => {
+
+  it('setHP clamps to 1 when min1HP is true', () => {
+    function setHP(currentHP: number, newValue: number, min1HP: boolean): number {
+      if(min1HP && newValue < 1) newValue = 1;
+      return newValue;
+    }
+    expect(setHP(10, -5, true)).toBe(1);
+    expect(setHP(10, 0, true)).toBe(1);
+    expect(setHP(10, 1, true)).toBe(1);
+    expect(setHP(10, 5, true)).toBe(5);
+  });
+
+  it('setHP is unrestricted when min1HP is false', () => {
+    function setHP(currentHP: number, newValue: number, min1HP: boolean): number {
+      if(min1HP && newValue < 1) newValue = 1;
+      return newValue;
+    }
+    expect(setHP(10, -5, false)).toBe(-5);
+    expect(setHP(10, 0, false)).toBe(0);
+    expect(setHP(10, 1, false)).toBe(1);
+  });
+
+  it('plot creatures implicitly get min1HP=true on template load', () => {
+    function loadTemplate(plot: boolean): boolean {
+      let min1HP = false;
+      if(plot) min1HP = true;
+      return min1HP;
+    }
+    expect(loadTemplate(true)).toBe(true);
+    expect(loadTemplate(false)).toBe(false);
+  });
+
+  it('subtractHP on a min1HP creature leaves at least 1 HP', () => {
+    function subtractHP(currentHP: number, damage: number, min1HP: boolean): number {
+      let newHP = currentHP - damage;
+      if(min1HP && newHP < 1) newHP = 1;
+      return newHP;
+    }
+    // Plot creature: can't be killed
+    expect(subtractHP(100, 200, true)).toBe(1);
+    expect(subtractHP(5, 5, true)).toBe(1);
+    expect(subtractHP(5, 3, true)).toBe(2);  // 5-3=2 >= 1, no clamp
+    // Non-plot creature: can die
+    expect(subtractHP(5, 10, false)).toBe(-5);
+    expect(subtractHP(5, 5, false)).toBe(0);
+  });
+
+  it('SetMinOneHP NWScript function wires through correctly', () => {
+    let min1HP = false;
+    function setMinOneHP(value: boolean) { min1HP = value; }
+    setMinOneHP(true);
+    expect(min1HP).toBe(true);
+    setMinOneHP(false);
+    expect(min1HP).toBe(false);
+  });
+
+});

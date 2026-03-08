@@ -72,6 +72,8 @@ export class ModuleMGPlayer extends ModuleObject {
 
   cameraName: string = '';
   trackName: string = '';
+  /** Length of the track model along its Y axis; 0 until the track model is set. */
+  trackLength: number = 0;
 
   constructor(template: GFFObject){
     super();
@@ -162,6 +164,17 @@ export class ModuleMGPlayer extends ModuleObject {
       console.error(e);
     }
 
+    // Compute the track length along the forward (Y) axis so the update loop
+    // can detect when the player has passed the finish line.
+    try{
+      const trackBBox = new THREE.Box3().setFromObject(this.track);
+      const size = new THREE.Vector3();
+      trackBBox.getSize(size);
+      this.trackLength = size.y > 0 ? size.y : 0;
+    }catch(e){
+      this.trackLength = 0;
+    }
+
     this.onCreateRun = false;
 
     this._heartbeatTimeout = 0;
@@ -233,6 +246,18 @@ export class ModuleMGPlayer extends ModuleObject {
         //this.updateCollision(delta);
         this.track.position.add(this.forceVector);
         //this.model.box.setFromObject(this.model);
+
+        // Finish-line detection: when the track has advanced by a full track
+        // length the player has completed one lap; fire the OnTrackLoop script.
+        // If tunnel_infinite.y is set the track is meant to loop continuously
+        // (e.g. turret minigame); otherwise each loop is a "lap completion".
+        if(this.trackLength > 0 && this.track.position.y >= this.trackLength){
+          if(this.tunnel_infinite?.y){
+            // Wrap the track position back to create a seamless loop
+            this.track.position.y -= this.trackLength;
+          }
+          this.onTrackLoop();
+        }
 
         const enemies = GameState.module?.area?.miniGame?.enemies ?? [];
         for(let i = 0; i < enemies.length; i++){
