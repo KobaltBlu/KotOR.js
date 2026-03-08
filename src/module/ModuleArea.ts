@@ -344,7 +344,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   dispose(){
-    this.areaMap.dispose();
+    this.areaMap?.dispose();
 
     //clear area room objects
     while (this.rooms.length){
@@ -2276,7 +2276,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     const areaMapField = git.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'AreaMap') );
-    areaMapField.addChildStruct( this.areaMap.exportData() );
+    if(this.areaMap) areaMapField.addChildStruct( this.areaMap.exportData() );
 
     const areaPropertiesField = git.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'AreaProperties') );
     areaPropertiesField.addChildStruct( this.getAreaPropertiesStruct() );

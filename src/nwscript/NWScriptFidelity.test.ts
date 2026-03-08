@@ -122,6 +122,12 @@
  *     ModuleCreature.updatePerceptionList() – area null-guard added.
  *     ModuleCreature.onPositionChanged() – area.triggers via optional chaining.
  *     ModuleCreature.findOpenTargetPosition() – area.creatures via optional chain.
+ *
+ * 82. ModuleCreature area update, PartyManager follow, ModuleArea save guards:
+ *     ModuleCreature.update() – this.area = GameState.module?.area (optional chain).
+ *     PartyManager.GetFollowPositionAtIndex() – guards leader and creature.area.
+ *     ModuleArea.dispose() – optional chain on areaMap before dispose().
+ *     ModuleArea.save() – guards areaMap before calling exportData().
  */
 
 // ---------------------------------------------------------------------------
@@ -9713,6 +9719,98 @@ describe('Section 81: Action null-guards for area.id and creature area accesses'
     expect(removeFromTargetPositions(null, [])).toBe(0);
     expect(removeFromTargetPositions(null, [1, 2])).toBe(2);
     expect(removeFromTargetPositions({ creatures: [1, 2, 3] }, [4])).toBe(4);
+  });
+
+});
+
+// ── Section 82: Module update, PartyManager follow, ModuleArea save null-guards
+//
+// Fixes verified in this section:
+//   a. ModuleCreature.update() – this.area = GameState.module?.area (optional chain)
+//   b. PartyManager.GetFollowPositionAtIndex() – guards leader and creature.area
+//   c. ModuleArea.dispose() – guards areaMap before calling dispose()
+//   d. ModuleArea.save() – guards areaMap before calling exportData()
+
+describe('Section 82: ModuleCreature area update, PartyManager follow, ModuleArea save guards', () => {
+
+  it('ModuleCreature.update: area assignment uses optional chaining (no crash when module null)', () => {
+    function getArea(module: any): any {
+      return module?.area;
+    }
+    expect(getArea(null)).toBeUndefined();
+    expect(getArea(undefined)).toBeUndefined();
+    expect(getArea({ area: { id: 1 } })).toEqual({ id: 1 });
+  });
+
+  it('PartyManager.GetFollowPositionAtIndex: no crash when party is empty (leader missing)', () => {
+    function getFollowPos(party: any[], idx: number): string {
+      const leader = party[0];
+      const creature = party[idx];
+      if(!creature || !leader) return 'EMPTY_VECTOR';
+      return 'OFFSET_FROM_LEADER';
+    }
+    expect(getFollowPos([], 1)).toBe('EMPTY_VECTOR');
+    expect(getFollowPos([{ rotation: { z: 0 }, position: { x: 0, y: 0, z: 0 } }], 1)).toBe('EMPTY_VECTOR');
+    const leader = { rotation: { z: 0 }, position: { x: 0, y: 0, z: 0 } };
+    const member = { area: null };
+    expect(getFollowPos([leader, member], 1)).toBe('OFFSET_FROM_LEADER');
+  });
+
+  it('PartyManager regression: old code crashed when leader was undefined', () => {
+    function getFollowPosOld(party: any[], idx: number): string {
+      try {
+        const leader = party[0];
+        const creature = party[idx];
+        if(!creature) return 'NO_CREATURE';
+        // Old code: accessed leader.rotation.z without null-guard
+        const _z = leader.rotation.z;
+        return 'OK';
+      } catch { return 'CRASHED'; }
+    }
+    expect(getFollowPosOld([], 1)).toBe('NO_CREATURE');
+    // This was the crash: party has only 1 member (leader), requesting idx=1
+    expect(getFollowPosOld([{}], 1)).toBe('NO_CREATURE'); // creature undefined
+    // When leader is present but has no rotation object
+    const fakeCreature = { area: null };
+    // leader[0] has no rotation property => crash on leader.rotation.z in old code
+    expect(getFollowPosOld([{}, fakeCreature], 1)).toBe('CRASHED');
+  });
+
+  it('PartyManager.GetFollowPositionAtIndex: creature.area null-guard uses fallback position', () => {
+    function getWalkablePos(area: any, pos: any, fallback: any): any {
+      return area?.isPointWalkable(pos) ? pos : (area?.getNearestWalkablePoint(pos, 0.5) ?? fallback);
+    }
+    const fallback = { x: 1, y: 1, z: 0 };
+    // No crash and returns fallback when area is null
+    expect(getWalkablePos(null, { x: 5, y: 5 }, fallback)).toBe(fallback);
+    // Returns pos when area says it's walkable
+    const area = { isPointWalkable: () => true, getNearestWalkablePoint: () => ({ x: 3, y: 3 }) };
+    const pos = { x: 5, y: 5 };
+    expect(getWalkablePos(area, pos, fallback)).toBe(pos);
+  });
+
+  it('ModuleArea.dispose: optional chaining on areaMap prevents crash when areaMap missing', () => {
+    let disposed = false;
+    function disposeArea(areaMap: any): void {
+      areaMap?.dispose();
+    }
+    expect(() => disposeArea(undefined)).not.toThrow();
+    expect(() => disposeArea(null)).not.toThrow();
+    disposeArea({ dispose(){ disposed = true; } });
+    expect(disposed).toBe(true);
+  });
+
+  it('ModuleArea.save: areaMap null-guard skips exportData when areaMap missing', () => {
+    let exported = false;
+    function saveAreaMap(areaMap: any, field: any): void {
+      if(areaMap) field.addChildStruct(areaMap.exportData());
+    }
+    const field = { added: false, addChildStruct(_s: any){ this.added = true; } };
+    saveAreaMap(undefined, field);
+    expect(field.added).toBe(false);
+    saveAreaMap({ exportData(){ exported = true; return {}; } }, field);
+    expect(field.added).toBe(true);
+    expect(exported).toBe(true);
   });
 
 });

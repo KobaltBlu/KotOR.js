@@ -445,7 +445,7 @@ export class ModuleCreature extends ModuleObject {
       //Get the first action in the queue
       this.action = this.actionQueue[0];
 
-      this.area = GameState.module.area;
+      this.area = GameState.module?.area;
 
       /*if(this == GameState.getCurrentPlayer() && this.room instanceof ModuleRoom){
         //this.room.show(true);
