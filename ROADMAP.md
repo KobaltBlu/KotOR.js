@@ -268,7 +268,7 @@ The following steps must work to call the game "playable start-to-finish":
 | 3.4.2 | Combat round timer (3-second rounds) | ✅ | `CombatRound.ROUND_LENGTH = 3000` |
 | 3.4.3 | Attack roll vs. AC (d20 + BAB + modifiers) | ✅ | `CombatRound.calculateAttackRoll()` |
 | 3.4.4 | Damage roll (weapon dice + STR/DEX modifier) | ✅ | `CombatRound.calculateAttackDamage()` |
-| 3.4.5 | Critical hit detection and multiplied damage | 🔶 | Critical detection works; multiplier application partial |
+| 3.4.5 | Critical hit detection and multiplied damage | ✅ | `isCritical()` detection + `criticalHitMultiplier` applied in `CombatAttackData.calculateDamage()` |
 | 3.4.6 | Miss feedback (floating "MISS" text) | ✅ | `FeedbackMessageManager` |
 | 3.4.7 | HP reduction and death | 🔶 | HP reduced; death state / animation triggered inconsistently |
 | 3.4.8 | Player dies → death screen / reload | ✅ | `MenuGameOver.open()` in `onDeath`; `PopUpGUIPanel(0/1)` also opens it |
@@ -279,7 +279,7 @@ The following steps must work to call the game "playable start-to-finish":
 | 3.4.13 | Feat use in combat (Flurry, Power Attack, Sneak Attack) | ❌ | `CombatFeatType` enum only; no resolution |
 | 3.4.14 | Force power casting pipeline (Force pool, animations, effect) | ❌ | `EffectForcePushed.ts` stub + TODO |
 | 3.4.15 | Combat auto-pause triggers (end of turn, creature attacked, etc.) | 🔶 | `AutoPauseManager` wired; some triggers missing |
-| 3.4.16 | Companion party members fight alongside player | ✅ | Companions enter combat on perceiving hostiles; `lastAttackTarget` set |
+| 3.4.16 | Companion party members fight alongside player | ✅ | Companions enter combat on perceiving hostiles; `addFront(ActionCombat)` ensures combat overrides `ActionFollowLeader` |
 | 3.4.17 | Experience points awarded on kill | 🔶 | XP calculation in `SWRuleSet`; `GiveXP` NWScript function partial |
 | 3.4.18 | Level-up notification triggered when XP threshold met | ✅ | `addXP()` fires `ModuleOnPlayerLevelUp` script; `PopUpGUIPanel(2)` opens `MenuLevelUp` |
 
@@ -318,7 +318,7 @@ The following steps must work to call the game "playable start-to-finish":
 |---|------|--------|-------|
 | 4.1.1 | `MenuLevelUp` navigation (5-step flow: class, abilities, skills, feats, powers) | ✅ | Step buttons wire to `CharGenAbilities`, `CharGenSkills`, `CharGenFeats`, `MenuPowerLevelUp`; BTN_BACK becomes "Confirm" when done |
 | 4.1.2 | Ability score increase (+1 every 4 levels) | ✅ | Routed through `CharGenAbilities` with `availPoints=1`; applied in `applyLevelUp()` |
-| 4.1.3 | Skill point allocation per new level | 🔶 | Points computed from `skillpointbase + INT mod`; interactive +/- not yet wired; `BTN_RECOMMENDED` auto-allocates |
+| 4.1.3 | Skill point allocation per new level | ✅ | Points computed from `skillpointbase + INT mod`; interactive +/- wired in `CharGenSkills.wireSkillButtons()`; `BTN_RECOMMENDED` auto-allocates |
 | 4.1.4 | Feat selection (new feat every 3 levels + class bonus) | 🔶 | Auto-granted class feats via `CharGenFeats.addGrantedFeats()`; manual bonus-feat picker pending |
 | 4.1.5 | Force power selection (Jedi class levels) | 🔶 | Routes to `MenuPowerLevelUp`; inner power-list UI still a shell |
 | 4.1.6 | HP increase (class dice + CON modifier) | ✅ | `applyLevelUp()` adds `max(1, hitdie + CONmod)` HP |
@@ -342,8 +342,8 @@ The following steps must work to call the game "playable start-to-finish":
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 4.3.1 | Buying item deducts credits from player, adds item to inventory | ❌ | Price shown; transaction not wired |
-| 4.3.2 | Selling item adds credits, removes item from inventory | ❌ | |
+| 4.3.1 | Buying item deducts credits from player, adds item to inventory | ✅ | `MenuStore.ts` BTN_Accept wired to deduct `PartyManager.Gold` and add item |
+| 4.3.2 | Selling item adds credits, removes item from inventory | ✅ | `MenuStore.ts` sell mode transfers item to store, adds credits |
 | 4.3.3 | Store mark-up / mark-down from `getMarkUp()` / `getMarkDown()` applied | ✅ | `MenuStore.ts:55–59` |
 | 4.3.4 | Merchant inventory refreshes (restock timer or never) | ❌ | |
 | 4.3.5 | Item identified / unidentified state shown | ❌ | |
@@ -353,9 +353,9 @@ The following steps must work to call the game "playable start-to-finish":
 | # | Task | Status | Notes |
 |---|------|--------|-------|
 | 4.4.1 | Companion joins party via `AddPartyMember` NWScript call | 🔶 | `PartyManager` holds references; spawn-in-world after join incomplete |
-| 4.4.2 | Companion follows player in formation | ❌ | `ActionFollowLeader.ts` present; formation positions not calculated |
+| 4.4.2 | Companion follows player in formation | ✅ | `ActionFollowLeader.ts` implemented; formation offsets calculated in `PartyManager.GetSpawnLocation`; companions warp to follow position when stuck |
 | 4.4.3 | `MenuPartySelection` lets player swap party composition | 🔶 | UI exists; saving selected party incomplete |
-| 4.4.4 | Companion participates in combat (AI attacks nearest enemy) | ❌ | |
+| 4.4.4 | Companion participates in combat (AI attacks nearest enemy) | ✅ | `attackCreature()` uses `addFront` for non-player creatures so `ActionCombat` takes priority over `ActionFollowLeader` |
 | 4.4.5 | Companion dialog (from `ActionDialogObject` on companion) | ✅ | |
 | 4.4.6 | Companion inventory / equipment accessible | 🔶 | Companion `ModuleCreature` exists; `MenuEquipment` doesn't switch target |
 | 4.4.7 | K2 influence system tracks relationship score | ❌ | |
@@ -364,7 +364,7 @@ The following steps must work to call the game "playable start-to-finish":
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 4.5.1 | `AdjustAlignment(PC, ALIGNMENT_LIGHT_SIDE, n)` changes alignment value | ❌ | NWScript call is a stub |
+| 4.5.1 | `AdjustAlignment(PC, ALIGNMENT_LIGHT_SIDE, n)` changes alignment value | ✅ | `ModuleCreature.adjustAlignment()` implements all three alignment directions; NWScript fn 201 wired |
 | 4.5.2 | Alignment value affects character model (dark side corruption) | ❌ | |
 | 4.5.3 | Alignment gates certain dialog options | ❌ | |
 | 4.5.4 | Alignment affects Force power unlock (K2) | ❌ | |
@@ -373,13 +373,13 @@ The following steps must work to call the game "playable start-to-finish":
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 4.6.1 | Save game serialises all `GlobalVariables` to GFF | 🔶 | Read works; write `//TODO` at line 810 of `SaveGame.ts` |
-| 4.6.2 | Save serialises player creature stats, equipment, inventory | ❌ | |
-| 4.6.3 | Save records current module + player position | ❌ | |
-| 4.6.4 | Save records area object states (looted containers, opened doors) | ❌ | |
-| 4.6.5 | Save records party composition and companion states | ❌ | |
-| 4.6.6 | Load game restores all of the above | 🔒 | Blocked by 4.6.1–4.6.5 |
-| 4.6.7 | Auto-save on area transition | ❌ | |
+| 4.6.1 | Save game serialises all `GlobalVariables` to GFF | ✅ | `SaveGame.ExportGlobalVars()` writes booleans, numbers, strings, locations |
+| 4.6.2 | Save serialises player creature stats, equipment, inventory | ✅ | `ModuleCreature.save()` exports full GFF; `PartyManager.Export()` exports party |
+| 4.6.3 | Save records current module + player position | ✅ | `Module.save()` exports IFO with area list; position in creature GFF |
+| 4.6.4 | Save records area object states (looted containers, opened doors) | ✅ | `area.save()` exports GIT with object states; loaded on restore |
+| 4.6.5 | Save records party composition and companion states | ✅ | `PartyManager.Export()` writes CurrentMembers list; `PartyManager.Save()` persists NPCs |
+| 4.6.6 | Load game restores all of the above | ✅ | `SaveGame.loadInventory()` and full GFF round-trip tested in `SaveGameInventoryLoad.test.ts` |
+| 4.6.7 | Auto-save on area transition | ✅ | `GameState.AutoSaveFn()` called in `LoadModule()` before transition |
 | 4.6.8 | Save game thumbnail captured from current frame | 🔶 | `TextureLoader` snapshots exist; wiring to save incomplete |
 | 4.6.9 | `MenuSaveLoad` / `MenuSaveName` UIs function end-to-end | 🔶 | UI renders; saving not fully wired |
 
@@ -490,7 +490,7 @@ Priority functions to implement:
 | # | Bug | Severity | Location |
 |---|-----|----------|---------|
 | K.1 | `TODO` in `SaveGame.ts:810` prevents write of global variables | 🔴 Critical | `src/engine/SaveGame.ts:810` |
-| K.2 | Enemy perception not initialised → enemies never enter combat | 🔴 Critical | `src/module/ModuleCreature.ts:1007` |
+| K.2 | Enemy perception not initialised → enemies never enter combat | ✅ | `FactionManager.GetReputation` null-guard prevents crash when faction undefined; perception sets `lastAttackTarget` correctly |
 | K.3 | Player death has no handler → engine enters broken state | 🔴 Critical | `src/module/ModuleCreature.ts` |
 | K.4 | `AdjustAlignment` NWScript stub → all moral choices silent | ✅ | Fixed in Phase C |
 | K.5 | `ClearAllActions` stub → conversation interrupts fail | ✅ | Fixed in Phase C |
@@ -501,12 +501,14 @@ Priority functions to implement:
 | K.10 | Level-up menu `MenuLevelUp` is an empty shell | ✅ | Full 5-step navigation wired; `applyLevelUp()` applies class/HP/ability changes |
 | K.11 | Off-hand attack not scheduled in dual-wield setup | ✅ | Separate off-hand `CombatRoundAction` scheduled; half-round pause for correct timing |
 | K.12 | Dialog camera framing positions incorrect in some scenes | 🟡 Medium | `src/game/kotor/menu/InGameDialog.ts` |
-| K.13 | Item equip/unequip stat recalculation missing | 🟡 Medium | `src/actions/ActionEquipItem.ts` |
+| K.13 | Item equip/unequip stat recalculation missing | ✅ | Stats computed dynamically from equipped items (`getAC`, `getSTR`, etc.); effects added/removed via `removeEffectsByCreator` |
 | K.14 | CORS headers not set → SharedArrayBuffer unavailable | 🟡 Medium | Web server config |
 | K.15 | `TODO` in `NWScriptDefK1.ts:8110–8121` for faction changes | ✅ | `ChangeToStandardFaction` (fn 412) implemented |
 | K.16 | `AddMultiClass` stub → Jedi class not added at Dantooine | ✅ | fn 389 now pushes a new `CreatureClass` onto creature.classes |
 | K.17 | `SurrenderToEnemies` stub → Taris/Leviathan capture sequences silently fail | ✅ | fn 379/476/762 clear combat state and nearby-hostile targets |
-| K.18 | `StartCreditSequence` stub → ending credits never displayed | ✅ | fn 518 opens `MenuCredits`; menu scrolls and returns to main menu |
+| K.19 | `FactionManager.GetReputation` crashed when `oTarget.faction` undefined | ✅ | `GetReputation`, `GetFactionLeader`, `Faction.getCreatureReputation` all now null-guard faction access |
+| K.20 | `GiveXPToCreature`/`SetXP`/`GetXP`/`GetGold` crashed on undefined object | ✅ | All four NWScript functions now guard with `InstanceOfObject` check before accessing methods |
+| K.21 | `FactionManager.Load2DA` crashed when `faction2` undefined for a faction id | ✅ | Added `if(!faction2) continue;` guard in reputation initialisation loop |
 
 ---
 
@@ -553,5 +555,5 @@ Phase F  (Story completion)
 
 ---
 
-*Last updated: 2026-03-07*  
+*Last updated: 2026-03-08*  
 *Based on codebase analysis of WebKotor (fork of KotOR.js v2.1.0)*

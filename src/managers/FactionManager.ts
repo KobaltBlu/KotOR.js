@@ -62,7 +62,7 @@ export class FactionManager {
 
   static GetFactionLeader( creature: ModuleObject ){
     if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
-      if(creature.faction.id == 0){
+      if(creature.faction?.id == 0){
         return GameState.PartyManager.party[0];
       }else{
         let faction = FactionManager.GetCreatureFaction(creature);
@@ -148,7 +148,7 @@ export class FactionManager {
     if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
       return 0;
 
-    if(oSource.faction){
+    if(oSource.faction && oTarget.faction){
       let reputation = oSource.faction.reputations[oTarget.faction.id];
       if(reputation instanceof Reputation){
         return reputation.reputation;
@@ -182,6 +182,7 @@ export class FactionManager {
         let twoDA_row = twoDA_factions[faction1_id];
         for(let faction2_id = 0; faction2_id < FactionManager.FACTION_COUNT; faction2_id++){
           const faction2 = FactionManager.factions.get(faction2_id);
+          if(!faction2) continue;
           let _2DARep = twoDA_row[faction2.label.toLocaleLowerCase()];
           let reputation = !isNaN(parseInt(_2DARep)) ? parseInt(_2DARep) : 0;
 

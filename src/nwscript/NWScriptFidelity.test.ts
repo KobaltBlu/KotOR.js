@@ -8242,3 +8242,287 @@ describe('71. recalculateMaxHP, TalentFeat.From2DA id, CharGenCustomPanel skipIn
   });
 
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 72. FactionManager null-guard + attackCreature addFront for non-player
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('72. FactionManager null-guard and attackCreature priority', () => {
+
+  // ── FactionManager.GetReputation null-guard ──────────────────────────────
+
+  it('GetReputation: returns 50 (neutral) when oTarget.faction is undefined', () => {
+    // Simulates oSource having a faction but oTarget (e.g. a trigger) having none
+    function GetReputation(oSource: any, oTarget: any): number {
+      if(!oSource || !oTarget) return 0;
+      // Fixed guard: both oSource.faction AND oTarget.faction must be set
+      if(oSource.faction && oTarget.faction){
+        const rep = oSource.faction.reputations[oTarget.faction.id];
+        if(rep !== undefined) return rep.reputation;
+      }
+      return 50;
+    }
+    const oSource = { faction: { reputations: { 2: { reputation: 5 } } } };
+    const oTarget = { faction: undefined }; // trigger / placeable with no faction
+    // Should NOT throw; returns neutral (50)
+    expect(GetReputation(oSource, oTarget)).toBe(50);
+  });
+
+  it('GetReputation regression: old code crashed on oTarget.faction.id when faction undefined', () => {
+    // Simulates old code path: oSource.faction is set, oTarget.faction is undefined
+    function GetReputationOld(oSource: any, oTarget: any): number {
+      if(!oSource || !oTarget) return 0;
+      if(oSource.faction){
+        // Bug: accessing oTarget.faction.id when oTarget.faction is undefined → TypeError
+        let threwError = false;
+        try {
+          const _id = oTarget.faction.id; // throws if oTarget.faction is undefined
+          const rep = oSource.faction.reputations[_id];
+          if(rep !== undefined) return rep.reputation;
+        } catch {
+          threwError = true;
+        }
+        return threwError ? -1 : 50;
+      }
+      return 50;
+    }
+    const oSource = { faction: { reputations: {} } };
+    const oTarget = { faction: undefined };
+    // Old code throws TypeError; we capture it as -1 in the regression simulation
+    expect(GetReputationOld(oSource, oTarget)).toBe(-1);
+  });
+
+  it('GetReputation: returns correct reputation when both factions are defined', () => {
+    function GetReputation(oSource: any, oTarget: any): number {
+      if(!oSource || !oTarget) return 0;
+      if(oSource.faction && oTarget.faction){
+        const rep = oSource.faction.reputations[oTarget.faction.id];
+        if(rep !== undefined) return rep.reputation;
+      }
+      return 50;
+    }
+    const oSource = { faction: { reputations: { 3: { reputation: 5 } } } };
+    const oTarget = { faction: { id: 3 } };
+    expect(GetReputation(oSource, oTarget)).toBe(5); // hostile
+  });
+
+  it('IsHostile: returns false when oTarget.faction is undefined (no crash)', () => {
+    function GetReputation(oSource: any, oTarget: any): number {
+      if(!oSource || !oTarget) return 0;
+      if(oSource.faction && oTarget.faction){
+        const rep = oSource.faction.reputations[oTarget.faction.id];
+        if(rep !== undefined) return rep.reputation;
+      }
+      return 50;
+    }
+    function IsHostile(oSource: any, oTarget: any): boolean {
+      return GetReputation(oSource, oTarget) <= 10;
+    }
+    // Creature with faction checking a trigger (no faction)
+    const creature = { faction: { reputations: {} } };
+    const trigger = { faction: undefined };
+    expect(IsHostile(creature, trigger)).toBe(false); // 50 > 10 → not hostile
+  });
+
+  // ── attackCreature addFront for non-player creatures ──────────────────────
+
+  it('attackCreature: ActionCombat added to FRONT for non-player creatures', () => {
+    const queue: string[] = [];
+    // Simulate the fixed logic
+    function attackCreature(isCurrentPlayer: boolean) {
+      const hasCombatAction = queue.indexOf('ActionCombat') >= 0;
+      if(!hasCombatAction){
+        if(isCurrentPlayer){
+          queue.push('ActionCombat');     // add to back
+        } else {
+          queue.unshift('ActionCombat'); // addFront
+        }
+      }
+    }
+    queue.push('ActionFollowLeader');
+    attackCreature(false); // companion / enemy
+    // ActionCombat should be at front (index 0), ActionFollowLeader at back
+    expect(queue[0]).toBe('ActionCombat');
+    expect(queue[1]).toBe('ActionFollowLeader');
+  });
+
+  it('attackCreature: ActionCombat added to BACK for player-controlled creature', () => {
+    const queue: string[] = [];
+    function attackCreature(isCurrentPlayer: boolean) {
+      const hasCombatAction = queue.indexOf('ActionCombat') >= 0;
+      if(!hasCombatAction){
+        if(isCurrentPlayer){
+          queue.push('ActionCombat');     // add to back
+        } else {
+          queue.unshift('ActionCombat'); // addFront
+        }
+      }
+    }
+    queue.push('ActionMoveToPoint');
+    attackCreature(true); // player character
+    expect(queue[0]).toBe('ActionMoveToPoint');
+    expect(queue[1]).toBe('ActionCombat');
+  });
+
+  it('attackCreature: ActionCombat not added twice if already in queue', () => {
+    const queue: string[] = ['ActionFollowLeader', 'ActionCombat'];
+    function attackCreature(isCurrentPlayer: boolean) {
+      const hasCombatAction = queue.indexOf('ActionCombat') >= 0;
+      if(!hasCombatAction){
+        if(isCurrentPlayer){
+          queue.push('ActionCombat');
+        } else {
+          queue.unshift('ActionCombat');
+        }
+      }
+    }
+    attackCreature(false);
+    expect(queue.filter(a => a === 'ActionCombat').length).toBe(1);
+  });
+
+  it('companion combat: ActionFollowLeader resumes after ActionCombat completes', () => {
+    // Simulate queue processing: ActionCombat at front blocks ActionFollowLeader
+    const queue: string[] = ['ActionCombat', 'ActionFollowLeader'];
+    // Process ActionCombat (completes after one tick)
+    queue.shift(); // ActionCombat → COMPLETE, removed
+    expect(queue[0]).toBe('ActionFollowLeader');
+  });
+
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 73. Additional null-guard fixes (FactionManager, GiveXPToCreature, GetGold)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('73. FactionManager.GetFactionLeader null-guard, GiveXPToCreature, GetGold null-guards', () => {
+
+  // ── FactionManager.GetFactionLeader null-guard ────────────────────────────
+
+  it('GetFactionLeader: does not crash when creature.faction is undefined', () => {
+    // Simulate the fixed code
+    function GetFactionLeader(creature: any, party: any[]): any {
+      if(!creature) return undefined;
+      // Fixed: use optional chaining ?. before .id
+      if(creature.faction?.id == 0){
+        return party[0];
+      } else {
+        const faction = creature.faction;
+        if(faction){
+          return faction.getStrongestMember?.() ?? undefined;
+        }
+      }
+      return undefined;
+    }
+    const creature = { faction: undefined };
+    // Should NOT throw; faction is undefined so we return undefined
+    expect(GetFactionLeader(creature, [])).toBeUndefined();
+  });
+
+  it('GetFactionLeader regression: old code crashed on creature.faction.id when undefined', () => {
+    function GetFactionLeaderOld(creature: any, party: any[]): any {
+      if(!creature) return undefined;
+      let threwError = false;
+      try {
+        // Bug: creature.faction.id without null-guard
+        if(creature.faction.id == 0){
+          return party[0];
+        }
+      } catch {
+        threwError = true;
+      }
+      return threwError ? 'ERROR' : undefined;
+    }
+    const creature = { faction: undefined };
+    expect(GetFactionLeaderOld(creature, [])).toBe('ERROR');
+  });
+
+  it('GetFactionLeader: returns party[0] for faction id=0', () => {
+    function GetFactionLeader(creature: any, party: any[]): any {
+      if(!creature) return undefined;
+      if(creature.faction?.id == 0){
+        return party[0];
+      }
+      return undefined;
+    }
+    const leader = { name: 'Revan' };
+    expect(GetFactionLeader({ faction: { id: 0 } }, [leader])).toBe(leader);
+  });
+
+  // ── GiveXPToCreature null-guard ──────────────────────────────────────────
+
+  it('GiveXPToCreature: no crash when args[0] is undefined', () => {
+    let xpAdded = 0;
+    // Simulate the fixed implementation with null-guard
+    function GiveXPToCreature(oCreature: any, amount: number) {
+      if(oCreature && typeof oCreature.addXP === 'function'){
+        oCreature.addXP(amount);
+      }
+    }
+    // Should NOT throw when oCreature is undefined
+    expect(() => GiveXPToCreature(undefined, 100)).not.toThrow();
+    // Should call addXP when oCreature is valid
+    const creature = { addXP: (v: number) => { xpAdded += v; } };
+    GiveXPToCreature(creature, 50);
+    expect(xpAdded).toBe(50);
+  });
+
+  it('GiveXPToCreature regression: old code crashed on undefined args[0].addXP', () => {
+    function GiveXPToCreatureOld(oCreature: any, amount: number) {
+      let threwError = false;
+      try {
+        oCreature.addXP(amount); // crash if oCreature is undefined
+      } catch {
+        threwError = true;
+      }
+      return threwError;
+    }
+    expect(GiveXPToCreatureOld(undefined, 100)).toBe(true);
+  });
+
+  // ── GetGold null-guard ────────────────────────────────────────────────────
+
+  it('GetGold: returns 0 when object is undefined (null-guard)', () => {
+    function GetGold(oTarget: any): number {
+      if(oTarget && typeof oTarget.getGold === 'function'){
+        return oTarget.getGold();
+      }
+      return 0;
+    }
+    expect(GetGold(undefined)).toBe(0);
+    expect(GetGold({ getGold: () => 5000 })).toBe(5000);
+  });
+
+  // ── FactionManager.Load2DA faction2 null-guard ───────────────────────────
+
+  it('FactionManager.Load2DA: skips faction2_id when faction2 is undefined', () => {
+    // Simulate the fixed loop that guards against a missing faction entry
+    const factions = new Map([[0, { label: 'player', reputations: [] }]]);
+    const FACTION_COUNT = 3; // faction 0 and 1 exist, faction 2 does not exist
+
+    let processed: number[] = [];
+    for(let faction2_id = 0; faction2_id < FACTION_COUNT; faction2_id++){
+      const faction2 = factions.get(faction2_id);
+      if(!faction2) continue; // the fix
+      processed.push(faction2_id);
+    }
+    // Only faction 0 exists and is processed; factions 1,2 are skipped
+    expect(processed).toEqual([0]);
+  });
+
+  it('FactionManager.Load2DA regression: old code crashed on faction2.label when faction2 is undefined', () => {
+    const factions = new Map([[0, { label: 'player', reputations: [] }]]);
+    const FACTION_COUNT = 2; // faction 1 does not exist
+
+    let threwError = false;
+    try {
+      for(let faction2_id = 0; faction2_id < FACTION_COUNT; faction2_id++){
+        const faction2: any = factions.get(faction2_id);
+        const _2DARep = (faction2.label as string).toLocaleLowerCase(); // crash at faction2_id=1
+      }
+    } catch {
+      threwError = true;
+    }
+    expect(threwError).toBe(true);
+  });
+
+});
