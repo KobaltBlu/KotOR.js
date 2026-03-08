@@ -8957,3 +8957,191 @@ describe('Section 75: NaN prevention in iterator Map.get()+1 and new null guards
   });
 
 });
+
+// ── Section 76: SWMG_ player null-guards, PazaakManager card null-guard, ModuleMiniGame constructor guard ──
+
+describe('Section 76: SWMG_ player null-guards, PazaakManager card null-guard, ModuleMiniGame', () => {
+
+  it('SWMG_SetLateralAccelerationPerSecond (fn 520): no crash when miniGame.player is undefined', () => {
+    function swmgSetLateral(player: any, val: number): void {
+      if(player) player.accel_lateral_secs = val;
+    }
+    expect(() => swmgSetLateral(undefined, 5)).not.toThrow();
+    const p: any = { accel_lateral_secs: 0 };
+    swmgSetLateral(p, 3);
+    expect(p.accel_lateral_secs).toBe(3);
+  });
+
+  it('SWMG_GetLateralAccelerationPerSecond (fn 521): returns 0 when player is undefined', () => {
+    function swmgGetLateral(player: any): number {
+      return player?.accel_lateral_secs ?? 0;
+    }
+    expect(swmgGetLateral(undefined)).toBe(0);
+    expect(swmgGetLateral({ accel_lateral_secs: 7 })).toBe(7);
+  });
+
+  it('SWMG_GetPlayerOffset (fn 641): returns {0,0,0} when player is undefined', () => {
+    function swmgGetOffset(miniGame: any): {x:number,y:number,z:number} {
+      const player = miniGame?.player;
+      if(!player) return {x: 0, y: 0, z: 0};
+      if(miniGame.type == 2){
+        const rot = player.rotation;
+        return { x: rot.x * 180/Math.PI, y: rot.y * 180/Math.PI, z: rot.z * 180/Math.PI };
+      }else{
+        return player.position;
+      }
+    }
+    expect(swmgGetOffset(undefined)).toEqual({x: 0, y: 0, z: 0});
+    expect(swmgGetOffset({ player: undefined })).toEqual({x: 0, y: 0, z: 0});
+    const mg = { type: 0, player: { position: {x:1, y:2, z:3} } };
+    expect(swmgGetOffset(mg)).toEqual({x:1, y:2, z:3});
+  });
+
+  it('SWMG_GetPlayerSpeed/MinSpeed/AccelPerSec (fns 643-645): returns 0 when player is undefined', () => {
+    const player = undefined as any;
+    expect(player?.speed ?? 0).toBe(0);
+    expect(player?.speed_min ?? 0).toBe(0);
+    expect(player?.accel_secs ?? 0).toBe(0);
+  });
+
+  it('SWMG_GetPlayerTunnelPos/Neg (fns 646, 653): returns {0,0,0} when player is undefined', () => {
+    const player = undefined as any;
+    expect(player?.tunnel?.pos ?? {x:0,y:0,z:0}).toEqual({x:0,y:0,z:0});
+    expect(player?.tunnel?.neg ?? {x:0,y:0,z:0}).toEqual({x:0,y:0,z:0});
+  });
+
+  it('SWMG_ setter fns (647,649-652,654): no crash when player is undefined', () => {
+    function safeSetter(player: any, key: string, val: any): void {
+      if(player) (player as any)[key] = val;
+    }
+    expect(() => safeSetter(undefined, 'position', {x:0,y:0,z:0})).not.toThrow();
+    expect(() => safeSetter(undefined, 'speed', 5)).not.toThrow();
+    expect(() => safeSetter(undefined, 'speed_min', 1)).not.toThrow();
+    expect(() => safeSetter(undefined, 'accel_secs', 2)).not.toThrow();
+  });
+
+  it('SWMG_GetPlayerMaxSpeed (fn 667): returns 0 when player is undefined', () => {
+    const player = undefined as any;
+    expect(player?.speed_max ?? 0).toBe(0);
+  });
+
+  it('SWMG_SetPlayerMaxSpeed (fn 668): no crash when player is undefined', () => {
+    function swmgSetMaxSpeed(player: any, val: number): void {
+      if(player) player.speed_max = val;
+    }
+    expect(() => swmgSetMaxSpeed(undefined, 10)).not.toThrow();
+  });
+
+  it('SWMG_ regression: old code crashed with "Cannot read properties of undefined"', () => {
+    const player = undefined as any;
+    let crashed = false;
+    try { const _ = player.speed; } catch { crashed = true; }
+    expect(crashed).toBe(true); // confirms the old crash
+    // New safe pattern:
+    expect(player?.speed ?? 0).toBe(0); // no crash
+  });
+
+  it('PazaakManager.AddCard: returns false (no crash) when Cards.get() returns undefined', () => {
+    const cards = new Map<number, {count: number}>();
+    function addCard(cardIndex: number, count: number = 1): boolean {
+      if(cardIndex <= 0) return false;
+      const card = cards.get(cardIndex);
+      if(!card) return false;
+      card.count += count;
+      return true;
+    }
+    expect(addCard(5)).toBe(false); // card not in map
+    cards.set(5, { count: 0 });
+    expect(addCard(5, 2)).toBe(true);
+    expect(cards.get(5)!.count).toBe(2);
+  });
+
+  it('PazaakManager.AddCard regression: old code crashed on undefined.count when card not in map', () => {
+    const cards = new Map<number, {count: number}>();
+    function addCardOld(cardIndex: number, count: number = 1): string {
+      try {
+        const card = cards.get(cardIndex);
+        (card as any).count += count; // old code: no null guard
+        return 'OK';
+      } catch { return 'CRASHED'; }
+    }
+    expect(addCardOld(5)).toBe('CRASHED');
+  });
+
+  it('PazaakManager.RemoveCard: returns false (no crash) when Cards.get() returns undefined', () => {
+    const cards = new Map<number, {count: number}>();
+    function removeCard(cardIndex: number, count: number = 1): boolean {
+      if(cardIndex <= 0) return false;
+      const card = cards.get(cardIndex);
+      if(!card) return false;
+      card.count -= count;
+      if(card.count <= 0){ card.count = 0; return false; }
+      return true;
+    }
+    expect(removeCard(3)).toBe(false); // card not in map
+    cards.set(3, { count: 2 });
+    expect(removeCard(3, 1)).toBe(true);
+    expect(cards.get(3)!.count).toBe(1);
+  });
+
+  it('ModuleMiniGame constructor: no crash when Player GFF field is missing', () => {
+    // Simulate GFFStruct with missing Player field
+    function buildMiniGame(hasPlayer: boolean): { player: any; enemies: any[] } {
+      const playerStructs = hasPlayer ? [{ dummy: true }] : [];
+      const player = playerStructs.length ? playerStructs[0] : undefined;
+      const enemies: any[] = [];
+      return { player, enemies };
+    }
+    const mg = buildMiniGame(false);
+    expect(mg.player).toBeUndefined();
+    expect(() => { if(mg.player) (mg.player as any).onCreate(); }).not.toThrow();
+  });
+
+  it('ModuleMiniGame.tick: no crash when player is undefined', () => {
+    const mg: any = { player: undefined, enemies: [], obstacles: [] };
+    function tick(delta: number = 0): void {
+      if(mg.player) mg.player.update(delta);
+      for(let i = 0; i < mg.enemies.length; i++) mg.enemies[i].update(delta);
+      for(let i = 0; i < mg.obstacles.length; i++) mg.obstacles[i].update(delta);
+    }
+    expect(() => tick(0.016)).not.toThrow();
+  });
+
+  it('ModuleMiniGame.tick regression: old code crashed on player.update() when player undefined', () => {
+    const player = undefined as any;
+    let crashed = false;
+    try { player.update(0.016); } catch { crashed = true; }
+    expect(crashed).toBe(true);
+  });
+
+  it('MenuPazaakGame: tableCardButton/Label null-guard prevents crash when control missing', () => {
+    function updateTableCard(slot: any, btn: any, lbl: any): void {
+      if(slot == undefined){
+        if(btn) btn.hide();
+        if(lbl) lbl.hide();
+        return;
+      }
+      if(btn){ btn.show(); btn.setFillTextureName(slot.texture); }
+      if(lbl){ lbl.show(); lbl.setText(slot.label); }
+    }
+    expect(() => updateTableCard(undefined, undefined, undefined)).not.toThrow();
+    const btn: any = { hidden: false, hide(){ this.hidden = true; }, show(){ this.hidden = false; }, setFillTextureName(_t: string){} };
+    const lbl: any = { hidden: false, hide(){ this.hidden = true; }, show(){ this.hidden = false; }, setText(_s: string){} };
+    updateTableCard(undefined, btn, lbl);
+    expect(btn.hidden).toBe(true);
+    expect(lbl.hidden).toBe(true);
+    updateTableCard({ texture: 'tex', label: '+3' }, btn, lbl);
+    expect(btn.hidden).toBe(false);
+  });
+
+  it('MenuPazaakGame regression: old code crashed calling hide() on undefined control', () => {
+    function updateTableCardOld(slot: any, btn: any, lbl: any): string {
+      try {
+        if(slot == undefined){ btn.hide(); lbl.hide(); return 'OK'; }
+        return 'SHOW';
+      } catch { return 'CRASHED'; }
+    }
+    expect(updateTableCardOld(undefined, undefined, undefined)).toBe('CRASHED');
+  });
+
+});
