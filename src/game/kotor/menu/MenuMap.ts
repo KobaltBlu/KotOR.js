@@ -67,7 +67,7 @@ export class MenuMap extends GameMenu {
       this.BTN_RETURN.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
-        if(!GameState.module.area.unescapable){
+        if(!GameState.module?.area?.unescapable){
           if(this.onTransitScript instanceof NWScriptInstance)
             this.onTransitScript.run();
         }
@@ -101,7 +101,7 @@ export class MenuMap extends GameMenu {
     if (!this.bVisible)
       return;
 
-    if (!GameState.module.area.miniGame) {
+    if (!GameState.module?.area?.miniGame) {
       const oPC = GameState.getCurrentPlayer();
 
       //update minimap
@@ -137,8 +137,8 @@ export class MenuMap extends GameMenu {
       this.LBL_MapNote.setText(this.miniMap.mapNoteSelected.mapNote.getValue());
     }
 
-    this.BTN_PRTYSLCT.disableSelection = (GameState.module.area.unescapable);
-    this.BTN_RETURN.disableSelection = (GameState.module.area.unescapable);
+    this.BTN_PRTYSLCT.disableSelection = !!(GameState.module?.area?.unescapable);
+    this.BTN_RETURN.disableSelection = !!(GameState.module?.area?.unescapable);
   }
 
   triggerControllerBumperLPress() {

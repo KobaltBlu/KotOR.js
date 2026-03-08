@@ -897,12 +897,15 @@ export class ModulePlaceable extends ModuleObject {
       this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+      const swVarStructs = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs();
+      if(swVarStructs && swVarStructs.length > 0){
+        let localBools = swVarStructs[0].getFieldByLabel('BitArray').getChildStructs();
+        //console.log(localBools);
+        for(let i = 0; i < localBools.length; i++){
+          let data = localBools[i].getFieldByLabel('Variable').getValue();
+          for(let bit = 0; bit < 32; bit++){
+            this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+          }
         }
       }
     }

@@ -235,7 +235,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
 
         //Area Unescapable disables party selection as well as transit
-        if(!GameState.module.area.unescapable || this.ignoreUnescapable){
+        if(!GameState.module?.area?.unescapable || this.ignoreUnescapable){
           if(GameState.PartyManager.IsNPCInParty(this.selectedNPC)){
             GameState.PartyManager.RemoveNPCById(this.selectedNPC);
             this.updateSelection();

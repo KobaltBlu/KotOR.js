@@ -406,7 +406,7 @@ export class CollisionManager {
 
   private handleCreatureCollisions(delta: number): void {
     // Handle both area creatures and party members
-    this.handleObjectGroupCollisions(GameState.module.area.creatures, CollisionType.CREATURE, delta);
+    this.handleObjectGroupCollisions(GameState.module?.area?.creatures ?? [], CollisionType.CREATURE, delta);
     this.handleObjectGroupCollisions(GameState.PartyManager.party, CollisionType.CREATURE, delta);
   }
 
