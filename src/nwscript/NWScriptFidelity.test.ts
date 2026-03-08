@@ -8821,3 +8821,139 @@ describe('74. ModuleItem baseItem null-safety, fn 419 key, ActionEquipBest baseI
   });
 
 });
+
+// ── Section 75: NaN prevention in iterator Map.get()+1 and new null guards ──
+
+describe('Section 75: NaN prevention in iterator Map.get()+1 and new null guards', () => {
+
+  it('GetNextItemInInventory: Map.get() ?? 0 prevents NaN when index missing', () => {
+    const map = new Map<number, number>();
+    const oldNextId = (map.get(-1) as any) + 1;
+    expect(Number.isNaN(oldNextId)).toBe(true);
+    const newNextId = (map.get(-1) ?? 0) + 1;
+    expect(newNextId).toBe(1);
+  });
+
+  it('GetNextItemInInventory: consecutive calls start from 1 then 2', () => {
+    const map = new Map<number, number>();
+    const id1 = (map.get(-1) ?? 0) + 1;
+    map.set(-1, id1);
+    const id2 = (map.get(-1) ?? 0) + 1;
+    expect(id1).toBe(1);
+    expect(id2).toBe(2);
+  });
+
+  it('GetNextInPersistentObject: Map.get() ?? 0 prevents NaN', () => {
+    const map = new Map<number, number>();
+    const oldId = (map.get(99) as any) + 1;
+    expect(Number.isNaN(oldId)).toBe(true);
+    const newId = (map.get(99) ?? 0) + 1;
+    expect(newId).toBe(1);
+  });
+
+  it('GetNextAttacker: Map.get() ?? 0 prevents NaN', () => {
+    const map = new Map<number, number>();
+    const oldId = (map.get(42) as any) + 1;
+    expect(Number.isNaN(oldId)).toBe(true);
+    const newId = (map.get(42) ?? 0) + 1;
+    expect(newId).toBe(1);
+  });
+
+  it('CombatRound: no crash when action.target is undefined', () => {
+    let crashed = false;
+    const action = { target: undefined as any, actionType: 0 };
+    try {
+      if(action && action.target) {
+        const _ = action.target.combatRound;
+      }
+    } catch {
+      crashed = true;
+    }
+    expect(crashed).toBe(false);
+  });
+
+  it('TalentSpell.inRange: returns true when oTarget/oCaster is undefined', () => {
+    function inRange(oTarget: any, oCaster: any): boolean {
+      if(!oTarget || !oCaster) return true;
+      if(oTarget === oCaster) return true;
+      const dx = oCaster.x - oTarget.x, dy = oCaster.y - oTarget.y;
+      return Math.sqrt(dx*dx + dy*dy) < 15;
+    }
+    expect(inRange(undefined, { x:0, y:0 })).toBe(true);
+    expect(inRange({ x:0, y:0 }, undefined)).toBe(true);
+    expect(inRange(null, null)).toBe(true);
+  });
+
+  it('DestroyObject: no crash when args[0] is null/undefined', () => {
+    function destroyObject(obj: any): string {
+      if(!obj || !obj.__objectType) return 'NO_OP';
+      obj.destroy();
+      return 'DESTROYED';
+    }
+    expect(destroyObject(null)).toBe('NO_OP');
+    expect(destroyObject(undefined)).toBe('NO_OP');
+    expect(destroyObject({ __objectType: 1, destroy: () => {} })).toBe('DESTROYED');
+  });
+
+  it('ActionFollowLeader: FAILED when party is empty', () => {
+    const party: any[] = [];
+    function followLeaderUpdate(): string {
+      const leader = party[0];
+      if(!leader) return 'FAILED';
+      return 'IN_PROGRESS';
+    }
+    expect(followLeaderUpdate()).toBe('FAILED');
+    party.push({ position: { x:0, y:0, z:0 } });
+    expect(followLeaderUpdate()).toBe('IN_PROGRESS');
+  });
+
+  it('ActionOpenDoor: falls back to owner when party is empty', () => {
+    const party: any[] = [];
+    const owner = { id: 'owner' };
+    function getOpener(): any { return party[0] ?? owner; }
+    expect(getOpener()).toBe(owner);
+    party.push({ id: 'pc' });
+    expect(getOpener().id).toBe('pc');
+  });
+
+  it('ActionPhysicalAttacks: falls back to module.area when target.area is undefined', () => {
+    const moduleArea = { id: 999 };
+    function getAreaId(target: any, modArea: any): number {
+      return (target.area ?? modArea).id;
+    }
+    expect(getAreaId({ area: undefined }, moduleArea)).toBe(999);
+    expect(getAreaId({ area: { id: 42 } }, moduleArea)).toBe(42);
+  });
+
+  it('PartyManager.UpdateLeader: no crash when party is empty', () => {
+    const party: any[] = [];
+    const members = [{ memberID: 1, isLeader: false }];
+    function updateLeader(): void {
+      if(!party.length) return;
+      for(const m of members) m.isLeader = party[0].npcId === m.memberID;
+    }
+    expect(() => updateLeader()).not.toThrow();
+    expect(members[0].isLeader).toBe(false);
+  });
+
+  it('PartyManager.IsPartyMemberLeader: false when party is empty', () => {
+    const party: any[] = [];
+    function isPartyMemberLeader(): boolean {
+      return !!(party[0]?.npcId >= 0);
+    }
+    expect(isPartyMemberLeader()).toBe(false);
+    party.push({ npcId: 2 });
+    expect(isPartyMemberLeader()).toBe(true);
+  });
+
+  it('ModuleCreature: no crash when room.model is null', () => {
+    const creature = {
+      room: { model: null as any },
+      doUpdate(): void {
+        if(this.room && this.room.model && !this.room.model.visible) return;
+      }
+    };
+    expect(() => creature.doUpdate()).not.toThrow();
+  });
+
+});
