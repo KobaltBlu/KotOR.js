@@ -160,7 +160,7 @@ export class ModuleMiniGame {
     for(let i = 0; i < this.enemies.length; i++){
       const enemy = this.enemies[i];
       const onCreate = enemy.scripts[ModuleObjectScript.MGEnemyOnCreate];
-      if(!onCreate){ return; }
+      if(!onCreate){ continue; }
       onCreate.run(enemy, 0);
     }
   }
