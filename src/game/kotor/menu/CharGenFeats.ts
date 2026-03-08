@@ -43,6 +43,40 @@ export class CharGenFeats extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+
+      this.BTN_BACK.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.close();
+      });
+
+      this.BTN_ACCEPT.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Confirm: the feat was already granted in addGrantedFeats() on show()
+        this.close();
+      });
+
+      this.BTN_SELECT.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Select the highlighted feat from the list
+        const selectedItem = this.LB_FEATS.selectedItem;
+        if(!selectedItem) return;
+        const group: any[] = selectedItem.node as any[];
+        if(!group || !group.length) return;
+        // Find the highest unlocked tier in the chain that the creature doesn't yet have
+        let featToGrant: any;
+        for(let i = group.length - 1; i >= 0; i--){
+          const feat = group[i];
+          if(!feat) continue;
+          if(!this.creature.getHasFeat(feat.rowIndex ?? i)){
+            featToGrant = feat;
+            break;
+          }
+        }
+        if(featToGrant && this.creature){
+          this.creature.addFeat(TalentFeat.From2DA(featToGrant));
+        }
+      });
+
       resolve();
     });
   }

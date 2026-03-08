@@ -5240,11 +5240,16 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      // GUI_PANEL_DEATH = 0; GUI_PANEL_PLAYER_DEATH = 0
-      // Opening the game over / death screen is the main use case here.
+      // GUI_PANEL_PLAYER_DEATH = 0; GUI_PANEL_PARTY_DEAD = 1
+      // GUI_PANEL_LEVELUP = 2; GUI_PANEL_CONVERSATION = 3
       if(args[1] === 0 || args[1] === 1){
         if(GameState.MenuManager.MenuGameOver){
           GameState.MenuManager.MenuGameOver.open();
+        }
+      }else if(args[1] === 2){
+        // Level-up panel
+        if(GameState.MenuManager.MenuLevelUp && BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+          GameState.MenuManager.MenuLevelUp.open();
         }
       }
     }

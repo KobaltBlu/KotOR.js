@@ -57,6 +57,7 @@ import { TextSprite3D } from "../engine/TextSprite3D";
 import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
 import { ExperienceType } from "../enums/engine/ExperienceType";
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { SkillType } from "../enums/nwscript/SkillType";
 
 /**
 * ModuleCreature class.
@@ -934,6 +935,9 @@ export class ModuleCreature extends ModuleObject {
         if(!isPartyMember){
           if(this.isHostile(creature)){
             this.resetExcitedDuration();
+            if(!this.combatData.lastAttackTarget || this.combatData.lastAttackTarget.isDead()){
+              this.combatData.lastAttackTarget = creature;
+            }
             if(this == GameState.getCurrentPlayer() && !this.combatData.combatState){
               GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
             }
@@ -971,6 +975,9 @@ export class ModuleCreature extends ModuleObject {
         if(!isPartyMember){
           if(this.isHostile(creature)){
             this.resetExcitedDuration();
+            if(!this.combatData.lastAttackTarget || this.combatData.lastAttackTarget.isDead()){
+              this.combatData.lastAttackTarget = creature;
+            }
           }
 
           this.notifyPerceptionSeenObject(creature, true);
@@ -2497,6 +2504,9 @@ export class ModuleCreature extends ModuleObject {
           GameState.lastPCLevellingUp = this;
           const instance = levelUpScript.newInstance();
           instance.run(GameState.module);
+        }else if(this == GameState.getCurrentPlayer()){
+          // No module script: open the level-up menu directly for the active player
+          GameState.MenuManager.MenuLevelUp?.open();
         }
       }
     }
@@ -3063,6 +3073,40 @@ export class ModuleCreature extends ModuleObject {
 
   getSkillLevel(value: number){
     return this.skills[value]?.rank || 0;
+  }
+
+  /**
+   * Returns the total skill modifier: base rank plus the relevant ability modifier.
+   * Skill ability associations (KotOR):
+   *   Computer Use, Demolitions, Repair, Security → INT modifier
+   *   Stealth → DEX modifier
+   *   Awareness, Treat Injury → WIS modifier
+   *   Persuade → CHA modifier
+   */
+  getSkillModifier(skillId: number): number {
+    const rank = this.getSkillLevel(skillId);
+    let abilityScore: number;
+    switch(skillId){
+      case SkillType.COMPUTER_USE:
+      case SkillType.DEMOLITIONS:
+      case SkillType.REPAIR:
+      case SkillType.SECURITY:
+        abilityScore = this.getINT();
+        break;
+      case SkillType.STEALTH:
+        abilityScore = this.getDEX();
+        break;
+      case SkillType.AWARENESS:
+      case SkillType.TREAT_INJURY:
+        abilityScore = this.getWIS();
+        break;
+      case SkillType.PERSUADE:
+        abilityScore = this.getCHA();
+        break;
+      default:
+        abilityScore = 10;
+    }
+    return rank + CombatRound.GetMod(abilityScore);
   }
 
   getHasSpell(id = 0){

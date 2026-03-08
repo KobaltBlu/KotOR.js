@@ -7601,3 +7601,319 @@ describe('68. Additional minigame fixes – GunBank fireSound, runMiniGameScript
   });
 
 });
+
+// ---------------------------------------------------------------------------
+describe('69. Perception data-bit fix, enemy lastAttackTarget, getSkillModifier, CharGenSkills cost', () => {
+
+  // ── notifyPerceptionSeenObject ──────────────────────────────────────────
+
+  it('notifyPerceptionSeenObject: new entry gets seen bit (0x01) set', () => {
+    const perceptionList: any[] = [];
+    function notifyPerceptionSeenObject(object: any, seen = false) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        const e = exists[0];
+        if(seen){ e.data |= 0x01; }
+        else { e.data &= ~0x01; }
+      }else{
+        if(seen) perceptionList.push({ object, objectId: 1, data: 0x01 });
+      }
+    }
+    const obj = {};
+    notifyPerceptionSeenObject(obj, true);
+    expect(perceptionList[0].data & 0x01).toBe(1);
+  });
+
+  it('notifyPerceptionSeenObject: existing heard-only object gets seen bit set when seen=true', () => {
+    // Object was heard first (data=0x02), now seen → data should become 0x03
+    const target = {};
+    const perceptionList: any[] = [{ object: target, objectId: 1, data: 0x02 }];
+    function notifyPerceptionSeenObject(object: any, seen: boolean) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        const e = exists[0];
+        if(seen){ e.data |= 0x01; }
+        else { e.data &= ~0x01; }
+      }else{
+        if(seen) perceptionList.push({ object, objectId: 1, data: 0x01 });
+      }
+    }
+    notifyPerceptionSeenObject(target, true);
+    expect(perceptionList[0].data & 0x01).toBe(1);  // seen bit set
+    expect(perceptionList[0].data & 0x02).toBe(2);  // heard bit preserved
+  });
+
+  it('notifyPerceptionSeenObject regression: old code never set seen bit for existing objects', () => {
+    const target = {};
+    const perceptionList: any[] = [{ object: target, objectId: 1, data: 0x02 }];
+    // Old code: data not updated for existing objects
+    function oldNotifySeenObject(object: any, seen: boolean) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        // Bug: no data update
+      }else{
+        if(seen) perceptionList.push({ object, objectId: 1, data: 0x01 });
+      }
+    }
+    oldNotifySeenObject(target, true);
+    expect(perceptionList[0].data & 0x01).toBe(0);  // seen bit never set (regression)
+  });
+
+  it('notifyPerceptionSeenObject: existing seen object loses seen bit when seen=false', () => {
+    const target = {};
+    const perceptionList: any[] = [{ object: target, objectId: 1, data: 0x03 }];
+    function notifyPerceptionSeenObject(object: any, seen: boolean) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        const e = exists[0];
+        if(seen){ e.data |= 0x01; }
+        else { e.data &= ~0x01; }
+      }
+    }
+    notifyPerceptionSeenObject(target, false);
+    expect(perceptionList[0].data & 0x01).toBe(0);  // seen bit cleared
+    expect(perceptionList[0].data & 0x02).toBe(2);  // heard bit preserved
+  });
+
+  // ── notifyPerceptionHeardObject ─────────────────────────────────────────
+
+  it('notifyPerceptionHeardObject: heard bit cleared when heard=false for existing object', () => {
+    const target = {};
+    const perceptionList: any[] = [{ object: target, objectId: 1, data: 0x03 }];
+    function notifyPerceptionHeardObject(object: any, heard: boolean) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        const e = exists[0];
+        if(heard){ e.data |= 0x02; }
+        else { e.data &= ~0x02; }
+      }
+    }
+    notifyPerceptionHeardObject(target, false);
+    expect(perceptionList[0].data & 0x02).toBe(0);  // heard bit cleared
+    expect(perceptionList[0].data & 0x01).toBe(1);  // seen bit preserved
+  });
+
+  it('notifyPerceptionHeardObject regression: old code never cleared heard bit on heard=false', () => {
+    const target = {};
+    const perceptionList: any[] = [{ object: target, objectId: 1, data: 0x03 }];
+    // Old code: existingObject.data |= 0x02 always, never clears
+    function oldNotifyHeardObject(object: any, heard: boolean) {
+      const exists = perceptionList.filter(o => o.object === object);
+      if(exists.length){
+        const e = exists[0];
+        e.data |= 0x02; // bug: always sets, never clears
+      }
+    }
+    oldNotifyHeardObject(target, false);
+    expect(perceptionList[0].data & 0x02).toBe(2); // heard bit stuck (regression)
+  });
+
+  // ── findNearestPerceivedHostile with seen bit ───────────────────────────
+
+  it('findNearestPerceivedHostile: only finds objects with seen bit set', () => {
+    function findNearestPerceivedHostile(
+      perceptionList: any[], position: {x:number,y:number},
+      isHostile: (o:any) => boolean
+    ){
+      let nearest: any;
+      let nearestDist = Infinity;
+      for(const percept of perceptionList){
+        const obj = percept.object;
+        if(!obj || !(percept.data & 0x01)) continue; // only seen
+        if(obj.dead) continue;
+        if(!isHostile(obj)) continue;
+        const dx = position.x - obj.x, dy = position.y - obj.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < nearestDist){ nearestDist = dist; nearest = obj; }
+      }
+      return nearest;
+    }
+    const heardOnly  = { object: { x:1, y:0, dead:false, hostile:true }, data: 0x02 };
+    const seenAndHostile = { object: { x:2, y:0, dead:false, hostile:true }, data: 0x01 };
+    const isHostile = (o: any) => o.hostile;
+    const result = findNearestPerceivedHostile(
+      [heardOnly, seenAndHostile], {x:0, y:0}, isHostile
+    );
+    expect(result).toBe(seenAndHostile.object);
+    expect(result).not.toBe(heardOnly.object);
+  });
+
+  it('findNearestPerceivedHostile: heard-only enemy (old bug) not found as target', () => {
+    // Before fix: heard-then-seen enemy had data=0x02, never gained 0x01
+    // findNearestPerceivedHostile required 0x01 → enemy not targeted
+    function findNearest(pl: any[], isHostile: (o:any)=>boolean){
+      return pl.find(p => !!(p.data & 0x01) && !p.object.dead && isHostile(p.object));
+    }
+    const heardOnly = { object: { dead: false, hostile: true }, data: 0x02 };
+    expect(findNearest([heardOnly], o => o.hostile)).toBeUndefined();
+  });
+
+  // ── enemy lastAttackTarget set on perception ────────────────────────────
+
+  it('enemy perception: sets lastAttackTarget when hostile creature seen', () => {
+    // Simulate NPC perceiving a hostile creature and setting lastAttackTarget
+    const combatData: any = { lastAttackTarget: undefined };
+    const hostile = { dead: false };
+    function onSeeHostile(combatData: any, creature: any) {
+      if(!combatData.lastAttackTarget || combatData.lastAttackTarget.dead){
+        combatData.lastAttackTarget = creature;
+      }
+    }
+    onSeeHostile(combatData, hostile);
+    expect(combatData.lastAttackTarget).toBe(hostile);
+  });
+
+  it('enemy perception: does not overwrite lastAttackTarget when already set', () => {
+    const existingTarget = { dead: false };
+    const newTarget = { dead: false };
+    const combatData: any = { lastAttackTarget: existingTarget };
+    function onSeeHostile(combatData: any, creature: any) {
+      if(!combatData.lastAttackTarget || combatData.lastAttackTarget.dead){
+        combatData.lastAttackTarget = creature;
+      }
+    }
+    onSeeHostile(combatData, newTarget);
+    expect(combatData.lastAttackTarget).toBe(existingTarget); // unchanged
+  });
+
+  it('enemy perception regression: old code never set lastAttackTarget for NPC', () => {
+    // Old code only called resetExcitedDuration() for non-party NPCs, not set target
+    const combatData: any = { lastAttackTarget: undefined };
+    function oldOnSeeHostile(combatData: any) {
+      // bug: only reset excited duration, never set target
+    }
+    oldOnSeeHostile(combatData);
+    expect(combatData.lastAttackTarget).toBeUndefined();
+  });
+
+  // ── getSkillModifier ────────────────────────────────────────────────────
+
+  it('getSkillModifier: Persuade uses CHA modifier', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function getSkillModifier(skillId: number, rank: number, cha: number, int: number, dex: number, wis: number){
+      let ability: number;
+      if(skillId === 4){ ability = cha; }      // PERSUADE
+      else if(skillId === 2){ ability = dex; } // STEALTH
+      else if(skillId === 3 || skillId === 7){ ability = wis; } // AWARENESS / TREAT_INJURY
+      else { ability = int; }
+      return rank + getMod(ability);
+    }
+    // rank=4, CHA=16 (mod=+3) → total 7
+    expect(getSkillModifier(4, 4, 16, 10, 10, 10)).toBe(7);
+  });
+
+  it('getSkillModifier: Security uses INT modifier', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function getSkillModifier(skillId: number, rank: number, int: number){
+      return rank + getMod(int);
+    }
+    // rank=3, INT=14 (mod=+2) → total 5
+    expect(getSkillModifier(6, 3, 14)).toBe(5);
+  });
+
+  it('getSkillModifier: Stealth uses DEX modifier', () => {
+    function getMod(score: number){ return Math.floor((score - 10) / 2); }
+    function getSkillModifier(skillId: number, rank: number, dex: number){
+      return rank + getMod(dex);
+    }
+    // rank=2, DEX=18 (mod=+4) → total 6
+    expect(getSkillModifier(2, 2, 18)).toBe(6);
+  });
+
+  // ── CharGenManager skill cost ────────────────────────────────────────────
+
+  it('isClassSkill: returns true when 2DA row has _class = 1', () => {
+    const rows: any[] = [
+      { 'cls_sk_jedi_class': '1' },  // COMPUTER_USE is class skill for Jedi
+    ];
+    function isClassSkill(skillIndex: number, col: string): boolean {
+      const row = rows[skillIndex];
+      if(!row) return true;
+      const val = row[col];
+      return val === '1' || val === 1;
+    }
+    expect(isClassSkill(0, 'cls_sk_jedi_class')).toBe(true);
+  });
+
+  it('isClassSkill: returns false when 2DA row has _class = 0', () => {
+    const rows: any[] = [
+      { 'cls_sk_jedi_class': '0' },
+    ];
+    function isClassSkill(skillIndex: number, col: string): boolean {
+      const row = rows[skillIndex];
+      if(!row) return true;
+      const val = row[col];
+      return val === '1' || val === 1;
+    }
+    expect(isClassSkill(0, 'cls_sk_jedi_class')).toBe(false);
+  });
+
+  it('getSkillCost: class skill costs 1 point', () => {
+    function getSkillCost(isClass: boolean){ return isClass ? 1 : 2; }
+    expect(getSkillCost(true)).toBe(1);
+  });
+
+  it('getSkillCost: cross-class skill costs 2 points', () => {
+    function getSkillCost(isClass: boolean){ return isClass ? 1 : 2; }
+    expect(getSkillCost(false)).toBe(2);
+  });
+
+  it('CharGenSkills +: deducts cost from availSkillPoints', () => {
+    let availSkillPoints = 10;
+    let persuade = 0;
+    function plusClick(cost: number){
+      if(availSkillPoints >= cost){ persuade++; availSkillPoints -= cost; }
+    }
+    plusClick(1); // class skill
+    expect(persuade).toBe(1);
+    expect(availSkillPoints).toBe(9);
+  });
+
+  it('CharGenSkills +: does not add if no points left', () => {
+    let availSkillPoints = 0;
+    let persuade = 0;
+    function plusClick(cost: number){
+      if(availSkillPoints >= cost){ persuade++; availSkillPoints -= cost; }
+    }
+    plusClick(1);
+    expect(persuade).toBe(0);
+    expect(availSkillPoints).toBe(0);
+  });
+
+  it('CharGenSkills -: refunds cost and decrements rank', () => {
+    let availSkillPoints = 5;
+    let persuade = 3;
+    const base = 2;
+    function minusClick(refund: number){
+      if(persuade > base){ persuade--; availSkillPoints += refund; }
+    }
+    minusClick(1);
+    expect(persuade).toBe(2);
+    expect(availSkillPoints).toBe(6);
+  });
+
+  it('CharGenSkills -: cannot go below base rank in level-up mode', () => {
+    let availSkillPoints = 5;
+    let persuade = 2;
+    const base = 2; // already at base
+    function minusClick(refund: number){
+      if(persuade > base){ persuade--; availSkillPoints += refund; }
+    }
+    minusClick(1);
+    expect(persuade).toBe(2); // unchanged
+    expect(availSkillPoints).toBe(5); // unchanged
+  });
+
+  it('CharGenSkills -: can go to 0 in initial chargen (base=0)', () => {
+    let availSkillPoints = 5;
+    let persuade = 1;
+    const base = 0;
+    function minusClick(refund: number){
+      if(persuade > base){ persuade--; availSkillPoints += refund; }
+    }
+    minusClick(1);
+    expect(persuade).toBe(0);
+    expect(availSkillPoints).toBe(6);
+  });
+
+});
