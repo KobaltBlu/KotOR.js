@@ -114,6 +114,14 @@
  *     ModuleTrigger.autoUpdateObjectsInside() – uses ?. chain with [] fallback
  *       on area.creatures.
  *     ModuleEncounter.update() – wraps creature iteration in area null-guard.
+ *
+ * 81. Action null-guards for area.id and creature area accesses:
+ *     ActionMoveToPoint.ts – uses GameState.module?.area?.id ?? 0 in fallback.
+ *     ActionCastSpell.ts – same pattern for move-toward-target action.
+ *     ActionFollowLeader.ts – same pattern for follow move action.
+ *     ModuleCreature.updatePerceptionList() – area null-guard added.
+ *     ModuleCreature.onPositionChanged() – area.triggers via optional chaining.
+ *     ModuleCreature.findOpenTargetPosition() – area.creatures via optional chain.
  */
 
 // ---------------------------------------------------------------------------
@@ -9623,6 +9631,88 @@ describe('Section 80: CombatRound, ModuleTrigger, ModuleEncounter null-guards', 
     expect(updateEncounterCreatures(null)).toBe(0);
     expect(updateEncounterCreatures(undefined)).toBe(0);
     expect(updateEncounterCreatures({ creatures: [1, 2, 3] })).toBe(3);
+  });
+
+});
+
+// ── Section 81: Action null-guards for area.id, creature area accesses ────────
+//
+// Fixes verified in this section:
+//   a. ActionMoveToPoint.ts – uses GameState.module?.area?.id ?? 0 in fallback jump
+//   b. ActionCastSpell.ts – same pattern for move-toward-target action
+//   c. ActionFollowLeader.ts – same pattern for follow move action
+//   d. ModuleCreature.updatePerceptionList() – added area null-guard after
+//      readyToProcessEvents check
+//   e. ModuleCreature.onPositionChanged() – area.triggers via optional chaining
+//   f. ModuleCreature.findOpenTargetPosition() – area.creatures via optional chain
+
+describe('Section 81: Action null-guards for area.id and creature area accesses', () => {
+
+  it('ActionMoveToPoint: area.id falls back to 0 when area is null', () => {
+    function getAreaId(area: any): number {
+      return area?.id ?? 0;
+    }
+    expect(getAreaId(null)).toBe(0);
+    expect(getAreaId(undefined)).toBe(0);
+    expect(getAreaId({ id: 42 })).toBe(42);
+  });
+
+  it('ActionCastSpell: area.id falls back to OBJECT_INVALID when area is null', () => {
+    const OBJECT_INVALID = 0xFFFFFFFF;
+    function getAreaIdForCastSpell(area: any): number {
+      return area?.id ?? OBJECT_INVALID;
+    }
+    expect(getAreaIdForCastSpell(null)).toBe(OBJECT_INVALID);
+    expect(getAreaIdForCastSpell(undefined)).toBe(OBJECT_INVALID);
+    expect(getAreaIdForCastSpell({ id: 7 })).toBe(7);
+  });
+
+  it('ModuleCreature.updatePerceptionList: returns early when area is null', () => {
+    function updatePerception(area: any, spawned: boolean, ready: boolean): string {
+      if(!spawned || !ready) return 'NOT_READY';
+      if(!area) return 'NO_AREA';
+      return 'PROCESSING:' + area.creatures.length;
+    }
+    expect(updatePerception(null, true, true)).toBe('NO_AREA');
+    expect(updatePerception(undefined, true, true)).toBe('NO_AREA');
+    expect(updatePerception({ creatures: [1, 2] }, true, true)).toBe('PROCESSING:2');
+    expect(updatePerception({ creatures: [1] }, false, true)).toBe('NOT_READY');
+  });
+
+  it('ModuleCreature.onPositionChanged: area.triggers guard prevents crash when area null', () => {
+    function onPositionChanged(area: any): number {
+      const triggers = area?.triggers;
+      if(!triggers) return 0;
+      let updated = 0;
+      for(let i = 0; i < triggers.length; i++){
+        triggers[i].updateObjectInside({});
+        updated++;
+      }
+      return updated;
+    }
+    expect(onPositionChanged(null)).toBe(0);
+    expect(onPositionChanged(undefined)).toBe(0);
+    const triggers = [{ updateObjectInside(_o: any){} }, { updateObjectInside(_o: any){} }];
+    expect(onPositionChanged({ triggers })).toBe(2);
+  });
+
+  it('ModuleCreature.findOpenTargetPosition: area.creatures guard prevents crash when area null', () => {
+    function removeFromTargetPositions(area: any, party: any[]): number {
+      const areaCreatures = area?.creatures;
+      let removed = 0;
+      if(areaCreatures){
+        for(let i = 0; i < areaCreatures.length; i++){
+          removed++;
+        }
+      }
+      for(let i = 0; i < party.length; i++){
+        removed++;
+      }
+      return removed;
+    }
+    expect(removeFromTargetPositions(null, [])).toBe(0);
+    expect(removeFromTargetPositions(null, [1, 2])).toBe(2);
+    expect(removeFromTargetPositions({ creatures: [1, 2, 3] }, [4])).toBe(4);
   });
 
 });

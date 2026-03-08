@@ -904,6 +904,10 @@ export class ModuleCreature extends ModuleObject {
       return;
     }
 
+    if(!GameState.module.area){
+      return;
+    }
+
     if(this.perceptionTimer < 3){
       this.perceptionTimer += 1 * delta;
       return;
@@ -2087,8 +2091,11 @@ export class ModuleCreature extends ModuleObject {
         }
       }
       if(typeof closest != 'undefined'){
-        for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-          GameState.module.area.creatures[i].removeObjectFromTargetPositions(oObject);
+        const areaCreatures = GameState.module?.area?.creatures;
+        if(areaCreatures){
+          for(let i = 0, len = areaCreatures.length; i < len; i++){
+            areaCreatures[i].removeObjectFromTargetPositions(oObject);
+          }
         }
 
         for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
@@ -2238,7 +2245,8 @@ export class ModuleCreature extends ModuleObject {
   onPositionChanged(){
     this.positionChanged = false;
     //check if the creature is inside a trigger
-    const triggers = GameState.module.area.triggers;
+    const triggers = GameState.module?.area?.triggers;
+    if(!triggers) return;
     const tLen = triggers.length;
     for(let i = 0; i < tLen; i++){
       triggers[i].updateObjectInside(this);

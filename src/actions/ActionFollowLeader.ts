@@ -52,7 +52,7 @@ export class ActionFollowLeader extends Action {
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, follow_destination.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, follow_destination.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, follow_destination.z);
-        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module?.area?.id ?? 0);
         actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
         actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
         actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 4.5 );
