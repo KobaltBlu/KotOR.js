@@ -9634,8 +9634,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, number]){
-      for(let i = 0, len = GameState.module.area.rooms.length; i < len; i++){
-        let room = GameState.module.area.rooms[i];
+      const rooms = GameState.module?.area?.rooms;
+      if(!rooms) return;
+      for(let i = 0, len = rooms.length; i < len; i++){
+        let room = rooms[i];
         if(room.roomName.toLowerCase() == args[0].toLowerCase()){
           if(room.model){
             room.model.playAnimation( 'scriptloop'+Utility.PadInt(args[1], 2) );

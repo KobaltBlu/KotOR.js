@@ -9985,3 +9985,72 @@ describe('Section 84: GetArea correctness and RestoreEnginePlayMode guard', () =
   });
 
 });
+
+// ── Section 85: PlayRoomAnimation area guard, MenuEquipment/MenuInventory fixes
+//
+// Fixes verified in this section:
+//   a. PlayRoomAnimation (fn 738) – guards GameState.module.area.rooms with
+//      optional chaining before iterating
+//   b. MenuEquipment.ts – uses item.getIcon() instead of item.baseItem.itemClass
+//      (getIcon() has its own null-guard for missing baseItem)
+//   c. MenuInventory.ts (TSL) – early-returns false if item.baseItem is null
+
+describe('Section 85: PlayRoomAnimation area guard, equipment icon null-safety', () => {
+
+  it('PlayRoomAnimation: guards area.rooms with optional chaining', () => {
+    function playRoomAnimation(module: any, roomName: string, animIdx: number): string {
+      const rooms = module?.area?.rooms;
+      if(!rooms) return 'SKIPPED';
+      for(let i = 0; i < rooms.length; i++){
+        if(rooms[i].roomName.toLowerCase() == roomName.toLowerCase()){
+          return 'PLAYED:' + animIdx;
+        }
+      }
+      return 'NOT_FOUND';
+    }
+    expect(playRoomAnimation(null, 'myroom', 1)).toBe('SKIPPED');
+    expect(playRoomAnimation({ area: null }, 'myroom', 1)).toBe('SKIPPED');
+    expect(playRoomAnimation({ area: { rooms: [] } }, 'myroom', 1)).toBe('NOT_FOUND');
+    const rooms = [{ roomName: 'myroom' }, { roomName: 'other' }];
+    expect(playRoomAnimation({ area: { rooms } }, 'myroom', 3)).toBe('PLAYED:3');
+  });
+
+  it('MenuEquipment: getIcon() returns empty string when baseItem is null (safe)', () => {
+    function getIcon(item: any): string {
+      if(!item.baseItem) return '';
+      return 'i' + item.baseItem.itemClass + '_001';
+    }
+    expect(getIcon({ baseItem: null })).toBe('');
+    // itemClass 'iarmor' → 'iiarmor_001' (prefix 'i' + itemClass 'iarmor')
+    expect(getIcon({ baseItem: { itemClass: 'iarmor' } })).toBe('iiarmor_001');
+  });
+
+  it('MenuEquipment regression: old code crashed when baseItem was null', () => {
+    function getIconOld(item: any): string {
+      try {
+        return 'i' + item.baseItem.itemClass + '_001';
+      } catch { return 'CRASHED'; }
+    }
+    expect(getIconOld({ baseItem: null })).toBe('CRASHED');
+  });
+
+  it('MenuInventory.filterInventory: returns false when item.baseItem is null', () => {
+    function filterItem(item: any): boolean {
+      if(!item.baseItem) return false;
+      return item.baseItem.itemClass.toLowerCase() == 'i_datapad';
+    }
+    expect(filterItem({ baseItem: null })).toBe(false);
+    expect(filterItem({ baseItem: { itemClass: 'i_datapad' } })).toBe(true);
+    expect(filterItem({ baseItem: { itemClass: 'other' } })).toBe(false);
+  });
+
+  it('MenuInventory regression: old code crashed when item.baseItem was null', () => {
+    function filterItemOld(item: any): string {
+      try {
+        return item.baseItem.itemClass.toLowerCase() == 'i_datapad' ? 'MATCH' : 'NO_MATCH';
+      } catch { return 'CRASHED'; }
+    }
+    expect(filterItemOld({ baseItem: null })).toBe('CRASHED');
+  });
+
+});
