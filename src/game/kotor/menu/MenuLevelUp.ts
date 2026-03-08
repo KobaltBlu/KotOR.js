@@ -120,6 +120,7 @@ export class MenuLevelUp extends GameMenu {
         }
         if(GameState.MenuManager.MenuPowerLevelUp){
           GameState.MenuManager.MenuPowerLevelUp.manager = this.manager;
+          GameState.MenuManager.MenuPowerLevelUp.setCreatureAndSlots(this.creature, this.pendingForcePowerSlots);
           GameState.MenuManager.MenuPowerLevelUp.open();
         }else{
           this.stepsCompleted[4] = true;

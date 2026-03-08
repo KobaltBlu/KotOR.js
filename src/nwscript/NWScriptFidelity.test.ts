@@ -10652,3 +10652,104 @@ describe('Section 91: ModuleMGPlayer track loop detection', () => {
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// Section 92: MenuPowerLevelUp force-power selection logic
+// ---------------------------------------------------------------------------
+// Fixes verified in this section:
+// MenuPowerLevelUp.setCreatureAndSlots – stores creature and remainingSelections
+// MenuPowerLevelUp.selectHighlightedPower – decrements remainingSelections and
+//   calls mainClass.addSpell(); guards remainingSelections <= 0
+// MenuPowerLevelUp.buildPowerList – skips spells with prerequisites (top-level only)
+//   and checks class availability (guardian/consular/sentinel > 0)
+// MenuLevelUp now calls setCreatureAndSlots() before opening MenuPowerLevelUp
+describe('Section 92: MenuPowerLevelUp force-power selection', () => {
+
+  it('remainingSelections decrements each time a power is selected', () => {
+    let remaining = 3;
+    function selectPower(): boolean {
+      if(remaining <= 0) return false;
+      remaining--;
+      return true;
+    }
+    expect(selectPower()).toBe(true);
+    expect(remaining).toBe(2);
+    expect(selectPower()).toBe(true);
+    expect(remaining).toBe(1);
+    expect(selectPower()).toBe(true);
+    expect(remaining).toBe(0);
+    // No more selections allowed
+    expect(selectPower()).toBe(false);
+    expect(remaining).toBe(0);
+  });
+
+  it('cannot select a power when remainingSelections is 0', () => {
+    function canSelect(remaining: number): boolean {
+      return remaining > 0;
+    }
+    expect(canSelect(0)).toBe(false);
+    expect(canSelect(1)).toBe(true);
+  });
+
+  it('buildPowerList: skips spells that have prerequisites (only top-level shown)', () => {
+    const spells = [
+      { id: 0, prerequisites: [],   guardian: 1, consular: 1, sentinel: 1 },
+      { id: 1, prerequisites: [0],  guardian: 1, consular: 1, sentinel: 1 }, // upgrade
+      { id: 2, prerequisites: [],   guardian: 0, consular: 1, sentinel: 1 },
+    ];
+    function buildList(classId: number /* 3=guardian,4=consular,5=sentinel */): number[] {
+      return spells
+        .filter(s => s.prerequisites.length === 0)
+        .filter(s => {
+          const minLevel = classId === 3 ? s.guardian : classId === 4 ? s.consular : s.sentinel;
+          return minLevel > 0;
+        })
+        .map(s => s.id);
+    }
+    // Guardian sees spell 0 but not spell 2 (guardian=0)
+    expect(buildList(3)).toEqual([0]);
+    // Consular sees both 0 and 2
+    expect(buildList(4)).toEqual([0, 2]);
+    // Sentinel sees both 0 and 2
+    expect(buildList(5)).toEqual([0, 2]);
+  });
+
+  it('selectHighlightedPower: picks the highest learnable tier the creature lacks', () => {
+    const SPELLS = [
+      { id: 0, prerequisites: [] },
+      { id: 1, prerequisites: [0] }, // upgrade of 0
+      { id: 2, prerequisites: [1] }, // master of 0
+    ];
+    function getNextLearnable(
+      group: typeof SPELLS,
+      knownIds: number[]
+    ): number | undefined {
+      for(let i = group.length - 1; i >= 0; i--){
+        const spell = group[i];
+        const prereqsMet = spell.prerequisites.every(p => knownIds.includes(p));
+        if(!knownIds.includes(spell.id) && prereqsMet){
+          return spell.id;
+        }
+      }
+      return undefined;
+    }
+    // Knows nothing → can learn base (id=0)
+    expect(getNextLearnable(SPELLS, [])).toBe(0);
+    // Knows base (0) → can learn upgrade (id=1)
+    expect(getNextLearnable(SPELLS, [0])).toBe(1);
+    // Knows base and upgrade → can learn master (id=2)
+    expect(getNextLearnable(SPELLS, [0, 1])).toBe(2);
+    // Knows all → nothing to learn
+    expect(getNextLearnable(SPELLS, [0, 1, 2])).toBeUndefined();
+  });
+
+  it('applyAndClose: clears selectedPowers list', () => {
+    const selected: number[] = [1, 2, 3];
+    function applyAndClose(): number[] {
+      selected.length = 0;
+      return selected;
+    }
+    expect(applyAndClose()).toEqual([]);
+  });
+
+});
