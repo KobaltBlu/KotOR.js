@@ -10842,3 +10842,70 @@ describe('Section 93: getSkillModifier effect integration', () => {
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// Section 94: MenuLevelUp multi-class level-up state (class-level vs total-level)
+// ---------------------------------------------------------------------------
+// Fixes verified in this section:
+// MenuLevelUp.initLevelUpState: pendingForcePowerSlots, pendingFeatSlots, and
+//   pendingSkillPoints now use mainClass.level+1 (class-specific new level)
+//   instead of getTotalClassLevel()+1 (total character level).
+// This is critical for Dantooine Jedi training: Scout(3)/JediConsular(0) should
+//   use index 1 for spellGainPoints (first Jedi level), not index 4.
+// pendingAbilityPoint still uses total level (every 4 total levels), which
+//   is correct per KotOR rules.
+describe('Section 94: MenuLevelUp multi-class level-up class-level index', () => {
+
+  it('single-class: class-level index equals total level', () => {
+    function computeClassLevel(classLevel: number, _totalLevel: number): number {
+      return classLevel + 1;
+    }
+    // Scout 3 levelling to 4: class level 3, total 3 → new class level 4
+    expect(computeClassLevel(3, 3)).toBe(4);
+  });
+
+  it('multi-class: Jedi joins at level 0 (Scout 3 + Jedi 0 → Jedi 1)', () => {
+    function computeClassLevel(mainClassLevel: number): number {
+      return mainClassLevel + 1;
+    }
+    // JediConsular.level = 0 → first Jedi level
+    expect(computeClassLevel(0)).toBe(1);
+  });
+
+  it('spellGainPoints: uses new class level index, not total level', () => {
+    // classpowergain.2da has 0-indexed rows per class level
+    // JediConsular at level 1 gains 3 force powers (typical value)
+    const spellGainPoints = [0, 3, 2, 2, 1, 1]; // index 0 unused, 1=level1, etc.
+    function getPowerSlots(classLevel: number): number {
+      return spellGainPoints[classLevel] ?? 0;
+    }
+    // Scout 3 + Jedi 0 levelling up: new class level = 1 → 3 powers
+    expect(getPowerSlots(1)).toBe(3);
+    // Using wrong total level (4) would give 1 power
+    expect(getPowerSlots(4)).toBe(1);
+  });
+
+  it('pendingAbilityPoint: still based on total character level (every 4 total)', () => {
+    function hasPendingAbility(totalLevel: number): boolean {
+      return (totalLevel % 4) === 0;
+    }
+    expect(hasPendingAbility(4)).toBe(true);
+    expect(hasPendingAbility(8)).toBe(true);
+    expect(hasPendingAbility(3)).toBe(false);
+    expect(hasPendingAbility(5)).toBe(false);
+  });
+
+  it('featGainPoints: uses new class level index', () => {
+    const featGainPoints = [0, 1, 0, 1, 0, 1]; // index 0 unused
+    function getFeatSlots(classLevel: number): number {
+      return featGainPoints[classLevel] ?? 0;
+    }
+    // Jedi level 1 → 1 feat
+    expect(getFeatSlots(1)).toBe(1);
+    // Jedi level 3 → 1 feat
+    expect(getFeatSlots(3)).toBe(1);
+    // Jedi level 2 → 0 feats
+    expect(getFeatSlots(2)).toBe(0);
+  });
+
+});

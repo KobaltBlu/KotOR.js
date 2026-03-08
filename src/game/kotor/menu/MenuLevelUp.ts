@@ -190,21 +190,26 @@ export class MenuLevelUp extends GameMenu {
     const mainClass = this.creature.getMainClass();
     if(!mainClass) return;
 
-    const newLevel = this.creature.getTotalClassLevel() + 1;
+    const newTotalLevel = this.creature.getTotalClassLevel() + 1;
+    // The class that is levelling up is the main (last) class.  Use the
+    // *class-specific* next level for per-class tables (skills, feats, powers).
+    const newClassLevel = mainClass.level + 1;
+
     const conMod = Math.floor((this.creature.getCON() - 10) / 2);
     this.pendingHP = Math.max(1, mainClass.hitdie + conMod);
-    this.pendingAbilityPoint = (newLevel % 4 === 0);
+    // Ability score point: granted every 4 total character levels.
+    this.pendingAbilityPoint = (newTotalLevel % 4 === 0);
 
     const intMod = Math.floor((this.creature.getINT() - 10) / 2);
     this.pendingSkillPoints = Math.max(1, mainClass.skillpointbase + intMod);
 
     const featGainPoints = mainClass.featGainPoints;
-    const classGrantedFeats = featGainPoints ? (featGainPoints[newLevel] || 0) : 0;
-    const defaultFeatSlot = (newLevel % 3 === 0) ? 1 : 0;
+    const classGrantedFeats = featGainPoints ? (featGainPoints[newClassLevel] || 0) : 0;
+    const defaultFeatSlot = (newClassLevel % 3 === 0) ? 1 : 0;
     this.pendingFeatSlots = classGrantedFeats || defaultFeatSlot;
 
     const spellGainPoints = mainClass.spellGainPoints;
-    this.pendingForcePowerSlots = (spellGainPoints && spellGainPoints[newLevel]) ? spellGainPoints[newLevel] : 0;
+    this.pendingForcePowerSlots = (spellGainPoints && spellGainPoints[newClassLevel]) ? spellGainPoints[newClassLevel] : 0;
 
     // Prime CharGenManager for level-up sub-menus.
     GameState.CharGenManager.isLevelUpMode = true;
