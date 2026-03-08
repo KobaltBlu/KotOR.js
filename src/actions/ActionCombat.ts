@@ -64,7 +64,7 @@ export class ActionCombat extends Action {
       case CombatActionType.ATTACK_USE_FEAT:
         const attackAction = new GameState.ActionFactory.ActionPhysicalAttacks();
         attackAction.setParameter(0, ActionParameterType.INT, combatAction.resultsCalculated);
-        attackAction.setParameter(1, ActionParameterType.DWORD, combatAction.target.id);
+        attackAction.setParameter(1, ActionParameterType.DWORD, combatAction.target?.id ?? ModuleObjectConstant.OBJECT_INVALID);
         attackAction.setParameter(2, ActionParameterType.INT, combatAction.actionType);
         attackAction.setParameter(3, ActionParameterType.INT, combatAction.animation);
         attackAction.setParameter(4, ActionParameterType.INT, combatAction.animationTime);

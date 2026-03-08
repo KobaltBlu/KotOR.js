@@ -503,11 +503,14 @@ export class ModuleDoor extends ModuleObject {
 
     //Notice all creatures within range that someone opened this door
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
-      for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-        let creature = GameState.module.area.creatures[i];
-        let distance = creature.position.distanceTo(this.position);
-        if(distance <= creature.getPerceptionRangePrimary()){
-          creature.notifyPerceptionHeardObject(object, true);
+      const areaCreatures = GameState.module?.area?.creatures;
+      if(areaCreatures){
+        for(let i = 0, len = areaCreatures.length; i < len; i++){
+          let creature = areaCreatures[i];
+          let distance = creature.position.distanceTo(this.position);
+          if(distance <= creature.getPerceptionRangePrimary()){
+            creature.notifyPerceptionHeardObject(object, true);
+          }
         }
       }
     }
@@ -605,9 +608,11 @@ export class ModuleDoor extends ModuleObject {
       }
     }else{
       //Check Creatures
-      let creatureLen = GameState.module.area.creatures.length;
+      const areaCreatures = GameState.module?.area?.creatures;
+      if(!areaCreatures) return;
+      let creatureLen = areaCreatures.length;
       for(let i = 0; i < creatureLen; i++){
-        let creature = GameState.module.area.creatures[i];
+        let creature = areaCreatures[i];
         if(this.box.containsPoint(creature.position)){
           if(this.objectsInside.indexOf(creature) == -1){
             this.objectsInside.push(creature);
@@ -806,6 +811,7 @@ export class ModuleDoor extends ModuleObject {
     let box = this.box.clone();
 
     this.rooms = [];
+    if(!GameState.module?.area) return;
     for(let i = 0; i < GameState.module.area.rooms.length; i++){
       let room = GameState.module.area.rooms[i];
       if(room.box.containsPoint(this.position)){
