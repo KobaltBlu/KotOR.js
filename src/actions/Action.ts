@@ -164,6 +164,7 @@ export class Action {
   runCreatureAvoidance(delta = 0, finalTarget: THREE.Vector3, excludeTarget?: ModuleObject) {
     if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
     const owner: ModuleCreature = this.owner as any;
+    if(!owner.area) return;
 
     // Early exit if no movement vector
     if (owner.forceVector.lengthSq() < 0.001) return;
@@ -334,6 +335,7 @@ export class Action {
    */
   private coordinateObstacleAvoidance(owner: ModuleCreature, obstacle: ModuleCreature) {
     if (obstacle.action?.type !== ActionType.ActionMoveToPoint) return;
+    if(!owner.area || !obstacle.area) return;
 
     const isObstacleMoving = obstacle.forceVector.lengthSq() > 0.001;
     if (!isObstacleMoving) return;

@@ -84,8 +84,10 @@ export class ActionCastSpell extends Action {
             }
 
             if(combatRound.roundStarted){
-              const spellCastInstance = new SpellCastInstance(this.owner, combatRound.action.target, combatRound.action.spell);
-              this.owner.area.attachSpellInstance(spellCastInstance);
+              const target = combatRound.action?.target ?? this.target;
+              const spellCastInstance = new SpellCastInstance(this.owner, target, combatRound.action?.spell ?? this.spell);
+              const ownerArea = this.owner.area ?? GameState.module?.area;
+              if(ownerArea) ownerArea.attachSpellInstance(spellCastInstance);
               spellCastInstance.init();
 
               return ActionStatus.COMPLETE;
