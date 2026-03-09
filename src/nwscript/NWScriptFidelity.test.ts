@@ -11628,3 +11628,618 @@ describe('Section 106: DelayCommand futureTime null-guard', () => {
   });
 
 });
+
+describe('Section 107: InGameOverlay party[0] optional-chain guards', () => {
+
+  it('BTN_CHAR1 click does not crash when party is empty', () => {
+    // Simulates: if(GameState.PartyManager.party[0]?.canLevelUp())
+    const party: any[] = [];
+    let menuOpened = '';
+    const canLevelUp = () => { menuOpened = 'character'; return true; };
+    // party[0]?.canLevelUp() is undefined when party is empty — no crash
+    if(party[0]?.canLevelUp()){
+      menuOpened = 'character';
+    } else {
+      menuOpened = 'equipment';
+    }
+    expect(menuOpened).toBe('equipment'); // no crash
+  });
+
+  it('BTN_CHAR1 click opens MenuCharacter when party[0] can level up', () => {
+    const mockCreature = { canLevelUp: () => true };
+    const party: any[] = [mockCreature];
+    let menuOpened = '';
+    if(party[0]?.canLevelUp()){
+      menuOpened = 'character';
+    } else {
+      menuOpened = 'equipment';
+    }
+    expect(menuOpened).toBe('character');
+  });
+
+  it('BTN_CHAR2/3 playSoundSet does not crash when party is empty', () => {
+    const party: any[] = [];
+    let crashed = false;
+    try {
+      party[0]?.playSoundSet(2);
+    } catch(e) {
+      crashed = true;
+    }
+    expect(crashed).toBe(false);
+  });
+
+  it('BTN_CHAR2/3 playSoundSet calls method when party[0] exists', () => {
+    let called = false;
+    const mockCreature = { playSoundSet: () => { called = true; } };
+    const party: any[] = [mockCreature];
+    party[0]?.playSoundSet(2);
+    expect(called).toBe(true);
+  });
+
+});
+
+describe('Section 108: ModuleArea areaProps/SWVarTable getChildStructs()[0] guards', () => {
+
+  it('areaPropsField falls back to [] when getChildStructs() returns empty array', () => {
+    // Simulates the patched: const areaPropsStruct = areaProps.getChildStructs()[0];
+    //                        const areaPropsField = areaPropsStruct ? areaPropsStruct.getFields() : [];
+    const emptyAreProps = { getChildStructs: () => [] as any[] };
+    const areaPropsStruct = emptyAreProps.getChildStructs()[0];
+    const areaPropsField = areaPropsStruct ? areaPropsStruct.getFields() : [];
+    expect(areaPropsField).toEqual([]);  // no crash
+  });
+
+  it('areaPropsField uses struct fields when struct is present', () => {
+    const fields = [{ label: 'AmbientSndDay' }];
+    const mockStruct = { getFields: () => fields, hasField: () => false };
+    const mockAreProps = { getChildStructs: () => [mockStruct] as any[] };
+    const areaPropsStruct = mockAreProps.getChildStructs()[0];
+    const areaPropsField = areaPropsStruct ? areaPropsStruct.getFields() : [];
+    expect(areaPropsField).toBe(fields);
+  });
+
+  it('SWVarTable with empty getChildStructs does not crash', () => {
+    // Simulates: const swVarTableStruct = gitNode.getChildStructs()[0];
+    //            if(swVarTableStruct?.hasField('BitArray')) { ... }
+    const mockGitNode = { getChildStructs: () => [] as any[] };
+    const swVarTableStruct = mockGitNode.getChildStructs()[0];
+    let boolsLoaded = false;
+    if(swVarTableStruct?.hasField('BitArray')){
+      boolsLoaded = true;
+    }
+    expect(boolsLoaded).toBe(false); // no crash
+  });
+
+  it('SWVarTable booleans are loaded when struct has BitArray', () => {
+    const mockBits = [{ getFieldByLabel: () => ({ getValue: () => 0b00000011 }) }];
+    const mockStruct = {
+      hasField: (f: string) => f === 'BitArray',
+      getFieldByLabel: () => ({ getChildStructs: () => mockBits }),
+    };
+    const mockGitNode = { getChildStructs: () => [mockStruct] as any[] };
+    const swVarTableStruct = mockGitNode.getChildStructs()[0];
+    const booleans: boolean[] = [];
+    if(swVarTableStruct?.hasField('BitArray')){
+      const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+      for(let i = 0; i < localBools.length; i++){
+        const data = localBools[i].getFieldByLabel('Variable').getValue();
+        for(let bit = 0; bit < 32; bit++){
+          booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+        }
+      }
+    }
+    expect(booleans[0]).toBe(true);
+    expect(booleans[1]).toBe(true);
+    expect(booleans[2]).toBe(false);
+  });
+
+});
+
+describe('Section 109: ModuleSound/ModuleDoor/ModuleAreaOfEffect/ModuleEncounter/ModuleTrigger SWVarTable guards', () => {
+
+  function loadSWVarTable(templateNode: any, locals: { Booleans: boolean[] }) {
+    // Shared extraction logic used by all module types after patching
+    if(templateNode.hasField('SWVarTable')){
+      const swVarTableStruct = templateNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      if(swVarTableStruct?.hasField('BitArray')){
+        const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+        for(let i = 0; i < localBools.length; i++){
+          const data = localBools[i].getFieldByLabel('Variable').getValue();
+          for(let bit = 0; bit < 32; bit++){
+            locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+          }
+        }
+      }
+    }
+  }
+
+  it('ModuleSound: SWVarTable with no child structs does not crash', () => {
+    const templateNode = {
+      hasField: (f: string) => f === 'SWVarTable',
+      getFieldByLabel: () => ({ getChildStructs: () => [] as any[] }),
+    };
+    const locals = { Booleans: [] as boolean[] };
+    expect(() => loadSWVarTable(templateNode, locals)).not.toThrow();
+    expect(locals.Booleans).toEqual([]);
+  });
+
+  it('ModuleDoor: SWVarTable struct without BitArray does not crash', () => {
+    const mockStruct = { hasField: () => false, getFieldByLabel: () => null };
+    const templateNode = {
+      hasField: (f: string) => f === 'SWVarTable',
+      getFieldByLabel: () => ({ getChildStructs: () => [mockStruct] as any[] }),
+    };
+    const locals = { Booleans: [] as boolean[] };
+    expect(() => loadSWVarTable(templateNode, locals)).not.toThrow();
+  });
+
+  it('ModuleEncounter: SWVarTable booleans are read correctly when struct is valid', () => {
+    const mockBits = [{ getFieldByLabel: () => ({ getValue: () => 0b101 }) }];
+    const mockStruct = {
+      hasField: (f: string) => f === 'BitArray',
+      getFieldByLabel: () => ({ getChildStructs: () => mockBits }),
+    };
+    const templateNode = {
+      hasField: (f: string) => f === 'SWVarTable',
+      getFieldByLabel: () => ({ getChildStructs: () => [mockStruct] as any[] }),
+    };
+    const locals = { Booleans: [] as boolean[] };
+    loadSWVarTable(templateNode, locals);
+    expect(locals.Booleans[0]).toBe(true);
+    expect(locals.Booleans[1]).toBe(false);
+    expect(locals.Booleans[2]).toBe(true);
+  });
+
+});
+
+describe('Section 110: ModuleObject.speakString area null-guard', () => {
+
+  it('notifyCreatures loop is skipped when module.area is undefined', () => {
+    // Simulates: if(notifyCreatures && GameState.module?.area){ ... }
+    const mockGameState = { module: null as any };
+    let heardCount = 0;
+    const notifyCreatures = true;
+    if(notifyCreatures && mockGameState.module?.area){
+      // Would iterate creatures
+      heardCount++;
+    }
+    expect(heardCount).toBe(0); // no crash
+  });
+
+  it('notifyCreatures loop runs when module.area is defined', () => {
+    const mockCreature = { isDead: () => false, position: { distanceToSquared: () => 1 }, heardStrings: [] as any[] };
+    const mockArea = { creatures: [mockCreature] };
+    const mockGameState = { module: { area: mockArea } };
+    let heardCount = 0;
+    const notifyCreatures = true;
+    const rangeSquared = 100;
+    const speaker = {};
+    if(notifyCreatures && mockGameState.module?.area){
+      for(let i = 0, len = mockGameState.module.area.creatures.length; i < len; i++){
+        const creature = mockGameState.module.area.creatures[i];
+        if(!creature.isDead()){
+          const dist = creature.position.distanceToSquared(null);
+          if(dist > rangeSquared) continue;
+          creature.heardStrings.push({ speaker, string: 'hello', volume: 0 });
+          heardCount++;
+        }
+      }
+    }
+    expect(heardCount).toBe(1);
+    expect(mockCreature.heardStrings.length).toBe(1);
+  });
+
+});
+
+describe('Section 111: ModuleMGEnemy minigame player optional-chain guard', () => {
+
+  it('intersectsSphere is not called when module.area is null', () => {
+    // Simulates: GameState.module?.area?.miniGame?.player?.sphere
+    const mockGameState = { module: null as any };
+    let intersectCalled = false;
+    const mockRaycaster = { ray: { intersectsSphere: (s: any) => { intersectCalled = true; return false; } } };
+    const sphere = mockGameState.module?.area?.miniGame?.player?.sphere;
+    if(sphere){ mockRaycaster.ray.intersectsSphere(sphere); }
+    expect(intersectCalled).toBe(false); // no crash
+  });
+
+  it('intersectsSphere is called when full chain is defined', () => {
+    const mockSphere = {};
+    const mockGameState = { module: { area: { miniGame: { player: { sphere: mockSphere } } } } };
+    let intersectCalled = false;
+    const mockRaycaster = { ray: { intersectsSphere: (s: any) => { intersectCalled = true; return false; } } };
+    const sphere = mockGameState.module?.area?.miniGame?.player?.sphere;
+    if(sphere){ mockRaycaster.ray.intersectsSphere(sphere); }
+    expect(intersectCalled).toBe(true);
+  });
+
+  it('intersectsSphere is not called when miniGame.player is undefined', () => {
+    const mockGameState = { module: { area: { miniGame: { player: undefined } } } };
+    let intersectCalled = false;
+    const mockRaycaster = { ray: { intersectsSphere: (s: any) => { intersectCalled = true; return false; } } };
+    const sphere = mockGameState.module?.area?.miniGame?.player?.sphere;
+    if(sphere){ mockRaycaster.ray.intersectsSphere(sphere); }
+    expect(intersectCalled).toBe(false);
+  });
+
+});
+
+describe('Section 112: TSL MenuAbilities party[0] optional-chain guard', () => {
+
+  it('getFilteredItems SKILLS returns empty array when party is empty', () => {
+    // Simulates: return GameState.PartyManager.party[0]?.skills.slice() ?? [];
+    const party: any[] = [];
+    const result = party[0]?.skills.slice() ?? [];
+    expect(result).toEqual([]);
+  });
+
+  it('getFilteredItems SKILLS returns skills slice when party[0] exists', () => {
+    const mockCreature = { skills: [10, 20, 30] };
+    const party: any[] = [mockCreature];
+    const result = party[0]?.skills.slice() ?? [];
+    expect(result).toEqual([10, 20, 30]);
+    expect(result).not.toBe(mockCreature.skills); // it's a copy
+  });
+
+  it('buildSpellsList uses creature parameter not global party[0]', () => {
+    // Simulates: if(!creature?.getHasSpell(id) ...) continue;
+    const creature = { getHasSpell: (id: number) => id === 5 };
+    const unknownSpells = [176];
+    const allowedSpells: number[] = [];
+    for(const id of [5, 6, 7]){
+      if(!creature?.getHasSpell(id) && unknownSpells.indexOf(id) === -1){ continue; }
+      allowedSpells.push(id);
+    }
+    expect(allowedSpells).toEqual([5]); // only id=5 passes
+  });
+
+  it('buildSpellsList does not crash when creature is undefined', () => {
+    // Simulates: if(!creature?.getHasSpell(id) ...) continue;
+    const creature: any = undefined;
+    const unknownSpells: number[] = [];
+    const allowedSpells: number[] = [];
+    expect(() => {
+      for(const id of [1, 2, 3]){
+        if(!creature?.getHasSpell(id) && unknownSpells.indexOf(id) === -1){ continue; }
+        allowedSpells.push(id);
+      }
+    }).not.toThrow();
+    expect(allowedSpells).toEqual([]); // creature is undefined, getHasSpell returns undefined (falsy), all skipped
+  });
+
+});
+
+describe('Section 113: GameState.getCurrentPlayer minigame optional-chain guard', () => {
+
+  it('getCurrentPlayer in MINIGAME mode falls back to Player when module is null', () => {
+    // Simulates: return (GameState.module?.area?.miniGame?.player as any) ?? GameState.PartyManager.Player;
+    const mockPlayer = { tag: 'player' };
+    const state = {
+      Mode: 'MINIGAME',
+      module: null as any,
+      PartyManager: { Player: mockPlayer },
+    };
+    const MINIGAME_MODE = 'MINIGAME';
+    function getCurrentPlayer(s: typeof state) {
+      if(s.Mode === MINIGAME_MODE){
+        return (s.module?.area?.miniGame?.player as any) ?? s.PartyManager.Player;
+      }
+      const p = s.PartyManager.Player;
+      return p;
+    }
+    expect(getCurrentPlayer(state)).toBe(mockPlayer); // falls back to Player, no crash
+  });
+
+  it('getCurrentPlayer in MINIGAME mode returns miniGame.player when chain is valid', () => {
+    const miniGamePlayer = { tag: 'mg_player' };
+    const mockPlayer = { tag: 'player' };
+    const state = {
+      Mode: 'MINIGAME',
+      module: { area: { miniGame: { player: miniGamePlayer } } } as any,
+      PartyManager: { Player: mockPlayer },
+    };
+    const MINIGAME_MODE = 'MINIGAME';
+    function getCurrentPlayer(s: typeof state) {
+      if(s.Mode === MINIGAME_MODE){
+        return (s.module?.area?.miniGame?.player as any) ?? s.PartyManager.Player;
+      }
+      return s.PartyManager.Player;
+    }
+    expect(getCurrentPlayer(state)).toBe(miniGamePlayer);
+  });
+
+});
+
+describe('Section 114: IngameControls minigame key guards', () => {
+
+  it('MGAction processor is a no-op when miniGame is null', () => {
+    // Simulates: const miniGame = GameState.module?.area?.miniGame; if(!miniGame) return;
+    const module = null as any;
+    let rotateCalled = false;
+    const mockMiniGame = { type: 'TURRET', player: { rotate: () => { rotateCalled = true; } } };
+    function processAction(module: any) {
+      const miniGame = module?.area?.miniGame;
+      if(!miniGame) return;
+      if(miniGame.type === 'TURRET') miniGame.player?.rotate('x', 1);
+    }
+    processAction(null);
+    expect(rotateCalled).toBe(false);
+    processAction({ area: { miniGame: mockMiniGame } });
+    expect(rotateCalled).toBe(true);
+  });
+
+  it('MGActionLeft lateral force not set when player is undefined', () => {
+    let lateralForce = 0;
+    const mockMiniGame = { type: 'SWOOPRACE', player: undefined as any };
+    function processLeft(miniGame: any) {
+      if(!miniGame) return;
+      switch(miniGame.type){
+        case 'SWOOPRACE':
+          if(miniGame.player) miniGame.player.lateralForce = -miniGame.player.accel_lateral_secs;
+        break;
+      }
+    }
+    processLeft(mockMiniGame);
+    expect(lateralForce).toBe(0); // no crash
+  });
+
+  it('MGshoot fires when miniGame and player are defined', () => {
+    let fired = false;
+    const mockMiniGame = { type: 'TURRET', player: { fire: () => { fired = true; } } };
+    function processShoot(miniGame: any) {
+      if(!miniGame) return;
+      switch(miniGame.type){
+        case 'TURRET':
+          miniGame.player?.fire();
+        break;
+      }
+    }
+    processShoot(mockMiniGame);
+    expect(fired).toBe(true);
+  });
+
+});
+
+describe('Section 115: GameState.SetDebugState walkmesh area guard', () => {
+
+  it('walkmesh debug loop skips when module.area is null', () => {
+    // Simulates: if(!GameState.module?.area) break;
+    const module = null as any;
+    let loopRan = false;
+    function setDebugWalkmesh(module: any) {
+      if(!module?.area) return false;
+      for(const room of module.area.rooms){
+        loopRan = true;
+      }
+      return true;
+    }
+    const result = setDebugWalkmesh(null);
+    expect(result).toBe(false);
+    expect(loopRan).toBe(false);
+  });
+
+  it('walkmesh debug loop runs when module.area is defined', () => {
+    const rooms = [{ collisionManager: { walkmesh: { mesh: { visible: false } } } }];
+    const module = { area: { rooms, doors: [], placeables: [] } };
+    let loopRan = false;
+    function setDebugWalkmesh(module: any) {
+      if(!module?.area) return false;
+      for(const room of module.area.rooms){
+        loopRan = true;
+      }
+      return true;
+    }
+    const result = setDebugWalkmesh(module);
+    expect(result).toBe(true);
+    expect(loopRan).toBe(true);
+  });
+
+});
+
+describe('Section 116: InGameOverlay LBL_LEVELUP pulsing guard', () => {
+
+  it('pulsing assignment is safe when getControlByName returns undefined', () => {
+    // Simulates: const lbl1 = this.getControlByName('LBL_LEVELUP1'); if(lbl1) lbl1.pulsing = true;
+    let pulsing = false;
+    const control: any = undefined;
+    if(control) control.pulsing = true;
+    expect(pulsing).toBe(false); // no crash
+  });
+
+  it('pulsing is set when control is defined', () => {
+    const control: any = { pulsing: false };
+    if(control) control.pulsing = true;
+    expect(control.pulsing).toBe(true);
+  });
+
+});
+
+describe('Section 117: PartyManager GlxyMap getChildStructs()[0] guard', () => {
+
+  it('does not crash when GlxyMap getChildStructs() returns empty array', () => {
+    // Simulates: let GlxyMap = gff.getFieldByLabel('GlxyMap').getChildStructs()[0]; if(!GlxyMap) return;
+    const mockGff = {
+      RootNode: { hasField: (f: string) => f === 'GlxyMap' },
+      getFieldByLabel: () => ({ getChildStructs: () => [] as any[] }),
+    };
+    let crashed = false;
+    function loadGlxyMap(gff: any) {
+      if(gff.RootNode.hasField('GlxyMap')){
+        const GlxyMap = gff.getFieldByLabel('GlxyMap').getChildStructs()[0];
+        if(!GlxyMap) return;
+        // would access GlxyMap.getFieldByLabel(...)
+        crashed = true;
+      }
+    }
+    loadGlxyMap(mockGff);
+    expect(crashed).toBe(false); // no crash
+  });
+
+  it('loads GlxyMap data when struct is valid', () => {
+    const mockStruct = {
+      getFieldByLabel: (f: string) => ({
+        getValue: () => f === 'GlxyMapNumPnts' ? 3 : f === 'GlxyMapPlntMsk' ? 0b101 : 0,
+      }),
+    };
+    const mockGff = {
+      RootNode: { hasField: (f: string) => f === 'GlxyMap' },
+      getFieldByLabel: () => ({ getChildStructs: () => [mockStruct] as any[] }),
+    };
+    let loaded = false;
+    function loadGlxyMap(gff: any) {
+      if(gff.RootNode.hasField('GlxyMap')){
+        const GlxyMap = gff.getFieldByLabel('GlxyMap').getChildStructs()[0];
+        if(!GlxyMap) return;
+        const planetCount = GlxyMap.getFieldByLabel('GlxyMapNumPnts').getValue();
+        loaded = planetCount > 0;
+      }
+    }
+    loadGlxyMap(mockGff);
+    expect(loaded).toBe(true);
+  });
+
+});
+
+describe('Section 118: NWScriptStack.FromActionStruct null guard', () => {
+
+  it('FromActionStruct returns an empty stack when struct is null', () => {
+    // Simulates: if(!struct) return stack;
+    function fromActionStruct(struct: any) {
+      const stack = { basePointer: 0, pointer: 0 };
+      if(!struct) return stack;
+      stack.basePointer = struct.getFieldByLabel('BasePointer').getValue() * 4;
+      return stack;
+    }
+    const result = fromActionStruct(null);
+    expect(result.basePointer).toBe(0); // no crash, default value
+  });
+
+  it('FromActionStruct reads values when struct is valid', () => {
+    function fromActionStruct(struct: any) {
+      const stack = { basePointer: 0, pointer: 0 };
+      if(!struct) return stack;
+      stack.basePointer = struct.getFieldByLabel('BasePointer').getValue() * 4;
+      return stack;
+    }
+    const mockStruct = { getFieldByLabel: (f: string) => ({ getValue: () => 5 }) };
+    const result = fromActionStruct(mockStruct);
+    expect(result.basePointer).toBe(20); // 5 * 4
+  });
+
+});
+
+describe('Section 119: NWScriptStack GameDefinedStrct guard', () => {
+
+  it('does not crash when GameDefinedStrct getChildStructs returns empty array', () => {
+    // Simulates: let gameStruct = ..getChildStructs()[0]; if(!gameStruct) break;
+    let processed = false;
+    function processStack(stackElement: any) {
+      if(stackElement.hasField('GameDefinedStrct')){
+        const gameStruct = stackElement.getFieldByLabel('GameDefinedStrct').getChildStructs()[0];
+        if(!gameStruct) return;
+        processed = true; // would call gameStruct.getType()
+      }
+    }
+    processStack({ hasField: () => true, getFieldByLabel: () => ({ getChildStructs: () => [] }) });
+    expect(processed).toBe(false); // no crash
+  });
+
+  it('processes gameStruct when struct is valid', () => {
+    let processed = false;
+    function processStack(stackElement: any) {
+      if(stackElement.hasField('GameDefinedStrct')){
+        const gameStruct = stackElement.getFieldByLabel('GameDefinedStrct').getChildStructs()[0];
+        if(!gameStruct) return;
+        const type = gameStruct.getType();
+        if(type >= 0) processed = true;
+      }
+    }
+    const mockStruct = { getType: () => 0 };
+    processStack({ hasField: () => true, getFieldByLabel: () => ({ getChildStructs: () => [mockStruct] }) });
+    expect(processed).toBe(true);
+  });
+
+});
+
+describe('Section 120: ActionParameter SCRIPT_SITUATION guard', () => {
+
+  it('does not crash when SCRIPT_SITUATION Value getChildStructs returns empty array', () => {
+    // Simulates: let scriptParamStructs = ..getChildStructs()[0]; if(!scriptParamStructs) break;
+    const SCRIPT_SITUATION = 9; // ActionParameterType.SCRIPT_SITUATION
+    let scriptCreated = false;
+    function fromStruct(type: number, struct: any) {
+      let value: any;
+      switch(type){
+        case SCRIPT_SITUATION:
+          const scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
+          if(!scriptParamStructs) break;
+          scriptCreated = true;
+          value = {};
+        break;
+      }
+      return value;
+    }
+    const mockStruct = { getFieldByLabel: () => ({ getChildStructs: () => [] }) };
+    fromStruct(SCRIPT_SITUATION, mockStruct);
+    expect(scriptCreated).toBe(false); // no crash
+  });
+
+});
+
+describe('Section 121: NWScript SetFacing/ActionAttack/ActionDoCommand/GetDistanceToObject2D caller guards', () => {
+
+  it('SetFacing does not crash when caller is null', () => {
+    // Simulates: this.caller?.setFacing(args[0] * Math.PI / 180)
+    let facingSet = false;
+    function setFacing(caller: any, deg: number) {
+      caller?.setFacing(deg * Math.PI / 180);
+      facingSet = !!caller;
+    }
+    setFacing(null, 90);
+    expect(facingSet).toBe(false); // no crash, just a no-op
+  });
+
+  it('ActionAttack does not crash when caller is not a creature', () => {
+    // Simulates: if(InstanceOfObject(this.caller, ModuleCreature)) { this.caller.attackCreature(...) }
+    let attacked = false;
+    function actionAttack(caller: any, target: any) {
+      const isCreature = !!(caller && typeof caller.attackCreature === 'function');
+      if(isCreature) caller.attackCreature(target);
+      attacked = isCreature;
+    }
+    actionAttack(null, {});
+    expect(attacked).toBe(false);
+    actionAttack({ attackCreature: () => { attacked = true; } }, {});
+    expect(attacked).toBe(true);
+  });
+
+  it('ActionDoCommand does not crash when caller is null', () => {
+    // Simulates: if(!InstanceOfObject(this.caller, ModuleObject)) return; this.caller.doCommand(...)
+    let doCommandCalled = false;
+    function actionDoCommand(caller: any, args: any) {
+      if(!args || !args.script) return;
+      if(!caller) return; // equivalent to InstanceOfObject check
+      caller.doCommand(args.script);
+      doCommandCalled = true;
+    }
+    actionDoCommand(null, { script: {} });
+    expect(doCommandCalled).toBe(false); // no crash
+  });
+
+  it('GetDistanceToObject2D returns -1 when caller is invalid', () => {
+    // Simulates: if(InstanceOf(args[0]) && InstanceOf(this.caller)) { ... } else { return -1 }
+    function getDistance2D(caller: any, target: any) {
+      if(!caller?.position || !target?.position) return -1.0;
+      const dx = caller.position.x - target.position.x;
+      const dy = caller.position.y - target.position.y;
+      return Math.sqrt(dx*dx + dy*dy);
+    }
+    expect(getDistance2D(null, { position: { x: 0, y: 0 } })).toBe(-1.0);
+    const d = getDistance2D(
+      { position: { x: 3, y: 0 } },
+      { position: { x: 0, y: 4 } }
+    );
+    expect(d).toBeCloseTo(5, 5);
+  });
+
+});

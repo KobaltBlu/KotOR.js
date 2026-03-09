@@ -200,7 +200,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      this.caller.setFacing(args[0] * Math.PI / 180);
+      this.caller?.setFacing(args[0] * Math.PI / 180);
     }
   },
   11:{
@@ -619,7 +619,9 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        this.caller.attackCreature(args[0]);
+        if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+          (this.caller as any).attackCreature(args[0]);
+        }
       }else{
         console.error('ActionAttack target undefined')
       }
@@ -3524,10 +3526,10 @@ NWScriptDefK1.Actions = {
       }else if(this.conversation){
         GameState.CutsceneManager.startConversation(this.conversation, this.caller, args[1] as any);
         return NW_TRUE;
-      }else if(this.caller.conversation){
+      }else if(this.caller?.conversation){
         GameState.CutsceneManager.startConversation(this.caller.conversation, this.caller, args[1] as any);
         return NW_TRUE;
-      }else if(this.listenPatternSpeaker.conversation){
+      }else if(this.listenPatternSpeaker?.conversation){
         GameState.CutsceneManager.startConversation(this.listenPatternSpeaker.conversation, this.caller, this.listenPatternSpeaker as any);
         return NW_TRUE;
       }else{
@@ -4038,6 +4040,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.ACTION],
     action: function(this: NWScriptInstance, args: [any]){
       if(args[0] == null || !args[0].script) return;
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)) return;
       this.caller.doCommand( args[0].script );
     }
   },
@@ -4570,7 +4573,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.FLOAT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject) && BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
         return new THREE.Vector2( this.caller.position.x, this.caller.position.y)
           .distanceTo(
             new THREE.Vector2( args[0].position.x, args[0].position.y)

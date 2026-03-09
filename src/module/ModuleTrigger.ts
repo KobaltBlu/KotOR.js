@@ -607,12 +607,15 @@ export class ModuleTrigger extends ModuleObject {
       this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+      const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      if(swVarTableStruct?.hasField('BitArray')){
+        let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+        //console.log(localBools);
+        for(let i = 0; i < localBools.length; i++){
+          let data = localBools[i].getFieldByLabel('Variable').getValue();
+          for(let bit = 0; bit < 32; bit++){
+            this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+          }
         }
       }
     }

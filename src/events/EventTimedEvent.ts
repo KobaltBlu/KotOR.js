@@ -55,7 +55,9 @@ export class EventTimedEvent extends GameEvent {
       this.script.isStoreState = true;
 
       let stackStruct = struct.getFieldByLabel('Stack').getChildStructs()[0];
-      this.script.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
+      if(stackStruct){
+        this.script.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
+      }
       this.offset = struct.getFieldByLabel('InstructionPtr').getValue();
     }
   }

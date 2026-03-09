@@ -107,6 +107,7 @@ export class ActionParameter {
       break;
       case ActionParameterType.SCRIPT_SITUATION:
         let scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
+        if(!scriptParamStructs) break;
         let script = new GameState.NWScript();
         script.name = scriptParamStructs.getFieldByLabel('Name').getValue();
         script.init(

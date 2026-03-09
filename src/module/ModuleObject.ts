@@ -650,6 +650,7 @@ export class ModuleObject {
    * @param clearable 
    */
   actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, bPrivate = 0, nConvoType = 1, clearable = false ){
+    if(!target) return;
     const action = new GameState.ActionFactory.ActionDialogObject();
     action.setParameter(0, ActionParameterType.DWORD, target.id);
     action.setParameter(1, ActionParameterType.STRING, dialogResRef);
@@ -2131,7 +2132,7 @@ export class ModuleObject {
       }
     }
 
-    if(notifyCreatures){
+    if(notifyCreatures && GameState.module?.area){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
         const creature = GameState.module.area.creatures[i];
         if(creature != (this as any) && !creature.isDead()){

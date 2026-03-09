@@ -322,7 +322,7 @@ export class InGameOverlay extends GameMenu {
       );
 
       this.BTN_CHAR1.addEventListener('click', (e) => {
-        if(GameState.PartyManager.party[0].canLevelUp()){
+        if(GameState.PartyManager.party[0]?.canLevelUp()){
           this.manager.MenuCharacter.open();
         }else{
           this.manager.MenuEquipment.open();
@@ -333,13 +333,13 @@ export class InGameOverlay extends GameMenu {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
         switch(Math.floor(Math.random() * (4 - 1) + 1)){
           case 2:
-            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
+            GameState.PartyManager.party[0]?.playSoundSet(SSFType.SELECT_2);
           break;
           case 3:
-            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
+            GameState.PartyManager.party[0]?.playSoundSet(SSFType.SELECT_3);
           break;
           default:
-            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
+            GameState.PartyManager.party[0]?.playSoundSet(SSFType.SELECT_1);
           break;
         }
       });
@@ -348,13 +348,13 @@ export class InGameOverlay extends GameMenu {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
         switch(Math.floor(Math.random() * (4 - 1) + 1)){
           case 2:
-            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
+            GameState.PartyManager.party[0]?.playSoundSet(SSFType.SELECT_2);
           break;
           case 3:
-            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
+            GameState.PartyManager.party[0]?.playSoundSet(SSFType.SELECT_3);
           break;
           default:
-            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
+            GameState.PartyManager.party[0]?.playSoundSet(SSFType.SELECT_1);
           break;
         }
       });
@@ -529,7 +529,8 @@ export class InGameOverlay extends GameMenu {
         switch (nth) {
         case 0:
           if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP1').pulsing = true;
+            const lbl1 = this.getControlByName('LBL_LEVELUP1');
+            if(lbl1) lbl1.pulsing = true;
             this.getControlByName('LBL_LEVELUP1')?.show();
           } else {
             this.getControlByName('LBL_LEVELUP1')?.hide();
@@ -537,7 +538,8 @@ export class InGameOverlay extends GameMenu {
           break;
         case 1:
           if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP3').pulsing = true;
+            const lbl3 = this.getControlByName('LBL_LEVELUP3');
+            if(lbl3) lbl3.pulsing = true;
             this.getControlByName('LBL_LEVELUP3')?.show();
           } else {
             this.getControlByName('LBL_LEVELUP3')?.hide();
@@ -545,7 +547,8 @@ export class InGameOverlay extends GameMenu {
           break;
         case 2:
           if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP2').pulsing = true;
+            const lbl2 = this.getControlByName('LBL_LEVELUP2');
+            if(lbl2) lbl2.pulsing = true;
             this.getControlByName('LBL_LEVELUP2')?.show();
           } else {
             this.getControlByName('LBL_LEVELUP2')?.hide();

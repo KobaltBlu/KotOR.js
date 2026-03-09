@@ -248,6 +248,7 @@ export class NWScriptStack {
   static FromActionStruct = function( struct: GFFStruct, object_self?: any ){
 
     let stack = new NWScriptStack();
+    if(!struct) return stack;
   
     stack.basePointer = struct.getFieldByLabel('BasePointer').getValue() * 4;
     stack.pointer = struct.getFieldByLabel('StackPointer').getValue() * 4;
@@ -287,6 +288,7 @@ export class NWScriptStack {
           }
         }else if(stackElement.hasField('GameDefinedStrct')){
           let gameStruct = stackElement.getFieldByLabel('GameDefinedStrct').getChildStructs()[0];
+          if(!gameStruct) break;
   
           switch(gameStruct.getType()){
             case 0: //Effect

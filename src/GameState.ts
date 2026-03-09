@@ -405,6 +405,7 @@ export class GameState implements EngineContext {
       case EngineDebugType.DOOR_WALKMESH:
       case EngineDebugType.PLACEABLE_WALKMESH:
         {
+          if(!GameState.module?.area) break;
           const areWalkmeshesVisible = GameState.debug[EngineDebugType.ROOM_WALKMESH] || GameState.debug[EngineDebugType.DOOR_WALKMESH] || GameState.debug[EngineDebugType.PLACEABLE_WALKMESH];
           GameState.group.room_walkmeshes.visible = areWalkmeshesVisible;
           for(let i = 0; i < GameState.module.area.rooms.length; i++){
@@ -969,7 +970,7 @@ export class GameState implements EngineContext {
 
   public static getCurrentPlayer(): ModuleCreature {
     if(GameState.Mode == EngineMode.MINIGAME){
-      return GameState.module.area.miniGame.player as any;
+      return (GameState.module?.area?.miniGame?.player as any) ?? GameState.PartyManager.Player;
     }
     let p = GameState.PartyManager.party[0];
     return p ? p : GameState.PartyManager.Player;

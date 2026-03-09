@@ -933,7 +933,7 @@ export class ModuleArea extends ModuleObject {
     this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
     this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
 
-    let map = this.are.getFieldByLabel('Map').getChildStructs()[0];
+    let map = this.are.getFieldByLabel('Map')?.getChildStructs()[0];
     if(map){
       this.areaMap = AreaMap.FromStruct(map);
     }
@@ -1037,12 +1037,13 @@ export class ModuleArea extends ModuleObject {
     const triggers = this.git.getFieldByLabel('TriggerList');
     const waypoints = this.git.getFieldByLabel('WaypointList');
 
-    const areaPropsField = areaProps.getChildStructs()[0].getFields();
+    const areaPropsStruct = areaProps.getChildStructs()[0];
+    const areaPropsField = areaPropsStruct ? areaPropsStruct.getFields() : [];
     this.audio.ambient.day = this.git.getFieldByLabel('AmbientSndDay', areaPropsField).getValue();
     this.audio.ambient.dayVolume = this.git.getFieldByLabel('AmbientSndDayVol', areaPropsField).getValue();
     this.audio.ambient.night = this.git.getFieldByLabel('AmbientSndNight', areaPropsField).getValue();
     this.audio.ambient.nightVolume = this.git.getFieldByLabel('AmbientSndNitVol', areaPropsField).getValue();
-    if(areaProps.getChildStructs()[0].hasField('EnvAudio')){
+    if(areaPropsStruct?.hasField('EnvAudio')){
       this.audio.environmentAudio = this.git.getFieldByLabel('EnvAudio', areaPropsField).getValue();
     }else{
       this.audio.environmentAudio = -1;
@@ -1180,12 +1181,15 @@ export class ModuleArea extends ModuleObject {
 
     if(this.git.RootNode.hasField('SWVarTable')){
       console.log("SWVarTable", this.git);
-      let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+      const swVarTableStruct = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      if(swVarTableStruct?.hasField('BitArray')){
+        let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+        //console.log(localBools);
+        for(let i = 0; i < localBools.length; i++){
+          let data = localBools[i].getFieldByLabel('Variable').getValue();
+          for(let bit = 0; bit < 32; bit++){
+            this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+          }
         }
       }
     }

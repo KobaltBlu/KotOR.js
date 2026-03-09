@@ -4027,19 +4027,24 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('SWVarTable')){
         const swVarStructs = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs();
         if(swVarStructs && swVarStructs.length > 0){
-          let localBools = swVarStructs[0].getFieldByLabel('BitArray').getChildStructs();
-          //console.log(localBools);
-          for(let i = 0; i < localBools.length; i++){
-            let data = localBools[i].getFieldByLabel('Variable').getValue();
-            for(let bit = 0; bit < 32; bit++){
-              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+          const swVarStruct = swVarStructs[0];
+          if(swVarStruct?.hasField('BitArray')){
+            let localBools = swVarStruct.getFieldByLabel('BitArray').getChildStructs();
+            //console.log(localBools);
+            for(let i = 0; i < localBools.length; i++){
+              let data = localBools[i].getFieldByLabel('Variable').getValue();
+              for(let bit = 0; bit < 32; bit++){
+                this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+              }
             }
           }
-          let localNumbers = swVarStructs[0].getFieldByLabel('ByteArray').getChildStructs();
-          //console.log(localNumbers);
-          for(let i = 0; i < localNumbers.length; i++){
-            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
-            this.setLocalNumber(i, data);
+          if(swVarStruct?.hasField('ByteArray')){
+            let localNumbers = swVarStruct.getFieldByLabel('ByteArray').getChildStructs();
+            //console.log(localNumbers);
+            for(let i = 0; i < localNumbers.length; i++){
+              let data = localNumbers[i].getFieldByLabel('Variable').getValue();
+              this.setLocalNumber(i, data);
+            }
           }
         }
       }

@@ -164,6 +164,7 @@ export class PartyManager {
 
     if(gff.RootNode.hasField('GlxyMap')){
       let GlxyMap = gff.getFieldByLabel('GlxyMap').getChildStructs()[0];
+      if(!GlxyMap) return;
       
       let planetCount = GlxyMap.getFieldByLabel('GlxyMapNumPnts').getValue();
       let planetBits = GlxyMap.getFieldByLabel('GlxyMapPlntMsk').getValue(); //Max 32?

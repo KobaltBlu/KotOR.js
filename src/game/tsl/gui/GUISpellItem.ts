@@ -52,7 +52,7 @@ export class GUISpellItem extends GUIProtoItem {
           }
         }*/
 
-        let hasSpell = GameState.PartyManager.party[0].getHasSpell(spell.__index);
+        let hasSpell = GameState.PartyManager.party[0]?.getHasSpell(spell.__index);
 
         console.log(spell.constant, hasPrereq);
 
