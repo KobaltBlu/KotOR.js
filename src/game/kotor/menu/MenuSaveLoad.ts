@@ -199,12 +199,13 @@ export class MenuSaveLoad extends GameMenu {
       this.LB_GAMES.selectItem(this.selected);
 
       if (!(this.selected instanceof NewSaveItem)) {
-        this.selected.getThumbnail().then((t: OdysseyTexture) => {
-          this.LBL_SCREENSHOT.setFillTexture(t);
+        const activeSave = this.selected;
+        activeSave.getThumbnail().then((t: OdysseyTexture) => {
+          if(this.selected === activeSave) this.LBL_SCREENSHOT.setFillTexture(t);
         });
-        this.selected.getPortrait(0).then(t => this.LBL_PM1.setFillTexture(t));
-        this.selected.getPortrait(1).then(t => this.LBL_PM2.setFillTexture(t));
-        this.selected.getPortrait(2).then(t => this.LBL_PM3.setFillTexture(t));
+        activeSave.getPortrait(0).then(t => { if(this.selected === activeSave) this.LBL_PM1.setFillTexture(t); });
+        activeSave.getPortrait(1).then(t => { if(this.selected === activeSave) this.LBL_PM2.setFillTexture(t); });
+        activeSave.getPortrait(2).then(t => { if(this.selected === activeSave) this.LBL_PM3.setFillTexture(t); });
 
         const area = this.selected.getAreaName().split(" - ");
         this.LBL_PLANETNAME.setText(area.length === 2 ? area[0] : "");

@@ -1003,7 +1003,7 @@ export class SaveGame {
    * // GLOBALVARS.res file created with current global variables
    */
   static async ExportGlobalVars( directory: string ){
-    console.log('ExportGlobalVars')
+    if(!GameState.GlobalVariableManager?.Globals){ return; }
     let gvt = new GFFObject();
     gvt.FileType = 'GVT ';
 

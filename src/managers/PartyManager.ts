@@ -943,17 +943,15 @@ export class PartyManager {
    * @returns number
    */
   static GetCreatureStartingPartyIndex(creature: ModuleCreature){
-
-    if(PartyManager.PortraitOrder[0]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
-      return 0
-    }else if(PartyManager.PortraitOrder[1]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
-      return 1;
-    }else if(PartyManager.PortraitOrder[2]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
-      return 2
+    const portrait = creature.getPortraitResRef().toLowerCase();
+    for(let i = 0; i < 3; i++){
+      if(PartyManager.PortraitOrder[i]?.toLowerCase() === portrait) return i;
     }
-
-    return PartyManager.party.length;
-
+    // Fallback: find the first empty slot in indices 0-2
+    for(let i = 0; i < 3; i++){
+      if(!PartyManager.party[i]) return i;
+    }
+    return 2; // last valid slot
   }
 
   /**
@@ -962,42 +960,42 @@ export class PartyManager {
    * @returns void
    */
   static async LoadPartyMember(nIdx: number = 0){
-    const npc = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID];
+    if(nIdx < 0 || nIdx > 1){
+      return;
+    }
+    const member = PartyManager.CurrentMembers[nIdx];
+    if(!member){ return; }
+    const npc = PartyManager.NPCS[member.memberID];
+    if(!npc || !npc.template){ return; }
     const template = npc.template;
     template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );
     const partyMember = new ModuleCreature(template);
-
-    if(nIdx < 0 || nIdx > 1){
-      console.log('LoadPartyMember', 'Wrong index', nIdx, npc, partyMember);
-      return;
-    }
 
     let currentSlot: ModuleCreature;
 
     try{
       if(!(currentSlot instanceof ModuleCreature)){
         partyMember.isPM = true;
-        partyMember.npcId = PartyManager.CurrentMembers[nIdx].memberID;
+        partyMember.npcId = member.memberID;
         partyMember.load();
         partyMember.clearAllActions();
-        //PartyManager.party[nIdx+1] = partyMember;
 
-        /*if(PartyManager.CurrentMembers[nIdx].isLeader){
-          PartyManager.party.unshift(PartyManager.party.splice(nIdx+1, 1)[0]);
-        }*/
         PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
         PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
         let spawn = PartyManager.GetSpawnLocation(partyMember);
-        partyMember.position.copy(spawn.position);
-        partyMember.setFacing(spawn.getFacing(), true);
-        
+        if(spawn){
+          partyMember.position.copy(spawn.position);
+          partyMember.setFacing(spawn.getFacing(), true);
+        }
+
         const model = await partyMember.loadModel();
         model.userData.moduleObject = partyMember;
 
-        partyMember.position.copy(spawn.position);
-        partyMember.setFacing(spawn.getFacing(), true);
-        //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
-  
+        if(spawn){
+          partyMember.position.copy(spawn.position);
+          partyMember.setFacing(spawn.getFacing(), true);
+        }
+
         model.hasCollision = true;
         GameState.group.party.add( partyMember.container );
 
@@ -1008,9 +1006,10 @@ export class PartyManager {
         partyMember.actionQueue.add(followAction);
       }else{
         const spawn = PartyManager.GetSpawnLocation(currentSlot);
-        currentSlot.position.copy(spawn.position);
-        currentSlot.setFacing(spawn.getFacing(), true);
-        //currentSlot.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
+        if(spawn){
+          currentSlot.position.copy(spawn.position);
+          currentSlot.setFacing(spawn.getFacing(), true);
+        }
       }
     }catch(e){
       console.error(e);
@@ -1071,9 +1070,6 @@ export class PartyManager {
           creature.getZOrientation()
         );
       }else if( GameState.module?.area?.transWP ){
-        if( GameState.module?.area?.transWP ){
-          //console.log('TransWP - PM', GameState.module?.area?.transWP);
-        }
         let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
         let spawnLoc = GameState.module?.area?.getSpawnLocation();
         if(!spawnLoc) return undefined;
@@ -1082,30 +1078,32 @@ export class PartyManager {
           case 0:
             return new EngineLocation(
               spawnLoc.position.x,
-              spawnLoc.position.y, 
+              spawnLoc.position.y,
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z
             );
           case 1:
             return new EngineLocation(
-              spawnLoc.position.x + 1.5 * Math.cos(facing), 
-              spawnLoc.position.y + 1.5 * Math.sin(facing), 
+              spawnLoc.position.x + 1.5 * Math.cos(facing),
+              spawnLoc.position.y + 1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z
             );
           case 2:
             return new EngineLocation(
-              spawnLoc.position.x + -1.5 * Math.cos(facing), 
-              spawnLoc.position.y + -1.5 * Math.sin(facing), 
+              spawnLoc.position.x + -1.5 * Math.cos(facing),
+              spawnLoc.position.y + -1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z
             );
+          default:
+            return spawnLoc;
         }
       }else{
         let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
@@ -1116,34 +1114,36 @@ export class PartyManager {
           case 0:
             return new EngineLocation(
               spawnLoc.position.x,
-              spawnLoc.position.y, 
+              spawnLoc.position.y,
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z,
             );
           case 1:
             return new EngineLocation(
-              spawnLoc.position.x + 1.5 * Math.cos(facing), 
-              spawnLoc.position.y + 1.5 * Math.sin(facing), 
+              spawnLoc.position.x + 1.5 * Math.cos(facing),
+              spawnLoc.position.y + 1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z,
             );
           case 2:
             return new EngineLocation(
-              spawnLoc.position.x + -1.5 * Math.cos(facing), 
-              spawnLoc.position.y + -1.5 * Math.sin(facing), 
+              spawnLoc.position.x + -1.5 * Math.cos(facing),
+              spawnLoc.position.y + -1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z,
             );
+          default:
+            return spawnLoc;
         }
       }
     }
-    
+
     return GameState.module?.area?.getSpawnLocation();
 
   }
