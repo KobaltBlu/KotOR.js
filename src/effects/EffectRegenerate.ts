@@ -31,13 +31,14 @@ export class EffectRegenerate extends GameEffect {
       
     super.onApply();
 
-    this.setInt(2, GameState.module.timeManager.pauseDay);
-    this.setInt(3, GameState.module.timeManager.pauseTime);
+    this.setInt(2, GameState.module?.timeManager.pauseDay ?? 0);
+    this.setInt(3, GameState.module?.timeManager.pauseTime ?? 0);
   }
 
   update(delta = 0){
     super.update(delta);
 
+    if(!GameState.module) return;
     const milliseconds_elapsed = GameState.module.timeManager.getMilisecondsElapsed(this.getInt(2), this.getInt(3));
     if(milliseconds_elapsed >= this.getInt(1) * 1000){
 

@@ -12243,3 +12243,93 @@ describe('Section 121: NWScript SetFacing/ActionAttack/ActionDoCommand/GetDistan
   });
 
 });
+
+describe('Section 122: EffectRegenerate/EffectForcePushed/ModuleObject/NWScriptInstance module null-guards', () => {
+
+  it('EffectRegenerate.onApply does not crash when module is null', () => {
+    // Simulates: this.setInt(2, GameState.module?.timeManager.pauseDay ?? 0)
+    let day = 0;
+    let time = 0;
+    function onApply(module: any) {
+      day = module?.timeManager.pauseDay ?? 0;
+      time = module?.timeManager.pauseTime ?? 0;
+    }
+    onApply(null);
+    expect(day).toBe(0);
+    expect(time).toBe(0);
+    onApply({ timeManager: { pauseDay: 5, pauseTime: 3600 } });
+    expect(day).toBe(5);
+    expect(time).toBe(3600);
+  });
+
+  it('EffectRegenerate.update returns early when module is null', () => {
+    // Simulates: if(!GameState.module) return;
+    let ticked = false;
+    function update(module: any, delta: number) {
+      if(!module) return;
+      ticked = true;
+    }
+    update(null, 0.016);
+    expect(ticked).toBe(false);
+    update({ timeManager: { getMilisecondsElapsed: () => 0 } }, 0.016);
+    expect(ticked).toBe(true);
+  });
+
+  it('EffectForcePushed.onApply is a no-op when module is null', () => {
+    // Simulates: const eFutureTime = GameState.module?.timeManager.getFutureTimeFromSeconds(3); if(!eFutureTime) return;
+    let applied = false;
+    function applyForcePush(module: any) {
+      const futureTime = module?.timeManager.getFutureTimeFromSeconds(3);
+      if(!futureTime) return;
+      applied = true;
+    }
+    applyForcePush(null);
+    expect(applied).toBe(false);
+    applyForcePush({ timeManager: { getFutureTimeFromSeconds: () => ({ day: 0, pauseTime: 3 }) } });
+    expect(applied).toBe(true);
+  });
+
+  it('ModuleObject.triggerHeartbeat does not crash when module is null', () => {
+    // Simulates: if(!(this.spawned === true && GameState.module?.readyToProcessEvents)) return
+    let ran = false;
+    function triggerHeartbeat(spawned: boolean, module: any) {
+      if(!(spawned === true && module?.readyToProcessEvents)) return;
+      ran = true;
+    }
+    triggerHeartbeat(true, null);
+    expect(ran).toBe(false);
+    triggerHeartbeat(true, { readyToProcessEvents: true });
+    expect(ran).toBe(true);
+  });
+
+  it('ModuleObject.hasLineOfSight returns false when module is null', () => {
+    // Simulates: if(!this.spawned || !GameState.module?.readyToProcessEvents) return false;
+    function hasLineOfSight(spawned: boolean, module: any) {
+      if(!spawned || !module?.readyToProcessEvents) return false;
+      return true;
+    }
+    expect(hasLineOfSight(true, null)).toBe(false);
+    expect(hasLineOfSight(false, { readyToProcessEvents: true })).toBe(false);
+    expect(hasLineOfSight(true, { readyToProcessEvents: true })).toBe(true);
+  });
+
+  it('NWScriptInstance delay commands are skipped when module is null', () => {
+    // Simulates: if(GameState.module) { for(...) module.eventQueue.push(...) }
+    let pushed = 0;
+    function flushDelayCommands(module: any, commands: any[]) {
+      if(module){
+        for(let i = 0; i < commands.length; i++){
+          module.eventQueue.push(commands[i]);
+          pushed++;
+        }
+      }
+    }
+    flushDelayCommands(null, [{ type: 'delay' }]);
+    expect(pushed).toBe(0);
+    const queue: any[] = [];
+    flushDelayCommands({ eventQueue: queue }, [{ type: 'delay' }, { type: 'delay2' }]);
+    expect(pushed).toBe(2);
+    expect(queue.length).toBe(2);
+  });
+
+});

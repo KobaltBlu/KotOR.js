@@ -1620,7 +1620,7 @@ export class ModuleObject {
    */
   triggerHeartbeat(){
     //Only allow the heartbeat script to run after the onspawn is called
-    if(!(this.spawned === true && GameState.module.readyToProcessEvents)){
+    if(!(this.spawned === true && GameState.module?.readyToProcessEvents)){
       return;
     }
 
@@ -3295,7 +3295,7 @@ export class ModuleObject {
    * @returns 
    */
   hasLineOfSight(oTarget: ModuleObject, max_distance = 30){
-    if(!this.spawned || !GameState.module.readyToProcessEvents)
+    if(!this.spawned || !GameState.module?.readyToProcessEvents)
       return false;
     
     if(!(oTarget instanceof ModuleObject)){

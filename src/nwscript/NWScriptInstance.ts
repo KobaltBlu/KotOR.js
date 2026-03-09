@@ -437,8 +437,10 @@ export class NWScriptInstance {
     /**
      * Add DelayCommand actions to the module's EventQueue
      */
-    for(let i = 0, len = this.delayCommands.length; i < len; i++){
-      GameState.module.eventQueue.push(this.delayCommands[i]);
+    if(GameState.module){
+      for(let i = 0, len = this.delayCommands.length; i < len; i++){
+        GameState.module.eventQueue.push(this.delayCommands[i]);
+      }
     }
 
     /**
