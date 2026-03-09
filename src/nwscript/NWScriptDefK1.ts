@@ -147,7 +147,8 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.FLOAT, NWScriptDataType.ACTION],
     action: function(this: NWScriptInstance, args: [number, any]){
       if(args[1] == null || !args[1].script) return;
-      let futureTime = GameState.module?.timeManager?.getFutureTimeFromSeconds(args[0])
+      let futureTime = GameState.module?.timeManager?.getFutureTimeFromSeconds(args[0]);
+      if(!futureTime) return;
       let timedEvent = new GameState.GameEventFactory.EventTimedEvent();
       timedEvent.setCaller(this.caller);
       timedEvent.setObject(this.caller);
@@ -2304,6 +2305,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(!args[0] || !args[1]) return NW_FALSE;
       return args[1].resistForce(args[0]);
     }
   },
@@ -2969,8 +2971,10 @@ NWScriptDefK1.Actions = {
           args[1].setDuration(args[3]);
           if(args[0] == GameEffectDurationType.TEMPORARY){
             const future = GameState.module?.timeManager?.getFutureTimeFromSeconds(args[3]);
-            args[1].setExpireDay(future.pauseDay);
-            args[1].setExpireTime(future.pauseTime);
+            if(future){
+              args[1].setExpireDay(future.pauseDay);
+              args[1].setExpireTime(future.pauseTime);
+            }
           }
           // console.log('ApplyEffectToObject', args[2], args[1], args[0], args[3]);
           args[2].addEffect(args[1], args[0], args[3]);
@@ -3204,7 +3208,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.STRING,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      return GameState.TLKManager.GetStringById( args[0] ).Value;
+      return GameState.TLKManager.GetStringById( args[0] )?.Value ?? '';
     }
   },
   240:{
@@ -6896,7 +6900,9 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
-        this.caller.attackCreature(args[0], undefined, true, args[3], GameState.TwoDAManager.datatables.get('animations').rows[args[1]].name, args[2]);
+        const animTable = GameState.TwoDAManager.datatables.get('animations');
+        const animRow = animTable?.rows[args[1]];
+        this.caller.attackCreature(args[0], undefined, true, args[3], animRow?.name, args[2]);
       }else{
         console.error('attackCreature', args[0]);
       }
@@ -7831,6 +7837,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleCreature]){
+      if(!args[0]) return NW_FALSE;
       return ( GameState.PartyManager.party.indexOf(args[0]) >= 0 || args[0] == GameState.PartyManager.Player ? NW_TRUE : NW_FALSE );
     }
   },
@@ -9338,10 +9345,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature))) return NW_FALSE;
-      if(args[0]){
-        return args[0].min1HP ? NW_TRUE : NW_FALSE;
-      }
-      return 0;
+      return args[0].min1HP ? NW_TRUE : NW_FALSE;
     }
   },
   716:{

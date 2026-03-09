@@ -254,7 +254,7 @@ export class MenuEquipment extends GameMenu {
       let inv = GameState.InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
       let currentPC = GameState.PartyManager.party[0];
       this.LB_ITEMS.addItem(new GUIItemNone());
-      if(currentPC.GetItemInSlot(slot)){
+      if(currentPC && currentPC.GetItemInSlot(slot)){
         this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(slot)));
       }
       this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);
@@ -332,7 +332,7 @@ export class MenuEquipment extends GameMenu {
     if (this.slot) {
       const inv = GameState.InventoryManager.getInventory(this.slot, currentPC);
       this.LB_ITEMS.addItem(new GUIItemNone());
-      if(currentPC.GetItemInSlot(this.slot)){
+      if(currentPC && currentPC.GetItemInSlot(this.slot)){
         this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)))
       }
       this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);

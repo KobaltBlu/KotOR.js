@@ -846,6 +846,7 @@ export class ModuleCreature extends ModuleObject {
     if(!(this.action)){
       const currentPlayer = GameState.getCurrentPlayer();
       if(
+        currentPlayer &&
         !this.combatData.combatState && 
         this.isPartyMember() && 
         this != currentPlayer && 
@@ -2225,14 +2226,14 @@ export class ModuleCreature extends ModuleObject {
     }
 
     if(this.isHostile(callee) && !this.isDead()){
-      GameState.getCurrentPlayer().attackCreature(this, undefined);
+      GameState.getCurrentPlayer()?.attackCreature(this, undefined);
     }else if(this.isHostile(callee) && this.isDead()){
       this.clearAllActions();
-      GameState.getCurrentPlayer().actionUseObject(this);
+      GameState.getCurrentPlayer()?.actionUseObject(this);
     }else if(!this.isDead()){
       this.clearAllActions();
       if(this.getConversation() && this.getConversation().resref){
-        GameState.getCurrentPlayer().actionDialogObject(this, this.getConversation().resref, false, undefined, undefined, true);
+        GameState.getCurrentPlayer()?.actionDialogObject(this, this.getConversation().resref, false, undefined, undefined, true);
       }
     }
     
@@ -3054,7 +3055,7 @@ export class ModuleCreature extends ModuleObject {
     this.currentHitPoints = hp;
   }
 
-
+  getBaseAttackBonus(){
     let bab = 0;
     for(let i = 0, len = this.classes.length; i < len; i++){
       bab += this.classes[i].getBaseAttackBonus();

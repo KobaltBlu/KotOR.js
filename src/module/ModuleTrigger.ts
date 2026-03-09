@@ -279,6 +279,7 @@ export class ModuleTrigger extends ModuleObject {
       }
     }else{
       //Check Creatures
+      if(!GameState.module?.area) return;
       const creatureLen = GameState.module.area.creatures.length;
       for(let i = 0; i < creatureLen; i++){
         const creature = GameState.module.area.creatures[i];

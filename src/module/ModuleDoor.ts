@@ -366,7 +366,9 @@ export class ModuleDoor extends ModuleObject {
   }
 
   onClick(callee: ModuleObject){
-    GameState.getCurrentPlayer().actionOpenDoor( this );
+    const player = GameState.getCurrentPlayer();
+    if(!player) return;
+    player.actionOpenDoor( this );
   }
 
   use(object: ModuleObject){

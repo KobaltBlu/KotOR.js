@@ -84,9 +84,9 @@ export class ActionCombat extends Action {
         spellAction.setParameter(3, ActionParameterType.INT, 0);
         spellAction.setParameter(4, ActionParameterType.INT, 0);
         spellAction.setParameter(5, ActionParameterType.DWORD, combatAction.target?.id || ModuleObjectConstant.OBJECT_INVALID); //Target Object
-        spellAction.setParameter(6, ActionParameterType.FLOAT, combatAction.target?.position.x || 0); //Target X
-        spellAction.setParameter(7, ActionParameterType.FLOAT, combatAction.target?.position.y || 0); //Target Y
-        spellAction.setParameter(8, ActionParameterType.FLOAT, combatAction.target?.position.z || 0); //Target Z
+        spellAction.setParameter(6, ActionParameterType.FLOAT, combatAction.target?.position?.x || 0); //Target X
+        spellAction.setParameter(7, ActionParameterType.FLOAT, combatAction.target?.position?.y || 0); //Target Y
+        spellAction.setParameter(8, ActionParameterType.FLOAT, combatAction.target?.position?.z || 0); //Target Z
         spellAction.setParameter(9, ActionParameterType.INT, combatAction.projectilePath); //ProjectilePath
         spellAction.setParameter(10, ActionParameterType.INT, -1);
         spellAction.setParameter(11, ActionParameterType.INT, combatAction.overrideSpell ? combatAction.overrideSpell.id : -1);

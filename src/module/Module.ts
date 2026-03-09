@@ -251,7 +251,7 @@ export class Module {
     this.areaList = [];
     //KOTOR modules should only ever have one area. But just incase lets loop through the list
     for(let i = 0; i < areaCount; i++){
-      let Mod_Area = areaList.childStructs[0];
+      let Mod_Area = areaList.childStructs[i];
       const area: IAreaListItem = {} as any;
 
       if(Mod_Area.hasField('Area_Name'))

@@ -452,13 +452,14 @@ export class CombatRound {
       }
     }
 
+    if(!combatAction.target) return;
     combatAction.target.combatData.lastAttacker = creature;
     creature.combatData.lastAttackResult = combatAction.attackResult;
     combatAction.target.onAttacked(combatAction.actionType);
 
     this.calculateRoundAnimations(creature, combatAction);
 
-    let attackAnimation = creature.model.odysseyAnimationMap.get(combatAction.animationName.toLowerCase().trim());
+    let attackAnimation = creature.model?.odysseyAnimationMap?.get(combatAction.animationName.toLowerCase().trim());
     let attackDamageDelay = attackAnimation?.getDamageDelay() || 0;
 
     if(combatAction.isCutsceneAttack){
@@ -643,6 +644,7 @@ export class CombatRound {
     const isCritical = this.isCritical(attackRoll, weapon, combatAction.feat);
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
     const attack = this.attackList[this.currentAttack];
+    if(!attack) return;  // No more attack slots (guard against overflow past 5)
 
     // Determine sneak attack eligibility: attacker has sneak feat AND target is
     // flatfooted (not yet in combat).

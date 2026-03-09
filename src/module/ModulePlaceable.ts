@@ -511,7 +511,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   lock(object: ModuleObject){
-    if(!this.locked){ return; }
+    if(this.locked){ return; }
     this.locked = true;
     
     const instance = this.scripts[ModuleObjectScript.PlaceableOnLock];

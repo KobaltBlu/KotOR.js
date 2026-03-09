@@ -116,7 +116,7 @@ export class ModuleArea extends ModuleObject {
   triggers: ModuleTrigger[] = [];
   waypoints: ModuleWaypoint[] = [];
   areaOfEffects: ModuleAreaOfEffect[] = [];
-  miniGame: ModuleMiniGame;
+  miniGame: ModuleMiniGame | undefined;
   walkmesh_rooms: ModuleRoom[] = [];
 
   scriptResRefs: Map<AreaScriptKeys, string> = new Map<AreaScriptKeys, string>();
@@ -426,7 +426,7 @@ export class ModuleArea extends ModuleObject {
 
     //update party
     for(let i = 0; i < partyCount; i++){
-      GameState.PartyManager.party[i].update(delta);
+      GameState.PartyManager.party[i]?.update(delta);
     }
     
     //update creatures
@@ -446,11 +446,12 @@ export class ModuleArea extends ModuleObject {
 
     //unset party controlled
     for(let i = 0; i < partyCount; i++){
-      GameState.PartyManager.party[i].controlled = false;
+      const member = GameState.PartyManager.party[i];
+      if(member) member.controlled = false;
     }
 
     if(GameState.Mode == EngineMode.MINIGAME){
-      this.miniGame.tick(delta);
+      this.miniGame?.tick(delta);
     }
 
     //update rooms
@@ -538,7 +539,7 @@ export class ModuleArea extends ModuleObject {
 
     //update party
     for(let i = 0; i < partyCount; i++){
-      GameState.PartyManager.party[i].updatePaused(delta);
+      GameState.PartyManager.party[i]?.updatePaused(delta);
     }
     
     //update creatures
@@ -557,7 +558,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     if(GameState.Mode == EngineMode.MINIGAME){
-      this.miniGame.tickPaused(delta);
+      this.miniGame?.tickPaused(delta);
     }
 
     //update rooms
@@ -1053,6 +1054,14 @@ export class ModuleArea extends ModuleObject {
     this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
     AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
 
+    // Load dynamic area state from save
+    const stealthXPCurrentField = this.git.getFieldByLabel('StealthXPCurrent', areaPropsField);
+    if(stealthXPCurrentField) this.stealthXP = stealthXPCurrentField.getValue();
+    const restrictModeField = this.git.getFieldByLabel('RestrictMode', areaPropsField);
+    if(restrictModeField) this.restrictMode = restrictModeField.getValue();
+    const unescapableField = this.git.getFieldByLabel('Unescapable', areaPropsField);
+    if(unescapableField) this.unescapable = unescapableField.getValue() ? true : false;
+
     //Cameras
     if(cameras){
       for(let i = 0; i < cameras.childStructs.length; i++){
@@ -1397,7 +1406,7 @@ export class ModuleArea extends ModuleObject {
 
       GameState.MenuManager.LoadScreen.setProgress(100);
 
-      FollowerCamera.facing = Utility.NormalizeRadian(GameState.PartyManager.party[0].getFacing() - Math.PI/2);
+      FollowerCamera.facing = Utility.NormalizeRadian((GameState.PartyManager.party[0]?.getFacing() ?? 0) - Math.PI/2);
 
       try { await this.weather.load(); } catch(e){ console.error(e); }
 
@@ -1596,7 +1605,9 @@ export class ModuleArea extends ModuleObject {
         try{
           const model = await GameState.PartyManager.Player.loadModel();
           GameState.PartyManager.Player.model = model;
-          GameState.PartyManager.Player.model.hasCollision = true;
+          if(model){
+            GameState.PartyManager.Player.model.hasCollision = true;
+          }
           //let spawnLoc = this.getSpawnLocation();
           let spawnLoc = GameState.PartyManager.GetSpawnLocation(GameState.PartyManager.Player);
           GameState.PartyManager.Player.position.copy(spawnLoc.position);
@@ -1746,6 +1757,7 @@ export class ModuleArea extends ModuleObject {
         door.rotation.set(0, 0, door.getBearing());
         const model = await door.loadModel();
         door.computeBoundingBox();
+        if(!model) continue;
         const dwk = await door.loadWalkmesh(model.name);
 
         try{
@@ -1876,7 +1888,7 @@ export class ModuleArea extends ModuleObject {
           }
         }
         wpObj.userData.area = _currentRoom;
-        this.areaMap.addMapNote(waypnt);
+        this.areaMap?.addMapNote(waypnt);
       }catch(e){
         console.error('loadWaypoints error', e);
       }
@@ -2246,9 +2258,9 @@ export class ModuleArea extends ModuleObject {
     struct.addField( new GFFField(GFFDataType.INT, 'MusicNight') ).setValue(this.audio.music.night);
 
     struct.addField( new GFFField(GFFDataType.BYTE, 'RestrictMode') ).setValue(this.restrictMode ? 1 : 0);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPCurrent') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.BYTE, 'StealthXPLoss') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPMax') ).setValue(0);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPCurrent') ).setValue(this.stealthXP);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'StealthXPLoss') ).setValue(this.stealthXPLoss);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPMax') ).setValue(this.stealthXPMax);
     struct.addField( new GFFField(GFFDataType.DWORD, 'SunFogColor') ).setValue(0);
     
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(0);

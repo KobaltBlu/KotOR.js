@@ -63,6 +63,8 @@ export class ActionDialogObject extends Action {
       return ActionStatus.COMPLETE;
     }
 
+    if(!this.target) return ActionStatus.FAILED;
+
     let distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 4.5 && !ignoreStartRange){
       // this.owner.openSpot = undefined;

@@ -79,6 +79,9 @@ export class ActionMoveToPoint extends Action {
       this.calculatePath();
     }
 
+    // If path calculation failed or area has no path, continue waiting
+    if(!this.computedPath) return ActionStatus.IN_PROGRESS;
+
     // this.computedPath = this.owner.getComputedPath();
 
     const distance = Utility.Distance2D(this.owner.position, this.target_position);

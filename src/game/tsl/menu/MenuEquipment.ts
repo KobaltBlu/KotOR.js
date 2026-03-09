@@ -202,6 +202,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         if(this.selectedItem){
           //console.log('selectedItem', this.selectedItem, this.slot, );
           let currentPC = GameState.PartyManager.party[0];
+          if(!currentPC) return;
           currentPC.equipItem(this.slot, this.selectedItem).then( () => {
             this.updateSlotIcons();
           });

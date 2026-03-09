@@ -132,7 +132,7 @@ export class MenuMap extends GameMenu {
       this.onOpenScript.run();
 
     this.LBL_MapNote.setText('');
-    this.miniMap.mapNoteSelected = this.miniMap.areaMap.getRevealedMapNotes()[0];
+    this.miniMap.mapNoteSelected = this.miniMap.areaMap?.getRevealedMapNotes()[0];
     if(this.miniMap.mapNoteSelected){
       this.LBL_MapNote.setText(this.miniMap.mapNoteSelected.mapNote.getValue());
     }

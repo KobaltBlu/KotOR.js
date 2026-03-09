@@ -110,11 +110,13 @@ export class MenuStore extends GameMenu {
 
   getItemSellPrice(item: ModuleItem) {
     // Sell price: the store pays (markDown % of base cost) when player sells
+    if(!this.storeObject) return Math.floor(item.cost);
     return Math.floor(item.cost * this.storeObject.getMarkDown());
   }
 
   getItemBuyPrice(item: ModuleItem) {
     // Buy price: player pays (base cost + markUp % premium) when buying from store
+    if(!this.storeObject) return Math.floor(item.cost);
     return Math.floor(item.cost * (1 + this.storeObject.getMarkUp()));
   }
 
