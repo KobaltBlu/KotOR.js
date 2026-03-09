@@ -56,8 +56,6 @@ export class AppState {
 
     AppState.loaderShow();
 
-    console.log('gameEULAConfig', gameEULAConfig);
-    console.log('eulaState', eulaState);
     AppState.directoryLocated = await AppState.checkGameDirectory();
     if(AppState.eulaAccepted){
       await AppState.loadGameDirectory();
@@ -165,7 +163,6 @@ export class AppState {
       KotOR.GameFileSystem.clearDirectoryCache();
       KotOR.ApplicationProfile.directoryHandle = AppState.appProfile.directory_handle;
     }
-    console.log('loading game...');
     AppState.loaderInit(AppState.appProfile.background, AppState.appProfile.logo);
     AppState.loaderShow();
     KotOR.GameState.GameKey = AppState.gameKey;
@@ -182,7 +179,6 @@ export class AppState {
 
     await KotOR.GameInitializer.Init(AppState.gameKey);
 
-    console.log('loaded')
     KotOR.GUIListBox.InitTextures();
     KotOR.OdysseyWalkMesh.Init();
     KotOR.GameState.setDOMElement(document.getElementById('renderer-container') as HTMLElement);
@@ -200,7 +196,6 @@ export class AppState {
     AppState.loaderMessage('GameState: Initializing...');
     await KotOR.GameState.Init();
     document.body.append(KotOR.GameState.stats.domElement);
-    console.log('init complete');
     AppState.loaderHide();
   }
 

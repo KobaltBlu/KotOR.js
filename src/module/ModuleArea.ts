@@ -1438,7 +1438,6 @@ export class ModuleArea extends ModuleObject {
         0
       );
     }else if(this.transWP instanceof GFFObject){
-      console.log('TransWP', this.transWP);
       return new EngineLocation(
         this.transWP.RootNode.getFieldByLabel('XPosition').getValue(),
         this.transWP.RootNode.getFieldByLabel('YPosition').getValue(),
@@ -1448,7 +1447,6 @@ export class ModuleArea extends ModuleObject {
         0
       );
     }else{
-      console.log('No TransWP');
       return new EngineLocation(
         this.module.entryX,
         this.module.entryY,
@@ -1661,7 +1659,6 @@ export class ModuleArea extends ModuleObject {
    * Load the active party members
    */
   async loadParty(): Promise<void> {
-    console.log('Loading Party Member');
     for(let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++){
       await GameState.PartyManager.LoadPartyMember(i);
     }

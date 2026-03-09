@@ -108,7 +108,6 @@ export class CharGenFeats extends GameMenu {
             const status = mainClass.getFeatStatus(feat);
             if (status == 3 && this.creature.getTotalClassLevel() >= mainClass.getFeatGrantedLevel(feat)) {
               if (!this.creature.getHasFeat(i)) {
-                console.log('Feat Granted', feat);
                 this.creature.addFeat(TalentFeat.From2DA(feat));
                 granted.push(feat);
               }
@@ -162,7 +161,6 @@ export class CharGenFeats extends GameMenu {
       groups.push(group);
     }
     groups.sort((groupa, groupb) => groupa[0].toolsCategories > groupb[0].toolsCategories ? 1 : -1);
-    console.log(groups);
   }
   
 }

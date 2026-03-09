@@ -77,7 +77,6 @@ export class CharGenSkills extends GameMenu {
 
       this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
-        console.log('CharGenSkills', 'Assigning skillpoints')
         GameState.CharGenManager.selectedCreature.skills[0].rank = GameState.CharGenManager.computerUse;
         GameState.CharGenManager.selectedCreature.skills[1].rank = GameState.CharGenManager.demolitions;
         GameState.CharGenManager.selectedCreature.skills[2].rank = GameState.CharGenManager.stealth;

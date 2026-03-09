@@ -14,7 +14,6 @@ export const VideoPromoItem = function(props: ProfilePromoItemProps){
 
   const videoElement = useRef(null) as React.RefObject<HTMLVideoElement>;
   const onVideoClick: React.MouseEventHandler<HTMLDivElement> = (e: React.MouseEvent<HTMLDivElement>) => {
-    console.log('onVideoClick', videoElement.current, e);
     if(videoElement.current){
       let elem: HTMLVideoElement = videoElement.current;
       if(elem === document.fullscreenElement){
@@ -36,7 +35,6 @@ export const VideoPromoItem = function(props: ProfilePromoItemProps){
   };
 
   const onVideoDoubleClick: React.MouseEventHandler<HTMLVideoElement> = (e: React.MouseEvent<HTMLVideoElement>) => {
-    console.log('onVideoDoubleClick', videoElement.current, e);
     if(videoElement.current){
       let elem: HTMLVideoElement = videoElement.current;
       if(elem === document.fullscreenElement){

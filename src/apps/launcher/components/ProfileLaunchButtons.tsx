@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
 import { ApplicationProfile } from "../../../utility/ApplicationProfile";
 import { ConfigClient } from "../../../utility/ConfigClient";
+import { GameFileSystem } from "../../../utility/GameFileSystem";
 import { useApp } from "../context/AppContext";
 
 export interface ProfileLaunchButtonsProps {
@@ -16,6 +17,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   const [render, rerender] = useState(false);
   const [selectValue, setSelectValue] = useState<any>("js");
   const [forgeSelectValue, setForgeSelectValue] = useState<any>();
+  const [locateError, setLocateError] = useState<string | null>(null);
   const isLocateRequired = (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON && !!profile.locate_required) && !profile.directory
 
   const launchLabel = profile.category == 'game' ? 'PLAY' : 'OPEN';
@@ -29,7 +31,6 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   }
 
   const onForgeSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    console.log(e.target.value)
     setForgeSelectValue(e.target.value);
   }
 
@@ -44,9 +45,9 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   };
 
   const btnLocate = () => {
+    setLocateError(null);
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       window.electron.locate_game_directory(profile).then( (directory: string) => {
-        console.log('directory', directory);
         if(directory){
           ConfigClient.set(`Profiles.${profile.key}.directory`, directory);
           profile.directory = directory;
@@ -54,18 +55,24 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
         }
       }).catch( (e: any) => {
         console.error(e);
+        setLocateError('Could not locate game directory. Please try again.');
       });
     }else{
-      // let handle = await window.showDirectoryPicker({
-      //   mode: "readwrite"
-      // });
-      // if(handle){
-      //   if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
-      //     ConfigClient.set(`Profiles.${profile.key}.directory_handle`, handle);
-      //     buildProfileElement(ConfigClient.get(`Profiles.${profile.key}`));
-      //     setLauncherOption(profile.key);
-      //   }
-      // }
+      GameFileSystem.showRequestDirectoryDialog().then( (handle) => {
+        if(handle){
+          ApplicationProfile.directoryHandle = handle;
+          ConfigClient.set(`Profiles.${profile.key}.directory_handle`, handle);
+          profile.directoryHandle = handle;
+          rerender(!render);
+        }else{
+          setLocateError('No directory selected. Please select your game install folder.');
+        }
+      }).catch( (e: any) => {
+        if(e?.name !== 'AbortError'){
+          console.error(e);
+          setLocateError('Failed to access the directory. Please try again.');
+        }
+      });
     }
   };
 
@@ -75,7 +82,6 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
       let clean_game_profile = Object.assign({}, profileCategoriesValue?.game?.profiles.find( (p: any) => {
         return p.key == forgeSelectValue;
       }));
-      console.log('s', forgeSelectValue, clean_game_profile);
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         clean_profile.key = clean_game_profile.key;
         window.electron.launchProfile(clean_profile);
@@ -99,6 +105,7 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
     return (
       <div className="launch-btns">
         <a href="#" className="btn-launch locate" key="launch-btn-locate" onClick={onLocateClick}>LOCATE</a>
+        {locateError && <p className="locate-error" role="alert" style={{color: 'red', fontSize: '0.85em', marginTop: '0.4em'}}>{locateError}</p>}
       </div>
     );
   }else{

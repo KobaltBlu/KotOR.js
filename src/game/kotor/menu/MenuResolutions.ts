@@ -48,7 +48,6 @@ export class MenuResolutions extends GameMenu {
       });
 
       this.LB_RESOLUTIONS.onSelected = (res: IScreenResolution) => {
-        console.log('LB_RESOLUTIONS', res);
         this.activeResolution = res;
       }
       resolve();

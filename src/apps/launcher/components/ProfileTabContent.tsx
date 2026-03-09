@@ -49,7 +49,6 @@ export const ProfileTabContent = forwardRef(function(props: ProfileTabContentPro
   }, []);
 
   const onPromoItemClick = useCallback((element: any) => {
-    console.log('onPromoItemClick', element);
     if(element.type === 'ytvideo'){
       setLightboxType('ytvideo');
       setLightboxSrc(element.id);

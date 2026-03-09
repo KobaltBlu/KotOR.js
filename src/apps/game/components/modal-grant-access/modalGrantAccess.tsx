@@ -8,19 +8,28 @@ export const ModalGrantAccess = () => {
   const [appState] = appContext.appState;
 
   const onCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
-    console.log("File System: access denied");
     alert("You must grant access to your local game directory to continue.");
     window.close();
   }
-  
+
   const showBrowserDirectoryPicker = async () => {
-    let handle = await window.showDirectoryPicker({
-      mode: "readwrite"
-    });
-    if(!handle) return;
+    let handle: FileSystemDirectoryHandle | undefined;
+    try{
+      handle = await window.showDirectoryPicker({
+        mode: "readwrite"
+      });
+    }catch(e: any){
+      if(e?.name === 'AbortError'){
+        // User dismissed the picker - not an error
+        return undefined;
+      }
+      console.error('showDirectoryPicker failed:', e);
+      return undefined;
+    }
+    if(!handle) return undefined;
 
     if (!(await appState.validateDirectoryHandle(handle))) {
-      return;
+      return undefined;
     }
 
     return handle;
@@ -42,8 +51,6 @@ export const ModalGrantAccess = () => {
   }
 
   const onOk = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    console.log("File System: access granted");
-
     // Electron
     if(appState.env == ApplicationEnvironment.ELECTRON){
       await showElectronDirectoryPicker();
@@ -54,8 +61,7 @@ export const ModalGrantAccess = () => {
     if(appState.env == ApplicationEnvironment.BROWSER){
       const handle = await showBrowserDirectoryPicker();
       if(!handle){
-        console.log("File System: access denied");
-        alert("Unable to access your local game directory. Please try again.");
+        alert("Unable to access your local game directory. Please select your game install folder and try again.");
         return;
       }
       appState.attachDirectoryHandle(handle);

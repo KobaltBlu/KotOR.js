@@ -112,7 +112,6 @@ export class MainMenu extends GameMenu {
           // manageLighting: false,
           context: this._3dView
         }).then( (model: OdysseyModel3D) => {
-          console.log('Model Loaded', model);
           this._3dViewModel = model;
           
           this._3dView.camera.position.copy(model.camerahook.position);

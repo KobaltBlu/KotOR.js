@@ -122,7 +122,6 @@ export class MenuPazaakSetup extends GameMenu {
        * Begin the game
        */
       this.BTN_ATEXT.addEventListener('click', () => {
-        console.log('PazaakSetup: Begin Game');
         this.close();
         GameState.MenuManager.MenuPazaakGame.open();
       });
@@ -131,7 +130,6 @@ export class MenuPazaakSetup extends GameMenu {
        * Add card to the side deck
        */
       this.BTN_YTEXT.addEventListener('click', () => {
-        console.log('BTN_YTEXT');
       });
       this.BTN_YTEXT.hide();
 
@@ -148,7 +146,6 @@ export class MenuPazaakSetup extends GameMenu {
           button.swapBorderAndHighliteOnHover = false;
           button.addEventListener('click', () => {
             this.selectedCard = i;
-            console.log(`PazaakSetup: Selected card ${i}, count: ${card.count}`);
             if(card.count <= 0){
               return;
             }
@@ -177,7 +174,6 @@ export class MenuPazaakSetup extends GameMenu {
         button.addEventListener('click', () => {
           const card = GameState.PazaakManager.PlayerSideDeck.get(i);
           this.selectedSideCard = i;
-          console.log(`PazaakSetup: Side card ${i} - ${card}`);
           if(card != PazaakCards.INVALID){
             GameState.PazaakManager.MoveSideDeckCardToMainDeck(i);
             this.rebuild();

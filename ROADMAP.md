@@ -164,7 +164,7 @@ The following steps must work to call the game "playable start-to-finish":
 | 1.1.2 | Persisted handle re-requested on subsequent visits (permission prompt) | ✅ | `ConfigClient.ts` uses `idb-keyval` |
 | 1.1.3 | File path resolution for `chitin.key` and game subdirectories case-insensitive | 🔶 | Windows paths use backslash; normalise in `GameFileSystem.normalizePath` |
 | 1.1.4 | Override folder (`Override/`) scanned in browser environment | 🔶 | `GameInitializer.LoadOverride()` – verify browser branch |
-| 1.1.5 | Graceful error UI when user cancels directory picker or wrong folder selected | ❌ | Launcher shows no feedback |
+| 1.1.5 | Graceful error UI when user cancels directory picker or wrong folder selected | ✅ | `ProfileLaunchButtons.tsx` shows inline error; `GameFileSystem.showRequestDirectoryDialog` handles AbortError; `ModalGrantAccess` shows typed error messages |
 
 ### 1.2 Webpack Build & Deployment
 

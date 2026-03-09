@@ -619,9 +619,17 @@ export class GameFileSystem {
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       ApplicationProfile.directory = ApplicationProfile.directory;
     }else{
-      ApplicationProfile.directoryHandle = await window.showDirectoryPicker({
-        mode: "readwrite"
-      });
+      try{
+        ApplicationProfile.directoryHandle = await window.showDirectoryPicker({
+          mode: "readwrite"
+        });
+      }catch(e: any){
+        // User cancelled the picker or browser denied access
+        if(e?.name !== 'AbortError'){
+          console.error('initializeGameDirectory failed:', e);
+        }
+        throw e;
+      }
     }
   }
 
@@ -638,16 +646,29 @@ export class GameFileSystem {
   }
 
   static async showRequestDirectoryDialog(){
-    let handle = await window.showDirectoryPicker({
-      id: ApplicationProfile.profile?.key,
-      mode: "readwrite"
-    });
+    let handle: FileSystemDirectoryHandle | undefined;
+    try{
+      handle = await window.showDirectoryPicker({
+        id: ApplicationProfile.profile?.key,
+        mode: "readwrite"
+      });
+    }catch(e: any){
+      // User cancelled the picker or browser denied access
+      if(e?.name !== 'AbortError'){
+        console.error('showRequestDirectoryDialog failed:', e);
+      }
+      return undefined;
+    }
     if(handle){
-      if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
-        return handle;
+      try{
+        if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
+          return handle;
+        }
+      }catch(e){
+        console.error('requestPermission failed:', e);
       }
     }
-    return;
+    return undefined;
   }
 
 

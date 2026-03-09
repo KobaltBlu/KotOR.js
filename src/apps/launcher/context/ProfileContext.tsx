@@ -26,7 +26,6 @@ export const ProfileProvider = (props: any) => {
     if(lightboxImageValue){
       let img = new Image();
       img.onload = () => {
-        console.log('img', img.width, img.height);
         setLightboxImageWidth(img.width);
         setLightboxImageHeight(img.height);
       }

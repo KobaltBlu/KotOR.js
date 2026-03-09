@@ -37,7 +37,6 @@ export const AppProvider = (props: any) => {
   const [loadingScreenLogoURL, setLoadingScreenLogoURL] = useState<string>('');
 
   const onAppReady = () => {
-    console.log('onAppReady', AppState.eulaAccepted, AppState.directoryLocated);
     setAppReady(true);
     setGameKey(AppState.gameKey);
     setShowEULAModal(!AppState.eulaAccepted);
@@ -45,7 +44,6 @@ export const AppProvider = (props: any) => {
   }
 
   const onPreload = () => {
-    console.log('onPreload', AppState.eulaAccepted, AppState.directoryLocated);
     setShowEULAModal(!AppState.eulaAccepted);
     setShowGrantModal(AppState.eulaAccepted && !AppState.directoryLocated);
   }

@@ -252,7 +252,6 @@ export class MenuGalaxyMap extends GameMenu {
       }
 
       control.removeEventListener('click');
-      console.log(planet.label, planet.enabled);
 
       if (!planet.enabled) {
         control.hide();

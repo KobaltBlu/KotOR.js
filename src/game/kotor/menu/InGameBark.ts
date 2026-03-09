@@ -57,7 +57,6 @@ export class InGameBark extends GameMenu {
   bark(entry: any) {
 
     const outText = this.gameStringParse(entry.text);
-    console.log('bark', entry, outText);
 
     if (!entry || !outText?.length) {
       return;
@@ -82,7 +81,6 @@ export class InGameBark extends GameMenu {
     if (!!entry.getVoiceResRef()?.length) {
       this.bHasAudio = true;
       this.bAudioPlayed = false;
-      console.log('lip', entry.getVoiceResRef());
       LIPObject.Load(entry.getVoiceResRef()).then((lip: LIPObject) => {
         if (BitWise.InstanceOfObject(entry.speaker, ModuleObjectType.ModuleCreature)) {
           entry.speaker.setLIP(lip);

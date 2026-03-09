@@ -37,10 +37,8 @@ const App = function() {
 
   let resizeEndTimeout: ReturnType<typeof setTimeout>;
   const onResizeEnd = () => {
-    console.log('end');
     ConfigClient.set(['Launcher', 'width'], window.outerWidth);
     ConfigClient.set(['Launcher', 'height'], window.outerHeight);
-    console.log(tabRefs);
   };
 
   const onResize = () => {
@@ -62,8 +60,6 @@ const App = function() {
   };
 
   const onFullscreenChange = (event: Event) => {
-    console.log(document.fullscreenElement);
-    console.log("FULL SCREEN CHANGE", event)
     if(document.fullscreenElement == null){
       if(event.target instanceof HTMLVideoElement){
         event.target.volume = 0;
@@ -77,8 +73,6 @@ const App = function() {
   };
 
   useEffect(() => {
-    console.log('sp', selectedProfileValue, tabRefs);
-
     if(!selectedProfileValue) return;
     if(!tabRefs[selectedProfileValue.id]?.current) return;
 
@@ -87,7 +81,6 @@ const App = function() {
 
   //on-mount
   useEffect(() => {
-    console.log(tabRefs);
     window.addEventListener('resize', onResize);
     setShowMenuTopRight(!(ApplicationProfile.ENV == ApplicationEnvironment.BROWSER));
     Launcher.InitProfiles().then( () => {
@@ -101,7 +94,6 @@ const App = function() {
       tabRefs = Array(Object.values(Launcher.AppCategories).reduce((acc, cat: any) => {
         return acc + cat.profiles.length;
       }, 0)).fill(0).map(i=> React.createRef());
-      console.log(tabRefs);
       setAppReady(true);
     })
 
@@ -212,14 +204,14 @@ const App = function() {
                   <GOGWidget 
                     productId="1207666283" // KotOR 1 GOG ID
                     onError={(error) => console.error('GOG Widget Error:', error)}
-                    onProductLoaded={(product) => console.log('Product loaded:', product)}
+                    onProductLoaded={() => {}}
                     showPrice={true}
                     showDiscount={true}
                   />
                   <GOGWidget 
                     productId="1421404581" // KotOR 2 GOG ID
                     onError={(error) => console.error('GOG Widget Error:', error)}
-                    onProductLoaded={(product) => console.log('Product loaded:', product)}
+                    onProductLoaded={() => {}}
                     showPrice={true}
                     showDiscount={true}
                   />

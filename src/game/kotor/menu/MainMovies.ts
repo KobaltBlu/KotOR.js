@@ -79,7 +79,6 @@ export class MainMovies extends GameMenu {
       this._button_b = this.BTN_BACK;
       this.LB_MOVIES.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
       this.LB_MOVIES.onClicked = (movie: GUIMovieItem, control: any, index: number) => {
-        console.log(movie);
         GameState.VideoManager.playMovie(movie.name, true);
       };
       const moviesTable = GameState.TwoDAManager.datatables.get('movies');

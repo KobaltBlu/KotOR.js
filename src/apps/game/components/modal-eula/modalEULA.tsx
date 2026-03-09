@@ -19,7 +19,6 @@ export const ModalEULA = () => {
   }
 
   const onOk = () => {
-    console.log("onOk");
     const gameEULAConfig = {
       key: gameKey,
       accepted: true,
