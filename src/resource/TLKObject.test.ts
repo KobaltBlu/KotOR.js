@@ -47,6 +47,44 @@ describe('TLKObject', () => {
     expect(reloaded.GetStringById(2)).toBe('qrstuvwxyz');
   });
 
+  it('size returns the number of talk table entries', () => {
+    expect(makeTLK().size()).toBe(3);
+  });
+
+  it('string returns the resolved text and empty string for invalid ids', () => {
+    const tlk = makeTLK();
+
+    expect(tlk.string(0)).toBe('abcdef');
+    expect(tlk.string(1)).toBe('ghijklmnop');
+    expect(tlk.string(2)).toBe('qrstuvwxyz');
+    expect(tlk.string(-1)).toBe('');
+    expect(tlk.string(3)).toBe('');
+  });
+
+  it('sound returns the voiceover resref and empty string for missing ids', () => {
+    const tlk = makeTLK();
+
+    expect(tlk.sound(0)).toBe('resref01');
+    expect(tlk.sound(1)).toBe('resref02');
+    expect(tlk.sound(2)).toBe('');
+    expect(tlk.sound(-1)).toBe('');
+    expect(tlk.sound(3)).toBe('');
+  });
+
+  it('batch returns string and sound tuples keyed by requested ids', () => {
+    const tlk = makeTLK();
+    const batch = tlk.batch([2, 0, -1, 3]);
+
+    expect(batch[0]).toEqual(['abcdef', 'resref01']);
+    expect(batch[2]).toEqual(['qrstuvwxyz', '']);
+    expect(batch[-1]).toEqual(['', '']);
+    expect(batch[3]).toEqual(['', '']);
+  });
+
+  it('language returns the current language id', () => {
+    expect(makeTLK().language()).toBe(0);
+  });
+
   it('Search finds matching entries and preserves indexes', () => {
     const tlk = makeTLK();
     const matches = tlk.Search('ghi');

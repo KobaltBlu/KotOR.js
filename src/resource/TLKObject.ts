@@ -166,6 +166,30 @@ export class TLKObject {
     }
   }
 
+  size(): number {
+    return this.TLKStrings.length;
+  }
+
+  string(id: number): string {
+    return this.GetStringById(id);
+  }
+
+  sound(id: number): string {
+    return this.TLKStrings[id]?.SoundResRef ?? '';
+  }
+
+  batch(ids: number[]): Record<number, [string, string]> {
+    const entries: Record<number, [string, string]> = {};
+    ids.forEach((id) => {
+      entries[id] = [this.string(id), this.sound(id)];
+    });
+    return entries;
+  }
+
+  language(): number {
+    return this.LanguageID;
+  }
+
   AddTLKString(tlkString: TLKString){
     this.TLKStrings.push(tlkString);
   }

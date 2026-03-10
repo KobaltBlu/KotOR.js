@@ -158,6 +158,45 @@ describe('TwoDAObject', () => {
     expect(logs).toContain('Shape mismatch');
   });
 
+  it('compare returns false on a cell mismatch in otherwise matching tables', () => {
+    const older = new TwoDAObject();
+    older.addColumn('A');
+    older.addColumn('B');
+    older.addRow('0');
+    older.addRow('1');
+
+    const newer = new TwoDAObject();
+    newer.addColumn('A');
+    newer.addColumn('B');
+    newer.addRow('0');
+    newer.addRow('1');
+    newer.getRow(0)?.updateValues({ A: 'asdf' });
+
+    const logs: string[] = [];
+    expect(older.compare(newer, (message) => logs.push(message))).toBe(false);
+    expect(logs.some((message) => message.includes('Cell mismatch'))).toBe(true);
+  });
+
+  it('compare returns true for matching populated tables', () => {
+    const older = new TwoDAObject();
+    older.addColumn('A');
+    older.addColumn('B');
+    older.addRow('0');
+    older.addRow('1');
+    older.getRow(0)?.updateValues({ A: 'asdf' });
+
+    const newer = new TwoDAObject();
+    newer.addColumn('A');
+    newer.addColumn('B');
+    newer.addRow('0');
+    newer.addRow('1');
+    newer.getRow(0)?.updateValues({ A: 'asdf' });
+
+    const logs: string[] = [];
+    expect(older.compare(newer, (message) => logs.push(message))).toBe(true);
+    expect(logs).toHaveLength(0);
+  });
+
   it('toExportBuffer round-trip', () => {
     const data = makeMinimal2DA();
     const two = new TwoDAObject(data);

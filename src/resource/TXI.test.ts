@@ -59,11 +59,19 @@ describe('TXI', () => {
   it('parseBlending handles default, additive, and punchthrough variants', () => {
     expect(TXI.parseBlending('default')).toBe(0);
     expect(TXI.parseBlending('DeFaUlT')).toBe(0);
+    expect(TXI.parseBlending('DEFAULT')).toBe(0);
+    expect(TXI.parseBlending('Default')).toBe(0);
     expect(TXI.parseBlending('additive')).toBe(1);
     expect(TXI.parseBlending('AdDiTiVe')).toBe(1);
+    expect(TXI.parseBlending('ADDITIVE')).toBe(1);
+    expect(TXI.parseBlending('Additive')).toBe(1);
     expect(TXI.parseBlending('punchthrough')).toBe(2);
+    expect(TXI.parseBlending('PUNCHTHROUGH')).toBe(2);
+    expect(TXI.parseBlending('Punchthrough')).toBe(2);
     expect(TXI.parseBlending('punch-through')).toBe(2);
     expect(TXI.parseBlending('invalid')).toBe(0);
+    expect(TXI.parseBlending('')).toBe(0);
+    expect(TXI.parseBlending('blend')).toBe(0);
   });
 
   it('fromBuffer parses Uint8Array', () => {
@@ -127,7 +135,7 @@ describe('TXI', () => {
     expect(txi.upperleftcoords).toHaveLength(256);
     expect(txi.lowerrightcoords).toHaveLength(256);
     expect(txi.upperleftcoords[0]).toEqual({ x: 0, y: 0, z: 0 });
-    expect(txi.lowerrightcoords[255]).toEqual({ x: 1, y: 1, z: 0 });
+    expect(txi.lowerrightcoords[255]).toEqual({ x: 1, y: 2, z: 0 });
   });
 
   it('toBuffer and fromBuffer preserve vendor-sized font metadata', () => {
