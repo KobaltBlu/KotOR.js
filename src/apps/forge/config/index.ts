@@ -1,8 +1,8 @@
 /**
- * Forge config – version, update info, and update check (ported from Holocron Toolset).
+ * Forge config – version, update info, and update check.
  */
 
-export { versionToToolsetTag, toolsetTagToVersion } from "@/apps/forge/config/ConfigVersion";
+export { versionToReleaseTag, releaseTagToVersion } from "@/apps/forge/config/ConfigVersion";
 export {
   CURRENT_VERSION,
   LOCAL_PROGRAM_INFO,
@@ -10,7 +10,7 @@ export {
 } from "@/apps/forge/config/ConfigInfo";
 export {
   fetchUpdateInfo,
-  getRemoteToolsetUpdateInfo,
+  getRemoteUpdateInfo,
   isRemoteVersionNewer,
   type RemoteUpdateInfo,
 } from "@/apps/forge/config/ConfigUpdate";

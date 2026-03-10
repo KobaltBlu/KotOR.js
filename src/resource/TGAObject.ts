@@ -2,15 +2,16 @@ import { ITGAHeader } from "@/interface/graphics/tga/ITGAHeader";
 import { ITGAObjectOptions } from "@/interface/graphics/tga/ITGAObjectOptions";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
 import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * TGAObject class.
- * 
+ *
  * Class representing a TGA texture file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TGAObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -32,8 +33,6 @@ export class TGAObject {
 
     const options = {..._default, ...args};
 
-    console.log('TGAObject', args);
-
     if(typeof options.file === 'string'){
       this.file = new Uint8Array(0);
     }else if(options.file instanceof Uint8Array){
@@ -46,6 +45,29 @@ export class TGAObject {
     this.pixelData = new Uint8Array(0);
 
   }
+
+  toJSON(): { filename: string; header: ITGAHeader; pixelData: number[] } {
+    return {
+      filename: this.filename,
+      header: { ...this.header },
+      pixelData: Array.from(this.pixelData),
+    };
+  }
+
+  fromJSON(json: string | ReturnType<TGAObject['toJSON']>): void {
+    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<TGAObject['toJSON']> : json;
+    this.filename = data.filename ?? '';
+    this.file = new Uint8Array(0);
+    this.header = { ...data.header } as ITGAHeader;
+    this.pixelData = Uint8Array.from(data.pixelData ?? []);
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<TGAObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<TGAObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<TGAObject['toJSON']>); }
 
   readHeader(): ITGAHeader {
     const Header = {

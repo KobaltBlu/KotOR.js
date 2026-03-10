@@ -57,6 +57,8 @@ jobs:
 
           src_ts_files=""
           prettier_files=""
+          jest_related_files=""
+          run_full_tests="false"
 
           while IFS= read -r file; do
             [ -z "${file}" ] && continue
@@ -64,6 +66,16 @@ jobs:
             if [[ "${file}" == src/* ]] && [[ "${file}" == *.ts || "${file}" == *.tsx ]]; then
               src_ts_files="${src_ts_files}"$'\n'"${file}"
             fi
+
+            if [[ "${file}" == src/* ]] && [[ "${file}" == *.ts || "${file}" == *.tsx || "${file}" == *.js || "${file}" == *.jsx ]]; then
+              jest_related_files="${jest_related_files}"$'\n'"${file}"
+            fi
+
+            case "${file}" in
+              jest.config.js|package.json|package-lock.json|tsconfig.jest.json|*.test.ts|*.spec.ts)
+                run_full_tests="true"
+                ;;
+            esac
 
             case "${file}" in
               *.ts|*.tsx|*.js|*.jsx|*.json|*.md|*.yml|*.yaml)
@@ -79,6 +91,10 @@ jobs:
             echo "prettier_files<<EOF"
             echo "${prettier_files}"
             echo "EOF"
+            echo "jest_related_files<<EOF"
+            echo "${jest_related_files}"
+            echo "EOF"
+            echo "run_full_tests=${run_full_tests}"
           } >> "${GITHUB_OUTPUT}"
 
       - name: Check formatting on changed files
@@ -98,7 +114,20 @@ jobs:
           printf '%s\n' "${SRC_TS_FILES}" | xargs -r npx cross-env ESLINT_USE_FLAT_CONFIG=false eslint
 
       - name: Run tests
+        if: ${{ steps.changed.outputs.run_full_tests == 'true' }}
         run: npm test
+
+      - name: Run related tests
+        if: ${{ steps.changed.outputs.run_full_tests != 'true' && steps.changed.outputs.jest_related_files != '' }}
+        env:
+          JEST_RELATED_FILES: ${{ steps.changed.outputs.jest_related_files }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "${JEST_RELATED_FILES}" | xargs -r npx jest --findRelatedTests --verbose --coverage --no-cache --passWithNoTests
+
+      - name: Skip tests when no related files changed
+        if: ${{ steps.changed.outputs.run_full_tests != 'true' && steps.changed.outputs.jest_related_files == '' }}
+        run: echo "No Jest-related files changed; skipping tests."
 
       - name: Compile Electron entrypoints
         run: npm run electron:compile

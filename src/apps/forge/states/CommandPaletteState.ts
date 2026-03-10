@@ -1,6 +1,5 @@
 /**
  * Command Palette state – VS Code–style command palette (Ctrl+Shift+P).
- * Ported from Holocron Toolset command_palette.py
  */
 
 import type { MenuTopState } from "@/apps/forge/states/MenuTopState";

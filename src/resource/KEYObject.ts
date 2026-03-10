@@ -6,15 +6,16 @@ import { IKEYEntry } from '@/interface/resource/IKEYEntry';
 import { BIFManager } from '@/managers/BIFManager';
 import { BIFObject } from '@/resource/BIFObject';
 import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
 import { GameFileSystem } from '@/utility/GameFileSystem';
 
 /**
  * KEYObject class.
- * 
+ *
  * Class representing a KEY file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file KEYObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -39,13 +40,15 @@ export class KEYObject {
     this.keys = [];
   }
 
-  async loadFile(file: string){
-    const buffer = await GameFileSystem.readFile(file);
-
+  loadBuffer(buffer: Uint8Array): void {
     this.reader = new BinaryReader(buffer);
 
     this.fileType = this.reader.readChars(4);
     this.FileVersion = this.reader.readChars(4);
+    if (this.fileType !== 'KEY ' || this.FileVersion !== 'V1  ') {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
+
     this.bifCount = this.reader.readUInt32();
     this.keyCount = this.reader.readUInt32();
     this.offsetToFileTable = this.reader.readUInt32();
@@ -55,6 +58,7 @@ export class KEYObject {
     this.reserved = this.reader.readBytes(32);
 
     this.bifs = [];
+    this.keys = [];
 
     this.reader.seek(this.offsetToFileTable);
     for(let i = 0; i < this.bifCount; i++){
@@ -79,6 +83,11 @@ export class KEYObject {
         resId: this.reader.readUInt32(),
       } as IKEYEntry;
     }
+  }
+
+  async loadFile(file: string){
+    const buffer = await GameFileSystem.readFile(file);
+    this.loadBuffer(buffer);
   }
 
   getFileLabel(index = 0){
@@ -144,5 +153,40 @@ export class KEYObject {
   static getBIFResourceIndex( ResID: number = 0 ): number{
     return (ResID & 0x3FFF);
   }
+
+  toJSON(): { fileType: string; fileVersion: string; bifCount: number; keyCount: number; bifs: IBIFEntry[]; keys: IKEYEntry[] } {
+    return {
+      fileType: this.fileType,
+      fileVersion: this.FileVersion,
+      bifCount: this.bifs.length,
+      keyCount: this.keys.length,
+      bifs: this.bifs.map((bif) => ({ ...bif })),
+      keys: this.keys.map((key) => ({ ...key })),
+    };
+  }
+
+  fromJSON(json: string | ReturnType<KEYObject['toJSON']>): void {
+    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<KEYObject['toJSON']> : json;
+    this.fileType = data.fileType || 'KEY ';
+    this.FileVersion = data.fileVersion || 'V1  ';
+    this.bifs = (data.bifs || []).map((bif) => ({ ...bif }));
+    this.keys = (data.keys || []).map((key) => ({ ...key }));
+    this.bifCount = data.bifCount ?? this.bifs.length;
+    this.keyCount = data.keyCount ?? this.keys.length;
+  }
+
+  toXML(): string { return objectToXML({ json: JSON.stringify(this.toJSON()) }); }
+  fromXML(xml: string): void {
+    const data = xmlToObject(xml) as { json?: string } | ReturnType<KEYObject['toJSON']>;
+    if (typeof (data as { json?: string }).json === 'string') {
+      this.fromJSON((data as { json: string }).json);
+      return;
+    }
+    this.fromJSON(data as ReturnType<KEYObject['toJSON']>);
+  }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<KEYObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<KEYObject['toJSON']>); }
 
 }

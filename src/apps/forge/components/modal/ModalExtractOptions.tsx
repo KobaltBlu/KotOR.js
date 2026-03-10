@@ -5,7 +5,7 @@ import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
 import { ModalExtractOptionsState } from "@/apps/forge/states/modal/ModalExtractOptionsState";
 
 /**
- * Dialog for configuring extraction options (ported from Holocron ExtractOptionsDialog).
+ * Dialog for configuring extraction options.
  * Options: TPC decompile, TPC TXI extract, MDL decompile, MDL texture extract.
  */
 export const ModalExtractOptions = (props: BaseModalProps) => {

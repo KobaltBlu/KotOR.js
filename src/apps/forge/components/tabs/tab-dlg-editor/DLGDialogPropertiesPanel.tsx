@@ -2,7 +2,6 @@
  * DLGDialogPropertiesPanel component.
  *
  * Panel for editing dialog-level properties (conversation type, scripts, etc.).
- * Based on PyKotor's dialog properties implementation.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

@@ -18,7 +18,7 @@ export class ModalSaveToModuleState extends ModalState {
   resref: string = "";
   resType: number = 0;
   data: Uint8Array = new Uint8Array(0);
-  /** Where to save (Holocron BifSaveOption: MOD, Override, RIM). */
+  /** Where to save: MOD, Override, or RIM. */
   destination: SaveDestination = SaveDestination.MOD;
   modPath: string = "";
   modBuffer: Uint8Array | null = null;

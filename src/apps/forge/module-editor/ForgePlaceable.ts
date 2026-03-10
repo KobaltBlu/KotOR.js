@@ -44,6 +44,7 @@ export class ForgePlaceable extends ForgeGameObject {
   lockable: boolean = false;
   locked: boolean = false;
   min1HP: boolean = false;
+  notBlastable: boolean = false;
   onClick: string = '';
   onClosed: string = '';
   onDamaged: string = '';
@@ -62,6 +63,8 @@ export class ForgePlaceable extends ForgeGameObject {
   onUsed: string = '';
   onUserDefined: string = '';
   openLockDC: number = 0;
+  openLockDiff: number = 0;
+  openLockDiffMod: number = 0;
   paletteID: number = 0;
   partyInteract: boolean = false;
   plot: boolean = false;
@@ -126,10 +129,10 @@ export class ForgePlaceable extends ForgeGameObject {
       this.appearance = root.getFieldByLabel('Appearance').getValue() || 0;
     }
     if(root.hasField('AutoRemoveKey')){
-      this.autoRemoveKey = root.getFieldByLabel('AutoRemoveKey').getValue() || false;
+      this.autoRemoveKey = !!root.getFieldByLabel('AutoRemoveKey').getValue();
     }
     if(root.hasField('BodyBag')){
-      this.bodyBag = root.getFieldByLabel('BodyBag').getValue() || false;
+      this.bodyBag = !!root.getFieldByLabel('BodyBag').getValue();
     }
     if(root.hasField('CloseLockDC')){
       this.closeLockDC = root.getFieldByLabel('CloseLockDC').getValue() || 0;
@@ -162,7 +165,7 @@ export class ForgePlaceable extends ForgeGameObject {
       this.hardness = root.getFieldByLabel('Hardness').getValue() || 0;
     }
     if(root.hasField('HasInventory')){
-      this.hasInventory = root.getFieldByLabel('HasInventory').getValue() || false;
+      this.hasInventory = !!root.getFieldByLabel('HasInventory').getValue();
     }
     if(root.hasField('ItemList')){
       const itemListField = root.getFieldByLabel('ItemList');
@@ -175,25 +178,28 @@ export class ForgePlaceable extends ForgeGameObject {
       });
     }
     if(root.hasField('Interruptable')){
-      this.interruptable = root.getFieldByLabel('Interruptable').getValue() || false;
+      this.interruptable = !!root.getFieldByLabel('Interruptable').getValue();
     }
     if(root.hasField('KeyName')){
       this.keyName = root.getFieldByLabel('KeyName').getValue() || '';
     }
     if(root.hasField('KeyRequired')){
-      this.keyRequired = root.getFieldByLabel('KeyRequired').getValue() || false;
+      this.keyRequired = !!root.getFieldByLabel('KeyRequired').getValue();
     }
     if(root.hasField('LocName')){
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('Lockable')){
-      this.lockable = root.getFieldByLabel('Lockable').getValue() || false;
+      this.lockable = !!root.getFieldByLabel('Lockable').getValue();
     }
     if(root.hasField('Locked')){
-      this.locked = root.getFieldByLabel('Locked').getValue() || false;
+      this.locked = !!root.getFieldByLabel('Locked').getValue();
     }
     if(root.hasField('Min1HP')){
-      this.min1HP = root.getFieldByLabel('Min1HP').getValue() || false;
+      this.min1HP = !!root.getFieldByLabel('Min1HP').getValue();
+    }
+    if(root.hasField('NotBlastable')){
+      this.notBlastable = !!root.getFieldByLabel('NotBlastable').getValue();
     }
     if(root.hasField('OnClick')){
       this.onClick = root.getFieldByLabel('OnClick').getValue() || '';
@@ -249,14 +255,20 @@ export class ForgePlaceable extends ForgeGameObject {
     if(root.hasField('OpenLockDC')){
       this.openLockDC = root.getFieldByLabel('OpenLockDC').getValue() || 0;
     }
+    if(root.hasField('OpenLockDiff')){
+      this.openLockDiff = root.getFieldByLabel('OpenLockDiff').getValue() || 0;
+    }
+    if(root.hasField('OpenLockDiffMod')){
+      this.openLockDiffMod = root.getFieldByLabel('OpenLockDiffMod').getValue() || 0;
+    }
     if(root.hasField('PaletteID')){
       this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
     if(root.hasField('PartyInteract')){
-      this.partyInteract = root.getFieldByLabel('PartyInteract').getValue() || false;
+      this.partyInteract = !!root.getFieldByLabel('PartyInteract').getValue();
     }
     if(root.hasField('Plot')){
-      this.plot = root.getFieldByLabel('Plot').getValue() || false;
+      this.plot = !!root.getFieldByLabel('Plot').getValue();
     }
     if(root.hasField('PortraitId')){
       this.portraitId = root.getFieldByLabel('PortraitId').getValue() || 0;
@@ -265,7 +277,7 @@ export class ForgePlaceable extends ForgeGameObject {
       this.ref = root.getFieldByLabel('Ref').getValue() || 0;
     }
     if(root.hasField('Static')){
-      this.static = root.getFieldByLabel('Static').getValue() || false;
+      this.static = !!root.getFieldByLabel('Static').getValue();
     }
     if(root.hasField('Tag')){
       this.tag = root.getFieldByLabel('Tag').getValue() || '';
@@ -277,16 +289,16 @@ export class ForgePlaceable extends ForgeGameObject {
       this.trapDetectDC = root.getFieldByLabel('TrapDetectDC').getValue() || 0;
     }
     if(root.hasField('TrapDetectable')){
-      this.trapDetectable = root.getFieldByLabel('TrapDetectable').getValue() || false;
+      this.trapDetectable = !!root.getFieldByLabel('TrapDetectable').getValue();
     }
     if(root.hasField('TrapDisarmable')){
-      this.trapDisarmable = root.getFieldByLabel('TrapDisarmable').getValue() || false;
+      this.trapDisarmable = !!root.getFieldByLabel('TrapDisarmable').getValue();
     }
     if(root.hasField('TrapFlag')){
-      this.trapFlag = root.getFieldByLabel('TrapFlag').getValue() || false;
+      this.trapFlag = !!root.getFieldByLabel('TrapFlag').getValue();
     }
     if(root.hasField('TrapOneShot')){
-      this.trapOneShot = root.getFieldByLabel('TrapOneShot').getValue() || false;
+      this.trapOneShot = !!root.getFieldByLabel('TrapOneShot').getValue();
     }
     if(root.hasField('TrapType')){
       this.trapType = root.getFieldByLabel('TrapType').getValue() || 0;
@@ -295,7 +307,7 @@ export class ForgePlaceable extends ForgeGameObject {
       this.t_type = root.getFieldByLabel('Type').getValue() || 0;
     }
     if(root.hasField('Useable')){
-      this.useable = root.getFieldByLabel('Useable').getValue() || false;
+      this.useable = !!root.getFieldByLabel('Useable').getValue();
     }
     if(root.hasField('Will')){
       this.will = root.getFieldByLabel('Will').getValue() || 0;
@@ -321,7 +333,7 @@ export class ForgePlaceable extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'DisarmDC', this.disarmDC) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Faction', this.faction) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Fort', this.fort) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'HP', this.hp) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.SHORT, 'HP', this.hp) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Hardness', this.hardness) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'HasInventory', this.hasInventory ? 1 : 0) );
 
@@ -343,6 +355,7 @@ export class ForgePlaceable extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Lockable', this.lockable ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Locked', this.locked ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Min1HP', this.min1HP ? 1 : 0) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'NotBlastable', this.notBlastable ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnClick', this.onClick) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnClosed', this.onClosed) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnDamaged', this.onDamaged) );
@@ -361,6 +374,8 @@ export class ForgePlaceable extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnUsed', this.onUsed) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnUserDefined', this.onUserDefined) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenLockDC', this.openLockDC) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenLockDiff', this.openLockDiff) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CHAR, 'OpenLockDiffMod', this.openLockDiffMod) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PartyInteract', this.partyInteract ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Plot', this.plot ? 1 : 0) );

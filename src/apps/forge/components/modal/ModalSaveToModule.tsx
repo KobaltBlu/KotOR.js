@@ -233,7 +233,7 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
       </Modal.Header>
       <Modal.Body>
         <p className="small text-muted mb-2">
-          Save the current resource to MOD, Override, or RIM (Holocron-style). MOD requires picking an existing file.
+          Save the current resource to MOD, Override, or RIM. MOD requires picking an existing file.
         </p>
         <Form.Group className="mb-2">
           <Form.Label>Destination</Form.Label>

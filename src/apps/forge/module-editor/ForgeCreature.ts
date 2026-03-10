@@ -657,7 +657,9 @@ export class ForgeCreature extends ForgeGameObject {
     if(root.hasField('Plot')){
       this.plot = root.getFieldByLabel('Plot').getValue() || false;
     }
-    if(root.hasField('PalletID')){
+    if(root.hasField('PaletteID')){
+      this.palletID = root.getFieldByLabel('PaletteID').getValue() || 0;
+    } else if(root.hasField('PalletID')){
       this.palletID = root.getFieldByLabel('PalletID').getValue() || 0;
     }
     if(root.hasField('PortraitId')){
@@ -681,7 +683,9 @@ export class ForgeCreature extends ForgeGameObject {
     if(root.hasField('ScriptDisturbed')){
       this.scriptDisturbed = root.getFieldByLabel('ScriptDisturbed').getValue() || '';
     }
-    if(root.hasField('ScriptEndDialogue')){
+    if(root.hasField('ScriptEndDialogu')){
+      this.scriptEndDialogue = root.getFieldByLabel('ScriptEndDialogu').getValue() || '';
+    } else if(root.hasField('ScriptEndDialogue')){
       this.scriptEndDialogue = root.getFieldByLabel('ScriptEndDialogue').getValue() || '';
     }
     if(root.hasField('ScriptEndRound')){
@@ -882,7 +886,7 @@ export class ForgeCreature extends ForgeGameObject {
       equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotArms) );
       equipItemList.addChildStruct(equipItem);
     }
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Equip_ItemList', equipItemList) );
+    root.addField( equipItemList );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'FactionID', this.factionID) );
     const featList = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'FeatList');
     if(featList){
@@ -921,7 +925,7 @@ export class ForgeCreature extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'NaturalAC', this.naturalAC) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'NoPermDeath', this.noPermDeath ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'NotReorienting', this.notReorienting ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PalletID', this.palletID) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.palletID) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PartyInteract', this.partyInteract ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PerceptionRange', this.perceptionRange) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'Phenotype', this.phenotype) );
@@ -933,7 +937,7 @@ export class ForgeCreature extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptDeath', this.scriptDeath) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptDialogu', this.scriptDialogu) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptDisturbed', this.scriptDisturbed) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptEndDialogue', this.scriptEndDialogue) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptEndDialogu', this.scriptEndDialogue) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptEndRound', this.scriptEndRound) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptHeartbeat', this.scriptHeartbeat) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptOnBlocked', this.scriptOnBlocked) );

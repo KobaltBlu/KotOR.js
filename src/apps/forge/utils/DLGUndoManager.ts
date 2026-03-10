@@ -2,7 +2,6 @@
  * DLGUndoManager class.
  *
  * Manages undo/redo operations for the DLG editor.
- * Based on PyKotor's QUndoStack implementation.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

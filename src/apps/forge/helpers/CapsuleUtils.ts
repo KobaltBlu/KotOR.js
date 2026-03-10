@@ -1,5 +1,5 @@
 /**
- * Capsule/container file type helpers. Ported from PyKotor tools.misc.
+ * Capsule and container file type helpers.
  */
 
 function getExt(filepath: string): string {
@@ -43,7 +43,6 @@ export function isCapsuleFile(filepath: string): boolean {
 /**
  * Returns the module root name from a module/capsule filename.
  * Strips .mod, .erf, .rim extensions and _s / _dlg suffixes (case-insensitive).
- * Ported from PyKotor Installation.get_module_root().
  */
 export function getModuleRoot(moduleName: string): string {
   let name = moduleName.trim();

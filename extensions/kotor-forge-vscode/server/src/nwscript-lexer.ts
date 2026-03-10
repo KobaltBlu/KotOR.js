@@ -10,7 +10,7 @@ export enum TokenType {
   NUMBER = 'NUMBER',
   STRING = 'STRING',
   IDENTIFIER = 'IDENTIFIER',
-  
+
   // Specific value types
   INT_VALUE = 'INT_VALUE',
   FLOAT_VALUE = 'FLOAT_VALUE',
@@ -112,7 +112,7 @@ export enum TokenType {
 
 export interface Token {
   type: TokenType;
-  value: string;
+  value: string | number;
   location: SourceLocation;
   raw?: string;
 }
@@ -340,19 +340,19 @@ export class NWScriptLexer {
 
   private scanNumber(start: SourceLocation): Token {
     const startPos = this.position - 1;
-    
+
     // Check for hex literals
     if (this.source.charAt(startPos) === '0' && (this.peek() === 'x' || this.peek() === 'X')) {
       this.advance(); // consume 'x'
-      
+
       // Consume hex digits
       while (this.isHexDigit(this.peek())) {
         this.advance();
       }
-      
+
       const raw = this.source.substring(startPos, this.position);
       const value = parseInt(raw, 16);
-      
+
       return this.makeToken(TokenType.INT_HEX_VALUE, value, start, raw);
     }
 
@@ -362,7 +362,7 @@ export class NWScriptLexer {
     }
 
     let isFloat = false;
-    
+
     // Look for decimal point
     if (this.peek() === '.' && this.isDigit(this.peekNext())) {
       isFloat = true;

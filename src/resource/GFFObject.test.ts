@@ -1,0 +1,129 @@
+import { describe, expect, it } from '@jest/globals';
+
+import { GFFDataType } from '@/enums/resource/GFFDataType';
+import { CExoLocString } from '@/resource/CExoLocString';
+import { CExoLocSubString } from '@/resource/CExoLocSubString';
+import { GFFField } from '@/resource/GFFField';
+import { GFFObject } from '@/resource/GFFObject';
+import { GFFStruct } from '@/resource/GFFStruct';
+
+function buildVendorStyleGff(): GFFObject {
+  const gff = new GFFObject();
+  gff.FileType = 'GFF ';
+
+  gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'uint8').setValue(255));
+  gff.RootNode.addField(new GFFField(GFFDataType.CHAR, 'int8').setValue(-127));
+  gff.RootNode.addField(new GFFField(GFFDataType.WORD, 'uint16').setValue(65535));
+  gff.RootNode.addField(new GFFField(GFFDataType.SHORT, 'int16').setValue(-32768));
+  gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'uint32').setValue(4294967295));
+  gff.RootNode.addField(new GFFField(GFFDataType.INT, 'int32').setValue(-2147483648));
+
+  const uint64 = new GFFField(GFFDataType.DWORD64, 'uint64');
+  uint64.setData(Uint8Array.from([0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00]));
+  gff.RootNode.addField(uint64);
+
+  gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'single').setValue(12.34567));
+  gff.RootNode.addField(new GFFField(GFFDataType.DOUBLE, 'double').setValue(12.345678901234));
+  gff.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'string').setValue('abcdefghij123456789'));
+  gff.RootNode.addField(new GFFField(GFFDataType.RESREF, 'resref').setValue('resref01'));
+
+  const locString = new CExoLocString(-1)
+    .addSubString(new CExoLocSubString(0, 'male_eng'))
+    .addSubString(new CExoLocSubString(5, 'fem_german'));
+  gff.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'locstring').setCExoLocString(locString));
+
+  const binary = new GFFField(GFFDataType.VOID, 'binary');
+  binary.setData(Uint8Array.from(Buffer.from('binarydata', 'latin1')));
+  gff.RootNode.addField(binary);
+
+  gff.RootNode.addField(new GFFField(GFFDataType.ORIENTATION, 'orientation').setOrientation({ x: 1, y: 2, z: 3, w: 4 }));
+  gff.RootNode.addField(new GFFField(GFFDataType.VECTOR, 'position').setVector({ x: 11, y: 22, z: 33 }));
+
+  const childStruct = new GFFStruct(0);
+  childStruct.addField(new GFFField(GFFDataType.BYTE, 'child_uint8').setValue(4));
+  gff.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'child_struct').addChildStruct(childStruct));
+
+  const listField = new GFFField(GFFDataType.LIST, 'list');
+  listField.addChildStruct(new GFFStruct(1));
+  listField.addChildStruct(new GFFStruct(2));
+  gff.RootNode.addField(listField);
+
+  return gff;
+}
+
+function expectVendorStyleValues(gff: GFFObject): void {
+  const root = gff.RootNode;
+  expect(root.getFieldByLabel('uint8')?.getValue()).toBe(255);
+  expect(root.getFieldByLabel('int8')?.getValue()).toBe(-127);
+  expect(root.getFieldByLabel('uint16')?.getValue()).toBe(65535);
+  expect(root.getFieldByLabel('int16')?.getValue()).toBe(-32768);
+  expect(root.getFieldByLabel('uint32')?.getValue()).toBe(4294967295);
+  expect(root.getFieldByLabel('int32')?.getValue()).toBe(-2147483648);
+  expect(root.getFieldByLabel('uint64')?.getValue()).toBe(4294967296n);
+  expect(root.getFieldByLabel('single')?.getValue()).toBeCloseTo(12.34567, 5);
+  expect(root.getFieldByLabel('double')?.getValue()).toBeCloseTo(12.345678901234, 12);
+  expect(root.getFieldByLabel('string')?.getValue()).toBe('abcdefghij123456789');
+  expect(root.getFieldByLabel('resref')?.getValue()).toBe('resref01');
+
+  const locString = root.getFieldByLabel('locstring')?.getCExoLocString();
+  expect(locString?.getRESREF()).toBe(-1);
+  expect(locString?.getStrings()).toHaveLength(2);
+  expect(locString?.getString(0).GetStringID()).toBe(0);
+  expect(locString?.getString(0).getString()).toBe('male_eng');
+  expect(locString?.getString(1).GetStringID()).toBe(5);
+  expect(locString?.getString(1).getString()).toBe('fem_german');
+
+  expect(Buffer.from(root.getFieldByLabel('binary')?.getVoid() ?? []).toString('latin1')).toBe('binarydata');
+  expect(root.getFieldByLabel('orientation')?.getOrientation()).toEqual({ x: 1, y: 2, z: 3, w: 4 });
+  expect(root.getFieldByLabel('position')?.getVector()).toEqual({ x: 11, y: 22, z: 33 });
+
+  const childStruct = root.getFieldByLabel('child_struct')?.getChildStructs()[0];
+  expect(childStruct?.getFieldByLabel('child_uint8')?.getValue()).toBe(4);
+
+  const list = root.getFieldByLabel('list')?.getChildStructs() ?? [];
+  expect(list.map((entry) => entry.getType())).toEqual([1, 2]);
+}
+
+describe('GFFObject', () => {
+  it('round-trips vendor-style binary field coverage through production export and parse paths', () => {
+    const original = buildVendorStyleGff();
+
+    const buffer = original.getExportBuffer();
+    const parsed = new GFFObject(buffer);
+
+    expectVendorStyleValues(parsed);
+    expect(parsed.getFieldByLabel('child_uint8')?.getValue()).toBe(4);
+  });
+
+  it('round-trips through JSON, XML, YAML, and TOML metadata serializers', () => {
+    const original = buildVendorStyleGff();
+
+    const jsonRoundTrip = new GFFObject();
+    jsonRoundTrip.fromJSON(original.toJSON());
+    expectVendorStyleValues(jsonRoundTrip);
+
+    const xmlRoundTrip = new GFFObject();
+    xmlRoundTrip.fromXML(original.toXML());
+    expectVendorStyleValues(xmlRoundTrip);
+
+    const yamlRoundTrip = new GFFObject();
+    yamlRoundTrip.fromYAML(original.toYAML());
+    expectVendorStyleValues(yamlRoundTrip);
+
+    const tomlRoundTrip = new GFFObject();
+    tomlRoundTrip.fromTOML(original.toTOML());
+    expectVendorStyleValues(tomlRoundTrip);
+  });
+
+  it('rejects truncated or invalid binary headers', () => {
+    expect(() => new GFFObject(new Uint8Array(12))).toThrow('Invalid GFF header');
+
+    const valid = buildVendorStyleGff().getExportBuffer();
+    const invalidVersion = valid.slice();
+    invalidVersion.set(Uint8Array.from(Buffer.from('V9.9', 'latin1')), 4);
+    expect(() => new GFFObject(invalidVersion)).toThrow('Unsupported GFF version: V9.9');
+
+    const truncated = valid.slice(0, valid.length - 1);
+    expect(() => new GFFObject(truncated)).toThrow('Invalid GFF');
+  });
+});

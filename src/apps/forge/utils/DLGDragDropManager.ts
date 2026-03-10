@@ -2,7 +2,6 @@
  * DLGDragDropManager class.
  *
  * Manages drag and drop operations for DLG tree nodes.
- * Based on PyKotor's drag/drop implementation.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

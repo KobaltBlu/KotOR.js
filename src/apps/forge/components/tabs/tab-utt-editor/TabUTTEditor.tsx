@@ -135,7 +135,7 @@ export const TabUTTEditor = function(props: BaseTabProps){
         <>
           <table style={{ width: '100%' }}>
             <tbody>
-              <FormField label="Name" info="Localized label shown in toolset lists.">
+              <FormField label="Name" info="Localized label shown in editor lists.">
                 <CExoLocStringEditor value={localizedName} onChange={onUpdateCExoLocStringField(setLocalizedName, 'localizedName')} />
               </FormField>
               <FormField label="Template ResRef" info="Internal ResRef (max 16 chars, lowercase).">
@@ -157,7 +157,7 @@ export const TabUTTEditor = function(props: BaseTabProps){
               <FormField label="Faction" info="Faction index controlling hostility.">
                 <input type="number" value={faction} onChange={onUpdateByteField(setFaction, 'faction')} />
               </FormField>
-              <FormField label="Palette ID" info="Palette folder identifier in toolset.">
+              <FormField label="Palette ID" info="Palette folder identifier used by the editor.">
                 <input type="number" value={paletteID} onChange={onUpdateByteField(setPaletteID, 'paletteID')} />
               </FormField>
               <FormField label="Cursor" info="Index into cursors.2da.">

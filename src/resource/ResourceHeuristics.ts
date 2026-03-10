@@ -1,5 +1,5 @@
 /**
- * Resource type heuristics (PyKotor tools.heuristics parity).
+ * Resource type heuristics.
  * Resolve resource type from file extension or buffer content for use in loaders and Forge.
  *
  * @file ResourceHeuristics.ts
@@ -95,7 +95,7 @@ export function detectResourceTypeFromBuffer(buffer: Uint8Array): number | null 
   const decoded = new TextDecoder('utf-8', { fatal: false }).decode(buffer.slice(0, Math.min(256, buffer.length)));
   const lower = decoded.toLowerCase();
 
-  // TXI: keyword-based heuristic before TGA so text buffers are not misdetected as TGA (PyKotor txi_auto style)
+  // TXI: keyword-based heuristic before TGA so text buffers are not misdetected as TGA.
   const txiKeywords = ['blending', 'proceduretype', 'compresstexture', 'mipmap', 'isbumpmap', 'downsamplemin', 'downsamplemax', 'envmaptexture', 'bumpmaptexture', 'wateralpha'];
   if (txiKeywords.some((kw) => lower.includes(kw))) {
     return (ResourceTypes as Record<string, number>)['txi'] ?? null;

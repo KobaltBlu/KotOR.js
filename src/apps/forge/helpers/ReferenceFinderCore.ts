@@ -169,14 +169,21 @@ export function countOccurrencesInText(
 
 export function getWordAtIndex(text: string, index: number): string {
   if (!text || index < 0 || index >= text.length) return "";
-  const left = text.slice(0, index + 1);
-  const right = text.slice(index);
-  const leftMatch = left.match(/[A-Za-z0-9_]+$/);
-  const rightMatch = right.match(/^[A-Za-z0-9_]+/);
-  const leftPart = leftMatch ? leftMatch[0] : "";
-  const rightPart = rightMatch ? rightMatch[0] : "";
-  const word = `${leftPart}${rightPart}`;
-  return word.trim();
+  const current = text.charAt(index);
+  if (!/[A-Za-z0-9_]/.test(current)) return "";
+
+  let start = index;
+  let end = index;
+
+  while (start > 0 && /[A-Za-z0-9_]/.test(text.charAt(start - 1))) {
+    start--;
+  }
+
+  while (end + 1 < text.length && /[A-Za-z0-9_]/.test(text.charAt(end + 1))) {
+    end++;
+  }
+
+  return text.slice(start, end + 1).trim();
 }
 
 export function findAllReferencesInText(text: string, token: string): TextReferenceMatch[] {

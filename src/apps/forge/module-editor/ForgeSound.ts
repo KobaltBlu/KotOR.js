@@ -69,13 +69,13 @@ export class ForgeSound extends ForgeGameObject {
     if(!root) return;
 
     if(root.hasField('Active')){
-      this.active = root.getFieldByLabel('Active').getValue() || false;
+      this.active = !!root.getFieldByLabel('Active').getValue();
     }
     if(root.hasField('Comment')){
       this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
     if(root.hasField('Continuous')){
-      this.continuous = root.getFieldByLabel('Continuous').getValue() || false;
+      this.continuous = !!root.getFieldByLabel('Continuous').getValue();
     }
     if(root.hasField('Elevation')){
       this.elevation = root.getFieldByLabel('Elevation').getValue() || 0;
@@ -93,7 +93,7 @@ export class ForgeSound extends ForgeGameObject {
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('Looping')){
-      this.looping = root.getFieldByLabel('Looping').getValue() || false;
+      this.looping = !!root.getFieldByLabel('Looping').getValue();
     }
     if(root.hasField('MaxDistance')){
       this.maxDistance = root.getFieldByLabel('MaxDistance').getValue() || 0;
@@ -108,16 +108,16 @@ export class ForgeSound extends ForgeGameObject {
       this.pitchVariation = root.getFieldByLabel('PitchVariation').getValue() || 0;
     }
     if(root.hasField('Positional')){
-      this.positional = root.getFieldByLabel('Positional').getValue() || false;
+      this.positional = !!root.getFieldByLabel('Positional').getValue();
     }
     if(root.hasField('Priority')){
       this.priority = root.getFieldByLabel('Priority').getValue() || 0;
     }
     if(root.hasField('Random')){
-      this.random = root.getFieldByLabel('Random').getValue() || false;
+      this.random = !!root.getFieldByLabel('Random').getValue();
     }
     if(root.hasField('RandomPosition')){
-      this.randomPosition = root.getFieldByLabel('RandomPosition').getValue() || false;
+      this.randomPosition = !!root.getFieldByLabel('RandomPosition').getValue();
     }
     if(root.hasField('RandomRangeX')){
       this.randomRangeX = root.getFieldByLabel('RandomRangeX').getValue() || 0;
@@ -150,13 +150,12 @@ export class ForgeSound extends ForgeGameObject {
   }
 
   exportToBlueprint(): KotOR.GFFObject {
-    this.calculatePriority();
     this.blueprint = new KotOR.GFFObject();
     this.blueprint.FileType = 'UTS ';
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Active', this.active ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Continuous', this.continuous ? 1 : 0) );
@@ -186,9 +185,9 @@ export class ForgeSound extends ForgeGameObject {
     root.addField( soundsField );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Times', this.times) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Volume', this.volume) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'VolumeVrtn', this.volumeVariation) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Times', this.times) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Volume', this.volume) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'VolumeVrtn', this.volumeVariation) );
 
     return this.blueprint;
   }
@@ -196,7 +195,7 @@ export class ForgeSound extends ForgeGameObject {
   calculatePriority(){
     const isLooping = this.looping ? 1 : 0;
     const isPositional = this.positional ? 1 : 0;
-    
+
     // Row 4: Looping area-wide ambients (looping=1, positional=0)
     if (isLooping === 1 && isPositional === 0) {
       this.priority = PRIORITY_LOOPING_AREAWIDE_AMBIENTS;

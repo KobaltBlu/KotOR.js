@@ -1,5 +1,5 @@
 /**
- * Resource auto-detection and serialization (PyKotor resource_auto parity).
+ * Resource auto-detection and serialization.
  * Single entry point to read resource from buffer (with optional type hint) and serialize back to bytes.
  *
  * @file ResourceAuto.ts
@@ -96,7 +96,7 @@ export type ResourceToBytesFormat =
   | undefined;
 
 /**
- * Serialize a resource instance to bytes (PyKotor resource_to_bytes).
+ * Serialize a resource instance to bytes.
  * Format option is used for TwoDA (e.g. '2da'|'csv'|'json') and TPC (e.g. 'tpc'|'tga'|'dds').
  */
 export function resourceToBytes(

@@ -1,6 +1,5 @@
 /**
  * LIP Batch Processor - generates LIP files from WAV audio files.
- * Ported from Holocron Toolset's batch_processor.py
  *
  * Creates basic lip sync keyframes based on audio duration.
  * Uses simple shapes (MPB, AH, OH) evenly distributed over the duration.

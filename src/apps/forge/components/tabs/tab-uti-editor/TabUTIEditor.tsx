@@ -207,7 +207,7 @@ export const TabUTIEditor = function(props: BaseTabProps){
               <FormField label="Palette ID" info="Palette grouping for the item blueprint.">
                 <input type="number" min={0} max={255} value={paletteID} onChange={onUpdateByteField(setPaletteID, 'paletteID')} />
               </FormField>
-              <FormField label="Cost" info="Final item cost shown in toolset.">
+              <FormField label="Cost" info="Final item cost shown in editor views.">
                 <input type="number" min={0} value={cost} onChange={onUpdateNumberField(setCost, 'cost')} />
               </FormField>
               <FormField label="Additional Cost" info="AddCost modifier added after calculations.">

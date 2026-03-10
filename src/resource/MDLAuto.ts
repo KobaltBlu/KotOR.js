@@ -1,5 +1,5 @@
 /**
- * MDL format auto-detection and I/O (PyKotor mdl_auto parity).
+ * MDL format auto-detection and I/O.
  * Single entry point to detect format, read MDL (binary or ASCII), and serialize.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

@@ -48,7 +48,7 @@ export class TabTextEditorState extends TabState {
     if(this.manualLanguageId) {
       return this.manualLanguageId;
     }
-    
+
     // Otherwise, detect from file extension
     if(!this.file) return 'plaintext';
     const ext = this.file.ext?.toLowerCase();
@@ -65,10 +65,10 @@ export class TabTextEditorState extends TabState {
 
   setLanguageId(languageId: string | null): void {
     this.manualLanguageId = languageId;
-    
+
     const finalLanguageId = this.getLanguageId();
     const finalTheme = this.getTheme();
-    
+
     // Update editor model language if editor exists
     if(this.editor && this.monaco) {
       const model = this.editor.getModel();
@@ -78,14 +78,14 @@ export class TabTextEditorState extends TabState {
       // Update theme
       this.monaco.editor.setTheme(finalTheme);
     }
-    
+
     // Update diff editor models if in diff mode
     if(this.isDiffMode && this.originalModel && this.modifiedModel && this.monaco) {
       this.monaco.editor.setModelLanguage(this.originalModel, finalLanguageId);
       this.monaco.editor.setModelLanguage(this.modifiedModel, finalLanguageId);
       this.monaco.editor.setTheme(finalTheme);
     }
-    
+
     // Trigger linter with new language
     this.triggerLinterTimeout();
   }
@@ -109,7 +109,7 @@ export class TabTextEditorState extends TabState {
       this.tabName = this.file.getFilename();
     }
 
-    
+
     this.#tabErrorLogState = new TabScriptErrorLogState( { parentTab: this } );
     this.#tabCompileLogState = new TabScriptCompileLogState( { parentTab: this } );
     this.#tabScriptInspectorState = new TabScriptInspectorState( { parentTab: this } );
@@ -168,7 +168,7 @@ export class TabTextEditorState extends TabState {
             const decoder = new TextDecoder('utf8');
             this.code = decoder.decode(response.buffer);
             this.triggerLinterTimeout();
-            
+
             this.processEventListener('onEditorFileLoad');
             resolve();
           });
@@ -209,14 +209,14 @@ export class TabTextEditorState extends TabState {
         model.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
       }
     }
-    
+
     // Update diff editor models
     if(this.diffEditor) {
       const originalEditor = this.diffEditor.getOriginalEditor();
       const modifiedEditor = this.diffEditor.getModifiedEditor();
       const originalModel = originalEditor.getModel();
       const modifiedModel = modifiedEditor.getModel();
-      
+
       if(originalModel) {
         originalModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
       }
@@ -224,7 +224,7 @@ export class TabTextEditorState extends TabState {
         modifiedModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
       }
     }
-    
+
     // Update standalone models if they exist
     if(this.originalModel) {
       this.originalModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
@@ -244,31 +244,31 @@ export class TabTextEditorState extends TabState {
 
   switchToDiffMode(): void {
     if(!this.monaco || !this.editor) return;
-    
+
     // Capture current text as original (left side)
     this.originalText = this.code;
-    
+
     // Create models for original and modified text
     const langId = this.getLanguageId();
     this.originalModel = this.monaco.editor.createModel(this.originalText, langId);
     this.modifiedModel = this.monaco.editor.createModel(this.code, langId);
-    
+
     // Apply tab size to models
     this.originalModel.updateOptions({ tabSize: this.tabSize });
     this.modifiedModel.updateOptions({ tabSize: this.tabSize });
-    
+
     this.isDiffMode = true;
     this.processEventListener('onDiffModeChanged');
   }
 
   switchToRegularMode(): void {
     if(!this.diffEditor) return;
-    
+
     // Get the current modified text from the diff editor
     const modifiedEditor = this.diffEditor.getModifiedEditor();
     const modifiedText = modifiedEditor.getValue();
     this.code = modifiedText;
-    
+
     // Dispose models
     if(this.originalModel) {
       this.originalModel.dispose();
@@ -278,11 +278,11 @@ export class TabTextEditorState extends TabState {
       this.modifiedModel.dispose();
       this.modifiedModel = null;
     }
-    
+
     // Dispose diff editor
     this.diffEditor.dispose();
     this.diffEditor = null;
-    
+
     this.isDiffMode = false;
     this.originalText = ``;
     this.processEventListener('onDiffModeChanged');
@@ -306,9 +306,9 @@ export class TabTextEditorState extends TabState {
 
   triggerLinter(){
     if(!this.editor || !this.monaco) return;
-    
+
     const langId = this.getLanguageId();
-    
+
     // Handle LYT files
     if(langId === 'lyt'){
       try{
@@ -332,18 +332,18 @@ export class TabTextEditorState extends TabState {
       }
       return;
     }
-    
+
     // Handle NWScript files
     if(langId === 'nwscript'){
       this.resolveIncludes(this.code, this.resolvedIncludes).then( (resolvedIncludes) => {
         this.resolvedIncludes = resolvedIncludes;
         try{
           this.nwScriptParser.parseScript( [ [...this.resolvedIncludes.values()].join("\n"), this.code ].join("\n") );
-          
+
           // Update local functions in the tokenizer for syntax highlighting
           const localFunctions = (this.nwScriptParser.program?.functions || []).map((f: SemanticFunctionNode) => f.name);
           NWScriptLanguageService.updateLocalFunctions(localFunctions);
-          
+
           console.log(this.nwScriptParser.errors);
           const markers: any[] = [ ];
           for(let i = 0; i < this.nwScriptParser.errors.length; i++){
@@ -384,7 +384,7 @@ export class TabTextEditorState extends TabState {
               message: e.message
             }];
             this.#tabErrorLogState.setErrors(markers);
-    
+
             if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', markers);
           }else{
             if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', []);
@@ -394,7 +394,7 @@ export class TabTextEditorState extends TabState {
       });
       return;
     }
-    
+
     // For other file types, clear markers
     if(this.editor) {
       const model = this.editor.getModel() as monacoEditor.editor.ITextModel;
@@ -508,5 +508,5 @@ export class TabTextEditorState extends TabState {
       //   NotificationManager.Notify(NotificationManager.Types.ALERT, `Parse: Failed! - with errors (${this.nwScriptParser.errors.length})`);
       // }
   }
-  
+
 }

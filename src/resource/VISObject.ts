@@ -3,6 +3,7 @@ import type { IVISRoom } from "@/interface/module/IVISRoom";
 import type { ModuleArea, ModuleRoom } from "@/module";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { BitWise } from "@/utility/BitWise";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
 import { GameFileSystem } from "@/utility/GameFileSystem";
 
 enum VISReadMode {
@@ -18,14 +19,14 @@ interface IReadContext {
 
 /**
  * VISObject class.
- * 
+ *
  * Class representing a Extra Texture Information file in memory.
- * 
- * CHILD_ROOMS are rooms that are visible from the parent room. The engine will not 
+ *
+ * CHILD_ROOMS are rooms that are visible from the parent room. The engine will not
  * render rooms that are not present in this list when you are standing in a parent room
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file VISObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -47,6 +48,21 @@ export class VISObject {
 
   constructor ( data?: Uint8Array ) {
     this.data = data;
+    if (data?.length) {
+      this.read(data);
+    }
+  }
+
+  private finalizeCurrentRoom(): void {
+    if (!this.readContext.currentRoom?.name) {
+      return;
+    }
+
+    if (this.readContext.linkedRoomCount !== this.readContext.currentRoom.count) {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
+
+    this.addRoom();
   }
 
   read(data?: Uint8Array){
@@ -70,10 +86,10 @@ export class VISObject {
 
     /**
      * VIS Object File Format
-     * [Parent Room] 
+     * [Parent Room]
      *  - room_name number_of_child_rooms
      *  - regex: ^([^\s]+)[\s|\t](\d+)\n
-     * [Child Room] 
+     * [Child Room]
      *  - child_room_name
      *  - regex: ^\s{2}([^\s]+)\n
      */
@@ -108,12 +124,17 @@ export class VISObject {
         //If we are still in CHILD_ROOMS mode and the current line is a room.
         //Push the currentRoom to the rooms array and reset the current room var
         if(this.readContext.mode == VISReadMode.CHILD_ROOMS){
+          this.finalizeCurrentRoom();
           this.resetReadContext();
         }
 
         this.readContext.mode = VISReadMode.ROOM;
 
-        const args = line.split(' ');
+        const args = line.split(/\s+/);
+
+        if (!args[1] || Number.isNaN(Number.parseInt(args[1], 10))) {
+          continue;
+        }
 
         this.readContext.currentRoom.name = args[0];
         this.readContext.currentRoom.count = parseInt(args[1]);
@@ -121,6 +142,7 @@ export class VISObject {
       }
     }
 
+    this.finalizeCurrentRoom();
     this.resetReadContext();
     // console.log('VISObject.read: Done!');
   }
@@ -128,12 +150,23 @@ export class VISObject {
   /**
    * Add a room to the rooms map
    */
-  addRoom(): void {
+  addRoom(roomName?: string): void {
+    if (roomName != null) {
+      const key = roomName.toLocaleLowerCase();
+      if (!this.rooms.has(key)) {
+        this.rooms.set(key, { name: key, count: 0, rooms: [] });
+      }
+      return;
+    }
+
     if(!this.readContext.currentRoom?.name){
       return;
     }
 
     const room = this.readContext.currentRoom;
+    room.name = room.name.toLocaleLowerCase();
+    room.rooms = room.rooms.map((entry) => entry.toLocaleLowerCase());
+    room.count = room.rooms.length;
     this.rooms.set(room.name, room);
   }
 
@@ -142,10 +175,6 @@ export class VISObject {
    * @returns A newly initialized IVISRoom object
    */
   resetReadContext () {
-    if(this.readContext.currentRoom){
-      this.addRoom();
-    }
-
     this.readContext = {
       mode: VISReadMode.ROOM,
       currentRoom: {
@@ -269,6 +298,97 @@ export class VISObject {
     });
 
   }
+
+  roomExists(room = ''): boolean {
+    return this.rooms.has(room.toLocaleLowerCase());
+  }
+
+  getVisible(source = '', target = ''): boolean {
+    return this.getVisibleRooms(source).includes(target.toLocaleLowerCase());
+  }
+
+  setVisible(source = '', target = '', visible = true): void {
+    const sourceKey = source.toLocaleLowerCase();
+    const targetKey = target.toLocaleLowerCase();
+    this.addRoom(sourceKey);
+    this.addRoom(targetKey);
+    const room = this.rooms.get(sourceKey);
+    if (!room) {
+      return;
+    }
+    room.rooms = room.rooms.filter((entry) => entry !== targetKey);
+    if (visible) {
+      room.rooms.push(targetKey);
+    }
+    room.count = room.rooms.length;
+  }
+
+  setAllVisible(): void {
+    const roomNames = Array.from(this.rooms.keys());
+    roomNames.forEach((roomName) => {
+      const room = this.rooms.get(roomName);
+      if (!room) {
+        return;
+      }
+      room.rooms = roomNames.filter((entry) => entry !== roomName);
+      room.count = room.rooms.length;
+    });
+  }
+
+  removeRoom(room = ''): void {
+    const key = room.toLocaleLowerCase();
+    this.rooms.delete(key);
+    this.rooms.forEach((visRoom) => {
+      visRoom.rooms = visRoom.rooms.filter((entry) => entry !== key);
+      visRoom.count = visRoom.rooms.length;
+    });
+  }
+
+  toBuffer(): Uint8Array {
+    const writer = new BinaryWriter();
+    const rooms = Array.from(this.rooms.values());
+    for (let i = 0; i < rooms.length; i++) {
+      const room = rooms[i];
+      writer.writeChars(`${room.name} ${room.rooms.length}`);
+      writer.writeByte(10);
+      for (let j = 0; j < room.rooms.length; j++) {
+        writer.writeChars(`  ${room.rooms[j]}`);
+        if (i < rooms.length - 1 || j < room.rooms.length - 1) {
+          writer.writeByte(10);
+        }
+      }
+    }
+    return writer.buffer;
+  }
+
+  toJSON(): { rooms: Array<{ name: string; count: number; rooms: string[] }> } {
+    return {
+      rooms: Array.from(this.rooms.values()).map((room) => ({
+        name: room.name,
+        count: room.rooms.length,
+        rooms: [...room.rooms],
+      })),
+    };
+  }
+
+  fromJSON(json: string | ReturnType<VISObject['toJSON']>): void {
+    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<VISObject['toJSON']> : json;
+    this.rooms.clear();
+    (data.rooms || []).forEach((room) => {
+      this.rooms.set(room.name.toLocaleLowerCase(), {
+        name: room.name.toLocaleLowerCase(),
+        count: room.rooms.length,
+        rooms: room.rooms.map((entry) => entry.toLocaleLowerCase()),
+      });
+    });
+  }
+
+  toXML(): string { return objectToXML(this.toJSON()); }
+  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<VISObject['toJSON']>); }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<VISObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<VISObject['toJSON']>); }
 
 }
 

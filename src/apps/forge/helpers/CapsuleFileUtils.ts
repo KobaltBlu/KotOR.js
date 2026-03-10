@@ -1,5 +1,5 @@
 /**
- * Capsule file type utilities (ported from PyKotor is_mod_file, is_erf_file, is_rim_file).
+ * Capsule file type utilities.
  */
 
 const MOD_ERF_RIM = /\.(mod|erf|rim)$/i;

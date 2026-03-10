@@ -17,6 +17,7 @@ export interface ItemPropertyEntry {
   param1Value: number;
   propertyName: number;
   subtype: number;
+  upgradeType?: number;
 }
 
 export class TabUTIEditorState extends TabState {

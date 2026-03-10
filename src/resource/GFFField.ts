@@ -442,13 +442,16 @@ export class GFFField {
         this.value = val;
       break;
       case GFFDataType.CHAR:
-        if(!val)
-          val = '';
+        if(typeof val === 'undefined'){
+          val = 0;
+        }
 
-        if(typeof val !== 'string')
-          val = val.toString()
-
-        this.value = val.toString();
+        if(val >= -128 && val <= 127){
+          this.value = val;
+        }else{
+          console.error('Field.setValue CHAR OutOfBounds', val, this);
+          this.value = val;
+        }
       break;
       case GFFDataType.BYTE:
         if(typeof val === 'undefined'){

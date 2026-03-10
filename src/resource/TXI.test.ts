@@ -1,10 +1,40 @@
 import { TXI } from '@/resource/TXI';
 
 describe('TXI', () => {
+  const sampleFontTXI = `
+    mipmap 0
+    filter 0
+    numchars 3
+    fontheight 0.500000
+    baselineheight 0.400000
+    texturewidth 1.000000
+    spacingr 0.002600
+    spacingb 0.100000
+    caretindent -0.010000
+    upperleftcoords 3
+    0.000000 0.000000 0
+    0.062500 0.000000 0
+    0.125000 0.000000 0
+    lowerrightcoords 3
+    0.062500 0.125000 0
+    0.125000 0.125000 0
+    0.187500 0.125000 0
+  `;
+
   it('parses from string', () => {
     const txi = new TXI('compresstexture 0\nmipmap 1');
     expect(txi.isCompressed).toBe(false);
     expect(txi.mipMap).toBe(1);
+  });
+
+  it('parseBlending handles default, additive, and punchthrough variants', () => {
+    expect(TXI.parseBlending('default')).toBe(0);
+    expect(TXI.parseBlending('DeFaUlT')).toBe(0);
+    expect(TXI.parseBlending('additive')).toBe(1);
+    expect(TXI.parseBlending('AdDiTiVe')).toBe(1);
+    expect(TXI.parseBlending('punchthrough')).toBe(2);
+    expect(TXI.parseBlending('punch-through')).toBe(2);
+    expect(TXI.parseBlending('invalid')).toBe(0);
   });
 
   it('fromBuffer parses Uint8Array', () => {
@@ -33,5 +63,30 @@ describe('TXI', () => {
     expect(txi2.numx).toBe(txi.numx);
     expect(txi2.numy).toBe(txi.numy);
     expect(txi2.fps).toBe(txi.fps);
+  });
+
+  it('parses indented font coordinate data', () => {
+    const txi = new TXI(sampleFontTXI);
+
+    expect(txi.mipMap).toBe(0);
+    expect(txi.filter).toBe(0);
+    expect(txi.numchars).toBe(3);
+    expect(txi.fontheight).toBeCloseTo(0.5);
+    expect(txi.baselineheight).toBeCloseTo(0.4);
+    expect(txi.texturewidth).toBeCloseTo(1.0);
+    expect(txi.upperleftcoords).toHaveLength(3);
+    expect(txi.lowerrightcoords).toHaveLength(3);
+    expect(txi.upperleftcoords[1]).toEqual({ x: 0.0625, y: 0, z: 0 });
+    expect(txi.lowerrightcoords[2]).toEqual({ x: 0.1875, y: 0.125, z: 0 });
+  });
+
+  it('toBuffer and fromBuffer preserve font feature counts', () => {
+    const txi = new TXI(sampleFontTXI);
+    const written = TXI.fromBuffer(txi.toBuffer());
+
+    expect(written.numchars).toBe(txi.numchars);
+    expect(written.fontheight).toBeCloseTo(txi.fontheight);
+    expect(written.upperleftcoords).toHaveLength(txi.upperleftcoords.length);
+    expect(written.lowerrightcoords).toHaveLength(txi.lowerrightcoords.length);
   });
 });

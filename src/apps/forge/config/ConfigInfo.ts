@@ -1,20 +1,20 @@
 /**
- * ConfigInfo – Forge/KotOR.js version and update metadata (ported from Holocron Toolset config_info).
+ * ConfigInfo – Forge/KotOR.js version and update metadata.
  * This is the source of truth for CURRENT_VERSION and update links.
  */
 
 export interface LocalProgramInfo {
   currentVersion: string;
-  toolsetLatestVersion: string;
-  toolsetLatestBetaVersion: string;
+  latestVersion: string;
+  latestBetaVersion: string;
   updateInfoLink: string;
   updateBetaInfoLink: string;
-  toolsetDownloadLink: string;
-  toolsetBetaDownloadLink: string;
-  toolsetDirectLinks: Record<string, Record<string, string[]>>;
-  toolsetBetaDirectLinks: Record<string, Record<string, string[]>>;
-  toolsetLatestNotes: string;
-  toolsetLatestBetaNotes: string;
+  downloadLink: string;
+  betaDownloadLink: string;
+  directLinks: Record<string, Record<string, string[]>>;
+  betaDirectLinks: Record<string, Record<string, string[]>>;
+  latestNotes: string;
+  latestBetaNotes: string;
   repoUrl?: string;
   help?: { version: number };
   kits?: Record<string, { version: number; id: string }> & { repository?: string; release_tag?: string };
@@ -26,26 +26,26 @@ export interface LocalProgramInfo {
  */
 export const LOCAL_PROGRAM_INFO: LocalProgramInfo = {
   currentVersion: "2.0.0",
-  toolsetLatestVersion: "2.0.0",
-  toolsetLatestBetaVersion: "2.0.0",
+  latestVersion: "2.0.0",
+  latestBetaVersion: "2.0.0",
   updateInfoLink: "https://api.github.com/repos/KobaltBlu/KotOR.js/contents/package.json",
   updateBetaInfoLink: "https://api.github.com/repos/KobaltBlu/KotOR.js/contents/package.json?ref=develop",
-  toolsetDownloadLink: "https://github.com/KobaltBlu/KotOR.js/releases",
-  toolsetBetaDownloadLink: "https://github.com/KobaltBlu/KotOR.js/releases",
-  toolsetDirectLinks: {
+  downloadLink: "https://github.com/KobaltBlu/KotOR.js/releases",
+  betaDownloadLink: "https://github.com/KobaltBlu/KotOR.js/releases",
+  directLinks: {
     Windows: { "64bit": ["https://github.com/KobaltBlu/KotOR.js/releases"] },
     Darwin: { "64bit": ["https://github.com/KobaltBlu/KotOR.js/releases"] },
     Linux: { "64bit": ["https://github.com/KobaltBlu/KotOR.js/releases"] },
   },
-  toolsetBetaDirectLinks: {
+  betaDirectLinks: {
     Windows: { "64bit": ["https://github.com/KobaltBlu/KotOR.js/releases"] },
     Darwin: { "64bit": ["https://github.com/KobaltBlu/KotOR.js/releases"] },
     Linux: { "64bit": ["https://github.com/KobaltBlu/KotOR.js/releases"] },
   },
   /** KotOR.js/Forge repo (used by About dialog). */
   repoUrl: "https://github.com/KobaltBlu/KotOR.js",
-  toolsetLatestNotes: "Forge editor for KotOR I & II resources.",
-  toolsetLatestBetaNotes: "Forge editor for KotOR I & II resources.",
+  latestNotes: "Forge editor for KotOR I & II resources.",
+  latestBetaNotes: "Forge editor for KotOR I & II resources.",
   help: { version: 1 },
 };
 

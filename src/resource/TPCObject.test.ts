@@ -242,4 +242,87 @@ describe('TPCObject', () => {
     expect(tpc2.header.width).toBe(tpc.header.width);
     expect(tpc2.header.height).toBe(tpc.header.height);
   });
+
+  // --- Vendor-derived: DXT block size and multi-mipmap ---
+
+  it('DXT1 compressed 4x4 has correct data length (one block)', () => {
+    const dxt1Block = makeDXT1Buffer(4, 4);
+    const tpc = new TPCObject({ file: dxt1Block, filename: 'dxt1', pack: 0 });
+    expect(tpc.header.width).toBe(4);
+    expect(tpc.header.height).toBe(4);
+    expect(tpc.header.compressed).toBe(true);
+    // DXT1: 8 bytes per 4x4 block → 1 block = 8 bytes
+    expect(tpc.getDataLength()).toBe(8);
+  });
+
+  it('DXT1 compressed 8x8 has correct data length (four blocks)', () => {
+    const dxt1 = makeDXT1Buffer(8, 8);
+    const tpc = new TPCObject({ file: dxt1, filename: 'dxt1_8', pack: 0 });
+    expect(tpc.header.width).toBe(8);
+    expect(tpc.header.height).toBe(8);
+    // 8x8 → (8/4)*(8/4) = 4 blocks × 8 bytes = 32 bytes
+    expect(tpc.getDataLength()).toBe(32);
+  });
+
+  it('TGA round-trip preserves dimensions and pixel byte count for uncompressed RGBA', () => {
+    // Build a TPC with known non-zero pixel data
+    const headerLen = 128;
+    const w = 2, h = 2;
+    const dataSize = w * h * 4;
+    const total = headerLen + dataSize + 1;
+    const bw2 = new BinaryWriter(new Uint8Array(total));
+    bw2.writeUInt32(0);
+    bw2.writeSingle(1.0);
+    bw2.writeUInt16(w);
+    bw2.writeUInt16(h);
+    bw2.writeByte(ENCODING.RGBA);
+    bw2.writeByte(1);
+    for (let i = 0; i < 114; i++) bw2.writeByte(0);
+    // Write distinct pixel bytes
+    for (let i = 0; i < dataSize; i++) bw2.writeByte((i * 37) & 0xff);
+    bw2.writeByte(0);
+
+    const tpc = new TPCObject({ file: bw2.buffer, filename: 'test', pack: 0 });
+    const tga = tpc.toTGABuffer();
+    const tpc2 = readTPCFromBuffer(tga, 'roundtrip.tga');
+    expect(tpc2.header.width).toBe(w);
+    expect(tpc2.header.height).toBe(h);
+    expect(tpc2.getDataLength()).toBe(dataSize);
+  });
+
+  it('readTPCFromBuffer rejects truncated TPC header', () => {
+    // A buffer with the right structure hint but too short for a real TPC
+    const short = new Uint8Array(64);
+    // Not a DDS, BMP, or valid TGA → falls through to TGA path and should fail
+    expect(() => readTPCFromBuffer(short, 'truncated.tpc')).toThrow();
+  });
+
+  it('toBuffer preserves encoding field through round-trip', () => {
+    const buf = makeMinimalTPC();
+    const tpc1 = new TPCObject({ file: buf, filename: 'test', pack: 0 });
+    const out = tpc1.toBuffer();
+    const tpc2 = new TPCObject({ file: out, filename: 'test2', pack: 0 });
+    expect(tpc2.header.encoding).toBe(tpc1.header.encoding);
+  });
 });
+
+// --- Helper: build a minimal DXT1-compressed TPC buffer ---
+
+function makeDXT1Buffer(w: number, h: number): Uint8Array {
+  const headerLen = 128;
+  const blocksX = Math.max(1, (w + 3) >> 2);
+  const blocksY = Math.max(1, (h + 3) >> 2);
+  const dataSize = blocksX * blocksY * 8; // DXT1: 8 bytes per block
+  const total = headerLen + dataSize + 1;  // +1 null TXI
+  const bw = new BinaryWriter(new Uint8Array(total));
+  bw.writeUInt32(dataSize); // compressed (non-zero = compressed data size)
+  bw.writeSingle(1.0);
+  bw.writeUInt16(w);
+  bw.writeUInt16(h);
+  bw.writeByte(ENCODING.RGB); // DXT1 uses RGB encoding
+  bw.writeByte(1); // 1 mipmap
+  for (let i = 0; i < 114; i++) bw.writeByte(0);
+  for (let i = 0; i < dataSize; i++) bw.writeByte(0);
+  bw.writeByte(0);
+  return bw.buffer;
+}

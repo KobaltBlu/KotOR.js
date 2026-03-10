@@ -67,7 +67,11 @@ export class ForgeStore extends ForgeGameObject {
         return {
           inventoryRes: struct.hasField('InventoryRes') ? struct.getFieldByLabel('InventoryRes').getValue() || '' : '',
           reposPosX: struct.hasField('Repos_PosX') ? struct.getFieldByLabel('Repos_PosX').getValue() || 0 : 0,
-          reposPosY: struct.hasField('Repos_Posy') ? struct.getFieldByLabel('Repos_Posy').getValue() || 0 : 0,
+          reposPosY: struct.hasField('Repos_PosY')
+            ? struct.getFieldByLabel('Repos_PosY').getValue() || 0
+            : struct.hasField('Repos_Posy')
+              ? struct.getFieldByLabel('Repos_Posy').getValue() || 0
+              : 0,
         } as StoreItemEntry;
       });
     }
@@ -98,11 +102,11 @@ export class ForgeStore extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BuySellFlag', this.buySellFlag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'ID', this.id) );
-    
+
     const itemListField = root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.itemList.length; i++){
       if(itemListField){
@@ -110,11 +114,11 @@ export class ForgeStore extends ForgeGameObject {
         const item = this.itemList[i];
         itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'InventoryRes', item.inventoryRes || '') );
         itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Repos_PosX', item.reposPosX || 0) );
-        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Repos_Posy', item.reposPosY || 0) );
+        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Repos_PosY', item.reposPosY || 0) );
         itemListField.addChildStruct(itemStruct);
       }
     }
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocName', this.locName) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'MarkDown', this.markDown) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'MarkUp', this.markUp) );
@@ -129,7 +133,7 @@ export class ForgeStore extends ForgeGameObject {
     this.updateBoundingBox();
   }
 
-  getGITInstance(): KotOR.GFFStruct { 
+  getGITInstance(): KotOR.GFFStruct {
     const instance = new KotOR.GFFStruct(11);
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ResRef', this.resref));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', this.rotation.z));

@@ -1,6 +1,5 @@
 /**
  * CloneModule – clone a KotOR module (MOD) with new identifier/name.
- * Ported from PyKotor toolset clone_module logic.
  */
 
 import { ERFObject } from "@/resource/ERFObject";

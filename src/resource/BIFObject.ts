@@ -4,17 +4,18 @@ import { IBIFResource } from "@/interface/resource/IBIFResource";
 import { IResourceDiskInfo } from "@/interface/resource/IResourceDiskInfo";
 import { KEYManager } from "@/managers/KEYManager";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
 import { GameFileSystem } from "@/utility/GameFileSystem";
 
 const BIF_HEADER_SIZE = 20;
 
 /**
  * BIFObject class.
- * 
+ *
  * Class representing a BIF archive file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BIFObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -75,7 +76,37 @@ export class BIFObject {
   }
 
   readFromMemory(){
-    //TODO
+    if (!this.inMemory || !(this.buffer instanceof Uint8Array)) {
+      throw new Error('BIFObject.readFromMemory requires an in-memory buffer');
+    }
+    if (this.buffer.length < BIF_HEADER_SIZE) {
+      throw new Error('BIF buffer too short for header');
+    }
+
+    this.reader = new BinaryReader(this.buffer);
+    this.fileType = this.reader.readChars(4);
+    this.fileVersion = this.reader.readChars(4);
+    this.variableResourceCount = this.reader.readUInt32();
+    this.fixedResourceCount = this.reader.readUInt32();
+    this.variableTableOffset = this.reader.readUInt32();
+
+    if (this.fileType !== 'BIFF' || this.fileVersion !== 'V1  ') {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
+
+    this.variableTableRowSize = 16;
+    this.variableTableSize = this.variableResourceCount * this.variableTableRowSize;
+    this.resources = [];
+
+    this.reader.seek(this.variableTableOffset);
+    for (let i = 0; i < this.variableResourceCount; i++) {
+      this.resources.push({
+        Id: this.reader.readUInt32(),
+        offset: this.reader.readUInt32(),
+        size: this.reader.readUInt32(),
+        resType: this.reader.readUInt32(),
+      } as IBIFResource);
+    }
   }
 
   async readFromDisk(){
@@ -89,6 +120,10 @@ export class BIFObject {
     this.variableResourceCount = this.reader.readUInt32();
     this.fixedResourceCount = this.reader.readUInt32();
     this.variableTableOffset = this.reader.readUInt32();
+
+    if (this.fileType !== 'BIFF' || this.fileVersion !== 'V1  ') {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
 
     this.variableTableRowSize = 16;
     this.variableTableSize = this.variableResourceCount * this.variableTableRowSize;
@@ -157,6 +192,10 @@ export class BIFObject {
     if(!res){ return new Uint8Array(0); }
     if(!res.size){ return new Uint8Array(0); }
 
+    if (this.inMemory && this.buffer instanceof Uint8Array) {
+      return this.buffer.slice(res.offset, res.offset + res.size);
+    }
+
     try{
       const fd = await GameFileSystem.open(this.resourceDiskInfo.path, 'r')
       const buffer = new Uint8Array(res.size);
@@ -178,6 +217,43 @@ export class BIFObject {
 
     return await this.getResourceBuffer(resource);
   }
+
+  toJSON(): { fileType: string; fileVersion: string; variableResourceCount: number; fixedResourceCount: number; variableTableOffset: number; resources: IBIFResource[] } {
+    return {
+      fileType: this.fileType,
+      fileVersion: this.fileVersion,
+      variableResourceCount: this.variableResourceCount,
+      fixedResourceCount: this.fixedResourceCount,
+      variableTableOffset: this.variableTableOffset,
+      resources: this.resources.map((resource) => ({ ...resource })),
+    };
+  }
+
+  fromJSON(json: string | ReturnType<BIFObject['toJSON']>): void {
+    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<BIFObject['toJSON']> : json;
+    this.fileType = data.fileType;
+    this.fileVersion = data.fileVersion;
+    this.variableResourceCount = data.variableResourceCount;
+    this.fixedResourceCount = data.fixedResourceCount;
+    this.variableTableOffset = data.variableTableOffset;
+    this.resources = (data.resources || []).map((resource) => ({ ...resource }));
+    this.variableTableRowSize = 16;
+    this.variableTableSize = this.variableResourceCount * this.variableTableRowSize;
+  }
+
+  toXML(): string { return objectToXML({ json: JSON.stringify(this.toJSON()) }); }
+  fromXML(xml: string): void {
+    const data = xmlToObject(xml) as { json?: string } | ReturnType<BIFObject['toJSON']>;
+    if (typeof (data as { json?: string }).json === 'string') {
+      this.fromJSON((data as { json: string }).json);
+      return;
+    }
+    this.fromJSON(data as ReturnType<BIFObject['toJSON']>);
+  }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<BIFObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<BIFObject['toJSON']>); }
 
   /*load( path: string, onLoad?: Function, onError?: Function ){
 

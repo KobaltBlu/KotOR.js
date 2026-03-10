@@ -1,5 +1,5 @@
 /**
- * Help contents and topic URLs for Forge (aligned with Holocron Toolset help structure).
+ * Help contents and topic URLs for Forge.
  * Maps topic names to wiki/documentation URLs. Used for Help menu and onboarding.
  */
 import { WIKI_BASE_URL } from "@/apps/forge/data/EditorWikiMapping";
@@ -23,7 +23,7 @@ function doc(name: string, file: string): HelpDocument {
 export const GETTING_STARTED_BLOB_URL =
   "https://github.com/KobaltBlu/KotOR.js/blob/master/src/apps/forge/help/getting-started.md";
 
-/** Introduction and getting started (Holocron-aligned section names). */
+/** Introduction and getting started section. */
 export const HELP_INTRODUCTION: HelpFolder = {
   name: "Introduction",
   documents: [

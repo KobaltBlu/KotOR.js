@@ -21,7 +21,7 @@ export interface ReferenceSearchOptionsStateValues {
 
 export class ModalReferenceSearchOptionsState extends ModalState {
   title: string = "Reference Search Options";
-  /** File types from ReferenceSearchConfig (Holocron-aligned). */
+  /** File types from ReferenceSearchConfig. */
   fileTypeOptions: string[] = getAllSearchableFileTypes();
 
   #partialMatch: boolean;

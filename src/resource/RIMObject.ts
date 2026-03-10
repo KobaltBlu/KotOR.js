@@ -1,5 +1,6 @@
-﻿import * as path from 'path';
+import * as path from 'path';
 import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
 import { GameFileSystem } from '@/utility/GameFileSystem';
 import { ResourceTypes } from '@/resource/ResourceTypes';
 import { IRIMResource } from '@/interface/resource/IRIMResource';
@@ -36,6 +37,8 @@ export class RIMObject {
 
     this.resources = [];
     this.inMemory = false;
+    this.group = 'rim';
+    this.type = 'rim';
 
     if(typeof file == 'string'){
       this.resource_path = file;
@@ -50,6 +53,13 @@ export class RIMObject {
       this.resourceMap.set(value, new Map());
     });
 
+  }
+
+  static fromBufferSync(buffer: Uint8Array): RIMObject {
+    const rim = new RIMObject(buffer);
+    rim.readHeaderFromBuffer(buffer);
+    rim.reader?.dispose();
+    return rim;
   }
 
   async load(): Promise<RIMObject> {
@@ -67,18 +77,30 @@ export class RIMObject {
   }
 
   readHeaderFromBuffer(buffer: Uint8Array){
+    this.reader = new BinaryReader(buffer);
     this.header = {} as IRIMHeader;
 
     this.header.fileType = this.reader.readChars(4);
     this.header.fileVersion = this.reader.readChars(4);
+
+    if (this.header.fileType !== 'RIM ' || this.header.fileVersion !== 'V1.0') {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
 
     this.reader.skip(4);
 
     this.header.resourceCount = this.reader.readUInt32();
     this.header.resourcesOffset = this.reader.readUInt32();
 
+    if (this.header.resourcesOffset < 20) {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
+
     //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
     this.rimDataOffset = (this.header.resourcesOffset + (this.header.resourceCount * 34));
+    if (this.rimDataOffset > buffer.length) {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
     const header = new Uint8Array(buffer.slice(0, this.rimDataOffset));
     this.reader = new BinaryReader(header);
     this.reader.seek(this.header.resourcesOffset);
@@ -176,7 +198,7 @@ export class RIMObject {
     try {
       if(this.inMemory && this.buffer instanceof Uint8Array){
         const buffer = new Uint8Array(resource.size);
-        buffer.set(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
+        buffer.set(this.buffer.slice(resource.offset, resource.offset + resource.size));
         return buffer;
       }else{
         const fd = await this.getFileDescription();
@@ -221,7 +243,7 @@ export class RIMObject {
     }
 
     if(this.inMemory){
-      const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
+      const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + resource.size));
       await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
       return buffer;
     }else{
@@ -235,6 +257,39 @@ export class RIMObject {
       return buffer;
     }
   }
+
+  toJSON(): { header: IRIMHeader; resources: IRIMResource[]; type: string; group: string } {
+    return {
+      header: { ...this.header },
+      resources: this.resources.map((resource) => ({ ...resource })),
+      type: this.type || 'rim',
+      group: this.group || 'rim',
+    };
+  }
+
+  fromJSON(json: string | ReturnType<RIMObject['toJSON']>): void {
+    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<RIMObject['toJSON']> : json;
+    this.header = { ...data.header };
+    this.type = data.type || 'rim';
+    this.group = data.group || 'rim';
+    this.resources = [];
+    this.resourceMap.clear();
+    (data.resources || []).forEach((resource) => this.addResource({ ...resource }));
+  }
+
+  toXML(): string { return objectToXML({ json: JSON.stringify(this.toJSON()) }); }
+  fromXML(xml: string): void {
+    const data = xmlToObject(xml) as { json?: string } | ReturnType<RIMObject['toJSON']>;
+    if (typeof (data as { json?: string }).json === 'string') {
+      this.fromJSON((data as { json: string }).json);
+      return;
+    }
+    this.fromJSON(data as ReturnType<RIMObject['toJSON']>);
+  }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<RIMObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<RIMObject['toJSON']>); }
 
 }
 

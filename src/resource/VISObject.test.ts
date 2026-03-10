@@ -2,31 +2,68 @@ import { VISObject } from '@/resource/VISObject';
 
 describe('VISObject', () => {
   const sampleVIS = [
-    'room001 2',
-    '  room002',
-    '  room003',
-    'room002 1',
-    '  room001',
+    'room_01 3',
+    '  room_02',
+    '  room_03',
+    '  room_04',
+    'room_02 1',
+    '  room_01',
+    'room_03 2',
+    '  room_01',
+    '  room_04',
+    'room_04 2',
+    '  room_03',
+    '  room_01',
+  ].join('\n');
+
+  const corruptVIS = [
+    'room_01 77',
+    '  room_02',
+    '     room_03',
+    '  room_04',
+    'room_02 1',
+    '     room_01',
   ].join('\n');
 
   it('read parses rooms and visibility', () => {
     const vis = new VISObject(new TextEncoder().encode(sampleVIS));
     vis.read();
-    expect(vis.rooms.size).toBeGreaterThanOrEqual(2);
-    expect(vis.getVisibleRooms('room001')).toContain('room002');
-    expect(vis.getVisibleRooms('room001')).toContain('room003');
+    expect(vis.rooms.size).toBe(4);
+    expect(vis.getVisibleRooms('room_01')).toContain('room_02');
+    expect(vis.getVisibleRooms('room_01')).toContain('room_03');
+    expect(vis.getVisibleRooms('room_01')).toContain('room_04');
   });
 
   it('constructor with data auto-reads', () => {
     const vis = new VISObject(new TextEncoder().encode(sampleVIS));
-    expect(vis.rooms.size).toBeGreaterThanOrEqual(2);
-    expect(vis.getVisibleRooms('room001')).toContain('room002');
+    expect(vis.rooms.size).toBe(4);
+    expect(vis.getVisibleRooms('room_01')).toContain('room_02');
+  });
+
+  it('preserves vendor-like room visibility semantics', () => {
+    const vis = new VISObject(new TextEncoder().encode(sampleVIS));
+
+    expect(vis.getVisible('room_01', 'room_02')).toBe(true);
+    expect(vis.getVisible('room_01', 'room_03')).toBe(true);
+    expect(vis.getVisible('room_01', 'room_04')).toBe(true);
+
+    expect(vis.getVisible('room_02', 'room_01')).toBe(true);
+    expect(vis.getVisible('room_02', 'room_03')).toBe(false);
+    expect(vis.getVisible('room_02', 'room_04')).toBe(false);
+
+    expect(vis.getVisible('room_03', 'room_01')).toBe(true);
+    expect(vis.getVisible('room_03', 'room_04')).toBe(true);
+    expect(vis.getVisible('room_03', 'room_02')).toBe(false);
+
+    expect(vis.getVisible('room_04', 'room_01')).toBe(true);
+    expect(vis.getVisible('room_04', 'room_03')).toBe(true);
+    expect(vis.getVisible('room_04', 'room_02')).toBe(false);
   });
 
   it('roomExists returns true for existing room', () => {
     const vis = new VISObject(new TextEncoder().encode(sampleVIS));
     vis.read();
-    expect(vis.roomExists('room001')).toBe(true);
+    expect(vis.roomExists('room_01')).toBe(true);
     expect(vis.roomExists('nonexistent')).toBe(false);
   });
 
@@ -51,20 +88,18 @@ describe('VISObject', () => {
   it('setAllVisible makes all rooms see each other', () => {
     const vis = new VISObject(new TextEncoder().encode(sampleVIS));
     vis.read();
-    // room003 appears only as a child in sampleVIS; ensure it exists so setAllVisible includes it
-    vis.addRoom('room003');
     vis.setAllVisible();
-    expect(vis.getVisible('room001', 'room002')).toBe(true);
-    expect(vis.getVisible('room001', 'room003')).toBe(true);
-    expect(vis.getVisible('room002', 'room001')).toBe(true);
+    expect(vis.getVisible('room_01', 'room_02')).toBe(true);
+    expect(vis.getVisible('room_01', 'room_03')).toBe(true);
+    expect(vis.getVisible('room_02', 'room_01')).toBe(true);
   });
 
   it('removeRoom removes room and references', () => {
     const vis = new VISObject(new TextEncoder().encode(sampleVIS));
     vis.read();
-    vis.removeRoom('room003');
-    expect(vis.roomExists('room003')).toBe(false);
-    expect(vis.getVisibleRooms('room001')).not.toContain('room003');
+    vis.removeRoom('room_03');
+    expect(vis.roomExists('room_03')).toBe(false);
+    expect(vis.getVisibleRooms('room_01')).not.toContain('room_03');
   });
 
   it('toBuffer round-trip', () => {
@@ -73,7 +108,16 @@ describe('VISObject', () => {
     expect(buf.length).toBeGreaterThan(0);
     const vis2 = new VISObject(buf);
     expect(vis2.rooms.size).toBe(vis.rooms.size);
-    expect(vis2.getVisibleRooms('room001')).toEqual(vis.getVisibleRooms('room001'));
+    expect(vis2.getVisibleRooms('room_01')).toEqual(vis.getVisibleRooms('room_01'));
+  });
+
+  it('toJSON and fromJSON round-trip room mappings', () => {
+    const vis = new VISObject(new TextEncoder().encode(sampleVIS));
+    const reloaded = new VISObject();
+    reloaded.fromJSON(vis.toJSON());
+
+    expect(reloaded.rooms.size).toBe(vis.rooms.size);
+    expect(reloaded.getVisibleRooms('room_04')).toEqual(vis.getVisibleRooms('room_04'));
   });
 
   it('skips version header lines', () => {
@@ -86,5 +130,44 @@ describe('VISObject', () => {
     vis.read();
     expect(vis.roomExists('room002')).toBe(true);
     expect(vis.getVisibleRooms('room002')).toContain('room001');
+  });
+
+  it('rejects malformed room counts', () => {
+    expect(() => new VISObject(new TextEncoder().encode(corruptVIS))).toThrow('Tried to save or load an unsupported or corrupted file.');
+  });
+
+  it('XML round-trip preserves room mappings', () => {
+    const vis = new VISObject(new TextEncoder().encode(sampleVIS));
+    const xml = vis.toXML();
+    expect(xml.length).toBeGreaterThan(0);
+    const reloaded = new VISObject();
+    reloaded.fromXML(xml);
+    expect(reloaded.rooms.size).toBe(vis.rooms.size);
+    expect(reloaded.getVisibleRooms('room_01')).toContain('room_02');
+  });
+
+  it('YAML round-trip preserves room mappings', () => {
+    const vis = new VISObject(new TextEncoder().encode(sampleVIS));
+    const yaml = vis.toYAML();
+    expect(yaml.length).toBeGreaterThan(0);
+    const reloaded = new VISObject();
+    reloaded.fromYAML(yaml);
+    expect(reloaded.rooms.size).toBe(vis.rooms.size);
+    expect(reloaded.getVisible('room_03', 'room_04')).toBe(true);
+  });
+
+  it('TOML round-trip preserves room mappings', () => {
+    const vis = new VISObject(new TextEncoder().encode(sampleVIS));
+    const toml = vis.toTOML();
+    expect(toml.length).toBeGreaterThan(0);
+    const reloaded = new VISObject();
+    reloaded.fromTOML(toml);
+    expect(reloaded.rooms.size).toBe(vis.rooms.size);
+    expect(reloaded.getVisible('room_04', 'room_01')).toBe(true);
+  });
+
+  it('empty VIS has no rooms', () => {
+    const vis = new VISObject(new TextEncoder().encode(''));
+    expect(vis.rooms.size).toBe(0);
   });
 });

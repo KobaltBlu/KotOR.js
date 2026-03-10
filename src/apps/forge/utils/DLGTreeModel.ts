@@ -2,7 +2,6 @@
  * DLGTreeModel class.
  *
  * Manages the tree structure and hierarchy for DLG nodes in the editor.
- * Based on PyKotor's DLGStandardItemModel implementation.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

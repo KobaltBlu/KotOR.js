@@ -2,7 +2,6 @@
  * DLGSearchBar component.
  *
  * Search, filter, and goto functionality for the DLG editor.
- * Based on PyKotor's search/find/goto implementation.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

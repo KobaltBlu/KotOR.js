@@ -1,6 +1,5 @@
 /**
  * ListModuleFiles – list MOD/RIM/ERF files in a game modules folder.
- * Ported from Holocron SelectModuleDialog module listing.
  * Used for "Load from game modules" and similar flows.
  */
 

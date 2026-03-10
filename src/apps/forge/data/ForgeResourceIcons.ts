@@ -1,11 +1,11 @@
 /**
- * Maps Forge resource type (extension) to Holocron-style icon identifiers.
+ * Maps Forge resource type (extension) to resource icon identifiers.
  * Used so UI (e.g. resource tree, file list) can show per-type icons.
- * Place Holocron PNGs in src/assets/forge/assets/icons/ named by icon id (e.g. k1_2da.png).
+ * Place PNGs in src/assets/forge/assets/icons/ named by icon id (e.g. k1_2da.png).
  * Standalone Forge and the extension webview both use this path (assets/icons/).
  */
 
-/** Extension (lowercase) -> icon id (matches Holocron icon filenames without .png). */
+/** Extension (lowercase) -> icon id. */
 export const RESOURCE_ICON_BY_EXTENSION: Record<string, string> = {
   '2da': 'k1_2da',
   are: 'k1_creature',
@@ -52,7 +52,7 @@ export const RESOURCE_ICON_BY_EXTENSION: Record<string, string> = {
   pwk: 'k1_walkmesh',
 };
 
-/** Relative path prefix for Holocron resource icons (resolve relative to app base). */
+/** Relative path prefix for resource icons (resolve relative to app base). */
 export const RESOURCE_ICON_PATH_PREFIX = 'assets/icons/';
 
 /**

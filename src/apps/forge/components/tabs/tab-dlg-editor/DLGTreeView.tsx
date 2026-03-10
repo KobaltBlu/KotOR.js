@@ -2,7 +2,6 @@
  * DLGTreeView component.
  *
  * React tree view component for displaying and editing DLG dialog structure.
- * Based on PyKotor's DLGTreeView implementation.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

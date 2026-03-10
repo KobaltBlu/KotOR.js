@@ -1,6 +1,5 @@
 /**
  * Field mappings and search configuration for reference finding.
- * Ported from Holocron Toolset's reference_search_config.py
  *
  * Defines which GFF fields should be searched for different types of references,
  * based on the KotOR findrefs utility functionality.

@@ -1,5 +1,5 @@
 /**
- * TwoDARegistry – canonical 2DA resnames used by the game (ported from Holocron/PyKotor).
+ * TwoDARegistry – canonical 2DA resnames used by the game.
  * Use these when loading 2DA files for editors (appearance, baseitems, classes, etc.).
  */
 

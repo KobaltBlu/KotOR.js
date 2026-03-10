@@ -1,5 +1,5 @@
 /**
- * Forge script compilation/conversion helper (ported from Holocron script_compiler).
+ * Forge script compilation and conversion helper.
  * Wraps NWScriptParser + NWScriptCompiler to compile NSS → NCS, and NWScript for NCS → NSS.
  */
 

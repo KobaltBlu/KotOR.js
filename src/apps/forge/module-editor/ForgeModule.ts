@@ -48,8 +48,8 @@ export class ForgeModule {
   expansionPack: number = 0;
 
   /**
-   * Arbitrarily generated 16-byte number sequence assigned when toolset creates a new module. It is never
-   * modified afterward by toolset. The game saves out 32 bytes instead of 16. Applications other than the toolset
+   * Arbitrarily generated 16-byte number sequence assigned when a module is created. It is never
+   * modified afterward by the editor. The game saves out 32 bytes instead of 16. Other applications
    * can set this to all null bytes when creating a new IFO file.
    */
   id: Uint8Array = new Uint8Array(16);

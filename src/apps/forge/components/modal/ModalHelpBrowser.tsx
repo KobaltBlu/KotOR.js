@@ -63,7 +63,7 @@ export const ModalHelpBrowser = (props: BaseModalProps) => {
       </Modal.Header>
       <Modal.Body>
         <p className="small text-muted">
-          Browse getting-started guides, tool overviews, and tutorials ported from the Holocron Toolset
+          Browse getting-started guides, tool overviews, and tutorials bundled with Forge
           documentation. Use the search box to locate topics quickly.
         </p>
         <Form className="mb-3" onSubmit={(event) => event.preventDefault()}>

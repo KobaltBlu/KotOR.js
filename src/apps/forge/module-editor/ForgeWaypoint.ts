@@ -55,7 +55,7 @@ export class ForgeWaypoint extends ForgeGameObject {
       this.description = root.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('HasMapNote')){
-      this.hasMapNote = root.getFieldByLabel('HasMapNote').getValue() || false;
+      this.hasMapNote = !!root.getFieldByLabel('HasMapNote').getValue();
     }
     if(root.hasField('LinkedTo')){
       this.linkedTo = root.getFieldByLabel('LinkedTo').getValue() || '';
@@ -67,7 +67,7 @@ export class ForgeWaypoint extends ForgeGameObject {
       this.mapNote = root.getFieldByLabel('MapNote').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('MapNoteEnabled')){
-      this.mapNoteEnabled = root.getFieldByLabel('MapNoteEnabled').getValue() || false;
+      this.mapNoteEnabled = !!root.getFieldByLabel('MapNoteEnabled').getValue();
     }
     if(root.hasField('PaletteID')){
       this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
@@ -86,7 +86,7 @@ export class ForgeWaypoint extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Appearance', this.appearance) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description) );
@@ -96,7 +96,7 @@ export class ForgeWaypoint extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'MapNote', this.mapNote) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'MapNoteEnabled', this.mapNoteEnabled ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Tag', this.tag) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') );
 
     return this.blueprint;
@@ -114,7 +114,7 @@ export class ForgeWaypoint extends ForgeGameObject {
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'LinkedTo', this.linkedTo));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'MapNote', this.mapNote));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'MapNoteEnabled', this.mapNoteEnabled ? 1 : 0));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Tag', this.tag));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', this.rotation.z));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', this.position.x));
@@ -127,10 +127,10 @@ export class ForgeWaypoint extends ForgeGameObject {
   setGITInstance(strt: KotOR.GFFStruct){
     this.appearance = strt.getFieldByLabel('Appearance').getValue() as number;
     this.description = strt.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
-    this.hasMapNote = strt.getFieldByLabel('HasMapNote').getValue() as boolean;
+    this.hasMapNote = !!strt.getFieldByLabel('HasMapNote').getValue();
     this.linkedTo = strt.getFieldByLabel('LinkedTo').getValue() as string;
     this.mapNote = strt.getFieldByLabel('MapNote').getCExoLocString() || new KotOR.CExoLocString();
-    this.mapNoteEnabled = strt.getFieldByLabel('MapNoteEnabled').getValue() as boolean;
+    this.mapNoteEnabled = !!strt.getFieldByLabel('MapNoteEnabled').getValue();
     this.tag = strt.getFieldByLabel('Tag').getValue() as string;
     this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
     this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;

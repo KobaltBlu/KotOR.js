@@ -1,6 +1,5 @@
 /**
  * Save a single resource to override folder (or any directory).
- * Ported from PyKotor Holocron Toolset save-to-override / extract behavior.
  * Used when saving a resource as a standalone file (e.g. override/module_name/resref.ext).
  */
 

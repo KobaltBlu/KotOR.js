@@ -1,6 +1,5 @@
 /**
  * AddResourceToErf – add a resource to an existing ERF/MOD and return the new buffer.
- * Ported from PyKotor Holocron Toolset save-to-module behavior.
  * Used when saving a resource into an open ERF/MOD file.
  */
 

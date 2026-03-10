@@ -1,6 +1,6 @@
 /**
- * JSON utilities ported from Holocron Toolset (toolset/data/me_controls.py).
- * Strip JavaScript-style comments from JSON text for config/JSON-with-comments parsing.
+ * JSON utilities.
+ * Strip JavaScript-style comments from JSON text for config and JSON-with-comments parsing.
  */
 
 /**

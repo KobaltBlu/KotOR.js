@@ -1,7 +1,8 @@
-﻿import * as path from "path";
+import * as path from "path";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { IERFLanguage } from "@/interface/resource/IERFLanguage";
 import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
@@ -56,6 +57,41 @@ export class ERFObject {
     }
   }
 
+  toJSON(): { header: IERFObjectHeader; localizedStrings: IERFLanguage[]; keyList: IERFKeyEntry[]; resources: Array<Omit<IERFResource, 'data'> & { data?: number[] }>; type: string; group: string } {
+    return {
+      header: { ...this.header },
+      localizedStrings: this.localizedStrings.map((entry) => ({ ...entry })),
+      keyList: this.keyList.map((entry) => ({ ...entry })),
+      resources: this.resources.map((entry) => ({ ...entry, data: entry.data ? Array.from(entry.data) : undefined })),
+      type: this.type,
+      group: this.group,
+    };
+  }
+
+  fromJSON(json: string | ReturnType<ERFObject['toJSON']>): void {
+    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<ERFObject['toJSON']> : json;
+    this.header = { ...data.header };
+    this.localizedStrings = (data.localizedStrings || []).map((entry) => ({ ...entry }));
+    this.keyList = (data.keyList || []).map((entry) => ({ ...entry }));
+    this.resources = (data.resources || []).map((entry) => ({ ...entry, data: entry.data ? Uint8Array.from(entry.data) : undefined }));
+    this.type = data.type || 'erf';
+    this.group = data.group || 'erf';
+  }
+
+  toXML(): string { return objectToXML({ json: JSON.stringify(this.toJSON()) }); }
+  fromXML(xml: string): void {
+    const data = xmlToObject(xml) as { json?: string } | ReturnType<ERFObject['toJSON']>;
+    if (typeof (data as { json?: string }).json === 'string') {
+      this.fromJSON((data as { json: string }).json);
+      return;
+    }
+    this.fromJSON(data as ReturnType<ERFObject['toJSON']>);
+  }
+  toYAML(): string { return objectToYAML(this.toJSON()); }
+  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<ERFObject['toJSON']>); }
+  toTOML(): string { return objectToTOML(this.toJSON()); }
+  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<ERFObject['toJSON']>); }
+
   async load(): Promise<ERFObject> {
     if(!this.inMemory){
       await this.loadFromDisk();
@@ -70,6 +106,10 @@ export class ERFObject {
     this.reader = new BinaryReader(buffer);
     this.header.fileType = this.reader.readChars(4);
     this.header.fileVersion = this.reader.readChars(4);
+
+    if (!['ERF ', 'MOD ', 'SAV '].includes(this.header.fileType) || this.header.fileVersion !== 'V1.0') {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
 
     this.header.languageCount = this.reader.readUInt32();
     this.header.localizedStringSize = this.reader.readUInt32();
@@ -179,7 +219,7 @@ export class ERFObject {
     const buffer = new Uint8Array(resource.size);
 
     if(this.inMemory){
-      buffer.set(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
+      buffer.set(this.buffer.slice(resource.offset, resource.offset + resource.size));
       return buffer;
     }else{
       const fd = await GameFileSystem.open(this.resource_path, 'r');
@@ -221,7 +261,7 @@ export class ERFObject {
     }
 
     if(this.inMemory){
-        const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
+        const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + resource.size));
       await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
       return buffer;
     }else{

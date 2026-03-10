@@ -1,6 +1,5 @@
 /**
  * Extract options for resource extraction (e.g. from ERF/RIM).
- * Ported from PyKotor Holocron Toolset extract_options dialog.
  * Used when extracting resources to configure TPC/MDL decompile and related options.
  */
 export interface ExtractOptions {

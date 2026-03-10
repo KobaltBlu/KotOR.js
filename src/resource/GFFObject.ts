@@ -1,10 +1,13 @@
 ﻿import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
+import type { IGFFFieldJSON } from "@/interface/resource/IGFFFieldJSON";
+import type { IGFFStructJSON } from "@/interface/resource/IGFFStructJSON";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { CExoLocSubString } from "@/resource/CExoLocSubString";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import * as path from "path";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 
@@ -152,10 +155,7 @@ export class GFFObject {
   parse(binary: Uint8Array, onComplete?: Function){
     const GFF_HEADER_SIZE = 56;
     if (!binary || binary.length < GFF_HEADER_SIZE) {
-      if (typeof onComplete === 'function') {
-        onComplete(this, this.RootNode);
-      }
-      return;
+      throw new Error('Invalid GFF header');
     }
 
     this.reader = new BinaryReader(binary);
@@ -174,6 +174,27 @@ export class GFFObject {
     this.FieldIndicesCount = this.reader.readUInt32();
     this.ListIndicesOffset = this.reader.readUInt32();
     this.ListIndicesCount = this.reader.readUInt32();
+
+    if (this.FileVersion !== 'V3.2') {
+      throw new Error(`Unsupported GFF version: ${this.FileVersion}`);
+    }
+
+    const validateBlock = (name: string, offset: number, size: number) => {
+      if (size === 0) {
+        return;
+      }
+
+      if (!Number.isInteger(offset) || !Number.isInteger(size) || offset < GFF_HEADER_SIZE || size < 0 || offset + size > binary.length) {
+        throw new Error(`Invalid GFF ${name} block`);
+      }
+    };
+
+    validateBlock('struct', this.StructOffset, this.StructCount * 12);
+    validateBlock('field', this.FieldOffset, this.FieldCount * 12);
+    validateBlock('label', this.LabelOffset, this.LabelCount * 16);
+    validateBlock('field-data', this.FieldDataOffset, this.FieldDataCount);
+    validateBlock('field-indices', this.FieldIndicesOffset, this.FieldIndicesCount);
+    validateBlock('list-indices', this.ListIndicesOffset, this.ListIndicesCount);
 
     this.tmpStructArray = [];
     this.tmpLabelArray = [];
@@ -234,6 +255,88 @@ export class GFFObject {
     return this.RootNode.toJSON();
   }
 
+  fromJSON(json: string | IGFFStructJSON): void {
+    const data = typeof json === 'string' ? JSON.parse(json) as IGFFStructJSON : json;
+    this.RootNode = this.buildStructFromJSON(data);
+    this.json = this.toJSON();
+  }
+
+  toXML(): string {
+    return objectToXML({ json: JSON.stringify(this.toJSON()) });
+  }
+
+  fromXML(xml: string): void {
+    const data = xmlToObject(xml) as { json?: string } | IGFFStructJSON;
+    if (typeof (data as { json?: string }).json === 'string') {
+      this.fromJSON((data as { json: string }).json);
+      return;
+    }
+    this.fromJSON(data as IGFFStructJSON);
+  }
+
+  toYAML(): string {
+    return objectToYAML(this.toJSON());
+  }
+
+  fromYAML(yaml: string): void {
+    this.fromJSON(yamlToObject(yaml) as IGFFStructJSON);
+  }
+
+  toTOML(): string {
+    return objectToTOML(this.toJSON());
+  }
+
+  fromTOML(toml: string): void {
+    this.fromJSON(tomlToObject(toml) as IGFFStructJSON);
+  }
+
+  buildStructFromJSON(struct: IGFFStructJSON | undefined): GFFStruct {
+    const result = new GFFStruct(struct?.type ?? -1);
+    const fields = struct?.fields ?? {};
+    Object.keys(fields).forEach((label) => {
+      result.addField(this.buildFieldFromJSON(label, fields[label]));
+    });
+    return result;
+  }
+
+  buildFieldFromJSON(label: string, field: IGFFFieldJSON): GFFField {
+    const gffField = new GFFField(field?.type ?? 0, label);
+    switch (field?.type) {
+      case GFFDataType.CEXOLOCSTRING: {
+        const loc = new CExoLocString();
+        const value = field.value as { str_ref?: number; substrings?: Array<{ id?: number; string?: string }> } | undefined;
+        if (typeof value?.str_ref === 'number') {
+          loc.setRESREF(value.str_ref);
+        }
+        (value?.substrings || []).forEach((substring) => {
+          loc.substrings.push(new CExoLocSubString(substring?.id ?? 0, substring?.string ?? ''));
+        });
+        gffField.setCExoLocString(loc);
+        break;
+      }
+      case GFFDataType.VOID:
+        if (field.value instanceof Uint8Array) {
+          gffField.setData(field.value);
+        } else if (Array.isArray(field.value)) {
+          gffField.setData(Uint8Array.from(field.value as number[]));
+        }
+        break;
+      case GFFDataType.VECTOR:
+        gffField.setVector((field.value as { x: number; y: number; z: number }) || { x: 0, y: 0, z: 0 });
+        break;
+      case GFFDataType.ORIENTATION:
+        gffField.setOrientation((field.value as { x: number; y: number; z: number; w: number }) || { x: 0, y: 0, z: 0, w: 1 });
+        break;
+      default:
+        gffField.setValue(field?.value);
+        break;
+    }
+    (field?.structs || []).forEach((child) => {
+      gffField.addChildStruct(this.buildStructFromJSON(child));
+    });
+    return gffField;
+  }
+
   buildStruct(struct: any){
     let strt = new GFFStruct();
     if (!struct || typeof struct !== 'object') {
@@ -271,7 +374,7 @@ export class GFFObject {
         field.setValue(dataView.getUint8(0));
         break;
       case GFFDataType.CHAR: //Char
-        field.setValue(dataView.getUint8(0));
+        field.setValue(dataView.getInt8(0));
         break;
       case GFFDataType.WORD: //UInt16
         field.setValue(dataView.getUint16(0, true));
@@ -786,7 +889,9 @@ export class GFFObject {
             this.BWFieldData.writeChars(field.value);
             break;
           case GFFDataType.CHAR:
-            this.BWFields.writeUInt32(field.value.charCodeAt());
+            this.BWFields.writeInt8(field.value);
+            this.BWFields.writeUInt8(0);
+            this.BWFields.writeUInt16(0);
             break;
           case GFFDataType.DOUBLE:
             this.BWFields.writeUInt32(this.BWFieldData.position);

@@ -8,9 +8,6 @@ import { TwoDARegistry } from "@/apps/forge/data/TwoDARegistry";
 /**
  * InstallationRegistry – typed, lazy-loading 2DA cache for Forge editors.
  *
- * Mirrors the HTInstallation.ht_get_cache_2da() pattern from HolocronToolset
- * (vendor/PyKotor/Tools/HolocronToolset/src/toolset/data/installation.py).
- *
  * Instead of re-implementing resource lookup from scratch, this class wraps
  * the existing TwoDAManager.datatables (populated at game init) and falls back
  * to ResourceLoader for on-demand loads when a table is not yet cached (e.g.

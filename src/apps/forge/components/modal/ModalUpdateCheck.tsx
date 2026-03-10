@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "react-bootstrap";
 
 import { CURRENT_VERSION } from "@/apps/forge/config";
-import { getRemoteToolsetUpdateInfo, isRemoteVersionNewer } from "@/apps/forge/config/ConfigUpdate";
+import { getRemoteUpdateInfo, isRemoteVersionNewer } from "@/apps/forge/config/ConfigUpdate";
 import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
 import { ModalUpdateCheckState } from "@/apps/forge/states/modal/ModalUpdateCheckState";
 
@@ -51,19 +51,19 @@ export const ModalUpdateCheck = (props: BaseModalProps) => {
     modal.setResult({ error: '', remoteVersion: '', hasUpdate: false });
 
     try {
-      const result = await getRemoteToolsetUpdateInfo({ silent: true });
+      const result = await getRemoteUpdateInfo({ silent: true });
 
       if(result instanceof Error){
         modal.setResult({ error: `Failed to check for updates: ${result.message}` });
       } else {
-        const remote = result.toolsetLatestVersion || result.currentVersion || '';
+        const remote = result.latestVersion || result.currentVersion || '';
         const newer = isRemoteVersionNewer(CURRENT_VERSION, remote);
 
         modal.setResult({
           remoteVersion: remote,
           hasUpdate: newer === true,
-          downloadLink: result.toolsetDownloadLink || '',
-          releaseNotes: result.toolsetLatestNotes || ''
+          downloadLink: result.downloadLink || '',
+          releaseNotes: result.latestNotes || ''
         });
       }
     } catch(e: unknown) {

@@ -47,17 +47,22 @@ export class TLKObject {
   StringCount: number;
   StringEntriesOffset: number;
 
-  constructor(file: Uint8Array|string = '', onSuccess?: Function, onProgress?: Function){
+  constructor(file: Uint8Array|string = new Uint8Array(0), onSuccess?: Function, onProgress?: Function){
     this.file = file;
     this.TLKStrings = [];
+    this.FileType = 'TLK ';
+    this.FileVersion = 'V3.0';
+    this.LanguageID = 0;
+    this.StringCount = 0;
+    this.StringEntriesOffset = 20;
     console.log('TLKObject', 'Opening TLK');
-    if(typeof this.file === 'string'){
+    if(typeof this.file === 'string' && this.file.length > 0){
       this.LoadFromDisk(this.file, onProgress).then( () => {
         if(typeof onSuccess === 'function') onSuccess();
       }).catch( () => {
         if(typeof onSuccess === 'function') onSuccess();
       });
-    }else if(file instanceof Uint8Array){
+    }else if(this.file instanceof Uint8Array && this.file.length > 0){
       this.LoadFromBuffer(this.file, onProgress).then( () => {
         if(typeof onSuccess === 'function') onSuccess();
       }).catch( () => {
@@ -69,6 +74,9 @@ export class TLKObject {
   LoadFromBuffer( buffer: Uint8Array, onProgress?: Function ){
     return new Promise<void>( (resolve, reject) => {
       try{
+        if (buffer.length < 20) {
+          throw new Error('Tried to save or load an unsupported or corrupted file.');
+        }
         console.log('TLKObject', 'Reading');
         this.reader = new BinaryReader(buffer);
         this.reader.seek(0);
@@ -78,16 +86,35 @@ export class TLKObject {
         this.LanguageID = this.reader.readUInt32();
         this.StringCount = this.reader.readUInt32();
         this.StringEntriesOffset = this.reader.readUInt32();
+
+        const entryTableEnd = 20 + (this.StringCount * 40);
+        if (this.FileType !== 'TLK ' || this.FileVersion !== 'V3.0' || this.StringEntriesOffset < entryTableEnd || entryTableEnd > buffer.length) {
+          throw new Error('Tried to save or load an unsupported or corrupted file.');
+        }
+
         this.reader.seek(20);
         for(let i = 0, len = this.StringCount; i < len; i++) {
+          const flags = this.reader.readUInt32();
+          const soundResRef = this.reader.readChars(16).replace(/\0[\s\S]*$/g,'');
+          const volumeVariance = this.reader.readUInt32();
+          const pitchVariance = this.reader.readUInt32();
+          const stringOffset = this.reader.readUInt32();
+          const stringLength = this.reader.readUInt32();
+          const soundLength = this.reader.readUInt32();
+
+          const absoluteStringOffset = this.StringEntriesOffset + stringOffset;
+          if (absoluteStringOffset < this.StringEntriesOffset || absoluteStringOffset + stringLength > buffer.length) {
+            throw new Error('Tried to save or load an unsupported or corrupted file.');
+          }
+
           this.TLKStrings[i] = new TLKString(
-            this.reader.readUInt32(), //flags
-            this.reader.readChars(16).replace(/\0[\s\S]*$/g,''), //SoundResRef
-            this.reader.readUInt32(), //VolumeVariance
-            this.reader.readUInt32(), //PitchVariance
-            this.StringEntriesOffset + this.reader.readUInt32(), //StringOffset
-            this.reader.readUInt32(), //StringLength
-            this.reader.readUInt32(), //SoundLength
+            flags,
+            soundResRef,
+            volumeVariance,
+            pitchVariance,
+            absoluteStringOffset,
+            stringLength,
+            soundLength,
             null
           );
 
@@ -122,7 +149,7 @@ export class TLKObject {
     });
   }
 
-  GetStringById(id: number, onReturn?: Function): string {
+  GetStringById(id: number, onReturn?: (value: string) => void): string {
     if(this.TLKStrings[id] != null){
       if(this.TLKStrings[id].Value == null){
         this.TLKStrings[id].GetValue(this.reader, onReturn);
@@ -194,7 +221,7 @@ export class TLKObject {
   }
 
   static fromJSON(json: string | TLKJSONData): TLKObject {
-    const tlk = new TLKObject();
+    const tlk = new TLKObject(new Uint8Array(0));
     tlk.fromJSON(json);
     return tlk;
   }
@@ -208,7 +235,7 @@ export class TLKObject {
   }
 
   static fromXML(xml: string): TLKObject {
-    const tlk = new TLKObject();
+    const tlk = new TLKObject(new Uint8Array(0));
     tlk.fromXML(xml);
     return tlk;
   }
@@ -222,7 +249,7 @@ export class TLKObject {
   }
 
   static fromYAML(yaml: string): TLKObject {
-    const tlk = new TLKObject();
+    const tlk = new TLKObject(new Uint8Array(0));
     tlk.fromYAML(yaml);
     return tlk;
   }
@@ -236,7 +263,7 @@ export class TLKObject {
   }
 
   static fromTOML(toml: string): TLKObject {
-    const tlk = new TLKObject();
+    const tlk = new TLKObject(new Uint8Array(0));
     tlk.fromTOML(toml);
     return tlk;
   }

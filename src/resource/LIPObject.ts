@@ -98,13 +98,27 @@ export class LIPObject {
 
   readBinary(buffer: Uint8Array, onComplete?: Function){
     if(buffer instanceof Uint8Array){
+      if (buffer.length < 16) {
+        throw new Error('Tried to save or load an unsupported or corrupted file.');
+      }
 
       const reader = new BinaryReader(buffer);
+      this.keyframes = [];
 
       const fileType = reader.readChars(4);
       const fileVersion = reader.readChars(4);
+      if (fileType !== LIPObject.FILE_TYPE || fileVersion !== LIPObject.FILE_VER) {
+        reader.dispose();
+        throw new Error('Tried to save or load an unsupported or corrupted file.');
+      }
+
       this.duration = reader.readSingle();
       const entryCount = reader.readUInt32();
+
+      if ((16 + (entryCount * 5)) > buffer.length) {
+        reader.dispose();
+        throw new Error('Tried to save or load an unsupported or corrupted file.');
+      }
 
       this.lipDataOffset = 16;
       reader.seek(this.lipDataOffset);

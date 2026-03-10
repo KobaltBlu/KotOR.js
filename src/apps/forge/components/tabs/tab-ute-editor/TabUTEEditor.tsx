@@ -219,7 +219,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
               </FormField>
               <FormField
                 label="Recommended Creatures"
-                info="Recommended number of creatures for this encounter (1-8). Maps to 'Min Creatures' in toolset. Must be less than or equal to Max Creatures."
+                info="Recommended number of creatures for this encounter (1-8). Maps to the minimum creature count and must be less than or equal to Max Creatures."
               >
                 <input
                   type="number"

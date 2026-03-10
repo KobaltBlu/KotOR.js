@@ -10,6 +10,7 @@ export class ForgeItem extends ForgeGameObject {
   //Blueprint Properties
   addCost: number = 0;
   baseItem: number = 0;
+  bodyVariation: number = 0;
   charges: number = 0;
   comment: string = '';
   cost: number = 0;
@@ -24,6 +25,7 @@ export class ForgeItem extends ForgeGameObject {
   stackSize: number = 1;
   stolen: boolean = false;
   tag: string = '';
+  textureVariation: number = 1;
   upgradeLevel: number = 0;
 
   // Model data
@@ -74,6 +76,9 @@ export class ForgeItem extends ForgeGameObject {
     if(root.hasField('BaseItem')){
       this.baseItem = root.getFieldByLabel('BaseItem').getValue() || 0;
     }
+    if(root.hasField('BodyVariation')){
+      this.bodyVariation = root.getFieldByLabel('BodyVariation').getValue() || 0;
+    }
     if(root.hasField('Charges')){
       this.charges = root.getFieldByLabel('Charges').getValue() || 0;
     }
@@ -102,7 +107,7 @@ export class ForgeItem extends ForgeGameObject {
       this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
     if(root.hasField('Plot')){
-      this.plot = root.getFieldByLabel('Plot').getValue() || false;
+      this.plot = !!root.getFieldByLabel('Plot').getValue();
     }
     if(root.hasField('PropertiesList')){
       const propertiesField = root.getFieldByLabel('PropertiesList');
@@ -117,6 +122,7 @@ export class ForgeItem extends ForgeGameObject {
           param1Value: getValue('Param1Value', 0),
           propertyName: getValue('PropertyName', 0),
           subtype: getValue('Subtype', 0),
+          upgradeType: struct.hasField('UpgradeType') ? getValue('UpgradeType', 0) : undefined,
         } as ItemPropertyEntry;
       });
     }
@@ -124,13 +130,16 @@ export class ForgeItem extends ForgeGameObject {
       this.stackSize = root.getFieldByLabel('StackSize').getValue() || 1;
     }
     if(root.hasField('Stolen')){
-      this.stolen = root.getFieldByLabel('Stolen').getValue() || false;
+      this.stolen = !!root.getFieldByLabel('Stolen').getValue();
     }
     if(root.hasField('Tag')){
       this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
     if(root.hasField('TemplateResRef')){
       this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
+    }
+    if(root.hasField('TextureVar')){
+      this.textureVariation = root.getFieldByLabel('TextureVar').getValue() || 1;
     }
     if(root.hasField('UpgradeLevel')){
       this.upgradeLevel = root.getFieldByLabel('UpgradeLevel').getValue() || 0;
@@ -146,6 +155,7 @@ export class ForgeItem extends ForgeGameObject {
 
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'AddCost', this.addCost) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'BaseItem', this.baseItem) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BodyVariation', this.bodyVariation) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Charges', this.charges) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Cost', this.cost) );
@@ -168,6 +178,9 @@ export class ForgeItem extends ForgeGameObject {
         struct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Param1Value', property.param1Value) );
         struct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'PropertyName', property.propertyName) );
         struct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Subtype', property.subtype) );
+        if(property.upgradeType !== undefined){
+          struct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'UpgradeType', property.upgradeType) );
+        }
         propertiesField.addChildStruct(struct);
       }
     }
@@ -176,6 +189,7 @@ export class ForgeItem extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Stolen', this.stolen ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TextureVar', this.textureVariation) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'UpgradeLevel', this.upgradeLevel || 0) );
 
     return this.blueprint;

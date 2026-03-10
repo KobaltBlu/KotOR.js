@@ -4,11 +4,11 @@ import { TXITexType } from "@/enums/graphics/txi/TXITexType";
 
 /**
  * TXI class.
- * 
+ *
  * Class representing a Extra Texture Information file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TwoDAObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -95,11 +95,28 @@ export class TXI {
 
   }
 
+  static parseBlending(value: string): TXIBlending {
+    switch (String(value).trim().toLowerCase()) {
+      case 'additive':
+        return TXIBlending.ADDITIVE;
+      case 'punchthrough':
+      case 'punch-through':
+        return TXIBlending.PUNCHTHROUGH;
+      case 'default':
+      default:
+        return TXIBlending.NONE;
+    }
+  }
+
   ParseInfo(){
     const lines = this.info.split('\n');
     for(let i = 0; i < lines.length; i++){
-      const line = lines[i];
-      const args = line.split(' ');
+      const line = lines[i].trim();
+      if (!line.length) {
+        continue;
+      }
+
+      const args = line.split(/\s+/);
 
       if(typeof args[1] != 'undefined')
         args[1] = args[1].trim();
@@ -143,14 +160,7 @@ export class TXI {
           this.filter = parseInt(args[1]);
         break;
         case 'blending':
-          switch(args[1]){
-            case 'punchthrough':
-              this.blending = TXIBlending.PUNCHTHROUGH;
-            break;
-            case 'additive':
-              this.blending = TXIBlending.ADDITIVE;
-            break;
-          }
+          this.blending = TXI.parseBlending(args[1]);
         break;
         case 'bumpmapscaling':
           this.bumpMapScaling = parseFloat(args[1]);
@@ -221,10 +231,10 @@ export class TXI {
           const _num = parseInt(args[1]);
 
           const _max = i + 1 + _num;
-          
+
           for(let _i = i + 1; _i < _max; _i++){
-            const line = lines[_i];
-            const args = line.split(' ');
+            const line = lines[_i].trim();
+            const args = line.split(/\s+/);
             this.upperleftcoords.push({x: parseFloat(args[0]), y: parseFloat(args[1]), z: parseFloat(args[2])});
           }
 
@@ -235,10 +245,10 @@ export class TXI {
           const _num2 = parseInt(args[1]);
 
           const _max2 = i + 1 + _num2;
-          
+
           for(let _i = i + 1; _i < _max2; _i++){
-            const line = lines[_i];
-            const args = line.split(' ');
+            const line = lines[_i].trim();
+            const args = line.split(/\s+/);
             this.lowerrightcoords.push({x: parseFloat(args[0]), y:parseFloat(args[1]), z:parseFloat(args[2])});
           }
 
@@ -250,6 +260,18 @@ export class TXI {
       }
 
     }
+  }
+
+  static fromBuffer(buffer: Uint8Array): TXI {
+    return new TXI(buffer);
+  }
+
+  toString(): string {
+    return this.info.trim();
+  }
+
+  toBuffer(): Uint8Array {
+    return new TextEncoder().encode(this.toString());
   }
 
 }

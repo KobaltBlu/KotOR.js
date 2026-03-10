@@ -55,6 +55,7 @@ export class ForgeDoor extends ForgeGameObject {
   lockable: boolean = false;
   locked: boolean = false;
   min1HP: boolean = false;
+  notBlastable: boolean = false;
   onClick: string = '';
   onClosed: string = '';
   onDamaged: string = '';
@@ -70,6 +71,8 @@ export class ForgeDoor extends ForgeGameObject {
   onUnlock: string = '';
   onUserDefined: string = '';
   openLockDC: number = 0;
+  openLockDiff: number = 0;
+  openLockDiffMod: number = 0;
   openState: number = 0;
   paletteID: number = 0;
   plot: boolean = false;
@@ -129,7 +132,7 @@ export class ForgeDoor extends ForgeGameObject {
       this.appearance = root.getFieldByLabel('Appearance').getValue() || 0;
     }
     if(root.hasField('AutoRemoveKey')){
-      this.autoRemoveKey = root.getFieldByLabel('AutoRemoveKey').getValue() || false;
+      this.autoRemoveKey = !!root.getFieldByLabel('AutoRemoveKey').getValue();
     }
     if(root.hasField('CloseLockDC')){
       this.closeLockDC = root.getFieldByLabel('CloseLockDC').getValue() || 0;
@@ -165,13 +168,13 @@ export class ForgeDoor extends ForgeGameObject {
       this.hardness = root.getFieldByLabel('Hardness').getValue() || 0;
     }
     if(root.hasField('Interruptable')){
-      this.interruptable = root.getFieldByLabel('Interruptable').getValue() || false;
+      this.interruptable = !!root.getFieldByLabel('Interruptable').getValue();
     }
     if(root.hasField('KeyName')){
       this.keyName = root.getFieldByLabel('KeyName').getValue() || '';
     }
     if(root.hasField('KeyRequired')){
-      this.keyRequired = root.getFieldByLabel('KeyRequired').getValue() || false;
+      this.keyRequired = !!root.getFieldByLabel('KeyRequired').getValue();
     }
     if(root.hasField('LoadScreenID')){
       this.loadScreenID = root.getFieldByLabel('LoadScreenID').getValue() || 0;
@@ -180,13 +183,16 @@ export class ForgeDoor extends ForgeGameObject {
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
     if(root.hasField('Lockable')){
-      this.lockable = root.getFieldByLabel('Lockable').getValue() || false;
+      this.lockable = !!root.getFieldByLabel('Lockable').getValue();
     }
     if(root.hasField('Locked')){
-      this.locked = root.getFieldByLabel('Locked').getValue() || false;
+      this.locked = !!root.getFieldByLabel('Locked').getValue();
     }
     if(root.hasField('Min1HP')){
-      this.min1HP = root.getFieldByLabel('Min1HP').getValue() || false;
+      this.min1HP = !!root.getFieldByLabel('Min1HP').getValue();
+    }
+    if(root.hasField('NotBlastable')){
+      this.notBlastable = !!root.getFieldByLabel('NotBlastable').getValue();
     }
     if(root.hasField('OnClick')){
       this.onClick = root.getFieldByLabel('OnClick').getValue() || '';
@@ -233,6 +239,12 @@ export class ForgeDoor extends ForgeGameObject {
     if(root.hasField('OpenLockDC')){
       this.openLockDC = root.getFieldByLabel('OpenLockDC').getValue() || 0;
     }
+    if(root.hasField('OpenLockDiff')){
+      this.openLockDiff = root.getFieldByLabel('OpenLockDiff').getValue() || 0;
+    }
+    if(root.hasField('OpenLockDiffMod')){
+      this.openLockDiffMod = root.getFieldByLabel('OpenLockDiffMod').getValue() || 0;
+    }
     if(root.hasField('OpenState')){
       this.openState = root.getFieldByLabel('OpenState').getValue() || 0;
     }
@@ -240,7 +252,7 @@ export class ForgeDoor extends ForgeGameObject {
       this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
     if(root.hasField('Plot')){
-      this.plot = root.getFieldByLabel('Plot').getValue() || false;
+      this.plot = !!root.getFieldByLabel('Plot').getValue();
     }
     if(root.hasField('PortraitId')){
       this.portraitId = root.getFieldByLabel('PortraitId').getValue() || 0;
@@ -249,7 +261,7 @@ export class ForgeDoor extends ForgeGameObject {
       this.ref = root.getFieldByLabel('Ref').getValue() || 0;
     }
     if(root.hasField('Static')){
-      this.static = root.getFieldByLabel('Static').getValue() || false;
+      this.static = !!root.getFieldByLabel('Static').getValue();
     }
     if(root.hasField('Tag')){
       this.tag = root.getFieldByLabel('Tag').getValue() || '';
@@ -261,16 +273,16 @@ export class ForgeDoor extends ForgeGameObject {
       this.trapDetectDC = root.getFieldByLabel('TrapDetectDC').getValue() || 0;
     }
     if(root.hasField('TrapDetectable')){
-      this.trapDetectable = root.getFieldByLabel('TrapDetectable').getValue() || false;
+      this.trapDetectable = !!root.getFieldByLabel('TrapDetectable').getValue();
     }
     if(root.hasField('TrapDisarmable')){
-      this.trapDisarmable = root.getFieldByLabel('TrapDisarmable').getValue() || false;
+      this.trapDisarmable = !!root.getFieldByLabel('TrapDisarmable').getValue();
     }
     if(root.hasField('TrapFlag')){
-      this.trapFlag = root.getFieldByLabel('TrapFlag').getValue() || false;
+      this.trapFlag = !!root.getFieldByLabel('TrapFlag').getValue();
     }
     if(root.hasField('TrapOneShot')){
-      this.trapOneShot = root.getFieldByLabel('TrapOneShot').getValue() || false;
+      this.trapOneShot = !!root.getFieldByLabel('TrapOneShot').getValue();
     }
     if(root.hasField('TrapType')){
       this.trapType = root.getFieldByLabel('TrapType').getValue() || 0;
@@ -286,7 +298,7 @@ export class ForgeDoor extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AnimationState', this.animationState || 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Appearance', this.appearance) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AutoRemoveKey', this.autoRemoveKey ? 1 : 0) );
@@ -309,6 +321,7 @@ export class ForgeDoor extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Lockable', this.lockable ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Locked', this.locked ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Min1HP', this.min1HP ? 1 : 0) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'NotBlastable', this.notBlastable ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnClick', this.onClick) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnClosed', this.onClosed) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnDamaged', this.onDamaged) );
@@ -324,6 +337,8 @@ export class ForgeDoor extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnUnlock', this.onUnlock) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnUserDefined', this.onUserDefined) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenLockDC', this.openLockDC) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenLockDiff', this.openLockDiff) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CHAR, 'OpenLockDiffMod', this.openLockDiffMod) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenState', this.openState || 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID || 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Plot', this.plot ? 1 : 0) );

@@ -10,7 +10,7 @@ export enum WAVType {
   SFX = 2,
 }
 
-/** Result of audio format detection (PyKotor wav_obfuscation.DeobfuscationResult). */
+/** Result of audio format detection. */
 export enum DeobfuscationResult {
   /** Standard RIFF/WAVE, no header to skip. */
   STANDARD = 0,
@@ -36,7 +36,7 @@ const SFX_HEADER = SFX_MAGIC;
 const RIFF_HEADER = RIFF_MAGIC;
 
 /**
- * WAV resource data (mirrors PyKotor WAV for forge/editors).
+ * WAV resource data.
  * For playback use AudioFile; use WAVObject for read/edit/save of WAV resources.
  */
 export class WAVObject {
@@ -159,7 +159,7 @@ export class WAVObject {
   }
 
   /**
-   * Return file extension for this audio's actual format (PyKotor detect_audio_type).
+   * Return file extension for this audio's actual format.
    * Use when saving to temp files or export.
    */
   getExportExtension(): 'mp3' | 'wav' {
@@ -167,8 +167,8 @@ export class WAVObject {
   }
 
   /**
-   * Return playable audio bytes (clean RIFF/WAVE or raw MP3) for media players (PyKotor get_playable_bytes).
-   * No game obfuscation headers; suitable for QMediaPlayer, HTML5 Audio, etc.
+   * Return playable audio bytes (clean RIFF/WAVE or raw MP3) for media players.
+   * No game obfuscation headers; suitable for audio playback components.
    */
   getPlayableBytes(): Uint8Array {
     if (this.audioFormat === AudioFileAudioType.MP3) return this.data;
@@ -290,7 +290,7 @@ function matchBytes(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 /**
- * Detect KotOR audio format and header size to skip (PyKotor wav_obfuscation.detect_audio_format).
+ * Detect KotOR audio format and header size to skip.
  * Returns [result, bytesToSkip].
  */
 export function detectAudioFormat(data: Uint8Array): [DeobfuscationResult, number] {
@@ -310,7 +310,7 @@ export function detectAudioFormat(data: Uint8Array): [DeobfuscationResult, numbe
 }
 
 /**
- * Remove KotOR obfuscation headers (PyKotor wav_obfuscation.deobfuscate_audio).
+ * Remove KotOR obfuscation headers.
  * Returns cleaned WAVE or MP3 bytes.
  */
 export function deobfuscateAudio(data: Uint8Array): Uint8Array {
@@ -320,7 +320,7 @@ export function deobfuscateAudio(data: Uint8Array): Uint8Array {
 }
 
 /**
- * Add KotOR obfuscation header (PyKotor wav_obfuscation.obfuscate_audio).
+ * Add a KotOR obfuscation header.
  * wavType: 'SFX' (470-byte header) or 'VO' (20-byte header).
  */
 export function obfuscateAudio(data: Uint8Array, wavType: 'SFX' | 'VO'): Uint8Array {

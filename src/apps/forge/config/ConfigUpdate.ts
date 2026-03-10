@@ -1,5 +1,5 @@
 /**
- * ConfigUpdate – fetch remote version info and compare (ported from Holocron Toolset config_update).
+ * ConfigUpdate – fetch remote version info and compare.
  * Uses fetch for GitHub API; no Qt/widgets.
  */
 
@@ -11,11 +11,11 @@ const log = createScopedLogger(LogScope.Forge);
 
 export interface RemoteUpdateInfo {
   currentVersion?: string;
-  toolsetLatestVersion?: string;
-  toolsetLatestBetaVersion?: string;
-  toolsetLatestNotes?: string;
-  toolsetLatestBetaNotes?: string;
-  toolsetDownloadLink?: string;
+  latestVersion?: string;
+  latestBetaVersion?: string;
+  latestNotes?: string;
+  latestBetaNotes?: string;
+  downloadLink?: string;
   [key: string]: unknown;
 }
 
@@ -32,7 +32,7 @@ function parseJsonAsUnknown(text: string): unknown {
 
 /**
  * Fetch JSON from an update info URL. For GitHub contents API, response has { content: base64 }.
- * Supports: 1) Holocron-style JSON block with <---JSON_START---> markers, 2) plain JSON (e.g. package.json with "version").
+ * Supports: 1) a JSON block with <---JSON_START---> markers, 2) plain JSON (e.g. package.json with "version").
  */
 export async function fetchUpdateInfo(
   updateLink: string,
@@ -58,13 +58,13 @@ export async function fetchUpdateInfo(
         const parsed = parseJsonAsUnknown(str);
         const rec = parsed as Record<string, unknown>;
         if (typeof rec.version === "string") {
-          return { toolsetLatestVersion: rec.version, currentVersion: rec.version };
+          return { latestVersion: rec.version, currentVersion: rec.version };
         }
         return parsed as RemoteUpdateInfo;
       }
       if (typeof obj.version === "string") {
         const v = obj.version;
-        return { toolsetLatestVersion: v, currentVersion: v };
+        return { latestVersion: v, currentVersion: v };
       }
     }
     return data as RemoteUpdateInfo;
@@ -74,10 +74,10 @@ export async function fetchUpdateInfo(
 }
 
 /**
- * Get remote toolset/Forge update info. Uses LOCAL_PROGRAM_INFO links.
+ * Get remote Forge update info. Uses LOCAL_PROGRAM_INFO links.
  * On failure returns the local info so the app can still run.
  */
-export async function getRemoteToolsetUpdateInfo(
+export async function getRemoteUpdateInfo(
   options: { useBetaChannel?: boolean; silent?: boolean } = {}
 ): Promise<RemoteUpdateInfo | Error> {
   const { useBetaChannel = false, silent = false } = options;

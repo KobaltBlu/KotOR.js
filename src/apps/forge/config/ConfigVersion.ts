@@ -1,24 +1,24 @@
 /**
- * ConfigVersion – version/tag helpers for Forge (ported from Holocron Toolset).
+ * ConfigVersion – version and tag helpers for Forge.
  * Used for update checks and release tagging.
  */
 
 /**
- * Convert a semantic version string to a toolset release tag (e.g. "2.0.0" -> "v2.0.0-toolset").
+ * Convert a semantic version string to a Forge release tag.
  */
-export function versionToToolsetTag(version: string): string {
+export function versionToReleaseTag(version: string): string {
   const dotCount = (version.match(/\./g) || []).length;
   if (dotCount === 2) {
     const secondDotIndex = version.indexOf(".", version.indexOf(".") + 1);
     version = version.slice(0, secondDotIndex) + version.slice(secondDotIndex + 1);
   }
-  return `v${version}-toolset`;
+  return `v${version}-forge`;
 }
 
 /**
- * Extract semantic version from a toolset tag (e.g. "v2.0.0-toolset" -> "2.0.0").
+ * Extract a semantic version from a release tag.
  */
-export function toolsetTagToVersion(tag: string): string {
+export function releaseTagToVersion(tag: string): string {
   const numericPart = tag.replace(/[^\d.]/g, "");
   const parts = numericPart.split(".").filter(Boolean);
   if (parts.length === 3) return parts.join(".");

@@ -17,7 +17,7 @@ export interface ListItemNodeProps {
   icon?: string;
   iconType?: 'folder' | 'file' | 'expanded';
   fileType?: string;
-  /** Optional URL for resource-type icon (e.g. Holocron icon); when set, shown instead of Font Awesome icon for files. */
+  /** Optional URL for a resource-type icon; when set, shown instead of the Font Awesome fallback for files. */
   iconImageUrl?: string;
 
   // Event handlers
@@ -197,7 +197,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
           />
         )}
 
-        {/* Icon: image (e.g. Holocron resource icon) or Font Awesome fallback */}
+        {/* Icon: image or Font Awesome fallback */}
         <span className={`tree-icon ${iconType}`}>
           {showIconImage ? (
             <img

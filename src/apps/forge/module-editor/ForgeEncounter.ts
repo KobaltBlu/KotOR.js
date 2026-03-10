@@ -84,7 +84,7 @@ export class ForgeEncounter extends ForgeGameObject {
     if(!root) return;
 
     if(root.hasField('Active')){
-      this.active = root.getFieldByLabel('Active').getValue() || false;
+      this.active = !!root.getFieldByLabel('Active').getValue();
     }
     if(root.hasField('Comment')){
       this.comment = root.getFieldByLabel('Comment').getValue() || '';
@@ -96,7 +96,8 @@ export class ForgeEncounter extends ForgeGameObject {
           appearance: struct.getFieldByLabel('Appearance').getValue() || 0,
           resref: struct.getFieldByLabel('ResRef').getValue() || '',
           cr: struct.getFieldByLabel('CR').getValue() || 0,
-          singleSpawn: !!struct.getFieldByLabel('SingleSpawn').getValue()
+          singleSpawn: !!struct.getFieldByLabel('SingleSpawn').getValue(),
+          guaranteedCount: struct.hasField('GuaranteedCount') ? struct.getFieldByLabel('GuaranteedCount').getValue() || 0 : undefined
         } as CreatureListEntry;
       });
     }
@@ -134,13 +135,13 @@ export class ForgeEncounter extends ForgeGameObject {
       this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
     if(root.hasField('PlayerOnly')){
-      this.playerOnly = root.getFieldByLabel('PlayerOnly').getValue() || false;
+      this.playerOnly = !!root.getFieldByLabel('PlayerOnly').getValue();
     }
     if(root.hasField('RecCreatures')){
       this.recCreatures = root.getFieldByLabel('RecCreatures').getValue() || 0;
     }
     if(root.hasField('Reset')){
-      this.reset = root.getFieldByLabel('Reset').getValue() || false;
+      this.reset = !!root.getFieldByLabel('Reset').getValue();
     }
     if(root.hasField('ResetTime')){
       this.resetTime = root.getFieldByLabel('ResetTime').getValue() || 0;
@@ -178,6 +179,9 @@ export class ForgeEncounter extends ForgeGameObject {
       creatureStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ResRef', creature.resref) );
       creatureStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'CR', creature.cr) );
       creatureStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'SingleSpawn', creature.singleSpawn ? 1 : 0) );
+      if(creature.guaranteedCount !== undefined){
+        creatureStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'GuaranteedCount', creature.guaranteedCount) );
+      }
       creatureListField.addChildStruct( creatureStruct );
     }
     
@@ -198,7 +202,7 @@ export class ForgeEncounter extends ForgeGameObject {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'ResetTime', this.resetTime) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'Respawns', this.respawns) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'SpawnOption', this.spawnOption) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Tag', this.tag) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') );
 
     return this.blueprint;
