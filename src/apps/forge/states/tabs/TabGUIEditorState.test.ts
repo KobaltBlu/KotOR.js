@@ -129,14 +129,31 @@ describe('TabGUIEditorState', () => {
   });
 
   it('show and hide toggle renderer state and trigger a render on show', () => {
+    // TabState.show/hide uses window.addEventListener and requires an attached tab manager.
+    // Provide a minimal global window stub for the Node test environment.
+    const origWindow = (global as any).window;
+    (global as any).window = { addEventListener: jest.fn(), removeEventListener: jest.fn() };
+
+    const mockTabManager = {
+      hideAll: jest.fn(),
+      currentTab: null as any,
+      triggerEventListener: jest.fn(),
+      removeTab: jest.fn(),
+    };
+
     const state = new TabGUIEditorState();
+    state.attach(mockTabManager as any);
 
     state.show();
     expect(state.ui3DRenderer.enabled).toBe(true);
     expect(state.ui3DRenderer.render).toHaveBeenCalled();
+    expect(mockTabManager.hideAll).toHaveBeenCalled();
 
     state.hide();
     expect(state.ui3DRenderer.enabled).toBe(false);
+
+    // Restore global
+    (global as any).window = origWindow;
   });
 
   it('animate updates the menu and emits the animation delta', () => {

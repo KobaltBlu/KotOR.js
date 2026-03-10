@@ -7,6 +7,7 @@ import { IRIMResource } from '@/interface/resource/IRIMResource';
 import { IRIMHeader } from '@/interface/resource/IRIMHeader';
 
 const RIM_HEADER_LENGTH = 160;
+const DEFAULT_RIM_RESOURCES_OFFSET = 120;
 
 /**
  * RIMObject class.
@@ -92,6 +93,12 @@ export class RIMObject {
     this.header.resourceCount = this.reader.readUInt32();
     this.header.resourcesOffset = this.reader.readUInt32();
 
+    // Some vanilla-style RIMs leave the header resource-table offset as 0.
+    // Treat that as the conventional fixed table start instead of rejecting it.
+    if (this.header.resourcesOffset === 0) {
+      this.header.resourcesOffset = DEFAULT_RIM_RESOURCES_OFFSET;
+    }
+
     if (this.header.resourcesOffset < 20) {
       throw new Error('Tried to save or load an unsupported or corrupted file.');
     }
@@ -127,13 +134,28 @@ export class RIMObject {
     this.header.fileType = this.reader.readChars(4);
     this.header.fileVersion = this.reader.readChars(4);
 
+    if (this.header.fileType !== 'RIM ' || this.header.fileVersion !== 'V1.0') {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
+
     this.reader.skip(4);
 
     this.header.resourceCount = this.reader.readUInt32();
     this.header.resourcesOffset = this.reader.readUInt32();
 
+    if (this.header.resourcesOffset === 0) {
+      this.header.resourcesOffset = DEFAULT_RIM_RESOURCES_OFFSET;
+    }
+
+    if (this.header.resourcesOffset < 20) {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
+
     //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
     this.rimDataOffset = (this.header.resourcesOffset + (this.header.resourceCount * 34));
+    if (this.rimDataOffset > RIM_HEADER_LENGTH && this.rimDataOffset < this.header.resourcesOffset) {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
     header = new Uint8Array(this.rimDataOffset);
     await GameFileSystem.read(fd, header, 0, this.rimDataOffset, 0);
     this.reader.reuse(header);

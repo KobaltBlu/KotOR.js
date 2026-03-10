@@ -67,6 +67,42 @@ describe('TLKObject', () => {
     expect(reloaded.TLKStrings[1].SoundResRef).toBe('resref02');
   });
 
+  it('GetStringById returns vendor-like empty strings for invalid ids', () => {
+    const tlk = makeTLK();
+
+    expect(tlk.GetStringById(-1)).toBe('');
+    expect(tlk.GetStringById(3)).toBe('');
+  });
+
+  it('GetStringById invokes the callback for cached strings', () => {
+    const tlk = makeTLK();
+    const onReturn = jest.fn();
+
+    expect(tlk.GetStringById(1, onReturn)).toBe('ghijklmnop');
+    expect(onReturn).toHaveBeenCalledWith('ghijklmnop');
+  });
+
+  it('XML round-trips talk table entries', () => {
+    const source = makeTLK();
+    const reloaded = TLKObject.fromXML(source.toXML());
+
+    expect(reloaded.LanguageID).toBe(0);
+    expect(reloaded.StringCount).toBe(3);
+    expect(reloaded.TLKStrings[0].SoundResRef).toBe('resref01');
+    expect(reloaded.TLKStrings[2].Value).toBe('qrstuvwxyz');
+  });
+
+  it('YAML and TOML round-trip talk table entries', () => {
+    const source = makeTLK();
+    const yamlReloaded = TLKObject.fromYAML(source.toYAML());
+    const tomlReloaded = TLKObject.fromTOML(source.toTOML());
+
+    expect(yamlReloaded.StringCount).toBe(3);
+    expect(yamlReloaded.TLKStrings[1].Value).toBe('ghijklmnop');
+    expect(tomlReloaded.StringCount).toBe(3);
+    expect(tomlReloaded.TLKStrings[2].SoundResRef).toBe('');
+  });
+
   it('constructs empty instances without trying to read an empty path', () => {
     const tlk = new TLKObject();
     expect(tlk.TLKStrings).toEqual([]);

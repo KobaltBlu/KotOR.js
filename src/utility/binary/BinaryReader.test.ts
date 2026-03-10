@@ -68,6 +68,50 @@ describe('BinaryReader', () => {
     expect(second.readString()).toBe('helloworld');
   });
 
+  it('readChars with latin1 encoding maps high bytes to Latin-1 code-points (decode-fallback parity)', () => {
+    // Latin-1 bytes 0x80–0xFF map 1:1 to Unicode code-points U+0080–U+00FF.
+    // 0xE9 = é, 0xF6 = ö
+    const bytes = new Uint8Array([0x68, 0xe9, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0xf6, 0x72, 0x6c, 0x64]);
+    const reader = new BinaryReader(bytes);
+    const result = reader.readChars(bytes.length, 'latin1');
+    expect(result).toBe('héllo wörld');
+  });
+
+  it('readChars with utf-8 encoding decodes multibyte sequences', () => {
+    // UTF-8 encoding of "héllo wörld" (é = 0xC3 0xA9, ö = 0xC3 0xB6)
+    const bytes = new Uint8Array([0x68, 0xc3, 0xa9, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0xc3, 0xb6, 0x72, 0x6c, 0x64]);
+    const reader = new BinaryReader(bytes);
+    const result = reader.readChars(bytes.length, 'utf-8');
+    expect(result).toBe('héllo wörld');
+  });
+
+  it('readChars with utf-8 encoding strips the UTF-8 BOM (WHATWG TextDecoder ignores BOM by default)', () => {
+    // The WHATWG TextDecoder spec strips the UTF-8 BOM when ignoreBOM is false (the default).
+    // utf-8-sig is a Python-specific alias; in Node/browsers "utf-8" handles BOM stripping.
+    const bom = [0xef, 0xbb, 0xbf];
+    const text = new TextEncoder().encode('hello world');
+    const bytes = new Uint8Array([...bom, ...text]);
+    const reader = new BinaryReader(bytes);
+    const result = reader.readChars(bytes.length, 'utf-8');
+    expect(result).toBe('hello world');
+  });
+
+  it('readChars with default latin1 handles ASCII content identically to utf-8', () => {
+    const bytes = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f]); // "Hello"
+    const latin1Reader = new BinaryReader(bytes);
+    const utf8Reader = new BinaryReader(bytes);
+    expect(latin1Reader.readChars(5)).toBe('Hello');           // default (latin1)
+    expect(utf8Reader.readChars(5, 'utf-8')).toBe('Hello');   // explicit utf-8
+  });
+
+  it('readChars advances position by the number of bytes consumed (multi-byte encoding aware)', () => {
+    // é in UTF-8 is 2 bytes; 5 bytes consumed for "héllo"
+    const bytes = new Uint8Array([0x68, 0xc3, 0xa9, 0x6c, 0x6c, 0x6f]);
+    const reader = new BinaryReader(bytes);
+    reader.readChars(5, 'utf-8'); // reads 5 bytes → "héll"
+    expect(reader.tell()).toBe(5);
+  });
+
   it('slice returns a new reader over the requested range', () => {
     const reader = new BinaryReader(new Uint8Array([10, 20, 30, 40, 50]));
     const sliced = reader.slice(1, 4);

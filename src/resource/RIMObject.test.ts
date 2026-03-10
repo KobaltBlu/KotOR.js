@@ -3,12 +3,12 @@ import { RIMObject } from '@/resource/RIMObject';
 import { ResourceTypes } from '@/resource/ResourceTypes';
 
 describe('RIMObject', () => {
-  function makeRimBuffer(): Uint8Array {
+  function makeRimBuffer(options: { resourcesOffset?: number } = {}): Uint8Array {
     const writer = new BinaryWriter();
     const entryCount = 3;
-    const resourcesOffset = 120;
+    const resourcesOffset = options.resourcesOffset ?? 120;
     const entrySize = 32;
-    const dataOffset = resourcesOffset + entryCount * entrySize;
+    const dataOffset = 120 + entryCount * entrySize;
     const payloads = [
       new TextEncoder().encode('abc'),
       new TextEncoder().encode('def'),
@@ -20,7 +20,7 @@ describe('RIMObject', () => {
     writer.writeUInt32(0);
     writer.writeUInt32(entryCount);
     writer.writeUInt32(resourcesOffset);
-    writer.writeBytes(new Uint8Array(resourcesOffset - writer.tell()));
+    writer.writeBytes(new Uint8Array(120 - writer.tell()));
 
     let currentOffset = dataOffset;
     ['1', '2', '3'].forEach((resref, index) => {
@@ -45,6 +45,17 @@ describe('RIMObject', () => {
     expect(rim.header.fileVersion).toBe('V1.0');
     expect(rim.resources).toHaveLength(3);
 
+    expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('1', ResourceTypes.txt))).toBe('abc');
+    expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('2', ResourceTypes.txt))).toBe('def');
+    expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('3', ResourceTypes.txt))).toBe('ghi');
+  });
+
+  it('loads vanilla-style RIMs with an implicit resource table offset of 0', async () => {
+    const rim = new RIMObject(makeRimBuffer({ resourcesOffset: 0 }));
+    await rim.load();
+
+    expect(rim.header.resourcesOffset).toBe(120);
+    expect(rim.resources).toHaveLength(3);
     expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('1', ResourceTypes.txt))).toBe('abc');
     expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('2', ResourceTypes.txt))).toBe('def');
     expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('3', ResourceTypes.txt))).toBe('ghi');
@@ -88,6 +99,14 @@ describe('RIMObject', () => {
     await rim.load();
 
     expect(rim.getResource('nonexistent', ResourceTypes.txt)).toBeUndefined();
+  });
+
+  it('hasResource reflects whether a resource exists', async () => {
+    const rim = new RIMObject(makeRimBuffer());
+    await rim.load();
+
+    expect(rim.hasResource('1', ResourceTypes.txt)).toBe(true);
+    expect(rim.hasResource('missing', ResourceTypes.txt)).toBe(false);
   });
 
   it('XML round-trip preserves RIM structure', async () => {

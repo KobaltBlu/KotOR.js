@@ -1,6 +1,35 @@
 import { TXI } from '@/resource/TXI';
 
 describe('TXI', () => {
+  function buildVendorFontTXI(charCount = 256): string {
+    const lines = [
+      'mipmap 0',
+      'filter 0',
+      `numchars ${charCount}`,
+      'fontheight 0.500000',
+      'baselineheight 0.400000',
+      'texturewidth 1.000000',
+      'fontwidth 1.000000',
+      'spacingr 0.002600',
+      'spacingb 0.100000',
+      'caretindent -0.010000',
+      'isdoublebyte 0',
+      `upperleftcoords ${charCount}`,
+    ];
+
+    for (let index = 0; index < charCount; index++) {
+      lines.push(`${(index / 16) / 16} ${(Math.floor(index / 16)) / 8} 0`);
+    }
+
+    lines.push(`lowerrightcoords ${charCount}`);
+
+    for (let index = 0; index < charCount; index++) {
+      lines.push(`${((index % 16) + 1) / 16} ${((Math.floor(index / 16)) + 1) / 8} 0`);
+    }
+
+    return lines.join('\n');
+  }
+
   const sampleFontTXI = `
     mipmap 0
     filter 0
@@ -88,5 +117,27 @@ describe('TXI', () => {
     expect(written.fontheight).toBeCloseTo(txi.fontheight);
     expect(written.upperleftcoords).toHaveLength(txi.upperleftcoords.length);
     expect(written.lowerrightcoords).toHaveLength(txi.lowerrightcoords.length);
+  });
+
+  it('parses vendor-sized font coordinate blocks', () => {
+    const txi = new TXI(buildVendorFontTXI());
+
+    expect(txi.numchars).toBe(256);
+    expect(txi.fontheight).toBeCloseTo(0.5);
+    expect(txi.upperleftcoords).toHaveLength(256);
+    expect(txi.lowerrightcoords).toHaveLength(256);
+    expect(txi.upperleftcoords[0]).toEqual({ x: 0, y: 0, z: 0 });
+    expect(txi.lowerrightcoords[255]).toEqual({ x: 1, y: 1, z: 0 });
+  });
+
+  it('toBuffer and fromBuffer preserve vendor-sized font metadata', () => {
+    const source = new TXI(buildVendorFontTXI());
+    const reloaded = TXI.fromBuffer(source.toBuffer());
+
+    expect(reloaded.numchars).toBe(source.numchars);
+    expect(reloaded.filter).toBe(source.filter);
+    expect(reloaded.fontheight).toBeCloseTo(source.fontheight);
+    expect(reloaded.upperleftcoords).toHaveLength(source.upperleftcoords.length);
+    expect(reloaded.lowerrightcoords).toHaveLength(source.lowerrightcoords.length);
   });
 });

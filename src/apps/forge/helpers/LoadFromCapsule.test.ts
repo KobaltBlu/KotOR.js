@@ -8,8 +8,8 @@ import { ResourceTypes } from '@/resource/ResourceTypes';
 function buildErfLikeBuffer(fileType: 'ERF ' | 'MOD ' | 'SAV '): Uint8Array {
   const erf = new ERFObject();
   erf.header.fileType = fileType;
-  erf.addResource('alpha', ResourceTypes.UTC, Uint8Array.from([0x55, 0x54, 0x43, 0x20]));
-  erf.addResource('beta', ResourceTypes.UTI, Uint8Array.from([0x55, 0x54, 0x49, 0x20]));
+  erf.addResource('alpha', ResourceTypes.utc, Uint8Array.from([0x55, 0x54, 0x43, 0x20]));
+  erf.addResource('beta', ResourceTypes.uti, Uint8Array.from([0x55, 0x54, 0x49, 0x20]));
   return erf.getExportBuffer();
 }
 
@@ -21,7 +21,7 @@ describe('loadFromCapsuleBuffer', () => {
     expect(capsule?.type).toBe('erf');
     expect(capsule?.entries).toHaveLength(2);
     expect(capsule?.entries.map((entry) => entry.resref)).toEqual(['alpha', 'beta']);
-    await expect(capsule?.getResourceBuffer('alpha', ResourceTypes.UTC)).resolves.toEqual(
+    await expect(capsule?.getResourceBuffer('alpha', ResourceTypes.utc)).resolves.toEqual(
       Uint8Array.from([0x55, 0x54, 0x43, 0x20]),
     );
   });
@@ -33,16 +33,16 @@ describe('loadFromCapsuleBuffer', () => {
     expect(modCapsule?.type).toBe('erf');
     expect(savCapsule?.type).toBe('erf');
     expect(modCapsule?.entries[0].ext).toBe('utc');
-    expect(savCapsule?.entries[1].ext).toBe('uti');
+    expect(savCapsule?.entries[1].ext).toBe('uti'); // ResourceTypes.uti → type 2025
   });
 
   it('filters returned entries when supported types are provided', async () => {
-    const capsule = await loadFromCapsuleBuffer(buildErfLikeBuffer('ERF '), [ResourceTypes.UTI]);
+    const capsule = await loadFromCapsuleBuffer(buildErfLikeBuffer('ERF '), [ResourceTypes.uti]);
 
     expect(capsule?.entries).toHaveLength(1);
     expect(capsule?.entries[0]).toMatchObject({
       resref: 'beta',
-      resType: ResourceTypes.UTI,
+      resType: ResourceTypes.uti,
       ext: 'uti',
     });
   });
@@ -50,7 +50,7 @@ describe('loadFromCapsuleBuffer', () => {
   it('loads RIM buffers built from the production helper', async () => {
     const rimBuffer = buildRimBuffer({
       resref: 'module',
-      resType: ResourceTypes.IFO,
+      resType: ResourceTypes.ifo,
       data: Uint8Array.from([0x49, 0x46, 0x4f, 0x20]),
     });
 
@@ -60,10 +60,10 @@ describe('loadFromCapsuleBuffer', () => {
     expect(capsule?.entries).toHaveLength(1);
     expect(capsule?.entries[0]).toMatchObject({
       resref: 'module',
-      resType: ResourceTypes.IFO,
+      resType: ResourceTypes.ifo,
       ext: 'ifo',
     });
-    await expect(capsule?.getResourceBuffer('module', ResourceTypes.IFO)).resolves.toEqual(
+    await expect(capsule?.getResourceBuffer('module', ResourceTypes.ifo)).resolves.toEqual(
       Uint8Array.from([0x49, 0x46, 0x4f, 0x20]),
     );
   });

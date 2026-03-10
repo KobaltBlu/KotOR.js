@@ -116,14 +116,18 @@ describe('GFFObject', () => {
   });
 
   it('rejects truncated or invalid binary headers', () => {
-    expect(() => new GFFObject(new Uint8Array(12))).toThrow('Invalid GFF header');
+    // parse() is called directly because the constructor swallows errors (uses callbacks).
+    const a = new GFFObject();
+    expect(() => a.parse(new Uint8Array(12))).toThrow('Invalid GFF header');
 
     const valid = buildVendorStyleGff().getExportBuffer();
     const invalidVersion = valid.slice();
     invalidVersion.set(Uint8Array.from(Buffer.from('V9.9', 'latin1')), 4);
-    expect(() => new GFFObject(invalidVersion)).toThrow('Unsupported GFF version: V9.9');
+    const b = new GFFObject();
+    expect(() => b.parse(invalidVersion)).toThrow('Unsupported GFF version: V9.9');
 
     const truncated = valid.slice(0, valid.length - 1);
-    expect(() => new GFFObject(truncated)).toThrow('Invalid GFF');
+    const c = new GFFObject();
+    expect(() => c.parse(truncated)).toThrow('Invalid GFF');
   });
 });

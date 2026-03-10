@@ -309,9 +309,16 @@ export class GFFObject {
           loc.setRESREF(value.str_ref);
         }
         (value?.substrings || []).forEach((substring) => {
-          loc.substrings.push(new CExoLocSubString(substring?.id ?? 0, substring?.string ?? ''));
+          loc.strings.push(new CExoLocSubString(substring?.id ?? 0, substring?.string ?? ''));
         });
         gffField.setCExoLocString(loc);
+        break;
+      }
+      case GFFDataType.DWORD64: {
+        const v = typeof field.value === 'bigint' ? field.value : BigInt(String(field.value ?? '0'));
+        const dword64Buf = new Uint8Array(8);
+        new DataView(dword64Buf.buffer).setBigUint64(0, v, true);
+        gffField.setData(dword64Buf);
         break;
       }
       case GFFDataType.VOID:

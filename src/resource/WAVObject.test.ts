@@ -94,7 +94,8 @@ describe('WAVObject', () => {
   });
 
   it('detects VO 20-byte header and round-trip', () => {
-    const riff = makeRiffWave();
+    // Use 0-byte data payload so RIFF is exactly 44 bytes: 20+44=64.
+    const riff = makeRiffWave({ data: new Uint8Array(0) });
     const enc = new TextEncoder();
     const withVO = new Uint8Array(20 + riff.length);
     enc.encodeInto('RIFF', withVO);
@@ -103,7 +104,7 @@ describe('WAVObject', () => {
     expect(wav.wavType).toBe(WAVType.VO);
     expect(wav.audioFormat).toBe(AudioFileAudioType.WAVE);
     const out = wav.toBuffer();
-    expect(out.length).toBe(20 + 8 + 36); // VO header + RIFF header + chunk
+    expect(out.length).toBe(20 + 8 + 36); // VO header(20) + RIFF+size(8) + WAVE+fmt chunk(36)
     expect(out[0]).toBe(0x52);
     expect(out[20]).toBe(0x52);
   });

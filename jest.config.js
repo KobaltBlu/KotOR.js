@@ -3,6 +3,8 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   moduleNameMapper: {
+    // Style imports must come before the @/ alias so they are intercepted first.
+    '\\.(css|scss|sass|less)$': '<rootDir>/__mocks__/styleMock.js',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
