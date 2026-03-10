@@ -214,6 +214,10 @@ export class RIMObject {
     return new Uint8Array(0);
   }
 
+  hasResource(resRef: string, resType: number): boolean {
+    return this.getResource(resRef, resType) !== undefined;
+  }
+
   async getResourceBufferByResRef(resRef: string = '', resType: number = 0x000F): Promise<Uint8Array> {
     const resource = this.getResource(resRef, resType);
     if(!resource){

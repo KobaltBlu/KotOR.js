@@ -2,9 +2,9 @@ import { Endians } from "@/enums/resource/Endians";
 
 /**
  * BinaryReader class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BinaryReader.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -21,7 +21,7 @@ export class BinaryReader {
 
   /**
    * Constructor for the BinaryReader class.
-   * 
+   *
    * @param reader - The reader to read from.
    * @param endians - The endianness of the data.
    */
@@ -29,7 +29,7 @@ export class BinaryReader {
     //variables
     this.position = 0;
     this.buffer = reader;
-    this.bufferView = new DataView(reader.buffer);
+    this.bufferView = new DataView(reader.buffer, reader.byteOffset, reader.byteLength);
     this.endians = endians;
     this.isLE = endians == Endians.LITTLE;
 
@@ -38,7 +38,7 @@ export class BinaryReader {
 
   /**
    * Sets the endianness of the data.
-   * 
+   *
    * @param endian - The endianness of the data.
    */
   setEndian(endian: Endians){
@@ -48,7 +48,7 @@ export class BinaryReader {
 
   /**
    * Seeks to a position in the buffer.
-   * 
+   *
    * @param pos - The position to seek to.
    */
   seek(pos: number): void {
@@ -57,7 +57,7 @@ export class BinaryReader {
 
   /**
    * Skips a number of bytes in the buffer.
-   * 
+   *
    * @param num - The number of bytes to skip.
    */
   skip(num: number): void {
@@ -66,7 +66,7 @@ export class BinaryReader {
 
   /**
    * Returns the length of the buffer.
-   * 
+   *
    * @returns The length of the buffer.
    */
   length(){
@@ -75,7 +75,7 @@ export class BinaryReader {
 
   /**
    * Returns the current position in the buffer.
-   * 
+   *
    * @returns The current position in the buffer.
    */
   tell(): number {
@@ -84,7 +84,7 @@ export class BinaryReader {
 
   /**
    * Reads an 8-bit integer from the buffer.
-   * 
+   *
    * @returns The 8-bit integer.
    */
   readInt8(): number {
@@ -98,7 +98,7 @@ export class BinaryReader {
 
   /**
    * Reads an unsigned 8-bit integer from the buffer.
-   * 
+   *
    * @returns The unsigned 8-bit integer.
    */
   readUInt8(): number {
@@ -112,11 +112,11 @@ export class BinaryReader {
 
   /**
    * Reads a 16-bit integer from the buffer.
-   * 
+   *
    * @returns The 16-bit integer.
    */
   readInt16(): number {
-    if(this.position >= this.buffer.length)
+    if(this.position + 2 > this.buffer.length)
       return 0;
 
     this._value = this.bufferView.getInt16(this.position, this.isLE);
@@ -126,11 +126,11 @@ export class BinaryReader {
 
   /**
    * Reads an unsigned 16-bit integer from the buffer.
-   * 
+   *
    * @returns The unsigned 16-bit integer.
    */
   readUInt16(): number {
-    if(this.position >= this.buffer.length)
+    if(this.position + 2 > this.buffer.length)
       return 0;
 
     this._value = this.bufferView.getUint16(this.position, this.isLE);
@@ -140,11 +140,11 @@ export class BinaryReader {
 
   /**
    * Reads an unsigned 32-bit integer from the buffer.
-   * 
+   *
    * @returns The unsigned 32-bit integer.
    */
   readUInt32(): number {
-    if(this.position >= this.buffer.length)
+    if(this.position + 4 > this.buffer.length)
       return 0;
 
     this._value = this.bufferView.getUint32(this.position, this.isLE);
@@ -157,11 +157,11 @@ export class BinaryReader {
 
   /**
    * Reads a 32-bit integer from the buffer.
-   * 
+   *
    * @returns The 32-bit integer.
    */
   readInt32(): number {
-    if(this.position >= this.buffer.length)
+    if(this.position + 4 > this.buffer.length)
       return 0;
 
     this._value = this.bufferView.getInt32(this.position, this.isLE);
@@ -174,7 +174,7 @@ export class BinaryReader {
 
   /**
    * Reads a character from the buffer.
-   * 
+   *
    * @returns The character.
    */
   readChar(): string {
@@ -187,7 +187,7 @@ export class BinaryReader {
 
   /**
    * Reads a string from the buffer.
-   * 
+   *
    * @param num - The number of characters to read.
    * @param encoding - The encoding of the string.
    * @returns The string.
@@ -196,15 +196,16 @@ export class BinaryReader {
     if(this.position >= this.buffer.length)
       return '\0';
     const textDecoder = new TextDecoder(encoding);
-    this._value = textDecoder.decode(this.buffer.slice(this.position, this.position + num));
-    this.position += num;
+    const bytes = this.buffer.slice(this.position, Math.min(this.position + num, this.buffer.length));
+    this._value = textDecoder.decode(bytes);
+    this.position += bytes.length;
     //console.log(num, this._value);
     return this._value;
   }
 
   /**
    * Reads a string from the buffer.
-   * 
+   *
    * @returns The string.
    */
   readString(): string{
@@ -221,7 +222,7 @@ export class BinaryReader {
 
   /**
    * Reads a byte from the buffer.
-   * 
+   *
    * @returns The byte.
    */
   readByte(): number {
@@ -233,7 +234,7 @@ export class BinaryReader {
 
   /**
    * Reads a signed byte from the buffer.
-   * 
+   *
    * @returns The signed byte.
    */
   readSByte(): number {
@@ -245,7 +246,7 @@ export class BinaryReader {
 
   /**
    * Reads an array of bytes from the buffer.
-   * 
+   *
    * @param num - The number of bytes to read.
    * @returns The array of bytes.
    */
@@ -260,11 +261,11 @@ export class BinaryReader {
 
   /**
    * Reads a single-precision floating point number from the buffer.
-   * 
+   *
    * @returns The single-precision floating point number.
    */
   readSingle(): number {
-    if(this.position >= this.buffer.length)
+    if(this.position + 4 > this.buffer.length)
       return 0;
 
     this._value = this.bufferView.getFloat32(this.position, this.isLE);
@@ -274,11 +275,11 @@ export class BinaryReader {
 
   /**
    * Reads a double-precision floating point number from the buffer.
-   * 
+   *
    * @returns The double-precision floating point number.
    */
   readDouble(): number {
-    if(this.position >= this.buffer.length)
+    if(this.position + 8 > this.buffer.length)
       return 0;
 
     this._value = this.bufferView.getFloat64(this.position, this.isLE);
@@ -288,11 +289,11 @@ export class BinaryReader {
 
   /**
    * Reads a 64-bit unsigned integer from the buffer.
-   * 
+   *
    * @returns The 64-bit unsigned integer.
    */
   readUInt64(): bigint {
-    if(this.position >= this.buffer.length)
+    if(this.position + 8 > this.buffer.length)
       return BigInt(0);
 
     this._value = this.bufferView.getBigUint64(this.position, this.isLE);
@@ -302,11 +303,11 @@ export class BinaryReader {
 
   /**
    * Reads a 64-bit integer from the buffer.
-   * 
+   *
    * @returns The 64-bit integer.
    */
   readInt64(): bigint {
-    if(this.position >= this.buffer.length)
+    if(this.position + 8 > this.buffer.length)
       return BigInt(0);
 
     this._value = this.bufferView.getBigInt64(this.position, this.isLE);
@@ -316,7 +317,7 @@ export class BinaryReader {
 
   /**
    * Slices the buffer.
-   * 
+   *
    * @param offset - The offset to slice from.
    * @param end - The end of the slice.
    * @returns The sliced buffer.
@@ -330,13 +331,13 @@ export class BinaryReader {
 
   /**
    * Reuses the buffer.
-   * 
+   *
    * @param buffer - The buffer to reuse.
    */
   reuse(buffer: Uint8Array){
     this.position = 0;
     this.buffer = buffer;
-    this.bufferView = new DataView(buffer.buffer);
+    this.bufferView = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   }
 
   /**

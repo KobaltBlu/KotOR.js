@@ -1,3 +1,4 @@
+import { Endians } from '@/enums/resource/Endians';
 import { BinaryReader } from '@/utility/binary/BinaryReader';
 
 describe('BinaryReader', () => {
@@ -46,6 +47,18 @@ describe('BinaryReader', () => {
     expect(reader.readUInt8()).toBe(2);
   });
 
+  it('supports subarray-backed buffers and preserves slice endian mode', () => {
+    const backing = new Uint8Array([0xaa, 0x34, 0x12, 0xbb]);
+    const reader = new BinaryReader(backing.subarray(1, 3), Endians.LITTLE);
+
+    expect(reader.length()).toBe(2);
+    expect(reader.readUInt16()).toBe(0x1234);
+
+    const bigEndianReader = new BinaryReader(new Uint8Array([0x12, 0x34, 0x56, 0x78]), Endians.BIG);
+    const sliced = bigEndianReader.slice(0, 2);
+    expect(sliced.readUInt16()).toBe(0x1234);
+  });
+
   it('reads fixed-length and null-terminated strings', () => {
     const data = new Uint8Array([...new TextEncoder().encode('helloworld'), 0x00]);
     const reader = new BinaryReader(data);
@@ -75,6 +88,31 @@ describe('BinaryReader', () => {
     expect(reader.readUInt8()).toBe(8);
   });
 
+  it('reads big-endian primitives when constructed with big endian mode', () => {
+    const reader = new BinaryReader(
+      new Uint8Array([
+        0xff, 0x01,
+        0xff, 0xff, 0xff, 0x02,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03,
+        0xff, 0x01,
+        0xff, 0xff, 0xff, 0x02,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03,
+        0x3f, 0x80, 0x00, 0x00,
+        0x3f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      ]),
+      Endians.BIG,
+    );
+
+    expect(reader.readUInt16()).toBe(65281);
+    expect(reader.readUInt32()).toBe(4294967042);
+    expect(reader.readUInt64()).toBe(BigInt('18446744073709551363'));
+    expect(reader.readInt16()).toBe(-255);
+    expect(reader.readInt32()).toBe(-254);
+    expect(reader.readInt64()).toBe(BigInt(-253));
+    expect(reader.readSingle()).toBeCloseTo(1.0, 5);
+    expect(reader.readDouble()).toBeCloseTo(1.0, 5);
+  });
+
   it('returns safe defaults when reading beyond the end of the buffer', () => {
     const reader = new BinaryReader(new Uint8Array(0));
     expect(reader.readUInt8()).toBe(0);
@@ -83,5 +121,17 @@ describe('BinaryReader', () => {
     expect(reader.readChars(4)).toBe('\0');
     expect(reader.readString()).toBe('');
     expect(reader.readBytes(4)).toEqual(new Uint8Array(0));
+  });
+
+  it('returns safe defaults for truncated multi-byte reads without throwing', () => {
+    const reader = new BinaryReader(new Uint8Array([0x12]));
+
+    expect(reader.readUInt16()).toBe(0);
+    expect(reader.readUInt32()).toBe(0);
+    expect(reader.readUInt64()).toBe(BigInt(0));
+    expect(reader.readSingle()).toBe(0);
+    expect(reader.readDouble()).toBe(0);
+    expect(reader.readChars(4)).toBe('\x12');
+    expect(reader.tell()).toBe(1);
   });
 });

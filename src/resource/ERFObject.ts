@@ -239,6 +239,10 @@ export class ERFObject {
     return await this.getResourceBuffer(resource);
   }
 
+  hasResource(resRef: string, resType: number): boolean {
+    return this.getResource(resRef, resType) !== undefined;
+  }
+
   getResourcesByType(resType: number): IERFResource[] {
     const resources: IERFResource[] = [];
     for(let i = 0; i < this.keyList.length; i++){

@@ -29,8 +29,8 @@ function getExtFromResType(resType: number): string {
 }
 
 /**
- * Load an ERF/MOD or RIM buffer and return resource list + getter.
- * Buffer must start with "MOD ", "ERF ", or "RIM ".
+ * Load an ERF/MOD/SAV or RIM buffer and return resource list + getter.
+ * Buffer must start with "MOD ", "ERF ", "SAV ", or "RIM ".
  */
 export async function loadFromCapsuleBuffer(
   buffer: Uint8Array,
@@ -39,7 +39,7 @@ export async function loadFromCapsuleBuffer(
   if (buffer.length < 4) return null;
   const sig = String.fromCharCode(buffer[0], buffer[1], buffer[2], buffer[3]);
 
-  if (sig === "MOD " || sig === "ERF ") {
+  if (sig === "MOD " || sig === "ERF " || sig === "SAV ") {
     const erf = new ERFObject(buffer);
     await erf.load();
     const keyList: IERFKeyEntry[] = erf.keyList;
