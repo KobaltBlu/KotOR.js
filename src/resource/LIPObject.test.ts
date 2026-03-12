@@ -1,4 +1,10 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+
+import { ApplicationEnvironment } from '@/enums/ApplicationEnvironment';
 import { LIPObject } from '@/resource/LIPObject';
+import { ApplicationProfile } from '@/utility/ApplicationProfile';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
 describe('LIPObject', () => {
@@ -45,6 +51,32 @@ describe('LIPObject', () => {
     expect(lip.keyframes[1].shape).toBe(5);
     expect(lip.keyframes[2].time).toBeCloseTo(1.25, 4);
     expect(lip.keyframes[2].shape).toBe(10);
+  });
+
+  it('reads vendor-like lip data from disk', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kotor-lip-'));
+    const previousEnv = ApplicationProfile.ENV;
+    const previousDirectory = ApplicationProfile.directory;
+    const fileName = 'test.lip';
+
+    try {
+      ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
+      ApplicationProfile.directory = tempDir;
+      fs.writeFileSync(path.join(tempDir, fileName), makeLipBuffer());
+
+      const lip = await new Promise<LIPObject>((resolve) => {
+        new LIPObject(fileName, (loaded: LIPObject) => resolve(loaded));
+      });
+
+      expect(lip.duration).toBeCloseTo(1.5, 3);
+      expect(lip.keyframes).toHaveLength(3);
+      expect(lip.keyframes.map((keyframe) => keyframe.shape)).toEqual([0, 5, 10]);
+      expect(lip.keyframes.map((keyframe) => Number(keyframe.time.toFixed(4)))).toEqual([0, 0.7777, 1.25]);
+    } finally {
+      ApplicationProfile.ENV = previousEnv;
+      ApplicationProfile.directory = previousDirectory;
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   it('toExportBuffer round-trips binary lip data', () => {

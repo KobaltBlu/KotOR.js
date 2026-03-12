@@ -23,4 +23,10 @@ export interface IForgeHostAdapter {
    * Used when Forge runs in an environment without direct file system (e.g. webview).
    */
   requestSave(tab: TabState, buffer: Uint8Array): Promise<void>;
+
+  /**
+   * Optional: called when the user edits the document so the host can push an edit (e.g. for undo/redo).
+   * Host gets current buffer from the tab and may debounce; full-buffer strategy for undo/redo.
+   */
+  onEdit?(): void | Promise<void>;
 }

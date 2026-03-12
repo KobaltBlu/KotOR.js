@@ -1,5 +1,7 @@
+import * as fs from 'fs';
 import * as path from 'path';
 import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
 import { GameFileSystem } from '@/utility/GameFileSystem';
 import { ResourceTypes } from '@/resource/ResourceTypes';
@@ -40,6 +42,12 @@ export class RIMObject {
     this.inMemory = false;
     this.group = 'rim';
     this.type = 'rim';
+    this.header = {
+      fileType: 'RIM ',
+      fileVersion: 'V1.0',
+      resourceCount: 0,
+      resourcesOffset: DEFAULT_RIM_RESOURCES_OFFSET,
+    };
 
     if(typeof file == 'string'){
       this.resource_path = file;
@@ -112,7 +120,8 @@ export class RIMObject {
     this.reader = new BinaryReader(header);
     this.reader.seek(this.header.resourcesOffset);
 
-    for (let i = 0; i < this.header.resourceCount; i++) {
+    const resourceCount = this.header.resourceCount;
+    for (let i = 0; i < resourceCount; i++) {
       this.addResource({
         resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
         resType: this.reader.readUInt16(),
@@ -161,7 +170,8 @@ export class RIMObject {
     this.reader.reuse(header);
     this.reader.seek(this.header.resourcesOffset);
 
-    for (let i = 0; i < this.header.resourceCount; i++) {
+    const resourceCount = this.header.resourceCount;
+    for (let i = 0; i < resourceCount; i++) {
       this.addResource({
         resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
         resType: this.reader.readUInt16(),
@@ -175,7 +185,32 @@ export class RIMObject {
     this.reader.dispose();
   }
 
-  addResource(res: IRIMResource){
+  addResource(res: IRIMResource): IRIMResource;
+  addResource(resRef: string, resType: number, data: Uint8Array): IRIMResource;
+  addResource(resOrRef: IRIMResource|string, resType?: number, data?: Uint8Array): IRIMResource {
+    const res = typeof resOrRef === 'string'
+      ? {
+          resId: this.resources.length,
+          resRef: resOrRef.toLowerCase(),
+          resType: resType as number,
+          unused: 0,
+          offset: 0,
+          size: data?.length ?? 0,
+          data,
+        }
+      : {
+          ...resOrRef,
+          resRef: resOrRef.resRef.toLowerCase(),
+        };
+
+    if (res.resId == null || res.resId < 0) {
+      res.resId = this.resources.length;
+    }
+
+    if (res.data instanceof Uint8Array) {
+      res.size = res.data.length;
+    }
+
     let typeMap = this.resourceMap.get(res.resType);
     if(!typeMap){
       typeMap = new Map();
@@ -183,6 +218,8 @@ export class RIMObject {
     }
     typeMap.set(res.resRef, res);
     this.resources.push(res);
+    this.header.resourceCount = this.resources.length;
+    return res;
   }
 
   async loadFromBuffer(buffer: Uint8Array){
@@ -215,6 +252,10 @@ export class RIMObject {
   async getResourceBuffer(resource?: IRIMResource): Promise<Uint8Array> {
     if(!resource){
       return new Uint8Array(0);
+    }
+
+    if (resource.data instanceof Uint8Array) {
+      return resource.data;
     }
 
     try {
@@ -268,26 +309,124 @@ export class RIMObject {
       return new Uint8Array(0);
     }
 
+    const outputPath = path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype));
+
     if(this.inMemory){
       const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + resource.size));
-      await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
+      if (path.isAbsolute(directory)) {
+        await fs.promises.writeFile(outputPath, buffer);
+      } else {
+        await GameFileSystem.writeFile(outputPath, buffer);
+      }
       return buffer;
     }else{
       let buffer = new Uint8Array(resource.size);
       const fd = await this.getFileDescription();
       await GameFileSystem.read(fd, buffer, 0, resource.size, resource.offset);
-      // console.log('RIM Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
-      await GameFileSystem.writeFile(
-        path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer
-      );
+      if (path.isAbsolute(directory)) {
+        await fs.promises.writeFile(outputPath, buffer);
+      } else {
+        await GameFileSystem.writeFile(outputPath, buffer);
+      }
       return buffer;
     }
+  }
+
+  private getInlineResourceData(resource: IRIMResource): Uint8Array | null {
+    if (resource.data instanceof Uint8Array) {
+      return resource.data;
+    }
+
+    if (this.inMemory && this.buffer instanceof Uint8Array) {
+      return new Uint8Array(this.buffer.slice(resource.offset, resource.offset + resource.size));
+    }
+
+    return null;
+  }
+
+  private buildExportBufferFromResources(resources: Array<IRIMResource & { data: Uint8Array }>): Uint8Array {
+    const writer = new BinaryWriter();
+    const headerSize = DEFAULT_RIM_RESOURCES_OFFSET;
+    const entrySize = 32;
+
+    this.header.fileType = this.header.fileType || 'RIM ';
+    this.header.fileVersion = this.header.fileVersion || 'V1.0';
+    this.header.resourceCount = resources.length;
+    this.header.resourcesOffset = DEFAULT_RIM_RESOURCES_OFFSET;
+
+    let currentOffset = headerSize + (resources.length * entrySize);
+    resources.forEach((resource, index) => {
+      resource.resId = index;
+      resource.offset = currentOffset;
+      resource.size = resource.data.length;
+      currentOffset += resource.size;
+    });
+
+    writer.writeChars(this.header.fileType);
+    writer.writeChars(this.header.fileVersion);
+    writer.writeUInt32(0);
+    writer.writeUInt32(resources.length);
+    writer.writeUInt32(this.header.resourcesOffset);
+    writer.writeBytes(new Uint8Array(headerSize - writer.tell()));
+
+    resources.forEach((resource) => {
+      writer.writeString(resource.resRef.padEnd(16, '\0').slice(0, 16));
+      writer.writeUInt16(resource.resType);
+      writer.writeUInt16(resource.unused ?? 0);
+      writer.writeUInt32(resource.resId);
+      writer.writeUInt32(resource.offset);
+      writer.writeUInt32(resource.size);
+    });
+
+    resources.forEach((resource) => {
+      writer.writeBytes(resource.data);
+    });
+
+    return writer.buffer;
+  }
+
+  getExportBuffer(): Uint8Array {
+    const resources = this.resources.map((resource) => {
+      const data = this.getInlineResourceData(resource);
+      if (!(data instanceof Uint8Array)) {
+        throw new Error('RIM resource data is not loaded in memory; use export() for disk-backed archives.');
+      }
+      return {
+        ...resource,
+        data,
+      };
+    });
+
+    return this.buildExportBufferFromResources(resources);
+  }
+
+  async export(file: string): Promise<void> {
+    if (!file) {
+      throw new Error('Failed to export: Missing file path.');
+    }
+
+    const resources = await Promise.all(this.resources.map(async (resource) => ({
+      ...resource,
+      data: await this.getResourceBuffer(resource),
+    })));
+
+    const buffer = this.buildExportBufferFromResources(resources as Array<IRIMResource & { data: Uint8Array }>);
+
+    if (path.isAbsolute(file)) {
+      await fs.promises.writeFile(file, buffer);
+      return;
+    }
+
+    await GameFileSystem.writeFile(file, buffer);
   }
 
   toJSON(): { header: IRIMHeader; resources: IRIMResource[]; type: string; group: string } {
     return {
       header: { ...this.header },
-      resources: this.resources.map((resource) => ({ ...resource })),
+      resources: this.resources.map((resource) => ({
+        ...resource,
+        data: resource.data ? Uint8Array.from(resource.data) : undefined,
+      })),
       type: this.type || 'rim',
       group: this.group || 'rim',
     };
@@ -318,4 +457,3 @@ export class RIMObject {
   fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<RIMObject['toJSON']>); }
 
 }
-

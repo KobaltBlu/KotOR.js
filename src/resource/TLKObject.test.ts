@@ -47,6 +47,46 @@ describe('TLKObject', () => {
     expect(reloaded.GetStringById(2)).toBe('qrstuvwxyz');
   });
 
+  it('preserves TLK metadata and entry fields through binary export', async () => {
+    const source = TLKObject.fromJSON({
+      fileType: 'TLK ',
+      fileVersion: 'V3.0',
+      languageId: 2,
+      stringCount: 2,
+      entries: [
+        {
+          index: 0,
+          flags: 7,
+          value: 'alpha',
+          soundResRef: 'snd_alpha',
+          volumeVariance: 11,
+          pitchVariance: 22,
+          soundLength: 33,
+        },
+        {
+          index: 1,
+          flags: 1,
+          value: 'beta',
+          soundResRef: 'snd_beta',
+          volumeVariance: 44,
+          pitchVariance: 55,
+          soundLength: 66,
+        },
+      ],
+    });
+
+    const reloaded = await parseTLK(source.toBuffer());
+
+    expect(reloaded.LanguageID).toBe(2);
+    expect(reloaded.StringCount).toBe(2);
+    expect(reloaded.TLKStrings[0].flags).toBe(7);
+    expect(reloaded.TLKStrings[0].SoundResRef).toBe('snd_alpha');
+    expect(reloaded.TLKStrings[0].VolumeVariance).toBe(11);
+    expect(reloaded.TLKStrings[0].PitchVariance).toBe(22);
+    expect(reloaded.TLKStrings[0].SoundLength).toBe(33);
+    expect(reloaded.TLKStrings[1].Value).toBe('beta');
+  });
+
   it('size returns the number of talk table entries', () => {
     expect(makeTLK().size()).toBe(3);
   });
@@ -139,6 +179,31 @@ describe('TLKObject', () => {
     expect(yamlReloaded.TLKStrings[1].Value).toBe('ghijklmnop');
     expect(tomlReloaded.StringCount).toBe(3);
     expect(tomlReloaded.TLKStrings[2].SoundResRef).toBe('');
+  });
+
+  it('structured serializers preserve complete metadata fields', () => {
+    const source = TLKObject.fromJSON({
+      fileType: 'TLK ',
+      fileVersion: 'V3.0',
+      languageId: 5,
+      stringCount: 1,
+      entries: [
+        {
+          index: 0,
+          flags: 9,
+          value: 'gamma',
+          soundResRef: 'snd_gamma',
+          volumeVariance: 12,
+          pitchVariance: 13,
+          soundLength: 14,
+        },
+      ],
+    });
+
+    expect(TLKObject.fromJSON(source.toJSON()).toJSON()).toEqual(source.toJSON());
+    expect(TLKObject.fromXML(source.toXML()).toJSON()).toEqual(source.toJSON());
+    expect(TLKObject.fromYAML(source.toYAML()).toJSON()).toEqual(source.toJSON());
+    expect(TLKObject.fromTOML(source.toTOML()).toJSON()).toEqual(source.toJSON());
   });
 
   it('constructs empty instances without trying to read an empty path', () => {

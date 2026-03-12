@@ -156,6 +156,22 @@ export class EditorTabManager extends EventListenerModel {
     return;
   }
 
+  /**
+   * Returns the archive (ERF/SAV) tab that has the given file path, if open.
+   * Used when saving a resource back into its parent archive.
+   */
+  getArchiveTabByPath(archivePath: string): TabState | undefined {
+    if (!archivePath) return undefined;
+    for (let i = 0; i < this.tabs.length; i++) {
+      const tab = this.tabs[i];
+      if ((tab instanceof TabERFEditorState || tab instanceof TabSAVEditorState) &&
+          tab.file?.path === archivePath) {
+        return tab;
+      }
+    }
+    return undefined;
+  }
+
   tabTypeExists(tab: TabState){
     const tabClass = tab.constructor.name;
     for(let i = 0; i < this.tabs.length; i++){

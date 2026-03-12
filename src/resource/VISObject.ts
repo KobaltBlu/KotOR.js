@@ -102,8 +102,18 @@ export class VISObject {
         continue;
       }
 
-      //Check if the current line is a child room
-      const isChildRoom = lines[i].substring(0, 2) == '  ';
+      const indented = lines[i].substring(0, 2) === '  ';
+      const args = line.split(/\s+/);
+      const hasCount = args[1] !== undefined && !Number.isNaN(Number.parseInt(args[1], 10));
+
+      // A line is a child room reference when:
+      // 1. It is indented with 2+ spaces (classic .vis format), OR
+      // 2. We are collecting children for the current room (declared count not yet satisfied)
+      //    and the line is a bare room name without a following integer count.
+      //    This handles .vis files with irregular / zero indentation on sub-entries.
+      const isCollectingChildren = !!this.readContext.currentRoom.name
+        && this.readContext.linkedRoomCount < this.readContext.currentRoom.count;
+      const isChildRoom = indented || (isCollectingChildren && !hasCount);
 
       /**
        * Child Room parse logic
@@ -130,9 +140,7 @@ export class VISObject {
 
         this.readContext.mode = VISReadMode.ROOM;
 
-        const args = line.split(/\s+/);
-
-        if (!args[1] || Number.isNaN(Number.parseInt(args[1], 10))) {
+        if (!hasCount) {
           continue;
         }
 

@@ -51,6 +51,8 @@ export class TabState extends EventListenerModel {
   #_onNameChanged: (file: EditorFile) => void;
   #_onKeyDown: (e: KeyboardEvent) => void;
   #_onKeyUp: (e: KeyboardEvent) => void;
+  #editNotifyTimeout: ReturnType<typeof setTimeout> | null = null;
+  static readonly EDIT_NOTIFY_DEBOUNCE_MS = 400;
 
   constructor(options: BaseTabStateOptions = {}){
     super();
@@ -81,6 +83,13 @@ export class TabState extends EventListenerModel {
 
     this.#_onSaveStateChanged = (file: EditorFile) => {
       this.editorFileUpdated();
+      if (file.unsaved_changes) {
+        if (this.#editNotifyTimeout != null) clearTimeout(this.#editNotifyTimeout);
+        this.#editNotifyTimeout = setTimeout(() => {
+          this.#editNotifyTimeout = null;
+          ForgeState.getHostAdapter()?.onEdit?.();
+        }, TabState.EDIT_NOTIFY_DEBOUNCE_MS);
+      }
     }
 
     this.#_onNameChanged = (file: EditorFile) => {
@@ -225,7 +234,37 @@ export class TabState extends EventListenerModel {
   async save() {
     const currentFile = this.getFile();
     if(currentFile.archive_path || currentFile.archive_path2){
+      const archivePath = currentFile.archive_path ?? currentFile.archive_path2;
+      const tabManager = this.getTabManager();
+      const parentTab = tabManager?.getArchiveTabByPath(archivePath);
+      const erf = parentTab != null ? (parentTab as { erf?: KotOR.ERFObject }).erf : undefined;
+      if (erf && currentFile.resref != null && currentFile.reskey != null) {
+        this.updateFile();
+        const saveBuffer = await this.getExportBuffer(currentFile.resref, currentFile.ext);
+        const resRef = String(currentFile.resref).toLowerCase();
+        const resType = typeof currentFile.reskey === 'number' ? currentFile.reskey : (KotOR.ResourceTypes[currentFile.ext ?? 'res'] ?? 0);
+        const replaced = erf.replaceResource(resRef, resType, saveBuffer);
+        if (replaced) {
+          currentFile.unsaved_changes = false;
+          if (parentTab.file) parentTab.file.unsaved_changes = true;
+          parentTab.editorFileUpdated?.();
+          return true;
+        }
+      }
       return this.saveAs();
+    }
+    const hostAdapter = ForgeState.getHostAdapter();
+    if (hostAdapter) {
+      try {
+        const saveBuffer = await this.getExportBuffer(this.file?.resref, this.file?.ext);
+        await hostAdapter.requestSave(this, saveBuffer);
+        currentFile.buffer = saveBuffer;
+        currentFile.unsaved_changes = false;
+        return true;
+      } catch (e) {
+        console.error(e);
+        return false;
+      }
     }
     return new Promise<boolean>( async (resolve, reject) => {
       try{

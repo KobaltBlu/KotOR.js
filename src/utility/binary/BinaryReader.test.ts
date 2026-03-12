@@ -122,6 +122,72 @@ describe('BinaryReader', () => {
     expect(sliced.readUInt8()).toBe(40);
   });
 
+  it('fromBytes supports offset and length slicing while preserving true source size', () => {
+    const data = new Uint8Array([
+      0x01,
+      0x02, 0x00,
+      0x03, 0x00, 0x00, 0x00,
+      0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ]);
+
+    const fromOffset = BinaryReader.fromBytes(data, 3);
+    expect(fromOffset.readUInt32()).toBe(3);
+    expect(fromOffset.readUInt64()).toBe(4n);
+    expect(fromOffset.size()).toBe(12);
+    expect(fromOffset.trueSize()).toBe(15);
+
+    const fromOffsetAndLength = BinaryReader.fromBytes(data, 3, 4);
+    expect(fromOffsetAndLength.size()).toBe(4);
+    expect(fromOffsetAndLength.trueSize()).toBe(15);
+    expect(fromOffsetAndLength.readUInt32()).toBe(3);
+  });
+
+  it('tracks remaining bytes independently from true source size', () => {
+    const data = new Uint8Array([
+      0x01,
+      0x02, 0x00,
+      0x03, 0x00, 0x00, 0x00,
+      0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ]);
+
+    const reader = BinaryReader.fromBytes(data);
+    reader.readUInt32();
+    reader.skip(2);
+    reader.skip(1);
+    expect(reader.remaining()).toBe(8);
+
+    const offsetReader = BinaryReader.fromBytes(data, 3);
+    offsetReader.readUInt32();
+    expect(offsetReader.remaining()).toBe(8);
+
+    const boundedReader = BinaryReader.fromBytes(data, 3, 4);
+    boundedReader.readUInt16();
+    expect(boundedReader.remaining()).toBe(2);
+  });
+
+  it('peek returns bytes from the current position without advancing', () => {
+    const data = new Uint8Array([
+      0x01,
+      0x02, 0x00,
+      0x03, 0x00, 0x00, 0x00,
+      0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ]);
+
+    const reader = BinaryReader.fromBytes(data);
+    reader.skip(3);
+    expect(reader.peek(1)).toEqual(new Uint8Array([0x03]));
+    expect(reader.tell()).toBe(3);
+
+    const offsetReader = BinaryReader.fromBytes(data, 3);
+    offsetReader.skip(4);
+    expect(offsetReader.peek(1)).toEqual(new Uint8Array([0x04]));
+    expect(offsetReader.tell()).toBe(4);
+
+    const boundedReader = BinaryReader.fromBytes(data, 3, 4);
+    expect(boundedReader.peek(1)).toEqual(new Uint8Array([0x03]));
+    expect(boundedReader.tell()).toBe(0);
+  });
+
   it('reuse resets position and swaps the buffer', () => {
     const reader = new BinaryReader(new Uint8Array([1, 2, 3]));
     reader.readUInt8();

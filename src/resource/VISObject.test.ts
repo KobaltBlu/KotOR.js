@@ -170,4 +170,47 @@ describe('VISObject', () => {
     const vis = new VISObject(new TextEncoder().encode(''));
     expect(vis.rooms.size).toBe(0);
   });
+
+  // --- Vendor-derived: exact ASCII_TEST_DATA with irregular mixed indentation ---
+
+  it('parses vendor ASCII_TEST_DATA with mixed indentation correctly', () => {
+    // Exact content of test.vis from test_vis.py — rooms and sub-entries use
+    // inconsistent leading whitespace (1, 2, and 5 spaces) as observed in original game files
+    const vendorAscii = [
+      'room_01 3',
+      '  room_02',
+      '     room_03',
+      '  room_04',
+      'room_02 1',
+      '     room_01',
+      'room_03 2',
+      'room_01',
+      '  room_04',
+      'room_04 2',
+      '  room_03',
+      ' room_01',
+    ].join('\n');
+
+    const vis = new VISObject(new TextEncoder().encode(vendorAscii));
+
+    // room_01 sees room_02, room_03, room_04
+    expect(vis.getVisible('room_01', 'room_02')).toBe(true);
+    expect(vis.getVisible('room_01', 'room_03')).toBe(true);
+    expect(vis.getVisible('room_01', 'room_04')).toBe(true);
+
+    // room_02 sees room_01 only
+    expect(vis.getVisible('room_02', 'room_01')).toBe(true);
+    expect(vis.getVisible('room_02', 'room_03')).toBe(false);
+    expect(vis.getVisible('room_02', 'room_04')).toBe(false);
+
+    // room_03 sees room_01 and room_04 (but NOT room_02)
+    expect(vis.getVisible('room_03', 'room_01')).toBe(true);
+    expect(vis.getVisible('room_03', 'room_04')).toBe(true);
+    expect(vis.getVisible('room_03', 'room_02')).toBe(false);
+
+    // room_04 sees room_03 and room_01 (but NOT room_02)
+    expect(vis.getVisible('room_04', 'room_01')).toBe(true);
+    expect(vis.getVisible('room_04', 'room_03')).toBe(true);
+    expect(vis.getVisible('room_04', 'room_02')).toBe(false);
+  });
 });

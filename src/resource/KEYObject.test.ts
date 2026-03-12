@@ -1,5 +1,13 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+
+import { ApplicationEnvironment } from '@/enums/ApplicationEnvironment';
+import { BIFManager } from '@/managers/BIFManager';
+import { BIFObject } from '@/resource/BIFObject';
 import { KEYObject } from '@/resource/KEYObject';
 import { ResourceTypes } from '@/resource/ResourceTypes';
+import { ApplicationProfile } from '@/utility/ApplicationProfile';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
 describe('KEYObject', () => {
@@ -62,6 +70,33 @@ describe('KEYObject', () => {
     return writer.buffer;
   }
 
+  function makeBifBuffer(entries: { id: number; resType: number; payload: Uint8Array }[]): Uint8Array {
+    const headerSize = 20;
+    const tableSize = entries.length * 16;
+    const totalDataSize = entries.reduce((sum, entry) => sum + entry.payload.length, 0);
+    const buffer = new Uint8Array(headerSize + tableSize + totalDataSize);
+    const view = new DataView(buffer.buffer);
+
+    new TextEncoder().encodeInto('BIFF', new Uint8Array(buffer.buffer, 0, 4));
+    new TextEncoder().encodeInto('V1  ', new Uint8Array(buffer.buffer, 4, 4));
+    view.setUint32(8, entries.length, true);
+    view.setUint32(12, 0, true);
+    view.setUint32(16, headerSize, true);
+
+    let payloadOffset = headerSize + tableSize;
+    for (let index = 0; index < entries.length; index++) {
+      const tableOffset = headerSize + index * 16;
+      view.setUint32(tableOffset, entries[index].id, true);
+      view.setUint32(tableOffset + 4, payloadOffset, true);
+      view.setUint32(tableOffset + 8, entries[index].payload.length, true);
+      view.setUint32(tableOffset + 12, entries[index].resType, true);
+      buffer.set(entries[index].payload, payloadOffset);
+      payloadOffset += entries[index].payload.length;
+    }
+
+    return buffer;
+  }
+
   it('loadBuffer parses bif entries and key entries', () => {
     const key = new KEYObject();
     key.loadBuffer(makeKeyBuffer());
@@ -99,6 +134,30 @@ describe('KEYObject', () => {
     expect(reloaded.bifs).toHaveLength(2);
     expect(reloaded.keys).toHaveLength(3);
     expect(reloaded.getFileKey('test1', ResourceTypes.txt)?.resId).toBe(0);
+  });
+
+  it('loadFile reads a KEY from disk using the configured filesystem profile', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kotor-key-'));
+    const previousEnv = ApplicationProfile.ENV;
+    const previousDirectory = ApplicationProfile.directory;
+    const fileName = 'test.key';
+
+    try {
+      ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
+      ApplicationProfile.directory = tempDir;
+      fs.writeFileSync(path.join(tempDir, fileName), makeKeyBuffer());
+
+      const key = new KEYObject();
+      await key.loadFile(fileName);
+
+      expect(key.bifs).toHaveLength(2);
+      expect(key.keys).toHaveLength(3);
+      expect(key.getFileKey('test2', ResourceTypes.txt)?.resId).toBe(1);
+    } finally {
+      ApplicationProfile.ENV = previousEnv;
+      ApplicationProfile.directory = previousDirectory;
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   it('exposes bif and resource index helpers', () => {
@@ -180,6 +239,69 @@ describe('KEYObject', () => {
 
     const res = { Id: 9999, offset: 0, size: 0, resType: ResourceTypes.txt };
     expect(key.getFileKeyByRes(res)).toBeUndefined();
+  });
+
+  it('getFilesByResType returns matching resources across mapped BIF archives', () => {
+    const key = new KEYObject();
+    const previousBifs = BIFManager.bifs;
+
+    key.loadBuffer(makeKeyBuffer());
+
+    const bif0 = new BIFObject(makeBifBuffer([
+      { id: 0, resType: ResourceTypes.txt, payload: new TextEncoder().encode('alpha') },
+      { id: 1, resType: ResourceTypes.tga, payload: new TextEncoder().encode('skip') },
+    ]));
+    bif0.readFromMemory();
+
+    const bif1 = new BIFObject(makeBifBuffer([
+      { id: (1 << 20) | 2, resType: ResourceTypes.txt, payload: new TextEncoder().encode('beta') },
+    ]));
+    bif1.readFromMemory();
+
+    BIFManager.bifs = new Map<number, BIFObject>([
+      [0, bif0],
+      [1, bif1],
+    ]);
+
+    try {
+      const txtResources = key.getFilesByResType(ResourceTypes.txt);
+      expect(txtResources).toHaveLength(2);
+      expect(txtResources.map((resource) => resource.Id)).toEqual([0, (1 << 20) | 2]);
+    } finally {
+      BIFManager.bifs = previousBifs;
+    }
+  });
+
+  it('getFileBuffer resolves key entries through BIFManager-backed archives', async () => {
+    const key = new KEYObject();
+    const previousBifs = BIFManager.bifs;
+
+    key.loadBuffer(makeKeyBuffer());
+
+    const bif0 = new BIFObject(makeBifBuffer([
+      { id: 0, resType: ResourceTypes.txt, payload: new TextEncoder().encode('abc') },
+      { id: 1, resType: ResourceTypes.txt, payload: new TextEncoder().encode('def') },
+    ]));
+    bif0.readFromMemory();
+
+    const bif1 = new BIFObject(makeBifBuffer([
+      { id: (1 << 20) | 2, resType: ResourceTypes.txt, payload: new TextEncoder().encode('ghi') },
+    ]));
+    bif1.readFromMemory();
+
+    BIFManager.bifs = new Map<number, BIFObject>([
+      [0, bif0],
+      [1, bif1],
+    ]);
+
+    try {
+      expect(new TextDecoder().decode(await key.getFileBuffer(key.getFileKey('test1', ResourceTypes.txt)!))).toBe('abc');
+      expect(new TextDecoder().decode(await key.getFileBuffer(key.getFileKey('test2', ResourceTypes.txt)!))).toBe('def');
+      expect(new TextDecoder().decode(await key.getFileBuffer(key.getFileKey('test3', ResourceTypes.txt)!))).toBe('ghi');
+      expect(await key.getFileBuffer(null as any)).toEqual(new Uint8Array(0));
+    } finally {
+      BIFManager.bifs = previousBifs;
+    }
   });
 
   // --- Serializer round-trips ---

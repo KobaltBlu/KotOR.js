@@ -1,6 +1,12 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+
+import { ApplicationEnvironment } from '@/enums/ApplicationEnvironment';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 import { RIMObject } from '@/resource/RIMObject';
 import { ResourceTypes } from '@/resource/ResourceTypes';
+import { ApplicationProfile } from '@/utility/ApplicationProfile';
 
 describe('RIMObject', () => {
   function makeRimBuffer(options: { resourcesOffset?: number } = {}): Uint8Array {
@@ -59,6 +65,33 @@ describe('RIMObject', () => {
     expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('1', ResourceTypes.txt))).toBe('abc');
     expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('2', ResourceTypes.txt))).toBe('def');
     expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('3', ResourceTypes.txt))).toBe('ghi');
+  });
+
+  it('loads a RIM from disk and preserves resource lookups', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kotor-rim-'));
+    const previousEnv = ApplicationProfile.ENV;
+    const previousDirectory = ApplicationProfile.directory;
+    const fileName = 'test.rim';
+
+    try {
+      ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
+      ApplicationProfile.directory = tempDir;
+      fs.writeFileSync(path.join(tempDir, fileName), makeRimBuffer());
+
+      const rim = new RIMObject(fileName);
+      await rim.load();
+
+      expect(rim.header.fileType).toBe('RIM ');
+      expect(rim.header.fileVersion).toBe('V1.0');
+      expect(rim.resources).toHaveLength(3);
+      expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('1', ResourceTypes.txt))).toBe('abc');
+      expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('2', ResourceTypes.txt))).toBe('def');
+      expect(new TextDecoder().decode(await rim.getResourceBufferByResRef('3', ResourceTypes.txt))).toBe('ghi');
+    } finally {
+      ApplicationProfile.ENV = previousEnv;
+      ApplicationProfile.directory = previousDirectory;
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   it('toJSON and fromJSON round-trip resource metadata', async () => {
@@ -145,10 +178,75 @@ describe('RIMObject', () => {
     expect(reloaded.resources).toHaveLength(3);
   });
 
+  it('exportRawResource writes the selected payload to disk', async () => {
+    const rim = new RIMObject(makeRimBuffer());
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kotor-rim-export-'));
+
+    try {
+      await rim.load();
+
+      const exported = await rim.exportRawResource(tempDir, '2', ResourceTypes.txt);
+      const exportedPath = path.join(tempDir, '2.txt');
+
+      expect(new TextDecoder().decode(exported)).toBe('def');
+      expect(fs.existsSync(exportedPath)).toBe(true);
+      expect(fs.readFileSync(exportedPath, 'utf8')).toBe('def');
+    } finally {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it('fromBufferSync parses header without async load', () => {
     const rim = RIMObject.fromBufferSync(makeRimBuffer());
     expect(rim.header.fileType).toBe('RIM ');
     expect(rim.header.fileVersion).toBe('V1.0');
     expect(rim.resources).toHaveLength(3);
+  });
+
+  it('addResource increments resources and exports a reloadable mutated RIM buffer', async () => {
+    const rim = new RIMObject(makeRimBuffer());
+    await rim.load();
+
+    rim.addResource('image', ResourceTypes.txt, new TextEncoder().encode('image data'));
+
+    const reloaded = new RIMObject(rim.getExportBuffer());
+    await reloaded.load();
+
+    expect(reloaded.resources).toHaveLength(4);
+    expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('1', ResourceTypes.txt))).toBe('abc');
+    expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('2', ResourceTypes.txt))).toBe('def');
+    expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('3', ResourceTypes.txt))).toBe('ghi');
+    expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('image', ResourceTypes.txt))).toBe('image data');
+  });
+
+  it('export writes a mutated disk-backed RIM that can be reloaded with original and appended resources', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kotor-rim-mutate-'));
+    const previousEnv = ApplicationProfile.ENV;
+    const previousDirectory = ApplicationProfile.directory;
+    const fileName = 'capsule.rim';
+
+    try {
+      ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
+      ApplicationProfile.directory = tempDir;
+      fs.writeFileSync(path.join(tempDir, fileName), makeRimBuffer());
+
+      const rim = new RIMObject(fileName);
+      await rim.load();
+      rim.addResource('image', ResourceTypes.txt, new TextEncoder().encode('image data'));
+      await rim.export(fileName);
+
+      const reloaded = new RIMObject(fileName);
+      await reloaded.load();
+
+      expect(reloaded.resources).toHaveLength(4);
+      expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('1', ResourceTypes.txt))).toBe('abc');
+      expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('2', ResourceTypes.txt))).toBe('def');
+      expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('3', ResourceTypes.txt))).toBe('ghi');
+      expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('image', ResourceTypes.txt))).toBe('image data');
+    } finally {
+      ApplicationProfile.ENV = previousEnv;
+      ApplicationProfile.directory = previousDirectory;
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 });

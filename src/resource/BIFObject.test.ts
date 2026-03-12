@@ -1,4 +1,12 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+
+import { ApplicationEnvironment } from '@/enums/ApplicationEnvironment';
+import { KEYManager } from '@/managers/KEYManager';
 import { BIFObject } from '@/resource/BIFObject';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { ApplicationProfile } from '@/utility/ApplicationProfile';
 
 describe('BIFObject', () => {
   /**
@@ -109,6 +117,34 @@ describe('BIFObject', () => {
     expect(await bif.getResourceBuffer(bif.resources[0])).toEqual(new Uint8Array(0));
   });
 
+  it('load() reads a BIF from disk and exposes the same resource slices', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kotor-bif-'));
+    const previousEnv = ApplicationProfile.ENV;
+    const previousDirectory = ApplicationProfile.directory;
+    const fileName = 'test.bif';
+    const entries = [
+      { id: 0, resType: ResourceTypes.txt, payload: new TextEncoder().encode('disk one') },
+      { id: 1, resType: ResourceTypes.txt, payload: new TextEncoder().encode('disk two') },
+    ];
+
+    try {
+      ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
+      ApplicationProfile.directory = tempDir;
+      fs.writeFileSync(path.join(tempDir, fileName), makeMultiResourceBif(entries));
+      const bif = new BIFObject(fileName);
+      await bif.load();
+
+      expect(bif.fileType).toBe('BIFF');
+      expect(bif.variableResourceCount).toBe(2);
+      expect(new TextDecoder().decode(await bif.getResourceBuffer(bif.resources[0]))).toBe('disk one');
+      expect(new TextDecoder().decode(await bif.getResourceBuffer(bif.resources[1]))).toBe('disk two');
+    } finally {
+      ApplicationProfile.ENV = previousEnv;
+      ApplicationProfile.directory = previousDirectory;
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it('toJSON and fromJSON round-trip parsed metadata', () => {
     const bif = new BIFObject(makeBifBuffer());
     bif.readFromMemory();
@@ -171,6 +207,33 @@ describe('BIFObject', () => {
 
     expect(await bif.getResourceBuffer(undefined as any)).toEqual(new Uint8Array(0));
     expect(await bif.getResourceBuffer({ Id: 0, offset: 0, size: 0, resType: 0 })).toEqual(new Uint8Array(0));
+  });
+
+  it('getResource and getResourceBufferByResRef resolve through KEYManager mappings', async () => {
+    const previousKey = KEYManager.Key;
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const bif = new BIFObject(makeMultiResourceBif([
+      { id: 0, resType: ResourceTypes.txt, payload: new TextEncoder().encode('alpha') },
+      { id: 1, resType: ResourceTypes.txt, payload: new TextEncoder().encode('beta') },
+    ]));
+    bif.readFromMemory();
+
+    KEYManager.Key = {
+      keys: [
+        { resRef: 'alpha_ref', resType: ResourceTypes.txt, resId: 0 },
+        { resRef: 'beta_ref', resType: ResourceTypes.txt, resId: 1 },
+      ],
+    } as any;
+
+    try {
+      expect(bif.getResource('alpha_ref', ResourceTypes.txt)?.Id).toBe(0);
+      expect(bif.getResource('missing', ResourceTypes.txt)).toBeUndefined();
+      expect(new TextDecoder().decode(await bif.getResourceBufferByResRef('beta_ref', ResourceTypes.txt))).toBe('beta');
+      expect(await bif.getResourceBufferByResRef('missing', ResourceTypes.txt)).toEqual(new Uint8Array(0));
+    } finally {
+      errorSpy.mockRestore();
+      KEYManager.Key = previousKey;
+    }
   });
 
   // --- Serializer round-trips (XML, YAML, TOML) ---

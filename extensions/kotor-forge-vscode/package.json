@@ -28,6 +28,74 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "walkthroughs": [
+      {
+        "id": "kotor-forge.getStarted",
+        "title": "Get Started with KotOR Forge",
+        "description": "Set up game paths and open your first KotOR file in VS Code.",
+        "steps": [
+          {
+            "id": "setPaths",
+            "title": "Set game paths",
+            "description": "Open Settings and set **KotOR Path** and **TSL Path** to your game installation directories. You can also run **KotOR Forge: Set KotOR Path** or **Set TSL Path** from the Command Palette.",
+            "button": "Open Settings",
+            "command": "workbench.action.openSettings",
+            "args": ["kotorForge"]
+          },
+          {
+            "id": "openFile",
+            "title": "Open a KotOR file",
+            "description": "Open a workspace with KotOR mod files and double-click a file (e.g. `.utc`, `.2da`, `.tlk`). It opens in the KotOR Forge editor. Use **Open With...** for Generic GFF or JSON view."
+          },
+          {
+            "id": "openAsJson",
+            "title": "Open as JSON",
+            "description": "Right-click a supported KotOR file and choose **Open as JSON**, or run **KotOR Forge: Open as JSON** when the file is active."
+          },
+          {
+            "id": "nwscript",
+            "title": "NWScript and debugging",
+            "description": "`.nss` and `.ncs` files get syntax highlighting and IntelliSense. Set breakpoints and use **Start Debugging** from the editor context menu to debug NWScript."
+          },
+          {
+            "id": "formatSort",
+            "title": "Format and Sort",
+            "description": "Use **KotOR Forge: Format** (Alt+Shift+F) and **KotOR Forge: Sort** (Alt+Shift+S) when a KotOR Forge editor has focus, or from the Command Palette."
+          }
+        ]
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "kotor-forge",
+          "title": "KotOR Forge",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "kotor-forge": [
+        {
+          "id": "kotor-forge.recent",
+          "name": "Recent KotOR Files",
+          "contextTitle": "KotOR Forge"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "kotor-forge.recent",
+        "contents": "No KotOR files opened yet.\n[Set game path](command:kotorForge.setKotorPath)\n[Open a KotOR file](command:workbench.action.quickOpen)\n",
+        "when": "!kotorForge.hasRecentFiles"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "kotor-forge.menu",
+        "label": "KotOR Forge"
+      }
+    ],
     "customEditors": [
       {
         "viewType": "kotor.forge",
@@ -219,6 +287,21 @@
         }
       }
     },
+    "chatInstructions": [
+      {
+        "path": "./prompts/nwscript-instructions.md",
+        "when": "resourceExtname == .nss || resourceExtname == .ncs || resourceLangId == nwscript"
+      }
+    ],
+    "breakpoints": [
+      { "language": "nwscript" }
+    ],
+    "snippets": [
+      {
+        "language": "nwscript",
+        "path": "./snippets/nwscript.json"
+      }
+    ],
     "debuggers": [
     {
       "type": "nwscript",
@@ -275,10 +358,65 @@
         "command": "kotorForge.openAsJson",
         "title": "Open as JSON",
         "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.format",
+        "title": "Format",
+        "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.sort",
+        "title": "Sort",
+        "category": "KotOR Forge"
+      },
+      {
+        "command": "kotorForge.openDocumentation",
+        "title": "Open KotOR.js documentation",
+        "category": "KotOR Forge"
+      }
+    ],
+    "colors": [
+      {
+        "id": "kotorForge.statusBar.foreground",
+        "description": "KotOR Forge status bar item text color",
+        "defaults": {
+          "dark": "editorForeground",
+          "light": "editorForeground",
+          "highContrast": "editorForeground"
+        }
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "kotor-forge",
+        "required": [],
+        "properties": {
+          "label": { "type": "string", "description": "Task label" },
+          "script": { "type": "string", "description": "Path to NWScript file" }
+        }
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "kotorForge.format",
+        "key": "alt+shift+f",
+        "mac": "option+shift+f",
+        "when": "resourceExtname == .2da || resourceExtname == .tlk || resourceExtname == .gff"
+      },
+      {
+        "command": "kotorForge.sort",
+        "key": "alt+shift+s",
+        "mac": "option+shift+s",
+        "when": "resourceExtname == .2da || resourceExtname == .tlk"
       }
     ],
     "menus": {
       "editor/context": [
+        {
+          "submenu": "kotor-forge.menu",
+          "group": "navigation",
+          "when": "resourceExtname == .2da || resourceExtname == .tlk || resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis || resourceExtname == .nss || resourceExtname == .ncs"
+        },
         {
           "when": "resourceLangId == nwscript || resourceExtname == .nss",
           "command": "nwscript.startDebugging",
@@ -288,7 +426,25 @@
           "when": "resourceExtname == .2da || resourceExtname == .tlk || resourceExtname == .gff || resourceExtname == .utc || resourceExtname == .utd || resourceExtname == .uti || resourceExtname == .utp || resourceExtname == .ute || resourceExtname == .uts || resourceExtname == .utt || resourceExtname == .utw || resourceExtname == .utm || resourceExtname == .are || resourceExtname == .bic || resourceExtname == .dlg || resourceExtname == .fac || resourceExtname == .git || resourceExtname == .gui || resourceExtname == .ifo || resourceExtname == .jrl || resourceExtname == .ltr || resourceExtname == .pth || resourceExtname == .res || resourceExtname == .vis",
           "command": "kotorForge.openAsJson",
           "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .2da || resourceExtname == .tlk || resourceExtname == .gff",
+          "command": "kotorForge.format",
+          "group": "1_modification"
+        },
+        {
+          "when": "resourceExtname == .2da || resourceExtname == .tlk",
+          "command": "kotorForge.sort",
+          "group": "1_modification"
         }
+      ],
+      "kotor-forge.menu": [
+        { "command": "kotorForge.openAsJson" },
+        { "command": "kotorForge.format" },
+        { "command": "kotorForge.sort" },
+        { "command": "kotorForge.setKotorPath" },
+        { "command": "kotorForge.setTSLPath" },
+        { "command": "kotorForge.openDocumentation" }
       ]
     }
   },

@@ -15,4 +15,5 @@ export interface IRIMResource {
   unused: number;
   offset: number;
   size: number;
+  data?: Uint8Array;
 }

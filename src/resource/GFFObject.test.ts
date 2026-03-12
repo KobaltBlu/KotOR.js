@@ -115,6 +115,61 @@ describe('GFFObject', () => {
     expectVendorStyleValues(tomlRoundTrip);
   });
 
+  it('preserves list structs containing vector fields without throwing on nested access', () => {
+    const gff = new GFFObject();
+    gff.FileType = 'UTC ';
+
+    const classList = new GFFField(GFFDataType.LIST, 'ClassList');
+
+    const existingClass = new GFFStruct(2);
+    existingClass.addField(new GFFField(GFFDataType.INT, 'Class').setValue(3));
+    existingClass.addField(new GFFField(GFFDataType.SHORT, 'ClassLevel').setValue(8));
+    existingClass.addField(new GFFField(GFFDataType.VECTOR, 'Facing').setVector({ x: 1, y: 2, z: 3 }));
+
+    const knownList = new GFFField(GFFDataType.LIST, 'KnownList0');
+    const knownEntry = new GFFStruct(3);
+    knownEntry.addField(new GFFField(GFFDataType.INT, 'Spell').setValue(4));
+    knownEntry.addField(new GFFField(GFFDataType.SHORT, 'SpellMetaMagic').setValue(0));
+    knownEntry.addField(new GFFField(GFFDataType.SHORT, 'SpellFlags').setValue(1));
+    knownList.addChildStruct(knownEntry);
+    existingClass.addField(knownList);
+
+    const addedClass = new GFFStruct(5);
+    addedClass.addField(new GFFField(GFFDataType.INT, 'Class').setValue(3));
+    addedClass.addField(new GFFField(GFFDataType.SHORT, 'ClassLevel').setValue(9));
+    addedClass.addField(new GFFField(GFFDataType.VECTOR, 'Facing').setVector({ x: 4, y: 5, z: 6 }));
+
+    const addedKnownList = new GFFField(GFFDataType.LIST, 'KnownList0');
+    const addedKnownEntry = new GFFStruct(7);
+    addedKnownEntry.addField(new GFFField(GFFDataType.INT, 'Spell').setValue(53));
+    addedKnownEntry.addField(new GFFField(GFFDataType.SHORT, 'SpellMetaMagic').setValue(0));
+    addedKnownEntry.addField(new GFFField(GFFDataType.SHORT, 'SpellFlags').setValue(1));
+    addedKnownList.addChildStruct(addedKnownEntry);
+    addedClass.addField(addedKnownList);
+
+    classList.addChildStruct(existingClass);
+    classList.addChildStruct(addedClass);
+    gff.RootNode.addField(classList);
+
+    const parsed = new GFFObject(gff.getExportBuffer());
+    const parsedList = parsed.RootNode.getFieldByLabel('ClassList')?.getChildStructs() ?? [];
+
+    expect(parsedList).toHaveLength(2);
+    expect(() => parsedList[0].getFieldByLabel('Facing')?.getVector()).not.toThrow();
+    expect(parsedList[0].getFieldByLabel('Facing')?.getVector()).toEqual({ x: 1, y: 2, z: 3 });
+    expect(parsedList[1].getFieldByLabel('Facing')?.getVector()).toEqual({ x: 4, y: 5, z: 6 });
+
+    const nestedKnownList = parsedList[0].getFieldByLabel('KnownList0')?.getChildStructs() ?? [];
+    expect(nestedKnownList).toHaveLength(1);
+    expect(nestedKnownList[0].getFieldByLabel('Spell')?.getValue()).toBe(4);
+
+    const jsonRoundTrip = new GFFObject();
+    jsonRoundTrip.fromJSON(parsed.toJSON());
+    const jsonList = jsonRoundTrip.RootNode.getFieldByLabel('ClassList')?.getChildStructs() ?? [];
+    expect(jsonList).toHaveLength(2);
+    expect(jsonList[1].getFieldByLabel('Facing')?.getVector()).toEqual({ x: 4, y: 5, z: 6 });
+  });
+
   it('rejects truncated or invalid binary headers', () => {
     // parse() is called directly because the constructor swallows errors (uses callbacks).
     const a = new GFFObject();

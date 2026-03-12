@@ -1,6 +1,7 @@
 import { EditorFile } from "@/apps/forge/EditorFile";
 import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import type { IForgeHostAdapter } from "@/apps/forge/ForgeHostAdapter";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
@@ -24,6 +25,16 @@ export class ForgeState {
   // static loader: LoadingScreen = new KotOR.LoadingScreen();
   static modalManager: ModalManagerState = new ModalManagerState();
   static tabManager: EditorTabManager = new EditorTabManager();
+  /** When set (e.g. by VS Code webview), save and optional edit notifications delegate to the host. */
+  static hostAdapter: IForgeHostAdapter | null = null;
+
+  static setHostAdapter(adapter: IForgeHostAdapter | null): void {
+    ForgeState.hostAdapter = adapter;
+  }
+
+  static getHostAdapter(): IForgeHostAdapter | null {
+    return ForgeState.hostAdapter;
+  }
   static explorerTabManager: EditorTabManager = new EditorTabManager();
   static projectExplorerTab: TabProjectExplorerState = new TabProjectExplorerState();
   static resourceExplorerTab: TabResourceExplorerState = new TabResourceExplorerState();

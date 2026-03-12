@@ -14,6 +14,7 @@ export class BinaryReader {
   position: number = 0;
   buffer: Uint8Array;
   bufferView: DataView;
+  sourceLength: number;
   endians: Endians = Endians.LITTLE;
   isLE: boolean;
 
@@ -25,15 +26,21 @@ export class BinaryReader {
    * @param reader - The reader to read from.
    * @param endians - The endianness of the data.
    */
-  constructor(reader: Uint8Array, endians = Endians.LITTLE){
+  constructor(reader: Uint8Array, endians = Endians.LITTLE, sourceLength?: number){
     //variables
     this.position = 0;
     this.buffer = reader;
     this.bufferView = new DataView(reader.buffer, reader.byteOffset, reader.byteLength);
+    this.sourceLength = sourceLength ?? reader.byteLength;
     this.endians = endians;
     this.isLE = endians == Endians.LITTLE;
 
     this._value = undefined;
+  }
+
+  static fromBytes(reader: Uint8Array, offset = 0, length = 0, endians = Endians.LITTLE): BinaryReader {
+    const end = length > 0 ? offset + length : reader.length;
+    return new BinaryReader(reader.slice(offset, end), endians, reader.length);
   }
 
   /**
@@ -71,6 +78,22 @@ export class BinaryReader {
    */
   length(){
     return this.buffer.length;
+  }
+
+  size(){
+    return this.buffer.length;
+  }
+
+  trueSize(){
+    return this.sourceLength;
+  }
+
+  remaining(){
+    return Math.max(this.buffer.length - this.position, 0);
+  }
+
+  peek(length = 1): Uint8Array {
+    return this.buffer.slice(this.position, this.position + length);
   }
 
   /**
@@ -326,7 +349,7 @@ export class BinaryReader {
     end = (end) ? end : this.buffer.length;
 
     const buffer = this.buffer.slice(offset, end);
-    return new BinaryReader(buffer, this.endians)
+    return new BinaryReader(buffer, this.endians, this.sourceLength)
   }
 
   /**
@@ -338,6 +361,7 @@ export class BinaryReader {
     this.position = 0;
     this.buffer = buffer;
     this.bufferView = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    this.sourceLength = buffer.byteLength;
   }
 
   /**
@@ -347,6 +371,7 @@ export class BinaryReader {
     this.position = 0;
     this.buffer = new Uint8Array(0);
     this.bufferView = new DataView(this.buffer.buffer);
+    this.sourceLength = 0;
   }
 
 }

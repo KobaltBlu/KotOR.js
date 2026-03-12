@@ -42,6 +42,11 @@
         opacity: 0.3;
         cursor: not-allowed;
       }
+
+      &.active {
+        background: var(--accent-bg, #264f78);
+        border-color: var(--accent-color, #4da6ff);
+      }
     }
 
     .toolbar-separator {

@@ -389,6 +389,22 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
   }
 
   /**
+   * Post a message to all webviews for a document by URI. Returns true if any webview was found.
+   * Used by format/sort commands when the active tab is a KotOR Forge custom editor.
+   */
+  public postToWebviewsForUri(uri: vscode.Uri, message: Record<string, unknown>): boolean {
+    const webviewsForDocument = this.webviews.get(uri.toString());
+    if (webviewsForDocument && webviewsForDocument.size > 0) {
+      for (const panel of webviewsForDocument) {
+        panel.webview.postMessage(message);
+      }
+      log.trace(`postToWebviewsForUri() uri=${uri.toString()} type=${message?.type}`);
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Post a message to a specific webview
    */
   private postMessage(panel: vscode.WebviewPanel, message: Record<string, unknown>) {

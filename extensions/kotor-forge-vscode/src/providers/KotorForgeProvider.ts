@@ -8,24 +8,30 @@ import { BaseKotorEditorProvider } from './BaseKotorEditorProvider';
 
 const log = createScopedLogger(LogScope.Forge);
 
-const GFF_EXTS = new Set([
-  'gff', 'res', 'are', 'git', 'ifo', 'jrl', 'fac', 'gui', 'pth', 'vis', 'ltr', 'bic'
-]);
+/** GFF-based types that use the generic GFF editor (res, bic, gui, pth, vis). Dedicated editors: are, ifo, git, jrl, fac, ltr, dlg. */
+const GFF_EXTS = new Set(['gff', 'res', 'gui', 'pth', 'vis', 'bic']);
 const UTX_EXTS = new Set(['utc', 'utd', 'utp', 'uti', 'ute', 'uts', 'utt', 'utw', 'utm']);
 const MODEL_EXTS = new Set(['mdl', 'mdx']);
 const IMAGE_EXTS = new Set(['tpc', 'tga']);
 const WALKMESH_EXTS = new Set(['wok', 'dwk', 'pwk', 'bwm']);
-const ARCHIVE_EXTS = new Set(['erf', 'mod', 'sav', 'rim']);
+const ARCHIVE_EXTS = new Set(['erf', 'mod', 'rim']);
 const AUDIO_EXTS = new Set(['wav', 'mp3']);
 
 function getEditorTypeFromExt(ext: string): string {
   const lower = ext.toLowerCase();
   let editorType: string;
   if (UTX_EXTS.has(lower)) editorType = lower;
-  else if (GFF_EXTS.has(lower)) editorType = 'gff';
+  else if (lower === 'are') editorType = 'are';
+  else if (lower === 'ifo') editorType = 'ifo';
+  else if (lower === 'git') editorType = 'git';
+  else if (lower === 'jrl') editorType = 'jrl';
+  else if (lower === 'fac') editorType = 'fac';
+  else if (lower === 'ltr') editorType = 'ltr';
   else if (lower === 'dlg') editorType = 'dlg';
+  else if (GFF_EXTS.has(lower)) editorType = 'gff';
   else if (lower === '2da') editorType = '2da';
   else if (ARCHIVE_EXTS.has(lower)) editorType = 'erf';
+  else if (lower === 'sav') editorType = 'sav';
   else if (MODEL_EXTS.has(lower)) editorType = 'model';
   else if (IMAGE_EXTS.has(lower)) editorType = 'image';
   else if (WALKMESH_EXTS.has(lower)) editorType = 'walkmesh';
@@ -95,8 +101,18 @@ export class KotorForgeProvider extends BaseKotorEditorProvider {
         supportsMultipleEditorsPerDocument: false
       }
     );
-    log.info('KotorForgeProvider registered (default + Generic GFF + JSON View)');
-    return vscode.Disposable.from(disp1, disp2, disp3);
+    const providers = [defaultProvider, gffProvider, jsonProvider];
+
+    const postRunCommandToUri = (uri: vscode.Uri, command: string): boolean => {
+      const message = { type: 'runCommand' as const, command };
+      for (const p of providers) {
+        if (p.postToWebviewsForUri(uri, message)) return true;
+      }
+      return false;
+    };
+
+    const composite = vscode.Disposable.from(disp1, disp2, disp3);
+    return Object.assign(composite, { postRunCommandToUri });
   }
 
   protected getEditorTypeForDocument(document: KotorDocument): string {

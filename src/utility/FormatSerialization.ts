@@ -64,11 +64,42 @@ export function yamlToObject(yaml: string): unknown {
  */
 type TomlStringifyTable = Parameters<typeof tomlStringify>[0];
 
+function sanitizeForTOML(value: unknown): unknown {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value instanceof Uint8Array) {
+    return Array.from(value);
+  }
+
+  if (Array.isArray(value)) {
+    const sanitized = value
+      .map((item) => sanitizeForTOML(item))
+      .filter((item) => item !== undefined);
+    return sanitized;
+  }
+
+  if (value && typeof value === 'object') {
+    const sanitized: Record<string, unknown> = {};
+    Object.entries(value as Record<string, unknown>).forEach(([key, entry]) => {
+      const cleaned = sanitizeForTOML(entry);
+      if (cleaned !== undefined) {
+        sanitized[key] = cleaned;
+      }
+    });
+    return sanitized;
+  }
+
+  return value;
+}
+
 export function objectToTOML(obj: unknown): string {
+  const sanitized = sanitizeForTOML(obj);
   try {
-    return tomlStringify(obj as TomlStringifyTable, { newline: '\n' });
+    return tomlStringify(sanitized as TomlStringifyTable, { newline: '\n' });
   } catch {
-    return tomlStringify({ data: obj } as TomlStringifyTable, { newline: '\n' });
+    return tomlStringify({ data: sanitized } as TomlStringifyTable, { newline: '\n' });
   }
 }
 

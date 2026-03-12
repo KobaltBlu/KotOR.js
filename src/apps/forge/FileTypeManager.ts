@@ -4,15 +4,25 @@ import { Project } from "@/apps/forge/Project";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import {
+  TabAREEditorState,
   TabBIKPlayerState,
+  TabDLGEditorState,
   TabERFEditorState,
+  TabFACEditorState,
   TabGFFEditorState,
+  TabGITEditorState,
   TabGUIEditorState,
+  TabIFOEditorState,
   TabImageViewerState,
+  TabJRLEditorState,
   TabLIPEditorState,
+  TabLTREditorState,
   TabModelViewerState,
   TabPTHEditorState,
+  TabSAVEditorState,
+  TabSSFEditorState,
   TabTextEditorState,
+  TabTLKEditorState,
   TabTwoDAEditorState,
   TabUTCEditorState,
   TabUTDEditorState,
@@ -71,16 +81,17 @@ export class FileTypeManager {
         ForgeState.tabManager.addTab(new TabTwoDAEditorState({editorFile: res}));
       break;
       case 'dlg':
-        ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
-        // ForgeState.tabManager.addTab(new TabDLGEditorState({editorFile: res}));
+        ForgeState.tabManager.addTab(new TabDLGEditorState({editorFile: res}));
       break;
       case 'lip':
         ForgeState.tabManager.addTab(new TabLIPEditorState({editorFile: res}));
       break;
       case 'erf':
       case 'mod':
-      case 'sav':
         ForgeState.tabManager.addTab(new TabERFEditorState({editorFile: res}));
+      break;
+      case 'sav':
+        ForgeState.tabManager.addTab(new TabSAVEditorState({editorFile: res}));
       break;
       case 'mdl':
       case 'mdx':
@@ -136,12 +147,32 @@ export class FileTypeManager {
       case 'pth':
         ForgeState.tabManager.addTab(new TabPTHEditorState({editorFile: res}));
       break;
-      case 'ifo':
       case 'are':
+        ForgeState.tabManager.addTab(new TabAREEditorState({editorFile: res}));
+      break;
+      case 'ifo':
+        ForgeState.tabManager.addTab(new TabIFOEditorState({editorFile: res}));
+      break;
       case 'git':
-      case 'res':
+        ForgeState.tabManager.addTab(new TabGITEditorState({editorFile: res}));
+      break;
       case 'fac':
+        ForgeState.tabManager.addTab(new TabFACEditorState({editorFile: res}));
+      break;
+      case 'jrl':
+        ForgeState.tabManager.addTab(new TabJRLEditorState({editorFile: res}));
+      break;
+      case 'ltr':
+        ForgeState.tabManager.addTab(new TabLTREditorState({editorFile: res}));
+      break;
+      case 'res':
         ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
+      break;
+      case 'tlk':
+        ForgeState.tabManager.addTab(new TabTLKEditorState({editorFile: res}));
+      break;
+      case 'ssf':
+        ForgeState.tabManager.addTab(new TabSSFEditorState({editorFile: res}));
       break;
       case 'vis':
         ForgeState.tabManager.addTab(new TabVISEditorState({editorFile: res}));

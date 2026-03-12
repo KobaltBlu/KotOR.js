@@ -23,6 +23,19 @@ import './WebviewApp.css';
 
 const log = createScopedLogger(LogScope.Webview);
 
+function applyBufferToCurrentTab(adapter: ForgeWebviewAdapter, content: Uint8Array): void {
+  const manager = adapter.getTabManager();
+  const tab = manager.currentTab as TabState | undefined;
+  if (tab?.file) {
+    tab.file.buffer = content;
+    tab.file.unsaved_changes = false;
+    adapter.setLastBuffer(content);
+    if (typeof (tab as TabState & { openFile?: () => Promise<void> }).openFile === 'function') {
+      void (tab as TabState & { openFile: () => Promise<void> }).openFile();
+    }
+  }
+}
+
 function createEditorFile(fileName: string, fileData: Uint8Array, buffer2?: Uint8Array): EditorFile {
   log.trace(`createEditorFile() fileName=${fileName} fileDataLength=${fileData?.length ?? 0} buffer2Length=${buffer2?.length ?? 0}`);
   const ext = fileName.includes('.') ? fileName.split('.').pop()!.toLowerCase() : '';
@@ -75,6 +88,7 @@ export const WebviewApp: React.FC = () => {
         ForgeState.setHostAdapter(adapter);
 
         const editorFile = createEditorFile(fileName, fileData, buffer2);
+        adapter.setLastBuffer(fileData);
         log.debug(`createTabStateForEditorType(editorType=${editorType}) creating tab state`);
         const tabState = createTabStateForEditorType(editorType, { editorFile });
         log.debug(`addTab() adding tab type=${tabState.constructor.name} id=${tabState.id}`);
@@ -107,22 +121,37 @@ export const WebviewApp: React.FC = () => {
       }
     });
 
-    bridge.on('undo', () => { log.trace('undo message received (host drives undo)'); });
-    bridge.on('redo', () => { log.trace('redo message received (host drives redo)'); });
+    bridge.on('undo', (data: unknown) => {
+      const msg = data as { edits?: number[] };
+      const content = msg?.edits ?? (Array.isArray(data) ? data : undefined);
+      if (!Array.isArray(content)) return;
+      log.info('undo message received, applying to current tab');
+      applyBufferToCurrentTab(adapter, new Uint8Array(content));
+    });
+    bridge.on('redo', (data: unknown) => {
+      const msg = data as { edits?: number[] };
+      const content = msg?.edits ?? (Array.isArray(data) ? data : undefined);
+      if (!Array.isArray(content)) return;
+      log.info('redo message received, applying to current tab');
+      applyBufferToCurrentTab(adapter, new Uint8Array(content));
+    });
 
     bridge.on('revert', (data: unknown) => {
       const msg = data as { content?: number[] };
       const content = msg?.content;
       if (!Array.isArray(content)) return;
       log.info('revert message received, applying to current tab');
-      const manager = adapter.getTabManager();
-      const tab = manager.currentTab as TabState | undefined;
-      if (tab?.file) {
-        tab.file.buffer = new Uint8Array(content);
-        tab.file.unsaved_changes = false;
-        if (typeof (tab as TabState & { openFile?: () => Promise<void> }).openFile === 'function') {
-          void (tab as TabState & { openFile: () => Promise<void> }).openFile();
-        }
+      applyBufferToCurrentTab(adapter, new Uint8Array(content));
+    });
+
+    bridge.on('runCommand', (data: unknown) => {
+      const msg = data as { command?: string };
+      const command = msg?.command;
+      if (!command) return;
+      log.info('runCommand message received: %s', command);
+      const tab = adapter.getTabManager().currentTab as TabState & { format?: () => void; sort?: () => void } | undefined;
+      if (tab && typeof tab[command as 'format' | 'sort'] === 'function') {
+        tab[command as 'format' | 'sort']!();
       }
     });
 

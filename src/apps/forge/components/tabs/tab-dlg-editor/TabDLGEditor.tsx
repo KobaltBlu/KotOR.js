@@ -5,6 +5,7 @@ import { DLGDialogPropertiesPanel } from "@/apps/forge/components/tabs/tab-dlg-e
 import { DLGNodePropertiesPanel } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGNodePropertiesPanel";
 import { DLGReferenceChooser } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGReferenceChooser";
 import { DLGSearchBar } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGSearchBar";
+import { DLGGraphView } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGGraphView";
 import { DLGTreeView } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGTreeView";
 import { DLGTreeNode, DLGNodeReference } from "@/apps/forge/interfaces/DLGTreeNode";
 import * as KotOR from "@/apps/forge/KotOR";
@@ -29,7 +30,7 @@ interface TabSaveRevert {
   revert: () => Promise<boolean>;
 }
 
-type ViewMode = 'tree' | 'list' | 'split';
+type ViewMode = 'tree' | 'list' | 'split' | 'graph';
 type PanelMode = 'node' | 'dialog' | 'both';
 type SearchMode = 'search' | 'goto' | 'filter';
 
@@ -344,6 +345,7 @@ export const TabDLGEditor = function (props: BaseTabProps) {
         { label: 'Tree View', onClick: () => setViewMode('tree'), disabled: viewMode === 'tree' },
         { label: 'List View', onClick: () => setViewMode('list'), disabled: viewMode === 'list' },
         { label: 'Split View', onClick: () => setViewMode('split'), disabled: viewMode === 'split' },
+        { label: 'Graph View', onClick: () => setViewMode('graph'), disabled: viewMode === 'graph' },
         { label: '---' },
         { label: 'Node Properties', onClick: () => setPanelMode('node'), disabled: panelMode === 'node' },
         { label: 'Dialog Properties', onClick: () => setPanelMode('dialog'), disabled: panelMode === 'dialog' },
@@ -488,6 +490,21 @@ export const TabDLGEditor = function (props: BaseTabProps) {
       >
         ✓
       </button>
+      <div className="toolbar-separator" />
+      <button
+        className={`toolbar-button ${viewMode === 'tree' ? 'active' : ''}`}
+        onClick={() => setViewMode('tree')}
+        title="Tree View"
+      >
+        Tree
+      </button>
+      <button
+        className={`toolbar-button ${viewMode === 'graph' ? 'active' : ''}`}
+        onClick={() => setViewMode('graph')}
+        title="Graph View"
+      >
+        Graph
+      </button>
       {stats && (
         <div className="toolbar-stats">
           {stats.errors > 0 && <span className="stat-error">❌ {stats.errors}</span>}
@@ -566,12 +583,26 @@ export const TabDLGEditor = function (props: BaseTabProps) {
 
       <div className="forge-dlg-editor__container">
         <div className="forge-dlg-editor__sidebar">
-          <DLGTreeView
-            model={treeModel}
-            onNodeSelect={handleTreeNodeSelect}
-            onNodeDoubleClick={handleTreeNodeDoubleClick}
-            onNodeContextMenu={handleTreeNodeContextMenu}
-          />
+          {viewMode === 'graph' ? (
+            <DLGGraphView
+              dlg={dlg}
+              selectedNodeIndex={tab.selectedNodeIndex ?? -1}
+              selectedNodeType={tab.selectedNodeType ?? null}
+              onSelectNode={(node, index, type) => {
+                tab.selectNode(node, index, type);
+                setSelectedNode(node);
+                setSelectedNodeIndex(index);
+                setSelectedNodeType(type);
+              }}
+            />
+          ) : (
+            <DLGTreeView
+              model={treeModel}
+              onNodeSelect={handleTreeNodeSelect}
+              onNodeDoubleClick={handleTreeNodeDoubleClick}
+              onNodeContextMenu={handleTreeNodeContextMenu}
+            />
+          )}
         </div>
 
         <div className="forge-dlg-editor__main">

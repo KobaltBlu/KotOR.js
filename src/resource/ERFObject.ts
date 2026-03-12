@@ -243,6 +243,18 @@ export class ERFObject {
     return this.getResource(resRef, resType) !== undefined;
   }
 
+  /**
+   * Replaces an existing resource's data in place (for save-back-into-archive).
+   * Returns true if the resource was found and updated.
+   */
+  replaceResource(resRef: string, resType: number, buffer: Uint8Array): boolean {
+    const resource = this.getResource(resRef, resType);
+    if (resource === undefined) return false;
+    resource.data = buffer;
+    resource.size = buffer.length;
+    return true;
+  }
+
   getResourcesByType(resType: number): IERFResource[] {
     const resources: IERFResource[] = [];
     for(let i = 0; i < this.keyList.length; i++){
@@ -383,7 +395,11 @@ export class ERFObject {
 
     //Data
     for(let i = 0; i < this.resources.length; i++){
-      output.writeBytes( this.resources[i].data );
+      const res = this.resources[i];
+      const data = res.data ?? (this.inMemory && res.offset >= 0 && res.size > 0
+        ? this.buffer.slice(res.offset, res.offset + res.size)
+        : new Uint8Array(0));
+      output.writeBytes(data);
     }
 
     return output.buffer;

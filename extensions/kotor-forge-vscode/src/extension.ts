@@ -3,8 +3,27 @@ import * as vscode from 'vscode';
 import { getLogger, setExtensionLogger, LogScope, createScopedLogger } from './logger';
 import { activateLsp, deactivateLsp } from './lsp/client';
 import { KotorForgeProvider } from './providers/KotorForgeProvider';
+import { registerKotorTreeView } from './kotorTreeView';
+import { registerStatusBarItem } from './statusBar';
+import { registerDocumentFormattingEditProvider } from './nwscriptFormat';
+import { registerTaskProvider } from './kotorTaskProvider';
 
 const log = createScopedLogger(LogScope.Extension);
+
+const FORGE_VIEW_TYPES = new Set([
+  'kotor.forge',
+  'kotor.forge.gff',
+  'kotor.forge.json'
+]);
+
+function getActiveForgeEditorUri(): vscode.Uri | undefined {
+  const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
+  const input = tab?.input as { uri?: vscode.Uri; viewType?: string } | undefined;
+  if (input?.uri && input?.viewType && FORGE_VIEW_TYPES.has(input.viewType)) {
+    return input.uri;
+  }
+  return undefined;
+}
 
 /**
  * Extension activation function
@@ -21,15 +40,23 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Register Forge-backed custom editors: default + Generic GFF option for GFF types
   log.trace('Registering KotorForgeProvider (default + kotor.forge.gff)');
-  context.subscriptions.push(
-    KotorForgeProvider.register(context)
-  );
+  const forgeRegistration = KotorForgeProvider.register(context) as vscode.Disposable & {
+    postRunCommandToUri(uri: vscode.Uri, command: string): boolean;
+  };
+  context.subscriptions.push(forgeRegistration);
   log.info('KotorForgeProvider registered; open files with KotOR Forge or "Open With" > KotOR Forge (Generic GFF) for GFF types');
 
   // Start NWScript language server for .nss/.ncs IntelliSense, diagnostics, and debugging
   log.trace('Calling activateLsp()');
   activateLsp(context);
   log.trace('activateLsp() returned');
+
+  void vscode.commands.executeCommand('setContext', 'kotorForge.hasRecentFiles', false);
+
+  registerKotorTreeView(context);
+  registerStatusBarItem(context);
+  registerDocumentFormattingEditProvider(context);
+  registerTaskProvider(context);
 
   // Register commands
   log.trace('Registering extension commands');
@@ -96,6 +123,27 @@ export function activate(context: vscode.ExtensionContext) {
         log.error(`openAsJson failed: ${e}`);
         vscode.window.showErrorMessage(`Failed to open as JSON: ${e instanceof Error ? e.message : String(e)}`);
       }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.format', () => {
+      const uri = getActiveForgeEditorUri();
+      if (uri && forgeRegistration.postRunCommandToUri(uri, 'format')) {
+        log.debug('kotorForge.format sent to webview');
+      } else {
+        vscode.window.showWarningMessage('Open a KotOR Forge editor (e.g. 2DA, TLK, GFF) to use Format.');
+      }
+    }),
+    vscode.commands.registerCommand('kotorForge.sort', () => {
+      const uri = getActiveForgeEditorUri();
+      if (uri && forgeRegistration.postRunCommandToUri(uri, 'sort')) {
+        log.debug('kotorForge.sort sent to webview');
+      } else {
+        vscode.window.showWarningMessage('Open a KotOR Forge editor (e.g. TLK, 2DA) to use Sort.');
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.openDocumentation', async () => {
+      await vscode.env.openExternal(vscode.Uri.parse('https://github.com/KobaltBlu/KotOR.js'));
     })
   );
   log.trace('Extension commands registered');

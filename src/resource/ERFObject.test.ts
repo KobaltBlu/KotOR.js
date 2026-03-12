@@ -1,5 +1,11 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+
+import { ApplicationEnvironment } from '@/enums/ApplicationEnvironment';
 import { ERFObject } from '@/resource/ERFObject';
 import { ResourceTypes } from '@/resource/ResourceTypes';
+import { ApplicationProfile } from '@/utility/ApplicationProfile';
 
 describe('ERFObject', () => {
   function makeErfObject(): ERFObject {
@@ -80,6 +86,56 @@ describe('ERFObject', () => {
     expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('3', ResourceTypes.txt))).toBe('ghi');
   });
 
+  it('loads an ERF from disk and preserves entry counts', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kotor-erf-'));
+    const previousEnv = ApplicationProfile.ENV;
+    const previousDirectory = ApplicationProfile.directory;
+    const fileName = 'test.erf';
+
+    try {
+      ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
+      ApplicationProfile.directory = tempDir;
+      fs.writeFileSync(path.join(tempDir, fileName), makeErfBuffer());
+      const erf = new ERFObject(fileName);
+      await erf.load();
+
+      expect(erf.header.fileType).toBe('ERF ');
+      expect(erf.keyList.length).toBe(erf.header.entryCount);
+      expect(erf.resources.length).toBe(erf.header.entryCount);
+      expect(new TextDecoder().decode(await erf.getResourceBufferByResRef('2', ResourceTypes.txt))).toBe('def');
+    } finally {
+      ApplicationProfile.ENV = previousEnv;
+      ApplicationProfile.directory = previousDirectory;
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('export writes an ERF file that can be reloaded from disk', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kotor-erf-export-'));
+    const previousEnv = ApplicationProfile.ENV;
+    const previousDirectory = ApplicationProfile.directory;
+    const fileName = 'roundtrip.erf';
+
+    try {
+      ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
+      ApplicationProfile.directory = tempDir;
+      const erf = makeErfObject();
+      await erf.export(fileName);
+
+      expect(fs.existsSync(path.join(tempDir, fileName))).toBe(true);
+
+      const reloaded = new ERFObject(fileName);
+      await reloaded.load();
+      expect(reloaded.keyList).toHaveLength(3);
+      expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('1', ResourceTypes.txt))).toBe('abc');
+      expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('3', ResourceTypes.txt))).toBe('ghi');
+    } finally {
+      ApplicationProfile.ENV = previousEnv;
+      ApplicationProfile.directory = previousDirectory;
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it('accepts MOD and SAV file types', async () => {
     const modErf = new ERFObject();
     modErf.header.fileType = 'MOD ';
@@ -151,5 +207,18 @@ describe('ERFObject', () => {
     expect(erf.keyList[1].resRef).toBe('b');
     expect(erf.resources[0].size).toBe(1);
     expect(erf.resources[1].size).toBe(2);
+  });
+
+  it('replaceResource updates existing resource data and size', () => {
+    const erf = new ERFObject();
+    erf.header.fileType = 'ERF ';
+    erf.header.fileVersion = 'V1.0';
+    erf.addResource('a', ResourceTypes.txt, new TextEncoder().encode('original'));
+
+    expect(erf.replaceResource('a', ResourceTypes.txt, new TextEncoder().encode('updated'))).toBe(true);
+    expect(erf.getResource('a', ResourceTypes.txt)?.size).toBe(7);
+    expect(new TextDecoder().decode(erf.getResource('a', ResourceTypes.txt)?.data)).toBe('updated');
+
+    expect(erf.replaceResource('missing', ResourceTypes.txt, new Uint8Array(0))).toBe(false);
   });
 });

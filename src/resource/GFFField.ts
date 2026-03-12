@@ -729,9 +729,12 @@ export class GFFField {
    * ```
    */
   toJSON(): IGFFFieldJSON {
+    // Avoid calling getValue() for CEXOLOCSTRING: it requires TLK when no
+    // substrings are present. The switch below overrides field.value anyway.
+    const safeInitialValue = this.type === GFFDataType.CEXOLOCSTRING ? 0 : this.getValue();
     const field = {
       type: this.getType(),
-      value: this.getValue(),
+      value: safeInitialValue,
       structs: [] as any[]
     };
 

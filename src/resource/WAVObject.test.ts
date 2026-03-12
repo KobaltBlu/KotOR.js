@@ -73,6 +73,33 @@ describe('WAVObject', () => {
     expect(mono8Bit.bitsPerSample).toBe(8);
   });
 
+  it('round-trips vendor-like PCM metadata across multiple audio configurations', () => {
+    const cases = [
+      { channels: 1, sampleRate: 44100, bitsPerSample: 16 },
+      { channels: 2, sampleRate: 44100, bitsPerSample: 16 },
+      { channels: 1, sampleRate: 22050, bitsPerSample: 16 },
+      { channels: 1, sampleRate: 48000, bitsPerSample: 8 },
+      { channels: 2, sampleRate: 48000, bitsPerSample: 16 },
+    ];
+
+    cases.forEach(({ channels, sampleRate, bitsPerSample }) => {
+      const blockAlign = channels * Math.max(bitsPerSample >> 3, 1);
+      const source = new WAVObject(makeRiffWave({
+        channels,
+        sampleRate,
+        bitsPerSample,
+        data: new Uint8Array(blockAlign * 3),
+      }));
+      const reloaded = new WAVObject(source.toBuffer());
+
+      expect(reloaded.audioFormat).toBe(AudioFileAudioType.WAVE);
+      expect(reloaded.channels).toBe(channels);
+      expect(reloaded.sampleRate).toBe(sampleRate);
+      expect(reloaded.bitsPerSample).toBe(bitsPerSample);
+      expect(reloaded.data.length).toBe(blockAlign * 3);
+    });
+  });
+
   it('detects SFX obfuscation header', () => {
     const riff = makeRiffWave();
     const withHeader = new Uint8Array(470 + riff.length);
@@ -129,6 +156,15 @@ describe('WAVObject', () => {
     const [result, skip] = detectAudioFormat(buf);
     expect(result).toBe(DeobfuscationResult.STANDARD);
     expect(skip).toBe(0);
+  });
+
+  it('detectAudioFormat returns STANDARD and 20-byte skip for VO wrappers', () => {
+    const payload = makeRiffWave({ data: new Uint8Array(0) });
+    const withVo = obfuscateAudio(payload, 'VO');
+
+    const [result, skip] = detectAudioFormat(withVo);
+    expect(result).toBe(DeobfuscationResult.STANDARD);
+    expect(skip).toBe(20);
   });
 
   it('detectAudioFormat returns MP3_IN_WAV for MP3-wrapped RIFF headers', () => {
@@ -218,6 +254,32 @@ describe('WAVObject', () => {
     const voBuffer = vo.toBuffer();
     expect(voBuffer[0]).toBe(0x52);
     expect(voBuffer[20]).toBe(0x52);
+  });
+
+  it('round-trips vendor-like PCM configurations through SFX wrappers', () => {
+    const cases = [
+      { channels: 1, sampleRate: 44100, bitsPerSample: 16 },
+      { channels: 2, sampleRate: 44100, bitsPerSample: 16 },
+      { channels: 1, sampleRate: 48000, bitsPerSample: 8 },
+    ];
+
+    cases.forEach(({ channels, sampleRate, bitsPerSample }) => {
+      const blockAlign = channels * Math.max(bitsPerSample >> 3, 1);
+      const source = new WAVObject(makeRiffWave({
+        channels,
+        sampleRate,
+        bitsPerSample,
+        data: new Uint8Array(blockAlign * 4),
+      }));
+      source.wavType = WAVType.SFX;
+
+      const reloaded = new WAVObject(source.toBuffer());
+      expect(reloaded.wavType).toBe(WAVType.SFX);
+      expect(reloaded.channels).toBe(channels);
+      expect(reloaded.sampleRate).toBe(sampleRate);
+      expect(reloaded.bitsPerSample).toBe(bitsPerSample);
+      expect(reloaded.data.length).toBe(blockAlign * 4);
+    });
   });
 
   it('getEncodingEnum and codec helpers reflect PCM and ADPCM', () => {

@@ -604,9 +604,9 @@ export class TPCObject {
 
 }
 
-function makeTPCBuffer(width: number, height: number, encoding: ENCODING, data: Uint8Array, compressed = false, mipMapCount = 1): Uint8Array {
+function makeTPCBuffer(width: number, height: number, encoding: ENCODING, data: Uint8Array, compressed = false, mipMapCount = 1, compressedDataSize?: number): Uint8Array {
   const writer = new BinaryWriter();
-  writer.writeUInt32(compressed ? data.length : 0);
+  writer.writeUInt32(compressed ? ((compressedDataSize && compressedDataSize > 0) ? compressedDataSize : data.length) : 0);
   writer.writeSingle(1.0);
   writer.writeUInt16(width);
   writer.writeUInt16(height);
@@ -674,16 +674,121 @@ function parseBMP(buffer: Uint8Array): { width: number; height: number; data: Ui
   return { width, height, data };
 }
 
-function parseDDS(buffer: Uint8Array): { width: number; height: number; encoding: ENCODING; data: Uint8Array } {
-  if (buffer.length < 128) {
-    throw new Error('Invalid DDS buffer');
+function isPowerOfTwo(value: number): boolean {
+  return value > 0 && (value & (value - 1)) === 0;
+}
+
+function isLikelyBioWareDDS(buffer: Uint8Array): boolean {
+  if (buffer.length < 20) {
+    return false;
   }
   const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-  const width = view.getUint32(16, true);
-  const height = view.getUint32(12, true);
-  const fourCC = view.getUint32(84, true);
-  const encoding = fourCC === 0x31545844 ? ENCODING.RGB : ENCODING.RGBA;
-  return { width, height, encoding, data: buffer.slice(128) };
+  const width = view.getUint32(0, true);
+  const height = view.getUint32(4, true);
+  const bpp = view.getUint32(8, true);
+  const dataSize = view.getUint32(12, true);
+  const reserved = view.getUint32(16, true);
+  return width > 0 && height > 0 && (bpp === 3 || bpp === 4) && dataSize > 0 && reserved === 0;
+}
+
+function parseDDS(buffer: Uint8Array): { width: number; height: number; encoding: ENCODING; data: Uint8Array; compressed: boolean; mipMapCount: number; topLevelDataSize?: number } {
+  if (buffer.length >= 4 && buffer[0] === 0x44 && buffer[1] === 0x44 && buffer[2] === 0x53 && buffer[3] === 0x20) {
+    if (buffer.length < 128) {
+      throw new Error('Invalid DDS buffer');
+    }
+
+    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    const width = view.getUint32(16, true);
+    const height = view.getUint32(12, true);
+    const mipMapCount = Math.max(1, view.getUint32(28, true));
+    const topLevelDataSize = view.getUint32(20, true);
+    const pixelFormatFlags = view.getUint32(80, true);
+    const fourCC = view.getUint32(84, true);
+    const bitCount = view.getUint32(88, true);
+    const redMask = view.getUint32(92, true);
+    const greenMask = view.getUint32(96, true);
+    const blueMask = view.getUint32(100, true);
+    const alphaMask = view.getUint32(104, true);
+    const payload = buffer.slice(128);
+
+    if (fourCC === 0x31545844) {
+      return { width, height, encoding: ENCODING.RGB, data: payload, compressed: true, mipMapCount, topLevelDataSize };
+    }
+
+    if (fourCC === 0x35545844) {
+      return { width, height, encoding: ENCODING.RGBA, data: payload, compressed: true, mipMapCount, topLevelDataSize };
+    }
+
+    const isRGB = (pixelFormatFlags & 0x40) !== 0;
+    const hasAlpha = (pixelFormatFlags & 0x1) !== 0;
+    if (isRGB && bitCount === 32 && redMask === 0x00FF0000 && greenMask === 0x0000FF00 && blueMask === 0x000000FF && alphaMask === 0xFF000000) {
+      return { width, height, encoding: ENCODING.BGRA, data: payload, compressed: false, mipMapCount };
+    }
+
+    if (isRGB && !hasAlpha && bitCount === 24 && redMask === 0x00FF0000 && greenMask === 0x0000FF00 && blueMask === 0x000000FF) {
+      const rgb = new Uint8Array(width * height * 3);
+      for (let i = 0; i < width * height; i++) {
+        const src = i * 3;
+        const dest = i * 3;
+        rgb[dest] = payload[src + 2] ?? 0;
+        rgb[dest + 1] = payload[src + 1] ?? 0;
+        rgb[dest + 2] = payload[src] ?? 0;
+      }
+      return { width, height, encoding: ENCODING.RGB, data: rgb, compressed: false, mipMapCount };
+    }
+
+    throw new Error('Unsupported DDS format');
+  }
+
+  if (!isLikelyBioWareDDS(buffer)) {
+    throw new Error('Invalid DDS buffer');
+  }
+
+  const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  const width = view.getUint32(0, true);
+  const height = view.getUint32(4, true);
+  const bpp = view.getUint32(8, true);
+  const topLevelDataSize = view.getUint32(12, true);
+
+  if (!isPowerOfTwo(width) || !isPowerOfTwo(height)) {
+    throw new Error('BioWare DDS requires power-of-two dimensions');
+  }
+
+  const encoding = bpp === 3 ? ENCODING.RGB : ENCODING.RGBA;
+  const minDataSize = encoding === ENCODING.RGB ? 8 : 16;
+  let mipWidth = width;
+  let mipHeight = height;
+  let offset = 20;
+  let mipMapCount = 0;
+
+  while (offset < buffer.length) {
+    const mipLength = Math.max(
+      minDataSize,
+      Math.floor((mipWidth + 3) / 4) * Math.floor((mipHeight + 3) / 4) * minDataSize,
+    );
+
+    if (offset + mipLength > buffer.length) {
+      throw new Error('Invalid BioWare DDS buffer');
+    }
+
+    offset += mipLength;
+    mipMapCount += 1;
+    if (mipWidth === 1 && mipHeight === 1) {
+      break;
+    }
+    mipWidth = Math.max(mipWidth >> 1, 1);
+    mipHeight = Math.max(mipHeight >> 1, 1);
+  }
+
+  return {
+    width,
+    height,
+    encoding,
+    data: buffer.slice(20, offset),
+    compressed: true,
+    mipMapCount,
+    topLevelDataSize,
+  };
 }
 
 export function isTPCBuffer(buffer: Uint8Array): boolean {
@@ -699,11 +804,14 @@ export function isTPCBuffer(buffer: Uint8Array): boolean {
 }
 
 export function detectTPCFormat(buffer: Uint8Array): 'tpc' | 'dds' | 'bmp' | 'tga' {
-  if (isTPCBuffer(buffer)) {
-    return 'tpc';
-  }
   if (buffer.length >= 4 && buffer[0] === 0x44 && buffer[1] === 0x44 && buffer[2] === 0x53 && buffer[3] === 0x20) {
     return 'dds';
+  }
+  if (isLikelyBioWareDDS(buffer)) {
+    return 'dds';
+  }
+  if (isTPCBuffer(buffer)) {
+    return 'tpc';
   }
   if (buffer.length >= 2 && buffer[0] === 0x42 && buffer[1] === 0x4d) {
     return 'bmp';
@@ -718,7 +826,7 @@ export function readTPCFromBuffer(buffer: Uint8Array, filename = '', pack = 0): 
   }
   if (format === 'dds') {
     const parsed = parseDDS(buffer);
-    return new TPCObject({ file: makeTPCBuffer(parsed.width, parsed.height, parsed.encoding, parsed.data, true), filename, pack });
+    return new TPCObject({ file: makeTPCBuffer(parsed.width, parsed.height, parsed.encoding, parsed.data, parsed.compressed, parsed.mipMapCount, parsed.topLevelDataSize), filename, pack });
   }
   if (format === 'bmp') {
     const parsed = parseBMP(buffer);

@@ -64,7 +64,6 @@ scratch/
 *.temp
 .cache/
 .history/
-vendor/WebKotor/
 
 # Lint output files
 eslint-creature.txt

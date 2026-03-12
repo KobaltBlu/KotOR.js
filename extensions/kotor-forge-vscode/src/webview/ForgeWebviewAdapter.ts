@@ -13,11 +13,15 @@ import bridge from './WebviewBridge';
 
 const log = createScopedLogger(LogScope.Webview);
 
+const EDIT_DEBOUNCE_MS = 400;
+
 export class ForgeWebviewAdapter implements IForgeHostAdapter {
   private readonly tabManager: EditorTabManager;
   private readonly modalManager: ModalManagerState;
   private saveResolve: (() => void) | null = null;
   private saveReject: ((err: Error) => void) | null = null;
+  private lastBuffer: Uint8Array | null = null;
+  private editNotifyTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     log.trace('ForgeWebviewAdapter constructor() entered');
@@ -69,5 +73,34 @@ export class ForgeWebviewAdapter implements IForgeHostAdapter {
       });
       log.trace('requestSave() postMessage sent');
     });
+  }
+
+  onEdit(): void {
+    if (this.editNotifyTimeout != null) clearTimeout(this.editNotifyTimeout);
+    this.editNotifyTimeout = setTimeout(() => {
+      this.editNotifyTimeout = null;
+      void this.flushEdit();
+    }, EDIT_DEBOUNCE_MS);
+  }
+
+  private async flushEdit(): Promise<void> {
+    const tab = this.tabManager.currentTab as TabState | undefined;
+    if (!tab) return;
+    try {
+      if (typeof (tab as TabState & { updateFile?: () => void }).updateFile === 'function') {
+        (tab as TabState & { updateFile: () => void }).updateFile();
+      }
+      const currentBuffer = await tab.getExportBuffer();
+      const prev = this.lastBuffer ?? currentBuffer;
+      bridge.notifyEdit('Edit', currentBuffer, Array.from(prev), Array.from(currentBuffer));
+      this.lastBuffer = currentBuffer;
+    } catch (e) {
+      log.warn('flushEdit failed: %s', String(e));
+    }
+  }
+
+  /** Call when document content is reset (init/revert) so next edit uses correct previous buffer. */
+  setLastBuffer(buffer: Uint8Array | null): void {
+    this.lastBuffer = buffer;
   }
 }

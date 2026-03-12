@@ -146,6 +146,116 @@ describe('TPCObject', () => {
     expect(tpc.header.encoding).toBe(ENCODING.RGB);
   });
 
+  it('readTPCFromBuffer loads standard DDS DXT5 with multiple mip levels', () => {
+    const width = 4;
+    const height = 4;
+    const mip0 = new Uint8Array(16).fill(0xaa);
+    const mip1 = new Uint8Array(16).fill(0x55);
+    const dds = makeStandardDDSHeader(width, height, 2, {
+      fourCC: 'DXT5',
+      bitCount: 0,
+      masks: [0, 0, 0, 0],
+      pixelFormatFlags: 0x4,
+    });
+    const combined = new Uint8Array(dds.length + mip0.length + mip1.length);
+    combined.set(dds, 0);
+    combined.set(mip0, dds.length);
+    combined.set(mip1, dds.length + mip0.length);
+
+    const tpc = readTPCFromBuffer(combined, 'mips.dds');
+    expect(tpc.header.width).toBe(width);
+    expect(tpc.header.height).toBe(height);
+    expect(tpc.header.encoding).toBe(ENCODING.RGBA);
+    expect(tpc.header.compressed).toBe(true);
+    expect(tpc.header.mipMapCount).toBe(2);
+    expect(tpc.getDataLength()).toBe(32);
+  });
+
+  it('readTPCFromBuffer loads BioWare DDS with multiple DXT5 mip levels', () => {
+    const header = new BinaryWriter();
+    header.writeUInt32(4);
+    header.writeUInt32(4);
+    header.writeUInt32(4);
+    header.writeUInt32(16);
+    header.writeUInt32(0);
+    const mip0 = new Uint8Array(16).fill(0xaa);
+    const mip1 = new Uint8Array(16).fill(0x55);
+    const biowareDDS = new Uint8Array(header.buffer.length + mip0.length + mip1.length);
+    biowareDDS.set(header.buffer, 0);
+    biowareDDS.set(mip0, header.buffer.length);
+    biowareDDS.set(mip1, header.buffer.length + mip0.length);
+
+    expect(detectTPCFormat(biowareDDS)).toBe('dds');
+    const tpc = readTPCFromBuffer(biowareDDS, 'bioware.dds');
+    expect(tpc.header.width).toBe(4);
+    expect(tpc.header.height).toBe(4);
+    expect(tpc.header.encoding).toBe(ENCODING.RGBA);
+    expect(tpc.header.compressed).toBe(true);
+    expect(tpc.header.mipMapCount).toBe(2);
+    expect(tpc.getDataLength()).toBe(32);
+  });
+
+  it('readTPCFromBuffer rejects BioWare DDS with non-power-of-two dimensions', () => {
+    const bad = new BinaryWriter();
+    bad.writeUInt32(3);
+    bad.writeUInt32(2);
+    bad.writeUInt32(3);
+    bad.writeUInt32(3);
+    bad.writeUInt32(0);
+    bad.writeBytes(new Uint8Array(8));
+
+    expect(() => readTPCFromBuffer(bad.buffer, 'bad-bioware.dds')).toThrow('BioWare DDS requires power-of-two dimensions');
+  });
+
+  it('readTPCFromBuffer loads standard DDS BGRA payload as uncompressed BGRA', () => {
+    const width = 2;
+    const height = 2;
+    const pixels = new Uint8Array([
+      0xff, 0x00, 0x00, 0xff,
+      0x00, 0xff, 0x00, 0xff,
+      0x00, 0x00, 0xff, 0xff,
+      0xff, 0xff, 0xff, 0xff,
+    ]);
+    const dds = makeStandardDDSHeader(width, height, 1, {
+      fourCC: null,
+      bitCount: 32,
+      masks: [0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000],
+      pixelFormatFlags: 0x40 | 0x1,
+    });
+    const combined = new Uint8Array(dds.length + pixels.length);
+    combined.set(dds, 0);
+    combined.set(pixels, dds.length);
+
+    const tpc = readTPCFromBuffer(combined, 'bgra.dds');
+    expect(tpc.header.width).toBe(width);
+    expect(tpc.header.height).toBe(height);
+    expect(tpc.header.compressed).toBe(false);
+    expect(tpc.header.encoding).toBe(ENCODING.BGRA);
+    expect(tpc.file.slice(128, 132)).toEqual(pixels.slice(0, 4));
+  });
+
+  it('readTPCFromBuffer loads standard DDS BGR payload and converts it to RGB ordering', () => {
+    const width = 1;
+    const height = 1;
+    const bgrPixel = new Uint8Array([0x10, 0x20, 0x30]);
+    const dds = makeStandardDDSHeader(width, height, 1, {
+      fourCC: null,
+      bitCount: 24,
+      masks: [0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000],
+      pixelFormatFlags: 0x40,
+    });
+    const combined = new Uint8Array(dds.length + bgrPixel.length);
+    combined.set(dds, 0);
+    combined.set(bgrPixel, dds.length);
+
+    const tpc = readTPCFromBuffer(combined, 'bgr.dds');
+    expect(tpc.header.width).toBe(width);
+    expect(tpc.header.height).toBe(height);
+    expect(tpc.header.compressed).toBe(false);
+    expect(tpc.header.encoding).toBe(ENCODING.RGB);
+    expect(tpc.file.slice(128, 131)).toEqual(new Uint8Array([0x30, 0x20, 0x10]));
+  });
+
   it('readTPCFromBuffer loads BMP 24bpp and returns TPCObject', () => {
     const w = 2;
     const h = 2;
@@ -304,6 +414,77 @@ describe('TPCObject', () => {
     const tpc2 = new TPCObject({ file: out, filename: 'test2', pack: 0 });
     expect(tpc2.header.encoding).toBe(tpc1.header.encoding);
   });
+
+  // --- Vendor-derived: DXT5, multi-mipmap, and RGBA uncompressed data sizes ---
+
+  it('DXT5 compressed 4x4 has correct data length (one block = 16 bytes)', () => {
+    const dxt5 = makeDXT5Buffer(4, 4);
+    const tpc = new TPCObject({ file: dxt5, filename: 'dxt5_4x4', pack: 0 });
+    expect(tpc.header.width).toBe(4);
+    expect(tpc.header.height).toBe(4);
+    expect(tpc.header.compressed).toBe(true);
+    // DXT5: 16 bytes per 4x4 block
+    expect(tpc.getDataLength()).toBe(16);
+  });
+
+  it('DXT5 compressed 8x8 has correct data length (four blocks = 64 bytes)', () => {
+    const dxt5 = makeDXT5Buffer(8, 8);
+    const tpc = new TPCObject({ file: dxt5, filename: 'dxt5_8x8', pack: 0 });
+    expect(tpc.header.width).toBe(8);
+    expect(tpc.header.height).toBe(8);
+    // 8x8 → (8/4)*(8/4) = 4 blocks × 16 bytes = 64 bytes
+    expect(tpc.getDataLength()).toBe(64);
+  });
+
+  it('multi-mipmap DXT1 8x8 with 2 mipmaps has summed data length', () => {
+    // Mip 0: 8x8 → 4 blocks × 8 = 32 bytes; dataSize stored in header = 32
+    // Mip 1: 4x4 → max(32>>2, 8) = max(8,8) = 8 bytes
+    // Total = 40 bytes
+    const dxt1 = makeDXT1BufferMipmapped(8, 8, 2);
+    const tpc = new TPCObject({ file: dxt1, filename: 'dxt1_mip2', pack: 0 });
+    expect(tpc.header.mipMapCount).toBe(2);
+    expect(tpc.header.compressed).toBe(true);
+    expect(tpc.getDataLength()).toBe(40);
+  });
+
+  it('RGBA uncompressed 4x4 has correct data length (4*4*4 = 64 bytes)', () => {
+    const buf = makeUncompressedRGBA(4, 4);
+    const tpc = new TPCObject({ file: buf, filename: 'rgba_4x4', pack: 0 });
+    expect(tpc.header.width).toBe(4);
+    expect(tpc.header.height).toBe(4);
+    expect(tpc.header.compressed).toBe(false);
+    expect(tpc.header.encoding).toBe(ENCODING.RGBA);
+    expect(tpc.getDataLength()).toBe(64);
+  });
+
+  it('RGBA uncompressed toBuffer round-trip preserves all pixel bytes', () => {
+    // Vendor parity: rgb_to_rgba adds alpha=255 to all pixels.
+    // Equivalent: RGBA uncompressed TPC preserves raw pixel bytes through round-trip.
+    const w = 2, h = 2;
+    const headerLen = 128;
+    const dataSize = w * h * 4;
+    const total = headerLen + dataSize + 1;
+    const bw = new BinaryWriter(new Uint8Array(total));
+    bw.writeUInt32(0);
+    bw.writeSingle(1.0);
+    bw.writeUInt16(w);
+    bw.writeUInt16(h);
+    bw.writeByte(ENCODING.RGBA);
+    bw.writeByte(1);
+    for (let i = 0; i < 114; i++) bw.writeByte(0);
+    // Distinctive pixel pattern: RGBA channels cycling 0x11..0xFF
+    for (let i = 0; i < dataSize; i++) bw.writeByte(0x11 * ((i % 15) + 1));
+    bw.writeByte(0); // null TXI
+
+    const tpc1 = new TPCObject({ file: bw.buffer, filename: 'pix', pack: 0 });
+    const outBuf = tpc1.toBuffer();
+    const tpc2 = new TPCObject({ file: outBuf, filename: 'pix2', pack: 0 });
+    expect(tpc2.getDataLength()).toBe(dataSize);
+    // Verify pixel bytes are preserved (comparing raw data region)
+    const data1 = tpc1.file.slice(128, 128 + dataSize);
+    const data2 = tpc2.file.slice(128, 128 + dataSize);
+    expect(data2).toEqual(data1);
+  });
 });
 
 // --- Helper: build a minimal DXT1-compressed TPC buffer ---
@@ -326,3 +507,117 @@ function makeDXT1Buffer(w: number, h: number): Uint8Array {
   bw.writeByte(0);
   return bw.buffer;
 }
+
+// --- Helper: build a minimal DXT5-compressed TPC buffer ---
+
+function makeDXT5Buffer(w: number, h: number): Uint8Array {
+  const headerLen = 128;
+  const blocksX = Math.max(1, (w + 3) >> 2);
+  const blocksY = Math.max(1, (h + 3) >> 2);
+  const dataSize = blocksX * blocksY * 16; // DXT5: 16 bytes per block
+  const total = headerLen + dataSize + 1;
+  const bw = new BinaryWriter(new Uint8Array(total));
+  bw.writeUInt32(dataSize); // compressed
+  bw.writeSingle(1.0);
+  bw.writeUInt16(w);
+  bw.writeUInt16(h);
+  bw.writeByte(ENCODING.RGBA); // DXT5 uses RGBA encoding
+  bw.writeByte(1); // 1 mipmap
+  for (let i = 0; i < 114; i++) bw.writeByte(0);
+  for (let i = 0; i < dataSize; i++) bw.writeByte(0);
+  bw.writeByte(0);
+  return bw.buffer;
+}
+
+// --- Helper: build a DXT1-compressed TPC buffer with N mipmaps ---
+
+function makeDXT1BufferMipmapped(w: number, h: number, mipmaps: number): Uint8Array {
+  const headerLen = 128;
+  const blocksX = Math.max(1, (w + 3) >> 2);
+  const blocksY = Math.max(1, (h + 3) >> 2);
+  const mip0Size = blocksX * blocksY * 8; // DXT1: 8 bytes per block
+
+  // Compute total data size across all mipmaps
+  let total = mip0Size;
+  let ds = mip0Size;
+  for (let i = 1; i < mipmaps; i++) {
+    ds = Math.max(ds >> 2, 8);
+    total += ds;
+  }
+
+  const buf = new BinaryWriter(new Uint8Array(headerLen + total + 1));
+  buf.writeUInt32(mip0Size); // dataSize = mip 0 size
+  buf.writeSingle(1.0);
+  buf.writeUInt16(w);
+  buf.writeUInt16(h);
+  buf.writeByte(ENCODING.RGB); // DXT1 uses RGB encoding
+  buf.writeByte(mipmaps);
+  for (let i = 0; i < 114; i++) buf.writeByte(0);
+  for (let i = 0; i < total; i++) buf.writeByte(0);
+  buf.writeByte(0);
+  return buf.buffer;
+}
+
+// --- Helper: build an uncompressed RGBA TPC buffer ---
+
+function makeUncompressedRGBA(w: number, h: number): Uint8Array {
+  const headerLen = 128;
+  const dataSize = w * h * 4;
+  const total = headerLen + dataSize + 1;
+  const bw = new BinaryWriter(new Uint8Array(total));
+  bw.writeUInt32(0); // uncompressed
+  bw.writeSingle(1.0);
+  bw.writeUInt16(w);
+  bw.writeUInt16(h);
+  bw.writeByte(ENCODING.RGBA);
+  bw.writeByte(1);
+  for (let i = 0; i < 114; i++) bw.writeByte(0);
+  for (let i = 0; i < dataSize; i++) bw.writeByte(0);
+  bw.writeByte(0);
+  return bw.buffer;
+}
+
+function makeStandardDDSHeader(
+  width: number,
+  height: number,
+  mipMapCount: number,
+  options: {
+    fourCC: 'DXT1' | 'DXT5' | null;
+    bitCount: number;
+    masks: [number, number, number, number];
+    pixelFormatFlags: number;
+  },
+): Uint8Array {
+  const writer = new BinaryWriter();
+  const hasFourCC = options.fourCC !== null;
+  const headerFlags = hasFourCC ? 0x1 | 0x2 | 0x4 | 0x1000 | 0x80000 | (mipMapCount > 1 ? 0x20000 : 0) : 0x1 | 0x2 | 0x4 | 0x8 | 0x1000 | (mipMapCount > 1 ? 0x20000 : 0);
+  const linearOrPitch = hasFourCC
+    ? Math.max(1, Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4)) * (options.fourCC === 'DXT1' ? 8 : 16)
+    : width * Math.floor(options.bitCount / 8);
+  const caps1 = 0x1000 | (mipMapCount > 1 ? 0x400000 | 0x8 : 0);
+
+  writer.writeUInt32(0x20534444);
+  writer.writeUInt32(124);
+  writer.writeUInt32(headerFlags);
+  writer.writeUInt32(height);
+  writer.writeUInt32(width);
+  writer.writeUInt32(linearOrPitch);
+  writer.writeUInt32(0);
+  writer.writeUInt32(mipMapCount);
+  for (let i = 0; i < 11; i++) writer.writeUInt32(0);
+  writer.writeUInt32(32);
+  writer.writeUInt32(options.pixelFormatFlags);
+  writer.writeUInt32(options.fourCC === 'DXT1' ? 0x31545844 : options.fourCC === 'DXT5' ? 0x35545844 : 0);
+  writer.writeUInt32(options.bitCount);
+  writer.writeUInt32(options.masks[0]);
+  writer.writeUInt32(options.masks[1]);
+  writer.writeUInt32(options.masks[2]);
+  writer.writeUInt32(options.masks[3]);
+  writer.writeUInt32(caps1);
+  writer.writeUInt32(0);
+  writer.writeUInt32(0);
+  writer.writeUInt32(0);
+  writer.writeUInt32(0);
+  return writer.buffer;
+}
+

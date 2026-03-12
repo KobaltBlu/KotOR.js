@@ -11,5 +11,6 @@
 export interface IERFResource {
   offset: number;
   size: number;
-  data: Uint8Array;
+  /** Present when resource was added/replaced in memory; absent when loaded from disk until read or replaced. */
+  data?: Uint8Array;
 }
