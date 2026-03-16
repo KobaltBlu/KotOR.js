@@ -1,5 +1,9 @@
-import { TalentObjectType } from "../enums/engine/TalentObjectType";
-import type { ModuleObject } from "../module";
+import type { CombatRoundAction } from "@/combat/CombatRoundAction";
+import { TalentObjectType } from "@/enums/engine/TalentObjectType";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import type { ModuleObject } from "@/module";
 
 /**
  * TalentObject class.

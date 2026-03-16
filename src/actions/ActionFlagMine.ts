@@ -1,17 +1,18 @@
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import type { ModuleObject } from "../module/ModuleObject";
-import type { ModuleTrigger } from "../module/ModuleTrigger";
-import { BitWise } from "../utility/BitWise";
-import { Action } from "./Action";
+import { Action } from "@/actions/Action";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleTrigger } from "@/module/ModuleTrigger";
+import { BitWise } from "@/utility/BitWise";
+
 
 /**
  * ActionFlagMine class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionFlagMine.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -41,7 +42,7 @@ export class ActionFlagMine extends Action {
 
       return ActionStatus.COMPLETE;
     }
-    
+
     return ActionStatus.FAILED;
   }
 

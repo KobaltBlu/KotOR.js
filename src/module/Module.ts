@@ -116,7 +116,7 @@ export class Module {
   voId: string;
 
   /**
-   * Module version. Is always set to 3. 
+   * Module version. Is always set to 3.
    */
   version: number = 3;
 
@@ -154,28 +154,28 @@ export class Module {
    * ID to use for the next Effect
    */
   effectNextId: number;
-  
-  /** 
+
+  /**
    * @deprecated Deprecated: since NWN
    */
-  expansionList: any[] = [];
+  expansionList: unknown[] = [];
 
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
-  globalVariableList: any[] = [];
+  globalVariableList: unknown[] = [];
 
-  /** 
+  /**
    * @deprecated Obsolete: since NWN
    */
   hak: string;
 
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
-  cutSceneList: any[] = [];
+  cutSceneList: unknown[] = [];
 
-  /** 
+  /**
    * always set to 2
    * @deprecated Deprecated: since NWN
    */

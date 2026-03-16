@@ -1,11 +1,15 @@
 import * as THREE from "three";
-import { GUIButton, GUIListBox, GUIProtoItem } from "../../../gui";
-import type { GUIControl, GameMenu } from "../../../gui";
-import { GFFStruct } from "../../../resource/GFFStruct";
-import { TextureLoader } from "../../../loaders";
-import { GameState } from "../../../GameState";
-import { TextureType } from "../../../enums/loaders/TextureType";
-import { GameEngineType } from "../../../enums/engine";
+
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GameState } from "@/GameState";
+import { GUIButton, GUIListBox, GUIProtoItem } from "@/gui";
+import type { GUIControl, GameMenu } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { GameEngineType } from "@/enums/engine";
 
 /**
  * GUIInventoryItem class.
@@ -30,20 +34,20 @@ export class GUIInventoryItem extends GUIProtoItem {
   createControl(){
     super.createControl();
     //Create the actual control elements below
-    let button = new GUIButton(this.menu, this.control, this, this.scale);
+    const button = new GUIButton(this.menu, this.control, this, this.scale);
     button.extent.width = 200;
     button.setText(this.node.getName());
     button.text.alignment = 9;
     button.autoCalculatePosition = false;
     this.children.push(button);
 
-    let _buttonWidget = button.createControl();
+    const _buttonWidget = button.createControl();
     _buttonWidget.position.x = (this.extent.width - button.extent.width) / 2;
     _buttonWidget.position.y = 0;
     _buttonWidget.position.z = this.zIndex + 1;
     this.widget.add(_buttonWidget);
 
-    let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
+    const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
     buttonIcon.setText(this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '');
     buttonIcon.text.mesh.scale.setScalar(.9);
     buttonIcon.disableTextAlignment();
@@ -57,7 +61,7 @@ export class GUIInventoryItem extends GUIProtoItem {
     buttonIcon.autoCalculatePosition = false;
     this.children.push(buttonIcon);
 
-    let _buttonIconWidget = buttonIcon.createControl();
+    const _buttonIconWidget = buttonIcon.createControl();
     _buttonIconWidget.position.x = -(this.extent.width/2 - buttonIcon.extent.width/2);
     _buttonIconWidget.position.y = 0;
     _buttonIconWidget.position.z = this.zIndex + 1;
@@ -76,7 +80,7 @@ export class GUIInventoryItem extends GUIProtoItem {
     this.widget.userData.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
     this.widget.userData.iconMaterial.transparent = true;
     this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
-    //console.log(this.node.getIcon());
+    //log.info(this.node.getIcon());
     TextureLoader.enQueue(this.node.getIcon(), this.widget.userData.iconMaterial, TextureType.TEXTURE);
     
     this.widget.userData.spriteGroup = new THREE.Group();

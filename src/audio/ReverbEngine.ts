@@ -1,4 +1,10 @@
-import { EAXPresets } from "./EAXPresets";
+
+
+import type { IEAXPreset } from "@/audio/EAXPresets";
+import { EAXPresets } from "@/audio/EAXPresets";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Audio);
 
 /**
  * ReverbEngine class.

@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUICheckBox, GUIListBox, GUIButton } from "../../../gui";
-import { MenuAutoPause as K1_MenuAutoPause } from "../../kotor/KOTOR";
-import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { MenuAutoPause as K1_MenuAutoPause } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUICheckBox, GUIListBox, GUIButton } from "@/gui";
 
 const END_ROUND_DESC = 42445;
 const ENEMY_SIGHTED_DESC = 42446;

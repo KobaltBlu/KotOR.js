@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import './LoadingScreen.scss';
+
+import { createScopedLogger, LogScope, type IScopedLogger } from "@/utility/Logger";
+
+import "@/apps/common/components/loadingScreen/LoadingScreen.scss";
+
+const log: IScopedLogger = createScopedLogger(LogScope.Loader);
 
 export interface ILoadingScreenProps {
   active?: boolean;

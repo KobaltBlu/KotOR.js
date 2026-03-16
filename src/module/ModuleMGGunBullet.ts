@@ -1,19 +1,21 @@
-import { ModuleObject } from "./ModuleObject";
-import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import { OdysseyModel3D } from "../three/odyssey";
-import { OdysseyModel } from "../odyssey";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { MDLLoader } from "../loaders";
+
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { MDLLoader } from "@/loaders";
+import { ModuleObject } from "@/module/ModuleObject";
+import { OdysseyModel } from "@/odyssey";
+import { GFFObject } from "@/resource/GFFObject";
+import { OdysseyModel3D } from "@/three/odyssey";
+
 
 /**
 * ModuleMGGunBullet class.
-* 
+*
 * Class representing a bullet that was spawned from gun banks found in minigame modules.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMGGunBullet.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -66,7 +68,7 @@ export class ModuleMGGunBullet extends ModuleObject {
       this.position.add( this.velocity );
       this.model.quaternion.copy(this.quaternion);
       this.model.position.copy(this.position);
-      
+
       if(this.owner.isPlayer){
         const enemies = GameState.module.area.miniGame.enemies;
         for(let i = 0, len = enemies.length; i < len; i++){

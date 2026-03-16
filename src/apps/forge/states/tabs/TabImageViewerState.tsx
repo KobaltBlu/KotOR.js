@@ -90,7 +90,7 @@ export class TabImageViewerState extends TabState {
 
         const width = tpc.header.width;
         const height = tpc.header.height;
-        const mipmapCount = 1;
+        const _mipmapCount = 1;
 
         if(!tpc.txi.procedureType){
           if(tpc.header.faces > 1){
@@ -128,11 +128,11 @@ export class TabImageViewerState extends TabState {
     });
   }
 
-  static FlipY(pixelData: Uint8Array, width = 1, height = 1){
+  static FlipY(pixelData: Uint8Array, width = 1, _height = 1){
     let offset = 0;
-    let stride = width * 4;
+    const stride = width * 4;
 
-    let unFlipped = Uint8Array.from(pixelData);
+    const unFlipped = Uint8Array.from(pixelData);
 
     for (let pos = unFlipped.length - stride; pos >= 0; pos -= stride) {
       pixelData.set(unFlipped.slice(pos, pos + stride), offset);
@@ -140,8 +140,8 @@ export class TabImageViewerState extends TabState {
     }
   }
 
-  static FlipX(pixelData: Uint8Array, width = 1, height = 1){
-    let unFlipped = Uint8Array.from(pixelData);
+  static FlipX(pixelData: Uint8Array, width = 1, _height = 1){
+    const unFlipped = Uint8Array.from(pixelData);
 
     for (let i = 0; i < pixelData.length; i++) {
       pixelData[i] = (unFlipped[i - 2 * (i % width) + width - 1]);
@@ -149,8 +149,8 @@ export class TabImageViewerState extends TabState {
   }
 
   static PixelDataToRGBA(pixelData: Uint8Array, width = 1, height = 1){
-    let data = new Uint8Array(pixelData.length);
-    let n = 4 * width * height;
+    const data = new Uint8Array(pixelData.length);
+    const n = 4 * width * height;
     let s = 0, d = 0;
     while (d < n) {
       data[d++] = pixelData[s++];
@@ -162,8 +162,8 @@ export class TabImageViewerState extends TabState {
   }
 
   static RGBToRGBA(pixelData: Uint8Array, width = 1, height = 1){
-    let data = new Uint8Array(4 * width * height);
-    let n = 4 * width * height;
+    const data = new Uint8Array(4 * width * height);
+    const n = 4 * width * height;
     let s = 0, d = 0;
     while (d < n) {
       data[d++] = pixelData[s++];
@@ -184,11 +184,11 @@ export class TabImageViewerState extends TabState {
   }
 
   static TGAGrayFix(pixelData: Uint8Array){
-    let fixed = new Uint8Array(pixelData.length * 4);
+    const fixed = new Uint8Array(pixelData.length * 4);
     for (let i = 0; i < pixelData.length; i++) {
 
-      let color = pixelData[i];
-      let offset = i * 4;
+      const color = pixelData[i];
+      const offset = i * 4;
 
       fixed[offset    ] = color; // red
       fixed[offset + 1] = color; // green
@@ -199,7 +199,7 @@ export class TabImageViewerState extends TabState {
   }
 
   static TGAColorFix(pixelData: Uint8Array){
-    let fixed = Uint8Array.from(pixelData);
+    const fixed = Uint8Array.from(pixelData);
     for (let i = 0; i < pixelData.length; i += 4) {
       fixed[i + 2] = pixelData[i    ]; // red
       fixed[i + 1] = pixelData[i + 1]; // green

@@ -1,4 +1,4 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 interface IEXPTableRow {
   index: number;

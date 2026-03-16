@@ -1,15 +1,15 @@
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel } from "../../../gui";
-import { ModuleObject } from "../../../module";
-import { DLGObject } from "../../../resource/DLGObject";
-import { DLGNode } from "../../../resource/DLGNode";
-import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
-import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
-import { AudioEngine } from "../../../audio/AudioEngine";
-import { ConversationState } from "../../../enums/dialog/ConversationState";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { ConversationState } from "@/enums/dialog/ConversationState";
+import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
+import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIControl, GUIListBox, GUILabel } from "@/gui";
+import { ModuleObject } from "@/module";
+import { DLGNode } from "@/resource/DLGNode";
+import { DLGObject } from "@/resource/DLGObject";
 
 /**
  * InGameComputer class.

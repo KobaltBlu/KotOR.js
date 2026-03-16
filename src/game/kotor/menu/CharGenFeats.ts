@@ -1,10 +1,12 @@
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { GUIFeatItem } from "../gui/GUIFeatItem";
-import type { ModuleCreature } from "../../../module";
-import { TextureLoader } from "../../../loaders";
-import { TalentFeat } from "../../../talents";
-import { GameState } from "../../../GameState";
+import { GUIFeatItem } from "@/game/kotor/gui/GUIFeatItem";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { ModuleCreature } from "@/module";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { TalentFeat } from "@/talents";
+import { createScopedLogger } from "@/utility/Logger";
 
 /**
  * CharGenFeats class.
@@ -31,6 +33,8 @@ export class CharGenFeats extends GameMenu {
   BTN_BACK: GUIButton;
 
   creature: ModuleCreature;
+
+  private static readonly log = createScopedLogger(CharGenFeats.name);
 
   constructor(){
     super();
@@ -103,7 +107,7 @@ export class CharGenFeats extends GameMenu {
         }
       }
     }
-    let groups = [];
+    const groups = [];
     for (let i = 0; i < list.length; i++) {
       const feat = list[i];
       const group = [];

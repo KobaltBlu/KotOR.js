@@ -1,21 +1,29 @@
-import { ILIPHeader } from "../interface/resource/ILIPHeader";
-import { ILIPKeyFrame } from "../interface/resource/ILIPKeyFrame";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { ResourceLoader } from "../loaders";
-import { ResourceTypes } from "./ResourceTypes";
-import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { OdysseyModel3D } from "../three/odyssey";
-import { OdysseyModelAnimation } from "../odyssey";
+import * as THREE from 'three';
+
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { ILIPKeyFrame } from "@/interface/resource/ILIPKeyFrame";
+import { ResourceLoader } from "@/loaders";
+import { OdysseyModelAnimation } from "@/odyssey";
+import type { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D } from "@/three/odyssey";
+import type { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Resource);
 
 /**
  * LIPObject class.
- * 
+ *
  * Class representing a Lip Sync file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LIPObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -48,7 +56,7 @@ export class LIPObject {
     this.lastTime = 0;
     this.elapsed = 0;
     this.anim = null;
-    
+
 
     if(this.file != null){
       this.readFile( (lip: LIPObject) => {
@@ -125,7 +133,7 @@ export class LIPObject {
   }
 
   addKeyFrame(time: number = 0, shape: number = 0){
-    let keyframe: ILIPKeyFrame = {
+    const keyframe: ILIPKeyFrame = {
       uuid: crypto.randomUUID(),
       time: time,
       shape: shape,
@@ -139,7 +147,7 @@ export class LIPObject {
     if(model){
 
       let lastFrame = 0;
-      let framesLen = this.keyframes.length;
+      const framesLen = this.keyframes.length;
       for(let f = 0; f < framesLen; f++){
         if(this.keyframes[f].time <= this.elapsed){
           lastFrame = f;
@@ -250,11 +258,11 @@ export class LIPObject {
   }
 
   reIndexKeyframes(){
-    this.keyframes.sort((a,b) => (a.time > b.time) ? 1 : ((b.time > a.time) ? -1 : 0)); 
+    this.keyframes.sort((a,b) => (a.time > b.time) ? 1 : ((b.time > a.time) ? -1 : 0));
   }
 
   toExportBuffer(): Uint8Array {
-    let writer = new BinaryWriter();
+    const writer = new BinaryWriter();
 
     //Write the header to the buffer
     writer.writeChars(LIPObject.FILE_TYPE);

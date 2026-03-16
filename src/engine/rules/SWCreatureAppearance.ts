@@ -1,5 +1,8 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
-import { Utility } from "../../utility/Utility";
+import { TwoDAObject, type ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * SWCreatureAppearance class.
@@ -126,7 +129,7 @@ export class SWCreatureAppearance {
 
   getBodyModelInfo(bodyVariation: string = '', textureVariation: number = 1): { model: string, texture: string } {
     textureVariation = Math.max(1, textureVariation);
-    console.log('getBodyModelInfo', bodyVariation, textureVariation);
+    log.info('getBodyModelInfo', bodyVariation, textureVariation);
     const defaultModel = this.modela.replace(/\0[\s\S]*$/g,'');
     const defaultTexture = this.texa.replace(/\0[\s\S]*$/g,'');
     let bodyModel = defaultModel; 

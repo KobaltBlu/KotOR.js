@@ -1,14 +1,14 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyModelNode } from "./OdysseyModelNode";
-import { OdysseyModelNodeAABB } from "./OdysseyModelNodeAABB";
-import { OdysseyModelNodeDangly } from "./OdysseyModelNodeDangly";
-import { OdysseyModelNodeEmitter } from "./OdysseyModelNodeEmitter";
-import { OdysseyModelNodeLight } from "./OdysseyModelNodeLight";
-import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
-import { OdysseyModelNodeReference } from "./OdysseyModelNodeReference";
-import { OdysseyModelNodeSaber } from "./OdysseyModelNodeSaber";
-import { OdysseyModelNodeSkin } from "./OdysseyModelNodeSkin";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import { OdysseyModelNodeAABB } from "@/odyssey/OdysseyModelNodeAABB";
+import { OdysseyModelNodeDangly } from "@/odyssey/OdysseyModelNodeDangly";
+import { OdysseyModelNodeEmitter } from "@/odyssey/OdysseyModelNodeEmitter";
+import { OdysseyModelNodeLight } from "@/odyssey/OdysseyModelNodeLight";
+import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
+import { OdysseyModelNodeReference } from "@/odyssey/OdysseyModelNodeReference";
+import { OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
+import { OdysseyModelNodeSkin } from "@/odyssey/OdysseyModelNodeSkin";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
 
 /**
  * OdysseyModelFactory class.

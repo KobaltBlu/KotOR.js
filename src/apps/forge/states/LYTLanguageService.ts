@@ -33,7 +33,7 @@ export class LYTLanguageService {
         root: [
           // Header
           [/^#MAXLAYOUT\s+ASCII/, 'keyword'],
-          
+
           // Keywords
           [/^filedependancy\s+/, 'keyword'],
           [/^beginlayout$/, 'keyword'],
@@ -99,16 +99,16 @@ export class LYTLanguageService {
 
     // Register diagnostics provider for linting
     monacoEditor.languages.registerDocumentFormattingEditProvider('lyt', {
-      provideDocumentFormattingEdits: (model: monacoEditor.editor.ITextModel, options: monacoEditor.languages.FormattingOptions, token: monacoEditor.CancellationToken) => {
+      provideDocumentFormattingEdits: (model: monacoEditor.editor.ITextModel, _options: monacoEditor.languages.FormattingOptions, _token: monacoEditor.CancellationToken) => {
         try {
           const text = model.getValue();
           const encoder = new TextEncoder();
           const decoder = new TextDecoder();
-          
+
           // Parse and re-export to format
           const lyt = new LYTObject(encoder.encode(text));
           const formatted = decoder.decode(lyt.export());
-          
+
           if (formatted !== text) {
             return [{
               range: model.getFullModelRange(),
@@ -118,7 +118,7 @@ export class LYTLanguageService {
           return [];
         } catch (error) {
           // If formatting fails, return empty array (don't break the editor)
-          console.warn('LYT formatting failed:', error);
+          log.warn('LYT formatting failed:', error);
           return [];
         }
       }
@@ -130,14 +130,14 @@ export class LYTLanguageService {
    */
   static validateLYT(text: string): monacoEditor.editor.IMarkerData[] {
     const markers: monacoEditor.editor.IMarkerData[] = [];
-    
+
     try {
       const encoder = new TextEncoder();
       const lyt = new LYTObject(encoder.encode(text));
-      
+
       // Validation is done during parsing - errors are thrown
       // We could add additional validations here if needed
-      
+
       // Additional validation: check if roomcount matches actual rooms
       const lines = text.split('\n');
       for(let i = 0; i < lines.length; i++){
@@ -210,7 +210,7 @@ export class LYTLanguageService {
         message: message
       });
     }
-    
+
     return markers;
   }
 

@@ -1,6 +1,8 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
 import * as THREE from "three";
+
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 const DEFAULT_OFFSET_Z = 0.01;
 const TRIGGER_MATERIAL = new THREE.MeshBasicMaterial({
@@ -174,7 +176,7 @@ export class ForgeTrigger extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AutoRemoveKey', this.autoRemoveKey ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Cursor', this.cursor & 0xFF) );
@@ -226,7 +228,7 @@ export class ForgeTrigger extends ForgeGameObject {
       this.container.add(this.mesh);
     }
     this.mesh.geometry = this.bufferGeometry;
-    
+
     // Initialize vertex helpers group
     this.vertexHelpersGroup.visible = false;
     if(!this.container.children.includes(this.vertexHelpersGroup)){
@@ -244,21 +246,21 @@ export class ForgeTrigger extends ForgeGameObject {
         (helper.material as THREE.Material).dispose();
       }
     }
-    
+
     // Create helpers for each vertex
     for(let i = 0; i < this.vertices.length; i++){
       const vertex = this.vertices[i];
       const helper = new THREE.Mesh(
-        this.vertexHelperGeometry, 
+        this.vertexHelperGeometry,
         new THREE.MeshBasicMaterial({color: 0x000000})
       );
-      
+
       helper.position.copy(vertex);
       helper.scale.setScalar(this.vertexHelperSize);
-      
+
       helper.userData.vertexIndex = i;
       helper.userData.forgeGameObject = this;
-      
+
       this.vertexHelpersGroup.add(helper);
       this.vertexHelpers.push(helper);
     }
@@ -289,7 +291,7 @@ export class ForgeTrigger extends ForgeGameObject {
     if(vertexIndex >= 0 && vertexIndex < this.vertices.length){
       const vertex = this.vertices[vertexIndex];
       const localPos = helper.position.clone();
-      
+
       // Update vertex position if it changed
       if(!vertex.equals(localPos)){
         vertex.copy(localPos);
@@ -302,18 +304,18 @@ export class ForgeTrigger extends ForgeGameObject {
     }
   }
 
-  update(delta: number = 0){
+  update(_delta: number = 0){
     // Update vertex positions from helpers
     if(this.vertexHelpers.length > 0 && this.vertices.length === this.vertexHelpers.length){
       let geometryNeedsUpdate = false;
-      
+
       for(let i = 0; i < this.vertices.length; i++){
         const vertex = this.vertices[i];
         const helper = this.vertexHelpers[i];
-        
+
         if(vertex && helper){
           const localPos = helper.position.clone();
-          
+
           // Update vertex position if it changed
           if(!vertex.equals(localPos)){
             vertex.copy(localPos);
@@ -321,7 +323,7 @@ export class ForgeTrigger extends ForgeGameObject {
           }
         }
       }
-      
+
       // Rebuild geometry if any vertices changed
       if(geometryNeedsUpdate){
         this.buildGeometry();

@@ -1,4 +1,7 @@
-import { ADPCMBlock } from "./ADPCMBlock";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { ADPCMBlock } from "@/audio/ADPCMBlock";
 
 interface ADPCMHeader {
 	sampleRate: number;
@@ -8,11 +11,11 @@ interface ADPCMHeader {
 
 /**
  * ADPCMDecoder class.
- * 
+ *
  * The ADPCMDecoder is used to decode ADPCM wav files in the game.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ADPCMDecoder.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -61,18 +64,18 @@ export class ADPCMDecoder {
 		this.blocks = [];
 		if(this.adpcm instanceof Uint8Array){
 
-			let blockHeaderSize = 4 * this.header.channels;
+			const blockHeaderSize = 4 * this.header.channels;
 			let count = this.adpcm.length;
 
 			this.pcm = new Uint8Array(0);
-			let chunks: Uint8Array[] = [];
+			const chunks: Uint8Array[] = [];
 
-			console.log('ADPCMDecoder', 'Decode Starting');
+			log.info('ADPCMDecoder', 'Decode Starting');
 			while( count > 0 ) {
-				let inSamples = (count > this.header.frameSize ? this.header.frameSize : count);
+				const inSamples = (count > this.header.frameSize ? this.header.frameSize : count);
 
-				let samples =  ( (inSamples - blockHeaderSize) * 4 ) + blockHeaderSize / this.header.channels;
-				let buffer = new Uint8Array( samples );
+				const samples =  ( (inSamples - blockHeaderSize) * 4 ) + blockHeaderSize / this.header.channels;
+				const buffer = new Uint8Array( samples );
 				this.decodeBlock( this.adpcm, buffer, this.inputStreamIndex, samples );
 
 				chunks.push(buffer);
@@ -120,7 +123,7 @@ export class ADPCMDecoder {
 			channel = (sampleIdx & 4) >> 2;
 
 			if(this.header.channels == 1)
-			  channel = 0;
+        channel = 0;
 
 			bytes = this.getNibblesFromByte(input[ inputIdx++ ], channel);
 
@@ -145,7 +148,7 @@ export class ADPCMDecoder {
 		outputIdx = 2 * this.header.channels;
 		sampleIdx = 0;
 
-		let channelMultiplier = (this.header.channels * 2);
+		const channelMultiplier = (this.header.channels * 2);
 		let sIdx = 0, idx1 = 0, idx2 = 0;
 		while( outputIdx < outputEnd ){
 
@@ -166,8 +169,8 @@ export class ADPCMDecoder {
 
 	getNibblesFromByte(input: number, channel: number){
 
-		let sample1 = this.expandNibble(input & 0x0F, channel);
-		let sample2 = this.expandNibble((input >> 4) & 0x0F, channel);
+		const sample1 = this.expandNibble(input & 0x0F, channel);
+		const sample2 = this.expandNibble((input >> 4) & 0x0F, channel);
 
 		return [sample1 & 0xFF, (sample1 >> 8) & 0xFF, sample2 & 0xFF, (sample2 >> 8) & 0xFF];
 
@@ -175,9 +178,9 @@ export class ADPCMDecoder {
 
 	expandNibble(nibble: number, channel = 0){
 
-		let bytecode = nibble & 0xFF;
+		const bytecode = nibble & 0xFF;
 
-		let step = ADPCMDecoder.stepTable[this.stepIdx[channel]];
+		const step = ADPCMDecoder.stepTable[this.stepIdx[channel]];
 		let predictor = this.predictor[channel];
 
 		let diff = step >> 3 ;

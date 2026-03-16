@@ -1,15 +1,19 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { CExoLocString } from "../resource/CExoLocString";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader } from "../loaders";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { TwoDAManager } from "./TwoDAManager";
-import { JournalCategory } from "../engine/JournalCategory";
-import { JournalEntry } from "../engine/JournalEntry";
-import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
-import { GameState } from "../GameState";
+import { JournalCategory } from "@/engine/JournalCategory";
+import { JournalEntry } from "@/engine/JournalEntry";
+import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { ResourceLoader } from "@/loaders";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Manager);
 
 /**
  * JournalManager class.
@@ -121,8 +125,8 @@ export class JournalManager {
         }
         resolve();
       }).catch( (e) => {
-        console.warn(`Failed to load global.jrl`);
-        console.error(e);
+        log.warn(`Failed to load global.jrl`);
+        log.error(e);
         resolve();
       });
     });

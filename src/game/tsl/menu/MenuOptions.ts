@@ -1,10 +1,11 @@
-import { EngineState } from "../../../enums/engine/EngineState";
-import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { GameState } from "../../../GameState";
-import type { GUIButton, GUILabel, GUIListBox } from "../../../gui";
-import { Module } from "../../../module";
-import { NWScript } from "../../../nwscript/NWScript";
-import { MenuOptions as K1_MenuOptions } from "../../kotor/KOTOR";
+
+import { EngineState } from "@/enums/engine/EngineState";
+import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
+import { MenuOptions as K1_MenuOptions } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUIButton, GUILabel, GUIListBox } from "@/gui";
+import { Module } from "@/module";
+import { NWScript } from "@/nwscript/NWScript";
 
 /**
  * MenuOptions class.

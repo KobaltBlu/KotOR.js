@@ -1,27 +1,34 @@
-import * as path from "path";
-import { GFFObject } from "../resource/GFFObject";
-import { TextureLoader } from "../loaders";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { CurrentGame } from "./CurrentGame";
-import { GFFField } from "../resource/GFFField";
-import { GameState } from "../GameState";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ERFObject } from "../resource/ERFObject";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { Utility } from "../utility/Utility";
-import EngineLocation from "./EngineLocation";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { ResourceTypes } from "../KotOR";
 import { exists } from "fs";
+import * as path from "path";
 
+import { CurrentGame } from "@/engine/CurrentGame";
+import EngineLocation from "@/engine/EngineLocation";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { ResourceTypes } from "@/KotOR";
+import { TextureLoader } from "@/loaders";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { ERFObject } from "@/resource/ERFObject";
+import { GFFField } from "@/resource/GFFField";
+import type { GFFFieldValue } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
+
+
+
+const log = createScopedLogger(LogScope.Game);
 const winEpoch = new Date("01-01-1601 UTC").getTime();
 
 /**
  * SaveGame class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SaveGame.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -85,7 +92,7 @@ export class SaveGame {
   PCNAME: string;
   /** Whether this is a new save game being created */
   isNewSave = false;
-  
+
 
   /** Array of all loaded save games */
   static saves: SaveGame[] = [];

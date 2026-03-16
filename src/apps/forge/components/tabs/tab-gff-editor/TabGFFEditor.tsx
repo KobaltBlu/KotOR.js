@@ -51,12 +51,12 @@ export const TabGFFEditor = function(props: BaseTabProps){
   <div id="gffProperties" className="container" style={{position: 'relative', overflow: 'auto', height: '100%', width:'50%', padding:'10px', float: 'left'}}>
     {(
       selectedNode ? (
-        selectedNode instanceof KotOR.GFFField ? 
+        selectedNode instanceof KotOR.GFFField ?
           <GFFFieldProperties node={selectedNode} /> :
-        selectedNode instanceof KotOR.GFFStruct ? 
-          <GFFStructProperties node={selectedNode} /> : 
+        selectedNode instanceof KotOR.GFFStruct ?
+          <GFFStructProperties node={selectedNode} /> :
         <></>
-      ) : 
+      ) :
       <></>
     )}
   </div>
@@ -87,23 +87,23 @@ const GFFStructElement = memo(function GFFStructElement(props: any){
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const contextMenuItems = createGFFContextMenuItems({
       struct,
       onFieldAdded: () => rerender(!render),
-      onStructCut: () => console.log('Cut STRUCT'),
-      onStructCopy: () => console.log('Copy STRUCT'),
-      onFieldPaste: () => console.log('Paste FIELD'),
-      onStructDelete: () => console.log('Delete Struct'),
-      onNew: () => console.log('New'),
-      onOpen: () => console.log('Open'),
-      onClose: () => console.log('Close')
+      onStructCut: () => log.debug('Cut STRUCT'),
+      onStructCopy: () => log.debug('Copy STRUCT'),
+      onFieldPaste: () => log.debug('Paste FIELD'),
+      onStructDelete: () => log.debug('Delete Struct'),
+      onNew: () => log.debug('New'),
+      onOpen: () => log.debug('Open'),
+      onClose: () => log.debug('Close')
     });
 
     showContextMenu(e.clientX, e.clientY, contextMenuItems);
   }, [struct, render, showContextMenu]);
 
-  const handleSelect = useCallback((nodeId: string) => {
+  const handleSelect = useCallback((_nodeId: string) => {
     tab.setSelectedField(struct);
   }, [tab, struct]);
 
@@ -115,11 +115,11 @@ const GFFStructElement = memo(function GFFStructElement(props: any){
   // Memoize child nodes to prevent unnecessary re-renders
   const childNodes = useMemo(() => {
     if (!openState || !struct) return null;
-    
+
     const fieldNodes = struct.getFields().map((field: KotOR.GFFField) => (
-      <GFFFieldElement 
-        field={field} 
-        key={field.uuid} 
+      <GFFFieldElement
+        field={field}
+        key={field.uuid}
         tab={props.tab}
         depth={depth + 1}
       />
@@ -191,11 +191,11 @@ const GFFFieldElement = memo(function GFFFieldElement(props: any){
     // Add double-click logic if needed
   }, []);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+  const handleContextMenu = useCallback((_e: React.MouseEvent) => {
     // Add context menu logic if needed
   }, []);
 
-  const handleSelect = useCallback((nodeId: string) => {
+  const handleSelect = useCallback((_nodeId: string) => {
     tab.setSelectedField(field);
   }, [tab, field]);
 
@@ -241,11 +241,11 @@ const GFFFieldElement = memo(function GFFFieldElement(props: any){
   // Memoize child nodes to prevent unnecessary re-renders
   const childNodes = useMemo(() => {
     if (!openState || !field) return null;
-    
+
     const structNodes = field.getChildStructs().map((struct: KotOR.GFFStruct) => (
-      <GFFStructElement 
-        struct={struct} 
-        key={struct.uuid} 
+      <GFFStructElement
+        struct={struct}
+        key={struct.uuid}
         tab={props.tab}
         depth={depth + 1}
       />

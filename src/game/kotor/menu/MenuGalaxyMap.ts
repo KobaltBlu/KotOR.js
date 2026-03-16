@@ -1,12 +1,15 @@
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyModel } from "../../../odyssey";
-import { Planet, Planetary } from "../../../engine/Planetary";
-import { OdysseyModel3D } from "../../../three/odyssey";
+import { Planet, Planetary } from "@/engine/Planetary";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 const STR_ALREADY_AT_THAT_LOCATION = 125629;
 
@@ -119,7 +122,7 @@ export class MenuGalaxyMap extends GameMenu {
     });
 
     GameState.PerformanceMonitor.stop('MenuGalaxyMap.loadGalaxyModel.FromMDL');
-    //console.log('Model Loaded', model);
+    //log.info('Model Loaded', model);
     this._3dViewModel = model;
     
     this._3dView.camera.position.copy(model.camerahook.position);
@@ -142,8 +145,8 @@ export class MenuGalaxyMap extends GameMenu {
     try {
       this._3dView.render(delta);
       (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e);
     }
   }
 
@@ -178,16 +181,16 @@ export class MenuGalaxyMap extends GameMenu {
 
       _3dView.render(delta);
       (planetControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e);
     }
   }
 
   UpdateScale() {
-    let controls = this.manager.MenuGalaxyMap.tGuiPanel.children;
+    const controls = this.manager.MenuGalaxyMap.tGuiPanel.children;
     for (let i = 0; i < controls.length; i++) {
-      let control = controls[i];
-      let plnt = Planetary.GetPlanetByGUITag(control.name);
+      const control = controls[i];
+      const plnt = Planetary.GetPlanetByGUITag(control.name);
       if (plnt) {
         if (plnt.enabled) {
           control.show();
@@ -241,18 +244,18 @@ export class MenuGalaxyMap extends GameMenu {
       const planet = planets[i];
 
       if(!planet){
-        console.warn('invalid planet index', i);
+        log.warn('invalid planet index', i);
         continue;
       }
 
       const control = this.getControlByName(planet.guitag);
       if (!control) {
-        console.warn('invalid guitag', planet.guitag);
+        log.warn('invalid guitag', planet.guitag);
         continue;
       }
 
       control.removeEventListener('click');
-      console.log(planet.label, planet.enabled);
+      log.info(planet.label, planet.enabled);
 
       if (!planet.enabled) {
         control.hide();

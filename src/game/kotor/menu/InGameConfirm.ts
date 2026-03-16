@@ -1,8 +1,11 @@
-import { GameState } from "../../../GameState";
-import { GameEngineType } from "../../../enums/engine";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUIButton } from "../../../gui";
-import { TwoDAObject } from "../../../resource/TwoDAObject";
+import { GameEngineType } from "@/enums/engine";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
  * InGameConfirm class.
@@ -52,7 +55,7 @@ export class InGameConfirm extends GameMenu {
 
       this.BTN_OK.addEventListener('click', (e) => {
         e.stopPropagation();
-        console.log('BTN_OK clicked', this.onOk);
+        log.info('BTN_OK clicked', this.onOk);
         if(typeof this.onOk === 'function'){
           this.onOk();
         }
@@ -62,7 +65,7 @@ export class InGameConfirm extends GameMenu {
 
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
-        console.log('BTN_CANCEL clicked', this.onCancel);
+        log.info('BTN_CANCEL clicked', this.onCancel);
         if(typeof this.onCancel === 'function'){
           this.onCancel();
         }
@@ -90,7 +93,7 @@ export class InGameConfirm extends GameMenu {
   }
 
   ShowTutorialMessage(id = 0, nth = 0) {
-    console.log('ShowTutorialMessage', id, nth);
+    log.info('ShowTutorialMessage', id, nth);
     if(GameState.TutorialWindowTracker[id]){
       return;
     }
@@ -123,7 +126,7 @@ export class InGameConfirm extends GameMenu {
   }
 
   showConfirmDialog(strRef = 0, onOk?: () => void, onCancel?: () => void) {
-    console.log('showConfirmDialog', strRef);
+    log.info('showConfirmDialog', strRef);
 
     if(strRef <= 0){
       return;

@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Button, Modal } from "react-bootstrap";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { ModalBlueprintBrowserState } from "../../states/modal/ModalBlueprintBrowserState";
-import "./ModalBlueprintBrowser.scss";
+
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { ModalBlueprintBrowserState } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
+import "@/apps/forge/components/modal/ModalBlueprintBrowser.scss";
 
 const BLUEPRINT_TYPE_LABELS: Record<string, string> = {
   'utc': 'creatures',
@@ -34,7 +38,7 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
     if (modal.items.length === 0) {
       setLoading(true);
       modal.loadBlueprints().catch((error) => {
-        console.error('Failed to load blueprints:', error);
+        log.error('Failed to load blueprints:', error);
         setLoading(false);
       });
     }
@@ -55,13 +59,13 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
     modal.addEventListener('onShow', onShow);
     modal.addEventListener('onBlueprintsLoaded', onBlueprintsLoaded);
     modal.addEventListener('onSearchChanged', onSearchChanged);
-    
+
     // Check if items are already loaded (from cache) and update state
     if (modal.items.length > 0) {
       setItems([...modal.filteredItems]);
       setLoading(false);
     }
-    
+
     return () => {
       modal.removeEventListener('onHide', onHide);
       modal.removeEventListener('onShow', onShow);
@@ -76,7 +80,7 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
       if (modal.items.length === 0) {
         setLoading(true);
         modal.loadBlueprints().catch((error) => {
-          console.error('Failed to load blueprints:', error);
+          log.error('Failed to load blueprints:', error);
           setLoading(false);
         });
       } else if (items.length === 0) {
@@ -91,7 +95,7 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
     modal.close();
   };
 
-  const handleClose = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClose = (_e: React.MouseEvent<HTMLButtonElement>) => {
     modal.close();
   };
 

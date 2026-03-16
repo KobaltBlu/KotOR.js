@@ -1,5 +1,5 @@
-import { GameMenu } from "../../../gui";
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
+import { GameMenu } from "@/gui";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
 
 /**
  * MenuChemicals class.

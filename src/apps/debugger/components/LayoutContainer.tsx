@@ -87,11 +87,11 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       offsetTop = rect.top;
     }
 
-    let x = e.clientX - offsetLeft;
+    const x = e.clientX - offsetLeft;
     let y = e.clientY - offsetTop;
     if(y < 0) y = 0;
 
-    let barSizeHalf = layoutBarOpenSize.current/2;
+    const barSizeHalf = layoutBarOpenSize.current/2;
 
     switch(handle){
       case 'north':
@@ -178,7 +178,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
     if(typeof layoutBarClosedSize.current === 'undefined'){
       layoutBarClosedSize.current = (typeof props?.barClosedSize === 'number') ? props.barClosedSize : 14;
     }
-    
+
     rerender(!render);
     window.addEventListener('resize', onWindowResize);
     return () => {
@@ -198,33 +198,33 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       return;
     }
 
-    let north_gutter_size = 
+    const north_gutter_size =
       layout_north_enabled ? (layoutNorthOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
-      
-    let south_gutter_size = 
+
+    const south_gutter_size =
       layout_south_enabled ? (layoutSouthOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
-    let east_gutter_size = 
+    const east_gutter_size =
       layout_east_enabled ? (layoutEastOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
-    let west_gutter_size = 
+    const west_gutter_size =
       layout_west_enabled ? (layoutWestOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
-    let west_bounds = {
+    const west_bounds = {
       top: 0,
       left: 0,
       width: (layout_west_enabled && layoutWestOpen.current) ? layoutWestSize.current - (west_gutter_size/2) : 0,
       height: (layout_west_enabled && layoutWestOpen.current) ? tabHeight : 0,
     };
 
-    let east_bounds = {
+    const east_bounds = {
       top: 0,
       right: 0,
       width: (layout_east_enabled && layoutEastOpen.current) ? layoutEastSize.current - (east_gutter_size/2) : 0,
       height: (layout_east_enabled && layoutEastOpen.current) ? tabHeight : 0,
     };
 
-    let north_bounds = {
+    const north_bounds = {
       top: 0,
       right: (layout_north_enabled && layoutNorthOpen.current) ? east_bounds.width + east_gutter_size : 0,
       left: (layout_north_enabled && layoutNorthOpen.current) ? west_bounds.width + west_gutter_size : 0,
@@ -232,7 +232,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       height: (layout_north_enabled && layoutNorthOpen.current) ? layoutNorthSize.current - (north_gutter_size/2) : 0,
     };
 
-    let south_bounds = {
+    const south_bounds = {
       bottom: 0,
       right: (layout_east_enabled && layoutEastOpen.current) ? east_bounds.width + east_gutter_size : 0,
       left: (layout_west_enabled && layoutWestOpen.current) ? west_bounds.width + west_gutter_size : 0,
@@ -240,7 +240,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       height: (layout_south_enabled && layoutSouthOpen.current) ? layoutSouthSize.current  - (south_gutter_size/2) : 0,
     };
 
-    let center_bounds = {
+    const center_bounds = {
       top: north_bounds.height + north_gutter_size,
       bottom: south_bounds.height + south_gutter_size,
       left: west_bounds.width + west_gutter_size,

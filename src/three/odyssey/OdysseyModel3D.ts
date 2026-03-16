@@ -1295,7 +1295,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //   odysseyModel.walkmesh = (mesh as THREE.Mesh);
           //   mesh.material.visible = false;
           // }
-          
+
           //RenderOrder
           // if(odysseyNode.BackgroundGeometry){
           //   mesh.renderOrder = 1000;
@@ -1578,7 +1578,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       lightNode.parentUUID = odysseyModel.uuid;
       lightNode.userData.odysseyModel = odysseyModel;
       lightNode.userData.odysseyNode = odysseyNode;
-  
+
       lightNode.priority = odysseyNode.lightPriority;
       lightNode.isAmbient = odysseyNode.ambientFlag ? true : false;
       lightNode.isDynamic = odysseyNode.dynamicFlag ? true : false;

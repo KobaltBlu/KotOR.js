@@ -1,8 +1,9 @@
-import { DiceType } from "../../enums/combat/DiceType";
-import { WeaponSize } from "../../enums/combat/WeaponSize";
-import { WeaponType } from "../../enums/combat/WeaponType";
-import { WeaponWield } from "../../enums/combat/WeaponWield";
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { DiceType } from "@/enums/combat/DiceType";
+import { WeaponSize } from "@/enums/combat/WeaponSize";
+import { WeaponType } from "@/enums/combat/WeaponType";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
 
 export class SWBaseItem {
   id: number = 0;

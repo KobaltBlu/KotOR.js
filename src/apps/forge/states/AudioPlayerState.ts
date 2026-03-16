@@ -37,9 +37,9 @@ export class AudioPlayerState {
     onLoop: [],
     onOpen: [],
   };
-  
+
   static analyser: AnalyserNode;
-  static analyserBufferLength: number; 
+  static analyserBufferLength: number;
   static analyserData: Uint8Array;
   static source: AudioBufferSourceNode;
   static gainNode: GainNode;

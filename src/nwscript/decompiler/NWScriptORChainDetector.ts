@@ -1,10 +1,11 @@
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptInstruction } from "./NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
-import { NWScriptExpressionBuilder } from "./NWScriptExpressionBuilder";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { OP_EQUAL, OP_LOGORII, OP_JZ, OP_JNZ } from './NWScriptOPCodes';
-import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
+
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
+import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
+import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { NWScriptInstruction } from "@/nwscript/decompiler/NWScriptInstruction";
+import { OP_EQUAL, OP_LOGORII, OP_JZ, OP_JNZ } from '@/nwscript/decompiler/NWScriptOPCodes';
+import { NWScriptDataType } from "@/nwscript/enums/nwscript/NWScriptDataType";
 
 /**
  * Detects and simplifies OR chains in NWScript bytecode.

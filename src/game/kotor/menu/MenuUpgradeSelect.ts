@@ -1,7 +1,8 @@
 import * as THREE from "three";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIButton, GUILabel } from "../../../gui";
+
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIButton, GUILabel } from "@/gui";
 
 type ItemType = 'RANGED' | 'MELEE' | 'LIGHTSABER' | 'ARMOR' | 'NONE';
 

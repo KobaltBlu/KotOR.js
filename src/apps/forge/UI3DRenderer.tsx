@@ -1,13 +1,18 @@
-import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager";
-import { EventListenerModel } from "./EventListenerModel";
-import * as KotOR from "./KotOR";
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
-import { ForgeModule } from "./module-editor/ForgeModule";
-import { ForgeGameObject } from "./module-editor/ForgeGameObject";
+
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import { createOrbitControls } from "@/apps/forge/threeControlsFactory";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export enum CameraView {
   Top = 'top',
@@ -87,24 +92,24 @@ export enum ObjectType {
 
 /**
  * UI3DRenderer class.
- * 
+ *
  * This class is used to create and manage 3d rendering instances in the KotOR Forge application.
  * The main use is for the model previews in the template editors for UTC, UTD, and UTP files
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file UI3DRenderer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class UI3DRenderer extends EventListenerModel {
-  
+
   static CameraMoveSpeed: number = 10;
 
   uuid: string;
 
   sceneGraphManager: SceneGraphTreeViewManager;
-  
+
   time: number;
   deltaTime: number;
   deltaTimeFixed: number = 0;
@@ -145,15 +150,15 @@ export class UI3DRenderer extends EventListenerModel {
     orthogonal?: CameraViewCache,
     default?: CameraViewCache
   } = {
-    top: undefined,
-    bottom: undefined,
-    left: undefined,
-    right: undefined,
-    front: undefined,
-    back: undefined,
-    orthogonal: undefined,
-    default: undefined
-  }
+      top: undefined,
+      bottom: undefined,
+      left: undefined,
+      right: undefined,
+      front: undefined,
+      back: undefined,
+      orthogonal: undefined,
+      default: undefined
+    }
 
   lightManager: KotOR.LightManager = new KotOR.LightManager();
 

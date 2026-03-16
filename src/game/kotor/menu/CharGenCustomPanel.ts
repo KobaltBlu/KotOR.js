@@ -1,7 +1,10 @@
-import { CurrentGame } from "../../../engine/CurrentGame";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
+import { CurrentGame } from "@/engine/CurrentGame";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIControl, GUILabel, GUIButton } from "@/gui";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * CharGenCustomPanel class.

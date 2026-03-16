@@ -179,7 +179,7 @@ export class ModuleItem extends ModuleObject {
 
   isDisguise(){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Disguise)){
         return true;
       }
@@ -189,7 +189,7 @@ export class ModuleItem extends ModuleObject {
 
   getDisguiseAppearance(){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Disguise)){
         return property.getValue();
       }
@@ -199,7 +199,7 @@ export class ModuleItem extends ModuleObject {
 
   getDisguiseAppearanceId(){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Disguise)){
         return property.subType;
       }
@@ -242,7 +242,7 @@ export class ModuleItem extends ModuleObject {
   getACBonus(){
     let bonus = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Armor)){
         bonus += property.getValue();
       }
@@ -260,7 +260,7 @@ export class ModuleItem extends ModuleObject {
   getAttackBonus(): number {
     let bonus = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.AttackBonus)){
         bonus += property.getValue();
         break;
@@ -317,7 +317,7 @@ export class ModuleItem extends ModuleObject {
 
   getMonsterDamage(){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Monster_Damage)){
         return property.getValue();
       }
@@ -327,7 +327,7 @@ export class ModuleItem extends ModuleObject {
 
   hasDamageBonus(): boolean {
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
         return true;
       }
@@ -337,7 +337,7 @@ export class ModuleItem extends ModuleObject {
 
   getDamageBonus(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
         return property.getValue();
       }
@@ -347,7 +347,7 @@ export class ModuleItem extends ModuleObject {
 
   getDamageBonusType(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
         return property.getSubType()?.id || 0;
       }
@@ -369,7 +369,7 @@ export class ModuleItem extends ModuleObject {
 
   getSTRBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 0)){
         return property.getValue();
       }
@@ -379,7 +379,7 @@ export class ModuleItem extends ModuleObject {
 
   getDEXBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 1)){
         return property.getValue();
       }
@@ -389,7 +389,7 @@ export class ModuleItem extends ModuleObject {
 
   getCONBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 2)){
         return property.getValue();
       }
@@ -399,7 +399,7 @@ export class ModuleItem extends ModuleObject {
 
   getINTBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 3)){
         return property.getValue();
       }
@@ -409,7 +409,7 @@ export class ModuleItem extends ModuleObject {
 
   getWISBonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 4)){
         return property.getValue();
       }
@@ -419,7 +419,7 @@ export class ModuleItem extends ModuleObject {
 
   getCHABonus(){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 5)){
         return property.getValue();
       }
@@ -429,7 +429,7 @@ export class ModuleItem extends ModuleObject {
 
   isUpgradable(){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(property.upgradeType >= 0){
         return true;
       }
@@ -439,13 +439,13 @@ export class ModuleItem extends ModuleObject {
 
   castAmmunitionAtTarget(oCaster: ModuleObject, oTarget: ModuleObject){
     if(typeof oTarget != 'undefined'){
-      let ammunitiontype = this.baseItem.ammunitionType;
+      const ammunitiontype = this.baseItem.ammunitionType;
       if( ammunitiontype >= 1 ){
         const _2DA = GameState.TwoDAManager.datatables.get('ammunitiontypes');
         if(_2DA){
-          let ammunition = _2DA.rows[ammunitiontype];
+          const ammunition = _2DA.rows[ammunitiontype];
           if(typeof ammunition != 'undefined'){
-            
+
           }
         }
       }
@@ -455,7 +455,7 @@ export class ModuleItem extends ModuleObject {
 
   useItemOnObject(oCaster: ModuleCreature, oTarget: ModuleObject){
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       if(!property.isUseable()){ continue; }
 
       if(property.is(ModuleItemProperty.CastSpell)){
@@ -515,7 +515,7 @@ export class ModuleItem extends ModuleObject {
         this.initProperties();
         return true;
       }else{
-        console.error('Failed to load ModuleItem template');
+        log.error('Failed to load ModuleItem template');
         if(this.template instanceof GFFObject){
           this.initProperties();
         }
@@ -530,7 +530,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   async loadModel(): Promise<OdysseyModel3D> {
-    if(!this.baseItem){ 
+    if(!this.baseItem){
       this.model = new OdysseyModel3D;
       return this.model;
     }
@@ -564,7 +564,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   nthStringConverter(name = '', nth = 1){
-    let value = nth.toString();
+    const value = nth.toString();
     name = name.substr(0, name.length - value.length);
     return name + value;
   }
@@ -591,7 +591,7 @@ export class ModuleItem extends ModuleObject {
       }
       return;
     }
-    
+
     //power down
     switch(currentAnimL.name){
       case 'powered':
@@ -616,11 +616,11 @@ export class ModuleItem extends ModuleObject {
   }
 
   getSpells(){
-    let spells = [];
+    const spells = [];
 
     //propertyName, subType, costTable, costValue, param1, param1Value, chanceAppear, usesPerDay, useable, upgradeType
     for(let i = 0, len = this.properties.length; i < len; i++){
-      let property = this.properties[i];
+      const property = this.properties[i];
       //Activate Item
       if(property.propertyName == ModuleItemProperty.CastSpell){
         spells.push(new TalentSpell(property.subType));
@@ -797,10 +797,10 @@ export class ModuleItem extends ModuleObject {
   }
 
   onEquip(oCreature: ModuleCreature){
-    console.log('ModuleItem.onEquip', oCreature, this);
+    log.debug('ModuleItem.onEquip', oCreature, this);
     if(this.isDisguise()){
       oCreature.removeEffectsByType( GameEffectType.EffectDisguise ); //EFFECT_DISGUISE
-      let eDisguise = new EffectDisguise();
+      const eDisguise = new EffectDisguise();
       eDisguise.setInt(0, this.getDisguiseAppearanceId());
       eDisguise.setCreator(this);
       eDisguise.setAttachedObject(oCreature);
@@ -815,7 +815,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   onUnEquip(oCreature: ModuleCreature){
-    console.log('ModuleItem.onUnEquip', oCreature, this);
+    log.debug('ModuleItem.onUnEquip', oCreature, this);
     oCreature.removeEffectsByCreator(this);
     if(GameState.PartyManager.party.indexOf(oCreature) >= 0){
       GameState.InventoryManager.addItem(this);

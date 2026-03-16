@@ -1,5 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import '../styles/GOGWidget.scss';
+
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Default);
+import "@/apps/launcher/styles/GOGWidget.scss";
 
 // Types and Interfaces
 export enum ContentType {
@@ -49,7 +53,7 @@ const CURRENCY_EXCEPTIONS_FORMATTING = ["RUB", "CNY"];
 const formatPrice = (price: number, currency: string): string => {
   // GOG API returns prices in cents, so we need to convert to dollars
   const priceInDollars = price / 100;
-  
+
   if (CURRENCY_EXCEPTIONS_FORMATTING.includes(currency)) {
     return priceInDollars.toString();
   }
@@ -116,7 +120,7 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
       setError(null);
 
       const productResponse = await fetchProductData(productId);
-      
+
       if (!productResponse || !productResponse._embedded || !productResponse._embedded.product) {
         throw new Error('Invalid product data received');
       }
@@ -147,13 +151,13 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
       // Load price data
       try {
         const priceResponse = await fetchPriceData(`52756712356612660`, productId);
-        
+
         if (priceResponse && priceResponse._embedded && priceResponse._embedded.prices && priceResponse._embedded.prices.length > 0) {
           const price = priceResponse._embedded.prices[0];
           const basePrice = parseInt(price.basePrice) || 0;
           const finalPrice = parseInt(price.finalPrice) || 0;
           const currency = price.currency?.code || 'USD';
-          
+
           setPriceData({
             basePrice,
             finalPrice,
@@ -169,10 +173,10 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
             currency
           } : null);
         } else {
-          console.warn('No price data found in response:', priceResponse);
+          log.warn('No price data found in response:', priceResponse);
         }
       } catch (priceError) {
-        console.warn('Failed to load price data:', priceError);
+        log.warn('Failed to load price data:', priceError);
         // Don't fail the entire widget if price loading fails
       }
 
@@ -229,8 +233,8 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
         {/* Product Image */}
         {product.imageFormatterTemplate && (
           <div className="gog-widget__image">
-            <img 
-              src={product.getImage ? product.getImage(imageFormatter) : product.imageFormatterTemplate} 
+            <img
+              src={product.getImage ? product.getImage(imageFormatter) : product.imageFormatterTemplate}
               alt={product.title}
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -242,7 +246,7 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
         {/* Product Info */}
         <div className="gog-widget__content">
           <h3 className="gog-widget__title">{product.title}</h3>
-          
+
           {/* Operating Systems */}
           {product.supportedOs.length > 0 && (
             <div className="gog-widget__os">
@@ -309,7 +313,7 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
 
           {/* Store Link */}
           {product.storeUri && (
-            <button 
+            <button
               className="gog-widget__store-button"
               onClick={handleStoreClick}
               disabled={!product.isAvailableForSale && !product.isPreorder}

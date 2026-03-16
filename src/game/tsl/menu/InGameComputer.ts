@@ -1,6 +1,8 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIListBox } from "../../../gui";
-import { InGameComputer as K1_InGameComputer } from "../../kotor/KOTOR";
+import { InGameComputer as K1_InGameComputer } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUIControl, GUILabel, GUIListBox } from "@/gui";
+import { DLGNode } from "@/resource/DLGNode";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /**
  * InGameComputer class.
@@ -11,6 +13,8 @@ import { InGameComputer as K1_InGameComputer } from "../../kotor/KOTOR";
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+const log = createScopedLogger(LogScope.Game);
+
 export class InGameComputer extends K1_InGameComputer {
 
   declare LBL_REP_UNITS: GUILabel;

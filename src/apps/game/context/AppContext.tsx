@@ -1,6 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { AppState } from "../states/AppState";
-import * as KotOR from "../KotOR";
+
+import * as KotOR from "@/apps/game/KotOR";
+import { AppState } from "@/apps/game/states/AppState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 export interface AppProviderValues {
   appState: [typeof AppState];
@@ -37,7 +41,7 @@ export const AppProvider = (props: any) => {
   const [loadingScreenLogoURL, setLoadingScreenLogoURL] = useState<string>('');
 
   const onAppReady = () => {
-    console.log('onAppReady', AppState.eulaAccepted, AppState.directoryLocated);
+    log.debug('onAppReady', AppState.eulaAccepted, AppState.directoryLocated);
     setAppReady(true);
     setGameKey(AppState.gameKey);
     setShowEULAModal(!AppState.eulaAccepted);
@@ -45,7 +49,7 @@ export const AppProvider = (props: any) => {
   }
 
   const onPreload = () => {
-    console.log('onPreload', AppState.eulaAccepted, AppState.directoryLocated);
+    log.debug('onPreload', AppState.eulaAccepted, AppState.directoryLocated);
     setShowEULAModal(!AppState.eulaAccepted);
     setShowGrantModal(AppState.eulaAccepted && !AppState.directoryLocated);
   }
@@ -103,7 +107,7 @@ export const AppProvider = (props: any) => {
     }
   }, []);
 
-  useEffect(() => { 
+  useEffect(() => {
     window.addEventListener('keypress', onKeyPress);
     return () => {
       window.removeEventListener('keypress', onKeyPress);

@@ -1,5 +1,5 @@
-import type { ModuleObject } from "../../module";
-import type { PerceptionType } from "../../enums/engine/PerceptionType";
+import type { PerceptionType } from "@/enums/engine/PerceptionType";
+import type { ModuleObject } from "@/module";
 
 /**
  * IPerceptionInfo interface.

@@ -1,8 +1,9 @@
-import { GameState } from "../GameState";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { TalkVolume } from "../enums/engine/TalkVolume";
-import { Action } from "./Action";
+import { Action } from "@/actions/Action";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { TalkVolume } from "@/enums/engine/TalkVolume";
+import { GameState } from "@/GameState";
+
 
 /**
  * ActionSpeakStrRef class.
@@ -25,7 +26,7 @@ export class ActionSpeakStrRef extends Action {
     
   }
 
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
     const str = GameState.TLKManager.GetStringById( this.getParameter<number>(0) ).Value;
     this.owner.speakString(str, this.getParameter<TalkVolume>(1));
     return ActionStatus.COMPLETE;

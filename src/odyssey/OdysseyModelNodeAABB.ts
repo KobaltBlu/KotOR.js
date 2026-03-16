@@ -1,10 +1,12 @@
 import * as THREE from "three";
-import { IOdysseyModelAABBNode } from "../interface/odyssey/IOdysseyModelAABBNode";
-import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
-import type { OdysseyModelNode } from "./OdysseyModelNode";
-import type { OdysseyModel } from "./OdysseyModel";
-import { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
+
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { IOdysseyModelAABBNode } from "@/interface/odyssey/IOdysseyModelAABBNode";
+import type { OdysseyModel } from "@/odyssey/OdysseyModel";
+import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
+import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
+
 
 /**
  * OdysseyModelNodeAABB class.
@@ -31,7 +33,7 @@ export class OdysseyModelNodeAABB extends OdysseyModelNodeMesh {
   readBinary(odysseyModel: OdysseyModel){
     super.readBinary(odysseyModel);
 
-    let rootNodeOffset = this.odysseyModel.mdlReader.readUInt32();
+    const rootNodeOffset = this.odysseyModel.mdlReader.readUInt32();
     this.rootAABBNode = this.readBinaryAABBNode(rootNodeOffset);
 
     let face;
@@ -50,7 +52,7 @@ export class OdysseyModelNodeAABB extends OdysseyModelNodeMesh {
   readBinaryAABBNode(aabbNodeOffset: number){
     this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + aabbNodeOffset);
 
-    let aabb: IOdysseyModelAABBNode = {
+    const aabb: IOdysseyModelAABBNode = {
       type: 'AABB',
       box: new THREE.Box3(
         new THREE.Vector3(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle()),

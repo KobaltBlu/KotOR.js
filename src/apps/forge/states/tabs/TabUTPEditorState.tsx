@@ -1,18 +1,23 @@
 import React from "react";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTPEditor } from "../../components/tabs/tab-utp-editor/TabUTPEditor";
-import { UI3DRenderer } from "../../UI3DRenderer";
-import { UI3DRendererView } from "../../components/UI3DRendererView";
-import { ForgePlaceable } from "../../module-editor/ForgePlaceable";
+
+import { TabUTPEditor } from "@/apps/forge/components/tabs/tab-utp-editor/TabUTPEditor";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
+
 
 export class TabUTPEditorState extends TabState {
   tabName: string = `UTP`;
   placeable: ForgePlaceable = new ForgePlaceable();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.placeable.blueprint;
   }
@@ -66,7 +71,7 @@ export class TabUTPEditorState extends TabState {
   center: THREE.Vector3 = new THREE.Vector3();
   size: THREE.Vector3 = new THREE.Vector3();
   origin: THREE.Vector3 = new THREE.Vector3();
-  
+
   updateCameraFocus(){
     const model = this.placeable.model;
     if(!model) return;
@@ -119,7 +124,7 @@ export class TabUTPEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-  
+
   updateFile(){
     this.placeable.exportToBlueprint();
   }

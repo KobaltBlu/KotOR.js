@@ -1,7 +1,10 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { TalentFeat } from "../../../talents";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { TalentFeat } from "@/talents";
 
 /**
  * CharGenQuickOrCustom class.
@@ -65,7 +68,7 @@ export class CharGenQuickOrCustom extends GameMenu {
           this.manager.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
           this.manager.CharGenMain.open();
         }catch(e){
-          console.log(e);
+          log.info(e);
         }
       });
 

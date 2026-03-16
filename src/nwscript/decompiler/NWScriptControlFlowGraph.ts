@@ -227,7 +227,7 @@ export class NWScriptControlFlowGraph {
     // Step 4: Identify entry and exit blocks
     this.identifyEntryAndExitBlocks();
 
-    // Step 5: Compute dominators (for loop detection and decompilation)
+    // Step 5: Compute dominators (for loop detection and conversion)
     // Note: Loop identification is done by NWScriptControlStructureBuilder, not here
     this.computeDominators();
 
@@ -701,9 +701,9 @@ export class NWScriptControlFlowGraph {
   /**
    * Compute dominators for each block, ignoring CALL edges (and optionally RETURN edges)
    * A block A dominates block B if all intra-procedural paths from entry to B go through A
-   * @param excludeReturn Whether to also exclude RETURN edges (default: false)
+   * @param _excludeReturn Whether to also exclude RETURN edges (default: false)
    */
-  private computeDominators(excludeReturn: boolean = false): void {
+  private computeDominators(_excludeReturn: boolean = false): void {
     if (!this.entryBlock) return;
 
     // Initialize: entry block dominates itself
@@ -860,7 +860,7 @@ export class NWScriptControlFlowGraph {
 
     // Also mark blocks reachable from subroutine entries as reachable
     // (they're reachable via JSR calls)
-    for (const [entryAddress, entryBlock] of this.subroutineEntries) {
+    for (const [_entryAddress, entryBlock] of this.subroutineEntries) {
       if (entryBlock.isUnreachable) {
         // This subroutine might be called, so mark it as reachable
         // We'll do a BFS from this entry point too
@@ -1094,7 +1094,7 @@ export class NWScriptControlFlowGraph {
   }
 
   /**
-   * Get all blocks in topological order (for decompilation)
+   * Get all blocks in topological order (for conversion)
    */
   getTopologicalOrder(): NWScriptBasicBlock[] {
     const visited = new Set<NWScriptBasicBlock>();
@@ -1359,7 +1359,7 @@ export class NWScriptControlFlowGraph {
     // Basic validation: check that exit blocks post-dominate themselves
     for (const exitBlock of this.exitBlocks) {
       if (!exitBlock.postDominators.has(exitBlock)) {
-        console.warn(`CFG Warning: Exit block ${exitBlock.id} does not post-dominate itself`);
+        log.warn(`CFG Warning: Exit block ${exitBlock.id} does not post-dominate itself`);
       }
     }
 
@@ -1480,7 +1480,7 @@ export class NWScriptControlFlowGraph {
     if (blocks.length === 1) return blocks[0];
 
     // Start with dominators of first block
-    let common = new Set(blocks[0].dominators);
+    const common = new Set(blocks[0].dominators);
 
     // Intersect with dominators of other blocks
     for (let i = 1; i < blocks.length; i++) {
@@ -1516,7 +1516,7 @@ export class NWScriptControlFlowGraph {
     if (blocks.length === 1) return blocks[0];
 
     // Start with post-dominators of first block
-    let common = new Set(blocks[0].postDominators);
+    const common = new Set(blocks[0].postDominators);
 
     // Intersect with post-dominators of other blocks
     for (let i = 1; i < blocks.length; i++) {
@@ -2180,8 +2180,8 @@ export class NWScriptControlFlowGraph {
    * This is the union of dominance frontiers, iterated until fixed point
    */
   getIteratedDominanceFrontier(blocks: Set<NWScriptBasicBlock>): Set<NWScriptBasicBlock> {
-    let df = new Set<NWScriptBasicBlock>();
-    let worklist = new Set(blocks);
+    const df = new Set<NWScriptBasicBlock>();
+    const worklist = new Set(blocks);
 
     while (worklist.size > 0) {
       const current = Array.from(worklist)[0];
@@ -2345,7 +2345,7 @@ export class NWScriptControlFlowGraph {
   getChildLoops(header: NWScriptBasicBlock): Set<NWScriptBasicBlock> {
     const children = new Set<NWScriptBasicBlock>();
     
-    for (const [otherHeader, loopBlocks] of this.naturalLoops) {
+    for (const [otherHeader, _loopBlocks] of this.naturalLoops) {
       if (otherHeader === header) continue;
       
       // Check if otherHeader's loop is nested within header's loop

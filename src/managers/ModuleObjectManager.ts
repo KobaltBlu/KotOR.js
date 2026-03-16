@@ -195,7 +195,7 @@ export class ModuleObjectManager {
 
   public static GetNearestObjectByTag(sTag = '', oObject: ModuleObject, iNum = 0){
     sTag = sTag.toLowerCase();
-    let results: ModuleObject[] = [];
+    const results: ModuleObject[] = [];
     let len = this.module.area.placeables.length;
     for(let i = 0; i < len; i++){
       if(this.module.area.placeables[i].getTag().toLowerCase() == sTag)
@@ -255,8 +255,8 @@ export class ModuleObjectManager {
     results.sort(
       function(a,b) {
         try{
-          let distanceA = a.getModel().position.distanceTo(oObject.getModel().position);
-          let distanceB = b.getModel().position.distanceTo(oObject.getModel().position);
+          const distanceA = a.getModel().position.distanceTo(oObject.getModel().position);
+          const distanceB = b.getModel().position.distanceTo(oObject.getModel().position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
         }catch(e){
           return 0;
@@ -283,8 +283,8 @@ export class ModuleObjectManager {
     results.sort(
       function(a,b) {
         try{
-          let distanceA = a.position.distanceTo(oObject.position);
-          let distanceB = b.position.distanceTo(oObject.position);
+          const distanceA = a.position.distanceTo(oObject.position);
+          const distanceB = b.position.distanceTo(oObject.position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
         }catch(e){
           return 0;
@@ -346,8 +346,8 @@ export class ModuleObjectManager {
     results.sort(
       function(a,b) {
         try{
-          let distanceA = a.position.distanceTo(oObject.position);
-          let distanceB = b.position.distanceTo(oObject.position);
+          const distanceA = a.position.distanceTo(oObject.position);
+          const distanceB = b.position.distanceTo(oObject.position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
         }catch(e){
           return 0;
@@ -498,7 +498,7 @@ export class ModuleObjectManager {
                 results.push(list[i]);
               }
             }
-          break;  
+          break;
           case ReputationType.NEUTRAL:
             for(let i = 0; i < list.length; i++){
               if(list[i].isDead()){ continue; }
@@ -595,7 +595,7 @@ export class ModuleObjectManager {
   public static GetObjectsInShape(shape = -1, size = 1, target: EngineLocation, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){
 
     let object_pool: ModuleObject[] = [];
-    let results: ModuleObject[] = [];
+    const results: ModuleObject[] = [];
 
     /*
     int    ModuleObjectType.CREATURE         = 1;
@@ -611,7 +611,7 @@ export class ModuleObjectManager {
     int    OBJECT_TYPE_ALL              = 32767;
     */
 
-    //console.log('GetObjectsInShape', objectFilter, shape);
+    //log.info('GetObjectsInShape', objectFilter, shape);
 
     if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){ //CREATURE
       object_pool = object_pool.concat(this.module.area.creatures);
@@ -622,33 +622,33 @@ export class ModuleObjectManager {
     }
 
     if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){ //TRIGGER
-      object_pool = object_pool.concat(this.module.area.triggers); 
+      object_pool = object_pool.concat(this.module.area.triggers);
     }
 
     if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){ //DOOR
-      object_pool = object_pool.concat(this.module.area.doors); 
+      object_pool = object_pool.concat(this.module.area.doors);
     }
 
     if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE){ //AOE
-              
+
     }
 
     if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){ //WAYPOINTS
       object_pool = object_pool.concat(this.module.area.waypoints);
     }
-    
+
     if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){ //PLACEABLE
       object_pool = object_pool.concat(this.module.area.placeables);
     }
 
     if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){ //STORE
-          
+
     }
-    
+
     if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER){ //ENCOUNTER
-          
+
     }
-    
+
     if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){ //SOUND
       object_pool = object_pool.concat(this.module.area.sounds);
     }

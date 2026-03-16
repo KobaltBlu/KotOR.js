@@ -1,18 +1,22 @@
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, LBL_MapView } from "../../../gui";
-import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import * as THREE from "three";
-import { Anchor } from "../../../enums/gui/Anchor";
-import { SSFType } from "../../../enums/resource/SSFType";
-import { TalentObject } from "../../../talents";
-import { EngineState } from "../../../enums/engine/EngineState";
-import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
-import { BitWise } from "../../../utility/BitWise";
-import { KeyMapAction, ModuleObjectType } from "../../../enums";
-import type { ModuleObject } from "../../../module/ModuleObject";
+
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { EngineState } from "@/enums/engine/EngineState";
+import { Anchor } from "@/enums/gui/Anchor";
+import { SSFType } from "@/enums/resource/SSFType";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_MapView } from "@/gui";
+import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import { TalentObject } from "@/talents";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { KeyMapAction, ModuleObjectType } from "@/enums";
 
 const TLK_TOOLTIP_FULL_HEALTH = 42498;
 
@@ -20,12 +24,12 @@ const TLK_TOOLTIP_SOLOMODE = 48035;
 const TLK_TOOLTIP_STEALTH = 247;
 const TLK_TOOLTIP_PAUSE = 48019;
 
-const TLK_TOOLTIP_QUEST     = 48218;
+const TLK_TOOLTIP_QUEST = 48218;
 const TLK_TOOLTIP_EQUIPMENT = 48219;
 const TLK_TOOLTIP_INVENTORY = 48220;
-const TLK_TOOLTIP_MAP       = 48221;
-const TLK_TOOLTIP_OPTIONS   = 48222;
-const TLK_TOOLTIP_MESSAGES  = 48223;
+const TLK_TOOLTIP_MAP = 48221;
+const TLK_TOOLTIP_OPTIONS = 48222;
+const TLK_TOOLTIP_MESSAGES = 48223;
 const TLK_TOOLTIP_ABILITIES = 48224;
 const TLK_TOOLTIP_CHARACTER = 48225;
 
@@ -496,7 +500,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   TogglePartyMember(nth = 0, bVisible = false) {
-    if (!bVisible) { 
+    if (!bVisible) {
       this.getControlByName('LBL_CMBTEFCTRED' + (nth + 1))?.hide();
       this.getControlByName('LBL_CMBTEFCTINC' + (nth + 1))?.hide();
       this.getControlByName('LBL_LEVELUP' + (nth + 1))?.hide();
@@ -516,30 +520,30 @@ export class InGameOverlay extends GameMenu {
       this.getControlByName('PB_VIT' + (nth + 1))?.show();
       if (!GameState.module.area.miniGame && GameState.PartyManager.party[nth]) {
         switch (nth) {
-        case 0:
-          if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP1').pulsing = true;
-            this.getControlByName('LBL_LEVELUP1')?.show();
-          } else {
-            this.getControlByName('LBL_LEVELUP1')?.hide();
-          }
-          break;
-        case 1:
-          if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP3').pulsing = true;
-            this.getControlByName('LBL_LEVELUP3')?.show();
-          } else {
-            this.getControlByName('LBL_LEVELUP3')?.hide();
-          }
-          break;
-        case 2:
-          if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP2').pulsing = true;
-            this.getControlByName('LBL_LEVELUP2')?.show();
-          } else {
-            this.getControlByName('LBL_LEVELUP2')?.hide();
-          }
-          break;
+          case 0:
+            if (GameState.PartyManager.party[nth].canLevelUp()) {
+              this.getControlByName('LBL_LEVELUP1').pulsing = true;
+              this.getControlByName('LBL_LEVELUP1')?.show();
+            } else {
+              this.getControlByName('LBL_LEVELUP1')?.hide();
+            }
+            break;
+          case 1:
+            if (GameState.PartyManager.party[nth].canLevelUp()) {
+              this.getControlByName('LBL_LEVELUP3').pulsing = true;
+              this.getControlByName('LBL_LEVELUP3')?.show();
+            } else {
+              this.getControlByName('LBL_LEVELUP3')?.hide();
+            }
+            break;
+          case 2:
+            if (GameState.PartyManager.party[nth].canLevelUp()) {
+              this.getControlByName('LBL_LEVELUP2').pulsing = true;
+              this.getControlByName('LBL_LEVELUP2')?.show();
+            } else {
+              this.getControlByName('LBL_LEVELUP2')?.hide();
+            }
+            break;
         }
       }
     }
@@ -550,8 +554,8 @@ export class InGameOverlay extends GameMenu {
       TextureLoader.Load(sTexture).then((texture: OdysseyTexture) => {
         this.miniMap.setTexture(texture);
       });
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e);
     }
   }
 
@@ -559,8 +563,8 @@ export class InGameOverlay extends GameMenu {
     if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature) && GameState.CursorManager.selectedObject.isDead())
       return false;
     return (
-      !this.manager.MenuContainer.bVisible && 
-      GameState.CursorManager.reticle2.visible && 
+      !this.manager.MenuContainer.bVisible &&
+      GameState.CursorManager.reticle2.visible &&
       BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleObject) &&
       !BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleRoom)
     );
@@ -949,20 +953,20 @@ export class InGameOverlay extends GameMenu {
     this.TogglePartyMember(0, false);
     this.TogglePartyMember(1, false);
     this.TogglePartyMember(2, false);
-    
+
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-      let partyMember = GameState.PartyManager.party[i];
+      const partyMember = GameState.PartyManager.party[i];
       let id = i;
       switch (i) {
-      case 1:
-        id = 2;
-        break;
-      case 2:
-        id = 1;
-        break;
+        case 1:
+          id = 2;
+          break;
+        case 2:
+          id = 1;
+          break;
       }
       this.TogglePartyMember(id, true);
-      let pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
+      const pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
       const portraitResRef = partyMember.getPortraitResRef();
       if (pmBG.getFillTextureName() != portraitResRef) {
         pmBG.setFillTextureName(portraitResRef);
@@ -980,10 +984,10 @@ export class InGameOverlay extends GameMenu {
     }
     if (oPC.excitedDuration || oPC.combatRound.scheduledActionList.length) {
       this.showCombatUI();
-      let action0 = oPC.combatRound.action;
-      let action1 = oPC.combatRound.scheduledActionList[0];
-      let action2 = oPC.combatRound.scheduledActionList[1];
-      let action3 = oPC.combatRound.scheduledActionList[2];
+      const action0 = oPC.combatRound.action;
+      const action1 = oPC.combatRound.scheduledActionList[0];
+      const action2 = oPC.combatRound.scheduledActionList[1];
+      const action3 = oPC.combatRound.scheduledActionList[2];
       if (action0 != undefined) {
         if (this.LBL_QUEUE0.getFillTextureName() != action0.iconResRef) {
           this.LBL_QUEUE0.setFillTextureName(action0.iconResRef);
@@ -1055,7 +1059,7 @@ export class InGameOverlay extends GameMenu {
         GameState.getCurrentPlayer().clearAllActions();
         GameState.CursorManager.selectedObject.onClick(GameState.getCurrentPlayer());
       } else {
-        let distance = GameState.getCurrentPlayer().position.distanceTo(GameState.CursorManager.selectedObject.position);
+        const distance = GameState.getCurrentPlayer().position.distanceTo(GameState.CursorManager.selectedObject.position);
         if (distance > 1.5) {
           GameState.getCurrentPlayer().clearAllActions();
           GameState.CursorManager.selectedObject.clearAllActions();
@@ -1064,5 +1068,5 @@ export class InGameOverlay extends GameMenu {
       }
     }
   }
-  
+
 }

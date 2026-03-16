@@ -1,5 +1,5 @@
-import type { GUILabel, GUIListBox } from "../../../gui";
-import { MenuDebug as K1_MenuDebug } from "../../kotor/KOTOR";
+import { MenuDebug as K1_MenuDebug } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIListBox } from "@/gui";
 
 /**
  * MenuDebug class.

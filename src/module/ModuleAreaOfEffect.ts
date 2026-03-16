@@ -1,13 +1,17 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { ModuleObject } from "./ModuleObject";
-import { AreaOfEffectShape } from "../enums/module/AreaOfEffectShape";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { GameEffectFactory } from "../effects/GameEffectFactory";
-import { GameState } from "../GameState";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import { AreaOfEffectShape } from "@/enums/module/AreaOfEffectShape";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { ModuleObject } from "@/module/ModuleObject";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * ModuleAreaOfEffect class.
@@ -190,7 +194,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
   }
 
   save(): GFFObject {
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'AOE ';
 
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
@@ -255,11 +259,11 @@ export class ModuleAreaOfEffect extends ModuleObject {
     gff.RootNode.addField( this.actionQueueToActionList() );
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
     
     //Effects
-    let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
+    const effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
     for(let i = 0; i < this.effects.length; i++){
       effectList.addChildStruct( this.effects[i].save() );
     }
@@ -268,7 +272,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue( this.position.y );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue( this.position.z );
 
-    let theta = this.rotation.z * Math.PI;
+    const theta = this.rotation.z * Math.PI;
 
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue( 1 * Math.cos(theta) );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue( 1 * Math.sin(theta) );

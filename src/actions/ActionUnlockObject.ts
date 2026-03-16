@@ -1,27 +1,28 @@
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { GameState } from "../GameState";
-import { SSFType } from "../enums/resource/SSFType";
-import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-// import type { ModulePlaceable } from "../module/ModulePlaceable";
-// import type { ModuleDoor } from "../module/ModuleDoor";
-import type { ModuleItem } from "../module/ModuleItem";
-import type { ModuleObject } from "../module/ModuleObject";
-import { SkillType } from "../enums/nwscript/SkillType";
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
-import { ModuleItemProperty } from "../enums/module/ModuleItemProperty";
-import { SignalEventType } from "../enums/events/SignalEventType";
+import { Action } from "@/actions/Action";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { SignalEventType } from "@/enums/events/SignalEventType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleItemProperty } from "@/enums/module/ModuleItemProperty";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import { SSFType } from "@/enums/resource/SSFType";
+import { GameState } from "@/GameState";
+import type { ModuleDoor } from "@/module/ModuleDoor";
+import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModulePlaceable } from "@/module/ModulePlaceable";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
+
 
 /**
  * ActionUnlockObject class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionUnlockObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -40,7 +41,7 @@ export class ActionUnlockObject extends Action {
     //PARAMS
     // 0 - dword: object id
     // 1 - dword: item id (security tunneler)
-    
+
   }
 
   update(delta: number = 0): ActionStatus {
@@ -53,17 +54,17 @@ export class ActionUnlockObject extends Action {
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModulePlaceable)){
       return ActionStatus.FAILED;
     }
-    
+
     if(!this.shouted){
       this.shouted = true;
       this.owner.playSoundSet(SSFType.UNLOCK);
     }
 
-    let distance = Utility.Distance2D(this.owner.position, this.target.position);
+    const distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 1.5){
-        
+
       // this.owner.openSpot = undefined;
-      let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+      const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -80,9 +81,9 @@ export class ActionUnlockObject extends Action {
 
       if(this.oItem && !this.usedItem){
         for(let i = 0, len = this.oItem.properties.length; i < len; i++){
-          let property = this.oItem.properties[i];
+          const property = this.oItem.properties[i];
           if(!property.isUseable()){ continue; }
-    
+
           if(property.is(ModuleItemProperty.ThievesTools)){
             const effect = new GameState.GameEffectFactory.EffectSkillIncrease();
             effect.setCreator(this.owner);
@@ -99,7 +100,7 @@ export class ActionUnlockObject extends Action {
       this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
       this.owner.force = 0;
       this.owner.speed = 0;
-                        
+
       if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
         this.owner.setFacingObject( this.target );
 
@@ -145,7 +146,7 @@ export class ActionUnlockObject extends Action {
       }
 
       return ActionStatus.IN_PROGRESS;
-      
+
     }
 
     return ActionStatus.FAILED;

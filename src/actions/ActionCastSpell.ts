@@ -1,15 +1,19 @@
-import { Action } from "./Action";
-import { SpellCastInstance } from "../combat";
-import { ModuleObjectType } from "../enums";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { GameState } from "../GameState";
-// import { TalentSpell } from "../talents/TalentSpell";
-import { BitWise } from "../utility/BitWise";
-import type { ModuleObject } from "../module/ModuleObject";
+import { Action } from "@/actions/Action";
+import { SpellCastInstance } from "@/combat";
+import { ModuleObjectType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { GameState } from "@/GameState";
+// import { TalentSpell } from "@/talents/TalentSpell";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Action);
 
 /**
  * ActionCastSpell class.

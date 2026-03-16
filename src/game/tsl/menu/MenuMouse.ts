@@ -1,5 +1,5 @@
-import type { GUILabel, GUIListBox, GUISlider, GUICheckBox, GUIButton } from "../../../gui";
-import { MenuMouse as K1_MenuMouse } from "../../kotor/KOTOR";
+import { MenuMouse as K1_MenuMouse } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIListBox, GUISlider, GUICheckBox, GUIButton } from "@/gui";
 
 /**
  * MenuMouse class.

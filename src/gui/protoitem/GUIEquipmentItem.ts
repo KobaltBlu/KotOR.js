@@ -1,12 +1,18 @@
 import { GUIButton, GUIListBox, GUIProtoItem } from "..";
-import { GameState } from "../../GameState";
-import { GameEngineType } from "../../enums/engine";
-import { TextureType } from "../../enums/loaders/TextureType";
-import { TextureLoader } from "../../loaders";
-import { GFFStruct } from "../../resource/GFFStruct";
-import { OdysseyTexture } from "../../three/odyssey/OdysseyTexture";
-import { GUIControl } from "../GUIControl";
-import { GameMenu } from "../GameMenu";
+
+import { GameEngineType } from "@/enums/engine";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import { TextureLoader } from "@/loaders";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+
+const log = createScopedLogger(LogScope.Game);
 import * as THREE from "three";
 
 /**
@@ -33,19 +39,19 @@ export class GUIEquipmentItem extends GUIProtoItem {
     try{
       super.createControl();
       //Create the actual control elements below
-      let button = new GUIButton(this.menu, this.control, this, this.scale);
+      const button = new GUIButton(this.menu, this.control, this, this.scale);
       button.extent.width = 190;
       button.setText(this.node.getName());
       button.autoCalculatePosition = false;
       this.children.push(button);
 
-      let _buttonWidget = button.createControl();
+      const _buttonWidget = button.createControl();
       _buttonWidget.position.x = (this.extent.width - button.extent.width) / 2;
       _buttonWidget.position.y = 0;
       _buttonWidget.position.z = this.zIndex + 1;
       this.widget.add(_buttonWidget);
 
-      let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
+      const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
       buttonIcon.setText(this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '');
       buttonIcon.disableTextAlignment();
       buttonIcon.extent.width = 55;
@@ -58,7 +64,7 @@ export class GUIEquipmentItem extends GUIProtoItem {
       buttonIcon.autoCalculatePosition = false;
       this.children.push(buttonIcon);
 
-      let _buttonIconWidget = buttonIcon.createControl();
+      const _buttonIconWidget = buttonIcon.createControl();
       _buttonIconWidget.position.x = -(this.extent.width/2 - buttonIcon.extent.width/2);
       _buttonIconWidget.position.y = 0;
       _buttonIconWidget.position.z = this.zIndex + 1;
@@ -78,7 +84,7 @@ export class GUIEquipmentItem extends GUIProtoItem {
       this.widget.userData.iconMaterial.transparent = true;
       this.widget.userData.iconMaterial.visible = false;
       this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
-      //console.log(this.node.getIcon());
+      //log.info(this.node.getIcon());
       TextureLoader.enQueue(this.node.getIcon(), this.widget.userData.iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         this.widget.userData.iconMaterial.visible = true;
       });
@@ -157,7 +163,7 @@ export class GUIEquipmentItem extends GUIProtoItem {
       _buttonIconWidget.add(this.widget.userData.spriteGroup);
       return this.widget;
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
     return this.widget;
 

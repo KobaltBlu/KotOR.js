@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from "react"
-import { useApp } from "../context/AppContext";
-import * as KotOR from "../KotOR";
-import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "../../../nwscript/NWScriptOPCodes";
-import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import React, { useEffect, useState } from "react";
+
+import { useApp } from "@/apps/debugger/context/AppContext";
+import * as KotOR from "@/apps/debugger/KotOR";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { IPCMessageTypeDebug } from "@/enums/server/ipc/IPCMessageTypeDebug";
+import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "@/nwscript/NWScriptOPCodes";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Debug);
 import {} from "@fortawesome/free-solid-svg-icons";
 
 /**
@@ -17,7 +21,7 @@ const InstructionType = (props: {type: number}) => {
     switch(props.type){
       case 0x00:
         setTypeName('VOID');
-        break;  
+        break;
       case 0x03:
         setTypeName('INTEGER');
         break;
@@ -67,7 +71,7 @@ const InstructionValue = (props: {instruction: KotOR.NWScriptInstruction}) => {
       case 0x00:
         setVal('');
         setType('void');
-        break;  
+        break;
       case 0x03:
         setVal(instruction.integer?.toString() || '');
         setType('integer');
@@ -176,22 +180,22 @@ const InstructionNode = (props: {instance: KotOR.NWScriptInstance, instruction: 
       </>) : <></>}
       {instruction.type != undefined ? (<>
         {(
-        instruction.code == OP_CONST || 
+        instruction.code == OP_CONST ||
         instruction.code == OP_RSADD
       ) ? <InstructionType type={instruction.type} /> : <></>}&nbsp;
         {!instruction.action ? <InstructionValue instruction={instruction} /> : <></>}
       </>) : <></>}
       {/* Display the offset if the instruction is a jump */}
       {(
-        instruction.code == OP_JSR || 
-        instruction.code == OP_JMP || 
-        instruction.code == OP_JNZ || 
+        instruction.code == OP_JSR ||
+        instruction.code == OP_JMP ||
+        instruction.code == OP_JNZ ||
         instruction.code == OP_JZ
       ) ? <InstructionOffset instance={instance} instruction={instruction} /> : <></>}
       {(
-        instruction.code == OP_CPDOWNBP || 
-        instruction.code == OP_CPDOWNSP || 
-        instruction.code == OP_CPTOPBP || 
+        instruction.code == OP_CPDOWNBP ||
+        instruction.code == OP_CPDOWNSP ||
+        instruction.code == OP_CPTOPBP ||
         instruction.code == OP_CPTOPSP ||
         instruction.code == OP_MOVSP
       ) ? <InstructionPointer pointer={instruction.offset} /> : <></>}
@@ -230,7 +234,7 @@ export const ScriptInstanceWindow = () => {
   };
 
   const onSelectedInstance = (inst: KotOR.NWScriptInstance) => {
-    const oldInst = instance;
+    const _oldInst = instance;
     setInstance(inst);
     setInstructions([...inst.instructions.values()]);
     setBreakpointMap(new Map(inst.breakPoints));

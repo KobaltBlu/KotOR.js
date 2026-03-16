@@ -1,27 +1,33 @@
 import * as THREE from "three";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameState } from "../GameState";
-import { EngineMode } from "../enums/engine/EngineMode";
-import type { MenuManager } from "../managers/MenuManager";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import { ShaderManager } from "../managers/ShaderManager"
-import { ResourceLoader, TextureLoader } from "../loaders";
-import { GUIControl } from "./GUIControl";
-import { GUIControlFactory } from "./GUIControlFactory";
-import { BitWise } from "../utility/BitWise";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { Mouse } from "../controls/Mouse";
-import { KeyMapper } from "../controls";
-import type { GUIProtoItem } from "./GUIProtoItem";
-import { GUIControlType } from "../enums/gui/GUIControlType";
+
+import { KeyMapper } from "@/controls";
+import { Mouse } from "@/controls/Mouse";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GameState } from "@/GameState";
+import { GUIControl } from "@/gui/GUIControl";
+import { GUIControlFactory } from "@/gui/GUIControlFactory";
+import type { GUIProtoItem } from "@/gui/GUIProtoItem";
+import { ResourceLoader, TextureLoader } from "@/loaders";
+import type { MenuManager } from "@/managers/MenuManager";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import { ShaderManager } from "@/managers/ShaderManager"
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * GameMenu class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GameMenu.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

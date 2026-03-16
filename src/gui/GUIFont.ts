@@ -1,8 +1,9 @@
 import * as THREE from "three";
-import { GUIControlAlignment } from "../enums/gui/GUIControlAlignment";
-import { TXI } from "../resource/TXI";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { createQuadElements as createIndicies } from "../utility/QuadIndices";
+
+import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
+import { TXI } from "@/resource/TXI";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
 
 interface Line {
   chars: GUIFontChar[];

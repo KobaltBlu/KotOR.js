@@ -54,11 +54,11 @@ export const App = (props: any) => {
   useEffectOnce( () => {
 
     ForgeState.VerifyGameDirectory(() => {
-      console.log('Game Directory', 'verified');
+      log.debug('Game Directory', 'verified');
       setShowGrantModal(false);
       beginInit();
     }, () => {
-      console.warn('Game Directory', 'not found');
+      log.warn('Game Directory', 'not found');
       setShowGrantModal(true);
     });
 

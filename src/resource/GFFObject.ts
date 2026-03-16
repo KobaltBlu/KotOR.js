@@ -175,8 +175,8 @@ export class GFFObject {
     this.reader.seek(this.StructOffset);
     for (let i = 0; i < this.StructCount; i++) {
       this.tmpStructArray[i] = {
-        Type: this.reader.readInt32(), 
-        DataOrDataOffset: this.reader.readInt32(), 
+        Type: this.reader.readInt32(),
+        DataOrDataOffset: this.reader.readInt32(),
         FieldCount: this.reader.readInt32()
       };
     }

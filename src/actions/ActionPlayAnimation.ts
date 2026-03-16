@@ -1,6 +1,10 @@
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { Action } from "./Action";
+import { Action } from "@/actions/Action";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 enum ActionPlayAnimationType
 {

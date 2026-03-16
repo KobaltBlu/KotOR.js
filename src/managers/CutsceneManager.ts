@@ -77,7 +77,7 @@ export class CutsceneManager {
   }
 
   static startConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.PartyManager.party[0]) {
-    console.log('CutsceneManager.startConversation', dialog, owner, listener);
+    log.debug('CutsceneManager.startConversation', String(dialog), owner, listener);
     this.active = true;
     this.cameraState.currentCameraAnimation = undefined;
     this.owner = owner;
@@ -99,7 +99,7 @@ export class CutsceneManager {
     this.currentReplies = [];
     this.lastSpokenString = '';
     this.ended = false;
-    
+
     if (!dialog) {
       dialog = this.owner.getConversation();
     }
@@ -112,16 +112,16 @@ export class CutsceneManager {
     this.dialog = dialog;
     this.dialog.owner = this.owner;
     this.dialog.listener = this.listener;
-    
+
     //todo trigger updateTextPosition
     this.isListening = true;
     this.startingEntry = this.getNextEntry(this.dialog.startingList);
     if(!this.startingEntry){
-      console.warn('CutsceneManager.startConversation: No starting entry found');
+      log.warn('CutsceneManager.startConversation: No starting entry found');
       this.endConversation();
       return;
     }
-    
+
     //bark entry
     const isBarkDialog = this.startingEntry.isBarkDialog();
     if (isBarkDialog) {
@@ -135,7 +135,7 @@ export class CutsceneManager {
       this.endConversation();
       return;
     }
-    
+
     //normal dialog entry
     this.cutsceneMode = (this.dialog.isAnimatedCutscene) ? CutsceneMode.ANIMATED : CutsceneMode.DIALOG;
 
@@ -192,9 +192,9 @@ export class CutsceneManager {
 
   /**
    * Handle the player skipping a dialog entry
-   * @param currentEntry - The entry to skip
+   * @param _currentEntry - The entry to skip (unused; skip applies to this.currentEntry)
    */
-  static playerSkipEntry(currentEntry: DLGNode) {
+  static playerSkipEntry(_currentEntry: DLGNode): void {
     if(!this.currentEntry) { return; }
     if(!this.currentEntry.skippable) { return; }
     if(this.currentEntry.checkList.isSkipped){ return; }
@@ -295,12 +295,12 @@ export class CutsceneManager {
   static selectReplyAtIndex(index: number) {
     const reply = this.currentReplies[index];
     if(!reply){
-      console.warn('CutsceneManager.selectReplyAtIndex: No reply found');
+      log.warn('CutsceneManager.selectReplyAtIndex: No reply found');
       return;
     }
 
     if(this.state != ConversationState.WAITING_FOR_PC_CHOICE){
-      console.warn('CutsceneManager.selectReplyAtIndex: Not in waiting for pc choice state');
+      log.warn('CutsceneManager.selectReplyAtIndex: Not in waiting for pc choice state');
       return;
     }
     this.onReplySelect(reply);
@@ -340,22 +340,22 @@ export class CutsceneManager {
     this.isListening = false;
     if (GameState.Mode != EngineMode.DIALOG)
       return;
-    
+
     //Get First Reply
     const reply = this.dialog.getReplyByIndex(entry.replies[0]?.index);
     if(!reply){
-      console.warn('CutsceneManager.showReplies: No reply found');
+      log.warn('CutsceneManager.showReplies: No reply found');
       this.endConversation();
       return;
     }
-    
+
     const isContinueDialog = entry.replies.length == 1 && reply.isContinueDialog();
     const isEndDialog = entry.replies.length == 1 && reply.isEndDialog();
 
     //End Dialog
     if (isEndDialog || !entry.replies.length) {
       if(!entry.replies.length){
-        console.warn('CutsceneManager.showReplies: No replies found');
+        log.warn('CutsceneManager.showReplies: No replies found');
       }
 
       reply?.runScripts();
@@ -383,8 +383,8 @@ export class CutsceneManager {
           this.getCurrentOwner().dialogPlayAnimation(anim);
         }
       }
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e instanceof Error ? e : new Error(String(e)));
     }
 
     //Update Listener Animation State
@@ -395,12 +395,12 @@ export class CutsceneManager {
           this.getCurrentListener().dialogPlayAnimation(anim);
         }
       }
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e instanceof Error ? e : new Error(String(e)));
     }
 
     this.setListenerCamera();
-    
+
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameComputer.setDialogMode(ConversationState.WAITING_FOR_PC_CHOICE);
     }else{
@@ -431,13 +431,13 @@ export class CutsceneManager {
     if(this.dialog){
       if (this.dialog.animatedCamera instanceof OdysseyModel3D)
         this.dialog.animatedCamera.animationManager.currentAnimation = undefined;
-      console.log('CutsceneManager.endConversation: onEndConversation', this.dialog.scripts.onEndConversation);
+      log.debug('CutsceneManager.endConversation: onEndConversation', String(this.dialog.scripts.onEndConversation));
       if (!aborted) {
         if(this.dialog.scripts.onEndConversation){
           this.dialog.scripts.onEndConversation.run(this.owner, 0);
         }
       }else{
-        console.log('CutsceneManager.endConversation: onEndConversationAbort', this.dialog.scripts.onEndConversationAbort);
+        log.debug('CutsceneManager.endConversation: onEndConversationAbort', String(this.dialog.scripts.onEndConversationAbort));
         if(this.dialog.scripts.onEndConversationAbort){
           this.dialog.scripts.onEndConversationAbort.run(this.owner, 0);
         }
@@ -532,7 +532,7 @@ export class CutsceneManager {
         if (anim) {
           actor.dialogPlayAnimation(anim);
         } else {
-          console.error('Anim', participant.animation);
+          log.error('Anim', String(participant.animation));
         }
       }
     }
@@ -703,9 +703,9 @@ export class CutsceneManager {
    * @param nCamera - The camera to set
    */
   static setPlaceableCamera(nCamera: number) {
-    let cam = GameState.getCameraById(nCamera);
+    const cam = GameState.getCameraById(nCamera);
     if (!cam) {
-      console.warn(`No placeable camera found for camera [${nCamera}] falling back to dialog camera`);
+      log.warn(`No placeable camera found for camera [${nCamera}] falling back to dialog camera`);
       this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
       return;
     }
@@ -819,15 +819,15 @@ export class CutsceneManager {
 
     if (this.cameraState.mode == CameraMode.DIALOG) {
       const listener = this.cameraState.listener;
-      const speaker = this.cameraState.speaker;   
+      const speaker = this.cameraState.speaker;
 
       if(!listener.participant || !speaker.participant){
         return;
       }
-      
+
       const listenerNeedsUpdate = (!listener.position || (listener.position.x != listener.participant.position.x && listener.position.y != listener.participant.position.y && listener.position.z != listener.participant.position.z));
       const speakerNeedsUpdate = (!speaker.position || (speaker.position.x != speaker.participant.position.x && speaker.position.y != speaker.participant.position.y && speaker.position.z != speaker.participant.position.z));
-      
+
       if(!listenerNeedsUpdate && !speakerNeedsUpdate){
         return;
       }
@@ -1008,12 +1008,12 @@ export class CutsceneManager {
       const scaleFactor = adjustedDistance / behindDistance;
       behindDistance = adjustedDistance;
       leftDistance *= scaleFactor;
-      
+
       cameraX = listenerCameraPosition.x + Math.cos(listenerRotation + Math.PI) * behindDistance + Math.cos(listenerRotation - HALF_PI) * leftDistance;
       cameraY = listenerCameraPosition.y + Math.sin(listenerRotation + Math.PI) * behindDistance + Math.sin(listenerRotation - HALF_PI) * leftDistance;
       cameraPosition.set(cameraX, cameraY, cameraZ);
     }
-    
+
     // Set camera position and look at the midpoint between speaker and listener
     GameState.camera_dialog.position.copy(cameraPosition);
     GameState.camera_dialog.lookAt(midpoint);
@@ -1063,12 +1063,12 @@ export class CutsceneManager {
       this.updateCameraAngleSpeakerBehindPlayer();
       return;
     }
-    
+
     // Calculate lookAt target - slightly biased toward the speaker
     const speakerBias = 0.5; // 50% bias toward speaker
     const lookAtTarget = this.getCameraMidPoint(listenerPos, speakerPos, speakerBias)
       .add(new THREE.Vector3(0, 0, -0.5)); // Slightly above midpoint
-    
+
     // Set camera position and lookAt
     GameState.camera_dialog.position.copy(cameraPosition);
     GameState.camera_dialog.lookAt(lookAtTarget);
@@ -1122,7 +1122,7 @@ export class CutsceneManager {
     this.#tmpMPVec3.x = pointA.x + (pointB.x - pointA.x) * percentage;
     this.#tmpMPVec3.y = pointA.y + (pointB.y - pointA.y) * percentage;
     this.#tmpMPVec3.z = pointA.z + (pointB.z - pointA.z) * percentage;
-    
+
     return this.#tmpMPVec3;
   }
 
@@ -1174,7 +1174,7 @@ export class CutsceneManager {
         });
       }
     }
-    
+
     // Add door walkmesh faces (closed doors only)
     for (let j = 0, jl = area.doors.length; j < jl; j++) {
       const door = area.doors[j];
@@ -1185,12 +1185,12 @@ export class CutsceneManager {
         });
       }
     }
-    
+
     // Test for collisions
     for (let k = 0, kl = aabbFaces.length; k < kl; k++) {
       const castableFaces = aabbFaces[k];
       const intersects = castableFaces.object.collisionManager.walkmesh.raycast(raycaster, castableFaces.faces) || [];
-      
+
       if (intersects.length > 0) {
         // Check if any intersection is close to the camera position
         for (let i = 0; i < intersects.length; i++) {
@@ -1202,7 +1202,7 @@ export class CutsceneManager {
         }
       }
     }
-    
+
     return false;
   }
 
@@ -1251,7 +1251,7 @@ export class CutsceneManager {
         });
       }
     }
-    
+
     // Add door walkmesh faces (closed doors only)
     for (let j = 0, jl = area.doors.length; j < jl; j++) {
       const door = area.doors[j];
@@ -1262,14 +1262,14 @@ export class CutsceneManager {
         });
       }
     }
-    
+
     // Test for collisions and adjust distance (similar to FollowerCamera logic)
     let adjustedDistance = maxDistance;
-    
+
     for (let k = 0, kl = aabbFaces.length; k < kl; k++) {
       const castableFaces = aabbFaces[k];
       const intersects = castableFaces.object.collisionManager.walkmesh.raycast(raycaster, castableFaces.faces) || [];
-      
+
       if (intersects.length > 0) {
         for (let i = 0; i < intersects.length; i++) {
           const intersect = intersects[i];

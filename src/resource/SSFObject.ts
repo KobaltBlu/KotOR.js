@@ -1,13 +1,15 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { TLKManager } from "../managers/TLKManager";
+import { TLKManager } from "@/managers/TLKManager";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 
 /**
  * SSFObject class.
- * 
+ *
  * Class representing a Sound Set file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SSFObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -53,7 +55,7 @@ export class SSFObject {
   GetSoundResRef(type = -1){
 
     if(type > -1 && type < 28){
-      let tlk = TLKManager.TLKStrings[this.sound_refs[type]];
+      const tlk = TLKManager.TLKStrings[this.sound_refs[type]];
       if(tlk){
         return tlk.SoundResRef;
       }

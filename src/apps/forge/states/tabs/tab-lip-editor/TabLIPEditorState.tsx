@@ -51,7 +51,7 @@ export class TabLIPEditorState extends TabState {
   preview_gain: number = 0.5;
   audio_buffer: AudioBuffer;
   playbackRate: number = 1;
-  
+
   utilitiesTabManager: EditorTabManager = new EditorTabManager();
   lipOptionsTab: TabLIPEditorOptionsState;
 
@@ -92,14 +92,14 @@ export class TabLIPEditorState extends TabState {
     if(this.file){
       this.tabName = this.file.getFilename();
     }
-    
+
     //Audio
     this.gainNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createGain();
     this.gainNode.gain.value = this.preview_gain;
     this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
 
     this.current_head = localStorage.getItem('lip_head') !== null ? localStorage.getItem('lip_head') as string : DEFAULT_HEAD;
-    
+
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.scene.add(this.head_hook);
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
@@ -227,9 +227,9 @@ export class TabLIPEditorState extends TabState {
       this.head.update(delta);
 
       if(this.ui3DRenderer){
-        let center: THREE.Vector3 = new THREE.Vector3;
+        const center: THREE.Vector3 = new THREE.Vector3;
         this.box3.getCenter(center);
-        let size: THREE.Vector3 = new THREE.Vector3;
+        const size: THREE.Vector3 = new THREE.Vector3;
         this.box3.getSize(size);
         //Center the object to 0
         this.head.position.set(-center.x, -center.y, -center.z);
@@ -286,7 +286,7 @@ export class TabLIPEditorState extends TabState {
 
     this.resetAudio();
     this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
-    
+
     try{
       this.source.buffer = this.audio_buffer;
       this.source.connect(this.gainNode);
@@ -300,7 +300,7 @@ export class TabLIPEditorState extends TabState {
         this.source.start(0, 0, duration);
       }
     }catch(e){}
-    
+
     this.poseFrame = true;
     this.playing = true;
     this.scrubDuration = duration;
@@ -329,7 +329,7 @@ export class TabLIPEditorState extends TabState {
 
   seek(time: number = 0){
 
-    let was_playing = this.playing;
+    const was_playing = this.playing;
     this.pause();
 
     if(this.lip instanceof KotOR.LIPObject){
@@ -562,7 +562,7 @@ export class TabLIPEditorState extends TabState {
             case "e&":
               keyframe.shape = PHN_EH;
               break;
-            
+
             case "ph":
               keyframe.shape = PHN_MPB;
               break;
@@ -689,7 +689,7 @@ export class TabLIPEditorState extends TabState {
           }
 
           if(keyframe.shape == last_shape || keyframe.shape == PHN_INVALID){
-            console.log('skipping');
+            log.debug('skipping');
             continue;
           }
 

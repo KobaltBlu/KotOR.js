@@ -1,15 +1,20 @@
 import * as THREE from "three";
-import { TextureLoader } from "../loaders";
-import { Mouse } from "../controls/Mouse";
-import type { ModuleObject } from "../module";
-import { ApplicationProfile } from "../utility/ApplicationProfile";
-import { EngineMode, GameEngineType } from "../enums/engine";
-import type { MenuManager } from "./MenuManager";
-import { GameState } from "../GameState";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { BitWise } from "../utility/BitWise";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { OdysseyObject3D } from "../three/odyssey/OdysseyObject3D";
+
+import { Mouse } from "@/controls/Mouse";
+import { EngineMode, GameEngineType } from "@/enums/engine";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { TextureLoader } from "@/loaders";
+import type { MenuManager } from "@/managers/MenuManager";
+import type { ModuleObject } from "@/module";
+import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Manager);
 
 /**
  * Manages the in-game cursor, reticles, and selection/hover logic.
@@ -288,7 +293,7 @@ export class CursorManager {
 	public static setReticleHoveredObject( object: ModuleObject ){
 		if(!object){ return; }
 
-		let canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
+		const canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
 
 		CursorManager.hovered = object.getReticleNode();
 		if(CursorManager.hovered){
@@ -372,10 +377,10 @@ export class CursorManager {
 
 		CursorManager.MenuManager.hoveredGUIElement = undefined;
 
-		let uiControls = GameState.controls.MenuGetActiveUIElements();
-		let controlCount = uiControls.length;
+		const uiControls = GameState.controls.MenuGetActiveUIElements();
+		const controlCount = uiControls.length;
 		for(let i = 0; i < controlCount; i++){
-			let control = uiControls[i];
+			const control = uiControls[i];
 
 			if(!control.isVisible()){
 				continue;
@@ -390,7 +395,7 @@ export class CursorManager {
 			}
 
 			if(!guiHoverCaptured){
-				let cMenu = control.menu;
+				const cMenu = control.menu;
 				cMenu.setWidgetHoverActive(control, true);
 				guiHoverCaptured = false;
 			}

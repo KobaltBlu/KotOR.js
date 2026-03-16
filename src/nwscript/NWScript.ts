@@ -58,7 +58,7 @@ export class NWScript {
   /**
    * The program type of the script
    * 
-   * should always be OP_T (0x42)
+   * should always be OP_T
    */
   prog: number = OP_T;
   
@@ -219,7 +219,7 @@ export class NWScript {
         instruction.offset = reader.readInt32();
         instruction.size = reader.readInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
         if(instruction.offset == undefined || instruction.size == undefined){
-          console.warn(instruction.codeName, instruction.offset, instruction.size, reader.position);
+          log.warn(instruction.codeName, instruction.offset, instruction.size, reader.position);
         }
       break;
       case OP_CONST:
@@ -387,7 +387,7 @@ export class NWScript {
    */
   disposeInstance( instance: NWScriptInstance ){
     if(instance instanceof NWScriptInstance){
-      let idx = this.instances.indexOf(instance);
+      const idx = this.instances.indexOf(instance);
       if(idx >= 0){
         this.instances.splice(idx, 1);
         instance.dispose();
@@ -401,7 +401,7 @@ export class NWScript {
   disposeInstances(){
     let i = this.instances.length;
     while(i--){
-      let instance = this.instances.splice(i, 1)[0];
+      const instance = this.instances.splice(i, 1)[0];
       if(instance instanceof NWScriptInstance){
         instance.dispose();
       }
@@ -420,7 +420,7 @@ export class NWScript {
       this.init(binary);
     }
 
-    // Use the decompiler to convert NCS to NSS
+    // Convert NCS bytecode to NSS source
     const decompiler = new NWScriptDecompiler(this);
     return decompiler.decompile();
   }

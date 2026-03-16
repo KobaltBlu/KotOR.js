@@ -1,6 +1,9 @@
-import type { INIConfig } from "../engine/INIConfig";
-import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
-import { FeedbackOption } from "../enums/engine/FeedbackOption";
+import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
+import type { INIConfig } from "@/engine/INIConfig";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Manager);
+import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 
 /**
  * FeedbackMessageManager class.
@@ -29,7 +32,7 @@ export class FeedbackMessageManager {
   static Entries: FeedbackMessageEntry[] = [];
 
   static Init(){
-    console.log('FeedbackMessageManager.Init');
+    log.info('FeedbackMessageManager.Init');
     this.FeedbackOptions.HideUnequippable = this.INIConfig.getProperty('Game Options.Hide Unequippable') == 1;
     this.FeedbackOptions.TutorialPopups = this.INIConfig.getProperty('Game Options.Tutorial Popups') == 1;
     this.FeedbackOptions.Subtitles = this.INIConfig.getProperty('Game Options.Subtitles') == 1;

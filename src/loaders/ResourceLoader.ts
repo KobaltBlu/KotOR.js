@@ -1,14 +1,16 @@
 import * as path from "path";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { ERFObject } from "../resource/ERFObject";
-import { RIMObject } from "../resource/RIMObject";
-import { CacheScope } from "../enums/resource/CacheScope";
-import { IResourceCacheScopes } from "../interface/resource/IResourceCacheScopes";
-import { KEYManager } from "../managers/KEYManager";
-import { RIMManager } from "../managers/RIMManager";
-import { IRIMResource } from "../interface/resource/IRIMResource";
-import { IERFResource } from "../interface/resource/IERFResource";
-import { GameFileSystem } from "../utility/GameFileSystem";
+
+import { CacheScope } from "@/enums/resource/CacheScope";
+import { IResourceCacheScopes } from "@/interface/resource/IResourceCacheScopes";
+import { KEYManager } from "@/managers/KEYManager";
+import { RIMManager } from "@/managers/RIMManager";
+import { ERFObject } from "@/resource/ERFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { RIMObject } from "@/resource/RIMObject";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Loader);
 
 /**
  * ResourceLoader class.
@@ -56,7 +58,7 @@ export class ResourceLoader {
       ResourceTypes['utm'], ResourceTypes['dlg'], ResourceTypes['ssf'],
     ];
 
-    console.log('Caching Types:', cacheableTemplates);
+    log.info('Caching Types:', cacheableTemplates);
 
     const scope = ResourceLoader.CacheScopes[CacheScope.GLOBAL];
     const keys = KEYManager.Key.keys.filter( k => cacheableTemplates.includes(k.resType) );
@@ -83,7 +85,7 @@ export class ResourceLoader {
         for(let i = 0; i < resources.length; i++){
           const resource = resources[i];
           const buffer = await archive.getResourceBuffer(resource);
-          // console.log('InitModuleCache: RIM', resource.resRef.toLocaleLowerCase(), buffer);
+          // log.info('InitModuleCache: RIM', resource.resRef.toLocaleLowerCase(), buffer);
           scope.get(resource.resType).set(
             resource.resRef.toLocaleLowerCase(),
             buffer
@@ -94,7 +96,7 @@ export class ResourceLoader {
         for(let i = 0; i < keyList.length; i++){
           const key = keyList[i];
           const buffer = await archive.getResourceBufferByResRef(key.resRef, key.resType);
-          // console.log('InitModuleCache: ERF', resource.resRef.toLocaleLowerCase(), buffer);
+          // log.info('InitModuleCache: ERF', resource.resRef.toLocaleLowerCase(), buffer);
           scope.get(key.resType).set(
             key.resRef.toLocaleLowerCase(),
             buffer

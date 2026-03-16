@@ -51,7 +51,7 @@ html, body {
     width: 100%;
     height: 50px;
   }
-  
+
   .script-debugger-container {
     position: relative;
     // display: flex;
@@ -105,7 +105,7 @@ html, body {
         }
       }
     }
-    
+
     .script-debugger-instance {
       // flex: 0.5;
       border: 2px solid #4a4a4a;
@@ -204,12 +204,15 @@ html, body {
               &.JMP {
                 color: green;
               }
+
               &.JSR {
                 color: olive;
-              } 
+              }
+
               &.JZ {
                 color: magenta;
-              } 
+              }
+
               &.RSADD {
                 color: pink
               }
@@ -266,8 +269,8 @@ html, body {
       }
     }
   }
-  
-  
+
+
 }
 
 .debugger-buttons {

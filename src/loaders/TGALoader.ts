@@ -1,10 +1,14 @@
 import * as path from "path";
-import { ResourceLoader } from "./ResourceLoader";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { TXI } from "../resource/TXI";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import type { TextureLoader } from "./TextureLoader";
-import { GameFileSystem } from "../utility/GameFileSystem";
+
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import type { TextureLoader } from "@/loaders/TextureLoader";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TXI } from "@/resource/TXI";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Loader);
 
 /**
  * TGALoader class.
@@ -186,7 +190,7 @@ export class TGALoader {
 				case TGA_TYPE_RLE_INDEXED:
 					if ( header.colormap_length > 256 || header.colormap_size !== 24 || header.colormap_type !== 1 ) {
 
-						console.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid type colormap data for indexed type' );
+						log.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid type colormap data for indexed type' );
 
 					}
 					break;
@@ -226,7 +230,7 @@ export class TGALoader {
 				header.pixel_size !== 24 &&
 				header.pixel_size !== 32 ) {
 
-				console.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid pixel size "' + header.pixel_size + '"' );
+				log.error( 'THREE.TGALoader.parse.tgaCheckHeader: Invalid pixel size "' + header.pixel_size + '"' );
 
 			}
 
@@ -237,7 +241,7 @@ export class TGALoader {
 
 		if ( header.id_length + offset > buffer.length ) {
 
-			console.error( 'THREE.TGALoader.parse: No data' );
+			log.error( 'THREE.TGALoader.parse: No data' );
 
 		}
 
@@ -305,7 +309,7 @@ export class TGALoader {
 
 				let c, count, i;
 				let shift = 0;
-				let pixels = new Uint8Array( pixel_size );
+				const pixels = new Uint8Array( pixel_size );
 
 				while ( shift < pixel_total ) {
 
@@ -557,7 +561,7 @@ export class TGALoader {
 						tgaGetImageDataGrey16bits( data, y_start, y_step, y_end, x_start, x_step, x_end, image );
 						break;
 					default:
-						console.error( 'THREE.TGALoader.parse.getTgaRGBA: not support this format' );
+						log.error( 'THREE.TGALoader.parse.getTgaRGBA: not support this format' );
 						break;
 				}
 
@@ -581,7 +585,7 @@ export class TGALoader {
 						break;
 
 					default:
-						console.error( 'THREE.TGALoader.parse.getTgaRGBA: not support this format' );
+						log.error( 'THREE.TGALoader.parse.getTgaRGBA: not support this format' );
 						break;
 				}
 
@@ -595,34 +599,34 @@ export class TGALoader {
 		}
 
 		let canvas: HTMLCanvasElement;
-		let faces = (header.height / header.width) == 6 ? 6 : 1;
+		const faces = (header.height / header.width) == 6 ? 6 : 1;
 
 		if(faces == 1){
 			canvas = document.createElement( 'canvas' );
 			canvas.width = header.width;
 			canvas.height = header.height;
 
-			let context = canvas.getContext( '2d' );
-			let imageData = context.createImageData( header.width, header.height );
+			const context = canvas.getContext( '2d' );
+			const imageData = context.createImageData( header.width, header.height );
 
-			let result = tgaParse( use_rle, use_pal, header, offset, content, 0 );
-			let rgbaData = getTgaRGBA( imageData.data, header.width, header.height, result.pixel_data, result.palettes );
+			const result = tgaParse( use_rle, use_pal, header, offset, content, 0 );
+			const _rgbaData = getTgaRGBA( imageData.data, header.width, header.height, result.pixel_data, result.palettes );
 
 			context.putImageData( imageData, 0, 0 );
 			return canvas;
 		}
 
-		let canvases = [];
+		const canvases = [];
 		for(let i = 0; i < faces; i++){
 			canvas = document.createElement( 'canvas' );
 			canvas.width = header.width;
 			canvas.height = header.width;
 			header.height = header.width;
 
-			let context = canvas.getContext( '2d' );
-			let imageData = context.createImageData( header.width, header.width );
-			let result = tgaParse( use_rle, use_pal, header, offset, content, i );
-			let rgbaData = getTgaRGBA( imageData.data, header.width, header.width, result.pixel_data, result.palettes );
+			const context = canvas.getContext( '2d' );
+			const imageData = context.createImageData( header.width, header.width );
+			const result = tgaParse( use_rle, use_pal, header, offset, content, i );
+			const _rgbaData = getTgaRGBA( imageData.data, header.width, header.width, result.pixel_data, result.palettes );
 
 			context.putImageData( imageData, 0, 0 );
 

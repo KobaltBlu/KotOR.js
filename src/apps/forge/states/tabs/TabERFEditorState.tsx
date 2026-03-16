@@ -1,12 +1,14 @@
 import React from "react";
-import { TabState } from "./TabState";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabERFEditor } from "../../components/tabs/tab-erf-editor/TabERFEditor";
-import { EditorFile } from "../../EditorFile";
-import { FileBrowserNode } from "../../FileBrowserNode";
 
-import * as KotOR from "../../KotOR";
+import { TabERFEditor } from "@/apps/forge/components/tabs/tab-erf-editor/TabERFEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
+const log = createScopedLogger(LogScope.Forge);
 const arfArchiveTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav']];
 
 export class TabERFEditorState extends TabState {

@@ -1,6 +1,7 @@
 import * as THREE from "three";
-import type { ModuleArea } from "../module";
-import { GameState } from "../GameState";
+
+import { GameState } from "@/GameState";
+import type { ModuleArea } from "@/module";
 
 /**
  * EngineLocation class.
@@ -43,7 +44,7 @@ export default class EngineLocation {
 
   //Set rotation from bearing in degrees
   setBearing( bearing = 0 ){
-    let facing = bearing / 180;
+    const facing = bearing / 180;
     this.setFacing(facing);
   }
 
@@ -55,7 +56,7 @@ export default class EngineLocation {
   //Set the facing value and then update the rotation values
   setFacing( facing = 0 ){
     this.facing = 0;
-    let theta = facing;
+    const theta = facing;
 
     this.rotation.x = 1 * Math.cos(theta);
     this.rotation.y = 1 * Math.sin(theta);

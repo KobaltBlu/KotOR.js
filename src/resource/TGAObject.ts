@@ -1,16 +1,22 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { ITGAObjectOptions } from "../interface/graphics/tga/ITGAObjectOptions";
-import { ITGAHeader } from "../interface/graphics/tga/ITGAHeader";
-import { GameFileSystem } from "../utility/GameFileSystem";
+/* eslint-disable import/order */
+import { ITGAHeader } from "@/interface/graphics/tga/ITGAHeader";
+import { ITGAObjectOptions } from "@/interface/graphics/tga/ITGAObjectOptions";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Resource);
+import type { TXI } from "@/resource/TXI";
 
 /**
  * TGAObject class.
- * 
+ *
  * Class representing a TGA texture file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TGAObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -32,7 +38,7 @@ export class TGAObject {
 
     const options = {..._default, ...args};
 
-    console.log('TGAObject', args);
+    log.info('TGAObject', args);
 
     if(typeof options.file === 'string'){
       this.file = new Uint8Array(0);
@@ -62,7 +68,7 @@ export class TGAObject {
     } as ITGAHeader;
 
     if(this.file instanceof Uint8Array && !!this.file.length){
-      let reader = new BinaryReader(this.file);
+      const reader = new BinaryReader(this.file);
 
       Header.ID = reader.readByte();
       Header.ColorMapType = reader.readByte();
@@ -73,7 +79,7 @@ export class TGAObject {
       Header.ColorMapIndex = reader.readByte();
 
       if(Header.hasColorMap){
-
+        // Color map present; layout read from header fields above.
       }
 
       Header.offsetX = reader.readUInt32();
@@ -119,7 +125,7 @@ export class TGAObject {
   }
 
   async toExportBuffer(): Promise<Uint8Array> {
-    let writer = new BinaryWriter();
+    const writer = new BinaryWriter();
 
     writer.writeByte(this.header.ID);
     writer.writeByte(this.header.ColorMapType);

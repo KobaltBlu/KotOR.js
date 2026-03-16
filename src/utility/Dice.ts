@@ -1,4 +1,4 @@
-import { DiceType } from "../enums/combat/DiceType";
+import { DiceType } from "@/enums/combat/DiceType";
 
 /**
  * Dice class.

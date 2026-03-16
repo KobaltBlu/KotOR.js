@@ -1,13 +1,16 @@
-import { GameState } from "../../../GameState";
-import { LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { MenuGalaxyMap as K1_MenuGalaxyMap } from "../../kotor/KOTOR";
-import { Planetary } from "../../../engine/Planetary";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { NWScript } from "../../../nwscript/NWScript";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { MDLLoader, TextureLoader } from "../../../loaders";
+import { Planetary } from "@/engine/Planetary";
+import { MenuGalaxyMap as K1_MenuGalaxyMap } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import { LBL_3DView } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 const STR_ALREADY_AT_THAT_LOCATION = 125629;
 
@@ -96,7 +99,7 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
         OdysseyModel3D.FromMDL(mdl, {
           context: this._3dView
         }).then((model: OdysseyModel3D) => {
-          //console.log('Model Loaded', model);
+          //log.info('Model Loaded', model);
           this._3dViewModel = model;
           
           this._3dView.camera.position.copy(model.camerahook.position);

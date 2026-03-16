@@ -1,5 +1,5 @@
-import type { GUILabel } from "../../../gui";
-import { MenuToolTip as K1_MenuToolTip } from "../../kotor/KOTOR";
+import { MenuToolTip as K1_MenuToolTip } from "@/game/kotor/KOTOR";
+import type { GUILabel } from "@/gui";
 
 /**
  * MenuToolTip class.

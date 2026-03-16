@@ -1,6 +1,7 @@
-import type { ForgeArea } from "./ForgeArea";
-import * as KotOR from "../KotOR";
-import type { UI3DRenderer } from "../UI3DRenderer";
+import * as KotOR from "@/apps/forge/KotOR";
+import type { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
+import type { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
@@ -84,25 +85,25 @@ export class ForgeModule {
    */
   startMovie: string = '';
   
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
-  expansionList: any[] = [];
+  expansionList: KotOR.GFFStruct[] = [];
 
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
-  globalVariableList: any[] = [];
+  globalVariableList: KotOR.GFFStruct[] = [];
 
-  /** 
+  /**
    * @deprecated Obsolete: since NWN
    */
   hak: string = '';
 
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
-  cutSceneList: any[] = [];
+  cutSceneList: KotOR.GFFStruct[] = [];
 
   /** 
    * always set to 2

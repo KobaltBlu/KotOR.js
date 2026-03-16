@@ -230,7 +230,7 @@ const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObjec
         </div>
         <ul className="git-instance-properties-editor__list">
           {propertyDefs.map((prop, index) => (
-            <li 
+            <li
               key={index}
               className="git-instance-properties-editor__list-item"
             >
@@ -321,7 +321,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
         modal.attachToModalManager(ForgeState.modalManager);
         modal.open();
       };
-      
+
       return (
         <div className="property-editor-row">
           <label className="property-editor-label property-editor-label--ellipsis">

@@ -51,7 +51,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
   }
 
   const onOpen = (file: KotOR.AudioFile) => {
-    console.log('onOpen', file);
+    log.debug('onOpen', file);
     if(!file){ return; }
     setFile(file);
   }
@@ -137,7 +137,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
   const animate = (time: number = 0) => {
     const context = contextRef.current;
     if (previousTimeRef.current != undefined && context && AudioPlayerState.analyser) {
-      const deltaTime = time - previousTimeRef.current;
+      const _deltaTime = time - previousTimeRef.current;
 
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
       const bufferLength = AudioPlayerState.analyserBufferLength;

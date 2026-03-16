@@ -290,7 +290,7 @@ export class GameState implements EngineContext {
   static renderPassGUI: RenderPass;
   static bloomPass: BloomPass;
   static bokehPass: BokehPass;
-  
+
   static module: Module;
   static TutorialWindowTracker: number[];
   static audioEmitter: AudioEmitter;
@@ -298,7 +298,7 @@ export class GameState implements EngineContext {
   static State: EngineState;
   static inMenu: boolean;
   static OnReadyCalled: boolean;
-  
+
   static loadingTextures: boolean;
 
   static preloadTextures: string[] = ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
@@ -685,9 +685,9 @@ export class GameState implements EngineContext {
     GameState.group.collision_helpers.visible = this.debug[EngineDebugType.COLLISION_HELPERS];
 
     GameState.interactableObjects = [
-      GameState.group.placeables, 
-      GameState.group.doors, 
-      GameState.group.creatures, 
+      GameState.group.placeables,
+      GameState.group.doors,
+      GameState.group.creatures,
       GameState.group.party,
       //GameState.group.rooms
       GameState.group.room_walkmeshes
@@ -783,7 +783,7 @@ export class GameState implements EngineContext {
       GameState.guiAudioEmitter.maxDistance = 100;
       GameState.guiAudioEmitter.volume = 127;
       GameState.guiAudioEmitter.load();
-    
+
       GameState.audioEmitter = new AudioEmitter(audioEngine);
       GameState.audioEmitter.maxDistance = 50;
       GameState.audioEmitter.type = AudioEmitterType.GLOBAL;
@@ -970,7 +970,7 @@ export class GameState implements EngineContext {
 
   /**
    * Load a module
-   * @param name 
+   * @param name
    * @param waypoint - The waypoint to spawn the player at (if null, the player will spawn at the entry waypoint)
    * @param sMovie1 - The first movie to play
    * @param sMovie2 - The second movie to play

@@ -1,14 +1,21 @@
-import React, {forwardRef, useImperativeHandle, useState, useMemo, useCallback, memo} from "react";
-import { TabResourceExplorerState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { FileTypeManager } from "../../../FileTypeManager";
-import { EditorFile } from "../../../EditorFile";
+import React, { useState, useMemo, useCallback } from "react";
 import { Form, ProgressBar } from "react-bootstrap";
-import { FileBrowserNode } from "../../../FileBrowserNode";
-import { ForgeTreeView } from "../../treeview/ForgeTreeView";
-import { ResourceListNode } from "../../treeview/ResourceListNode";
 
+import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
+import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
+import { ResourceListNode } from "@/apps/forge/components/treeview/ResourceListNode";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabResourceExplorerState } from "@/apps/forge/states/tabs";
+import { TabReferenceFinderState } from "@/apps/forge/states/tabs/TabReferenceFinderState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer.scss";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface TabResourceExplorerProps extends BaseTabProps {
   tab: TabResourceExplorerState;
@@ -63,7 +70,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
         }
       }
     } catch (error) {
-      console.error('Search error:', error);
+      log.error('Search error:', error);
       if(searchId === currentSearchId){
         updateVisibleItems(TabResourceExplorerState.Resources);
       }
@@ -86,7 +93,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
     const startIndex = nextPage * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const newItems = resourceList.slice(startIndex, endIndex);
-    
+
     if (newItems.length > 0) {
       setVisibleItems(prev => [...prev, ...newItems]);
       setCurrentPage(nextPage);

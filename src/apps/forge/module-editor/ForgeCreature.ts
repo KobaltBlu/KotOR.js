@@ -1,6 +1,11 @@
-import * as KotOR from "../KotOR";
-import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
-import { ForgeGameObject } from "./ForgeGameObject";
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import type { IGameContext } from "@/interface/engine/IGameContext";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 interface EngineItem {
   baseItem: KotOR.SWBaseItem | undefined;
@@ -21,9 +26,9 @@ export interface SpecialAbilityEntry {
    */
   spellCasterLevel: number;
   /**
-   * 0x01 = readied
-   * 0x02 = spontaneous
-   * 0x04 = unlimited use
+   * Bit 0 = readied
+   * Bit 1 = spontaneous
+   * Bit 2 = unlimited use
    */
   spellFlags: number;
 }
@@ -35,20 +40,14 @@ export interface KnownSpellEntry {
   spell: number;
 
   /**
-   * 0x00 - None
-   * 0x01 - Empower
-   * 0x02 - Extend
-   * 0x04 - Maximize
-   * 0x08 - Quicken
-   * 0x10 - Silent
-   * 0x20 - Still
+   * None, Empower, Extend, Maximize, Quicken, Silent, Still (bit flags)
    */
   spellMetaMagic: number;
 
   /**
-   * 0x01 = readied
-   * 0x02 = spontaneous
-   * 0x04 = unlimited use
+   * Bit 0 = readied
+   * Bit 1 = spontaneous
+   * Bit 2 = unlimited use
    */
   spellFlags: number;
 }
@@ -763,7 +762,7 @@ export class ForgeCreature extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Appearance_Type', this.appearanceType) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BodyBag', this.bodyBag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BodyVariation', this.bodyVariation) );

@@ -1,20 +1,35 @@
-import React from "react";
-import { TabTextEditor } from "../../components/tabs/tab-text-editor/TabTextEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import { EditorTabManager } from "../../managers/EditorTabManager";
-import { ForgeState } from "../ForgeState";
-// import { NWScriptCompiler } from "../../../../nwscript/NWScriptCompiler";
-import { NWScriptParser } from "../../../../nwscript/compiler/NWScriptParser";
-import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState } from ".";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
+import React from "react";
 
-import * as KotOR from "../../KotOR";
-import { NWScriptCompiler } from "../../../../nwscript/compiler/NWScriptCompiler";
-import { NWScriptLanguageService } from "../NWScriptLanguageService";
-import { LYTLanguageService } from "../LYTLanguageService";
-import { SemanticFunctionNode } from "../../../../nwscript/compiler/ASTSemanticTypes";
+import { TabScriptCompileLogState } from "./TabScriptCompileLogState";
+import { TabScriptErrorLogState } from "./TabScriptErrorLogState";
+import { TabScriptFindReferencesState, type TextReferenceMatch } from "./TabScriptFindReferencesState";
+import { TabScriptInspectorState } from "./TabScriptInspectorState";
+
+import { TabTextEditor } from "@/apps/forge/components/tabs/tab-text-editor/TabTextEditor";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { findAllReferencesInText, getWordAtIndex, createKeyResources, findScriptReferences, findStrRefReferences, findConversationReferences } from "@/apps/forge/helpers/ReferenceFinder";
+import type { ReferenceSearchResult } from "@/apps/forge/helpers/ReferenceFinderCore";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+
+// import { NWScriptCompiler } from "@/nwscript/NWScriptCompiler";
+
+import * as KotOR from "@/apps/forge/KotOR";
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
+import { ModalFileResultsState } from "@/apps/forge/states/modal/ModalFileResultsState";
+import { ModalReferenceSearchOptionsState } from "@/apps/forge/states/modal/ModalReferenceSearchOptionsState";
+import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { SemanticFunctionNode } from "@/nwscript/compiler/ASTSemanticTypes";
+import type { CompilerProgramNode } from "@/nwscript/compiler/CompilerNodeTypes";
+import { NWScriptCompiler } from "@/nwscript/compiler/NWScriptCompiler";
+import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabTextEditorState extends TabState {
 
@@ -64,10 +79,10 @@ export class TabTextEditorState extends TabState {
 
   setLanguageId(languageId: string | null): void {
     this.manualLanguageId = languageId;
-    
+
     const finalLanguageId = this.getLanguageId();
     const finalTheme = this.getTheme();
-    
+
     // Update editor model language if editor exists
     if(this.editor && this.monaco) {
       const model = this.editor.getModel();
@@ -77,14 +92,14 @@ export class TabTextEditorState extends TabState {
       // Update theme
       this.monaco.editor.setTheme(finalTheme);
     }
-    
+
     // Update diff editor models if in diff mode
     if(this.isDiffMode && this.originalModel && this.modifiedModel && this.monaco) {
       this.monaco.editor.setModelLanguage(this.originalModel, finalLanguageId);
       this.monaco.editor.setModelLanguage(this.modifiedModel, finalLanguageId);
       this.monaco.editor.setTheme(finalTheme);
     }
-    
+
     // Trigger linter with new language
     this.triggerLinterTimeout();
   }
@@ -208,14 +223,14 @@ export class TabTextEditorState extends TabState {
         model.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
       }
     }
-    
+
     // Update diff editor models
     if(this.diffEditor) {
       const originalEditor = this.diffEditor.getOriginalEditor();
       const modifiedEditor = this.diffEditor.getModifiedEditor();
       const originalModel = originalEditor.getModel();
       const modifiedModel = modifiedEditor.getModel();
-      
+
       if(originalModel) {
         originalModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
       }
@@ -223,7 +238,7 @@ export class TabTextEditorState extends TabState {
         modifiedModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
       }
     }
-    
+
     // Update standalone models if they exist
     if(this.originalModel) {
       this.originalModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
@@ -243,31 +258,31 @@ export class TabTextEditorState extends TabState {
 
   switchToDiffMode(): void {
     if(!this.monaco || !this.editor) return;
-    
+
     // Capture current text as original (left side)
     this.originalText = this.code;
-    
+
     // Create models for original and modified text
     const langId = this.getLanguageId();
     this.originalModel = this.monaco.editor.createModel(this.originalText, langId);
     this.modifiedModel = this.monaco.editor.createModel(this.code, langId);
-    
+
     // Apply tab size to models
     this.originalModel.updateOptions({ tabSize: this.tabSize });
     this.modifiedModel.updateOptions({ tabSize: this.tabSize });
-    
+
     this.isDiffMode = true;
     this.processEventListener('onDiffModeChanged');
   }
 
   switchToRegularMode(): void {
     if(!this.diffEditor) return;
-    
+
     // Get the current modified text from the diff editor
     const modifiedEditor = this.diffEditor.getModifiedEditor();
     const modifiedText = modifiedEditor.getValue();
     this.code = modifiedText;
-    
+
     // Dispose models
     if(this.originalModel) {
       this.originalModel.dispose();
@@ -277,11 +292,11 @@ export class TabTextEditorState extends TabState {
       this.modifiedModel.dispose();
       this.modifiedModel = null;
     }
-    
+
     // Dispose diff editor
     this.diffEditor.dispose();
     this.diffEditor = null;
-    
+
     this.isDiffMode = false;
     this.originalText = ``;
     this.processEventListener('onDiffModeChanged');
@@ -305,9 +320,9 @@ export class TabTextEditorState extends TabState {
 
   triggerLinter(){
     if(!this.editor || !this.monaco) return;
-    
+
     const langId = this.getLanguageId();
-    
+
     // Handle LYT files
     if(langId === 'lyt'){
       try{
@@ -393,7 +408,7 @@ export class TabTextEditorState extends TabState {
       });
       return;
     }
-    
+
     // For other file types, clear markers
     if(this.editor) {
       const model = this.editor.getModel() as monacoEditor.editor.ITextModel;
@@ -507,5 +522,5 @@ export class TabTextEditorState extends TabState {
       //   NotificationManager.Notify(NotificationManager.Types.ALERT, `Parse: Failed! - with errors (${this.nwScriptParser.errors.length})`);
       // }
   }
-  
+
 }

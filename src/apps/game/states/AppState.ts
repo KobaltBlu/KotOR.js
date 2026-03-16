@@ -56,8 +56,8 @@ export class AppState {
 
     AppState.loaderShow();
 
-    console.log('gameEULAConfig', gameEULAConfig);
-    console.log('eulaState', eulaState);
+    log.debug('gameEULAConfig', gameEULAConfig);
+    log.debug('eulaState', eulaState);
     AppState.directoryLocated = await AppState.checkGameDirectory();
     if(AppState.eulaAccepted){
       await AppState.loadGameDirectory();
@@ -81,7 +81,7 @@ export class AppState {
   static async loadGameDirectory(){
     AppState.loaderShow();
     KotOR.GameInitializer.SetLoadingMessage('Locating Game Directory...');
-  
+
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       if(await KotOR.GameFileSystem.exists('chitin.key')){
         AppState.directoryLocated = true;
@@ -319,7 +319,7 @@ export class AppState {
         }
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 

@@ -1,8 +1,10 @@
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import type { LightManager } from "../managers";
-import { OdysseyModel3D } from "../three/odyssey";
-import type { GUIControl } from "./GUIControl";
+
+import { GameState } from "@/GameState";
+import type { GUIControl } from "@/gui/GUIControl";
+import type { LightManager } from "@/managers";
+import { OdysseyModel3D } from "@/three/odyssey";
+
 
 /**
  * LBL_3DView class.
@@ -132,12 +134,12 @@ export class LBL_3DView {
     if(!this.visible)
       return;
 
-    for(let emitter in this.emitters){
+    for(const emitter in this.emitters){
       this.emitters[emitter].tick(delta);
     }
 
     for(let i = 0; i < this.scene.children.length; i++){
-      let element = this.scene.children[i];
+      const element = this.scene.children[i];
       if(element instanceof OdysseyModel3D){
         element.update(delta);
       }

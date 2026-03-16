@@ -1,9 +1,12 @@
-import { GameState } from "../GameState";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-// import { ResolutionManager } from "../managers";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+// import { ResolutionManager } from "@/managers";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Module);
 import * as THREE from "three";
 
 /**
@@ -23,9 +26,9 @@ import * as THREE from "three";
  * camera.load();
  * 
  * // Access camera properties
- * console.log(camera.cameraID); // Camera identifier
- * console.log(camera.fov); // Field of view
- * console.log(camera.position); // Camera position
+ * log.info(camera.cameraID); // Camera identifier
+ * log.info(camera.fov); // Field of view
+ * log.info(camera.position); // Camera position
  * 
  * // Get the Three.js camera object
  * const threeCamera = camera.perspectiveCamera;
@@ -197,11 +200,11 @@ export class ModuleCamera {
    * camera.position.set(10, 5, 10);
    * 
    * const gff = camera.save();
-   * console.log(gff.RootNode.type); // 14 (camera type)
+   * log.info(gff.RootNode.type); // 14 (camera type)
    * ```
    */
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.RootNode.type = 14;
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CameraID') ).setValue(this.cameraID);

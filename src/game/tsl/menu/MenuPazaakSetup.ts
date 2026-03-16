@@ -1,5 +1,5 @@
-import type { GUILabel, GUIButton } from "../../../gui";
-import { MenuPazaakSetup as K1_MenuPazaakSetup } from "../../kotor/KOTOR";
+import { MenuPazaakSetup as K1_MenuPazaakSetup } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * MenuPazaakSetup class.

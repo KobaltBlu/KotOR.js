@@ -1,6 +1,11 @@
 import * as path from 'path';
+
 import * as THREE from 'three';
-import { GameFileSystem } from './GameFileSystem';
+
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const _log = createScopedLogger(LogScope.Manager);
 
 const PI: number = Math.PI;
 const TWO_PI: number = Math.PI * 2;
@@ -77,7 +82,7 @@ export class Utility {
   }
 
   static PadInt(num: number|string, size: number): string {
-    let s = "000000000" + num;
+    const s = "000000000" + num;
     return s.substr(s.length-size);
   }
 
@@ -140,10 +145,10 @@ export class Utility {
     //isLocal
     if(filePath.indexOf(':\\') > -1){
 
-      let filePathInfo = path.parse(filePath);
+      const filePathInfo = path.parse(filePath);
 
-      let fileInfo = filePath.split('\\');
-      fileInfo = fileInfo[fileInfo.length - 1].split('.');
+      let _fileInfo = filePath.split('\\');
+      _fileInfo = _fileInfo[_fileInfo.length - 1].split('.');
 
       if(filePathInfo.ext.indexOf('.') == 0)
         filePathInfo.ext = filePathInfo.ext.substr(1, filePathInfo.ext.length - 1);
@@ -162,10 +167,10 @@ export class Utility {
     //isArchive
     else if(filePath.indexOf('://') > -1){
 
-      let archivePath = filePath.split('://')[0];//.split('.');
-      let resourcePath = filePath.split('://')[1];//.split('.');
-      let archivePathInfo = path.parse(archivePath);
-      let resourcePathInfo = path.parse(resourcePath);
+      const archivePath = filePath.split('://')[0];//.split('.');
+      const resourcePath = filePath.split('://')[1];//.split('.');
+      const archivePathInfo = path.parse(archivePath);
+      const resourcePathInfo = path.parse(resourcePath);
 
       return {
         location: OdysseyPathLocation.archive,
@@ -185,14 +190,14 @@ export class Utility {
 
     //possible relative filePath
     else{
-
+      // fallthrough to return empty path info
     }
 
     return {} as OdysseyPathInfo;
 
   }
 
-  static isPOW2(n: number): boolean{
+  static isPOW2(_n: number): boolean{
     return false;
   }
 
@@ -209,7 +214,7 @@ export class Utility {
 
     let mipmaps = 1;
     while(size > 1){
-      //console.log(size);
+      //log.info(size);
       mipmaps++;
       size = size >> 1;
     }
@@ -217,7 +222,7 @@ export class Utility {
   }
 
   static Distance2DSquared(v0: THREE.Vector3|THREE.Vector2, v1: THREE.Vector3|THREE.Vector2){
-    let dx = v0.x - v1.x, dy = v0.y - v1.y;
+    const dx = v0.x - v1.x, dy = v0.y - v1.y;
     return dx * dx + dy * dy;
   }
 

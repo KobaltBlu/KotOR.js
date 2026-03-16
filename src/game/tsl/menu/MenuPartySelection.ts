@@ -1,14 +1,17 @@
-import { GameState } from "../../../GameState";
-import { LBL_3DView } from "../../../gui";
-import type { GUILabel, GUICheckBox, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { ModuleCreature } from "../../../module";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { MenuPartySelection as K1_MenuPartySelection } from "../../kotor/KOTOR";
+import { GameState } from "@/GameState";
+import { LBL_3DView } from "@/gui";
+import type { GUILabel, GUICheckBox, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { ModuleCreature } from "@/module";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { MenuPartySelection as K1_MenuPartySelection } from "@/game/kotor/KOTOR";
 
 /**
  * MenuPartySelection class.
@@ -258,7 +261,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
           // manageLighting: false,
           context: this.LBL_3D_VIEW
         }).then((model: OdysseyModel3D) => {
-          //console.log('Model Loaded', model);
+          //log.info('Model Loaded', model);
           this.LBL_3D_VIEW.model = model;
           this.LBL_3D_VIEW.addModel(this.LBL_3D_VIEW.model);
 
@@ -338,7 +341,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       }
       try {
         this.LBL_3D_VIEW.render(delta);
-      } catch (e: any) { }
+      } catch (_e: unknown) { }
     }
   }
 

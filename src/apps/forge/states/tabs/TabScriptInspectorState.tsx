@@ -1,7 +1,12 @@
 import React from "react";
-import { TabState } from ".";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabScriptInspector } from "../../components/tabs/tab-script-inspector/TabScriptInspector";
+
+import { TabState } from "./TabState";
+
+import { TabScriptInspector } from "@/apps/forge/components/tabs/tab-script-inspector/TabScriptInspector";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabScriptInspectorState extends TabState {
 

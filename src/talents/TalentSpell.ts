@@ -1,17 +1,21 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { TalentObject } from "./TalentObject";
-import type { ModuleObject } from "../module";
-import { OdysseyModel3D } from "../three/odyssey";
-import { TwoDAManager } from "../managers/TwoDAManager";
-import { ActionType } from "../enums/actions/ActionType";
-import { ActionCombat } from "../actions/ActionCombat";
-import { CombatRoundAction, SpellCastInstance } from "../combat";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { TalentObjectType } from "../enums/engine/TalentObjectType";
-import { TwoDAObject } from "../resource/TwoDAObject";
+import { TalentObject } from "@/talents/TalentObject";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { ActionCombat } from "@/actions/ActionCombat";
+import { CombatRoundAction, SpellCastInstance } from "@/combat";
+import { ActionType } from "@/enums/actions/ActionType";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { TalentObjectType } from "@/enums/engine/TalentObjectType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import type { ModuleObject } from "@/module";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import type { ITwoDARowData } from "@/resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 const underscoreParser = (value: string = ''): number[] => {
   return value.split('_').map((val) => {
@@ -180,7 +184,7 @@ export class TalentSpell extends TalentObject {
   useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
     super.useTalentOnObject(oTarget, oCaster);
 
-    console.log('Talent.useTalentOnObject', this);
+    log.info('Talent.useTalentOnObject', this);
     
     oCaster.combatData.lastSpellTarget = oTarget;
     oTarget.combatData.lastSpellAttacker = oCaster;
@@ -213,7 +217,7 @@ export class TalentSpell extends TalentObject {
     if(oTarget == oCaster){
       return true;
     }
-    let distance = oCaster.position.distanceTo(oTarget.position);
+    const distance = oCaster.position.distanceTo(oTarget.position);
     //Spell ranges are defined in the ranges.2da file
     switch(this.range){
       case 'L': //Large
@@ -457,7 +461,7 @@ export class TalentSpell extends TalentObject {
   }
 
   save(){
-    let spellStruct = new GFFStruct(3);
+    const spellStruct = new GFFStruct(3);
     spellStruct.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue(this.getId());
     //spellStruct.addField( new GFFField(GFFDataType.SHORT, 'SpellFlags') ).setValue(this.getFlags());
     //spellStruct.addField( new GFFField(GFFDataType.SHORT, 'SpellMetaMagic') ).setValue(this.getMetaMagic());

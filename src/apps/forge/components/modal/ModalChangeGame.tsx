@@ -41,10 +41,10 @@ export const ModalChangeGame = function(props: any){
   });
 
   return (
-    <Modal 
-      show={show} 
-      onHide={handleClose} 
-      backdrop="static" 
+    <Modal
+      show={show}
+      onHide={handleClose}
+      backdrop="static"
       keyboard={false}
     >
       <Modal.Header closeButton>

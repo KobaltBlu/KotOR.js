@@ -73,7 +73,6 @@ export const AppProvider = (props: {children: any; appState: DebuggerState}) => 
     scriptMap: [scriptMap, setScriptMap],
     instanceMap: [instanceMap, setInstanceMap],
     parentMap: [parentMap, setParentMap],
-    //@ts-ignore
     selectedInstance: [selectedInstance, setSelectedInstance],
     setSelectedInstanceHelper: setSelectedInstanceHelper,
     sendMessageHelper: sendMessageHelper

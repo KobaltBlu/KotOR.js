@@ -1,7 +1,12 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
 import * as THREE from "three";
-import { CreatureListEntry } from "../interfaces/CreatureListEntry";
+
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import { CreatureListEntry } from "@/apps/forge/interfaces/CreatureListEntry";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 const DEFAULT_OFFSET_Z = 0.01;
 const ENCOUNTER_MATERIAL = new THREE.MeshBasicMaterial({
@@ -179,7 +184,7 @@ export class ForgeEncounter extends ForgeGameObject {
       creatureStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'SingleSpawn', creature.singleSpawn ? 1 : 0) );
       creatureListField.addChildStruct( creatureStruct );
     }
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'Difficulty', this.difficulty) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'DifficultyIndex', this.difficultyIndex) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Faction', this.faction) );
@@ -299,18 +304,18 @@ export class ForgeEncounter extends ForgeGameObject {
     }
   }
 
-  update(delta: number = 0){
+  update(_delta: number = 0){
     // Update vertex positions from helpers
     if(this.vertexHelpers.length > 0 && this.vertices.length === this.vertexHelpers.length){
       let geometryNeedsUpdate = false;
-      
+
       for(let i = 0; i < this.vertices.length; i++){
         const vertex = this.vertices[i];
         const helper = this.vertexHelpers[i];
-        
+
         if(vertex && helper){
           const localPos = helper.position.clone();
-          
+
           // Update vertex position if it changed
           if(!vertex.equals(localPos)){
             vertex.copy(localPos);
@@ -318,7 +323,7 @@ export class ForgeEncounter extends ForgeGameObject {
           }
         }
       }
-      
+
       // Rebuild geometry if any vertices changed
       if(geometryNeedsUpdate){
         this.buildGeometry();

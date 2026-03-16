@@ -1,6 +1,8 @@
-import type { GUIProgressBar, GUILabel } from "../../../gui";
-import { LoadScreen as K1_LoadScreen } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
+import * as THREE from "three";
+
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { LoadScreen as K1_LoadScreen } from "@/game/kotor/KOTOR";
+import type { GUIProgressBar, GUILabel } from "@/gui";
 
 /**
  * LoadScreen class.
@@ -18,7 +20,6 @@ export class LoadScreen extends K1_LoadScreen {
   declare LBL_HINT: GUILabel;
   declare LBL_LOGO: GUILabel;
   declare LBL_LOADING: GUILabel;
-  // defaultTex: any;
 
   constructor(){
     super();

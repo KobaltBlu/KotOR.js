@@ -85,9 +85,9 @@ const concatBuffers = (buffers: ByteArray[]) => {
 
 /**
  * NWScriptCompiler class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptCompiler.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -178,9 +178,9 @@ export class NWScriptCompiler {
     return undefined;
   }
 
-  opcodeDebug(name: string, buffer: Uint8Array){
+  opcodeDebug(_name: string, _buffer: Uint8Array){
     if( this._silent ) return;
-    // console.log( (name + "                ").slice(0, 16), buffer );
+    // log.info( (name + "                ").slice(0, 16), buffer );
   }
 
   scopePush( scope: NWScriptScope ){
@@ -292,10 +292,10 @@ export class NWScriptCompiler {
   }
 
   compilePass(funcMain: CompilerFunctionNode, returnInt: boolean = false): ByteArray[] {
-    console.log('compilePass: Begin');
+    log.info('compilePass: Begin');
     const buffers: ByteArray[] = [new Uint8Array(0)];
     if(!this.program){
-      console.error('compilePass: program is undefined');
+      log.error('compilePass: program is undefined');
       return buffers;
     }
 
@@ -427,7 +427,7 @@ export class NWScriptCompiler {
         case 'while':         return this.compileWhileLoop( statement );
         case 'for':           return this.compileForLoop( statement );
         case 'incor':         return this.compileINCOR( statement );
-        case 'xor':           return this.compileEXCOR( statement );        
+        case 'xor':           return this.compileEXCOR( statement );
         case 'booland':       return this.compileBOOLAND( statement );
         case 'shift':         return this.compileShift( statement );
         case 'comp':          return this.compileComp( statement );
@@ -541,11 +541,11 @@ export class NWScriptCompiler {
               }else{
                 buffers.push( this.writeCPTOPSP( statement.struct_reference.stackPointer - this.stackPointer, statement.struct_reference.struct_reference.structDataLength ) );
               }
-              buffers.push( 
-                this.writeDESTRUCT( 
-                  statement.struct_reference.struct_reference.structDataLength, 
-                  statement.variable_reference.offsetPointer, 
-                  this.getDataTypeStackLength( statement.variable_reference.datatype ) 
+              buffers.push(
+                this.writeDESTRUCT(
+                  statement.struct_reference.struct_reference.structDataLength,
+                  statement.variable_reference.offsetPointer,
+                  this.getDataTypeStackLength( statement.variable_reference.datatype )
                 )
               );
             }
@@ -895,7 +895,7 @@ export class NWScriptCompiler {
       const __arguments = statement.function_reference.arguments.slice(0).reverse();
       let argumentsDataSize = 0;
       for(let i = 0; i < __arguments.length; i++){
-        let arg = _arguments[i];
+        const arg = _arguments[i];
         const arg_ref = __arguments[i];
 
         if(!arg){
@@ -905,11 +905,11 @@ export class NWScriptCompiler {
         if(arg_ref.datatype.value == 'action'){
           buffers.push( this.writeSTORE_STATE( this.basePointer, this.stackPointer ) );
           buffers.push(
-            this.writeJMP( 
-              this.getInstructionLength(OP_JMP) + 
-              this.getStatementLength( arg ) + 
-              this.getInstructionLength(OP_RETN) 
-            ) 
+            this.writeJMP(
+              this.getInstructionLength(OP_JMP) +
+              this.getStatementLength( arg ) +
+              this.getInstructionLength(OP_RETN)
+            )
           );
           // const ssScope = new NWScriptScope();
           // this.scopePush( ssScope );
@@ -1211,7 +1211,7 @@ export class NWScriptCompiler {
           buffers.push( this.writeGEQ(NWCompileDataTypes.FF) );
         }else{
           //ERROR: unsupported datatypes to compare
-          console.error('Unsupported: GEQ datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
+          log.error('Unsupported: GEQ datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '>'){
         if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
@@ -1220,7 +1220,7 @@ export class NWScriptCompiler {
           buffers.push( this.writeGT(NWCompileDataTypes.FF) );
         }else{
           //ERROR: unsupported datatypes to compare
-          console.error('Unsupported: GT datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
+          log.error('Unsupported: GT datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '<'){
         if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
@@ -1229,7 +1229,7 @@ export class NWScriptCompiler {
           buffers.push( this.writeLT(NWCompileDataTypes.FF) );
         }else{
           //ERROR: unsupported datatypes to compare
-          console.error('Unsupported: LT datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
+          log.error('Unsupported: LT datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '<='){
         if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
@@ -1727,18 +1727,18 @@ export class NWScriptCompiler {
           this.getDataTypeStackLength(varRef.datatype)
         ) );
         if(statement.postfix){
-          buffers.push( 
-            this.writeDECIBP( 
-              varRef.stackPointer - this.basePointer 
-            ) 
+          buffers.push(
+            this.writeDECIBP(
+              varRef.stackPointer - this.basePointer
+            )
           );
         }
       }else{
         if(!statement.postfix){
-          buffers.push( 
-            this.writeDECISP( 
-              varRef.stackPointer - this.stackPointer 
-            ) 
+          buffers.push(
+            this.writeDECISP(
+              varRef.stackPointer - this.stackPointer
+            )
           );
         }
         buffers.push( this.writeCPTOPSP(
@@ -1746,10 +1746,10 @@ export class NWScriptCompiler {
           this.getDataTypeStackLength(varRef.datatype)
         ) );
         if(statement.postfix){
-          buffers.push( 
-            this.writeDECISP( 
+          buffers.push(
+            this.writeDECISP(
               varRef.stackPointer - this.stackPointer
-            ) 
+            )
           );
         }
       }
@@ -1961,7 +1961,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_LOGANDII', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeLOGORII( ){
@@ -1973,7 +1973,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_LOGORII', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeINCORII( ){
@@ -1985,7 +1985,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_INCORII', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeEXCORII( ){
@@ -1997,7 +1997,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_EXCORII', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeBOOLANDII( ){
@@ -2009,7 +2009,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_BOOLANDII', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeEQUAL( type = 0x20 ){
@@ -2021,7 +2021,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_EQUAL', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeNEQUAL( type = 0x20 ){
@@ -2033,7 +2033,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_NEQUAL', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeGEQ( type = 0x20 ){
@@ -2045,7 +2045,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_GEQ', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeGT( type = 0x20 ){
@@ -2057,7 +2057,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_GT', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeLT( type = 0x20 ){
@@ -2069,7 +2069,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_LT', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeLEQ( type = 0x20 ){
@@ -2081,7 +2081,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_LEQ', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeSHLEFTII( ){
@@ -2093,7 +2093,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_SHLEFTII', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeSHRIGHTII( ){
@@ -2105,7 +2105,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_SHRIGHTII', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeUSHRIGHTII( ){
@@ -2117,7 +2117,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_USHRIGHTII', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer; 
+    return buffer;
   }
 
   writeADD( type = 0x20 ){
@@ -2247,7 +2247,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_STORE_STATEALL', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeJMP( nOffset = 0 ){
@@ -2259,7 +2259,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_JMP', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeJSR( nOffset = 0 ){
@@ -2271,7 +2271,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_JSR', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeJZ( nOffset = 0 ){
@@ -2283,7 +2283,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_JZ', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeRETN( ){
@@ -2294,7 +2294,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_RETN', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeDESTRUCT( nTotalSizeToDestory = 0, nOffsetOfElementToKeep = 0, nSizeOfElementToKeep = 4 ){
@@ -2308,7 +2308,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_DESTRUCT', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeNOTI( ){
@@ -2319,7 +2319,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_NOTI', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeDECISP( nOffset = 0 ){
@@ -2331,7 +2331,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_DECISP', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeINCISP( nOffset = 0 ){
@@ -2343,7 +2343,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_INCISP', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeJNZ( nOffset = 0 ){
@@ -2355,7 +2355,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_JNZ', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeCPDOWNBP( nOffset = 0, nSize = 0 ){
@@ -2393,7 +2393,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_DECIBP', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeINCIBP( nOffset = 0 ){
@@ -2405,7 +2405,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_INCIBP', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeSAVEBP( ){
@@ -2419,7 +2419,7 @@ export class NWScriptCompiler {
     this.stackPointer = 0;
     this.basePointerWriting = false;
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeRESTOREBP( ){
@@ -2430,7 +2430,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_RESTOREBP', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeSTORE_STATE( nBStackSize = 0, nStackSize = 0 ){
@@ -2443,7 +2443,7 @@ export class NWScriptCompiler {
     this.opcodeDebug('OP_STORE_STATE', buffer);
     this.scopeAddBytesWritten(buffer.length);
     this.addBytesWritten(buffer.length);
-    return buffer;  
+    return buffer;
   }
 
   writeNOP( ){

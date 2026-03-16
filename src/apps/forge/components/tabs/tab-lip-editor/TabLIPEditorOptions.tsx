@@ -47,25 +47,25 @@ export const TabLIPEditorOptions = function(props: any){
   });
 
   useEffect( () => {
-    console.log('duration', 'change');
+    log.debug('duration', 'change');
   }, [duration]);
 
-  const onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let shape = parseInt(e.target.value);
+  const _onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const shape = parseInt(e.target.value);
     parentTab.selected_frame.shape = !isNaN(shape) ? shape : 0;
     parentTab.selectKeyFrame(parentTab.selected_frame);
   }
 
   const onPreviewHeadChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let head = (e.target.value);
+    const head = (e.target.value);
     parentTab.loadHead(head);
   }
 
-  const onImportPHNClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onImportPHNClick = (_e: React.MouseEvent<HTMLButtonElement>) => {
     parentTab.importPHN();
   }
 
-  const onFitToKeyFrames = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onFitToKeyFrames = (_e: React.MouseEvent<HTMLButtonElement>) => {
     parentTab.fitDurationToKeyFrames();
   }
 

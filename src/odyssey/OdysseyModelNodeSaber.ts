@@ -1,7 +1,7 @@
-import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import type { OdysseyModel } from "./OdysseyModel";
-import type { OdysseyModelNode } from "./OdysseyModelNode";
-import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import type { OdysseyModel } from "@/odyssey/OdysseyModel";
+import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
 
 /**
  * OdysseyModelNodeSaber class.
@@ -40,9 +40,9 @@ export class OdysseyModelNodeSaber extends OdysseyModelNodeMesh {
     this.tvectors[1] = [];
     this.indices = [];
 
-    let vertexDataSize = 12;
-    let normalDataSize = 12;
-    let uvDataSize = 8;
+    const vertexDataSize = 12;
+    const normalDataSize = 12;
+    const uvDataSize = 8;
 
     for(let i = 0; i < 176; i++){
       //SABER Vertices
@@ -84,14 +84,14 @@ export class OdysseyModelNodeSaber extends OdysseyModelNodeMesh {
 
     this.indices = [];
 
-    let order = [                      //--\\
+    const order = [                      //--\\
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
     ];
 
     //Build the face indices
     for(let i = 0, len = order.length-1; i < len; i++){
-      let f1 = (order[i    ] * 4);
-      let f2 = (order[i + 1] * 4);
+      const f1 = (order[i    ] * 4);
+      const f2 = (order[i + 1] * 4);
 
       this.indices.push(
         f1 + 0, f1 + 1, f2 + 0,

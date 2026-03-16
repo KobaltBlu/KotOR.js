@@ -1,11 +1,15 @@
-import { AnalogInput } from "./AnalogInput";
-import { KeyInput } from "./KeyInput";
+
+import { AnalogInput } from "@/controls/AnalogInput";
+import { KeyInput } from "@/controls/KeyInput";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * GamePad class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GamePad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -75,7 +79,7 @@ export class GamePad {
       this.stick_l.update(this.gamePad, delta);
       this.stick_l_x.update(this.gamePad, delta);
       this.stick_l_y.update(this.gamePad, delta);
-      
+
       this.stick_r.update(this.gamePad, delta);
       this.stick_r_x.update(this.gamePad, delta);
       this.stick_r_y.update(this.gamePad, delta);

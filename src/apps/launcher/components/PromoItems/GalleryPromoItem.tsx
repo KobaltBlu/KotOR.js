@@ -22,8 +22,8 @@ export const GalleryPromoItem = function(props: ProfilePromoItemProps){
   };
 
   const galleryPreviousImage = () => {
-    let count = element.images.length;
-    let newIndex = index - 1;
+    const count = element.images.length;
+    const newIndex = index - 1;
     setIndex(index - 1);
     if(newIndex < 0){
       setIndex(count - 1);
@@ -31,8 +31,8 @@ export const GalleryPromoItem = function(props: ProfilePromoItemProps){
   }
 
   const galleryNextImage = () => {
-    let count = element.images.length;
-    let newIndex = index + 1;
+    const count = element.images.length;
+    const newIndex = index + 1;
     setIndex(index + 1);
     if(newIndex >= count){
       setIndex(0);

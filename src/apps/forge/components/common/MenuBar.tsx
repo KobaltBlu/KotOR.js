@@ -23,7 +23,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
     setOpenSubmenu(null);
   }, [openMenu]);
 
-  const handleSubmenuClick = useCallback((label: string) => {
+  const _handleSubmenuClick = useCallback((label: string) => {
     setOpenSubmenu(openSubmenu === label ? null : label);
   }, [openSubmenu]);
 

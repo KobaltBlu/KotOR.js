@@ -1,29 +1,34 @@
-import { GameState } from "../GameState";
-import { GFFObject } from "../resource/GFFObject";
-import { ResourceTypes } from "../resource/ResourceTypes";
 import * as path from "path";
+
 import * as THREE from "three";
-import EngineLocation from "../engine/EngineLocation";
-import { CurrentGame } from "../engine/CurrentGame";
-import { ModuleCreature } from "../module/ModuleCreature";
-import { OdysseyModel3D } from "../three/odyssey";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { ResourceLoader } from "../loaders";
-import { GameEngineType, UIIconTimerType } from "../enums/engine";
-import { PartyManagerEvent } from "../types/PartyManagerEvent";
-import { ModulePlayer } from "../module/ModulePlayer";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { JournalEntry } from "../engine/JournalEntry";
-import { DialogMessageEntry } from "../engine/DialogMessageEntry";
-import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
-import { PazaakCards } from "../enums/minigames/PazaakCards";
-import { PazaakSideDeckSlots } from "../enums/minigames/PazaakSideDeckSlots";
-import { type SWPortrait } from "../engine/rules/SWPortrait";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { BitWise } from "../utility/BitWise";
+
+import { CurrentGame } from "@/engine/CurrentGame";
+import { DialogMessageEntry } from "@/engine/DialogMessageEntry";
+import EngineLocation from "@/engine/EngineLocation";
+import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
+import { JournalEntry } from "@/engine/JournalEntry";
+import { type SWPortrait } from "@/engine/rules/SWPortrait";
+import { GameEngineType, UIIconTimerType } from "@/enums/engine";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
+import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { ResourceLoader } from "@/loaders";
+import { ModuleCreature } from "@/module/ModuleCreature";
+import { ModulePlayer } from "@/module/ModulePlayer";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { PartyManagerEvent } from "@/types/PartyManagerEvent";
+import { BitWise } from "@/utility/BitWise";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Manager);
 
 export interface CurrentMember {
   isLeader: boolean,
@@ -53,9 +58,9 @@ export interface PartyPuppetList {
 
 /**
  * PartyManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file PartyManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -145,7 +150,7 @@ export class PartyManager {
 
     PartyManager.MaxPartyCount = GameState.GameKey == GameEngineType.TSL ? 12 : 9;
     PartyManager.MaxPuppetCount = GameState.GameKey == GameEngineType.TSL ? 3 : 0;
-    
+
     for(let i = 0; i < PartyManager.MaxPartyCount; i++){
       GameState.PartyManager.InfluenceMap.set(i, -1);
       GameState.PartyManager.NPCS[i] = {
@@ -176,7 +181,7 @@ export class PartyManager {
       GameState.Planetary.SetSelectedPlanet(currentPlanet);
     }
 
-    //Init the TutorialWindowTracker      
+    //Init the TutorialWindowTracker
     const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
     let bitCount = 0;
     if(tutorial2DA){
@@ -336,7 +341,7 @@ export class PartyManager {
   static async Export(directory = ''){
     return new Promise<void>( (resolve, reject) => {
       //Export PARTYTABLE.res
-      let partytable = new GFFObject();
+      const partytable = new GFFObject();
       partytable.FileType = 'PT  ';
       partytable.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'GlxyMap')).addChildStruct( GameState.Planetary.SaveStruct() );
       const jnl_list = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'JNL_Entries'));
@@ -349,13 +354,13 @@ export class PartyManager {
 
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'JNL_SortOrder')).setValue(0);
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_AISTATE')).setValue(0);
-      let availNPCSList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_AVAIL_NPCS'));
+      const availNPCSList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_AVAIL_NPCS'));
 
       //TODO: Party Available NPCS
-      let maxPartyMembers = (GameState.GameKey == GameEngineType.KOTOR) ? 9 : 12;
+      const maxPartyMembers = (GameState.GameKey == GameEngineType.KOTOR) ? 9 : 12;
       for(let i = 0; i < maxPartyMembers; i++){
-        let pm = GameState.PartyManager.NPCS[i];
-        let availStruct = new GFFStruct();
+        const pm = GameState.PartyManager.NPCS[i];
+        const availStruct = new GFFStruct();
         availStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_NPC_AVAIL') ).setValue(pm.available ? 1 : 0);
         availStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_NPC_SELECT') ).setValue(pm.canSelect ? 1 : 0);
         availNPCSList.addChildStruct(availStruct);
@@ -386,13 +391,13 @@ export class PartyManager {
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_FOLLOWSTATE')).setValue(0);
       partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_GOLD')).setValue(GameState.PartyManager.Gold);
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_LAST_GUI_PNL')).setValue(0);
-      let ptMembersList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_MEMBERS'));
+      const ptMembersList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_MEMBERS'));
 
       let numMembers = 0;
       for(let i = 0; i < GameState.PartyManager.party.length; i++){
-        let member = GameState.PartyManager.party[i];
+        const member = GameState.PartyManager.party[i];
         if(member != GameState.PartyManager.Player){
-          let memberStruct = new GFFStruct();
+          const memberStruct = new GFFStruct();
           memberStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_IS_LEADER') ).setValue( GameState.getCurrentPlayer() == member ? 1 : 0 );
           memberStruct.addField( new GFFField(GFFDataType.INT, 'PT_MEMBER_ID') ).setValue( member.npcId );
           ptMembersList.addChildStruct( memberStruct );
@@ -407,7 +412,7 @@ export class PartyManager {
        */
       const pazaakCardsList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PAZAAKCARDS'));
       for(let i = 0; i < PazaakCards.MAX_CARDS + 1; i++){
-        let cardStruct = new GFFStruct(0);
+        const cardStruct = new GFFStruct(0);
         const card = GameState.PazaakManager.Cards.get(i);
         const isUnusedCard = i == PazaakCards.UNUSED_CARD;
         /**
@@ -425,7 +430,7 @@ export class PartyManager {
        */
       const pazaakSideDeckList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PAZSIDELIST'));
       for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
-        let sideDeckStruct = new GFFStruct(0);
+        const sideDeckStruct = new GFFStruct(0);
         const sideDeckCard = GameState.PazaakManager.PlayerSideDeck.get(i);
         sideDeckStruct.addField(new GFFField(GFFDataType.INT, 'PT_PAZSIDECARD'))
           .setValue(sideDeckCard);
@@ -437,13 +442,13 @@ export class PartyManager {
 
       const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
       if(tutorial2DA){
-        let byteCount = Math.ceil(tutorial2DA.RowCount / 8);
-        let buffer = new Uint8Array(byteCount);
+        const byteCount = Math.ceil(tutorial2DA.RowCount / 8);
+        const buffer = new Uint8Array(byteCount);
         for(let i = 0; i < byteCount; i++){
           let byte = 0;
           for(let j = 0; j < 8; j++){
-            let offset = (8 * i) + j;
-            let bit = GameState.TutorialWindowTracker[offset];
+            const offset = (8 * i) + j;
+            const bit = GameState.TutorialWindowTracker[offset];
             if(bit){
               byte |= 1 << j;
             }
@@ -474,7 +479,7 @@ export class PartyManager {
   static AddGold(amount: number){
     if(!amount) return;
     this.Gold += amount;
-    
+
     if(this.Gold < 0){
       this.Gold = 0;
     }
@@ -528,7 +533,7 @@ export class PartyManager {
    * @returns void
    */
   static RemoveNPCById(npcId = 0, leaveInWorld = false){
-    console.log('RemoveNPCById', npcId, leaveInWorld);
+    log.trace('RemoveNPCById', npcId, leaveInWorld);
     const partyMember = PartyManager.GetPartyMemberByNPCId(npcId);
     if(!partyMember){
       return;
@@ -545,17 +550,17 @@ export class PartyManager {
     PartyManager.RebuildPortraitOrder();
 
     if(!leaveInWorld){
-      console.log('RemoveNPCById !leaveInWorld', partyMember);
+      log.debug('RemoveNPCById !leaveInWorld', partyMember);
       partyMember.destroy();
     }else{
-      console.log('RemoveNPCById leaveInWorld', partyMember);
+      log.debug('RemoveNPCById leaveInWorld', partyMember);
       if(partyMember.container){
         partyMember.container.removeFromParent();
       }
       GameState.group.creatures.add(partyMember.container);
       GameState.module.area.attachObject(partyMember);
     }
-    
+
     PartyManager.RemoveCurrentMemberByNPCId(npcId);
   }
 
@@ -649,7 +654,7 @@ export class PartyManager {
       if(portrait2DA[i].baseresref.toLowerCase() != resref.toLowerCase()){
         continue;
       }
-      return portrait2DA[i];    
+      return portrait2DA[i];
     }
     return null;
   }
@@ -682,7 +687,7 @@ export class PartyManager {
   static IsSelectable(nID = 0){
     return PartyManager.NPCS[nID]?.canSelect ? true : false;
   }
-  
+
   /**
    * Check if the NPC is available
    * @param nID - The ID of the NPC to check if it is available
@@ -735,7 +740,7 @@ export class PartyManager {
         PartyManager.NPCS[npcId].template = new GFFObject(buffer);
         return true;
       }else{
-        console.error('Failed to load character template');
+        log.error('Failed to load character template');
       }
     }else if(template instanceof GFFObject){
       //We already have the template (From SAVEGAME)
@@ -744,7 +749,7 @@ export class PartyManager {
       PartyManager.NPCS[npcId].template = template;
       return true;
     }else{
-      console.error('Failed to load character template');
+      log.error('Failed to load character template');
     }
     return false;
   }
@@ -780,7 +785,7 @@ export class PartyManager {
     //Add the creature to the party array
     PartyManager.party.push(creature);
     //Check to see if the creature needs to be removed from the creatures array
-    let cIdx = GameState.module.area.creatures.indexOf(creature);
+    const cIdx = GameState.module.area.creatures.indexOf(creature);
     if(cIdx > -1){
       GameState.module.area.creatures.splice(cIdx, 1);
     }
@@ -799,7 +804,7 @@ export class PartyManager {
     }else{
       partyMember = new ModuleCreature(PartyManager.NPCS[npcId].template);
     }
-     
+
     const oldPC = PartyManager.Player;
     PartyManager.Player = partyMember;
 
@@ -971,17 +976,17 @@ export class PartyManager {
         }*/
         PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
         PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
-        let spawn = PartyManager.GetSpawnLocation(partyMember);
+        const spawn = PartyManager.GetSpawnLocation(partyMember);
         partyMember.position.copy(spawn.position);
         partyMember.setFacing(spawn.getFacing(), true);
-        
+
         const model = await partyMember.loadModel();
         model.userData.moduleObject = partyMember;
 
         partyMember.position.copy(spawn.position);
         partyMember.setFacing(spawn.getFacing(), true);
         //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
-  
+
         model.hasCollision = true;
         GameState.group.party.add( partyMember.container );
 
@@ -1018,7 +1023,7 @@ export class PartyManager {
 
       return;
     }
-    
+
     const partyMember = new ModuleCreature(npc.template);
     partyMember.npcId = npcId;
     partyMember.isPM = true;
@@ -1031,7 +1036,7 @@ export class PartyManager {
         onLoad(partyMember);
 
     });
-    
+
   }
 
   /**
@@ -1043,85 +1048,85 @@ export class PartyManager {
     if( BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature) ){
       if( GameState.isLoadingSave ){
         return new EngineLocation(
-          creature.position.x, 
-          creature.position.y, 
+          creature.position.x,
+          creature.position.y,
           creature.position.z,
-          creature.getXOrientation(), 
-          creature.getYOrientation(), 
+          creature.getXOrientation(),
+          creature.getYOrientation(),
           creature.getZOrientation()
         );
       }else if( GameState.module.area.transWP ){
         if( GameState.module.area.transWP ){
-          //console.log('TransWP - PM', GameState.module.area.transWP);
+          //log.debug('TransWP - PM', GameState.module.area.transWP);
         }
-        let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
-        let spawnLoc = GameState.module.area.getSpawnLocation();
-        let facing = -Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y);
+        const index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
+        const spawnLoc = GameState.module.area.getSpawnLocation();
+        const facing = -Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y);
         switch(index){
           case 0:
             return new EngineLocation(
               spawnLoc.position.x,
-              spawnLoc.position.y, 
+              spawnLoc.position.y,
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z
             );
           case 1:
             return new EngineLocation(
-              spawnLoc.position.x + 1.5 * Math.cos(facing), 
-              spawnLoc.position.y + 1.5 * Math.sin(facing), 
+              spawnLoc.position.x + 1.5 * Math.cos(facing),
+              spawnLoc.position.y + 1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z
             );
           case 2:
             return new EngineLocation(
-              spawnLoc.position.x + -1.5 * Math.cos(facing), 
-              spawnLoc.position.y + -1.5 * Math.sin(facing), 
+              spawnLoc.position.x + -1.5 * Math.cos(facing),
+              spawnLoc.position.y + -1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z
             );
         }
       }else{
-        let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
-        let spawnLoc = GameState.module.area.getSpawnLocation();
-        let facing = spawnLoc.getFacing();
+        const index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
+        const spawnLoc = GameState.module.area.getSpawnLocation();
+        const facing = spawnLoc.getFacing();
         switch(index){
           case 0:
             return new EngineLocation(
               spawnLoc.position.x,
-              spawnLoc.position.y, 
+              spawnLoc.position.y,
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z,
             );
           case 1:
             return new EngineLocation(
-              spawnLoc.position.x + 1.5 * Math.cos(facing), 
-              spawnLoc.position.y + 1.5 * Math.sin(facing), 
+              spawnLoc.position.x + 1.5 * Math.cos(facing),
+              spawnLoc.position.y + 1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z,
             );
           case 2:
             return new EngineLocation(
-              spawnLoc.position.x + -1.5 * Math.cos(facing), 
-              spawnLoc.position.y + -1.5 * Math.sin(facing), 
+              spawnLoc.position.x + -1.5 * Math.cos(facing),
+              spawnLoc.position.y + -1.5 * Math.sin(facing),
               spawnLoc.position.z,
               spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
+              spawnLoc.rotation.y,
               spawnLoc.rotation.z,
             );
         }
       }
     }
-    
+
     return GameState.module.area.getSpawnLocation();
 
   }
@@ -1152,8 +1157,8 @@ export class PartyManager {
     const targetOffset = (idx == 2) ? -1.5 :1.5;
 
     this.#tmpFollowPositionTarget.set(
-      targetOffset * Math.cos(leader.rotation.z), 
-      targetOffset * Math.sin(leader.rotation.z), 
+      targetOffset * Math.cos(leader.rotation.z),
+      targetOffset * Math.sin(leader.rotation.z),
       0
     );
     this.#tmpFollowPosition.copy(leader.position).sub(this.#tmpFollowPositionTarget);
@@ -1190,16 +1195,16 @@ export class PartyManager {
    */
   static async ExportPartyMemberTemplates(){
     return new Promise<void>( async (resolve, reject) => {
-      let maxPartyMembers = (GameState.GameKey == GameEngineType.KOTOR) ? 9 : 12;
+      const maxPartyMembers = (GameState.GameKey == GameEngineType.KOTOR) ? 9 : 12;
       for(let i = 0; i < maxPartyMembers; i++){
-        let pm = PartyManager.NPCS[i];
+        const pm = PartyManager.NPCS[i];
         if(!pm){
-          console.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. pm was undefined.`);
+          log.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. pm was undefined.`);
           continue;
         }
 
         if(!(pm.template instanceof GFFObject)){
-          console.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. template was not an instance of GFFObject`);
+          log.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. template was not an instance of GFFObject`);
           continue;
         }
 
@@ -1240,7 +1245,7 @@ export class PartyManager {
    * @returns GFFObject
    */
   public static GeneratePlayerTemplate(): GFFObject {
-    let pTPL = new GFFObject();
+    const pTPL = new GFFObject();
 
     pTPL.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).setValue(GameState.GameKey == GameEngineType.TSL ? 134 : 177);
@@ -1264,7 +1269,7 @@ export class PartyManager {
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'IsDestroyable') ).setValue(1);
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'IsPC') ).setValue(1);
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'IsRaiseable') ).setValue(1);
-    let equipment = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
+    const equipment = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
     pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptAttacked') ).setValue('k_hen_attacked01');
     pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDamaged') ).setValue('k_def_damage01');
     pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDeath') ).setValue('');
@@ -1297,26 +1302,26 @@ export class PartyManager {
 
     pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') ).setValue(12);
 
-    let classList = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'ClassList') );
+    const classList = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'ClassList') );
     for(let i = 0; i < 1; i++){
-      let _class = new GFFStruct();
+      const _class = new GFFStruct();
       _class.addField( new GFFField(GFFDataType.INT, 'Class') ).setValue(0);
       _class.addField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).setValue(1);
       _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
       classList.addChildStruct(_class);
     }
 
-    let skillList = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
+    const skillList = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
 
     for(let i = 0; i < 8; i++){
-      let _skill = new GFFStruct();
+      const _skill = new GFFStruct();
       _skill.addField( new GFFField(GFFDataType.RESREF, 'Rank') ).setValue(0);
       skillList.addChildStruct(_skill);
     }
 
-    let armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
+    const armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
     armorStruct.addField( new GFFField(GFFDataType.RESREF, 'EquippedRes') ).setValue('g_a_jedirobe01');
-    let rhStruct = new GFFStruct(ModuleCreatureArmorSlot.RIGHTHAND);
+    const rhStruct = new GFFStruct(ModuleCreatureArmorSlot.RIGHTHAND);
     rhStruct.addField( new GFFField(GFFDataType.RESREF, 'EquippedRes') ).setValue('g_w_lghtsbr01');
 
     equipment.addChildStruct( armorStruct );

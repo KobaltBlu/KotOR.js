@@ -27,13 +27,13 @@ export class ActionCombat extends Action {
     // 0 - int: (?) 1 or 0
 
   }
-  
+
   /**
    * Updates the combat action state.
-   * 
+   *
    * Processes the combat round and executes scheduled combat actions like attacks and spells.
    * Adds appropriate actions to the owner's action queue based on the combat action type.
-   * 
+   *
    * @param delta - Time elapsed since last update in seconds
    * @returns ActionStatus indicating the current state of the combat action:
    *          - FAILED if owner is not a creature

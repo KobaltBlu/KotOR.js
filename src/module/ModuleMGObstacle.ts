@@ -1,19 +1,22 @@
-import { ModuleObject } from "./ModuleObject";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
-import { NWScript } from "../nwscript/NWScript";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFObject } from "../resource/GFFObject";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import { GameState } from "../GameState";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ILayoutObstacle } from "@/interface/resource/ILayoutObstacle";
+import { ModuleObject } from "@/module/ModuleObject";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFObject } from "@/resource/GFFObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Module);
+import { GameState } from "@/GameState";
 
 /**
 * ModuleMGObstacle class.
-* 
+*
 * Class representing a obstacle found in minigame modules.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMGObstacle.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

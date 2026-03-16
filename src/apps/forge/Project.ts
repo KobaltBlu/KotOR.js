@@ -1,25 +1,27 @@
-import { EditorFile } from "./EditorFile";
-import { DeepObject } from "../../utility/DeepObject";
-import { ForgeState } from "./states/ForgeState";
-import { TabModuleEditorState, TabQuickStartState } from "./states/tabs";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { ProjectType } from "@/apps/forge/enum/ProjectType";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
+import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
+import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabModuleEditorState, TabQuickStartState } from "@/apps/forge/states/tabs";
+import { DeepObject } from "@/utility/DeepObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
-import * as KotOR from "./KotOR";
-import { ProjectType } from "./enum/ProjectType";
-import { FileTypeManager } from "./FileTypeManager";
-import { ProjectFileSystem } from "./ProjectFileSystem";
-import { ForgeFileSystem } from "./ForgeFileSystem";
-import { ProjectSettings } from "./interfaces/ProjectSettings";
-import { ForgeArea } from "./module-editor/ForgeArea";
-import { ForgeModule } from "./module-editor/ForgeModule";
-import { ForgeRoom } from "./module-editor/ForgeRoom";
+const log = createScopedLogger(LogScope.Forge);
 
 const DIR_FORGE = '.forge';
 const DIR_BLUEPRINTS = 'blueprints';
 const DIR_MODELS = 'models';
 const DIR_TEXTURES = 'textures';
 const DIR_DIALOGS = 'dialogs';
-const DIR_SOUNDS = 'sounds';
-const DIR_MUSIC = 'music';
+const _DIR_SOUNDS = 'sounds';
+const _DIR_MUSIC = 'music';
 const DIR_SCRIPTS = 'scripts';
 
 export class Project {
@@ -273,7 +275,7 @@ export class Project {
   addToOpenFileList(editor_file: EditorFile){
     if(editor_file instanceof EditorFile){
       if(editor_file.getPath()){
-        let index = this.settings.open_files.indexOf(editor_file.getPath());
+        const index = this.settings.open_files.indexOf(editor_file.getPath());
         if(index == -1){
           this.settings.open_files.push(editor_file.getPath());
           this.saveSettings();
@@ -287,7 +289,7 @@ export class Project {
   removeFromOpenFileList(editor_file: EditorFile){
     if(editor_file instanceof EditorFile){
       if(editor_file.getPath()){
-        let index = this.settings.open_files.indexOf(editor_file.getPath());
+        const index = this.settings.open_files.indexOf(editor_file.getPath());
         if(index >= 0){
           this.settings.open_files.splice(index, 1);
           this.saveSettings();
@@ -301,7 +303,7 @@ export class Project {
   async buildModuleAndArea(name: string, areaName: string = 'm01aa', rooms: { roomName: string, envAudio: number, ambientScale: number }[] = []){
     const mod = new ForgeModule();
     mod.name.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
-    
+
     /**
      * Build the entry area
      */
@@ -351,7 +353,7 @@ export class Project {
     //   await ProjectFileSystem.mkdir(`${DIR_MUSIC}`, { recursive: false });
     // }
     if(!await ProjectFileSystem.exists(`${DIR_SCRIPTS}`)){
-      console.log('Creating directory', `./${DIR_SCRIPTS}/`);
+      log.debug('Creating directory', `./${DIR_SCRIPTS}/`);
       await ProjectFileSystem.mkdir(`${DIR_SCRIPTS}`, { recursive: false });
     }
   }

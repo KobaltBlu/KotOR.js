@@ -1,27 +1,32 @@
-import type { ModuleCreature, ModuleItem, ModuleObject } from "../module";
-import { GFFStruct } from "../resource/GFFStruct";
-import { Dice } from "../utility/Dice";
-import { OdysseyModelAnimation } from "../odyssey";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { CombatFeatType } from "../enums/combat/CombatFeatType";
-import { AttackResult } from "../enums/combat/AttackResult";
-import { WeaponWield } from "../enums/combat/WeaponWield";
-import { ActionType } from "../enums/actions/ActionType";
-import { WeaponSize } from "../enums/combat/WeaponSize";
-import { DamageType } from "../enums/combat/DamageType";
-import { DiceType } from "../enums/combat/DiceType";
-import { TextSprite3D } from "../engine/TextSprite3D";
-import { BitWise } from "../utility/BitWise";
-import { CombatAttackData } from "./CombatAttackData";
-import type { CombatRoundAction } from "./CombatRoundAction";
-import { GameState } from "../GameState";
-import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
-import { FeebackMessageColor } from "../enums/engine/FeedbackMessageColor";
+import { CombatAttackData } from "@/combat/CombatAttackData";
+import type { CombatRoundAction } from "@/combat/CombatRoundAction";
+import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
+import { TextSprite3D } from "@/engine/TextSprite3D";
+import { ActionType } from "@/enums/actions/ActionType";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
+import { DamageType } from "@/enums/combat/DamageType";
+import { DiceType } from "@/enums/combat/DiceType";
+import { WeaponSize } from "@/enums/combat/WeaponSize";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
+import { TextSprite3DType } from "@/enums/engine/TextSprite3DType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import { OdysseyModelAnimation } from "@/odyssey";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { BitWise } from "@/utility/BitWise";
+import { Dice } from "@/utility/Dice";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
+
 
 /**
  * CombatRound class.
@@ -198,7 +203,7 @@ export class CombatRound {
    * End the combat round
    */
   endCombatRound(){
-    console.log('endCombatRound', this.owner.tag);
+    log.debug('endCombatRound', this.owner.tag);
     this.roundStarted = false;
     const combatData = this.owner.combatData;
     combatData.lastCombatFeatUsed = undefined;
@@ -325,7 +330,7 @@ export class CombatRound {
    * @returns True if the action was cleared, false otherwise
    */
   clearAction(action: CombatRoundAction){
-    let index = this.scheduledActionList.indexOf(action);
+    const index = this.scheduledActionList.indexOf(action);
     if(index >= 0){
       this.scheduledActionList.splice( index, 1 );
       return true;
@@ -429,8 +434,8 @@ export class CombatRound {
 
     this.calculateRoundAnimations(creature, combatAction);
 
-    let attackAnimation = creature.model.odysseyAnimationMap.get(combatAction.animationName.toLowerCase().trim());
-    let attackDamageDelay = attackAnimation?.getDamageDelay() || 0;
+    const attackAnimation = creature.model.odysseyAnimationMap.get(combatAction.animationName.toLowerCase().trim());
+    const attackDamageDelay = attackAnimation?.getDamageDelay() || 0;
 
     if(combatAction.isCutsceneAttack){
       const attack = this.attackList[0];
@@ -605,7 +610,7 @@ export class CombatRound {
     if(!combatAction) return;
 
     let attackKey = creature.getCombatAnimationAttackType();
-    let weaponWield = creature.getCombatAnimationWeaponType();
+    const weaponWield = creature.getCombatAnimationWeaponType();
     let attackType = 1;
 
     //Get random basic melee attack in combat with another melee creature that is targeting you
@@ -800,7 +805,7 @@ export class CombatRound {
     FeedbackMessageManager.AddEntry(entry);
 
     // Also log to console for debugging
-    console.log(`Combat Log: ${message}`);
+    log.debug(`Combat Log: ${message}`);
   }
 
   /**

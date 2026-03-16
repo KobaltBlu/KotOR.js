@@ -685,7 +685,7 @@ export class NWScriptLanguageService {
                 const funcLine = l_function.source.first_line - 1; // Convert to 0-based index
                 
                 // Look backwards for comment blocks (similar to engine actions)
-                let commentLines: string[] = [];
+                const commentLines: string[] = [];
                 let inBlockComment = false;
                 
                 for (let i = funcLine - 1; i >= 0; i--) {
@@ -750,7 +750,6 @@ export class NWScriptLanguageService {
                 functionComment = commentLines.join('\n').trim();
               }
               
-              // console.log(l_function);
               const args: string[] = [];
               for(let i = 0; i < l_function.arguments.length; i++){
                 const def_arg = l_function.arguments[i];

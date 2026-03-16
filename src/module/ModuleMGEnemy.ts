@@ -1,24 +1,29 @@
-import { ModuleObject } from "./ModuleObject";
-import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
-import { OdysseyModel3D } from "../three/odyssey";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GameState } from "../GameState";
-import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
-import { NWScript } from "../nwscript/NWScript";
-import { IModelListItem } from "../interface/module/minigame/IModelListItem";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { MDLLoader } from "../loaders";
-import { ModuleMGGunBank } from "./ModuleMGGunBank";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
+import { MDLLoader } from "@/loaders";
+import { ModuleMGGunBank } from "@/module/ModuleMGGunBank";
+import { ModuleObject } from "@/module/ModuleObject";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel, OdysseyModelAnimationManager } from "@/odyssey";
+import { GFFObject } from "@/resource/GFFObject";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
 * ModuleMGEnemy class.
-* 
+*
 * Class representing an enemy object found in minigame modules.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMGEnemy.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

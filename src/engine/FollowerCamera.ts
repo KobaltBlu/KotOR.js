@@ -146,7 +146,7 @@ export class FollowerCamera {
     }
 
     for(let j = 0, jl = area.doors.length; j < jl; j++){
-      let door = area.doors[j];
+      const door = area.doors[j];
       if(door && door.collisionManager.walkmesh && !door.isOpen()){
         if(door.box.intersectsBox(FollowerCamera.box) || door.box.containsBox(FollowerCamera.box)){
           aabbFaces.push({
@@ -158,7 +158,7 @@ export class FollowerCamera {
     }
     
     for(let k = 0, kl = aabbFaces.length; k < kl; k++){
-      let castableFaces = aabbFaces[k];
+      const castableFaces = aabbFaces[k];
       intersects = castableFaces.object.collisionManager.walkmesh.raycast(FollowerCamera.raycaster, castableFaces.faces) || [];
       if ( intersects.length > 0 ) {
         for(let i = 0; i < intersects.length; i++){

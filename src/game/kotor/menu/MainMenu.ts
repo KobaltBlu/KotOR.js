@@ -1,15 +1,16 @@
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { CurrentGame } from "../../../engine/CurrentGame";
-import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { AudioEngine } from "../../../audio/AudioEngine";
-import { ApplicationProfile } from "../../../utility/ApplicationProfile";
-import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { CurrentGame } from "@/engine/CurrentGame";
+import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * MainMenu class.
@@ -67,7 +68,7 @@ export class MainMenu extends GameMenu {
 
       this.BTN_LOADGAME.addEventListener('click', (e) => {
         e.stopPropagation();
-        //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
+        //Game.LoadModule('danm14aa', null, () => { log.info('ready to load'); })
         this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
         this.manager.MenuSaveLoad.open()
       });
@@ -76,7 +77,7 @@ export class MainMenu extends GameMenu {
         e.stopPropagation();
         //this.Hide();
         this.manager.MainMovies.open();
-        //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
+        //Game.LoadModule('danm14aa', null, () => { log.info('ready to load'); })
       });
 
       this.BTN_OPTIONS.addEventListener('click', (e) => {
@@ -140,7 +141,7 @@ export class MainMenu extends GameMenu {
         resolve();
       }, () => {
         this.open();
-        console.error('Background Music not found', this.bgMusicResRef);
+        log.error('Background Music not found', this.bgMusicResRef);
         resolve();
       });
     });

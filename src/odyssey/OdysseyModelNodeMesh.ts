@@ -1,13 +1,14 @@
 import * as THREE from "three";
-import { OdysseyModelEngine } from "../enums/odyssey/OdysseyModelEngine";
-import { OdysseyModelMDXFlag } from "../enums/odyssey/OdysseyModelMDXFlag";
-import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
-import { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
-import { OdysseyModelNode } from "./OdysseyModelNode";
-import type { OdysseyModel } from "./OdysseyModel";
-import { OdysseyModelUtility } from "./OdysseyModelUtility";
-import { OdysseyWalkMesh } from "./OdysseyWalkMesh";
+
+import { OdysseyModelEngine } from "@/enums/odyssey/OdysseyModelEngine";
+import { OdysseyModelMDXFlag } from "@/enums/odyssey/OdysseyModelMDXFlag";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
+import type { OdysseyModel } from "@/odyssey/OdysseyModel";
+import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
+import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 
 const mdlStringCleaner = (str: string = ''): string => {
   const cleaned = str.replace(/\0[\s\S]*$/g,'').toLowerCase().trim();
@@ -209,7 +210,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     if ((this.verticesCount == 0) || (this.faceArrayDefinition.count == 0))
       return;
 
-    let cachedPosition = this.odysseyModel.mdlReader.position;
+    const cachedPosition = this.odysseyModel.mdlReader.position;
 
     //Tangent1
     if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT1){
@@ -253,7 +254,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
 
     for (let i = 0; i < this.verticesCount; i++) {
       // Base Position Offset
-      let basePosition = (this.MDXNodeDataOffset + (i * this.MDXDataSize));
+      const basePosition = (this.MDXNodeDataOffset + (i * this.MDXDataSize));
 
       // Vertex
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.VERTEX){
@@ -345,7 +346,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
 
     if(this.vertexLocArrayDef.count){
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + this.vertexLocArrayDef.offset;
-      let offVerts = this.odysseyModel.mdlReader.readUInt32();
+      const offVerts = this.odysseyModel.mdlReader.readUInt32();
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + offVerts;
     }
 
@@ -400,8 +401,8 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     // Calculate handedness
 
     tmp2.crossVectors( n2, t );
-    let test = tmp2.dot( t2 );
-    let w = ( test < 0.0 ) ? - 1.0 : 1.0;
+    const test = tmp2.dot( t2 );
+    const w = ( test < 0.0 ) ? - 1.0 : 1.0;
 
     tangentObject.computed[(index * 4) + 0] = tmp.x;
     tangentObject.computed[(index * 4) + 1] = tmp.y;

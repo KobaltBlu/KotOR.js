@@ -1,5 +1,6 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 export interface StoreItemEntry {
   inventoryRes: string;
@@ -98,11 +99,11 @@ export class ForgeStore extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BuySellFlag', this.buySellFlag) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'ID', this.id) );
-    
+
     const itemListField = root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.itemList.length; i++){
       if(itemListField){
@@ -114,7 +115,7 @@ export class ForgeStore extends ForgeGameObject {
         itemListField.addChildStruct(itemStruct);
       }
     }
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocName', this.locName) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'MarkDown', this.markDown) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'MarkUp', this.markUp) );
@@ -129,7 +130,7 @@ export class ForgeStore extends ForgeGameObject {
     this.updateBoundingBox();
   }
 
-  getGITInstance(): KotOR.GFFStruct { 
+  getGITInstance(): KotOR.GFFStruct {
     const instance = new KotOR.GFFStruct(11);
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ResRef', this.resref));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', this.rotation.z));

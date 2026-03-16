@@ -1,8 +1,13 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIListBox } from "../../../gui";
-import { ITwoDAAnimation } from "../../../interface";
-import { InGameDialog as K1_InGameDialog } from "../../kotor/KOTOR";
 import * as THREE from "three";
+
+import { InGameDialog as K1_InGameDialog } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUIControl, GUILabel, GUIListBox } from "@/gui";
+import { ITwoDAAnimation } from "@/interface";
+import { DLGNode } from "@/resource/DLGNode";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * InGameDialog class.

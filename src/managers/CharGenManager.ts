@@ -1,21 +1,22 @@
-import { TwoDAManager } from "./TwoDAManager";
-import { AudioLoader } from "../audio/AudioLoader";
-import { GameEngineType } from "../enums/engine";
-import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { CharGenClasses } from "../game/CharGenClasses";
-import { GameState } from "../GameState";
-import { LBL_3DView } from "../gui";
-import type { ModulePlayer } from "../module/ModulePlayer";
-import { OdysseyModel } from "../odyssey";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { OdysseyModel3D } from "../three/odyssey";
-import { AudioEngine } from "../audio/AudioEngine";
-import { LTRObject } from "../resource/LTRObject";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { ResourceTypes } from "../resource/ResourceTypes";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { GameEngineType } from "@/enums/engine";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { CharGenClasses } from "@/game/CharGenClasses";
+import { GameState } from "@/GameState";
+import { LBL_3DView } from "@/gui";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import type { ModulePlayer } from "@/module/ModulePlayer";
+import { OdysseyModel } from "@/odyssey";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { LTRObject } from "@/resource/LTRObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModel3D } from "@/three/odyssey";
+
 
 /**
  * CharGenManager class.
@@ -125,17 +126,17 @@ export class CharGenManager {
   static InitializeCreatureTemplate(){
     for(let i = 0; i < 6; i++){
       CharGenManager.lbl_3d_views.set(i, new LBL_3DView());
-      let template = CharGenManager.GetPlayerTemplate(i);
+      const template = CharGenManager.GetPlayerTemplate(i);
       CharGenManager.templates.set(i, template);
       CharGenManager.creatures.set(i, new GameState.Module.ModuleArea.ModulePlayer(template));
     }
-    let template = CharGenManager.templates.get(CharGenManager.selectedClass);
+    const template = CharGenManager.templates.get(CharGenManager.selectedClass);
     CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
   }
 
   static GetPlayerTemplate(nth = 0) {
-    let template = new GFFObject();
-    let idx = Math.floor(Math.random() * 15);
+    const template = new GFFObject();
+    const idx = Math.floor(Math.random() * 15);
     let classId = 0;
     switch (nth) {
     case 0:
@@ -158,11 +159,11 @@ export class CharGenManager {
       break;
     }
     let portraitId = 0;
-    let appearanceIdx = CharGenClasses[nth].appearances[idx];
+    const appearanceIdx = CharGenClasses[nth].appearances[idx];
     const portraits2DA = GameState.SWRuleSet.portraits;
     if(portraits2DA){
       for (let i = 0; i < portraits2DA.length; i++) {
-        let port = portraits2DA[i];
+        const port = portraits2DA[i];
         if (port.appearancenumber == appearanceIdx) {
           portraitId = i;
           break;
@@ -195,7 +196,7 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'ForcePoints')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'CurrentForce')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Gender')).setValue(gender);
-    let equipment = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'Equip_ItemList'));
+    const equipment = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'Equip_ItemList'));
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptAttacked')).setValue('k_hen_attacked01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDamaged')).setValue('k_hen_damage01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDeath')).setValue('');
@@ -222,19 +223,19 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'refbonus')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'willbonus')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PerceptionRange')).setValue(13);
-    let skillList = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'SkillList'));
+    const skillList = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'SkillList'));
     for (let i = 0; i < 8; i++) {
-      let _skill = new GFFStruct();
+      const _skill = new GFFStruct();
       _skill.addField(new GFFField(GFFDataType.BYTE, 'Rank')).setValue(0);
       skillList.addChildStruct(_skill);
     }
-    let classList = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'ClassList'));
-    let classStruct = new GFFStruct();
+    const classList = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'ClassList'));
+    const classStruct = new GFFStruct();
     classStruct.addField(new GFFField(GFFDataType.INT, 'Class')).setValue(classId);
     classStruct.addField(new GFFField(GFFDataType.SHORT, 'ClassLevel')).setValue(1);
     classStruct.addField(new GFFField(GFFDataType.LIST, 'KnownList0'));
     classList.addChildStruct(classStruct);
-    let armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
+    const armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
     armorStruct.addField(new GFFField(GFFDataType.RESREF, 'EquippedRes')).setValue('g_a_clothes01');
     equipment.addChildStruct(armorStruct);
     if (appearanceIdx >= 91 && appearanceIdx <= 105) {
@@ -305,7 +306,7 @@ export class CharGenManager {
     };
     
     for (let i = 0; i < 8; i++) {
-      let value = TwoDAManager.datatables.get('skills').rows[i][this.getSkillTableColumnRecommended()];
+      const value = TwoDAManager.datatables.get('skills').rows[i][this.getSkillTableColumnRecommended()];
       if (value != '****') {
         skillOrder[value - 1] = i;
       }

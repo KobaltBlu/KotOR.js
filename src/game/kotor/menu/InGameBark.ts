@@ -1,14 +1,18 @@
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu } from "../../../gui";
-import type { GUILabel } from "../../../gui";
 import * as THREE from "three";
-import { ResourceLoader } from "../../../loaders";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
-import { LIPObject } from "../../../resource/LIPObject";
-import { GameState } from "../../../GameState";
-import { DLGNodeType, ModuleObjectType } from "../../../enums";
-import { BitWise } from "../../../utility/BitWise";
-import { DLGNode } from "../../../resource/DLGNode";
+
+import { DLGNodeType, ModuleObjectType } from "@/enums";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUILabel } from "@/gui";
+import { ResourceLoader } from "@/loaders";
+import { DLGNode } from "@/resource/DLGNode";
+import { LIPObject } from "@/resource/LIPObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { BitWise } from "@/utility/BitWise";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * InGameBark class.
@@ -71,7 +75,7 @@ export class InGameBark extends GameMenu {
     this.barkTimer = InGameBark.BARK_TIMER;
     this.show();
     this.LBL_BARKTEXT.setText(entry.text);
-    let size = new THREE.Vector3();
+    const size = new THREE.Vector3();
     this.LBL_BARKTEXT.text.geometry.boundingBox?.getSize(size);
     this.tGuiPanel.extent.height = Math.ceil(size.y) + 14;
     this.tGuiPanel.resizeControl();
@@ -101,7 +105,7 @@ export class InGameBark extends GameMenu {
     } else {
       this.bAudioPlayed = true;
       this.bHasAudio = false;
-      console.error('VO ERROR', entry);
+      log.error('VO ERROR', entry);
     }
   }
 

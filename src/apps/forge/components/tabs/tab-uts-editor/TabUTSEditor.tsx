@@ -1,20 +1,24 @@
-import React, { useRef, useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTSEditorState } from "../../../states/tabs";
-import * as KotOR from "../../../KotOR";
-import "../../../styles/tabs/tab-uts-editor.scss";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Button, Modal } from "react-bootstrap";
-import { FileBrowserNode } from "../../../FileBrowserNode";
-import { ForgeState } from "../../../states/ForgeState";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
-import { FormField } from "../../form-field/FormField";
-import { ForgeSound } from "../../../module-editor/ForgeSound";
+
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import "@/apps/forge/styles/tabs/tab-uts-editor.scss";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabUTSEditorState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 const SoundSelector = function(props: {onSelect: (resRef: string) => void, onClose: () => void}){
   const [soundResRef, setSoundResRef] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sounds, setSounds] = useState<FileBrowserNode[]>([]);
-  const [soundMap, setSoundMap] = useState<Map<string, FileBrowserNode>>(new Map());
+  const [_soundMap, setSoundMap] = useState<Map<string, FileBrowserNode>>(new Map());
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const audioBufferRef = useRef<AudioBufferSourceNode | null>(null);
 
@@ -98,15 +102,15 @@ const SoundSelector = function(props: {onSelect: (resRef: string) => void, onClo
   }
 
   // Filter sounds based on search query
-  const filteredSounds = sounds.filter(sound => 
+  const filteredSounds = sounds.filter(sound =>
     sound.name.toLowerCase().includes(searchQuery)
   );
 
   return (
-    <Modal 
-      show={true} 
-      onHide={props.onClose} 
-      backdrop="static" 
+    <Modal
+      show={true}
+      onHide={props.onClose}
+      backdrop="static"
       keyboard={false}
       size="lg"
     >
@@ -118,10 +122,10 @@ const SoundSelector = function(props: {onSelect: (resRef: string) => void, onClo
         <div className="sound-selector">
           {/* Search input */}
           <div className="mb-3">
-            <input 
-              type="text" 
-              className="form-control" 
-              placeholder="Search sounds..." 
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search sounds..."
               value={searchQuery}
               onChange={handleSearchInput}
             />
@@ -131,7 +135,7 @@ const SoundSelector = function(props: {onSelect: (resRef: string) => void, onClo
           <div className="file-browser-container">
             <div className="file-browser-grid">
               {filteredSounds.map((sound, index) => (
-                <div 
+                <div
                   className={`file-browser-item ${soundResRef === sound.name ? 'selected' : ''}`}
                   key={`sound-item-${index}-${sound.name}`}
                   onClick={() => handleSoundClick(sound)}
@@ -151,19 +155,19 @@ const SoundSelector = function(props: {onSelect: (resRef: string) => void, onClo
           {/* Manual input */}
           <div className="mt-3">
             <label className="form-label">Or enter ResRef manually:</label>
-            <input 
-              type="text" 
-              className="form-control" 
-              placeholder="Enter Sound ResRef" 
-              value={soundResRef} 
-              onChange={handleManualInput} 
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Enter Sound ResRef"
+              value={soundResRef}
+              onChange={handleManualInput}
             />
           </div>
         </div>
       </Modal.Body>
 
       <Modal.Footer>
-        <Button 
+        <Button
           onClick={isPlaying ? stopPreview : previewSound}
           disabled={!soundResRef.trim()}
           className="me-2"
@@ -200,7 +204,7 @@ export const TabUTSEditor = function(props: BaseTabProps){
   const [sounds, setSounds] = useState<string[]>([]);
 
   const [active, setActive] = useState<boolean>(false);
-  const [continuous, setContinuous] = useState<boolean>(false);
+  const [_continuous, setContinuous] = useState<boolean>(false);
   const [priority, setPriority] = useState<number>(0);
   const [looping, setLooping] = useState<boolean>(false);
   const [random, setRandom] = useState<boolean>(false);
@@ -216,10 +220,10 @@ export const TabUTSEditor = function(props: BaseTabProps){
   const [elevation, setElevation] = useState<number>(0);
   const [volume, setVolume] = useState<number>(0);
   const [volumeVariation, setVolumeVariation] = useState<number>(0);
-  const [fixedVariance, setFixedVariance] = useState<number>(0);
-  const [generatedType, setGeneratedType] = useState<number>(0);
-  const [hours, setHours] = useState<number>(0);
-  const [times, setTimes] = useState<number>(0);
+  const [_fixedVariance, _setFixedVariance] = useState<number>(0);
+  const [_generatedType, _setGeneratedType] = useState<number>(0);
+  const [_hours, setHours] = useState<number>(0);
+  const [_times, setTimes] = useState<number>(0);
 
   const audioBugfferRef = useRef<AudioBufferSourceNode|null>(null);
 
@@ -252,7 +256,7 @@ export const TabUTSEditor = function(props: BaseTabProps){
     });
   }
 
-  const onBtnStopSound = (e: React.MouseEvent<HTMLButtonElement>, index: number) => {
+  const onBtnStopSound = (e: React.MouseEvent<HTMLButtonElement>, _index: number) => {
     e.preventDefault();
     if(audioBugfferRef.current){
       audioBugfferRef.current.disconnect();
@@ -271,19 +275,19 @@ export const TabUTSEditor = function(props: BaseTabProps){
   }
 
   // Helper functions using ForgeSound methods
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeSound) => 
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeSound) =>
     tab.sound.createResRefFieldHandler(setter, property, tab.sound, tab);
-  
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeSound) => 
+
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeSound) =>
     tab.sound.createCExoStringFieldHandler(setter, property, tab.sound, tab);
-  
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeSound) => 
+
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeSound) =>
     tab.sound.createCExoLocStringFieldHandler(setter, property, tab.sound, tab);
-  
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeSound, parser: (value: number) => number = (v) => v) => 
+
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeSound, parser: (value: number) => number = (v) => v) =>
     tab.sound.createNumberFieldHandler(setter, property, tab.sound, tab, parser);
-  
-  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeSound) => 
+
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeSound) =>
     tab.sound.createBooleanFieldHandler(setter, property, tab.sound, tab);
 
   const onSoundChange = useCallback(() => {
@@ -379,11 +383,11 @@ export const TabUTSEditor = function(props: BaseTabProps){
                   </div>
                 </td>
               </tr>
-              <FormField 
-                label="Name" 
+              <FormField
+                label="Name"
                 info="The display name of the door/trigger. This is what players will see in-game and can be localized for different languages."
               >
-                <CExoLocStringEditor 
+                <CExoLocStringEditor
                   value={locName}
                   onChange={onUpdateCExoLocStringField(setLocName, 'locName')}
                 />
@@ -410,7 +414,7 @@ export const TabUTSEditor = function(props: BaseTabProps){
                 </td>
                 <td>
                   <div className="btn-group mb-2">
-                    <button className="btn btn-primary" onClick={(e) => setShowSoundSelector(true)}><i className="fa-solid fa-plus"></i> Add Sound</button>
+                    <button className="btn btn-primary" onClick={(_e) => setShowSoundSelector(true)}><i className="fa-solid fa-plus"></i> Add Sound</button>
                   </div>
                   {showSoundSelector && (
                     <div className="sound-selector">

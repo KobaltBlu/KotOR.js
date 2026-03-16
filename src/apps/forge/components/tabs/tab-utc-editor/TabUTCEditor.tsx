@@ -1,19 +1,22 @@
-import React, { useCallback, useEffect, useState } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTCEditorState } from "../../../states/tabs";
-import type{ CreatureClassEntry, ForgeCreature, KnownSpellEntry, SpecialAbilityEntry } from "../../../module-editor/ForgeCreature";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { SubTabHost, SubTab } from "../../SubTabHost";
-import * as KotOR from "../../../KotOR";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { TextureCanvas } from "../../TextureCanvas/TextureCanvas";
-import { ModalItemBrowserState } from "../../../states/modal/ModalItemBrowserState";
-import { ForgeState } from "../../../states/ForgeState";
-import { InfoBubble } from "../../info-bubble/info-bubble";
 import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import './TabUTCEditor.scss';
+import React, { useCallback, useEffect, useState } from "react"
+
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
+import { SubTabHost, SubTab } from "@/apps/forge/components/SubTabHost";
+import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanvas";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import * as KotOR from "@/apps/forge/KotOR";
+import type{ CreatureClassEntry, ForgeCreature, KnownSpellEntry, SpecialAbilityEntry } from "@/apps/forge/module-editor/ForgeCreature";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
+import { TabUTCEditorState } from "@/apps/forge/states/tabs";
+
+
+import "@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor.scss";
 
 export const TabUTCEditor = function(props: BaseTabProps){
 
@@ -72,42 +75,42 @@ export const TabUTCEditor = function(props: BaseTabProps){
   };
   const [appearanceType, setAppearanceType] = useState<number>(0);
   const [bodyBag, setBodyBag] = useState<number>(0);
-  const [bodyVariation, setBodyVariation] = useState<number>(0);
+  const [_bodyVariation, setBodyVariation] = useState<number>(0);
   const [cha, setCha] = useState<number>(10);
   const [challengeRating, setChallengeRating] = useState<number>(0);
   const [classList, setClassList] = useState<CreatureClassEntry[]>([]);
   const [comment, setComment] = useState<string>('');
   const [con, setCon] = useState<number>(10);
   const [conversation, setConversation] = useState<string>('');
-  const [currentForce, setCurrentForce] = useState<number>(0);
+  const [_currentForce, setCurrentForce] = useState<number>(0);
   const [currentHitPoints, setCurrentHitPoints] = useState<number>(0);
-  const [deity, setDeity] = useState<string>('');
+  const [_deity, setDeity] = useState<string>('');
   const [description, setDescription] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
   const [dex, setDex] = useState<number>(10);
   const [disarmable, setDisarmable] = useState<boolean>(false);
   const [factionID, setFactionID] = useState<number>(0);
   const [featList, setFeatList] = useState<number[]>([]);
   const [firstName, setFirstName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
-  const [forcePoints, setForcePoints] = useState<number>(0);
+  const [_forcePoints, setForcePoints] = useState<number>(0);
   const [gender, setGender] = useState<number>(0);
   const [goodEvil, setGoodEvil] = useState<number>(50);
   const [hitPoints, setHitPoints] = useState<number>(0);
   const [int, setInt] = useState<number>(10);
   const [interruptable, setInterruptable] = useState<boolean>(true);
   const [isPC, setIsPC] = useState<boolean>(false);
-  const [itemList, setItemList] = useState<string[]>([]);
+  const [_itemList, setItemList] = useState<string[]>([]);
   const [lastName, setLastName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
-  const [lawfulChaotic, setLawfulChaotic] = useState<number>(0);
+  const [_lawfulChaotic, setLawfulChaotic] = useState<number>(0);
   const [maxHitPoints, setMaxHitPoints] = useState<number>(0);
   const [min1HP, setMin1HP] = useState<boolean>(false);
   const [naturalAC, setNaturalAC] = useState<number>(0);
   const [noPermDeath, setNoPermDeath] = useState<boolean>(false);
-  const [notReorienting, setNotReorienting] = useState<boolean>(false);
-  const [partyInteract, setPartyInteract] = useState<boolean>(false);
+  const [_notReorienting, setNotReorienting] = useState<boolean>(false);
+  const [_partyInteract, setPartyInteract] = useState<boolean>(false);
   const [perceptionRange, setPerceptionRange] = useState<number>(0);
   const [phenotype, setPhenotype] = useState<number>(0);
   const [plot, setPlot] = useState<boolean>(false);
-  const [palletID, setPalletID] = useState<number>(0);
+  const [_palletID, setPalletID] = useState<number>(0);
   const [portraitId, setPortraitId] = useState<number>(0);
   const [race, setRace] = useState<number>(0);
   const [scriptAttacked, setScriptAttacked] = useState<string>('');
@@ -127,11 +130,11 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [skillList, setSkillList] = useState<number[]>([]);
   const [soundSetFile, setSoundSetFile] = useState<number>(0);
   const [str, setStr] = useState<number>(10);
-  const [subrace, setSubrace] = useState<string>('');
+  const [_subrace, setSubrace] = useState<string>('');
   const [subraceIndex, setSubraceIndex] = useState<number>(0);
   const [tag, setTag] = useState<string>('');
   const [templateResRef, setTemplateResRef] = useState<string>('');
-  const [textureVar, setTextureVar] = useState<number>(1);
+  const [_textureVar, setTextureVar] = useState<number>(1);
   const [walkRate, setWalkRate] = useState<number>(7);
   const [wis, setWis] = useState<number>(10);
   const [fortbonus, setFortbonus] = useState<number>(0);
@@ -140,21 +143,21 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [specialAbilities, setSpecialAbilities] = useState<SpecialAbilityEntry[]>([]);
 
   // Equipment Slots
-  const [slotArmor, setSlotArmor] = useState<string>('');
-  const [slotBelt, setSlotBelt] = useState<string>('');
-  const [slotClaw1, setSlotClaw1] = useState<string>('');
-  const [slotClaw2, setSlotClaw2] = useState<string>('');
-  const [slotClaw3, setSlotClaw3] = useState<string>('');
-  const [slotHide, setSlotHide] = useState<string>('');
-  const [slotLeftArmband, setSlotLeftArmband] = useState<string>('');
-  const [slotLeftHand, setSlotLeftHand] = useState<string>('');
-  const [slotRightArmband, setSlotRightArmband] = useState<string>('');
-  const [slotRightHand, setSlotRightHand] = useState<string>('');
-  const [slotRightHand2, setSlotRightHand2] = useState<string>('');
-  const [slotLeftHand2, setSlotLeftHand2] = useState<string>('');
-  const [slotImplant, setSlotImplant] = useState<string>('');
-  const [slotHead, setSlotHead] = useState<string>('');
-  const [slotArms, setSlotArms] = useState<string>('');
+  const [_slotArmor, setSlotArmor] = useState<string>('');
+  const [_slotBelt, setSlotBelt] = useState<string>('');
+  const [_slotClaw1, setSlotClaw1] = useState<string>('');
+  const [_slotClaw2, setSlotClaw2] = useState<string>('');
+  const [_slotClaw3, setSlotClaw3] = useState<string>('');
+  const [_slotHide, setSlotHide] = useState<string>('');
+  const [_slotLeftArmband, setSlotLeftArmband] = useState<string>('');
+  const [_slotLeftHand, setSlotLeftHand] = useState<string>('');
+  const [_slotRightArmband, setSlotRightArmband] = useState<string>('');
+  const [_slotRightHand, setSlotRightHand] = useState<string>('');
+  const [_slotRightHand2, setSlotRightHand2] = useState<string>('');
+  const [_slotLeftHand2, setSlotLeftHand2] = useState<string>('');
+  const [_slotImplant, setSlotImplant] = useState<string>('');
+  const [_slotHead, setSlotHead] = useState<string>('');
+  const [_slotArms, setSlotArms] = useState<string>('');
 
   const [feats, setFeats] = useState<KotOR.TalentFeat[]>([]);
   const [spells, setSpells] = useState<KotOR.TalentSpell[]>([]);
@@ -164,7 +167,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [creatureLevel, setCreatureLevel] = useState<number>(1);
   const [knownList0, setKnownList0] = useState<KnownSpellEntry[]>([]);
   const [appearanceList, setAppearanceList] = useState<KotOR.SWCreatureAppearance[]>([]);
-  const [raceList, setRaceList] = useState<KotOR.SWRace[]>([]);
+  const [_raceList, _setRaceList] = useState<KotOR.SWRace[]>([]);
 
   const [portrait, setPortrait] = useState<KotOR.SWPortrait>(new KotOR.SWPortrait());
 
@@ -285,25 +288,25 @@ export const TabUTCEditor = function(props: BaseTabProps){
     };
   }, []);
 
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeCreature, parser: (value: number) => number = (v) => v) => 
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeCreature, parser: (value: number) => number = (v) => v) =>
     tab.creature.createNumberFieldHandler(setter, property, tab.creature, tab, parser);
 
-  const onUpdateNumberArrayField = (setter: (value: number[]) => void, index: number, property: keyof ForgeCreature) => 
+  const onUpdateNumberArrayField = (setter: (value: number[]) => void, index: number, property: keyof ForgeCreature) =>
     tab.creature.createNumberArrayFieldHandler(setter, index, property, tab.creature, tab);
 
-  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeCreature) => 
+  const _onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeCreature) =>
     tab.creature.createBooleanFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeCreature) => 
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeCreature) =>
     tab.creature.createResRefFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeCreature) => 
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeCreature) =>
     tab.creature.createCExoStringFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeCreature) => 
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeCreature) =>
     tab.creature.createCExoLocStringFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeCreature) => 
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeCreature) =>
     tab.creature.createForgeCheckboxFieldHandler(setter, property, tab.creature, tab);
 
   const onUpdateClassListField = (setter: (value: number) => void, property: 'class' | 'level') => {
@@ -662,7 +665,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
               </tbody>
             </table>
           </fieldset>
-          
+
           <table>
             <tbody>
               <tr>
@@ -687,10 +690,10 @@ export const TabUTCEditor = function(props: BaseTabProps){
                     <legend>Hit Points</legend>
                     <label>Base Hit Points</label>
                     <input type="number" min="0" value={hitPoints} onChange={onUpdateNumberField(setHitPoints, 'hitPoints')} />
-        
+
                     <label>Current Hit Points</label>
                     <input type="number" min="0" value={currentHitPoints} onChange={onUpdateNumberField(setCurrentHitPoints, 'currentHitPoints')} />
-        
+
                     <label>Max Hit Points</label>
                     <input type="number" min="0" value={maxHitPoints} onChange={onUpdateNumberField(setMaxHitPoints, 'maxHitPoints')} />
                   </fieldset>
@@ -802,7 +805,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
                   <fieldset>
                     <legend>Faction</legend>
                     <select className="form-select" value={factionID} onChange={onUpdateNumberField(setFactionID, 'factionID')}>
-                      {KotOR.SWRuleSet.factions.map((faction, index) => (
+                      {KotOR.SWRuleSet.factions.map((faction, _index) => (
                         <option key={faction.id} value={faction.id}>{faction.getName()}</option>
                       ))}
                     </select>
@@ -832,10 +835,10 @@ export const TabUTCEditor = function(props: BaseTabProps){
       content: (
         <>
           <div className="feats">
-            {feats.map((feat, index) => (
-              <div 
+            {feats.map((feat, _index) => (
+              <div
                 className="feat-row"
-                key={`feat-${feat.id}`} 
+                key={`feat-${feat.id}`}
               >
                 <div className={`feat-icon ${featList.includes(feat.id) ? 'enabled' : 'disabled'}`} onClick={onFeatClick(feat.id)}>
                   <InfoBubble
@@ -901,10 +904,10 @@ export const TabUTCEditor = function(props: BaseTabProps){
       content: (
         <>
           <div className="feats">
-            {spells.map((spell, index) => (
-              <div 
+            {spells.map((spell, _index) => (
+              <div
                 className="feat-row"
-                key={`feat-${spell.id}`} 
+                key={`feat-${spell.id}`}
               >
                 <div className={`feat-icon ${knownList0.find(s => s.spell == spell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.id)}>
                   <InfoBubble
@@ -983,7 +986,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
                       <td><label>Class</label></td>
                       <td>
                         <select className="form-select" value={creatureClass} onChange={onUpdateClassListField(setCreatureClass, 'class')}>
-                          {classes.map((cls, index) => (
+                          {classes.map((cls, _index) => (
                             <option key={`class-${cls.id}`} value={cls.id}>{cls.label}</option>
                           ))}
                         </select>
@@ -1009,10 +1012,10 @@ export const TabUTCEditor = function(props: BaseTabProps){
       content: (
         <>
           <div className="feats">
-            {specialAbilitiesList.map((specialAbility, index) => (
-              <div 
+            {specialAbilitiesList.map((specialAbility, _index) => (
+              <div
                 className="feat-row"
-                key={`feat-${specialAbility.id}`} 
+                key={`feat-${specialAbility.id}`}
               >
                 <div className={`feat-icon ${specialAbilities.find(s => s.spell == specialAbility.id) ? 'enabled' : 'disabled'}`} onClick={onSpecialAbilityClick(specialAbility.id)}>
                   <InfoBubble

@@ -87,15 +87,15 @@ body {
 // LOADING SCREEN
 // =============================================================================
 
-.no-js #loader { 
-  display: none;  
+.no-js #loader {
+  display: none;
 }
 
-.js #loader { 
-  display: block; 
-  position: absolute; 
-  left: 100px; 
-  top: 0; 
+.js #loader {
+  display: block;
+  position: absolute;
+  left: 100px;
+  top: 0;
 }
 
 .se-pre-con {
@@ -192,15 +192,15 @@ body {
   color: $text-white;
 }
 
-.navbar-default .navbar-nav > .open > a, 
-.navbar-default .navbar-nav > .open > a:focus, 
+.navbar-default .navbar-nav > .open > a,
+.navbar-default .navbar-nav > .open > a:focus,
 .navbar-default .navbar-nav > .open > a:hover {
   color: $text-white;
   background-color: $primary-blue-light;
   background-image: initial;
 }
 
-.navbar-default .navbar-nav > li > a:focus, 
+.navbar-default .navbar-nav > li > a:focus,
 .navbar-default .navbar-nav > li > a:hover {
   color: $text-light;
   background-color: transparent;
@@ -228,7 +228,7 @@ body {
     background-color: $bg-darker;
   }
 
-  > li > a:focus, 
+  > li > a:focus,
   > li > a:hover {
     background-image: initial;
     background-color: $primary-blue-light;
@@ -246,7 +246,7 @@ body {
   }
 }
 
-li.dropdown > a:hover + .dropdown-menu.side, 
+li.dropdown > a:hover + .dropdown-menu.side,
 li.dropdown > a + .dropdown-menu.side:hover {
   display: block;
 }
@@ -389,7 +389,7 @@ ul.topnav {
   padding: $spacing-sm;
   background: $bg-primary;
 
-  > ul { 
+  > ul {
     list-style: none;
     padding: 0;
 
@@ -467,11 +467,11 @@ div#editor-content {
   }
 }
 
-.form-control, 
-pre, 
-input[type=text], 
-input[type=number], 
-input[type=cexolocstring], 
+.form-control,
+pre,
+input[type=text],
+input[type=number],
+input[type=cexolocstring],
 textarea {
   width: 100%;
   padding: $spacing-sm 9px;
@@ -518,9 +518,9 @@ select {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
-  appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
+  appearance: none;
 
   &:focus {
     color: $text-white;
@@ -544,8 +544,8 @@ select {
   @extend select;
 }
 
-button[disabled], 
-html input[disabled], 
+button[disabled],
+html input[disabled],
 textarea[disabled] {
   cursor: default !important;
   background: $disabled-bg !important;
@@ -588,7 +588,7 @@ button, .btn-default {
   color: inherit;
   text-shadow: 0 1px 0 $secondary-cyan-darker;
 
-  &:focus, 
+  &:focus,
   &:hover {
     background-color: $primary-blue-dark;
     border-color: $primary-blue-lighter;
@@ -596,20 +596,20 @@ button, .btn-default {
     color: $text-white;
   }
 
-  &.active, 
+  &.active,
   &:active {
     background-color: $primary-blue-dark;
     border-color: $secondary-cyan;
   }
 
-  &.active.focus, 
-  &.active:focus, 
-  &.active:hover, 
-  &:active.focus, 
-  &:active:focus, 
-  &:active:hover, 
-  .open > .dropdown-toggle.focus, 
-  .open > .dropdown-toggle:focus, 
+  &.active.focus,
+  &.active:focus,
+  &.active:hover,
+  &:active.focus,
+  &:active:focus,
+  &:active:hover,
+  .open > .dropdown-toggle.focus,
+  .open > .dropdown-toggle:focus,
   .open > .dropdown-toggle:hover {
     color: $text-white;
     background-color: $primary-blue-dark;
@@ -723,7 +723,7 @@ button, .btn-default {
   }
 }
 
-.nav > li > a:focus, 
+.nav > li > a:focus,
 .nav > li > a:hover {
   text-decoration: none;
   background-color: $primary-blue;
@@ -746,7 +746,7 @@ button, .btn-default {
   a {
     color: $text-primary;
 
-    &:hover, 
+    &:hover,
     &:focus {
       background: $primary-blue-dark;
     }
@@ -864,7 +864,7 @@ input[type=range] {
     &::-webkit-slider-runnable-track {
       background: $bg-secondary;
     }
-    
+
     &::-webkit-slider-thumb {
       background: #555;
     }
@@ -999,7 +999,7 @@ input[type="range"].volume:before {
     padding-left: 0;
 
     span {
-      display: inline-flex; 
+      display: inline-flex;
       width: 33.33%;
       padding: 10px 0 10px $spacing-md;
       cursor: pointer;
@@ -1023,8 +1023,8 @@ input[type="range"].volume:before {
         border-right: $border-width solid $primary-blue;
       }
     }
-    
-    &:hover, 
+
+    &:hover,
     &:focus {
       z-index: 1;
       cursor: pointer;
@@ -1032,7 +1032,7 @@ input[type="range"].volume:before {
 
     span {
       padding: 10px 0 10px $spacing-md;
-      display: inline-flex; 
+      display: inline-flex;
       width: 33.33%;
       border-right: $border-width solid $border-tertiary;
     }
@@ -1155,19 +1155,19 @@ input[type="range"].volume:before {
 
 .checkerboard {
   background-color: $text-white;
-  background-image: 
-    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.25, $checkerboard-light), color-stop(.25, rgba(255, 255, 255, 0))), 
-    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.25, $checkerboard-light), color-stop(.25, transparent)), 
-    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.75, transparent), color-stop(.75, $checkerboard-light)), 
+  background-image:
+    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.25, $checkerboard-light), color-stop(.25, rgba(255, 255, 255, 0))),
+    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.25, $checkerboard-light), color-stop(.25, transparent)),
+    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.75, transparent), color-stop(.75, $checkerboard-light)),
     -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.75, transparent), color-stop(.75, $checkerboard-light));
   background-color: $bg-secondary;
-  background-image: 
-    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(0.25, $checkerboard-dark), color-stop(0.25, rgb(255 255 255 / 0%))), 
-    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(0.25, $checkerboard-dark), color-stop(0.25, transparent)), 
-    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(0.75, transparent), color-stop(0.75, $checkerboard-dark)), 
+  background-image:
+    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(0.25, $checkerboard-dark), color-stop(0.25, rgb(255 255 255 / 0%))),
+    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(0.25, $checkerboard-dark), color-stop(0.25, transparent)),
+    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(0.75, transparent), color-stop(0.75, $checkerboard-dark)),
     -webkit-gradient(linear, 0 0, 100% 100%, color-stop(0.75, transparent), color-stop(0.75, $checkerboard-dark));
-  background-size: 64px 64px;
   -webkit-background-size: 64px 64px;
+  background-size: 64px 64px;
   background-position: 0 0, 32px 0, 32px -32px, 0px 32px;
 }
 
@@ -1363,31 +1363,31 @@ input[type="range"].volume:before {
     background: $tsl-primary;
   }
 
-  .menu-accent::before, 
+  .menu-accent::before,
   .menu-accent::after {
     border-top-color: $tsl-primary;
   }
 
-  .navbar-brand, 
+  .navbar-brand,
   .navbar-nav > li > a {
     background: $bg-primary;
     border-right: $border-width-thick solid $tsl-primary-darkest;
   }
 
-  .nav .open > a, 
-  .nav .open > a:focus, 
+  .nav .open > a,
+  .nav .open > a:focus,
   .nav .open > a:hover {
     background-color: $tsl-primary;
     border-color: $tsl-primary;
     color: $text-white;
   }
 
-  .dropdown-menu > li > a:focus, 
+  .dropdown-menu > li > a:focus,
   .dropdown-menu > li > a:hover {
     background-color: $tsl-primary-dark;
   }
 
-  .ball, 
+  .ball,
   .ball1 {
     border-bottom-color: rgba($tsl-primary, 0.9);
     border-right-color: rgba($tsl-primary, 0.9);
@@ -1404,17 +1404,17 @@ input[type="range"].volume:before {
   a {
     color: $tsl-primary;
 
-    &:focus, 
+    &:focus,
     &:hover {
       color: $tsl-primary-light;
     }
   }
 
-  .form-control, 
-  pre, 
-  input[type=text], 
-  input[type=number], 
-  input[type=cexolocstring], 
+  .form-control,
+  pre,
+  input[type=text],
+  input[type=number],
+  input[type=cexolocstring],
   textarea {
     color: $text-primary;
     background: $tsl-primary;
@@ -1435,8 +1435,8 @@ input[type="range"].volume:before {
     }
   }
 
-  button[disabled], 
-  html input[disabled], 
+  button[disabled],
+  html input[disabled],
   textarea[disabled] {
     background: rgb(49, 68, 63);
     border: $border-width-thick solid $tsl-primary;
@@ -1446,32 +1446,32 @@ input[type="range"].volume:before {
     border: $border-width-thick solid $tsl-primary;
   }
 
-  button, 
+  button,
   .btn-default {
     background: $tsl-primary-dark;
     border: $border-width-thick solid $tsl-primary;
     text-shadow: 0 1px 0 $tsl-primary-darker;
 
-    &:focus, 
+    &:focus,
     &:hover {
       background-color: rgb(12, 143, 110);
       border-color: $tsl-primary-lighter;
     }
 
-    &.active, 
+    &.active,
     &:active {
       background-color: rgb(12, 143, 110);
       border-color: $tsl-primary-lighter;
     }
 
-    &.active.focus, 
-    &.active:focus, 
-    &.active:hover, 
-    &:active.focus, 
-    &:active:focus, 
-    &:active:hover, 
-    .open > .dropdown-toggle.focus, 
-    .open > .dropdown-toggle:focus, 
+    &.active.focus,
+    &.active:focus,
+    &.active:hover,
+    &:active.focus,
+    &:active:focus,
+    &:active:hover,
+    .open > .dropdown-toggle.focus,
+    .open > .dropdown-toggle:focus,
     .open > .dropdown-toggle:hover {
       background-color: rgb(12, 143, 110);
       border-color: $tsl-primary-lighter;

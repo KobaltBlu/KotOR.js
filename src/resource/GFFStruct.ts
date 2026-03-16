@@ -35,33 +35,33 @@ import type { IGFFStructJSON } from "../interface/resource/IGFFStructJSON";
 export class GFFStruct {
   /** Unique identifier for this structure instance */
   uuid: string;
-  
+
   /** Array of fields contained within this structure */
   fields: GFFField[];
-  
+
   /** Type identifier for this structure (used to identify the structure's purpose) */
   type: number;
 
   /** Index position of this structure within its parent container */
   index: number = 0;
-  
+
   /** Number of fields in this structure (legacy property, use fields.length instead) */
   fieldCount: number = 0;
 
   /**
    * Creates a new GFFStruct instance.
-   * 
+   *
    * @param {number} [type=0] - The type identifier for this structure. Different types
    *                           represent different kinds of data structures (e.g., creature,
    *                           item, area, etc.)
-   * 
+   *
    * @example
    * ```typescript
    * // Create a creature structure
-   * const creatureStruct = new GFFStruct(0x0007);
-   * 
-   * // Create an item structure  
-   * const itemStruct = new GFFStruct(0x0008);
+   * const creatureStruct = new GFFStruct(7);
+   *
+   * // Create an item structure
+   * const itemStruct = new GFFStruct(8);
    * ```
    */
   constructor(type = 0){
@@ -72,14 +72,14 @@ export class GFFStruct {
 
   /**
    * Sets the type identifier for this structure.
-   * 
+   *
    * @param {number} i - The new type identifier
    * @returns {GFFStruct} This structure instance for method chaining
-   * 
+   *
    * @example
    * ```typescript
    * const struct = new GFFStruct();
-   * struct.setType(0x0007); // Set to creature type
+   * struct.setType(7); // Set to creature type
    * ```
    */
   setType(i: number){
@@ -89,10 +89,10 @@ export class GFFStruct {
 
   /**
    * Adds a field to this structure.
-   * 
+   *
    * @param {GFFField} field - The field to add to the structure
    * @returns {GFFField} The added field, or undefined if field is null/undefined
-   * 
+   *
    * @example
    * ```typescript
    * const struct = new GFFStruct();
@@ -102,23 +102,23 @@ export class GFFStruct {
    */
   addField(field: GFFField){
     if(!field) return;
-    
+
     return this.fields[this.fields.length] = field;
   }
 
   /**
    * Removes a field from this structure by its label.
-   * 
+   *
    * @param {string} [label=''] - The label of the field to remove
    * @returns {boolean} True if the field was found and removed, false otherwise
-   * 
+   *
    * @example
    * ```typescript
    * const struct = new GFFStruct();
    * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
-   * 
+   *
    * const removed = struct.removeFieldByLabel('Name');
-   * console.log(removed); // true
+   * log.info(removed); // true
    * ```
    */
   removeFieldByLabel(label = ''){
@@ -135,13 +135,13 @@ export class GFFStruct {
 
   /**
    * Gets the type identifier of this structure.
-   * 
+   *
    * @returns {number} The type identifier
-   * 
+   *
    * @example
    * ```typescript
-   * const struct = new GFFStruct(0x0007);
-   * console.log(struct.getType()); // 0x0007
+   * const struct = new GFFStruct(7);
+   * log.info(struct.getType()); // 7
    * ```
    */
   getType(){
@@ -150,17 +150,17 @@ export class GFFStruct {
 
   /**
    * Gets all fields contained within this structure.
-   * 
+   *
    * @returns {GFFField[]} Array of all fields in this structure
-   * 
+   *
    * @example
    * ```typescript
    * const struct = new GFFStruct();
    * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
    * struct.addField(new GFFField('Level', GFFDataType.UInt32, 1));
-   * 
+   *
    * const fields = struct.getFields();
-   * console.log(fields.length); // 2
+   * log.info(fields.length); // 2
    * ```
    */
   getFields(){
@@ -235,21 +235,21 @@ export class GFFStruct {
 
   /**
    * Checks if this structure contains a field with the specified label.
-   * 
+   *
    * @param {string} Label - The label of the field to check for
    * @returns {boolean} True if a field with the specified label exists, false otherwise
-   * 
+   *
    * @example
    * ```typescript
    * const struct = new GFFStruct();
    * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
-   * 
+   *
    * if (struct.hasField('Name')) {
-   *   console.log('Name field exists');
+   *   log.info('Name field exists');
    * }
-   * 
+   *
    * if (!struct.hasField('Level')) {
-   *   console.log('Level field does not exist');
+   *   log.info('Level field does not exist');
    * }
    * ```
    */
@@ -264,19 +264,19 @@ export class GFFStruct {
 
   /**
    * Converts this structure to a JSON representation.
-   * 
+   *
    * @returns {IGFFStructJSON} A JSON object containing the structure's type and all field data
-   * 
+   *
    * @example
    * ```typescript
-   * const struct = new GFFStruct(0x0007);
+   * const struct = new GFFStruct(7);
    * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
    * struct.addField(new GFFField('Level', GFFDataType.UInt32, 1));
-   * 
+   *
    * const json = struct.toJSON();
-   * console.log(json.type); // 0x0007
-   * console.log(json.fields.Name.value); // 'PlayerName'
-   * console.log(json.fields.Level.value); // 1
+   * log.info(json.type); // 7
+   * log.info(json.fields.Name.value); // 'PlayerName'
+   * log.info(json.fields.Level.value); // 1
    * ```
    */
   toJSON(): IGFFStructJSON {

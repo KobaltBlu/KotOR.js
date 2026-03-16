@@ -1,16 +1,22 @@
 import * as THREE from "three";
-import { ResourceLoader } from "../loaders";
-import { GFFObject } from "../resource/GFFObject";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameState } from "../GameState";
-import { PathPoint } from "../engine/pathfinding/PathPoint";
-import { ComputedPath } from "../engine/pathfinding/ComputedPath";
-import { IClosestPathPointData } from "../interface/engine/pathfinding/IClosestPathPointData";
-import type { ModuleArea } from "./ModuleArea";
-import { Utility } from "../utility/Utility";
-import type { WalkmeshEdge } from "../odyssey/WalkmeshEdge";
-import type { ModuleObject } from "./ModuleObject";
-import { EngineDebugType } from "../enums";
+
+import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
+import { PathPoint } from "@/engine/pathfinding/PathPoint";
+import { EngineDebugType } from "@/enums";
+import { GameState } from "@/GameState";
+import { IClosestPathPointData } from "@/interface/engine/pathfinding/IClosestPathPointData";
+import { ResourceLoader } from "@/loaders";
+import type { ModuleArea } from "@/module/ModuleArea";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { Utility } from "@/utility/Utility";
+
+
+
+const log = createScopedLogger(LogScope.Module);
 
 /**
 * ModulePath class.
@@ -59,7 +65,7 @@ export class ModulePath {
     if(buffer){
       this.template = new GFFObject(buffer);
     }else{
-      console.error('Failed to load ModulePath template');
+      log.error('Failed to load ModulePath template');
     }
 
     if(this.template instanceof GFFObject){
@@ -112,7 +118,7 @@ export class ModulePath {
     try{
       this.generatePathHelper();
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
 
     this.setPathHelpersVisibility(GameState.GetDebugState(EngineDebugType.PATH_FINDING));
@@ -322,7 +328,7 @@ export class ModulePath {
       }
       while(toPrune.length){
         const con = toPrune.pop();
-        console.log('los', 'pruning connection', point, con);
+        log.info('los', 'pruning connection', point, con);
         point.removeConnection(con);
         con.removeConnection(point);
       }

@@ -1,11 +1,15 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel } from "../../../gui";
 import * as THREE from "three";
-import { CutsceneMode } from "../../../enums/dialog/CutsceneMode";
-import { DLGNode } from "../../../resource/DLGNode";
-import { ConversationState } from "../../../enums/dialog/ConversationState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
+
+import { ConversationState } from "@/enums/dialog/ConversationState";
+import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIControl, GUIListBox, GUILabel } from "@/gui";
+import { DLGNode } from "@/resource/DLGNode";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 const LETTERBOX_HEIGHT = 100;
 
@@ -123,9 +127,9 @@ export class InGameDialog extends GameMenu {
   updateTextPosition(isListening: boolean = false) {
     if (typeof this.LBL_MESSAGE.text.geometry !== 'undefined') {
       this.LBL_MESSAGE.text.geometry.computeBoundingBox();
-      let bb = this.LBL_MESSAGE.text.geometry.boundingBox;
-      let height = Math.abs(bb.min.y) + Math.abs(bb.max.y);
-      let width = Math.abs(bb.min.x) + Math.abs(bb.max.x);
+      const bb = this.LBL_MESSAGE.text.geometry.boundingBox;
+      const height = Math.abs(bb.min.y) + Math.abs(bb.max.y);
+      const width = Math.abs(bb.min.x) + Math.abs(bb.max.x);
       if (isListening) {
         this.LBL_MESSAGE.widget.position.y = -GameState.ResolutionManager.getViewportHeight() / 2 + 50;
       } else {

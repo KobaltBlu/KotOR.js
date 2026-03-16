@@ -1,8 +1,11 @@
-import { GameState } from "../GameState";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { Action } from "./Action";
+import { Action } from "@/actions/Action";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * ActionDoCommand class.

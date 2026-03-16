@@ -55,7 +55,7 @@ export class GUISlider extends GUIControl{
     this.widget.add(this.thumb.mesh);
 
     this.thumb.mesh.addEventListener('click', (e) => {
-      console.log('hello');
+      log.info('hello');
       this.mouseInside();
     });
 
@@ -67,7 +67,7 @@ export class GUISlider extends GUIControl{
       this.thumb.mesh.scale.x = this.thumb.width;
       this.thumb.mesh.scale.y = this.thumb.height;
 
-      let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
+      const parentPos = this.widget.getWorldPosition(new THREE.Vector3());
 
       this.thumb.mesh.userData.box = new THREE.Box2(
         new THREE.Vector2(
@@ -223,7 +223,7 @@ export class GUISlider extends GUIControl{
     if(this.iniProperty){
       GameState.iniConfig.setProperty(this.iniProperty, (this.value * 100) | 0);
     }
-    
+
     if(typeof this.onValueChanged === 'function')
       this.onValueChanged(this.value);
 

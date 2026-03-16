@@ -1,7 +1,10 @@
-import { AudioEngine } from "../../../audio/AudioEngine";
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "../../../gui";
-import { MenuSound as K1_MenuSound } from "../../kotor/KOTOR";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+import { MenuSound as K1_MenuSound } from "@/game/kotor/KOTOR";
 
 const DEFAULT_GAIN = 0.75;
 
@@ -87,49 +90,49 @@ export class MenuSound extends K1_MenuSound {
     this.SLI_MOVIE.attachINIProperty('Sound Options.Movie Volume');
 
     this.LBL_MUSIC.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_MUSIC.getHintText())
     });
 
     this.SLI_MUSIC.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_MUSIC.getHintText())
     });
 
     this.LBL_VO.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_VO.getHintText())
     });
 
     this.SLI_VO.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_VO.getHintText())
     });
 
     this.LBL_FX.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_FX.getHintText())
     });
 
     this.SLI_FX.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_FX.getHintText())
     });
 
     this.LBL_MOVIE.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_MOVIE.getHintText())
     });
 
     this.SLI_MOVIE.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
       this.LB_DESC.addItem(this.LBL_MOVIE.getHintText())
     });

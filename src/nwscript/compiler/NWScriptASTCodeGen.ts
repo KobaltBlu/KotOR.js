@@ -390,11 +390,11 @@ export class NWScriptASTCodeGen {
     return result;
   }
 
-  private generateBreak(breakNode: BreakNode): string {
+  private generateBreak(_breakNode: BreakNode): string {
     return this.indent() + 'break;';
   }
 
-  private generateContinue(continueNode: ContinueNode): string {
+  private generateContinue(_continueNode: ContinueNode): string {
     return this.indent() + 'continue;';
   }
 
@@ -534,8 +534,8 @@ export class NWScriptASTCodeGen {
   }
 
   private generateBinary(binary: BinaryOpNode, precedence: number): string {
-    let op = binary.operator.value;
-    let opPrecedence = this.getOperatorPrecedence(op);
+    const op = binary.operator.value;
+    const opPrecedence = this.getOperatorPrecedence(op);
     
     // For left-associative operators:
     // - Left side: parenthesize if its precedence is <= current (same or lower)

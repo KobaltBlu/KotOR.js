@@ -1,6 +1,5 @@
-import React from 'react';
-import { ContextMenuItem } from '../../common/ContextMenu';
-import * as KotOR from '../../../KotOR';
+import { ContextMenuItem } from '@/apps/forge/components/common/ContextMenu';
+import * as KotOR from '@/apps/forge/KotOR';
 
 export interface GFFContextMenuProps {
   struct: KotOR.GFFStruct;
@@ -48,7 +47,7 @@ export const createGFFContextMenuItems = (props: GFFContextMenuProps): ContextMe
     { label: 'Vector', type: KotOR.GFFDataType.VECTOR },
   ];
 
-  const addFieldItems: ContextMenuItem[] = fieldTypes.map((fieldType, index) => ({
+  const addFieldItems: ContextMenuItem[] = fieldTypes.map((fieldType, _index) => ({
     id: `add-field-${fieldType.label.toLowerCase()}`,
     label: `Add ${fieldType.label}`,
     onClick: () => {

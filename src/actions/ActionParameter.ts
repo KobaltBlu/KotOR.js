@@ -1,29 +1,29 @@
-import { GameState } from "../GameState";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * Represents a parameter for game actions in the engine.
- * 
+ *
  * @remarks
  * ActionParameter handles the storage and type conversion of values used by actions.
  * It supports various parameter types including integers, floats, object references,
  * strings, and script situations.
- * 
+ *
  * @example
  * ```typescript
  * // Create an integer parameter
  * const intParam = new ActionParameter(ActionParameterType.INT, 42);
- * 
+ *
  * // Create a float parameter
  * const floatParam = new ActionParameter(ActionParameterType.FLOAT, 3.14);
  * ```
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionParameter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -68,10 +68,10 @@ export class ActionParameter {
 
   /**
    * Creates an ActionParameter instance from a GFF struct.
-   * 
+   *
    * @param struct - GFF struct containing parameter data
    * @returns New ActionParameter instance or undefined if creation fails
-   * 
+   *
    * @remarks
    * Handles deserialization of different parameter types:
    * - INT: Integer values
@@ -79,9 +79,9 @@ export class ActionParameter {
    * - DWORD: Object references or numeric values
    * - STRING: Text values
    * - SCRIPT_SITUATION: Script instance data
-   * 
+   *
    * @throws {Error} If the parameter type in the struct is invalid
-   * 
+   *
    * @example
    * ```typescript
    * // Create parameter from GFF struct

@@ -1,21 +1,26 @@
-import { GameState } from "../GameState";
-import { MiniGameType } from "../enums/engine/MiniGameType";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ModuleMGEnemy } from "./ModuleMGEnemy";
-import type { ModuleMGObstacle } from "./ModuleMGObstacle";
-import type { ModuleMGPlayer } from "./ModuleMGPlayer";
-import type { ModuleMGTrack } from "./ModuleMGTrack";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { GameState } from "@/GameState";
+import { ModuleMGEnemy } from "@/module/ModuleMGEnemy";
+import type { ModuleMGObstacle } from "@/module/ModuleMGObstacle";
+import type { ModuleMGPlayer } from "@/module/ModuleMGPlayer";
+
+
+const log = createScopedLogger(LogScope.Module);
+import type { ModuleMGTrack } from "@/module/ModuleMGTrack";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /**
 * ModuleMiniGame class.
-* 
+*
 * Class representing the minigame instance in a minigame module.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMiniGame.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

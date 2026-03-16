@@ -1,19 +1,24 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
 import * as path from 'path';
-import { KEYManager } from "../managers/KEYManager";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { IResourceDiskInfo } from "../interface/resource/IResourceDiskInfo";
-import { IBIFResource } from "../interface/resource/IBIFResource";
+
+import { IResourceDiskInfo } from "@/interface/resource/IResourceDiskInfo";
+import { KEYManager } from "@/managers/KEYManager";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Resource);
+import { IBIFResource } from "@/interface/resource/IBIFResource";
 
 const BIF_HEADER_SIZE = 20;
 
 /**
  * BIFObject class.
- * 
+ *
  * Class representing a BIF archive file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BIFObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -122,7 +127,7 @@ export class BIFObject {
   }
 
   getResourcesByType(ResType: number){
-    let arr: IBIFResource[] = []
+    const arr: IBIFResource[] = []
     if(ResType != null){
       for(let i = 0; i < this.variableResourceCount; i++){
         if(this.resources[i].resType == ResType){
@@ -140,10 +145,10 @@ export class BIFObject {
 
     const len = KEYManager.Key.keys.length;
     for(let i = 0; i < len; i++){
-      let key = KEYManager.Key.keys[i];
+      const key = KEYManager.Key.keys[i];
       if(key.resRef == resRef && key.resType == ResType){
         for(let j = 0; j != this.resources.length; j++){
-          let res = this.resources[j];
+          const res = this.resources[j];
           if(res.Id == key.resId && res.resType == ResType){
             return res;
           }

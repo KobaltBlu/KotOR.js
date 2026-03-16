@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * InGamePause class.

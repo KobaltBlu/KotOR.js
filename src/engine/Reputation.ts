@@ -1,6 +1,6 @@
-import { GFFStruct } from "../resource/GFFStruct";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * Reputation class.
@@ -24,7 +24,7 @@ export class Reputation {
   }
 
   toStruct(structIdx: number, id1 = -1, id2 = -1){
-    let struct = new GFFStruct(structIdx);
+    const struct = new GFFStruct(structIdx);
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'FactionID1') )?.setValue(id1);
     struct.addField( new GFFField(GFFDataType.DWORD, 'FactionID2') )?.setValue(id2);

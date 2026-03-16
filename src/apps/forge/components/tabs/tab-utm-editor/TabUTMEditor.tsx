@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTMEditorState } from "../../../states/tabs/TabUTMEditorState";
-import * as KotOR from "../../../KotOR";
-import { FormField } from "../../form-field/FormField";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { SubTab, SubTabHost } from "../../SubTabHost";
-import { ForgeStore, StoreItemEntry } from "../../../module-editor/ForgeStore";
-import { ModalItemBrowserState } from "../../../states/modal/ModalItemBrowserState";
-import { ForgeState } from "../../../states/ForgeState";
+
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeStore, StoreItemEntry } from "@/apps/forge/module-editor/ForgeStore";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
+import { TabUTMEditorState } from "@/apps/forge/states/tabs/TabUTMEditorState";
 
 export const TabUTMEditor = function(props: BaseTabProps){
 
@@ -41,7 +41,7 @@ export const TabUTMEditor = function(props: BaseTabProps){
   const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeStore, parser: (value: number) => number = (v) => v) => 
     tab.store.createNumberFieldHandler(setter, property, tab.store, tab, parser);
   
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeStore) => 
+const _onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeStore) =>
     tab.store.createByteFieldHandler(setter, property, tab.store, tab);
   
   const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeStore) => 

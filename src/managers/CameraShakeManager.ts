@@ -1,8 +1,12 @@
-
 import * as THREE from "three";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { GameState } from "../GameState";
-import { TwoDAManager } from "./TwoDAManager";
+
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Manager);
 
 interface RumbleSample {
   magnitude: number;
@@ -117,14 +121,14 @@ export class CameraShakeManager {
       let lLeft = CameraShakeManager.lsamples.length;
       let rRight = CameraShakeManager.rsamples.length;
       while(lLeft--){
-        let sample = CameraShakeManager.lsamples[lLeft];
+        const sample = CameraShakeManager.lsamples[lLeft];
         if(!sample){ continue; }
         if(sample.time > 0){ continue; }
         CameraShakeManager.lsamples.splice(lLeft, 1);
       }
       
       while(rRight--){
-        let sample = CameraShakeManager.rsamples[rRight];
+        const sample = CameraShakeManager.rsamples[rRight];
         if(!sample){ continue; }
         if(sample.time > 0){ continue; }
         CameraShakeManager.rsamples.splice(rRight, 1);

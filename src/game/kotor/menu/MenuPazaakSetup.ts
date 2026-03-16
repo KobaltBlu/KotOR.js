@@ -1,11 +1,12 @@
-import { PazaakCards } from "../../../enums/minigames/PazaakCards";
-import { PazaakSideDeckSlots } from "../../../enums/minigames/PazaakSideDeckSlots";
-import { PazaakCardGUITextures } from "../../../enums/minigames/PazaakCardGUITextures";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIControl } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
+import { PazaakCardGUITextures } from "@/enums/minigames/PazaakCardGUITextures";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
+import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIControl , GUILabel, GUIButton } from "@/gui";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
 
+const log = createScopedLogger(LogScope.Game);
 const MSG_CONFIRM_SIDE_DECK = 32322;
 const MSG_YOU_WIN = 32334;
 const MSG_TIED = 32338;
@@ -122,7 +123,7 @@ export class MenuPazaakSetup extends GameMenu {
        * Begin the game
        */
       this.BTN_ATEXT.addEventListener('click', () => {
-        console.log('PazaakSetup: Begin Game');
+        log.debug('PazaakSetup: Begin Game');
         this.close();
         GameState.MenuManager.MenuPazaakGame.open();
       });
@@ -148,7 +149,7 @@ export class MenuPazaakSetup extends GameMenu {
           button.swapBorderAndHighliteOnHover = false;
           button.addEventListener('click', () => {
             this.selectedCard = i;
-            console.log(`PazaakSetup: Selected card ${i}, count: ${card.count}`);
+            log.debug(`PazaakSetup: Selected card ${i}, count: ${card.count}`);
             if(card.count <= 0){
               return;
             }
@@ -177,7 +178,7 @@ export class MenuPazaakSetup extends GameMenu {
         button.addEventListener('click', () => {
           const card = GameState.PazaakManager.PlayerSideDeck.get(i);
           this.selectedSideCard = i;
-          console.log(`PazaakSetup: Side card ${i} - ${card}`);
+          log.debug(`PazaakSetup: Side card ${i} - ${card}`);
           if(card != PazaakCards.INVALID){
             GameState.PazaakManager.MoveSideDeckCardToMainDeck(i);
             this.rebuild();

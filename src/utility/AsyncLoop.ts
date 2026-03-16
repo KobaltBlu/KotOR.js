@@ -73,11 +73,11 @@ export class AsyncLoop {
   _test = new AsyncLoop({
     array: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     onLoop: (obj, looper) => {
-      console.log(obj);
+      log.debug(obj);
       looper.next();
       }
   });
   _test.iterate( () => {
-    console.log('Done looping');
+    log.debug('Done looping');
   });
 */

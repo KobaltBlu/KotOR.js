@@ -97,7 +97,7 @@ export class FileTypeManager {
       case 'uti':
         ForgeState.tabManager.addTab(new TabUTIEditorState({editorFile: res}));
       break;
-      case 'utm': 
+      case 'utm':
         ForgeState.tabManager.addTab(new TabUTMEditorState({editorFile: res}));
       break;
       case 'utp':

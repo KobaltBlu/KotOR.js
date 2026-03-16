@@ -1,5 +1,9 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
+import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class ForgeRoom extends ForgeGameObject {
 
@@ -68,7 +72,7 @@ export class ForgeRoom extends ForgeGameObject {
     this.updateBoundingBox();
   }
 
-  async loadModel(resRef = ''): Promise<KotOR.OdysseyModel3D | undefined> {
+  async loadModel(_resRef = ''): Promise<KotOR.OdysseyModel3D | undefined> {
     //Check if the room name is NULL
     if(KotOR.Utility.is2daNULL(this.roomName)){
       return this.model;

@@ -1,8 +1,8 @@
-import { ArgumentNode, BlockNode, BreakNode, CaseNode, CommentNode, ContinueNode, DataTypeNode, DefaultNode, DefineNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionNode, IfNode, IncludeNode, ProgramNode, ReturnNode, StatementNode, StructNode, SwitchNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./ASTTypes";
-import { NWScriptLexer } from "./NWScriptLexer";
-import type { Token } from "./NWScriptToken";
+import { ArgumentNode, BlockNode, BreakNode, CaseNode, CommentNode, ContinueNode, DataTypeNode, DefaultNode, DefineNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionNode, IfNode, IncludeNode, ProgramNode, ReturnNode, StatementNode, StructNode, SwitchNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "@/nwscript/compiler/ASTTypes";
+import { NWScriptLexer } from "@/nwscript/compiler/NWScriptLexer";
+import type { Token } from "@/nwscript/compiler/NWScriptToken";
 
-const NWEngineTypeUnaryTypeOffset = 0x10;
+const _NWEngineTypeUnaryTypeOffset = 0x10;
 const NWCompileDataTypes: Record<string, number> = {
   void: 0x00,
   int: 0x03,
@@ -79,7 +79,7 @@ export class NWScriptASTBuilder {
 
   /**
    * Accepts either a normal name token or a keyword token as an identifier.
-   * Some legacy/decompiled scripts use keywords (e.g., TRUE) as identifiers in defines or vars.
+   * Some legacy scripts use keywords (e.g., TRUE) as identifiers in defines or vars.
    */
   private expectNameToken(): Token {
     if (this.tok.type === "name" || this.tok.type === "keyword") {

@@ -1,4 +1,4 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { TwoDAObject, type ITwoDARowData } from "@/resource/TwoDAObject";
 
 /**
  * class SWAttackBonus

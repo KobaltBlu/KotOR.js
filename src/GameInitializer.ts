@@ -184,7 +184,7 @@ export class GameInitializer {
     PerformanceMonitor.start('configclient');
     await ConfigClient.Init();
     PerformanceMonitor.stop('configclient');
-    
+
     GameInitializer.SetLoadingMessage("Loading Keys");
     PerformanceMonitor.start('keys');
     await KEYManager.Load('chitin.key');

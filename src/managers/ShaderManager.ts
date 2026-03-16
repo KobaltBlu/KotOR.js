@@ -1,16 +1,16 @@
 import * as THREE from "three";
 
-import {shadertoy_perlin} from "../shaders/chunks/ShaderToyPerlin";
+import {shadertoy_perlin} from "@/shaders/chunks/ShaderToyPerlin";
 THREE.ShaderChunk.shadertoy_perlin = shadertoy_perlin;
 
-import { Shader } from "../shaders/Shader";
-import { ShaderOdysseyEmitter } from "../shaders/ShaderOdysseyEmitter";
-import { ShaderAuroraGUI } from "../shaders/ShaderAuroraGUI";
-import { ShaderOdysseyModel } from "../shaders/ShaderOdysseyModel";
-import { ShaderGrass } from "../shaders/ShaderGrass";
-import { ShaderGUIVoid } from "../shaders/ShaderGUIVoid";
-import { ShaderGUIBackground } from "../shaders/ShaderGUIBackground";
-import { ShaderFogOfWar } from "../shaders/ShaderFogOfWar";
+import { Shader } from "@/shaders/Shader";
+import { ShaderAuroraGUI } from "@/shaders/ShaderAuroraGUI";
+import { ShaderFogOfWar } from "@/shaders/ShaderFogOfWar";
+import { ShaderGrass } from "@/shaders/ShaderGrass";
+import { ShaderGUIBackground } from "@/shaders/ShaderGUIBackground";
+import { ShaderGUIVoid } from "@/shaders/ShaderGUIVoid";
+import { ShaderOdysseyEmitter } from "@/shaders/ShaderOdysseyEmitter";
+import { ShaderOdysseyModel } from "@/shaders/ShaderOdysseyModel";
 
 
 /**

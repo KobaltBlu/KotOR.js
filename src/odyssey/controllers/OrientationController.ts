@@ -1,9 +1,9 @@
-import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
-import { OdysseyController } from "./OdysseyController";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
 
 /**
  * OrientationController class.
@@ -18,6 +18,7 @@ export class OrientationController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Orientation;
 
+  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
   constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }
@@ -25,7 +26,7 @@ export class OrientationController extends OdysseyController {
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     //Cache the orientation controller
     if(manager.modelNode.controllerHelpers.hasOrientation === undefined){
-      let _controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Orientation);
+      const _controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Orientation);
       if(typeof _controller != 'undefined'){
         manager.modelNode.controllerHelpers.hasOrientation = true;
         manager.modelNode.controllerHelpers.orientation = _controller;

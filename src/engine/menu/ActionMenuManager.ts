@@ -34,11 +34,11 @@ export class ActionMenuManager {
     targetPanels: [],
     selfPanels: [],
   };
-  
+
   static SetPC(oPC: ModuleCreature){
     ActionMenuManager.oPC = oPC;
   }
-  
+
   static SetTarget(oTarget: ModuleObject){
     ActionMenuManager.oTarget = oTarget;
   }
@@ -50,11 +50,11 @@ export class ActionMenuManager {
       targetPanels: [],
       selfPanels: [],
     };
-    
+
     for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.targetPanels[i] = new GameState.ActionMenuManager.ActionMenuPanel();
     }
-    
+
     for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.selfPanels[i] = new GameState.ActionMenuManager.ActionMenuPanel();
     }
@@ -64,7 +64,7 @@ export class ActionMenuManager {
     for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.targetPanels[i].clearActions();
     }
-    
+
     for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.selfPanels[i].clearActions();
     }
@@ -94,7 +94,7 @@ export class ActionMenuManager {
 
           if(securityTunnelers.length){
             const item = securityTunnelers[0];
-            
+
             const action = new GameState.ActionFactory.ActionUnlockObject();
             action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
@@ -104,7 +104,7 @@ export class ActionMenuManager {
               icon: item.getIcon()
             }));
           }
-          
+
           if(!this.oTarget?.notBlastable){
             ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: {
@@ -157,7 +157,7 @@ export class ActionMenuManager {
 
           if(securityTunnelers.length){
             const item = securityTunnelers[0];
-            
+
             const action = new GameState.ActionFactory.ActionUnlockObject();
             action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
@@ -167,7 +167,7 @@ export class ActionMenuManager {
               icon: item.getIcon()
             }));
           }
-          
+
           if(!this.oTarget?.notBlastable){
             ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: {
@@ -310,7 +310,7 @@ export class ActionMenuManager {
 
   static targetActionCount(){
     return ActionMenuManager.ActionPanels.targetPanels.reduce(
-      (previousValue, currentValue, currentIndex, panels) => {
+      (previousValue, currentValue, _currentIndex, _panels) => {
         return previousValue += currentValue.actions.length;
       }, 0
     );
@@ -318,7 +318,7 @@ export class ActionMenuManager {
 
   static selfActionCount(){
     return ActionMenuManager.ActionPanels.selfPanels.reduce(
-      (previousValue, currentValue, currentIndex, panels) => {
+      (previousValue, currentValue, _currentIndex, _panels) => {
         return previousValue += currentValue.actions.length;
       }, 0
     );
@@ -353,7 +353,7 @@ export class ActionMenuManager {
 
   static onSelfMenuAction(index: number = 0){
     if(!ActionMenuManager.oPC){ return; }
-    
+
     const action = ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
     if(!action){ return; }
 

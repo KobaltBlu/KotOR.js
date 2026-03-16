@@ -1,13 +1,14 @@
-import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
-import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { GameState } from "../../../GameState";
-import { LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { ApplicationProfile } from "../../../utility/ApplicationProfile";
-import { MainMenu as K1_MainMenu } from "../../kotor/KOTOR";
+import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
+import { MainMenu as K1_MainMenu } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import { LBL_3DView } from "@/gui";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * MainMenu class.
@@ -106,7 +107,7 @@ export class MainMenu extends K1_MainMenu {
           // manageLighting: false,
           context: this._3dView
         }).then((model: OdysseyModel3D) => {
-          console.log('Model Loaded', model);
+          log.debug('Model Loaded', model);
           this._3dViewModel = model;
           
           this._3dView.camera.position.copy(model.camerahook.position);

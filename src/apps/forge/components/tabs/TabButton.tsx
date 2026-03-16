@@ -1,7 +1,11 @@
-import React, { MouseEventHandler, useEffect, useState } from "react";
-import { useTabManager } from "../../context/TabManagerContext";
-import { TabState } from "../../states/tabs";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import React, { useEffect, useState } from "react";
+
+import { useTabManager } from "@/apps/forge/context/TabManagerContext";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { TabState } from "@/apps/forge/states/tabs";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface TabButtonProps {
   tab: TabState

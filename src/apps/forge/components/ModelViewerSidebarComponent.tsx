@@ -35,9 +35,9 @@ export const ModelViewerSidebarComponent = function(props: any){
 
   useEffectOnce( () => { //constructor
 
-    let keys: KotOR.IKEYEntry[] = [];
-    let res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
-    res_list.forEach( (res, index) => {
+    const keys: KotOR.IKEYEntry[] = [];
+    const res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
+    res_list.forEach( (res, _index) => {
       keys.push(
         KotOR.KEYManager.Key.getFileKeyByRes(res)
       );
@@ -62,7 +62,7 @@ export const ModelViewerSidebarComponent = function(props: any){
     UI3DRenderer.CameraMoveSpeed = value;
   };
 
-  const onBtnAlignToCameraHook = function(e: React.MouseEvent<HTMLButtonElement>){
+  const onBtnAlignToCameraHook = function(_e: React.MouseEvent<HTMLButtonElement>){
 
   }
 
@@ -84,11 +84,11 @@ export const ModelViewerSidebarComponent = function(props: any){
     // tab.setLayoutByIndex(value);
   };
 
-  const onBtnLoadLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onBtnLoadLayout = (_e: React.MouseEvent<HTMLButtonElement>) => {
     tab.loadLayout( layouts.find( key => key.resId == selectedLayout ) );
   };
 
-  const onBtnDisposeLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onBtnDisposeLayout = (_e: React.MouseEvent<HTMLButtonElement>) => {
     tab.disposeLayout();
   };
 

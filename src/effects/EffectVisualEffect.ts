@@ -1,16 +1,17 @@
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import { MDLLoader, TextureLoader } from "../loaders";
-// import { TwoDAManager } from "../managers";
-import type { ModuleCreature } from "../module";
-import { OdysseyModel } from "../odyssey";
-import { OdysseyModel3D } from "../three/odyssey";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
-import { GameEffect } from "./GameEffect";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import { MDLLoader, TextureLoader } from "@/loaders";
+// import { TwoDAManager } from "@/managers";
+import type { ModuleCreature } from "@/module";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
+
 
 /**
  * EffectVisualEffect class.
@@ -125,8 +126,8 @@ export class EffectVisualEffect extends GameEffect {
       this.model.animationManager.currentAnimation = undefined;
 
       if(this.object.model && this.model){
-        for(let node of this.object.model.nodes){
-          let c_node = this.model.nodes.get(node[0]);
+        for(const node of this.object.model.nodes){
+          const c_node = this.model.nodes.get(node[0]);
           c_node.position.copy(node[1].position);
           c_node.quaternion.copy(node[1].quaternion);
           c_node.scale.copy(node[1].scale);
@@ -296,7 +297,7 @@ export class EffectVisualEffect extends GameEffect {
 
     //ForceShield progFX_impact
     if(this.visualEffect.progfx_impact > 1400 && this.visualEffect.progfx_impact < 1500){
-      let fx_tex = this.getProgFXTexture(this.visualEffect.progfx_impact);
+      const fx_tex = this.getProgFXTexture(this.visualEffect.progfx_impact);
       
       if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
         const creature = this.object as ModuleCreature;
@@ -346,7 +347,7 @@ export class EffectVisualEffect extends GameEffect {
 
     //ForceShield progFX_impact
     if(this.visualEffect.progfx_duration > 1400 && this.visualEffect.progfx_duration < 1500){
-      let fx_tex = this.getProgFXTexture(this.visualEffect.progfx_duration);
+      const fx_tex = this.getProgFXTexture(this.visualEffect.progfx_duration);
       
       if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
         const creature = this.object as ModuleCreature;

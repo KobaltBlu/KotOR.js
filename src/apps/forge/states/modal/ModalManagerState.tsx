@@ -1,5 +1,8 @@
-import { EventListenerModel } from "../../EventListenerModel";
-import { ModalState } from "./ModalState";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { createScopedLogger, LogScope } from "@/utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class ModalManagerState extends EventListenerModel {
 

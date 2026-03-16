@@ -470,7 +470,7 @@ export class ProjectFileSystem {
           });
 
           const subdirResults = await Promise.all(subdirPromises);
-          
+
           for (const subdirFiles of subdirResults) {
             files.push(...subdirFiles);
           }

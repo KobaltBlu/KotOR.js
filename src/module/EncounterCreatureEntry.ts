@@ -1,6 +1,6 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * EncounterCreatureEntry class.
@@ -19,7 +19,7 @@ export class EncounterCreatureEntry {
   singleSpawn = 0;
 
   save(){
-    let struct = new GFFStruct();
+    const struct = new GFFStruct();
 
     //struct.addField( new GFFField(GFFDataType.INT, 'Appearance') ).setValue(this.appearance);
     struct.addField( new GFFField(GFFDataType.RESREF, 'ResRef') ).setValue(this.resref);

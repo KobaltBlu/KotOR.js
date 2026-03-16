@@ -1,6 +1,6 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
-import { MenuGraphics as K1_MenuGraphics } from "../../kotor/KOTOR";
+import { MenuGraphics as K1_MenuGraphics } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "@/gui";
 
 /**
  * MenuGraphics class.
