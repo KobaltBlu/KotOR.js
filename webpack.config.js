@@ -147,6 +147,8 @@ const libraryConfig = (name, color) => ({
       patterns: [
         { from: "src/assets/icons", to: "assets/icons" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
+        { from: "src/assets/runtime/index.html", to: "index.html" },
+        { from: "src/assets/runtime/runtime-config.js", to: "runtime-config.js" },
         { from: 'node_modules/three/build/three.min.js', to: 'three.min.js' },
         { from: 'node_modules/three/build/three.module.js', to: 'three.module.js' },
         { from: 'node_modules/@fortawesome/fontawesome-free/webfonts', to: 'webfonts' },
@@ -339,7 +341,7 @@ const gameConfig = (name, color) => ({
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/game'),
-    globalObject: 'this', 
+    globalObject: 'this',
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
       if (filename.endsWith('.ts')) {
@@ -355,7 +357,7 @@ const forgeConfig = (name, color) => ({
   mode: isProd ? 'production': 'development',
   entry: {
     forge: [
-      './src/apps/forge/index.tsx', 
+      './src/apps/forge/index.tsx',
       './src/worker/worker-tex.ts'
     ]
   },
@@ -417,7 +419,7 @@ const forgeConfig = (name, color) => ({
       filename: 'style.css'
     })] : []),
     new MonacoWebpackPlugin({
-      publicPath: '/monaco',
+      publicPath: 'monaco',
       globalAPI: true,
       languages: ['json']
     }),
@@ -439,7 +441,7 @@ const forgeConfig = (name, color) => ({
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/forge'),
-    globalObject: 'this', 
+    globalObject: 'this',
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
       if (filename.endsWith('.ts')) {
@@ -532,7 +534,7 @@ const debuggerConfig = (name, color) => ({
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/debugger'),
-    globalObject: 'this', 
+    globalObject: 'this',
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
       if (filename.endsWith('.ts')) {
