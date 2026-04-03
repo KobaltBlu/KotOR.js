@@ -64,3 +64,5 @@ scratch/
 *.temp
 .cache/
 .history/
+extensions/kotor-forge-vscode/server/out/
+extensions/kotor-forge-vscode/kotor-forge-0.1.0.vsix
