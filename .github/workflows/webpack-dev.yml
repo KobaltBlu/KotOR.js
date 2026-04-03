@@ -34,7 +34,7 @@ jobs:
 
       - name: Upload To S3 Bucket
         run: |
-          aws s3 sync dist s3://${{ secrets.AWS_BUCKET }} --delete
+          aws s3 sync dist s3://${{ secrets.AWS_BUCKET }} --delete --acl public-read
 
       - name: Invalidate CloudFront Cache
         run: |
