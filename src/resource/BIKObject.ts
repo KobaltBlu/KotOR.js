@@ -4,6 +4,17 @@ import { BinkWorkerHeader, WorkerRequest, WorkerResponse } from "../worker/bink-
 import { YUVFrame } from "../video/binkvideo";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
+type DecodedAudioPacket = {
+  pcm: ArrayBuffer[];
+  sampleRate: number;
+  channels: number;
+  sampleCount: number;
+  frameLen: number;
+  overlapLen: number;
+  isFirst: boolean;
+  ptsSamples: number;
+};
+
 /**
  * BIKObject class.
  * Decodes and streams BIK video/audio. Does not own any Three.js state;
@@ -50,6 +61,8 @@ export class BIKObject {
     this.width = 640;
     this.height = 480;
     this.fps = 29.97;
+    this.isPlaying = false;
+    this.disposed = false;
     this.audio_nodes = [];
     this.audioStartTime = 0;
     this.worker = null;
@@ -297,11 +310,11 @@ export class BIKObject {
    * On the first buffer, sets audioStartTime so stream time 0 aligns with the demuxer timeline; video uses the same clock.
    * Skips scheduling if start time is more than 1ms in the past to avoid overlap. Creates a BufferSource, connects to movie channel, and starts at startTime.
    */
-  private handleAudioData(_frameIndex: number, audio: { pcm: ArrayBuffer[]; sampleRate: number; channels: number; frameLen: number; overlapLen: number; isFirst: boolean; ptsSamples: number }): void {
-    if (audio.pcm.length === 0 || audio.sampleRate <= 0) return;
+  private handleAudioData(_frameIndex: number, audio: DecodedAudioPacket): void {
+    if (audio.pcm.length === 0 || audio.sampleRate <= 0 || audio.sampleCount <= 0) return;
 
     const audioCtx = AudioEngine.GetAudioEngine().audioCtx;
-    const buffer = audioCtx.createBuffer(audio.channels, audio.frameLen - audio.overlapLen, audio.sampleRate);
+    const buffer = audioCtx.createBuffer(audio.channels, audio.sampleCount, audio.sampleRate);
     for (let channel = 0; channel < audio.channels; channel++) {
       buffer.copyToChannel(new Float32Array(audio.pcm[channel]), channel, 0);
     }
@@ -349,7 +362,7 @@ export class BIKObject {
    * @param delta - Time in seconds since last update; used only when there is no audio or before the first audio buffer.
    */
   update(delta = 0): void {
-    if (this.disposed) return;
+    if (this.disposed || !this.isPlaying || !this.workerReady || !this.header) return;
 
     // Use same clock as audio when we've started streaming so video and audio stay in sync
     if (this.audioStartTime > 0 && this.audioCtx && this.hasAudio) {
