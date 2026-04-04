@@ -72,4 +72,15 @@ eslint-compact.txt
 eslint-moduleobject.json
 module-creature-errors.txt
 module-creature-eslint-errors.txt
+# src/**/*.js
+dist/
+debug.log
+docs/
+coverage/
+scratch/
+research/
+.history/
+extensions/
+.npm-cache/
+.vscode/mcp.json
 agentdecompile_projects/

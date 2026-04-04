@@ -13,6 +13,7 @@
 @use "styles/audio-player" as *;
 @use "styles/keyframe-track" as *;
 @use "styles/UI3DToolPalette" as *;
+@use "components/tabs/tab-wok-editor/TabWOKEditor" as *;
 @use "@fortawesome/fontawesome-free/scss/variables" with ($font-path: "fonts");
 @use "@fortawesome/fontawesome-free/scss/fontawesome" as *;
 @use "@fortawesome/fontawesome-free/scss/solid" as *;

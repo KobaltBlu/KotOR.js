@@ -390,6 +390,11 @@ export class TabState extends EventListenerModel {
                 // this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
                 // this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
                 this.file = currentFile;
+                // Preserve original in recent files before mutating (Save As replaces the file object's path)
+                const originalPath = currentFile.getPath();
+                if(originalPath){
+                  ForgeState.addRecentFile(EditorFile.From(currentFile));
+                }
                 currentFile.setPath(savePath.filePath);
                 currentFile.archive_path = undefined;
                 currentFile.archive_path2 = undefined;
@@ -409,6 +414,11 @@ export class TabState extends EventListenerModel {
             types: this.getSaveTypes(),
           });
           if(newHandle){
+            // Preserve original in recent files before mutating (Save As replaces the file object's path)
+            const originalPath = currentFile.getPath();
+            if(originalPath){
+              ForgeState.addRecentFile(EditorFile.From(currentFile));
+            }
             currentFile.handle = newHandle;
             try{
               const pathInfo = pathParse(newHandle.name);

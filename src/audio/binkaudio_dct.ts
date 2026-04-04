@@ -29,6 +29,11 @@ export interface BinkAudioDCTConfig {
   versionChar: string; // e.g. 'i' for BIKi
 }
 
+export interface DecodedBinkAudioDCTPacket {
+  pcm: Float32Array[];
+  sampleCount: number;
+}
+
 export class BinkAudioDCTDecoder {
   readonly frameLenBits: number;
   readonly frameLen: number;
@@ -81,15 +86,49 @@ export class BinkAudioDCTDecoder {
   }
 
   // Decode one Bink Audio DCT packet payload (including leading reported size field)
-  // Returns per-channel Float32 samples (length frameLen)
-  decodePacket(pkt: Uint8Array): Float32Array[] {
+  // Returns the full playable PCM for all blocks carried by this packet.
+  decodePacket(pkt: Uint8Array): DecodedBinkAudioDCTPacket {
     const { channels } = this.cfg;
+    const samplesPerBlock = this.frameLen - this.overlapLen;
+    const reportedBytes = pkt.length >= 4
+      ? (pkt[0] | (pkt[1] << 8) | (pkt[2] << 16) | (pkt[3] << 24)) >>> 0
+      : 0;
+    const expectedSampleCount = Math.max(0, Math.floor(reportedBytes / (2 * channels)));
+
+    if (expectedSampleCount === 0) {
+      return {
+        pcm: new Array(channels).fill(null).map(() => new Float32Array(0)),
+        sampleCount: 0,
+      };
+    }
+
     const out: Float32Array[] = new Array(channels);
-    for (let ch = 0; ch < channels; ch++) out[ch] = new Float32Array(this.frameLen);
+    for (let ch = 0; ch < channels; ch++) out[ch] = new Float32Array(expectedSampleCount);
 
     const br = new BitReaderLE(pkt);
     // skip reported decompressed byte size (32 bits)
     br.skipBits(32);
+
+    let produced = 0;
+    while (produced < expectedSampleCount) {
+      const block = this.decodeBlock(br);
+      const copyCount = Math.min(samplesPerBlock, expectedSampleCount - produced);
+      for (let ch = 0; ch < channels; ch++) {
+        out[ch].set(block[ch].subarray(0, copyCount), produced);
+      }
+      produced += copyCount;
+    }
+
+    return {
+      pcm: out,
+      sampleCount: produced,
+    };
+  }
+
+  private decodeBlock(br: BitReaderLE): Float32Array[] {
+    const { channels } = this.cfg;
+    const out: Float32Array[] = new Array(channels);
+    for (let ch = 0; ch < channels; ch++) out[ch] = new Float32Array(this.frameLen);
 
     // Bink 'i' -> not version_b
     const version_b = false;
@@ -103,6 +142,8 @@ export class BinkAudioDCTDecoder {
     br.skipBits(2);
 
     for (let ch = 0; ch < channels; ch++) {
+      coeffs.fill(0);
+
       // Read first two scalars
       if (version_b) {
         // not used for 'i'

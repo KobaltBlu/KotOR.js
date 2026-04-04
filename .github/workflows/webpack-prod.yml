@@ -51,3 +51,10 @@ jobs:
         if: ${{ !inputs.dry_run }}
         run: |
           aws s3 sync dist "s3://${{ secrets.AWS_BUCKET_PROD }}" --delete
+
+      - name: Invalidate CloudFront Cache
+        if: ${{ !inputs.dry_run }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_PROD }} \
+            --paths "/*"

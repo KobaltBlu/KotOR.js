@@ -81,13 +81,12 @@ cd KotOR.js
 npm install
 ```
 
-1. **Start development build** (in one terminal):
+---
 
-```bash
-npm run watch
-```
+### Running the App
 
-1. **Start the application** (in another terminal):
+#### Option A — Desktop app (Electron) — most common
+This compiles the TypeScript and launches the Electron desktop window. Run this if you just want to play/test the game locally.
 
 ```bash
 npm start

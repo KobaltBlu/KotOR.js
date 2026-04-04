@@ -37,7 +37,7 @@ export class ActionMoveToPoint extends Action {
     // 2 - float: z
     // 3 - dword: area object id
     // 4 - dword: target object id
-    // 5 - int: 0 == walk | 1 == run
+    // 5 - int: move flags
     // 6 - float: min range/distance
     // 7 - int: unknown
     // 8 - float: timeout value The amount of time to search for path before jumping to the object (as in ActionJumpToObject()) default 30
@@ -55,7 +55,8 @@ export class ActionMoveToPoint extends Action {
     );
 
     const range = this.getParameter<number>(6) || 0.1;
-    const run = this.getParameter<number>(5) ? true : false;
+    const moveFlags = this.getParameter<number>(5) || 0;
+    const run = moveFlags & 0x01 ? true : false;
 
     this.real_target_position.copy(this.target_position);
 

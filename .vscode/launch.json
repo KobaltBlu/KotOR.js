@@ -216,6 +216,30 @@
       "preLaunchTask": "Watch web verbose (root)",
       "presentation": { "group": "2-electron", "order": 1 },
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "KotOR Forge",
+      "url": "http://localhost:8080/forge/index.html",
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "Build web for serve (root)",
+      "presentation": {
+        "group": "2-browser",
+        "order": 6
+      }
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "KotOR Debugger",
+      "url": "http://localhost:8080/debugger/index.html",
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "Build web for serve (root)",
+      "presentation": {
+        "group": "2-browser",
+        "order": 7
+      }
     }
   ],
   "version": "0.2.0"

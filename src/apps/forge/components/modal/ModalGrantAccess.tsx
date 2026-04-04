@@ -22,11 +22,6 @@ export const ModalGrantAccess = function(props: ModalGrantAccessProps){
   
 
   useEffectOnce( () => {
-    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
-      // KotOR.GameFileSystem.
-      setShowGrantModal(true);
-    }
-    
     return () => {
       //Deconstructor
     }
