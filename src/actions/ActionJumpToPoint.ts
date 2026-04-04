@@ -1,11 +1,11 @@
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleObject } from "../module/ModuleObject";
-import { BitWise } from "../utility/BitWise";
-import { Action } from "./Action";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
+import { Action } from "@/actions/Action";
 import * as THREE from "three";
-import { TURN_SPEED_FAST } from "../engine/TurnSpeeds";
+import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 
 /**
  * ActionJumpToPoint class.

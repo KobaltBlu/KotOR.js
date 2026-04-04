@@ -1,16 +1,16 @@
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
-import type { ModuleObject } from "../module/ModuleObject";
-import { DLGObject } from "../resource/DLGObject";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { DLGObject } from "@/resource/DLGObject";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionDialogObject class.
