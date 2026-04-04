@@ -170,6 +170,8 @@ export class CharGenClass extends K1_CharGenClass {
         (control.getFill().material as THREE.ShaderMaterial).blending = 1;
       }
 
+      this.captureBaseExtents();
+
       resolve();  
     });
   }

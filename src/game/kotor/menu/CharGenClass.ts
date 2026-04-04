@@ -238,7 +238,7 @@ export class CharGenClass extends GameMenu {
    * Layout (classsel.gui) defines the intended size; we animate between base and a slightly
    * larger hover size so portraits never shrink below the layout dimensions.
    */
-  private captureBaseExtents(): void {
+  protected captureBaseExtents(): void {
     if (this._baseExtentsCaptured) return;
     //Hover extents can be calculated from the first model and button control
     //They are sized differently from the other 5 controls
