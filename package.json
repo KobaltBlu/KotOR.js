@@ -35,7 +35,7 @@
     "@types/wicg-file-system-access": "^2023.10.7",
     "browserify-fs": "^1.0.0",
     "circular-dependency-plugin": "^5.2.2",
-    "copy-webpack-plugin": "^13.0.1",
+    "copy-webpack-plugin": "^14.0.0",
     "cross-env": "^10.1.0",
     "css-loader": "^7.1.2",
     "dxt-js": "^0.0.3",
