@@ -255,7 +255,6 @@ const launcherConfig = (name, color) => ({
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/launcher'),
-    publicPath: '/launcher/',
   },
 });
 
@@ -340,7 +339,6 @@ const gameConfig = (name, color) => ({
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/game'),
-    publicPath: '/game/',
     globalObject: 'this', 
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
@@ -441,7 +439,6 @@ const forgeConfig = (name, color) => ({
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/forge'),
-    publicPath: '/forge/',
     globalObject: 'this', 
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
@@ -535,7 +532,6 @@ const debuggerConfig = (name, color) => ({
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/debugger'),
-    publicPath: '/debugger/',
     globalObject: 'this', 
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
