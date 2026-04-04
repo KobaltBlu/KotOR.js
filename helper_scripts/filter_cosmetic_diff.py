@@ -66,7 +66,6 @@ def normalize(line: str) -> str:
     s = re.sub(r'\bdecompile\b', '_RECONSTRUCT_', s)
     s = re.sub(r'\bdecompiler\b', '_CONVERTER_', s)
     #   "original game behavior" → uniform form
-    s = re.sub(r'\bdecompilation\b', '_MSG_', s)
     s = re.sub(r'\bconversion\b', '_MSG_', s)
 
     # Collapse whitespace so indentation shifts don't matter
