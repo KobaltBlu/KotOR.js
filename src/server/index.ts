@@ -1,2 +1,2 @@
-export * from './ipc';
-export * from "./object";
+export * from "@/server/ipc";
+export * from "@/server/object";
