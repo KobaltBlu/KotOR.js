@@ -7,6 +7,9 @@ const CopyPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 
+/** Matches tsconfig.json paths: "@/*" -> "src/*" */
+const srcPath = path.resolve(__dirname, 'src');
+
 // Read version from package.json
 const packageJson = require('./package.json');
 const version = packageJson.version;
@@ -155,6 +158,7 @@ const libraryConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': srcPath,
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -241,6 +245,7 @@ const launcherConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': srcPath,
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -324,6 +329,7 @@ const gameConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': srcPath,
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -424,6 +430,7 @@ const forgeConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': srcPath,
       three: path.resolve('./node_modules/three'),
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -517,6 +524,7 @@ const debuggerConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
+      '@': srcPath,
       three: path.resolve('./node_modules/three'),
     },
     extensions: ['.tsx', '.ts', '.js'],

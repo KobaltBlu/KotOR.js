@@ -1,5 +1,6 @@
 { 
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ES6",
     "module": "CommonJS",
     "moduleResolution": "node",
@@ -11,6 +12,11 @@
     // "suppressImplicitAnyIndexErrors": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
     "types": [
       "electron",
       "node",
