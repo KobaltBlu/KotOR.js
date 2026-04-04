@@ -1,19 +1,19 @@
-import { AudioEmitter } from "../audio";
-import { DLGNodeType } from "../enums/dialog/DLGNodeType";
-import { DLGNodeEngineType } from "../enums/dialog/DLGNodeEngineType";
-import { GameState } from "../GameState";
-import { IDLGNodeScriptParams } from "../interface/dialog/IDLGNodeScriptParams";
-// import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "../managers";
-import type { ModuleCreature, ModuleObject } from "../module";
-// import { NWScript } from "../nwscript/NWScript";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { LIPObject } from "./LIPObject";
-import { GFFStruct } from "./GFFStruct";
-import { DialogMessageEntry } from "../engine/DialogMessageEntry";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
-import type { DLGObject } from "./DLGObject";
+import { AudioEmitter } from "@/audio";
+import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
+import { DLGNodeEngineType } from "@/enums/dialog/DLGNodeEngineType";
+import { GameState } from "@/GameState";
+import { IDLGNodeScriptParams } from "@/interface/dialog/IDLGNodeScriptParams";
+// import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "@/managers";
+import type { ModuleCreature, ModuleObject } from "@/module";
+// import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { LIPObject } from "@/resource/LIPObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { DialogMessageEntry } from "@/engine/DialogMessageEntry";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
+import type { DLGObject } from "@/resource/DLGObject";
 
 class DummyScriptInstance extends NWScriptInstance {
   name: string = 'SWG_DUMMY_SCRIPT';
