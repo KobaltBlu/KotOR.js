@@ -619,7 +619,7 @@ export class GameFileSystem {
 
   static async validateDirectoryHandle(handle: FileSystemDirectoryHandle){
     try{
-      if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
+      if ((await handle.queryPermission({ mode: 'readwrite' })) === 'granted') {
         return true;
       }
       return false;

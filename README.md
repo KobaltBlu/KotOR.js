@@ -46,27 +46,93 @@ The recent transition to TypeScript has brought many improvements to the codebas
 [Demo Icon]: https://img.shields.io/badge/Online_Playable_Demo-37a779?style=for-the-badge&logoColor=white&logo=google-chrome
 
 ## Getting Started (Developer)
-To get started as a developer, follow these steps:
 
-1. Download and install [npm (Node Package Manager)](https://www.npmjs.com/get-npm).
+### Prerequisites
+1. Download and install [Node.js / npm](https://www.npmjs.com/get-npm).
 2. Clone the KotOR.js repository.
-3. Install the npm dependencies.
+3. Install dependencies:
 
 ```bash
 npm install
 ```
-4. Run the build command
 
-```bash
-npm run webpack:dev-watch
-```
-5. Run the start command in a separate console/shell window
+---
+
+### Running the App
+
+#### Option A — Desktop app (Electron) — most common
+This compiles the TypeScript and launches the Electron desktop window. Run this if you just want to play/test the game locally.
 
 ```bash
 npm run start
 ```
 
-6. Enjoy
+> **Hot-reload variant:** Watches for TypeScript changes and auto-restarts Electron on save:
+> ```bash
+> npm run start-watch
+> ```
+
+---
+
+#### Option B — Browser / web dev (Webpack + local server)
+Use this when you're working on the web frontend (Launcher, Game, Forge, Debugger views) and want to open them in Chrome.
+
+**Step 1 — Build and watch for changes** (keeps running, recompiles on save):
+```bash
+npm run webpack:dev-watch
+```
+This compiles five bundles in parallel to the `dist/` folder:
+- `KotOR.js` — core engine library
+- `dist/launcher/` — game launcher UI
+- `dist/game/` — in-browser game client
+- `dist/forge/` — KotOR Forge modding tool
+- `dist/debugger/` — script debugger
+
+**Step 2 — Serve the output** (in a separate terminal):
+```bash
+npm run serve
+```
+Starts a static file server at **http://localhost:8080**. Then open one of these in Chrome:
+
+| URL | What it is |
+|---|---|
+| http://localhost:8080 | Redirects to Launcher |
+| http://localhost:8080/launcher/ | Game Launcher |
+| http://localhost:8080/game/?key=kotor | KotOR I in-browser |
+| http://localhost:8080/game/?key=tsl | KotOR II in-browser |
+| http://localhost:8080/forge/ | KotOR Forge modding tool |
+| http://localhost:8080/debugger/ | Script debugger |
+
+**Shortcut — run both at once:**
+```bash
+npm run dev
+```
+Runs `webpack:dev-watch` and `serve` in parallel with a single command.
+
+---
+
+#### Option C — VS Code launch configurations
+If you're using VS Code, press **F5** (Run & Debug) and pick a configuration. VS Code will automatically start the `serve: dist` background task and open Chrome pointed at the right URL:
+
+- **KotOR Launcher** — opens the launcher at localhost:8080
+- **KotOR** — opens the KotOR I game client
+- **TSL** — opens the KotOR II game client
+- **KotOR Forge** — opens the Forge modding tool
+- **KotOR Debugger** — opens the script debugger
+
+> Make sure you've already run `npm run webpack:dev-watch` (or `npm run dev`) so `dist/` has been built before pressing F5.
+
+---
+
+### Other Commands
+
+| Command | What it does |
+|---|---|
+| `npm run webpack:dev` | One-shot development build (no watch) |
+| `npm run webpack:prod` | Production build (minified, no source maps) |
+| `npm run electron:compile` | Compile only the Electron main process TypeScript |
+| `npm run test` | Run the Jest test suite |
+| `npm run typedoc` | Generate API docs into the `wiki/` folder |
 
 ## Screenshots
 
