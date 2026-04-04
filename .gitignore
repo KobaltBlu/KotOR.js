@@ -17,3 +17,8 @@ docs/
 coverage/
 scratch/
 research/
+.history/
+extensions/
+.npm-cache/
+.vscode/mcp.json
+agentdecompile_projects/
