@@ -4,42 +4,42 @@ import {
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
   VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, CutsceneManager, LegalScreenManager
-} from "./managers";
+} from "@/managers";
 
-import type { SWRuleSet } from "./engine/rules/SWRuleSet";
+import type { SWRuleSet } from "@/engine/rules/SWRuleSet";
 
-import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
-import type { ModuleObject, ModuleCreature, Module, ModuleDoor } from "./module";
-import type { NWScript } from "./nwscript/NWScript";
-import type { SaveGame } from "./engine/SaveGame";
-import type { GameEffectFactory } from "./effects/GameEffectFactory";
-import type { GameEventFactory } from "./events/GameEventFactory";
+import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "@/talents";
+import type { ModuleObject, ModuleCreature, Module, ModuleDoor } from "@/module";
+import type { NWScript } from "@/nwscript/NWScript";
+import type { SaveGame } from "@/engine/SaveGame";
+import type { GameEffectFactory } from "@/effects/GameEffectFactory";
+import type { GameEventFactory } from "@/events/GameEventFactory";
 
-import type { ActionMenuManager } from "./engine/menu/ActionMenuManager";
-import type { ActionFactory } from "./actions/ActionFactory";
+import type { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
+import type { ActionFactory } from "@/actions/ActionFactory";
 
-import { IngameControls } from "./controls/IngameControls";
-// import { Mouse } from "./controls/Mouse";
+import { IngameControls } from "@/controls/IngameControls";
+// import { Mouse } from "@/controls/Mouse";
 
-import { INIConfig } from "./engine/INIConfig";
+import { INIConfig } from "@/engine/INIConfig";
 
 // import { OdysseyObject3D } from "./three/odyssey";
-import { AudioEngine, AudioEmitter } from "./audio";
-import { TGAObject } from "./resource/TGAObject";
+import { AudioEngine, AudioEmitter } from "@/audio";
+import { TGAObject } from "@/resource/TGAObject";
 
-import { IGameStateGroups } from "./interface/engine/IGameStateGroups";
-import { ITextureLoaderQueuedRef } from "./interface/loaders/ITextureLoaderQueuedRef";
+import { IGameStateGroups } from "@/interface/engine/IGameStateGroups";
+import { ITextureLoaderQueuedRef } from "@/interface/loaders/ITextureLoaderQueuedRef";
 
-import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
-import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "./enums/engine";
-import { TextureType } from "./enums/loaders/TextureType";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "@/enums/engine";
+import { TextureType } from "@/enums/loaders/TextureType";
 
-import { EngineContext } from "./engine/EngineContext";
+import { EngineContext } from "@/engine/EngineContext";
 
-import { ConfigClient } from "./utility/ConfigClient";
-import { FollowerCamera } from "./engine/FollowerCamera";
-import { OdysseyShaderPass } from "./shaders/pass/OdysseyShaderPass";
-import { ResourceLoader, TextureLoader } from "./loaders";
+import { ConfigClient } from "@/utility/ConfigClient";
+import { FollowerCamera } from "@/engine/FollowerCamera";
+import { OdysseyShaderPass } from "@/shaders/pass/OdysseyShaderPass";
+import { ResourceLoader, TextureLoader } from "@/loaders";
 
 //THREE.js imports
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
@@ -51,19 +51,19 @@ import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
 import { ColorCorrectionShader } from "three/examples/jsm/shaders/ColorCorrectionShader";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { BitWise } from "./utility/BitWise";
-import { ModuleObjectType } from "./enums/module/ModuleObjectType";
-import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
+// import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 // import { GUIControlTypeMask } from "./enums/gui/GUIControlTypeMask";
 
-import { ModuleTriggerType } from "./enums";
-import { Planetary } from "./engine/Planetary";
-import { Debugger } from "./engine/Debugger";
-import { DebuggerState } from "./enums/server/DebuggerState";
-import type { IPCMessage } from "./server/ipc/IPCMessage";
-import { IPCMessageType } from "./enums/server/ipc/IPCMessageType";
-import { IPCMessageTypeDebug } from "./enums/server/ipc/IPCMessageTypeDebug";
-import { PerformanceMonitor } from "./utility/PerformanceMonitor";
+// import { ModuleTriggerType } from "@/enums";
+import { Planetary } from "@/engine/Planetary";
+import { Debugger } from "@/engine/Debugger";
+import { DebuggerState } from "@/enums/server/DebuggerState";
+import type { IPCMessage } from "@/server/ipc/IPCMessage";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { IPCMessageTypeDebug } from "@/enums/server/ipc/IPCMessageTypeDebug";
+import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
