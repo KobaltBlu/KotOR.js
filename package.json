@@ -9,7 +9,7 @@
     "webpack:dev": "cross-env NODE_ENV=development webpack",
     "webpack:dev-watch": "cross-env NODE_ENV=development webpack --watch",
     "webpack:prod": "cross-env NODE_ENV=production webpack",
-    "serve": "serve ./dist -l 8080 --no-clipboard",
+    "serve": "serve ./dist -p 8080 --no-clipboard --config ../serve.json",
     "dev": "run-p webpack:dev-watch serve",
     "electron:watch": "tsc-watch --project tsconfig.electron.json",
     "electron:compile": "tsc --project tsconfig.electron.json",
