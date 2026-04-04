@@ -39,7 +39,7 @@
     "cross-env": "^10.1.0",
     "css-loader": "^7.1.2",
     "dxt-js": "^0.0.3",
-    "electron": "^39.2.7",
+    "electron": "^41.1.1",
     "esbuild": "^0.27.2",
     "esbuild-loader": "^4.4.2",
     "escodegen": "^2.1.0",
