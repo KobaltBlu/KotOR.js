@@ -1,6 +1,6 @@
 import React, { createRef, useEffect, useState } from "react";
-import { useApp } from "../../context/AppContext";
-import { useProfile } from "../../context/ProfileContext";
+import { useApp } from "@/apps/launcher/context/AppContext";
+import { useProfile } from "@/apps/launcher/context/ProfileContext";
 
 export interface ProfilePromoItemProps {
   element: any;

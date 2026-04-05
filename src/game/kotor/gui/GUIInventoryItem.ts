@@ -1,11 +1,11 @@
 import * as THREE from "three";
-import { GUIButton, GUIListBox, GUIProtoItem } from "../../../gui";
-import type { GUIControl, GameMenu } from "../../../gui";
-import { GFFStruct } from "../../../resource/GFFStruct";
-import { TextureLoader } from "../../../loaders";
-import { GameState } from "../../../GameState";
-import { TextureType } from "../../../enums/loaders/TextureType";
-import { GameEngineType } from "../../../enums/engine";
+import { GUIButton, GUIListBox, GUIProtoItem } from "@/gui";
+import type { GUIControl, GameMenu } from "@/gui";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { TextureLoader } from "@/loaders";
+import { GameState } from "@/GameState";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GameEngineType } from "@/enums/engine";
 
 /**
  * GUIInventoryItem class.

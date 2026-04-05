@@ -34,6 +34,11 @@
     ],
     "outDir": "dist",
   },
-  "include": ["src/apps/debugger/debugger.ts", "src/types", "src/index.d.ts"],
+  "include": [
+    "src/apps/debugger/**/*.ts",
+    "src/apps/debugger/**/*.tsx",
+    "src/types",
+    "src/index.d.ts"
+  ],
   "exclude": ["node_modules", "src/**/*.spec.ts"]
 }

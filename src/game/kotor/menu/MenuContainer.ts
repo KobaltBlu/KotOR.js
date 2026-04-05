@@ -1,10 +1,10 @@
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import type { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "../../../module";
-import { MenuContainerMode } from "../../../enums/gui/MenuContainerMode";
-import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
+import { GameState } from "@/GameState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameMenu, GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "@/module";
+import { MenuContainerMode } from "@/enums/gui/MenuContainerMode";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 
 const STR_SWITCH_TO = 47884;
 const STR_GET_ITEMS = 38542;

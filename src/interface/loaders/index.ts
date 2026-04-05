@@ -1,1 +1,1 @@
-export * from "./ITextureLoaderQueuedRef";
+export * from "@/interface/loaders/ITextureLoaderQueuedRef";

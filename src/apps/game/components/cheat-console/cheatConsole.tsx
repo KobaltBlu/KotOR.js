@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { useApp } from "../../context/AppContext";
-import { EngineDebugType } from "../../../../enums/engine/EngineDebugType";
-import './cheat-console.scss';
-import * as KotOR from "../../KotOR";
+import { useApp } from "@/apps/game/context/AppContext";
+import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import "@/apps/game/components/cheat-console/cheat-console.scss";
+import * as KotOR from "@/apps/game/KotOR";
 
 export const CheatConsole = () => {
   const appContext = useApp();

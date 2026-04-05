@@ -1,13 +1,13 @@
 import * as THREE from "three";
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import { TextureType } from "../enums/loaders/TextureType";
-import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
-import { TextureLoader } from "../loaders";
-import { ShaderManager } from "../managers/ShaderManager";
-import type { GFFStruct } from "../resource/GFFStruct";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
+import { TextureLoader } from "@/loaders";
+import { ShaderManager } from "@/managers/ShaderManager";
+import type { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 
 /**
  * GUIProgressBar class.

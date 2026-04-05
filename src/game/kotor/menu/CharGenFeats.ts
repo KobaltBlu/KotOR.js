@@ -1,10 +1,10 @@
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { GUIFeatItem } from "../gui/GUIFeatItem";
-import type { ModuleCreature } from "../../../module";
-import { TextureLoader } from "../../../loaders";
-import { TalentFeat } from "../../../talents";
-import { GameState } from "../../../GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GUIFeatItem } from "@/game/kotor/gui/GUIFeatItem";
+import type { ModuleCreature } from "@/module";
+import { TextureLoader } from "@/loaders";
+import { TalentFeat } from "@/talents";
+import { GameState } from "@/GameState";
 
 /**
  * CharGenFeats class.

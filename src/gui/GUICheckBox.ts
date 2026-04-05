@@ -1,14 +1,14 @@
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import { GFFStruct } from "../resource/GFFStruct";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
-import { TextureLoader } from "../loaders";
-import { TextureType } from "../enums/loaders/TextureType";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GameState } from "../GameState";
-import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
-// import { ShaderManager } from "../managers";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { TextureLoader } from "@/loaders";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameState } from "@/GameState";
+import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
+// import { ShaderManager } from "@/managers";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 
 /**
  * GUICheckBox class.

@@ -1,6 +1,6 @@
-import { GFFStruct } from "../resource/GFFStruct";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
 
 /**
  * Reputation class.

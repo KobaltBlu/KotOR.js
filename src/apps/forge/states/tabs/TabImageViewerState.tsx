@@ -1,10 +1,10 @@
 import React from "react";
-import { TabState } from "./";
-import { TabImageViewer } from "../../components/tabs/tab-image-viewer/TabImageViewer";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { EditorFile } from "../../EditorFile";
-import * as KotOR from "../../KotOR";
-import { PixelManager } from "../../../../utility/PixelManager";
+import { TabState } from "@/apps/forge/states/tabs";
+import { TabImageViewer } from "@/apps/forge/components/tabs/tab-image-viewer/TabImageViewer";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import * as KotOR from "@/apps/forge/KotOR";
+import { PixelManager } from "@/utility/PixelManager";
 
 const concatenate = (resultConstructor: any, ...arrays: any) => {
   let totalLength = 0;

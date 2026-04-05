@@ -34,6 +34,13 @@
     ],
     "outDir": "dist",
   },
-  "include": ["src/apps/launcher/launcher.tsx", "src/types", "src/index.d.ts"],
+  "include": [
+    "src/apps/launcher/**/*.ts",
+    "src/apps/launcher/**/*.tsx",
+    "src/apps/common/**/*.ts",
+    "src/apps/common/**/*.tsx",
+    "src/types",
+    "src/index.d.ts"
+  ],
   "exclude": ["node_modules", "src/**/*.spec.ts"]
 }

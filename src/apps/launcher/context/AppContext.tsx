@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { ConfigClient } from "../../../utility/ConfigClient";
+import { ConfigClient } from "@/utility/ConfigClient";
 
 export interface AppProviderValues {
   version: string,

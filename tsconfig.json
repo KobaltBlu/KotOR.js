@@ -36,6 +36,6 @@
     ],
     "outDir": "dist",
   },
-  "include": ["src/KotOR.ts", "src/types", "src/index.d.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/index.d.ts"],
   "exclude": ["node_modules", "src/**/*.spec.ts"]
 }

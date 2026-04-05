@@ -1,11 +1,11 @@
-import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
-import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
-import type { ModuleItem } from "../../../module";
-import { MenuEquipment as K1_MenuEquipment } from "../../kotor/KOTOR";
-import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
-import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
-import { GameState } from "../../../GameState";
-import { GUIInventoryItem } from "../gui/GUIInventoryItem";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
+import type { ModuleItem } from "@/module";
+import { MenuEquipment as K1_MenuEquipment } from "@/game/kotor/KOTOR";
+import { GUIItemEquipped } from "@/gui/protoitem/GUIItemEquipped";
+import { GUIItemNone } from "@/gui/protoitem/GUIItemNone";
+import { GameState } from "@/GameState";
+import { GUIInventoryItem } from "@/game/tsl/gui/GUIInventoryItem";
 
 /**
  * MenuEquipment class.

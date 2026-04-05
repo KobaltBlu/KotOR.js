@@ -1,11 +1,11 @@
-import { GameEvent } from "./GameEvent";
-import { GameEffect } from "../effects/GameEffect";
-import { GameEventType } from "../enums/events/GameEventType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameEvent } from "@/events/GameEvent";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEventType } from "@/enums/events/GameEventType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 
 /**
  * EventApplyEffect class.

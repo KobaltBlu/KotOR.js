@@ -23,7 +23,7 @@ import { IngameControls } from "@/controls/IngameControls";
 
 import { INIConfig } from "@/engine/INIConfig";
 
-// import { OdysseyObject3D } from "./three/odyssey";
+// import { OdysseyObject3D } from "@/three/odyssey";
 import { AudioEngine, AudioEmitter } from "@/audio";
 import { TGAObject } from "@/resource/TGAObject";
 
@@ -54,7 +54,7 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 // import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
-// import { GUIControlTypeMask } from "./enums/gui/GUIControlTypeMask";
+// import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 
 // import { ModuleTriggerType } from "@/enums";
 import { Planetary } from "@/engine/Planetary";

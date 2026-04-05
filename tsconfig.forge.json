@@ -34,6 +34,13 @@
     ],
     "outDir": "dist",
   },
-  "include": ["src/apps/forge/forge.ts", "src/types", "src/index.d.ts"],
+  "include": [
+    "src/apps/forge/**/*.ts",
+    "src/apps/forge/**/*.tsx",
+    "src/apps/common/**/*.ts",
+    "src/apps/common/**/*.tsx",
+    "src/types",
+    "src/index.d.ts"
+  ],
   "exclude": ["node_modules", "src/**/*.spec.ts"]
 }

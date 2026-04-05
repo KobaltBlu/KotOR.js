@@ -1,7 +1,7 @@
-import { GameState } from "../GameState";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { GameEffect } from "./GameEffect";
-// import { TwoDAManager } from "../managers";
+import { GameState } from "@/GameState";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameEffect } from "@/effects/GameEffect";
+// import { TwoDAManager } from "@/managers";
 
 /**
  * EffectForceShield class.

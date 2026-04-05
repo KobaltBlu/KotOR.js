@@ -1,17 +1,17 @@
-import { EditorFile } from "../EditorFile";
-import { MenuTopItem } from "../MenuTopItem";
-import { Project } from "../Project";
-import { ModalChangeGameState } from "../components/modal/ModalChangeGame";
-import { ForgeState } from "./ForgeState";
-import { TabQuickStartState } from "./tabs/TabQuickStartState";
-import { TabState } from "./tabs/TabState";
-import { TabUTCEditorState } from "./tabs/TabUTCEditorState";
-import { TabUTDEditorState } from "./tabs/TabUTDEditorState";
-import { TabUTPEditorState } from "./tabs/TabUTPEditorState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { MenuTopItem } from "@/apps/forge/MenuTopItem";
+import { Project } from "@/apps/forge/Project";
+import { ModalChangeGameState } from "@/apps/forge/components/modal/ModalChangeGame";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TabUTCEditorState } from "@/apps/forge/states/tabs/TabUTCEditorState";
+import { TabUTDEditorState } from "@/apps/forge/states/tabs/TabUTDEditorState";
+import { TabUTPEditorState } from "@/apps/forge/states/tabs/TabUTPEditorState";
 
-import * as KotOR from "../KotOR";
-import { ModalNewProjectState } from "./modal/ModalNewProjectState";
-import { TabTextEditorState } from "./tabs/TabTextEditorState";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
+import { TabTextEditorState } from "@/apps/forge/states/tabs/TabTextEditorState";
 
 
 export class MenuTopState {

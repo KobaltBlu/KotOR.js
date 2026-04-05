@@ -1,11 +1,11 @@
-import { GameState } from "../../../GameState";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import type { ModuleCreature } from "../../../module/ModuleCreature";
-import { MenuAbilities as K1_MenuAbilities } from "../../kotor/KOTOR";
-import { GUICreatureSkill } from "../gui/GUICreatureSkill";
-import { GUISpellItem } from "../gui/GUISpellItem";
-import { GUIFeatItem } from "../gui/GUIFeatItem";
-import { type TalentFeat } from "../../../talents/TalentFeat";
+import { GameState } from "@/GameState";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { MenuAbilities as K1_MenuAbilities } from "@/game/kotor/KOTOR";
+import { GUICreatureSkill } from "@/game/tsl/gui/GUICreatureSkill";
+import { GUISpellItem } from "@/game/tsl/gui/GUISpellItem";
+import { GUIFeatItem } from "@/game/tsl/gui/GUIFeatItem";
+import { type TalentFeat } from "@/talents/TalentFeat";
 
 enum AbilityFilter {
   SKILLS = 1,

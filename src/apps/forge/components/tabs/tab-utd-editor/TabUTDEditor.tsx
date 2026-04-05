@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTDEditorState } from "../../../states/tabs";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { SubTabHost, SubTab } from "../../SubTabHost";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor";
-import * as KotOR from "../../../KotOR";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { InfoBubble } from "../../info-bubble/info-bubble";
-import { FormField } from "../../form-field/FormField";
-import { ForgeDoor } from "../../../module-editor/ForgeDoor";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import { TabUTDEditorState } from "@/apps/forge/states/tabs";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { SubTabHost, SubTab } from "@/apps/forge/components/SubTabHost";
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
 
 export const TabUTDEditor = function(props: BaseTabProps){
 

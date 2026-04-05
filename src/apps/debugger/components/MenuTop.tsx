@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Container, Nav, Navbar } from 'react-bootstrap';
-import { useEffectOnce } from "../helpers/UseEffectOnce";
-import { MenuItem } from "./MenuItem";
-import { MenuTopState } from "../states/MenuTopState";
-import { MenuTopItem } from "../MenuTopItem";
+import { useEffectOnce } from "@/apps/debugger/helpers/UseEffectOnce";
+import { MenuItem } from "@/apps/debugger/components/MenuItem";
+import { MenuTopState } from "@/apps/debugger/states/MenuTopState";
+import { MenuTopItem } from "@/apps/debugger/MenuTopItem";
 
 export const MenuTop = function(props: any) {
 

@@ -1,5 +1,5 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
-import { Utility } from "../../utility/Utility";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+import { Utility } from "@/utility/Utility";
 
 /**
  * SWCreatureAppearance class.

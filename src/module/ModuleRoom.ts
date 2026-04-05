@@ -1,5 +1,5 @@
 import { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from ".";
+import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from "@/module";
 import * as THREE from "three";
 import { GameState } from "@/GameState";
 import { OdysseyFace3, OdysseyModel3D } from "@/three/odyssey";

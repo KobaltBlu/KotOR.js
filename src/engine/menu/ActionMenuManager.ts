@@ -1,14 +1,14 @@
-import { GameState } from "../../GameState";
-import { ActionMenuPanel } from "./ActionMenuPanel";
-import { ActionMenuItem } from "./ActionMenuItem";
-import type { ModuleObject } from "../../module/ModuleObject";
-import type { ModuleCreature } from "../../module/ModuleCreature";
-import { IActionPanelLists } from "../../interface/gui/IActionPanelLists";
-import { GameEngineType } from "../../enums/engine/GameEngineType";
-import { ActionType } from "../../enums/actions/ActionType";
-import { SkillType } from "../../enums/nwscript/SkillType";
-import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "../../enums";
-import { TalentObject } from "../../talents/TalentObject";
+import { GameState } from "@/GameState";
+import { ActionMenuPanel } from "@/engine/menu/ActionMenuPanel";
+import { ActionMenuItem } from "@/engine/menu/ActionMenuItem";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { IActionPanelLists } from "@/interface/gui/IActionPanelLists";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { ActionType } from "@/enums/actions/ActionType";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "@/enums";
+import { TalentObject } from "@/talents/TalentObject";
 
 /**
  * ActionMenuManager class.

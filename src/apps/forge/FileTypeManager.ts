@@ -1,13 +1,13 @@
-import { EditorFile } from "./EditorFile";
-import { Project } from "./Project";
-import { EditorFileOptions } from "./interfaces/EditorFileOptions";
-import { AudioPlayerState } from "./states/AudioPlayerState";
-import { ForgeState } from "./states/ForgeState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { Project } from "@/apps/forge/Project";
+import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
+import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { 
   TabBIKPlayerState, TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabPTHEditorState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState, 
   TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState 
-} from "./states/tabs";
-import { ResourceTypes } from "../../KotOR";
+} from "@/apps/forge/states/tabs";
+import { ResourceTypes } from "@/KotOR";
 
 /**
  * FileTypeManager class.

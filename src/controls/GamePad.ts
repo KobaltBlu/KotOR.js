@@ -1,5 +1,5 @@
-import { AnalogInput } from "./AnalogInput";
-import { KeyInput } from "./KeyInput";
+import { AnalogInput } from "@/controls/AnalogInput";
+import { KeyInput } from "@/controls/KeyInput";
 
 /**
  * GamePad class.

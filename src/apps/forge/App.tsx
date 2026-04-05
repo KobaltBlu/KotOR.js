@@ -1,16 +1,16 @@
 import React from "react";
-import TabManager from "./components/tabs/TabManager";
-import { TabManagerProvider } from "./context/TabManagerContext";
-import { ForgeState } from "./states/ForgeState";
-import { MenuTop } from "./components/MenuTop";
-import { LayoutContainerProvider } from "./context/LayoutContainerContext";
-import { LayoutContainer } from "./components/LayoutContainer/LayoutContainer";
-import ModalGrantAccess from "./components/modal/ModalGrantAccess";
-import { ModalChangeGame } from "./components/modal/ModalChangeGame";
-import { useEffectOnce } from "./helpers/UseEffectOnce";
-import { useApp } from "./context/AppContext";
-import { ModalManager } from "./components/modal/ModalManager";
-import { LoadingScreen } from "../common/components/loadingScreen/LoadingScreen";
+import TabManager from "@/apps/forge/components/tabs/TabManager";
+import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { MenuTop } from "@/apps/forge/components/MenuTop";
+import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import ModalGrantAccess from "@/apps/forge/components/modal/ModalGrantAccess";
+import { ModalChangeGame } from "@/apps/forge/components/modal/ModalChangeGame";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { useApp } from "@/apps/forge/context/AppContext";
+import { ModalManager } from "@/apps/forge/components/modal/ModalManager";
+import { LoadingScreen } from "@/apps/common/components/loadingScreen/LoadingScreen";
 
 export const App = (props: any) => {
 

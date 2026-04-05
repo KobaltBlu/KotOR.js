@@ -1,7 +1,7 @@
 import { BrowserWindow } from "electron";
 import * as path from "path";
-import { WindowManager } from "./WindowManager";
-import Main from "./Main";
+import { WindowManager } from "@/electron/WindowManager";
+import Main from "@/electron/Main";
 
 export class ApplicationWindow {
 

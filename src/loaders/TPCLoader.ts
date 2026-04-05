@@ -1,12 +1,12 @@
-import { TPCObject } from "../resource/TPCObject";
+import { TPCObject } from "@/resource/TPCObject";
 import * as path from "path";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { ERFManager } from "../managers/ERFManager";
-import { KEYManager } from "../managers/KEYManager";
-import { OdysseyCompressedTexture } from "../three/odyssey";
-import { IFindTPCResult } from "../interface/graphics/IFindTPCResult";
-import { TextureLoaderState } from "./TextureLoaderState";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { ERFManager } from "@/managers/ERFManager";
+import { KEYManager } from "@/managers/KEYManager";
+import { OdysseyCompressedTexture } from "@/three/odyssey";
+import { IFindTPCResult } from "@/interface/graphics/IFindTPCResult";
+import { TextureLoaderState } from "@/loaders/TextureLoaderState";
 
 /**
  * TPCLoader class.

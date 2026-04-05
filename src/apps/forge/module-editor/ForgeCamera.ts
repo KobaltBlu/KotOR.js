@@ -1,5 +1,5 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from "three";
 
 export class ForgeCamera extends ForgeGameObject {

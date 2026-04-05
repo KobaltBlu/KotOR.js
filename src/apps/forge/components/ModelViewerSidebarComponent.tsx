@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { TabModelViewerState } from "../states/tabs";
-import { useEffectOnce } from "../helpers/UseEffectOnce";
+import { TabModelViewerState } from "@/apps/forge/states/tabs";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { Form } from "react-bootstrap";
-import { SceneGraphTreeView } from "./SceneGraphTreeView";
+import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
 
-import * as KotOR from "../KotOR";
-import { UI3DRenderer } from "../UI3DRenderer";
+import * as KotOR from "@/apps/forge/KotOR";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 
 export const ModelViewerSidebarComponent = function(props: any){
   const tab: TabModelViewerState = props.tab as TabModelViewerState;

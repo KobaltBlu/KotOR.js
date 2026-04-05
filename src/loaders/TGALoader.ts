@@ -1,10 +1,10 @@
 import * as path from "path";
-import { ResourceLoader } from "./ResourceLoader";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { TXI } from "../resource/TXI";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import type { TextureLoader } from "./TextureLoader";
-import { GameFileSystem } from "../utility/GameFileSystem";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TXI } from "@/resource/TXI";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import type { TextureLoader } from "@/loaders/TextureLoader";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * TGALoader class.

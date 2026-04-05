@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Draggable from 'react-draggable';
-import { useEffectOnce } from "../../forge/helpers/UseEffectOnce";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
 export interface LayoutContainerProps {
   northContent?: JSX.Element;

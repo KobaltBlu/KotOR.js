@@ -1,6 +1,6 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIListBox } from "../../../gui";
-import { InGameComputer as K1_InGameComputer } from "../../kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIListBox } from "@/gui";
+import { InGameComputer as K1_InGameComputer } from "@/game/kotor/KOTOR";
 
 /**
  * InGameComputer class.

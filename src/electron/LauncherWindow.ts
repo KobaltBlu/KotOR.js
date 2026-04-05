@@ -1,6 +1,6 @@
 import { BrowserWindow, shell } from "electron";
 import * as path from "path";
-import Main from "./Main";
+import Main from "@/electron/Main";
 
 export class LauncherWindow {
 

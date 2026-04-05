@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { TabPTHEditorState } from "../../../states/tabs";
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { TabPTHEditorState } from "@/apps/forge/states/tabs";
+import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowPointer, faCircle, faCircleNodes, faPlus } from "@fortawesome/free-solid-svg-icons";
-import { SceneGraphTreeView } from "../../SceneGraphTreeView";
+import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
 
 
 const UI3DToolPalette = function(props: any){

@@ -1,13 +1,13 @@
-import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
-import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { GameState } from "../../../GameState";
-import { LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { ApplicationProfile } from "../../../utility/ApplicationProfile";
-import { MainMenu as K1_MainMenu } from "../../kotor/KOTOR";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
+import { GameState } from "@/GameState";
+import { LBL_3DView } from "@/gui";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { MainMenu as K1_MainMenu } from "@/game/kotor/KOTOR";
 
 /**
  * MainMenu class.

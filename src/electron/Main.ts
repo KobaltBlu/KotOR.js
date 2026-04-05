@@ -1,6 +1,6 @@
 
 import {  Menu, Tray, globalShortcut, ipcMain } from 'electron';
-import { WindowManager } from './WindowManager';
+import { WindowManager } from "@/electron/WindowManager";
 
 export default class Main {
 

@@ -27,7 +27,7 @@ import { LIPObject } from "@/resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
 import { Utility } from "@/utility/Utility";
 import { ComputedPath } from "@/engine/pathfinding";
-import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from ".";
+import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from "@/module";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { DLGObject } from "@/resource/DLGObject";
 import { Faction } from "@/engine/Faction";
