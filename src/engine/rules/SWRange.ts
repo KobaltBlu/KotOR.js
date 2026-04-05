@@ -1,5 +1,5 @@
-import { TLKManager } from "../../managers/TLKManager";
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { TLKManager } from "@/managers/TLKManager";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 const RANGE_TYPES = {
   SPELL: 0,

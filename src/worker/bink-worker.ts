@@ -22,9 +22,9 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { BinkDemuxer } from '../video/bink-demuxer';
-import { BinkVideoDecoder, YUVFrame } from '../video/binkvideo';
-import { BinkAudioDCTDecoder } from '../audio/binkaudio_dct';
+import { BinkDemuxer } from '@/video/bink-demuxer';
+import { BinkVideoDecoder, YUVFrame } from '@/video/binkvideo';
+import { BinkAudioDCTDecoder } from '@/audio/binkaudio_dct';
 
 // ── Types shared with main thread ──────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { useEffectOnce } from "../helpers/UseEffectOnce";
-import { CameraView, UI3DRenderer } from "../UI3DRenderer";
-import { MenuBar, MenuItem } from "./common/MenuBar";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { CameraView, UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
 // Re-export MenuItem for backward compatibility
 export type { MenuItem };

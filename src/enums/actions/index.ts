@@ -1,3 +1,3 @@
-export * from "./ActionParameterType";
-export * from "./ActionStatus";
-export * from "./ActionType";
+export * from "@/enums/actions/ActionParameterType";
+export * from "@/enums/actions/ActionStatus";
+export * from "@/enums/actions/ActionType";

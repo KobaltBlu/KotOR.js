@@ -1,22 +1,22 @@
 import * as THREE from "three";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import { NWScript } from "../nwscript/NWScript";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { OdysseyFace3 } from "../three/odyssey";
-import { ConfigClient } from "../utility/ConfigClient";
-import { ResourceLoader } from "../loaders";
-// import { ModuleObjectManager, PartyManager, FactionManager } from "../managers";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleObject } from "./ModuleObject";
-import { EncounterCreatureEntry } from "./EncounterCreatureEntry";
-import { EncounterSpawnPointEntry } from "./EncounterSpawnPointEntry";
-import { EncounterSpawnEntry } from "./EncounterSpawnEntry";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyFace3 } from "@/three/odyssey";
+import { ConfigClient } from "@/utility/ConfigClient";
+import { ResourceLoader } from "@/loaders";
+// import { ModuleObjectManager, PartyManager, FactionManager } from "@/managers";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleObject } from "@/module/ModuleObject";
+import { EncounterCreatureEntry } from "@/module/EncounterCreatureEntry";
+import { EncounterSpawnPointEntry } from "@/module/EncounterSpawnPointEntry";
+import { EncounterSpawnEntry } from "@/module/EncounterSpawnEntry";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 /**
 * ModuleEncounter class.

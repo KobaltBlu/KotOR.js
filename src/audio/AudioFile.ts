@@ -1,10 +1,10 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { AudioFileAudioType } from "../enums/audio/AudioFileAudioType";
-import { AudioFileWaveEncoding } from "../enums/audio/AudioFileWaveEncoding";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { Utility } from "../utility/Utility";
-import { ADPCMDecoder } from "./ADPCMDecoder";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { AudioFileAudioType } from "@/enums/audio/AudioFileAudioType";
+import { AudioFileWaveEncoding } from "@/enums/audio/AudioFileWaveEncoding";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { Utility } from "@/utility/Utility";
+import { ADPCMDecoder } from "@/audio/ADPCMDecoder";
 
 //Header Tests
 const fakeHeaderTest = [0xFF, 0xF3, 0x60, 0xC4];

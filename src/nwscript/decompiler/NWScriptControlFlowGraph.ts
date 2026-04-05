@@ -1,10 +1,10 @@
-import type { NWScript } from "../NWScript";
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import { NWScriptEdge, EdgeType } from "./NWScriptEdge";
+import type { NWScript } from "@/nwscript/NWScript";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import { NWScriptEdge, EdgeType } from "@/nwscript/decompiler/NWScriptEdge";
 import {
   OP_JMP, OP_JSR, OP_JZ, OP_JNZ, OP_RETN, OP_STORE_STATE, OP_STORE_STATEALL
-} from '../NWScriptOPCodes';
+} from "@/nwscript/NWScriptOPCodes";
 
 /**
  * Control Flow Graph for NWScript decompilation.

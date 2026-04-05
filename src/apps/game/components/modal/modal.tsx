@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import "./modal.scss";
-import { useApp } from "../../context/AppContext";
+import "@/apps/game/components/modal/modal.scss";
+import { useApp } from "@/apps/game/context/AppContext";
 
 export interface KotORModalProps {
   children: React.ReactNode;

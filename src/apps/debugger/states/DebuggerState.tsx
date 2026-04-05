@@ -1,8 +1,8 @@
-import { IPCDataType } from "../../../enums/server/ipc/IPCDataType";
-import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
-import { IPCMessage } from "../../../server/ipc/IPCMessage";
-import { IPCMessageParam } from "../../../server/ipc/IPCMessageParam";
-import * as KotOR from "../KotOR";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { IPCMessage } from "@/server/ipc/IPCMessage";
+import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
+import * as KotOR from "@/apps/debugger/KotOR";
 
 export class DebuggerState {
 

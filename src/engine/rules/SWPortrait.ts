@@ -1,4 +1,4 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 export class SWPortrait {
   static portraits: any[] = [];

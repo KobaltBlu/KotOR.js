@@ -1,5 +1,5 @@
-import { GameState } from "../GameState";
-import { EventTimedEvent } from "../events";
+import { GameState } from "@/GameState";
+import { EventTimedEvent } from "@/events";
 
 /**
  * NWScriptSubroutine class.

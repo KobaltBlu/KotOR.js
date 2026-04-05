@@ -1,11 +1,11 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel } from "../../../gui";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel } from "@/gui";
 import * as THREE from "three";
-import { CutsceneMode } from "../../../enums/dialog/CutsceneMode";
-import { DLGNode } from "../../../resource/DLGNode";
-import { ConversationState } from "../../../enums/dialog/ConversationState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
+import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
+import { DLGNode } from "@/resource/DLGNode";
+import { ConversationState } from "@/enums/dialog/ConversationState";
+import { EngineMode } from "@/enums/engine/EngineMode";
 
 const LETTERBOX_HEIGHT = 100;
 

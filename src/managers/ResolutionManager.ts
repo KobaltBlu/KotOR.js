@@ -1,4 +1,4 @@
-import { IScreenResolution } from "../interface/graphics/IScreenResolution";
+import { IScreenResolution } from "@/interface/graphics/IScreenResolution";
 
 /**
  * ResolutionManager class.

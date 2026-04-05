@@ -1,4 +1,4 @@
-import { ModuleObjectType } from "../../enums/module";
+import { ModuleObjectType } from "@/enums/module";
 
 export class GameObject {
   id: number;

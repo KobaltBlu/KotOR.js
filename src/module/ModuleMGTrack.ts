@@ -1,10 +1,10 @@
-import { ModuleObject } from "./ModuleObject";
-import { GameState } from "../GameState";
-import { OdysseyModel3D } from "../three/odyssey";
-import { OdysseyModel } from "../odyssey";
-import { ILayoutTrack } from "../interface/resource/ILayoutTrack";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { MDLLoader } from "../loaders";
+import { ModuleObject } from "@/module/ModuleObject";
+import { GameState } from "@/GameState";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyModel } from "@/odyssey";
+import { ILayoutTrack } from "@/interface/resource/ILayoutTrack";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { MDLLoader } from "@/loaders";
 
 /**
 * ModuleMGTrack class.

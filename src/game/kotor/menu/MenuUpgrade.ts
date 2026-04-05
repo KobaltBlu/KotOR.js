@@ -1,6 +1,6 @@
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 
 /**
  * MenuUpgrade class.

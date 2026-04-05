@@ -1,5 +1,5 @@
-import { TLKManager } from "../managers/TLKManager";
-import { CExoLocSubString } from "./CExoLocSubString";
+import { TLKManager } from "@/managers/TLKManager";
+import { CExoLocSubString } from "@/resource/CExoLocSubString";
 
 /**
  * CExoLocString class.

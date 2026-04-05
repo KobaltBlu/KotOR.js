@@ -1,11 +1,11 @@
-import * as KOTOR from "../game/kotor/KOTOR";
-import * as TSL from "../game/tsl/TSL";
-import { GameState } from "../GameState";
-import { EngineMode, GameEngineType } from "../enums/engine";
-import type { GUIControl, GameMenu } from "../gui";
-import { ActionMenuManager } from "../engine/menu/ActionMenuManager";
-import { EngineState } from "../enums/engine/EngineState";
-import { PerformanceMonitor } from "../utility/PerformanceMonitor";
+import * as KOTOR from "@/game/kotor/KOTOR";
+import * as TSL from "@/game/tsl/TSL";
+import { GameState } from "@/GameState";
+import { EngineMode, GameEngineType } from "@/enums/engine";
+import type { GUIControl, GameMenu } from "@/gui";
+import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
+import { EngineState } from "@/enums/engine/EngineState";
+import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 
 /**
  * MenuManager class.

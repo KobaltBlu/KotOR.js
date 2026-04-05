@@ -1,6 +1,6 @@
 import React, { useState } from "react"
-import { useEffectOnce } from "../helpers/UseEffectOnce"
-import { UI3DRenderer } from "../UI3DRenderer";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce"
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import * as THREE from 'three';
 
 export const UI3DOverlayComponent = function(props: any){

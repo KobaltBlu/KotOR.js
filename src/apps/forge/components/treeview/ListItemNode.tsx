@@ -1,5 +1,5 @@
 import React, { useState, useCallback, memo } from "react";
-import "./ForgeTreeView.scss";
+import "@/apps/forge/components/treeview/ForgeTreeView.scss";
 
 export interface ListItemNodeProps {
   // Core node data

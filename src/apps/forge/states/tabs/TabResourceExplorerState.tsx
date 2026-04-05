@@ -1,13 +1,13 @@
 import React from "react";
-import { TabState } from "./TabState";
-import { TabResourceExplorer } from "../../components/tabs/tab-resource-explorer/TabResourceExplorer";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TabResourceExplorer } from "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer";
 import * as path from "path";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { AsyncLoop } from "../../../../utility/AsyncLoop";
-import * as KotOR from "../../KotOR";
-import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
-import { ForgeState } from "../ForgeState";
-import { FileBrowserNode } from "../../FileBrowserNode";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { AsyncLoop } from "@/utility/AsyncLoop";
+import * as KotOR from "@/apps/forge/KotOR";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
 
 export class TabResourceExplorerState extends TabState {
 

@@ -1,7 +1,7 @@
 import React, { MouseEventHandler, useEffect, useState } from "react";
-import { useTabManager } from "../../context/TabManagerContext";
-import { TabState } from "../../states/tabs";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { useTabManager } from "@/apps/forge/context/TabManagerContext";
+import { TabState } from "@/apps/forge/states/tabs";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
 export interface TabButtonProps {
   tab: TabState

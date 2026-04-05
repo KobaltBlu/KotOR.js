@@ -1,6 +1,6 @@
-import { OdysseyModel } from "../odyssey";
-import { ResourceLoader } from "./ResourceLoader";
-import { ResourceTypes } from "../resource/ResourceTypes";
+import { OdysseyModel } from "@/odyssey";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import { ResourceTypes } from "@/resource/ResourceTypes";
 
 /**
  * Interface defining the structure of the model cache.

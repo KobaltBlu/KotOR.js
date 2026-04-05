@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import { FadeOverlayState } from "../enums/engine/FadeOverlayState";
+import { GameState } from "@/GameState";
+import { FadeOverlayState } from "@/enums/engine/FadeOverlayState";
 
 /**
  * FadeOverlayManager class.

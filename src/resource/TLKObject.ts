@@ -1,6 +1,6 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { TLKString } from "./TLKString";
-import { GameFileSystem } from "../utility/GameFileSystem";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { TLKString } from "@/resource/TLKString";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * TLKObject class.

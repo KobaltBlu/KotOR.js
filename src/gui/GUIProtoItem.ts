@@ -1,12 +1,12 @@
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import type { GFFStruct } from "../resource/GFFStruct";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import type { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
-import { Anchor } from "../enums/gui/Anchor";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import type { GUIListBox } from "./GUIListBox";
-import { Mouse } from "../controls/Mouse";
+import { Anchor } from "@/enums/gui/Anchor";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import { Mouse } from "@/controls/Mouse";
 
 /**
  * GUIProtoItem class.

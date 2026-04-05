@@ -1,5 +1,5 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { TLKManager } from "../managers/TLKManager";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { TLKManager } from "@/managers/TLKManager";
 
 /**
  * SSFObject class.

@@ -3,10 +3,10 @@ import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import 'bootstrap';
-import './app.scss';
-import { AppProvider, useApp } from './context/AppContext';
-import * as KotOR from "./KotOR";
-import { App } from './App';
+import "@/apps/forge/app.scss";
+import { AppProvider, useApp } from "@/apps/forge/context/AppContext";
+import * as KotOR from "@/apps/forge/KotOR";
+import { App } from "@/apps/forge/App";
 
 const query = new URLSearchParams(window.location.search);
 

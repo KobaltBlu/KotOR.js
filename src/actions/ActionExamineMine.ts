@@ -1,12 +1,12 @@
-import { GameState } from "../GameState";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleObject } from "../module/ModuleObject";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
+import { GameState } from "@/GameState";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionExamineMine class.

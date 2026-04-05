@@ -1,13 +1,13 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
-import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
-import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
-import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
-import { ModuleItem } from "../../../module/ModuleItem";
-import type { ModuleCreature } from "../../../module/ModuleCreature";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { GUIItemEquipped } from "@/gui/protoitem/GUIItemEquipped";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import { GUIItemNone } from "@/gui/protoitem/GUIItemNone";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
  * MenuEquipment class.

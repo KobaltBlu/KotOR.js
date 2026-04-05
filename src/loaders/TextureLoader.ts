@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 import * as path from "path";
-import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
-import { TextureType } from '../enums/loaders/TextureType';
-import { ITextureLoaderQueuedRef } from '../interface/loaders/ITextureLoaderQueuedRef';
-import { TXIBlending } from '../enums/graphics/txi/TXIBlending';
-import { TPCLoader } from './TPCLoader';
-import { TGALoader } from './TGALoader';
-import { OdysseyTexture } from '../three/odyssey/OdysseyTexture';
-import { GameFileSystem } from '../utility/GameFileSystem';
-import { TXIPROCEDURETYPE } from '../enums/graphics/txi/TXIPROCEDURETYPE';
-import { GameEngineType } from '../enums/engine';
+import { PixelFormat } from "@/enums/graphics/tpc/PixelFormat";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { ITextureLoaderQueuedRef } from "@/interface/loaders/ITextureLoaderQueuedRef";
+import { TXIBlending } from "@/enums/graphics/txi/TXIBlending";
+import { TPCLoader } from "@/loaders/TPCLoader";
+import { TGALoader } from "@/loaders/TGALoader";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
+import { GameEngineType } from "@/enums/engine";
 
 type onProgressCallback = (ref: ITextureLoaderQueuedRef, index: number, total: number) => void;
 

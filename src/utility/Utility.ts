@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as THREE from 'three';
-import { GameFileSystem } from './GameFileSystem';
+import { GameFileSystem } from '@/utility/GameFileSystem';
 
 const PI: number = Math.PI;
 const TWO_PI: number = Math.PI * 2;

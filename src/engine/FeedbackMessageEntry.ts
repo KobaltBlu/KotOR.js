@@ -1,7 +1,7 @@
-import { FeebackMessageColor } from "../enums/engine/FeedbackMessageColor";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
+import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * FeedbackMessageEntry class.

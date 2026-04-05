@@ -1,6 +1,6 @@
-import { ArgumentNode, BlockNode, BreakNode, CaseNode, CommentNode, ContinueNode, DataTypeNode, DefaultNode, DefineNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionNode, IfNode, IncludeNode, ProgramNode, ReturnNode, StatementNode, StructNode, SwitchNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./ASTTypes";
-import { NWScriptLexer } from "./NWScriptLexer";
-import type { Token } from "./NWScriptToken";
+import { ArgumentNode, BlockNode, BreakNode, CaseNode, CommentNode, ContinueNode, DataTypeNode, DefaultNode, DefineNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionNode, IfNode, IncludeNode, ProgramNode, ReturnNode, StatementNode, StructNode, SwitchNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "@/nwscript/compiler/ASTTypes";
+import { NWScriptLexer } from "@/nwscript/compiler/NWScriptLexer";
+import type { Token } from "@/nwscript/compiler/NWScriptToken";
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWCompileDataTypes: Record<string, number> = {

@@ -1,17 +1,17 @@
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { TalentObject } from "./TalentObject";
-import type { ModuleObject } from "../module";
-import { OdysseyModel3D } from "../three/odyssey";
-import { TwoDAManager } from "../managers/TwoDAManager";
-import { ActionType } from "../enums/actions/ActionType";
-import { ActionCombat } from "../actions/ActionCombat";
-import { CombatRoundAction, SpellCastInstance } from "../combat";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { TalentObjectType } from "../enums/engine/TalentObjectType";
-import { TwoDAObject } from "../resource/TwoDAObject";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { TalentObject } from "@/talents/TalentObject";
+import type { ModuleObject } from "@/module";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ActionCombat } from "@/actions/ActionCombat";
+import { CombatRoundAction, SpellCastInstance } from "@/combat";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { TalentObjectType } from "@/enums/engine/TalentObjectType";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 const underscoreParser = (value: string = ''): number[] => {
   return value.split('_').map((val) => {

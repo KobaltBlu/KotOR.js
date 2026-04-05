@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import './LoadingScreen.scss';
+import "@/apps/common/components/loadingScreen/LoadingScreen.scss";
 
 export interface ILoadingScreenProps {
   active?: boolean;

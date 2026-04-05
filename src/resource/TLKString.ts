@@ -1,4 +1,4 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
 
 /**
  * TLKString class.

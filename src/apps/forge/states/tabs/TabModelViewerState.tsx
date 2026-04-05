@@ -1,14 +1,14 @@
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
-import * as KotOR from "../../KotOR";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
+import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
 import React from "react";
-import { TabModelViewer } from "../../components/tabs/tab-model-viewer/TabModelViewer";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
-import { EditorFile } from "../../EditorFile";
-import { BinaryReader } from "../../../../utility/binary/BinaryReader";
-import { SceneGraphNode } from "../../SceneGraphNode";
-import { UI3DOverlayComponent } from "../../components/UI3DOverlayComponent";
+import { TabModelViewer } from "@/apps/forge/components/tabs/tab-model-viewer/TabModelViewer";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
+import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
 
 export type TabModelViewerStateEventListenerTypes =
 TabStateEventListenerTypes & 

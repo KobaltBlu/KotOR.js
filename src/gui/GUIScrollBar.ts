@@ -1,15 +1,15 @@
-import type { GFFStruct } from "../resource/GFFStruct";
+import type { GFFStruct } from "@/resource/GFFStruct";
 
 import * as THREE from "three";
-import { TextureLoader } from "../loaders";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { TextureType } from "../enums/loaders/TextureType";
-import { Mouse } from "../controls/Mouse";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ResolutionManager } from "../managers/ResolutionManager";
-import { GUIControl } from "./GUIControl";
-import type { GUIListBox } from "./GUIListBox";
-import type { GameMenu } from "./GameMenu";
+import { TextureLoader } from "@/loaders";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { Mouse } from "@/controls/Mouse";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import { GUIControl } from "@/gui/GUIControl";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import type { GameMenu } from "@/gui/GameMenu";
 
 /**
  * GUIScrollBar class.

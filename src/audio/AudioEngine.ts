@@ -1,13 +1,13 @@
 import * as THREE from "three";
-import type { AudioEmitter } from "./AudioEmitter";
-import { AudioEngineMode } from "../enums/audio/AudioEngineMode";
-import { IAreaAudioProperties } from "../interface/area/IAreaAudioProperties";
-import { AmbientAudioEmitter } from "./AmbientAudioEmitter";
-import { EAXPresets } from "./EAXPresets";
-import { BackgroundMusicMode } from "../enums/audio/BackgroundMusicMode";
-import { BackgroundMusicState } from "../enums/audio/BackgroundMusicState";
-import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
-import { ReverbEngine } from "./ReverbEngine";
+import type { AudioEmitter } from "@/audio/AudioEmitter";
+import { AudioEngineMode } from "@/enums/audio/AudioEngineMode";
+import { IAreaAudioProperties } from "@/interface/area/IAreaAudioProperties";
+import { AmbientAudioEmitter } from "@/audio/AmbientAudioEmitter";
+import { EAXPresets } from "@/audio/EAXPresets";
+import { BackgroundMusicMode } from "@/enums/audio/BackgroundMusicMode";
+import { BackgroundMusicState } from "@/enums/audio/BackgroundMusicState";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { ReverbEngine } from "@/audio/ReverbEngine";
 
 class AudioChannel {
 

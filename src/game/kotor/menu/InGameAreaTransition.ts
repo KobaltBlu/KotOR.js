@@ -1,9 +1,9 @@
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { ModuleObjectType } from "../../../enums/module/ModuleObjectType";
-import { GameMenu } from "../../../gui";
-import type { GUILabel } from "../../../gui";
-import type { ModuleObject } from "../../../module";
-import { BitWise } from "../../../utility/BitWise";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameMenu } from "@/gui";
+import type { GUILabel } from "@/gui";
+import type { ModuleObject } from "@/module";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * InGameAreaTransition class.

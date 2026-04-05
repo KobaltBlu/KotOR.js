@@ -1,12 +1,12 @@
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { Utility } from "../utility/Utility";
-import type { ModuleArea, ModuleMGPlayer, ModuleObject } from "../module";
-import { MiniGameType } from "../enums/engine/MiniGameType";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ResolutionManager } from "../managers/ResolutionManager";
+import { GameState } from "@/GameState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { Utility } from "@/utility/Utility";
+import type { ModuleArea, ModuleMGPlayer, ModuleObject } from "@/module";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ResolutionManager } from "@/managers/ResolutionManager";
 
 const HALF_PI = Math.PI / 2;
 const EASE_THRESHOLD = Math.PI/2;

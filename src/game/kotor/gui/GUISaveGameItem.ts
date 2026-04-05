@@ -1,7 +1,7 @@
-import type { SaveGame } from "../../../engine/SaveGame";
-import { GUIProtoItem } from "../../../gui";
-import type { GameMenu, GUIControl } from "../../../gui";
-import { GFFStruct } from "../../../resource/GFFStruct";
+import type { SaveGame } from "@/engine/SaveGame";
+import { GUIProtoItem } from "@/gui";
+import type { GameMenu, GUIControl } from "@/gui";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * GUISaveGameItem class.

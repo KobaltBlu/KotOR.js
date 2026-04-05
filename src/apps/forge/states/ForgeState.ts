@@ -1,23 +1,23 @@
-import { EditorFile } from "../EditorFile";
-import { Project } from "../Project";
-import { EditorTabManager } from "../managers/EditorTabManager";
-import { TabProjectExplorerState } from "./tabs/TabProjectExplorerState";
-import { TabQuickStartState } from "./tabs/TabQuickStartState";
-import { TabResourceExplorerState } from "./tabs/TabResourceExplorerState";
-import { ProjectFileSystem } from "../ProjectFileSystem";
-import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
-import { pathParse } from "../helpers/PathParse";
-import { FileTypeManager } from "../FileTypeManager";
-import { EditorFileProtocol } from "../enum/EditorFileProtocol";
-import { TabStoreState } from "../interfaces/TabStoreState";
-import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
-import { ModalManagerState } from "./modal/ModalManagerState";
-import { MenuTopState } from "./MenuTopState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { Project } from "@/apps/forge/Project";
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { TabProjectExplorerState } from "@/apps/forge/states/tabs/TabProjectExplorerState";
+import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
+import { TabResourceExplorerState } from "@/apps/forge/states/tabs/TabResourceExplorerState";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
+import { pathParse } from "@/apps/forge/helpers/PathParse";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
+import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
+import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
+import { MenuTopState } from "@/apps/forge/states/MenuTopState";
 
-import * as KotOR from '../KotOR';
-import { NWScriptLanguageService } from "./NWScriptLanguageService";
-import { LYTLanguageService } from "./LYTLanguageService";
-import { RecentProject } from "../RecentProject";
+import * as KotOR from "@/apps/forge/KotOR";
+import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
+import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
+import { RecentProject } from "@/apps/forge/RecentProject";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()

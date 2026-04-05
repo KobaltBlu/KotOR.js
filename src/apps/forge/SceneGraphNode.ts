@@ -1,4 +1,4 @@
-import { EventListenerModel } from "./EventListenerModel";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
 
 export interface SceneGraphNodeOptions {
   uuid?: string;

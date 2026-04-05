@@ -1,6 +1,6 @@
 import React from 'react';
-import { ContextMenuItem } from '../../common/ContextMenu';
-import * as KotOR from '../../../KotOR';
+import { ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export interface GFFContextMenuProps {
   struct: KotOR.GFFStruct;

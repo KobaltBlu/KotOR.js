@@ -1,16 +1,16 @@
 import * as THREE from "three";
-import { WalkmeshEdge } from "./WalkmeshEdge";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { OdysseyWalkMeshType } from "../enums/odyssey/OdysseyWalkMeshType";
-import { IOdysseyModelAABBNode } from "../interface/odyssey/IOdysseyModelAABBNode";
-import { TwoDAManager } from "../managers/TwoDAManager";
-import { ModuleObject } from "../module";
-import { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
-import { SurfaceMaterial } from "../engine/SurfaceMaterial";
-import { TileColor } from "../engine/TileColor";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { IPerimeter } from "../interface/odyssey";
-import { OdysseyModelUtility } from "./OdysseyModelUtility";
+import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { OdysseyWalkMeshType } from "@/enums/odyssey/OdysseyWalkMeshType";
+import { IOdysseyModelAABBNode } from "@/interface/odyssey/IOdysseyModelAABBNode";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import { ModuleObject } from "@/module";
+import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
+import { SurfaceMaterial } from "@/engine/SurfaceMaterial";
+import { TileColor } from "@/engine/TileColor";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { IPerimeter } from "@/interface/odyssey";
+import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
 
 /**
  * OdysseyWalkMesh class.

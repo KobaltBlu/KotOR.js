@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { TabUTEEditorState } from "../../../states/tabs/TabUTEEditorState";
-import { EncounterDifficulty } from "../../../interfaces/EncounterDifficulty";
-import { CreatureListEntry } from "../../../interfaces/CreatureListEntry";
-import * as KotOR from "../../../KotOR";
-import { FormField } from "../../form-field/FormField";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import "../../../styles/tabs/tab-ute-editor.scss";
-import { SubTab, SubTabHost } from "../../SubTabHost/SubTabHost";
-import { ForgeEncounter } from "../../../module-editor/ForgeEncounter";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { TabUTEEditorState } from "@/apps/forge/states/tabs/TabUTEEditorState";
+import { EncounterDifficulty } from "@/apps/forge/interfaces/EncounterDifficulty";
+import { CreatureListEntry } from "@/apps/forge/interfaces/CreatureListEntry";
+import * as KotOR from "@/apps/forge/KotOR";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import "@/apps/forge/styles/tabs/tab-ute-editor.scss";
+import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost/SubTabHost";
+import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
 
 export const TabUTEEditor = function(props: BaseTabProps){
   const tab: TabUTEEditorState = props.tab as TabUTEEditorState;

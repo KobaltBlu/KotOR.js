@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import TabButton from "./TabButton";
-import { TabManagerProvider, useTabManager } from "../../context/TabManagerContext";
-import { TabState } from "../../states/tabs";
+import TabButton from "@/apps/forge/components/tabs/TabButton";
+import { TabManagerProvider, useTabManager } from "@/apps/forge/context/TabManagerContext";
+import { TabState } from "@/apps/forge/states/tabs";
 
-import * as KotOR from "../../KotOR";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export interface TabManagerProps {
   // manager: EditorTabManager

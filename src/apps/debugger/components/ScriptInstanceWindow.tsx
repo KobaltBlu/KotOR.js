@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react"
-import { useApp } from "../context/AppContext";
-import * as KotOR from "../KotOR";
-import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "../../../nwscript/NWScriptOPCodes";
-import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
+import { useApp } from "@/apps/debugger/context/AppContext";
+import * as KotOR from "@/apps/debugger/KotOR";
+import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "@/nwscript/NWScriptOPCodes";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {} from "@fortawesome/free-solid-svg-icons";
 

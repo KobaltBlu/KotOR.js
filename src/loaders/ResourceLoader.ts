@@ -1,14 +1,14 @@
 import * as path from "path";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { ERFObject } from "../resource/ERFObject";
-import { RIMObject } from "../resource/RIMObject";
-import { CacheScope } from "../enums/resource/CacheScope";
-import { IResourceCacheScopes } from "../interface/resource/IResourceCacheScopes";
-import { KEYManager } from "../managers/KEYManager";
-import { RIMManager } from "../managers/RIMManager";
-import { IRIMResource } from "../interface/resource/IRIMResource";
-import { IERFResource } from "../interface/resource/IERFResource";
-import { GameFileSystem } from "../utility/GameFileSystem";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { ERFObject } from "@/resource/ERFObject";
+import { RIMObject } from "@/resource/RIMObject";
+import { CacheScope } from "@/enums/resource/CacheScope";
+import { IResourceCacheScopes } from "@/interface/resource/IResourceCacheScopes";
+import { KEYManager } from "@/managers/KEYManager";
+import { RIMManager } from "@/managers/RIMManager";
+import { IRIMResource } from "@/interface/resource/IRIMResource";
+import { IERFResource } from "@/interface/resource/IERFResource";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * ResourceLoader class.

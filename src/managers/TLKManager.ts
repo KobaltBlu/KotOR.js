@@ -1,6 +1,6 @@
-import { TLKString } from "../resource/TLKString";
-import { TLKObject } from "../resource/TLKObject";
-import { GameFileSystem } from "../utility/GameFileSystem";
+import { TLKString } from "@/resource/TLKString";
+import { TLKObject } from "@/resource/TLKObject";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * TLKManager class.

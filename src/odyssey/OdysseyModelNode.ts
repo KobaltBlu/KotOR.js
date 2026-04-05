@@ -1,14 +1,14 @@
 import * as THREE from "three";
-import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyModel } from "./OdysseyModel";
-import { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
-import { type OdysseyController } from "./controllers/OdysseyController";
-import { OdysseyControllerFactory } from "./controllers/OdysseyControllerFactory";
-import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
-import { OdysseyModelUtility } from "./OdysseyModelUtility";
-import { IOdysseyControllerGeneric } from "../interface/odyssey/controller/IOdysseyControllerGeneric";
-import { IOdysseyControllerFrameGeneric } from "../interface";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { OdysseyModel } from "@/odyssey/OdysseyModel";
+import { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
+import { type OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import { OdysseyControllerFactory } from "@/odyssey/controllers/OdysseyControllerFactory";
+import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
+import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { IOdysseyControllerFrameGeneric } from "@/interface";
       
 // Constants for quaternion decompression
 const QUAT_X_MASK = 0x07ff;        // 11 bits for X component

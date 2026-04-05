@@ -1,7 +1,7 @@
-import { AudioEngine } from "../../../audio/AudioEngine";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUISlider } from "../../../gui";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUISlider } from "@/gui";
 
 const DEFAULT_GAIN = 0.75;
 

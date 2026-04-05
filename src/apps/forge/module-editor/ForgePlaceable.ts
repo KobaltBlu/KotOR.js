@@ -1,5 +1,5 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export class ForgePlaceable extends ForgeGameObject {
 

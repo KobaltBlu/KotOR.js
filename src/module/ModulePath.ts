@@ -1,16 +1,16 @@
 import * as THREE from "three";
-import { ResourceLoader } from "../loaders";
-import { GFFObject } from "../resource/GFFObject";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameState } from "../GameState";
-import { PathPoint } from "../engine/pathfinding/PathPoint";
-import { ComputedPath } from "../engine/pathfinding/ComputedPath";
-import { IClosestPathPointData } from "../interface/engine/pathfinding/IClosestPathPointData";
-import type { ModuleArea } from "./ModuleArea";
-import { Utility } from "../utility/Utility";
-import type { WalkmeshEdge } from "../odyssey/WalkmeshEdge";
-import type { ModuleObject } from "./ModuleObject";
-import { EngineDebugType } from "../enums";
+import { ResourceLoader } from "@/loaders";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { GameState } from "@/GameState";
+import { PathPoint } from "@/engine/pathfinding/PathPoint";
+import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
+import { IClosestPathPointData } from "@/interface/engine/pathfinding/IClosestPathPointData";
+import type { ModuleArea } from "@/module/ModuleArea";
+import { Utility } from "@/utility/Utility";
+import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { EngineDebugType } from "@/enums";
 
 /**
 * ModulePath class.

@@ -1,14 +1,14 @@
-import { GFFStruct } from "../resource/GFFStruct";
+import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
-import { TextureLoader } from "../loaders";
-import { TextureType } from "../enums/loaders/TextureType";
-import { GameState } from "../GameState";
-import { Mouse } from "../controls/Mouse";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GUISliderDirection } from "../enums/gui/GUISliderDirection";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GUIControl } from "./GUIControl";
-import type { GameMenu } from "./GameMenu";
+import { TextureLoader } from "@/loaders";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { GameState } from "@/GameState";
+import { Mouse } from "@/controls/Mouse";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GUISliderDirection } from "@/enums/gui/GUISliderDirection";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GUIControl } from "@/gui/GUIControl";
+import type { GameMenu } from "@/gui/GameMenu";
 
 /**
  * GUISlider class.

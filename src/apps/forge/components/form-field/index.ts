@@ -1,1 +1,1 @@
-export * from './FormField';
+export * from "@/apps/forge/components/form-field/FormField";

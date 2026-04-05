@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { TwoDAObject } from "../../../resource/TwoDAObject";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 interface MovieItem {
   name: string;
