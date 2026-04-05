@@ -1,16 +1,16 @@
-import EngineLocation from "../engine/EngineLocation";
-import { CreatureType } from "../enums/nwscript/CreatureType";
-import { NWModuleObjectType } from "../enums/nwscript/NWModuleObjectType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { ReputationType } from "../enums/nwscript/ReputationType";
-import { BitWise } from "../utility/BitWise";
-import { PartyManager } from "./PartyManager";
+import EngineLocation from "@/engine/EngineLocation";
+import { CreatureType } from "@/enums/nwscript/CreatureType";
+import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { ReputationType } from "@/enums/nwscript/ReputationType";
+import { BitWise } from "@/utility/BitWise";
+import { PartyManager } from "@/managers/PartyManager";
 import * as THREE from "three";
-import type { Module, ModuleCreature, ModuleDoor, ModuleObject } from "../module";
-import { PerceptionMask } from "../enums/engine/PerceptionMask";
-import { GameState } from "../GameState";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
+import type { Module, ModuleCreature, ModuleDoor, ModuleObject } from "@/module";
+import { PerceptionMask } from "@/enums/engine/PerceptionMask";
+import { GameState } from "@/GameState";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 
 const UPDATE_SELECTABLE_OBJECTS_INTERVAL = 0.5;
 

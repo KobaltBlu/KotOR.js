@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import { BIKObject } from "../resource/BIKObject";
-import { GameState } from "../GameState";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { AudioEngine } from "../audio/AudioEngine";
-import { YUVFrame } from "../video/binkvideo";
+import { BIKObject } from "@/resource/BIKObject";
+import { GameState } from "@/GameState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { YUVFrame } from "@/video/binkvideo";
 
 /**
  * VideoManager class.
