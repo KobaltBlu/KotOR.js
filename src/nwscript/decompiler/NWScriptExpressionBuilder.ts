@@ -1,7 +1,7 @@
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
 import {
   OP_CONST, OP_ACTION, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII,
   OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ,
@@ -9,7 +9,7 @@ import {
   OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
   OP_NEG, OP_COMPI, OP_NOTI,
   OP_CPTOPBP, OP_CPTOPSP
-} from '../NWScriptOPCodes';
+} from "@/nwscript/NWScriptOPCodes";
 
 /**
  * Builds expressions from stack-based instructions.

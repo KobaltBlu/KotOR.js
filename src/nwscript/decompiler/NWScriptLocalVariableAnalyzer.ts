@@ -1,8 +1,8 @@
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import type { NWScript } from "../NWScript";
-import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_MOVSP, OP_NEG, OP_ACTION } from '../NWScriptOPCodes';
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import type { NWScript } from "@/nwscript/NWScript";
+import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_MOVSP, OP_NEG, OP_ACTION } from "@/nwscript/NWScriptOPCodes";
 
 /**
  * Represents a detected local variable initialization

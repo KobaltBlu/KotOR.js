@@ -1,5 +1,5 @@
-import { ArrayLiteralNode, CallNode, IndexNode, LiteralNode } from "./ASTTypes";
-import type { Token } from "./NWScriptToken";
+import { ArrayLiteralNode, CallNode, IndexNode, LiteralNode } from "@/nwscript/compiler/ASTTypes";
+import type { Token } from "@/nwscript/compiler/NWScriptToken";
 
 export type SourceInfo = Token["source"] | undefined;
 
