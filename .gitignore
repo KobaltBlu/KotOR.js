@@ -1,6 +1,6 @@
 node_modules/
 release/
-settings.json
+/settings.json
 crash.log
 npm-debug.log
 *.gypi
@@ -21,4 +21,5 @@ research/
 extensions/
 .npm-cache/
 .vscode/mcp.json
+.vscode/chrome-debug-profile/
 agentdecompile_projects/
