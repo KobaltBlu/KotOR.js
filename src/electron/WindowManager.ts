@@ -1,6 +1,6 @@
 import { BrowserWindow, dialog } from "electron";
-import { ApplicationWindow } from "@/electron/ApplicationWindow";
-import { LauncherWindow } from "@/electron/LauncherWindow";
+import { ApplicationWindow } from "./ApplicationWindow";
+import { LauncherWindow } from "./LauncherWindow";
 import * as path from "path";
 //exec & execFile are used for launching the original games from the launcher
 import { execFile, exec } from "child_process";

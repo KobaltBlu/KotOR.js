@@ -4,7 +4,7 @@
     "target": "ES6",
     "module": "CommonJS",
     "moduleResolution": "node",
-    "sourceMap": false,
+    "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "removeComments": false,
@@ -12,11 +12,6 @@
     // "suppressImplicitAnyIndexErrors": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
     "types": [
       "electron",
       "node",
