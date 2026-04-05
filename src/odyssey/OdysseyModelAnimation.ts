@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { TwoDAManager } from "../managers/TwoDAManager";
-import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { OdysseyModelAnimationNode } from './OdysseyModelAnimationNode';
-import type { OdysseyModel } from './OdysseyModel';
-import { OdysseyModelUtility } from './OdysseyModelUtility';
-import { IOdysseyAnimationEvent } from '../interface/odyssey/IOdysseyAnimationEvent';
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
+import type { OdysseyModel } from "@/odyssey/OdysseyModel";
+import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { IOdysseyAnimationEvent } from "@/interface/odyssey/IOdysseyAnimationEvent";
 
 /**
  * OdysseyModelAnimation class.

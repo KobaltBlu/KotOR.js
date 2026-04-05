@@ -1,13 +1,13 @@
 import * as THREE from "three";
-import { OdysseyModelEngine } from "../enums/odyssey/OdysseyModelEngine";
-import { OdysseyModelMDXFlag } from "../enums/odyssey/OdysseyModelMDXFlag";
-import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
-import { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
-import { OdysseyModelNode } from "./OdysseyModelNode";
-import type { OdysseyModel } from "./OdysseyModel";
-import { OdysseyModelUtility } from "./OdysseyModelUtility";
-import { OdysseyWalkMesh } from "./OdysseyWalkMesh";
+import { OdysseyModelEngine } from "@/enums/odyssey/OdysseyModelEngine";
+import { OdysseyModelMDXFlag } from "@/enums/odyssey/OdysseyModelMDXFlag";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
+import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
+import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import type { OdysseyModel } from "@/odyssey/OdysseyModel";
+import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 
 const mdlStringCleaner = (str: string = ''): string => {
   const cleaned = str.replace(/\0[\s\S]*$/g,'').toLowerCase().trim();
