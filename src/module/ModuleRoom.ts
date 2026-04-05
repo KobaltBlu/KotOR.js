@@ -1,24 +1,24 @@
-import { ModuleObject } from "./ModuleObject";
+import { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from ".";
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import { OdysseyFace3, OdysseyModel3D } from "../three/odyssey";
-import { Utility } from "../utility/Utility";
-import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { MDLLoader, ResourceLoader, TextureLoader } from "../loaders";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GFFStruct } from "../resource/GFFStruct";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
+import { GameState } from "@/GameState";
+import { OdysseyFace3, OdysseyModel3D } from "@/three/odyssey";
+import { Utility } from "@/utility/Utility";
+import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "@/odyssey";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { MDLLoader, ResourceLoader, TextureLoader } from "@/loaders";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
-// import { ShaderManager } from "../managers";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { BitWise } from "../utility/BitWise";
-import { VISObject } from "../resource/VISObject";
-import { IVISRoom } from "../interface";
-import { EngineMode } from "../enums/engine/EngineMode";
+// import { ShaderManager } from "@/managers";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { BitWise } from "@/utility/BitWise";
+import { VISObject } from "@/resource/VISObject";
+import { IVISRoom } from "@/interface";
+import { EngineMode } from "@/enums/engine/EngineMode";
 
 /**
 * ModuleRoom class.
