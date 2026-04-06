@@ -1,12 +1,12 @@
 
-import { EngineMode } from "../enums/engine/EngineMode";
-import { AnalogInput } from "./AnalogInput";
-import { GamePad } from "./GamePad";
-import { KeyInput } from "./KeyInput";
-import { Keyboard } from "./Keyboard";
-import { KeyMapAction } from "../enums/controls/KeyMapAction";
-import { TwoDAManager } from "../managers/TwoDAManager";
-import type { INIConfig } from "../engine/INIConfig";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { AnalogInput } from "@/controls/AnalogInput";
+import { GamePad } from "@/controls/GamePad";
+import { KeyInput } from "@/controls/KeyInput";
+import { Keyboard } from "@/controls/Keyboard";
+import { KeyMapAction } from "@/enums/controls/KeyMapAction";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import type { INIConfig } from "@/engine/INIConfig";
 
 type KeymapProcessorCallback = (map: Keymap, delta: number) => void;
 

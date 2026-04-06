@@ -1,0 +1,83 @@
+@import "../../../styles/variables";
+
+.wok-sidebar {
+  .section-content {
+    padding: 8px 10px !important;
+  }
+
+  .wok-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+  }
+
+  .wok-prop-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    padding: 2px 0;
+    font-size: 0.9em;
+  }
+
+  .wok-prop-label {
+    color: $text-secondary;
+    flex-shrink: 0;
+  }
+
+  .wok-prop-value {
+    text-align: right;
+    font-family: monospace;
+    font-size: 0.95em;
+  }
+
+  .wok-transition-input {
+    max-width: 80px;
+    text-align: right;
+    font-family: monospace;
+  }
+
+  .wok-mode-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+
+    .btn {
+      padding: 6px 10px;
+    }
+  }
+
+  .wok-color-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .wok-swatch {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+
+    &:hover {
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: scale(1.05);
+    }
+
+    &.selected {
+      border: 2px solid white;
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+    }
+  }
+
+  .wok-hint {
+    font-size: 0.85em;
+    color: $text-secondary;
+    font-style: italic;
+    padding: 4px 0;
+  }
+}

@@ -1,15 +1,16 @@
 import React from "react";
-import { EditorFile, EditorFileEventListenerTypes } from "../../EditorFile";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import type { EditorTabManager } from "../../managers/EditorTabManager";
-import { GetNewTabID } from "../../managers/TabIdGenerator";
+import { EditorFile, EditorFileEventListenerTypes } from "@/apps/forge/EditorFile";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import type { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { GetNewTabID } from "@/apps/forge/managers/TabIdGenerator";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 import * as fs from "fs";
-import { EventListenerModel } from "../../EventListenerModel";
-import { supportedFileDialogTypes, supportedFilePickerTypes } from "../../ForgeFileSystem";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { supportedFileDialogTypes, supportedFilePickerTypes } from "@/apps/forge/ForgeFileSystem";
 
-import * as KotOR from "../../KotOR";
-import { TabStoreState } from "../../interfaces/TabStoreState";
-import { pathParse } from "../../helpers/PathParse";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
+import { pathParse } from "@/apps/forge/helpers/PathParse";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -352,6 +353,11 @@ export class TabState extends EventListenerModel {
                 // this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
                 // this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
                 this.file = currentFile;
+                // Preserve original in recent files before mutating (Save As replaces the file object's path)
+                const originalPath = currentFile.getPath();
+                if(originalPath){
+                  ForgeState.addRecentFile(EditorFile.From(currentFile));
+                }
                 currentFile.setPath(savePath.filePath);
                 currentFile.archive_path = undefined;
                 currentFile.archive_path2 = undefined;
@@ -371,6 +377,11 @@ export class TabState extends EventListenerModel {
             types: this.getSaveTypes(),
           });
           if(newHandle){
+            // Preserve original in recent files before mutating (Save As replaces the file object's path)
+            const originalPath = currentFile.getPath();
+            if(originalPath){
+              ForgeState.addRecentFile(EditorFile.From(currentFile));
+            }
             currentFile.handle = newHandle;
             try{
               const pathInfo = pathParse(newHandle.name);

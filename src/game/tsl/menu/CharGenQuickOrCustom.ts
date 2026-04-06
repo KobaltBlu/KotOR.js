@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import type { GUIListBox, GUIButton } from "../../../gui";
-import { TalentFeat } from "../../../talents";
-import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "../../kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUIListBox, GUIButton } from "@/gui";
+import { TalentFeat } from "@/talents";
+import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "@/game/kotor/KOTOR";
 
 /**
  * CharGenQuickOrCustom class.

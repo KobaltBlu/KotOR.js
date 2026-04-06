@@ -1,13 +1,13 @@
-import { ModuleObjectScript, ModuleObjectType } from "../enums";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject } from "../module";
-import { BitWise } from "../utility/BitWise";
-import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
-import { NWScriptDef } from "./NWScriptDef";
-import { NWScriptDefK1 } from "./NWScriptDefK1";
-import { NWScriptInstance } from "./NWScriptInstance";
+import { ModuleObjectScript, ModuleObjectType } from "@/enums";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleObject } from "@/module";
+import { BitWise } from "@/utility/BitWise";
+import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
+import { NWScriptDef } from "@/nwscript/NWScriptDef";
+import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 
 /**
  * NWScriptDefK2 class.

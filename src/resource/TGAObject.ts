@@ -1,8 +1,8 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { ITGAObjectOptions } from "../interface/graphics/tga/ITGAObjectOptions";
-import { ITGAHeader } from "../interface/graphics/tga/ITGAHeader";
-import { GameFileSystem } from "../utility/GameFileSystem";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { ITGAObjectOptions } from "@/interface/graphics/tga/ITGAObjectOptions";
+import { ITGAHeader } from "@/interface/graphics/tga/ITGAHeader";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * TGAObject class.

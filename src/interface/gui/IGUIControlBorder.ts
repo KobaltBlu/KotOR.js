@@ -1,4 +1,4 @@
-import type { IGUIControlBorderFill } from "./IGUIControlBorderFill";
+import type { IGUIControlBorderFill } from "@/interface/gui/IGUIControlBorderFill";
 
 /**
  * IGUIControlBorder interface.

@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { TextureLoader } from "../../loaders/TextureLoader";
-import { OdysseyModelNode, OdysseyModelNodeEmitter } from "../../odyssey";
-import type { OdysseyController } from "../../odyssey/controllers";
-import { OdysseyObject3D } from "./OdysseyObject3D";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { TextureLoader } from "@/loaders/TextureLoader";
+import { OdysseyModelNode, OdysseyModelNodeEmitter } from "@/odyssey";
+import type { OdysseyController } from "@/odyssey/controllers";
+import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 
 /**
  * OdysseyEmitter3D class.

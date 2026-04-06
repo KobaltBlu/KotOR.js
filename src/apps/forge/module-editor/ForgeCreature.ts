@@ -1,6 +1,6 @@
-import * as KotOR from "../KotOR";
-import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
-import { ForgeGameObject } from "./ForgeGameObject";
+import * as KotOR from "@/apps/forge/KotOR";
+import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 interface EngineItem {
   baseItem: KotOR.SWBaseItem | undefined;

@@ -1,5 +1,5 @@
 import type React from "react";
-import { TabState } from "../states/tabs";
+import { TabState } from "@/apps/forge/states/tabs";
 
 export interface BaseTabProps {
   tab: TabState;

@@ -1,5 +1,13 @@
 // tsconfig.kotorjs.json
 {
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    }
+  },
   "extends": "./tsconfig.json",
   "include": [
     "src/index.d.ts"

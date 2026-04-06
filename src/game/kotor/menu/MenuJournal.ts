@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { JournalEntry } from "../../../engine/JournalEntry";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GameState } from "@/GameState";
+import { JournalEntry } from "@/engine/JournalEntry";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 enum JournalSort {
   RECIEVED = 0,

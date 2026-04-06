@@ -1,8 +1,8 @@
 import React, { useState, useCallback, memo, useMemo } from "react";
-import { FileBrowserNode } from "../../FileBrowserNode";
-import { FileTypeManager } from "../../FileTypeManager";
-import { EditorFile } from "../../EditorFile";
-import { ListItemNode } from "./ListItemNode";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
 
 export interface ResourceListNodeProps {
   node: FileBrowserNode;

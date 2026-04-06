@@ -1,17 +1,17 @@
-import type { GameMenu } from "./GameMenu";
-import { GUIControl } from "./GUIControl";
-import type { GFFStruct } from "../resource/GFFStruct";
+import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControl } from "@/gui/GUIControl";
+import type { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
-import { TextureLoader } from "../loaders/TextureLoader";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GameState } from "../GameState";
-import { GameEngineType } from "../enums/engine";
-import { Mouse } from "../controls/Mouse";
-import { GUIControlType } from "../enums/gui/GUIControlType";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GUIProtoItem } from "./GUIProtoItem";
-import type { GUIScrollBar } from "./GUIScrollBar";
-import { GUIControlEvent } from "./GUIControlEvent";
+import { TextureLoader } from "@/loaders/TextureLoader";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameState } from "@/GameState";
+import { GameEngineType } from "@/enums/engine";
+import { Mouse } from "@/controls/Mouse";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GUIProtoItem } from "@/gui/GUIProtoItem";
+import type { GUIScrollBar } from "@/gui/GUIScrollBar";
+import { GUIControlEvent } from "@/gui/GUIControlEvent";
 
 interface GUIListItemCallbacks {
   onClick?: (e: GUIControlEvent, ...args: any) => void;

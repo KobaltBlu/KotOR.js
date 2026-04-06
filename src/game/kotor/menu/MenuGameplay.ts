@@ -1,7 +1,7 @@
-import type { SWDifficulty } from "../../../engine/rules/SWDifficulty";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "../../../gui";
+import type { SWDifficulty } from "@/engine/rules/SWDifficulty";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 /**
  * MenuGameplay class.

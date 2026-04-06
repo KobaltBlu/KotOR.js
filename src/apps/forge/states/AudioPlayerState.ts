@@ -1,8 +1,8 @@
-import { EditorFile } from "../EditorFile";
+import { EditorFile } from "@/apps/forge/EditorFile";
 import * as fs from "fs";
-import * as KotOR from "../KotOR";
-import { ForgeState } from "./ForgeState";
-import { TabAudioPlayerState } from "./tabs/TabAudioPlayerState";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
 
 declare const dialog: any;
 

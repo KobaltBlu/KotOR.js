@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import * as KotOR from "./KotOR";
+import * as KotOR from "@/apps/forge/KotOR";
 /** Electron dialog when ENV is ELECTRON; provided by preload. */
 declare const dialog: {
   showOpenDialog: (options: { title?: string; defaultPath?: string; buttonLabel?: string; filters?: { name: string; extensions: string[] }[]; properties?: string[]; message?: string; securityScopedBookmarks?: boolean }) => Promise<{ canceled?: boolean; filePaths?: string[] }>;

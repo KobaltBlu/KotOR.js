@@ -1,6 +1,6 @@
-import EngineLocation from "../engine/EngineLocation";
-import { IEngineGlobals } from "../interface/engine/IEngineGlobals";
-import { TwoDAManager } from "./TwoDAManager";
+import EngineLocation from "@/engine/EngineLocation";
+import { IEngineGlobals } from "@/interface/engine/IEngineGlobals";
+import { TwoDAManager } from "@/managers/TwoDAManager";
 
 /**
  * GlobalVariableManager class.

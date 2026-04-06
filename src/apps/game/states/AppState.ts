@@ -1,5 +1,5 @@
-import * as KotOR from "../KotOR";
-import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
+import * as KotOR from "@/apps/game/KotOR";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 
 export class AppState {
   static eulaAccepted: boolean = false;

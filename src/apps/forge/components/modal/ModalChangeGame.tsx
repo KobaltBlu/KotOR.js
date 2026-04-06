@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Button, Modal } from "react-bootstrap";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
-import * as KotOR from "../../KotOR";
-import { ForgeState } from "../../states/ForgeState";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 
 export const ModalChangeGame = function(props: any){
   const [show, setShow] = useState(false);

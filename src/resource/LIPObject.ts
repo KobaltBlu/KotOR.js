@@ -1,13 +1,13 @@
-import { ILIPHeader } from "../interface/resource/ILIPHeader";
-import { ILIPKeyFrame } from "../interface/resource/ILIPKeyFrame";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { ResourceLoader } from "../loaders";
-import { ResourceTypes } from "./ResourceTypes";
-import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { OdysseyModel3D } from "../three/odyssey";
-import { OdysseyModelAnimation } from "../odyssey";
+import { ILIPHeader } from "@/interface/resource/ILIPHeader";
+import { ILIPKeyFrame } from "@/interface/resource/ILIPKeyFrame";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { ResourceLoader } from "@/loaders";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyModelAnimation } from "@/odyssey";
 
 /**
  * LIPObject class.

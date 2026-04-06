@@ -1,8 +1,8 @@
-import { BIFObject } from "../resource/BIFObject";
-import { KEYObject } from "../resource/KEYObject";
+import { BIFObject } from "@/resource/BIFObject";
+import { KEYObject } from "@/resource/KEYObject";
 import * as path from 'path';
-import { BIFManager } from "./BIFManager";
-import { IBIFEntry } from "../interface/resource/IBIFEntry";
+import { BIFManager } from "@/managers/BIFManager";
+import { IBIFEntry } from "@/interface/resource/IBIFEntry";
 
 /**
  * KEYManager class.

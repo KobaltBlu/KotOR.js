@@ -1,11 +1,11 @@
-import { GameMenu } from "../../../gui";
-import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import type { ModulePlayer } from "../../../module";
-import { OdysseyModel3D } from "../../../three/odyssey";
+import { GameMenu } from "@/gui";
+import type { GUIControl, GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import type { ModulePlayer } from "@/module";
+import { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
-import { CharGenClasses } from "../../CharGenClasses";
-import { GameState } from "../../../GameState";
+import { CharGenClasses } from "@/game/CharGenClasses";
+import { GameState } from "@/GameState";
 
 /**
  * CharGenClass class.
@@ -239,7 +239,7 @@ export class CharGenClass extends GameMenu {
    * Layout (classsel.gui) defines the intended size; we animate between base and a slightly
    * larger hover size so portraits never shrink below the layout dimensions.
    */
-  private captureBaseExtents(): void {
+  protected captureBaseExtents(): void {
     if (this._baseExtentsCaptured) return;
     //Hover extents can be calculated from the first model and button control
     //They are sized differently from the other 5 controls

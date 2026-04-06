@@ -1,17 +1,17 @@
 import React, { useEffect, useRef, useState } from "react"
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-import TabManager from "../TabManager";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "../../../states/tabs";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { TabManagerProvider } from "../../../context/TabManagerContext";
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import TabManager from "@/apps/forge/components/tabs/TabManager";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
+import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
 import Draggable from "react-draggable";
 import { Form } from "react-bootstrap";
-import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
+import { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
 
-import * as KotOR from "../../../KotOR";
-import { UI3DRendererView } from "../../UI3DRendererView";
+import * as KotOR from "@/apps/forge/KotOR";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 
 export const TabLIPEditor = function(props: BaseTabProps){
 

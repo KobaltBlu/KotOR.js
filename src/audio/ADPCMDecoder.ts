@@ -1,4 +1,4 @@
-import { ADPCMBlock } from "./ADPCMBlock";
+import { ADPCMBlock } from "@/audio/ADPCMBlock";
 
 interface ADPCMHeader {
 	sampleRate: number;

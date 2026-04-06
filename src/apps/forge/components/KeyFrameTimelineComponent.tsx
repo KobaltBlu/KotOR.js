@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Form } from "react-bootstrap";
-import * as KotOR from "../KotOR";
-import { TabModelViewerState } from "../states/tabs";
-import { useEffectOnce } from "../helpers/UseEffectOnce";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabModelViewerState } from "@/apps/forge/states/tabs";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
 export const KeyFrameTimelineComponent = function(props: any){
   const tab: TabModelViewerState = props.tab;

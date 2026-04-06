@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { ForgeState } from "../../states/ForgeState";
-import { useApp } from "../../context/AppContext";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { useApp } from "@/apps/forge/context/AppContext";
 
-import * as KotOR from "../../KotOR";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export interface ModalGrantAccessProps {
   onUserGrant: Function,
@@ -21,11 +21,6 @@ export const ModalGrantAccess = function(props: ModalGrantAccessProps){
   
 
   useEffectOnce( () => {
-    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
-      // KotOR.GameFileSystem.
-      setShowGrantModal(true);
-    }
-    
     return () => {
       //Deconstructor
     }

@@ -1,5 +1,5 @@
-import type { GUILabel, GUIButton } from "../../../gui";
-import { MenuStatusSummary as K1_MenuStatusSummary } from "../../kotor/KOTOR";
+import type { GUILabel, GUIButton } from "@/gui";
+import { MenuStatusSummary as K1_MenuStatusSummary } from "@/game/kotor/KOTOR";
 
 /**
  * MenuStatusSummary class.

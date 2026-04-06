@@ -1,12 +1,12 @@
 import React from "react";
-import { TabProjectExplorer } from "../../components/tabs/tab-project-explorer/TabProjectExplorer";
-import { TabState } from "./";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { ProjectFileSystem } from "../../ProjectFileSystem";
+import { TabProjectExplorer } from "@/apps/forge/components/tabs/tab-project-explorer/TabProjectExplorer";
+import { TabState } from "@/apps/forge/states/tabs";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import * as path from "path";
-import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
-import { ForgeState } from "../ForgeState";
-import { FileBrowserNode } from "../../FileBrowserNode";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
 
 export class TabProjectExplorerState extends TabState {
 

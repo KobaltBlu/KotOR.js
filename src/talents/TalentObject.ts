@@ -1,5 +1,5 @@
-import { TalentObjectType } from "../enums/engine/TalentObjectType";
-import type { ModuleObject } from "../module";
+import { TalentObjectType } from "@/enums/engine/TalentObjectType";
+import type { ModuleObject } from "@/module";
 
 /**
  * TalentObject class.

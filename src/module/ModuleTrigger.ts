@@ -1,19 +1,19 @@
-import { ModuleObject } from "./ModuleObject";
-import { GFFObject } from "../resource/GFFObject";
+import { ModuleObject } from "@/module/ModuleObject";
+import { GFFObject } from "@/resource/GFFObject";
 import * as THREE from "three";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { GameState } from "../GameState";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import { ConfigClient } from "../utility/ConfigClient";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleDoorAnimState, SignalEventType } from "../enums";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { GameState } from "@/GameState";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { ConfigClient } from "@/utility/ConfigClient";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleDoorAnimState, SignalEventType } from "@/enums";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 
 const OBJECTS_INSIDE_UPDATE_THRESHOLD = 15; // 15 frame ticks

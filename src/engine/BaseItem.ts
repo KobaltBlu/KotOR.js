@@ -1,10 +1,10 @@
-import { TwoDAObject } from "../resource/TwoDAObject";
-// import { TwoDAManager } from "../managers";
-import { WeaponWield } from "../enums/combat/WeaponWield";
-import { WeaponType } from "../enums/combat/WeaponType";
-import { WeaponSize } from "../enums/combat/WeaponSize";
-import { DiceType } from "../enums/combat/DiceType";
-import { GameState } from "../GameState";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+// import { TwoDAManager } from "@/managers";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { WeaponType } from "@/enums/combat/WeaponType";
+import { WeaponSize } from "@/enums/combat/WeaponSize";
+import { DiceType } from "@/enums/combat/DiceType";
+import { GameState } from "@/GameState";
 
 /**
  * BaseItem class.

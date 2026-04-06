@@ -1,34 +1,34 @@
 import * as path from "path";
-import { GameState } from "./GameState";
-import { ERFObject } from "./resource/ERFObject";
-import { ResourceTypes } from "./resource/ResourceTypes";
-import { RIMObject } from "./resource/RIMObject";
-import { GameFileSystem } from "./utility/GameFileSystem";
-import { GamePad, KeyMapper } from "./controls";
-import { CurrentGame } from "./engine/CurrentGame";
-import { ConfigClient } from "./utility/ConfigClient";
+import { GameState } from "@/GameState";
+import { ERFObject } from "@/resource/ERFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { RIMObject } from "@/resource/RIMObject";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { GamePad, KeyMapper } from "@/controls";
+import { CurrentGame } from "@/engine/CurrentGame";
+import { ConfigClient } from "@/utility/ConfigClient";
 import { 
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager, KEYManager, RIMManager, ERFManager, VideoEffectManager, PazaakManager, UINotificationManager, CutsceneManager,
   VideoManager,
   LegalScreenManager
-} from "./managers";
-import { SWRuleSet } from "./engine/rules/SWRuleSet";
-import { ResourceLoader } from "./loaders";
-import { GameEngineType } from "./enums/engine";
-import { SaveGame } from "./engine/SaveGame";
-import { Module } from "./module/Module";
-import { NWScript } from "./nwscript/NWScript";
+} from "@/managers";
+import { SWRuleSet } from "@/engine/rules/SWRuleSet";
+import { ResourceLoader } from "@/loaders";
+import { GameEngineType } from "@/enums/engine";
+import { SaveGame } from "@/engine/SaveGame";
+import { Module } from "@/module/Module";
+import { NWScript } from "@/nwscript/NWScript";
 
-import { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
-import { ActionMenuManager } from "./engine/menu/ActionMenuManager";
-import { ActionFactory } from "./actions/ActionFactory";
-import { GameEffectFactory } from "./effects/GameEffectFactory";
-import { GameEventFactory } from "./events/GameEventFactory";
-import { INIConfig } from "./engine/INIConfig";
-import { CacheScope } from "./enums";
-import { PerformanceMonitor } from "./utility/PerformanceMonitor";
+import { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "@/talents";
+import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
+import { ActionFactory } from "@/actions/ActionFactory";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import { GameEventFactory } from "@/events/GameEventFactory";
+import { INIConfig } from "@/engine/INIConfig";
+import { CacheScope } from "@/enums";
+import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 
 /**
  * GameInitializer class.

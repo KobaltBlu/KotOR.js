@@ -1,14 +1,14 @@
 import React, { NewLifecycle, useEffect, useState } from "react";
-import { SceneGraphTreeView } from "../../SceneGraphTreeView";
-import { SceneGraphNode } from "../../../SceneGraphNode";
-import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes, TabLIPEditorOptionsState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
+import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
+import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes, TabLIPEditorOptionsState } from "@/apps/forge/states/tabs";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { Button, Form } from "react-bootstrap";
-import { SectionContainer } from "../../SectionContainer";
+import { SectionContainer } from "@/apps/forge/components/SectionContainer";
 
-import * as KotOR from "../../../KotOR";
-import { ForgeState } from "../../../states/ForgeState";
-import { ModalLIPBatchProcessorState } from "../../../states/modal/ModalLIPBatchProcessorState";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ModalLIPBatchProcessorState } from "@/apps/forge/states/modal/ModalLIPBatchProcessorState";
 
 export const TabLIPEditorOptions = function(props: any){
   const tab: TabLIPEditorOptionsState = props.tab;

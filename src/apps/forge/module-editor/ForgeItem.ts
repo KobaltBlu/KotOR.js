@@ -1,6 +1,6 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
-import { ItemPropertyEntry } from "../states/tabs/TabUTIEditorState";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ItemPropertyEntry } from "@/apps/forge/states/tabs/TabUTIEditorState";
 
 export class ForgeItem extends ForgeGameObject {
   //GIT Instance Properties

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
-import { ApplicationProfile } from "../../../utility/ApplicationProfile";
-import { ConfigClient } from "../../../utility/ConfigClient";
-import { useApp } from "../context/AppContext";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { ConfigClient } from "@/utility/ConfigClient";
+import { useApp } from "@/apps/launcher/context/AppContext";
 
 export interface ProfileLaunchButtonsProps {
   profile: any

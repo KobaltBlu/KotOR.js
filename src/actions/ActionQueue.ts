@@ -1,7 +1,7 @@
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import type { ModuleObject } from "../module";
-import type { Action } from "./Action";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import type { ModuleObject } from "@/module";
+import type { Action } from "@/actions/Action";
 
 /**
  * ActionQueue class.

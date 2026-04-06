@@ -1,5 +1,5 @@
 import React from "react";
-import { AppProvider, AppProviderValues, useApp } from "../context/AppContext";
+import { AppProvider, AppProviderValues, useApp } from "@/apps/launcher/context/AppContext";
 
 export interface ProfileMenuItemProps {
   profile: any

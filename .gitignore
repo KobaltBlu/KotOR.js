@@ -1,6 +1,12 @@
 # Dependencies
 node_modules/
 package-lock.json
+release/
+/settings.json
+crash.log
+npm-debug.log
+*.gypi
+backup/
 
 # Build outputs
 dist/
@@ -66,3 +72,16 @@ scratch/
 .history/
 extensions/kotor-forge-vscode/server/out/
 extensions/kotor-forge-vscode/kotor-forge-0.1.0.vsix
+# src/**/*.js
+dist/
+debug.log
+docs/
+coverage/
+scratch/
+research/
+.history/
+extensions/
+.npm-cache/
+.vscode/mcp.json
+.vscode/chrome-debug-profile/
+agentdecompile_projects/

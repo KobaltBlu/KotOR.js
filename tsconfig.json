@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "allowJs": true,
+    "baseUrl": ".",
     "declaration": false,
     "esModuleInterop": true,
     "experimentalDecorators": true,
@@ -17,19 +18,22 @@
     "newLine": "LF",
     "noEmitOnError": true,
     "noImplicitAny": true,
-    "outDir": "dist",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
     "removeComments": true,
     "rootDir": ".",
     "skipLibCheck": true,
     "sourceMap": false,
-    "strict": true,
     "strictNullChecks": false,
     "target": "ESNext",
     "types": [
       "@types/wicg-file-system-access",
       "user-agent-data-types",
       "node",
-      "offscreencanvas",
+      "offscreencanvas"
     ]
   },
   "exclude": [
@@ -37,8 +41,8 @@
     "src/**/*.spec.ts"
   ],
   "include": [
-    "src/KotOR.ts",
-    "src/types",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     "src/index.d.ts"
   ]
 }

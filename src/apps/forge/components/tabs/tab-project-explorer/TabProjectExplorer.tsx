@@ -1,16 +1,16 @@
 import React, { useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabProjectExplorerState } from "../../../states/tabs";
-import { FileTypeManager } from "../../../FileTypeManager";
-import { EditorFile } from "../../../EditorFile";
-import { FileLocationType } from "../../../enum/FileLocationType";
-import { FileBrowserNode } from "../../../FileBrowserNode";
-import { ForgeTreeView } from "../../treeview/ForgeTreeView";
-import { ForgeState } from "../../../states/ForgeState";
-import { Project } from "../../../Project";
-import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
-import { TabReferenceFinderState } from "../../../states/tabs/TabReferenceFinderState";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { TabProjectExplorerState } from "@/apps/forge/states/tabs";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { Project } from "@/apps/forge/Project";
+import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
+import { TabReferenceFinderState } from "@/apps/forge/states/tabs/TabReferenceFinderState";
 import "./TabProjectExplorer.scss";
 
 export interface ResourceListNodeProps {

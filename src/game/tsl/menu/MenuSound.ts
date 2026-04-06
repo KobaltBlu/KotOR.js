@@ -1,7 +1,7 @@
-import { AudioEngine } from "../../../audio/AudioEngine";
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "../../../gui";
-import { MenuSound as K1_MenuSound } from "../../kotor/KOTOR";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "@/gui";
+import { MenuSound as K1_MenuSound } from "@/game/kotor/KOTOR";
 
 const DEFAULT_GAIN = 0.75;
 

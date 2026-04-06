@@ -1,13 +1,13 @@
-import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager";
-import { EventListenerModel } from "./EventListenerModel";
-import * as KotOR from "./KotOR";
+import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
-import { ForgeModule } from "./module-editor/ForgeModule";
-import { ForgeGameObject } from "./module-editor/ForgeGameObject";
+import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 export enum CameraView {
   Top = 'top',

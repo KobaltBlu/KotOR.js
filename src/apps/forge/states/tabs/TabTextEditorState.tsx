@@ -1,23 +1,23 @@
 import React from "react";
-import { TabTextEditor } from "../../components/tabs/tab-text-editor/TabTextEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import { EditorTabManager } from "../../managers/EditorTabManager";
-import { ForgeState } from "../ForgeState";
-// import { NWScriptCompiler } from "../../../../nwscript/NWScriptCompiler";
-import { NWScriptParser } from "../../../../nwscript/compiler/NWScriptParser";
-import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState, TabScriptFindReferencesState, TextReferenceMatch } from ".";
+import { TabTextEditor } from "@/apps/forge/components/tabs/tab-text-editor/TabTextEditor";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+// import { NWScriptCompiler } from "@/nwscript/NWScriptCompiler";
+import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
+import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptFindReferencesState, TabScriptInspectorState, TextReferenceMatch } from "@/apps/forge/states/tabs";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 
-import * as KotOR from "../../KotOR";
-import { NWScriptCompiler } from "../../../../nwscript/compiler/NWScriptCompiler";
-import { NWScriptLanguageService } from "../NWScriptLanguageService";
-import { LYTLanguageService } from "../LYTLanguageService";
-import { SemanticFunctionNode } from "../../../../nwscript/compiler/ASTSemanticTypes";
-import { findAllReferencesInText, getWordAtIndex, createKeyResources, findScriptReferences, findStrRefReferences, findConversationReferences } from "../../helpers/ReferenceFinder";
-import { ModalFileResultsState } from "../modal/ModalFileResultsState";
-import { ModalReferenceSearchOptionsState } from "../modal/ModalReferenceSearchOptionsState";
+import * as KotOR from "@/apps/forge/KotOR";
+import { NWScriptCompiler } from "@/nwscript/compiler/NWScriptCompiler";
+import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
+import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
+import { SemanticFunctionNode } from "@/nwscript/compiler/ASTSemanticTypes";
+import { findAllReferencesInText, getWordAtIndex, createKeyResources, findScriptReferences, findStrRefReferences, findConversationReferences } from "@/apps/forge/helpers/ReferenceFinder";
+import { ModalFileResultsState } from "@/apps/forge/states/modal/ModalFileResultsState";
+import { ModalReferenceSearchOptionsState } from "@/apps/forge/states/modal/ModalReferenceSearchOptionsState";
 
 export class TabTextEditorState extends TabState {
 

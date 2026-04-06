@@ -22,9 +22,9 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { BinkDemuxer } from '../video/bink-demuxer';
-import { BinkVideoDecoder, YUVFrame } from '../video/binkvideo';
-import { BinkAudioDCTDecoder } from '../audio/binkaudio_dct';
+import { BinkDemuxer } from '@/video/bink-demuxer';
+import { BinkVideoDecoder, YUVFrame } from '@/video/binkvideo';
+import { BinkAudioDCTDecoder } from '@/audio/binkaudio_dct';
 
 // ── Types shared with main thread ──────────────────────────────────────────
 
@@ -49,7 +49,7 @@ export type WorkerRequest =
 
 export type WorkerResponse =
   | { type: 'ready'; header: BinkWorkerHeader }
-  | { type: 'frame'; frameIndex: number; video: ({ rgba: ArrayBuffer; width: number; height: number } | { yuv: YUVFrame }) | null; audio: { pcm: ArrayBuffer[]; sampleRate: number; channels: number; frameLen: number; overlapLen: number; isFirst: boolean; ptsSamples: number } | null }
+  | { type: 'frame'; frameIndex: number; video: ({ rgba: ArrayBuffer; width: number; height: number } | { yuv: YUVFrame }) | null; audio: { pcm: ArrayBuffer[]; sampleRate: number; channels: number; sampleCount: number; frameLen: number; overlapLen: number; isFirst: boolean; ptsSamples: number } | null }
   | { type: 'error'; message: string };
 
 // ── Worker state ───────────────────────────────────────────────────────────
@@ -288,18 +288,19 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
 
         // lTime = performance.now();
         // ── Audio ──────────────────────────────────────────────────────
-        let audioPayload: { pcm: ArrayBuffer[]; sampleRate: number; channels: number; frameLen: number; overlapLen: number; isFirst: boolean; ptsSamples: number } | null = null;
+        let audioPayload: { pcm: ArrayBuffer[]; sampleRate: number; channels: number; sampleCount: number; frameLen: number; overlapLen: number; isFirst: boolean; ptsSamples: number } | null = null;
 
         if (audioDec && frame.audio.length > audioTrackIndex) {
           const pkt = frame.audio[audioTrackIndex];
           if (pkt.size >= 4) {
             try {
-              const pcmChans = audioDec.decodePacket(pkt.data);
-              const buffers = pcmChans.map(ch => ch.buffer as ArrayBuffer);
+              const decoded = audioDec.decodePacket(pkt.data);
+              const buffers = decoded.pcm.map(ch => ch.buffer as ArrayBuffer);
               audioPayload = {
                 pcm: buffers,
                 sampleRate: audioSampleRate,
                 channels: audioChannels,
+                sampleCount: decoded.sampleCount,
                 frameLen: audioDec.frameLen,
                 overlapLen: audioDec.overlapLen,
                 isFirst: audioIsFirst,
@@ -307,7 +308,9 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
               };
               // Transfer the Float32Array buffers
               for (const b of buffers) transfers.push(b);
-              audioIsFirst = false;
+              if (decoded.sampleCount > 0) {
+                audioIsFirst = false;
+              }
             } catch { /* skip audio for this frame */ }
           }
           // console.log(`Audio decode time: ${performance.now() - lTime}ms`);

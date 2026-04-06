@@ -1,15 +1,15 @@
 import React, { ChangeEvent, useEffect, useState, useCallback, memo, useMemo } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
-import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "../../../states/tabs";
+import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
 
-import * as KotOR from "../../../KotOR";
+import * as KotOR from "@/apps/forge/KotOR";
 import { Form, InputGroup } from "react-bootstrap";
-import { ForgeTreeView } from "../../treeview/ForgeTreeView";
-import { ListItemNode } from "../../treeview/ListItemNode";
-import { useContextMenu } from "../../common/ContextMenu";
-import { createGFFContextMenuItems } from "./GFFContextMenu";
+import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
+import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
+import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
+import { createGFFContextMenuItems } from "@/apps/forge/components/tabs/tab-gff-editor/GFFContextMenu";
 
 export const TabGFFEditor = function(props: BaseTabProps){
 

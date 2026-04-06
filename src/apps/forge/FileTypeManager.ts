@@ -1,15 +1,44 @@
-import { EditorFile } from "./EditorFile";
-import { Project } from "./Project";
-import { EditorFileOptions } from "./interfaces/EditorFileOptions";
-import { AudioPlayerState } from "./states/AudioPlayerState";
-import { ForgeState } from "./states/ForgeState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { Project } from "@/apps/forge/Project";
+import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
+import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 import {
+  TabAREEditorState,
   TabBIKPlayerState,
-  TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabPTHEditorState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState,
-  TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState, TabBinaryViewerState,
-  TabAREEditorState, TabIFOEditorState, TabJRLEditorState, TabSSFEditorState, TabTLKEditorState, TabFACEditorState, TabLTREditorState, TabDLGEditorState, TabGITEditorState, TabSAVEditorState, TabVISEditorState
-} from "./states/tabs";
-import { ResourceTypes } from "../../KotOR";
+  TabBinaryViewerState,
+  TabDLGEditorState,
+  TabERFEditorState,
+  TabFACEditorState,
+  TabGFFEditorState,
+  TabGITEditorState,
+  TabGUIEditorState,
+  TabIFOEditorState,
+  TabImageViewerState,
+  TabJRLEditorState,
+  TabLIPEditorState,
+  TabLTREditorState,
+  TabLYTEditorState,
+  TabModelViewerState,
+  TabPTHEditorState,
+  TabSAVEditorState,
+  TabSSFEditorState,
+  TabTextEditorState,
+  TabTLKEditorState,
+  TabTwoDAEditorState,
+  TabUTCEditorState,
+  TabUTDEditorState,
+  TabUTEEditorState,
+  TabUTIEditorState,
+  TabUTMEditorState,
+  TabUTPEditorState,
+  TabUTSEditorState,
+  TabUTTEditorState,
+  TabUTWEditorState,
+  TabVISEditorState,
+  TabWOKEditorState,
+} from "@/apps/forge/states/tabs";
+import { ResourceTypes } from "@/KotOR";
 
 /**
  * FileTypeManager class.
@@ -46,6 +75,8 @@ export class FileTypeManager {
 
     switch(ext){
       case 'lyt':
+        ForgeState.tabManager.addTab(new TabLYTEditorState({editorFile: res}));
+      break;
       case 'txi':
       case 'txt':
         ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));

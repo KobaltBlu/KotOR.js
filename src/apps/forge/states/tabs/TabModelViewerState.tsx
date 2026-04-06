@@ -1,14 +1,23 @@
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
-import * as KotOR from "../../KotOR";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
+import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
 import React from "react";
-import { TabModelViewer } from "../../components/tabs/tab-model-viewer/TabModelViewer";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
-import { EditorFile } from "../../EditorFile";
-import { BinaryReader } from "../../../../utility/binary/BinaryReader";
-import { SceneGraphNode } from "../../SceneGraphNode";
-import { UI3DOverlayComponent } from "../../components/UI3DOverlayComponent";
+import { TabModelViewer } from "@/apps/forge/components/tabs/tab-model-viewer/TabModelViewer";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
+import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
+import {
+  promptForDirectory,
+  collectModelAssets,
+  collectTxiReferencedTextures,
+  exportCollectedAssets,
+  fetchModelBuffers,
+  showExtractionResults,
+  createProgressModal,
+} from "@/apps/forge/helpers/AssetExtraction";
 
 export type TabModelViewerStateEventListenerTypes =
 TabStateEventListenerTypes & 
@@ -386,6 +395,51 @@ export class TabModelViewerState extends TabState {
       (Math.random()-0.5*2) * spread,
       (Math.random()-0.5*2) * spread
     );
+  }
+
+  async extractModelAssets(): Promise<void> {
+    if (!this.odysseyModel) return;
+
+    const modelName = this.odysseyModel.geometryHeader.modelName?.toLowerCase().trim();
+    if (!modelName) return;
+
+    const target = await promptForDirectory(modelName);
+    if (!target) return;
+
+    const progress = createProgressModal();
+
+    const visited = new Set<string>();
+    const allModels = new Set<string>();
+    const allTextures = new Set<string>();
+
+    progress.setProgress(0, 0, `Collecting model assets: ${modelName}`);
+    await collectModelAssets(modelName, visited, allModels, allTextures, this.mdl, this.mdx);
+    progress.setProgress(0, 0, 'Resolving TXI texture references...');
+    await collectTxiReferencedTextures(allTextures);
+
+    const primaryName = modelName;
+    const mdl = this.mdl;
+    const mdx = this.mdx;
+    const overrideFetch = async (resref: string) => {
+      if (resref === primaryName && mdl && mdx) {
+        return { mdl, mdx };
+      }
+      return fetchModelBuffers(resref);
+    };
+
+    const { exportedFiles, skippedFiles, failedFiles } = await exportCollectedAssets(
+      allModels, allTextures, target, overrideFetch,
+      (cur, tot, msg) => progress.setProgress(cur, tot, msg),
+    );
+
+    showExtractionResults({
+      modelName,
+      modelCount: allModels.size,
+      textureCount: allTextures.size,
+      exportedFiles,
+      skippedFiles,
+      failedFiles,
+    }, progress);
   }
 
 }

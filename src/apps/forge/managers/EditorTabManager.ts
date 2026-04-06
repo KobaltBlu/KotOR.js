@@ -1,14 +1,45 @@
-import { EditorFile } from "../EditorFile";
-import { EventListenerModel } from "../EventListenerModel";
-import { TabStoreState } from "../interfaces/TabStoreState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import {
-  TabBIKPlayerState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabModelViewerState,
-  TabModuleEditorState, TabQuickStartState, TabHelpState, TabTwoDAEditorState,
-  TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabUTEEditorState, TabUTSEditorState, TabUTMEditorState, TabUTTEditorState, TabUTWEditorState, TabUTIEditorState,
-  TabBinaryViewerState, TabAREEditorState, TabIFOEditorState, TabJRLEditorState, TabSSFEditorState, TabTLKEditorState, TabFACEditorState, TabLTREditorState,
-  TabDLGEditorState, TabGITEditorState, TabSAVEditorState, TabVISEditorState, TabState,
-  TabERFEditorState, TabTextEditorState, TabLIPEditorState, TabPTHEditorState, TabWOKEditorState, TabDiffToolState,
-} from "../states/tabs";
+  TabAREEditorState,
+  TabBIKPlayerState,
+  TabBinaryViewerState,
+  TabDiffToolState,
+  TabDLGEditorState,
+  TabERFEditorState,
+  TabFACEditorState,
+  TabGFFEditorState,
+  TabGITEditorState,
+  TabGUIEditorState,
+  TabHelpState,
+  TabIFOEditorState,
+  TabImageViewerState,
+  TabJRLEditorState,
+  TabLIPEditorState,
+  TabLTREditorState,
+  TabModelViewerState,
+  TabModuleEditorState,
+  TabPTHEditorState,
+  TabQuickStartState,
+  TabSAVEditorState,
+  TabSSFEditorState,
+  TabState,
+  TabTextEditorState,
+  TabTLKEditorState,
+  TabTwoDAEditorState,
+  TabUTCEditorState,
+  TabUTDEditorState,
+  TabUTEEditorState,
+  TabUTIEditorState,
+  TabUTMEditorState,
+  TabUTPEditorState,
+  TabUTSEditorState,
+  TabUTTEditorState,
+  TabUTWEditorState,
+  TabVISEditorState,
+  TabWOKEditorState,
+} from "@/apps/forge/states/tabs";
 
 import { TabReferenceFinderState } from "../states/tabs/TabReferenceFinderState";
 import { TabScriptFindReferencesState } from "../states/tabs/TabScriptFindReferencesState";

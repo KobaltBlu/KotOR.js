@@ -1,15 +1,15 @@
-import { GameEffectFactory } from "../effects/GameEffectFactory";
-import EngineLocation from "../engine/EngineLocation";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-// import { ModuleObjectManager } from "../managers";
-// import { ModuleObject } from "../module";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-// import { TalentFeat, TalentSkill, TalentSpell } from "../talents";
-import { NWScriptEventFactory } from "./events/NWScriptEventFactory";
-import { NWScriptStackVariable } from "./NWScriptStackVariable";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import EngineLocation from "@/engine/EngineLocation";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+// import { ModuleObjectManager } from "@/managers";
+// import { ModuleObject } from "@/module";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+// import { TalentFeat, TalentSkill, TalentSpell } from "@/talents";
+import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
+import { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
 
 const STACK_PACKET_CONSTANTS = {
   STACK_ELEMENT_SIZE: 8,

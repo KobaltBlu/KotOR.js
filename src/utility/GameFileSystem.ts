@@ -1,8 +1,8 @@
 import * as path from "path";
 import * as fs from "fs";
-import { ApplicationProfile } from "./ApplicationProfile";
-import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
-import { IGameFileSystemReadDirOptions } from "../interface/filesystem/IGameFileSystemReadDirOptions";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
 declare const dialog: any;
 
 const spleep = (time: number = 0) => {
@@ -627,7 +627,7 @@ export class GameFileSystem {
 
   static async validateDirectoryHandle(handle: FileSystemDirectoryHandle){
     try{
-      if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
+      if ((await handle.queryPermission({ mode: 'readwrite' })) === 'granted') {
         return true;
       }
       return false;

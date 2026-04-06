@@ -1,16 +1,16 @@
 import React, {forwardRef, useImperativeHandle, useState, useMemo, useCallback, memo} from "react";
-import { TabResourceExplorerState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { FileTypeManager } from "../../../FileTypeManager";
-import { EditorFile } from "../../../EditorFile";
+import { TabResourceExplorerState } from "@/apps/forge/states/tabs";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { EditorFile } from "@/apps/forge/EditorFile";
 import { Form, ProgressBar } from "react-bootstrap";
-import { FileBrowserNode } from "../../../FileBrowserNode";
-import { ForgeTreeView } from "../../treeview/ForgeTreeView";
-import { ResourceListNode } from "../../treeview/ResourceListNode";
-import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
-import { ForgeState } from "../../../states/ForgeState";
-import { TabReferenceFinderState } from "../../../states/tabs/TabReferenceFinderState";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
+import { ResourceListNode } from "@/apps/forge/components/treeview/ResourceListNode";
+import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabReferenceFinderState } from "@/apps/forge/states/tabs/TabReferenceFinderState";
 import "./TabResourceExplorer.scss";
 
 

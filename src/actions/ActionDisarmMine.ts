@@ -1,17 +1,17 @@
-import { GameState } from "../GameState";
-import { ModuleTriggerType } from "../enums";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { SkillType } from "../enums/nwscript/SkillType";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import type { ModuleObject } from "../module/ModuleObject";
-import type { ModuleTrigger } from "../module/ModuleTrigger";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
+import { GameState } from "@/GameState";
+import { ModuleTriggerType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleTrigger } from "@/module/ModuleTrigger";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionDisarmMine class.

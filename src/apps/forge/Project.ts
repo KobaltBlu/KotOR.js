@@ -1,17 +1,17 @@
-import { EditorFile } from "./EditorFile";
-import { DeepObject } from "../../utility/DeepObject";
-import { ForgeState } from "./states/ForgeState";
-import { TabModuleEditorState, TabQuickStartState } from "./states/tabs";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { DeepObject } from "@/utility/DeepObject";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabModuleEditorState, TabQuickStartState } from "@/apps/forge/states/tabs";
 
-import * as KotOR from "./KotOR";
-import { ProjectType } from "./enum/ProjectType";
-import { FileTypeManager } from "./FileTypeManager";
-import { ProjectFileSystem } from "./ProjectFileSystem";
-import { ForgeFileSystem } from "./ForgeFileSystem";
-import { ProjectSettings } from "./interfaces/ProjectSettings";
-import { ForgeArea } from "./module-editor/ForgeArea";
-import { ForgeModule } from "./module-editor/ForgeModule";
-import { ForgeRoom } from "./module-editor/ForgeRoom";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ProjectType } from "@/apps/forge/enum/ProjectType";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
+import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
+import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
+import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
 
 const DIR_FORGE = '.forge';
 const DIR_BLUEPRINTS = 'blueprints';

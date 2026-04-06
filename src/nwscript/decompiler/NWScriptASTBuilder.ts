@@ -1,14 +1,14 @@
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptControlStructure } from "./NWScriptControlStructureBuilder";
-import type { NWScriptFunction } from "./NWScriptFunctionAnalyzer";
-import type { NWScriptStatement } from "./NWScriptStatementBuilder";
-import type { NWScriptProcessedBlock } from "./NWScriptStatementBuilder";
-import { NWScriptExpression } from "./NWScriptExpression";
-import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
-import type { NWScriptLocalInit } from "./NWScriptLocalVariableAnalyzer";
-import { ControlStructureType } from "./NWScriptControlStructureBuilder";
-import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptASTNodeUnion } from "./NWScriptAST";
+import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptControlStructure } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
+import type { NWScriptFunction } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { NWScriptStatement } from "@/nwscript/decompiler/NWScriptStatementBuilder";
+import type { NWScriptProcessedBlock } from "@/nwscript/decompiler/NWScriptStatementBuilder";
+import { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
+import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import type { NWScriptLocalInit } from "@/nwscript/decompiler/NWScriptLocalVariableAnalyzer";
+import { ControlStructureType } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
+import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptASTNodeUnion } from "@/nwscript/decompiler/NWScriptAST";
 import type {
   NWScriptProgramNode,
   NWScriptFunctionNode,
@@ -28,8 +28,8 @@ import type {
   NWScriptContinueNode,
   NWScriptVariableDeclarationNode,
   NWScriptGlobalVariableDeclarationNode
-} from "./NWScriptAST";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+} from "@/nwscript/decompiler/NWScriptAST";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 
 /**
  * Builds an Abstract Syntax Tree (AST) from control structures and statements.

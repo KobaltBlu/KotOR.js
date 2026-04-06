@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabImageViewerState } from "../../../states/tabs";
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { TabImageViewerState } from "@/apps/forge/states/tabs";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
 
-import * as KotOR from "../../../KotOR";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export const TabImageViewer = function(props: BaseTabProps){
 

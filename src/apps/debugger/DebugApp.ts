@@ -1,4 +1,4 @@
-import type { DebuggerState } from "./states/DebuggerState";
+import type { DebuggerState } from "@/apps/debugger/states/DebuggerState";
 
 export class DebugApp {
   static appState: DebuggerState

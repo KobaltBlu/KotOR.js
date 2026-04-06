@@ -1,14 +1,14 @@
-import { GameEvent } from "./GameEvent";
-import { GameEventType } from "../enums/events/GameEventType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import type { NWScriptEvent } from "../nwscript/events/NWScriptEvent";
-import { NWScriptEventFactory } from "../nwscript/events/NWScriptEventFactory";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleObject } from "../module/ModuleObject";
-import { ModuleObjectScript, SignalEventType } from "../enums";
+import { GameEvent } from "@/events/GameEvent";
+import { GameEventType } from "@/enums/events/GameEventType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import type { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
+import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import type { ModuleObject } from "@/module/ModuleObject";
+import { ModuleObjectScript, SignalEventType } from "@/enums";
 
 /**
  * EventSignalEvent class.
