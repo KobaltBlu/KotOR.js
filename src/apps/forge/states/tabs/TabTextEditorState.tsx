@@ -507,5 +507,6 @@ export class TabTextEditorState extends TabState {
       //   NotificationManager.Notify(NotificationManager.Types.ALERT, `Parse: Failed! - with errors (${this.nwScriptParser.errors.length})`);
       // }
   }
+
   
 }

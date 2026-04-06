@@ -22,6 +22,7 @@ export * from "@/apps/forge/states/tabs/TabTextEditorState";
 export * from "@/apps/forge/states/tabs/TabWOKEditorState";
 export * from "@/apps/forge/states/tabs/TabERFEditorState";
 export * from "@/apps/forge/states/tabs/TabPTHEditorState";
+export * from "@/apps/forge/states/tabs/TabLYTEditorState";
 export * from "@/apps/forge/states/tabs/TabBIKPlayerState";
 
 export * from "@/apps/forge/states/tabs/TabScriptErrorLogState";
