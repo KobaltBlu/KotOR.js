@@ -64,8 +64,8 @@ export const TabLYTEditor = function (props: BaseTabProps) {
     {
       label: 'Edit',
       children: [
-        { label: 'Undo', onClick: () => tab.undo() },
-        { label: 'Redo', onClick: () => tab.redo() },
+        { label: 'Undo', shortcut: 'Ctrl+Z', onClick: () => tab.undo() },
+        { label: 'Redo', shortcut: 'Ctrl+Y', onClick: () => tab.redo() },
       ],
     },
     {
