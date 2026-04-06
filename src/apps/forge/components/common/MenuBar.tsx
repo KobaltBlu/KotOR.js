@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 
 export interface MenuItem {
   label?: string;
+  shortcut?: string;
   onClick?: () => void;
   children?: MenuItem[];
   disabled?: boolean;
@@ -124,9 +125,11 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
             )}
             <span>{item.label}</span>
           </span>
-          {hasChildren && (
+          {hasChildren ? (
             <span style={{ marginLeft: '20px', fontSize: '10px' }}>▶</span>
-          )}
+          ) : item.shortcut ? (
+            <span style={{ marginLeft: '24px', fontSize: '11px', color: '#888' }}>{item.shortcut}</span>
+          ) : null}
         </div>
         {hasChildren && isSubmenuOpen && (
           <div
