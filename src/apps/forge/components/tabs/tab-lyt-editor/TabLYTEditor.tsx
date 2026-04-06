@@ -34,6 +34,7 @@ export const TabLYTEditor = function (props: BaseTabProps) {
   });
 
   const onMonacoChange = (newValue: string) => {
+    setCode(newValue);
     tab.setCode(newValue);
   };
 
@@ -58,6 +59,13 @@ export const TabLYTEditor = function (props: BaseTabProps) {
           label: 'Extract Layout Assets',
           onClick: () => tab.extractLayoutAssets(),
         },
+      ],
+    },
+    {
+      label: 'Edit',
+      children: [
+        { label: 'Undo', onClick: () => tab.undo() },
+        { label: 'Redo', onClick: () => tab.redo() },
       ],
     },
     {

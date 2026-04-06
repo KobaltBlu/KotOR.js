@@ -38,6 +38,9 @@ export class TabLYTEditorState extends TabState {
 
   private _syncTimeout: any;
   private _suppressTextSync: boolean = false;
+  private _isDragging: boolean = false;
+  private _sidebarUndoStopPushed: boolean = false;
+  private _sidebarUndoTimeout: any;
 
   constructor(options: BaseTabStateOptions = {}) {
     super(options);
@@ -58,11 +61,11 @@ export class TabLYTEditorState extends TabState {
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
 
     if (this.ui3DRenderer.transformControls) {
-      this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
+      this.attachTransformControlListeners(this.ui3DRenderer.transformControls);
     } else {
       this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => {
         if (this.ui3DRenderer.transformControls) {
-          this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
+          this.attachTransformControlListeners(this.ui3DRenderer.transformControls);
         }
       });
     }
@@ -71,6 +74,26 @@ export class TabLYTEditorState extends TabState {
       if (e.key === 'Escape') {
         this.selectRoom(-1);
         this.ui3DRenderer.selectObject(undefined);
+      }
+    });
+
+    this.addEventListener('onKeyDown', (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+        if (e.key === 'z') {
+          if (this.editor && !this.editor.hasTextFocus()) {
+            e.preventDefault();
+            if (e.shiftKey) {
+              this.redo();
+            } else {
+              this.undo();
+            }
+          }
+        } else if (e.key === 'y') {
+          if (this.editor && !this.editor.hasTextFocus()) {
+            e.preventDefault();
+            this.redo();
+          }
+        }
       }
     });
 
@@ -83,6 +106,22 @@ export class TabLYTEditorState extends TabState {
         accept: { 'text/plain': ['.lyt'] },
       },
     ];
+  }
+
+  private attachTransformControlListeners(tc: any): void {
+    tc.addEventListener('change', this.onTransformControlsChange.bind(this));
+    tc.addEventListener('dragging-changed', this.onDraggingChanged.bind(this));
+  }
+
+  private onDraggingChanged(event: any): void {
+    const dragging = event.value === true;
+    if (dragging && !this._isDragging) {
+      this._isDragging = true;
+      this.editor?.pushUndoStop();
+    } else if (!dragging && this._isDragging) {
+      this._isDragging = false;
+      this.editor?.pushUndoStop();
+    }
   }
 
   public openFile(file?: EditorFile) {
@@ -216,8 +255,19 @@ export class TabLYTEditorState extends TabState {
     if (!this.lyt) return;
     const buffer = this.lyt.export();
     const decoder = new TextDecoder('utf8');
-    this.code = decoder.decode(buffer);
+    const newCode = decoder.decode(buffer);
+    this.code = newCode;
+
     this._suppressTextSync = true;
+    if (this.editor) {
+      const model = this.editor.getModel();
+      if (model) {
+        this.editor.executeEdits('lyt-sync', [{
+          range: model.getFullModelRange(),
+          text: newCode,
+        }]);
+      }
+    }
     this.processEventListener('onCodeChanged', [this.code]);
     this._suppressTextSync = false;
   }
@@ -272,9 +322,22 @@ export class TabLYTEditorState extends TabState {
     this.monaco = monaco;
   }
 
+  undo(): void {
+    this.editor?.trigger('keyboard', 'undo', null);
+  }
+
+  redo(): void {
+    this.editor?.trigger('keyboard', 'redo', null);
+  }
+
   updateRoomPosition(index: number, x: number, y: number, z: number): void {
     const entry = this.roomEntries[index];
     if (!entry) return;
+
+    if (!this._sidebarUndoStopPushed) {
+      this.editor?.pushUndoStop();
+      this._sidebarUndoStopPushed = true;
+    }
 
     entry.lytRoom.position.set(x, y, z);
     if (entry.model) {
@@ -282,6 +345,12 @@ export class TabLYTEditorState extends TabState {
     }
 
     this.rebuildCodeFromLYT();
+
+    clearTimeout(this._sidebarUndoTimeout);
+    this._sidebarUndoTimeout = setTimeout(() => {
+      this.editor?.pushUndoStop();
+      this._sidebarUndoStopPushed = false;
+    }, 500);
 
     if (this.file) {
       this.file.unsaved_changes = true;
