@@ -409,6 +409,76 @@
     border-bottom: 1px solid $border-secondary;
   }
 
+  &__visual-toolbar {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    max-width: calc(100% - 28px);
+    pointer-events: auto;
+  }
+
+  &__viz-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid $border-secondary;
+    background: rgba($bg-darkest, 0.72);
+    color: $text-tertiary;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition:
+      background 0.12s ease,
+      color 0.12s ease,
+      border-color 0.12s ease,
+      box-shadow 0.12s ease;
+    -webkit-app-region: no-drag;
+
+    .fa-solid {
+      font-size: 13px;
+      color: $primary-blue-lighter;
+      opacity: 0.9;
+    }
+
+    &:hover {
+      background: rgba($primary-blue-dark, 0.35);
+      border-color: rgba($primary-blue-lighter, 0.35);
+      color: $text-secondary;
+
+      .fa-solid {
+        color: $text-white;
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid $primary-blue-lighter;
+      outline-offset: 2px;
+    }
+
+    &--active {
+      border-color: rgba($text-accent, 0.45);
+      background: rgba($secondary-cyan-darker, 0.42);
+      color: $text-light;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+      .fa-solid {
+        color: $text-accent;
+      }
+    }
+  }
+
+  &__viz-btn-label {
+    white-space: nowrap;
+  }
+
   &__canvas {
     display: block;
     width: 100%;

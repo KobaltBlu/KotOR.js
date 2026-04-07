@@ -7,6 +7,15 @@ import {
   AudioPlayerState,
 } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeAudioOstControls } from "@/apps/forge/components/ForgeAudioOstControls";
+import {
+  drawHyperspace,
+  drawSpectrumBars,
+  drawSpectrumIdle,
+  ensureHyperspaceState,
+  HyperspaceVizState,
+  TAB_AUDIO_VISUAL_OPTIONS,
+  TabAudioVisualId,
+} from "@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
 import * as KotOR from "@/KotOR";
 
 const VISUAL_MIN_H = 168;
@@ -20,6 +29,8 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const visualRef = useRef<HTMLDivElement>(null);
+  const visualIdRef = useRef<TabAudioVisualId>("spectrum");
+  const hyperspaceStateRef = useRef<HyperspaceVizState | null>(null);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -27,6 +38,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   const [currentTimeString, setCurrentTimeString] = useState<string>("0:00");
   const [durationString, setDurationString] = useState<string>("0:00");
   const [file, setFile] = useState<KotOR.AudioFile>();
+  const [visualId, setVisualId] = useState<TabAudioVisualId>("spectrum");
   const [ost, setOst] = useState<AudioPlayerOstStatePayload>(() => ({
     active: false,
     label: "",
@@ -109,6 +121,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
     const h = Math.min(VISUAL_MAX_H, Math.max(VISUAL_MIN_H, Math.floor(w * 0.28)));
     canvas.width = w;
     canvas.height = h;
+    hyperspaceStateRef.current = null;
   };
 
   useEffect(() => {
@@ -150,6 +163,8 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
     };
   });
 
+  visualIdRef.current = visualId;
+
   const onBtnPlay = () => {
     if (isPlaying) {
       AudioPlayerState.Pause();
@@ -184,46 +199,33 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
 
   const animate = (time: number = 0) => {
     const context = contextRef.current;
-    if (previousTimeRef.current != undefined && context && AudioPlayerState.analyser) {
+    if (previousTimeRef.current != undefined && context) {
       const w = context.canvas.width;
       const h = context.canvas.height;
       context.clearRect(0, 0, w, h);
 
-      const bufferLength = AudioPlayerState.analyserBufferLength;
-      const barWidth = w / 2 / bufferLength;
-      let firstX = -barWidth / 2;
-      let secondX = bufferLength * barWidth - barWidth / 2;
+      let data: Uint8Array | null = null;
+      let bufferLength = 0;
+      if (AudioPlayerState.analyser) {
+        bufferLength = AudioPlayerState.analyserBufferLength;
+        AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData as any);
+        data = AudioPlayerState.analyserData;
+      }
 
-      AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData as any);
-
-      const maxHeight = Math.min(96, h * 0.45);
-      const factor = maxHeight / 128;
-
-      const total = AudioPlayerState.analyserData.reduce((prev = 0, current = 0) => {
-        return prev + current;
-      });
-      const avg = total / bufferLength;
-      const strength = avg / 128;
-
-      context.filter = "blur(36px)";
-      const radius = Math.min(w, h) * 0.35 * (0.25 + strength * 0.75);
-      context.fillStyle = "rgba(38, 92, 140, 0.45)";
-      context.beginPath();
-      context.arc(w / 2, h / 2 + radius * 0.15, radius, 0, Math.PI * 2, true);
-      context.fill();
-      context.filter = "none";
-
-      for (let i = 0; i < bufferLength; i++) {
-        const barHeight = AudioPlayerState.analyserData[i] * factor;
-        const percent = barHeight / maxHeight;
-        const r = Math.floor(20 + 40 * percent);
-        const g = Math.floor(90 + 80 * percent);
-        const b = Math.floor(140 + 90 * percent);
-        context.fillStyle = `rgb(${r},${g},${b})`;
-        context.fillRect(w / 2 - firstX, h - barHeight, barWidth, barHeight);
-        firstX += barWidth;
-        context.fillRect(secondX, h - barHeight, barWidth, barHeight);
-        secondX += barWidth;
+      const mode = visualIdRef.current;
+      if (mode === "spectrum") {
+        if (data && bufferLength > 0) {
+          drawSpectrumBars(context, w, h, data, bufferLength);
+        } else {
+          drawSpectrumIdle(context, w, h);
+        }
+      } else if (mode === "hyperspace") {
+        hyperspaceStateRef.current = ensureHyperspaceState(
+          hyperspaceStateRef.current,
+          w,
+          h
+        );
+        drawHyperspace(context, w, h, hyperspaceStateRef.current, data, bufferLength, time);
       }
     }
     previousTimeRef.current = time;
@@ -244,6 +246,26 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   return (
     <div className="forge-tab-audio" data-tab-id={tab.id}>
       <div className="forge-tab-audio__visual" ref={visualRef}>
+        <div
+          className="forge-tab-audio__visual-toolbar"
+          role="toolbar"
+          aria-label="Audio visualization"
+        >
+          {TAB_AUDIO_VISUAL_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              className={`forge-tab-audio__viz-btn${visualId === opt.id ? " forge-tab-audio__viz-btn--active" : ""}`}
+              title={opt.title}
+              aria-label={opt.label}
+              aria-pressed={visualId === opt.id}
+              onClick={() => setVisualId(opt.id)}
+            >
+              <i className={`fa-solid ${opt.icon}`} aria-hidden />
+              <span className="forge-tab-audio__viz-btn-label">{opt.label}</span>
+            </button>
+          ))}
+        </div>
         <canvas
           ref={canvasRef}
           className="forge-tab-audio__canvas"
