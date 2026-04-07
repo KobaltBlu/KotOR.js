@@ -309,6 +309,10 @@ export class AudioFile {
   }
 
   getExportableData(){
+    if (!this.isProcessed && this.data instanceof Uint8Array && this.data.length > 0) {
+      this.reader = new BinaryReader(this.data);
+      this.processFile();
+    }
 
     switch(this.audioType){
       case AudioFileAudioType.WAVE:
@@ -334,6 +338,12 @@ export class AudioFile {
           case AudioFileWaveEncoding.PCM:
             return this.reader.buffer;
           break;
+          default:
+            // Unknown / extended WAV codec — still export raw file bytes
+            if (this.reader?.buffer?.length) {
+              return new Uint8Array(this.reader.buffer);
+            }
+          break;
         }
       break;
       case AudioFileAudioType.MP3:
@@ -341,6 +351,12 @@ export class AudioFile {
       break;
     }
 
+    if (this.data instanceof Uint8Array && this.data.length > 0) {
+      return new Uint8Array(this.data);
+    }
+    if (this.reader?.buffer?.length) {
+      return new Uint8Array(this.reader.buffer);
+    }
     return new Uint8Array(0);
 
   }

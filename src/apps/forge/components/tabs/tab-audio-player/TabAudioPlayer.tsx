@@ -44,6 +44,8 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
   const onStop = () => {
     setIsPlaying(false);
     cancelAnimationFrame(animationFrame);
+    setCurrentTime(0);
+    setCurrentTimeString(AudioPlayerState.SecondsToTimeString(0));
   }
 
   const onLoop = () => {

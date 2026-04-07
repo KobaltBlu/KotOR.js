@@ -30,8 +30,29 @@
       border-radius:10px;
       padding: 0 5px;
     }
-    .btn-play, .btn-save, .btn-stop {
+    .btn-play, .btn-save, .btn-stop, .btn-ost, .btn-ost-skip {
       padding: 0 0.15em;
+    }
+
+    .btn-ost.btn-ost-active .fa-compact-disc {
+      color: #6ec3ff;
+    }
+
+    .ost-playlist-dropdown {
+      .dropdown-toggle::after {
+        display: none;
+      }
+
+      .dropdown-toggle {
+        line-height: 1;
+      }
+    }
+
+    .ost-track-menu {
+      max-height: min(360px, 70vh);
+      overflow-y: auto;
+      min-width: 240px;
+      z-index: 2000;
     }
 
     .btn-play {

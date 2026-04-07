@@ -74,9 +74,11 @@ export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
       </div>
       <Container fluid>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse id="basic-navbar-nav">
+        <Navbar.Collapse id="basic-navbar-nav" className="flex-grow-1">
           <Nav className="me-auto">
             {menuItems}
+          </Nav>
+          <Nav className="ms-auto flex-row align-items-center">
             <AudioPlayer />
           </Nav>
         </Navbar.Collapse>
