@@ -2,7 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
-import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
+import {
+  AudioPlayerOstStatePayload,
+  AudioPlayerState,
+} from "@/apps/forge/states/AudioPlayerState";
+import { ForgeAudioOstControls } from "@/apps/forge/components/ForgeAudioOstControls";
 import * as KotOR from "@/KotOR";
 
 const VISUAL_MIN_H = 168;
@@ -23,8 +27,35 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   const [currentTimeString, setCurrentTimeString] = useState<string>("0:00");
   const [durationString, setDurationString] = useState<string>("0:00");
   const [file, setFile] = useState<KotOR.AudioFile>();
+  const [ost, setOst] = useState<AudioPlayerOstStatePayload>(() => ({
+    active: false,
+    label: "",
+    trackIndex: -1,
+    total: 0,
+    shuffle: false,
+    queuePosition: 0,
+  }));
 
   let animationFrame: number;
+
+  const syncOstFromState = () => {
+    const active = AudioPlayerState.ostMode && AudioPlayerState.ostTracks.length > 0;
+    const physical = AudioPlayerState.getCurrentOstPhysicalIndex();
+    const entry =
+      active && physical >= 0 ? AudioPlayerState.ostTracks[physical] : undefined;
+    setOst({
+      active,
+      label: entry?.displayName ?? entry?.label ?? "",
+      trackIndex: physical,
+      total: AudioPlayerState.ostTracks.length,
+      shuffle: AudioPlayerState.ostShuffle,
+      queuePosition: active ? AudioPlayerState.ostPlayCursor + 1 : 0,
+    });
+  };
+
+  const onOstState = (payload: AudioPlayerOstStatePayload) => {
+    setOst(payload);
+  };
 
   const onPlay = () => {
     setIsPlaying(true);
@@ -103,6 +134,8 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
     AudioPlayerState.AddEventListener("onStop", onStop);
     AudioPlayerState.AddEventListener("onLoop", onLoop);
     AudioPlayerState.AddEventListener("onOpen", onOpen);
+    syncOstFromState();
+    AudioPlayerState.AddEventListener("onOstState", onOstState);
 
     requestRef.current = requestAnimationFrame(animate);
 
@@ -112,6 +145,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
       AudioPlayerState.RemoveEventListener("onStop", onStop);
       AudioPlayerState.RemoveEventListener("onLoop", onLoop);
       AudioPlayerState.RemoveEventListener("onOpen", onOpen);
+      AudioPlayerState.RemoveEventListener("onOstState", onOstState);
       cancelAnimationFrame(requestRef.current as number);
     };
   });
@@ -198,6 +232,14 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
 
   const seekDisabled = duration <= 0;
   const title = file?.filename?.trim() || "No file loaded";
+  const ostPosition =
+    ost.active && ost.total > 0
+      ? `${ost.queuePosition} / ${ost.total}${ost.shuffle ? " · shuffle" : ""}`
+      : "";
+  const ostMetaTitle =
+    ost.active && ost.label
+      ? `Ambient soundtrack: ${ost.label}${ostPosition ? ` (${ostPosition})` : ""}`
+      : "";
 
   return (
     <div className="forge-tab-audio" data-tab-id={tab.id}>
@@ -216,8 +258,18 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
         <h2 className="forge-tab-audio__meta-title" title={title}>
           {title}
         </h2>
+        {ost.active && ost.label ? (
+          <p className="forge-tab-audio__meta-ost" title={ostMetaTitle}>
+            <span className="forge-tab-audio__meta-ost-badge">OST</span>
+            <span className="forge-tab-audio__meta-ost-title">{ost.label}</span>
+            {ostPosition ? (
+              <span className="forge-tab-audio__meta-ost-pos">{ostPosition}</span>
+            ) : null}
+          </p>
+        ) : null}
         <p className="forge-tab-audio__meta-hint">
-          Ambient playlist and shuffle live in the toolbar audio widget.
+          Use the deck below for transport, export, and the ambientmusic.2da soundtrack
+          (playlist, shuffle, skip).
         </p>
       </div>
 
@@ -265,6 +317,10 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
             </span>
           </div>
         </div>
+
+        <div className="forge-tab-audio__rule" aria-hidden />
+
+        <ForgeAudioOstControls showInlineNowPlaying={false} className="forge-audio-ost--tab" />
 
         <div className="forge-tab-audio__rule" aria-hidden />
 
