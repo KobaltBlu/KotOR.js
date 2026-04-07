@@ -221,7 +221,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
           <span className="btn-stop" title="Stop" style={{cursor: 'pointer'}} onClick={onBtnStop}>
             <i className="fa-solid fa-stop"></i>
           </span>
-          <input className="track large" type="range" step="0.01" min="0" value={currentTime} max={duration} disabled={!!isReady} onChange={onTrackBarChange} />
+          <input className="track large" type="range" step="0.01" min="0" value={currentTime} max={duration} disabled={duration <= 0} onChange={onTrackBarChange} />
           <span className="time">{currentTimeString} / {durationString}</span>
           <span className="btn-save" title="Export Audio" style={{cursor: 'pointer', marginLeft: '3px'}} onClick={onBtnSave}>
             <i className="fa-solid fa-download"></i>
