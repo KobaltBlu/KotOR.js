@@ -41,6 +41,8 @@ export class TabLYTEditorState extends TabState {
   private _isDragging: boolean = false;
   private _sidebarUndoStopPushed: boolean = false;
   private _sidebarUndoTimeout: any;
+  private _textChangeOccurred: boolean = false;
+  private _textUndoTimeout: any;
 
   constructor(options: BaseTabStateOptions = {}) {
     super(options);
@@ -77,26 +79,6 @@ export class TabLYTEditorState extends TabState {
       }
     });
 
-    this.addEventListener('onKeyDown', (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.altKey) {
-        if (e.key === 'z') {
-          if (this.editor && !this.editor.hasTextFocus()) {
-            e.preventDefault();
-            if (e.shiftKey) {
-              this.redo();
-            } else {
-              this.undo();
-            }
-          }
-        } else if (e.key === 'y') {
-          if (this.editor && !this.editor.hasTextFocus()) {
-            e.preventDefault();
-            this.redo();
-          }
-        }
-      }
-    });
-
     this.setContentView(<TabLYTEditor tab={this} />);
     this.openFile();
 
@@ -117,11 +99,39 @@ export class TabLYTEditorState extends TabState {
     const dragging = event.value === true;
     if (dragging && !this._isDragging) {
       this._isDragging = true;
-      this.editor?.pushUndoStop();
+      this.captureUndoSnapshot();
     } else if (!dragging && this._isDragging) {
       this._isDragging = false;
-      this.editor?.pushUndoStop();
     }
+  }
+
+  protected override captureUndoState(): string {
+    return this.code;
+  }
+
+  protected override applyUndoState(code: string): void {
+    this._suppressTextSync = true;
+    this.code = code;
+
+    if (this.editor) {
+      const model = this.editor.getModel();
+      if (model) {
+        model.setValue(code);
+      }
+    }
+    this.processEventListener('onCodeChanged', [this.code]);
+    this._suppressTextSync = false;
+
+    this.syncLYTFromText();
+
+    if (this.file) {
+      this.file.unsaved_changes = true;
+      this.editorFileUpdated();
+    }
+  }
+
+  protected override shouldHandleUndoKeyboard(_e: KeyboardEvent): boolean {
+    return !this.editor?.hasTextFocus();
   }
 
   public openFile(file?: EditorFile) {
@@ -138,6 +148,7 @@ export class TabLYTEditorState extends TabState {
           const decoder = new TextDecoder('utf8');
           this.code = decoder.decode(response.buffer);
           this.lyt = new KotOR.LYTObject(response.buffer);
+          this.clearUndoHistory();
 
           await this.loadRoomModels();
 
@@ -255,19 +266,8 @@ export class TabLYTEditorState extends TabState {
     if (!this.lyt) return;
     const buffer = this.lyt.export();
     const decoder = new TextDecoder('utf8');
-    const newCode = decoder.decode(buffer);
-    this.code = newCode;
-
+    this.code = decoder.decode(buffer);
     this._suppressTextSync = true;
-    if (this.editor) {
-      const model = this.editor.getModel();
-      if (model) {
-        this.editor.executeEdits('lyt-sync', [{
-          range: model.getFullModelRange(),
-          text: newCode,
-        }]);
-      }
-    }
     this.processEventListener('onCodeChanged', [this.code]);
     this._suppressTextSync = false;
   }
@@ -276,6 +276,16 @@ export class TabLYTEditorState extends TabState {
     this.code = code;
 
     if (this._suppressTextSync) return;
+
+    if (!this._textChangeOccurred && !this.suppressUndoCapture) {
+      this.captureUndoSnapshot();
+      this._textChangeOccurred = true;
+    }
+
+    clearTimeout(this._textUndoTimeout);
+    this._textUndoTimeout = setTimeout(() => {
+      this._textChangeOccurred = false;
+    }, 1000);
 
     clearTimeout(this._syncTimeout);
     this._syncTimeout = setTimeout(() => {
@@ -320,14 +330,16 @@ export class TabLYTEditorState extends TabState {
 
   setMonaco(monaco: typeof monacoEditor): void {
     this.monaco = monaco;
+    this.setupEditorKeybindings();
   }
 
-  undo(): void {
-    this.editor?.trigger('keyboard', 'undo', null);
-  }
-
-  redo(): void {
-    this.editor?.trigger('keyboard', 'redo', null);
+  private setupEditorKeybindings(): void {
+    if (!this.editor || !this.monaco) return;
+    const km = this.monaco.KeyMod;
+    const kc = this.monaco.KeyCode;
+    this.editor.addCommand(km.CtrlCmd | kc.KeyZ, () => this.undo());
+    this.editor.addCommand(km.CtrlCmd | kc.KeyY, () => this.redo());
+    this.editor.addCommand(km.CtrlCmd | km.Shift | kc.KeyZ, () => this.redo());
   }
 
   updateRoomPosition(index: number, x: number, y: number, z: number): void {
@@ -335,7 +347,7 @@ export class TabLYTEditorState extends TabState {
     if (!entry) return;
 
     if (!this._sidebarUndoStopPushed) {
-      this.editor?.pushUndoStop();
+      this.captureUndoSnapshot();
       this._sidebarUndoStopPushed = true;
     }
 
@@ -348,7 +360,6 @@ export class TabLYTEditorState extends TabState {
 
     clearTimeout(this._sidebarUndoTimeout);
     this._sidebarUndoTimeout = setTimeout(() => {
-      this.editor?.pushUndoStop();
       this._sidebarUndoStopPushed = false;
     }, 500);
 

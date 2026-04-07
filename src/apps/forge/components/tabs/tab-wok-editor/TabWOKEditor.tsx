@@ -18,8 +18,14 @@ export const TabWOKEditor = function(props: BaseTabProps) {
   const [wireframeVisible, setWireframeVisible] = useState(() => tab.wireframeVisible);
   const [edgeNormalHelpersVisible, setEdgeNormalHelpersVisible] = useState(() => tab.edgeNormalHelpersVisible);
   const [faceNormalHelpersVisible, setFaceNormalHelpersVisible] = useState(() => tab.faceNormalHelpersVisible);
+  const [hasSelectedFace, setHasSelectedFace] = useState(false);
 
   const onEditorFileLoad = () => {
+    setWalkmesh(tab.wok);
+    setHasSelectedFace(false);
+  };
+
+  const onUndoRedoApplied = () => {
     setWalkmesh(tab.wok);
   };
 
@@ -35,20 +41,43 @@ export const TabWOKEditor = function(props: BaseTabProps) {
     setFaceNormalHelpersVisible(tab.faceNormalHelpersVisible);
   };
 
+  const onFaceSelectedForMenu = (face?: KotOR.OdysseyFace3) => {
+    setHasSelectedFace(face != null);
+  };
+
   useEffectOnce( () => { //constructor
     tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
+    tab.addEventListener('onUndoApplied', onUndoRedoApplied);
+    tab.addEventListener('onRedoApplied', onUndoRedoApplied);
     tab.addEventListener('onWireframeVisibilityChange', onWireframeVisibilityChange);
     tab.addEventListener('onEdgeNormalHelpersVisibilityChange', onEdgeNormalHelpersVisibilityChange);
     tab.addEventListener('onFaceNormalHelpersVisibilityChange', onFaceNormalHelpersVisibilityChange);
+    tab.addEventListener('onFaceSelected', onFaceSelectedForMenu);
     return () => { //destructor
       tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
+      tab.removeEventListener('onUndoApplied', onUndoRedoApplied);
+      tab.removeEventListener('onRedoApplied', onUndoRedoApplied);
       tab.removeEventListener('onWireframeVisibilityChange', onWireframeVisibilityChange);
       tab.removeEventListener('onEdgeNormalHelpersVisibilityChange', onEdgeNormalHelpersVisibilityChange);
       tab.removeEventListener('onFaceNormalHelpersVisibilityChange', onFaceNormalHelpersVisibilityChange);
+      tab.removeEventListener('onFaceSelected', onFaceSelectedForMenu);
     };
   })
 
   const menuItems: MenuItem[] = [
+    {
+      label: 'Edit',
+      children: [
+        { label: 'Undo', shortcut: 'Ctrl+Z', onClick: () => tab.undo() },
+        { label: 'Redo', shortcut: 'Ctrl+Y', onClick: () => tab.redo() },
+        { separator: true },
+        {
+          label: 'Flip Normal',
+          disabled: !hasSelectedFace,
+          onClick: () => tab.flipNormalOfSelectedFace(),
+        },
+      ],
+    },
     {
       label: 'View',
       children: [
