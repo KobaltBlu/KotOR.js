@@ -1,4 +1,5 @@
 import * as KotOR from "@/apps/game/KotOR";
+import { Launcher } from "@/apps/launcher/context/Launcher";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 
 export class AppState {
@@ -11,11 +12,18 @@ export class AppState {
 
   /**
    * getProfile
+   * Seeds Profiles.* from built-in launcher definitions when IndexedDB has never seen the launcher
+   * (direct navigation to game.html?key=kotor, etc.).
    */
   static async getProfile(){
     const query = new URLSearchParams(window.location.search);
     await KotOR.ConfigClient.Init();
-    return KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
+    await Launcher.InitProfiles();
+    const rawKey = query.get("key");
+    const validKeys = Object.keys(Launcher.AppProfiles || {});
+    const key =
+      rawKey && validKeys.includes(rawKey) ? rawKey : "kotor";
+    return KotOR.ConfigClient.get(`Profiles.${key}`);
   }
 
   /**
