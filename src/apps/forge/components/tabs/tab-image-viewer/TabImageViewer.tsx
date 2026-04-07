@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { TabImageViewerState } from "@/apps/forge/states/tabs";
@@ -13,8 +13,6 @@ export const TabImageViewer = function(props: BaseTabProps){
   const [canvasScale, setCanvasScale] = useState<number>(1);
   const [canvasWidth, setCanvasWidth] = useState<number>(512);
   const [canvasHeight, setCanvasHeight] = useState<number>(512);
-  const [txiObject, setTXIObject] = useState<object>();
-  const [txiPane, setTXIPane] = useState<JSX.Element>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -95,25 +93,19 @@ export const TabImageViewer = function(props: BaseTabProps){
     }
   }
 
-  let tmpCanvasScale = 1;
-
-  const onMouseWheel = (e: WheelEvent) => {
-    // let tmpCanvasScale = canvasScale;
-    if(!!e.ctrlKey){
-      if(e.deltaY < 0){
-        tmpCanvasScale -= 0.25;
-      }else{
-        tmpCanvasScale += 0.25;
-      }
+  const onMouseWheel = useCallback((e: WheelEvent) => {
+    if(!e.ctrlKey){
+      return;
     }
-    if(tmpCanvasScale < 0.25){
-      tmpCanvasScale = 0.25;
-    }
-    if(tmpCanvasScale > 10){
-      tmpCanvasScale = 10;
-    }
-    setCanvasScale(tmpCanvasScale);
-  }
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.25 : -0.25;
+    setCanvasScale((prev) => {
+      let next = prev + delta;
+      if(next < 0.25) next = 0.25;
+      if(next > 10) next = 10;
+      return next;
+    });
+  }, []);
 
   const onEditorFileLoad = () => {
     setPixelData(tab.image);
@@ -127,16 +119,15 @@ export const TabImageViewer = function(props: BaseTabProps){
   });
 
   useEffect(() => {
-    console.log('containerRef', containerRef);
     if(containerRef.current){
-      containerRef.current.addEventListener('wheel', onMouseWheel);
+      containerRef.current.addEventListener('wheel', onMouseWheel, { passive: false });
     }
     return () => {
       if(containerRef.current){
         containerRef.current.removeEventListener('wheel', onMouseWheel);
       }
     }
-  }, [containerRef]);
+  }, [onMouseWheel]);
 
   const eastContent = (
     (tab.image instanceof KotOR.TPCObject) ? (
