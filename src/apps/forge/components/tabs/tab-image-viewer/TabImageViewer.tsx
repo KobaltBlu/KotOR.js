@@ -3,6 +3,7 @@ import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { TabImageViewerState } from "@/apps/forge/states/tabs";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
 import * as KotOR from "@/apps/forge/KotOR";
 
@@ -15,6 +16,12 @@ export const TabImageViewer = function(props: BaseTabProps){
   const [canvasHeight, setCanvasHeight] = useState<number>(512);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  const clampScale = (value: number) => {
+    if(value < 0.25) return 0.25;
+    if(value > 10) return 10;
+    return value;
+  };
 
   const setPixelData = (image: KotOR.TPCObject|KotOR.TGAObject) => {
     rerender(!render);
@@ -99,17 +106,62 @@ export const TabImageViewer = function(props: BaseTabProps){
     }
     e.preventDefault();
     const delta = e.deltaY < 0 ? 0.25 : -0.25;
-    setCanvasScale((prev) => {
-      let next = prev + delta;
-      if(next < 0.25) next = 0.25;
-      if(next > 10) next = 10;
-      return next;
-    });
+    setCanvasScale((prev) => clampScale(prev + delta));
   }, []);
+
+  const zoomIn = () => {
+    setCanvasScale((prev) => clampScale(prev + 0.25));
+  };
+
+  const zoomOut = () => {
+    setCanvasScale((prev) => clampScale(prev - 0.25));
+  };
+
+  const zoomReset = () => {
+    setCanvasScale(1);
+  };
+
+  const zoomFit = () => {
+    const el = containerRef.current;
+    if(!el || canvasWidth <= 0 || canvasHeight <= 0){
+      return;
+    }
+    const padding = 40;
+    const fitWidth = Math.max(50, el.clientWidth - padding);
+    const fitHeight = Math.max(50, el.clientHeight - padding);
+    const next = Math.min(fitWidth / canvasWidth, fitHeight / canvasHeight);
+    setCanvasScale(clampScale(next));
+  };
 
   const onEditorFileLoad = () => {
     setPixelData(tab.image);
   };
+
+  const menuItems: MenuItem[] = [
+    {
+      label: 'File',
+      children: [
+        {
+          label: 'Export TGA',
+          onClick: () => {
+            void tab.exportAs('tga');
+          }
+        },
+        {
+          label: 'Export PNG',
+          onClick: () => {
+            void tab.exportAs('png');
+          }
+        },
+        {
+          label: 'Export TPC',
+          onClick: () => {
+            void tab.exportAs('tpc');
+          }
+        }
+      ]
+    }
+  ];
 
   useEffectOnce( () => {
     tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
@@ -151,8 +203,22 @@ export const TabImageViewer = function(props: BaseTabProps){
   return (
     <>
       <LayoutContainer eastContent={eastContent}>
-        <div ref={containerRef} style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'scroll', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <canvas ref={canvasRef} className="checkerboard" style={{width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvasScale})`}} />
+        <MenuBar items={menuItems} />
+        <div className="tab-image-viewer-menubar">
+          <div className="tab-image-viewer-menubar__group">
+            <span className="tab-image-viewer-menubar__label">Zoom</span>
+            <button type="button" className="tab-image-viewer-menubar__btn" onClick={zoomOut}>-</button>
+            <button type="button" className="tab-image-viewer-menubar__btn" onClick={zoomIn}>+</button>
+            <button type="button" className="tab-image-viewer-menubar__btn" onClick={zoomReset}>100%</button>
+            <button type="button" className="tab-image-viewer-menubar__btn" onClick={zoomFit}>Fit</button>
+            <span className="tab-image-viewer-menubar__readout">{Math.round(canvasScale * 100)}%</span>
+          </div>
+          <div className="tab-image-viewer-menubar__group">
+            <span className="tab-image-viewer-menubar__meta">{canvasWidth}x{canvasHeight}</span>
+          </div>
+        </div>
+        <div ref={containerRef} className="tab-image-viewer-viewport">
+          <canvas ref={canvasRef} className="checkerboard tab-image-viewer-canvas" style={{width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvasScale})`}} />
         </div>
       </LayoutContainer>
     </>

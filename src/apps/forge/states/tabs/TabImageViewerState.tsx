@@ -27,6 +27,34 @@ export class TabImageViewerState extends TabState {
   workingData: Uint8Array;
   bitsPerPixel: number;
 
+  private static getSaveTypeForExtension(ext: string){
+    switch(ext.toLowerCase()){
+      case 'tpc':
+        return {
+          description: 'Compressed Odyssey Image File',
+          accept: {
+            'image/*': ['.tpc']
+          }
+        };
+      case 'tga':
+        return {
+          description: 'TGA Image File',
+          accept: {
+            'image/*': ['.tga']
+          }
+        };
+      case 'png':
+        return {
+          description: 'PNG Image File',
+          accept: {
+            'image/*': ['.png']
+          }
+        };
+      default:
+        return undefined;
+    }
+  }
+
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -41,19 +69,25 @@ export class TabImageViewerState extends TabState {
     this.openFile();
 
     this.saveTypes = [
-      {
-        description: 'Compressed Odyssey Image File',
-        accept: {
-          'image/*': ['.tpc']
-        }
-      },
-      {
-        description: 'TGA Image File',
-        accept: {
-          'image/*': ['.tga']
-        }
-      }
+      TabImageViewerState.getSaveTypeForExtension('tpc'),
+      TabImageViewerState.getSaveTypeForExtension('tga'),
+      TabImageViewerState.getSaveTypeForExtension('png')
     ];
+  }
+
+  async exportAs(ext: 'tga' | 'png' | 'tpc'){
+    const saveType = TabImageViewerState.getSaveTypeForExtension(ext);
+    if(!saveType){
+      return false;
+    }
+
+    const previousSaveTypes = this.saveTypes;
+    this.saveTypes = [saveType];
+    try{
+      return await this.saveAs();
+    }finally{
+      this.saveTypes = previousSaveTypes;
+    }
   }
 
   openFile(file?: EditorFile){
@@ -216,7 +250,9 @@ export class TabImageViewerState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(ext == 'tga'){
+    const normalizedExt = (ext || '').replace('.', '').toLowerCase();
+
+    if(normalizedExt == 'tga'){
       const tga = new KotOR.TGAObject();
       tga.header = {
         ID: 0,
@@ -234,6 +270,59 @@ export class TabImageViewerState extends TabState {
       };
       tga.pixelData = TabImageViewerState.TGAColorFix(await this.getPixelData());
       return tga.toExportBuffer();
+    }
+
+    if(normalizedExt == 'png'){
+      const width = this.image.header.width;
+      const height = this.image.header.height;
+      let pixelData = await this.getPixelData();
+      const bitsPerPixel = this.image.header.bitsPerPixel;
+
+      if(this.image instanceof KotOR.TPCObject){
+        if(bitsPerPixel == 24){
+          pixelData = TabImageViewerState.PixelDataToRGBA(pixelData, width, height);
+        }
+        if(bitsPerPixel == 8){
+          pixelData = TabImageViewerState.TGAGrayFix(pixelData);
+        }
+        TabImageViewerState.FlipY(pixelData, width, height);
+      }
+
+      if(this.image instanceof KotOR.TGAObject){
+        switch(bitsPerPixel){
+          case 32:
+            pixelData = TabImageViewerState.TGAColorFix(pixelData);
+          break;
+          case 24:
+            pixelData = TabImageViewerState.RGBToRGBA(pixelData, width, height);
+            pixelData = TabImageViewerState.TGAColorFix(pixelData);
+          break;
+          case 8:
+            pixelData = TabImageViewerState.TGAGrayFix(pixelData);
+          break;
+        }
+        TabImageViewerState.FlipY(pixelData, width, height);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if(!ctx){
+        return new Uint8Array(0);
+      }
+      const imageData = ctx.createImageData(width, height);
+      imageData.data.set(pixelData);
+      ctx.putImageData(imageData, 0, 0);
+
+      const dataURL = canvas.toDataURL('image/png');
+      const base64 = dataURL.split(',')[1] || '';
+      const binary = atob(base64);
+      const output = new Uint8Array(binary.length);
+      for(let i = 0; i < binary.length; i++){
+        output[i] = binary.charCodeAt(i);
+      }
+      return output;
     }
     
     return super.getExportBuffer(resref, ext);
