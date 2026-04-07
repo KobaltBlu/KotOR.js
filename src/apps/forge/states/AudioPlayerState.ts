@@ -265,7 +265,7 @@ export class AudioPlayerState {
   }
 
   /**
-   * Rows from `ambientmusic.2da` with a valid `resource` (not ****), in table order.
+   * Rows from `ambientmusic.2da` with a non-empty `resource` (not ****), in table order.
    */
   static getAmbientMusicPlaylistEntries(): AmbientMusicOstEntry[] {
     const twoda = KotOR.TwoDAManager.datatables.get('ambientmusic') as KotOR.TwoDAObject | undefined;
@@ -278,15 +278,19 @@ export class AudioPlayerState {
       if (!row) {
         continue;
       }
-      const res = row.resource;
-      if (!res || res === '****') {
+      const raw = row.resource;
+      if (raw == null || raw === '****') {
+        continue;
+      }
+      const resRef = String(raw).trim();
+      if (!resRef) {
         continue;
       }
       const label = row.__rowlabel != null && String(row.__rowlabel).length
         ? String(row.__rowlabel)
-        : String(res);
-      const displayName = AudioPlayerState.resolveAmbientMusicDisplayName(row, label, String(res));
-      out.push({ resRef: String(res), label, displayName });
+        : resRef;
+      const displayName = AudioPlayerState.resolveAmbientMusicDisplayName(row, label, resRef);
+      out.push({ resRef, label, displayName });
     }
     return out;
   }
