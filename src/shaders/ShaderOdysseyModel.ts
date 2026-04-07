@@ -184,7 +184,8 @@ export class ShaderOdysseyModel extends Shader {
     uniform float opacity;
     uniform float time;
     uniform vec4 animatedUV; // MDL animatedUV properties
-    uniform vec4 animationVector; // Water TXI animation
+    uniform vec4 animationVectorMap; // Base map TXI cycle animation
+    uniform vec4 animationVectorBump; // Bump map TXI cycle animation
   
     float randF(vec2 co) {
       return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
@@ -200,8 +201,8 @@ export class ShaderOdysseyModel extends Shader {
       return vec2(p.x + x + ((animatedUV.x * 50.0) * time), p.y + y + ((animatedUV.y * 50.0) * time));
     }
 
-    #ifdef CYCLE
-      varying vec2 vUvCycle;
+    #ifdef CYCLE_BUMP
+      varying vec2 vUvBumpCycle;
     #endif
   
     #ifdef WATER
@@ -257,11 +258,15 @@ export class ShaderOdysseyModel extends Shader {
         uniform sampler2D bumpMap;
         uniform float bumpScale;
         vec2 dHdxy_fwd() {
-          vec2 dSTdx = dFdx( vUvCycle );
-          vec2 dSTdy = dFdy( vUvCycle );
-          float Hll = bumpScale * texture2D( bumpMap, vUvCycle ).x;
-          float dBx = bumpScale * texture2D( bumpMap, vUvCycle + dSTdx ).x - Hll;
-          float dBy = bumpScale * texture2D( bumpMap, vUvCycle + dSTdy ).x - Hll;
+          vec2 bumpUv = vUv;
+          #ifdef CYCLE_BUMP
+            bumpUv = vUvBumpCycle;
+          #endif
+          vec2 dSTdx = dFdx( bumpUv );
+          vec2 dSTdy = dFdy( bumpUv );
+          float Hll = bumpScale * texture2D( bumpMap, bumpUv ).x;
+          float dBx = bumpScale * texture2D( bumpMap, bumpUv + dSTdx ).x - Hll;
+          float dBy = bumpScale * texture2D( bumpMap, bumpUv + dSTdy ).x - Hll;
           return vec2( dBx, dBy );
         }
         vec3 perturbNormalArb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection ) {
@@ -473,10 +478,13 @@ export class ShaderOdysseyModel extends Shader {
       uniform float time;
     #endif
 
-    #ifdef CYCLE
-      // varying mat3 cycleTransform;
-      varying vec2 vUvCycle;
-      uniform vec4 animationVector;
+    #ifdef CYCLE_MAP
+      uniform vec4 animationVectorMap;
+    #endif
+
+    #ifdef CYCLE_BUMP
+      varying vec2 vUvBumpCycle;
+      uniform vec4 animationVectorBump;
     #endif
   
     #ifdef DANGLY
@@ -498,39 +506,51 @@ export class ShaderOdysseyModel extends Shader {
     #include <clipping_planes_pars_vertex>
     
     void main() {
-      #ifdef CYCLE
-        //SpriteSheet Calculations
-        float framesX = animationVector.x;
-        float framesY = animationVector.y;
-        float totalFrames = animationVector.z;
-        float fps = animationVector.w;
-        
-        float deltaMax = (1.0 / fps) * totalFrames;
-        float fTime = mod(time, deltaMax) / deltaMax;
-        float frameNumber = floor(mod( fTime * totalFrames, totalFrames ));
+      #include <uv_vertex>
 
-        float column = floor(mod( frameNumber, framesX ));
-        float row = floor( (frameNumber - column) / framesX );
+      #ifdef CYCLE_MAP
+        float mapFramesX = animationVectorMap.x;
+        float mapFramesY = animationVectorMap.y;
+        float mapTotalFrames = animationVectorMap.z;
+        float mapFPS = animationVectorMap.w;
 
-        float columnNorm = column / framesX;
-        float rowNorm = row / framesY;
+        float mapDeltaMax = (1.0 / mapFPS) * mapTotalFrames;
+        float mapTime = mod(time, mapDeltaMax) / mapDeltaMax;
+        float mapFrameNumber = floor(mod(mapTime * mapTotalFrames, mapTotalFrames));
+        float mapColumn = floor(mod(mapFrameNumber, mapFramesX));
+        float mapRow = floor((mapFrameNumber - mapColumn) / mapFramesX);
+        float mapRowFlipped = mapRow;//(mapFramesY - 1.0) - mapRow;
+        float mapColumnNorm = mapColumn / mapFramesX;
+        float mapRowNorm = mapRowFlipped / mapFramesY;
 
-        vec2 cycleUV = vec2(
-          columnNorm,
-          rowNorm
-        );
-        
-        vUvCycle = cycleUV + uv;
         mat3 cycleTransform = mat3(
           uvTransform[0][0], uvTransform[0][1], uvTransform[0][2],
           uvTransform[1][0], uvTransform[1][1], uvTransform[1][2],
-          columnNorm, rowNorm, uvTransform[2][2]
+          mapColumnNorm, mapRowNorm, uvTransform[2][2]
         );
         #if defined( USE_UV ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || defined( USE_ALPHAMAP ) || defined( USE_EMISSIVEMAP ) || defined( USE_ROUGHNESSMAP ) || defined( USE_METALNESSMAP )
           vUv = ( cycleTransform * vec3( uv, 1 ) ).xy;
         #endif
-      #else
-        #include <uv_vertex>
+      #endif
+
+      #ifdef CYCLE_BUMP
+        float bumpFramesX = animationVectorBump.x;
+        float bumpFramesY = animationVectorBump.y;
+        float bumpTotalFrames = animationVectorBump.z;
+        float bumpFPS = animationVectorBump.w;
+
+        float bumpDeltaMax = (1.0 / bumpFPS) * bumpTotalFrames;
+        float bumpTime = mod(time, bumpDeltaMax) / bumpDeltaMax;
+        float bumpFrameNumber = floor(mod(bumpTime * bumpTotalFrames, bumpTotalFrames));
+        float bumpColumn = floor(mod(bumpFrameNumber, bumpFramesX));
+        float bumpRow = floor((bumpFrameNumber - bumpColumn) / bumpFramesX);
+        float bumpRowFlipped = bumpRow; //(bumpFramesY - 1.0) - bumpRow;
+        float bumpColumnNorm = bumpColumn / bumpFramesX;
+        float bumpRowNorm = bumpRowFlipped / bumpFramesY;
+        vec2 cycleUV = vec2(bumpColumnNorm, bumpRowNorm);
+        // Sample within the selected frame tile instead of offsetting full-range UVs.
+        vec2 frameUV = uv / vec2(bumpFramesX, bumpFramesY);
+        vUvBumpCycle = cycleUV + frameUV;
       #endif
 
       #include <uv2_vertex>
@@ -550,7 +570,11 @@ export class ShaderOdysseyModel extends Shader {
       #include <skinning_vertex>
 
       #ifdef USE_DISPLACEMENTMAP
-        transformed += normalize( objectNormal ) * ( texture2D( displacementMap, vUvCycle ).x * displacementScale + displacementBias );
+        vec2 displacementUv = vUv;
+        #ifdef CYCLE_BUMP
+          displacementUv = vUvBumpCycle;
+        #endif
+        transformed += normalize( objectNormal ) * ( texture2D( displacementMap, displacementUv ).x * displacementScale + displacementBias );
       #endif
 
       #ifdef DANGLY
@@ -586,7 +610,8 @@ export class ShaderOdysseyModel extends Shader {
       { time: { value: 0.0 } },
       { animatedUV: { value: new THREE.Vector4(0, 0, 0, 0) } },
       { waterAlpha: { value: 1 } },
-      { animationVector : { value: new THREE.Vector4(0, 0, 0, 0) } },
+      { animationVectorMap : { value: new THREE.Vector4(0, 0, 0, 0) } },
+      { animationVectorBump : { value: new THREE.Vector4(0, 0, 0, 0) } },
       { danglyDisplacement: { value: 0 } },
       { danglyTightness: { value: 0 } },
       { danglyPeriod: { value: 0 } },
