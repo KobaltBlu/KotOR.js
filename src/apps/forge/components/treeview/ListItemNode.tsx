@@ -108,6 +108,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
       case 'nss': return 'fa-file-code';
       case 'ncs': return 'fa-file-code';
       case 'dlg': return 'fa-file-code';
+      case 'res': return 'fa-file-code';
       case 'utc': return 'fa-file-code';
       case 'utd': return 'fa-file-code';
       case 'ute': return 'fa-file-code';
@@ -125,6 +126,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
       case 'erf': return 'fa-file-archive';
       case 'rim': return 'fa-file-archive';
       case 'mod': return 'fa-file-archive';
+      case 'sav': return 'fa-file-archive';
       case 'hak': return 'fa-file-archive';
       case 'nwm': return 'fa-file-archive';
       default: return 'fa-file';

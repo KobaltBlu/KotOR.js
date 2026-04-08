@@ -146,6 +146,12 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
     showContextMenu(event.clientX, event.clientY, items);
   }, [handleExportNode, handleExportAllFromNode, showContextMenu]);
 
+  const onNodeToggle = useCallback(async (node: FileBrowserNode) => {
+    if (node.data?.lazyArchive && !node.data?.lazyLoaded) {
+      await TabResourceExplorerState.ExpandLazyArchiveNode(node);
+    }
+  }, []);
+
   useEffectOnce(() => {
     const tab = props.tab as TabResourceExplorerState;
     if(tab){
@@ -222,9 +228,10 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
         node={node}
         depth={0}
         onContextMenu={onNodeContextMenu}
+        onToggleNode={onNodeToggle}
       />
     ));
-  }, [visibleItems, onNodeContextMenu]);
+  }, [visibleItems, onNodeContextMenu, onNodeToggle]);
   
   return (
     <div className="flex-vertical" style={{

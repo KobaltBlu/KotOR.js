@@ -10,18 +10,27 @@ export interface ResourceListNodeProps {
   isSelected?: boolean;
   onSelect?: (node: FileBrowserNode) => void;
   onContextMenu?: (event: React.MouseEvent, node: FileBrowserNode) => void;
+  onToggleNode?: (node: FileBrowserNode) => Promise<void> | void;
 }
 
 export const ResourceListNode = memo(function ResourceListNode(props: ResourceListNodeProps) {
-  const { node, depth = 0, isSelected = false, onSelect, onContextMenu } = props;
+  const { node, depth = 0, isSelected = false, onSelect, onContextMenu, onToggleNode } = props;
   const [openState, setOpenState] = useState<boolean>(node.open);
+  const [loadingChildren, setLoadingChildren] = useState<boolean>(false);
 
-  const isFolder = node.nodes && node.nodes.length > 0;
-  const hasChildren = isFolder && node.nodes.length > 0;
+  const hasLazyChildren = !!node.data?.lazyArchive && !node.data?.lazyLoaded;
+  const isFolder = hasLazyChildren || (node.nodes && node.nodes.length > 0);
+  const hasChildren = isFolder;
 
-  const handleToggle = useCallback(() => {
+  const handleToggle = useCallback(async () => {
+    const isExpanding = !openState;
+    if (isExpanding && typeof onToggleNode === 'function') {
+      setLoadingChildren(true);
+      await onToggleNode(node);
+      setLoadingChildren(false);
+    }
     setOpenState(prev => !prev);
-  }, []);
+  }, [node, onToggleNode, openState]);
 
   const handleClick = useCallback(() => {
     if (onSelect) {
@@ -30,7 +39,7 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
   }, [node, onSelect]);
 
   const handleDoubleClick = useCallback(() => {
-    if (node.type === 'resource') {
+    if (node.type === 'resource' && node.data?.path) {
       console.log('Opening resource:', node);
       FileTypeManager.onOpenResource(
         new EditorFile({
@@ -66,9 +75,10 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
         isSelected={false}
         onSelect={onSelect}
         onContextMenu={onContextMenu}
+        onToggleNode={onToggleNode}
       />
     ));
-  }, [openState, hasChildren, node.nodes, depth, onSelect, onContextMenu]);
+  }, [openState, hasChildren, node.nodes, depth, onSelect, onContextMenu, onToggleNode]);
 
   // Prepare data attributes for the core component
   const dataAttributes = {
@@ -86,6 +96,7 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
       hasChildren={hasChildren}
       isExpanded={openState}
       isSelected={isSelected}
+      isLoading={loadingChildren}
       depth={depth}
       iconType={isFolder ? 'folder' : 'file'}
       fileType={node.name?.split('.').pop()?.toLowerCase()}
