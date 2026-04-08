@@ -11,6 +11,8 @@ import { ResourceListNode } from "@/apps/forge/components/treeview/ResourceListN
 import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
 import { promptForDirectory, fileExists, writeFile } from "@/apps/forge/helpers/AssetExtraction";
 import { createProgressModal, showExtractionResults } from "@/apps/forge/helpers/AssetExtraction";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabGFFEditorState } from "@/apps/forge/states/tabs";
 
 
 export interface TabResourceExplorerProps extends BaseTabProps {
@@ -127,6 +129,13 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
   }, [collectNodeResources, exportEntries]);
 
   const onNodeContextMenu = useCallback((event: React.MouseEvent, node: FileBrowserNode) => {
+    const nodeExt = (node.name?.split('.').pop() || '').toLowerCase();
+    const gffLikeExtensions = new Set([
+      'are', 'bic', 'dlg', 'fac', 'git', 'gff', 'ifo', 'jrl', 'res',
+      'utc', 'utd', 'ute', 'uti', 'utm', 'utp', 'uts', 'utt', 'utw'
+    ]);
+    const canOpenWithGff = node.type === 'resource' && !!node.data?.path && gffLikeExtensions.has(nodeExt);
+
     const items: ContextMenuItem[] = [
       {
         id: 'export-node',
@@ -143,6 +152,25 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
         },
       },
     ];
+
+    if (canOpenWithGff) {
+      items.push(
+        { id: 'sep-open-with-gff', separator: true },
+        {
+          id: 'open-with-gff',
+          label: 'Open with GFF',
+          onClick: () => {
+            ForgeState.tabManager.addTab(new TabGFFEditorState({
+              editorFile: new EditorFile({
+                path: node.data.path,
+                useGameFileSystem: true,
+              }),
+            }));
+          },
+        }
+      );
+    }
+
     showContextMenu(event.clientX, event.clientY, items);
   }, [handleExportNode, handleExportAllFromNode, showContextMenu]);
 
