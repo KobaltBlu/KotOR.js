@@ -74,6 +74,38 @@ body {
   right: 0;
 }
 
+.drag-drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.6);
+  border: 3px dashed rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border-radius: $border-radius;
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: rgba(255, 255, 255, 0.85);
+
+    i {
+      font-size: 48px;
+      opacity: 0.9;
+    }
+
+    span {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+  }
+}
+
 #container {
   position: absolute;
   top: $header-height;
