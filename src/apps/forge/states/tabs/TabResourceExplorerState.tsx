@@ -72,6 +72,8 @@ export class TabResourceExplorerState extends TabState {
     const music     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamMusic');   //KOTOR & TSL
     ForgeState.loaderMessage('Loading [StreamVoice]...');
     const voice     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamVoice');   //TSL
+    ForgeState.loaderMessage('Loading [Override]...');
+    const override  = await TabResourceExplorerState.LoadFolderForFileBrowser('Override');      //KOTOR & TSL
 
     bifs.sort();
     rims.sort();
@@ -85,7 +87,7 @@ export class TabResourceExplorerState extends TabState {
 
     TabResourceExplorerState.Resources.push( 
       ...[
-        bifs, rims, modules, lips, textures, waves, sounds, music, voice
+        bifs, rims, modules, lips, textures, waves, sounds, music, voice, override
       ].filter((node: FileBrowserNode) => (node instanceof FileBrowserNode && node.nodes.length)) 
     );
     state.reload();
