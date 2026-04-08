@@ -84,6 +84,7 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
   const [hasWaveformAudio, setHasWaveformAudio] = useState<boolean>(() => tab.audio_buffer instanceof AudioBuffer);
   const [canUndo, setCanUndo] = useState<boolean>(false);
   const [canRedo, setCanRedo] = useState<boolean>(false);
+  const [timedPhonemes, setTimedPhonemes] = useState<any[]>(() => tab.timed_phonemes?.items || []);
 
   const drawWaveform = () => {
     if(waveformCanvasRef.current){
@@ -151,6 +152,10 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
 
   };
 
+  const onPhonemesGenerated = (_state: TabLIPEditorState, result: any) => {
+    setTimedPhonemes(result?.items || []);
+  };
+
   const onKeyFrameSelect = (keyframe: KotOR.ILIPKeyFrame) => {
     setSelectedFrame(keyframe);
     tab.lip.elapsed = keyframe.time;
@@ -210,6 +215,7 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
     tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onDurationChange', onDurationChange);
     tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onUndoApplied', syncUndoRedoState);
     tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onRedoApplied', syncUndoRedoState);
+    tab.addEventListener<TabLIPEditorStateEventListenerTypes>('onPhonemesGenerated', onPhonemesGenerated);
     window.addEventListener('mouseup', onMouseUpWindow);
     window.addEventListener('mousemove', onMouseMoveWindow);
     rebuildTimelineLabels();
@@ -227,6 +233,7 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
       tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onDurationChange', onDurationChange);
       tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onUndoApplied', syncUndoRedoState);
       tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onRedoApplied', syncUndoRedoState);
+      tab.removeEventListener<TabLIPEditorStateEventListenerTypes>('onPhonemesGenerated', onPhonemesGenerated);
       window.removeEventListener('mouseup', onMouseUpWindow);
       window.removeEventListener('mousemove', onMouseMoveWindow);
     }
@@ -681,6 +688,14 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
 
           {/* Keyframe strip */}
           <div className="keyframe-track" style={{ width: timelineWidthPx }}>
+            {timedPhonemes.map((item: any, index: number) => (
+              <div
+                key={`phon-${index}-${item.startSec}`}
+                className="lip-phoneme-marker"
+                style={{ left: item.startSec * zoom }}
+                title={`${item.symbol} @ ${item.startSec.toFixed(2)}s`}
+              />
+            ))}
             {keyframes.map((keyframe: KotOR.ILIPKeyFrame) => (
               <div
                 key={keyframe.uuid}

@@ -335,6 +335,20 @@
   .keyframe-track {
     top: 25px;
     background: transparent;
+
+    .keyframe {
+      z-index: 1;
+    }
+  }
+
+  .lip-phoneme-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba($primary-blue, 0.35);
+    pointer-events: none;
+    z-index: 0;
   }
 
   // Seeker spans full visible height

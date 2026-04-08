@@ -12,6 +12,8 @@ import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
 import { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
 import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
+import { EnergyWindowPhonemeService } from "@/apps/forge/states/tabs/tab-lip-editor/AudioPhonemeService";
+import { convertTimedPhonemesToKeyframes, mapPhonemeToShape, PHN_INVALID, TimedPhonemeResult } from "@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
 
@@ -23,7 +25,8 @@ export type TabLIPEditorStateEventListenerTypes =
 TabStateEventListenerTypes & 
   ''|'onLIPLoaded'|'onPlay'|'onPause'|'onStop'|'onAudioLoad'|'onHeadChange'|
   'onHeadLoad'|'onKeyFrameSelect'|'onKeyFrameTrackZoomIn'|'onKeyFrameTrackZoomOut'|
-  'onAnimate'|'onKeyFramesChange'|'onDurationChange';
+  'onAnimate'|'onKeyFramesChange'|'onDurationChange'|'onPhonemesGenerated'|
+  'onPhonemeGenerationStart'|'onPhonemeGenerationError';
 
 export interface TabLIPEditorStateEventListeners extends TabStateEventListeners {
   onLIPLoaded: Function[],
@@ -39,6 +42,9 @@ export interface TabLIPEditorStateEventListeners extends TabStateEventListeners 
   onAnimate: Function[],
   onKeyFramesChange: Function[],
   onDurationChange: Function[],
+  onPhonemesGenerated: Function[],
+  onPhonemeGenerationStart: Function[],
+  onPhonemeGenerationError: Function[],
 }
 
 export interface LIPUndoSnapshot {
@@ -72,6 +78,9 @@ export class TabLIPEditorState extends TabState {
   scrubbingTimeout: NodeJS.Timeout|number;
   current_head: string = DEFAULT_HEAD;
   audio_name: string;
+  timed_phonemes: TimedPhonemeResult|undefined;
+  phoneme_generation_error: string|undefined;
+  phoneme_generation_busy: boolean = false;
   selected_frame: ILIPKeyFrame|undefined;
   dragging_frame: ILIPKeyFrame|undefined;
   dragging_frame_snapshot: ILIPKeyFrame|undefined;
@@ -83,11 +92,12 @@ export class TabLIPEditorState extends TabState {
   scrubDuration: number|undefined;
 
   head: KotOR.OdysseyModel3D;
-  head_hook: THREE.Object3D<THREE.Event> = new THREE.Object3D();
+  head_hook: THREE.Object3D = new THREE.Object3D();
   pointLight: THREE.PointLight;
 
   ui3DRenderer: UI3DRenderer;
   box3: THREE.Box3 = new THREE.Box3();
+  phonemeService = new EnergyWindowPhonemeService();
 
   keyframesSceneGraphNode: SceneGraphNode = new SceneGraphNode({
     name: 'Key Frames',
@@ -322,11 +332,11 @@ export class TabLIPEditorState extends TabState {
         try{
           // decodeAudioData requires an ArrayBuffer, not a Uint8Array.
           // Handle non-zero byteOffset views to avoid a detached-buffer error.
-          const ab: ArrayBuffer = (
+          const ab = (
             data.byteOffset === 0 && data.byteLength === data.buffer.byteLength
               ? data.buffer
               : data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
-          );
+          ) as ArrayBuffer;
           KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(
             ab,
             (buffer: AudioBuffer) => finishLoad(buffer),
@@ -347,6 +357,9 @@ export class TabLIPEditorState extends TabState {
         if (!data || data.byteLength === 0) { resolve(); return; }
         const finishLoad = (buffer?: AudioBuffer, error?: any) => {
           this.audio_buffer = buffer;
+          if (buffer instanceof AudioBuffer && buffer.duration > this.lip.duration) {
+            this.setDuration(buffer.duration);
+          }
           this.processEventListener<TabLIPEditorStateEventListenerTypes>('onAudioLoad', [this, buffer, error]);
           resolve();
         };
@@ -354,11 +367,11 @@ export class TabLIPEditorState extends TabState {
           const af = new KotOR.AudioFile(data);
           af.getPlayableByteStream().then((pcm: Uint8Array) => {
             try {
-              const ab: ArrayBuffer = (
+              const ab = (
                 pcm.byteOffset === 0 && pcm.byteLength === pcm.buffer.byteLength
                   ? pcm.buffer
                   : pcm.buffer.slice(pcm.byteOffset, pcm.byteOffset + pcm.byteLength)
-              );
+              ) as ArrayBuffer;
               KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(
                 ab,
                 (buffer: AudioBuffer) => {
@@ -376,6 +389,61 @@ export class TabLIPEditorState extends TabState {
         }
       }).catch(() => resolve());
     });
+  }
+
+  async generatePhonemesFromLoadedAudio(): Promise<TimedPhonemeResult> {
+    if (!(this.audio_buffer instanceof AudioBuffer)) {
+      const error = "No audio loaded.";
+      this.phoneme_generation_error = error;
+      this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationError", [this, error]);
+      throw new Error(error);
+    }
+    this.phoneme_generation_busy = true;
+    this.phoneme_generation_error = undefined;
+    this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationStart", [this]);
+    try {
+      const result = await this.phonemeService.extractTimedPhonemes(this.audio_buffer);
+      this.timed_phonemes = result;
+      this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemesGenerated", [this, result]);
+      return result;
+    } catch (e: any) {
+      const message = e?.message || "Unable to generate phonemes.";
+      this.phoneme_generation_error = message;
+      this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationError", [this, message]);
+      throw e;
+    } finally {
+      this.phoneme_generation_busy = false;
+    }
+  }
+
+  async generateLIPKeyframesFromAudio(): Promise<void> {
+    const result = this.timed_phonemes ?? await this.generatePhonemesFromLoadedAudio();
+    this.applyTimedPhonemesToKeyframes(result);
+  }
+
+  applyTimedPhonemesToKeyframes(result: TimedPhonemeResult = this.timed_phonemes as TimedPhonemeResult): void {
+    if (!result || !Array.isArray(result.items)) return;
+    this.captureUndoSnapshot();
+    this.lip.keyframes = [];
+
+    const converted = convertTimedPhonemesToKeyframes(result.items);
+    for (const frame of converted) {
+      this.lip.addKeyFrame(frame.time, frame.shape);
+    }
+
+    this.lip.reIndexKeyframes();
+    this.lip.elapsed = 0;
+    const duration = Math.max(this.audio_buffer?.duration || 0, this.lip.keyframes.at(-1)?.time || 0);
+    this.lip.duration = Math.max(0.1, duration);
+
+    if (this.lip.keyframes.length) {
+      this.selectKeyFrame(this.lip.keyframes[0]);
+    } else {
+      this.selected_frame = undefined;
+    }
+    this.setDuration(this.lip.duration);
+    this.reloadKeyFrames();
+    if (this.file) this.file.unsaved_changes = true;
   }
 
   animate(delta: number = 0){
@@ -635,251 +703,26 @@ export class TabLIPEditorState extends TabState {
 
         this.captureUndoSnapshot();
         this.lip.keyframes = [];
-
-        let PHN_INVALID = -1;
-        let PHN_EE = 0;
-        let PHN_EH = 1;
-        let PHN_SCHWA = 2;
-        let PHN_AH = 3;
-        let PHN_OH = 4;
-        let PHN_OOH = 5;
-        let PHN_Y = 6;
-        let PHN_S = 7;
-        let PHN_FV = 8;
-        let PHN_NNG = 9;
-        let PHN_TH = 0xA;
-        let PHN_MPB = 0xB;
-        let PHN_TD = 0xC;
-        let PHN_JSH = 0xD;
-        let PHN_L = 0xE;
-        let PHN_KG = 0xF;
-        let PHN_USE_NEXT = 0x10;
-
         let last_shape = PHN_INVALID;
 
         for(let i = 0; i < keyframes.length; i++){
-
           let keyframe_data = keyframes[i].trim().split(' ');
-
-          if(!keyframe_data.length){
+          if(keyframe_data.length < 3){
             continue;
           }
 
-          let keyframe:  {shape: number, time: number} = {
-            shape: PHN_INVALID,
-            time: parseFloat(keyframe_data[0]) * .001
-          };
-          
-          switch(keyframe_data[2]){
-            case "i:":
-              keyframe.shape = PHN_EE;
-              break;
-            case "I":
-              keyframe.shape = PHN_EH;
-              break;
-            case "I_x":
-              keyframe.shape = PHN_EH;
-              break;
-            case "E":
-              keyframe.shape = PHN_EH;
-              break;
-            case "@":
-              keyframe.shape = PHN_AH;
-              break;
-            case "A":
-              keyframe.shape = PHN_AH;
-              break;
-            case "^":
-              keyframe.shape = PHN_AH;
-              break;
-            case ">":
-              keyframe.shape = PHN_SCHWA;
-              break;
-            case "U":
-              keyframe.shape = PHN_OH;
-              break;
-            case "u":
-              keyframe.shape = PHN_OOH;
-              break;
-            case "u_x":
-              keyframe.shape = PHN_OOH;
-              break;
-            case "&":
-              keyframe.shape = PHN_OH;
-              break;
-            case "&_0":
-              keyframe.shape = PHN_OH;
-              break;
-            case "3r":
-              keyframe.shape = PHN_SCHWA;
-              break;
-            case "&r":
-              keyframe.shape = PHN_SCHWA;
-              break;
-            case "5":
-              keyframe.shape = PHN_OH;
-              break;
-            case "ei":
-              keyframe.shape = PHN_EH;
-              break;
-            case ">i":
-              keyframe.shape = PHN_OH;
-              break;
-            case "aI":
-              keyframe.shape = PHN_AH;
-              break;
-            case "aU":
-              keyframe.shape = PHN_AH;
-              break;
-            case "oU":
-              keyframe.shape = PHN_OH;
-              break;
-            case "iU":
-              keyframe.shape = PHN_EE;
-              break;
-            case "i&":
-              keyframe.shape = PHN_EE;
-              break;
-            case "u&":
-              keyframe.shape = PHN_OOH;
-              break;
-            case "e&":
-              keyframe.shape = PHN_EH;
-              break;
-            
-            case "ph":
-              keyframe.shape = PHN_MPB;
-              break;
-            case "pc":
-              keyframe.shape = PHN_MPB;
-              break;
-            case "b":
-              keyframe.shape = PHN_MPB;
-              break;
-            case "bc":
-              keyframe.shape = PHN_MPB;
-              break;
-            case "th":
-              keyframe.shape = PHN_TD;
-              break;
-            case "tc":
-              keyframe.shape = PHN_TD;
-              break;
-            case "d":
-              keyframe.shape = PHN_TD;
-              break;
-            case "dc":
-              keyframe.shape = PHN_TD;
-              break;
-            case "kh":
-              keyframe.shape = PHN_KG;
-              break;
-            case "kc":
-              keyframe.shape = PHN_KG;
-              break;
-            case "g":
-              keyframe.shape = PHN_KG;
-              break;
-            case "gc":
-              keyframe.shape = PHN_KG;
-              break;
-            case "f":
-              keyframe.shape = PHN_FV;
-              break;
-            case "v":
-              keyframe.shape = PHN_FV;
-              break;
-            case "T":
-              keyframe.shape = PHN_TH;
-              break;
-            case "D":
-              keyframe.shape = PHN_TH;
-              break;
-            case "s":
-              keyframe.shape = PHN_S;
-              break;
-            case "z":
-              keyframe.shape = PHN_S;
-              break;
-            case "S":
-              keyframe.shape = PHN_JSH;
-              break;
-            case "Z":
-              keyframe.shape = PHN_JSH;
-              break;
-            case "h":
-              keyframe.shape = PHN_USE_NEXT;
-              break;
-            case "h_v":
-              keyframe.shape = PHN_USE_NEXT;
-              break;
-            case "tS":
-              keyframe.shape = PHN_JSH;
-              break;
-            case "tSc":
-              keyframe.shape = PHN_JSH;
-              break;
-            case "dZ":
-              keyframe.shape = PHN_JSH;
-              break;
-            case "dZc":
-              keyframe.shape = PHN_JSH;
-              break;
-            case "m":
-              keyframe.shape = PHN_MPB;
-              break;
-            case "n":
-              keyframe.shape = PHN_NNG;
-              break;
-            case "N":
-              keyframe.shape = PHN_NNG;
-              break;
-            case "d_(":
-              keyframe.shape = PHN_TD;
-              break;
-            case "th_(":
-              keyframe.shape = PHN_TD;
-              break;
-            case "n_(":
-              keyframe.shape = PHN_NNG;
-              break;
-            case "l=":
-              keyframe.shape = PHN_L;
-              break;
-            case "m=":
-              keyframe.shape = PHN_MPB;
-              break;
-            case "n=":
-              keyframe.shape = PHN_NNG;
-              break;
-            case "l":
-              keyframe.shape = PHN_L;
-              break;
-            case "9r":
-              keyframe.shape = PHN_L;
-              break;
-            case "j":
-              keyframe.shape = PHN_Y;
-              break;
-            case "w":
-              keyframe.shape = PHN_OOH;
-              break;
-            case "+":
-              keyframe.shape = PHN_MPB;
-              break;
-            default:
-              keyframe.shape = PHN_INVALID;
-            break;
-          }
+          const keyframeTime = parseFloat(keyframe_data[0]) * .001;
+          const keyframeEndTime = parseFloat(keyframe_data[1]) * .001;
+          const shape = mapPhonemeToShape(keyframe_data[2], last_shape);
 
-          if(keyframe.shape == last_shape || keyframe.shape == PHN_INVALID){
+          if(shape == last_shape || shape == PHN_INVALID){
             continue;
           }
 
-          this.lip.addKeyFrame(keyframe.time, keyframe.shape);
-          this.lip.duration = parseFloat(keyframe_data[1]) * .001;
+          this.lip.addKeyFrame(keyframeTime, shape);
+          this.lip.duration = keyframeEndTime;
 
-          last_shape = keyframe.shape;
+          last_shape = shape;
         }
 
         this.lip.reIndexKeyframes();

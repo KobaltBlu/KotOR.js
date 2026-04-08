@@ -26,6 +26,10 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
   const [duration, setDuration] = useState<number>(parentTab.lip.duration);
   const [audioName, setAudioName] = useState<string>(() => parentTab.audio_name || '');
   const [hasAudio, setHasAudio] = useState<boolean>(() => parentTab.audio_buffer instanceof AudioBuffer);
+  const [phonemeCount, setPhonemeCount] = useState<number>(() => parentTab.timed_phonemes?.items?.length || 0);
+  const [phonemeEngine, setPhonemeEngine] = useState<string>(() => parentTab.timed_phonemes?.engine || '');
+  const [phonemeBusy, setPhonemeBusy] = useState<boolean>(false);
+  const [phonemeError, setPhonemeError] = useState<string>('');
 
   const onLIPLoaded = () => {
     setDuration(parentTab.lip.duration);
@@ -47,17 +51,42 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
     setAudioName(parentTab.audio_name || '');
   };
 
+  const onPhonemeGenerationStart = () => {
+    setPhonemeBusy(true);
+    setPhonemeError('');
+  };
+
+  const onPhonemesGenerated = (_state: TabLIPEditorState, result: any) => {
+    setPhonemeBusy(false);
+    setPhonemeError('');
+    setPhonemeCount(result?.items?.length || 0);
+    setPhonemeEngine(result?.engine || '');
+  };
+
+  const onPhonemeGenerationError = (_state: TabLIPEditorState, message: string) => {
+    setPhonemeBusy(false);
+    setPhonemeError(message || 'Generation failed');
+  };
+
   useEffectOnce(() => {
     parentTab.addEventListener<TabLIPEditorStateEventListenerTypes>("onLIPLoaded", onLIPLoaded);
     parentTab.addEventListener<TabLIPEditorStateEventListenerTypes>("onHeadChange", onHeadChange);
     parentTab.addEventListener<TabLIPEditorStateEventListenerTypes>("onDurationChange", onDurationChange);
     parentTab.addEventListener<TabLIPEditorStateEventListenerTypes>("onAudioLoad", onAudioLoad);
+    parentTab.addEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationStart", onPhonemeGenerationStart);
+    parentTab.addEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemesGenerated", onPhonemesGenerated);
+    parentTab.addEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationError", onPhonemeGenerationError);
     setSelectedHead((parentTab.current_head || LIP_EDITOR_DEFAULT_HEAD).toLowerCase());
+    setPhonemeCount(parentTab.timed_phonemes?.items?.length || 0);
+    setPhonemeEngine(parentTab.timed_phonemes?.engine || '');
     return () => {
       parentTab.removeEventListener<TabLIPEditorStateEventListenerTypes>("onLIPLoaded", onLIPLoaded);
       parentTab.removeEventListener<TabLIPEditorStateEventListenerTypes>("onHeadChange", onHeadChange);
       parentTab.removeEventListener<TabLIPEditorStateEventListenerTypes>("onDurationChange", onDurationChange);
       parentTab.removeEventListener<TabLIPEditorStateEventListenerTypes>("onAudioLoad", onAudioLoad);
+      parentTab.removeEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationStart", onPhonemeGenerationStart);
+      parentTab.removeEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemesGenerated", onPhonemesGenerated);
+      parentTab.removeEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationError", onPhonemeGenerationError);
     };
   });
 
@@ -74,6 +103,11 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
   const onReplaceAudioClick = () => {
     parentTab.loadSoundFromFile();
   };
+
+  const onGeneratePhonemesAndShapes = () => {
+    parentTab.generateLIPKeyframesFromAudio().catch(() => {});
+  };
+
 
   const onFitToKeyFrames = () => {
     parentTab.fitDurationToKeyFrames();
@@ -139,8 +173,8 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
         </div>
       </SectionContainer>
 
-      {/* ── Import ─────────────────────────────────────────────────── */}
-      <SectionContainer name="Import">
+      {/* ── Phoneme Detection (PHN + Auto) ─────────────────────────── */}
+      <SectionContainer name="Phoneme Detection">
         <Button
           variant="secondary"
           size="sm"
@@ -152,8 +186,24 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
           Import PHN
         </Button>
         <p className="lip-sidebar__hint">
-          Replaces all keyframes and updates duration from the PHN header.
+          Replaces all keyframes and updates duration from the PHN file.
         </p>
+        <div className="lip-sidebar__btn-row">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="lip-sidebar__btn"
+            onClick={onGeneratePhonemesAndShapes}
+            disabled={!hasAudio || phonemeBusy}
+            title="Generate timed phonemes and convert directly to LIP keyframes"
+          >
+            <i className={`fa-solid ${phonemeBusy ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'} me-1`} aria-hidden />
+            {phonemeBusy ? 'Generating...' : 'Generate Phonemes + Shapes'}
+          </Button>
+        </div>
+        {phonemeError && (
+          <p className="lip-sidebar__hint text-danger mb-0">{phonemeError}</p>
+        )}
       </SectionContainer>
 
       {/* ── Audio ──────────────────────────────────────────────────── */}
