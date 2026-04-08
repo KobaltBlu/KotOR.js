@@ -276,6 +276,31 @@ body {
   }
 }
 
+// Desktop-style cascading submenu behavior for Forge top menu.
+.top-menu {
+  .forge-menu-submenu {
+    > .dropdown-menu {
+      top: 0;
+      left: 100%;
+      margin-top: -1px;
+    }
+
+    > .dropdown-toggle::after {
+      float: right;
+      margin-top: 0.5em;
+      transform: rotate(-90deg);
+    }
+  }
+
+  .forge-menu-title {
+    color: $text-light;
+    font-size: 11px;
+    text-transform: uppercase;
+    opacity: 0.8;
+    pointer-events: none;
+  }
+}
+
 li.dropdown > a:hover + .dropdown-menu.side, 
 li.dropdown > a + .dropdown-menu.side:hover {
   display: block;
