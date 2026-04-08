@@ -1,5 +1,6 @@
 import * as KotOR from "@/apps/forge/KotOR";
 import * as fs from "fs";
+import * as path from "path";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { TXI } from "@/resource/TXI";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
@@ -50,7 +51,16 @@ export async function fileExists(filename: string, target: ExportTarget): Promis
     });
   } else {
     try {
-      await target.handle.getFileHandle(filename);
+      const normalized = filename.replace(/\\/g, '/').replace(/^\/+/, '');
+      const parts = normalized.split('/').filter(Boolean);
+      const fileName = parts.pop();
+      if (!fileName) return false;
+
+      let dirHandle = target.handle;
+      for (const segment of parts) {
+        dirHandle = await dirHandle.getDirectoryHandle(segment);
+      }
+      await dirHandle.getFileHandle(fileName);
       return true;
     } catch {
       return false;
@@ -60,14 +70,29 @@ export async function fileExists(filename: string, target: ExportTarget): Promis
 
 export async function writeFile(filename: string, buffer: Uint8Array, target: ExportTarget): Promise<void> {
   if (target.type === 'electron') {
+    const fullpath = path.join(target.path, filename);
+    const dirpath = path.dirname(fullpath);
+    await fs.promises.mkdir(dirpath, { recursive: true });
     await new Promise<void>((resolve, reject) => {
-      fs.writeFile(`${target.path}/${filename}`, buffer, (err) => {
+      fs.writeFile(fullpath, buffer, (err) => {
         if (err) reject(err);
         else resolve();
       });
     });
   } else {
-    const fileHandle = await target.handle.getFileHandle(filename, { create: true });
+    const normalized = filename.replace(/\\/g, '/').replace(/^\/+/, '');
+    const parts = normalized.split('/').filter(Boolean);
+    const fileName = parts.pop();
+    if (!fileName) {
+      throw new Error(`Invalid filename '${filename}'`);
+    }
+
+    let dirHandle = target.handle;
+    for (const segment of parts) {
+      dirHandle = await dirHandle.getDirectoryHandle(segment, { create: true });
+    }
+
+    const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
     const ws: FileSystemWritableFileStream = await fileHandle.createWritable();
     await ws.write(buffer as any);
     await ws.close();
