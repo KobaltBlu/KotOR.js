@@ -8,36 +8,77 @@
     <link rel="shortcut icon" href="favicon.ico">
     <style>
       html, body {
-        background: #333;
+        background: #212121;
         overflow: hidden;
+        margin: 0;
       }
 
       .page-pre-loader {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 12px;
         position: absolute;
-        top:0;
+        top: 0;
         bottom: 0;
         left: 0;
         right: 0;
         z-index: 99999999999999;
-        background: #333!important;
-        font-family: "Roboto", sans-serif!important;
-        color: #CCC!important;
-        margin-top: 0!important;
-        margin-bottom: 0.5rem!important;
-        font-weight: 500!important;
-        line-height: 1.2!important;
-        font-size: 1rem!important;
-        text-shadow: 0 0 5px #000, 0 0 10px #000, 0 0 15px #000!important;
+        background: rgba(0, 0, 0, 0.6) !important;
+        font-family: "Roboto", sans-serif !important;
+        color: #ccc !important;
+      }
+
+      .page-pre-loader .pre-loader-card {
+        min-width: 280px;
+        max-width: 420px;
+        padding: 20px 24px;
+        border: 1px solid #464646;
+        border-radius: 5px;
+        box-shadow: 2px 2px 10px #1d1d1d;
+        background: #212121;
+        text-align: center;
+      }
+
+      .page-pre-loader h1 {
+        margin: 0 0 6px !important;
+        font-weight: 600 !important;
+        line-height: 1.2 !important;
+        font-size: 1.35rem !important;
+        color: #c9dde6 !important;
+      }
+
+      .page-pre-loader p {
+        margin: 0 !important;
+        font-size: 0.9rem !important;
+        color: #9d9d9d !important;
+      }
+
+      .page-pre-loader .loading-accent {
+        width: 120px;
+        height: 3px;
+        border-radius: 999px;
+        margin: 10px auto 0;
+        background: linear-gradient(90deg, #0c3d5a 0%, #337ab7 50%, #0c3d5a 100%);
+        animation: loading-accent 1.5s ease-in-out infinite;
+      }
+
+      @keyframes loading-accent {
+        0% { opacity: 0.45; transform: scaleX(0.9); }
+        50% { opacity: 1; transform: scaleX(1); }
+        100% { opacity: 0.45; transform: scaleX(0.9); }
       }
     </style>
   </head> 
   <body>
     <div id="root">
       <div class="page-pre-loader">
-        <h1>Initializing...</h1>
+        <div class="pre-loader-card">
+          <h1>Initializing...</h1>
+          <p>Preparing Forge workspace</p>
+          <div class="loading-accent"></div>
+        </div>
       </div>
     </div>
     <script type="text/javascript" src="../three.min.js"></script>

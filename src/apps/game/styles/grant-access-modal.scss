@@ -1,15 +1,16 @@
 .modal-grant-access-wrapper {
   display: none;
   position: absolute;
-  top:0;
+  top: 0;
   bottom: 0;
   right: 0;
   left: 0;
-  background:rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.6);
   z-index: 1000000;
 
   &.show {
-    display: flex!important;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     cursor: auto;
@@ -17,18 +18,107 @@
   }
 
   .modal-grant-access {
-    margin: auto;
-    max-width: 720px;
+    width: min(720px, 100%);
+    margin: 0 auto;
+    border: 1px solid #464646;
+    border-radius: 5px;
+    box-shadow: 2px 2px 10px #1d1d1d;
+    background: #212121;
+    overflow: hidden;
+
     .modal-content-wrapper {
-      padding: 20px;
+      padding: 24px 24px 16px;
+      text-align: left;
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 1.6rem;
+        line-height: 1.2;
+        letter-spacing: 0.01em;
+        color: #c9dde6;
+        text-transform: none;
+      }
+
+      p {
+        margin: 0;
+        color: #ccc;
+        font-size: 0.95rem;
+        line-height: 1.55;
+      }
+
+      p + p {
+        margin-top: 10px;
+      }
     }
+
     .modal-button-wrapper {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 0 24px 20px;
+
       .modal-button {
-        .grant {
+        min-width: 140px;
+        padding: 8px 14px;
+        border-radius: 5px;
+        border: 1px solid #2a7ab9;
+        font-size: 0.875rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 
+        &:hover {
+          transform: none;
         }
-        .quit { 
 
+        &:active {
+          transform: none;
+        }
+
+        &.grant {
+          color: #fff;
+          border-color: #2a7ab9;
+          background: linear-gradient(#133652 0%, #205784 100%);
+
+          &:hover {
+            border-color: #2196f3;
+            background: #255d8e;
+          }
+        }
+
+        &.quit {
+          color: #c9dde6;
+          border-color: #464646;
+          background: #30303d;
+
+          &:hover {
+            border-color: #656565;
+            background: #313131;
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: 640px) {
+    padding: 16px;
+
+    .modal-grant-access {
+      .modal-content-wrapper {
+        padding: 20px 16px 12px;
+
+        h1 {
+          font-size: 1.35rem;
+        }
+      }
+
+      .modal-button-wrapper {
+        flex-direction: column;
+        padding: 0 16px 16px;
+
+        .modal-button {
+          width: 100%;
         }
       }
     }

@@ -6,6 +6,7 @@ export interface KotORModalProps {
   children: React.ReactNode;
   show: boolean;
   title: string;
+  className?: string;
   enableCancel?: boolean;
   enableOk?: boolean; 
   cancelText?: string;
@@ -19,6 +20,7 @@ export const KotORModal = ({
   children, 
   show, 
   title, 
+  className = "",
   enableCancel = true, 
   enableOk = true, 
   cancelText = "CANCEL",
@@ -51,7 +53,7 @@ export const KotORModal = ({
   };
 
   return (
-    isVisible && <div className={`kotor-modal-backdrop ${gameKey} ${isVisible ? "visible" : ""}`}>
+    isVisible && <div className={`kotor-modal-backdrop ${gameKey} ${className} ${isVisible ? "visible" : ""}`}>
       <div className="kotor-modal"> 
         <h2 className="modal-heading">{title}</h2>
         <div className="modal-content">{children}</div>

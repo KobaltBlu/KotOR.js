@@ -36,6 +36,7 @@ export const ModalEULA = () => {
     <KotORModal 
       title="EULA" 
       show={showEULAModal} 
+      className="forge-style-modal eula-modal"
       onCancel={onCancel} 
       onOk={onOk}
     >

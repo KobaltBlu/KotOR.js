@@ -190,6 +190,10 @@ export class ForgeState {
 
         TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
           ForgeState.loaderHide();
+          const perfMonitor = (KotOR.GameState as any)?.PerformanceMonitor;
+          if(perfMonitor && typeof perfMonitor.toString === 'function'){
+            console.log(perfMonitor.toString());
+          }
           // ScriptEditorTab.InitNWScriptLanguage();
           resolve();
         });
