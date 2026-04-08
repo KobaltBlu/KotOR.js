@@ -173,6 +173,15 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
     >
       {items.map((item, index) => {
         const isOpen = openMenu === item.label;
+        const hasChildren = item.children && item.children.length > 0;
+        const handleTopClick = () => {
+          if(item.disabled) return;
+          if(hasChildren){
+            handleMenuClick(item.label);
+          }else if(item.onClick){
+            item.onClick();
+          }
+        };
         return (
           <div
             key={index}
@@ -182,20 +191,21 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
             }}
           >
             <button
-              onClick={() => handleMenuClick(item.label)}
+              onClick={handleTopClick}
+              disabled={item.disabled}
               style={{
                 height: '100%',
                 padding: '0 12px',
                 backgroundColor: isOpen ? '#2d2d2d' : 'transparent',
                 border: 'none',
-                color: '#ccc',
-                cursor: 'pointer',
+                color: item.disabled ? '#555' : '#ccc',
+                cursor: item.disabled ? 'not-allowed' : 'pointer',
                 fontSize: '13px',
                 fontFamily: 'inherit',
                 userSelect: 'none',
               }}
               onMouseEnter={(e) => {
-                if (!isOpen) {
+                if (!isOpen && !item.disabled) {
                   e.currentTarget.style.backgroundColor = '#2a2a2a';
                 }
               }}
@@ -207,7 +217,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
             >
               {item.label}
             </button>
-            {isOpen && item.children && (
+            {isOpen && hasChildren && (
               <div
                 style={{
                   position: 'absolute',
@@ -224,7 +234,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
                   setOpenSubmenu(null);
                 }}
               >
-                {item.children.map((child, childIndex) => renderMenuItem(child, childIndex, item.label))}
+                {item.children!.map((child, childIndex) => renderMenuItem(child, childIndex, item.label))}
               </div>
             )}
           </div>
