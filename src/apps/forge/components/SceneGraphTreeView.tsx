@@ -1,27 +1,35 @@
-import React, { useState, useCallback, memo, useMemo, useEffect } from "react";
+import React, { useState, useCallback, memo, useMemo, useEffect, CSSProperties } from "react";
 import { SceneGraphNode, SceneGraphNodeEventListenerTypes } from "@/apps/forge/SceneGraphNode";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
 import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
 import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
 
-export const SceneGraphTreeView = function (props: any) {
-  const manager: SceneGraphTreeViewManager = props.manager;
+export interface SceneGraphTreeViewProps {
+  manager: SceneGraphTreeViewManager;
+  /** Overrides default 350px list height (e.g. side panels with their own scroll host). */
+  listStyle?: CSSProperties;
+}
+
+export const SceneGraphTreeView = function (props: SceneGraphTreeViewProps) {
+  const manager = props.manager;
+  const listStyle = props.listStyle;
   const [nodes, setNodes] = useState<SceneGraphNode[]>([]);
 
-  const onBuild = useCallback((nodes: SceneGraphNode[]) => {
-    setNodes([...nodes]);
-  }, [manager]);
+  const onBuild = useCallback((built: SceneGraphNode[]) => {
+    setNodes([...built]);
+  }, []);
 
   useEffect( () => {
     if(!manager){ return; }
     manager.addEventListener('onBuild', onBuild);
+    // onBuild may have run before this component mounted (e.g. UI3DRenderer setCanvas); sync roots now.
+    setNodes([...(manager.parentNodes ?? [])]);
     return () => {
       manager.removeEventListener('onBuild', onBuild);
     }
-  }, [manager]);
+  }, [manager, onBuild]);
   return (
-    <ForgeTreeView style={{ height: '350px', overflow: 'auto'}}>
+    <ForgeTreeView style={listStyle ?? { height: '350px', overflow: 'auto'}}>
     {
       nodes.map( (node: SceneGraphNode) => {
         return (

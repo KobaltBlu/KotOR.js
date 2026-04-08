@@ -55,6 +55,24 @@
       margin-left: initial;
     }
   }
+
+  button.keyframe-control-icon {
+    margin-left: 15px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: inherit;
+    line-height: inherit;
+    &:nth-child(1) {
+      margin-left: initial;
+    }
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
 }
 
 .keyframe-bar {

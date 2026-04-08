@@ -135,8 +135,35 @@ export class LIPObject {
     return keyframe;
   }
 
+  removeKeyFrame(keyframe: ILIPKeyFrame): boolean {
+    const i = this.keyframes.indexOf(keyframe);
+    if (i < 0) return false;
+    this.keyframes.splice(i, 1);
+    this.reIndexKeyframes();
+    return true;
+  }
+
   update(delta = 0, model: OdysseyModel3D){
     if(model){
+
+      if (!this.keyframes.length) {
+        if (this.elapsed >= this.duration) {
+          if (model.userData.moduleObject)
+            model.userData.moduleObject.lipObject = undefined;
+          if (this.anim) {
+            for (let i = 0; i < this.anim.nodes.length; i++) {
+              let modelNode: any = model.animNodeCache[this.anim.nodes[i].name];
+              if (typeof modelNode != 'undefined') {
+                modelNode.lipping = false;
+              }
+            }
+          }
+        } else {
+          this.elapsed += delta;
+        }
+        this.lastTime = this.elapsed;
+        return;
+      }
 
       let lastFrame = 0;
       let framesLen = this.keyframes.length;

@@ -11,10 +11,13 @@ import { TabLIPEditorOptionsState } from "@/apps/forge/states/tabs/tab-lip-edito
 import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
 import { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
+import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
 
-const DEFAULT_HEAD = 'p_bastilah';
+/** Default LIP preview head resref; persisted under `lip_head` in localStorage. */
+export const LIP_EDITOR_DEFAULT_HEAD = 'p_bastilah';
+const DEFAULT_HEAD = LIP_EDITOR_DEFAULT_HEAD;
 
 export type TabLIPEditorStateEventListenerTypes =
 TabStateEventListenerTypes & 
@@ -38,6 +41,12 @@ export interface TabLIPEditorStateEventListeners extends TabStateEventListeners 
   onDurationChange: Function[],
 }
 
+export interface LIPUndoSnapshot {
+  keyframes: { time: number; shape: number; uuid: string }[];
+  duration: number;
+  selected_frame_uuid: string | undefined;
+}
+
 export class TabLIPEditorState extends TabState {
 
   tabName: string = `LIP Editor`;
@@ -49,7 +58,7 @@ export class TabLIPEditorState extends TabState {
   gainNode: GainNode;
   source: AudioBufferSourceNode;
   preview_gain: number = 0.5;
-  audio_buffer: AudioBuffer;
+  audio_buffer: AudioBuffer|undefined;
   playbackRate: number = 1;
   
   utilitiesTabManager: EditorTabManager = new EditorTabManager();
@@ -63,9 +72,9 @@ export class TabLIPEditorState extends TabState {
   scrubbingTimeout: NodeJS.Timeout|number;
   current_head: string = DEFAULT_HEAD;
   audio_name: string;
-  selected_frame: ILIPKeyFrame;
+  selected_frame: ILIPKeyFrame|undefined;
   dragging_frame: ILIPKeyFrame|undefined;
-  dragging_frame_snapshot: ILIPKeyFrame;
+  dragging_frame_snapshot: ILIPKeyFrame|undefined;
   poseFrame: boolean;
   max_timeline_zoom: number = 1000;
   min_timeline_zoom: number = 50;
@@ -98,13 +107,17 @@ export class TabLIPEditorState extends TabState {
     this.gainNode.gain.value = this.preview_gain;
     this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
 
-    this.current_head = localStorage.getItem('lip_head') !== null ? localStorage.getItem('lip_head') as string : DEFAULT_HEAD;
+    const storedHead = localStorage.getItem('lip_head')?.trim();
+    const headCandidate = storedHead && storedHead.length ? storedHead : DEFAULT_HEAD;
+    this.current_head = this.resolvePreviewHead(headCandidate);
+    localStorage.setItem('lip_head', this.current_head);
     
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.scene.add(this.head_hook);
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
 
     this.ui3DRenderer.sceneGraphManager.parentNodes.push(this.keyframesSceneGraphNode);
+    this.ui3DRenderer.sceneGraphManager.rebuild();
 
     this.lipOptionsTab = new TabLIPEditorOptionsState({
       parentTab: this
@@ -131,12 +144,63 @@ export class TabLIPEditorState extends TabState {
     this.ui3DRenderer.camera.position.set(0.0, 0.5, 0.1);
     this.ui3DRenderer.camera.lookAt(0, 0, 0);
 
+    // Ensure persisted preview head is present when tab is shown,
+    // even if openFile has not completed yet.
+    if(!(this.head instanceof THREE.Object3D)){
+      this.loadHead(this.current_head);
+    }
+
     this.ui3DRenderer.render();
   }
 
   hide(): void {
     super.hide();
     this.ui3DRenderer.enabled = false;
+  }
+
+  // ── Undo / Redo ─────────────────────────────────────────────────────────
+
+  protected captureUndoState(): LIPUndoSnapshot {
+    return {
+      keyframes: this.lip.keyframes.map(kf => ({ time: kf.time, shape: kf.shape, uuid: kf.uuid })),
+      duration: this.lip.duration,
+      selected_frame_uuid: this.selected_frame?.uuid,
+    };
+  }
+
+  protected applyUndoState(snapshot: LIPUndoSnapshot): void {
+    // Rebuild the keyframes array from the snapshot, preserving uuid identity
+    // so the UI can re-select by uuid without object reference tricks.
+    this.lip.keyframes = snapshot.keyframes.map(s => ({
+      time: s.time, shape: s.shape, uuid: s.uuid,
+    } as ILIPKeyFrame));
+    this.lip.duration = snapshot.duration;
+    this.selected_frame = this.lip.keyframes.find(kf => kf.uuid === snapshot.selected_frame_uuid);
+    if (this.file) this.file.unsaved_changes = true;
+    this.setDuration(snapshot.duration);
+    this.reloadKeyFrames();
+    if (this.selected_frame) {
+      this.processEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFrameSelect', [this.selected_frame]);
+    }
+  }
+
+  // ── Private helpers ──────────────────────────────────────────────────────
+
+  /** Lowercase resref that exists in heads.2da when available, else first row or the normalized preference. */
+  private resolvePreviewHead(name: string): string {
+    const normalized = (name || DEFAULT_HEAD).trim().toLowerCase() || DEFAULT_HEAD;
+    try {
+      const rows = KotOR.TwoDAManager.datatables.get('heads')?.rows;
+      if (!rows) return normalized;
+      const valid = Object.values(rows)
+        .map((r: any) => String(r?.head ?? '').trim().toLowerCase())
+        .filter(Boolean);
+      if (!valid.length) return normalized;
+      if (valid.includes(normalized)) return normalized;
+      return valid[0];
+    } catch {
+      return normalized;
+    }
   }
 
   openFile(file?: EditorFile){
@@ -167,16 +231,54 @@ export class TabLIPEditorState extends TabState {
               });
             });
           });
-        });
+        }).catch(reject);
+      } else {
+        reject(new Error('TabLIPEditorState.openFile requires an EditorFile'));
       }
     });
   }
 
+  newFile(): Promise<void> {
+    // Create a placeholder EditorFile if one isn't already attached.
+    if (!(this.file instanceof EditorFile)) {
+      this.file = new EditorFile({
+        resref: 'untitled',
+        reskey: KotOR.ResourceTypes.lip,
+        location: FileLocationType.OTHER,
+      });
+    }
+    this.tabName = this.file.getFilename();
+
+    // Reset to a clean blank LIP (no keyframes, 1 s default duration).
+    this.lip = new KotOR.LIPObject(new Uint8Array(0), () => {
+      // LIPObject seeds one keyframe when given an empty buffer; clear it so
+      // the editor opens genuinely blank.
+      this.lip.keyframes = [];
+      this.lip.duration = 1;
+    });
+    this.lip.file = `${this.file.resref}.lip`;
+
+    this.selected_frame = undefined;
+    this.file.unsaved_changes = true;
+
+    this.setDuration(this.lip.duration);
+    this.reloadKeyFrames();
+    this.processEventListener<TabLIPEditorStateEventListenerTypes>('onLIPLoaded', [this.lip]);
+
+    return this.loadHead(this.current_head);
+  }
+
   loadHead(model_name = DEFAULT_HEAD){
     return new Promise<void>( (resolve, reject) => {
-      KotOR.MDLLoader.loader.load(model_name)
+      const resolved = this.resolvePreviewHead(model_name || DEFAULT_HEAD);
+      if(this.current_head === resolved && this.head instanceof THREE.Object3D){
+        this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadChange', []);
+        resolve();
+        return;
+      }
+      KotOR.MDLLoader.loader.load(resolved)
       .then((mdl: KotOR.OdysseyModel) => {
-        this.current_head = model_name;
+        this.current_head = resolved;
         localStorage.setItem('lip_head', this.current_head);
         KotOR.OdysseyModel3D.FromMDL(mdl, {
           context: this.ui3DRenderer,
@@ -200,6 +302,7 @@ export class TabLIPEditorState extends TabState {
           };
 
           this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadLoad', [model]);
+          this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadChange', []);
           resolve();
         }).catch(resolve)
       }).catch(resolve)
@@ -207,17 +310,71 @@ export class TabLIPEditorState extends TabState {
   }
 
   loadSound(sound = 'nm35aabast06217_'){
-    return new Promise<void>( (resolve, reject) => {
-      KotOR.AudioLoader.LoadStreamWave(sound).then((data: any) => {
-        this.audio_name = sound;
-        KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data, (buffer: AudioBuffer) => {
-          this.audio_buffer = buffer;
-          this.processEventListener<TabLIPEditorStateEventListenerTypes>('onAudioLoad', [this, buffer]);
-          resolve();
-        });
-      }, (e: any) => {
+    return new Promise<void>( (resolve) => {
+      const finishLoad = (buffer?: AudioBuffer, error?: any) => {
+        this.audio_buffer = buffer;
+        this.processEventListener<TabLIPEditorStateEventListenerTypes>('onAudioLoad', [this, buffer, error]);
         resolve();
+      };
+
+      KotOR.AudioLoader.LoadStreamWave(sound).then((data: Uint8Array) => {
+        this.audio_name = sound;
+        try{
+          // decodeAudioData requires an ArrayBuffer, not a Uint8Array.
+          // Handle non-zero byteOffset views to avoid a detached-buffer error.
+          const ab: ArrayBuffer = (
+            data.byteOffset === 0 && data.byteLength === data.buffer.byteLength
+              ? data.buffer
+              : data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+          );
+          KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(
+            ab,
+            (buffer: AudioBuffer) => finishLoad(buffer),
+            (error: any) => finishLoad(undefined, error)
+          );
+        }catch(error){
+          finishLoad(undefined, error);
+        }
+      }, (error: any) => {
+        finishLoad(undefined, error);
       });
+    });
+  }
+
+  loadSoundFromFile(): Promise<void> {
+    return new Promise<void>((resolve) => {
+      ForgeFileSystem.OpenFileBuffer({ ext: ['wav', 'mp3'] }).then((data: Uint8Array) => {
+        if (!data || data.byteLength === 0) { resolve(); return; }
+        const finishLoad = (buffer?: AudioBuffer, error?: any) => {
+          this.audio_buffer = buffer;
+          this.processEventListener<TabLIPEditorStateEventListenerTypes>('onAudioLoad', [this, buffer, error]);
+          resolve();
+        };
+        try {
+          const af = new KotOR.AudioFile(data);
+          af.getPlayableByteStream().then((pcm: Uint8Array) => {
+            try {
+              const ab: ArrayBuffer = (
+                pcm.byteOffset === 0 && pcm.byteLength === pcm.buffer.byteLength
+                  ? pcm.buffer
+                  : pcm.buffer.slice(pcm.byteOffset, pcm.byteOffset + pcm.byteLength)
+              );
+              KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(
+                ab,
+                (buffer: AudioBuffer) => {
+                  this.audio_name = '(custom)';
+                  finishLoad(buffer);
+                },
+                (error: any) => finishLoad(undefined, error)
+              );
+            } catch(error) {
+              finishLoad(undefined, error);
+            }
+          }).catch((error: any) => finishLoad(undefined, error));
+        } catch(error) {
+          finishLoad(undefined, error);
+        }
+      }).catch(() => resolve());
     });
   }
 
@@ -376,13 +533,29 @@ export class TabLIPEditorState extends TabState {
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFrameSelect', [keyframe]);
   }
 
+  removeKeyFrame(keyframe: ILIPKeyFrame|undefined){
+    if(!keyframe) return;
+    this.captureUndoSnapshot();
+    if(!this.lip.removeKeyFrame(keyframe)) return;
+    if(this.file) this.file.unsaved_changes = true;
+    if(this.selected_frame === keyframe){
+      if(this.lip.keyframes.length){
+        this.selectKeyFrame(this.lip.keyframes[0]);
+      }else{
+        this.selected_frame = undefined;
+      }
+    }
+    this.reloadKeyFrames();
+  }
+
   setDuration(value: number = 0){
     this.lip.duration = value;
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onDurationChange', [value]);
   }
 
   selectNextKeyFrame(){
-    let index = this.lip.keyframes.indexOf(this.selected_frame);
+    if(!this.lip.keyframes.length) return;
+    let index = this.lip.keyframes.indexOf(this.selected_frame as ILIPKeyFrame);
     if(index == -1){
       this.selectKeyFrame(this.lip.keyframes[0]);
     }else{
@@ -396,7 +569,8 @@ export class TabLIPEditorState extends TabState {
   }
 
   selectPreviousKeyFrame(){
-    let index = this.lip.keyframes.indexOf(this.selected_frame);
+    if(!this.lip.keyframes.length) return;
+    let index = this.lip.keyframes.indexOf(this.selected_frame as ILIPKeyFrame);
     if(index == -1){
       this.selectKeyFrame(this.lip.keyframes[0]);
     }else{
@@ -410,15 +584,26 @@ export class TabLIPEditorState extends TabState {
   }
 
   addKeyFrame(time: number = 0, shape: number = 0){
+    this.captureUndoSnapshot();
     const newFrame = this.lip.addKeyFrame(time, shape);
     this.reloadKeyFrames();
-    this.file.unsaved_changes = true;
+    if(this.file) this.file.unsaved_changes = true;
     return newFrame;
   }
 
   reloadKeyFrames(){
     this.keyframesSceneGraphNode.setNodes(this.getKeyframesAsSceneGraphNodes());
+    this.ui3DRenderer.sceneGraphManager.rebuild();
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFramesChange');
+  }
+
+  finalizeKeyframeDrag(){
+    if(!this.dragging_frame || !this.dragging_frame_snapshot) return;
+    if(this.dragging_frame.time !== this.dragging_frame_snapshot.time){
+      this.lip.reIndexKeyframes();
+      if(this.file) this.file.unsaved_changes = true;
+      this.reloadKeyFrames();
+    }
   }
 
   getKeyframesAsSceneGraphNodes(){
@@ -434,6 +619,7 @@ export class TabLIPEditorState extends TabState {
   }
 
   fitDurationToKeyFrames(){
+    this.captureUndoSnapshot();
     const duration = this.lip.keyframes.reduce((a: number, b: ILIPKeyFrame) => Math.max(a, b.time), -Infinity);
     this.setDuration(duration);
   }
@@ -442,14 +628,12 @@ export class TabLIPEditorState extends TabState {
     ForgeFileSystem.OpenFileBuffer({ext: ['phn']}).then( (buffer: Uint8Array ) => {
       const textDecoder = new TextDecoder();
       let data = textDecoder.decode(buffer);
-      console.log('phn', data);
       let eoh = data.indexOf('END OF HEADER');
       if(eoh > -1){
-        data = data.substr(eoh+14);
+        data = data.slice(eoh + 14);
         let keyframes = data.trim().split('\r\n');
 
-        console.log(keyframes);
-
+        this.captureUndoSnapshot();
         this.lip.keyframes = [];
 
         let PHN_INVALID = -1;
@@ -689,7 +873,6 @@ export class TabLIPEditorState extends TabState {
           }
 
           if(keyframe.shape == last_shape || keyframe.shape == PHN_INVALID){
-            console.log('skipping');
             continue;
           }
 
@@ -700,9 +883,15 @@ export class TabLIPEditorState extends TabState {
         }
 
         this.lip.reIndexKeyframes();
-        this.selectKeyFrame(this.lip.keyframes[0]);
+        if(this.lip.keyframes.length){
+          this.selectKeyFrame(this.lip.keyframes[0]);
+        }else{
+          this.selected_frame = undefined;
+        }
         this.lip.elapsed = 0;
-
+        this.setDuration(this.lip.duration);
+        this.reloadKeyFrames();
+        if(this.file) this.file.unsaved_changes = true;
       }
     });
   }
