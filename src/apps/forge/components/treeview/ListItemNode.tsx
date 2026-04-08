@@ -232,6 +232,13 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
         focusNodeAtIndex(visibleNodes, visibleNodes.length - 1);
       break;
       case 'Enter':
+        e.preventDefault();
+        if (onDoubleClick) {
+          onDoubleClick();
+        } else if (onClick) {
+          onClick();
+        }
+      break;
       case ' ':
         e.preventDefault();
         if (onClick) {
