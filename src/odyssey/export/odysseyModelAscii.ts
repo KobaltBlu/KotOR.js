@@ -533,8 +533,17 @@ export function exportOdysseyModelAscii(model: OdysseyModel, options: ExportOdys
   const geomName = model.geometryHeader.modelName;
   const superName = model.modelHeader.superModelName || "null";
   const headLink =
-    model.geometryHeader.rootNodeOffset !== model.geometryHeader.rootNodeOffset2 ? 1 : 0;
-  const compress = collectCompressedQuaternionUsage(model) ? 1 : 0;
+    model.asciiHeadLink !== undefined
+      ? model.asciiHeadLink
+      : model.geometryHeader.rootNodeOffset !== model.geometryHeader.rootNodeOffset2
+        ? 1
+        : 0;
+  const compress =
+    model.asciiCompressQuaternions !== undefined
+      ? model.asciiCompressQuaternions
+      : collectCompressedQuaternionUsage(model)
+        ? 1
+        : 0;
 
   let out = "";
   out += "# Exported with KotOR.js";
@@ -553,6 +562,17 @@ export function exportOdysseyModelAscii(model: OdysseyModel, options: ExportOdys
   out += nl + "  bmin " + prepareFloat(model.modelHeader.boundingMinX) + " " + prepareFloat(model.modelHeader.boundingMinY) + " " + prepareFloat(model.modelHeader.boundingMinZ);
   out += nl + "  bmax " + prepareFloat(model.modelHeader.boundingMaxX) + " " + prepareFloat(model.modelHeader.boundingMaxY) + " " + prepareFloat(model.modelHeader.boundingMaxZ);
   out += nl + "  radius " + prepareFloat(model.modelHeader.radius);
+  if (model.asciiLayoutPosition) {
+    const lp = model.asciiLayoutPosition;
+    out +=
+      nl +
+      "  layoutposition " +
+      prepareFloat(lp.x) +
+      " " +
+      prepareFloat(lp.y) +
+      " " +
+      prepareFloat(lp.z);
+  }
 
   for (const entryName of model.names) {
     const node = geometryNodeForName(model, entryName);

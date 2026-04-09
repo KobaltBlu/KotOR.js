@@ -149,8 +149,19 @@ export class TabModelViewerState extends TabState {
   
         file.readFile().then( (response) => {
           this.mdl = response.buffer;
-          this.mdx = response.buffer2 as Buffer;
-          this.odysseyModel = new KotOR.OdysseyModel(new BinaryReader(response.buffer), new BinaryReader(response.buffer2 as Buffer));
+          this.mdx = (response.buffer2 as Buffer) ?? new Uint8Array(0);
+          const head = new TextDecoder("utf-8", { fatal: false }).decode(
+            this.mdl.subarray(0, Math.min(512, this.mdl.length)),
+          );
+          const asciiMdl = /\b(beginmodelgeom|newmodel|# MODEL ASCII)\b/i.test(head);
+          if (asciiMdl) {
+            this.odysseyModel = KotOR.parseOdysseyModelAscii(new TextDecoder("utf-8").decode(this.mdl));
+          } else {
+            this.odysseyModel = new KotOR.OdysseyModel(
+              new BinaryReader(response.buffer),
+              new BinaryReader((response.buffer2 as Buffer) ?? new Uint8Array(0)),
+            );
+          }
           KotOR.OdysseyModel3D.FromMDL(this.odysseyModel, {
             // manageLighting: false,
             context: this.ui3DRenderer,
@@ -490,7 +501,7 @@ export class TabModelViewerState extends TabState {
     const allTextures = new Set<string>();
 
     progress.setProgress(0, 0, `Collecting model assets: ${modelName}`);
-    await collectModelAssets(modelName, visited, allModels, allTextures, this.mdl, this.mdx);
+    await collectModelAssets(modelName, visited, allModels, allTextures, this.mdl, this.mdx, this.odysseyModel);
     progress.setProgress(0, 0, 'Resolving TXI texture references...');
     await collectTxiReferencedTextures(allTextures);
 
@@ -498,8 +509,8 @@ export class TabModelViewerState extends TabState {
     const mdl = this.mdl;
     const mdx = this.mdx;
     const overrideFetch = async (resref: string) => {
-      if (resref === primaryName && mdl && mdx) {
-        return { mdl, mdx };
+      if (resref === primaryName && mdl) {
+        return { mdl, mdx: mdx && mdx.length ? mdx : new Uint8Array(0) };
       }
       return fetchModelBuffers(resref);
     };
@@ -524,9 +535,9 @@ export class TabModelViewerState extends TabState {
 
     const baseName =
       (this.odysseyModel.geometryHeader.modelName || this.file?.getFilename() || "model")
-        .replace(/\.(mdl|mdx)$/i, "")
+        .replace(/\.(mdl\.ascii|mdl|mdx)$/i, "")
         .trim() || "model";
-    const suggestedName = `${baseName}.ascii.mdl`;
+    const suggestedName = `${baseName}.mdl.ascii`;
     const text = KotOR.exportOdysseyModelAscii(this.odysseyModel);
     const payload = new TextEncoder().encode(text);
 
@@ -535,7 +546,7 @@ export class TabModelViewerState extends TabState {
         title: "Export MDL as ASCII",
         defaultPath: suggestedName,
         properties: ["createDirectory"],
-        filters: [{ name: "MDL ASCII", extensions: ["mdl"] }],
+        filters: [{ name: "MDL ASCII", extensions: ["mdl.ascii", "mdl"] }],
       });
       if (!savePath?.canceled && typeof savePath?.filePath === "string") {
         await fs.promises.writeFile(savePath.filePath, payload);
@@ -549,7 +560,7 @@ export class TabModelViewerState extends TabState {
         types: [
           {
             description: "MDL ASCII",
-            accept: { "text/plain": [".mdl"] },
+            accept: { "text/plain": [".mdl.ascii", ".mdl"] },
           },
         ],
       });

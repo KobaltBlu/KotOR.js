@@ -145,6 +145,8 @@ export async function collectModelAssets(
   allTextures: Set<string>,
   primaryMdl?: Uint8Array,
   primaryMdx?: Uint8Array,
+  /** When the open file is `*.mdl.ascii` (no MDX), use the already-parsed model from the viewer. */
+  primaryOdysseyModel?: KotOR.OdysseyModel,
 ): Promise<void> {
   resref = resref.toLowerCase().trim();
   if (!resref || visited.has(resref)) return;
@@ -153,7 +155,10 @@ export async function collectModelAssets(
 
   let odysseyModel: KotOR.OdysseyModel | undefined;
   try {
-    if (primaryMdl && primaryMdx) {
+    const primaryParsedName = primaryOdysseyModel?.geometryHeader?.modelName?.toLowerCase().trim() ?? "";
+    if (primaryOdysseyModel && primaryParsedName === resref) {
+      odysseyModel = primaryOdysseyModel;
+    } else if (primaryMdl && primaryMdx && primaryMdl.length && primaryMdx.length) {
       odysseyModel = new KotOR.OdysseyModel(new BinaryReader(primaryMdl), new BinaryReader(primaryMdx));
     } else {
       odysseyModel = await KotOR.MDLLoader.loader.load(resref);

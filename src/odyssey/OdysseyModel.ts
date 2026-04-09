@@ -45,6 +45,12 @@ export class OdysseyModel {
 
   namesArrayDefinition: IOdysseyArrayDefinition;
   nameOffsetsArray: number[] = [];
+
+  /** Banner / optional geometry fields preserved when loading from {@link OdysseyModel.fromAscii}. */
+  asciiCompressQuaternions?: number;
+  asciiHeadLink?: number;
+  /** MDLedit `layoutposition` (beginmodelgeom). */
+  asciiLayoutPosition?: { x: number; y: number; z: number };
   
   constructor( mdlReader: BinaryReader, mdxReader: BinaryReader ){
 
@@ -208,4 +214,5 @@ export class OdysseyModel {
     const mdxReader = new BinaryReader(mdx_buffer);
     return new OdysseyModel(mdlReader, mdxReader);
   }
+  
 }

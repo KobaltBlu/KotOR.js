@@ -27,6 +27,8 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   vertices: any[];
   normals: number[];
   colors: number[];
+  /** Vertex color index list (ASCII / MDLedit); optional. */
+  colorIndices?: number[];
   tvectors: number[][];
   texCords: any[][];
   tangents: any[][];
