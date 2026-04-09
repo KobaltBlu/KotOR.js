@@ -53,7 +53,7 @@ export const TabModelViewer = function(props: any){
 
   return (
     <LayoutContainerProvider>
-      <LayoutContainer southContent={southPanel} southSize={140} eastContent={eastPanel}>
+      <LayoutContainer southContent={southPanel} southSize={140} eastContent={eastPanel} eastSize={340}>
         <UI3DRendererView context={tab.ui3DRenderer} showMenuBar={true} menuItems={menuItems}>
           <UI3DOverlayComponent context={tab.ui3DRenderer}></UI3DOverlayComponent>
         </UI3DRendererView>

@@ -1314,6 +1314,30 @@ input[type="range"].volume:before {
     padding: 2.5px $spacing-sm;
     border-bottom: $border-width-thick solid $border-accent-darkest;
     font-weight: bold;
+
+    &-collapsible {
+      cursor: pointer;
+      user-select: none;
+
+      &:hover {
+        background: lighten($border-secondary, 5%);
+      }
+    }
+  }
+
+  .section-collapse-arrow {
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 10px;
+    transition: transform 0.15s ease;
+
+    &.open {
+      transform: rotate(90deg);
+    }
+  }
+
+  &-collapsed .section-header {
+    border-bottom-color: transparent;
   }
 
   .section-content {
@@ -1575,6 +1599,138 @@ input[type="range"].volume:before {
   .navbar.navbar-sidebar-wizard-horizontal a {
     color: $text-primary;
   }
+}
+
+// =============================================================================
+// MODEL VIEWER PROPERTIES PANEL
+// =============================================================================
+
+.mvp-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.mvp-scene-outliner {
+  flex: 0 0 auto;
+  border-bottom: 2px solid $border-accent-darkest;
+}
+
+.mvp-properties-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.mvp-no-selection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg;
+  color: $text-secondary;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.mvp-node-properties {
+  .property-editor-row {
+    .property-editor-value {
+      flex: 1;
+      font-size: 11px;
+      color: $text-primary;
+      text-align: right;
+      word-break: break-all;
+    }
+  }
+}
+
+.mvp-vec3 {
+  display: flex;
+  gap: 6px;
+  font-family: monospace;
+  font-size: 11px;
+
+  span {
+    flex: 1;
+    white-space: nowrap;
+  }
+}
+
+.mvp-vec3-input {
+  display: flex;
+  gap: 4px;
+  font-family: monospace;
+  font-size: 11px;
+
+  label {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    min-width: 0;
+    padding: 2px 4px;
+    font-family: monospace;
+    font-size: 11px;
+    margin-bottom: 0;
+    line-height: 1.2;
+  }
+}
+
+.mvp-color-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #555;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.mvp-texture-preview {
+  margin-bottom: $spacing-sm;
+
+  canvas {
+    margin: $spacing-sm auto;
+    display: block;
+    border: 1px solid #444;
+    image-rendering: pixelated;
+  }
+}
+
+.mvp-texture-swap {
+  margin-top: $spacing-sm;
+}
+
+.mvp-swap-controls {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.mvp-checkbox-row {
+  padding: 4px 8px;
+  font-size: 12px;
+
+  label {
+    cursor: pointer;
+  }
+}
+
+.mvp-defines {
+  font-size: 10px;
+  word-break: break-word;
+  line-height: 1.4;
 }
 
 // =============================================================================

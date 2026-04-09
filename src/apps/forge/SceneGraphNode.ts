@@ -99,6 +99,11 @@ export class SceneGraphNode extends EventListenerModel {
     this.processEventListener<SceneGraphNodeEventListenerTypes>('onSelectStateChange', [this.name]);
   }
 
+  deselect(){
+    this.selected = false;
+    this.processEventListener<SceneGraphNodeEventListenerTypes>('onSelectStateChange', [this.name]);
+  }
+
   traverseAll(cb: Function){
     this.traverseChildren(cb);
     this.traverseAncestors(cb);

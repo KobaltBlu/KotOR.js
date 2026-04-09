@@ -38,7 +38,33 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
   attachUI3DRenderer(context: UI3DRenderer){
     this.context = context;
     this.context.addEventListener('onModuleSet', this.rebuild.bind(this));
+    this.context.addEventListener('onSelect', (object: any) => {
+      this.syncSelection(object);
+    });
     this.rebuild();
+  }
+
+  syncSelection(object: any){
+    const resolved = this.resolveOdysseyObject(object);
+    this.sceneNode.traverseChildren((node: SceneGraphNode) => {
+      if (node.data != null && node.data === resolved) {
+        if (!node.selected) node.select();
+      } else {
+        if (node.selected) node.deselect();
+      }
+    });
+  }
+
+  private resolveOdysseyObject(object: any): any {
+    if (!object) return undefined;
+    let current = object;
+    while (current) {
+      if (current instanceof OdysseyObject3D && current.odysseyModelNode) {
+        return current;
+      }
+      current = current.parent;
+    }
+    return object;
   }
 
   rebuild(){

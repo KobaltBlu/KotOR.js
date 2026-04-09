@@ -1,8 +1,11 @@
 import React, { useState } from "react";
-import { TabModelViewerState } from "@/apps/forge/states/tabs";
+import * as THREE from "three";
+import { TabModelViewerState, TabModelViewerStateEventListenerTypes } from "@/apps/forge/states/tabs";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { Form } from "react-bootstrap";
 import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
+import { SectionContainer } from "@/apps/forge/components/SectionContainer";
+import { NodePropertiesPanel } from "@/apps/forge/components/tabs/tab-model-viewer/panels/NodePropertiesPanel";
 
 import * as KotOR from "@/apps/forge/KotOR";
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
@@ -10,31 +13,35 @@ import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 export const ModelViewerSidebarComponent = function(props: any){
   const tab: TabModelViewerState = props.tab as TabModelViewerState;
 
-  const [selectedTab, setSelectedTab] = useState<string>('camera');
-
-  const [animations, setAnimations] = useState<KotOR.OdysseyModelAnimation[]>([]);
-  const [selectedAnimation, setSelectedAnimation] = useState<number>(tab.selectedAnimationIndex);
-  const [looping, setLooping] = useState<boolean>(tab.looping);
-
   const [layouts, setLayouts] = useState<KotOR.IKEYEntry[]>([]);
   const [selectedLayout, setSelectedLayout] = useState<number>(tab.selectedLayoutIndex);
 
   const [cameraSpeed, setCameraSpeed] = useState<number>(UI3DRenderer.CameraMoveSpeed);
 
-  const onEditorFileLoad = () => {
-    setAnimations(tab.animations);
-  }
+  const [selectedNode, setSelectedNode] = useState<KotOR.OdysseyObject3D | undefined>(undefined);
+  const [selectedModelNode, setSelectedModelNode] = useState<KotOR.OdysseyModelNode | undefined>(undefined);
 
-  const onAnimationChange = function(){
-    setSelectedAnimation(tab.selectedAnimationIndex);
+  const [cameras, setCameras] = useState<{ name: string; camera: THREE.PerspectiveCamera; isMain: boolean }[]>([]);
+  const [selectedCameraIndex, setSelectedCameraIndex] = useState<number>(0);
+  const [cameraFov, setCameraFov] = useState<number>(tab.ui3DRenderer.camera?.fov ?? 50);
+
+  const onNodeSelect = function(node: KotOR.OdysseyObject3D | undefined, modelNode: KotOR.OdysseyModelNode | undefined){
+    setSelectedNode(node);
+    setSelectedModelNode(modelNode);
   };
 
-  const onLoopChange = function(){
-    setLooping(tab.looping);
+  const onEditorFileLoad = function(){
+    const available = tab.getAvailableCameras();
+    setCameras(available);
+    setSelectedCameraIndex(0);
+    setCameraFov(available[0]?.camera.fov ?? 50);
   };
 
-  useEffectOnce( () => { //constructor
+  const onCameraChange = function(camera: THREE.PerspectiveCamera){
+    setCameraFov(camera.fov);
+  };
 
+  useEffectOnce( () => {
     let keys: KotOR.IKEYEntry[] = [];
     let res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
     res_list.forEach( (res, index) => {
@@ -44,14 +51,14 @@ export const ModelViewerSidebarComponent = function(props: any){
     });
     setLayouts(keys);
 
+    tab.addEventListener<TabModelViewerStateEventListenerTypes>('onNodeSelect', onNodeSelect);
     tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
-    tab.addEventListener('onAnimationChange', onAnimationChange);
-    tab.addEventListener('onLoopChange', onLoopChange);
+    tab.addEventListener<TabModelViewerStateEventListenerTypes>('onCameraChange', onCameraChange);
 
-    return () => { //destructor
+    return () => {
+      tab.removeEventListener('onNodeSelect', onNodeSelect);
       tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
-      tab.removeEventListener('onAnimationChange', onAnimationChange);
-      tab.removeEventListener('onLoopChange', onLoopChange);
+      tab.removeEventListener('onCameraChange', onCameraChange);
     };
   });
 
@@ -62,26 +69,30 @@ export const ModelViewerSidebarComponent = function(props: any){
     UI3DRenderer.CameraMoveSpeed = value;
   };
 
-  const onBtnAlignToCameraHook = function(e: React.MouseEvent<HTMLButtonElement>){
-
-  }
-
-  const onAnimationSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = parseInt(e.target.value);
-    setSelectedAnimation(value);
-    tab.setAnimationByIndex(value);
+  const onCameraSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const idx = parseInt(e.target.value);
+    setSelectedCameraIndex(idx);
+    const entry = cameras[idx];
+    if (entry) {
+      tab.setCamera(entry.camera);
+      setCameraFov(entry.camera.fov);
+    }
   };
 
-  const onCheckboxLoopChange = function(e: React.ChangeEvent<HTMLInputElement>){
-    tab.setLooping(e.target.checked);
-    setLooping(e.target.checked);
-  }
+  const onCameraFovChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (isNaN(value)) return;
+    setCameraFov(value);
+    const entry = cameras[selectedCameraIndex];
+    if (entry) {
+      tab.setCameraFov(entry.camera, value);
+    }
+  };
 
   const onLayoutSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = parseInt(e.target.value);
     tab.selectedLayoutIndex = value;
     setSelectedLayout(value);
-    // tab.setLayoutByIndex(value);
   };
 
   const onBtnLoadLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -92,93 +103,69 @@ export const ModelViewerSidebarComponent = function(props: any){
     tab.disposeLayout();
   };
 
+  const isMainCamera = cameras[selectedCameraIndex]?.isMain ?? true;
+
   return (
-    <>
-      <div className="nodes-container" style={{ flex: 0.25, overflowY: 'auto' }}>
+    <div className="mvp-sidebar">
+      <div className="mvp-scene-outliner">
         <div className="toolbar-header">
           <b>Scene</b>
         </div>
-        <SceneGraphTreeView manager={tab.ui3DRenderer.sceneGraphManager}></SceneGraphTreeView>
+        <SceneGraphTreeView
+          manager={tab.ui3DRenderer.sceneGraphManager}
+          listStyle={{ height: '200px', overflow: 'auto' }}
+        />
       </div>
-      <div className="tab-host" style={{ flex: 0.75 }}>
-        <div className="tabs">
-          <ul className="tabs-menu tabs-flex-wrap">
-            <li className={`btn btn-tab ${selectedTab == 'camera' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('camera') }>Camera</a></li>
-            <li className={`btn btn-tab ${selectedTab == 'animation' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('animation') }>Animation</a></li>
-            <li className={`btn btn-tab ${selectedTab == 'nodes' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('nodes') }>Nodes</a></li>
-            <li className={`btn btn-tab ${selectedTab == 'utils' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('utils') }>Utils</a></li>
-          </ul>
-        </div>
-        <div className="tab-container">
-          <div className="tab-content" style={{display: (selectedTab == 'camera' ? 'block' : 'none')}}>
-            <div className="toolbar-header">
-              <b>Camera</b>
-            </div>
-            <Form.Select>
-              <option value="-1">Main</option>
-            </Form.Select>
+      <div className="mvp-properties-scroll">
+        {selectedNode && selectedModelNode ? (
+          <NodePropertiesPanel
+            node={selectedNode}
+            modelNode={selectedModelNode}
+            tab={tab}
+          />
+        ) : (
+          <div className="mvp-no-selection">
+            <span>Select a node to view properties</span>
+          </div>
+        )}
 
-            <div className="toolbar-header">
-              <b>Camera Speed</b>
-            </div>
-            <Form.Control type="number" min={1} max={250} value={cameraSpeed} onChange={onCameraSpeedChange} ></Form.Control>
-            <div className="button-group">
-              <button onClick={onBtnAlignToCameraHook}>Align to camera hook</button>
-            </div>
+        <SectionContainer name="Camera" collapsible>
+          <Form.Select size="sm" value={selectedCameraIndex} onChange={onCameraSelectChange}>
+            {cameras.map((entry, index) => (
+              <option key={index} value={index}>{entry.name}</option>
+            ))}
+            {cameras.length === 0 && <option value={0}>Main</option>}
+          </Form.Select>
+          <div className="property-editor-row">
+            <span className="property-editor-label">Speed</span>
+            <Form.Control size="sm" type="number" min={1} max={250} value={cameraSpeed} onChange={onCameraSpeedChange} />
           </div>
-          <div className="tab-content" style={{display: (selectedTab == 'animation' ? 'block' : 'none')}}>
-            <div className="toolbar-header">
-              <b>Animations</b>
+          {!isMainCamera && (
+            <div className="property-editor-row">
+              <span className="property-editor-label">FOV</span>
+              <Form.Control size="sm" type="number" min={1} max={179} value={Math.round(cameraFov)} onChange={onCameraFovChange} />
             </div>
-            <Form.Select value={selectedAnimation} onChange={onAnimationSelectChange}>
-              <option value={-1}>None</option>
-              {
-                animations.map( (animation, index) => {
-                  return <option value={index}>{animation.name}</option>
-                })
-              }
-            </Form.Select>
-            <b>Loop? </b><input type="checkbox" checked={looping} onChange={onCheckboxLoopChange} />
+          )}
+        </SectionContainer>
+
+        <SectionContainer name="Utilities" collapsible>
+          <div className="property-editor-row">
+            <span className="property-editor-label">Layout</span>
           </div>
-          <div className="tab-content" style={{display: (selectedTab == 'nodes' ? 'block' : 'none')}}>
-            <div className="toolbar-header">
-              <b>Name</b>
-            </div>
-            <input type="text" className="input" disabled />
-            <div className="toolbar-header">
-              <b>Texture</b>
-            </div>
-            <input type="text" className="input" disabled />
-            <div className="button-group">
-              <button>Change Texture</button>
-            </div>
+          <Form.Select size="sm" value={selectedLayout} onChange={onLayoutSelectChange}>
+            <option value={-1}>None</option>
+            {
+              layouts.map( (lytKEY) => {
+                return <option key={lytKEY.resId} value={lytKEY.resId}>{lytKEY.resRef}</option>
+              })
+            }
+          </Form.Select>
+          <div className="button-group">
+            <button className="btn btn-sm" onClick={onBtnLoadLayout}>Load</button>
+            <button className="btn btn-sm" onClick={onBtnDisposeLayout}>Dispose</button>
           </div>
-          <div className="tab-content" style={{display: (selectedTab == 'utils' ? 'block' : 'none')}}>
-            <div className="toolbar-header">
-              <b>Position</b>
-            </div>
-            <div className="button-group">
-              <button>Reset</button>
-              <button>Center</button>
-            </div>
-            <div className="toolbar-header">
-              <b>Layout</b>
-            </div>
-            <Form.Select value={selectedLayout} onChange={onLayoutSelectChange}>
-              <option value={-1}>None</option>
-              {
-                layouts.map( (lytKEY) => {
-                  return <option value={lytKEY.resId}>{lytKEY.resRef}</option>
-                })
-              }
-            </Form.Select>
-            <div className="button-group">
-              <button onClick={onBtnLoadLayout}>Load</button>
-              <button onClick={onBtnDisposeLayout}>Dispose</button>
-            </div>
-          </div>
-        </div>
+        </SectionContainer>
       </div>
-    </>
+    </div>
   );
 }

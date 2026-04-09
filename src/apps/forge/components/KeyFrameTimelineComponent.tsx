@@ -24,7 +24,8 @@ export const KeyFrameTimelineComponent = function(props: any){
 
   const onEditorFileLoad = function(){
     setAnimations( tab.animations );
-    setCurrentAnimation( tab.animations[0] );
+    setCurrentAnimation( tab.currentAnimation );
+    setSelectedAnimationIndex( tab.selectedAnimationIndex );
   };
 
   const onKeyFrameTrackZoomIn = function(){

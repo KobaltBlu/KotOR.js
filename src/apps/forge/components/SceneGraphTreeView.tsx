@@ -47,6 +47,7 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
   const depth: number = props.depth || 0;
   const [nodes, setNodes] = useState<SceneGraphNode[]>([...node.nodes]);
   const [openState, setOpenState] = useState<boolean>(node.open);
+  const [isSelected, setIsSelected] = useState<boolean>(node.selected);
   const [render, rerender] = useState<boolean>(false);
 
   const onNameChange = useCallback(() => {
@@ -61,20 +62,27 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
     setNodes([...node.nodes]);
   }, [node]);
 
+  const onSelectStateChange = useCallback(() => {
+    setIsSelected(node.selected);
+  }, [node]);
+
   useEffect( () => {
     // Initialize state from current node.nodes
     setNodes([...node.nodes]);
     setOpenState(node.open);
+    setIsSelected(node.selected);
     
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onNameChange', onNameChange);
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onExpandStateChange', onExpandStateChange);
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onNodesChange', onNodesChange);
+    node.addEventListener<SceneGraphNodeEventListenerTypes>('onSelectStateChange', onSelectStateChange);
     return () => {
       node.removeEventListener<SceneGraphNodeEventListenerTypes>('onNameChange', onNameChange);
       node.removeEventListener<SceneGraphNodeEventListenerTypes>('onExpandStateChange', onExpandStateChange);
       node.removeEventListener<SceneGraphNodeEventListenerTypes>('onNodesChange', onNodesChange);
+      node.removeEventListener<SceneGraphNodeEventListenerTypes>('onSelectStateChange', onSelectStateChange);
     }
-  }, [node, onNameChange, onExpandStateChange, onNodesChange]);
+  }, [node, onNameChange, onExpandStateChange, onNodesChange, onSelectStateChange]);
 
   const handleClick = useCallback(() => {
     if(typeof node.onClick === 'function'){
@@ -126,7 +134,7 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
       name={node.name}
       hasChildren={hasChildren}
       isExpanded={openState}
-      isSelected={false}
+      isSelected={isSelected}
       depth={depth}
       icon={node.icon}
       iconType={hasChildren ? 'folder' : 'file'}

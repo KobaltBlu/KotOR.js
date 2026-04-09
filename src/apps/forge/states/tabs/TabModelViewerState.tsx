@@ -23,7 +23,8 @@ export type TabModelViewerStateEventListenerTypes =
 TabStateEventListenerTypes & 
   ''|'onModelLoaded'|'onPlay'|'onPause'|'onStop'|'onAudioLoad'|'onHeadChange'|
   'onHeadLoad'|'onKeyFrameSelect'|'onKeyFrameTrackZoomIn'|'onKeyFrameTrackZoomOut'|
-  'onAnimate'|'onKeyFramesChange'|'onDurationChange'|'onAnimationChange'|'onLoopChange';
+  'onAnimate'|'onKeyFramesChange'|'onDurationChange'|'onAnimationChange'|'onLoopChange'|
+  'onNodeSelect'|'onCameraChange';
 
 export interface TabModelViewerStateEventListeners extends TabStateEventListeners {
   onModelLoaded: Function[],
@@ -41,6 +42,8 @@ export interface TabModelViewerStateEventListeners extends TabStateEventListener
   onDurationChange: Function[],
   onAnimationChange: Function[],
   onLoopChange: Function[],
+  onNodeSelect: Function[],
+  onCameraChange: Function[],
 }
 
 export class TabModelViewerState extends TabState {
@@ -54,6 +57,9 @@ export class TabModelViewerState extends TabState {
   mdx: Uint8Array;
 
   ui3DRenderer: UI3DRenderer;
+
+  selectedNode: KotOR.OdysseyObject3D | undefined;
+  selectedModelNode: KotOR.OdysseyModelNode | undefined;
 
   selectedAnimationIndex: number = -1;
   animations: KotOR.OdysseyModelAnimation[] = [];
@@ -104,6 +110,17 @@ export class TabModelViewerState extends TabState {
     
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', (object: THREE.Object3D | undefined) => {
+      const odysseyNode = TabModelViewerState.findOdysseyObject3D(object);
+      if (odysseyNode) {
+        this.selectedNode = odysseyNode;
+        this.selectedModelNode = odysseyNode.odysseyModelNode;
+      } else {
+        this.selectedNode = undefined;
+        this.selectedModelNode = undefined;
+      }
+      this.processEventListener<TabModelViewerStateEventListenerTypes>('onNodeSelect', [this.selectedNode, this.selectedModelNode]);
+    });
     this.ui3DRenderer.scene.add(this.groundMesh);
     this.ui3DRenderer.scene.add(this.layout_group);
 
@@ -395,6 +412,63 @@ export class TabModelViewerState extends TabState {
       (Math.random()-0.5*2) * spread,
       (Math.random()-0.5*2) * spread
     );
+  }
+
+  getAvailableCameras(): { name: string; camera: THREE.PerspectiveCamera; isMain: boolean }[] {
+    const result: { name: string; camera: THREE.PerspectiveCamera; isMain: boolean }[] = [];
+    result.push({ name: 'Main', camera: this.ui3DRenderer.camera, isMain: true });
+    for (const cam of this.ui3DRenderer.cameras) {
+      result.push({ name: cam.name || 'Camera Hook', camera: cam, isMain: false });
+    }
+    return result;
+  }
+
+  setCamera(camera: THREE.PerspectiveCamera) {
+    const isMain = camera === this.ui3DRenderer.camera;
+    this.ui3DRenderer.currentCamera = camera;
+
+    if (this.ui3DRenderer.orbitControls) {
+      this.ui3DRenderer.orbitControls.enabled = isMain;
+    }
+
+    camera.aspect = this.ui3DRenderer.width / this.ui3DRenderer.height;
+    camera.updateProjectionMatrix();
+
+    this.processEventListener<TabModelViewerStateEventListenerTypes>('onCameraChange', [camera]);
+  }
+
+  setCameraFov(camera: THREE.PerspectiveCamera, fov: number) {
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+    this.processEventListener<TabModelViewerStateEventListenerTypes>('onCameraChange', [camera]);
+  }
+
+  static findOdysseyObject3D(object: THREE.Object3D | undefined): KotOR.OdysseyObject3D | undefined {
+    let current: THREE.Object3D | null = object ?? null;
+    while (current) {
+      if (current instanceof KotOR.OdysseyObject3D && current.odysseyModelNode) {
+        return current;
+      }
+      current = current.parent;
+    }
+    return undefined;
+  }
+
+  async swapTexture(node: KotOR.OdysseyObject3D, newResRef: string): Promise<void> {
+    if (!node) return;
+    const mesh = node.children.find(c => (c as THREE.Mesh).isMesh) as THREE.Mesh | undefined;
+    const target = mesh || node;
+    const material = (target as any).material as THREE.ShaderMaterial | undefined;
+    if (!material || !material.uniforms) return;
+
+    const texture = await KotOR.TextureLoader.Load(newResRef);
+    if (texture) {
+      material.uniforms.map.value = texture;
+      material.uniformsNeedUpdate = true;
+      if (material.userData) {
+        material.userData.map = newResRef;
+      }
+    }
   }
 
   async extractModelAssets(): Promise<void> {
