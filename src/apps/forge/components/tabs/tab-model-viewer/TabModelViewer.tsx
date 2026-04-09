@@ -19,6 +19,10 @@ export const TabModelViewer = function(props: any){
           label: 'Extract Model Assets',
           onClick: () => tab.extractModelAssets(),
         },
+        {
+          label: 'Export MDL as ASCII…',
+          onClick: () => tab.exportOdysseyModelAscii(),
+        },
       ],
     },
     {

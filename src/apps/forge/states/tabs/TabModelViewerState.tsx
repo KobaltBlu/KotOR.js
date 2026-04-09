@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
 import * as KotOR from "@/apps/forge/KotOR";
@@ -18,6 +19,8 @@ import {
   showExtractionResults,
   createProgressModal,
 } from "@/apps/forge/helpers/AssetExtraction";
+
+declare const dialog: any;
 
 export type TabModelViewerStateEventListenerTypes =
 TabStateEventListenerTypes & 
@@ -514,6 +517,49 @@ export class TabModelViewerState extends TabState {
       skippedFiles,
       failedFiles,
     }, progress);
+  }
+
+  async exportOdysseyModelAscii(): Promise<void> {
+    if (!this.odysseyModel) return;
+
+    const baseName =
+      (this.odysseyModel.geometryHeader.modelName || this.file?.getFilename() || "model")
+        .replace(/\.(mdl|mdx)$/i, "")
+        .trim() || "model";
+    const suggestedName = `${baseName}.ascii.mdl`;
+    const text = KotOR.exportOdysseyModelAscii(this.odysseyModel);
+    const payload = new TextEncoder().encode(text);
+
+    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
+      const savePath = await dialog.showSaveDialog({
+        title: "Export MDL as ASCII",
+        defaultPath: suggestedName,
+        properties: ["createDirectory"],
+        filters: [{ name: "MDL ASCII", extensions: ["mdl"] }],
+      });
+      if (!savePath?.canceled && typeof savePath?.filePath === "string") {
+        await fs.promises.writeFile(savePath.filePath, payload);
+      }
+      return;
+    }
+
+    try {
+      const newHandle = await window.showSaveFilePicker({
+        suggestedName,
+        types: [
+          {
+            description: "MDL ASCII",
+            accept: { "text/plain": [".mdl"] },
+          },
+        ],
+      });
+      const ws = await newHandle.createWritable();
+      await ws.write(payload as BufferSource);
+      await ws.close();
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
+      console.error("exportOdysseyModelAscii", e);
+    }
   }
 
 }

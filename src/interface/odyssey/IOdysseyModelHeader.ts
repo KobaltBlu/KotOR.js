@@ -30,6 +30,9 @@ export interface IOdysseyModelHeader {
   boundingMaxZ: number;
   radius: number;
   scale: number;
-  
+
+  /** When true, per-face smoothing group uint32s follow the face array in the MDL (matches MDLedit `nUnknown == 1`). */
+  smoothingGroupsInFile: boolean;
+
   superModelName: string;
 }

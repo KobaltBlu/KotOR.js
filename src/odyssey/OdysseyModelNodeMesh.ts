@@ -80,6 +80,9 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   faceArrayDefinition: IOdysseyArrayDefinition;
   vertexCoordinatesOffset: number;
 
+  /** Mesh inverted counter from MDL (Aurora `inv_count`). */
+  meshInvertedCounter: number = 0;
+
   //MDX
   MDXDataSize: number;
   MDXDataBitmap: number;
@@ -377,6 +380,17 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
           this.texCords[1][i] = ([this.tvectors[1][this.faces[i].a], this.tvectors[1][this.faces[i].b], this.tvectors[1][this.faces[i].c]]);
 
       }
+
+      if (this.odysseyModel.modelHeader.smoothingGroupsInFile && this.faceArrayDefinition.count > 0) {
+        for (let i = 0; i < this.faceArrayDefinition.count; i++) {
+          this.faces[i].smoothingGroup = this.odysseyModel.mdlReader.readUInt32();
+        }
+      }
+    }
+
+    if (this.InvertedCountArrayDef?.count > 0) {
+      this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.InvertedCountArrayDef.offset);
+      this.meshInvertedCounter = this.odysseyModel.mdlReader.readUInt32();
     }
 
     this.odysseyModel.mdlReader.position = cachedPosition;

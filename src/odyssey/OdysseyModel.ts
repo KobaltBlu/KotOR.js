@@ -104,7 +104,9 @@ export class OdysseyModel {
     
     this.modelHeader.classification = this.mdlReader.readByte();
     this.modelHeader.subClassification = this.mdlReader.readByte();
-    this.modelHeader.smoothing = !!this.mdlReader.readByte(); //Unknown
+    const smoothingByte = this.mdlReader.readByte();
+    this.modelHeader.smoothing = !!smoothingByte; // legacy name; also MDLedit `nUnknown`
+    this.modelHeader.smoothingGroupsInFile = smoothingByte === 1;
     this.modelHeader.fogged = !!this.mdlReader.readByte();
     this.modelHeader.childModelCount = this.mdlReader.readUInt32(); //Unkown
 

@@ -86,6 +86,9 @@ export class OdysseyFace3 {
 	 */
 	materialIndex: number;
 
+	/** MDL face smoothing group (optional; present when model header requests smoothing groups). */
+	smoothingGroup?: number;
+
 	perimeter = {
 		a: false, b: false, c: false
 	};
