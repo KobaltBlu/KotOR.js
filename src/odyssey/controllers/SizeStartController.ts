@@ -24,6 +24,7 @@ export class SizeStartController extends OdysseyController {
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
+      manager.modelNode.emitter.sizes[0] = data.value;
       manager.modelNode.emitter.material.uniforms.scale.value.x = data.value;
       manager.modelNode.emitter.material.uniformsNeedUpdate = true;
     }
@@ -31,7 +32,9 @@ export class SizeStartController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.material.uniforms.scale.value.x = ((next.value - last.value) * fl + last.value);
+      const v = ((next.value - last.value) * fl + last.value);
+      manager.modelNode.emitter.sizes[0] = v;
+      manager.modelNode.emitter.material.uniforms.scale.value.x = v;
       manager.modelNode.emitter.material.uniformsNeedUpdate = true;
     }
   }

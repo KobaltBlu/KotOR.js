@@ -353,6 +353,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
       }
     }
     
+    //Update wind impulses (once per model update; expired impulses are removed)
+    OdysseyEmitter3D.updateWindImpulses(delta);
+
     //Update emitters
     for(let i = 0; i < this.emitters.length; i++){
       this.emitters[i].tick(delta);
@@ -1020,9 +1023,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
 
     if((odysseyNode.nodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference && odysseyNode){
-      //console.log('OdysseyModel', 'Reference Node', options.parent);
-      if(parentNode.parent instanceof OdysseyEmitter3D){
-        parentNode.parent.emitter.setReferenceNode(node)
+      // Reference is a child of the emitter host OdysseyObject3D; the OdysseyEmitter3D lives on parentNode.emitter.
+      if(parentNode instanceof OdysseyObject3D && parentNode.emitter instanceof OdysseyEmitter3D){
+        parentNode.emitter.setReferenceNode(node);
       }else{
         console.log('Loading child model: '+(odysseyNode as any).modelName);
         MDLLoader.loader.load((odysseyNode as any).modelName).then( (childModel) => {

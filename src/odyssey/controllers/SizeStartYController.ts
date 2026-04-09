@@ -23,11 +23,20 @@ export class SizeStartYController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.sizesY[0] = data.value;
+      manager.modelNode.emitter.material.uniforms.scaleY.value.x = data.value;
+      manager.modelNode.emitter.material.uniformsNeedUpdate = true;
+    }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    
+    if(manager.modelNode.emitter){
+      const v = ((next.value - last.value) * fl + last.value);
+      manager.modelNode.emitter.sizesY[0] = v;
+      manager.modelNode.emitter.material.uniforms.scaleY.value.x = v;
+      manager.modelNode.emitter.material.uniformsNeedUpdate = true;
+    }
   }
 
 }

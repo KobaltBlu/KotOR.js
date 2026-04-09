@@ -29,7 +29,7 @@ export class BirthRateController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.birthRate = next.value;//Math.ceil((last.value + fl * (next.value - last.value)));
+      manager.modelNode.emitter.birthRate = OdysseyController.lerp1(last, next, fl);
     }
   }
 

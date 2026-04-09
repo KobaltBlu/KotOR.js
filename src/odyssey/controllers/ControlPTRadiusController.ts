@@ -29,7 +29,7 @@ export class ControlPTRadiusController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.controlPTRadius = next.value;
+      manager.modelNode.emitter.controlPTRadius = OdysseyController.lerp1(last, next, fl);
     }
   }
 

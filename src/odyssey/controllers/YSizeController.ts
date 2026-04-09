@@ -23,11 +23,16 @@ export class YSizeController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.size.y = data.value * 0.01;
+    }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    
+    if(manager.modelNode.emitter){
+      const v = OdysseyController.lerp1(last, next, fl);
+      manager.modelNode.emitter.size.y = v * 0.01;
+    }
   }
 
 }

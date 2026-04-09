@@ -29,7 +29,7 @@ export class ControlPTCountController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.controlPTCount = next.value;
+      manager.modelNode.emitter.controlPTCount = OdysseyController.lerp1(last, next, fl);
     }
   }
 

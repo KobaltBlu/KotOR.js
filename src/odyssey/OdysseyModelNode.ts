@@ -154,10 +154,13 @@ export class OdysseyModelNode {
       
       let tmpQuat = new THREE.Quaternion();
 
+      // Always set so OdysseyControllerFactory can build emitter-specific controllers (SizeStart, etc.).
+      // When geometry is already parsed, prefer its nodeType so flags match the mesh instance.
+      controller.nodeType = this.nodeType;
       if(this.odysseyModel.nodes.has(this.name)){
         controller.nodeType = this.nodeType = this.odysseyModel.nodes.get(this.name).nodeType;
       }
-    
+
       if(controller.frameCount != -1){
 
         if(this instanceof OdysseyModelAnimationNode || this instanceof OdysseyModelNode){

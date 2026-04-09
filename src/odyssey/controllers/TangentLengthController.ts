@@ -30,7 +30,7 @@ export class TangentLengthController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.tangentLength = next.value;
+      manager.modelNode.emitter.tangentLength = OdysseyController.lerp1(last, next, fl);
     }
   }
 

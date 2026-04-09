@@ -23,11 +23,20 @@ export class SizeMidYController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.sizesY[1] = data.value;
+      manager.modelNode.emitter.material.uniforms.scaleY.value.y = data.value;
+      manager.modelNode.emitter.material.uniformsNeedUpdate = true;
+    }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    
+    if(manager.modelNode.emitter){
+      const v = ((next.value - last.value) * fl + last.value);
+      manager.modelNode.emitter.sizesY[1] = v;
+      manager.modelNode.emitter.material.uniforms.scaleY.value.y = v;
+      manager.modelNode.emitter.material.uniformsNeedUpdate = true;
+    }
   }
 
 }

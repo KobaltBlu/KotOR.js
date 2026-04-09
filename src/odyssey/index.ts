@@ -1,4 +1,5 @@
 export * from "@/odyssey/OdysseyModel";
+export * from "@/odyssey/OdysseyModelJSON";
 export * from "@/odyssey/OdysseyModelNode";
 export * from "@/odyssey/OdysseyModelNodeMesh";
 export * from "@/odyssey/OdysseyModelAnimation";

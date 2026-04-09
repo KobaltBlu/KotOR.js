@@ -29,7 +29,7 @@ export class ControlPTDelayController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.controlPTDelay = next.value;
+      manager.modelNode.emitter.controlPTDelay = OdysseyController.lerp1(last, next, fl);
     }
   }
 

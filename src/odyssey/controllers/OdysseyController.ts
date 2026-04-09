@@ -1,7 +1,6 @@
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
 import * as THREE from "three";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
@@ -30,6 +29,11 @@ export class OdysseyController {
 
     this.vec3 = new THREE.Vector3(0, 0, 0);
     this.quaternion = new THREE.Quaternion(0, 0, 0, 1);
+  }
+
+  /** Interpolate single-float keyframes (`value` only). */
+  static lerp1(last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number): number {
+    return (next.value - last.value) * fl + last.value;
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){

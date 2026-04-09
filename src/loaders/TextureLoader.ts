@@ -499,7 +499,8 @@ export class TextureLoader {
               //tex.material.uniforms.displacementMap.value = tex.material.uniforms.bumpMap.value;
               //tex.material.uniforms.displacementScale.value = tex.material.uniforms.bumpScale.value;
               tex.material.uniforms.reflectivity.value = 1;
-              tex.material.transparent = true;
+              //transparent is set to false because we are using additive blending
+              tex.material.transparent = false;
               tex.material.premultipliedAlpha = false;
               tex.material.needsUpdate = true;
 
@@ -583,7 +584,7 @@ export class TextureLoader {
         //BLENDING
         switch(texture.txi.blending){
           case TXIBlending.ADDITIVE:
-            tex.material.transparent = true;
+            tex.material.transparent = false;
             tex.material.blending = THREE['AdditiveBlending'];
             //tex.material.alphaTest = 0;//0.5;
             //tex.material.side = THREE.DoubleSide; //DoubleSide is causing issues with windows in TSL and elsewhere

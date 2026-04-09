@@ -30,7 +30,7 @@ export class FrameEndController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.material.uniforms.frameRange.value.y = next.value;
+      manager.modelNode.emitter.material.uniforms.frameRange.value.y = OdysseyController.lerp1(last, next, fl);
       manager.modelNode.emitter.material.uniformsNeedUpdate = true;
     }
   }
