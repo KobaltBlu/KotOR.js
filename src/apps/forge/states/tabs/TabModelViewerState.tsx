@@ -19,15 +19,43 @@ import {
   showExtractionResults,
   createProgressModal,
 } from "@/apps/forge/helpers/AssetExtraction";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 
 declare const dialog: any;
+
+export type ModelViewerLayerKey =
+  | 'lights'
+  | 'emitters'
+  | 'walkmeshes'
+  | 'trimesh'
+  | 'skin'
+  | 'dangly'
+  | 'saber'
+  | 'childModels'
+  | 'layout'
+  | 'ground';
+
+export type ModelViewerLayerVisibility = Record<ModelViewerLayerKey, boolean>;
+
+export const DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY: ModelViewerLayerVisibility = {
+  lights: true,
+  emitters: true,
+  walkmeshes: true,
+  trimesh: true,
+  skin: true,
+  dangly: true,
+  saber: true,
+  childModels: true,
+  layout: true,
+  ground: true,
+};
 
 export type TabModelViewerStateEventListenerTypes =
 TabStateEventListenerTypes & 
   ''|'onModelLoaded'|'onPlay'|'onPause'|'onStop'|'onAudioLoad'|'onHeadChange'|
   'onHeadLoad'|'onKeyFrameSelect'|'onKeyFrameTrackZoomIn'|'onKeyFrameTrackZoomOut'|
   'onAnimate'|'onKeyFramesChange'|'onDurationChange'|'onAnimationChange'|'onLoopChange'|
-  'onNodeSelect'|'onCameraChange';
+  'onNodeSelect'|'onCameraChange'|'onModelViewerLayersChange';
 
 export interface TabModelViewerStateEventListeners extends TabStateEventListeners {
   onModelLoaded: Function[],
@@ -47,6 +75,7 @@ export interface TabModelViewerStateEventListeners extends TabStateEventListener
   onLoopChange: Function[],
   onNodeSelect: Function[],
   onCameraChange: Function[],
+  onModelViewerLayersChange: Function[],
 }
 
 export class TabModelViewerState extends TabState {
@@ -94,6 +123,8 @@ export class TabModelViewerState extends TabState {
   scrubbing: boolean = false;
   scrubbingTimeout: NodeJS.Timeout;
   paused: boolean = false;
+
+  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY };
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -189,6 +220,11 @@ export class TabModelViewerState extends TabState {
                 this.ui3DRenderer.attachCamera(camera);
               }
               this.ui3DRenderer.sceneGraphManager.rebuild();
+
+              TabModelViewerState.applyModelViewerLayers(this.model, this.modelViewerLayerVisibility, {
+                layoutGroup: this.layout_group,
+                groundMesh: this.groundMesh,
+              });
 
               // this.updateCameraFocus();
               this.processEventListener('onEditorFileLoad', [this]);
@@ -455,6 +491,102 @@ export class TabModelViewerState extends TabState {
     camera.fov = fov;
     camera.updateProjectionMatrix();
     this.processEventListener<TabModelViewerStateEventListenerTypes>('onCameraChange', [camera]);
+  }
+
+  static applyModelViewerLayers(
+    model: KotOR.OdysseyModel3D | undefined,
+    layers: ModelViewerLayerVisibility,
+    sceneExtras?: { layoutGroup?: THREE.Group; groundMesh?: THREE.Object3D },
+  ): void {
+    if (sceneExtras?.layoutGroup) {
+      sceneExtras.layoutGroup.visible = layers.layout;
+    }
+    if (sceneExtras?.groundMesh) {
+      sceneExtras.groundMesh.visible = layers.ground;
+    }
+    if (!model) return;
+
+    for (let i = 0; i < model.childModels.length; i++) {
+      model.childModels[i].visible = layers.childModels;
+    }
+
+    const roots: KotOR.OdysseyModel3D[] = [model, ...model.childModels];
+    for (let r = 0; r < roots.length; r++) {
+      const m = roots[r];
+      const rootVisible = m === model || layers.childModels;
+      if (!rootVisible) continue;
+
+      for (let e = 0; e < m.emitters.length; e++) {
+        m.emitters[e].visible = layers.emitters;
+      }
+
+      if (m.mergedMesh) {
+        m.mergedMesh.visible = layers.trimesh;
+      }
+      if (m.mergedDanglyMesh) {
+        m.mergedDanglyMesh.visible = layers.dangly;
+      }
+    }
+
+    model.traverse((obj) => {
+      if (obj instanceof KotOR.OdysseyEmitter3D) {
+        obj.visible = layers.emitters;
+        return;
+      }
+      if (obj instanceof KotOR.OdysseyLight3D || obj instanceof THREE.Light) {
+        obj.visible = layers.lights;
+        return;
+      }
+      if (obj instanceof KotOR.OdysseyObject3D && obj.odysseyModelNode) {
+        const nt = obj.odysseyModelNode.nodeType;
+        if ((nt & OdysseyModelNodeType.AABB) === OdysseyModelNodeType.AABB) {
+          obj.visible = layers.walkmeshes;
+        }
+      }
+      if (obj instanceof THREE.Mesh || obj instanceof THREE.SkinnedMesh) {
+        const odysseyNode = obj.userData?.odysseyModelNode as KotOR.OdysseyModelNode | undefined;
+        if (!odysseyNode) return;
+        const nt = odysseyNode.nodeType;
+        if ((nt & OdysseyModelNodeType.AABB) === OdysseyModelNodeType.AABB) {
+          obj.visible = layers.walkmeshes;
+          return;
+        }
+        if ((nt & OdysseyModelNodeType.Saber) === OdysseyModelNodeType.Saber) {
+          obj.visible = layers.saber;
+          return;
+        }
+        if ((nt & OdysseyModelNodeType.Skin) === OdysseyModelNodeType.Skin) {
+          obj.visible = layers.skin;
+          return;
+        }
+        if ((nt & OdysseyModelNodeType.Dangly) === OdysseyModelNodeType.Dangly) {
+          obj.visible = layers.dangly;
+          return;
+        }
+        if ((nt & OdysseyModelNodeType.Mesh) === OdysseyModelNodeType.Mesh) {
+          obj.visible = layers.trimesh;
+        }
+      }
+    });
+  }
+
+  refreshModelViewerLayers(): void {
+    TabModelViewerState.applyModelViewerLayers(this.model, this.modelViewerLayerVisibility, {
+      layoutGroup: this.layout_group,
+      groundMesh: this.groundMesh,
+    });
+    this.ui3DRenderer.render();
+  }
+
+  setLayerVisibility(key: ModelViewerLayerKey, visible: boolean): void {
+    if (this.modelViewerLayerVisibility[key] === visible) return;
+    this.modelViewerLayerVisibility[key] = visible;
+    this.refreshModelViewerLayers();
+    this.processEventListener<TabModelViewerStateEventListenerTypes>('onModelViewerLayersChange', [this]);
+  }
+
+  toggleLayerVisibility(key: ModelViewerLayerKey): void {
+    this.setLayerVisibility(key, !this.modelViewerLayerVisibility[key]);
   }
 
   static findOdysseyObject3D(object: THREE.Object3D | undefined): KotOR.OdysseyObject3D | undefined {

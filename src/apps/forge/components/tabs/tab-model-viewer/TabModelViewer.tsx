@@ -1,15 +1,44 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { TabModelViewerState } from "@/apps/forge/states/tabs";
+import {
+  TabModelViewerState,
+  type ModelViewerLayerKey,
+} from "@/apps/forge/states/tabs";
 import { KeyFrameTimelineComponent } from "@/apps/forge/components/KeyFrameTimelineComponent";
 import { ModelViewerSidebarComponent } from "@/apps/forge/components/ModelViewerSidebarComponent";
 import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
 import { UI3DRendererView, MenuItem } from "@/apps/forge/components/UI3DRendererView";
 import { CameraView } from "@/apps/forge/UI3DRenderer";
 
+const MODEL_VIEWER_LAYER_LABELS: Record<ModelViewerLayerKey, string> = {
+  lights: 'Lights',
+  emitters: 'Emitters',
+  walkmeshes: 'Walkmeshes (AABB)',
+  trimesh: 'Static meshes',
+  skin: 'Skin meshes',
+  dangly: 'Dangly meshes',
+  saber: 'Lightsaber meshes',
+  childModels: 'Child / reference models',
+  layout: 'Layout (rooms)',
+  ground: 'Ground grid',
+};
+
 export const TabModelViewer = function(props: any){
   const tab: TabModelViewerState = props.tab as TabModelViewerState;
+  const [layerMenuGen, setLayerMenuGen] = useState(0);
+
+  useEffect(() => {
+    const onLayers = () => setLayerMenuGen((g) => g + 1);
+    tab.addEventListener('onModelViewerLayersChange', onLayers);
+    return () => tab.removeEventListener('onModelViewerLayersChange', onLayers);
+  }, [tab]);
+
+  const layerToggle = (key: ModelViewerLayerKey): MenuItem => ({
+    label: MODEL_VIEWER_LAYER_LABELS[key],
+    checked: tab.modelViewerLayerVisibility[key],
+    onClick: () => tab.toggleLayerVisibility(key),
+  });
 
   const menuItems: MenuItem[] = useMemo(() => [
     {
@@ -29,6 +58,23 @@ export const TabModelViewer = function(props: any){
       label: 'View',
       children: [
         {
+          label: 'Show',
+          children: [
+            layerToggle('lights'),
+            layerToggle('emitters'),
+            layerToggle('walkmeshes'),
+            { separator: true },
+            layerToggle('trimesh'),
+            layerToggle('skin'),
+            layerToggle('dangly'),
+            layerToggle('saber'),
+            { separator: true },
+            layerToggle('childModels'),
+            layerToggle('layout'),
+            layerToggle('ground'),
+          ],
+        },
+        {
           label: 'Camera',
           children: [
             { label: 'Fit Camera to Scene', onClick: () => tab.ui3DRenderer.fitCameraToScene() },
@@ -45,7 +91,7 @@ export const TabModelViewer = function(props: any){
         },
       ],
     },
-  ], [tab]);
+  ], [tab, layerMenuGen]);
 
   const southPanel = (
     <KeyFrameTimelineComponent tab={tab} />
