@@ -340,7 +340,7 @@ const gameConfig = (name, color) => ({
   externals: {
     fs: 'window.fs',
     three: 'THREE',
-    '../../KotOR': 'KotOR',
+    '@/apps/game/KotOR': 'KotOR',
   },
   output: {
     filename: '[name].js',
@@ -441,7 +441,8 @@ const forgeConfig = (name, color) => ({
   externals: {
     fs: 'window.fs',
     three: 'THREE',
-    '../../KotOR': 'KotOR',
+    '@/apps/forge/KotOR': 'KotOR',
+    '@/KotOR': 'KotOR',
   },
   output: {
     filename: '[name].js',
@@ -535,7 +536,7 @@ const debuggerConfig = (name, color) => ({
   externals: {
     fs: 'window.fs',
     three: 'THREE',
-    '../../KotOR': 'KotOR',
+    '@/apps/debugger/KotOR': 'KotOR',
   },
   output: {
     filename: '[name].js',
