@@ -3394,7 +3394,12 @@ NWScriptDefK1.Actions = {
     comment: "266: Flag the specified item as being non-equippable or not.  Set bNonEquippable\nto TRUE to prevent this item from being equipped, and FALSE to allow\nthe normal equipping checks to determine if the item can be equipped.\nNOTE: This will do nothing if the object passed in is not an item.  Items that\nare already equipped when this is called will not automatically be\nunequipped.  These items will just be prevented from being re-equipped\nshould they be unequipped.\n",
     name: "SetItemNonEquippable",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        (args[0] as ModuleItem).nonEquippable = !!args[1];
+      }
+    }
   },
   267:{
     comment: "267: GetButtonMashCheck\nThis function returns whether the button mash check, used for the combat tutorial, is on\n",
