@@ -45,6 +45,7 @@ export class OdysseyModel {
 
   namesArrayDefinition: IOdysseyArrayDefinition;
   nameOffsetsArray: number[] = [];
+  private changeListeners: Set<(event: OdysseyModelChangeEvent) => void> = new Set();
 
   /** Banner / optional geometry fields preserved when loading from {@link OdysseyModel.fromAscii}. */
   asciiCompressQuaternions?: number;
@@ -214,5 +215,89 @@ export class OdysseyModel {
     const mdxReader = new BinaryReader(mdx_buffer);
     return new OdysseyModel(mdlReader, mdxReader);
   }
+
+  addChangeListener(listener: (event: OdysseyModelChangeEvent) => void): () => void {
+    this.changeListeners.add(listener);
+    return () => this.removeChangeListener(listener);
+  }
+
+  removeChangeListener(listener: (event: OdysseyModelChangeEvent) => void): void {
+    this.changeListeners.delete(listener);
+  }
+
+  emitChange(event: OdysseyModelChangeEvent): void {
+    this.changeListeners.forEach((listener) => {
+      try {
+        listener(event);
+      } catch (e) {
+        console.error("OdysseyModel.emitChange listener error", e);
+      }
+    });
+  }
+
+  markMetaChanged(field?: string): void {
+    this.emitChange({
+      kind: "model.meta",
+      model: this,
+      field,
+    });
+  }
+
+  markControllerKeyframesChanged(nodeUUID: string, animationName?: string): void {
+    this.emitChange({
+      kind: "controller.keyframes",
+      model: this,
+      nodeUUID,
+      animationName,
+    });
+  }
+
+  markNodeMaterialChanged(nodeUUID: string): void {
+    this.emitChange({
+      kind: "node.material",
+      model: this,
+      nodeUUID,
+    });
+  }
+
+  markNodeGeometryChanged(nodeUUID: string): void {
+    this.emitChange({
+      kind: "node.geometry",
+      model: this,
+      nodeUUID,
+    });
+  }
+
+  markNodeHierarchyChanged(nodeUUID: string): void {
+    this.emitChange({
+      kind: "node.hierarchy",
+      model: this,
+      nodeUUID,
+    });
+  }
+
+  markNodeTransformChanged(nodeUUID: string): void {
+    this.emitChange({
+      kind: "node.transform",
+      model: this,
+      nodeUUID,
+    });
+  }
   
+}
+
+export type OdysseyModelChangeKind =
+  | "node.transform"
+  | "controller.keyframes"
+  | "node.material"
+  | "node.geometry"
+  | "node.hierarchy"
+  | "model.meta";
+
+export interface OdysseyModelChangeEvent {
+  kind: OdysseyModelChangeKind;
+  model: OdysseyModel;
+  nodeUUID?: string;
+  animationName?: string;
+  field?: string;
 }

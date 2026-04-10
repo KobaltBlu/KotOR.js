@@ -20,7 +20,6 @@ export interface IOdysseyModelLoaderOptions {
   useTweakColor?: boolean,
   tweakColor?: number,
   isForceShield?: boolean,
-  isChildrenDynamic?: boolean,
   parseChildren?: boolean,
   isHologram?: boolean,
   context?: any,

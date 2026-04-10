@@ -457,7 +457,7 @@ export class OdysseyWalkMesh {
   dispose(){
 
     if(this.mesh && this.mesh.parent)
-      this.mesh.parent.remove(this.mesh);
+      this.mesh.removeFromParent();
 
     if(this.geometry){
       this.geometry.dispose();

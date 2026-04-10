@@ -292,8 +292,10 @@ export class MenuCharacter extends GameMenu {
 
     this.SLD_ALIGN?.setValue(creature.getGoodEvil()/100);
 
+    const portraitAttachRoot = this._3dViewModel?.getRootOdysseyNode?.() || this._3dViewModel;
+
     if (this.char) {
-      this._3dViewModel.children[0].children[0].remove(this.char);
+      this.char.removeFromParent();
     }
     if(creature){
       this._3dView.camera.position.z = 1;
@@ -350,7 +352,7 @@ export class MenuCharacter extends GameMenu {
         model.rotation.z = Math.PI;
         model.box = new THREE.Box3().setFromObject(model);
         this.char = model;
-        this._3dViewModel.children[0].children[0].add(this.char);
+        portraitAttachRoot?.add(this.char);
         TextureLoader.LoadQueue().then(() => {
           if (clone.goodEvil >= 95) {
             this.char.playAnimation('good', true);

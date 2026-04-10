@@ -19,6 +19,7 @@ export class OdysseyModelAnimationNode extends OdysseyModelNode {
   children: OdysseyModelAnimationNode[] = [];
   modelNodeCache: any = {};
   animation: OdysseyModelAnimation;
+  sourceNodeUUID: string;
 
   constructor(animation?: OdysseyModelAnimation){
     super(undefined);

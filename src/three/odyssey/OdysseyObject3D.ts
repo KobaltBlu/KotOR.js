@@ -17,6 +17,7 @@ import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 export class OdysseyObject3D extends THREE.Object3D {
   odysseyModel: OdysseyModel3D;
   odysseyModelNode: OdysseyModelNode;
+  sourceNodeUUID: string;
   NodeType: number;
   isWalkmesh: boolean;
   controllers: Map<number, OdysseyController>;
@@ -39,6 +40,7 @@ export class OdysseyObject3D extends THREE.Object3D {
   
   emitter: OdysseyEmitter3D;
   light: THREE.Light | OdysseyLight3D;
+  mesh: THREE.Mesh | THREE.SkinnedMesh;
 
   constructor( node: OdysseyModelNode = undefined ){
     super();

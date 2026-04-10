@@ -24,6 +24,12 @@ export const ModelViewerSidebarComponent = function(props: any){
   const [cameras, setCameras] = useState<{ name: string; camera: THREE.PerspectiveCamera; isMain: boolean }[]>([]);
   const [selectedCameraIndex, setSelectedCameraIndex] = useState<number>(0);
   const [cameraFov, setCameraFov] = useState<number>(tab.ui3DRenderer.camera?.fov ?? 50);
+  const [keyframeEditorEnabled, setKeyframeEditorEnabled] = useState<boolean>(tab.keyframeEditorEnabled);
+  const [trackOptions, setTrackOptions] = useState(tab.getEditableTracks());
+  const [selectedTrackId, setSelectedTrackId] = useState<string>(tab.selectedTrack?.id ?? '');
+  const [selectedKeyIndex, setSelectedKeyIndex] = useState<number>(tab.selectedKey?.keyIndex ?? -1);
+  const [followCameraHook, setFollowCameraHook] = useState<boolean>(tab.followCameraHook);
+  const [selectedCameraHookNode, setSelectedCameraHookNode] = useState<string>('');
 
   const onNodeSelect = function(node: KotOR.OdysseyObject3D | undefined, modelNode: KotOR.OdysseyModelNode | undefined){
     setSelectedNode(node);
@@ -41,6 +47,15 @@ export const ModelViewerSidebarComponent = function(props: any){
     setCameraFov(camera.fov);
   };
 
+  const onKeyframeEditorChange = function(){
+    const tracks = tab.getEditableTracks();
+    setTrackOptions(tracks);
+    setKeyframeEditorEnabled(tab.keyframeEditorEnabled);
+    setSelectedTrackId(tab.selectedTrack?.id ?? '');
+    setSelectedKeyIndex(tab.selectedKey?.keyIndex ?? -1);
+    setFollowCameraHook(tab.followCameraHook);
+  };
+
   useEffectOnce( () => {
     let keys: KotOR.IKEYEntry[] = [];
     let res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
@@ -54,11 +69,19 @@ export const ModelViewerSidebarComponent = function(props: any){
     tab.addEventListener<TabModelViewerStateEventListenerTypes>('onNodeSelect', onNodeSelect);
     tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
     tab.addEventListener<TabModelViewerStateEventListenerTypes>('onCameraChange', onCameraChange);
+    tab.addEventListener<TabModelViewerStateEventListenerTypes>('onKeyframeEditorChange', onKeyframeEditorChange);
+    tab.addEventListener<TabModelViewerStateEventListenerTypes>('onTrackSelectionChange', onKeyframeEditorChange);
+    tab.addEventListener<TabModelViewerStateEventListenerTypes>('onKeySelectionChange', onKeyframeEditorChange);
+    tab.addEventListener<TabModelViewerStateEventListenerTypes>('onKeyFramesChange', onKeyframeEditorChange);
 
     return () => {
       tab.removeEventListener('onNodeSelect', onNodeSelect);
       tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
       tab.removeEventListener('onCameraChange', onCameraChange);
+      tab.removeEventListener('onKeyframeEditorChange', onKeyframeEditorChange);
+      tab.removeEventListener('onTrackSelectionChange', onKeyframeEditorChange);
+      tab.removeEventListener('onKeySelectionChange', onKeyframeEditorChange);
+      tab.removeEventListener('onKeyFramesChange', onKeyframeEditorChange);
     };
   });
 
@@ -104,6 +127,14 @@ export const ModelViewerSidebarComponent = function(props: any){
   };
 
   const isMainCamera = cameras[selectedCameraIndex]?.isMain ?? true;
+  const selectedTrack = trackOptions.find((track) => track.id === selectedTrackId);
+  const selectedKey = selectedTrack && selectedKeyIndex >= 0 ? selectedTrack.keys[selectedKeyIndex] : undefined;
+
+  const onFollowCameraHookChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const enabled = e.target.checked;
+    setFollowCameraHook(enabled);
+    tab.setFollowCameraHook(enabled);
+  };
 
   return (
     <div className="mvp-sidebar">
@@ -164,6 +195,53 @@ export const ModelViewerSidebarComponent = function(props: any){
             <button className="btn btn-sm" onClick={onBtnLoadLayout}>Load</button>
             <button className="btn btn-sm" onClick={onBtnDisposeLayout}>Dispose</button>
           </div>
+        </SectionContainer>
+
+        <SectionContainer name="Keyframe Inspector" collapsible>
+          <div className="property-editor-row">
+            <span className="property-editor-label">Edit Mode</span>
+            <span>{keyframeEditorEnabled ? 'On' : 'Off'}</span>
+          </div>
+          <div className="property-editor-row">
+            <span className="property-editor-label">Track</span>
+            <span>{selectedTrack?.label ?? 'None selected'}</span>
+          </div>
+          <div className="property-editor-row">
+            <span className="property-editor-label">Key Index</span>
+            <span>{selectedKeyIndex >= 0 ? selectedKeyIndex : 'None selected'}</span>
+          </div>
+          {selectedKey && (
+            <>
+              <div className="property-editor-row">
+                <span className="property-editor-label">Time</span>
+                <span>{selectedKey.time}</span>
+              </div>
+              <div className="property-editor-row">
+                <span className="property-editor-label">X</span>
+                <span>{selectedKey.x ?? 0}</span>
+              </div>
+              <div className="property-editor-row">
+                <span className="property-editor-label">Y</span>
+                <span>{selectedKey.y ?? 0}</span>
+              </div>
+              <div className="property-editor-row">
+                <span className="property-editor-label">Z</span>
+                <span>{selectedKey.z ?? 0}</span>
+              </div>
+              <div className="property-editor-row">
+                <span className="property-editor-label">W/Value</span>
+                <span>{selectedKey.w ?? selectedKey.value ?? 0}</span>
+              </div>
+            </>
+          )}
+          {!!selectedTrack?.isCameraHook && (
+            <>
+              <div className="property-editor-row">
+                <span className="property-editor-label">Follow Hook Cam</span>
+                <Form.Check type="switch" checked={followCameraHook} onChange={onFollowCameraHookChange} />
+              </div>
+            </>
+          )}
         </SectionContainer>
       </div>
     </div>

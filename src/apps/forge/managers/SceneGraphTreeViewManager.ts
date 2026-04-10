@@ -357,7 +357,10 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
         },
       });
 
-      processNode(model.children[0] as OdysseyObject3D, modelNode);
+      const rootNode = model.getRootOdysseyNode?.();
+      if (rootNode) {
+        processNode(rootNode, modelNode);
+      }
 
       this.objectsNode.addChildNode(modelNode);
     }

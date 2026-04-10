@@ -91,7 +91,7 @@ export class CharGenQuickOrCustom extends GameMenu {
         //Game.CharGenMain.Hide();
 
         try{
-          GameState.CharGenManager.selectedCreature.model.parent.remove(GameState.CharGenManager.selectedCreature.model);
+          GameState.CharGenManager.selectedCreature.model.removeFromParent();
         }catch(e){}
 
         // this.manager.CharGenClass.getControlByName('_3D_MODEL'+(GameState.CharGenManager.selectedClass+1))

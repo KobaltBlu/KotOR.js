@@ -357,7 +357,11 @@ export class OdysseyModelAnimationManager {
       state = this.createAnimationState();
     }
     if(!node) return;
-    this.modelNode = this.model.nodes.get(node.name);
+    if (node.sourceNodeUUID) {
+      this.modelNode = this.model.nodesByUUID.get(node.sourceNodeUUID);
+    } else {
+      this.modelNode = this.model.nodes.get(node.name);
+    }
 
     if(!this.modelNode) return;
 

@@ -223,7 +223,7 @@ export class ModuleRoom extends ModuleObject {
     if(this.collisionManager.walkmesh && !this.collisionManager.walkmesh.mesh.parent){
       GameState.group.room_walkmeshes.add(this.collisionManager.walkmesh.mesh);
     }else if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh.parent){
-      this.collisionManager.walkmesh.mesh.parent.remove(this.collisionManager.walkmesh.mesh);
+      this.collisionManager.walkmesh.mesh.removeFromParent();
       GameState.group.room_walkmeshes.add(this.collisionManager.walkmesh.mesh);
     }
 
@@ -257,7 +257,7 @@ export class ModuleRoom extends ModuleObject {
     
     //Remove the walkmesh back to the scene
     if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh.parent){
-      this.collisionManager.walkmesh.mesh.parent.remove(this.collisionManager.walkmesh.mesh);
+      this.collisionManager.walkmesh.mesh.removeFromParent();
     }
 
     for(let i = 0, sLen = this.sounds.length; i < sLen; i++){

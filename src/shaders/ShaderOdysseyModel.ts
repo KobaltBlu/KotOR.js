@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { Shader } from "@/shaders/Shader";
+import { ODYSSEY_DANGLY_VERTEX_LIBRARY } from "@/shaders/odysseyDangly";
 
 const odyssey_envmap_fragment = `
 #ifdef USE_ENVMAP
@@ -492,6 +493,7 @@ export class ShaderOdysseyModel extends Shader {
       uniform float danglyDisplacement;
       uniform float danglyTightness;
       uniform float danglyPeriod;
+      uniform float danglyWindPower;
     #endif
     #include <uv_pars_vertex>
     #include <uv2_pars_vertex>
@@ -504,6 +506,10 @@ export class ShaderOdysseyModel extends Shader {
     #include <shadowmap_pars_vertex>
     #include <logdepthbuf_pars_vertex>
     #include <clipping_planes_pars_vertex>
+
+    #ifdef DANGLY
+    ${ODYSSEY_DANGLY_VERTEX_LIBRARY}
+    #endif
     
     void main() {
       #include <uv_vertex>
@@ -578,8 +584,7 @@ export class ShaderOdysseyModel extends Shader {
       #endif
 
       #ifdef DANGLY
-        float wind = (1.0 * danglyPeriod) * ( cos(time) );
-        transformed += vec3(sin(wind) * constraint.x * 2.0, sin(wind) * constraint.y * 2.0, sin(wind) * constraint.z * 2.0 * danglyTightness) * (constraint.w / 255.0) * (danglyDisplacement * 0.1);
+        odyssey_apply_dangly_vertex(transformed, objectNormal);
       #endif
   
       #ifdef FORCE_SHIELD
@@ -615,6 +620,7 @@ export class ShaderOdysseyModel extends Shader {
       { danglyDisplacement: { value: 0 } },
       { danglyTightness: { value: 0 } },
       { danglyPeriod: { value: 0 } },
+      { danglyWindPower: { value: 1 } },
       { animPointLights: { value: [], properties: {
         color: {},
         position: {},

@@ -884,6 +884,17 @@ export class UI3DRenderer extends EventListenerModel {
 
     this.sceneGraphManager.rebuild();
   }
+
+  /** Swap a replaced OdysseyModel3D instance in the Forge registry (e.g. after rebuildFromSourceModel). */
+  replaceOdysseyModelInRegistry(prev: KotOR.OdysseyModel3D, next: KotOR.OdysseyModel3D): void {
+    const index = this.odysseyModels.indexOf(prev);
+    if (index >= 0) {
+      this.odysseyModels[index] = next;
+    } else if (this.odysseyModels.indexOf(next) < 0) {
+      this.odysseyModels.push(next);
+    }
+    this.sceneGraphManager.rebuild();
+  }
   
   attachCamera(camera: THREE.PerspectiveCamera){
     camera.userData.heler = new THREE.CameraHelper( camera );
@@ -1128,7 +1139,9 @@ export class UI3DRenderer extends EventListenerModel {
     });
     if(this.renderer){
       this.renderer.clear();
-      // this.selectionBox.update();
+      if (this.selectionBox.visible) {
+        this.selectionBox.update();
+      }
 
       const delta = this.clock.getDelta();
       this.time += delta;

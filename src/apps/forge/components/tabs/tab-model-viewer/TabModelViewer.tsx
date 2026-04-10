@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
 import {
+  TabModelViewerControlMode,
   TabModelViewerState,
   type ModelViewerLayerKey,
 } from "@/apps/forge/states/tabs";
@@ -27,11 +28,18 @@ const MODEL_VIEWER_LAYER_LABELS: Record<ModelViewerLayerKey, string> = {
 export const TabModelViewer = function(props: any){
   const tab: TabModelViewerState = props.tab as TabModelViewerState;
   const [layerMenuGen, setLayerMenuGen] = useState(0);
+  const [controlMode, setControlMode] = useState<TabModelViewerControlMode>(tab.controlMode);
 
   useEffect(() => {
     const onLayers = () => setLayerMenuGen((g) => g + 1);
     tab.addEventListener('onModelViewerLayersChange', onLayers);
     return () => tab.removeEventListener('onModelViewerLayersChange', onLayers);
+  }, [tab]);
+
+  useEffect(() => {
+    const onControlMode = () => setControlMode(tab.controlMode);
+    tab.addEventListener('onControlModeChange', onControlMode);
+    return () => tab.removeEventListener('onControlModeChange', onControlMode);
   }, [tab]);
 
   const layerToggle = (key: ModelViewerLayerKey): MenuItem => ({
@@ -52,6 +60,13 @@ export const TabModelViewer = function(props: any){
           label: 'Export MDL as ASCII…',
           onClick: () => tab.exportOdysseyModelAscii(),
         },
+      ],
+    },
+    {
+      label: 'Edit',
+      children: [
+        { label: 'Undo', shortcut: 'Ctrl+Z', onClick: () => tab.undo(), disabled: !tab.canUndo },
+        { label: 'Redo', shortcut: 'Ctrl+Y', onClick: () => tab.redo(), disabled: !tab.canRedo },
       ],
     },
     {
@@ -127,6 +142,19 @@ export const TabModelViewer = function(props: any){
         <UI3DRendererView context={tab.ui3DRenderer} showMenuBar={true} menuItems={menuItems}>
           <UI3DOverlayComponent context={tab.ui3DRenderer}></UI3DOverlayComponent>
         </UI3DRendererView>
+        <div className="UI3DToolPalette" style={{ marginTop: '25px' }}>
+          <ul>
+            <li className={`${controlMode === TabModelViewerControlMode.SELECT ? 'selected' : ''}`} onClick={() => tab.setControlMode(TabModelViewerControlMode.SELECT)}>
+              <a title="Select Mode"><i className="fa-solid fa-arrow-pointer"></i></a>
+            </li>
+            <li className={`${controlMode === TabModelViewerControlMode.TRANSLATE ? 'selected' : ''}`} onClick={() => tab.setControlMode(TabModelViewerControlMode.TRANSLATE)}>
+              <a title="Translate Mode"><i className="fa-solid fa-up-down-left-right"></i></a>
+            </li>
+            <li className={`${controlMode === TabModelViewerControlMode.ROTATE ? 'selected' : ''}`} onClick={() => tab.setControlMode(TabModelViewerControlMode.ROTATE)}>
+              <a title="Rotate Mode"><i className="fa-solid fa-rotate"></i></a>
+            </li>
+          </ul>
+        </div>
       </LayoutContainer>
     </LayoutContainerProvider>
   );
