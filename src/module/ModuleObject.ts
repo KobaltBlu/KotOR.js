@@ -162,6 +162,9 @@ export class ModuleObject {
   _locals: { Booleans: any[]; Numbers: {}; };
   objectsInside: any[];
   lockDialogOrientation: boolean = false;
+  lastInventoryDisturbType: number = 0;
+  lastInventoryDisturbItem: any = undefined;
+  lastItemAcquired: any = undefined;
   context: any;
 
   heartbeatTimer: any;
