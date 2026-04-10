@@ -4544,7 +4544,10 @@ NWScriptDefK1.Actions = {
     comment: "374: Send a server message (szMessage) to the oPlayer.\n",
     name: "SendMessageToPC",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [ModuleObject, string]){
+      console.log('[SendMessageToPC]', args[1]);
+    }
   },
   375:{
     comment: "375: Get the target at which the caller attempted to cast a spell.\nThis value is set every time a spell is cast and is reset at the end of\ncombat.\n* Returns OBJECT_INVALID if the caller is not a valid creature.\n",
