@@ -6008,7 +6008,30 @@ NWScriptDefK1.Actions = {
     comment: "501: The action subject will fake casting a spell at oTarget; the conjure and cast\nanimations and visuals will occur, nothing else.\n- nSpell\n- oTarget\n- nProjectilePathType: PROJECTILE_PATH_TYPE_*\n",
     name: "ActionCastFakeSpellAtObject",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionCastSpell();
+      action.setParameter(0, ActionParameterType.INT, args[0]); //Spell Id
+      action.setParameter(1, ActionParameterType.INT, -1); //Cheat enabled
+      action.setParameter(2, ActionParameterType.INT, 0); //DomainLevel
+      action.setParameter(3, ActionParameterType.INT, 0);
+      action.setParameter(4, ActionParameterType.INT, 0);
+      action.setParameter(5, ActionParameterType.DWORD, args[1].id); //Target Object
+      action.setParameter(6, ActionParameterType.FLOAT, args[1].position.x);
+      action.setParameter(7, ActionParameterType.FLOAT, args[1].position.y);
+      action.setParameter(8, ActionParameterType.FLOAT, args[1].position.z);
+      action.setParameter(9, ActionParameterType.INT, args[2] || 0); //ProjectilePath
+      action.setParameter(10, ActionParameterType.INT, -1);
+      action.setParameter(11, ActionParameterType.INT, -1);
+      this.caller.actionQueue.add(action);
+    }
   },
   502:{
     comment: "502: The action subject will fake casting a spell at lLocation; the conjure and\ncast animations and visuals will occur, nothing else.\n- nSpell\n- lTarget\n- nProjectilePathType: PROJECTILE_PATH_TYPE_*\n",
