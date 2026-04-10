@@ -319,6 +319,48 @@ NWScriptDefK1.Actions = {
     name: "ActionMoveAwayFromObject",
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      const caller = this.caller as ModuleCreature;
+      const fleeFrom = args[0];
+      const bRun = !!args[1];
+      const range = args[2] || 10.0;
+
+      // Calculate a point that is range meters from fleeFrom, along the
+      // direction from fleeFrom through the caller
+      const dx = caller.position.x - fleeFrom.position.x;
+      const dy = caller.position.y - fleeFrom.position.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1.0;
+
+      // Already far enough away
+      if(dist >= range){
+        return;
+      }
+
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const targetX = fleeFrom.position.x + nx * range;
+      const targetY = fleeFrom.position.y + ny * range;
+      const targetZ = caller.position.z;
+
+      const action = new GameState.ActionFactory.ActionMoveToPoint();
+      action.setParameter(0, ActionParameterType.FLOAT, targetX);
+      action.setParameter(1, ActionParameterType.FLOAT, targetY);
+      action.setParameter(2, ActionParameterType.FLOAT, targetZ);
+      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      action.setParameter(4, ActionParameterType.DWORD, 0);
+      action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
+      action.setParameter(6, ActionParameterType.FLOAT, 1.0);
+      action.setParameter(7, ActionParameterType.INT, 0);
+      action.setParameter(8, ActionParameterType.FLOAT, 30.0);
+      caller.actionQueue.add(action);
+    }
   },
   24:{
     comment: "24: Get the area that oTarget is currently in\n* Return value on error: OBJECT_INVALID\n",
