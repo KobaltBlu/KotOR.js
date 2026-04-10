@@ -1373,7 +1373,23 @@ NWScriptDefK1.Actions = {
     comment: "106: Get the object type (OBJECT_TYPE_*) of oTarget\n* Return value if oTarget is not a valid object: -1\n",
     name: "GetObjectType",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return -1;
+      }
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return NWModuleObjectType.CREATURE;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)) return NWModuleObjectType.ITEM;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger)) return NWModuleObjectType.TRIGGER;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor)) return NWModuleObjectType.DOOR;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleAreaOfEffect)) return NWModuleObjectType.AOE;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleWaypoint)) return NWModuleObjectType.WAYPOINT;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)) return NWModuleObjectType.PLACEABLE;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleStore)) return NWModuleObjectType.STORE;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleEncounter)) return NWModuleObjectType.ENCOUNTER;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound)) return NWModuleObjectType.SOUND;
+      return -1;
+    }
   },
   107:{
     comment: "107: Get the racial type (RACIAL_TYPE_*) of oCreature\n* Return value if oCreature is not a valid creature: RACIAL_TYPE_INVALID\n",
