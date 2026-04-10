@@ -4359,13 +4359,19 @@ NWScriptDefK1.Actions = {
     comment: "352: Get the type of disturbance (INVENTORY_DISTURB_*) that caused the caller's\nOnInventoryDisturbed script to fire.  This will only work for creatures and\nplaceables.\n",
     name: "GetInventoryDisturbType",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.caller.lastInventoryDisturbType ?? 0;
+    }
   },
   353:{
     comment: "353: get the item that caused the caller's OnInventoryDisturbed script to fire.\n* Returns OBJECT_INVALID if the caller is not a valid object.\n",
     name: "GetInventoryDisturbItem",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.caller.lastInventoryDisturbItem ?? undefined;
+    }
   },
   354:{
     comment: "354: Displays the upgrade screen where the player can modify weapons and armor\n",
