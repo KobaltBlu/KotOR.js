@@ -3446,7 +3446,22 @@ NWScriptDefK1.Actions = {
     comment: "271: Give oItem to oGiveTo (instant; for similar Action use ActionGiveItem)\nIf oItem is not a valid item, or oGiveTo is not a valid object, nothing will\nhappen.\n",
     name: "GiveItem",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        return;
+      }
+
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      if(GameState.PartyManager.party.indexOf(args[1] as any) >= 0){
+        GameState.InventoryManager.addItem(args[0] as ModuleItem);
+      }else{
+        args[1].addItem(args[0] as ModuleItem);
+      }
+    }
   },
   272:{
     comment: "272: Convert oObject into a hexadecimal string.\n",
