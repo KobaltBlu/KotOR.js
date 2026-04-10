@@ -14,19 +14,42 @@ interface MenuBarProps {
   items: MenuItem[];
 }
 
+const SUBMENU_CLOSE_DELAY_MS = 220;
+
 export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  /** Clears pending nested-submenu close; must run when entering any row or flyout that keeps that path open. */
+  const submenuCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelPendingSubmenuClose = useCallback(() => {
+    if (submenuCloseTimerRef.current !== null) {
+      clearTimeout(submenuCloseTimerRef.current);
+      submenuCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleSubmenuClose = useCallback(
+    (path: string) => {
+      cancelPendingSubmenuClose();
+      submenuCloseTimerRef.current = setTimeout(() => {
+        submenuCloseTimerRef.current = null;
+        setOpenSubmenu((prev) => (prev === path ? null : prev));
+      }, SUBMENU_CLOSE_DELAY_MS);
+    },
+    [cancelPendingSubmenuClose],
+  );
+
+  useEffect(() => {
+    return () => cancelPendingSubmenuClose();
+  }, [cancelPendingSubmenuClose]);
 
   const handleMenuClick = useCallback((label?: string) => {
-    setOpenMenu(openMenu === label ? null : label || null);
+    setOpenMenu((prev) => (prev === label ? null : label ?? null));
     setOpenSubmenu(null);
-  }, [openMenu]);
-
-  const handleSubmenuClick = useCallback((label: string) => {
-    setOpenSubmenu(openSubmenu === label ? null : label);
-  }, [openSubmenu]);
+    cancelPendingSubmenuClose();
+  }, [cancelPendingSubmenuClose]);
 
   const handleItemClick = useCallback((item: MenuItem) => {
     if (item.children) {
@@ -37,14 +60,20 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
     }
     setOpenMenu(null);
     setOpenSubmenu(null);
-  }, []);
+    cancelPendingSubmenuClose();
+  }, [cancelPendingSubmenuClose]);
+
+  const closeAllMenus = useCallback(() => {
+    cancelPendingSubmenuClose();
+    setOpenMenu(null);
+    setOpenSubmenu(null);
+  }, [cancelPendingSubmenuClose]);
 
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenu(null);
-        setOpenSubmenu(null);
+        closeAllMenus();
       }
     };
 
@@ -52,7 +81,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [closeAllMenus]);
 
   const renderMenuItem = (item: MenuItem, index: number, parentPath: string = '') => {
     const itemPath = `${parentPath}-${index}`;
@@ -80,17 +109,13 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
         }}
         onMouseEnter={() => {
           if (hasChildren) {
+            cancelPendingSubmenuClose();
             setOpenSubmenu(itemPath);
           }
         }}
         onMouseLeave={() => {
           if (hasChildren) {
-            // Delay closing to allow moving to submenu
-            setTimeout(() => {
-              if (openSubmenu === itemPath) {
-                setOpenSubmenu(null);
-              }
-            }, 100);
+            scheduleSubmenuClose(itemPath);
           }
         }}
       >
@@ -144,8 +169,11 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
               minWidth: '150px',
               zIndex: 1000,
             }}
-            onMouseEnter={() => setOpenSubmenu(itemPath)}
-            onMouseLeave={() => setOpenSubmenu(null)}
+            onMouseEnter={() => {
+              cancelPendingSubmenuClose();
+              setOpenSubmenu(itemPath);
+            }}
+            onMouseLeave={() => scheduleSubmenuClose(itemPath)}
           >
             {item.children!.map((child, childIndex) => renderMenuItem(child, childIndex, itemPath))}
           </div>
@@ -189,6 +217,8 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
               position: 'relative',
               height: '100%',
             }}
+            onMouseEnter={() => cancelPendingSubmenuClose()}
+            onMouseLeave={closeAllMenus}
           >
             <button
               onClick={handleTopClick}
@@ -228,10 +258,6 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
                   boxShadow: '2px 2px 8px rgba(0, 0, 0, 0.5)',
                   minWidth: '150px',
                   zIndex: 1000,
-                }}
-                onMouseLeave={() => {
-                  setOpenMenu(null);
-                  setOpenSubmenu(null);
                 }}
               >
                 {item.children!.map((child, childIndex) => renderMenuItem(child, childIndex, item.label))}
