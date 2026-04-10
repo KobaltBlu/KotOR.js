@@ -109,6 +109,11 @@ export class UI3DRenderer extends EventListenerModel {
   deltaTime: number;
   deltaTimeFixed: number = 0;
 
+  /**
+   * Dangly mesh wind preview (0–2, matches ARE WindPower). Used when this renderer is OdysseyModel3D context (e.g. model viewer); overrides module.area wind when set.
+   */
+  windowPower: number = 1;
+
   canvas?: HTMLCanvasElement;
   width: number = 640;
   height: number = 480;

@@ -40,7 +40,7 @@ export type ModelViewerLayerVisibility = Record<ModelViewerLayerKey, boolean>;
 export const DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY: ModelViewerLayerVisibility = {
   lights: true,
   emitters: true,
-  walkmeshes: true,
+  walkmeshes: false,
   trimesh: true,
   skin: true,
   dangly: true,
@@ -224,6 +224,7 @@ export class TabModelViewerState extends TabState {
               TabModelViewerState.applyModelViewerLayers(this.model, this.modelViewerLayerVisibility, {
                 layoutGroup: this.layout_group,
                 groundMesh: this.groundMesh,
+                lightHelpers: this.ui3DRenderer.group.light_helpers,
               });
 
               // this.updateCameraFocus();
@@ -497,13 +498,16 @@ export class TabModelViewerState extends TabState {
   static applyModelViewerLayers(
     model: KotOR.OdysseyModel3D | undefined,
     layers: ModelViewerLayerVisibility,
-    sceneExtras?: { layoutGroup?: THREE.Group; groundMesh?: THREE.Object3D },
+    sceneExtras?: { layoutGroup?: THREE.Group; groundMesh?: THREE.Object3D; lightHelpers?: THREE.Object3D },
   ): void {
     if (sceneExtras?.layoutGroup) {
       sceneExtras.layoutGroup.visible = layers.layout;
     }
     if (sceneExtras?.groundMesh) {
       sceneExtras.groundMesh.visible = layers.ground;
+    }
+    if (sceneExtras?.lightHelpers) {
+      sceneExtras.lightHelpers.visible = layers.lights;
     }
     if (!model) return;
 
@@ -575,6 +579,7 @@ export class TabModelViewerState extends TabState {
     TabModelViewerState.applyModelViewerLayers(this.model, this.modelViewerLayerVisibility, {
       layoutGroup: this.layout_group,
       groundMesh: this.groundMesh,
+      lightHelpers: this.ui3DRenderer.group.light_helpers,
     });
     this.ui3DRenderer.render();
   }
@@ -588,6 +593,13 @@ export class TabModelViewerState extends TabState {
 
   toggleLayerVisibility(key: ModelViewerLayerKey): void {
     this.setLayerVisibility(key, !this.modelViewerLayerVisibility[key]);
+  }
+
+  /** Preview dangly wind for model viewer (0 / 1 / 2); ARE WindPower when not using Forge preview context. */
+  setWindPower(power: 0 | 1 | 2): void {
+    if (this.ui3DRenderer.windowPower === power) return;
+    this.ui3DRenderer.windowPower = power;
+    this.processEventListener<TabModelViewerStateEventListenerTypes>('onModelViewerLayersChange', [this]);
   }
 
   static findOdysseyObject3D(object: THREE.Object3D | undefined): KotOR.OdysseyObject3D | undefined {

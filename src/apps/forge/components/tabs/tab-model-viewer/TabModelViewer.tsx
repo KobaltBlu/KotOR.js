@@ -58,6 +58,26 @@ export const TabModelViewer = function(props: any){
       label: 'View',
       children: [
         {
+          label: 'Wind Power',
+          children: [
+            {
+              label: 'Off (0)',
+              checked: tab.ui3DRenderer.windowPower === 0,
+              onClick: () => tab.setWindPower(0),
+            },
+            {
+              label: 'Weak (1)',
+              checked: tab.ui3DRenderer.windowPower === 1,
+              onClick: () => tab.setWindPower(1),
+            },
+            {
+              label: 'Strong (2)',
+              checked: tab.ui3DRenderer.windowPower === 2,
+              onClick: () => tab.setWindPower(2),
+            },
+          ],
+        },
+        {
           label: 'Show',
           children: [
             layerToggle('lights'),
