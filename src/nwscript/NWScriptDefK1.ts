@@ -5800,7 +5800,30 @@ NWScriptDefK1.Actions = {
     comment: "476: Use this on an NPC to cause all creatures within a 10-metre radius to stop\nwhat they are doing and sets the NPC's enemies within this range to be\nneutral towards the NPC. If this command is run on a PC or an object that is\nnot a creature, nothing will happen.\n",
     name: "SurrenderToEnemies",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModulePlayer)){
+        return;
+      }
+
+      const caller = this.caller as ModuleCreature;
+      const creatures = GameState.module.area.creatures;
+      for(let i = 0; i < creatures.length; i++){
+        const creature = creatures[i];
+        if(creature === caller) continue;
+        const dx = creature.position.x - caller.position.x;
+        const dy = creature.position.y - caller.position.y;
+        if(dx * dx + dy * dy > 100) continue; // 10m radius = 100 sq
+        if(creature.isHostile(caller)){
+          creature.clearAllActions();
+          creature.clearAllEffects();
+          GameState.FactionManager.SetFactionReputation(caller, creature, 50);
+        }
+      }
+    }
   },
   477:{
     comment: "477: Create a Miss Chance effect.\n- nPercentage: 1-100 inclusive\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nPercentage < 1 or\nnPercentage > 100.\n",
