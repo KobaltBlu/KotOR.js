@@ -395,7 +395,8 @@ export class TabModelViewerState extends TabState {
           if(mdl){
             let model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
               // manageLighting: false,
-              context: this.ui3DRenderer, 
+              context: this.ui3DRenderer,
+              editorMode: true,
               mergeStatic: false,
             });
             if(model){

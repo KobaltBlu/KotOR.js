@@ -16,7 +16,7 @@ import { TwoDAManager } from "@/managers/TwoDAManager";
 import { IOdysseyModelLoaderOptions } from "@/interface/odyssey";
 import { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
-import { type OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
+import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 import { type OdysseyModelNodeLight } from "@/odyssey/OdysseyModelNodeLight";
 import { type OdysseyModel } from "@/odyssey/OdysseyModel";
 import { type OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
@@ -824,6 +824,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
       } as IOdysseyModelLoaderOptions;
 
       const options: IOdysseyModelLoaderOptions = { ..._default, ..._options };
+      if (options.attachMdlAabbMesh === undefined) {
+        options.attachMdlAabbMesh = !!options.editorMode;
+      }
 
       if(model){
 
@@ -1250,11 +1253,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
             geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
 
             const colors = odysseyNode.faces.map( f => {
+              const c = OdysseyWalkMesh.colorForMaterialIndex(f.materialIndex);
               return [
-                f.color.r, f.color.g, f.color.b,
-                f.color.r, f.color.g, f.color.b,
-                f.color.r, f.color.g, f.color.b,
-              ]
+                c.r, c.g, c.b,
+                c.r, c.g, c.b,
+                c.r, c.g, c.b,
+              ];
             }).flat();
 
             //Color
@@ -1345,13 +1349,17 @@ export class OdysseyModel3D extends OdysseyObject3D {
             (mesh as any).odysseyNode = odysseyNode;
             mesh.userData.odysseyModelNode = odysseyNode;
             mesh.matrixAutoUpdate = true;
-            if(!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) ){
+            const isAabb = (odysseyNode.nodeType & OdysseyModelNodeType.AABB) === OdysseyModelNodeType.AABB;
+            if(!isAabb || options.attachMdlAabbMesh){
               parentNode.add( mesh );
               parentNode.userData.mesh = mesh;
             }
-            if(!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB)){
+            if(!isAabb){
               mesh.castShadow = odysseyNode.flagShadow;// && !options.static;//options.castShadow;
               mesh.receiveShadow = options.receiveShadow;
+            }else if(options.attachMdlAabbMesh){
+              mesh.castShadow = false;
+              mesh.receiveShadow = false;
             }
           }
 
@@ -1389,6 +1397,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
         vertexColors: true,
         fog: false,
         side: THREE.FrontSide,
+        transparent: true,
+        opacity: 0.5,
+        depthWrite: false,
       });
     }else{
       const cacheId = OdysseyModel3D.NodeMaterialCacheId(odysseyNode);

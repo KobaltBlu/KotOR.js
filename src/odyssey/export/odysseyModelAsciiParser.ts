@@ -22,6 +22,7 @@ import { OdysseyModelNodeReference } from "@/odyssey/OdysseyModelNodeReference";
 import { OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
 import { OdysseyModelNodeSkin } from "@/odyssey/OdysseyModelNodeSkin";
 import { OdysseyControllerFactory } from "@/odyssey/controllers/OdysseyControllerFactory";
+import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 import {
   asciiClassificationToEnum,
@@ -198,6 +199,7 @@ function buildFaceFromVerts(
   const f = new OdysseyFace3(ia, ib, ic, n, undefined, materialIndex);
   f.distance = planeD;
   f.adjacent = [-1, -1, -1];
+  f.color = OdysseyWalkMesh.colorForMaterialIndex(materialIndex);
   if (smoothingGroup !== undefined) f.smoothingGroup = smoothingGroup >>> 0;
   return f;
 }

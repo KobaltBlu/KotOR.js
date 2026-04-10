@@ -77,7 +77,7 @@ export class OdysseyWalkMesh {
       let face = this.faces[i];
       face.materialIndex = this.walkTypes[i];
       face.walkIndex = face.materialIndex;
-      face.color = (OdysseyWalkMesh.TILECOLORS[this.walkTypes[i]] || OdysseyWalkMesh.TILECOLORS[0]).color.clone();
+      face.color = OdysseyWalkMesh.colorForMaterialIndex(this.walkTypes[i]);
       face.surfacemat = OdysseyModelUtility.SURFACEMATERIALS[face.walkIndex];
       face.triangle = new THREE.Triangle(
         this.vertices[face.a],
@@ -674,6 +674,16 @@ export class OdysseyWalkMesh {
     }
   }
 
+  /**
+   * Display color for a walk/surface material index (tilecolor.2da), matching WOK mesh coloring.
+   * Safe before {@link Init} or if TILECOLORS is empty (neutral gray).
+   */
+  static colorForMaterialIndex(materialIndex: number): THREE.Color {
+    const idx = materialIndex | 0;
+    const tc = OdysseyWalkMesh.TILECOLORS[idx] || OdysseyWalkMesh.TILECOLORS[0];
+    return tc?.color?.clone() ?? new THREE.Color(0.5, 0.5, 0.5);
+  }
+
   getAdjacentFaces(faceIndex: number = 0): { a: OdysseyFace3, b: OdysseyFace3, c: OdysseyFace3 } {
     const face = this.faces[1];
     const vertIndexes = [face.a, face.b, face.c];
@@ -737,7 +747,7 @@ export class OdysseyWalkMesh {
     this.walkTypes[faceIndex] = walkIndex;
     face.materialIndex = walkIndex;
     face.walkIndex = walkIndex;
-    face.color = (OdysseyWalkMesh.TILECOLORS[walkIndex] || OdysseyWalkMesh.TILECOLORS[0])?.color?.clone() ?? new THREE.Color(0.5, 0.5, 0.5);
+    face.color = OdysseyWalkMesh.colorForMaterialIndex(walkIndex);
     face.surfacemat = OdysseyModelUtility.SURFACEMATERIALS[walkIndex];
     if (face.surfacemat) {
       face.blocksLineOfSight = face.surfacemat.lineOfSight;
@@ -793,7 +803,7 @@ export class OdysseyWalkMesh {
       const walkIndex = this.walkTypes[i];
       face.materialIndex = walkIndex;
       face.walkIndex = walkIndex;
-      face.color = (OdysseyWalkMesh.TILECOLORS[walkIndex] || OdysseyWalkMesh.TILECOLORS[0])?.color?.clone() ?? new THREE.Color(0.5, 0.5, 0.5);
+      face.color = OdysseyWalkMesh.colorForMaterialIndex(walkIndex);
       face.surfacemat = OdysseyModelUtility.SURFACEMATERIALS[walkIndex];
       if (face.surfacemat) {
         face.blocksLineOfSight = face.surfacemat.lineOfSight;
