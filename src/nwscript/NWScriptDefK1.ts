@@ -5693,7 +5693,13 @@ NWScriptDefK1.Actions = {
     comment: "465: Create a True Seeing effect.\n",
     name: "EffectTrueSeeing",
     type: NWScriptDataType.EFFECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      let effect = new GameState.GameEffectFactory.EffectTrueSeeing();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   466:{
     comment: "466: Create a See Invisible effect.\n",
