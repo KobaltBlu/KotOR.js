@@ -8490,7 +8490,16 @@ NWScriptDefK1.Actions = {
     comment: "767. SetAvailableNPCId\nThis will set the object id that should be used for a specific available NPC\n",
     name: "SetAvailableNPCId",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      const npc = GameState.PartyManager.NPCS[args[0]];
+      if(!npc){
+        return;
+      }
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        npc.moduleObject = args[1];
+      }
+    }
   },
   768:{
     comment: "768. IsMoviePlaying\nChecks if a movie is currently playing.\n",
