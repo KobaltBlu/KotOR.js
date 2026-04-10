@@ -8528,7 +8528,30 @@ NWScriptDefK1.Actions = {
     comment: "762: SurrenderRetainBuffs()\nThis will do the same as SurrenderToEnemies, except that affected creatures will not\nlose effects which they have put on themselves\n",
     name: "SurrenderRetainBuffs",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModulePlayer)){
+        return;
+      }
+
+      const caller = this.caller as ModuleCreature;
+      const creatures = GameState.module.area.creatures;
+      for(let i = 0; i < creatures.length; i++){
+        const creature = creatures[i];
+        if(creature === caller) continue;
+        const dx = creature.position.x - caller.position.x;
+        const dy = creature.position.y - caller.position.y;
+        if(dx * dx + dy * dy > 100) continue; // 10m radius = 100 sq
+        if(creature.isHostile(caller)){
+          creature.clearAllActions();
+          // Unlike SurrenderToEnemies, do NOT clear effects
+          GameState.FactionManager.SetFactionReputation(caller, creature, 50);
+        }
+      }
+    }
   },
   763:{
     comment: "763. SuppressStatusSummaryEntry\nThis will prevent the next n entries that should have shown up in the status summary\nfrom being added\nThis will not add on to any existing summary suppressions, but rather replace it.  So\nto clear the supression system pass 0 as the entry value\n",
