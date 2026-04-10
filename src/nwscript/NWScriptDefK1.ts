@@ -3579,7 +3579,10 @@ NWScriptDefK1.Actions = {
     comment: "282: Use this in an OnItemAcquired script to get the item that was acquired.\n* Returns OBJECT_INVALID if the module is not valid.\n",
     name: "GetModuleItemAcquired",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module?.lastItemAcquired ?? undefined;
+    }
   },
   283:{
     comment: "283: Use this in an OnItemAcquired script to get the creatre that previously\npossessed the item.\n* Returns OBJECT_INVALID if the item was picked up from the ground.\n",
