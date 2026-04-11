@@ -2074,11 +2074,17 @@ export class GUIControl {
       break;
     }
 
-    if(BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox) && this.type == GUIControlType.Label){
+    // ProtoItem rows (e.g. Messages dialog list) wrap text like Labels; without this, extent.height stays at
+    // the single-line template height and list rows overlap after buildGeometry.
+    if(
+      BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox) &&
+      this.list &&
+      (this.type == GUIControlType.Label || this.type == GUIControlType.ProtoItem)
+    ){
       // this.widget.userData.text.position.x -= (this.parent.scrollbar.extent.width) + (this.parent.scrollbar.border.dimension * 2);
       this.extent.height = this.textSize.y;
       this.resizeControl();
-      this.list.updateList();
+      this.list.relayoutAfterRowHeightChange();
     }
     
   }

@@ -94,9 +94,10 @@ export class GUIProtoItem extends GUIControl{
 
     if(this.text.geometry){
       this.text.geometry.computeBoundingBox();
-      let tSize = this.text.geometry.boundingBox.getSize(new THREE.Vector3);
+      const tSize = new THREE.Vector3();
+      this.text.geometry.boundingBox.getSize(tSize);
       if(tSize.y > height){
-        height = tSize.y/2;
+        height = tSize.y;
       }
     }
 

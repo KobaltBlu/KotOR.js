@@ -302,9 +302,13 @@ export class GUIScrollBar extends GUIControl{
 
     if(this.list){
 
-      let contentHeight = this.list.getContentHeight();
+      const contentHeight = this.list.getContentHeight();
+      const vh =
+        typeof this.list.getViewportInnerHeight === 'function'
+          ? this.list.getViewportInnerHeight()
+          : this.list.extent.height;
 
-      let scaleY = this.list.extent.height / contentHeight;
+      let scaleY = contentHeight > 0 ? vh / contentHeight : 1;
       if(scaleY > 1){
         scaleY = 1;
         this.thumb.scale.y = this.extent.height * scaleY;
@@ -314,30 +318,12 @@ export class GUIScrollBar extends GUIControl{
         this.thumb.scale.y = this.extent.height * scaleY;
       }
 
-      let offsetY = contentHeight*this.scrollPos;
-      let offsetYMax = contentHeight - this.extent.height;
-      let nodeHeight = this.list.getNodeHeight();
-      if(offsetY > offsetYMax){
-        offsetY = offsetYMax;//Math.floor(offsetYMax / nodeHeight) * nodeHeight;
+      if(this.list.maxScroll <= 0){
+        this.list.scroll = 0;
+      }else{
+        this.list.scroll = this.list.maxScroll * this.scrollPos;
       }
-
-      //console.log((Math.floor(offsetY / nodeHeight)) * nodeHeight);
-      /*offsetY = (Math.ceil(offsetY / nodeHeight)) * nodeHeight;
-
-      for(let i = 0; i < this.list.itemGroup.children.length; i++){
-        let node = this.list.itemGroup.children[i];
-        let control = node.control;
-        node.position.y = control.startY + offsetY;
-        control.calculateBox();
-        //node.box.translate(new THREE.Vector2( offsetY))
-      }
-      this.list.cullOffscreen();*/
-
-      this.list.scroll = Math.floor(this.list.maxScroll * this.scrollPos) || 0;
       this.list.updateList();
-
-      let scrollThumbOffset = (this.extent.height - this.thumb.scale.y) - (this.border.dimension*2);
-      this.thumb.position.y = scrollThumbOffset/2 - (scrollThumbOffset * this.list.scroll / this.list.maxScroll) || 0;
 
     }
 

@@ -372,12 +372,26 @@ export class GameMenu {
   }
 
   triggerControllerDUpPress(){
+    if(
+      this.selectedControl &&
+      BitWise.InstanceOfObject(this.selectedControl.objectType, GUIControlTypeMask.GUIListBox)
+    ){
+      (this.selectedControl as GUIControl & { directionalNavigate(dir: string): void }).directionalNavigate('up');
+      return;
+    }
     if(this.manager.activeGUIElement){
       //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerDDownPress(){
+    if(
+      this.selectedControl &&
+      BitWise.InstanceOfObject(this.selectedControl.objectType, GUIControlTypeMask.GUIListBox)
+    ){
+      (this.selectedControl as GUIControl & { directionalNavigate(dir: string): void }).directionalNavigate('down');
+      return;
+    }
     if(this.manager.activeGUIElement){
       //this.manager.activeGUIElement.click();
     }
