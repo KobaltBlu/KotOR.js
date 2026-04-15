@@ -21,7 +21,7 @@ export const TabHelp = function TabHelp(props: BaseTabProps) {
       <h2 className="h5 mb-3">Documentation</h2>
       <p className="text-muted small mb-4">
         Open documentation and tutorials in your browser. Use{" "}
-        <strong>Help → Open Editor Documentation</strong> for the current editor&apos;s format.
+        <strong>Help -> Open Editor Documentation</strong> for the current editor&apos;s format.
       </p>
       {HELP_FOLDERS.map((folder: HelpFolder) => (
         <div key={folder.name} className="mb-4">

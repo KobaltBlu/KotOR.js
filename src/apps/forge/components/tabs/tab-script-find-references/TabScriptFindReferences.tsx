@@ -49,7 +49,7 @@ export const TabScriptFindReferences = function(props: any){
         <div className="error-list__empty">
           {parentTab
             ? "No references found."
-            : "Open a script (File → New → NW Script) and use Find References from the editor to search for symbol usages."}
+            : "Open a script (File -> New -> NW Script) and use Find References from the editor to search for symbol usages."}
         </div>
       ) : (
         <div className="error-list__items">

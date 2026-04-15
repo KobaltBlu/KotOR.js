@@ -39,10 +39,10 @@ All stub/fallback editors replaced with fully functional specialized editors:
 
 | Tool | Status | Integration | Purpose |
 |------|--------|-------------|---------|
-| **Update Check** | ✅ Complete | Help → Check for Updates | Version checking with download links |
-| **Patcher Project** | ✅ Complete | Project → Patcher Project | Mod packaging tool (TSLPatchData-style) |
-| **Settings** | ✅ Complete | File → Settings | Game paths, editor prefs, updates, theme |
-| **Diff Tool** | ✅ Complete | View → Diff Tool | Side-by-side file comparison launcher |
+| **Update Check** | ✅ Complete | Help -> Check for Updates | Version checking with download links |
+| **Patcher Project** | ✅ Complete | Project -> Patcher Project | Mod packaging tool (TSLPatchData-style) |
+| **Settings** | ✅ Complete | File -> Settings | Game paths, editor prefs, updates, theme |
+| **Diff Tool** | ✅ Complete | View -> Diff Tool | Side-by-side file comparison launcher |
 | **GFF Diff** | ✅ Complete | (Comparison modal) | GFF-aware structured comparison |
 | **BIF Save Docs** | ✅ Complete | (ModalSaveToModule) | Documentation for BIF resource workflow |
 | **Theme System** | ✅ Complete | ForgeState.applyTheme() | Dark/light/auto theme support |
@@ -118,17 +118,17 @@ Help
 
 ### File Type Routing (FileTypeManager.ts)
 All editors already registered:
-- `dlg` → TabDLGEditorState
-- `are` → TabAREEditorState
-- `git` → TabGITEditorState
-- `ifo` → TabIFOEditorState
-- `fac` → TabFACEditorState
-- `jrl` → TabJRLEditorState
-- `ltr` → TabLTREditorState
-- `ssf` → TabSSFEditorState
-- `tlk` → TabTLKEditorState
-- `vis` → TabVISEditorState
-- `sav` → TabSAVEditorState
+- `dlg` -> TabDLGEditorState
+- `are` -> TabAREEditorState
+- `git` -> TabGITEditorState
+- `ifo` -> TabIFOEditorState
+- `fac` -> TabFACEditorState
+- `jrl` -> TabJRLEditorState
+- `ltr` -> TabLTREditorState
+- `ssf` -> TabSSFEditorState
+- `tlk` -> TabTLKEditorState
+- `vis` -> TabVISEditorState
+- `sav` -> TabSAVEditorState
 
 ---
 
@@ -163,7 +163,7 @@ All editors already registered:
 - [ ] Test Patcher Project modal (add files, generate config, export)
 - [ ] Test Diff Tool tab (select two files, run comparison)
 - [ ] Test GFF-aware comparison (open DLG/ARE/GIT files in comparison)
-- [ ] Test theme switching (Settings → Appearance, apply dark/light/auto)
+- [ ] Test theme switching (Settings -> Appearance, apply dark/light/auto)
 - [ ] Test session persistence (open tabs, restart app, verify tabs restore)
 
 ---

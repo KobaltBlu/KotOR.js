@@ -158,7 +158,7 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
         setOverridePath(outputDir);
       }
       if (!outputDir && !dirHandle) {
-        modal.setError("Choose the game Override folder (Browse) or set the game directory first (File → Change Game).");
+        modal.setError("Choose the game Override folder (Browse) or set the game directory first (File -> Change Game).");
         setSaving(false);
         return;
       }

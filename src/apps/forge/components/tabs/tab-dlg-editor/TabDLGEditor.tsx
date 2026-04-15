@@ -314,7 +314,7 @@ const NodePropertiesPanel = (props: NodePropertiesPanelProps) => {
             <p>Replies ({node.replies?.length || 0})</p>
             <ul className="link-list">
               {node.replies?.map((reply, idx) => (
-                <li key={idx}>→ Reply [{reply.index}]: {reply.text?.substring(0, 50) || '(empty)'}</li>
+                <li key={idx}>-> Reply [{reply.index}]: {reply.text?.substring(0, 50) || '(empty)'}</li>
               ))}
             </ul>
           </>
@@ -324,7 +324,7 @@ const NodePropertiesPanel = (props: NodePropertiesPanelProps) => {
             <p>Entries ({node.entries?.length || 0})</p>
             <ul className="link-list">
               {node.entries?.map((entry, idx) => (
-                <li key={idx}>→ Entry [{entry.index}]: {entry.text?.substring(0, 50) || '(empty)'}</li>
+                <li key={idx}>-> Entry [{entry.index}]: {entry.text?.substring(0, 50) || '(empty)'}</li>
               ))}
             </ul>
           </>
@@ -334,7 +334,7 @@ const NodePropertiesPanel = (props: NodePropertiesPanelProps) => {
             <p>Entries ({node.entries?.length || 0})</p>
             <ul className="link-list">
               {node.entries?.map((entry, idx) => (
-                <li key={idx}>→ Entry [{entry.index}]: {entry.text?.substring(0, 50) || '(empty)'}</li>
+                <li key={idx}>-> Entry [{entry.index}]: {entry.text?.substring(0, 50) || '(empty)'}</li>
               ))}
             </ul>
           </>

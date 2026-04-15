@@ -113,13 +113,13 @@ instance.execute();
 ## Critical Cross-Component Flows
 
 **Loading a Module:**
-GameInitializer → Module.Load(ifoFile) → ModuleArea.Load() → Creates ModuleObjects → Loads NWScripts → Executes Mod_OnModLoad event
+GameInitializer -> Module.Load(ifoFile) -> ModuleArea.Load() -> Creates ModuleObjects -> Loads NWScripts -> Executes Mod_OnModLoad event
 
 **Executing an Action:**
-Action.Update() checks ActionStatus → Calls subclass virtual methods → May queue follow-up actions → Triggers game events
+Action.Update() checks ActionStatus -> Calls subclass virtual methods -> May queue follow-up actions -> Triggers game events
 
 **Loading a Resource:**
-ResourceLoader.demand() → Checks archives (KEY→BIF lookup, or RIM/ERF) → Parses format-specific handler (GFF, TPC, etc.) → Caches result
+ResourceLoader.demand() -> Checks archives (KEY->BIF lookup, or RIM/ERF) -> Parses format-specific handler (GFF, TPC, etc.) -> Caches result
 
 ## Key Files to Reference
 
@@ -156,7 +156,7 @@ ResourceLoader.demand() → Checks archives (KEY→BIF lookup, or RIM/ERF) → P
 2. **Type checking**: `npx tsc --noEmit` for full project type check
 3. **Performance**: `PerformanceMonitor` utility in codebase for profiling
 4. **Script decompilation**: NWScript has built-in decompiler for .ncs files
-5. **Resource issues**: Check archive loading order (KEY→BIF→RIM→ERF) in GameFileSystem
+5. **Resource issues**: Check archive loading order (KEY->BIF->RIM->ERF) in GameFileSystem
 
 ---
 

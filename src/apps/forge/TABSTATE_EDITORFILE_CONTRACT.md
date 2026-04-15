@@ -44,7 +44,7 @@ Special case: `readMdlMdxFile()` for MDL/MDX dual files.
 Parses filepath URL and extracts:
 - Protocol (file://, bif://, erf://, mod://, rim://, zip://, 7zip://)
 - Pathname (normalized, slashes replaced)
-- Special prefixes: `game.dir`, `project.dir`, `system.dir` → sets filesystem flags
+- Special prefixes: `game.dir`, `project.dir`, `system.dir` -> sets filesystem flags
 - Query params: `?resref=X&restype=Y` for archive resources
 - Sets `this.resref`, `this.ext`, `this.reskey`, `this.location`
 
@@ -112,7 +112,7 @@ Returns `${resref}.${ext}` for display.
   - `TabTextEditorState`: encodes text content to buffer
 
 #### `updateFile()`
-**Override in subclasses** to sync tab state → file buffer before save.
+**Override in subclasses** to sync tab state -> file buffer before save.
 - Default: no-op
 - Called by `save()` and `saveAs()` before `getExportBuffer()`
 
@@ -122,7 +122,7 @@ Returns `${resref}.${ext}` for display.
 3. Calls `getExportBuffer()`
 4. Writes buffer to filesystem:
    - **Electron**: `fs.writeFile(path, buffer)`
-   - **Browser**: `handle.createWritable()` → `write()` → `close()`
+   - **Browser**: `handle.createWritable()` -> `write()` -> `close()`
 5. Updates `file.buffer` and sets `file.unsaved_changes = false`
 6. Returns `true` on success, `false` on error
 
@@ -136,13 +136,13 @@ Returns `${resref}.${ext}` for display.
 7. Returns `true` on success, `false` on error
 
 #### `async compile(): Promise<boolean>`
-**Override in subclasses** for compilable files (e.g. NSS → NCS).
+**Override in subclasses** for compilable files (e.g. NSS -> NCS).
 - Default: returns `false`
 
 #### `storeState(): TabStoreState`
 **Override in subclasses** to persist tab state across sessions.
 - Default: `{ type: this.type, file: this.file }`
-- Used by `ForgeState.saveOpenTabsState()` → `ConfigClient.set('open_tabs', ...)`
+- Used by `ForgeState.saveOpenTabsState()` -> `ConfigClient.set('open_tabs', ...)`
 - Restored via `EditorTabManager.restoreTabState(tabState)`
 
 #### `editorFileUpdated()`
@@ -182,8 +182,8 @@ Sets the React element to render when tab is visible.
 ### Core Methods
 
 #### `addTab(tab: TabState)`
-1. If `tab.singleInstance=true`, checks if instance already exists → shows existing tab instead
-2. Checks if resource ID already open (`isResourceIdOpenInTab()`) → shows existing tab instead
+1. If `tab.singleInstance=true`, checks if instance already exists -> shows existing tab instead
+2. Checks if resource ID already open (`isResourceIdOpenInTab()`) -> shows existing tab instead
 3. Sets `currentTab = tab`
 4. Calls `tab.attach(this)` and `tab.show()`
 5. Adds to `tabs[]` array
@@ -344,34 +344,34 @@ export { TabXYZEditorState } from './TabXYZEditorState';
 
 ## File Loading Flow
 
-1. **User opens file** → `FileTypeManager.onOpenResource(editorFile)`
-2. **Routing** → `FileTypeManager` instantiates correct `Tab*State` with `editorFile`
-3. **Tab init** → `TabState` constructor calls `this.openFile()`
-4. **File read** → `editorFile.readFile()` loads buffer based on protocol
-5. **Parse** → Tab parses buffer using TS parser (e.g. `GFFObject.FromBuffer()`)
-6. **Render** → Tab triggers `onEditorFileLoad` event → React UI updates
+1. **User opens file** -> `FileTypeManager.onOpenResource(editorFile)`
+2. **Routing** -> `FileTypeManager` instantiates correct `Tab*State` with `editorFile`
+3. **Tab init** -> `TabState` constructor calls `this.openFile()`
+4. **File read** -> `editorFile.readFile()` loads buffer based on protocol
+5. **Parse** -> Tab parses buffer using TS parser (e.g. `GFFObject.FromBuffer()`)
+6. **Render** -> Tab triggers `onEditorFileLoad` event -> React UI updates
 
 ## File Saving Flow
 
-1. **User triggers save** → `tab.save()` or `tab.saveAs()`
-2. **Sync state** → `tab.updateFile()` (override hook to sync UI → data)
-3. **Export** → `tab.getExportBuffer()` (override hook to serialize data → buffer)
-4. **Write** → Platform-specific write (Node fs or Browser FileSystemFileHandle)
-5. **Update state** → `editorFile.buffer = savedBuffer`, `editorFile.unsaved_changes = false`
-6. **UI update** → `editorFileUpdated()` removes `*` from tab name
+1. **User triggers save** -> `tab.save()` or `tab.saveAs()`
+2. **Sync state** -> `tab.updateFile()` (override hook to sync UI -> data)
+3. **Export** -> `tab.getExportBuffer()` (override hook to serialize data -> buffer)
+4. **Write** -> Platform-specific write (Node fs or Browser FileSystemFileHandle)
+5. **Update state** -> `editorFile.buffer = savedBuffer`, `editorFile.unsaved_changes = false`
+6. **UI update** -> `editorFileUpdated()` removes `*` from tab name
 
 ## Persistence/Restoration Flow
 
-1. **On app exit** → `ForgeState.saveOpenTabsState()` (currently disabled but available)
+1. **On app exit** -> `ForgeState.saveOpenTabsState()` (currently disabled but available)
    - Calls `tab.storeState()` for each open tab
    - Saves to `ConfigClient.set('open_tabs', tabStoreStates)`
-2. **On app init** → `ForgeState.InitializeApp()`
+2. **On app init** -> `ForgeState.InitializeApp()`
    - Reads `ConfigClient.get('open_tabs', [])`
    - Calls `EditorTabManager.restoreTabState(tabState)` for each
-3. **Restoration** → `restoreTabState()` switch on `tabState.type`
+3. **Restoration** -> `restoreTabState()` switch on `tabState.type`
    - Reconstructs `EditorFile` from serialized data
    - Instantiates correct tab class
-   - Tab constructor calls `openFile()` → buffer loads → UI renders
+   - Tab constructor calls `openFile()` -> buffer loads -> UI renders
 
 ## Unsaved Changes Tracking
 
@@ -388,7 +388,7 @@ When opening from archive:
 - `EditorFile.resref` = `myfile`
 - `EditorFile.ext` = `utc`
 - `readFile()` loads from archive object
-- `save()` → forces `saveAs()` (cannot save back to archive directly)
+- `save()` -> forces `saveAs()` (cannot save back to archive directly)
 - Alternative: use "Save to Module/Override/RIM" modals for structured archive saving
 
 ## Browser vs Electron Differences
@@ -416,5 +416,5 @@ When opening from archive:
 
 ## Maintenance
 
-- Keep this document in sync with `EditorTabManager.restoreTabState()` (switch cases must match all tab types) and `FileTypeManager.onOpenResource()` (ext → tab mapping).
+- Keep this document in sync with `EditorTabManager.restoreTabState()` (switch cases must match all tab types) and `FileTypeManager.onOpenResource()` (ext -> tab mapping).
 - When adding a new tab type, add a case to both `restoreTabState()` and the `FileTypeManager` switch.

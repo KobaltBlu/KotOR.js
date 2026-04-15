@@ -1,6 +1,6 @@
 /**
  * Forge script compilation/decompilation helper (ported from Holocron script_compiler).
- * Wraps NWScriptParser + NWScriptCompiler to compile NSS → NCS, and NWScript decompiler for NCS → NSS.
+ * Wraps NWScriptParser + NWScriptCompiler to compile NSS -> NCS, and NWScript decompiler for NCS -> NSS.
  */
 
 import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";

@@ -92,7 +92,7 @@ export class OdysseyEngine {
   /**
    * Initialize the game engine
    * Follows the sequence found in binary analysis:
-   * System → Display → Graphics → Input → Audio → Resources → Game State
+   * System -> Display -> Graphics -> Input -> Audio -> Resources -> Game State
    */
   async initialize(): Promise<void> {
     try {

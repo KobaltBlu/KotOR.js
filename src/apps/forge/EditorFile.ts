@@ -574,12 +574,12 @@ export class EditorFile extends EventListenerModel {
 
   /** Save to current path. Call TabState.save() on the owning tab to perform the actual save. */
   save(){
-    // Stub: tab handles save via TabState.save() when user uses File → Save.
+    // Stub: tab handles save via TabState.save() when user uses File -> Save.
   }
 
   /** Save to a new path. Call TabState.saveAs() on the owning tab to perform the actual save. */
   saveAs(){
-    // Stub: tab handles save-as via TabState.saveAs() when user uses File → Save As.
+    // Stub: tab handles save-as via TabState.saveAs() when user uses File -> Save As.
   }
 
   static From(editorFile: EditorFile){

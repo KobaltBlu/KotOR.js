@@ -31,7 +31,7 @@ export class ForgeState {
   static projectExplorerTab: TabProjectExplorerState = new TabProjectExplorerState();
   static resourceExplorerTab: TabResourceExplorerState = new TabResourceExplorerState();
 
-  /** Current extract options (TPC/MDL decompile, etc.). Updated by Help → Extract Options. */
+  /** Current extract options (TPC/MDL decompile, etc.). Updated by Help -> Extract Options. */
   static extractOptions: ExtractOptions = { ...DEFAULT_EXTRACT_OPTIONS };
 
   /** Current theme/appearance (loaded from ConfigClient, applied to app container) */

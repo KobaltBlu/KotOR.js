@@ -387,7 +387,7 @@ export class MenuTopState {
             alert(`Extract failed: ${e instanceof Error ? e.message : String(e)}`);
           }
         } else {
-          alert('Open an ERF or MOD file first (File → Open File).');
+          alert('Open an ERF or MOD file first (File -> Open File).');
         }
       },
     });
