@@ -812,7 +812,7 @@ export class DLGNode {
 
   getCompiledString(): string {
     let text = this.text;
-    text = text.split('##')[0].replaceAll(/\{.*\}/ig, '').trim();
+    text = text.split('##')[0].replaceAll(/\{.*?\}/ig, '').trim();
     //if(this.speaker instanceof ModuleCreature){
       text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
       text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
