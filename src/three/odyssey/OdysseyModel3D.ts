@@ -1609,6 +1609,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
       material.needsUpdate = true;
       odysseyModel.cachedMaterials.set(cacheId, material);
+      material.addEventListener('txi', (event: any) => {
+        const mesh: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial> = (parentNode as any).mesh;
+        if(mesh && mesh.material.blending == THREE.AdditiveBlending){
+          mesh.renderOrder = 2;
+        }
+      });
     }
     return material;
   };
