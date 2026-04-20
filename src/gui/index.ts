@@ -12,5 +12,6 @@ export * from "@/gui/GUIScrollBar";
 export * from "@/gui/GUISlider";
 export * from "@/gui/LBL_3DView";
 export * from "@/gui/GameMenu";
+export * from "@/gui/listrow";
 export * from "@/gui/LBL_MapView";
 export * from "@/gui/GUIFont";

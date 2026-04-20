@@ -3,6 +3,7 @@ import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlEvent } from "@/gui/GUIControlEvent";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
 
 /**
  * GUILabel class.
@@ -18,6 +19,7 @@ export class GUILabel extends GUIControl {
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUILabel;
+    this.setControlType(GUIControlType.Label);
 
     this.onKeyDown = (e: any) => {
       // e.stopPropagation();

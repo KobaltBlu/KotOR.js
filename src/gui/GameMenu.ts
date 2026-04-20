@@ -14,8 +14,7 @@ import { BitWise } from "@/utility/BitWise";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { Mouse } from "@/controls/Mouse";
 import { KeyMapper } from "@/controls";
-import type { GUIProtoItem } from "@/gui/GUIProtoItem";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { shouldSuppressGameMenuHoverForListRow } from "@/gui/listrow/listRowHover";
 
 /**
  * GameMenu class.
@@ -291,10 +290,7 @@ export class GameMenu {
     if(!BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIControl))
       return false;
 
-    if(BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIProtoItem) && (
-      typeof (control as GUIProtoItem).list.GUIProtoItemClass !== 'undefined' &&
-      control.type !== GUIControlType.Label && control.type !== GUIControlType.ProtoItem
-    )){
+    if(shouldSuppressGameMenuHoverForListRow(control)){
       return false;
     }
 

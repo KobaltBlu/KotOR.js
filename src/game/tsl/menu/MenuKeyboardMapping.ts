@@ -72,7 +72,7 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
         this.updateList();
       });
 
-      this.LST_EventList.GUIProtoItemClass = GUIKeyMapItem;
+      this.LST_EventList.setProtoBuilder(GUIKeyMapItem);
       this.LST_EventList.border.inneroffset = 5;
       this.LST_EventList.border.inneroffsety = 5;
       this.LST_EventList.onSelected = (node: any, control: GUIKeyMapItem) => {

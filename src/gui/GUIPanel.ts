@@ -2,6 +2,7 @@ import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import type { GFFStruct } from "@/resource/GFFStruct";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
 
 /**
  * GUIPanel class.
@@ -17,6 +18,7 @@ export class GUIPanel extends GUIControl {
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUIPanel;
+    this.setControlType(GUIControlType.Panel);
   }
 
   createControl(){

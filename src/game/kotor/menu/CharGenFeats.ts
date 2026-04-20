@@ -50,7 +50,7 @@ export class CharGenFeats extends GameMenu {
   show() {
     super.show();
     this.addGrantedFeats();
-    this.LB_FEATS.GUIProtoItemClass = GUIFeatItem;
+    this.LB_FEATS.setProtoBuilder(GUIFeatItem);
     this.LB_FEATS.clearItems();
     this.buildFeatList();
     TextureLoader.LoadQueue();

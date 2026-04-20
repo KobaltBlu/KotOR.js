@@ -110,7 +110,7 @@ export class MenuInventory extends K1_MenuInventory {
         this.updateFilterButton();
       });
 
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.selected = item;
         this.UpdateSelected();

@@ -9,6 +9,7 @@ import { GameState } from "@/GameState";
 import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
 // import { ShaderManager } from "@/managers";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
 
 /**
  * GUICheckBox class.
@@ -31,6 +32,7 @@ export class GUICheckBox extends GUIControl{
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUICheckBox;
+    this.setControlType(GUIControlType.CheckBox);
 
     this.value = 0;
 

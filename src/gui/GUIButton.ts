@@ -2,6 +2,7 @@ import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import type { GFFStruct } from "@/resource/GFFStruct";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
 
 /**
  * GUIButton class.
@@ -17,12 +18,13 @@ export class GUIButton extends GUIControl {
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUIButton;
+    this.setControlType(GUIControlType.Button);
     //this.widget.position.z = -2; 
   }
 
   onHoverIn(){
     super.onHoverIn();
-    if(!this.disableSelection){
+    if(!this.disableSelection && !this.disableHover){
       if(this.swapBorderAndHighliteOnHover){
         this.hideBorder();
         this.showHighlight();
@@ -42,7 +44,7 @@ export class GUIButton extends GUIControl {
 
   onHoverOut(){
     super.onHoverOut();
-    if(!this.disableSelection){
+    if(!this.disableSelection && !this.disableHover){
       if(this.swapBorderAndHighliteOnHover){
         this.showBorder();
         this.hideHighlight();
