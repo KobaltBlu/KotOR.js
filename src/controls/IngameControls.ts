@@ -64,6 +64,25 @@ export class IngameControls {
         }
       }
 
+      const ae = GameState.MenuManager.activeGUIElement as { editable?: boolean } | undefined;
+      const editingTextField = !!(ae && ae.editable === true);
+
+      if(
+        !editingTextField &&
+        (GameState.Mode == EngineMode.GUI || GameState.Mode == EngineMode.DIALOG) &&
+        (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'UpArrow' || e.code === 'DownArrow')
+      ){
+        const fg = GameState.MenuManager.GetForegroundMenu();
+        if(fg){
+          if(e.code === 'ArrowUp' || e.code === 'UpArrow'){
+            fg.triggerControllerDUpPress();
+          }else{
+            fg.triggerControllerDDownPress();
+          }
+          e.preventDefault();
+        }
+      }
+
       if(GameState.MenuManager.activeMenus.length){
         GameState.MenuManager.activeMenus[GameState.MenuManager.activeMenus.length-1].triggerEventListener('keydown', e);
       }

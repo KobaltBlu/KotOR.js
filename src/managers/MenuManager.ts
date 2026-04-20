@@ -158,6 +158,17 @@ export class MenuManager {
     return MenuManager.activeMenus[MenuManager.activeMenus.length-1];
   }
 
+  /** Topmost menu for input: overlay modals above the regular menu stack. */
+  static GetForegroundMenu(): GameMenu | undefined {
+    if(MenuManager.activeModals.length){
+      return MenuManager.activeModals[MenuManager.activeModals.length - 1];
+    }
+    if(MenuManager.activeMenus.length){
+      return MenuManager.activeMenus[MenuManager.activeMenus.length - 1];
+    }
+    return undefined;
+  }
+
   static Resize(){
     for(let i = 0, len = MenuManager.activeMenus.length; i < len; i++){
       MenuManager.activeMenus[i].resize();
