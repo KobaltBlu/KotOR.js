@@ -58,6 +58,7 @@ import { EffectTemporaryHitPoints } from "@/effects/EffectTemporaryHitPoints";
 import { EffectVisualEffect } from "@/effects/EffectVisualEffect";
 import { EffectForceResistanceIncrease } from "@/effects/EffectForceResistanceIncrease";
 import { EffectForceResistanceDecrease } from "@/effects/EffectForceResistanceDecrease";
+import { EffectTrueSeeing } from "@/effects/EffectTrueSeeing";
 import { GameEffect } from "@/effects/GameEffect";
 
 /**
@@ -136,7 +137,7 @@ export class GameEffectFactory {
   static EffectRacialType: typeof EffectRacialType = EffectRacialType;
   // static EffectSeeInvisible: typeof EffectSeeInvisible = EffectSeeInvisible;
   // static EffectUltraVision: typeof EffectUltraVision = EffectUltraVision;
-  // static EffectTrueseeing: typeof EffectTrueseeing = EffectTrueseeing;
+  static EffectTrueSeeing: typeof EffectTrueSeeing = EffectTrueSeeing;
   // static EffectBlindness: typeof EffectBlindness = EffectBlindness;
   // static EffectDarkness: typeof EffectDarkness = EffectDarkness;
   static EffectMissChance: typeof EffectMissChance = EffectMissChance;
@@ -375,6 +376,9 @@ export class GameEffectFactory {
       break;
       case GameEffectType.EffectSetState: //EffectSetState
         effect = new EffectSetState();
+      break;
+      case GameEffectType.EffectTrueseeing: //TrueSeeing
+        effect = new EffectTrueSeeing();
       break;
     }
 

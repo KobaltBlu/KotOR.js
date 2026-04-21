@@ -67,6 +67,7 @@ export class Module {
   customTokens: Map<number, string>;
   transition: any;
   transWP: string;
+  lastItemAcquired: any = undefined;
 
   /**
    * List of Areas in the module
