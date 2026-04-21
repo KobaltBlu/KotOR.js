@@ -634,9 +634,13 @@ export class SaveGame {
    * console.log(customSave.getFullName()); // "Game1 - My Adventure"
    */
   getFullName(){
-    if(this.getSaveName() != ''){
-      return this.folderName.split(' - ')[1] + ' - ' + this.getSaveName();
-    }else{
+    if(this.getIsQuickSave()) {
+      return GameState.TLKManager.GetStringById(47991).Value + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M`;
+    } else if(this.getIsAutoSave()) {
+      return GameState.TLKManager.GetStringById(1593).Value + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M`;
+    } else if(this.getSaveName() != '') {
+      return this.folderName.split(' - ')[1] + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M\n` + this.getSaveName();
+    } else {
       return this.folderName.split(' - ')[1];
     }
   }

@@ -9,6 +9,7 @@ import { GUISliderDirection } from "@/enums/gui/GUISliderDirection";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { GUIControl } from "@/gui/GUIControl";
 import type { GameMenu } from "@/gui/GameMenu";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
 
 /**
  * GUISlider class.
@@ -34,6 +35,7 @@ export class GUISlider extends GUIControl{
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUISlider;
+    this.setControlType(GUIControlType.Slider);
 
     this.scrollPos = 0.5;
     this.scrollMax = 1;

@@ -77,6 +77,7 @@ export class MainMovies extends GameMenu {
         this.close();
       });
       this._button_b = this.BTN_BACK;
+      this.LB_MOVIES.protoItem.extent.height = 64;
       this.LB_MOVIES.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
       this.LB_MOVIES.onClicked = (movie: GUIMovieItem, control: any, index: number) => {
         console.log(movie);

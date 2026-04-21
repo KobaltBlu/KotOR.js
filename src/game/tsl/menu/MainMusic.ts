@@ -53,7 +53,7 @@ export class MainMusic extends GameMenu {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.LB_MUSIC.GUIProtoItemClass = GUIMusicItem;
+      this.LB_MUSIC.setProtoBuilder(GUIMusicItem);
       
       this.audioCtx = new (global.AudioContext || (global as any).webkitAudioContext)();
       this.musicGain = this.audioCtx.createGain();

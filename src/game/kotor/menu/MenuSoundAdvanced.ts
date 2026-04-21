@@ -50,6 +50,7 @@ export class MenuSoundAdvanced extends GameMenu {
       this.close();
     });
     this._button_b = this.BTN_BACK;
+    this.selectedControl = this.LB_DESC;
     resolve();
   });
 }

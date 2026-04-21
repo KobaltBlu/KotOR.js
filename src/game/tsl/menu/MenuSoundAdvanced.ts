@@ -48,6 +48,7 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
         this.close();
       });
       this._button_b = this.BTN_BACK;
+      this.selectedControl = this.LB_DESC;
       resolve();
     });
   }

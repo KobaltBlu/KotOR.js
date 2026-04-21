@@ -219,7 +219,8 @@ export class MenuEquipment extends GameMenu {
         }
       });
 
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
+      this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
         this.updateSelected(item);
       }

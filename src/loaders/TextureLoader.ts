@@ -586,8 +586,6 @@ export class TextureLoader {
           case TXIBlending.ADDITIVE:
             tex.material.transparent = false;
             tex.material.blending = THREE['AdditiveBlending'];
-            //tex.material.alphaTest = 0;//0.5;
-            //tex.material.side = THREE.DoubleSide; //DoubleSide is causing issues with windows in TSL and elsewhere
           break;
           case TXIBlending.PUNCHTHROUGH:
             tex.material.transparent = false;
@@ -597,6 +595,10 @@ export class TextureLoader {
         }
 
         //tex.material.transparent = true;
+        tex.material.dispatchEvent({
+          type: 'txi',
+          txi: texture.txi,
+        });
         resolve();
       }catch(e){
         console.error('TextureLoader.parseTXI', e);

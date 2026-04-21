@@ -852,6 +852,10 @@ export class GameState implements EngineContext {
         GameState.VideoManager.queueMovie('leclogo', true);
         GameState.VideoManager.queueMovie('biologo', true);
         GameState.VideoManager.queueMovie('legal', true);
+      }else if(GameState.GameKey == GameEngineType.TSL){
+        GameState.VideoManager.queueMovie('leclogo', true);
+        GameState.VideoManager.queueMovie('ObsidianEnt', true);
+        GameState.VideoManager.queueMovie('Legal', true);
       }
 
       GameState.Ready = true;
@@ -869,12 +873,12 @@ export class GameState implements EngineContext {
       GameState.processEventListener('ready');
       window.dispatchEvent(new Event('resize'));
       
-      if(GameState.GameKey == GameEngineType.TSL){
-        GameState.SetEngineMode(EngineMode.LEGAL);
-        GameState.State = EngineState.RUNNING;
-        GameState.Update();
-        return;
-      }
+      // if(GameState.GameKey == GameEngineType.TSL){
+      //   GameState.SetEngineMode(EngineMode.LEGAL);
+      //   GameState.State = EngineState.RUNNING;
+      //   GameState.Update();
+      //   return;
+      // }
 
       GameState.VideoManager.playMovieQueue( () => {
         window.dispatchEvent(new Event('resize'));
@@ -980,99 +984,108 @@ export class GameState implements EngineContext {
    * @param sMovie6 - The sixth movie to play
    */
   static async LoadModule(name = '', waypoint: string = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
-    GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
-    /**
-     * Set the game mode to loading
-     */
-    GameState.SetEngineMode(EngineMode.LOADING);
-    GameState.MenuManager.ClearMenus();
+    try{
+      GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
+      /**
+       * Set the game mode to loading
+       */
+      GameState.SetEngineMode(EngineMode.LOADING);
+      GameState.MenuManager.ClearMenus();
 
-    GameState.UnloadModule();
+      GameState.UnloadModule();
 
-    GameState.MenuManager.LoadScreen.setProgress(0);
-    await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name);
-    GameState.MenuManager.LoadScreen.showRandomHint();
-    GameState.MenuManager.LoadScreen.open();
+      GameState.MenuManager.LoadScreen.setProgress(0);
+      await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name);
+      GameState.MenuManager.LoadScreen.showRandomHint();
+      GameState.MenuManager.LoadScreen.open();
 
-    await GameState.MenuManager.LoadInGameMenus();
-    
-    GameState.VideoEffectManager.SetVideoEffect(-1);
-    GameState.ModuleObjectManager.playerSelectableObjects = [];
-    GameState.VideoManager.queueMovie(sMovie1);
-    GameState.VideoManager.queueMovie(sMovie2);
-    GameState.VideoManager.queueMovie(sMovie3);
-    GameState.VideoManager.queueMovie(sMovie4);
-    GameState.VideoManager.queueMovie(sMovie5);
-    GameState.VideoManager.queueMovie(sMovie6);
-    GameState.SetEngineMode(EngineMode.LOADING);
-    
-    if(GameState.module){
-      try{ await GameState.module.save(); }catch(e){
-        console.error(e);
+      await GameState.MenuManager.LoadInGameMenus();
+      
+      GameState.VideoEffectManager.SetVideoEffect(-1);
+      GameState.ModuleObjectManager.playerSelectableObjects = [];
+      GameState.VideoManager.queueMovie(sMovie1);
+      GameState.VideoManager.queueMovie(sMovie2);
+      GameState.VideoManager.queueMovie(sMovie3);
+      GameState.VideoManager.queueMovie(sMovie4);
+      GameState.VideoManager.queueMovie(sMovie5);
+      GameState.VideoManager.queueMovie(sMovie6);
+      GameState.SetEngineMode(EngineMode.LOADING);
+      
+      if(GameState.module){
+        try{ await GameState.module.save(); }catch(e){
+          console.error(e);
+        }
+        try{ GameState.module.dispose(); }catch(e){
+          console.error(e);
+        }
       }
-      try{ GameState.module.dispose(); }catch(e){
-        console.error(e);
+
+      //Remove all cached scripts and kill all running instances
+      GameState.NWScript.Reload();
+
+      //Resets all keys to their default state
+      GameState.controls.initKeys();
+
+      await GameState.FactionManager.Load();
+
+      const module = await GameState.Module.Load(name, waypoint);
+      GameState.module = module;
+      GameState.scene.visible = false;
+
+      console.log('Module.loadScene');
+      await module.loadScene();
+
+      await TextureLoader.LoadQueue( (ref: ITextureLoaderQueuedRef) => {
+        const material = ref.material as any;
+        if(material?.map){
+          GameState.renderer.initTexture(material.map);
+        }
+      });
+
+      module.initEventQueue();
+
+      console.log('Module.initScripts');
+      await module.initScripts();
+
+      //GameState.scene_gui.background = null;
+      GameState.scene.visible = true;
+      
+      AudioEngine.Unmute();
+
+      const runSpawnScripts = !GameState.isLoadingSave;
+      GameState.isLoadingSave = false;
+
+      GameState.ResetModuleAudio();
+
+      GameState.MenuManager.InGameOverlay.recalculatePosition();
+      GameState.MenuManager.InGameOverlay.open();
+
+      GameState.renderer.compile(GameState.scene, GameState.currentCamera);
+      GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
+      
+      console.log('ModuleArea.initAreaObjects');
+      GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
+      await GameState.module.area.initAreaObjects(runSpawnScripts);
+      console.log('ModuleArea: ready to play');
+      GameState.module.readyToProcessEvents = true;
+
+      if(GameState.Mode == EngineMode.INGAME){
+        const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
+        if(anyCanLevel){
+          GameState.audioEmitter.playSound('gui_level');
+        }
       }
+
+      //Reveal the area
+      GameState.MenuManager.LoadScreen.close();
+      if(!GameState.holdWorldFadeInForDialog){
+        GameState.FadeOverlayManager.FadeIn(2.5, 0, 0, 0, 1);
+      }
+      GameState.module.area.musicBackgroundPlay();
+    }catch(e){
+      console.error(e);
+      throw e;
     }
-
-    //Remove all cached scripts and kill all running instances
-    GameState.NWScript.Reload();
-
-    //Resets all keys to their default state
-    GameState.controls.initKeys();
-
-    await GameState.FactionManager.Load();
-    const module = await GameState.Module.Load(name, waypoint);
-    GameState.module = module;
-    GameState.scene.visible = false;
-
-    console.log('Module.loadScene');
-    await module.loadScene();
-    await TextureLoader.LoadQueue( (ref: ITextureLoaderQueuedRef) => {
-      const material = ref.material as any;
-      if(material?.map){
-        GameState.renderer.initTexture(material.map);
-      }
-    });
-    module.initEventQueue();
-    console.log('Module.initScripts');
-    await module.initScripts();
-
-    //GameState.scene_gui.background = null;
-    GameState.scene.visible = true;
-    
-    AudioEngine.Unmute();
-
-    const runSpawnScripts = !GameState.isLoadingSave;
-    GameState.isLoadingSave = false;
-
-    GameState.ResetModuleAudio();
-
-    GameState.MenuManager.InGameOverlay.recalculatePosition();
-    GameState.MenuManager.InGameOverlay.open();
-
-    GameState.renderer.compile(GameState.scene, GameState.currentCamera);
-    GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
-    
-    console.log('ModuleArea.initAreaObjects');
-    GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
-    await GameState.module.area.initAreaObjects(runSpawnScripts);
-    console.log('ModuleArea: ready to play');
-    GameState.module.readyToProcessEvents = true;
-
-    if(GameState.Mode == EngineMode.INGAME){
-      const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
-      if(anyCanLevel){
-        GameState.audioEmitter.playSound('gui_level');
-      }
-    }
-
-    //Reveal the area
-    GameState.MenuManager.LoadScreen.close();
-    if(!GameState.holdWorldFadeInForDialog){
-      GameState.FadeOverlayManager.FadeIn(2.5, 0, 0, 0, 1);
-    }
-    GameState.module.area.musicBackgroundPlay();
   }
 
   static RestoreEnginePlayMode(): void {

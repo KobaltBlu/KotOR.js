@@ -43,7 +43,7 @@ export class MenuUpgradeItems extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.setSelected(item);
       }

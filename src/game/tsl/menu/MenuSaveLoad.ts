@@ -95,8 +95,8 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
 
       this.LBL_PCNAME.setText('');
       this.LBL_TIMEPLAYED.setText('');
-      this.LB_GAMES.border.inneroffsety = 7;
-      this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
+      // this.LB_GAMES.border.inneroffsety = 7;
+      this.LB_GAMES.setProtoBuilder(GUISaveGameItem);
       this.LB_GAMES.onSelected = (save: any) => {
         this.selected = save;
         this.UpdateSelected();

@@ -107,7 +107,7 @@ const libraryConfig = (name, color) => ({
         loader: 'esbuild-loader',
         options: {
           loader: 'tsx',
-          target: 'es2019',
+          target: 'esnext',
           tsconfig: 'tsconfig.json',
         },
         exclude: /node_modules/,
@@ -209,7 +209,7 @@ const launcherConfig = (name, color) => ({
         loader: 'esbuild-loader',
         options: {
           loader: 'tsx',
-          target: 'es2019',
+          target: 'esnext',
           tsconfig: 'tsconfig.launcher.json',
         },
         exclude: /node_modules/,
@@ -294,7 +294,7 @@ const gameConfig = (name, color) => ({
         loader: 'esbuild-loader',
         options: {
           loader: 'tsx',
-          target: 'es2019',
+          target: 'esnext',
           tsconfig: 'tsconfig.game.json',
         },
         exclude: /node_modules/,
@@ -389,7 +389,7 @@ const forgeConfig = (name, color) => ({
         loader: 'esbuild-loader',
         options: {
           loader: 'tsx',
-          target: 'es2019',
+          target: 'esnext',
           tsconfig: 'tsconfig.forge.json',
         },
         exclude: /node_modules/,
@@ -490,7 +490,7 @@ const debuggerConfig = (name, color) => ({
         loader: 'esbuild-loader',
         options: {
           loader: 'tsx',
-          target: 'es2019',
+          target: 'esnext',
           tsconfig: 'tsconfig.debugger.json',
         },
         exclude: /node_modules/,

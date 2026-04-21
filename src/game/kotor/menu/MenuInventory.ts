@@ -53,7 +53,8 @@ export class MenuInventory extends GameMenu {
       });
       this._button_b = this.BTN_EXIT;
 
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
+      this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.selected = item;
         this.UpdateSelected();
@@ -135,6 +136,7 @@ export class MenuInventory extends GameMenu {
   show() {
     super.show();
     this.manager.MenuTop.LBLH_INV.onHoverIn();
+    this.selectedControl = this.LB_ITEMS;
     this.filterInventory();
     this.updateCharacterStats();
     this.updatePartyMemberButtons();

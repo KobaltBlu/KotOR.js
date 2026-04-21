@@ -65,6 +65,8 @@ export class MenuJournal extends GameMenu {
         this.close();
       });
       this._button_b = this.BTN_EXIT;
+      
+      this.LB_ITEMS.protoItem.extent.height = 41;
       this.LB_ITEMS.onSelected = (item: JournalEntry) => {
         this.selected = item;
         this.UpdateSelected();
