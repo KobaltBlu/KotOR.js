@@ -117,7 +117,7 @@
     "@fortawesome/free-regular-svg-icons": "^7.2.0",
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@types/jest": "^30.0.0",
-    "axios": "^1.14.0",
+    "axios": "^1.15.0",
     "bootstrap": "^5.3.8",
     "jest": "^30.3.0",
     "monaco-editor": "^0.52.0",
