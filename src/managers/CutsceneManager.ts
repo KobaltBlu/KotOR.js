@@ -125,6 +125,7 @@ export class CutsceneManager {
     //bark entry
     const isBarkDialog = this.startingEntry.isBarkDialog();
     if (isBarkDialog) {
+      this.dialog.loadBackgroundMusic()
       this.cutsceneMode = CutsceneMode.BARK;
       GameState.MenuManager.InGameBark.bark(this.startingEntry);
       this.startingEntry.runScripts();
@@ -151,25 +152,22 @@ export class CutsceneManager {
     console.log(`CutsceneManager.startConversation: ${this.dialog.getConversationType() ? 'Computer' : 'Conversation'}`);
 
     GameState.holdWorldFadeInForDialog = (this.cutsceneMode == CutsceneMode.ANIMATED);
-    this.dialog.loadStuntCamera().then(() => {
-      console.log('CutsceneManager.startConversation: loadStuntCamera');
-      this.dialog.loadStuntActors().then(() => {
-        console.log('CutsceneManager.startConversation: loadStuntActors');
-        this.dialog.loadBackgroundMusic().then(() => {
-          console.log('CutsceneManager.startConversation: loadBackgroundMusic');
-          switch (this.dialog.getConversationType()) {
-            case DLGConversationType.COMPUTER:
-              console.log('CutsceneManager.startConversation: Computer');
-              GameState.MenuManager.InGameComputer.open();
-              break;
-            default:
-              console.log('CutsceneManager.startConversation: Conversation');
-              GameState.MenuManager.InGameDialog.open();
-              break;
-          }
-          this.showEntry(this.startingEntry);
-        });
-      });
+    Promise.all([
+      this.dialog.loadStuntCamera(),
+      this.dialog.loadStuntActors(),
+      this.dialog.loadBackgroundMusic()
+    ]).then(() => {
+      switch (this.dialog.getConversationType()) {
+        case DLGConversationType.COMPUTER:
+          console.log('CutsceneManager.startConversation: Computer');
+          GameState.MenuManager.InGameComputer.open();
+          break;
+        default:
+          console.log('CutsceneManager.startConversation: Conversation');
+          GameState.MenuManager.InGameDialog.open();
+          break;
+      }
+      this.showEntry(this.startingEntry);
     });
   }
 
