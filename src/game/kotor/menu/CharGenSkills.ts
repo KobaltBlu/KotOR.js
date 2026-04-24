@@ -1,18 +1,17 @@
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton } from '@/gui';
 
 /**
  * CharGenSkills class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenSkills.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenSkills extends GameMenu {
-
   MAIN_TITLE_LBL: GUILabel;
   SUB_TITLE_LBL: GUILabel;
   REMAINING_SELECTIONS_LBL: GUILabel;
@@ -58,7 +57,7 @@ export class CharGenSkills extends GameMenu {
   BTN_BACK: GUIButton;
   TRE_PLUS_BTN: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'skchrgen';
     this.background = '1600x1200back';
@@ -67,9 +66,8 @@ export class CharGenSkills extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -77,7 +75,7 @@ export class CharGenSkills extends GameMenu {
 
       this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
-        console.log('CharGenSkills', 'Assigning skillpoints')
+        console.log('CharGenSkills', 'Assigning skillpoints');
         GameState.CharGenManager.selectedCreature.skills[0].rank = GameState.CharGenManager.computerUse;
         GameState.CharGenManager.selectedCreature.skills[1].rank = GameState.CharGenManager.demolitions;
         GameState.CharGenManager.selectedCreature.skills[2].rank = GameState.CharGenManager.stealth;
@@ -90,53 +88,50 @@ export class CharGenSkills extends GameMenu {
       });
 
       this.BTN_RECOMMENDED.addEventListener('click', (e) => {
-
         GameState.CharGenManager.resetSkillPoints();
         GameState.CharGenManager.availSkillPoints = GameState.CharGenManager.getMaxSkillPoints();
         const skillOrder = GameState.CharGenManager.getRecommendedOrder();
-        
-        while(GameState.CharGenManager.availSkillPoints > 0){
-          for(let i = 0; i < 8; i++){
+
+        while (GameState.CharGenManager.availSkillPoints > 0) {
+          for (let i = 0; i < 8; i++) {
             const skillIndex = skillOrder[i];
 
-            if(!GameState.CharGenManager.availSkillPoints)
-              break;
+            if (!GameState.CharGenManager.availSkillPoints) break;
 
-            switch(skillIndex){
+            switch (skillIndex) {
               case 0:
                 GameState.CharGenManager.computerUse++;
-              break;
+                break;
               case 1:
                 GameState.CharGenManager.demolitions++;
-              break;
+                break;
               case 2:
                 GameState.CharGenManager.stealth++;
-              break;
+                break;
               case 3:
                 GameState.CharGenManager.awareness++;
-              break;
+                break;
               case 4:
                 GameState.CharGenManager.persuade++;
-              break;
+                break;
               case 5:
                 GameState.CharGenManager.repair++;
-              break;
+                break;
               case 6:
                 GameState.CharGenManager.security++;
-              break;
+                break;
               case 7:
                 GameState.CharGenManager.treatInjury++;
-              break;
+                break;
             }
-            
-            if(skillIndex >= 0){
+
+            if (skillIndex >= 0) {
               GameState.CharGenManager.availSkillPoints -= 1;
             }
           }
         }
 
         this.updateButtonStates();
-
       });
       resolve();
     });
@@ -163,5 +158,4 @@ export class CharGenSkills extends GameMenu {
     GameState.CharGenManager.availSkillPoints = GameState.CharGenManager.getMaxSkillPoints();
     GameState.CharGenManager.resetSkillPoints();
   }
-  
 }

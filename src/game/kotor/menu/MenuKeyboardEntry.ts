@@ -1,5 +1,5 @@
-import { GameMenu } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUILabel, GUIButton } from '@/gui';
 
 /**
  * MenuKeyboardEntry class.
@@ -11,7 +11,6 @@ import type { GUILabel, GUIButton } from "@/gui";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuKeyboardEntry extends GameMenu {
-
   LBL_Title: GUILabel;
   LBL_EventName: GUILabel;
   BTN_Cancel: GUIButton;
@@ -20,7 +19,7 @@ export class MenuKeyboardEntry extends GameMenu {
   LBL_Desc: GUILabel;
   LBL_Instructions: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optkeyentry';
     this.background = '';
@@ -29,10 +28,9 @@ export class MenuKeyboardEntry extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       resolve();
     });
-}
-
+  }
 }

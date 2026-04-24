@@ -36,7 +36,9 @@ function buildVendorStyleGff(): GFFObject {
   binary.setData(Uint8Array.from(Buffer.from('binarydata', 'latin1')));
   gff.RootNode.addField(binary);
 
-  gff.RootNode.addField(new GFFField(GFFDataType.ORIENTATION, 'orientation').setOrientation({ x: 1, y: 2, z: 3, w: 4 }));
+  gff.RootNode.addField(
+    new GFFField(GFFDataType.ORIENTATION, 'orientation').setOrientation({ x: 1, y: 2, z: 3, w: 4 })
+  );
   gff.RootNode.addField(new GFFField(GFFDataType.VECTOR, 'position').setVector({ x: 11, y: 22, z: 33 }));
 
   const childStruct = new GFFStruct(0);

@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
-import { KotORModal } from "@/apps/game/components/modal/modal";
-import { useApp } from "@/apps/game/context/AppContext";
-import { EULA_VERSION, EULA_DATE, EULA } from "@/apps/game/eula";
+import React, { useEffect } from 'react';
+import { KotORModal } from '@/apps/game/components/modal/modal';
+import { useApp } from '@/apps/game/context/AppContext';
+import { EULA_VERSION, EULA_DATE, EULA } from '@/apps/game/eula';
 
 export const ModalEULA = () => {
   const appContext = useApp();
@@ -9,35 +9,33 @@ export const ModalEULA = () => {
   const [gameKey] = appContext.gameKey;
   const [showEULAModal, setShowEULAModal] = appContext.showEULAModal;
 
-  useEffect(() => {
-    
-  }, []);
+  useEffect(() => {}, []);
 
   const onCancel = () => {
     alert('You must accept the Usage Notice to play this game. We are sorry to see you go.');
     window.close();
-  }
+  };
 
   const onOk = () => {
-    console.log("onOk");
+    console.log('onOk');
     const gameEULAConfig = {
       key: gameKey,
       accepted: true,
       date: new Date().toISOString(),
-      version: EULA_VERSION
+      version: EULA_VERSION,
     };
     const eulaState: any = Object.assign({}, JSON.parse(window.localStorage.getItem('acceptEULA') as string));
     eulaState[gameKey] = gameEULAConfig;
     window.localStorage.setItem('acceptEULA', JSON.stringify(eulaState));
     appState.acceptEULA();
-  }
+  };
 
   return (
-    <KotORModal 
-      title="EULA" 
-      show={showEULAModal} 
+    <KotORModal
+      title="EULA"
+      show={showEULAModal}
       className="forge-style-modal eula-modal"
-      onCancel={onCancel} 
+      onCancel={onCancel}
       onOk={onOk}
     >
       {<EULA />}

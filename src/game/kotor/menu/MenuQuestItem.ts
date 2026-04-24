@@ -1,5 +1,5 @@
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton } from '@/gui';
 
 /**
  * MenuQuestItem class.
@@ -11,13 +11,12 @@ import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuQuestItem extends GameMenu {
-
   LB_ITEM_DESCRIPTION: GUIListBox;
   LB_ITEMS: GUIListBox;
   LBL_TITLE: GUILabel;
   BTN_BACK: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'questitem';
     this.background = '';
@@ -26,10 +25,9 @@ export class MenuQuestItem extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       resolve();
     });
-}
-
+  }
 }

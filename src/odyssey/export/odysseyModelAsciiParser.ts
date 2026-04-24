@@ -1,36 +1,41 @@
-import * as THREE from "three";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { OdysseyModelEngine } from "@/enums/odyssey/OdysseyModelEngine";
-import { OdysseyModelClass } from "@/enums/odyssey/OdysseyModelClass";
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelMDXFlag } from "@/enums/odyssey/OdysseyModelMDXFlag";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import type { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import type { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
-import type { IOdysseyModelAABBNode } from "@/interface/odyssey/IOdysseyModelAABBNode";
-import { OdysseyModelEmitterFlag } from "@/enums/odyssey/OdysseyModelEmitterFlag";
-import { OdysseyModel } from "@/odyssey/OdysseyModel";
-import { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
-import { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
-import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
-import { OdysseyModelNodeAABB } from "@/odyssey/OdysseyModelNodeAABB";
-import { OdysseyModelNodeDangly } from "@/odyssey/OdysseyModelNodeDangly";
-import { OdysseyModelNodeEmitter } from "@/odyssey/OdysseyModelNodeEmitter";
-import { OdysseyModelNodeLight } from "@/odyssey/OdysseyModelNodeLight";
-import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
-import { OdysseyModelNodeReference } from "@/odyssey/OdysseyModelNodeReference";
-import { OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
-import { OdysseyModelNodeSkin } from "@/odyssey/OdysseyModelNodeSkin";
-import { OdysseyControllerFactory } from "@/odyssey/controllers/OdysseyControllerFactory";
-import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
-import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
+import * as THREE from 'three';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { OdysseyModelEngine } from '@/enums/odyssey/OdysseyModelEngine';
+import { OdysseyModelClass } from '@/enums/odyssey/OdysseyModelClass';
+import { OdysseyModelControllerType } from '@/enums/odyssey/OdysseyModelControllerType';
+import { OdysseyModelMDXFlag } from '@/enums/odyssey/OdysseyModelMDXFlag';
+import { OdysseyModelNodeType } from '@/enums/odyssey/OdysseyModelNodeType';
+import type { IOdysseyControllerFrameGeneric } from '@/interface/odyssey/controller/IOdysseyControllerFrameGeneric';
+import type { IOdysseyControllerGeneric } from '@/interface/odyssey/controller/IOdysseyControllerGeneric';
+import type { IOdysseyModelAABBNode } from '@/interface/odyssey/IOdysseyModelAABBNode';
+import { OdysseyModelEmitterFlag } from '@/enums/odyssey/OdysseyModelEmitterFlag';
+import { OdysseyModel } from '@/odyssey/OdysseyModel';
+import { OdysseyModelAnimation } from '@/odyssey/OdysseyModelAnimation';
+import { OdysseyModelAnimationNode } from '@/odyssey/OdysseyModelAnimationNode';
+import { OdysseyModelNode } from '@/odyssey/OdysseyModelNode';
+import { OdysseyModelNodeAABB } from '@/odyssey/OdysseyModelNodeAABB';
+import { OdysseyModelNodeDangly } from '@/odyssey/OdysseyModelNodeDangly';
+import { OdysseyModelNodeEmitter } from '@/odyssey/OdysseyModelNodeEmitter';
+import { OdysseyModelNodeLight } from '@/odyssey/OdysseyModelNodeLight';
+import { OdysseyModelNodeMesh } from '@/odyssey/OdysseyModelNodeMesh';
+import { OdysseyModelNodeReference } from '@/odyssey/OdysseyModelNodeReference';
+import { OdysseyModelNodeSaber } from '@/odyssey/OdysseyModelNodeSaber';
+import { OdysseyModelNodeSkin } from '@/odyssey/OdysseyModelNodeSkin';
+import { OdysseyControllerFactory } from '@/odyssey/controllers/OdysseyControllerFactory';
+import { OdysseyWalkMesh } from '@/odyssey/OdysseyWalkMesh';
+import { OdysseyFace3 } from '@/three/odyssey/OdysseyFace3';
 import {
   asciiClassificationToEnum,
   asciiControllerBaseToType,
   axisAngleToQuaternion,
   parseControllerKeyHeader,
-} from "./odysseyModelAsciiParseMaps";
-import { MdlAsciiParseError, MdlAsciiTokenStream, tokenizeMdlAscii, type AsciiToken } from "./odysseyModelAsciiTokenizer";
+} from './odysseyModelAsciiParseMaps';
+import {
+  MdlAsciiParseError,
+  MdlAsciiTokenStream,
+  tokenizeMdlAscii,
+  type AsciiToken,
+} from './odysseyModelAsciiTokenizer';
 
 const FN_PTR_PC_K1_MODEL = 4273776;
 
@@ -55,7 +60,10 @@ function applyEngineFromFunctionPointer0(model: OdysseyModel): void {
 }
 
 function cleanName(s: string): string {
-  return s.replace(/\0[\s\S]*$/g, "").toLowerCase().trim();
+  return s
+    .replace(/\0[\s\S]*$/g, '')
+    .toLowerCase()
+    .trim();
 }
 
 function collectGeometryNames(tokens: AsciiToken[]): string[] {
@@ -64,18 +72,18 @@ function collectGeometryNames(tokens: AsciiToken[]): string[] {
   let inGeom = false;
   while (i < tokens.length) {
     const w = tokens[i].text.toLowerCase();
-    if (w === "beginmodelgeom") {
+    if (w === 'beginmodelgeom') {
       inGeom = true;
       i++;
       continue;
     }
-    if (w === "endmodelgeom") break;
-    if (inGeom && w === "node" && i + 2 < tokens.length) {
+    if (w === 'endmodelgeom') break;
+    if (inGeom && w === 'node' && i + 2 < tokens.length) {
       names.push(cleanName(tokens[i + 2].text));
       i += 3;
       continue;
     }
-    if (inGeom && w === "name" && i + 1 < tokens.length) {
+    if (inGeom && w === 'name' && i + 1 < tokens.length) {
       names.push(cleanName(tokens[i + 1].text));
       i += 2;
       continue;
@@ -88,23 +96,23 @@ function collectGeometryNames(tokens: AsciiToken[]): string[] {
 function nodeKindToType(kind: string): OdysseyModelNodeType {
   const k = kind.toLowerCase();
   switch (k) {
-    case "dummy":
+    case 'dummy':
       return OdysseyModelNodeType.Header;
-    case "trimesh":
+    case 'trimesh':
       return OdysseyModelNodeType.Header | OdysseyModelNodeType.Mesh;
-    case "skin":
+    case 'skin':
       return OdysseyModelNodeType.Header | OdysseyModelNodeType.Mesh | OdysseyModelNodeType.Skin;
-    case "danglymesh":
+    case 'danglymesh':
       return OdysseyModelNodeType.Header | OdysseyModelNodeType.Mesh | OdysseyModelNodeType.Dangly;
-    case "aabb":
+    case 'aabb':
       return OdysseyModelNodeType.Header | OdysseyModelNodeType.Mesh | OdysseyModelNodeType.AABB;
-    case "lightsaber":
+    case 'lightsaber':
       return OdysseyModelNodeType.Header | OdysseyModelNodeType.Mesh | OdysseyModelNodeType.Saber;
-    case "emitter":
+    case 'emitter':
       return OdysseyModelNodeType.Header | OdysseyModelNodeType.Emitter;
-    case "light":
+    case 'light':
       return OdysseyModelNodeType.Header | OdysseyModelNodeType.Light;
-    case "reference":
+    case 'reference':
       return OdysseyModelNodeType.Header | OdysseyModelNodeType.Reference;
     default:
       return OdysseyModelNodeType.Header;
@@ -114,14 +122,14 @@ function nodeKindToType(kind: string): OdysseyModelNodeType {
 function instantiateNode(kind: string, parent: OdysseyModelNode | undefined): OdysseyModelNode {
   const p = parent as OdysseyModelNode;
   const k = kind.toLowerCase();
-  if (k === "trimesh") return new OdysseyModelNodeMesh(p);
-  if (k === "skin") return new OdysseyModelNodeSkin(p);
-  if (k === "danglymesh") return new OdysseyModelNodeDangly(p);
-  if (k === "aabb") return new OdysseyModelNodeAABB(p);
-  if (k === "lightsaber") return new OdysseyModelNodeSaber(p);
-  if (k === "emitter") return new OdysseyModelNodeEmitter(p);
-  if (k === "light") return new OdysseyModelNodeLight(p);
-  if (k === "reference") return new OdysseyModelNodeReference(p);
+  if (k === 'trimesh') return new OdysseyModelNodeMesh(p);
+  if (k === 'skin') return new OdysseyModelNodeSkin(p);
+  if (k === 'danglymesh') return new OdysseyModelNodeDangly(p);
+  if (k === 'aabb') return new OdysseyModelNodeAABB(p);
+  if (k === 'lightsaber') return new OdysseyModelNodeSaber(p);
+  if (k === 'emitter') return new OdysseyModelNodeEmitter(p);
+  if (k === 'light') return new OdysseyModelNodeLight(p);
+  if (k === 'reference') return new OdysseyModelNodeReference(p);
   return new OdysseyModelNode(p);
 }
 
@@ -135,11 +143,11 @@ function createAsciiShell(): OdysseyModel {
     mdxDataSize: 0,
     modelDataOffset: 12,
     rawDataOffset: 12,
-  } as OdysseyModel["fileHeader"];
+  } as OdysseyModel['fileHeader'];
   m.geometryHeader = {
     functionPointer0: FN_PTR_PC_K1_MODEL,
     functionPointer1: FN_PTR_PC_K1_MODEL,
-    modelName: "",
+    modelName: '',
     rootNodeOffset: 0,
     nodeCount: 0,
     unknown1ArrayDefinition: { offset: 0, count: 0, count2: 0 },
@@ -151,7 +159,7 @@ function createAsciiShell(): OdysseyModel {
     mdxLength: 0,
     padding: 0,
     rootNodeOffset2: 0,
-  } as OdysseyModel["geometryHeader"];
+  } as OdysseyModel['geometryHeader'];
   m.modelHeader = {
     classification: OdysseyModelClass.OTHER,
     subClassification: 0,
@@ -169,8 +177,8 @@ function createAsciiShell(): OdysseyModel {
     radius: 0,
     scale: 1,
     smoothingGroupsInFile: false,
-    superModelName: "",
-  } as OdysseyModel["modelHeader"];
+    superModelName: '',
+  } as OdysseyModel['modelHeader'];
   m.engine = OdysseyModelEngine.K1;
   m.names = [];
   m.nodes = new Map();
@@ -186,7 +194,7 @@ function buildFaceFromVerts(
   ib: number,
   ic: number,
   materialIndex: number,
-  smoothingGroup?: number,
+  smoothingGroup?: number
 ): OdysseyFace3 {
   const va = new THREE.Vector3(verts[ia * 3], verts[ia * 3 + 1], verts[ia * 3 + 2]);
   const vb = new THREE.Vector3(verts[ib * 3], verts[ib * 3 + 1], verts[ib * 3 + 2]);
@@ -208,7 +216,7 @@ function putStaticController(
   node: OdysseyModelNode,
   type: OdysseyModelControllerType,
   columnCount: number,
-  frames: IOdysseyControllerFrameGeneric[],
+  frames: IOdysseyControllerFrameGeneric[]
 ): void {
   const gen: IOdysseyControllerGeneric = {
     type,
@@ -223,20 +231,16 @@ function putStaticController(
   if (c) node.controllers.set(type, c);
 }
 
-function applyGeometryController(
-  node: OdysseyModelNode,
-  word: string,
-  s: MdlAsciiTokenStream,
-): boolean {
+function applyGeometryController(node: OdysseyModelNode, word: string, s: MdlAsciiTokenStream): boolean {
   const w = word.toLowerCase();
-  if (w === "position") {
+  if (w === 'position') {
     const x = s.takeNumber();
     const y = s.takeNumber();
     const z = s.takeNumber();
     node.position.set(x, y, z);
     return true;
   }
-  if (w === "orientation") {
+  if (w === 'orientation') {
     const ax = s.takeNumber();
     const ay = s.takeNumber();
     const az = s.takeNumber();
@@ -245,7 +249,7 @@ function applyGeometryController(
     node.quaternion.copy(q);
     return true;
   }
-  if (w === "scale") {
+  if (w === 'scale') {
     const sc = s.takeNumber();
     const gen: IOdysseyControllerGeneric = {
       type: OdysseyModelControllerType.Scale,
@@ -265,7 +269,7 @@ function applyGeometryController(
   if (!mapped) return false;
   const { type } = mapped;
 
-  if (w === "selfillumcolor" && (node.nodeType & OdysseyModelNodeType.Mesh)) {
+  if (w === 'selfillumcolor' && node.nodeType & OdysseyModelNodeType.Mesh) {
     const x = s.takeNumber();
     const y = s.takeNumber();
     const z = s.takeNumber();
@@ -274,12 +278,14 @@ function applyGeometryController(
     ]);
     return true;
   }
-  if (w === "alpha" && (node.nodeType & OdysseyModelNodeType.Mesh)) {
+  if (w === 'alpha' && node.nodeType & OdysseyModelNodeType.Mesh) {
     const v = s.takeNumber();
-    putStaticController(node, OdysseyModelControllerType.Alpha, 1, [{ time: 0, value: v } as IOdysseyControllerFrameGeneric]);
+    putStaticController(node, OdysseyModelControllerType.Alpha, 1, [
+      { time: 0, value: v } as IOdysseyControllerFrameGeneric,
+    ]);
     return true;
   }
-  if (w === "color" && (node.nodeType & OdysseyModelNodeType.Light)) {
+  if (w === 'color' && node.nodeType & OdysseyModelNodeType.Light) {
     const r = s.takeNumber();
     const g = s.takeNumber();
     const b = s.takeNumber();
@@ -291,8 +297,8 @@ function applyGeometryController(
     return true;
   }
   if (
-    (w === "radius" || w === "shadowradius" || w === "verticaldisplacement" || w === "multiplier") &&
-    (node.nodeType & OdysseyModelNodeType.Light)
+    (w === 'radius' || w === 'shadowradius' || w === 'verticaldisplacement' || w === 'multiplier') &&
+    node.nodeType & OdysseyModelNodeType.Light
   ) {
     const v = s.takeNumber();
     const light = node as OdysseyModelNodeLight;
@@ -304,7 +310,7 @@ function applyGeometryController(
   }
 
   if (node.nodeType & OdysseyModelNodeType.Emitter) {
-    if (w === "colorstart" || w === "colormid" || w === "colorend") {
+    if (w === 'colorstart' || w === 'colormid' || w === 'colorend') {
       const x = s.takeNumber();
       const y = s.takeNumber();
       const z = s.takeNumber();
@@ -319,7 +325,12 @@ function applyGeometryController(
   return false;
 }
 
-function parseSkinWeights(model: OdysseyModel, skin: OdysseyModelNodeSkin, s: MdlAsciiTokenStream, nVerts: number): void {
+function parseSkinWeights(
+  model: OdysseyModel,
+  skin: OdysseyModelNodeSkin,
+  s: MdlAsciiTokenStream,
+  nVerts: number
+): void {
   skin.weights = new Array(nVerts * 4).fill(0);
   skin.boneIdx = new Array(nVerts * 4).fill(0);
   skin.bone_parts = new Array(17).fill(0);
@@ -354,7 +365,7 @@ function parseSkinWeights(model: OdysseyModel, skin: OdysseyModelNodeSkin, s: Md
 
 function parseAabbPreorder(s: MdlAsciiTokenStream, faces: OdysseyFace3[]): IOdysseyModelAABBNode | undefined {
   const p = s.peek();
-  if (!p || p.text.toLowerCase() === "roomlinks") return undefined;
+  if (!p || p.text.toLowerCase() === 'roomlinks') return undefined;
 
   const minx = s.takeNumber();
   const miny = s.takeNumber();
@@ -365,11 +376,8 @@ function parseAabbPreorder(s: MdlAsciiTokenStream, faces: OdysseyFace3[]): IOdys
   const faceIdx = s.takeInt();
 
   const node: IOdysseyModelAABBNode = {
-    type: "AABB",
-    box: new THREE.Box3(
-      new THREE.Vector3(minx, miny, minz),
-      new THREE.Vector3(maxx, maxy, maxz),
-    ),
+    type: 'AABB',
+    box: new THREE.Box3(new THREE.Vector3(minx, miny, minz), new THREE.Vector3(maxx, maxy, maxz)),
     leftNodeOffset: 0,
     rightNodeOffset: 0,
     faceIdx,
@@ -384,11 +392,11 @@ function parseAabbPreorder(s: MdlAsciiTokenStream, faces: OdysseyFace3[]): IOdys
     return node;
   }
 
-  if (s.peek()?.text.toLowerCase() !== "roomlinks") {
+  if (s.peek()?.text.toLowerCase() !== 'roomlinks') {
     node.leftNode = parseAabbPreorder(s, faces);
     node.leftNodeOffset = node.leftNode ? 1 : 0;
   }
-  if (s.peek()?.text.toLowerCase() !== "roomlinks") {
+  if (s.peek()?.text.toLowerCase() !== 'roomlinks') {
     node.rightNode = parseAabbPreorder(s, faces);
     node.rightNodeOffset = node.rightNode ? 1 : 0;
   }
@@ -402,46 +410,46 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
     const p = s.peek();
     if (!p) break;
     const w = p.text.toLowerCase();
-    if (w === "endnode") break;
+    if (w === 'endnode') break;
 
-    if (w === "newanim" || w === "donemodel" || w === "beginmodelgeom" || w === "endmodelgeom") {
+    if (w === 'newanim' || w === 'donemodel' || w === 'beginmodelgeom' || w === 'endmodelgeom') {
       break;
     }
 
     s.take();
 
-    if (w === "parent") {
+    if (w === 'parent') {
       (mesh as OdysseyModelNode & { _asciiParent?: string })._asciiParent = cleanName(s.take().text);
-    } else if (w === "diffuse") {
+    } else if (w === 'diffuse') {
       const r = s.takeNumber();
       const g = s.takeNumber();
       const b = s.takeNumber();
       mesh.diffuse = new THREE.Color(r, g, b);
-    } else if (w === "ambient") {
+    } else if (w === 'ambient') {
       const r = s.takeNumber();
       const g = s.takeNumber();
       const b = s.takeNumber();
       mesh.ambient = new THREE.Color(r, g, b);
-    } else if (w === "transparencyhint") mesh.transparencyHint = !!s.takeNumber();
-    else if (w === "animateuv") mesh.nAnimateUV = !!s.takeNumber();
-    else if (w === "uvdirectionx") mesh.fUVDirectionX = s.takeNumber();
-    else if (w === "uvdirectiony") mesh.fUVDirectionY = s.takeNumber();
-    else if (w === "uvjitter") mesh.fUVJitter = s.takeNumber();
-    else if (w === "uvjitterspeed") mesh.fUVJitterSpeed = s.takeNumber();
-    else if (w === "lightmapped") mesh.hasLightmap = !!s.takeNumber();
-    else if (w === "rotatetexture") mesh.rotateTexture = !!s.takeNumber();
-    else if (w === "m_bisbackgroundgeometry") mesh.backgroundGeometry = !!s.takeNumber();
-    else if (w === "shadow") mesh.flagShadow = !!s.takeNumber();
-    else if (w === "beaming") mesh.beaming = !!s.takeNumber();
-    else if (w === "render") mesh.flagRender = !!s.takeNumber();
-    else if (w === "dirt_enabled") mesh.dirtEnabled = s.takeInt();
-    else if (w === "dirt_texture") mesh.dirtTexture = s.takeInt();
-    else if (w === "dirt_worldspace") mesh.dirtCoordSpace = s.takeInt();
-    else if (w === "hologram_donotdraw") mesh.hideInHolograms = s.takeInt();
-    else if (w === "tangentspace") {
+    } else if (w === 'transparencyhint') mesh.transparencyHint = !!s.takeNumber();
+    else if (w === 'animateuv') mesh.nAnimateUV = !!s.takeNumber();
+    else if (w === 'uvdirectionx') mesh.fUVDirectionX = s.takeNumber();
+    else if (w === 'uvdirectiony') mesh.fUVDirectionY = s.takeNumber();
+    else if (w === 'uvjitter') mesh.fUVJitter = s.takeNumber();
+    else if (w === 'uvjitterspeed') mesh.fUVJitterSpeed = s.takeNumber();
+    else if (w === 'lightmapped') mesh.hasLightmap = !!s.takeNumber();
+    else if (w === 'rotatetexture') mesh.rotateTexture = !!s.takeNumber();
+    else if (w === 'm_bisbackgroundgeometry') mesh.backgroundGeometry = !!s.takeNumber();
+    else if (w === 'shadow') mesh.flagShadow = !!s.takeNumber();
+    else if (w === 'beaming') mesh.beaming = !!s.takeNumber();
+    else if (w === 'render') mesh.flagRender = !!s.takeNumber();
+    else if (w === 'dirt_enabled') mesh.dirtEnabled = s.takeInt();
+    else if (w === 'dirt_texture') mesh.dirtTexture = s.takeInt();
+    else if (w === 'dirt_worldspace') mesh.dirtCoordSpace = s.takeInt();
+    else if (w === 'hologram_donotdraw') mesh.hideInHolograms = s.takeInt();
+    else if (w === 'tangentspace') {
       /* flag */
       s.takeNumber();
-    } else if (w === "inv_count") {
+    } else if (w === 'inv_count') {
       if (mesh instanceof OdysseyModelNodeSaber) {
         const sab = mesh as OdysseyModelNodeSaber;
         sab.invCount1 = s.takeInt() >>> 0;
@@ -449,7 +457,7 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
       } else {
         mesh.meshInvertedCounter = s.takeInt() >>> 0;
       }
-    } else if (w === "weights") {
+    } else if (w === 'weights') {
       const nw = s.takeInt();
       if (mesh instanceof OdysseyModelNodeSkin) {
         parseSkinWeights(model, mesh, s, nw);
@@ -464,42 +472,42 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
           }
         }
       }
-    } else if (w === "displacement" && mesh instanceof OdysseyModelNodeDangly) {
+    } else if (w === 'displacement' && mesh instanceof OdysseyModelNodeDangly) {
       (mesh as OdysseyModelNodeDangly).danglyDisplacement = s.takeNumber();
-    } else if (w === "tightness" && mesh instanceof OdysseyModelNodeDangly) {
+    } else if (w === 'tightness' && mesh instanceof OdysseyModelNodeDangly) {
       (mesh as OdysseyModelNodeDangly).danglyTightness = s.takeNumber();
-    } else if (w === "period" && mesh instanceof OdysseyModelNodeDangly) {
+    } else if (w === 'period' && mesh instanceof OdysseyModelNodeDangly) {
       (mesh as OdysseyModelNodeDangly).danglyPeriod = s.takeNumber();
-    } else if (w === "constraints" && mesh instanceof OdysseyModelNodeDangly) {
+    } else if (w === 'constraints' && mesh instanceof OdysseyModelNodeDangly) {
       const nc = s.takeInt();
       const dang = mesh as OdysseyModelNodeDangly;
       dang.constraints = [];
       for (let i = 0; i < nc; i++) dang.constraints.push(s.takeNumber());
-    } else if (w === "aabb" && mesh instanceof OdysseyModelNodeAABB) {
+    } else if (w === 'aabb' && mesh instanceof OdysseyModelNodeAABB) {
       const aabb = mesh as OdysseyModelNodeAABB;
       const root = parseAabbPreorder(s, aabb.faces ?? []);
       if (root) aabb.rootAABBNode = root;
-    } else if (w === "roomlinks") {
+    } else if (w === 'roomlinks') {
       if (s.peek() && /^-?\d/.test(s.peek()!.text)) {
         const n = s.takeInt();
         for (let i = 0; i < n * 2; i++) s.takeNumber();
       }
-      if (s.peek()?.text.toLowerCase() === "endlist") s.take();
-    } else if (w === "colors") {
+      if (s.peek()?.text.toLowerCase() === 'endlist') s.take();
+    } else if (w === 'colors') {
       const n = s.takeInt();
       mesh.colors = [];
       for (let i = 0; i < n; i++) {
         mesh.colors.push(s.takeNumber(), s.takeNumber(), s.takeNumber());
       }
-    } else if (w === "colorindices") {
+    } else if (w === 'colorindices') {
       const n = s.takeInt();
       mesh.colorIndices = [];
       for (let i = 0; i < n; i++) mesh.colorIndices.push(s.takeInt());
-    } else if (w === "bitmap") mesh.textureMap1 = cleanName(s.take().text);
-    else if (w === "bitmap2") mesh.textureMap2 = cleanName(s.take().text);
-    else if (w === "texture0") mesh.textureMap3 = cleanName(s.take().text);
-    else if (w === "texture1") mesh.textureMap4 = cleanName(s.take().text);
-    else if (w === "verts") {
+    } else if (w === 'bitmap') mesh.textureMap1 = cleanName(s.take().text);
+    else if (w === 'bitmap2') mesh.textureMap2 = cleanName(s.take().text);
+    else if (w === 'texture0') mesh.textureMap3 = cleanName(s.take().text);
+    else if (w === 'texture1') mesh.textureMap4 = cleanName(s.take().text);
+    else if (w === 'verts') {
       const n = s.takeInt();
       mesh.verticesCount = n;
       verts.length = 0;
@@ -507,7 +515,7 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
         verts.push(s.takeNumber(), s.takeNumber(), s.takeNumber());
       }
       mesh.vertices = verts;
-    } else if (w === "faces") {
+    } else if (w === 'faces') {
       const nf = s.takeInt();
       mesh.faces = [];
       mesh.indices = [];
@@ -527,14 +535,14 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
         mesh.faces.push(face);
         mesh.indices.push(a, b, c);
       }
-    } else if (w === "tverts") {
+    } else if (w === 'tverts') {
       const n = s.takeInt();
       mdxFlags |= OdysseyModelMDXFlag.VERTEX | OdysseyModelMDXFlag.UV1;
       mesh.tvectors[0] = [];
       for (let i = 0; i < n; i++) {
         mesh.tvectors[0].push(s.takeNumber(), s.takeNumber());
       }
-    } else if (w === "texindices1") {
+    } else if (w === 'texindices1') {
       const nf = s.takeInt();
       for (let i = 0; i < nf; i++) {
         s.takeNumber();
@@ -542,11 +550,11 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
         s.takeNumber();
       }
       mdxFlags |= OdysseyModelMDXFlag.UV2;
-    } else if (w === "tverts1") {
+    } else if (w === 'tverts1') {
       const n = s.takeInt();
       mesh.tvectors[1] = [];
       for (let i = 0; i < n; i++) mesh.tvectors[1].push(s.takeNumber(), s.takeNumber());
-    } else if (w === "texindices2") {
+    } else if (w === 'texindices2') {
       const nf = s.takeInt();
       for (let i = 0; i < nf; i++) {
         s.takeNumber();
@@ -554,11 +562,11 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
         s.takeNumber();
       }
       mdxFlags |= OdysseyModelMDXFlag.UV3;
-    } else if (w === "tverts2") {
+    } else if (w === 'tverts2') {
       const n = s.takeInt();
       mesh.tvectors[2] = [];
       for (let i = 0; i < n; i++) mesh.tvectors[2].push(s.takeNumber(), s.takeNumber());
-    } else if (w === "texindices3") {
+    } else if (w === 'texindices3') {
       const nf = s.takeInt();
       for (let i = 0; i < nf; i++) {
         s.takeNumber();
@@ -566,7 +574,7 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
         s.takeNumber();
       }
       mdxFlags |= OdysseyModelMDXFlag.UV4;
-    } else if (w === "tverts3") {
+    } else if (w === 'tverts3') {
       const n = s.takeInt();
       mesh.tvectors[3] = [];
       for (let i = 0; i < n; i++) mesh.tvectors[3].push(s.takeNumber(), s.takeNumber());
@@ -604,66 +612,66 @@ function parseEmitterBody(em: OdysseyModelNodeEmitter, s: MdlAsciiTokenStream): 
     const p = s.peek();
     if (!p) break;
     const w = p.text.toLowerCase();
-    if (w === "endnode") return;
+    if (w === 'endnode') return;
     s.take();
-    if (w === "parent") (em as OdysseyModelNode & { _asciiParent?: string })._asciiParent = cleanName(s.take().text);
-    else if (w === "deadspace") em.deadSpace = s.takeNumber();
-    else if (w === "blastradius") em.blastRadius = s.takeNumber();
-    else if (w === "blastlength") em.blastLength = s.takeNumber();
-    else if (w === "numbranches") em.branchCount = s.takeInt();
-    else if (w === "controlptsmoothing") em.controlPTSmoothing = s.takeNumber();
-    else if (w === "xgrid") em.gridX = s.takeInt();
-    else if (w === "ygrid") em.gridY = s.takeInt();
-    else if (w === "spawntype") em.spaceType = s.takeInt();
-    else if (w === "update") em.updateMode = s.take().text;
-    else if (w === "render") em.renderMode = s.take().text;
-    else if (w === "blend") em.blendMode = s.take().text;
-    else if (w === "texture") em.textureResRef = cleanName(s.take().text);
-    else if (w === "chunkname") em.chunkResRef = cleanName(s.take().text);
-    else if (w === "twosidedtex") em.twoSidedTex = s.takeInt();
-    else if (w === "loop") em.loop = s.takeInt();
-    else if (w === "renderorder") em.renderOrder = s.takeInt();
-    else if (w === "m_bframeblending") em.padding1 = s.takeInt();
-    else if (w === "m_sdepthtexturename") {
+    if (w === 'parent') (em as OdysseyModelNode & { _asciiParent?: string })._asciiParent = cleanName(s.take().text);
+    else if (w === 'deadspace') em.deadSpace = s.takeNumber();
+    else if (w === 'blastradius') em.blastRadius = s.takeNumber();
+    else if (w === 'blastlength') em.blastLength = s.takeNumber();
+    else if (w === 'numbranches') em.branchCount = s.takeInt();
+    else if (w === 'controlptsmoothing') em.controlPTSmoothing = s.takeNumber();
+    else if (w === 'xgrid') em.gridX = s.takeInt();
+    else if (w === 'ygrid') em.gridY = s.takeInt();
+    else if (w === 'spawntype') em.spaceType = s.takeInt();
+    else if (w === 'update') em.updateMode = s.take().text;
+    else if (w === 'render') em.renderMode = s.take().text;
+    else if (w === 'blend') em.blendMode = s.take().text;
+    else if (w === 'texture') em.textureResRef = cleanName(s.take().text);
+    else if (w === 'chunkname') em.chunkResRef = cleanName(s.take().text);
+    else if (w === 'twosidedtex') em.twoSidedTex = s.takeInt();
+    else if (w === 'loop') em.loop = s.takeInt();
+    else if (w === 'renderorder') em.renderOrder = s.takeInt();
+    else if (w === 'm_bframeblending') em.padding1 = s.takeInt();
+    else if (w === 'm_sdepthtexturename') {
       /* optional string */
       s.take();
-    } else if (w === "p2p") {
+    } else if (w === 'p2p') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.P2P;
       else em.nFlags &= ~OdysseyModelEmitterFlag.P2P;
-    } else if (w === "p2p_sel") {
+    } else if (w === 'p2p_sel') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.P2P_SEL;
       else em.nFlags &= ~OdysseyModelEmitterFlag.P2P_SEL;
-    } else if (w === "affectedbywind") {
+    } else if (w === 'affectedbywind') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.AFFECTED_WIND;
       else em.nFlags &= ~OdysseyModelEmitterFlag.AFFECTED_WIND;
-    } else if (w === "m_istinted") {
+    } else if (w === 'm_istinted') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.TINTED;
       else em.nFlags &= ~OdysseyModelEmitterFlag.TINTED;
-    } else if (w === "bounce") {
+    } else if (w === 'bounce') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.BOUNCE;
       else em.nFlags &= ~OdysseyModelEmitterFlag.BOUNCE;
-    } else if (w === "random") {
+    } else if (w === 'random') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.RANDOM;
       else em.nFlags &= ~OdysseyModelEmitterFlag.RANDOM;
-    } else if (w === "inherit") {
+    } else if (w === 'inherit') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.INHERIT;
       else em.nFlags &= ~OdysseyModelEmitterFlag.INHERIT;
-    } else if (w === "inheritvel") {
+    } else if (w === 'inheritvel') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.INHERIT_VEL;
       else em.nFlags &= ~OdysseyModelEmitterFlag.INHERIT_VEL;
-    } else if (w === "inherit_local") {
+    } else if (w === 'inherit_local') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.INHERIT_LOCAL;
       else em.nFlags &= ~OdysseyModelEmitterFlag.INHERIT_LOCAL;
-    } else if (w === "splat") {
+    } else if (w === 'splat') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.SPLAT;
       else em.nFlags &= ~OdysseyModelEmitterFlag.SPLAT;
-    } else if (w === "inherit_part") {
+    } else if (w === 'inherit_part') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.INHERIT_PART;
       else em.nFlags &= ~OdysseyModelEmitterFlag.INHERIT_PART;
-    } else if (w === "depth_texture") {
+    } else if (w === 'depth_texture') {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.DEPTH_TEXTURE;
       else em.nFlags &= ~OdysseyModelEmitterFlag.DEPTH_TEXTURE;
-    } else if (w === "emitterflag13") {
+    } else if (w === 'emitterflag13') {
       s.takeNumber();
     } else if (applyGeometryController(em, w, s)) {
       void 0;
@@ -678,34 +686,33 @@ function parseLightBody(light: OdysseyModelNodeLight, s: MdlAsciiTokenStream): v
     const p = s.peek();
     if (!p) break;
     const w = p.text.toLowerCase();
-    if (w === "endnode") return;
+    if (w === 'endnode') return;
     s.take();
-    if (w === "lightpriority") light.lightPriority = s.takeInt();
-    else if (w === "ndynamictype") light.dynamicFlag = s.takeInt();
-    else if (w === "ambientonly") light.ambientFlag = s.takeInt();
-    else if (w === "affectdynamic") light.affectDynamicFlag = s.takeInt();
-    else if (w === "shadow") light.shadowFlag = s.takeInt();
-    else if (w === "flare") light.generateFlareFlag = s.takeInt();
-    else if (w === "fadinglight") light.fadingLightFlag = s.takeInt();
-    else if (w === "flareradius") light.flare.radius = s.takeNumber();
-    else if (w === "texturenames") {
+    if (w === 'lightpriority') light.lightPriority = s.takeInt();
+    else if (w === 'ndynamictype') light.dynamicFlag = s.takeInt();
+    else if (w === 'ambientonly') light.ambientFlag = s.takeInt();
+    else if (w === 'affectdynamic') light.affectDynamicFlag = s.takeInt();
+    else if (w === 'shadow') light.shadowFlag = s.takeInt();
+    else if (w === 'flare') light.generateFlareFlag = s.takeInt();
+    else if (w === 'fadinglight') light.fadingLightFlag = s.takeInt();
+    else if (w === 'flareradius') light.flare.radius = s.takeNumber();
+    else if (w === 'texturenames') {
       const n = s.takeInt();
       light.flare.textures = [];
       for (let i = 0; i < n; i++) light.flare.textures.push(cleanName(s.take().text));
-    } else if (w === "flaresizes") {
+    } else if (w === 'flaresizes') {
       const n = s.takeInt();
       for (let i = 0; i < n; i++) light.flare.sizes.push(s.takeNumber());
-    } else if (w === "flarepositions") {
+    } else if (w === 'flarepositions') {
       const n = s.takeInt();
       for (let i = 0; i < n; i++) light.flare.positions.push(s.takeNumber());
-    } else if (w === "flarecolorshifts") {
+    } else if (w === 'flarecolorshifts') {
       const n = s.takeInt();
       for (let i = 0; i < n; i++) {
-        light.flare.colorShifts.push(
-          new THREE.Color(s.takeNumber(), s.takeNumber(), s.takeNumber()),
-        );
+        light.flare.colorShifts.push(new THREE.Color(s.takeNumber(), s.takeNumber(), s.takeNumber()));
       }
-    } else if (w === "parent") (light as OdysseyModelNode & { _asciiParent?: string })._asciiParent = cleanName(s.take().text);
+    } else if (w === 'parent')
+      (light as OdysseyModelNode & { _asciiParent?: string })._asciiParent = cleanName(s.take().text);
     else if (applyGeometryController(light, w, s)) {
       void 0;
     }
@@ -717,11 +724,12 @@ function parseReferenceBody(ref: OdysseyModelNodeReference, s: MdlAsciiTokenStre
     const p = s.peek();
     if (!p) break;
     const w = p.text.toLowerCase();
-    if (w === "endnode") return;
+    if (w === 'endnode') return;
     s.take();
-    if (w === "refmodel") ref.modelName = cleanName(s.take().text);
-    else if (w === "reattachable") ref.reattachable = s.takeInt();
-    else if (w === "parent") (ref as OdysseyModelNode & { _asciiParent?: string })._asciiParent = cleanName(s.take().text);
+    if (w === 'refmodel') ref.modelName = cleanName(s.take().text);
+    else if (w === 'reattachable') ref.reattachable = s.takeInt();
+    else if (w === 'parent')
+      (ref as OdysseyModelNode & { _asciiParent?: string })._asciiParent = cleanName(s.take().text);
     else if (applyGeometryController(ref, w, s)) {
       void 0;
     }
@@ -733,9 +741,9 @@ function parseDummyBody(node: OdysseyModelNode, s: MdlAsciiTokenStream): void {
     const p = s.peek();
     if (!p) break;
     const w = p.text.toLowerCase();
-    if (w === "endnode") return;
+    if (w === 'endnode') return;
     s.take();
-    if (w === "parent") (node as OdysseyModelNode & { _asciiParent?: string })._asciiParent = cleanName(s.take().text);
+    if (w === 'parent') (node as OdysseyModelNode & { _asciiParent?: string })._asciiParent = cleanName(s.take().text);
     else if (applyGeometryController(node, w, s)) {
       void 0;
     }
@@ -746,13 +754,13 @@ function parseKeyedList(
   s: MdlAsciiTokenStream,
   geoNode: OdysseyModelNode | undefined,
   nodeType: number,
-  ctrlWord: string,
+  ctrlWord: string
 ): ReturnType<typeof OdysseyControllerFactory.From> | undefined {
   const spec = parseControllerKeyHeader(ctrlWord);
   const mapped = asciiControllerBaseToType(spec.baseName, nodeType);
   if (!mapped) {
-    while (!s.eof && s.peek()!.text.toLowerCase() !== "endlist") s.take();
-    if (s.peek()?.text.toLowerCase() === "endlist") s.take();
+    while (!s.eof && s.peek()!.text.toLowerCase() !== 'endlist') s.take();
+    if (s.peek()?.text.toLowerCase() === 'endlist') s.take();
     return undefined as any;
   }
   const { type, defaultCols } = mapped;
@@ -771,14 +779,14 @@ function parseKeyedList(
 
   while (!s.eof) {
     const t0 = s.peek()!;
-    if (t0.text.toLowerCase() === "endlist") {
+    if (t0.text.toLowerCase() === 'endlist') {
       s.take();
       break;
     }
     const lineNum = t0.line;
     const time = s.takeNumber();
     const vals: number[] = [];
-    while (s.peek() && s.peek()!.line === lineNum && s.peek()!.text.toLowerCase() !== "endlist") {
+    while (s.peek() && s.peek()!.line === lineNum && s.peek()!.text.toLowerCase() !== 'endlist') {
       vals.push(s.takeNumber());
     }
 
@@ -810,7 +818,11 @@ function parseKeyedList(
       }
     } else if (type === OdysseyModelControllerType.Scale) {
       frames.push({ time, value: vals[0] ?? 0 } as IOdysseyControllerFrameGeneric);
-    } else if (spec.bezier && type !== OdysseyModelControllerType.Position && type !== OdysseyModelControllerType.Orientation) {
+    } else if (
+      spec.bezier &&
+      type !== OdysseyModelControllerType.Position &&
+      type !== OdysseyModelControllerType.Orientation
+    ) {
       if (defaultCols === 3) {
         frames.push({
           time,
@@ -849,10 +861,10 @@ function parseAnimationNode(
   model: OdysseyModel,
   anim: OdysseyModelAnimation,
   s: MdlAsciiTokenStream,
-  parentAnim: OdysseyModelAnimationNode | undefined,
+  parentAnim: OdysseyModelAnimationNode | undefined
 ): OdysseyModelAnimationNode {
-  s.expectWord("node");
-  s.expectWord("dummy");
+  s.expectWord('node');
+  s.expectWord('dummy');
   const nodeName = cleanName(s.take().text);
   const an = new OdysseyModelAnimationNode(anim);
   an.name = nodeName;
@@ -862,19 +874,19 @@ function parseAnimationNode(
   while (!s.eof) {
     const p = s.peek()!;
     const w = p.text.toLowerCase();
-    if (w === "endnode") {
+    if (w === 'endnode') {
       s.take();
       break;
     }
-    if (w === "node") {
+    if (w === 'node') {
       const child = parseAnimationNode(model, anim, s, an);
       an.children.push(child);
       continue;
     }
     s.take();
-    if (w === "parent") {
+    if (w === 'parent') {
       (an as OdysseyModelAnimationNode & { _animParentName?: string })._animParentName = cleanName(s.take().text);
-    } else if (w.endsWith("key") || w.includes("bezier")) {
+    } else if (w.endsWith('key') || w.includes('bezier')) {
       const c = parseKeyedList(s, geo, geo?.nodeType ?? OdysseyModelNodeType.Header, w);
       if (c && (c as { type?: number }).type !== undefined) {
         an.controllers.set((c as { type: OdysseyModelControllerType }).type, c as any);
@@ -886,7 +898,7 @@ function parseAnimationNode(
 }
 
 function parseAnimation(model: OdysseyModel, s: MdlAsciiTokenStream): void {
-  s.expectWord("newanim");
+  s.expectWord('newanim');
   const animName = cleanName(s.take().text);
   const geomName = cleanName(s.take().text);
   const anim = new OdysseyModelAnimation();
@@ -900,22 +912,22 @@ function parseAnimation(model: OdysseyModel, s: MdlAsciiTokenStream): void {
   while (!s.eof) {
     const p = s.peek()!;
     const w = p.text.toLowerCase();
-    if (w === "doneanim") {
+    if (w === 'doneanim') {
       s.take();
       s.take();
       s.take();
       break;
     }
-    if (w === "node") {
+    if (w === 'node') {
       anim.rootNode = parseAnimationNode(model, anim, s, undefined);
       anim.nodes = flattenAnimNodes(anim.rootNode);
       continue;
     }
     s.take();
-    if (w === "length") anim.length = s.takeNumber();
-    else if (w === "transtime") anim.transition = s.takeNumber();
-    else if (w === "animroot") anim.animRoot = cleanName(s.take().text);
-    else if (w === "event") {
+    if (w === 'length') anim.length = s.takeNumber();
+    else if (w === 'transtime') anim.transition = s.takeNumber();
+    else if (w === 'animroot') anim.animRoot = cleanName(s.take().text);
+    else if (w === 'event') {
       const len = s.takeNumber();
       const evName = s.take().text;
       anim.events.push({ length: len, name: evName });
@@ -937,7 +949,7 @@ function flattenAnimNodes(root: OdysseyModelAnimationNode): OdysseyModelAnimatio
 }
 
 function parseGeometry(model: OdysseyModel, s: MdlAsciiTokenStream): void {
-  s.expectWord("beginmodelgeom");
+  s.expectWord('beginmodelgeom');
   const gn = cleanName(s.take().text);
   model.geometryHeader.modelName = gn;
 
@@ -946,31 +958,31 @@ function parseGeometry(model: OdysseyModel, s: MdlAsciiTokenStream): void {
   while (!s.eof) {
     const p = s.peek()!;
     const w = p.text.toLowerCase();
-    if (w === "endmodelgeom") {
+    if (w === 'endmodelgeom') {
       s.take();
       s.take();
       break;
     }
-    if (w === "bmin") {
+    if (w === 'bmin') {
       s.take();
       model.modelHeader.boundingMinX = s.takeNumber();
       model.modelHeader.boundingMinY = s.takeNumber();
       model.modelHeader.boundingMinZ = s.takeNumber();
       continue;
     }
-    if (w === "bmax") {
+    if (w === 'bmax') {
       s.take();
       model.modelHeader.boundingMaxX = s.takeNumber();
       model.modelHeader.boundingMaxY = s.takeNumber();
       model.modelHeader.boundingMaxZ = s.takeNumber();
       continue;
     }
-    if (w === "radius") {
+    if (w === 'radius') {
       s.take();
       model.modelHeader.radius = s.takeNumber();
       continue;
     }
-    if (w === "layoutposition") {
+    if (w === 'layoutposition') {
       s.take();
       const lx = s.takeNumber();
       const ly = s.takeNumber();
@@ -978,7 +990,7 @@ function parseGeometry(model: OdysseyModel, s: MdlAsciiTokenStream): void {
       model.asciiLayoutPosition = { x: lx, y: ly, z: lz };
       continue;
     }
-    if (w === "node") {
+    if (w === 'node') {
       s.take();
       const kind = s.take().text;
       const nodeName = cleanName(s.take().text);
@@ -995,30 +1007,30 @@ function parseGeometry(model: OdysseyModel, s: MdlAsciiTokenStream): void {
       node.childOffsets = [];
       node.controllerArrayDefinition = { offset: 0, count: 0, count2: 0 };
       node.controllerDataArrayDefinition = { offset: 0, count: 0, count2: 0 };
-      let parentName = "null";
-      if (kind.toLowerCase() === "trimesh" || kind.toLowerCase() === "skin" || kind.toLowerCase() === "danglymesh") {
+      let parentName = 'null';
+      if (kind.toLowerCase() === 'trimesh' || kind.toLowerCase() === 'skin' || kind.toLowerCase() === 'danglymesh') {
         parseMeshBody(model, node as OdysseyModelNodeMesh, s);
-      } else if (kind.toLowerCase() === "emitter") {
+      } else if (kind.toLowerCase() === 'emitter') {
         parseEmitterBody(node as OdysseyModelNodeEmitter, s);
         syncEmitterFlagsFromNFlags(node as OdysseyModelNodeEmitter);
-      } else if (kind.toLowerCase() === "light") {
+      } else if (kind.toLowerCase() === 'light') {
         const ln = node as OdysseyModelNodeLight;
         if (!ln.color) ln.color = new THREE.Color(1, 1, 1);
         parseLightBody(ln, s);
-      } else if (kind.toLowerCase() === "reference") {
+      } else if (kind.toLowerCase() === 'reference') {
         parseReferenceBody(node as OdysseyModelNodeReference, s);
-      } else if (kind.toLowerCase() === "dummy") {
+      } else if (kind.toLowerCase() === 'dummy') {
         parseDummyBody(node, s);
-      } else if (kind.toLowerCase() === "aabb" || kind.toLowerCase() === "lightsaber") {
+      } else if (kind.toLowerCase() === 'aabb' || kind.toLowerCase() === 'lightsaber') {
         parseMeshBody(model, node as OdysseyModelNodeMesh, s);
       } else {
         parseDummyBody(node, s);
       }
-      if (s.peek()?.text.toLowerCase() === "endnode") s.take();
+      if (s.peek()?.text.toLowerCase() === 'endnode') s.take();
       pending.push({ node, kind });
       continue;
     }
-    if (w === "name") {
+    if (w === 'name') {
       s.take();
       s.take();
       continue;
@@ -1031,8 +1043,8 @@ function parseGeometry(model: OdysseyModel, s: MdlAsciiTokenStream): void {
   }
   for (const { node } of pending) {
     const pn = (node as OdysseyModelNode & { _asciiParent?: string })._asciiParent;
-    const parentName = pn ? cleanName(pn) : "null";
-    if (parentName === "null" || parentName === "") {
+    const parentName = pn ? cleanName(pn) : 'null';
+    if (parentName === 'null' || parentName === '') {
       node.parent = null as any;
     } else {
       const p = model.nodes.get(parentName);
@@ -1049,7 +1061,7 @@ function parseGeometry(model: OdysseyModel, s: MdlAsciiTokenStream): void {
   }
   if (!root && pending.length) root = pending[0].node;
   if (!root) {
-    throw new MdlAsciiParseError("No root geometry node (no node with parent NULL)", 0);
+    throw new MdlAsciiParseError('No root geometry node (no node with parent NULL)', 0);
   }
   model.rootNode = root;
 }
@@ -1064,7 +1076,7 @@ function resolveAnimParents(anim: OdysseyModelAnimation): void {
   walk(anim.rootNode);
   for (const n of byName.values()) {
     const want = (n as OdysseyModelAnimationNode & { _animParentName?: string })._animParentName;
-    if (!want || want.toLowerCase() === "null") continue;
+    if (!want || want.toLowerCase() === 'null') continue;
     const p = byName.get(cleanName(want));
     if (p) {
       n.parent = p;
@@ -1085,51 +1097,51 @@ export function parseOdysseyModelAscii(source: string): OdysseyModel {
 
   const s = new MdlAsciiTokenStream(tokens);
 
-  while (!s.eof && s.peek()!.text.toLowerCase() !== "newmodel") {
+  while (!s.eof && s.peek()!.text.toLowerCase() !== 'newmodel') {
     s.pos++;
   }
   if (s.eof) {
-    throw new MdlAsciiParseError("newmodel not found", 0);
+    throw new MdlAsciiParseError('newmodel not found', 0);
   }
 
-  while (!s.eof && s.peek()!.text.toLowerCase() !== "beginmodelgeom") {
+  while (!s.eof && s.peek()!.text.toLowerCase() !== 'beginmodelgeom') {
     const w = s.take().text.toLowerCase();
-    if (w === "newmodel") {
+    if (w === 'newmodel') {
       model.geometryHeader.modelName = cleanName(s.take().text);
-    } else if (w === "setsupermodel") {
+    } else if (w === 'setsupermodel') {
       cleanName(s.take().text);
       model.modelHeader.superModelName = cleanName(s.take().text);
-    } else if (w === "classification") {
+    } else if (w === 'classification') {
       model.modelHeader.classification = asciiClassificationToEnum(s.take().text);
-    } else if (w === "classification_unk1") {
+    } else if (w === 'classification_unk1') {
       model.modelHeader.subClassification = s.takeInt();
-    } else if (w === "ignorefog") {
+    } else if (w === 'ignorefog') {
       model.modelHeader.fogged = s.takeNumber() === 0;
-    } else if (w === "setanimationscale") {
+    } else if (w === 'setanimationscale') {
       model.modelHeader.scale = s.takeNumber();
-    } else if (w === "compress_quaternions") {
+    } else if (w === 'compress_quaternions') {
       model.asciiCompressQuaternions = s.takeNumber();
-    } else if (w === "headlink") {
+    } else if (w === 'headlink') {
       model.asciiHeadLink = s.takeNumber();
-    } else if (w === "functionpointer0") {
+    } else if (w === 'functionpointer0') {
       model.geometryHeader.functionPointer0 = Math.floor(s.takeNumber()) >>> 0;
       applyEngineFromFunctionPointer0(model);
-    } else if (w === "functionpointer1") {
+    } else if (w === 'functionpointer1') {
       model.geometryHeader.functionPointer1 = Math.floor(s.takeNumber()) >>> 0;
     }
   }
 
-  if (!s.eof && s.peek()!.text.toLowerCase() === "beginmodelgeom") {
+  if (!s.eof && s.peek()!.text.toLowerCase() === 'beginmodelgeom') {
     parseGeometry(model, s);
   }
 
   while (!s.eof) {
     const w = s.peek()!.text.toLowerCase();
-    if (w === "newanim") {
+    if (w === 'newanim') {
       parseAnimation(model, s);
       continue;
     }
-    if (w === "donemodel") {
+    if (w === 'donemodel') {
       s.take();
       if (!s.eof) s.take();
       break;

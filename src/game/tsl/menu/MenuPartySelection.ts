@@ -1,26 +1,25 @@
-import { GameState } from "@/GameState";
-import { LBL_3DView } from "@/gui";
-import type { GUILabel, GUICheckBox, GUIButton } from "@/gui";
-import { MDLLoader, TextureLoader } from "@/loaders";
-import { ModuleCreature } from "@/module";
-import { NWScript } from "@/nwscript/NWScript";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { OdysseyModel } from "@/odyssey";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { OdysseyModel3D } from "@/three/odyssey";
-import { MenuPartySelection as K1_MenuPartySelection } from "@/game/kotor/KOTOR";
+import { GameState } from '@/GameState';
+import { LBL_3DView } from '@/gui';
+import type { GUILabel, GUICheckBox, GUIButton } from '@/gui';
+import { MDLLoader, TextureLoader } from '@/loaders';
+import { ModuleCreature } from '@/module';
+import { NWScript } from '@/nwscript/NWScript';
+import { NWScriptInstance } from '@/nwscript/NWScriptInstance';
+import { OdysseyModel } from '@/odyssey';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { OdysseyModel3D } from '@/three/odyssey';
+import { MenuPartySelection as K1_MenuPartySelection } from '@/game/kotor/KOTOR';
 
 /**
  * MenuPartySelection class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuPartySelection.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuPartySelection extends K1_MenuPartySelection {
-
   declare LBL_NAMEBACK: GUILabel;
   declare LBL_BAR2: GUILabel;
   declare LBL_BAR1: GUILabel;
@@ -90,7 +89,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   LBL_3D_VIEW: any;
   cgmain_light: OdysseyModel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'partyselect_p';
     this.background = 'blackfill';
@@ -99,7 +98,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.childMenu = this.manager.MenuTop;
       this.default0 = this.LBL_NA0.getFillTextureName();
@@ -116,7 +115,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       this.default11 = this.LBL_NA11.getFillTextureName();
       this.BTN_NPC0.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(0)){
+        if (GameState.PartyManager.IsAvailable(0)) {
           this.selectedNPC = 0;
           this.updateSelection();
         }
@@ -124,7 +123,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       this.BTN_NPC1.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(1)){
+        if (GameState.PartyManager.IsAvailable(1)) {
           this.selectedNPC = 1;
           this.updateSelection();
         }
@@ -132,7 +131,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       this.BTN_NPC2.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(2)){
+        if (GameState.PartyManager.IsAvailable(2)) {
           this.selectedNPC = 2;
           this.updateSelection();
         }
@@ -140,7 +139,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       this.BTN_NPC3.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(3)){
+        if (GameState.PartyManager.IsAvailable(3)) {
           this.selectedNPC = 3;
           this.updateSelection();
         }
@@ -148,7 +147,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       this.BTN_NPC4.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(4)){
+        if (GameState.PartyManager.IsAvailable(4)) {
           this.selectedNPC = 4;
           this.updateSelection();
         }
@@ -156,7 +155,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       this.BTN_NPC5.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(5)){
+        if (GameState.PartyManager.IsAvailable(5)) {
           this.selectedNPC = 5;
           this.updateSelection();
         }
@@ -164,7 +163,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       this.BTN_NPC6.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(6)){
+        if (GameState.PartyManager.IsAvailable(6)) {
           this.selectedNPC = 6;
           this.updateSelection();
         }
@@ -172,7 +171,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       this.BTN_NPC7.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(7)){
+        if (GameState.PartyManager.IsAvailable(7)) {
           this.selectedNPC = 7;
           this.updateSelection();
         }
@@ -180,7 +179,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       this.BTN_NPC8.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(8)){
+        if (GameState.PartyManager.IsAvailable(8)) {
           this.selectedNPC = 8;
           this.updateSelection();
         }
@@ -188,7 +187,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       this.BTN_NPC9.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(9)){
+        if (GameState.PartyManager.IsAvailable(9)) {
           this.selectedNPC = 9;
           this.updateSelection();
         }
@@ -196,7 +195,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       this.BTN_NPC10.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(10)){
+        if (GameState.PartyManager.IsAvailable(10)) {
           this.selectedNPC = 10;
           this.updateSelection();
         }
@@ -204,7 +203,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
       this.BTN_NPC11.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.IsAvailable(11)){
+        if (GameState.PartyManager.IsAvailable(11)) {
           this.selectedNPC = 11;
           this.updateSelection();
         }
@@ -213,17 +212,15 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       this.BTN_DONE.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        if(!this.canClose())
-          return;
+        if (!this.canClose()) return;
 
-        if(this.onCloseScript instanceof NWScriptInstance){
+        if (this.onCloseScript instanceof NWScriptInstance) {
           this.close();
           this.onCloseScript.run(undefined, 0);
           this.onCloseScript = undefined;
-        }else{
+        } else {
           this.close();
         }
-        
       });
 
       this.BTN_BACK.addEventListener('click', (e) => {
@@ -235,53 +232,55 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
 
         //Area Unescapable disables party selection as well as transit
-        if(!GameState.module.area.unescapable || this.ignoreUnescapable){
-          if(GameState.PartyManager.IsNPCInParty(this.selectedNPC)){
+        if (!GameState.module.area.unescapable || this.ignoreUnescapable) {
+          if (GameState.PartyManager.IsNPCInParty(this.selectedNPC)) {
             GameState.PartyManager.RemoveNPCById(this.selectedNPC);
             this.updateSelection();
-          }else if(this.isSelectable(this.selectedNPC) && GameState.PartyManager.CurrentMembers.length < GameState.PartyManager.MaxNPCCount){
+          } else if (
+            this.isSelectable(this.selectedNPC) &&
+            GameState.PartyManager.CurrentMembers.length < GameState.PartyManager.MaxNPCCount
+          ) {
             this.addToParty(this.selectedNPC);
           }
           this.updateCount();
         }
-
       });
 
       this.LBL_3D_VIEW = new LBL_3DView(this.LBL_3D.extent.width, this.LBL_3D.extent.height);
       this.LBL_3D_VIEW.setControl(this.LBL_3D);
 
-      MDLLoader.loader.load('cgmain_light')
-      .then((mdl: OdysseyModel) => {
-        this.cgmain_light = mdl;
+      MDLLoader.loader
+        .load('cgmain_light')
+        .then((mdl: OdysseyModel) => {
+          this.cgmain_light = mdl;
 
-        OdysseyModel3D.FromMDL(this.cgmain_light, {
-          // manageLighting: false,
-          context: this.LBL_3D_VIEW
-        }).then((model: OdysseyModel3D) => {
-          //console.log('Model Loaded', model);
-          this.LBL_3D_VIEW.model = model;
-          this.LBL_3D_VIEW.addModel(this.LBL_3D_VIEW.model);
+          OdysseyModel3D.FromMDL(this.cgmain_light, {
+            // manageLighting: false,
+            context: this.LBL_3D_VIEW,
+          })
+            .then((model: OdysseyModel3D) => {
+              //console.log('Model Loaded', model);
+              this.LBL_3D_VIEW.model = model;
+              this.LBL_3D_VIEW.addModel(this.LBL_3D_VIEW.model);
 
-          this.LBL_3D_VIEW.camerahook = this.LBL_3D_VIEW.model.getObjectByName('camerahook');
-          
-          this.LBL_3D_VIEW.camera.position.copy(
-            this.LBL_3D_VIEW.camerahook.position
-          );
+              this.LBL_3D_VIEW.camerahook = this.LBL_3D_VIEW.model.getObjectByName('camerahook');
 
-          this.LBL_3D_VIEW.camera.quaternion.copy(
-            this.LBL_3D_VIEW.camerahook.quaternion
-          ); 
-          this.LBL_3D_VIEW.camera.position.z = 1;
+              this.LBL_3D_VIEW.camera.position.copy(this.LBL_3D_VIEW.camerahook.position);
 
-          this.LBL_3D_VIEW.camera.updateProjectionMatrix();
-          this.LBL_3D_VIEW.visible = true;
-          resolve();
-        }).catch(() => {
+              this.LBL_3D_VIEW.camera.quaternion.copy(this.LBL_3D_VIEW.camerahook.quaternion);
+              this.LBL_3D_VIEW.camera.position.z = 1;
+
+              this.LBL_3D_VIEW.camera.updateProjectionMatrix();
+              this.LBL_3D_VIEW.visible = true;
+              resolve();
+            })
+            .catch(() => {
+              resolve();
+            });
+        })
+        .catch(() => {
           resolve();
         });
-      }).catch(() => {
-        resolve();
-      });
     });
   }
 
@@ -303,10 +302,8 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     super.show();
     this.forceNPC1 = forceNPC1;
     this.forceNPC2 = forceNPC2;
-    if (this.forceNPC1 > -1)
-      this.addToParty(this.forceNPC1);
-    if (this.forceNPC2 > -1)
-      this.addToParty(this.forceNPC2);
+    if (this.forceNPC1 > -1) this.addToParty(this.forceNPC1);
+    if (this.forceNPC2 > -1) this.addToParty(this.forceNPC2);
     if (this.ignoreUnescapable) {
       // this.manager.MenuTop.toggleNavUI(false);
     }
@@ -328,17 +325,16 @@ export class MenuPartySelection extends K1_MenuPartySelection {
    */
   update(delta: number) {
     super.update(delta);
-    if (!this.bVisible)
-      return;
+    if (!this.bVisible) return;
 
-    if (this.char instanceof ModuleCreature){
+    if (this.char instanceof ModuleCreature) {
       this.char.update(delta);
-      if(this.char.model instanceof OdysseyModel3D && this.char.model.bonesInitialized){
-        this.char.model.update( delta );
+      if (this.char.model instanceof OdysseyModel3D && this.char.model.bonesInitialized) {
+        this.char.model.update(delta);
       }
       try {
         this.LBL_3D_VIEW.render(delta);
-      } catch (_e: unknown) { }
+      } catch (_e: unknown) {}
     }
   }
 
@@ -347,7 +343,10 @@ export class MenuPartySelection extends K1_MenuPartySelection {
    */
   updateSelection() {
     super.updateSelection();
-    if (!(this.char instanceof ModuleCreature) || this.char instanceof ModuleCreature && this.char.selectedNPC != this.selectedNPC) {
+    if (
+      !(this.char instanceof ModuleCreature) ||
+      (this.char instanceof ModuleCreature && this.char.selectedNPC != this.selectedNPC)
+    ) {
       GameState.PartyManager.LoadPartyMemberCreature(this.selectedNPC, (creature: ModuleCreature) => {
         if (creature instanceof ModuleCreature) {
           if (this.char instanceof ModuleCreature) {
@@ -363,5 +362,4 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       });
     }
   }
-  
 }

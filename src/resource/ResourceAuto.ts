@@ -8,7 +8,13 @@
 import { bytesMDL, readMDL } from '@/resource/MDLAuto';
 import { MDL } from '@/resource/MDLData';
 import { ResourceTypes } from '@/resource/ResourceTypes';
-import { TPCObject, detectTPCFormat, readTPCFromBuffer, writeTPCToBuffer, type WriteTPCFormat } from '@/resource/TPCObject';
+import {
+  TPCObject,
+  detectTPCFormat,
+  readTPCFromBuffer,
+  writeTPCToBuffer,
+  type WriteTPCFormat,
+} from '@/resource/TPCObject';
 import {
   TwoDAObject,
   detectTwoDAFormat,
@@ -20,28 +26,20 @@ import { TXI } from '@/resource/TXI';
 import { VISObject } from '@/resource/VISObject';
 import { WAVObject } from '@/resource/WAVObject';
 
-export type ReadResourceResult =
-  | MDL
-  | TPCObject
-  | TwoDAObject
-  | TXI
-  | VISObject
-  | WAVObject;
+export type ReadResourceResult = MDL | TPCObject | TwoDAObject | TXI | VISObject | WAVObject;
 
 /**
  * Read a resource from buffer. If resType is provided, use it to select parser; otherwise auto-detect.
  * Supports: MDL (2002), TPC/TGA/DDS/BMP (texture), 2DA (2017), TXI (2022), VIS (3001), WAV (4).
  * Throws if format is unknown or detection fails.
  */
-export function readResourceFromBuffer(
-  buffer: Uint8Array,
-  resType?: number
-): ReadResourceResult {
+export function readResourceFromBuffer(buffer: Uint8Array, resType?: number): ReadResourceResult {
   if (resType !== undefined) {
     const R = ResourceTypes as Record<string, number>;
     if (resType === R['mdl']) return readMDL(buffer);
     if (resType === R['2da']) return readTwoDAFromBuffer(buffer);
-    if (resType === R['tga'] || resType === R['tpc'] || resType === R['dds'] || resType === R['bmp']) return readTPCFromBuffer(buffer);
+    if (resType === R['tga'] || resType === R['tpc'] || resType === R['dds'] || resType === R['bmp'])
+      return readTPCFromBuffer(buffer);
     if (resType === R['txi']) return TXI.fromBuffer(buffer);
     if (resType === R['vis']) return new VISObject(buffer);
     if (resType === R['wav']) return new WAVObject(buffer);
@@ -99,10 +97,7 @@ export type ResourceToBytesFormat =
  * Serialize a resource instance to bytes.
  * Format option is used for TwoDA (e.g. '2da'|'csv'|'json') and TPC (e.g. 'tpc'|'tga'|'dds').
  */
-export function resourceToBytes(
-  resource: ReadResourceResult,
-  options?: ResourceToBytesFormat
-): Uint8Array {
+export function resourceToBytes(resource: ReadResourceResult, options?: ResourceToBytesFormat): Uint8Array {
   if (resource instanceof TPCObject) {
     const format = (options as { format?: WriteTPCFormat } | undefined)?.format ?? 'tpc';
     return writeTPCToBuffer(resource, format);
@@ -118,5 +113,7 @@ export function resourceToBytes(
     const format = (options as { format?: 'mdl' | 'mdl_ascii' } | undefined)?.format ?? 'mdl';
     return bytesMDL(resource, format);
   }
-  throw new Error(`Unsupported resource type for serialization: ${(resource as object).constructor?.name ?? typeof resource}`);
+  throw new Error(
+    `Unsupported resource type for serialization: ${(resource as object).constructor?.name ?? typeof resource}`
+  );
 }

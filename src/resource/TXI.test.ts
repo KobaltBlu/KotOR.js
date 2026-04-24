@@ -18,13 +18,13 @@ describe('TXI', () => {
     ];
 
     for (let index = 0; index < charCount; index++) {
-      lines.push(`${(index / 16) / 16} ${(Math.floor(index / 16)) / 8} 0`);
+      lines.push(`${index / 16 / 16} ${Math.floor(index / 16) / 8} 0`);
     }
 
     lines.push(`lowerrightcoords ${charCount}`);
 
     for (let index = 0; index < charCount; index++) {
-      lines.push(`${((index % 16) + 1) / 16} ${((Math.floor(index / 16)) + 1) / 8} 0`);
+      lines.push(`${((index % 16) + 1) / 16} ${(Math.floor(index / 16) + 1) / 8} 0`);
     }
 
     return lines.join('\n');

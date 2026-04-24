@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanvas";
-import * as KotOR from "@/apps/forge/KotOR";
-import * as THREE from "three";
-import { TabModelViewerState } from "@/apps/forge/states/tabs";
+import React, { useState } from 'react';
+import { SectionContainer } from '@/apps/forge/components/SectionContainer';
+import { TextureCanvas } from '@/apps/forge/components/TextureCanvas/TextureCanvas';
+import * as KotOR from '@/apps/forge/KotOR';
+import * as THREE from 'three';
+import { TabModelViewerState } from '@/apps/forge/states/tabs';
 
 export interface MaterialTextureSectionProps {
   node: KotOR.OdysseyObject3D;
@@ -106,11 +106,7 @@ export const MaterialTextureSection: React.FC<MaterialTextureSectionProps> = ({ 
             onChange={(e) => setSwapTexture(e.target.value)}
             onKeyDown={handleSwapKeyDown}
           />
-          <button
-            className="btn btn-sm"
-            onClick={handleSwapTexture}
-            disabled={swapping || !swapTexture.trim()}
-          >
+          <button className="btn btn-sm" onClick={handleSwapTexture} disabled={swapping || !swapTexture.trim()}>
             {swapping ? 'Loading...' : 'Apply'}
           </button>
         </div>

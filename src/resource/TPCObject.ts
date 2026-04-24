@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { TXI } from "@/resource/TXI";
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { TXI } from '@/resource/TXI';
 // @ts-ignore
-import * as dxtJs from "dxt-js";
-import { PixelFormat } from "@/enums/graphics/tpc/PixelFormat";
-import { ENCODING } from "@/enums/graphics/tpc/Encoding";
-import { OdysseyCompressedTexture } from "@/three/odyssey/OdysseyCompressedTexture";
-import { ITPCHeader } from "@/interface/resource/ITPCHeader";
-import { ITPCObjectOptions } from "@/interface/resource/ITPCObjectOptions";
+import * as dxtJs from 'dxt-js';
+import { PixelFormat } from '@/enums/graphics/tpc/PixelFormat';
+import { ENCODING } from '@/enums/graphics/tpc/Encoding';
+import { OdysseyCompressedTexture } from '@/three/odyssey/OdysseyCompressedTexture';
+import { ITPCHeader } from '@/interface/resource/ITPCHeader';
+import { ITPCObjectOptions } from '@/interface/resource/ITPCObjectOptions';
 
 const TPCHeaderLength = 128;
 export type WriteTPCFormat = 'tpc' | 'tga' | 'dds' | 'bmp';
@@ -34,154 +34,153 @@ export class TPCObject {
 
   canvas: OffscreenCanvas[] = [];
 
-  constructor ( args = {} as ITPCObjectOptions ) {
-
+  constructor(args = {} as ITPCObjectOptions) {
     const _default: ITPCObjectOptions = {} as ITPCObjectOptions;
 
-    const options = {..._default, ...args};
+    const options = { ..._default, ...args };
 
     this.file = options.file ?? new Uint8Array(TPCHeaderLength);
     this.filename = options.filename ?? '';
     this.pack = options.pack ?? 0;
     this.header = this.readHeader();
-    this.txi = new TXI( this.getTXIData() );
-
+    this.txi = new TXI(this.getTXIData());
   }
 
   getTXIData(): string {
-
-    try{
+    try {
       const _txiOffset = this.getDataLength() + TPCHeaderLength;
       const _txiDataLength = this.file.length - _txiOffset;
 
-      if (_txiDataLength > 0){
-        const txiReader = new BinaryReader(this.file.slice(_txiOffset, _txiOffset + _txiDataLength ));
+      if (_txiDataLength > 0) {
+        const txiReader = new BinaryReader(this.file.slice(_txiOffset, _txiOffset + _txiDataLength));
         let txiData = '';
         let ch;
 
-        while ((ch = txiReader.readChar() || '\0').charCodeAt(0) != 0)
-          txiData = txiData + ch;
+        while ((ch = txiReader.readChar() || '\0').charCodeAt(0) != 0) txiData = txiData + ch;
 
         return txiData;
-      }else{
+      } else {
         return '';
       }
-    }catch(e){
+    } catch (e) {
       console.error('getTXIData', e);
       return '';
     }
-
   }
 
-  getMIPMaps(){
+  getMIPMaps() {}
 
-  }
-
-  getDDS( compressMipMaps: boolean = true ) {
-
-  	const dds = { mipmaps: [], width: 0, height: 0, format: null, mipmapCount: 1, isCubemap: false } as any;
+  getDDS(compressMipMaps: boolean = true) {
+    const dds = { mipmaps: [], width: 0, height: 0, format: null, mipmapCount: 1, isCubemap: false } as any;
 
     // Parse header
-    if(this.header === null)
-      this.header = this.readHeader();
+    if (this.header === null) this.header = this.readHeader();
 
-  	if (!this.header.compressed) {
+    if (!this.header.compressed) {
       // Uncompressed
-      switch(this.header.encoding){
+      switch (this.header.encoding) {
         case ENCODING.GRAY:
           // 8bpp grayscale
-        break;
+          break;
         case ENCODING.RGB:
-    			dds.format = 1023;//THREE.RGBAFormat
-        break;
+          dds.format = 1023; //THREE.RGBAFormat
+          break;
         case ENCODING.RGBA:
-          dds.format = 1023;//THREE.RGBAFormat;
-        break;
+          dds.format = 1023; //THREE.RGBAFormat;
+          break;
         case ENCODING.BGRA:
-          dds.format = 1023;//THREE.RGBAFormat;
-        break;
+          dds.format = 1023; //THREE.RGBAFormat;
+          break;
       }
-    }else{
-      switch(this.header.encoding){
+    } else {
+      switch (this.header.encoding) {
         case ENCODING.RGB:
           // S3TC DXT1
-          dds.format = 33776;//THREE.RGB_S3TC_DXT1_Format;
-        break;
+          dds.format = 33776; //THREE.RGB_S3TC_DXT1_Format;
+          break;
         case ENCODING.RGBA:
           // S3TC DXT5
-          dds.format = 33779;//THREE.RGBA_S3TC_DXT5_Format;
-        break;
+          dds.format = 33779; //THREE.RGBA_S3TC_DXT5_Format;
+          break;
       }
     }
 
-  	dds.mipmapCount = this.header.mipMapCount;
-  	dds.isCubemap = this.header.isCubemap;
-  	dds.width = this.header.width;
-  	dds.height = this.header.height;
+    dds.mipmapCount = this.header.mipMapCount;
+    dds.isCubemap = this.header.isCubemap;
+    dds.width = this.header.width;
+    dds.height = this.header.height;
 
     let dataOffset = TPCHeaderLength;
 
     //Detect Animated Textures
-    if(this.txi.procedureType == 1){
+    if (this.txi.procedureType == 1) {
       this.header.faces = this.txi.numx * this.txi.numy;
-      dds.width  = this.header.width / this.txi.numx;
-      dds.height  = this.header.height / this.txi.numy;
+      dds.width = this.header.width / this.txi.numx;
+      dds.height = this.header.height / this.txi.numy;
       dds.mipmapCount = this.generateMipMapCount(dds.width, dds.height);
     }
 
-  	for ( let face = 0; face < this.header.faces; face++ ) {
-
-  		let width = dds.width;
-  		let height = dds.height;
+    for (let face = 0; face < this.header.faces; face++) {
+      let width = dds.width;
+      let height = dds.height;
       let dataSize = this.header.dataSize;
       let dataLength = 0;
       let byteArray = new Uint8Array(0);
 
-  		for ( let i = 0; i < dds.mipmapCount; i++ ) {
-
-  			if ( !this.header.compressed ) {
-  				dataLength = width * height * this.header.minDataSize;
+      for (let i = 0; i < dds.mipmapCount; i++) {
+        if (!this.header.compressed) {
+          dataLength = width * height * this.header.minDataSize;
           const rawBuffer = this.file.slice(dataOffset, dataOffset + dataLength);
-          if(this.header.encoding == ENCODING.RGB){
-            byteArray = new Uint8Array( (rawBuffer.length/3) * 4 );
+          if (this.header.encoding == ENCODING.RGB) {
+            byteArray = new Uint8Array((rawBuffer.length / 3) * 4);
             const n = 4 * width * height;
-            let s = 0, d = 0;
+            let s = 0,
+              d = 0;
             while (d < n) {
               byteArray[d++] = rawBuffer[s++];
               byteArray[d++] = rawBuffer[s++];
               byteArray[d++] = rawBuffer[s++];
               byteArray[d++] = 255;
             }
-          }else{
+          } else {
             byteArray = rawBuffer;
           }
-  			} else {
-          if(this.header.encoding == ENCODING.RGB){
+        } else {
+          if (this.header.encoding == ENCODING.RGB) {
             dataLength = Math.max(this.header.minDataSize, width * height * 0.5);
-            dataLength = Math.max(this.header.minDataSize, Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4) * this.header.minDataSize);
-          }else if(this.header.encoding == ENCODING.RGBA){
-            dataLength = Math.max(this.header.minDataSize, Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4) * this.header.minDataSize);
+            dataLength = Math.max(
+              this.header.minDataSize,
+              Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4) * this.header.minDataSize
+            );
+          } else if (this.header.encoding == ENCODING.RGBA) {
+            dataLength = Math.max(
+              this.header.minDataSize,
+              Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4) * this.header.minDataSize
+            );
           }
           byteArray = this.file.slice(dataOffset, dataOffset + dataLength);
-          if(!compressMipMaps){
-            byteArray = dxtJs.decompress(byteArray, width, height, this.header.encoding == ENCODING.RGB ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5 );
+          if (!compressMipMaps) {
+            byteArray = dxtJs.decompress(
+              byteArray,
+              width,
+              height,
+              this.header.encoding == ENCODING.RGB ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5
+            );
           }
-  			}
+        }
 
-  			dds.mipmaps.push({
+        dds.mipmaps.push({
           data: byteArray,
           width: width,
-          height: height
+          height: height,
         });
 
-  			dataOffset += dataLength;
+        dataOffset += dataLength;
 
-  			width = Math.max( width >> 1, 1 );
-  			height = Math.max( height >> 1, 1 );
-        dataSize = Math.max( dataSize >> 2, this.header.minDataSize );
-
-  		}
-
+        width = Math.max(width >> 1, 1);
+        height = Math.max(height >> 1, 1);
+        dataSize = Math.max(dataSize >> 2, this.header.minDataSize);
+      }
     }
 
     ///////////////////////////////////
@@ -189,10 +188,10 @@ export class TPCObject {
     ///////////////////////////////////
 
     //Combine Extracted mipMaps into a single mipmap if this texture is a procedureType = cycle texture
-    if(this.txi.procedureType == 1){
-      try{
+    if (this.txi.procedureType == 1) {
+      try {
         //console.log('TPCObject: Rebuilding Frames', this.filename);
-        const encoding = (this.header.encoding == ENCODING.RGB) ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5;
+        const encoding = this.header.encoding == ENCODING.RGB ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5;
         const mipmaps = [];
 
         dds.width = this.header.width;
@@ -200,11 +199,11 @@ export class TPCObject {
 
         let imageWidth = this.header.width;
         let imageHeight = this.header.height;
-        let frameWidth = (imageWidth / this.txi.numx);
-        let frameHeight = (imageHeight / this.txi.numy);
-        const frameCount = (this.txi.numx * this.txi.numy);
+        let frameWidth = imageWidth / this.txi.numx;
+        let frameHeight = imageHeight / this.txi.numy;
+        const frameCount = this.txi.numx * this.txi.numy;
 
-        for(let m = 0; m < dds.mipmapCount; m++){
+        for (let m = 0; m < dds.mipmapCount; m++) {
           const frames = [];
 
           //Create an OffsreenCanvas so we can stitch the frames back together
@@ -212,23 +211,21 @@ export class TPCObject {
           const ctx = this.canvas[m].getContext('2d');
 
           //Get the proper frames from the old mipmaps list
-          for(let i = 0; i < frameCount; i++){
-            const mipmap = dds.mipmaps[m + (i * dds.mipmapCount)];
+          for (let i = 0; i < frameCount; i++) {
+            const mipmap = dds.mipmaps[m + i * dds.mipmapCount];
             //console.log(m + (i * dds.mipmapCount), mipmap);
             const uint8 = Uint8ClampedArray.from(
               compressMipMaps ? dxtJs.decompress(mipmap.data, frameWidth, frameHeight, encoding) : mipmap.data
               // (window as any).dxt.decompress(mipmap.data, frameWidth, frameHeight, encoding)
             );
             //console.log(uint8, frameWidth, frameHeight);
-            frames.push(
-              new ImageData(uint8, frameWidth, frameHeight)
-            );
+            frames.push(new ImageData(uint8, frameWidth, frameHeight));
           }
 
           //Merge the frames onto the canvas
-          for(let y = 0; y < this.txi.numy; y++){
-            const frameY = (y * this.txi.numx);
-            for(let x = 0; x < this.txi.numx; x++){
+          for (let y = 0; y < this.txi.numy; y++) {
+            const frameY = y * this.txi.numx;
+            for (let x = 0; x < this.txi.numx; x++) {
               //console.log(frameY + x, x * frameWidth2, y * frameHeight2);
               ctx.putImageData(frames[frameY + x], x * frameWidth, y * frameHeight);
             }
@@ -238,58 +235,58 @@ export class TPCObject {
           const mergedImageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
 
           //Compress it with the proper DXT encoding
-          const mipmap_data = compressMipMaps ? dxtJs.compress(mergedImageData.data, imageWidth, imageHeight, encoding) : mergedImageData.data;
+          const mipmap_data = compressMipMaps
+            ? dxtJs.compress(mergedImageData.data, imageWidth, imageHeight, encoding)
+            : mergedImageData.data;
 
           //Add it the the new mipmaps list
           mipmaps.push({
             data: mipmap_data,
             width: imageWidth,
-            height: imageHeight
+            height: imageHeight,
           });
 
           //Resize Next Frame
-          frameWidth = Math.max( frameWidth >> 1, 1 );
-          frameHeight = Math.max( frameHeight >> 1, 1 );
+          frameWidth = Math.max(frameWidth >> 1, 1);
+          frameHeight = Math.max(frameHeight >> 1, 1);
           //Resize Next Image
-          imageWidth = Math.max( imageWidth >> 1, 1 );
-          imageHeight = Math.max( imageHeight >> 1, 1 );
+          imageWidth = Math.max(imageWidth >> 1, 1);
+          imageHeight = Math.max(imageHeight >> 1, 1);
         }
         dds.mipmaps = mipmaps;
         return dds;
-      }catch(e){
+      } catch (e) {
         console.error(e);
       }
     }
 
-  	return dds;
-
+    return dds;
   }
 
-  generateMipMapCount(width = 0, height = 0){
+  generateMipMapCount(width = 0, height = 0) {
     let nWidth = width;
     let nHeight = height;
     let dataSize = 0;
     let running = true;
     let mips = 0;
 
-    const multiplier = (this.header.encoding == ENCODING.RGB) ? 0.5 : 1;
+    const multiplier = this.header.encoding == ENCODING.RGB ? 0.5 : 1;
 
-    while(running){
-      const mipMapSize = Math.max((nWidth * nHeight) * multiplier, this.header.minDataSize);
+    while (running) {
+      const mipMapSize = Math.max(nWidth * nHeight * multiplier, this.header.minDataSize);
       //console.log(nWidth, nHeight, mipMapSize);
-      dataSize += mipMapSize;//Math.max( dataSize >> 2, this.header.minDataSize );
-      if(nWidth == 1 && nHeight == 1){
+      dataSize += mipMapSize; //Math.max( dataSize >> 2, this.header.minDataSize );
+      if (nWidth == 1 && nHeight == 1) {
         running = false;
       }
-      nWidth = Math.max( nWidth >> 1, 1 );
-      nHeight = Math.max( nHeight >> 1, 1 );
+      nWidth = Math.max(nWidth >> 1, 1);
+      nHeight = Math.max(nHeight >> 1, 1);
       mips += 1;
     }
     return mips;
   }
 
   readHeader(): ITPCHeader {
-
     // Parse header
     const Header: ITPCHeader = {} as ITPCHeader;
     const Reader = new BinaryReader(this.file.slice(0, TPCHeaderLength));
@@ -305,10 +302,10 @@ export class TPCObject {
     Header.encoding = Reader.readByte();
 
     // Number of mip maps in the image
-    Header.mipMapCount = Math.max( 1, Reader.readByte() );
+    Header.mipMapCount = Math.max(1, Reader.readByte());
 
     Header.bytesPerPixel = 4;
-    Header.bitsPerPixel = (Header.bytesPerPixel * 8);
+    Header.bitsPerPixel = Header.bytesPerPixel * 8;
 
     Header.minDataSize = 0;
     Header.compressed = false;
@@ -317,51 +314,51 @@ export class TPCObject {
     if (Header.dataSize == 0) {
       // Uncompressed
       Header.compressed = false;
-      switch(Header.encoding){
+      switch (Header.encoding) {
         case ENCODING.GRAY:
           Header.hasAlpha = false;
           Header.format = PixelFormat.R8G8B8;
           Header.minDataSize = 1;
           Header.dataSize = Header.width * Header.height;
-        break;
+          break;
         case ENCODING.RGB:
           Header.hasAlpha = false;
           Header.format = PixelFormat.R8G8B8;
           Header.minDataSize = 3;
           Header.dataSize = Header.width * Header.height * 3;
-        break;
+          break;
         case ENCODING.RGBA:
           Header.hasAlpha = true;
           Header.format = PixelFormat.R8G8B8A8;
           Header.minDataSize = 4;
           Header.dataSize = Header.width * Header.height * 4;
-        break;
+          break;
         case ENCODING.BGRA:
           Header.hasAlpha = true;
           Header.format = PixelFormat.B8G8R8A8;
           Header.minDataSize = 4;
           Header.dataSize = Header.width * Header.height * 4;
-        break;
+          break;
         default:
           console.error('TPCObject', Header);
           throw 'Unknown';
       }
-    }else{
-      switch(Header.encoding){
+    } else {
+      switch (Header.encoding) {
         case ENCODING.RGB:
           // S3TC DXT1
           Header.compressed = true;
           Header.hasAlpha = false;
           Header.format = PixelFormat.DXT1;
           Header.minDataSize = 8;
-        break;
+          break;
         case ENCODING.RGBA:
           // S3TC DXT5
           Header.compressed = true;
           Header.hasAlpha = true;
           Header.format = PixelFormat.DXT5;
           Header.minDataSize = 16;
-        break;
+          break;
         default:
           console.error('TPCObject', Header);
       }
@@ -369,7 +366,7 @@ export class TPCObject {
 
     // Extract mipmaps buffers
     Header.isCubemap = false;
-    if( ( Header.height / Header.width ) == 6 ){
+    if (Header.height / Header.width == 6) {
       Header.isCubemap = true;
       Header.height = Header.width;
     }
@@ -377,43 +374,37 @@ export class TPCObject {
     Header.faces = Header.isCubemap ? 6 : 1;
 
     return Header;
-
   }
 
   getDataLength() {
+    let dataLength = 0;
 
-      let dataLength = 0;
+    for (let face = 0; face < this.header.faces; face++) {
+      let width = this.header.width;
+      let height = this.header.height;
+      let dataSize = this.header.dataSize;
 
-      for ( let face = 0; face < this.header.faces; face ++ ) {
+      for (let i = 0; i < this.header.mipMapCount; i++) {
+        if (!this.header.compressed) {
+          dataLength += width * height * this.header.minDataSize;
+        } else {
+          dataLength += dataSize;
+        }
 
-    		let width = this.header.width;
-    		let height = this.header.height;
-        let dataSize = this.header.dataSize;
+        width = Math.max(width >> 1, 1);
+        height = Math.max(height >> 1, 1);
+        dataSize = Math.max(dataSize >> 2, this.header.minDataSize);
+      }
+    }
 
-    		for ( let i = 0; i < this.header.mipMapCount; i ++ ) {
-    			if ( !this.header.compressed ) {
-    				dataLength += width * height * this.header.minDataSize;
-    			} else {
-    				dataLength += dataSize;
-    			}
-
-    			width = Math.max( width >> 1, 1 );
-    			height = Math.max( height >> 1, 1 );
-          dataSize = Math.max( dataSize >> 2, this.header.minDataSize );
-    		}
-
-    	}
-
-      return dataLength;
-
+    return dataLength;
   }
 
-  FlipY(pixelData: any){
+  FlipY(pixelData: any) {
     let offset = 0;
     const stride = this.header.width * 4;
 
-    if(pixelData == null)
-      throw 'Missing pixelData'
+    if (pixelData == null) throw 'Missing pixelData';
 
     const unFlipped = Uint8Array.from(pixelData);
 
@@ -423,45 +414,51 @@ export class TPCObject {
     }
 
     return pixelData;
-
   }
 
   //Convert the TPC into a THREE.CompressedTexture for use in the engine
-  toCompressedTexture(){
+  toCompressedTexture() {
     const images = [];
-    const texDatas = this.getDDS( true );
-    const _texture: OdysseyCompressedTexture|THREE.CanvasTexture = new OdysseyCompressedTexture( texDatas.mipmaps, texDatas.width, texDatas.height );
+    const texDatas = this.getDDS(true);
+    const _texture: OdysseyCompressedTexture | THREE.CanvasTexture = new OdysseyCompressedTexture(
+      texDatas.mipmaps,
+      texDatas.width,
+      texDatas.height
+    );
 
     // if(this.canvas.length){
     //   _texture = new THREE.CanvasTexture(this.canvas[0] as any);
     // }else{
-      if ( texDatas.isCubemap ) {
-        const faces = texDatas.mipmaps.length / texDatas.mipmapCount;
-        for ( let f = 0; f < faces; f ++ ) {
-          images[ f ] = { mipmaps : [] } as any;
-          for ( let i = 0; i < texDatas.mipmapCount; i++ ) {
-            images[ f ].mipmaps.push( texDatas.mipmaps[ f * texDatas.mipmapCount + i ] );
-            images[ f ].format = THREE.CubeReflectionMapping;//texDatas.format;
-            images[ f ].width = texDatas.width;
-            images[ f ].height = texDatas.height;
+    if (texDatas.isCubemap) {
+      const faces = texDatas.mipmaps.length / texDatas.mipmapCount;
+      for (let f = 0; f < faces; f++) {
+        images[f] = { mipmaps: [] } as any;
+        for (let i = 0; i < texDatas.mipmapCount; i++) {
+          images[f].mipmaps.push(texDatas.mipmaps[f * texDatas.mipmapCount + i]);
+          images[f].format = THREE.CubeReflectionMapping; //texDatas.format;
+          images[f].width = texDatas.width;
+          images[f].height = texDatas.height;
 
-            _texture.mipmaps = images[ f ].mipmaps;
-          }
+          _texture.mipmaps = images[f].mipmaps;
         }
-        (_texture as { image: { width: number; height: number } }).image = images as unknown as { width: number; height: number };
-        (_texture as { image: { width: number; height: number } }).image.width = texDatas.width;
-        (_texture as { image: { width: number; height: number } }).image.height = texDatas.height;
-      } else {
-        const img = (_texture as { image: { width: number; height: number } }).image;
-        img.width = texDatas.width;
-        img.height = texDatas.height;
-        _texture.mipmaps = texDatas.mipmaps;
       }
+      (_texture as { image: { width: number; height: number } }).image = images as unknown as {
+        width: number;
+        height: number;
+      };
+      (_texture as { image: { width: number; height: number } }).image.width = texDatas.width;
+      (_texture as { image: { width: number; height: number } }).image.height = texDatas.height;
+    } else {
+      const img = (_texture as { image: { width: number; height: number } }).image;
+      img.width = texDatas.width;
+      img.height = texDatas.height;
+      _texture.mipmaps = texDatas.mipmaps;
+    }
     // }
 
     _texture.name = this.filename;
 
-    if ( texDatas.mipmapCount === 1 ) {
+    if (texDatas.mipmapCount === 1) {
       _texture.minFilter = THREE.LinearFilter;
     }
 
@@ -476,7 +473,7 @@ export class TPCObject {
     (_texture as any).txi = this.txi;
 
     (_texture as any).clone = function () {
-      const cloned = new this.constructor().copy( this );
+      const cloned = new this.constructor().copy(this);
       cloned.format = this.format;
       cloned.needsUpdate = true;
       cloned.bumpMapType = this.bumpMapType;
@@ -599,12 +596,21 @@ export class TPCObject {
   static fromBuffer(buffer: Uint8Array, filename = '', pack = 0): TPCObject {
     return readTPCFromBuffer(buffer, filename, pack);
   }
-
 }
 
-function makeTPCBuffer(width: number, height: number, encoding: ENCODING, data: Uint8Array, compressed = false, mipMapCount = 1, compressedDataSize?: number): Uint8Array {
+function makeTPCBuffer(
+  width: number,
+  height: number,
+  encoding: ENCODING,
+  data: Uint8Array,
+  compressed = false,
+  mipMapCount = 1,
+  compressedDataSize?: number
+): Uint8Array {
   const writer = new BinaryWriter();
-  writer.writeUInt32(compressed ? ((compressedDataSize && compressedDataSize > 0) ? compressedDataSize : data.length) : 0);
+  writer.writeUInt32(
+    compressed ? (compressedDataSize && compressedDataSize > 0 ? compressedDataSize : data.length) : 0
+  );
   writer.writeSingle(1.0);
   writer.writeUInt16(width);
   writer.writeUInt16(height);
@@ -689,7 +695,15 @@ function isLikelyBioWareDDS(buffer: Uint8Array): boolean {
   return width > 0 && height > 0 && (bpp === 3 || bpp === 4) && dataSize > 0 && reserved === 0;
 }
 
-function parseDDS(buffer: Uint8Array): { width: number; height: number; encoding: ENCODING; data: Uint8Array; compressed: boolean; mipMapCount: number; topLevelDataSize?: number } {
+function parseDDS(buffer: Uint8Array): {
+  width: number;
+  height: number;
+  encoding: ENCODING;
+  data: Uint8Array;
+  compressed: boolean;
+  mipMapCount: number;
+  topLevelDataSize?: number;
+} {
   if (buffer.length >= 4 && buffer[0] === 0x44 && buffer[1] === 0x44 && buffer[2] === 0x53 && buffer[3] === 0x20) {
     if (buffer.length < 128) {
       throw new Error('Invalid DDS buffer');
@@ -719,11 +733,25 @@ function parseDDS(buffer: Uint8Array): { width: number; height: number; encoding
 
     const isRGB = (pixelFormatFlags & 0x40) !== 0;
     const hasAlpha = (pixelFormatFlags & 0x1) !== 0;
-    if (isRGB && bitCount === 32 && redMask === 0x00FF0000 && greenMask === 0x0000FF00 && blueMask === 0x000000FF && alphaMask === 0xFF000000) {
+    if (
+      isRGB &&
+      bitCount === 32 &&
+      redMask === 0x00ff0000 &&
+      greenMask === 0x0000ff00 &&
+      blueMask === 0x000000ff &&
+      alphaMask === 0xff000000
+    ) {
       return { width, height, encoding: ENCODING.BGRA, data: payload, compressed: false, mipMapCount };
     }
 
-    if (isRGB && !hasAlpha && bitCount === 24 && redMask === 0x00FF0000 && greenMask === 0x0000FF00 && blueMask === 0x000000FF) {
+    if (
+      isRGB &&
+      !hasAlpha &&
+      bitCount === 24 &&
+      redMask === 0x00ff0000 &&
+      greenMask === 0x0000ff00 &&
+      blueMask === 0x000000ff
+    ) {
       const rgb = new Uint8Array(width * height * 3);
       for (let i = 0; i < width * height; i++) {
         const src = i * 3;
@@ -762,7 +790,7 @@ function parseDDS(buffer: Uint8Array): { width: number; height: number; encoding
   while (offset < buffer.length) {
     const mipLength = Math.max(
       minDataSize,
-      Math.floor((mipWidth + 3) / 4) * Math.floor((mipHeight + 3) / 4) * minDataSize,
+      Math.floor((mipWidth + 3) / 4) * Math.floor((mipHeight + 3) / 4) * minDataSize
     );
 
     if (offset + mipLength > buffer.length) {
@@ -795,7 +823,11 @@ export function isTPCBuffer(buffer: Uint8Array): boolean {
   }
   try {
     const probe = new TPCObject({ file: buffer, filename: '', pack: 0 });
-    return probe.header.width > 0 && probe.header.height > 0 && [ENCODING.GRAY, ENCODING.RGB, ENCODING.RGBA, ENCODING.BGRA].includes(probe.header.encoding);
+    return (
+      probe.header.width > 0 &&
+      probe.header.height > 0 &&
+      [ENCODING.GRAY, ENCODING.RGB, ENCODING.RGBA, ENCODING.BGRA].includes(probe.header.encoding)
+    );
   } catch {
     return false;
   }
@@ -824,14 +856,34 @@ export function readTPCFromBuffer(buffer: Uint8Array, filename = '', pack = 0): 
   }
   if (format === 'dds') {
     const parsed = parseDDS(buffer);
-    return new TPCObject({ file: makeTPCBuffer(parsed.width, parsed.height, parsed.encoding, parsed.data, parsed.compressed, parsed.mipMapCount, parsed.topLevelDataSize), filename, pack });
+    return new TPCObject({
+      file: makeTPCBuffer(
+        parsed.width,
+        parsed.height,
+        parsed.encoding,
+        parsed.data,
+        parsed.compressed,
+        parsed.mipMapCount,
+        parsed.topLevelDataSize
+      ),
+      filename,
+      pack,
+    });
   }
   if (format === 'bmp') {
     const parsed = parseBMP(buffer);
-    return new TPCObject({ file: makeTPCBuffer(parsed.width, parsed.height, ENCODING.RGBA, parsed.data, false), filename, pack });
+    return new TPCObject({
+      file: makeTPCBuffer(parsed.width, parsed.height, ENCODING.RGBA, parsed.data, false),
+      filename,
+      pack,
+    });
   }
   const parsed = parseTGA(buffer);
-  return new TPCObject({ file: makeTPCBuffer(parsed.width, parsed.height, ENCODING.RGBA, parsed.data, false), filename, pack });
+  return new TPCObject({
+    file: makeTPCBuffer(parsed.width, parsed.height, ENCODING.RGBA, parsed.data, false),
+    filename,
+    pack,
+  });
 }
 
 export function writeTPCToBuffer(tpc: TPCObject, format: WriteTPCFormat = 'tpc'): Uint8Array {
@@ -846,4 +898,3 @@ export function writeTPCToBuffer(tpc: TPCObject, format: WriteTPCFormat = 'tpc')
   }
   return tpc.toBuffer();
 }
-

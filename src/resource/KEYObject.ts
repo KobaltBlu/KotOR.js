@@ -1,11 +1,11 @@
 import * as path from 'path';
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { BIFObject } from "@/resource/BIFObject";
-import { BIFManager } from "@/managers/BIFManager";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { IBIFResource } from "@/interface/resource/IBIFResource";
-import { IBIFEntry } from "@/interface/resource/IBIFEntry";
-import { IKEYEntry } from "@/interface/resource/IKEYEntry";
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { BIFObject } from '@/resource/BIFObject';
+import { BIFManager } from '@/managers/BIFManager';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { IBIFResource } from '@/interface/resource/IBIFResource';
+import { IBIFEntry } from '@/interface/resource/IBIFEntry';
+import { IKEYEntry } from '@/interface/resource/IKEYEntry';
 
 /**
  * KEYObject class.
@@ -34,7 +34,7 @@ export class KEYObject {
   buildDay: number = 0;
   reserved: Uint8Array;
 
-  constructor(){
+  constructor() {
     this.keys = [];
   }
 
@@ -59,39 +59,43 @@ export class KEYObject {
     this.keys = [];
 
     this.reader.seek(this.offsetToFileTable);
-    for(let i = 0; i < this.bifCount; i++){
+    for (let i = 0; i < this.bifCount; i++) {
       this.bifs[i] = {
-        fileSize:this.reader.readUInt32(),
+        fileSize: this.reader.readUInt32(),
         filenameOffset: this.reader.readUInt32(),
         filenameSize: this.reader.readUInt16(),
-        drives: this.reader.readUInt16()
+        drives: this.reader.readUInt16(),
       } as IBIFEntry;
     }
 
-    for(let i = 0; i < this.bifCount; i++){
+    for (let i = 0; i < this.bifCount; i++) {
       this.reader.seek(this.bifs[i].filenameOffset);
-      this.bifs[i].filename = this.reader.readChars(this.bifs[i].filenameSize).replace(/\0[\s\S]*$/g,'').toLocaleString().split('\\').join(path.sep);
+      this.bifs[i].filename = this.reader
+        .readChars(this.bifs[i].filenameSize)
+        .replace(/\0[\s\S]*$/g, '')
+        .toLocaleString()
+        .split('\\')
+        .join(path.sep);
     }
 
     this.reader.seek(this.offsetToKeyTable);
-    for(let i = 0; i < this.keyCount; i++){
+    for (let i = 0; i < this.keyCount; i++) {
       this.keys[i] = {
-        resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,''),
+        resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g, ''),
         resType: this.reader.readUInt16(),
         resId: this.reader.readUInt32(),
       } as IKEYEntry;
     }
   }
 
-  async loadFile(file: string){
+  async loadFile(file: string) {
     const buffer = await GameFileSystem.readFile(file);
     this.loadBuffer(buffer);
   }
 
-  getFileLabel(index = 0){
-    for(let i = 0; i < this.keys.length; i++){
-      if(index == this.keys[i].resId)
-        return this.keys[i].resRef;
+  getFileLabel(index = 0) {
+    for (let i = 0; i < this.keys.length; i++) {
+      if (index == this.keys[i].resId) return this.keys[i].resRef;
     }
     /*try{
       return this.keys[index].ResRef;
@@ -99,10 +103,10 @@ export class KEYObject {
     return null;
   }
 
-  getFileKey(ResRef: string, ResType: number){
-    for(let i = 0; i < this.keys.length; i++){
+  getFileKey(ResRef: string, ResType: number) {
+    for (let i = 0; i < this.keys.length; i++) {
       const key = this.keys[i];
-      if ( key.resRef == ResRef && key.resType == ResType){
+      if (key.resRef == ResRef && key.resType == ResType) {
         return key;
       }
     }
@@ -110,22 +114,22 @@ export class KEYObject {
   }
 
   getFileKeyByRes(Res: IBIFResource): IKEYEntry {
-    for(let i = 0; i < this.keys.length; i++){
+    for (let i = 0; i < this.keys.length; i++) {
       const key = this.keys[i];
-      if ( key.resId == Res.Id && key.resType == Res.resType){
+      if (key.resId == Res.Id && key.resType == Res.resType) {
         return key;
       }
     }
     return;
   }
 
-  getFilesByResType(ResType: number){
+  getFilesByResType(ResType: number) {
     const bifResults: IBIFResource[][] = [];
-    this.bifs.forEach( (bifRes: IBIFEntry, index: number) => {
-      if(BIFManager.bifs.has(index)){
+    this.bifs.forEach((bifRes: IBIFEntry, index: number) => {
+      if (BIFManager.bifs.has(index)) {
         const bif = BIFManager.bifs.get(index);
-        if(bif){
-          bifResults[index] = bif.resources.filter( (res: IBIFResource) => {
+        if (bif) {
+          bifResults[index] = bif.resources.filter((res: IBIFResource) => {
             return res.resType == ResType;
           });
         }
@@ -134,25 +138,36 @@ export class KEYObject {
     return bifResults.flat();
   }
 
-  async getFileBuffer(key: IKEYEntry): Promise<Uint8Array>{
-    if(!key){ return new Uint8Array(0); }
+  async getFileBuffer(key: IKEYEntry): Promise<Uint8Array> {
+    if (!key) {
+      return new Uint8Array(0);
+    }
 
     const bif: BIFObject = BIFManager.bifs.get(KEYObject.getBIFIndex(key.resId));
-    if(!bif){ return new Uint8Array(0); }
+    if (!bif) {
+      return new Uint8Array(0);
+    }
 
     const buffer = await bif.getResourceBuffer(bif.getResourceById(key.resId));
     return buffer;
   }
 
-  static getBIFIndex( ResID: number = 0 ): number{
-    return (ResID >> 20);
+  static getBIFIndex(ResID: number = 0): number {
+    return ResID >> 20;
   }
 
-  static getBIFResourceIndex( ResID: number = 0 ): number{
-    return (ResID & 0x3FFF);
+  static getBIFResourceIndex(ResID: number = 0): number {
+    return ResID & 0x3fff;
   }
 
-  toJSON(): { fileType: string; fileVersion: string; bifCount: number; keyCount: number; bifs: IBIFEntry[]; keys: IKEYEntry[] } {
+  toJSON(): {
+    fileType: string;
+    fileVersion: string;
+    bifCount: number;
+    keyCount: number;
+    bifs: IBIFEntry[];
+    keys: IKEYEntry[];
+  } {
     return {
       fileType: this.fileType,
       fileVersion: this.FileVersion,
@@ -164,7 +179,7 @@ export class KEYObject {
   }
 
   fromJSON(json: string | ReturnType<KEYObject['toJSON']>): void {
-    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<KEYObject['toJSON']> : json;
+    const data = typeof json === 'string' ? (JSON.parse(json) as ReturnType<KEYObject['toJSON']>) : json;
     this.fileType = data.fileType || 'KEY ';
     this.FileVersion = data.fileVersion || 'V1  ';
     this.bifs = (data.bifs || []).map((bif) => ({ ...bif }));
@@ -173,7 +188,9 @@ export class KEYObject {
     this.keyCount = data.keyCount ?? this.keys.length;
   }
 
-  toXML(): string { return objectToXML({ json: JSON.stringify(this.toJSON()) }); }
+  toXML(): string {
+    return objectToXML({ json: JSON.stringify(this.toJSON()) });
+  }
   fromXML(xml: string): void {
     const data = xmlToObject(xml) as { json?: string } | ReturnType<KEYObject['toJSON']>;
     if (typeof (data as { json?: string }).json === 'string') {
@@ -182,9 +199,16 @@ export class KEYObject {
     }
     this.fromJSON(data as ReturnType<KEYObject['toJSON']>);
   }
-  toYAML(): string { return objectToYAML(this.toJSON()); }
-  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<KEYObject['toJSON']>); }
-  toTOML(): string { return objectToTOML(this.toJSON()); }
-  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<KEYObject['toJSON']>); }
-
+  toYAML(): string {
+    return objectToYAML(this.toJSON());
+  }
+  fromYAML(yaml: string): void {
+    this.fromJSON(yamlToObject(yaml) as ReturnType<KEYObject['toJSON']>);
+  }
+  toTOML(): string {
+    return objectToTOML(this.toJSON());
+  }
+  fromTOML(toml: string): void {
+    this.fromJSON(tomlToObject(toml) as ReturnType<KEYObject['toJSON']>);
+  }
 }

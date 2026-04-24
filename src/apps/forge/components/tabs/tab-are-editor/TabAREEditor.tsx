@@ -1,18 +1,18 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from 'react';
 
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { LazyTextureCanvas } from "@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import type { GFFFieldValue } from "@/apps/forge/interfaces/GFFFormField";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabAREEditorState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/components/tabs/tab-are-editor/TabAREEditor.scss";
+import { CExoLocStringEditor } from '@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor';
+import { LazyTextureCanvas } from '@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas';
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
+import type { GFFFieldValue } from '@/apps/forge/interfaces/GFFFormField';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabAREEditorState } from '@/apps/forge/states/tabs';
+import '@/apps/forge/components/tabs/tab-are-editor/TabAREEditor.scss';
 
 interface BaseTabProps {
   tab: TabAREEditorState;
 }
 
-export const TabAREEditor = function(props: BaseTabProps){
+export const TabAREEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabAREEditorState;
   const [are, setAre] = useState(tab.are);
   const [activeTab, setActiveTab] = useState(tab.activeTab);
@@ -35,12 +35,12 @@ export const TabAREEditor = function(props: BaseTabProps){
       label: 'File',
       children: [
         { label: 'Save', onClick: () => tab.save() },
-        { label: 'Save As', onClick: () => tab.saveAs() }
-      ]
-    }
+        { label: 'Save As', onClick: () => tab.saveAs() },
+      ],
+    },
   ];
 
-  if(!are){
+  if (!are) {
     return (
       <div className="forge-are-editor">
         <MenuBar items={menuItems} />
@@ -57,40 +57,22 @@ export const TabAREEditor = function(props: BaseTabProps){
     <div className="forge-are-editor">
       <MenuBar items={menuItems} />
       <div className="forge-are-editor__tabs">
-        <button
-          className={activeTab === 'basic' ? 'active' : ''}
-          onClick={() => tab.setActiveTab('basic')}
-        >
+        <button className={activeTab === 'basic' ? 'active' : ''} onClick={() => tab.setActiveTab('basic')}>
           Basic
         </button>
-        <button
-          className={activeTab === 'audio' ? 'active' : ''}
-          onClick={() => tab.setActiveTab('audio')}
-        >
+        <button className={activeTab === 'audio' ? 'active' : ''} onClick={() => tab.setActiveTab('audio')}>
           Audio
         </button>
-        <button
-          className={activeTab === 'map' ? 'active' : ''}
-          onClick={() => tab.setActiveTab('map')}
-        >
+        <button className={activeTab === 'map' ? 'active' : ''} onClick={() => tab.setActiveTab('map')}>
           Map
         </button>
-        <button
-          className={activeTab === 'environment' ? 'active' : ''}
-          onClick={() => tab.setActiveTab('environment')}
-        >
+        <button className={activeTab === 'environment' ? 'active' : ''} onClick={() => tab.setActiveTab('environment')}>
           Environment
         </button>
-        <button
-          className={activeTab === 'scripts' ? 'active' : ''}
-          onClick={() => tab.setActiveTab('scripts')}
-        >
+        <button className={activeTab === 'scripts' ? 'active' : ''} onClick={() => tab.setActiveTab('scripts')}>
           Scripts
         </button>
-        <button
-          className={activeTab === 'rooms' ? 'active' : ''}
-          onClick={() => tab.setActiveTab('rooms')}
-        >
+        <button className={activeTab === 'rooms' ? 'active' : ''} onClick={() => tab.setActiveTab('rooms')}>
           Rooms
         </button>
       </div>
@@ -123,7 +105,7 @@ const BasicTab = ({ are, onUpdate }: TabProps) => {
 
   const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = are.RootNode.getFieldByLabel(label);
-    if(field){
+    if (field) {
       field.setValue(value);
       onUpdate();
     }
@@ -147,10 +129,7 @@ const BasicTab = ({ are, onUpdate }: TabProps) => {
       </div>
       <div className="property-group">
         <label>Name (LocString)</label>
-        <CExoLocStringEditor
-          value={getLocStringValue('Name')}
-          onChange={(value) => setFieldValue('Name', value)}
-        />
+        <CExoLocStringEditor value={getLocStringValue('Name')} onChange={(value) => setFieldValue('Name', value)} />
       </div>
       <div className="property-group">
         <label>Comments</label>
@@ -209,7 +188,7 @@ const AudioTab = ({ are, onUpdate }: TabProps) => {
 
   const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = are.RootNode.getFieldByLabel(label);
-    if(field){
+    if (field) {
       field.setValue(value);
       onUpdate();
     }
@@ -491,7 +470,7 @@ const EnvironmentTab = ({ are, onUpdate }: TabProps) => {
 
   const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = are.RootNode.getFieldByLabel(label);
-    if(field){
+    if (field) {
       field.setValue(value);
       onUpdate();
     }
@@ -780,7 +759,7 @@ const ScriptsTab = ({ are, onUpdate }: TabProps) => {
 
   const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = are.RootNode.getFieldByLabel(label);
-    if(field){
+    if (field) {
       field.setValue(value);
       onUpdate();
     }
@@ -916,4 +895,3 @@ const RoomsTab = ({ are, onUpdate }: TabProps) => {
     </div>
   );
 };
-

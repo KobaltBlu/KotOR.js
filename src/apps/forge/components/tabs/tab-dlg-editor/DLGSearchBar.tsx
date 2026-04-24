@@ -12,11 +12,10 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 
-
 import { DLGTreeNode } from '@/apps/forge/interfaces/DLGTreeNode';
 import { DLGTreeModel } from '@/apps/forge/utils/DLGTreeModel';
 import { DLGNodeType } from '@/enums/dialog/DLGNodeType';
-import "@/apps/forge/components/tabs/tab-dlg-editor/DLGSearchBar.scss";
+import '@/apps/forge/components/tabs/tab-dlg-editor/DLGSearchBar.scss';
 
 interface DLGSearchBarProps {
   model: DLGTreeModel;
@@ -31,12 +30,7 @@ interface SearchResult {
   matchText: string;
 }
 
-export const DLGSearchBar: React.FC<DLGSearchBarProps> = ({
-  model,
-  mode,
-  onClose,
-  onNavigate
-}) => {
+export const DLGSearchBar: React.FC<DLGSearchBarProps> = ({ model, mode, onClose, onNavigate }) => {
   const [query, setQuery] = useState('');
   const [caseSensitive, setCaseSensitive] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -51,32 +45,35 @@ export const DLGSearchBar: React.FC<DLGSearchBarProps> = ({
     }
   }, [mode]);
 
-  const performSearch = useCallback((searchQuery: string, caseSens: boolean) => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    const results: SearchResult[] = [];
-    const term = caseSens ? searchQuery : searchQuery.toLowerCase();
-
-    model.getAllNodes().forEach(node => {
-      const text = caseSens ? node.dlgNode.text : node.dlgNode.text.toLowerCase();
-      const comment = caseSens ? node.dlgNode.comment : node.dlgNode.comment.toLowerCase();
-      const speaker = caseSens ? node.dlgNode.speakerTag : node.dlgNode.speakerTag.toLowerCase();
-
-      if (text.includes(term)) {
-        results.push({ node, matchType: 'text', matchText: node.dlgNode.text });
-      } else if (comment.includes(term)) {
-        results.push({ node, matchType: 'comment', matchText: node.dlgNode.comment });
-      } else if (speaker.includes(term)) {
-        results.push({ node, matchType: 'speaker', matchText: node.dlgNode.speakerTag });
+  const performSearch = useCallback(
+    (searchQuery: string, caseSens: boolean) => {
+      if (!searchQuery.trim()) {
+        setSearchResults([]);
+        return;
       }
-    });
 
-    setSearchResults(results);
-    setCurrentResultIndex(0);
-  }, [model]);
+      const results: SearchResult[] = [];
+      const term = caseSens ? searchQuery : searchQuery.toLowerCase();
+
+      model.getAllNodes().forEach((node) => {
+        const text = caseSens ? node.dlgNode.text : node.dlgNode.text.toLowerCase();
+        const comment = caseSens ? node.dlgNode.comment : node.dlgNode.comment.toLowerCase();
+        const speaker = caseSens ? node.dlgNode.speakerTag : node.dlgNode.speakerTag.toLowerCase();
+
+        if (text.includes(term)) {
+          results.push({ node, matchType: 'text', matchText: node.dlgNode.text });
+        } else if (comment.includes(term)) {
+          results.push({ node, matchType: 'comment', matchText: node.dlgNode.comment });
+        } else if (speaker.includes(term)) {
+          results.push({ node, matchType: 'speaker', matchText: node.dlgNode.speakerTag });
+        }
+      });
+
+      setSearchResults(results);
+      setCurrentResultIndex(0);
+    },
+    [model]
+  );
 
   const parseGotoQuery = useCallback((gotoQuery: string) => {
     // Parse goto query like "entry 5" or "e5" or "reply[3]" or "r3"
@@ -86,18 +83,19 @@ export const DLGSearchBar: React.FC<DLGSearchBarProps> = ({
       /^(?:start|s)\s*(\d+)$/i,
       /^entry\[(\d+)\]$/i,
       /^reply\[(\d+)\]$/i,
-      /^start\[(\d+)\]$/i
+      /^start\[(\d+)\]$/i,
     ];
 
     for (const pattern of patterns) {
       const match = gotoQuery.match(pattern);
       if (match) {
         const index = parseInt(match[1], 10);
-        const type = pattern.toString().includes('reply') || pattern.toString().includes('r')
-          ? DLGNodeType.REPLY
-          : pattern.toString().includes('start') || pattern.toString().includes('s')
-          ? DLGNodeType.STARTING
-          : DLGNodeType.ENTRY;
+        const type =
+          pattern.toString().includes('reply') || pattern.toString().includes('r')
+            ? DLGNodeType.REPLY
+            : pattern.toString().includes('start') || pattern.toString().includes('s')
+              ? DLGNodeType.STARTING
+              : DLGNodeType.ENTRY;
 
         return { index, type };
       }
@@ -106,53 +104,57 @@ export const DLGSearchBar: React.FC<DLGSearchBarProps> = ({
     return null;
   }, []);
 
-  const performGoto = useCallback((gotoQuery: string) => {
-    const parsed = parseGotoQuery(gotoQuery);
-    if (!parsed) {
-      // Show suggestions
-      const suggestions: DLGTreeNode[] = [];
-      const lowerQuery = gotoQuery.toLowerCase();
+  const performGoto = useCallback(
+    (gotoQuery: string) => {
+      const parsed = parseGotoQuery(gotoQuery);
+      if (!parsed) {
+        // Show suggestions
+        const suggestions: DLGTreeNode[] = [];
+        const lowerQuery = gotoQuery.toLowerCase();
 
-      model.getAllNodes().forEach(node => {
-        const text = node.dlgNode.text.toLowerCase();
-        if (text.includes(lowerQuery)) {
-          suggestions.push(node);
-        }
-      });
+        model.getAllNodes().forEach((node) => {
+          const text = node.dlgNode.text.toLowerCase();
+          if (text.includes(lowerQuery)) {
+            suggestions.push(node);
+          }
+        });
 
-      setGotoSuggestions(suggestions.slice(0, 10));
-      return;
-    }
+        setGotoSuggestions(suggestions.slice(0, 10));
+        return;
+      }
 
-    // Navigate to specific node
-    const nodes = model.filterNodes(node =>
-      node.listIndex === parsed.index && node.nodeType === parsed.type
-    );
+      // Navigate to specific node
+      const nodes = model.filterNodes((node) => node.listIndex === parsed.index && node.nodeType === parsed.type);
 
-    if (nodes.length > 0) {
-      navigateToNode(nodes[0]);
-    } else {
-      setGotoSuggestions([]);
-    }
-  }, [model, parseGotoQuery]);
+      if (nodes.length > 0) {
+        navigateToNode(nodes[0]);
+      } else {
+        setGotoSuggestions([]);
+      }
+    },
+    [model, parseGotoQuery]
+  );
 
-  const navigateToNode = useCallback((node: DLGTreeNode) => {
-    // Expand ancestors
-    let current: DLGTreeNode | undefined = node.parent;
-    while (current) {
-      model.expandNode(current.id);
-      current = current.parent;
-    }
+  const navigateToNode = useCallback(
+    (node: DLGTreeNode) => {
+      // Expand ancestors
+      let current: DLGTreeNode | undefined = node.parent;
+      while (current) {
+        model.expandNode(current.id);
+        current = current.parent;
+      }
 
-    // Select node
-    model.selectNode(node.id);
+      // Select node
+      model.selectNode(node.id);
 
-    if (onNavigate) {
-      onNavigate(node);
-    }
+      if (onNavigate) {
+        onNavigate(node);
+      }
 
-    onClose();
-  }, [model, onNavigate, onClose]);
+      onClose();
+    },
+    [model, onNavigate, onClose]
+  );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -232,9 +234,7 @@ export const DLGSearchBar: React.FC<DLGSearchBarProps> = ({
   return (
     <div className="dlg-search-bar">
       <div className="dlg-search-input-container">
-        <span className="dlg-search-icon">
-          {mode === 'search' ? '🔍' : mode === 'goto' ? '🎯' : '🔽'}
-        </span>
+        <span className="dlg-search-icon">{mode === 'search' ? '🔍' : mode === 'goto' ? '🎯' : '🔽'}</span>
 
         <input
           ref={inputRef}
@@ -294,13 +294,9 @@ export const DLGSearchBar: React.FC<DLGSearchBarProps> = ({
                 <span className="dlg-search-result-type">
                   {getNodeTypeLabel(result.node.nodeType)}[{result.node.listIndex}]
                 </span>
-                <span className="dlg-search-result-match">
-                  {result.matchType}
-                </span>
+                <span className="dlg-search-result-match">{result.matchType}</span>
               </div>
-              <div className="dlg-search-result-text">
-                {result.matchText}
-              </div>
+              <div className="dlg-search-result-text">{result.matchText}</div>
             </div>
           ))}
         </div>
@@ -309,17 +305,11 @@ export const DLGSearchBar: React.FC<DLGSearchBarProps> = ({
       {mode === 'goto' && gotoSuggestions.length > 0 && (
         <div className="dlg-goto-suggestions">
           {gotoSuggestions.map((node, _index) => (
-            <div
-              key={node.id}
-              className="dlg-goto-suggestion"
-              onClick={() => navigateToNode(node)}
-            >
+            <div key={node.id} className="dlg-goto-suggestion" onClick={() => navigateToNode(node)}>
               <span className="dlg-goto-suggestion-type">
                 {getNodeTypeLabel(node.nodeType)}[{node.listIndex}]
               </span>
-              <span className="dlg-goto-suggestion-text">
-                {node.dlgNode.text || '(No text)'}
-              </span>
+              <span className="dlg-goto-suggestion-text">{node.dlgNode.text || '(No text)'}</span>
             </div>
           ))}
         </div>

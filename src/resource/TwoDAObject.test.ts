@@ -11,7 +11,6 @@ const JSON_TEST_DATA = {
   ],
 };
 
-
 describe('TwoDAObject', () => {
   function makeMinimal2DA(): Uint8Array {
     const bw = new BinaryWriter();
@@ -237,7 +236,7 @@ describe('TwoDAObject', () => {
   it('filterRows', () => {
     const data = makeMinimal2DA();
     const two = new TwoDAObject(data);
-    const filtered = two.filterRows(row => row.getString('col1') === 'b');
+    const filtered = two.filterRows((row) => row.getString('col1') === 'b');
     expect(filtered.getHeight()).toBe(1);
     const fr0 = filtered.getRow(0);
     expect(fr0).toBeDefined();
@@ -275,7 +274,13 @@ describe('TwoDAObject', () => {
   });
 
   it('fromJSON and toJSON round-trip', () => {
-    const obj = { headers: ['col1'], rows: [{ label: '0', cells: ['a'] }, { label: '1', cells: ['b'] }] };
+    const obj = {
+      headers: ['col1'],
+      rows: [
+        { label: '0', cells: ['a'] },
+        { label: '1', cells: ['b'] },
+      ],
+    };
     const two = TwoDAObject.fromJSON(obj);
     expect(two.getHeight()).toBe(2);
     expect(two.getLabels()).toEqual(['0', '1']);
@@ -437,6 +442,8 @@ describe('TwoDAObject', () => {
   });
 
   it('readTwoDAFromBuffer throws on unsupported data formats', () => {
-    expect(() => readTwoDAFromBuffer(new TextEncoder().encode('not a table'))).toThrow('Unsupported 2DA buffer format.');
+    expect(() => readTwoDAFromBuffer(new TextEncoder().encode('not a table'))).toThrow(
+      'Unsupported 2DA buffer format.'
+    );
   });
 });

@@ -1,9 +1,9 @@
-import { DeepObject } from "@/utility/DeepObject";
-import * as swKotOR from "@/game/kotor/swkotor-config";
-import * as swKotOR2 from "@/game/tsl/swkotor2-config";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { ApplicationProfile } from "@/utility/ApplicationProfile";
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { DeepObject } from '@/utility/DeepObject';
+import * as swKotOR from '@/game/kotor/swkotor-config';
+import * as swKotOR2 from '@/game/tsl/swkotor2-config';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { ApplicationProfile } from '@/utility/ApplicationProfile';
+import { ApplicationEnvironment } from '@/enums/ApplicationEnvironment';
 
 /**
  * INIConfig class.
@@ -22,18 +22,18 @@ export class INIConfig {
 
   static defaultConfigs: any = {
     swKotOR: swKotOR.default,
-    swKotOR2: swKotOR2.default
+    swKotOR2: swKotOR2.default,
   };
 
-  constructor( ini_path: string, defaults: any = {} ){
+  constructor(ini_path: string, defaults: any = {}) {
     this.ini_path = ini_path;
     this.defaults = defaults;
     this.options = {};
-    console.log('defaults', defaults)
+    console.log('defaults', defaults);
   }
 
   async load(): Promise<void> {
-    try{
+    try {
       const buffer = await GameFileSystem.readFile(this.ini_path);
       const decoder = new TextDecoder('utf-8');
       let ini_text = decoder.decode(buffer);
@@ -41,41 +41,41 @@ export class INIConfig {
 
       this.current_section = null;
 
-      for(let i = 0, len = lines.length; i < len; i++){
+      for (let i = 0, len = lines.length; i < len; i++) {
         const line = lines[i].trim();
-        if( !line.length ){
+        if (!line.length) {
           continue;
         }
 
         const section = line.match(/^\[(.*)\]$/);
         const property = line.split('=');
-        if(section != null && section.length){
+        if (section != null && section.length) {
           this.current_section = section[1];
           this.options[section[1]] = {};
-        }else if(property.length){
+        } else if (property.length) {
           const name = (property.shift() || '').trim();
-          if(!name.length){
+          if (!name.length) {
             continue;
           }
           let value = property.join('=');
           value = value.split(';')[0].split('#')[0].trim();
 
-          try{
+          try {
             value = JSON.parse(value.toString());
-          }catch(e){
+          } catch (e) {
             value = value.toString();
           }
 
-          if(this.current_section){
+          if (this.current_section) {
             this.options[this.current_section][name] = value;
-          }else{
+          } else {
             this.options[name] = value;
           }
         }
       }
       this.options = DeepObject.Merge(this.defaults, this.options);
       return;
-    }catch(e){
+    } catch (e) {
       console.error(e);
       this.options = DeepObject.Merge(this.defaults, this.options);
       return;
@@ -92,9 +92,8 @@ export class INIConfig {
     let o = this.options;
     if (parts.length > 1) {
       for (let i = 0; i < parts.length - 1; i++) {
-          if (!o[parts[i]])
-            o[parts[i]] = {};
-          o = o[parts[i]];
+        if (!o[parts[i]]) o[parts[i]] = {};
+        o = o[parts[i]];
       }
     }
 
@@ -107,9 +106,8 @@ export class INIConfig {
     let o = this.options;
     if (parts.length > 1) {
       for (let i = 0; i < parts.length - 1; i++) {
-          if (!o[parts[i]])
-            o[parts[i]] = {};
-          o = o[parts[i]];
+        if (!o[parts[i]]) o[parts[i]] = {};
+        o = o[parts[i]];
       }
     }
 
@@ -119,35 +117,33 @@ export class INIConfig {
   toString(): string {
     let string = '';
     const keys = Object.keys(this.options);
-    for(let i = 0, len = keys.length; i < len; i++){
+    for (let i = 0, len = keys.length; i < len; i++) {
       string += this.toStringNodeWalker(keys[i], this.options[keys[i]]);
     }
-    return '\r\n'+string;
+    return '\r\n' + string;
   }
 
   toStringNodeWalker(key: string, value: any): string {
-    if(typeof value == 'object'){
-      let string = '['+key+']\r\n';
+    if (typeof value == 'object') {
+      let string = '[' + key + ']\r\n';
       let keys = Object.keys(value);
-      for(let i = 0, len = keys.length; i < len; i++){
+      for (let i = 0, len = keys.length; i < len; i++) {
         string += this.toStringNodeWalker(keys[i], value[keys[i]]);
       }
-      return string+'\r\n';
-    }else{
-      return key+'='+value+'\r\n';
+      return string + '\r\n';
+    } else {
+      return key + '=' + value + '\r\n';
     }
   }
 
-  async save(){
-    try{
+  async save() {
+    try {
       console.log(`INIConfig saving: ${this.ini_path}`);
       const encoder = new TextEncoder();
       await GameFileSystem.writeFile(this.ini_path, encoder.encode(this.toString()));
       console.log(`INIConfig saved: ${this.ini_path}`);
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
-
 }
-

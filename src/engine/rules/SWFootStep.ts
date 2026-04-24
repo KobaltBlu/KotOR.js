@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from '@/resource/TwoDAObject';
 
 export class SWFootStep {
   id: number = -1;
@@ -46,50 +46,51 @@ export class SWFootStep {
     return this.rolling;
   }
 
-  getSurfaceSoundResRef(surfaceId: number = 0){
+  getSurfaceSoundResRef(surfaceId: number = 0) {
     let sound = '';
-    const sndIdx = Math.round(Math.random()*2);
-    switch(surfaceId){
+    const sndIdx = Math.round(Math.random() * 2);
+    switch (surfaceId) {
       case 1:
         sound = sndIdx == 0 ? this.dirt0 : sndIdx == 1 ? this.dirt1 : this.dirt2;
-      break;
+        break;
       case 3:
         sound = sndIdx == 0 ? this.grass0 : sndIdx == 1 ? this.grass1 : this.grass2;
-      break;
+        break;
       case 4:
         sound = sndIdx == 0 ? this.stone0 : sndIdx == 1 ? this.stone1 : this.stone2;
-      break;
+        break;
       case 5:
         sound = sndIdx == 0 ? this.wood0 : sndIdx == 1 ? this.wood1 : this.wood2;
-      break;
+        break;
       case 6:
         sound = sndIdx == 0 ? this.water0 : sndIdx == 1 ? this.water1 : this.water2;
-      break;
+        break;
       case 9:
         sound = sndIdx == 0 ? this.carpet0 : sndIdx == 1 ? this.carpet1 : this.carpet2;
-      break;
+        break;
       case 10:
         sound = sndIdx == 0 ? this.metal0 : sndIdx == 1 ? this.metal1 : this.metal2;
-      break;
+        break;
       case 11:
       case 13:
         sound = sndIdx == 0 ? this.puddles0 : sndIdx == 1 ? this.puddles1 : this.puddles2;
-      break;
+        break;
       case 14:
         sound = sndIdx == 0 ? this.leaves0 : sndIdx == 1 ? this.leaves1 : this.leaves2;
-      break;
+        break;
       default:
         sound = sndIdx == 0 ? this.dirt0 : sndIdx == 1 ? this.dirt1 : this.dirt2;
-      break;
+        break;
     }
-    if(!sound){
+    if (!sound) {
       sound = this.rolling;
     }
     return sound ? sound : '';
   }
 
-
-  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWFootStep {
+  static From2DA(
+    row: import('@/resource/TwoDAObject').ITwoDARowData | Record<string, string | number> = {}
+  ): SWFootStep {
     const footStep = new SWFootStep();
     footStep.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     footStep.label = TwoDAObject.normalizeValue(row.label, 'string', '');

@@ -1,8 +1,8 @@
 /**
  * BitReaderLE class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BitReaderLE.ts
  * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
  * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
@@ -29,7 +29,7 @@ export class BitReaderLE {
 
   align32(): void {
     const mis = this.bitPos & 31;
-    if (mis) this.bitPos += (32 - mis);
+    if (mis) this.bitPos += 32 - mis;
   }
 
   skipBits(n: number): void {
@@ -63,7 +63,7 @@ export class BitReaderLE {
       const wordIndex = byteIndex >>> 2;
       const shift = (byteIndex & 2) << 3; // 0 or 16
       this.bitPos += 16;
-      return (this.buf32[wordIndex] >>> shift) & 0xFFFF;
+      return (this.buf32[wordIndex] >>> shift) & 0xffff;
     }
 
     // Fast path for aligned 8-bit reads

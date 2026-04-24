@@ -108,12 +108,7 @@ function validateSound(sound: ForgeSound): void {
   expect(sound.volumeVariation).toBe(7);
   expect(sound.paletteID).toBe(6);
   expect(sound.comment).toBe('comment');
-  expect(sound.soundResRefs).toEqual([
-    'c_drdastro_dead',
-    'c_drdastro_atk1',
-    'p_t3-m4_dead',
-    'c_drdastro_atk2',
-  ]);
+  expect(sound.soundResRefs).toEqual(['c_drdastro_dead', 'c_drdastro_atk1', 'p_t3-m4_dead', 'c_drdastro_atk2']);
 }
 
 describe('ForgeSound (UTS)', () => {

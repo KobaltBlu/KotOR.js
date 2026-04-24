@@ -1,22 +1,21 @@
-import { ActionStatus } from "@/enums/actions/ActionStatus";
-import { ActionType } from "@/enums/actions/ActionType";
-import type { ModuleObject } from "@/module";
-import type { Action } from "@/actions/Action";
+import { ActionStatus } from '@/enums/actions/ActionStatus';
+import { ActionType } from '@/enums/actions/ActionType';
+import type { ModuleObject } from '@/module';
+import type { Action } from '@/actions/Action';
 
 /**
  * ActionQueue class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionQueue.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionQueue extends Array {
+  static AUTO_INCREMENT_GROUP_ID = 0xffff;
+  static MAX_GROUP_ID = 0xfffe;
 
-  static AUTO_INCREMENT_GROUP_ID = 0xFFFF;
-  static MAX_GROUP_ID = 0xFFFE;
-  
   NEXT_GROUP_ID: number = 0;
   nextGroupId: number;
   lastGroupId: number;
@@ -30,7 +29,7 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  constructor(...items: any[]){
+  constructor(...items: any[]) {
     super(...items);
     this.nextGroupId = 1;
     this.lastGroupId = 0;
@@ -44,7 +43,7 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  setOwner( owner: ModuleObject ){
+  setOwner(owner: ModuleObject) {
     this.owner = owner;
   }
 
@@ -55,10 +54,12 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  add( actionNode: Action ){
-    if(!actionNode){ return; }
+  add(actionNode: Action) {
+    if (!actionNode) {
+      return;
+    }
     actionNode.owner = this.owner;
-    super.push( actionNode );
+    super.push(actionNode);
   }
 
   /**
@@ -68,10 +69,12 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  addFront( actionNode: Action ){
-    if(!actionNode){ return; }
+  addFront(actionNode: Action) {
+    if (!actionNode) {
+      return;
+    }
     actionNode.owner = this.owner;
-    super.unshift( actionNode );
+    super.unshift(actionNode);
   }
 
   /**
@@ -82,29 +85,28 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  #processGroupId(actionNode: Action){
+  #processGroupId(actionNode: Action) {
     let newGroupId = actionNode.groupId;
-    if(newGroupId < 0 || newGroupId > 0xFFFF){
+    if (newGroupId < 0 || newGroupId > 0xffff) {
       console.warn('Invalid GroupID', newGroupId);
-      newGroupId = 0xFFFF;
+      newGroupId = 0xffff;
     }
-    if(newGroupId == ActionQueue.AUTO_INCREMENT_GROUP_ID){
+    if (newGroupId == ActionQueue.AUTO_INCREMENT_GROUP_ID) {
       newGroupId = this.nextGroupId;
-      if(newGroupId >= ActionQueue.MAX_GROUP_ID){
+      if (newGroupId >= ActionQueue.MAX_GROUP_ID) {
         newGroupId = this.lastGroupId = 0;
         this.nextGroupId = 1;
-      }else{
+      } else {
         this.lastGroupId = newGroupId;
         this.nextGroupId++;
       }
       actionNode.groupId = newGroupId;
-    }else if(actionNode.groupId == ActionQueue.MAX_GROUP_ID){
+    } else if (actionNode.groupId == ActionQueue.MAX_GROUP_ID) {
       actionNode.groupId = this.lastGroupId;
-    }else{
+    } else {
       actionNode.groupId = newGroupId;
     }
   }
-
 
   /**
    * push the actionNode into the queue
@@ -114,11 +116,11 @@ export class ActionQueue extends Array {
    *
    */
   //@ts-expect-error
-  push( actionNode: Action ){
+  push(actionNode: Action) {
     actionNode.owner = this.owner;
     actionNode.queue = this;
     this.#processGroupId(actionNode);
-    this.add( actionNode );
+    this.add(actionNode);
   }
 
   /**
@@ -129,11 +131,11 @@ export class ActionQueue extends Array {
    *
    */
   //@ts-expect-error
-  unshift( actionNode: Action ){
+  unshift(actionNode: Action) {
     actionNode.owner = this.owner;
     actionNode.queue = undefined;
     this.#processGroupId(actionNode);
-    this.addFront( actionNode );
+    this.addFront(actionNode);
   }
 
   /**
@@ -143,12 +145,14 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  process( delta: number = 0 ){
+  process(delta: number = 0) {
     const action = this[0];
-    if(!action){ return; }
+    if (!action) {
+      return;
+    }
     action.owner = this.owner;
-    const status = action.update( delta );
-    if(status != ActionStatus.IN_PROGRESS){
+    const status = action.update(delta);
+    if (status != ActionStatus.IN_PROGRESS) {
       this.shift();
     }
   }
@@ -159,8 +163,8 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  clear(){
-    this.splice(0, this.length).map( (a: Action) => a.dispose() );
+  clear() {
+    this.splice(0, this.length).map((a: Action) => a.dispose());
   }
 
   /**
@@ -170,11 +174,11 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  clearAction(action: Action){
-    if(action){
+  clearAction(action: Action) {
+    if (action) {
       const index = this.indexOf(action);
-      if(index >= 0){
-        this.splice(index, 1).map( (a: Action) => a.dispose() );
+      if (index >= 0) {
+        this.splice(index, 1).map((a: Action) => a.dispose());
         this.clearActionsByGroupId(action.groupId);
       }
     }
@@ -187,19 +191,18 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  clearActionsByGroupId(groupId: number = -1){
-    if(groupId > 0) return;
+  clearActionsByGroupId(groupId: number = -1) {
+    if (groupId > 0) return;
     let index = this.length;
-    while(index--){
+    while (index--) {
       const action = this[index];
-      if(action && action.groupId == groupId){
-        this.splice(index, 1).map( (a: Action) => a.dispose() );
+      if (action && action.groupId == groupId) {
+        this.splice(index, 1).map((a: Action) => a.dispose());
       }
     }
   }
 
-  actionTypeExists(actionType: ActionType){
-    return this.findIndex( (a: Action) => a.type == actionType ) >= 0;
+  actionTypeExists(actionType: ActionType) {
+    return this.findIndex((a: Action) => a.type == actionType) >= 0;
   }
-
 }

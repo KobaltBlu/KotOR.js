@@ -89,26 +89,52 @@ describe('ResourceFormatRoundtrip', () => {
         fileVersion: 'V3.0',
         languageId: 0,
         stringCount: 1,
-        entries: [{ index: 0, flags: 0, value: 'hello', soundResRef: '', volumeVariance: 0, pitchVariance: 0, soundLength: 0 }]
+        entries: [
+          { index: 0, flags: 0, value: 'hello', soundResRef: '', volumeVariance: 0, pitchVariance: 0, soundLength: 0 },
+        ],
       };
       const a = TLKObject.fromJSON(data);
       const b = TLKObject.fromJSON(a.toJSON());
       expectJSONEqual(a.toJSON(), b.toJSON());
     });
     it('XML round-trip', () => {
-      const data = { fileType: 'TLK ', fileVersion: 'V3.0', languageId: 0, stringCount: 1, entries: [{ index: 0, flags: 0, value: 'hi', soundResRef: '', volumeVariance: 0, pitchVariance: 0, soundLength: 0 }] };
+      const data = {
+        fileType: 'TLK ',
+        fileVersion: 'V3.0',
+        languageId: 0,
+        stringCount: 1,
+        entries: [
+          { index: 0, flags: 0, value: 'hi', soundResRef: '', volumeVariance: 0, pitchVariance: 0, soundLength: 0 },
+        ],
+      };
       const a = TLKObject.fromJSON(data);
       const b = TLKObject.fromXML(a.toXML());
       expectJSONEqual(a.toJSON(), b.toJSON());
     });
     it('YAML round-trip', () => {
-      const data = { fileType: 'TLK ', fileVersion: 'V3.0', languageId: 0, stringCount: 1, entries: [{ index: 0, flags: 0, value: 'hi', soundResRef: '', volumeVariance: 0, pitchVariance: 0, soundLength: 0 }] };
+      const data = {
+        fileType: 'TLK ',
+        fileVersion: 'V3.0',
+        languageId: 0,
+        stringCount: 1,
+        entries: [
+          { index: 0, flags: 0, value: 'hi', soundResRef: '', volumeVariance: 0, pitchVariance: 0, soundLength: 0 },
+        ],
+      };
       const a = TLKObject.fromJSON(data);
       const b = TLKObject.fromYAML(a.toYAML());
       expectJSONEqual(a.toJSON(), b.toJSON());
     });
     it('TOML round-trip', () => {
-      const data = { fileType: 'TLK ', fileVersion: 'V3.0', languageId: 0, stringCount: 1, entries: [{ index: 0, flags: 0, value: 'hi', soundResRef: '', volumeVariance: 0, pitchVariance: 0, soundLength: 0 }] };
+      const data = {
+        fileType: 'TLK ',
+        fileVersion: 'V3.0',
+        languageId: 0,
+        stringCount: 1,
+        entries: [
+          { index: 0, flags: 0, value: 'hi', soundResRef: '', volumeVariance: 0, pitchVariance: 0, soundLength: 0 },
+        ],
+      };
       const a = TLKObject.fromJSON(data);
       const b = TLKObject.fromTOML(a.toTOML());
       expectJSONEqual(a.toJSON(), b.toJSON());
@@ -340,10 +366,23 @@ describe('ResourceFormatRoundtrip', () => {
 
   describe('ERFObject', () => {
     const minimalERF: ReturnType<ERFObject['toJSON']> = {
-      header: { fileType: 'MOD ', fileVersion: 'V1.0', languageCount: 0, localizedStringSize: 0, entryCount: 0, offsetToLocalizedString: 0, offsetToKeyList: 0, offsetToResourceList: 0, buildYear: 0, buildDay: 0, DescriptionStrRef: 0, reserved: new Uint8Array(116) } as ReturnType<ERFObject['toJSON']>['header'],
+      header: {
+        fileType: 'MOD ',
+        fileVersion: 'V1.0',
+        languageCount: 0,
+        localizedStringSize: 0,
+        entryCount: 0,
+        offsetToLocalizedString: 0,
+        offsetToKeyList: 0,
+        offsetToResourceList: 0,
+        buildYear: 0,
+        buildDay: 0,
+        DescriptionStrRef: 0,
+        reserved: new Uint8Array(116),
+      } as ReturnType<ERFObject['toJSON']>['header'],
       localizedStrings: [],
       keyList: [],
-      resources: []
+      resources: [],
     };
     it('JSON round-trip', () => {
       const a = new ERFObject();
@@ -379,7 +418,14 @@ describe('ResourceFormatRoundtrip', () => {
   });
 
   describe('KEYObject', () => {
-    const minimalKEY: ReturnType<KEYObject['toJSON']> = { fileType: 'KEY ', FileVersion: 'V1  ', bifCount: 0, keyCount: 0, bifs: [], keys: [] };
+    const minimalKEY: ReturnType<KEYObject['toJSON']> = {
+      fileType: 'KEY ',
+      FileVersion: 'V1  ',
+      bifCount: 0,
+      keyCount: 0,
+      bifs: [],
+      keys: [],
+    };
     it('JSON round-trip', () => {
       const a = new KEYObject();
       a.fromJSON(minimalKEY);

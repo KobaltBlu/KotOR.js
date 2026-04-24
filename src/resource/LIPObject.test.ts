@@ -14,13 +14,9 @@ describe('LIPObject', () => {
       { time: 0.7777, shape: 5 },
       { time: 1.25, shape: 10 },
     ],
-    options: { fileType?: string; fileVersion?: string; duration?: number } = {},
+    options: { fileType?: string; fileVersion?: string; duration?: number } = {}
   ): Uint8Array {
-    const {
-      fileType = 'LIP ',
-      fileVersion = 'V1.0',
-      duration = 1.5,
-    } = options;
+    const { fileType = 'LIP ', fileVersion = 'V1.0', duration = 1.5 } = options;
 
     const writer = new BinaryWriter();
     writer.writeChars(fileType);
@@ -85,12 +81,21 @@ describe('LIPObject', () => {
 
     expect(reloaded.duration).toBeCloseTo(source.duration, 3);
     expect(reloaded.keyframes).toHaveLength(source.keyframes.length);
-    expect(reloaded.keyframes.map((keyframe) => keyframe.shape)).toEqual(source.keyframes.map((keyframe) => keyframe.shape));
-    expect(reloaded.keyframes.map((keyframe) => Number(keyframe.time.toFixed(4)))).toEqual(source.keyframes.map((keyframe) => Number(keyframe.time.toFixed(4))));
+    expect(reloaded.keyframes.map((keyframe) => keyframe.shape)).toEqual(
+      source.keyframes.map((keyframe) => keyframe.shape)
+    );
+    expect(reloaded.keyframes.map((keyframe) => Number(keyframe.time.toFixed(4)))).toEqual(
+      source.keyframes.map((keyframe) => Number(keyframe.time.toFixed(4)))
+    );
   });
 
   it('sorts keyframes by time when adding frames', () => {
-    const lip = parseLip(makeLipBuffer([{ time: 1.25, shape: 10 }, { time: 0.0, shape: 0 }]));
+    const lip = parseLip(
+      makeLipBuffer([
+        { time: 1.25, shape: 10 },
+        { time: 0.0, shape: 0 },
+      ])
+    );
     lip.addKeyFrame(0.7777, 5);
 
     expect(lip.keyframes.map((keyframe) => Number(keyframe.time.toFixed(4)))).toEqual([0, 0.7777, 1.25]);
@@ -100,8 +105,12 @@ describe('LIPObject', () => {
   it('rejects invalid headers and truncated keyframe payloads', () => {
     const lip = new LIPObject(new Uint8Array(0));
 
-    expect(() => lip.readBinary(makeLipBuffer([], { fileType: 'BAD ' }))).toThrow('Tried to save or load an unsupported or corrupted file.');
-    expect(() => lip.readBinary(makeLipBuffer([], { fileVersion: 'V2.0' }))).toThrow('Tried to save or load an unsupported or corrupted file.');
+    expect(() => lip.readBinary(makeLipBuffer([], { fileType: 'BAD ' }))).toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
+    expect(() => lip.readBinary(makeLipBuffer([], { fileVersion: 'V2.0' }))).toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
 
     const truncated = new Uint8Array(makeLipBuffer());
     truncated[12] = 4;

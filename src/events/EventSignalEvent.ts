@@ -1,20 +1,20 @@
-import { GameEvent } from "@/events/GameEvent";
-import { GameEventType } from "@/enums/events/GameEventType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import type { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
-import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { ModuleObjectScript, SignalEventType } from "@/enums";
+import { GameEvent } from '@/events/GameEvent';
+import { GameEventType } from '@/enums/events/GameEventType';
+import { GFFDataType } from '@/enums/resource/GFFDataType';
+import type { NWScriptEvent } from '@/nwscript/events/NWScriptEvent';
+import { NWScriptEventFactory } from '@/nwscript/events/NWScriptEventFactory';
+import { GFFField } from '@/resource/GFFField';
+import { GFFStruct } from '@/resource/GFFStruct';
+import { BitWise } from '@/utility/BitWise';
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import type { ModuleObject } from '@/module/ModuleObject';
+import { ModuleObjectScript, SignalEventType } from '@/enums';
 
 /**
  * EventSignalEvent class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventSignalEvent.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -22,215 +22,219 @@ import { ModuleObjectScript, SignalEventType } from "@/enums";
 export class EventSignalEvent extends GameEvent {
   event: NWScriptEvent;
   eventType: number;
-  constructor(){
+  constructor() {
     super();
 
     //Event Type
     this.type = GameEventType.EventSignalEvent;
 
     this.event = undefined;
-
   }
 
-  setEvent(event: NWScriptEvent){
-    if(event){
+  setEvent(event: NWScriptEvent) {
+    if (event) {
       this.event = event;
     }
   }
 
-  eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
+  eventDataFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
       this.eventType = struct.getFieldByLabel('EventType').getValue();
     }
   }
 
-  execute(){
+  execute() {
     const obj = this.getObject() as ModuleObject;
     console.log('EventSignalEvent', this.eventType, obj, this.getCaller());
-    if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleObject)){
+    if (!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleObject)) {
       return;
     }
 
-    switch(this.eventType){
+    switch (this.eventType) {
       case SignalEventType.OnClose:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnClosed);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnClosed);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
         }
-      break;
+        break;
       case SignalEventType.OnOpen:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnOpen);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnOpen);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
         }
-      break;
+        break;
       case SignalEventType.OnDamaged:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnDamaged);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnDamaged);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGObstacle)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGObstacle)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDamage);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGEnemy)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGEnemy)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDamage);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGPlayer)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGPlayer)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.MGPlayerOnDamage);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
         }
-      break;
+        break;
       case SignalEventType.OnDeath:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+        if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.CreatureOnDeath);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnDeath);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnDeath);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGObstacle)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGObstacle)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDeath);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGEnemy)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGEnemy)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.MGEnemyOnDeath);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGPlayer)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGPlayer)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.MGPlayerOnDeath);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
         }
-      break;
+        break;
       case SignalEventType.OnDisarm:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnDisarm);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnDisarm);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
         }
-      break;
+        break;
       case SignalEventType.OnFailToOpen:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnFailToOpen);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
         }
-      break;
+        break;
       case SignalEventType.OnObjectEnter:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+        if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)) {
           const onEnter = obj.getScriptInstance(ModuleObjectScript.TriggerOnEnter);
-          if(onEnter){
+          if (onEnter) {
             onEnter.enteringObject = this.getCaller();
             onEnter.run(obj);
           }
         }
-      break;
+        break;
       case SignalEventType.OnObjectExit:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+        if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)) {
           const onExit = obj.getScriptInstance(ModuleObjectScript.TriggerOnExit);
-          if(onExit){
+          if (onExit) {
             onExit.exitingObject = this.getCaller();
             onExit.run(obj);
           }
         }
-      break;
+        break;
       case SignalEventType.OnTrapTriggered:
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.PlaceableOnTrapTriggered);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.DoorOnTrapTriggered);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
-        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)) {
           const instance = obj.getScriptInstance(ModuleObjectScript.TriggerOnTrapTriggered);
-          if(instance){
+          if (instance) {
             instance.run(obj);
           }
         }
-        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        if (
+          BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor) ||
+          BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)
+        ) {
           obj.setHP(-11);
           obj.onDamaged();
-          if(obj.linkedToObject){
-            if(obj.linkedToObject.audioEmitter){
+          if (obj.linkedToObject) {
+            if (obj.linkedToObject.audioEmitter) {
               obj.linkedToObject.audioEmitter.playSound((obj.linkedToObject as any).trapExplosionSound);
             }
             obj.linkedToObject.destroy();
           }
-        }else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
-          if(obj.audioEmitter){
+        } else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)) {
+          if (obj.audioEmitter) {
             obj.audioEmitter.playSound((obj as any).trapExplosionSound);
           }
           obj.destroy();
         }
-      break;
+        break;
     }
   }
 
-  export(){
-    const struct = new GFFStruct( 0xABCD );
+  export() {
+    const struct = new GFFStruct(0xabcd);
 
-    struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject) ? this.caller.id : 2130706432 );
-    struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
-    const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
-    if(this.event){
+    struct
+      .addField(new GFFField(GFFDataType.DWORD, 'CallerId'))
+      .setValue(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject) ? this.caller.id : 2130706432);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'Day')).setValue(this.day);
+    const eventData = struct.addField(new GFFField(GFFDataType.STRUCT, 'EventData'));
+    if (this.event) {
       const eStruct = this.event.save();
       eStruct.setType(0x4444);
-      eventData.addChildStruct( eStruct );
+      eventData.addChildStruct(eStruct);
     }
-    struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject) ? this.caller.id : 2130706432 );
-    struct.addField( new GFFField(GFFDataType.DWORD, 'Time') ).setValue(this.time);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'EventId')).setValue(this.id);
+    struct
+      .addField(new GFFField(GFFDataType.DWORD, 'ObjectId'))
+      .setValue(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject) ? this.caller.id : 2130706432);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'Time')).setValue(this.time);
 
     return struct;
   }
-
 }
-

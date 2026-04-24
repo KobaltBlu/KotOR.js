@@ -45,39 +45,37 @@ function buildUTCGff(): GFFObject {
   const r = gff.RootNode;
 
   r.addField(new GFFField(GFFDataType.RESREF, 'TemplateResRef').setValue('n_minecoorta'));
-  r.addField(new GFFField(GFFDataType.BYTE,   'Race').setValue(6));
-  r.addField(new GFFField(GFFDataType.BYTE,   'SubraceIndex').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Race').setValue(6));
+  r.addField(new GFFField(GFFDataType.BYTE, 'SubraceIndex').setValue(1));
 
-  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName')
-    .setCExoLocString(new CExoLocString(76046)));
-  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName')
-    .setCExoLocString(new CExoLocString(123)));
+  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName').setCExoLocString(new CExoLocString(76046)));
+  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName').setCExoLocString(new CExoLocString(123)));
 
-  r.addField(new GFFField(GFFDataType.WORD,  'Appearance_Type').setValue(636));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Gender').setValue(2));
-  r.addField(new GFFField(GFFDataType.INT,   'Phenotype').setValue(0));
-  r.addField(new GFFField(GFFDataType.WORD,  'PortraitId').setValue(1));
+  r.addField(new GFFField(GFFDataType.WORD, 'Appearance_Type').setValue(636));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Gender').setValue(2));
+  r.addField(new GFFField(GFFDataType.INT, 'Phenotype').setValue(0));
+  r.addField(new GFFField(GFFDataType.WORD, 'PortraitId').setValue(1));
   r.addField(new GFFField(GFFDataType.CEXOSTRING, 'Tag').setValue('Coorta'));
   r.addField(new GFFField(GFFDataType.RESREF, 'Conversation').setValue('coorta'));
-  r.addField(new GFFField(GFFDataType.BYTE,  'IsPC').setValue(1));
-  r.addField(new GFFField(GFFDataType.WORD,  'FactionID').setValue(5));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Disarmable').setValue(1));
-  r.addField(new GFFField(GFFDataType.WORD,  'SoundSetFile').setValue(46));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Plot').setValue(1));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Interruptable').setValue(1));
-  r.addField(new GFFField(GFFDataType.BYTE,  'NoPermDeath').setValue(1));
-  r.addField(new GFFField(GFFDataType.BYTE,  'NotReorienting').setValue(1));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Hologram').setValue(1));
-  r.addField(new GFFField(GFFDataType.BYTE,  'IgnoreCrePath').setValue(1));
-  r.addField(new GFFField(GFFDataType.BYTE,  'MultiplierSet').setValue(3));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Str').setValue(10));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Dex').setValue(10));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Con').setValue(10));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Int').setValue(10));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Wis').setValue(10));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Cha').setValue(10));
-  r.addField(new GFFField(GFFDataType.INT,   'WalkRate').setValue(7));
-  r.addField(new GFFField(GFFDataType.BYTE,  'NaturalAC').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'IsPC').setValue(1));
+  r.addField(new GFFField(GFFDataType.WORD, 'FactionID').setValue(5));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Disarmable').setValue(1));
+  r.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile').setValue(46));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Plot').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Interruptable').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'NoPermDeath').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'NotReorienting').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Hologram').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'IgnoreCrePath').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'MultiplierSet').setValue(3));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Str').setValue(10));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Dex').setValue(10));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Con').setValue(10));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Int').setValue(10));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Wis').setValue(10));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Cha').setValue(10));
+  r.addField(new GFFField(GFFDataType.INT, 'WalkRate').setValue(7));
+  r.addField(new GFFField(GFFDataType.BYTE, 'NaturalAC').setValue(1));
   r.addField(new GFFField(GFFDataType.SHORT, 'HitPoints').setValue(8));
   r.addField(new GFFField(GFFDataType.SHORT, 'CurrentHitPoints').setValue(8));
   r.addField(new GFFField(GFFDataType.SHORT, 'MaxHitPoints').setValue(8));
@@ -86,13 +84,13 @@ function buildUTCGff(): GFFObject {
   r.addField(new GFFField(GFFDataType.SHORT, 'refbonus').setValue(1));
   r.addField(new GFFField(GFFDataType.SHORT, 'willbonus').setValue(1));
   r.addField(new GFFField(GFFDataType.SHORT, 'fortbonus').setValue(1));
-  r.addField(new GFFField(GFFDataType.BYTE,  'GoodEvil').setValue(50));
-  r.addField(new GFFField(GFFDataType.BYTE,  'LawfulChaotic').setValue(0));
+  r.addField(new GFFField(GFFDataType.BYTE, 'GoodEvil').setValue(50));
+  r.addField(new GFFField(GFFDataType.BYTE, 'LawfulChaotic').setValue(0));
   r.addField(new GFFField(GFFDataType.FLOAT, 'BlindSpot').setValue(120.0));
   r.addField(new GFFField(GFFDataType.FLOAT, 'ChallengeRating').setValue(1.0));
-  r.addField(new GFFField(GFFDataType.BYTE,  'PerceptionRange').setValue(11));
-  r.addField(new GFFField(GFFDataType.BYTE,  'PartyInteract').setValue(1));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Min1HP').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'PerceptionRange').setValue(11));
+  r.addField(new GFFField(GFFDataType.BYTE, 'PartyInteract').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Min1HP').setValue(1));
 
   // Scripts
   r.addField(new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat').setValue('k_def_heartbt01'));
@@ -120,7 +118,7 @@ function buildUTCGff(): GFFObject {
 
   // FeatList — feats 93, 94
   const featList = new GFFField(GFFDataType.LIST, 'FeatList');
-  ([93, 94] as const).forEach(feat => {
+  ([93, 94] as const).forEach((feat) => {
     const s = new GFFStruct(1);
     s.addField(new GFFField(GFFDataType.WORD, 'Feat').setValue(feat));
     featList.addChildStruct(s);
@@ -146,7 +144,7 @@ function buildUTCGff(): GFFObject {
   class1.addField(new GFFField(GFFDataType.INT, 'Class').setValue(1));
   class1.addField(new GFFField(GFFDataType.SHORT, 'ClassLevel').setValue(3));
   const kl0b = new GFFField(GFFDataType.LIST, 'KnownList0');
-  ([9, 11] as const).forEach(spellId => {
+  ([9, 11] as const).forEach((spellId) => {
     const sp = new GFFStruct(3);
     sp.addField(new GFFField(GFFDataType.WORD, 'Spell').setValue(spellId));
     sp.addField(new GFFField(GFFDataType.BYTE, 'SpellMetaMagic').setValue(0));
@@ -293,12 +291,11 @@ function buildAREGff(): GFFObject {
   gff.FileType = 'ARE ';
   const r = gff.RootNode;
 
-  r.addField(new GFFField(GFFDataType.INT,    'ID').setValue(0));
-  r.addField(new GFFField(GFFDataType.INT,    'Creator_ID').setValue(0));
-  r.addField(new GFFField(GFFDataType.DWORD,  'Version').setValue(88));
+  r.addField(new GFFField(GFFDataType.INT, 'ID').setValue(0));
+  r.addField(new GFFField(GFFDataType.INT, 'Creator_ID').setValue(0));
+  r.addField(new GFFField(GFFDataType.DWORD, 'Version').setValue(88));
   r.addField(new GFFField(GFFDataType.CEXOSTRING, 'Tag').setValue('Untitled'));
-  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Name')
-    .setCExoLocString(new CExoLocString(75101)));
+  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Name').setCExoLocString(new CExoLocString(75101)));
   r.addField(new GFFField(GFFDataType.CEXOSTRING, 'Comments').setValue('comments'));
 
   // Nested Map struct
@@ -315,10 +312,10 @@ function buildAREGff(): GFFObject {
   r.addField(mapStruct);
 
   r.addField(new GFFField(GFFDataType.DWORD, 'Flags').setValue(0));
-  r.addField(new GFFField(GFFDataType.INT,   'ModSpotCheck').setValue(0));
-  r.addField(new GFFField(GFFDataType.INT,   'ModListenCheck').setValue(0));
+  r.addField(new GFFField(GFFDataType.INT, 'ModSpotCheck').setValue(0));
+  r.addField(new GFFField(GFFDataType.INT, 'ModListenCheck').setValue(0));
   r.addField(new GFFField(GFFDataType.FLOAT, 'AlphaTest').setValue(0.20000000298023224));
-  r.addField(new GFFField(GFFDataType.INT,   'CameraStyle').setValue(1));
+  r.addField(new GFFField(GFFDataType.INT, 'CameraStyle').setValue(1));
   r.addField(new GFFField(GFFDataType.RESREF, 'DefaultEnvMap').setValue('defaultenvmap'));
   r.addField(new GFFField(GFFDataType.RESREF, 'Grass_TexName').setValue('grasstexture'));
   r.addField(new GFFField(GFFDataType.FLOAT, 'Grass_Density').setValue(1.0));
@@ -333,20 +330,20 @@ function buildAREGff(): GFFObject {
   // Moon lighting
   r.addField(new GFFField(GFFDataType.DWORD, 'MoonAmbientColor').setValue(0));
   r.addField(new GFFField(GFFDataType.DWORD, 'MoonDiffuseColor').setValue(0));
-  r.addField(new GFFField(GFFDataType.BYTE,  'MoonFogOn').setValue(0));
+  r.addField(new GFFField(GFFDataType.BYTE, 'MoonFogOn').setValue(0));
   r.addField(new GFFField(GFFDataType.FLOAT, 'MoonFogNear').setValue(99.0));
   r.addField(new GFFField(GFFDataType.FLOAT, 'MoonFogFar').setValue(100.0));
   r.addField(new GFFField(GFFDataType.DWORD, 'MoonFogColor').setValue(0));
-  r.addField(new GFFField(GFFDataType.BYTE,  'MoonShadows').setValue(0));
+  r.addField(new GFFField(GFFDataType.BYTE, 'MoonShadows').setValue(0));
 
   // Sun lighting
   r.addField(new GFFField(GFFDataType.DWORD, 'SunAmbientColor').setValue(16777215));
   r.addField(new GFFField(GFFDataType.DWORD, 'SunDiffuseColor').setValue(16777215));
-  r.addField(new GFFField(GFFDataType.BYTE,  'SunFogOn').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'SunFogOn').setValue(1));
   r.addField(new GFFField(GFFDataType.FLOAT, 'SunFogNear').setValue(99.0));
   r.addField(new GFFField(GFFDataType.FLOAT, 'SunFogFar').setValue(100.0));
   r.addField(new GFFField(GFFDataType.DWORD, 'SunFogColor').setValue(16777215));
-  r.addField(new GFFField(GFFDataType.BYTE,  'SunShadows').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'SunShadows').setValue(1));
   r.addField(new GFFField(GFFDataType.DWORD, 'DynAmbientColor').setValue(16777215));
 
   // Day/night & weather
@@ -354,10 +351,10 @@ function buildAREGff(): GFFObject {
   r.addField(new GFFField(GFFDataType.BYTE, 'LightingScheme').setValue(0));
   r.addField(new GFFField(GFFDataType.BYTE, 'ShadowOpacity').setValue(205));
   r.addField(new GFFField(GFFDataType.BYTE, 'DayNightCycle').setValue(0));
-  r.addField(new GFFField(GFFDataType.INT,  'ChanceRain').setValue(99));
-  r.addField(new GFFField(GFFDataType.INT,  'ChanceSnow').setValue(99));
-  r.addField(new GFFField(GFFDataType.INT,  'ChanceLightning').setValue(99));
-  r.addField(new GFFField(GFFDataType.INT,  'WindPower').setValue(1));
+  r.addField(new GFFField(GFFDataType.INT, 'ChanceRain').setValue(99));
+  r.addField(new GFFField(GFFDataType.INT, 'ChanceSnow').setValue(99));
+  r.addField(new GFFField(GFFDataType.INT, 'ChanceLightning').setValue(99));
+  r.addField(new GFFField(GFFDataType.INT, 'WindPower').setValue(1));
   r.addField(new GFFField(GFFDataType.WORD, 'LoadScreenID').setValue(0));
   r.addField(new GFFField(GFFDataType.BYTE, 'PlayerVsPlayer').setValue(3));
   r.addField(new GFFField(GFFDataType.BYTE, 'NoRest').setValue(0));
@@ -384,7 +381,7 @@ function buildAREGff(): GFFObject {
   // Rooms list — 2 room entries
   const rooms = new GFFField(GFFDataType.LIST, 'Rooms');
   const roomData = [
-    { name: '002ebo',  envAudio: 17, ambientScale: 0.9300000071525574, forceRating: 1, disableWeather: 1 },
+    { name: '002ebo', envAudio: 17, ambientScale: 0.9300000071525574, forceRating: 1, disableWeather: 1 },
     { name: '002ebo2', envAudio: 17, ambientScale: 0.9800000190734863, forceRating: 2, disableWeather: 0 },
   ];
   roomData.forEach(({ name, envAudio, ambientScale, forceRating, disableWeather }) => {
@@ -485,23 +482,21 @@ function buildUTIGff(): GFFObject {
   const r = gff.RootNode;
 
   r.addField(new GFFField(GFFDataType.RESREF, 'TemplateResRef').setValue('g_a_class4001'));
-  r.addField(new GFFField(GFFDataType.INT,   'BaseItem').setValue(38));
-  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName')
-    .setCExoLocString(new CExoLocString(5632)));
-  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'DescIdentified')
-    .setCExoLocString(new CExoLocString(5633)));
+  r.addField(new GFFField(GFFDataType.INT, 'BaseItem').setValue(38));
+  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName').setCExoLocString(new CExoLocString(5632)));
+  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'DescIdentified').setCExoLocString(new CExoLocString(5633)));
   r.addField(new GFFField(GFFDataType.CEXOSTRING, 'Tag').setValue('G_A_CLASS4001'));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Charges').setValue(13));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Charges').setValue(13));
   r.addField(new GFFField(GFFDataType.DWORD, 'Cost').setValue(50));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Stolen').setValue(1));
-  r.addField(new GFFField(GFFDataType.WORD,  'StackSize').setValue(1));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Plot').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Stolen').setValue(1));
+  r.addField(new GFFField(GFFDataType.WORD, 'StackSize').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Plot').setValue(1));
   r.addField(new GFFField(GFFDataType.DWORD, 'AddCost').setValue(50));
-  r.addField(new GFFField(GFFDataType.BYTE,  'Identified').setValue(1));
-  r.addField(new GFFField(GFFDataType.BYTE,  'BodyVariation').setValue(3));
-  r.addField(new GFFField(GFFDataType.BYTE,  'TextureVar').setValue(1));
-  r.addField(new GFFField(GFFDataType.BYTE,  'ModelVariation').setValue(2));
-  r.addField(new GFFField(GFFDataType.BYTE,  'PaletteID').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'Identified').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'BodyVariation').setValue(3));
+  r.addField(new GFFField(GFFDataType.BYTE, 'TextureVar').setValue(1));
+  r.addField(new GFFField(GFFDataType.BYTE, 'ModelVariation').setValue(2));
+  r.addField(new GFFField(GFFDataType.BYTE, 'PaletteID').setValue(1));
   r.addField(new GFFField(GFFDataType.CEXOSTRING, 'Comment').setValue('itemo'));
 
   // PropertiesList — 2 entries; second entry has UpgradeType
@@ -1053,7 +1048,6 @@ function validateUTWFields(gff: GFFObject): void {
 // ---------------------------------------------------------------------------
 
 describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, test_utp, test_utt, test_uts, test_ute, test_utw, test_git, test_dlg, test_fac, test_ifo, test_jrl, test_pth)', () => {
-
   // ── UTC ──────────────────────────────────────────────────────────────────
 
   it('UTC: all primitive fields survive binary round-trip (vendor test_utc parity)', () => {
@@ -1332,10 +1326,19 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     const cameraList = new GFFField(GFFDataType.LIST, 'CameraList');
     const cam = new GFFStruct(14);
     cam.addField(new GFFField(GFFDataType.INT, 'CameraID').setValue(1));
-    cam.addField(new GFFField(GFFDataType.VECTOR, 'Position').setVector({ x: -57.16752624511719, y: -28.255794525146484, z: 0.0 }));
+    cam.addField(
+      new GFFField(GFFDataType.VECTOR, 'Position').setVector({ x: -57.16752624511719, y: -28.255794525146484, z: 0.0 })
+    );
     cam.addField(new GFFField(GFFDataType.FLOAT, 'Pitch').setValue(69.69999694824219));
     cam.addField(new GFFField(GFFDataType.FLOAT, 'MicRange').setValue(0.0));
-    cam.addField(new GFFField(GFFDataType.ORIENTATION, 'Orientation').setOrientation({ x: 0.9719610214233398, y: 0.0, z: 0.0, w: 0.23514211177825928 }));
+    cam.addField(
+      new GFFField(GFFDataType.ORIENTATION, 'Orientation').setOrientation({
+        x: 0.9719610214233398,
+        y: 0.0,
+        z: 0.0,
+        w: 0.23514211177825928,
+      })
+    );
     cam.addField(new GFFField(GFFDataType.FLOAT, 'Height').setValue(3.0));
     cam.addField(new GFFField(GFFDataType.FLOAT, 'FieldOfView').setValue(55.0));
     cameraList.addChildStruct(cam);
@@ -1424,7 +1427,9 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     const trigger = new GFFStruct(1);
     trigger.addField(new GFFField(GFFDataType.RESREF, 'TemplateResRef').setValue('newgeneric001'));
     trigger.addField(new GFFField(GFFDataType.CEXOSTRING, 'Tag').setValue('to_203TEL'));
-    trigger.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'TransitionDestin').setCExoLocString(new CExoLocString(104245)));
+    trigger.addField(
+      new GFFField(GFFDataType.CEXOLOCSTRING, 'TransitionDestin').setCExoLocString(new CExoLocString(104245))
+    );
     trigger.addField(new GFFField(GFFDataType.RESREF, 'LinkedToModule').setValue('203tel'));
     trigger.addField(new GFFField(GFFDataType.CEXOSTRING, 'LinkedTo').setValue('from_204TEL'));
     trigger.addField(new GFFField(GFFDataType.BYTE, 'LinkedToFlags').setValue(2));
@@ -1525,7 +1530,7 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     expect(encs[0].getFieldByLabel('XPosition')?.getValue()).toBeCloseTo(-41.319, 2);
     const geomPts = encs[0].getFieldByLabel('Geometry')?.getChildStructs() ?? [];
     expect(geomPts).toHaveLength(1);
-    expect(geomPts[0].getFieldByLabel('X')?.getValue()).toBeCloseTo(-5.890, 2);
+    expect(geomPts[0].getFieldByLabel('X')?.getValue()).toBeCloseTo(-5.89, 2);
     const spawnPts = encs[0].getFieldByLabel('SpawnPointList')?.getChildStructs() ?? [];
     expect(spawnPts).toHaveLength(1);
     expect(spawnPts[0].getFieldByLabel('X')?.getValue()).toBeCloseTo(-48.936, 2);
@@ -1541,7 +1546,7 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     const stores = r.getFieldByLabel('StoreList')?.getChildStructs() ?? [];
     expect(stores).toHaveLength(1);
     expect(stores[0].getFieldByLabel('ResRef')?.getValue()).toBe('m_chano');
-    expect(stores[0].getFieldByLabel('XPosition')?.getValue()).toBeCloseTo(106.230, 2);
+    expect(stores[0].getFieldByLabel('XPosition')?.getValue()).toBeCloseTo(106.23, 2);
 
     // TriggerList
     const triggers = r.getFieldByLabel('TriggerList')?.getChildStructs() ?? [];
@@ -1689,13 +1694,18 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     const entry0 = new GFFStruct(0);
     entry0.addField(new GFFField(GFFDataType.CEXOSTRING, 'Speaker').setValue('bark'));
     entry0.addField(new GFFField(GFFDataType.CEXOSTRING, 'Listener').setValue('yoohoo'));
-    entry0.addField(makeAnimList([{ p: 'aaa', anim: 1200 }, { p: 'bbb', anim: 2400 }]));
+    entry0.addField(
+      makeAnimList([
+        { p: 'aaa', anim: 1200 },
+        { p: 'bbb', anim: 2400 },
+      ])
+    );
     const text0 = new GFFField(GFFDataType.CEXOLOCSTRING, 'Text');
     const ls0 = new CExoLocString(-1);
     entry0.addField(text0.setCExoLocString(ls0));
     entry0.addField(new GFFField(GFFDataType.RESREF, 'VO_ResRef').setValue('gand'));
     entry0.addField(new GFFField(GFFDataType.RESREF, 'Script').setValue('num1'));
-    entry0.addField(new GFFField(GFFDataType.DWORD, 'Delay').setValue(0xFFFFFFFF));
+    entry0.addField(new GFFField(GFFDataType.DWORD, 'Delay').setValue(0xffffffff));
     entry0.addField(new GFFField(GFFDataType.CEXOSTRING, 'Comment').setValue('commentto'));
     entry0.addField(new GFFField(GFFDataType.RESREF, 'Sound').setValue('gonk'));
     entry0.addField(new GFFField(GFFDataType.CEXOSTRING, 'Quest').setValue('quest'));
@@ -1720,7 +1730,7 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
       e.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Text').setCExoLocString(new CExoLocString(-1)));
       e.addField(new GFFField(GFFDataType.RESREF, 'VO_ResRef').setValue(''));
       e.addField(new GFFField(GFFDataType.RESREF, 'Script').setValue(''));
-      e.addField(new GFFField(GFFDataType.DWORD, 'Delay').setValue(0xFFFFFFFF));
+      e.addField(new GFFField(GFFDataType.DWORD, 'Delay').setValue(0xffffffff));
       e.addField(new GFFField(GFFDataType.CEXOSTRING, 'Comment').setValue(''));
       e.addField(new GFFField(GFFDataType.RESREF, 'Sound').setValue(''));
       e.addField(new GFFField(GFFDataType.CEXOSTRING, 'Quest').setValue(''));
@@ -1742,7 +1752,7 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     reply0.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Text').setCExoLocString(new CExoLocString(-1)));
     reply0.addField(new GFFField(GFFDataType.RESREF, 'VO_ResRef').setValue(''));
     reply0.addField(new GFFField(GFFDataType.RESREF, 'Script').setValue(''));
-    reply0.addField(new GFFField(GFFDataType.DWORD, 'Delay').setValue(0xFFFFFFFF));
+    reply0.addField(new GFFField(GFFDataType.DWORD, 'Delay').setValue(0xffffffff));
     reply0.addField(new GFFField(GFFDataType.CEXOSTRING, 'Comment').setValue(''));
     reply0.addField(new GFFField(GFFDataType.RESREF, 'Sound').setValue(''));
     reply0.addField(new GFFField(GFFDataType.CEXOSTRING, 'Quest').setValue(''));
@@ -1758,11 +1768,16 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
 
     const reply1 = new GFFStruct(1);
     reply1.addField(new GFFField(GFFDataType.CEXOSTRING, 'Listener').setValue(''));
-    reply1.addField(makeAnimList([{ p: 'aaa', anim: 1200 }, { p: 'bbb', anim: 2400 }]));
+    reply1.addField(
+      makeAnimList([
+        { p: 'aaa', anim: 1200 },
+        { p: 'bbb', anim: 2400 },
+      ])
+    );
     reply1.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Text').setCExoLocString(new CExoLocString(-1)));
     reply1.addField(new GFFField(GFFDataType.RESREF, 'VO_ResRef').setValue(''));
     reply1.addField(new GFFField(GFFDataType.RESREF, 'Script').setValue(''));
-    reply1.addField(new GFFField(GFFDataType.DWORD, 'Delay').setValue(0xFFFFFFFF));
+    reply1.addField(new GFFField(GFFDataType.DWORD, 'Delay').setValue(0xffffffff));
     reply1.addField(new GFFField(GFFDataType.CEXOSTRING, 'Comment').setValue(''));
     reply1.addField(new GFFField(GFFDataType.RESREF, 'Sound').setValue(''));
     reply1.addField(new GFFField(GFFDataType.CEXOSTRING, 'Quest').setValue(''));
@@ -1809,7 +1824,7 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     expect(entries[0].getFieldByLabel('Comment')?.getValue()).toBe('commentto');
     expect(entries[0].getFieldByLabel('Sound')?.getValue()).toBe('gonk');
     expect(entries[0].getFieldByLabel('Quest')?.getValue()).toBe('quest');
-    expect(entries[0].getFieldByLabel('Delay')?.getValue()).toBe(0xFFFFFFFF);
+    expect(entries[0].getFieldByLabel('Delay')?.getValue()).toBe(0xffffffff);
     expect(entries[0].getFieldByLabel('WaitFlags')?.getValue()).toBe(1);
     expect(entries[0].getFieldByLabel('CameraAngle')?.getValue()).toBe(14);
     expect(entries[0].getFieldByLabel('FadeType')?.getValue()).toBe(1);
@@ -1882,10 +1897,10 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     // FactionList — 4 factions
     const factionList = new GFFField(GFFDataType.LIST, 'FactionList');
     const factionData = [
-      { name: 'PC',       global: 0, parentId: 0xFFFFFFFF },
-      { name: 'Hostile',  global: 1, parentId: 0xFFFFFFFF },
-      { name: 'Commoner', global: 0, parentId: 0xFFFFFFFF },
-      { name: 'Merchant', global: 0, parentId: 0xFFFFFFFF },
+      { name: 'PC', global: 0, parentId: 0xffffffff },
+      { name: 'Hostile', global: 1, parentId: 0xffffffff },
+      { name: 'Commoner', global: 0, parentId: 0xffffffff },
+      { name: 'Merchant', global: 0, parentId: 0xffffffff },
     ];
     factionData.forEach(({ name, global: g, parentId }, idx) => {
       const s = new GFFStruct(idx);
@@ -1899,9 +1914,18 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     // RepList — 12 reputation entries
     const repList = new GFFField(GFFDataType.LIST, 'RepList');
     const repData: Array<[number, number, number]> = [
-      [1, 0, 5], [0, 1, 5], [2, 0, 100], [0, 2, 100],
-      [1, 2, 0], [2, 1, 10], [3, 0, 100], [0, 3, 100],
-      [1, 3, 0], [3, 1, 5], [2, 3, 95], [3, 2, 95],
+      [1, 0, 5],
+      [0, 1, 5],
+      [2, 0, 100],
+      [0, 2, 100],
+      [1, 2, 0],
+      [2, 1, 10],
+      [3, 0, 100],
+      [0, 3, 100],
+      [1, 3, 0],
+      [3, 1, 5],
+      [2, 3, 95],
+      [3, 2, 95],
     ];
     repData.forEach(([id1, id2, rep], idx) => {
       const s = new GFFStruct(idx);
@@ -1922,7 +1946,7 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     expect(factions).toHaveLength(4);
     expect(factions[0].getFieldByLabel('FactionName')?.getValue()).toBe('PC');
     expect(factions[0].getFieldByLabel('FactionGlobal')?.getValue()).toBe(0);
-    expect(factions[0].getFieldByLabel('FactionParentID')?.getValue()).toBe(0xFFFFFFFF);
+    expect(factions[0].getFieldByLabel('FactionParentID')?.getValue()).toBe(0xffffffff);
     expect(factions[1].getFieldByLabel('FactionName')?.getValue()).toBe('Hostile');
     expect(factions[1].getFieldByLabel('FactionGlobal')?.getValue()).toBe(1);
     expect(factions[2].getFieldByLabel('FactionName')?.getValue()).toBe('Commoner');
@@ -1932,30 +1956,26 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     expect(reps).toHaveLength(12);
 
     // Hostile(1) vs PC(0) = 5
-    const hostileToPC = reps.find(s =>
-      s.getFieldByLabel('FactionID1')?.getValue() === 1 &&
-      s.getFieldByLabel('FactionID2')?.getValue() === 0
+    const hostileToPC = reps.find(
+      (s) => s.getFieldByLabel('FactionID1')?.getValue() === 1 && s.getFieldByLabel('FactionID2')?.getValue() === 0
     );
     expect(hostileToPC?.getFieldByLabel('FactionRep')?.getValue()).toBe(5);
 
     // Commoner(2) vs PC(0) = 100
-    const commonerToPC = reps.find(s =>
-      s.getFieldByLabel('FactionID1')?.getValue() === 2 &&
-      s.getFieldByLabel('FactionID2')?.getValue() === 0
+    const commonerToPC = reps.find(
+      (s) => s.getFieldByLabel('FactionID1')?.getValue() === 2 && s.getFieldByLabel('FactionID2')?.getValue() === 0
     );
     expect(commonerToPC?.getFieldByLabel('FactionRep')?.getValue()).toBe(100);
 
     // Hostile(1) vs Commoner(2) = 0
-    const hostileToCommoner = reps.find(s =>
-      s.getFieldByLabel('FactionID1')?.getValue() === 1 &&
-      s.getFieldByLabel('FactionID2')?.getValue() === 2
+    const hostileToCommoner = reps.find(
+      (s) => s.getFieldByLabel('FactionID1')?.getValue() === 1 && s.getFieldByLabel('FactionID2')?.getValue() === 2
     );
     expect(hostileToCommoner?.getFieldByLabel('FactionRep')?.getValue()).toBe(0);
 
     // Merchant(3) vs Commoner(2) = 95
-    const merchantToCommoner = reps.find(s =>
-      s.getFieldByLabel('FactionID1')?.getValue() === 3 &&
-      s.getFieldByLabel('FactionID2')?.getValue() === 2
+    const merchantToCommoner = reps.find(
+      (s) => s.getFieldByLabel('FactionID1')?.getValue() === 3 && s.getFieldByLabel('FactionID2')?.getValue() === 2
     );
     expect(merchantToCommoner?.getFieldByLabel('FactionRep')?.getValue()).toBe(95);
   }
@@ -1968,8 +1988,8 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
   it('FAC: FactionParentID DWORD max value (0xFFFFFFFF) survives binary round-trip', () => {
     const gff = new GFFObject(buildFACGff().getExportBuffer());
     const factions = gff.RootNode.getFieldByLabel('FactionList')!.getChildStructs();
-    expect(factions[0].getFieldByLabel('FactionParentID')?.getValue()).toBe(0xFFFFFFFF);
-    expect(factions[1].getFieldByLabel('FactionParentID')?.getValue()).toBe(0xFFFFFFFF);
+    expect(factions[0].getFieldByLabel('FactionParentID')?.getValue()).toBe(0xffffffff);
+    expect(factions[1].getFieldByLabel('FactionParentID')?.getValue()).toBe(0xffffffff);
   });
 
   it('FAC: binary->JSON->binary double round-trip preserves all key fields', () => {
@@ -1990,7 +2010,9 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
 
     // Mod_ID as VOID (16 bytes) — use setData() for binary payloads
     const modId = new GFFField(GFFDataType.VOID, 'Mod_ID');
-    modId.setData(new Uint8Array([0x52, 0x3A, 0xE5, 0x9E, 0xE3, 0x73, 0x71, 0x1D, 0x0F, 0xF0, 0x69, 0x9C, 0xB9, 0x61, 0x9F, 0xA7]));
+    modId.setData(
+      new Uint8Array([0x52, 0x3a, 0xe5, 0x9e, 0xe3, 0x73, 0x71, 0x1d, 0x0f, 0xf0, 0x69, 0x9c, 0xb9, 0x61, 0x9f, 0xa7])
+    );
     r.addField(modId);
 
     r.addField(new GFFField(GFFDataType.INT, 'Mod_Creator_ID').setValue(2));
@@ -2006,7 +2028,7 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     r.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_X').setValue(2.5811009407043457));
     r.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Y').setValue(41.46979522705078));
     r.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Z').setValue(21.372770309448242));
-    r.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Dir_X').setValue(1.5099580252808664e-07));
+    r.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Dir_X').setValue(1.5099580252808664e-7));
     r.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Dir_Y').setValue(-1.0));
     r.addField(new GFFField(GFFDataType.LIST, 'Mod_Expan_List'));
     r.addField(new GFFField(GFFDataType.BYTE, 'Mod_DawnHour').setValue(6));
@@ -2053,7 +2075,7 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     expect(modIdBytes).toBeDefined();
     expect(modIdBytes!.length).toBe(16);
     expect(modIdBytes![0]).toBe(0x52);
-    expect(modIdBytes![1]).toBe(0x3A);
+    expect(modIdBytes![1]).toBe(0x3a);
 
     expect(r.getFieldByLabel('Mod_Creator_ID')?.getValue()).toBe(2);
     expect(r.getFieldByLabel('Mod_Version')?.getValue()).toBe(3);
@@ -2106,7 +2128,7 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     const bytes = gff.RootNode.getFieldByLabel('Mod_ID')!.getVoid();
     expect(bytes.length).toBe(16);
     expect(bytes[0]).toBe(0x52);
-    expect(bytes[15]).toBe(0xA7);
+    expect(bytes[15]).toBe(0xa7);
   });
 
   it('IFO: binary->JSON->binary double round-trip preserves all key fields', () => {
@@ -2129,7 +2151,11 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     const cat = new GFFStruct(0);
     cat.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Name').setCExoLocString(new CExoLocString(33089)));
     cat.addField(new GFFField(GFFDataType.DWORD, 'Priority').setValue(1));
-    cat.addField(new GFFField(GFFDataType.CEXOSTRING, 'Comment').setValue('Plot to be considered worthy to hear the Sand People history.'));
+    cat.addField(
+      new GFFField(GFFDataType.CEXOSTRING, 'Comment').setValue(
+        'Plot to be considered worthy to hear the Sand People history.'
+      )
+    );
     cat.addField(new GFFField(GFFDataType.CEXOSTRING, 'Tag').setValue('Tat20aa_worthy'));
     cat.addField(new GFFField(GFFDataType.INT, 'PlotIndex').setValue(72));
     cat.addField(new GFFField(GFFDataType.INT, 'PlanetID').setValue(4));
@@ -2164,7 +2190,9 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     const quest = cats[0];
     expect(quest.getFieldByLabel('Name')?.getCExoLocString()?.getRESREF()).toBe(33089);
     expect(quest.getFieldByLabel('Priority')?.getValue()).toBe(1);
-    expect(quest.getFieldByLabel('Comment')?.getValue()).toBe('Plot to be considered worthy to hear the Sand People history.');
+    expect(quest.getFieldByLabel('Comment')?.getValue()).toBe(
+      'Plot to be considered worthy to hear the Sand People history.'
+    );
     expect(quest.getFieldByLabel('Tag')?.getValue()).toBe('Tat20aa_worthy');
     expect(quest.getFieldByLabel('PlotIndex')?.getValue()).toBe(72);
     expect(quest.getFieldByLabel('PlanetID')?.getValue()).toBe(4);
@@ -2191,7 +2219,9 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
   it('JRL: entry ID, End flag and XP_Percentage survive binary round-trip', () => {
     const gff = new GFFObject(buildJRLGff().getExportBuffer());
     const entries = gff.RootNode.getFieldByLabel('Categories')!
-      .getChildStructs()[0].getFieldByLabel('EntryList')!.getChildStructs();
+      .getChildStructs()[0]
+      .getFieldByLabel('EntryList')!
+      .getChildStructs();
     expect(entries[0].getFieldByLabel('ID')?.getValue()).toBe(10);
     expect(entries[1].getFieldByLabel('ID')?.getValue()).toBe(20);
     expect(entries[1].getFieldByLabel('End')?.getValue()).toBe(1);
@@ -2236,7 +2266,7 @@ describe('GFF generics (vendor parity: test_utc, test_are, test_uti, test_utd, t
     // Path_Conections — 8 edges
     const conns = new GFFField(GFFDataType.LIST, 'Path_Conections');
     const connDests = [1, 2, 0, 2, 3, 0, 1, 1];
-    connDests.forEach(dest => {
+    connDests.forEach((dest) => {
       const s = new GFFStruct(3);
       s.addField(new GFFField(GFFDataType.DWORD, 'Destination').setValue(dest));
       conns.addChildStruct(s);

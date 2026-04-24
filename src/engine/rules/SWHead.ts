@@ -1,10 +1,10 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from '@/resource/TwoDAObject';
 
 /**
  * Head texture for NPCs
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SWHead.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -19,10 +19,10 @@ export class SWHead {
   headtexg: string;
   headtexvg: string;
 
-  getTextureGoodEvil(nGoodEvil: number){
+  getTextureGoodEvil(nGoodEvil: number) {
     nGoodEvil = nGoodEvil > 50 ? 50 : nGoodEvil;
-    const evilIndex = Math.floor(nGoodEvil/10);
-    switch(evilIndex){
+    const evilIndex = Math.floor(nGoodEvil / 10);
+    switch (evilIndex) {
       case 0:
         return this.headtexvvve?.length ? this.headtexvvve : this.head;
       case 1:
@@ -34,21 +34,32 @@ export class SWHead {
       case 4:
         return this.head;
       default:
-        return this.head; 
+        return this.head;
     }
   }
 
-  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number>): SWHead {
+  static From2DA(row: import('@/resource/TwoDAObject').ITwoDARowData | Record<string, string | number>): SWHead {
     const head = new SWHead();
-    head.id = TwoDAObject.normalizeValue(row.__index, "number", -1);
-    head.head = (TwoDAObject.normalizeValue(row.head, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
-    head.headtexvvve = (TwoDAObject.normalizeValue(row.headtexvvve, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
-    head.headtexvve = (TwoDAObject.normalizeValue(row.headtexvve, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
-    head.headtexve = (TwoDAObject.normalizeValue(row.headtexve, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
-    head.headtexe = (TwoDAObject.normalizeValue(row.headtexe, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
-    head.headtexg = (TwoDAObject.normalizeValue(row.headtexg, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
-    head.headtexvg = (TwoDAObject.normalizeValue(row.headtexvg, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
+    head.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
+    head.head = (TwoDAObject.normalizeValue(row.head, 'string', '') as string).replace(/\0[\s\S]*$/g, '').toLowerCase();
+    head.headtexvvve = (TwoDAObject.normalizeValue(row.headtexvvve, 'string', '') as string)
+      .replace(/\0[\s\S]*$/g, '')
+      .toLowerCase();
+    head.headtexvve = (TwoDAObject.normalizeValue(row.headtexvve, 'string', '') as string)
+      .replace(/\0[\s\S]*$/g, '')
+      .toLowerCase();
+    head.headtexve = (TwoDAObject.normalizeValue(row.headtexve, 'string', '') as string)
+      .replace(/\0[\s\S]*$/g, '')
+      .toLowerCase();
+    head.headtexe = (TwoDAObject.normalizeValue(row.headtexe, 'string', '') as string)
+      .replace(/\0[\s\S]*$/g, '')
+      .toLowerCase();
+    head.headtexg = (TwoDAObject.normalizeValue(row.headtexg, 'string', '') as string)
+      .replace(/\0[\s\S]*$/g, '')
+      .toLowerCase();
+    head.headtexvg = (TwoDAObject.normalizeValue(row.headtexvg, 'string', '') as string)
+      .replace(/\0[\s\S]*$/g, '')
+      .toLowerCase();
     return head;
   }
-
 }

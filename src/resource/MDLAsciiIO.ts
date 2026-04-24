@@ -260,7 +260,9 @@ function writeNodeAscii(lines: string[], indent: number, node: MDLNode): void {
   lines.push(`${pad}{`);
   lines.push(`${pad}  parent NULL`);
   lines.push(`${pad}  position${fmt(node.position.x)}${fmt(node.position.y)}${fmt(node.position.z)}`);
-  lines.push(`${pad}  orientation${fmt(node.orientation.x)}${fmt(node.orientation.y)}${fmt(node.orientation.z)}${fmt(node.orientation.w)}`);
+  lines.push(
+    `${pad}  orientation${fmt(node.orientation.x)}${fmt(node.orientation.y)}${fmt(node.orientation.z)}${fmt(node.orientation.w)}`
+  );
   lines.push(`${pad}}`);
   for (const child of node.children) {
     writeNodeAscii(lines, indent, child);

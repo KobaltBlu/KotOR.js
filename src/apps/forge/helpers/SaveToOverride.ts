@@ -3,7 +3,7 @@
  * Used when saving a resource as a standalone file (e.g. override/module_name/resref.ext).
  */
 
-import { ResourceTypes } from "@/resource/ResourceTypes";
+import { ResourceTypes } from '@/resource/ResourceTypes';
 
 export interface SaveToOverrideOptions {
   resref: string;
@@ -24,33 +24,31 @@ export interface SaveToOverrideOptions {
  */
 export async function saveResourceToOverride(options: SaveToOverrideOptions): Promise<string> {
   const { resref, resType, data, outputDir, outputDirHandle, ext } = options;
-  const extension = ext ?? ResourceTypes.getKeyByValue(resType) ?? "res";
+  const extension = ext ?? ResourceTypes.getKeyByValue(resType) ?? 'res';
   const fileName = `${resref}.${extension}`;
 
-  const useFs = outputDir && typeof process !== "undefined" && process.versions?.node != null;
-  const useHandle = outputDirHandle && typeof outputDirHandle.getFileHandle === "function";
+  const useFs = outputDir && typeof process !== 'undefined' && process.versions?.node != null;
+  const useHandle = outputDirHandle && typeof outputDirHandle.getFileHandle === 'function';
 
   if (!useFs && !useHandle) {
     throw new Error(
-      "Save to Override requires Electron (outputDir) or browser with File System Access (outputDirHandle)."
+      'Save to Override requires Electron (outputDir) or browser with File System Access (outputDirHandle).'
     );
   }
 
   if (useFs && outputDir) {
-    type FsModule = typeof import("fs");
-    type PathModule = typeof import("path");
-    const fsMod = (await import("fs")) as FsModule;
-    const pathMod = (await import("path")) as PathModule;
+    type FsModule = typeof import('fs');
+    type PathModule = typeof import('path');
+    const fsMod = (await import('fs')) as FsModule;
+    const pathMod = (await import('path')) as PathModule;
     const fullPath = pathMod.join(outputDir, fileName);
     if (fsMod.promises?.mkdir) await fsMod.promises.mkdir(outputDir, { recursive: true });
     await fsMod.promises.writeFile(fullPath, Buffer.from(data));
     return fullPath;
   }
 
-  const handle = outputDirHandle
-    ? await outputDirHandle.getFileHandle(fileName, { create: true })
-    : null;
-  if (!handle) throw new Error("outputDirHandle is required when not using Node fs.");
+  const handle = outputDirHandle ? await outputDirHandle.getFileHandle(fileName, { create: true }) : null;
+  if (!handle) throw new Error('outputDirHandle is required when not using Node fs.');
   const writable = await (handle as FileSystemFileHandle).createWritable();
   await writable.write(data as FileSystemWriteChunkType);
   await writable.close();

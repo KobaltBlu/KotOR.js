@@ -13,18 +13,20 @@ import { DLGValidation, ValidationSeverity } from '@/apps/forge/utils/DLGValidat
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeEntry(opts: {
-  text?: string;
-  speakerTag?: string;
-  vo_resref?: string;
-  sound?: string;
-  replies?: any[];
-  index?: number;
-  script?: any;
-  script2?: any;
-  isActive?: any;
-  isActive2?: any;
-} = {}): any {
+function makeEntry(
+  opts: {
+    text?: string;
+    speakerTag?: string;
+    vo_resref?: string;
+    sound?: string;
+    replies?: any[];
+    index?: number;
+    script?: any;
+    script2?: any;
+    isActive?: any;
+    isActive2?: any;
+  } = {}
+): any {
   return {
     nodeType: DLGNodeType.ENTRY,
     text: opts.text ?? 'Greetings',
@@ -41,13 +43,15 @@ function makeEntry(opts: {
   };
 }
 
-function makeReply(opts: {
-  text?: string;
-  entries?: any[];
-  index?: number;
-  script?: any;
-  isActive?: any;
-} = {}): any {
+function makeReply(
+  opts: {
+    text?: string;
+    entries?: any[];
+    index?: number;
+    script?: any;
+    isActive?: any;
+  } = {}
+): any {
   return {
     nodeType: DLGNodeType.REPLY,
     text: opts.text ?? 'Player response',
@@ -81,13 +85,15 @@ function makeStarting(entries: any[]): any {
   };
 }
 
-function makeDlg(opts: {
-  startingList?: any[];
-  entryList?: any[];
-  replyList?: any[];
-  vo_id?: string;
-  scripts?: any;
-} = {}): any {
+function makeDlg(
+  opts: {
+    startingList?: any[];
+    entryList?: any[];
+    replyList?: any[];
+    vo_id?: string;
+    scripts?: any;
+  } = {}
+): any {
   return {
     startingList: opts.startingList ?? [],
     entryList: opts.entryList ?? [],
@@ -125,10 +131,8 @@ describe('DLGValidation', () => {
       const v = new DLGValidation(makeDlg());
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'NO_STARTING_NODES')).toBe(true);
-      expect(issues.find(i => i.code === 'NO_STARTING_NODES')!.severity).toBe(
-        ValidationSeverity.Error,
-      );
+      expect(issues.some((i) => i.code === 'NO_STARTING_NODES')).toBe(true);
+      expect(issues.find((i) => i.code === 'NO_STARTING_NODES')!.severity).toBe(ValidationSeverity.Error);
     });
 
     it('reports STARTING_NO_ENTRIES error when a starting node has no entries', () => {
@@ -136,7 +140,7 @@ describe('DLGValidation', () => {
       const v = new DLGValidation(makeDlg({ startingList: [empty] }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'STARTING_NO_ENTRIES')).toBe(true);
+      expect(issues.some((i) => i.code === 'STARTING_NO_ENTRIES')).toBe(true);
     });
 
     it('does not report STARTING_NO_ENTRIES when the starting node has entries', () => {
@@ -144,12 +148,10 @@ describe('DLGValidation', () => {
       const starting = makeStarting([entry]);
       entry.replies = [makeReply({ entries: [] })];
       entry.replies[0].text = 'farewell';
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry] }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'STARTING_NO_ENTRIES')).toBe(false);
+      expect(issues.some((i) => i.code === 'STARTING_NO_ENTRIES')).toBe(false);
     });
   });
 
@@ -159,12 +161,10 @@ describe('DLGValidation', () => {
       entry.replies = [makeReply({ entries: [] })];
       entry.replies[0].text = 'farewell';
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry] }));
       const issues = v.validate();
 
-      const emptyTextIssue = issues.filter(i => i.code === 'EMPTY_TEXT' && i.nodeType === DLGNodeType.ENTRY);
+      const emptyTextIssue = issues.filter((i) => i.code === 'EMPTY_TEXT' && i.nodeType === DLGNodeType.ENTRY);
       expect(emptyTextIssue.length).toBeGreaterThan(0);
       expect(emptyTextIssue[0].severity).toBe(ValidationSeverity.Warning);
     });
@@ -174,12 +174,10 @@ describe('DLGValidation', () => {
       entry.replies = [makeReply({ entries: [] })];
       entry.replies[0].text = 'farewell';
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry] }));
       const issues = v.validate();
 
-      const noSpeaker = issues.filter(i => i.code === 'NO_SPEAKER');
+      const noSpeaker = issues.filter((i) => i.code === 'NO_SPEAKER');
       expect(noSpeaker.length).toBeGreaterThan(0);
     });
 
@@ -188,12 +186,10 @@ describe('DLGValidation', () => {
       entry.replies = [makeReply({ entries: [] })];
       entry.replies[0].text = 'farewell';
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry], vo_id: 'tar03' }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry], vo_id: 'tar03' }));
       const issues = v.validate();
 
-      const noVO = issues.filter(i => i.code === 'NO_VO');
+      const noVO = issues.filter((i) => i.code === 'NO_VO');
       expect(noVO.length).toBeGreaterThan(0);
       expect(noVO[0].severity).toBe(ValidationSeverity.Info);
     });
@@ -203,35 +199,29 @@ describe('DLGValidation', () => {
       entry.replies = [makeReply({ entries: [] })];
       entry.replies[0].text = 'farewell';
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry], vo_id: '' }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry], vo_id: '' }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'NO_VO')).toBe(false);
+      expect(issues.some((i) => i.code === 'NO_VO')).toBe(false);
     });
 
     it('reports NO_REPLIES warning for an entry with no replies not marked as end', () => {
       const entry = makeEntry({ text: 'Hello', speakerTag: 'NPC', index: 0 });
       // No replies and text is not 'farewell'/'goodbye'/'[end]' → not an end node
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry] }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'NO_REPLIES')).toBe(true);
+      expect(issues.some((i) => i.code === 'NO_REPLIES')).toBe(true);
     });
 
     it('does NOT report NO_REPLIES for an entry whose text marks it as an end node', () => {
       const entry = makeEntry({ text: 'farewell', speakerTag: 'NPC', index: 0 });
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry] }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'NO_REPLIES')).toBe(false);
+      expect(issues.some((i) => i.code === 'NO_REPLIES')).toBe(false);
     });
   });
 
@@ -241,12 +231,10 @@ describe('DLGValidation', () => {
       reply.text = ''; // explicitly empty
       const entry = makeEntry({ index: 0, replies: [reply] });
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry], replyList: [reply] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry], replyList: [reply] }));
       const issues = v.validate();
 
-      const emptyReply = issues.filter(i => i.code === 'EMPTY_TEXT' && i.nodeType === DLGNodeType.REPLY);
+      const emptyReply = issues.filter((i) => i.code === 'EMPTY_TEXT' && i.nodeType === DLGNodeType.REPLY);
       expect(emptyReply.length).toBeGreaterThan(0);
     });
 
@@ -254,12 +242,10 @@ describe('DLGValidation', () => {
       const reply = makeReply({ text: 'OK', index: 0, entries: [] });
       const entry = makeEntry({ index: 0, replies: [reply] });
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry], replyList: [reply] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry], replyList: [reply] }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'NO_ENTRIES')).toBe(true);
+      expect(issues.some((i) => i.code === 'NO_ENTRIES')).toBe(true);
     });
   });
 
@@ -275,11 +261,11 @@ describe('DLGValidation', () => {
           startingList: [starting],
           entryList: [entry0, orphanEntry],
           replyList: [entry0.replies[0]],
-        }),
+        })
       );
       const issues = v.validate();
 
-      const orphanIssues = issues.filter(i => i.code === 'ORPHAN_NODE' && i.nodeType === DLGNodeType.ENTRY);
+      const orphanIssues = issues.filter((i) => i.code === 'ORPHAN_NODE' && i.nodeType === DLGNodeType.ENTRY);
       expect(orphanIssues.length).toBeGreaterThan(0);
       expect(orphanIssues[0].nodeIndex).toBe(1);
     });
@@ -295,11 +281,11 @@ describe('DLGValidation', () => {
           startingList: [starting],
           entryList: [entry0],
           replyList: [orphanReply],
-        }),
+        })
       );
       const issues = v.validate();
 
-      const orphanReplies = issues.filter(i => i.code === 'ORPHAN_NODE' && i.nodeType === DLGNodeType.REPLY);
+      const orphanReplies = issues.filter((i) => i.code === 'ORPHAN_NODE' && i.nodeType === DLGNodeType.REPLY);
       expect(orphanReplies.length).toBeGreaterThan(0);
     });
 
@@ -307,7 +293,7 @@ describe('DLGValidation', () => {
       const v = new DLGValidation(buildValidDlg());
       const issues = v.validate();
 
-      const orphans = issues.filter(i => i.code === 'ORPHAN_NODE');
+      const orphans = issues.filter((i) => i.code === 'ORPHAN_NODE');
       expect(orphans).toHaveLength(0);
     });
   });
@@ -319,12 +305,10 @@ describe('DLGValidation', () => {
       entry.replies = [makeReply({ entries: [] })];
       entry.replies[0].text = 'farewell';
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry] }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'INVALID_SCRIPT_NAME')).toBe(true);
+      expect(issues.some((i) => i.code === 'INVALID_SCRIPT_NAME')).toBe(true);
     });
 
     it('does NOT report INVALID_SCRIPT_NAME for valid script names', () => {
@@ -333,12 +317,10 @@ describe('DLGValidation', () => {
       entry.replies = [makeReply({ entries: [] })];
       entry.replies[0].text = 'farewell';
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry] }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'INVALID_SCRIPT_NAME')).toBe(false);
+      expect(issues.some((i) => i.code === 'INVALID_SCRIPT_NAME')).toBe(false);
     });
 
     it('validates dialog-level end conversation script name', () => {
@@ -349,7 +331,7 @@ describe('DLGValidation', () => {
       };
       const issues = new DLGValidation(dlg).validate();
 
-      expect(issues.some(i => i.code === 'INVALID_SCRIPT_NAME')).toBe(true);
+      expect(issues.some((i) => i.code === 'INVALID_SCRIPT_NAME')).toBe(true);
     });
   });
 
@@ -359,12 +341,10 @@ describe('DLGValidation', () => {
       entry.replies = [makeReply({ entries: [] })];
       entry.replies[0].text = 'farewell';
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry] }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'INVALID_VO_FORMAT')).toBe(true);
+      expect(issues.some((i) => i.code === 'INVALID_VO_FORMAT')).toBe(true);
     });
 
     it('does NOT report INVALID_VO_FORMAT for valid alphanumeric VO resrefs', () => {
@@ -372,12 +352,10 @@ describe('DLGValidation', () => {
       entry.replies = [makeReply({ entries: [] })];
       entry.replies[0].text = 'farewell';
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry] }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'INVALID_VO_FORMAT')).toBe(false);
+      expect(issues.some((i) => i.code === 'INVALID_VO_FORMAT')).toBe(false);
     });
 
     it('reports INVALID_SOUND_FORMAT for sound names with illegal characters', () => {
@@ -385,12 +363,10 @@ describe('DLGValidation', () => {
       entry.replies = [makeReply({ entries: [] })];
       entry.replies[0].text = 'farewell';
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry] }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'INVALID_SOUND_FORMAT')).toBe(true);
+      expect(issues.some((i) => i.code === 'INVALID_SOUND_FORMAT')).toBe(true);
     });
   });
 
@@ -402,12 +378,10 @@ describe('DLGValidation', () => {
       entry0.replies = [reply0];
 
       const starting = makeStarting([entry0]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry0], replyList: [reply0] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry0], replyList: [reply0] }));
       const issues = v.validate();
 
-      expect(issues.some(i => i.code === 'CIRCULAR_REFERENCE')).toBe(true);
+      expect(issues.some((i) => i.code === 'CIRCULAR_REFERENCE')).toBe(true);
     });
   });
 
@@ -430,17 +404,15 @@ describe('DLGValidation', () => {
       // Actually keep empty text to generate warning:
       entry.text = '';
       const starting = makeStarting([entry]);
-      const v = new DLGValidation(
-        makeDlg({ startingList: [starting], entryList: [entry] }),
-      );
+      const v = new DLGValidation(makeDlg({ startingList: [starting], entryList: [entry] }));
       v.validate();
 
       const errors = v.getIssuesBySeverity(ValidationSeverity.Error);
       const warnings = v.getIssuesBySeverity(ValidationSeverity.Warning);
 
       // starting node has entries, so no STARTING_NO_ENTRIES; entry has no text, no speaker
-      errors.forEach(i => expect(i.severity).toBe(ValidationSeverity.Error));
-      warnings.forEach(i => expect(i.severity).toBe(ValidationSeverity.Warning));
+      errors.forEach((i) => expect(i.severity).toBe(ValidationSeverity.Error));
+      warnings.forEach((i) => expect(i.severity).toBe(ValidationSeverity.Warning));
     });
 
     it('getIssueCount returns correct counts', () => {

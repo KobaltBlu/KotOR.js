@@ -1,17 +1,16 @@
-import type { GUILabel, GUIListBox, GUISlider, GUICheckBox, GUIButton } from "@/gui";
-import { MenuMouse as K1_MenuMouse } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIListBox, GUISlider, GUICheckBox, GUIButton } from '@/gui';
+import { MenuMouse as K1_MenuMouse } from '@/game/kotor/KOTOR';
 
 /**
  * MenuMouse class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuMouse.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuMouse extends K1_MenuMouse {
-
   declare LBL_BAR4: GUILabel;
   declare LBL_TITLE: GUILabel;
   declare LB_DESC: GUIListBox;
@@ -24,7 +23,7 @@ export class MenuMouse extends K1_MenuMouse {
   declare BTN_BACK: GUIButton;
   declare BTN_DEFAULT: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optmouse_p';
     this.background = '';
@@ -33,9 +32,8 @@ export class MenuMouse extends K1_MenuMouse {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
-
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -43,6 +41,4 @@ export class MenuMouse extends K1_MenuMouse {
       resolve();
     });
   }
-  
 }
-

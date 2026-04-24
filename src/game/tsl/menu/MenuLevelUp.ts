@@ -1,17 +1,16 @@
-import type { GUIButton, GUIControl, GUILabel } from "@/gui";
-import { MenuLevelUp as K1_MenuLevelUp } from "@/game/kotor/KOTOR";
+import type { GUIButton, GUIControl, GUILabel } from '@/gui';
+import { MenuLevelUp as K1_MenuLevelUp } from '@/game/kotor/KOTOR';
 
 /**
  * MenuLevelUp class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuLevelUp.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuLevelUp extends K1_MenuLevelUp {
-
   declare BTN_BACK: GUIButton;
   declare LBL_5: GUIControl;
   declare LBL_4: GUIControl;
@@ -29,7 +28,7 @@ export class MenuLevelUp extends K1_MenuLevelUp {
   declare BTN_STEPNAME3: GUIButton;
   declare BTN_STEPNAME5: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'leveluppnl_p';
     this.background = '';
@@ -38,11 +37,9 @@ export class MenuLevelUp extends K1_MenuLevelUp {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
-  
 }
-

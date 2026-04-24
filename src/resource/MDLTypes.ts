@@ -15,7 +15,7 @@ export enum MDLGeometryType {
   Normal = 1,
   Skinned = 2,
   Dangly = 3,
-  Saber = 4
+  Saber = 4,
 }
 
 /** Model classification (usage in game). */
@@ -32,7 +32,7 @@ export enum MDLClassification {
   Lightsaber = 256,
   Waypoint = 512,
   Weapon = 1024,
-  Furniture = 2048
+  Furniture = 2048,
 }
 
 /** Node flags (combined to form node types, e.g. HEADER | MESH = mesh node). */
@@ -47,7 +47,7 @@ export enum MDLNodeFlags {
   Anim = 0x0080,
   Dangly = 0x0100,
   Aabb = 0x0200,
-  Saber = 0x0800
+  Saber = 0x0800,
 }
 
 /** Node type (role in model). */
@@ -63,7 +63,7 @@ export enum MDLNodeType {
   Skin = 9,
   Camera = 10,
   Binary = 11,
-  Saber = 12
+  Saber = 12,
 }
 
 /** Controller types for animations and node properties. */
@@ -126,7 +126,7 @@ export enum MDLControllerType {
   ColorMid = 284,
   ColorEnd = 380,
   ColorStart = 392,
-  Detonate = 502
+  Detonate = 502,
 }
 
 /** Trimesh property flags. */
@@ -135,7 +135,7 @@ export enum MDLTrimeshProps {
   Lightmap = 0x01,
   Compressed = 0x02,
   Unknown = 0x04,
-  Tangents = 0x08
+  Tangents = 0x08,
 }
 
 /** Emitter type. */
@@ -143,7 +143,7 @@ export enum MDLEmitterType {
   Static = 0,
   Fire = 1,
   Fountain = 2,
-  Lightning = 3
+  Lightning = 3,
 }
 
 /** Particle render type. */
@@ -154,7 +154,7 @@ export enum MDLRenderType {
   BillboardToWorldZ = 3,
   AlignedToWorldZ = 4,
   AlignedToParticleDir = 5,
-  MotionBlur = 6
+  MotionBlur = 6,
 }
 
 /** Particle blend type. */
@@ -162,7 +162,7 @@ export enum MDLBlendType {
   Normal = 0,
   Punch = 1,
   Lighten = 2,
-  Multiply = 3
+  Multiply = 3,
 }
 
 /** Particle update type. */
@@ -170,7 +170,7 @@ export enum MDLUpdateType {
   Fountain = 0,
   Single = 1,
   Explosion = 2,
-  Lightning = 3
+  Lightning = 3,
 }
 
 /** Trimesh flags (tile fade, head, render, shadow, etc.). */
@@ -182,7 +182,7 @@ export enum MDLTrimeshFlags {
   Beaming = 0x0010,
   RenderEnvMap = 0x0020,
   Lightmap = 0x0040,
-  Skin = 0x0080
+  Skin = 0x0080,
 }
 
 /** Light flags. */
@@ -191,7 +191,7 @@ export enum MDLLightFlags {
   Shadow = 0x0002,
   Flare = 0x0004,
   Fading = 0x0008,
-  Ambient = 0x0010
+  Ambient = 0x0010,
 }
 
 /** Emitter flags. */
@@ -209,21 +209,21 @@ export enum MDLEmitterFlags {
   Splat = 0x0200,
   InheritPart = 0x0400,
   DepthTexture = 0x0800,
-  Flag13 = 0x1000
+  Flag13 = 0x1000,
 }
 
 /** Saber flags. */
 export enum MDLSaberFlags {
   Flare = 0x0001,
   Dynamic = 0x0002,
-  Trail = 0x0004
+  Trail = 0x0004,
 }
 
 /** Dynamic type for lights. */
 export enum MDLDynamicType {
   Static = 0,
   Dynamic = 1,
-  Animated = 2
+  Animated = 2,
 }
 
 /** Detected MDL file format. */

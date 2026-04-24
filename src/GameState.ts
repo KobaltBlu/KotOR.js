@@ -1,92 +1,115 @@
-﻿import * as THREE from "three";
+﻿import * as THREE from 'three';
 import {
-  AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager,
-  ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
-  VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, CutsceneManager, LegalScreenManager
-} from "@/managers";
+  AppearanceManager,
+  AutoPauseManager,
+  TLKManager,
+  CharGenManager,
+  CheatConsoleManager,
+  CameraShakeManager,
+  ConfigManager,
+  CursorManager,
+  DialogMessageManager,
+  FadeOverlayManager,
+  FeedbackMessageManager,
+  GlobalVariableManager,
+  InventoryManager,
+  JournalManager,
+  LightManager,
+  MenuManager,
+  ModuleObjectManager,
+  PartyManager,
+  ResolutionManager,
+  ShaderManager,
+  TwoDAManager,
+  FactionManager,
+  VideoEffectManager,
+  VideoManager,
+  PazaakManager,
+  UINotificationManager,
+  CutsceneManager,
+  LegalScreenManager,
+} from '@/managers';
 
-import type { SWRuleSet } from "@/engine/rules/SWRuleSet";
+import type { SWRuleSet } from '@/engine/rules/SWRuleSet';
 
-import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "@/talents";
-import type { ModuleObject, ModuleCreature, Module, ModuleDoor } from "@/module";
-import type { NWScript } from "@/nwscript/NWScript";
-import type { SaveGame } from "@/engine/SaveGame";
-import type { GameEffectFactory } from "@/effects/GameEffectFactory";
-import type { GameEventFactory } from "@/events/GameEventFactory";
+import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from '@/talents';
+import type { ModuleObject, ModuleCreature, Module, ModuleDoor } from '@/module';
+import type { NWScript } from '@/nwscript/NWScript';
+import type { SaveGame } from '@/engine/SaveGame';
+import type { GameEffectFactory } from '@/effects/GameEffectFactory';
+import type { GameEventFactory } from '@/events/GameEventFactory';
 
-import type { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
-import type { ActionFactory } from "@/actions/ActionFactory";
+import type { ActionMenuManager } from '@/engine/menu/ActionMenuManager';
+import type { ActionFactory } from '@/actions/ActionFactory';
 
-import { IngameControls } from "@/controls/IngameControls";
+import { IngameControls } from '@/controls/IngameControls';
 // import { Mouse } from "@/controls/Mouse";
 
-import { INIConfig } from "@/engine/INIConfig";
+import { INIConfig } from '@/engine/INIConfig';
 
 // import { OdysseyObject3D } from "@/three/odyssey";
-import { AudioEngine, AudioEmitter } from "@/audio";
-import { TGAObject } from "@/resource/TGAObject";
+import { AudioEngine, AudioEmitter } from '@/audio';
+import { TGAObject } from '@/resource/TGAObject';
 
-import { IGameStateGroups } from "@/interface/engine/IGameStateGroups";
-import { ITextureLoaderQueuedRef } from "@/interface/loaders/ITextureLoaderQueuedRef";
+import { IGameStateGroups } from '@/interface/engine/IGameStateGroups';
+import { ITextureLoaderQueuedRef } from '@/interface/loaders/ITextureLoaderQueuedRef';
 
-import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
-import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "@/enums/engine";
-import { TextureType } from "@/enums/loaders/TextureType";
+import { AudioEngineChannel } from '@/enums/audio/AudioEngineChannel';
+import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from '@/enums/engine';
+import { TextureType } from '@/enums/loaders/TextureType';
 
-import { EngineContext } from "@/engine/EngineContext";
+import { EngineContext } from '@/engine/EngineContext';
 
-import { ConfigClient } from "@/utility/ConfigClient";
-import { FollowerCamera } from "@/engine/FollowerCamera";
-import { OdysseyShaderPass } from "@/shaders/pass/OdysseyShaderPass";
-import { ResourceLoader, TextureLoader } from "@/loaders";
+import { ConfigClient } from '@/utility/ConfigClient';
+import { FollowerCamera } from '@/engine/FollowerCamera';
+import { OdysseyShaderPass } from '@/shaders/pass/OdysseyShaderPass';
+import { ResourceLoader, TextureLoader } from '@/loaders';
 
 //THREE.js imports
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
-import { SSAARenderPass } from "three/examples/jsm/postprocessing/SSAARenderPass";
-import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
-import { AfterimagePass } from "three/examples/jsm/postprocessing/AfterimagePass";
-import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass";
-import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
-import { ColorCorrectionShader } from "three/examples/jsm/shaders/ColorCorrectionShader";
-import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
-import Stats from 'three/examples/jsm/libs/stats.module'
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import { SSAARenderPass } from 'three/examples/jsm/postprocessing/SSAARenderPass';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
+import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass';
+import { BloomPass } from 'three/examples/jsm/postprocessing/BloomPass';
+import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass';
+import { ColorCorrectionShader } from 'three/examples/jsm/shaders/ColorCorrectionShader';
+import { CopyShader } from 'three/examples/jsm/shaders/CopyShader';
+import Stats from 'three/examples/jsm/libs/stats.module';
 // import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import { AudioEmitterType } from '@/enums/audio/AudioEmitterType';
 // import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 
 // import { ModuleTriggerType } from "@/enums";
-import { Planetary } from "@/engine/Planetary";
-import { Debugger } from "@/engine/Debugger";
-import { DebuggerState } from "@/enums/server/DebuggerState";
-import type { IPCMessage } from "@/server/ipc/IPCMessage";
-import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
-import { IPCMessageTypeDebug } from "@/enums/server/ipc/IPCMessageTypeDebug";
-import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
+import { Planetary } from '@/engine/Planetary';
+import { Debugger } from '@/engine/Debugger';
+import { DebuggerState } from '@/enums/server/DebuggerState';
+import type { IPCMessage } from '@/server/ipc/IPCMessage';
+import { IPCMessageType } from '@/enums/server/ipc/IPCMessageType';
+import { IPCMessageTypeDebug } from '@/enums/server/ipc/IPCMessageTypeDebug';
+import { PerformanceMonitor } from '@/utility/PerformanceMonitor';
 
 export interface GameStateInitializeOptions {
-  Game: GameEngineType,
-  GameDirectory: string, //path to the local game install directory
-  Env: GameEngineEnv,
-};
+  Game: GameEngineType;
+  GameDirectory: string; //path to the local game install directory
+  Env: GameEngineEnv;
+}
 
 const namedGroup = (name: string = 'na'): THREE.Group => {
   const group = new THREE.Group();
   group.name = name;
   return group;
-}
+};
 
 export class GameState implements EngineContext {
-
   static eventListeners: any = {
-    "init": [],
-    "start": [],
-    "ready": [],
+    init: [],
+    start: [],
+    ready: [],
 
-    "beforeRender": [],
-    "afterRender": [],
+    beforeRender: [],
+    afterRender: [],
     // "mgPazaakStart": []
   };
 
@@ -161,10 +184,10 @@ export class GameState implements EngineContext {
     LogScripts: false,
     EnableOverride: false,
     WalkmeshVisible: false,
-    CombatEnabled: false
-  }
+    CombatEnabled: false,
+  };
   static debugMode = false;
-  static debug: {[key in EngineDebugType]: boolean} = {
+  static debug: { [key in EngineDebugType]: boolean } = {
     CONTROLS: false,
     SELECTED_OBJECT: false,
     OBJECT_LABELS: false,
@@ -172,7 +195,7 @@ export class GameState implements EngineContext {
 
     ROOM_WALKMESH: false,
     DOOR_WALKMESH: false,
-    PLACEABLE_WALKMESH: false
+    PLACEABLE_WALKMESH: false,
   };
 
   static IsPaused = false;
@@ -250,25 +273,25 @@ export class GameState implements EngineContext {
   static walkmeshList: any[];
 
   static group: IGameStateGroups = {
-    creatures: new THREE.Group,
-    doors: new THREE.Group,
-    placeables: new THREE.Group,
-    rooms: new THREE.Group,
-    grass: new THREE.Group,
-    sounds: new THREE.Group,
-    triggers: new THREE.Group,
-    waypoints: new THREE.Group,
-    party: new THREE.Group,
-    lights: new THREE.Group,
-    light_helpers: new THREE.Group,
-    shadow_lights: new THREE.Group,
-    path_helpers: new THREE.Group,
-    emitters: new THREE.Group,
-    effects: new THREE.Group,
-    stunt: new THREE.Group,
-    weather_effects: new THREE.Group,
-    room_walkmeshes: new THREE.Group,
-    spell_instances: new THREE.Group,
+    creatures: new THREE.Group(),
+    doors: new THREE.Group(),
+    placeables: new THREE.Group(),
+    rooms: new THREE.Group(),
+    grass: new THREE.Group(),
+    sounds: new THREE.Group(),
+    triggers: new THREE.Group(),
+    waypoints: new THREE.Group(),
+    party: new THREE.Group(),
+    lights: new THREE.Group(),
+    light_helpers: new THREE.Group(),
+    shadow_lights: new THREE.Group(),
+    path_helpers: new THREE.Group(),
+    emitters: new THREE.Group(),
+    effects: new THREE.Group(),
+    stunt: new THREE.Group(),
+    weather_effects: new THREE.Group(),
+    room_walkmeshes: new THREE.Group(),
+    spell_instances: new THREE.Group(),
   };
 
   static interactableObjects: any[];
@@ -297,61 +320,84 @@ export class GameState implements EngineContext {
 
   static loadingTextures: boolean;
 
-  static preloadTextures: string[] = ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
-    'fx_tex_09', 'fx_tex_10', 'fx_tex_11', 'fx_tex_12', 'fx_tex_13', 'fx_tex_14', 'fx_tex_15', 'fx_tex_16',
-    'fx_tex_17', 'fx_tex_18', 'fx_tex_19', 'fx_tex_20', 'fx_tex_21', 'fx_tex_22', 'fx_tex_23', 'fx_tex_24',
-    'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth'];
+  static preloadTextures: string[] = [
+    'fx_tex_01',
+    'fx_tex_02',
+    'fx_tex_03',
+    'fx_tex_04',
+    'fx_tex_05',
+    'fx_tex_06',
+    'fx_tex_07',
+    'fx_tex_08',
+    'fx_tex_09',
+    'fx_tex_10',
+    'fx_tex_11',
+    'fx_tex_12',
+    'fx_tex_13',
+    'fx_tex_14',
+    'fx_tex_15',
+    'fx_tex_16',
+    'fx_tex_17',
+    'fx_tex_18',
+    'fx_tex_19',
+    'fx_tex_20',
+    'fx_tex_21',
+    'fx_tex_22',
+    'fx_tex_23',
+    'fx_tex_24',
+    'fx_tex_25',
+    'fx_tex_26',
+    'fx_tex_stealth',
+  ];
 
   static domElement: HTMLElement;
 
-  static GetDebugState(type: EngineDebugType){
+  static GetDebugState(type: EngineDebugType) {
     return !!this.debug[type];
   }
 
-  static ToggleDebugState(type: EngineDebugType){
+  static ToggleDebugState(type: EngineDebugType) {
     GameState.SetDebugState(type, !this.debug[type]);
   }
 
-  static SetDebugState(type: EngineDebugType, enabled: boolean){
+  static SetDebugState(type: EngineDebugType, enabled: boolean) {
     this.debug[type] = enabled;
-    switch(type){
+    switch (type) {
       case EngineDebugType.PATH_FINDING:
-        if(!GameState?.module?.area?.path)
-          return;
+        if (!GameState?.module?.area?.path) return;
 
         GameState.module.area.path.setPathHelpersVisibility(enabled);
 
-        for(let i = 0; i < GameState.module.area.creatures.length; i++){
-          const creature = GameState.module.area.creatures[i]
-          if(!creature.getComputedPath()?.helperMesh){
+        for (let i = 0; i < GameState.module.area.creatures.length; i++) {
+          const creature = GameState.module.area.creatures[i];
+          if (!creature.getComputedPath()?.helperMesh) {
             continue;
           }
           creature.getComputedPath().helperMesh.visible = enabled;
         }
 
-        for(let i = 0; i < GameState.PartyManager.party.length; i++){
-          const creature = GameState.PartyManager.party[i]
-          if(!creature.getComputedPath()?.helperMesh){
+        for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+          const creature = GameState.PartyManager.party[i];
+          if (!creature.getComputedPath()?.helperMesh) {
             continue;
           }
           creature.getComputedPath().helperMesh.visible = enabled;
         }
-      break;
+        break;
       case EngineDebugType.OBJECT_LABELS:
-        if(!GameState?.module?.area)
-          return;
+        if (!GameState?.module?.area) return;
 
-        for(let i = 0; i < GameState.module.area.creatures.length; i++){
-          const creature = GameState.module.area.creatures[i]
-          if(!creature.debugLabel){
+        for (let i = 0; i < GameState.module.area.creatures.length; i++) {
+          const creature = GameState.module.area.creatures[i];
+          if (!creature.debugLabel) {
             continue;
           }
           creature.debugLabel.container.visible = enabled;
         }
 
-        for(let i = 0; i < GameState.PartyManager.party.length; i++){
-          const creature = GameState.PartyManager.party[i]
-          if(!creature.debugLabel){
+        for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+          const creature = GameState.PartyManager.party[i];
+          if (!creature.debugLabel) {
             continue;
           }
           creature.debugLabel.container.visible = enabled;
@@ -380,40 +426,39 @@ export class GameState implements EngineContext {
         //   }
         //   creature.debugLabel.container.visible = enabled;
         // }
-      break;
+        break;
     }
   }
 
-  static addEventListener(event: string, callback: Function){
-    if(GameState.eventListeners.hasOwnProperty(event)){
+  static addEventListener(event: string, callback: Function) {
+    if (GameState.eventListeners.hasOwnProperty(event)) {
       const callbacks: any[] = GameState.eventListeners[event];
-      if(callbacks){
+      if (callbacks) {
         callbacks.push(callback);
       }
     }
   }
 
-  static processEventListener(event: string, args: any[] = []){
-    if(GameState.eventListeners.hasOwnProperty(event)){
+  static processEventListener(event: string, args: any[] = []) {
+    if (GameState.eventListeners.hasOwnProperty(event)) {
       const callbacks = GameState.eventListeners[event];
-      if(callbacks && callbacks.length){
-        for(let i = 0, len = callbacks.length; i < len; i++){
+      if (callbacks && callbacks.length) {
+        for (let i = 0, len = callbacks.length; i < len; i++) {
           const cb = callbacks[i];
-          if(typeof cb === 'function')
-            cb(...args);
+          if (typeof cb === 'function') cb(...args);
         }
       }
     }
   }
 
-  static setDOMElement(element: HTMLElement){
+  static setDOMElement(element: HTMLElement) {
     GameState.domElement = element;
   }
 
   /**
    * Initialize the GameState
    */
-  static async Init(){
+  static async Init() {
     GameState.Debugger.addEventListener('open', () => {
       console.log('Debugger: Open');
       GameState.debugMode = true;
@@ -423,24 +468,24 @@ export class GameState implements EngineContext {
       GameState.debugMode = false;
     });
     GameState.Debugger.addEventListener('message', (msg: IPCMessage) => {
-      if(msg.type == IPCMessageType.SetScriptBreakpoint){
+      if (msg.type == IPCMessageType.SetScriptBreakpoint) {
         const instanceUUID = msg.getParam(0).getString();
         const address = msg.getParam(1).getInt32();
         const instance = GameState.NWScript.NWScriptInstanceMap.get(instanceUUID);
-        if(instance){
-          console.log("Setting breakpoint", address, "on instance", instanceUUID);
+        if (instance) {
+          console.log('Setting breakpoint', address, 'on instance', instanceUUID);
           instance.setBreakpoint(address);
         }
-      }else if(msg.type == IPCMessageType.RemoveScriptBreakpoint){
+      } else if (msg.type == IPCMessageType.RemoveScriptBreakpoint) {
         const instanceUUID = msg.getParam(0).getString();
         const address = msg.getParam(1).getInt32();
         const instance = GameState.NWScript.NWScriptInstanceMap.get(instanceUUID);
-        if(instance){
-          console.log("Removing breakpoint", address, "on instance", instanceUUID);
+        if (instance) {
+          console.log('Removing breakpoint', address, 'on instance', instanceUUID);
           instance.removeBreakpoint(address);
         }
-      }else if(msg.type == IPCMessageType.ContinueScript){
-        if(GameState.Debugger.currentScript && GameState.Debugger.currentInstruction){
+      } else if (msg.type == IPCMessageType.ContinueScript) {
+        if (GameState.Debugger.currentScript && GameState.Debugger.currentInstruction) {
           const instruction = GameState.Debugger.currentInstruction;
           const seek = instruction.address;
           GameState.Debugger.currentInstruction = undefined;
@@ -448,8 +493,8 @@ export class GameState implements EngineContext {
           GameState.Debugger.currentScript.seekTo(seek);
           GameState.Debugger.currentScript.runScript(true);
         }
-      }else if(msg.type == IPCMessageType.StepOverInstruction){
-        if(GameState.Debugger.currentScript && GameState.Debugger.currentInstruction){
+      } else if (msg.type == IPCMessageType.StepOverInstruction) {
+        if (GameState.Debugger.currentScript && GameState.Debugger.currentInstruction) {
           const instruction = GameState.Debugger.currentInstruction;
           const seek = instruction.address;
           GameState.Debugger.currentInstruction = undefined;
@@ -457,7 +502,7 @@ export class GameState implements EngineContext {
           GameState.Debugger.currentScript.seekTo(seek);
           GameState.Debugger.currentScript.runScript(true);
         }
-      }else if(msg.type == IPCMessageType.Debug && msg.subType == IPCMessageTypeDebug.ToggleDebugState){
+      } else if (msg.type == IPCMessageType.Debug && msg.subType == IPCMessageTypeDebug.ToggleDebugState) {
         const type = msg.getParam(0).getString();
         GameState.ToggleDebugState(type as EngineDebugType);
       }
@@ -474,12 +519,12 @@ export class GameState implements EngineContext {
     GameState.deltaTimeFixed = 0;
     GameState.tickAccumulator = 0; // Fixed 60-tick accumulator
 
-    GameState.canvas = document.createElement( 'canvas' );
+    GameState.canvas = document.createElement('canvas');
     //GameState.canvas = GameState.renderer.domElement;
 
     GameState.canvas.classList.add('noselect');
     GameState.canvas.setAttribute('tabindex', '1');
-    if(GameState.domElement){
+    if (GameState.domElement) {
       GameState.domElement.appendChild(GameState.canvas);
     }
 
@@ -488,7 +533,7 @@ export class GameState implements EngineContext {
 
     GameState.canvas.style.setProperty('width', '0');
     GameState.canvas.style.setProperty('height', '0');
-    GameState.context = GameState.canvas.getContext( 'webgl' );
+    GameState.context = GameState.canvas.getContext('webgl');
 
     GameState.rendererUpscaleFactor = 1;
     GameState.renderer = new THREE.WebGLRenderer({
@@ -497,20 +542,29 @@ export class GameState implements EngineContext {
       context: GameState.context,
       logarithmicDepthBuffer: true,
       alpha: true,
-      preserveDrawingBuffer: false
+      preserveDrawingBuffer: false,
     }) as THREE.WebGLRenderer;
 
-
     GameState.renderer.autoClear = false;
-    GameState.renderer.setSize( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight() );
+    GameState.renderer.setSize(
+      GameState.ResolutionManager.getViewportWidth(),
+      GameState.ResolutionManager.getViewportHeight()
+    );
     GameState.renderer.setClearColor(0x000000);
 
     let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
-		GameState.depthTarget = new THREE.WebGLRenderTarget( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight(), pars );
+    GameState.depthTarget = new THREE.WebGLRenderTarget(
+      GameState.ResolutionManager.getViewportWidth(),
+      GameState.ResolutionManager.getViewportHeight(),
+      pars
+    );
     GameState.depthTarget.texture.generateMipmaps = false;
     GameState.depthTarget.stencilBuffer = false;
     GameState.depthTarget.depthBuffer = true;
-    GameState.depthTarget.depthTexture = new THREE.DepthTexture(GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight());
+    GameState.depthTarget.depthTexture = new THREE.DepthTexture(
+      GameState.ResolutionManager.getViewportWidth(),
+      GameState.ResolutionManager.getViewportHeight()
+    );
     GameState.depthTarget.depthTexture.type = THREE.UnsignedShortType;
 
     GameState.clock = new THREE.Clock();
@@ -518,16 +572,16 @@ export class GameState implements EngineContext {
     GameState.stats.showPanel(undefined);
 
     GameState.limiter = {
-      fps : 30,
-      fpsInterval: 1000/30,
+      fps: 30,
+      fpsInterval: 1000 / 30,
       startTime: Date.now(),
       now: 0,
       then: 0,
       elapsed: 0,
-      setFPS: function(fps = 30){
+      setFPS: function (fps = 30) {
         this.fps = fps;
         this.fpsInterval = 1000 / this.fps;
-      }
+      },
     };
 
     GameState.limiter.then = GameState.limiter.startTime;
@@ -543,27 +597,38 @@ export class GameState implements EngineContext {
     GameState.frustumMat4 = new THREE.Matrix4();
     GameState.camera = FollowerCamera.camera;
 
-    GameState.camera_dialog = new THREE.PerspectiveCamera( 55, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.01, 15000 );
-    GameState.camera_dialog.up = new THREE.Vector3( 0, 0, 1 );
-    GameState.camera_animated = new THREE.PerspectiveCamera( 55, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.01, 15000 );
-    GameState.camera_animated.up = new THREE.Vector3( 0, 1, 0 );
-    GameState.camera.up = new THREE.Vector3( 0, 0, 1 );
-    GameState.camera.position.set( .1, 5, 1 );              // offset the camera a bit
-    GameState.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
+    GameState.camera_dialog = new THREE.PerspectiveCamera(
+      55,
+      GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(),
+      0.01,
+      15000
+    );
+    GameState.camera_dialog.up = new THREE.Vector3(0, 0, 1);
+    GameState.camera_animated = new THREE.PerspectiveCamera(
+      55,
+      GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(),
+      0.01,
+      15000
+    );
+    GameState.camera_animated.up = new THREE.Vector3(0, 1, 0);
+    GameState.camera.up = new THREE.Vector3(0, 0, 1);
+    GameState.camera.position.set(0.1, 5, 1); // offset the camera a bit
+    GameState.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
     GameState.camera_gui = new THREE.OrthographicCamera(
       GameState.ResolutionManager.getViewportWidth() / -2,
       GameState.ResolutionManager.getViewportWidth() / 2,
       GameState.ResolutionManager.getViewportHeight() / 2,
       GameState.ResolutionManager.getViewportHeight() / -2,
-      1, 1000
+      1,
+      1000
     );
-    GameState.camera_gui.up = new THREE.Vector3( 0, 0, 1 );
+    GameState.camera_gui.up = new THREE.Vector3(0, 0, 1);
     GameState.camera_gui.position.z = 500;
     GameState.camera_gui.updateProjectionMatrix();
-    GameState.scene_gui.add(new THREE.AmbientLight(0x60534A));
+    GameState.scene_gui.add(new THREE.AmbientLight(0x60534a));
 
-    FollowerCamera.facing = Math.PI/2;
+    FollowerCamera.facing = Math.PI / 2;
     FollowerCamera.speed = 0;
 
     //Static Camera's that are in the .git file of the module
@@ -577,16 +642,16 @@ export class GameState implements EngineContext {
     GameState.viewportProjectionMatrix = new THREE.Matrix4();
 
     //0x60534A
-    GameState.globalLight = new THREE.AmbientLight(0xFFFFFF);
+    GameState.globalLight = new THREE.AmbientLight(0xffffff);
     GameState.globalLight.position.x = 0;
     GameState.globalLight.position.y = 0;
     GameState.globalLight.position.z = 0;
-    GameState.globalLight.intensity  = 1;
+    GameState.globalLight.intensity = 1;
 
     GameState.scene.add(GameState.globalLight);
 
     GameState.currentLeader = undefined;
-    GameState.playerFeetOffset = new THREE.Vector3(0,0,1);
+    GameState.playerFeetOffset = new THREE.Vector3(0, 0, 1);
 
     GameState.collisionList = [];
     GameState.walkmeshList = [];
@@ -642,7 +707,7 @@ export class GameState implements EngineContext {
       GameState.group.creatures,
       GameState.group.party,
       //GameState.group.rooms
-      GameState.group.room_walkmeshes
+      GameState.group.room_walkmeshes,
     ];
 
     GameState.scene_cursor_holder = new THREE.Group();
@@ -651,7 +716,7 @@ export class GameState implements EngineContext {
     //BEGIN: PostProcessing
     GameState.composer = new EffectComposer(GameState.renderer);
     GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
-    GameState.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
+    GameState.renderPassAA = new SSAARenderPass(GameState.scene, GameState.currentCamera);
     GameState.odysseyShaderPass = new OdysseyShaderPass();
     GameState.copyPass = new ShaderPass(CopyShader);
     GameState.renderPassGUI = new RenderPass(GameState.scene_gui, GameState.camera_gui);
@@ -659,8 +724,8 @@ export class GameState implements EngineContext {
     GameState.bloomPass = new BloomPass(0.5);
     GameState.bokehPass = new BokehPass(GameState.scene, GameState.currentCamera, {
       focus: 1.0,
-      aperture:	0.0001,
-      maxblur:	1.0,
+      aperture: 0.0001,
+      maxblur: 1.0,
       // width: ResolutionManager.getViewportWidth(),
       // height: ResolutionManager.getViewportHeight()
     });
@@ -717,8 +782,7 @@ export class GameState implements EngineContext {
       GameState.EventOnResize();
     });
 
-
-    try{
+    try {
       //init shaders
       PerformanceMonitor.start('ShaderManager.Init');
       GameState.ShaderManager.Init();
@@ -730,11 +794,11 @@ export class GameState implements EngineContext {
        * Initialize Audio for the GUI
        */
       const audioEngine = AudioEngine.GetAudioEngine();
-      AudioEngine.GAIN_MUSIC = parseInt(GameState.iniConfig.getProperty('Sound Options.Music Volume')) || 0
-      AudioEngine.GAIN_VO = parseInt(GameState.iniConfig.getProperty('Sound Options.Voiceover Volume')) || 0
-      AudioEngine.GAIN_SFX = parseInt(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')) || 0
-      AudioEngine.GAIN_GUI = parseInt(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')) || 0
-      AudioEngine.GAIN_MOVIE = parseInt(GameState.iniConfig.getProperty('Sound Options.Movie Volume')) || 0
+      AudioEngine.GAIN_MUSIC = parseInt(GameState.iniConfig.getProperty('Sound Options.Music Volume')) || 0;
+      AudioEngine.GAIN_VO = parseInt(GameState.iniConfig.getProperty('Sound Options.Voiceover Volume')) || 0;
+      AudioEngine.GAIN_SFX = parseInt(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')) || 0;
+      AudioEngine.GAIN_GUI = parseInt(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')) || 0;
+      AudioEngine.GAIN_MOVIE = parseInt(GameState.iniConfig.getProperty('Sound Options.Movie Volume')) || 0;
 
       GameState.guiAudioEmitter = new AudioEmitter(audioEngine, AudioEngineChannel.GUI);
       GameState.guiAudioEmitter.maxDistance = 100;
@@ -765,11 +829,11 @@ export class GameState implements EngineContext {
       GameState.CursorManager.hovered = undefined;
       await GameState.CursorManager.init();
 
-      GameState.scene_cursor_holder.add( GameState.CursorManager.cursor );
-      GameState.scene.add( GameState.CursorManager.reticle );
-      GameState.scene.add( GameState.CursorManager.reticle2 );
-      GameState.scene_gui.add( GameState.CursorManager.arrow );
-      GameState.scene.add( GameState.CursorManager.testPoints );
+      GameState.scene_cursor_holder.add(GameState.CursorManager.cursor);
+      GameState.scene.add(GameState.CursorManager.reticle);
+      GameState.scene.add(GameState.CursorManager.reticle2);
+      GameState.scene_gui.add(GameState.CursorManager.arrow);
+      GameState.scene.add(GameState.CursorManager.testPoints);
       console.log('CursorManager: Complete');
 
       PerformanceMonitor.start('PartyManager.Initialize');
@@ -790,41 +854,38 @@ export class GameState implements EngineContext {
       /**
        * Preload fx textures
        */
-      TextureLoader.enQueue(GameState.preloadTextures,
-        undefined,
-        TextureType.TEXTURE
-      );
+      TextureLoader.enQueue(GameState.preloadTextures, undefined, TextureType.TEXTURE);
       PerformanceMonitor.start('TextureLoader.LoadQueue');
       await TextureLoader.LoadQueue();
       PerformanceMonitor.stop('TextureLoader.LoadQueue');
 
-      if(GameState.GameKey == GameEngineType.KOTOR){
+      if (GameState.GameKey == GameEngineType.KOTOR) {
         GameState.VideoManager.queueMovie('leclogo', true);
         GameState.VideoManager.queueMovie('biologo', true);
         GameState.VideoManager.queueMovie('legal', true);
-      }else if(GameState.GameKey == GameEngineType.TSL){
+      } else if (GameState.GameKey == GameEngineType.TSL) {
         GameState.VideoManager.queueMovie('leclogo', true);
         GameState.VideoManager.queueMovie('ObsidianEnt', true);
         GameState.VideoManager.queueMovie('Legal', true);
       }
 
       GameState.Ready = true;
-      if(GameState.OpeningMoviesComplete){
+      if (GameState.OpeningMoviesComplete) {
         GameState.Start();
       }
       console.log(PerformanceMonitor.toString());
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
 
-  static Start(){
-    if(GameState.Ready && !GameState.OnReadyCalled){
+  static Start() {
+    if (GameState.Ready && !GameState.OnReadyCalled) {
       GameState.OnReadyCalled = true;
       GameState.processEventListener('ready');
       GameState.MenuManager.MainMenu.Start();
       window.dispatchEvent(new Event('resize'));
-      
+
       // if(GameState.GameKey == GameEngineType.TSL){
       //   GameState.SetEngineMode(EngineMode.LEGAL);
       //   GameState.State = EngineState.RUNNING;
@@ -837,7 +898,7 @@ export class GameState implements EngineContext {
     }
   }
 
-  static EventOnResize(){
+  static EventOnResize() {
     GameState.ResolutionManager.recalculate();
     let width = GameState.ResolutionManager.getViewportWidth();
     let height = GameState.ResolutionManager.getViewportHeight();
@@ -869,34 +930,38 @@ export class GameState implements EngineContext {
     GameState.camera_animated.aspect = GameState.camera.aspect;
     GameState.camera_animated.updateProjectionMatrix();
 
-    for(let i = 0; i < GameState.staticCameras.length; i++){
+    for (let i = 0; i < GameState.staticCameras.length; i++) {
       GameState.staticCameras[i].aspect = GameState.camera.aspect;
       GameState.staticCameras[i].updateProjectionMatrix();
     }
 
     //GameState.bokehPass.renderTargetColor.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
 
-    GameState.screenCenter.x = ( (GameState.ResolutionManager.getViewportWidth()/2) / GameState.ResolutionManager.getViewportWidth() ) * 2 - 1;
-    GameState.screenCenter.y = - ( (GameState.ResolutionManager.getViewportHeight()/2) / GameState.ResolutionManager.getViewportHeight() ) * 2 + 1;
+    GameState.screenCenter.x =
+      (GameState.ResolutionManager.getViewportWidth() / 2 / GameState.ResolutionManager.getViewportWidth()) * 2 - 1;
+    GameState.screenCenter.y =
+      -(GameState.ResolutionManager.getViewportHeight() / 2 / GameState.ResolutionManager.getViewportHeight()) * 2 + 1;
 
     GameState.MenuManager.Resize();
 
-    GameState.depthTarget.setSize(GameState.ResolutionManager.getViewportWidth() * GameState.rendererUpscaleFactor, GameState.ResolutionManager.getViewportHeight() * GameState.rendererUpscaleFactor);
+    GameState.depthTarget.setSize(
+      GameState.ResolutionManager.getViewportWidth() * GameState.rendererUpscaleFactor,
+      GameState.ResolutionManager.getViewportHeight() * GameState.rendererUpscaleFactor
+    );
 
-    if(GameState.ResolutionManager.vpScaleFactor){
-      GameState.canvas.style.transform = 'scale('+GameState.ResolutionManager.vpScaleFactor+')';
-    }else{
+    if (GameState.ResolutionManager.vpScaleFactor) {
+      GameState.canvas.style.transform = 'scale(' + GameState.ResolutionManager.vpScaleFactor + ')';
+    } else {
       GameState.canvas.style.transform = '';
     }
-
   }
 
-  static updateRendererUpscaleFactor(){
+  static updateRendererUpscaleFactor() {
     this.EventOnResize();
   }
 
   public static getCurrentPlayer(): ModuleCreature {
-    if(GameState.Mode == EngineMode.MINIGAME){
+    if (GameState.Mode == EngineMode.MINIGAME) {
       return GameState.module.area.miniGame.player as any;
     }
     let p = GameState.PartyManager.party[0];
@@ -906,16 +971,17 @@ export class GameState implements EngineContext {
   static tUpdateSelectable = 0;
 
   public static getSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
-
     const objects = [
       ...GameState.module.area.placeables,
       ...GameState.module.area.doors,
       ...GameState.module.area.creatures,
-      ...GameState.module.area.triggers.filter((trig) => trig.type == ModuleTriggerType.TRAP)
+      ...GameState.module.area.triggers.filter((trig) => trig.type == ModuleTriggerType.TRAP),
     ];
 
-    for(let i = 0; i < GameState.PartyManager.party.length; i++){
-      if(!i){ continue; }
+    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+      if (!i) {
+        continue;
+      }
       objects.push(GameState.PartyManager.party[i]);
     }
 
@@ -931,25 +997,29 @@ export class GameState implements EngineContext {
     const targetPosition = new THREE.Vector3();
 
     let distance = 0;
-    for(let i = 0; i < objCount; i++){
+    for (let i = 0; i < objCount; i++) {
       obj = objects[i];
 
-      if(!obj.isUseable()){ continue; }
+      if (!obj.isUseable()) {
+        continue;
+      }
 
       const isDoor = BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor);
-      if(isDoor){
-        if((obj as ModuleDoor).isOpen()){ continue; };
+      if (isDoor) {
+        if ((obj as ModuleDoor).isOpen()) {
+          continue;
+        }
       }
 
       targetPosition.copy(obj.position);
-      if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+      if (!BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)) {
         targetPosition.z += losZ;
-      }else{
+      } else {
         targetPosition.z += 0.1;
       }
 
       distance = targetPosition.distanceTo(playerPosition);
-      if(distance > GameState.maxSelectableDistance){
+      if (distance > GameState.maxSelectableDistance) {
         continue;
       }
 
@@ -958,21 +1028,25 @@ export class GameState implements EngineContext {
       // dir.negate();
       dir.normalize();
 
-      if(obj.model){
+      if (obj.model) {
         GameState.raycaster.set(playerPosition, dir);
 
         //Check that we can see the object
         let los = GameState.raycaster.intersectObjects([...GameState.group.room_walkmeshes.children, obj.model], true);
 
         //If the object a door ignore it's walkmesh
-        if(isDoor && los.length){
-          los = los.filter( (intersect) => {
-            intersect.object.uuid != obj.collisionData.walkmesh.mesh.uuid
+        if (isDoor && los.length) {
+          los = los.filter((intersect) => {
+            intersect.object.uuid != obj.collisionData.walkmesh.mesh.uuid;
           });
         }
 
         const intersect = los[0];
-        if(intersect && Array.isArray(obj.model.userData.uuids) && obj.model.userData.uuids.indexOf(intersect.object.uuid) == -1){
+        if (
+          intersect &&
+          Array.isArray(obj.model.userData.uuids) &&
+          obj.model.userData.uuids.indexOf(intersect.object.uuid) == -1
+        ) {
           continue;
         }
       }
@@ -980,12 +1054,12 @@ export class GameState implements EngineContext {
       selectableObjects.push(obj);
     }
 
-    if(selectableObjects.indexOf(GameState.CursorManager.selectedObject) == -1){
+    if (selectableObjects.indexOf(GameState.CursorManager.selectedObject) == -1) {
       GameState.CursorManager.selectedObject = undefined;
       GameState.CursorManager.selected = undefined;
     }
 
-    if(selectableObjects.indexOf(GameState.CursorManager.hoveredObject) == -1){
+    if (selectableObjects.indexOf(GameState.CursorManager.hoveredObject) == -1) {
       GameState.CursorManager.hoveredObject = undefined;
       GameState.CursorManager.hovered = undefined;
     }
@@ -993,9 +1067,11 @@ export class GameState implements EngineContext {
     return selectableObjects;
   }
 
-  static ResetModuleAudio(){
-    GameState.CutsceneManager.audioEmitter =
-    this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
+  static ResetModuleAudio() {
+    GameState.CutsceneManager.audioEmitter = this.audioEmitter = new AudioEmitter(
+      AudioEngine.GetAudioEngine(),
+      AudioEngineChannel.VO
+    );
     this.audioEmitter.maxDistance = 50;
     this.audioEmitter.type = AudioEmitterType.GLOBAL;
     this.audioEmitter.load();
@@ -1012,8 +1088,17 @@ export class GameState implements EngineContext {
    * @param sMovie5 - The fifth movie to play
    * @param sMovie6 - The sixth movie to play
    */
-  static async LoadModule(name = '', waypoint: string = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
-    try{
+  static async LoadModule(
+    name = '',
+    waypoint: string = null,
+    sMovie1 = '',
+    sMovie2 = '',
+    sMovie3 = '',
+    sMovie4 = '',
+    sMovie5 = '',
+    sMovie6 = ''
+  ) {
+    try {
       GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
       /**
        * Set the game mode to loading
@@ -1024,12 +1109,12 @@ export class GameState implements EngineContext {
       GameState.UnloadModule();
 
       GameState.MenuManager.LoadScreen.setProgress(0);
-      await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name);
+      await GameState.MenuManager.LoadScreen.setLoadBackground('load_' + name);
       GameState.MenuManager.LoadScreen.showRandomHint();
       GameState.MenuManager.LoadScreen.open();
 
       await GameState.MenuManager.LoadInGameMenus();
-      
+
       GameState.VideoEffectManager.SetVideoEffect(-1);
       GameState.ModuleObjectManager.playerSelectableObjects = [];
       GameState.VideoManager.queueMovie(sMovie1);
@@ -1039,12 +1124,16 @@ export class GameState implements EngineContext {
       GameState.VideoManager.queueMovie(sMovie5);
       GameState.VideoManager.queueMovie(sMovie6);
       GameState.SetEngineMode(EngineMode.LOADING);
-      
-      if(GameState.module){
-        try{ await GameState.module.save(); }catch(e){
+
+      if (GameState.module) {
+        try {
+          await GameState.module.save();
+        } catch (e) {
           console.error(e);
         }
-        try{ GameState.module.dispose(); }catch(e){
+        try {
+          GameState.module.dispose();
+        } catch (e) {
           console.error(e);
         }
       }
@@ -1064,9 +1153,9 @@ export class GameState implements EngineContext {
       console.log('Module.loadScene');
       await module.loadScene();
 
-      await TextureLoader.LoadQueue( (ref: ITextureLoaderQueuedRef) => {
+      await TextureLoader.LoadQueue((ref: ITextureLoaderQueuedRef) => {
         const material = ref.material as any;
-        if(material?.map){
+        if (material?.map) {
           GameState.renderer.initTexture(material.map);
         }
       });
@@ -1078,7 +1167,7 @@ export class GameState implements EngineContext {
 
       //GameState.scene_gui.background = null;
       GameState.scene.visible = true;
-      
+
       AudioEngine.Unmute();
 
       const runSpawnScripts = !GameState.isLoadingSave;
@@ -1090,79 +1179,89 @@ export class GameState implements EngineContext {
       GameState.MenuManager.InGameOverlay.open();
 
       GameState.renderer.compile(GameState.scene, GameState.currentCamera);
-      GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
-      
+      GameState.renderer.setClearColor(new THREE.Color(GameState.module.area.sun.fogColor));
+
       console.log('ModuleArea.initAreaObjects');
       GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
       await GameState.module.area.initAreaObjects(runSpawnScripts);
       console.log('ModuleArea: ready to play');
       GameState.module.readyToProcessEvents = true;
 
-      if(GameState.Mode == EngineMode.INGAME){
+      if (GameState.Mode == EngineMode.INGAME) {
         const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
-        if(anyCanLevel){
+        if (anyCanLevel) {
           GameState.audioEmitter.playSound('gui_level');
         }
       }
 
       //Reveal the area
       GameState.MenuManager.LoadScreen.close();
-      if(!GameState.holdWorldFadeInForDialog){
+      if (!GameState.holdWorldFadeInForDialog) {
         GameState.FadeOverlayManager.FadeIn(2.5, 0, 0, 0, 1);
       }
       GameState.module.area.musicBackgroundPlay();
-    }catch(e){
+    } catch (e) {
       console.error(e);
       throw e;
     }
   }
 
   static RestoreEnginePlayMode(): void {
-    if(GameState.module){
-      if(GameState.module.area.miniGame){
-        GameState.SetEngineMode(EngineMode.MINIGAME)
-      }else{
+    if (GameState.module) {
+      if (GameState.module.area.miniGame) {
+        GameState.SetEngineMode(EngineMode.MINIGAME);
+      } else {
         GameState.SetEngineMode(EngineMode.INGAME);
       }
-    }else{
+    } else {
       GameState.SetEngineMode(EngineMode.GUI);
     }
   }
 
-  static SetEngineMode(mode: EngineMode){
-    if(GameState.Mode == mode){
+  static SetEngineMode(mode: EngineMode) {
+    if (GameState.Mode == mode) {
       return;
     }
     GameState.Mode = mode;
-    if(mode == EngineMode.LOADING){
-      if(GameState.MenuManager.LoadScreen){
+    if (mode == EngineMode.LOADING) {
+      if (GameState.MenuManager.LoadScreen) {
         GameState.MenuManager.LoadScreen.setProgress(0);
         GameState.MenuManager.LoadScreen.open();
       }
     }
 
-    if(mode != EngineMode.INGAME){
-      if(GameState.MenuManager.InGameBark)
-        GameState.MenuManager.InGameBark.hide();
+    if (mode != EngineMode.INGAME) {
+      if (GameState.MenuManager.InGameBark) GameState.MenuManager.InGameBark.hide();
 
-      if(GameState.MenuManager.InGameAreaTransition)
-        GameState.MenuManager.InGameAreaTransition.hide();
+      if (GameState.MenuManager.InGameAreaTransition) GameState.MenuManager.InGameAreaTransition.hide();
     }
 
-    if(!(mode == EngineMode.INGAME || mode == EngineMode.DIALOG || mode == EngineMode.FREELOOK || mode == EngineMode.MINIGAME)){
+    if (
+      !(
+        mode == EngineMode.INGAME ||
+        mode == EngineMode.DIALOG ||
+        mode == EngineMode.FREELOOK ||
+        mode == EngineMode.MINIGAME
+      )
+    ) {
       AudioEngine.Mute(AudioEngineChannel.SFX);
     }
 
-    if(mode == EngineMode.INGAME || mode == EngineMode.DIALOG || mode == EngineMode.FREELOOK || mode == EngineMode.MINIGAME){
+    if (
+      mode == EngineMode.INGAME ||
+      mode == EngineMode.DIALOG ||
+      mode == EngineMode.FREELOOK ||
+      mode == EngineMode.MINIGAME
+    ) {
       AudioEngine.Unmute(AudioEngineChannel.SFX);
     }
 
-    if(mode == EngineMode.GUI && GameState.FadeOverlayManager.material.visible){
+    if (mode == EngineMode.GUI && GameState.FadeOverlayManager.material.visible) {
       GameState.FadeOverlayManager.material.visible = false;
     }
   }
 
-  static UnloadModule(){
+  static UnloadModule() {
     GameState.MenuManager.ClearMenus();
     GameState.deltaTime = 0;
     GameState.tickAccumulator = 0;
@@ -1191,29 +1290,27 @@ export class GameState implements EngineContext {
     AudioEngine.Mute();
   }
 
-  static ReloadTextureCache(){
-    if(GameState.module && GameState.module.area){
+  static ReloadTextureCache() {
+    if (GameState.module && GameState.module.area) {
       GameState.module.area.reloadTextures();
     }
   }
 
-  static getCameraById(id = 0){
-    for(let i = 0; i < GameState.staticCameras.length; i++){
-      if(GameState.staticCameras[i].userData.ingameID == id)
-        return GameState.staticCameras[i];
+  static getCameraById(id = 0) {
+    for (let i = 0; i < GameState.staticCameras.length; i++) {
+      if (GameState.staticCameras[i].userData.ingameID == id) return GameState.staticCameras[i];
     }
 
     return GameState.currentCamera;
   }
 
-  static forwardVector = new THREE.Vector3(0, 0, );
+  static forwardVector = new THREE.Vector3(0, 0);
 
-  static Update(){
-
-    requestAnimationFrame( GameState.Update );
+  static Update() {
+    requestAnimationFrame(GameState.Update);
 
     // if(GameState.Debugger.showFPS && GameState.stats.m){
-      // GameState.stats.showPanel(GameState.Debugger.showFPS);
+    // GameState.stats.showPanel(GameState.Debugger.showFPS);
     // }
 
     GameState.forwardVector.set(0, 0, -1);
@@ -1222,7 +1319,7 @@ export class GameState implements EngineContext {
     GameState.processEventListener('beforeRender', [delta]);
     GameState.delta = delta;
     GameState.deltaTime += delta;
-    GameState.deltaTimeFixed += (1/60); // For shaders/UI (assumes 60fps reference)
+    GameState.deltaTimeFixed += 1 / 60; // For shaders/UI (assumes 60fps reference)
     GameState.clampedDelta = Math.max(0, Math.min(delta, 0.016666666666666666 * 5));
 
     GameState.limiter.now = Date.now();
@@ -1231,8 +1328,7 @@ export class GameState implements EngineContext {
     /**
      * Pause the main loop if the debugger is active
      */
-    if(GameState.debugMode && !!GameState.Debugger.state){
-
+    if (GameState.debugMode && !!GameState.Debugger.state) {
       return;
     }
 
@@ -1244,31 +1340,28 @@ export class GameState implements EngineContext {
     } catch (menuError: unknown) {
       console.error('[GameState] MenuManager.Update threw; continuing frame so composer can render.', menuError);
     }
-    if(GameState.MenuManager.InGameAreaTransition)
-      GameState.MenuManager.InGameAreaTransition.hide();
+    if (GameState.MenuManager.InGameAreaTransition) GameState.MenuManager.InGameAreaTransition.hide();
 
-    if(!GameState.loadingTextures && TextureLoader.queue.length){
+    if (!GameState.loadingTextures && TextureLoader.queue.length) {
       GameState.loadingTextures = true;
-      TextureLoader.LoadQueue().then( () => {
+      TextureLoader.LoadQueue().then(() => {
         GameState.loadingTextures = false;
       });
     }
 
     GameState.scene_cursor_holder.visible = true;
-    if(GameState.MenuManager.InGamePause)
-      GameState.MenuManager.InGamePause.hide();
+    if (GameState.MenuManager.InGamePause) GameState.MenuManager.InGamePause.hide();
 
-    if(
+    if (
       GameState.Mode == EngineMode.MINIGAME ||
       GameState.Mode == EngineMode.DIALOG ||
       GameState.Mode == EngineMode.INGAME ||
       GameState.Mode == EngineMode.FREELOOK
-    ){
-
+    ) {
       //Get Selectable Objects In Range
-      if(GameState.Mode == EngineMode.INGAME){
+      if (GameState.Mode == EngineMode.INGAME) {
         GameState.tUpdateSelectable -= delta || 0;
-        if(GameState.tUpdateSelectable <= 0){
+        if (GameState.tUpdateSelectable <= 0) {
           //Update the cache of selectable objects
           CursorManager.selectableObjects = GameState.getSelectableObjectsInRange(PartyManager.party[0]);
           GameState.tUpdateSelectable = 0.5;
@@ -1276,29 +1369,32 @@ export class GameState implements EngineContext {
       }
 
       //Update Mode Camera
-      if(GameState.Mode == EngineMode.INGAME){
+      if (GameState.Mode == EngineMode.INGAME) {
         //Make sure we are using the follower camera while ingame
         GameState.currentCamera = GameState.camera;
         GameState.VideoEffectManager.SetVideoEffect(-1);
-        if(GameState.getCurrentPlayer()){
+        if (GameState.getCurrentPlayer()) {
           GameState.forwardVector.copy(GameState.getCurrentPlayer().forceVector).multiplyScalar(100);
           GameState.forwardVector.z = -1;
         }
-      }else if(GameState.Mode == EngineMode.FREELOOK){
+      } else if (GameState.Mode == EngineMode.FREELOOK) {
         GameState.VideoEffectManager.SetVideoEffect(-1);
         const player = GameState.getCurrentPlayer();
-        if(player){
+        if (player) {
           const appearance = player.getAppearance();
-          if(appearance){
+          if (appearance) {
             const effectId = appearance.freelookeffect;
-            if(!isNaN(effectId)){
+            if (!isNaN(effectId)) {
               GameState.VideoEffectManager.SetVideoEffect(effectId);
             }
           }
         }
       }
 
-      GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
+      GameState.frustumMat4.multiplyMatrices(
+        GameState.currentCamera.projectionMatrix,
+        GameState.currentCamera.matrixWorldInverse
+      );
       GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
       GameState.currentCameraPosition.set(0, 0, 0);
       GameState.currentCameraPosition.applyMatrix4(FollowerCamera.camera.matrix);
@@ -1310,12 +1406,9 @@ export class GameState implements EngineContext {
       let ticksRun = 0;
       const fixedDelta = GameState.FIXED_DELTA;
 
-      if(
-        GameState.State == EngineState.PAUSED ||
-        GameState.MenuManager.activeModals.length
-      ){
+      if (GameState.State == EngineState.PAUSED || GameState.MenuManager.activeModals.length) {
         GameState.module.tickPaused(delta);
-      }else{
+      } else {
         GameState.tickAccumulator += delta;
         while (GameState.tickAccumulator >= fixedDelta && ticksRun < maxTicksPerFrame) {
           GameState.module.tick(fixedDelta);
@@ -1327,94 +1420,96 @@ export class GameState implements EngineContext {
         }
 
         //Update the Bark Overlay if it is visible (use last tick's delta for consistency)
-        if(GameState.MenuManager.InGameBark?.bVisible){
+        if (GameState.MenuManager.InGameBark?.bVisible) {
           GameState.MenuManager.InGameBark.update(ticksRun > 0 ? fixedDelta : delta);
         }
       }
 
       //TODO: Move Cursor Logic Into Global Cursor Manager
-      if(GameState.Mode == EngineMode.DIALOG){
-        if(
+      if (GameState.Mode == EngineMode.DIALOG) {
+        if (
           GameState.MenuManager.InGameDialog.isVisible() &&
           !GameState.MenuManager.InGameDialog.LB_REPLIES.isVisible() &&
           GameState.scene_cursor_holder.visible
-        ){
+        ) {
           GameState.scene_cursor_holder.visible = false;
         }
         GameState.CutsceneManager.update(delta);
       }
 
-      if(
-        GameState.Mode == EngineMode.INGAME ||
-        GameState.Mode == EngineMode.DIALOG
-      ){
+      if (GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.DIALOG) {
         GameState.FadeOverlayManager.Update(delta);
-        GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
+        GameState.frustumMat4.multiplyMatrices(
+          GameState.currentCamera.projectionMatrix,
+          GameState.currentCamera.matrixWorldInverse
+        );
         GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
-        if(GameState.Mode == EngineMode.DIALOG){
+        if (GameState.Mode == EngineMode.DIALOG) {
           GameState.lightManager.update(delta, GameState.currentCamera);
           GameState.module.area.updateRoomAnimatedLights(delta);
-        }else{
+        } else {
           GameState.lightManager.update(delta, GameState.getCurrentPlayer());
           GameState.currentCamera = GameState.camera;
           GameState.module.area.updateRoomAnimatedLights(delta);
         }
 
         //Handle the visibility of the PAUSE overlay
-        if(GameState.State == EngineState.PAUSED && GameState.MenuManager.InGameOverlay.isVisible()){
-          if(!GameState.MenuManager.InGamePause.isVisible())
-            GameState.MenuManager.InGamePause.show();
-        }else{
-          if(GameState.MenuManager.InGamePause.isVisible())
-            GameState.MenuManager.InGamePause.hide();
+        if (GameState.State == EngineState.PAUSED && GameState.MenuManager.InGameOverlay.isVisible()) {
+          if (!GameState.MenuManager.InGamePause.isVisible()) GameState.MenuManager.InGamePause.show();
+        } else {
+          if (GameState.MenuManager.InGamePause.isVisible()) GameState.MenuManager.InGamePause.hide();
         }
-      }else if(GameState.Mode == EngineMode.MINIGAME){
+      } else if (GameState.Mode == EngineMode.MINIGAME) {
         GameState.FadeOverlayManager.Update(delta);
         GameState.lightManager.update(delta, GameState.getCurrentPlayer());
         GameState.module.area.updateRoomAnimatedLights(delta);
       }
 
-      if(GameState.Mode == EngineMode.INGAME){
-        if(GameState.MenuManager.InGameAreaTransition.transitionObject){
+      if (GameState.Mode == EngineMode.INGAME) {
+        if (GameState.MenuManager.InGameAreaTransition.transitionObject) {
           GameState.MenuManager.InGameAreaTransition.show();
         }
       }
 
       //Handle visibility state for debug helpers
-      if(GameState.Mode == EngineMode.INGAME){
+      if (GameState.Mode == EngineMode.INGAME) {
         let obj: any;
-        for(let i = 0, len = GameState.group.room_walkmeshes.children.length; i < len; i++){
+        for (let i = 0, len = GameState.group.room_walkmeshes.children.length; i < len; i++) {
           obj = GameState.group.room_walkmeshes.children[i];
-          if(obj.type === 'Mesh'){
-            obj.material.visible = true;//ConfigClient.get('GameState.debug.show_collision_meshes');
+          if (obj.type === 'Mesh') {
+            obj.material.visible = true; //ConfigClient.get('GameState.debug.show_collision_meshes');
           }
         }
 
-        for(let i = 0, len = GameState.walkmeshList.length; i < len; i++){
+        for (let i = 0, len = GameState.walkmeshList.length; i < len; i++) {
           obj = GameState.walkmeshList[i];
-          if(obj.type === 'Mesh'){
-            obj.material.visible = true;//ConfigClient.get('GameState.debug.show_collision_meshes');
+          if (obj.type === 'Mesh') {
+            obj.material.visible = true; //ConfigClient.get('GameState.debug.show_collision_meshes');
           }
         }
 
-        for(let i = 0, len = GameState.collisionList.length; i < len; i++){
+        for (let i = 0, len = GameState.collisionList.length; i < len; i++) {
           obj = GameState.collisionList[i];
-          if(obj.type === 'Mesh'){
+          if (obj.type === 'Mesh') {
             obj.material.visible = false;
           }
         }
 
-        for(let i = 0, len = GameState.group.path_helpers.children.length; i < len; i++){
+        for (let i = 0, len = GameState.group.path_helpers.children.length; i < len; i++) {
           obj = GameState.group.path_helpers.children[i];
-          if(obj){
+          if (obj) {
             obj.visible = ConfigClient.get('GameState.debug.show_path_helpers');
           }
         }
       }
-
     }
 
-    AudioEngine.GetAudioEngine().update(delta, GameState.currentCamera.position, GameState.currentCamera.rotation, GameState.forwardVector);
+    AudioEngine.GetAudioEngine().update(
+      delta,
+      GameState.currentCamera.position,
+      GameState.currentCamera.rotation,
+      GameState.forwardVector
+    );
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
     if (GameState.composer && GameState.renderer) {
@@ -1425,7 +1520,7 @@ export class GameState implements EngineContext {
       GameState.composer.render(delta);
 
       //Handle screenshot callback
-      if(typeof GameState.onScreenShot === 'function'){
+      if (typeof GameState.onScreenShot === 'function') {
         console.log('Screenshot', GameState.onScreenShot);
 
         GameState.renderer.clear();
@@ -1433,7 +1528,7 @@ export class GameState implements EngineContext {
 
         const screenshot = new Image();
         screenshot.src = GameState.canvas.toDataURL('image/png');
-        screenshot.onload = function() {
+        screenshot.onload = function () {
           const ssCanvas = new OffscreenCanvas(256, 256);
           const ctx = ssCanvas.getContext('2d');
           ctx.drawImage(screenshot, 0, 0, 256, 256);
@@ -1451,10 +1546,15 @@ export class GameState implements EngineContext {
     }
 
     //NoClickTimer: Update
-    if( ((GameState.Mode == EngineMode.MINIGAME || GameState.Mode == EngineMode.DIALOG) || (GameState.Mode == EngineMode.INGAME)) && GameState.State != EngineState.PAUSED){
-      if(GameState.noClickTimer){
-        GameState.noClickTimer -= (1 * delta);
-        if(GameState.noClickTimer < 0){
+    if (
+      (GameState.Mode == EngineMode.MINIGAME ||
+        GameState.Mode == EngineMode.DIALOG ||
+        GameState.Mode == EngineMode.INGAME) &&
+      GameState.State != EngineState.PAUSED
+    ) {
+      if (GameState.noClickTimer) {
+        GameState.noClickTimer -= 1 * delta;
+        if (GameState.noClickTimer < 0) {
           GameState.noClickTimer = 0;
         }
       }
@@ -1464,20 +1564,17 @@ export class GameState implements EngineContext {
     GameState.processEventListener('afterRender', [delta]);
   }
 
-  static updateTime(delta: number = 0){
+  static updateTime(delta: number = 0) {
     GameState.time += delta;
 
-    if(GameState.deltaTime > 1000)
-      GameState.deltaTime = GameState.deltaTime % 1;
+    if (GameState.deltaTime > 1000) GameState.deltaTime = GameState.deltaTime % 1;
   }
 
-  static async GetScreenShot(){
-    return new Promise<TGAObject>( (resolve, reject) => {
+  static async GetScreenShot() {
+    return new Promise<TGAObject>((resolve, reject) => {
       GameState.onScreenShot = (tga: TGAObject) => {
         resolve(tga);
       };
     });
   }
-
 }
-

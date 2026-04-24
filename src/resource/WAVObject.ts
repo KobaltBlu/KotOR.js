@@ -2,7 +2,14 @@ import { AudioFileAudioType } from '@/enums/audio/AudioFileAudioType';
 import { AudioFileWaveEncoding } from '@/enums/audio/AudioFileWaveEncoding';
 import { BinaryReader } from '@/utility/binary/BinaryReader';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
+import {
+  objectToTOML,
+  objectToXML,
+  objectToYAML,
+  tomlToObject,
+  xmlToObject,
+  yamlToObject,
+} from '@/utility/FormatSerialization';
 
 /** KotOR WAV type: VO = voice (streamwaves), SFX = sound effects (streammusic with 470-byte header). */
 export enum WAVType {
@@ -78,7 +85,13 @@ export class WAVObject {
     }
 
     if (match(flag, RIFF_HEADER)) {
-      if (buffer.length >= VO_HEADER_LEN + 4 && buffer[VO_HEADER_LEN] === 0x52 && buffer[VO_HEADER_LEN + 1] === 0x49 && buffer[VO_HEADER_LEN + 2] === 0x46 && buffer[VO_HEADER_LEN + 3] === 0x46) {
+      if (
+        buffer.length >= VO_HEADER_LEN + 4 &&
+        buffer[VO_HEADER_LEN] === 0x52 &&
+        buffer[VO_HEADER_LEN + 1] === 0x49 &&
+        buffer[VO_HEADER_LEN + 2] === 0x46 &&
+        buffer[VO_HEADER_LEN + 3] === 0x46
+      ) {
         this.wavType = WAVType.VO;
         const after = buffer.slice(VO_HEADER_LEN);
         this.parseRiffWave(after);
@@ -193,9 +206,21 @@ export class WAVObject {
     return bw.buffer;
   }
 
-  toJSON(): { wavType: number; audioFormat: number; encoding: number; channels: number; sampleRate: number; bitsPerSample: number; dataBase64: string } {
+  toJSON(): {
+    wavType: number;
+    audioFormat: number;
+    encoding: number;
+    channels: number;
+    sampleRate: number;
+    bitsPerSample: number;
+    dataBase64: string;
+  } {
     const d = this.data ?? new Uint8Array(0);
-    const b64 = d.length ? (typeof Buffer !== 'undefined' ? Buffer.from(d).toString('base64') : btoa(String.fromCharCode(...d))) : '';
+    const b64 = d.length
+      ? typeof Buffer !== 'undefined'
+        ? Buffer.from(d).toString('base64')
+        : btoa(String.fromCharCode(...d))
+      : '';
     return {
       wavType: this.wavType ?? WAVType.VO,
       audioFormat: this.audioFormat ?? 1,
@@ -203,7 +228,7 @@ export class WAVObject {
       channels: this.channels ?? 1,
       sampleRate: this.sampleRate ?? 44100,
       bitsPerSample: this.bitsPerSample ?? 16,
-      dataBase64: b64
+      dataBase64: b64,
     };
   }
 
@@ -216,18 +241,31 @@ export class WAVObject {
     this.sampleRate = obj.sampleRate ?? 44100;
     this.bitsPerSample = obj.bitsPerSample ?? 16;
     if (obj.dataBase64) {
-      this.data = typeof Buffer !== 'undefined'
-        ? new Uint8Array(Buffer.from(obj.dataBase64, 'base64'))
-        : Uint8Array.from(atob(obj.dataBase64), c => c.charCodeAt(0));
+      this.data =
+        typeof Buffer !== 'undefined'
+          ? new Uint8Array(Buffer.from(obj.dataBase64, 'base64'))
+          : Uint8Array.from(atob(obj.dataBase64), (c) => c.charCodeAt(0));
     } else this.data = new Uint8Array(0);
   }
 
-  toXML(): string { return objectToXML(this.toJSON()); }
-  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<WAVObject['toJSON']>); }
-  toYAML(): string { return objectToYAML(this.toJSON()); }
-  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<WAVObject['toJSON']>); }
-  toTOML(): string { return objectToTOML(this.toJSON()); }
-  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<WAVObject['toJSON']>); }
+  toXML(): string {
+    return objectToXML(this.toJSON());
+  }
+  fromXML(xml: string): void {
+    this.fromJSON(xmlToObject(xml) as ReturnType<WAVObject['toJSON']>);
+  }
+  toYAML(): string {
+    return objectToYAML(this.toJSON());
+  }
+  fromYAML(yaml: string): void {
+    this.fromJSON(yamlToObject(yaml) as ReturnType<WAVObject['toJSON']>);
+  }
+  toTOML(): string {
+    return objectToTOML(this.toJSON());
+  }
+  fromTOML(toml: string): void {
+    this.fromJSON(tomlToObject(toml) as ReturnType<WAVObject['toJSON']>);
+  }
 
   /**
    * Write back to buffer. If wavType is SFX, prepends the 470-byte obfuscation header.
@@ -297,9 +335,13 @@ export function detectAudioFormat(data: Uint8Array): [DeobfuscationResult, numbe
   if (data.length < 12) return [DeobfuscationResult.STANDARD, 0];
   if (matchBytes(data, SFX_MAGIC)) return [DeobfuscationResult.SFX_HEADER, SFX_HEADER_LEN];
   if (matchBytes(data, RIFF_HEADER)) {
-    if (data.length >= VO_HEADER_LEN + 4 &&
-        data[VO_HEADER_LEN] === 0x52 && data[VO_HEADER_LEN + 1] === 0x49 &&
-        data[VO_HEADER_LEN + 2] === 0x46 && data[VO_HEADER_LEN + 3] === 0x46) {
+    if (
+      data.length >= VO_HEADER_LEN + 4 &&
+      data[VO_HEADER_LEN] === 0x52 &&
+      data[VO_HEADER_LEN + 1] === 0x49 &&
+      data[VO_HEADER_LEN + 2] === 0x46 &&
+      data[VO_HEADER_LEN + 3] === 0x46
+    ) {
       return [DeobfuscationResult.STANDARD, VO_HEADER_LEN];
     }
     const riffSize = data[4] | (data[5] << 8) | (data[6] << 16) | (data[7] << 24);

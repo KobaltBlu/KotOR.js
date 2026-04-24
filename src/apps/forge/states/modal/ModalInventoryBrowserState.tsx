@@ -1,11 +1,11 @@
-import React from "react";
+import React from 'react';
 
-import { ModalInventoryBrowser } from "@/apps/forge/components/modal/ModalInventoryBrowser";
-import { InstallationRegistry } from "@/apps/forge/data/InstallationRegistry";
-import type { InventoryItemEntry } from "@/apps/forge/module-editor/ForgeCreature";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ModalItemBrowserState, type UTIItem } from "@/apps/forge/states/modal/ModalItemBrowserState";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalInventoryBrowser } from '@/apps/forge/components/modal/ModalInventoryBrowser';
+import { InstallationRegistry } from '@/apps/forge/data/InstallationRegistry';
+import type { InventoryItemEntry } from '@/apps/forge/module-editor/ForgeCreature';
+import * as KotOR from '@/apps/forge/KotOR';
+import { ModalItemBrowserState, type UTIItem } from '@/apps/forge/states/modal/ModalItemBrowserState';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
 
 export type InventoryItemSource = 'core' | 'module' | 'override';
 
@@ -42,7 +42,7 @@ export class ModalInventoryBrowserState extends ModalState {
   constructor(
     inventory: InventoryItemEntry[],
     onSave?: (inventory: InventoryItemEntry[]) => void,
-    mode: InventoryEditorMode = 'creature',
+    mode: InventoryEditorMode = 'creature'
   ) {
     super();
     this.title = 'Inventory Browser';
@@ -55,7 +55,7 @@ export class ModalInventoryBrowserState extends ModalState {
   async loadCoreItems() {
     // Reuse ModalItemBrowserState cache when available to avoid redundant loading
     if (ModalItemBrowserState.cacheLoaded) {
-      this.coreItems = ModalItemBrowserState.itemsCache.map(item => ({ ...item, source: 'core' as const }));
+      this.coreItems = ModalItemBrowserState.itemsCache.map((item) => ({ ...item, source: 'core' as const }));
       this.filteredCoreItems = this.coreItems.slice();
       this.coreLoaded = true;
       this.processEventListener('onCoreItemsLoaded', [this]);
@@ -66,12 +66,12 @@ export class ModalInventoryBrowserState extends ModalState {
       await InstallationRegistry.get2DA(InstallationRegistry.BASEITEMS);
       const items: UTISourceItem[] = [];
       const utiKeys = KotOR.KEYManager.Key.keys.filter(
-        (key: KotOR.IKEYEntry) => key.resType === KotOR.ResourceTypes['uti'],
+        (key: KotOR.IKEYEntry) => key.resType === KotOR.ResourceTypes['uti']
       );
 
       for (const key of utiKeys) {
         try {
-          const buffer = await KotOR.KEYManager.Key.getFileBuffer(key) as Uint8Array;
+          const buffer = (await KotOR.KEYManager.Key.getFileBuffer(key)) as Uint8Array;
           if (!buffer) continue;
           const item = await this._parseUTIBuffer(buffer, key.resRef, 'core');
           if (item) items.push(item);
@@ -147,7 +147,7 @@ export class ModalInventoryBrowserState extends ModalState {
   private async _parseUTIBuffer(
     buffer: Uint8Array,
     resref: string,
-    source: InventoryItemSource,
+    source: InventoryItemSource
   ): Promise<UTISourceItem | null> {
     try {
       const gff = new KotOR.GFFObject(buffer);
@@ -199,11 +199,9 @@ export class ModalInventoryBrowserState extends ModalState {
 
   findItemByResref(resref: string): UTISourceItem | undefined {
     const lookup = resref.toLowerCase();
-    return [
-      ...this.coreItems,
-      ...this.moduleItems,
-      ...this.overrideItems,
-    ].find((item) => item.resref.toLowerCase() === lookup);
+    return [...this.coreItems, ...this.moduleItems, ...this.overrideItems].find(
+      (item) => item.resref.toLowerCase() === lookup
+    );
   }
 
   addItem(resref: string) {

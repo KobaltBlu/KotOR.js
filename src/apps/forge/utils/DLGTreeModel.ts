@@ -10,10 +10,10 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { DLGTreeNode, DLGNodeReference } from "@/apps/forge/interfaces/DLGTreeNode";
-import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
-import { DLGNode } from "@/resource/DLGNode";
-import { DLGObject } from "@/resource/DLGObject";
+import { DLGTreeNode, DLGNodeReference } from '@/apps/forge/interfaces/DLGTreeNode';
+import { DLGNodeType } from '@/enums/dialog/DLGNodeType';
+import { DLGNode } from '@/resource/DLGNode';
+import { DLGObject } from '@/resource/DLGObject';
 
 export class DLGTreeModel {
   private rootNodes: DLGTreeNode[] = [];
@@ -73,7 +73,7 @@ export class DLGTreeModel {
       hasConditions: this.nodeHasConditions(dlgNode),
       hasActions: this.nodeHasActions(dlgNode),
       isOrphan: false,
-      depth: parent ? parent.depth + 1 : 0
+      depth: parent ? parent.depth + 1 : 0,
     };
 
     this.nodeMap.set(id, treeNode);
@@ -113,13 +113,7 @@ export class DLGTreeModel {
     if (treeNode.nodeType === DLGNodeType.STARTING) {
       dlgNode.entries.forEach((entryNode, idx) => {
         const childPath = [...treeNode.path, idx];
-        const entryTreeNode = this.createTreeNode(
-          entryNode,
-          entryNode.index,
-          DLGNodeType.ENTRY,
-          treeNode,
-          childPath
-        );
+        const entryTreeNode = this.createTreeNode(entryNode, entryNode.index, DLGNodeType.ENTRY, treeNode, childPath);
         treeNode.children.push(entryTreeNode);
       });
     }
@@ -127,13 +121,7 @@ export class DLGTreeModel {
     else if (treeNode.nodeType === DLGNodeType.ENTRY) {
       dlgNode.replies.forEach((replyNode, idx) => {
         const childPath = [...treeNode.path, idx];
-        const replyTreeNode = this.createTreeNode(
-          replyNode,
-          replyNode.index,
-          DLGNodeType.REPLY,
-          treeNode,
-          childPath
-        );
+        const replyTreeNode = this.createTreeNode(replyNode, replyNode.index, DLGNodeType.REPLY, treeNode, childPath);
         treeNode.children.push(replyTreeNode);
       });
     }
@@ -141,13 +129,7 @@ export class DLGTreeModel {
     else if (treeNode.nodeType === DLGNodeType.REPLY) {
       dlgNode.entries.forEach((entryNode, idx) => {
         const childPath = [...treeNode.path, idx];
-        const entryTreeNode = this.createTreeNode(
-          entryNode,
-          entryNode.index,
-          DLGNodeType.ENTRY,
-          treeNode,
-          childPath
-        );
+        const entryTreeNode = this.createTreeNode(entryNode, entryNode.index, DLGNodeType.ENTRY, treeNode, childPath);
         treeNode.children.push(entryTreeNode);
       });
     }
@@ -317,14 +299,12 @@ export class DLGTreeModel {
   public searchByText(query: string, caseSensitive: boolean = false): DLGTreeNode[] {
     const searchTerm = caseSensitive ? query : query.toLowerCase();
 
-    return this.filterNodes(node => {
+    return this.filterNodes((node) => {
       const text = caseSensitive ? node.dlgNode.text : node.dlgNode.text.toLowerCase();
       const comment = caseSensitive ? node.dlgNode.comment : node.dlgNode.comment.toLowerCase();
       const speaker = caseSensitive ? node.dlgNode.speakerTag : node.dlgNode.speakerTag.toLowerCase();
 
-      return text.includes(searchTerm) ||
-             comment.includes(searchTerm) ||
-             speaker.includes(searchTerm);
+      return text.includes(searchTerm) || comment.includes(searchTerm) || speaker.includes(searchTerm);
     });
   }
 
@@ -364,13 +344,13 @@ export class DLGTreeModel {
   public getNodeReferences(listIndex: number, nodeType: DLGNodeType): DLGNodeReference[] {
     const references: DLGNodeReference[] = [];
 
-    this.getAllNodes().forEach(treeNode => {
+    this.getAllNodes().forEach((treeNode) => {
       treeNode.children.forEach((child, idx) => {
         if (child.listIndex === listIndex && child.nodeType === nodeType) {
           references.push({
             sourceNode: treeNode,
             targetNode: child,
-            linkIndex: idx
+            linkIndex: idx,
           });
         }
       });
@@ -392,7 +372,7 @@ export class DLGTreeModel {
    */
   public markOrphans(): void {
     // Reset all orphan flags
-    this.getAllNodes().forEach(node => {
+    this.getAllNodes().forEach((node) => {
       node.isOrphan = false;
     });
 
@@ -400,9 +380,7 @@ export class DLGTreeModel {
     this.dlg.entryList.forEach((entry, index) => {
       const isOrphan = this.isNodeOrphan(index, DLGNodeType.ENTRY);
       // Mark all tree nodes representing this entry
-      this.filterNodes(node =>
-        node.listIndex === index && node.nodeType === DLGNodeType.ENTRY
-      ).forEach(node => {
+      this.filterNodes((node) => node.listIndex === index && node.nodeType === DLGNodeType.ENTRY).forEach((node) => {
         node.isOrphan = isOrphan;
       });
     });
@@ -411,9 +389,7 @@ export class DLGTreeModel {
     this.dlg.replyList.forEach((reply, index) => {
       const isOrphan = this.isNodeOrphan(index, DLGNodeType.REPLY);
       // Mark all tree nodes representing this reply
-      this.filterNodes(node =>
-        node.listIndex === index && node.nodeType === DLGNodeType.REPLY
-      ).forEach(node => {
+      this.filterNodes((node) => node.listIndex === index && node.nodeType === DLGNodeType.REPLY).forEach((node) => {
         node.isOrphan = isOrphan;
       });
     });
@@ -551,7 +527,7 @@ export class DLGTreeModel {
       id: this.generateId(),
       isCopy: true,
       selected: false,
-      children: []
+      children: [],
     };
 
     return copy;
@@ -587,7 +563,7 @@ export class DLGTreeModel {
    * Notify all listeners of changes
    */
   private notifyChange(): void {
-    this.changeListeners.forEach(listener => {
+    this.changeListeners.forEach((listener) => {
       listener(this.rootNodes);
     });
   }
@@ -596,7 +572,7 @@ export class DLGTreeModel {
    * Notify all listeners of selection changes
    */
   private notifySelection(node: DLGTreeNode | null): void {
-    this.selectionListeners.forEach(listener => {
+    this.selectionListeners.forEach((listener) => {
       listener(node);
     });
   }
@@ -616,7 +592,7 @@ export class DLGTreeModel {
       startingNodes: this.dlg.startingList.length,
       entryNodes: this.dlg.entryList.length,
       replyNodes: this.dlg.replyList.length,
-      totalTreeNodes: this.nodeMap.size
+      totalTreeNodes: this.nodeMap.size,
     };
   }
 }

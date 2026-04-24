@@ -1,24 +1,23 @@
-import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
-import { GameState } from "@/GameState";
-import { GameMenu, ListRowRegistry } from "@/gui";
-import { GUISaveGameItem } from "@/game/kotor/gui/GUISaveGameItem";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import { Module } from "@/module";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { SaveGame } from "@/engine/SaveGame";
+import { MenuSaveLoadMode } from '@/enums/gui/MenuSaveLoadMode';
+import { GameState } from '@/GameState';
+import { GameMenu, ListRowRegistry } from '@/gui';
+import { GUISaveGameItem } from '@/game/kotor/gui/GUISaveGameItem';
+import type { GUIListBox, GUILabel, GUIButton } from '@/gui';
+import { TextureLoader } from '@/loaders';
+import { Module } from '@/module';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { SaveGame } from '@/engine/SaveGame';
 
 /**
  * MenuSaveLoad class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuSaveLoad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuSaveLoad extends GameMenu {
-
   LB_GAMES: GUIListBox;
   LBL_PANELNAME: GUILabel;
   LBL_SCREENSHOT: GUILabel;
@@ -35,7 +34,7 @@ export class MenuSaveLoad extends GameMenu {
   saves: SaveGame[] = [];
   selected: SaveGame;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'saveload';
     this.background = '1600x1200back';
@@ -44,9 +43,8 @@ export class MenuSaveLoad extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
-
       this._button_y = this.BTN_DELETE;
 
       this.BTN_SAVELOAD.setText('Load');
@@ -65,23 +63,23 @@ export class MenuSaveLoad extends GameMenu {
 
       // LIST
       this.LB_GAMES.setProtoBuilder(GUISaveGameItem);
-      ListRowRegistry.register("kotor.MenuSaveLoad.LB_GAMES", GUISaveGameItem);
+      ListRowRegistry.register('kotor.MenuSaveLoad.LB_GAMES', GUISaveGameItem);
       this.LB_GAMES.onSelected = (save: SaveGame) => {
         this.selected = save;
         this.UpdateSelected();
-      }
+      };
       this.LB_GAMES.onActivated = () => {
         this.activateSelectedSave();
       };
 
       this.addEventListener('keydown', (e: KeyboardEvent) => {
-        if(e.key === 'ArrowUp'){
+        if (e.key === 'ArrowUp') {
           e.preventDefault();
           this.LB_GAMES.directionalNavigate('up');
-        }else if(e.key === 'ArrowDown'){
+        } else if (e.key === 'ArrowDown') {
           e.preventDefault();
           this.LB_GAMES.directionalNavigate('down');
-        }else if(e.key === 'Enter'){
+        } else if (e.key === 'Enter') {
           e.preventDefault();
           this.activateSelectedSave();
         }
@@ -98,7 +96,7 @@ export class MenuSaveLoad extends GameMenu {
     this.reloadSaves();
     if (this.mode == MenuSaveLoadMode.SAVEGAME) {
       this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1587].Value);
-    }else{
+    } else {
       this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1589].Value);
     }
     TextureLoader.LoadQueue();
@@ -107,17 +105,17 @@ export class MenuSaveLoad extends GameMenu {
   getSaveGames(): SaveGame[] {
     let saves: SaveGame[] = [];
     if (this.mode == MenuSaveLoadMode.SAVEGAME) {
-      saves = SaveGame.saves.filter(save => {
+      saves = SaveGame.saves.filter((save) => {
         return !save.getIsQuickSave() && !save.getIsAutoSave();
       });
       saves.unshift(new NewSaveItem());
-    }else{
+    } else {
       saves = SaveGame.saves;
     }
     return saves;
   }
 
-  reloadSaves(){
+  reloadSaves() {
     this.LB_GAMES.clearItems();
     let saves = this.getSaveGames();
     for (let i = 0; i < saves.length; i++) {
@@ -129,12 +127,12 @@ export class MenuSaveLoad extends GameMenu {
     this.LB_GAMES.updateList();
   }
 
-  protected activateSelectedSave(){
+  protected activateSelectedSave() {
     const savegame = this.selected;
-    if(this.mode == MenuSaveLoadMode.LOADGAME){
-      if(savegame && !(savegame instanceof NewSaveItem)){
+    if (this.mode == MenuSaveLoadMode.LOADGAME) {
+      if (savegame && !(savegame instanceof NewSaveItem)) {
         this.manager.ClearMenus();
-        if(GameState.module instanceof Module){
+        if (GameState.module instanceof Module) {
           GameState.module.dispose();
           GameState.module = undefined;
         }
@@ -142,9 +140,9 @@ export class MenuSaveLoad extends GameMenu {
       }
       return;
     }
-    if(savegame instanceof NewSaveItem){
+    if (savegame instanceof NewSaveItem) {
       this.manager.MenuSaveName.show();
-      this.manager.MenuSaveName.onSave = ( name = '' ) => {
+      this.manager.MenuSaveName.onSave = (name = '') => {
         console.log('SaveGame', name);
       };
     }
@@ -160,8 +158,7 @@ export class MenuSaveLoad extends GameMenu {
     if (this.selected instanceof SaveGame) {
       this.LB_GAMES.selectItem(this.selected);
       if (this.selected instanceof NewSaveItem) {
-
-      }else{
+      } else {
         this.selected.getThumbnail().then((texture: OdysseyTexture) => {
           this.LBL_SCREENSHOT.setFillTexture(texture);
           (this.LBL_SCREENSHOT.getFill().material as THREE.ShaderMaterial).transparent = false;
@@ -202,16 +199,15 @@ export class MenuSaveLoad extends GameMenu {
   triggerControllerDDownPress() {
     this.LB_GAMES.directionalNavigate('down');
   }
-  
 }
 
 export class NewSaveItem extends SaveGame {
-  constructor(){
+  constructor() {
     super();
     this.isNewSave = true;
   }
 
-  getFullName(){
+  getFullName() {
     return GameState.TLKManager.TLKStrings[1586].Value;
   }
 
@@ -222,4 +218,3 @@ export class NewSaveItem extends SaveGame {
   async loadInventory(): Promise<void> {}
   async loadPartyTable(): Promise<void> {}
 }
-

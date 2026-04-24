@@ -203,10 +203,14 @@ let resources: Awaited<ReturnType<typeof loadTestInstallation>> | null = null;
       expect(result.fileType).toBe('UTC');
     }
 
-    const emptyResults = await findTemplateResrefReferences(resources?.resources ?? [], 'nonexistent_template_xyz_123', {
-      partialMatch: false,
-      caseSensitive: false,
-    });
+    const emptyResults = await findTemplateResrefReferences(
+      resources?.resources ?? [],
+      'nonexistent_template_xyz_123',
+      {
+        partialMatch: false,
+        caseSensitive: false,
+      }
+    );
     expect(emptyResults).toEqual([]);
   });
 

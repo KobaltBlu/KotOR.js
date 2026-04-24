@@ -1,6 +1,6 @@
-import { OdysseyModelClass } from "@/enums/odyssey/OdysseyModelClass";
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { OdysseyModelClass } from '@/enums/odyssey/OdysseyModelClass';
+import { OdysseyModelControllerType } from '@/enums/odyssey/OdysseyModelControllerType';
+import { OdysseyModelNodeType } from '@/enums/odyssey/OdysseyModelNodeType';
 
 /** MDLedit `RoundDec` then `TruncateDec` (see research/mdledit/general.cpp). */
 export function roundDec(fNumber: number, nDecPlaces: number): number {
@@ -12,138 +12,138 @@ export function roundDec(fNumber: number, nDecPlaces: number): number {
 }
 
 export function truncateDec(s: string): string {
-  const n = s.indexOf("e");
-  let sPart2 = "";
+  const n = s.indexOf('e');
+  let sPart2 = '';
   let sCopy = s;
   if (n !== -1) {
     sPart2 = s.slice(n);
     sCopy = s.slice(0, n);
   }
-  if (sCopy.indexOf(".") === -1) {
-    return sCopy + ".0" + sPart2;
+  if (sCopy.indexOf('.') === -1) {
+    return sCopy + '.0' + sPart2;
   }
-  while (sCopy.endsWith("0")) {
+  while (sCopy.endsWith('0')) {
     sCopy = sCopy.slice(0, -1);
   }
-  if (sCopy.endsWith(".")) {
-    sCopy += "0";
+  if (sCopy.endsWith('.')) {
+    sCopy += '0';
   }
   return sCopy + sPart2;
 }
 
 export function prepareFloat(fFloat: number, finiteOnly = true): string {
   if (!Number.isFinite(fFloat)) {
-    return finiteOnly ? "0.0" : String(fFloat);
+    return finiteOnly ? '0.0' : String(fFloat);
   }
   const rounded = roundDec(fFloat, 8);
   const ss = rounded.toPrecision(6);
-  return truncateDec(ss.indexOf("e") >= 0 ? String(rounded) : ss);
+  return truncateDec(ss.indexOf('e') >= 0 ? String(rounded) : ss);
 }
 
 export function classificationToAscii(nClassification: number): string {
   switch (nClassification) {
     case OdysseyModelClass.OTHER:
-      return "other";
+      return 'other';
     case OdysseyModelClass.EFFECT:
-      return "effect";
+      return 'effect';
     case OdysseyModelClass.TILE:
-      return "tile";
+      return 'tile';
     case OdysseyModelClass.CREATURE:
-      return "character";
+      return 'character';
     case OdysseyModelClass.DOOR:
-      return "door";
+      return 'door';
     case OdysseyModelClass.LIGHTSABER:
-      return "lightsaber";
+      return 'lightsaber';
     case OdysseyModelClass.PLACEABLE:
-      return "placeable";
+      return 'placeable';
     case OdysseyModelClass.FLYER:
-      return "flyer";
+      return 'flyer';
     default:
-      return "unknown";
+      return 'unknown';
   }
 }
 
 export function controllerTypeToAscii(type: OdysseyModelControllerType, nodeType: number): string {
   switch (type) {
     case OdysseyModelControllerType.Position:
-      return "position";
+      return 'position';
     case OdysseyModelControllerType.Orientation:
-      return "orientation";
+      return 'orientation';
     case OdysseyModelControllerType.Scale:
-      return "scale";
+      return 'scale';
   }
   if (nodeType & OdysseyModelNodeType.Light) {
     switch (type) {
       case OdysseyModelControllerType.Color:
-        return "color";
+        return 'color';
       case OdysseyModelControllerType.Radius:
-        return "radius";
+        return 'radius';
       case OdysseyModelControllerType.ShadowRadius:
-        return "shadowradius";
+        return 'shadowradius';
       case OdysseyModelControllerType.VerticalDisplacement:
-        return "verticaldisplacement";
+        return 'verticaldisplacement';
       case OdysseyModelControllerType.Multiplier:
-        return "multiplier";
+        return 'multiplier';
     }
   } else if (nodeType & OdysseyModelNodeType.Emitter) {
     const map: Partial<Record<OdysseyModelControllerType, string>> = {
-      [OdysseyModelControllerType.AlphaEnd]: "alphaEnd",
-      [OdysseyModelControllerType.AlphaStart]: "alphaStart",
-      [OdysseyModelControllerType.BirthRate]: "birthrate",
-      [OdysseyModelControllerType.Bounce_Co]: "bounce_co",
-      [OdysseyModelControllerType.CombineTime]: "combinetime",
-      [OdysseyModelControllerType.Drag]: "drag",
-      [OdysseyModelControllerType.FPS]: "fps",
-      [OdysseyModelControllerType.FrameEnd]: "frameEnd",
-      [OdysseyModelControllerType.FrameStart]: "frameStart",
-      [OdysseyModelControllerType.Gravity]: "grav",
-      [OdysseyModelControllerType.LifeExp]: "lifeExp",
-      [OdysseyModelControllerType.Mass]: "mass",
-      [OdysseyModelControllerType.P2P_Bezier2]: "p2p_bezier2",
-      [OdysseyModelControllerType.P2P_Bezier3]: "p2p_bezier3",
-      [OdysseyModelControllerType.ParticleRot]: "particleRot",
-      [OdysseyModelControllerType.RandomVelocity]: "randvel",
-      [OdysseyModelControllerType.SizeStart]: "sizeStart",
-      [OdysseyModelControllerType.SizeEnd]: "sizeEnd",
-      [OdysseyModelControllerType.SizeStart_Y]: "sizeStart_y",
-      [OdysseyModelControllerType.SizeEnd_Y]: "sizeEnd_y",
-      [OdysseyModelControllerType.Spread]: "spread",
-      [OdysseyModelControllerType.Threshold]: "threshold",
-      [OdysseyModelControllerType.Velocity]: "velocity",
-      [OdysseyModelControllerType.XSize]: "xsize",
-      [OdysseyModelControllerType.YSize]: "ysize",
-      [OdysseyModelControllerType.BlurLength]: "blurlength",
-      [OdysseyModelControllerType.LightningDelay]: "lightningDelay",
-      [OdysseyModelControllerType.LightningRadius]: "lightningRadius",
-      [OdysseyModelControllerType.LightningScale]: "lightningScale",
-      [OdysseyModelControllerType.LightningSubDiv]: "lightningSubDiv",
-      [OdysseyModelControllerType.LightningZigZag]: "lightningzigzag",
-      [OdysseyModelControllerType.AlphaMid]: "alphaMid",
-      [OdysseyModelControllerType.PercentStart]: "percentStart",
-      [OdysseyModelControllerType.PercentMid]: "percentMid",
-      [OdysseyModelControllerType.PercentEnd]: "percentEnd",
-      [OdysseyModelControllerType.SizeMid]: "sizeMid",
-      [OdysseyModelControllerType.SizeMid_Y]: "sizeMid_y",
-      [OdysseyModelControllerType.RandomBirthRate]: "m_frandombirthrate",
-      [OdysseyModelControllerType.TargetSize]: "targetsize",
-      [OdysseyModelControllerType.ControlPTCount]: "numcontrolpts",
-      [OdysseyModelControllerType.ControlPTRadius]: "controlptradius",
-      [OdysseyModelControllerType.ControlPTDelay]: "controlptdelay",
-      [OdysseyModelControllerType.TangentSpread]: "tangentspread",
-      [OdysseyModelControllerType.TangentLength]: "tangentlength",
-      [OdysseyModelControllerType.ColorMid]: "colormid",
-      [OdysseyModelControllerType.ColorEnd]: "colorend",
-      [OdysseyModelControllerType.ColorStart]: "colorstart",
-      [OdysseyModelControllerType.Detonate]: "detonate",
+      [OdysseyModelControllerType.AlphaEnd]: 'alphaEnd',
+      [OdysseyModelControllerType.AlphaStart]: 'alphaStart',
+      [OdysseyModelControllerType.BirthRate]: 'birthrate',
+      [OdysseyModelControllerType.Bounce_Co]: 'bounce_co',
+      [OdysseyModelControllerType.CombineTime]: 'combinetime',
+      [OdysseyModelControllerType.Drag]: 'drag',
+      [OdysseyModelControllerType.FPS]: 'fps',
+      [OdysseyModelControllerType.FrameEnd]: 'frameEnd',
+      [OdysseyModelControllerType.FrameStart]: 'frameStart',
+      [OdysseyModelControllerType.Gravity]: 'grav',
+      [OdysseyModelControllerType.LifeExp]: 'lifeExp',
+      [OdysseyModelControllerType.Mass]: 'mass',
+      [OdysseyModelControllerType.P2P_Bezier2]: 'p2p_bezier2',
+      [OdysseyModelControllerType.P2P_Bezier3]: 'p2p_bezier3',
+      [OdysseyModelControllerType.ParticleRot]: 'particleRot',
+      [OdysseyModelControllerType.RandomVelocity]: 'randvel',
+      [OdysseyModelControllerType.SizeStart]: 'sizeStart',
+      [OdysseyModelControllerType.SizeEnd]: 'sizeEnd',
+      [OdysseyModelControllerType.SizeStart_Y]: 'sizeStart_y',
+      [OdysseyModelControllerType.SizeEnd_Y]: 'sizeEnd_y',
+      [OdysseyModelControllerType.Spread]: 'spread',
+      [OdysseyModelControllerType.Threshold]: 'threshold',
+      [OdysseyModelControllerType.Velocity]: 'velocity',
+      [OdysseyModelControllerType.XSize]: 'xsize',
+      [OdysseyModelControllerType.YSize]: 'ysize',
+      [OdysseyModelControllerType.BlurLength]: 'blurlength',
+      [OdysseyModelControllerType.LightningDelay]: 'lightningDelay',
+      [OdysseyModelControllerType.LightningRadius]: 'lightningRadius',
+      [OdysseyModelControllerType.LightningScale]: 'lightningScale',
+      [OdysseyModelControllerType.LightningSubDiv]: 'lightningSubDiv',
+      [OdysseyModelControllerType.LightningZigZag]: 'lightningzigzag',
+      [OdysseyModelControllerType.AlphaMid]: 'alphaMid',
+      [OdysseyModelControllerType.PercentStart]: 'percentStart',
+      [OdysseyModelControllerType.PercentMid]: 'percentMid',
+      [OdysseyModelControllerType.PercentEnd]: 'percentEnd',
+      [OdysseyModelControllerType.SizeMid]: 'sizeMid',
+      [OdysseyModelControllerType.SizeMid_Y]: 'sizeMid_y',
+      [OdysseyModelControllerType.RandomBirthRate]: 'm_frandombirthrate',
+      [OdysseyModelControllerType.TargetSize]: 'targetsize',
+      [OdysseyModelControllerType.ControlPTCount]: 'numcontrolpts',
+      [OdysseyModelControllerType.ControlPTRadius]: 'controlptradius',
+      [OdysseyModelControllerType.ControlPTDelay]: 'controlptdelay',
+      [OdysseyModelControllerType.TangentSpread]: 'tangentspread',
+      [OdysseyModelControllerType.TangentLength]: 'tangentlength',
+      [OdysseyModelControllerType.ColorMid]: 'colormid',
+      [OdysseyModelControllerType.ColorEnd]: 'colorend',
+      [OdysseyModelControllerType.ColorStart]: 'colorstart',
+      [OdysseyModelControllerType.Detonate]: 'detonate',
     };
     const s = map[type];
     if (s) return s;
   } else if (nodeType & OdysseyModelNodeType.Mesh) {
     switch (type) {
       case OdysseyModelControllerType.SelfIllumColor:
-        return "selfillumcolor";
+        return 'selfillumcolor';
       case OdysseyModelControllerType.Alpha:
-        return "alpha";
+        return 'alpha';
     }
   }
   return `controller_${type}`;
@@ -154,7 +154,7 @@ export function quaternionToAxisAngleFromXYZW(
   x: number,
   y: number,
   z: number,
-  w: number,
+  w: number
 ): { ax: number; ay: number; az: number; angle: number } {
   const len = Math.sqrt(x * x + y * y + z * z + w * w) || 1;
   const qx = x / len;

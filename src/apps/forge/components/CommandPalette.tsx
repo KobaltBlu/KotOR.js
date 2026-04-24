@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Modal, Form, ListGroup } from "react-bootstrap";
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Modal, Form, ListGroup } from 'react-bootstrap';
 
-import { CommandPaletteState, CommandPaletteCommand } from "@/apps/forge/states/CommandPaletteState";
-import "@/apps/forge/components/CommandPalette.scss";
+import { CommandPaletteState, CommandPaletteCommand } from '@/apps/forge/states/CommandPaletteState';
+import '@/apps/forge/components/CommandPalette.scss';
 
 export interface CommandPaletteProps {
   show: boolean;
@@ -10,13 +10,13 @@ export interface CommandPaletteProps {
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ show, onHide }) => {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const commands = CommandPaletteState.getFilteredCommands(query);
   const byCategory = commands.reduce<Record<string, CommandPaletteCommand[]>>((acc, cmd) => {
-    const cat = cmd.category || "Other";
+    const cat = cmd.category || 'Other';
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(cmd);
     return acc;
@@ -35,7 +35,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ show, onHide }) 
 
   useEffect(() => {
     if (show) {
-      setQuery("");
+      setQuery('');
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
@@ -47,23 +47,23 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ show, onHide }) 
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "ArrowDown") {
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex((i) => Math.min(i + 1, flatCommands.length - 1));
         return;
       }
-      if (e.key === "ArrowUp") {
+      if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex((i) => Math.max(i - 1, 0));
         return;
       }
-      if (e.key === "Enter") {
+      if (e.key === 'Enter') {
         e.preventDefault();
         const cmd = flatCommands[safeIndex];
         if (cmd) handleExecute(cmd);
         return;
       }
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         e.preventDefault();
         onHide();
       }
@@ -97,9 +97,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ show, onHide }) 
             <ListGroup variant="flush">
               {Object.entries(byCategory).map(([cat, cmds]) => (
                 <React.Fragment key={cat}>
-                  <ListGroup.Item className="command-palette-category text-muted small py-1">
-                    {cat}
-                  </ListGroup.Item>
+                  <ListGroup.Item className="command-palette-category text-muted small py-1">{cat}</ListGroup.Item>
                   {cmds.map((cmd, _i) => {
                     const flatIdx = flatCommands.indexOf(cmd);
                     const isSelected = flatIdx === safeIndex;

@@ -1,8 +1,8 @@
-import React, { useState, useCallback, memo, useMemo } from "react";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
+import React, { useState, useCallback, memo, useMemo } from 'react';
+import { FileBrowserNode } from '@/apps/forge/FileBrowserNode';
+import { FileTypeManager } from '@/apps/forge/FileTypeManager';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import { ListItemNode } from '@/apps/forge/components/treeview/ListItemNode';
 
 export interface ResourceListNodeProps {
   node: FileBrowserNode;
@@ -29,7 +29,7 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
       await onToggleNode(node);
       setLoadingChildren(false);
     }
-    setOpenState(prev => !prev);
+    setOpenState((prev) => !prev);
   }, [node, onToggleNode, openState]);
 
   const handleClick = useCallback(() => {
@@ -50,27 +50,33 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
     }
   }, [node]);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    console.log('Context menu for:', node.name);
-    // Add context menu logic here
-    if(typeof onContextMenu === 'function'){
-      onContextMenu(e, node);
-    }
-  }, [node, onContextMenu]);
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      console.log('Context menu for:', node.name);
+      // Add context menu logic here
+      if (typeof onContextMenu === 'function') {
+        onContextMenu(e, node);
+      }
+    },
+    [node, onContextMenu]
+  );
 
-  const handleSelect = useCallback((nodeId: string) => {
-    if (onSelect) {
-      onSelect(node);
-    }
-  }, [node, onSelect]);
+  const handleSelect = useCallback(
+    (nodeId: string) => {
+      if (onSelect) {
+        onSelect(node);
+      }
+    },
+    [node, onSelect]
+  );
 
   // Memoize child nodes to prevent unnecessary re-renders
   const childNodes = useMemo(() => {
     if (!openState || !hasChildren) return null;
     return node.nodes.map((child: FileBrowserNode) => (
-      <ResourceListNode 
-        key={child.id} 
-        node={child} 
+      <ResourceListNode
+        key={child.id}
+        node={child}
         depth={depth + 1}
         isSelected={false}
         onSelect={onSelect}

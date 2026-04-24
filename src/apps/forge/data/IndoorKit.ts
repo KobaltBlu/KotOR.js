@@ -1,8 +1,7 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 
-import { CaseInsensitiveMap } from "@/apps/forge/data/CaseInsensitiveMap";
-import type { OdysseyWalkMesh } from "@/apps/forge/KotOR";
-
+import { CaseInsensitiveMap } from '@/apps/forge/data/CaseInsensitiveMap';
+import type { OdysseyWalkMesh } from '@/apps/forge/KotOR';
 
 export class Kit {
   name: string;
@@ -35,7 +34,15 @@ export class KitComponent {
   defaultPosition: THREE.Vector3 = new THREE.Vector3();
   image: HTMLCanvasElement | ImageBitmap | null = null;
 
-  constructor(kit: Kit, name: string, componentId: string, bwm: OdysseyWalkMesh, bwmRaw: Uint8Array, mdl: Uint8Array, mdx: Uint8Array) {
+  constructor(
+    kit: Kit,
+    name: string,
+    componentId: string,
+    bwm: OdysseyWalkMesh,
+    bwmRaw: Uint8Array,
+    mdl: Uint8Array,
+    mdx: Uint8Array
+  ) {
     this.kit = kit;
     this.id = componentId;
     this.name = name;
@@ -68,7 +75,14 @@ export class KitDoor {
   width: number;
   height: number;
 
-  constructor(utdK1ResRef: string, utdK2ResRef: string, utdK1: Uint8Array, utdK2: Uint8Array, width: number, height: number) {
+  constructor(
+    utdK1ResRef: string,
+    utdK2ResRef: string,
+    utdK1: Uint8Array,
+    utdK2: Uint8Array,
+    width: number,
+    height: number
+  ) {
     this.utdK1ResRef = utdK1ResRef;
     this.utdK2ResRef = utdK2ResRef;
     this.utdK1 = utdK1;

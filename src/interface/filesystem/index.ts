@@ -1,1 +1,1 @@
-export * from "@/interface/filesystem/IGameFileSystemReadDirOptions";
+export * from '@/interface/filesystem/IGameFileSystemReadDirOptions';

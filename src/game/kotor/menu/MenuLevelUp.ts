@@ -1,5 +1,5 @@
-import { GameMenu } from "@/gui";
-import type { GUILabel, GUIButton, GUIControl } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUILabel, GUIButton, GUIControl } from '@/gui';
 
 /**
  * MenuLevelUp class.
@@ -11,7 +11,6 @@ import type { GUILabel, GUIButton, GUIControl } from "@/gui";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuLevelUp extends GameMenu {
-
   LBL_BG: GUILabel;
   BTN_BACK: GUIButton;
   LBL_5: GUIControl;
@@ -30,7 +29,7 @@ export class MenuLevelUp extends GameMenu {
   BTN_STEPNAME3: GUIButton;
   BTN_STEPNAME5: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'leveluppnl';
     this.background = '1600x1200back';
@@ -39,10 +38,9 @@ export class MenuLevelUp extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
-
 }

@@ -1,11 +1,11 @@
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from "@/apps/forge/KotOR";
-import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
-import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import { EventListenerModel } from '@/apps/forge/EventListenerModel';
+import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from '@/apps/forge/KotOR';
+import { SceneGraphNode } from '@/apps/forge/SceneGraphNode';
+import { GroupType, type UI3DRenderer } from '@/apps/forge/UI3DRenderer';
+import { ForgeEncounter } from '@/apps/forge/module-editor/ForgeEncounter';
+import { ForgeGameObject } from '@/apps/forge/module-editor/ForgeGameObject';
+import { ForgeRoom } from '@/apps/forge/module-editor/ForgeRoom';
+import { ForgeTrigger } from '@/apps/forge/module-editor/ForgeTrigger';
 
 export interface IModuleGroupNode {
   key: GroupType;
@@ -15,18 +15,17 @@ export interface IModuleGroupNode {
 }
 
 export class SceneGraphTreeViewManager extends EventListenerModel {
-
   context: UI3DRenderer;
 
   parentNodes: SceneGraphNode[] = [];
-  sceneNode: SceneGraphNode = new SceneGraphNode({name: 'Scene'});
-  camerasNode: SceneGraphNode = new SceneGraphNode({name: 'Cameras'});
-  lightingNode: SceneGraphNode = new SceneGraphNode({name: 'Lights'});
-  objectsNode: SceneGraphNode = new SceneGraphNode({name: 'Objects'});
+  sceneNode: SceneGraphNode = new SceneGraphNode({ name: 'Scene' });
+  camerasNode: SceneGraphNode = new SceneGraphNode({ name: 'Cameras' });
+  lightingNode: SceneGraphNode = new SceneGraphNode({ name: 'Lights' });
+  objectsNode: SceneGraphNode = new SceneGraphNode({ name: 'Objects' });
 
   groupNodes: Map<GroupType, SceneGraphNode> = new Map();
 
-  constructor(){
+  constructor() {
     super();
     this.sceneNode.addChildNode(this.camerasNode);
     this.sceneNode.addChildNode(this.lightingNode);
@@ -35,7 +34,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
     this.sceneNode.expandNode();
   }
 
-  attachUI3DRenderer(context: UI3DRenderer){
+  attachUI3DRenderer(context: UI3DRenderer) {
     this.context = context;
     this.context.addEventListener('onModuleSet', this.rebuild.bind(this));
     this.context.addEventListener('onSelect', (object: any) => {
@@ -44,7 +43,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
     this.rebuild();
   }
 
-  syncSelection(object: any){
+  syncSelection(object: any) {
     const resolved = this.resolveOdysseyObject(object);
     this.sceneNode.traverseChildren((node: SceneGraphNode) => {
       if (node.data != null && node.data === resolved) {
@@ -67,25 +66,24 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
     return object;
   }
 
-  rebuild(){
-
+  rebuild() {
     this.camerasNode.setNodes([]);
     this.lightingNode.setNodes([]);
     this.objectsNode.setNodes([]);
 
-    if(!this.context){
+    if (!this.context) {
       return;
     }
 
-    if(this.context.module){
+    if (this.context.module) {
       this.buildModuleSceneGraph();
       return;
     }
-    
+
     this.buildGenericSceneGraph();
   }
 
-  buildModuleSceneGraph(){
+  buildModuleSceneGraph() {
     this.sceneNode.name = 'Module: ' + this.context.module.entryArea;
     const groups: IModuleGroupNode[] = [
       {
@@ -153,40 +151,36 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
         name: 'Waypoints',
         icon: 'fa-solid fa-location-pin',
         objects: this.context.module.area.waypoints,
-      }
+      },
     ];
-    
-    for(let i = 0; i < groups.length; i++){
+
+    for (let i = 0; i < groups.length; i++) {
       const group = groups[i];
 
       let groupNode = this.groupNodes.get(group.key);
-      if(!groupNode){
+      if (!groupNode) {
         groupNode = new SceneGraphNode({
           uuid: group.key,
           name: group.name,
           data: undefined,
           icon: group.icon,
           nodes: [],
-          onClick: (node) => {
-            
-          },
+          onClick: (node) => {},
         });
         this.sceneNode.addChildNode(groupNode);
         this.groupNodes.set(group.key, groupNode);
-      }
-      else
-      {
+      } else {
         // Use setNodes() instead of direct assignment to fire onNodesChange event
         groupNode.setNodes([]);
       }
 
-      for(let j = 0; j < group.objects.length; j++){
+      for (let j = 0; j < group.objects.length; j++) {
         const child = group.objects[j];
-        if(!child){
+        if (!child) {
           continue;
         }
 
-        const nodeNode =  new SceneGraphNode({
+        const nodeNode = new SceneGraphNode({
           uuid: child.uuid,
           name: child.getEditorName(),
           icon: group.icon,
@@ -195,11 +189,11 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
             this.context.selectObject(node.data.container);
           },
         });
-        
-        if(group.key == GroupType.ROOMS){
+
+        if (group.key == GroupType.ROOMS) {
           const room = child as ForgeRoom;
-          if(room.walkmesh){
-            const walkmeshNode =  new SceneGraphNode({
+          if (room.walkmesh) {
+            const walkmeshNode = new SceneGraphNode({
               uuid: room.walkmesh.uuid,
               name: 'Walkmesh',
               icon: 'fa-solid fa-person-walking-dashed-line-arrow-right',
@@ -212,11 +206,11 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
           }
         }
 
-        if(group.key == GroupType.TRIGGER || group.key == GroupType.ENCOUNTER){
+        if (group.key == GroupType.TRIGGER || group.key == GroupType.ENCOUNTER) {
           const trigger = child as ForgeTrigger | ForgeEncounter;
-          for(let k = 0; k < trigger.vertices.length; k++){
+          for (let k = 0; k < trigger.vertices.length; k++) {
             const vertex = trigger.vertices[k];
-            const vertexNode =  new SceneGraphNode({
+            const vertexNode = new SceneGraphNode({
               uuid: `vertex-${k}`,
               name: 'Vertex',
               icon: 'fa-solid fa-circle',
@@ -235,9 +229,9 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
     this.processEventListener('onBuild', [this.parentNodes]);
   }
 
-  buildGenericSceneGraph(){
+  buildGenericSceneGraph() {
     this.sceneNode.name = 'Scene';
-    if(this.context.camera){
+    if (this.context.camera) {
       this.camerasNode.addChildNode(
         new SceneGraphNode({
           uuid: this.context.camera.uuid,
@@ -250,7 +244,7 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
       );
     }
 
-    for(let i = 0; i < this.context.cameras.length; i++){
+    for (let i = 0; i < this.context.cameras.length; i++) {
       const camera = this.context.cameras[i];
       this.camerasNode.addChildNode(
         new SceneGraphNode({
@@ -264,67 +258,64 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
       );
     }
 
-    if(this.context.globalLight){
+    if (this.context.globalLight) {
       this.lightingNode.addChildNode(
         new SceneGraphNode({
           uuid: this.context.globalLight.uuid,
           name: 'Ambient Light',
           data: this.context.globalLight,
-          onClick: (node) => {
-
-          },
+          onClick: (node) => {},
         })
       );
     }
 
-    for(let i = 0; i < this.context.odysseyModels.length; i++){
+    for (let i = 0; i < this.context.odysseyModels.length; i++) {
       const model = this.context.odysseyModels[i];
 
       const processNode = (node: OdysseyObject3D, parentNode: SceneGraphNode) => {
-
         let icon = '';
 
         const odysseyNode = node.odysseyModelNode || (node as any).odysseyNode;
-        if(!odysseyNode){
+        if (!odysseyNode) {
           return;
         }
 
-        if ((odysseyNode.nodeType & OdysseyModelNodeType.Header) == OdysseyModelNodeType.Header){
+        if ((odysseyNode.nodeType & OdysseyModelNodeType.Header) == OdysseyModelNodeType.Header) {
           icon = 'fa-regular fa-square';
         }
-  
+
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference) {
           icon = 'fa-solid fa-circle-nodes';
         }
-  
+
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
           icon = 'fa-solid fa-lightbulb';
         }
-  
+
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
           icon = 'fa-solid fa-vector-square';
         }
-  
+
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
           icon = 'fa-solid fa-shirt';
         }
-  
+
         if ((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) {
           icon = 'fa-solid fa-person-walking-dashed-line-arrow-right';
         }
-  
+
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly) {
           icon = 'fa-solid fa-flag';
         }
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber) {
           icon = 'fa-solid fa-wand-magic';
         }
-  
+
         if ((odysseyNode.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
           icon = 'fa-solid fa-burst';
         }
-        
-        const nodeNode =  new SceneGraphNode({
+
+        const nodeNode = new SceneGraphNode({
           uuid: node.uuid,
           name: node.name,
           icon: icon,
@@ -334,10 +325,10 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
           },
         });
 
-        if(node.children){
-          for(let i = 0; i < node.children.length; i++){
+        if (node.children) {
+          for (let i = 0; i < node.children.length; i++) {
             const child = node.children[i];
-            if(child instanceof OdysseyObject3D){
+            if (child instanceof OdysseyObject3D) {
               processNode(child, nodeNode);
             }
           }
@@ -346,15 +337,13 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
         parentNode.addChildNode(nodeNode);
 
         return nodeNode;
-      }
+      };
 
       const modelNode = new SceneGraphNode({
         uuid: model.uuid,
         name: model.name,
         data: model,
-        onClick: (node) => {
-
-        },
+        onClick: (node) => {},
       });
 
       const rootNode = model.getRootOdysseyNode?.();
@@ -367,5 +356,4 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
 
     this.processEventListener('onBuild', [this.parentNodes]);
   }
-
 }

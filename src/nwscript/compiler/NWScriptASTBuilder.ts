@@ -1,6 +1,33 @@
-import { ArgumentNode, BlockNode, BreakNode, CaseNode, CommentNode, ContinueNode, DataTypeNode, DefaultNode, DefineNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionNode, IfNode, IncludeNode, ProgramNode, ReturnNode, StatementNode, StructNode, SwitchNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "@/nwscript/compiler/ASTTypes";
-import { NWScriptLexer } from "@/nwscript/compiler/NWScriptLexer";
-import type { Token } from "@/nwscript/compiler/NWScriptToken";
+import {
+  ArgumentNode,
+  BlockNode,
+  BreakNode,
+  CaseNode,
+  CommentNode,
+  ContinueNode,
+  DataTypeNode,
+  DefaultNode,
+  DefineNode,
+  DoWhileNode,
+  ElseIfNode,
+  ElseNode,
+  ExpressionNode,
+  ForNode,
+  FunctionNode,
+  IfNode,
+  IncludeNode,
+  ProgramNode,
+  ReturnNode,
+  StatementNode,
+  StructNode,
+  SwitchNode,
+  VariableListNode,
+  VariableNode,
+  VariableReferenceNode,
+  WhileNode,
+} from '@/nwscript/compiler/ASTTypes';
+import { NWScriptLexer } from '@/nwscript/compiler/NWScriptLexer';
+import type { Token } from '@/nwscript/compiler/NWScriptToken';
 
 const _NWEngineTypeUnaryTypeOffset = 0x10;
 const NWCompileDataTypes: Record<string, number> = {
@@ -10,25 +37,25 @@ const NWCompileDataTypes: Record<string, number> = {
   string: 0x05,
   object: 0x06,
   struct: 0x12,
-  vector: 0x0A, // you use 'V' elsewhere; parser just needs unary to exist
-  action: 0x0E,
+  vector: 0x0a, // you use 'V' elsewhere; parser just needs unary to exist
+  action: 0x0e,
 };
 
 // Error shape compatible with NWScriptParser error console consumption
 export class NWScriptASTBuilderError extends Error {
-  type = "parse" as const;
+  type = 'parse' as const;
   statement: Token | ExpressionNode | undefined;
   offender: Token | ExpressionNode | undefined;
   constructor(message: string, offender: Token | ExpressionNode | undefined = undefined) {
     super(message);
-    this.name = "NWScriptASTBuilderError";
+    this.name = 'NWScriptASTBuilderError';
     this.offender = offender;
     this.statement = offender;
   }
 }
 
 function dt(value: string, unary: number, engine_type = false): DataTypeNode {
-  return { type: "datatype", value, unary, engine_type: engine_type || undefined };
+  return { type: 'datatype', value, unary, engine_type: engine_type || undefined };
 }
 
 export interface ASTBuilderOptions {
@@ -57,16 +84,16 @@ export class NWScriptASTBuilder {
     this.tok = this.lex.next();
   }
 
-  private is(type: Token["type"], value?: string): boolean {
+  private is(type: Token['type'], value?: string): boolean {
     if (this.tok.type !== type) return false;
     if (value !== undefined) return this.tok.value === value;
     return true;
   }
 
-  private expect(type: Token["type"], value?: string): Token {
+  private expect(type: Token['type'], value?: string): Token {
     if (!this.is(type, value)) {
       const got = `${this.tok.type}:${this.tok.value}`;
-      const want = `${type}${value ? ":" + value : ""}`;
+      const want = `${type}${value ? ':' + value : ''}`;
       throw new NWScriptASTBuilderError(
         `Parse error: expected ${want}, got ${got} @ ${this.tok.source.first_line}:${this.tok.source.first_column}`,
         this.tok
@@ -82,7 +109,7 @@ export class NWScriptASTBuilder {
    * Some legacy scripts use keywords (e.g., TRUE) as identifiers in defines or vars.
    */
   private expectNameToken(): Token {
-    if (this.tok.type === "name" || this.tok.type === "keyword") {
+    if (this.tok.type === 'name' || this.tok.type === 'keyword') {
       const t = this.tok;
       this.next();
       return t;
@@ -96,11 +123,11 @@ export class NWScriptASTBuilder {
 
   parseAST(): ProgramNode {
     const statements: StatementNode[] = [];
-    while (!this.is("eof")) {
+    while (!this.is('eof')) {
       const st = this.parseTopLevelStatement();
       if (st) statements.push(st);
     }
-    return { type: "program", statements };
+    return { type: 'program', statements };
   }
 
   private parseTopLevelStatement(): StatementNode | null {
@@ -110,19 +137,19 @@ export class NWScriptASTBuilder {
     }
 
     // allow stray semicolons
-    if (this.is("punct", ";")) {
+    if (this.is('punct', ';')) {
       this.next();
       return null;
     }
 
     // Handle comments (only if not ignoring them)
-    if (!this.ignoreComments && this.is("comment")) {
+    if (!this.ignoreComments && this.is('comment')) {
       return this.parseComment();
     }
 
-    if (this.is("keyword", "DEFINE")) return this.parseDefine();
-    if (this.is("keyword", "INCLUDE")) return this.parseInclude();
-    if (this.is("keyword", "STRUCT")) return this.parseStructDeclOrVar();
+    if (this.is('keyword', 'DEFINE')) return this.parseDefine();
+    if (this.is('keyword', 'INCLUDE')) return this.parseInclude();
+    if (this.is('keyword', 'STRUCT')) return this.parseStructDeclOrVar();
     return this.parseDeclOrStatement();
   }
 
@@ -130,7 +157,7 @@ export class NWScriptASTBuilder {
     const tok = this.tok;
     this.next();
     return {
-      type: "comment",
+      type: 'comment',
       value: tok.value,
       source: tok.source,
     };
@@ -138,7 +165,7 @@ export class NWScriptASTBuilder {
 
   // Helper method to skip all consecutive comments
   private skipComments(): void {
-    while (this.is("comment")) {
+    while (this.is('comment')) {
       this.next();
     }
   }
@@ -150,26 +177,26 @@ export class NWScriptASTBuilder {
     }
 
     // Handle comments (only if not ignoring them)
-    if (!this.ignoreComments && this.is("comment")) {
+    if (!this.ignoreComments && this.is('comment')) {
       return this.parseComment();
     }
 
     // const? datatype name ...
     // or control-flow statements
-    if (this.is("keyword", "IF")) return this.parseIf();
-    if (this.is("keyword", "SWITCH")) return this.parseSwitch();
-    if (this.is("keyword", "WHILE")) return this.parseWhile();
-    if (this.is("keyword", "DO")) return this.parseDoWhile();
-    if (this.is("keyword", "FOR")) return this.parseFor();
-    if (this.is("keyword", "RETURN")) return this.parseReturn();
-    if (this.is("keyword", "BREAK")) return this.parseBreak();
-    if (this.is("keyword", "CONTINUE")) return this.parseContinue();
-    if (this.is("punct", "{")) return this.parseBlock();
+    if (this.is('keyword', 'IF')) return this.parseIf();
+    if (this.is('keyword', 'SWITCH')) return this.parseSwitch();
+    if (this.is('keyword', 'WHILE')) return this.parseWhile();
+    if (this.is('keyword', 'DO')) return this.parseDoWhile();
+    if (this.is('keyword', 'FOR')) return this.parseFor();
+    if (this.is('keyword', 'RETURN')) return this.parseReturn();
+    if (this.is('keyword', 'BREAK')) return this.parseBreak();
+    if (this.is('keyword', 'CONTINUE')) return this.parseContinue();
+    if (this.is('punct', '{')) return this.parseBlock();
 
     // attempt declaration: [const] datatype name ...
     const save = this.tok;
 
-    const isConst = this.is("keyword", "CONST");
+    const isConst = this.is('keyword', 'CONST');
     if (isConst) this.next();
 
     const dataType = this.tryParseDataType();
@@ -179,7 +206,7 @@ export class NWScriptASTBuilder {
       const name = nameTok.value;
 
       // function?
-      if (this.is("punct", "(")) {
+      if (this.is('punct', '(')) {
         return this.finishFunctionDecl(isConst, dataType, name, nameTok);
       }
 
@@ -194,77 +221,87 @@ export class NWScriptASTBuilder {
     }
 
     const expr = this.parseExpression(0);
-    this.expect("punct", ";");
-    if (expr && (expr as VariableReferenceNode).type === "variable_reference") {
+    this.expect('punct', ';');
+    if (expr && (expr as VariableReferenceNode).type === 'variable_reference') {
       (expr as VariableReferenceNode).terminated = true;
     }
     return expr;
   }
 
   private parseDefine(): DefineNode {
-    this.expect("keyword", "DEFINE");
+    this.expect('keyword', 'DEFINE');
     const nameTok = this.expectNameToken();
     // value can be integer, name, datatype in your old grammar
-    let value: DefineNode["value"];
+    let value: DefineNode['value'];
 
-    if (this.is("int")) {
-      const t = this.expect("int");
-      value = { type: "literal", datatype: dt("int", NWCompileDataTypes.int), value: parseInt(t.value, 10), source: t.source };
-    } else if (this.is("keyword")) {
+    if (this.is('int')) {
+      const t = this.expect('int');
+      value = {
+        type: 'literal',
+        datatype: dt('int', NWCompileDataTypes.int),
+        value: parseInt(t.value, 10),
+        source: t.source,
+      };
+    } else if (this.is('keyword')) {
       // datatype define
       const d = this.tryParseDataType();
-      if (!d) throw new Error("Invalid #define datatype");
+      if (!d) throw new Error('Invalid #define datatype');
       value = d;
     } else {
-      const t = this.expect("name");
-      value = { type: "name", value: t.value, source: t.source };
+      const t = this.expect('name');
+      value = { type: 'name', value: t.value, source: t.source };
     }
 
-    return { type: "define", name: { type: "name", value: nameTok.value, source: nameTok.source }, value };
+    return { type: 'define', name: { type: 'name', value: nameTok.value, source: nameTok.source }, value };
   }
 
   private parseInclude(): IncludeNode {
-    this.expect("keyword", "INCLUDE");
+    this.expect('keyword', 'INCLUDE');
     // next token is typically a string, but some scripts use NAME; accept both
-    let target: IncludeNode["value"];
-    if (this.is("string")) {
-      const t = this.expect("string");
-      target = { type: "literal", datatype: dt("string", NWCompileDataTypes.string), value: t.value, source: t.source };
+    let target: IncludeNode['value'];
+    if (this.is('string')) {
+      const t = this.expect('string');
+      target = { type: 'literal', datatype: dt('string', NWCompileDataTypes.string), value: t.value, source: t.source };
     } else {
-      const t = this.expect("name");
-      target = { type: "name", value: t.value, source: t.source };
+      const t = this.expect('name');
+      target = { type: 'name', value: t.value, source: t.source };
     }
-    return { type: "include", value: target };
+    return { type: 'include', value: target };
   }
 
   private parseStructDeclOrVar(): StructNode | VariableNode | VariableListNode {
-    const kw = this.expect("keyword", "STRUCT");
-    const nameTok = this.expect("name");
+    const kw = this.expect('keyword', 'STRUCT');
+    const nameTok = this.expect('name');
 
     // Struct definition
-    if (this.is("punct", "{")) {
+    if (this.is('punct', '{')) {
       this.next(); // consume '{'
 
-      const properties: Array<{ type: "property"; datatype: DataTypeNode; name: string; source: { first_line?: number; first_column?: number } }> = [];
-      while (!this.is("punct", "}")) {
+      const properties: Array<{
+        type: 'property';
+        datatype: DataTypeNode;
+        name: string;
+        source: { first_line?: number; first_column?: number };
+      }> = [];
+      while (!this.is('punct', '}')) {
         // datatype name ;
         const propType = this.mustParseDataType();
         const propNameTok = this.expectNameToken();
-        this.expect("punct", ";");
+        this.expect('punct', ';');
         properties.push({
-          type: "property",
+          type: 'property',
           datatype: propType,
           name: propNameTok.value,
           source: propNameTok.source,
         });
       }
-      this.expect("punct", "}");
+      this.expect('punct', '}');
       // optional ;
-      if (this.is("punct", ";")) this.next();
+      if (this.is('punct', ';')) this.next();
 
       return {
-        type: "struct",
-        datatype: { type: "datatype", value: "struct", unary: NWCompileDataTypes.struct, struct: nameTok.value },
+        type: 'struct',
+        datatype: { type: 'datatype', value: 'struct', unary: NWCompileDataTypes.struct, struct: nameTok.value },
         name: nameTok.value,
         properties,
         source: kw.source,
@@ -273,7 +310,7 @@ export class NWScriptASTBuilder {
 
     // Struct-typed variable declaration: struct Name var1, var2;
     const structDatatype: DataTypeNode = {
-      type: "datatype",
+      type: 'datatype',
       value: nameTok.value,
       unary: NWCompileDataTypes.struct,
       struct: nameTok.value,
@@ -284,30 +321,30 @@ export class NWScriptASTBuilder {
 
   private finishFunctionDecl(isConst: boolean, returntype: DataTypeNode, name: string, nameTok: Token): FunctionNode {
     // NOTE: NWScript doesn’t have const functions; keep flag ignored
-    this.expect("punct", "(");
+    this.expect('punct', '(');
 
     const args: ArgumentNode[] = [];
-    if (!this.is("punct", ")")) {
+    if (!this.is('punct', ')')) {
       while (true) {
         const argType = this.mustParseDataType();
 
-        const argNameTok = this.expect("name");
+        const argNameTok = this.expect('name');
         let defaultValue: ExpressionNode | undefined = undefined;
 
-        if (this.is("op", "=")) {
+        if (this.is('op', '=')) {
           this.next();
           defaultValue = this.parseExpression(0);
         }
 
         args.push({
-          type: "argument",
+          type: 'argument',
           datatype: argType,
           name: argNameTok.value,
           value: defaultValue,
           source: argNameTok.source,
         });
 
-        if (this.is("punct", ",")) {
+        if (this.is('punct', ',')) {
           this.next();
           continue;
         }
@@ -315,13 +352,13 @@ export class NWScriptASTBuilder {
       }
     }
 
-    this.expect("punct", ")");
+    this.expect('punct', ')');
 
     // header only?
-    if (this.is("punct", ";")) {
+    if (this.is('punct', ';')) {
       this.next();
       return {
-        type: "function",
+        type: 'function',
         header_only: true,
         name,
         returntype,
@@ -333,7 +370,7 @@ export class NWScriptASTBuilder {
 
     const block = this.parseBlock();
     return {
-      type: "function",
+      type: 'function',
       header_only: false,
       name,
       returntype,
@@ -343,27 +380,32 @@ export class NWScriptASTBuilder {
     };
   }
 
-  private finishVariableDecl(isConst: boolean, datatype: DataTypeNode, firstName: string, firstNameTok: Token): VariableNode | VariableListNode {
+  private finishVariableDecl(
+    isConst: boolean,
+    datatype: DataTypeNode,
+    firstName: string,
+    firstNameTok: Token
+  ): VariableNode | VariableListNode {
     // parse: name (, name)* (= expr)? ;
-    const names: VariableListNode["names"] = [{ name: firstName, source: firstNameTok.source }];
+    const names: VariableListNode['names'] = [{ name: firstName, source: firstNameTok.source }];
 
-    while (this.is("punct", ",")) {
+    while (this.is('punct', ',')) {
       this.next();
-      const n = this.expect("name");
+      const n = this.expect('name');
       names.push({ name: n.value, source: n.source });
     }
 
     let value: ExpressionNode | null = null;
-    if (this.is("op", "=")) {
+    if (this.is('op', '=')) {
       this.next();
       value = this.parseExpression(0);
     }
 
-    this.expect("punct", ";");
+    this.expect('punct', ';');
 
     if (names.length === 1) {
       return {
-        type: "variable",
+        type: 'variable',
         is_const: isConst,
         declare: true,
         datatype,
@@ -374,7 +416,7 @@ export class NWScriptASTBuilder {
     }
 
     return {
-      type: "variableList",
+      type: 'variableList',
       is_const: isConst,
       declare: true,
       datatype,
@@ -384,7 +426,7 @@ export class NWScriptASTBuilder {
   }
 
   private parseBlock(): BlockNode {
-    this.expect("punct", "{");
+    this.expect('punct', '{');
     const statements: StatementNode[] = [];
     while (true) {
       // Skip comments if ignoreComments is enabled
@@ -393,24 +435,24 @@ export class NWScriptASTBuilder {
       }
 
       // Stop if we encounter closing brace
-      if (this.is("punct", "}")) break;
+      if (this.is('punct', '}')) break;
 
       const st = this.parseDeclOrStatement();
       if (st) statements.push(st);
     }
-    this.expect("punct", "}");
-    return { type: "block", statements };
+    this.expect('punct', '}');
+    return { type: 'block', statements };
   }
 
   private parseIf(): IfNode {
-    const kw = this.expect("keyword", "IF");
-    this.expect("punct", "(");
+    const kw = this.expect('keyword', 'IF');
+    this.expect('punct', '(');
     const condition = this.parseExpression(0);
-    this.expect("punct", ")");
+    this.expect('punct', ')');
 
-    const thenBlock = this.is("punct", "{")
+    const thenBlock = this.is('punct', '{')
       ? this.parseBlock()
-      : { type: "block", statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
+      : { type: 'block', statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
 
     const elseIfs: ElseIfNode[] = [];
     while (true) {
@@ -418,25 +460,25 @@ export class NWScriptASTBuilder {
       if (this.ignoreComments) {
         this.skipComments();
       }
-      if (!this.is("keyword", "ELSEIF")) break;
+      if (!this.is('keyword', 'ELSEIF')) break;
 
-      const e = this.expect("keyword", "ELSEIF");
+      const e = this.expect('keyword', 'ELSEIF');
       // Skip comments if ignoreComments is enabled (e.g., elseif//comment)
       if (this.ignoreComments) {
         this.skipComments();
       }
-      this.expect("punct", "(");
+      this.expect('punct', '(');
       const c = this.parseExpression(0);
       // Skip comments if ignoreComments is enabled
       if (this.ignoreComments) {
         this.skipComments();
       }
-      this.expect("punct", ")");
+      this.expect('punct', ')');
 
-      const b = this.is("punct", "{")
+      const b = this.is('punct', '{')
         ? this.parseBlock()
-        : { type: "block", statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
-      elseIfs.push({ type: "elseif", condition: c, statements: b.statements, source: e.source });
+        : { type: 'block', statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
+      elseIfs.push({ type: 'elseif', condition: c, statements: b.statements, source: e.source });
     }
 
     let elseBlock: ElseNode | null = null;
@@ -444,20 +486,20 @@ export class NWScriptASTBuilder {
     if (this.ignoreComments) {
       this.skipComments();
     }
-    if (this.is("keyword", "ELSE")) {
+    if (this.is('keyword', 'ELSE')) {
       this.next();
       // Skip comments if ignoreComments is enabled (e.g., else//comment)
       if (this.ignoreComments) {
         this.skipComments();
       }
-      const b = this.is("punct", "{")
+      const b = this.is('punct', '{')
         ? this.parseBlock()
-        : { type: "block", statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
-      elseBlock = { type: "else", statements: b.statements };
+        : { type: 'block', statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
+      elseBlock = { type: 'else', statements: b.statements };
     }
 
     return {
-      type: "if",
+      type: 'if',
       condition,
       statements: thenBlock.statements,
       elseIfs,
@@ -467,110 +509,110 @@ export class NWScriptASTBuilder {
   }
 
   private parseWhile(): WhileNode {
-    const kw = this.expect("keyword", "WHILE");
-    this.expect("punct", "(");
+    const kw = this.expect('keyword', 'WHILE');
+    this.expect('punct', '(');
     const condition = this.parseExpression(0);
-    this.expect("punct", ")");
-    const body = this.is("punct", "{")
+    this.expect('punct', ')');
+    const body = this.is('punct', '{')
       ? this.parseBlock()
-      : { type: "block", statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
-    return { type: "while", condition, statements: body.statements, source: kw.source };
+      : { type: 'block', statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
+    return { type: 'while', condition, statements: body.statements, source: kw.source };
   }
 
   private parseDoWhile(): DoWhileNode {
-    const kw = this.expect("keyword", "DO");
-    const body = this.is("punct", "{")
+    const kw = this.expect('keyword', 'DO');
+    const body = this.is('punct', '{')
       ? this.parseBlock()
-      : { type: "block", statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
-    this.expect("keyword", "WHILE");
-    this.expect("punct", "(");
+      : { type: 'block', statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
+    this.expect('keyword', 'WHILE');
+    this.expect('punct', '(');
     const condition = this.parseExpression(0);
-    this.expect("punct", ")");
-    this.expect("punct", ";");
-    return { type: "do", condition, statements: body.statements, source: kw.source };
+    this.expect('punct', ')');
+    this.expect('punct', ';');
+    return { type: 'do', condition, statements: body.statements, source: kw.source };
   }
 
   private parseFor(): ForNode {
-    const kw = this.expect("keyword", "FOR");
-    this.expect("punct", "(");
+    const kw = this.expect('keyword', 'FOR');
+    this.expect('punct', '(');
 
     // initializer can be decl or expression or empty
-    let initializer: ForNode["initializer"] = null;
-    if (!this.is("punct", ";")) {
+    let initializer: ForNode['initializer'] = null;
+    if (!this.is('punct', ';')) {
       // try decl form
-      const isConst = this.is("keyword", "CONST");
+      const isConst = this.is('keyword', 'CONST');
       if (isConst) this.next();
       const dtype = this.tryParseDataType();
       if (dtype) {
-        const nameTok = this.expect("name");
+        const nameTok = this.expect('name');
         initializer = this.finishVariableDecl(isConst, dtype, nameTok.value, nameTok);
       } else {
         initializer = this.parseExpression(0);
-        this.expect("punct", ";");
-        if (initializer && (initializer as VariableReferenceNode).type === "variable_reference") {
+        this.expect('punct', ';');
+        if (initializer && (initializer as VariableReferenceNode).type === 'variable_reference') {
           (initializer as VariableReferenceNode).terminated = true;
         }
       }
     } else {
-      this.expect("punct", ";");
+      this.expect('punct', ';');
     }
 
     // condition
-    let condition: ForNode["condition"] = null;
-    if (!this.is("punct", ";")) condition = this.parseExpression(0);
-    this.expect("punct", ";");
+    let condition: ForNode['condition'] = null;
+    if (!this.is('punct', ';')) condition = this.parseExpression(0);
+    this.expect('punct', ';');
 
     // incrementor
-    let incrementor: ForNode["incrementor"] = null;
-    if (!this.is("punct", ")")) incrementor = this.parseExpression(0);
-    this.expect("punct", ")");
+    let incrementor: ForNode['incrementor'] = null;
+    if (!this.is('punct', ')')) incrementor = this.parseExpression(0);
+    this.expect('punct', ')');
 
-    const body = this.is("punct", "{")
+    const body = this.is('punct', '{')
       ? this.parseBlock()
-      : { type: "block", statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
-    return { type: "for", initializer, condition, incrementor, statements: body.statements, source: kw.source };
+      : { type: 'block', statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
+    return { type: 'for', initializer, condition, incrementor, statements: body.statements, source: kw.source };
   }
 
   private parseSwitch(): SwitchNode {
-    const kw = this.expect("keyword", "SWITCH");
-    this.expect("punct", "(");
+    const kw = this.expect('keyword', 'SWITCH');
+    this.expect('punct', '(');
     const condition = this.parseExpression(0);
     // Skip comments if ignoreComments is enabled
     if (this.ignoreComments) {
       this.skipComments();
     }
-    this.expect("punct", ")");
-    this.expect("punct", "{");
+    this.expect('punct', ')');
+    this.expect('punct', '{');
 
     const cases: CaseNode[] = [];
     let def: DefaultNode | null = null;
 
-    while (!this.is("punct", "}")) {
-      if (this.is("keyword", "CASE")) {
-        const ckw = this.expect("keyword", "CASE");
+    while (!this.is('punct', '}')) {
+      if (this.is('keyword', 'CASE')) {
+        const ckw = this.expect('keyword', 'CASE');
         const caseValue = this.parseExpression(0);
-        this.expect("punct", ":");
+        this.expect('punct', ':');
 
         const statements: StatementNode[] = [];
-        while (!this.is("keyword", "CASE") && !this.is("keyword", "DEFAULT") && !this.is("punct", "}")) {
+        while (!this.is('keyword', 'CASE') && !this.is('keyword', 'DEFAULT') && !this.is('punct', '}')) {
           const st = this.parseDeclOrStatement();
           if (st) statements.push(st);
         }
 
-        cases.push({ type: "case", value: caseValue, statements, source: ckw.source });
+        cases.push({ type: 'case', value: caseValue, statements, source: ckw.source });
         continue;
       }
 
-      if (this.is("keyword", "DEFAULT")) {
-        const dkw = this.expect("keyword", "DEFAULT");
-        this.expect("punct", ":");
+      if (this.is('keyword', 'DEFAULT')) {
+        const dkw = this.expect('keyword', 'DEFAULT');
+        this.expect('punct', ':');
 
         const statements: StatementNode[] = [];
-        while (!this.is("keyword", "CASE") && !this.is("punct", "}")) {
+        while (!this.is('keyword', 'CASE') && !this.is('punct', '}')) {
           const st = this.parseDeclOrStatement();
           if (st) statements.push(st);
         }
-        def = { type: "default", statements, source: dkw.source };
+        def = { type: 'default', statements, source: dkw.source };
         continue;
       }
 
@@ -578,53 +620,74 @@ export class NWScriptASTBuilder {
       this.next();
     }
 
-    this.expect("punct", "}");
-    return { type: "switch", condition, cases, default: def, source: kw.source };
+    this.expect('punct', '}');
+    return { type: 'switch', condition, cases, default: def, source: kw.source };
   }
 
   private parseReturn(): ReturnNode {
-    const kw = this.expect("keyword", "RETURN");
-    if (this.is("punct", ";")) {
+    const kw = this.expect('keyword', 'RETURN');
+    if (this.is('punct', ';')) {
       this.next();
-      return { type: "return", value: null, source: kw.source };
+      return { type: 'return', value: null, source: kw.source };
     }
     const value = this.parseExpression(0);
-    this.expect("punct", ";");
-    return { type: "return", value, source: kw.source };
+    this.expect('punct', ';');
+    return { type: 'return', value, source: kw.source };
   }
 
   private parseBreak(): BreakNode {
-    const kw = this.expect("keyword", "BREAK");
-    this.expect("punct", ";");
-    return { type: "break", source: kw.source };
+    const kw = this.expect('keyword', 'BREAK');
+    this.expect('punct', ';');
+    return { type: 'break', source: kw.source };
   }
 
   private parseContinue(): ContinueNode {
-    const kw = this.expect("keyword", "CONTINUE");
-    this.expect("punct", ";");
-    return { type: "continue", source: kw.source };
+    const kw = this.expect('keyword', 'CONTINUE');
+    this.expect('punct', ';');
+    return { type: 'continue', source: kw.source };
   }
 
   // -------------------------
   // Data type parsing
   // -------------------------
   private tryParseDataType(): DataTypeNode | null {
-    if (this.is("keyword", "VOID")) { this.next(); return dt("void", NWCompileDataTypes.void); }
-    if (this.is("keyword", "INT")) { this.next(); return dt("int", NWCompileDataTypes.int); }
-    if (this.is("keyword", "FLOAT")) { this.next(); return dt("float", NWCompileDataTypes.float); }
-    if (this.is("keyword", "STRING")) { this.next(); return dt("string", NWCompileDataTypes.string); }
-    if (this.is("keyword", "OBJECT")) { this.next(); return dt("object", NWCompileDataTypes.object); }
-    if (this.is("keyword", "VECTOR")) { this.next(); return dt("vector", NWCompileDataTypes.vector); }
-    if (this.is("keyword", "ACTION")) { this.next(); return dt("action", NWCompileDataTypes.action); }
+    if (this.is('keyword', 'VOID')) {
+      this.next();
+      return dt('void', NWCompileDataTypes.void);
+    }
+    if (this.is('keyword', 'INT')) {
+      this.next();
+      return dt('int', NWCompileDataTypes.int);
+    }
+    if (this.is('keyword', 'FLOAT')) {
+      this.next();
+      return dt('float', NWCompileDataTypes.float);
+    }
+    if (this.is('keyword', 'STRING')) {
+      this.next();
+      return dt('string', NWCompileDataTypes.string);
+    }
+    if (this.is('keyword', 'OBJECT')) {
+      this.next();
+      return dt('object', NWCompileDataTypes.object);
+    }
+    if (this.is('keyword', 'VECTOR')) {
+      this.next();
+      return dt('vector', NWCompileDataTypes.vector);
+    }
+    if (this.is('keyword', 'ACTION')) {
+      this.next();
+      return dt('action', NWCompileDataTypes.action);
+    }
 
     // engine types are identifiers that got injected from nwscript.nss defines
-    if (this.is("name")) {
+    if (this.is('name')) {
       const lower = this.tok.value.toLowerCase();
       const unary = this.engineTypesByLower.get(lower);
       if (unary !== undefined) {
         const v = this.tok.value;
         this.next();
-        return { type: "datatype", value: v.toLowerCase(), unary, engine_type: true };
+        return { type: 'datatype', value: v.toLowerCase(), unary, engine_type: true };
       }
     }
 
@@ -647,52 +710,65 @@ export class NWScriptASTBuilder {
   // -------------------------
   private lbp(op: string): number {
     switch (op) {
-      case "=":
-      case "+=":
-      case "-=":
-      case "*=":
-      case "/=":
-      case "%=":
-      case "|=":
-      case "&=":
-      case "^=":
-      case "<<=":
-      case ">>=":
-      case ">>>=":
+      case '=':
+      case '+=':
+      case '-=':
+      case '*=':
+      case '/=':
+      case '%=':
+      case '|=':
+      case '&=':
+      case '^=':
+      case '<<=':
+      case '>>=':
+      case '>>>=':
         return 10;
 
-      case "||": return 20;
-      case "&&": return 30;
+      case '||':
+        return 20;
+      case '&&':
+        return 30;
 
-      case "|": return 40;
-      case "^": return 50;
-      case "&": return 60;
+      case '|':
+        return 40;
+      case '^':
+        return 50;
+      case '&':
+        return 60;
 
-      case "==":
-      case "!=": return 70;
+      case '==':
+      case '!=':
+        return 70;
 
-      case "<":
-      case ">":
-      case "<=":
-      case ">=": return 80;
+      case '<':
+      case '>':
+      case '<=':
+      case '>=':
+        return 80;
 
-      case "<<":
-      case ">>":
-      case ">>>": return 90;
+      case '<<':
+      case '>>':
+      case '>>>':
+        return 90;
 
-      case "+":
-      case "-": return 100;
+      case '+':
+      case '-':
+        return 100;
 
-      case "*":
-      case "/":
-      case "%": return 110;
+      case '*':
+      case '/':
+      case '%':
+        return 110;
 
-      case "++":
-      case "--": return 120;
+      case '++':
+      case '--':
+        return 120;
 
-      case ".": return 140;
+      case '.':
+        return 140;
 
-      default: return 0;
+      default:
+        return 0;
     }
   }
 
@@ -711,14 +787,14 @@ export class NWScriptASTBuilder {
       }
 
       // postfix call / index handled in led as well
-      if (this.is("punct", "(") || this.is("punct", "[")) {
+      if (this.is('punct', '(') || this.is('punct', '[')) {
         left = this.ledPostfix(left);
         continue;
       }
 
-      if (!this.is("op") && !this.is("punct", ".")) break;
+      if (!this.is('op') && !this.is('punct', '.')) break;
 
-      const op = this.is("punct", ".") ? "." : this.tok.value;
+      const op = this.is('punct', '.') ? '.' : this.tok.value;
       const lbp = this.lbp(op);
       if (lbp <= rbp) break;
 
@@ -744,107 +820,165 @@ export class NWScriptASTBuilder {
     }
 
     // prefix ops
-    if (this.is("op", "++")) {
-      const t = this.tok; this.next();
+    if (this.is('op', '++')) {
+      const t = this.tok;
+      this.next();
       const v = this.parseExpression(120);
-      return { type: "inc", value: v, postfix: false, source: t.source };
+      return { type: 'inc', value: v, postfix: false, source: t.source };
     }
-    if (this.is("op", "--")) {
-      const t = this.tok; this.next();
+    if (this.is('op', '--')) {
+      const t = this.tok;
+      this.next();
       const v = this.parseExpression(120);
-      return { type: "dec", value: v, postfix: false, source: t.source };
+      return { type: 'dec', value: v, postfix: false, source: t.source };
     }
-    if (this.is("op", "!")) {
-      const t = this.tok; this.next();
+    if (this.is('op', '!')) {
+      const t = this.tok;
+      this.next();
       const v = this.parseExpression(120);
-      return { type: "not", value: v, source: t.source };
+      return { type: 'not', value: v, source: t.source };
     }
-    if (this.is("op", "~")) {
-      const t = this.tok; this.next();
+    if (this.is('op', '~')) {
+      const t = this.tok;
+      this.next();
       const v = this.parseExpression(120);
-      return { type: "comp", value: v, source: t.source };
+      return { type: 'comp', value: v, source: t.source };
     }
-    if (this.is("op", "-")) {
-      const t = this.tok; this.next();
+    if (this.is('op', '-')) {
+      const t = this.tok;
+      this.next();
       const v = this.parseExpression(120);
-      return { type: "neg", value: v, source: t.source };
+      return { type: 'neg', value: v, source: t.source };
     }
 
     // literals
-    if (this.is("int")) {
-      const t = this.expect("int");
-      return { type: "literal", datatype: dt("int", NWCompileDataTypes.int), value: parseInt(t.value, 10), source: t.source };
+    if (this.is('int')) {
+      const t = this.expect('int');
+      return {
+        type: 'literal',
+        datatype: dt('int', NWCompileDataTypes.int),
+        value: parseInt(t.value, 10),
+        source: t.source,
+      };
     }
-    if (this.is("float")) {
-      const t = this.expect("float");
-      return { type: "literal", datatype: dt("float", NWCompileDataTypes.float), value: parseFloat(t.value), source: t.source };
+    if (this.is('float')) {
+      const t = this.expect('float');
+      return {
+        type: 'literal',
+        datatype: dt('float', NWCompileDataTypes.float),
+        value: parseFloat(t.value),
+        source: t.source,
+      };
     }
-    if (this.is("hex")) {
-      const t = this.expect("hex");
-      return { type: "literal", datatype: dt("int", NWCompileDataTypes.int), value: parseInt(t.value, 16), source: t.source };
+    if (this.is('hex')) {
+      const t = this.expect('hex');
+      return {
+        type: 'literal',
+        datatype: dt('int', NWCompileDataTypes.int),
+        value: parseInt(t.value, 16),
+        source: t.source,
+      };
     }
-    if (this.is("string")) {
-      const t = this.expect("string");
-      return { type: "literal", datatype: dt("string", NWCompileDataTypes.string), value: t.value, source: t.source };
+    if (this.is('string')) {
+      const t = this.expect('string');
+      return { type: 'literal', datatype: dt('string', NWCompileDataTypes.string), value: t.value, source: t.source };
     }
-    if (this.is("keyword", "TRUE")) {
-      const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("int", NWCompileDataTypes.int), value: 1, source: t.source, originalText: "TRUE" };
+    if (this.is('keyword', 'TRUE')) {
+      const t = this.tok;
+      this.next();
+      return {
+        type: 'literal',
+        datatype: dt('int', NWCompileDataTypes.int),
+        value: 1,
+        source: t.source,
+        originalText: 'TRUE',
+      };
     }
-    if (this.is("keyword", "FALSE")) {
-      const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("int", NWCompileDataTypes.int), value: 0, source: t.source, originalText: "FALSE" };
+    if (this.is('keyword', 'FALSE')) {
+      const t = this.tok;
+      this.next();
+      return {
+        type: 'literal',
+        datatype: dt('int', NWCompileDataTypes.int),
+        value: 0,
+        source: t.source,
+        originalText: 'FALSE',
+      };
     }
-    if (this.is("keyword", "NULL")) {
-      const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 0, source: t.source, originalText: "NULL" };
+    if (this.is('keyword', 'NULL')) {
+      const t = this.tok;
+      this.next();
+      return {
+        type: 'literal',
+        datatype: dt('object', NWCompileDataTypes.object),
+        value: 0,
+        source: t.source,
+        originalText: 'NULL',
+      };
     }
-    if (this.is("keyword", "OBJECT_SELF")) {
-      const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 0, source: t.source, originalText: "OBJECT_SELF" };
+    if (this.is('keyword', 'OBJECT_SELF')) {
+      const t = this.tok;
+      this.next();
+      return {
+        type: 'literal',
+        datatype: dt('object', NWCompileDataTypes.object),
+        value: 0,
+        source: t.source,
+        originalText: 'OBJECT_SELF',
+      };
     }
-    if (this.is("keyword", "OBJECT_INVALID")) {
-      const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 1, source: t.source, originalText: "OBJECT_INVALID" };
+    if (this.is('keyword', 'OBJECT_INVALID')) {
+      const t = this.tok;
+      this.next();
+      return {
+        type: 'literal',
+        datatype: dt('object', NWCompileDataTypes.object),
+        value: 1,
+        source: t.source,
+        originalText: 'OBJECT_INVALID',
+      };
     }
 
     // parens
-    if (this.is("punct", "(")) {
+    if (this.is('punct', '(')) {
       this.next();
       const e = this.parseExpression(0);
       // Skip comments if ignoreComments is enabled
       if (this.ignoreComments) {
         this.skipComments();
       }
-      this.expect("punct", ")");
+      this.expect('punct', ')');
       return e;
     }
 
     // array literal (non-standard NWScript, but tolerate for legacy input): [a, b, c]
-    if (this.is("punct", "[")) {
+    if (this.is('punct', '[')) {
       const openTok = this.tok;
       this.next(); // consume '['
       const elements: ExpressionNode[] = [];
-      if (!this.is("punct", "]")) {
+      if (!this.is('punct', ']')) {
         while (true) {
           elements.push(this.parseExpression(0));
-          if (this.is("punct", ",")) { this.next(); continue; }
+          if (this.is('punct', ',')) {
+            this.next();
+            continue;
+          }
           break;
         }
       }
-      this.expect("punct", "]");
-      return { type: "array_literal", elements, source: openTok.source };
+      this.expect('punct', ']');
+      return { type: 'array_literal', elements, source: openTok.source };
     }
 
     // name: variable ref or function call (postfix handles call)
-    if (this.is("name")) {
-      const t = this.expect("name");
-      return { type: "variable_reference", name: t.value, source: t.source };
+    if (this.is('name')) {
+      const t = this.expect('name');
+      return { type: 'variable_reference', name: t.value, source: t.source };
     }
 
     // If we encounter a comment and ignoreComments is enabled, this shouldn't happen
     // (comments should be skipped before nud is called), but handle it gracefully
-    if (this.ignoreComments && this.is("comment")) {
+    if (this.ignoreComments && this.is('comment')) {
       throw new NWScriptASTBuilderError(
         `Parse error: comment encountered in expression (should have been skipped) @ ${this.tok.source.first_line}:${this.tok.source.first_column}`,
         this.tok
@@ -859,17 +993,20 @@ export class NWScriptASTBuilder {
 
   private ledPostfix(left: ExpressionNode): ExpressionNode {
     // function call: <name>(args)
-    if (this.is("punct", "(")) {
-      this.expect("punct", "(");
+    if (this.is('punct', '(')) {
+      this.expect('punct', '(');
       const args: ExpressionNode[] = [];
-      if (!this.is("punct", ")")) {
+      if (!this.is('punct', ')')) {
         while (true) {
           args.push(this.parseExpression(0));
           // Skip comments if ignoreComments is enabled
           if (this.ignoreComments) {
             this.skipComments();
           }
-          if (this.is("punct", ",")) { this.next(); continue; }
+          if (this.is('punct', ',')) {
+            this.next();
+            continue;
+          }
           break;
         }
       }
@@ -877,12 +1014,12 @@ export class NWScriptASTBuilder {
       if (this.ignoreComments) {
         this.skipComments();
       }
-      this.expect("punct", ")");
+      this.expect('punct', ')');
 
       // If left is a variable_reference, treat it as function_call by name.
-      if (left?.type === "variable_reference") {
+      if (left?.type === 'variable_reference') {
         return {
-          type: "function_call",
+          type: 'function_call',
           name: left.name,
           arguments: args,
           source: left.source,
@@ -890,19 +1027,19 @@ export class NWScriptASTBuilder {
       }
 
       // otherwise: call expression (not really used in NWScript, but keep a node)
-      return { type: "call", callee: left, arguments: args, source: left.source };
+      return { type: 'call', callee: left, arguments: args, source: left.source };
     }
 
     // index: left[expr] (rare in NWScript, but keep)
-    if (this.is("punct", "[")) {
-      this.expect("punct", "[");
+    if (this.is('punct', '[')) {
+      this.expect('punct', '[');
       const idx = this.parseExpression(0);
       // Skip comments if ignoreComments is enabled
       if (this.ignoreComments) {
         this.skipComments();
       }
-      this.expect("punct", "]");
-      return { type: "index", left, index: idx, source: left.source };
+      this.expect('punct', ']');
+      return { type: 'index', left, index: idx, source: left.source };
     }
 
     return left;
@@ -910,66 +1047,75 @@ export class NWScriptASTBuilder {
 
   private led(left: ExpressionNode, op: string, opTok: Token): ExpressionNode {
     // member: left.name
-    if (op === ".") {
-      const propTok = this.expect("name");
-      return { type: "property", left, name: propTok.value, source: opTok.source };
+    if (op === '.') {
+      const propTok = this.expect('name');
+      return { type: 'property', left, name: propTok.value, source: opTok.source };
     }
 
     // assignment (right associative)
-    if (op.endsWith("=") && op !== "==" && op !== "!=" && op !== "<=" && op !== ">=") {
+    if (op.endsWith('=') && op !== '==' && op !== '!=' && op !== '<=' && op !== '>=') {
       const right = this.parseExpression(this.lbp(op) - 1);
-      return { type: "assign", left, right, operator: { type: "operator", value: op }, source: opTok.source };
+      return { type: 'assign', left, right, operator: { type: 'operator', value: op }, source: opTok.source };
     }
 
     // postfix inc/dec
-    if (op === "++") {
-      return { type: "inc", value: left, postfix: true, source: opTok.source };
+    if (op === '++') {
+      return { type: 'inc', value: left, postfix: true, source: opTok.source };
     }
-    if (op === "--") {
-      return { type: "dec", value: left, postfix: true, source: opTok.source };
+    if (op === '--') {
+      return { type: 'dec', value: left, postfix: true, source: opTok.source };
     }
 
     // comparisons + logical
-    if (op === "==" || op === "!=" || op === "<" || op === ">" || op === "<=" || op === ">=" || op === "&&" || op === "||") {
+    if (
+      op === '==' ||
+      op === '!=' ||
+      op === '<' ||
+      op === '>' ||
+      op === '<=' ||
+      op === '>=' ||
+      op === '&&' ||
+      op === '||'
+    ) {
       const right = this.parseExpression(this.lbp(op));
       return {
-        type: "compare",
-        datatype: dt("int", NWCompileDataTypes.int),
+        type: 'compare',
+        datatype: dt('int', NWCompileDataTypes.int),
         left,
         right,
-        operator: { type: "operator", value: op },
+        operator: { type: 'operator', value: op },
         source: opTok.source,
       };
     }
 
     // arithmetic
-    if (op === "+" || op === "-" || op === "*" || op === "/" || op === "%") {
+    if (op === '+' || op === '-' || op === '*' || op === '/' || op === '%') {
       const right = this.parseExpression(this.lbp(op));
-      const type = op === "+" ? "add" : op === "-" ? "sub" : op === "*" ? "mul" : op === "/" ? "div" : "mod";
-      return { type, left, right, operator: { type: "operator", value: op }, source: opTok.source };
+      const type = op === '+' ? 'add' : op === '-' ? 'sub' : op === '*' ? 'mul' : op === '/' ? 'div' : 'mod';
+      return { type, left, right, operator: { type: 'operator', value: op }, source: opTok.source };
     }
 
-    if (op === "|") {
+    if (op === '|') {
       const right = this.parseExpression(this.lbp(op));
-      return { type: "incor", left, right, operator: { type: "operator", value: op }, source: opTok.source };
+      return { type: 'incor', left, right, operator: { type: 'operator', value: op }, source: opTok.source };
     }
-    if (op === "^") {
+    if (op === '^') {
       const right = this.parseExpression(this.lbp(op));
-      return { type: "xor", left, right, operator: { type: "operator", value: op }, source: opTok.source };
+      return { type: 'xor', left, right, operator: { type: 'operator', value: op }, source: opTok.source };
     }
-    if (op === "&") {
+    if (op === '&') {
       const right = this.parseExpression(this.lbp(op));
-      return { type: "booland", left, right, operator: { type: "operator", value: op }, source: opTok.source };
+      return { type: 'booland', left, right, operator: { type: 'operator', value: op }, source: opTok.source };
     }
 
     // shifts are not wired into your compiler yet; still emit a node so the AST is faithful
-    if (op === "<<" || op === ">>" || op === ">>>") {
+    if (op === '<<' || op === '>>' || op === '>>>') {
       const right = this.parseExpression(this.lbp(op));
-      return { type: "shift", left, right, operator: { type: "operator", value: op }, source: opTok.source };
+      return { type: 'shift', left, right, operator: { type: 'operator', value: op }, source: opTok.source };
     }
 
     // fallback
     const right = this.parseExpression(this.lbp(op));
-    return { type: "binary", left, right, operator: { type: "operator", value: op }, source: opTok.source };
+    return { type: 'binary', left, right, operator: { type: 'operator', value: op }, source: opTok.source };
   }
 }

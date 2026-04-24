@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { Button, Modal } from "react-bootstrap";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ModalBlueprintBrowserState } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import "@/apps/forge/components/modal/ModalBlueprintBrowser.scss";
+import React, { useState, useEffect } from 'react';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import { Button, Modal } from 'react-bootstrap';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { ModalBlueprintBrowserState } from '@/apps/forge/states/modal/ModalBlueprintBrowserState';
+import '@/apps/forge/components/modal/ModalBlueprintBrowser.scss';
 
 const BLUEPRINT_TYPE_LABELS: Record<string, string> = {
-  'utc': 'creatures',
-  'utd': 'doors',
-  'ute': 'encounters',
-  'uti': 'items',
-  'utp': 'placeables',
-  'utm': 'stores',
-  'uts': 'sounds',
-  'utt': 'triggers',
-  'utw': 'waypoints',
+  utc: 'creatures',
+  utd: 'doors',
+  ute: 'encounters',
+  uti: 'items',
+  utp: 'placeables',
+  utm: 'stores',
+  uts: 'sounds',
+  utt: 'triggers',
+  utw: 'waypoints',
 };
 
 export const ModalBlueprintBrowser = (props: BaseModalProps) => {
@@ -55,13 +55,13 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
     modal.addEventListener('onShow', onShow);
     modal.addEventListener('onBlueprintsLoaded', onBlueprintsLoaded);
     modal.addEventListener('onSearchChanged', onSearchChanged);
-    
+
     // Check if items are already loaded (from cache) and update state
     if (modal.items.length > 0) {
       setItems([...modal.filteredItems]);
       setLoading(false);
     }
-    
+
     return () => {
       modal.removeEventListener('onHide', onHide);
       modal.removeEventListener('onShow', onShow);
@@ -169,5 +169,3 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
     </Modal>
   );
 };
-
-

@@ -1,20 +1,19 @@
-import { GameState } from "@/GameState";
-import { AudioLoader } from "@/audio/AudioLoader";
-import { GameMenu } from "@/gui/GameMenu";
-import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "@/gui";
-import { GUIMusicItem } from "@/game/tsl/gui/GUIMusicItem";
+import { GameState } from '@/GameState';
+import { AudioLoader } from '@/audio/AudioLoader';
+import { GameMenu } from '@/gui/GameMenu';
+import type { GUILabel, GUIButton, GUIListBox, GUISlider } from '@/gui';
+import { GUIMusicItem } from '@/game/tsl/gui/GUIMusicItem';
 
 /**
  * MainMusic class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMusic.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MainMusic extends GameMenu {
-
   declare LBL_MUSIC_TITLE: GUILabel;
   declare BTN_LOOP: GUIButton;
   declare BTN_STOP: GUIButton;
@@ -42,7 +41,7 @@ export class MainMusic extends GameMenu {
 
   musicList: any[] = [];
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'titlemusic_p';
     this.background = '';
@@ -51,17 +50,17 @@ export class MainMusic extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LB_MUSIC.setProtoBuilder(GUIMusicItem);
-      
+
       this.audioCtx = new (global.AudioContext || (global as any).webkitAudioContext)();
       this.musicGain = this.audioCtx.createGain();
       this.musicGain.gain.value = this.musicVolume;
       this.musicGain.connect(this.audioCtx.destination);
 
       const table = GameState.TwoDAManager.datatables.get('musictable');
-      for(let i = 0; i < table.RowCount; i++){
+      for (let i = 0; i < table.RowCount; i++) {
         const row = table.getRowByIndex(i);
         this.LB_MUSIC.addItem(row);
         this.musicList.push(row);
@@ -75,15 +74,18 @@ export class MainMusic extends GameMenu {
         this.LBL_TRACKNAME.setText(GameState.TLKManager.GetStringById(node.strrefname).Value);
         this.LBL_TRACKNUM.setText(`${node.__rowlabel} / ${table.RowCount}`);
         this.selectedIndex = this.musicList.indexOf(node);
-      }
+      };
 
       this.BTN_PLAY.addEventListener('click', (e) => {
         e.stopPropagation();
-        AudioLoader.LoadMusic(this.selected.filename).then((data: Uint8Array) => {
-          this.setBackgroundMusic(data.buffer as ArrayBuffer);
-        }, () => {
-          console.error('Background Music not found', this.selected.filename);
-        });
+        AudioLoader.LoadMusic(this.selected.filename).then(
+          (data: Uint8Array) => {
+            this.setBackgroundMusic(data.buffer as ArrayBuffer);
+          },
+          () => {
+            console.error('Background Music not found', this.selected.filename);
+          }
+        );
       });
 
       this.BTN_STOP.addEventListener('click', (e) => {
@@ -94,7 +96,7 @@ export class MainMusic extends GameMenu {
       this.BTN_NEXT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.selectedIndex++;
-        if(this.selectedIndex >= table.RowCount){
+        if (this.selectedIndex >= table.RowCount) {
           this.selectedIndex = 0;
         }
         console.log(this.selectedIndex);
@@ -112,28 +114,26 @@ export class MainMusic extends GameMenu {
         this.loop = !this.loop;
         this.BTN_LOOP.pulsing = this.loop;
       });
-      
+
       this.SLI_VOLUME.onValueChanged = (value: number) => {
         value = Math.min(1, Math.max(0, value));
         this.musicVolume = value;
         this.musicGain.gain.value = value;
-      }
+      };
 
       resolve();
     });
   }
 
-  setBackgroundMusic ( data: ArrayBuffer ) {
-    this.audioCtx.decodeAudioData( data, ( buffer ) => {
+  setBackgroundMusic(data: ArrayBuffer) {
+    this.audioCtx.decodeAudioData(data, (buffer) => {
       this.bgmBuffer = buffer;
       this.startBackgroundMusic();
     });
   }
 
-  startBackgroundMusic(buffer?: AudioBuffer){
-
-    if(buffer == undefined)
-      buffer = this.bgmBuffer;
+  startBackgroundMusic(buffer?: AudioBuffer) {
+    if (buffer == undefined) buffer = this.bgmBuffer;
 
     this.stopBackgroundMusic();
 
@@ -142,25 +142,24 @@ export class MainMusic extends GameMenu {
 
     this.bgm.buffer = buffer;
     this.bgm.loop = false;
-    this.bgm.start( 0, 0 );
-    this.bgm.connect( this.musicGain );
+    this.bgm.start(0, 0);
+    this.bgm.connect(this.musicGain);
 
     this.bgm.onended = () => {
-      if(this.loop){
-        this.startBackgroundMusic()
+      if (this.loop) {
+        this.startBackgroundMusic();
       }
     };
   }
 
-  stopBackgroundMusic(){
-    try{
+  stopBackgroundMusic() {
+    try {
       if (this.bgm != null) {
         this.bgm.onended = undefined;
         this.bgm.disconnect();
         this.bgm.stop(0);
         this.bgm = null;
       }
-    }catch(e){}
+    } catch (e) {}
   }
-  
 }

@@ -16,14 +16,7 @@ describe('VISObject', () => {
     '  room_01',
   ].join('\n');
 
-  const corruptVIS = [
-    'room_01 77',
-    '  room_02',
-    '     room_03',
-    '  room_04',
-    'room_02 1',
-    '     room_01',
-  ].join('\n');
+  const corruptVIS = ['room_01 77', '  room_02', '     room_03', '  room_04', 'room_02 1', '     room_01'].join('\n');
 
   it('read parses rooms and visibility', () => {
     const vis = new VISObject(new TextEncoder().encode(sampleVIS));
@@ -121,11 +114,7 @@ describe('VISObject', () => {
   });
 
   it('skips version header lines', () => {
-    const withVersion = [
-      'room001 V3.28',
-      'room002 1',
-      '  room001',
-    ].join('\n');
+    const withVersion = ['room001 V3.28', 'room002 1', '  room001'].join('\n');
     const vis = new VISObject(new TextEncoder().encode(withVersion));
     vis.read();
     expect(vis.roomExists('room002')).toBe(true);
@@ -133,7 +122,9 @@ describe('VISObject', () => {
   });
 
   it('rejects malformed room counts', () => {
-    expect(() => new VISObject(new TextEncoder().encode(corruptVIS))).toThrow('Tried to save or load an unsupported or corrupted file.');
+    expect(() => new VISObject(new TextEncoder().encode(corruptVIS))).toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
   });
 
   it('XML round-trip preserves room mappings', () => {

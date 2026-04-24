@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
-import type { TabJsonViewState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/components/tabs/tab-json-view/TabJsonView.scss";
+import type { TabJsonViewState } from '@/apps/forge/states/tabs';
+import '@/apps/forge/components/tabs/tab-json-view/TabJsonView.scss';
 
 interface BaseTabProps {
   tab: TabJsonViewState;

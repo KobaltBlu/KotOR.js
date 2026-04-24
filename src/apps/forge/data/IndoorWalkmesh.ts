@@ -1,7 +1,7 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 
-import { OdysseyWalkMesh } from "@/apps/forge/KotOR";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { OdysseyWalkMesh } from '@/apps/forge/KotOR';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
 
 export type WalkmeshTransform = {
   position: THREE.Vector3;
@@ -44,12 +44,10 @@ export const applyWalkmeshTransform = (walkmesh: OdysseyWalkMesh, transform: Wal
   }
 };
 
-export const collectWalkmeshFaceVertices = (walkmesh: OdysseyWalkMesh): Array<[THREE.Vector3, THREE.Vector3, THREE.Vector3]> => {
+export const collectWalkmeshFaceVertices = (
+  walkmesh: OdysseyWalkMesh
+): Array<[THREE.Vector3, THREE.Vector3, THREE.Vector3]> => {
   return walkmesh.faces.map((face) => {
-    return [
-      walkmesh.vertices[face.a],
-      walkmesh.vertices[face.b],
-      walkmesh.vertices[face.c],
-    ];
+    return [walkmesh.vertices[face.a], walkmesh.vertices[face.b], walkmesh.vertices[face.c]];
   });
 };

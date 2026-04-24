@@ -1,6 +1,6 @@
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "@/gui";
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from '@/gui';
 
 /**
  * MenuGraphics class.
@@ -12,7 +12,6 @@ import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "@/
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuGraphics extends GameMenu {
-
   LBL_TITLE: GUILabel;
   SLI_GAMMA: GUISlider;
   LBL_GAMMA: GUILabel;
@@ -24,7 +23,7 @@ export class MenuGraphics extends GameMenu {
   CB_GRASS: GUICheckBox;
   BTN_ADVANCED: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optgraphics';
     this.background = '1600x1200back';
@@ -33,9 +32,8 @@ export class MenuGraphics extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
-
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         /*this.Hide();
@@ -54,9 +52,9 @@ export class MenuGraphics extends GameMenu {
 
       this.SLI_GAMMA.onValueChanged = (value: number | boolean) => {
         //let gamma = (1.5 * value) + .25;
-        const contrast = (50 * ((value*2) - 1) )*-1;
+        const contrast = 50 * (value * 2 - 1) * -1;
 
-        GameState.canvas.style.filter = 'contrast('+(100 + contrast)+'%)';
+        GameState.canvas.style.filter = 'contrast(' + (100 + contrast) + '%)';
       };
 
       this.BTN_RESOLUTION.addEventListener('click', (_e) => {
@@ -67,7 +65,7 @@ export class MenuGraphics extends GameMenu {
 
       this.CB_GRASS.onValueChanged = (value: number | boolean) => {
         //Toggle Grass
-        if(GameState.group.grass){
+        if (GameState.group.grass) {
           GameState.group.grass.visible = !!value;
         }
       };
@@ -81,9 +79,8 @@ export class MenuGraphics extends GameMenu {
     });
   }
 
-  close(){
+  close() {
     super.close();
     GameState.iniConfig.save();
   }
-
 }

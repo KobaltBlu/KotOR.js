@@ -1,7 +1,7 @@
-import { AudioEngine } from "@/audio/AudioEngine";
-import { GameState } from "@/GameState";
-import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "@/gui";
-import { MenuSound as K1_MenuSound } from "@/game/kotor/KOTOR";
+import { AudioEngine } from '@/audio/AudioEngine';
+import { GameState } from '@/GameState';
+import type { GUILabel, GUISlider, GUIListBox, GUIButton } from '@/gui';
+import { MenuSound as K1_MenuSound } from '@/game/kotor/KOTOR';
 
 const DEFAULT_GAIN = 0.75;
 
@@ -15,7 +15,6 @@ const DEFAULT_GAIN = 0.75;
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuSound extends K1_MenuSound {
-
   declare LBL_BAR4: GUILabel;
   declare LBL_TITLE: GUILabel;
   declare SLI_MUSIC: GUISlider;
@@ -34,7 +33,7 @@ export class MenuSound extends K1_MenuSound {
   declare BTN_BACK: GUIButton;
   declare BTN_DEFAULT: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optsound_p';
     this.background = '';
@@ -43,7 +42,7 @@ export class MenuSound extends K1_MenuSound {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     this.BTN_ADVANCED.addEventListener('click', (_e) => {
       this.manager.MenuSoundAdvanced.open();
     });
@@ -58,10 +57,10 @@ export class MenuSound extends K1_MenuSound {
     this.BTN_DEFAULT.addEventListener('click', (e) => {
       e.stopPropagation();
       AudioEngine.GAIN_GUI = DEFAULT_GAIN;
-      this.SLI_MUSIC.setValue(AudioEngine.GAIN_MUSIC = DEFAULT_GAIN);
-      this.SLI_VO.setValue(AudioEngine.GAIN_VO = DEFAULT_GAIN);
-      this.SLI_FX.setValue(AudioEngine.GAIN_SFX = DEFAULT_GAIN);
-      this.SLI_MOVIE.setValue(AudioEngine.GAIN_MOVIE = DEFAULT_GAIN);
+      this.SLI_MUSIC.setValue((AudioEngine.GAIN_MUSIC = DEFAULT_GAIN));
+      this.SLI_VO.setValue((AudioEngine.GAIN_VO = DEFAULT_GAIN));
+      this.SLI_FX.setValue((AudioEngine.GAIN_SFX = DEFAULT_GAIN));
+      this.SLI_MOVIE.setValue((AudioEngine.GAIN_MOVIE = DEFAULT_GAIN));
     });
 
     this.SLI_MUSIC.onValueChanged = (value: number) => {
@@ -86,53 +85,52 @@ export class MenuSound extends K1_MenuSound {
     this.SLI_FX.attachINIProperty('Sound Options.Sound Effects Volume');
     this.SLI_MOVIE.attachINIProperty('Sound Options.Movie Volume');
 
-    this.LBL_MUSIC.addEventListener( 'hover', () => {
+    this.LBL_MUSIC.addEventListener('hover', () => {
       //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_MUSIC.getHintText())
+      this.LB_DESC.addItem(this.LBL_MUSIC.getHintText());
     });
 
-    this.SLI_MUSIC.addEventListener( 'hover', () => {
+    this.SLI_MUSIC.addEventListener('hover', () => {
       //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_MUSIC.getHintText())
+      this.LB_DESC.addItem(this.LBL_MUSIC.getHintText());
     });
 
-    this.LBL_VO.addEventListener( 'hover', () => {
+    this.LBL_VO.addEventListener('hover', () => {
       //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_VO.getHintText())
+      this.LB_DESC.addItem(this.LBL_VO.getHintText());
     });
 
-    this.SLI_VO.addEventListener( 'hover', () => {
+    this.SLI_VO.addEventListener('hover', () => {
       //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_VO.getHintText())
+      this.LB_DESC.addItem(this.LBL_VO.getHintText());
     });
 
-    this.LBL_FX.addEventListener( 'hover', () => {
+    this.LBL_FX.addEventListener('hover', () => {
       //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_FX.getHintText())
+      this.LB_DESC.addItem(this.LBL_FX.getHintText());
     });
 
-    this.SLI_FX.addEventListener( 'hover', () => {
+    this.SLI_FX.addEventListener('hover', () => {
       //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_FX.getHintText())
+      this.LB_DESC.addItem(this.LBL_FX.getHintText());
     });
 
-    this.LBL_MOVIE.addEventListener( 'hover', () => {
+    this.LBL_MOVIE.addEventListener('hover', () => {
       //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_MOVIE.getHintText())
+      this.LB_DESC.addItem(this.LBL_MOVIE.getHintText());
     });
 
-    this.SLI_MOVIE.addEventListener( 'hover', () => {
+    this.SLI_MOVIE.addEventListener('hover', () => {
       //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_MOVIE.getHintText())
+      this.LB_DESC.addItem(this.LBL_MOVIE.getHintText());
     });
   }
-
 }

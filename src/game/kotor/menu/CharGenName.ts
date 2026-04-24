@@ -1,6 +1,6 @@
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUILabel, GUIButton } from '@/gui';
 
 /**
  * CharGenName class.
@@ -12,7 +12,6 @@ import type { GUILabel, GUIButton } from "@/gui";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenName extends GameMenu {
-
   MAIN_TITLE_LBL: GUILabel;
   SUB_TITLE_LBL: GUILabel;
   NAME_BOX_EDIT: GUILabel;
@@ -20,7 +19,7 @@ export class CharGenName extends GameMenu {
   BTN_RANDOM: GUIButton;
   BTN_BACK: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'name';
     this.background = '1600x1200back';
@@ -29,7 +28,7 @@ export class CharGenName extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       this.NAME_BOX_EDIT.setEditable(true);
 
@@ -57,5 +56,4 @@ export class CharGenName extends GameMenu {
     super.show();
     this.NAME_BOX_EDIT.setText(GameState.CharGenManager.selectedCreature.firstName);
   }
-
 }

@@ -14,7 +14,7 @@ import React, { useState, useEffect } from 'react';
 
 import * as KotOR from '@/apps/forge/KotOR';
 import { DLGUndoManager, DLGUndoActions } from '@/apps/forge/utils/DLGUndoManager';
-import "@/apps/forge/components/tabs/tab-dlg-editor/DLGNodePropertiesPanel.scss";
+import '@/apps/forge/components/tabs/tab-dlg-editor/DLGNodePropertiesPanel.scss';
 
 interface DLGNodePropertiesPanelProps {
   node: KotOR.DLGNode | null;
@@ -27,12 +27,10 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
   node,
   nodeType,
   undoManager,
-  onUpdate
+  onUpdate,
 }) => {
   const [_localNode, setLocalNode] = useState(node);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['basic', 'text', 'audio'])
-  );
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['basic', 'text', 'audio']));
 
   useEffect(() => {
     setLocalNode(node);
@@ -140,12 +138,7 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
     onUpdate();
   };
 
-  const renderSection = (
-    id: string,
-    title: string,
-    content: React.ReactNode,
-    icon?: string
-  ) => {
+  const renderSection = (id: string, title: string, content: React.ReactNode, icon?: string) => {
     const isExpanded = expandedSections.has(id);
 
     return (
@@ -155,11 +148,7 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
           {icon && <span className="section-icon">{icon}</span>}
           <h4>{title}</h4>
         </div>
-        {isExpanded && (
-          <div className="property-section-content">
-            {content}
-          </div>
-        )}
+        {isExpanded && <div className="property-section-content">{content}</div>}
       </div>
     );
   };
@@ -171,9 +160,7 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
         <span className="node-type-badge" data-type={nodeType}>
           {nodeType?.toUpperCase()}
         </span>
-        <span className="node-index">
-          [{node.index}]
-        </span>
+        <span className="node-index">[{node.index}]</span>
       </div>
 
       <div className="panel-content">
@@ -183,22 +170,12 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
           <>
             <div className="property-group">
               <label>Index</label>
-              <input
-                type="number"
-                value={node.index}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.index} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Node Type</label>
-              <input
-                type="text"
-                value={nodeType || 'Unknown'}
-                disabled
-                className="input-disabled"
-              />
+              <input type="text" value={nodeType || 'Unknown'} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
@@ -284,12 +261,7 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
 
             <div className="property-group">
               <label>Sound Exists</label>
-              <input
-                type="number"
-                value={node.soundExists}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.soundExists} disabled className="input-disabled" />
             </div>
           </>,
           '🔊'
@@ -301,10 +273,7 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
           <>
             <div className="property-group">
               <label>Camera Angle</label>
-              <select
-                value={node.cameraAngle}
-                onChange={(e) => handleCameraAngleChange(parseInt(e.target.value, 10))}
-              >
+              <select value={node.cameraAngle} onChange={(e) => handleCameraAngleChange(parseInt(e.target.value, 10))}>
                 <option value="0">Random</option>
                 <option value="1">Speaker</option>
                 <option value="2">Speaker Behind Player</option>
@@ -326,32 +295,17 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
 
             <div className="property-group">
               <label>Camera Animation</label>
-              <input
-                type="number"
-                value={node.cameraAnimation}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.cameraAnimation} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Camera FOV</label>
-              <input
-                type="number"
-                value={node.camFieldOfView}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.camFieldOfView} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Camera Video Effect</label>
-              <input
-                type="number"
-                value={node.camVidEffect}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.camVidEffect} disabled className="input-disabled" />
             </div>
           </>,
           '📹'
@@ -374,22 +328,12 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
 
             <div className="property-group">
               <label>Wait Flags</label>
-              <input
-                type="number"
-                value={node.waitFlags}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.waitFlags} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Fade Type</label>
-              <input
-                type="number"
-                value={node.fadeType}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.fadeType} disabled className="input-disabled" />
             </div>
           </>,
           '⏱️'
@@ -408,9 +352,7 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
                 className="input-disabled"
                 placeholder="No script"
               />
-              {node.isActive && (
-                <button className="btn-script">Edit Script</button>
-              )}
+              {node.isActive && <button className="btn-script">Edit Script</button>}
             </div>
 
             <div className="property-group">
@@ -422,9 +364,7 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
                 className="input-disabled"
                 placeholder="No script"
               />
-              {node.isActive2 && (
-                <button className="btn-script">Edit Script</button>
-              )}
+              {node.isActive2 && <button className="btn-script">Edit Script</button>}
             </div>
 
             <div className="property-group">
@@ -436,9 +376,7 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
                 className="input-disabled"
                 placeholder="No script"
               />
-              {node.script && (
-                <button className="btn-script">Edit Script</button>
-              )}
+              {node.script && <button className="btn-script">Edit Script</button>}
             </div>
 
             <div className="property-group">
@@ -450,18 +388,12 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
                 className="input-disabled"
                 placeholder="No script"
               />
-              {node.script2 && (
-                <button className="btn-script">Edit Script</button>
-              )}
+              {node.script2 && <button className="btn-script">Edit Script</button>}
             </div>
 
             <div className="property-group">
               <label>Logic</label>
-              <input
-                type="checkbox"
-                checked={node.Logic}
-                disabled
-              />
+              <input type="checkbox" checked={node.Logic} disabled />
               <span className="checkbox-label">AND/OR Logic</span>
             </div>
           </>,
@@ -474,44 +406,22 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
           <>
             <div className="property-group">
               <label>Quest</label>
-              <input
-                type="text"
-                value={node.quest || ''}
-                disabled
-                className="input-disabled"
-                placeholder="No quest"
-              />
+              <input type="text" value={node.quest || ''} disabled className="input-disabled" placeholder="No quest" />
             </div>
 
             <div className="property-group">
               <label>Quest Entry</label>
-              <input
-                type="number"
-                value={node.questEntry}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.questEntry} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Plot Index</label>
-              <input
-                type="number"
-                value={node.plotIndex}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.plotIndex} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Plot XP Percentage</label>
-              <input
-                type="number"
-                value={node.plotXPPercentage}
-                disabled
-                className="input-disabled"
-                step="0.1"
-              />
+              <input type="number" value={node.plotXPPercentage} disabled className="input-disabled" step="0.1" />
             </div>
           </>,
           '📖'
@@ -523,71 +433,37 @@ export const DLGNodePropertiesPanel: React.FC<DLGNodePropertiesPanelProps> = ({
           <>
             <div className="property-group">
               <label>Alien Race Node</label>
-              <input
-                type="number"
-                value={node.alienRaceNode}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.alienRaceNode} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Emotion</label>
-              <input
-                type="number"
-                value={node.emotion}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.emotion} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Facial Animation</label>
-              <input
-                type="number"
-                value={node.facialAnimation}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.facialAnimation} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Post Process Node</label>
-              <input
-                type="number"
-                value={node.postProcessNode}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.postProcessNode} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Record VO</label>
-              <input
-                type="number"
-                value={node.recordVO}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.recordVO} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Record No VO Override</label>
-              <input
-                type="number"
-                value={node.recordNoVOOverride}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={node.recordNoVOOverride} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>VO Text Changed</label>
-              <input
-                type="checkbox"
-                checked={node.voTextChanged}
-                disabled
-              />
+              <input type="checkbox" checked={node.voTextChanged} disabled />
             </div>
           </>,
           '⚙️'

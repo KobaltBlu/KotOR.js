@@ -1,13 +1,13 @@
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { ModuleObjectType } from "@/enums";
-import type { ModuleArea, ModuleRoom } from "@/module";
-import { BitWise } from "@/utility/BitWise";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import type { IVISRoom } from "@/interface/module/IVISRoom";
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
+import { ModuleObjectType } from '@/enums';
+import type { ModuleArea, ModuleRoom } from '@/module';
+import { BitWise } from '@/utility/BitWise';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import type { IVISRoom } from '@/interface/module/IVISRoom';
 
 enum VISReadMode {
   ROOM = 0,
-  CHILD_ROOMS = 1
+  CHILD_ROOMS = 1,
 }
 
 interface IReadContext {
@@ -40,12 +40,12 @@ export class VISObject {
     currentRoom: {
       name: '',
       count: 0,
-      rooms: []
+      rooms: [],
     },
-    linkedRoomCount: 0
+    linkedRoomCount: 0,
   };
 
-  constructor ( data?: Uint8Array ) {
+  constructor(data?: Uint8Array) {
     this.data = data;
     if (data?.length) {
       this.read(data);
@@ -64,18 +64,18 @@ export class VISObject {
     this.addRoom();
   }
 
-  read(data?: Uint8Array){
+  read(data?: Uint8Array) {
     // console.log('VISObject.read');
-    if(data){
+    if (data) {
       this.data = data;
     }
 
-    if(!this.data){
+    if (!this.data) {
       console.warn('VISObject.read: No data to read');
       return;
     }
 
-    const text = (new TextDecoder('utf8')).decode(this.data).toLocaleLowerCase();
+    const text = new TextDecoder('utf8').decode(this.data).toLocaleLowerCase();
     const lines = text.split('\n');
     const lineCount = lines.length;
 
@@ -93,11 +93,11 @@ export class VISObject {
      *  - regex: ^\s{2}([^\s]+)\n
      */
 
-    for( let i = 0; i < lineCount; i++ ) {
+    for (let i = 0; i < lineCount; i++) {
       const line = lines[i].trim();
 
       //Skip empty lines
-      if(!line.length){
+      if (!line.length) {
         continue;
       }
 
@@ -110,29 +110,27 @@ export class VISObject {
       // 2. We are collecting children for the current room (declared count not yet satisfied)
       //    and the line is a bare room name without a following integer count.
       //    This handles .vis files with irregular / zero indentation on sub-entries.
-      const isCollectingChildren = !!this.readContext.currentRoom.name
-        && this.readContext.linkedRoomCount < this.readContext.currentRoom.count;
+      const isCollectingChildren =
+        !!this.readContext.currentRoom.name && this.readContext.linkedRoomCount < this.readContext.currentRoom.count;
       const isChildRoom = indented || (isCollectingChildren && !hasCount);
 
       /**
        * Child Room parse logic
        */
-      if(isChildRoom){
+      if (isChildRoom) {
         // console.log(`VISObject.read: Child Room: ${line}`);
         this.readContext.mode = VISReadMode.CHILD_ROOMS;
         //CHILD_ROOMS
         this.readContext.currentRoom.rooms.push(line);
         this.readContext.linkedRoomCount++;
-      }
+      } else {
       /**
        * ParentRoom parse logic
        */
-      else
-      {
         // console.log(`VISObject.read: Parent Room: ${line}`);
         //If we are still in CHILD_ROOMS mode and the current line is a room.
         //Push the currentRoom to the rooms array and reset the current room var
-        if(this.readContext.mode == VISReadMode.CHILD_ROOMS){
+        if (this.readContext.mode == VISReadMode.CHILD_ROOMS) {
           this.finalizeCurrentRoom();
           this.resetReadContext();
         }
@@ -166,7 +164,7 @@ export class VISObject {
       return;
     }
 
-    if(!this.readContext.currentRoom?.name){
+    if (!this.readContext.currentRoom?.name) {
       return;
     }
 
@@ -181,34 +179,34 @@ export class VISObject {
    * Get a newly initialized IVISRoom object
    * @returns A newly initialized IVISRoom object
    */
-  resetReadContext () {
+  resetReadContext() {
     this.readContext = {
       mode: VISReadMode.ROOM,
       currentRoom: {
         name: '',
         count: 0,
-        rooms: []
+        rooms: [],
       },
-      linkedRoomCount: 0
+      linkedRoomCount: 0,
     };
   }
 
-  attachArea(area?: ModuleArea){
-    if(area){
+  attachArea(area?: ModuleArea) {
+    if (area) {
       this.area = area;
     }
 
-    if(!this.area){
+    if (!this.area) {
       console.warn('VISObject.attachArea: No area to process');
       return;
     }
 
     const rooms = Array.from(this.rooms.values());
-    for(let i = 0; i < rooms.length; i++){
+    for (let i = 0; i < rooms.length; i++) {
       const visRoom = rooms[i];
-      for(let j = 0; j < this.area.rooms.length; j++){
+      for (let j = 0; j < this.area.rooms.length; j++) {
         const room = this.area.rooms[j];
-        if( BitWise.InstanceOfObject(room, ModuleObjectType.ModuleRoom) && (room.roomName == visRoom.name) ){
+        if (BitWise.InstanceOfObject(room, ModuleObjectType.ModuleRoom) && room.roomName == visRoom.name) {
           room.visObject = this;
         }
       }
@@ -239,7 +237,7 @@ export class VISObject {
    */
   getVisibleRooms(room = ''): string[] {
     const visRoom = this.getRoom(room.toLocaleLowerCase());
-    if(visRoom){
+    if (visRoom) {
       return visRoom.rooms;
     }
 
@@ -252,18 +250,18 @@ export class VISObject {
    * @returns The room or null if it is not found
    */
   getRoomByName(name: string): ModuleRoom | null {
-    if(!this.area){
+    if (!this.area) {
       console.warn('VISObject.getRoomByName: No area to process');
       return null;
     }
-    return this.area.rooms.find(room => room.roomName.toLocaleLowerCase() === name.toLocaleLowerCase()) || null;
+    return this.area.rooms.find((room) => room.roomName.toLocaleLowerCase() === name.toLocaleLowerCase()) || null;
   }
 
   /**
    * Export the VISObject to a file
    * @param fileName - The name of the file to export to
    */
-  export (fileName = 'm01aa') {
+  export(fileName = 'm01aa') {
     // console.log(`VISObject.export: ${fileName}.vis`);
     const data = new BinaryWriter();
 
@@ -273,12 +271,12 @@ export class VISObject {
     /**
      * Write the rooms to the output buffer
      */
-    for(let i = 0; i < rooms.length; i++){
+    for (let i = 0; i < rooms.length; i++) {
       const room = rooms[i];
       const roomCount = room.rooms.length;
       // console.log(`VISObject.export: ${room.name} - ${roomCount} child rooms`);
 
-      data.writeChars(room.name+' '+roomCount);
+      data.writeChars(room.name + ' ' + roomCount);
 
       data.writeByte(13); //CarriageReturn
       data.writeByte(10); //NewLine
@@ -286,24 +284,22 @@ export class VISObject {
       /**
        * Write the child rooms to the output buffer
        */
-      for( let j = 0; j < roomCount; j++ ){
+      for (let j = 0; j < roomCount; j++) {
         // console.log(`VISObject.export: ${room.rooms[j]}`);
-        data.writeChars('  '+room.rooms[j]);
-        if(i < ( rooms.length - 1 ) || j < (roomCount - 1)){
+        data.writeChars('  ' + room.rooms[j]);
+        if (i < rooms.length - 1 || j < roomCount - 1) {
           data.writeByte(13); //CarriageReturn
           data.writeByte(10); //NewLine
         }
       }
-
     }
 
     /**
      * Write the output buffer to a file
      */
-    GameFileSystem.writeFile(`${fileName}.vis`, data.buffer).then( () => {
+    GameFileSystem.writeFile(`${fileName}.vis`, data.buffer).then(() => {
       // console.log(`VISObject.export: ${fileName}.vis saved`);
     });
-
   }
 
   roomExists(room = ''): boolean {
@@ -379,7 +375,7 @@ export class VISObject {
   }
 
   fromJSON(json: string | ReturnType<VISObject['toJSON']>): void {
-    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<VISObject['toJSON']> : json;
+    const data = typeof json === 'string' ? (JSON.parse(json) as ReturnType<VISObject['toJSON']>) : json;
     this.rooms.clear();
     (data.rooms || []).forEach((room) => {
       this.rooms.set(room.name.toLocaleLowerCase(), {
@@ -390,13 +386,22 @@ export class VISObject {
     });
   }
 
-  toXML(): string { return objectToXML(this.toJSON()); }
-  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<VISObject['toJSON']>); }
-  toYAML(): string { return objectToYAML(this.toJSON()); }
-  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<VISObject['toJSON']>); }
-  toTOML(): string { return objectToTOML(this.toJSON()); }
-  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<VISObject['toJSON']>); }
-
+  toXML(): string {
+    return objectToXML(this.toJSON());
+  }
+  fromXML(xml: string): void {
+    this.fromJSON(xmlToObject(xml) as ReturnType<VISObject['toJSON']>);
+  }
+  toYAML(): string {
+    return objectToYAML(this.toJSON());
+  }
+  fromYAML(yaml: string): void {
+    this.fromJSON(yamlToObject(yaml) as ReturnType<VISObject['toJSON']>);
+  }
+  toTOML(): string {
+    return objectToTOML(this.toJSON());
+  }
+  fromTOML(toml: string): void {
+    this.fromJSON(tomlToObject(toml) as ReturnType<VISObject['toJSON']>);
+  }
 }
-
-

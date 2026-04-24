@@ -12,24 +12,26 @@ function readerFromString(text: string): BinaryReader {
   return new BinaryReader(buf);
 }
 
-function makeTLKString(overrides: Partial<{
-  flags: number;
-  SoundResRef: string;
-  VolumeVariance: number;
-  PitchVariance: number;
-  StringOffset: number;
-  StringLength: number;
-  SoundLength: number;
-  Value: string;
-}> = {}): TLKString {
+function makeTLKString(
+  overrides: Partial<{
+    flags: number;
+    SoundResRef: string;
+    VolumeVariance: number;
+    PitchVariance: number;
+    StringOffset: number;
+    StringLength: number;
+    SoundLength: number;
+    Value: string;
+  }> = {}
+): TLKString {
   return new TLKString(
-    overrides.flags         ?? 1,
-    overrides.SoundResRef   ?? 'vo_sound',
+    overrides.flags ?? 1,
+    overrides.SoundResRef ?? 'vo_sound',
     overrides.VolumeVariance ?? 0,
-    overrides.PitchVariance  ?? 0,
-    overrides.StringOffset   ?? 0,
-    overrides.StringLength   ?? 0,
-    overrides.SoundLength    ?? 0,
+    overrides.PitchVariance ?? 0,
+    overrides.StringOffset ?? 0,
+    overrides.StringLength ?? 0,
+    overrides.SoundLength ?? 0,
     overrides.Value
   );
 }

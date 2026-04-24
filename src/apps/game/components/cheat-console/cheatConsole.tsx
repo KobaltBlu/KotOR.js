@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { useApp } from "@/apps/game/context/AppContext";
-import { EngineDebugType } from "@/enums/engine/EngineDebugType";
-import "@/apps/game/components/cheat-console/cheat-console.scss";
-import * as KotOR from "@/apps/game/KotOR";
+import React, { useState } from 'react';
+import { useApp } from '@/apps/game/context/AppContext';
+import { EngineDebugType } from '@/enums/engine/EngineDebugType';
+import '@/apps/game/components/cheat-console/cheat-console.scss';
+import * as KotOR from '@/apps/game/KotOR';
 
 export const CheatConsole = () => {
   const appContext = useApp();
@@ -14,7 +14,7 @@ export const CheatConsole = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if(showCheatConsole){
+    if (showCheatConsole) {
       inputRef.current?.focus();
       inputRef.current?.select();
     }
@@ -22,7 +22,7 @@ export const CheatConsole = () => {
 
   const onConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setConsoleInput(e.target.value);
-  }
+  };
 
   const onConsoleSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     e.stopPropagation();
@@ -32,31 +32,39 @@ export const CheatConsole = () => {
       setConsoleInput('');
       setShowCheatConsole(false);
     }
-  }
+  };
 
   const onToggleDebugger = () => {
     appState.toggleDebugger();
     setShowCheatConsole(false);
-  }
+  };
 
   const onTogglePerformanceMonitor = () => {
     appState.togglePerformanceMonitor();
     setShowCheatConsole(false);
-  }
+  };
 
   const onReloadLastSave = () => {
     appState.reloadLastSave();
     setShowCheatConsole(false);
-  }
+  };
 
   return (
     <div className={`console on ${gameKey}`}>
       <div className="console-buttons">
-        <button type="button" className="console-btn" onClick={onToggleDebugger}>Debugger</button>
-        <button type="button" className="console-btn" onClick={onTogglePerformanceMonitor}>Toggle Stats</button>
-        <button type="button" className="console-btn" onClick={onReloadLastSave}>Reload Last Save</button>
+        <button type="button" className="console-btn" onClick={onToggleDebugger}>
+          Debugger
+        </button>
+        <button type="button" className="console-btn" onClick={onTogglePerformanceMonitor}>
+          Toggle Stats
+        </button>
+        <button type="button" className="console-btn" onClick={onReloadLastSave}>
+          Reload Last Save
+        </button>
       </div>
-      <label htmlFor="console-input" className="visually-hidden">Console Command Input</label>
+      <label htmlFor="console-input" className="visually-hidden">
+        Console Command Input
+      </label>
       <input
         id="console-input"
         ref={inputRef}
@@ -72,5 +80,3 @@ export const CheatConsole = () => {
     </div>
   );
 };
-
-

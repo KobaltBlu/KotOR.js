@@ -147,7 +147,7 @@ export class DLGUndoManager {
    * Notify all listeners of changes
    */
   private notifyChange(): void {
-    this.changeListeners.forEach(listener => listener());
+    this.changeListeners.forEach((listener) => listener());
   }
 
   /**
@@ -172,11 +172,7 @@ export class DLGUndoActions {
   /**
    * Create an action for editing node text
    */
-  static editNodeText(
-    node: DLGNode,
-    oldText: string,
-    newText: string
-  ): UndoAction {
+  static editNodeText(node: DLGNode, oldText: string, newText: string): UndoAction {
     return {
       type: 'edit-node-text',
       description: `Edit node text`,
@@ -185,18 +181,14 @@ export class DLGUndoActions {
       },
       redo: () => {
         node.text = newText;
-      }
+      },
     };
   }
 
   /**
    * Create an action for editing node comment
    */
-  static editNodeComment(
-    node: DLGNode,
-    oldComment: string,
-    newComment: string
-  ): UndoAction {
+  static editNodeComment(node: DLGNode, oldComment: string, newComment: string): UndoAction {
     return {
       type: 'edit-node-comment',
       description: `Edit node comment`,
@@ -205,18 +197,14 @@ export class DLGUndoActions {
       },
       redo: () => {
         node.comment = newComment;
-      }
+      },
     };
   }
 
   /**
    * Create an action for editing node speaker
    */
-  static editNodeSpeaker(
-    node: DLGNode,
-    oldSpeaker: string,
-    newSpeaker: string
-  ): UndoAction {
+  static editNodeSpeaker(node: DLGNode, oldSpeaker: string, newSpeaker: string): UndoAction {
     return {
       type: 'edit-node-speaker',
       description: `Edit node speaker`,
@@ -225,18 +213,14 @@ export class DLGUndoActions {
       },
       redo: () => {
         node.speakerTag = newSpeaker;
-      }
+      },
     };
   }
 
   /**
    * Create an action for editing node listener
    */
-  static editNodeListener(
-    node: DLGNode,
-    oldListener: string,
-    newListener: string
-  ): UndoAction {
+  static editNodeListener(node: DLGNode, oldListener: string, newListener: string): UndoAction {
     return {
       type: 'edit-node-listener',
       description: `Edit node listener`,
@@ -245,18 +229,14 @@ export class DLGUndoActions {
       },
       redo: () => {
         node.listenerTag = newListener;
-      }
+      },
     };
   }
 
   /**
    * Create an action for editing node VO
    */
-  static editNodeVO(
-    node: DLGNode,
-    oldVO: string,
-    newVO: string
-  ): UndoAction {
+  static editNodeVO(node: DLGNode, oldVO: string, newVO: string): UndoAction {
     return {
       type: 'edit-node-vo',
       description: `Edit node voice-over`,
@@ -265,18 +245,14 @@ export class DLGUndoActions {
       },
       redo: () => {
         node.vo_resref = newVO;
-      }
+      },
     };
   }
 
   /**
    * Create an action for editing node sound
    */
-  static editNodeSound(
-    node: DLGNode,
-    oldSound: string,
-    newSound: string
-  ): UndoAction {
+  static editNodeSound(node: DLGNode, oldSound: string, newSound: string): UndoAction {
     return {
       type: 'edit-node-sound',
       description: `Edit node sound`,
@@ -285,18 +261,14 @@ export class DLGUndoActions {
       },
       redo: () => {
         node.sound = newSound;
-      }
+      },
     };
   }
 
   /**
    * Create an action for editing node delay
    */
-  static editNodeDelay(
-    node: DLGNode,
-    oldDelay: number,
-    newDelay: number
-  ): UndoAction {
+  static editNodeDelay(node: DLGNode, oldDelay: number, newDelay: number): UndoAction {
     return {
       type: 'edit-node-delay',
       description: `Edit node delay`,
@@ -305,18 +277,14 @@ export class DLGUndoActions {
       },
       redo: () => {
         node.delay = newDelay;
-      }
+      },
     };
   }
 
   /**
    * Create an action for editing node camera angle
    */
-  static editNodeCameraAngle(
-    node: DLGNode,
-    oldAngle: number,
-    newAngle: number
-  ): UndoAction {
+  static editNodeCameraAngle(node: DLGNode, oldAngle: number, newAngle: number): UndoAction {
     return {
       type: 'edit-node-camera-angle',
       description: `Edit node camera angle`,
@@ -325,18 +293,14 @@ export class DLGUndoActions {
       },
       redo: () => {
         node.cameraAngle = newAngle;
-      }
+      },
     };
   }
 
   /**
    * Create an action for editing node camera ID
    */
-  static editNodeCameraID(
-    node: DLGNode,
-    oldID: number,
-    newID: number
-  ): UndoAction {
+  static editNodeCameraID(node: DLGNode, oldID: number, newID: number): UndoAction {
     return {
       type: 'edit-node-camera-id',
       description: `Edit node camera ID`,
@@ -345,18 +309,14 @@ export class DLGUndoActions {
       },
       redo: () => {
         node.cameraID = newID;
-      }
+      },
     };
   }
 
   /**
    * Create an action for adding a link
    */
-  static addLink(
-    sourceNode: DLGNode,
-    targetNode: DLGNode,
-    isReply: boolean
-  ): UndoAction {
+  static addLink(sourceNode: DLGNode, targetNode: DLGNode, isReply: boolean): UndoAction {
     return {
       type: 'add-link',
       description: `Add link`,
@@ -372,19 +332,14 @@ export class DLGUndoActions {
         if (!list.includes(targetNode)) {
           list.push(targetNode);
         }
-      }
+      },
     };
   }
 
   /**
    * Create an action for removing a link
    */
-  static removeLink(
-    sourceNode: DLGNode,
-    targetNode: DLGNode,
-    index: number,
-    isReply: boolean
-  ): UndoAction {
+  static removeLink(sourceNode: DLGNode, targetNode: DLGNode, index: number, isReply: boolean): UndoAction {
     return {
       type: 'remove-link',
       description: `Remove link`,
@@ -395,19 +350,14 @@ export class DLGUndoActions {
       redo: () => {
         const list = isReply ? sourceNode.replies : sourceNode.entries;
         list.splice(index, 1);
-      }
+      },
     };
   }
 
   /**
    * Create an action for moving a link
    */
-  static moveLink(
-    sourceNode: DLGNode,
-    fromIndex: number,
-    toIndex: number,
-    isReply: boolean
-  ): UndoAction {
+  static moveLink(sourceNode: DLGNode, fromIndex: number, toIndex: number, isReply: boolean): UndoAction {
     return {
       type: 'move-link',
       description: `Move link`,
@@ -420,18 +370,14 @@ export class DLGUndoActions {
         const list = isReply ? sourceNode.replies : sourceNode.entries;
         const [moved] = list.splice(fromIndex, 1);
         list.splice(toIndex, 0, moved);
-      }
+      },
     };
   }
 
   /**
    * Create an action for adding a starting node
    */
-  static addStartingNode(
-    dlg: DLGObject,
-    node: DLGNode,
-    index: number
-  ): UndoAction {
+  static addStartingNode(dlg: DLGObject, node: DLGNode, index: number): UndoAction {
     return {
       type: 'add-starting-node',
       description: `Add starting node`,
@@ -440,18 +386,14 @@ export class DLGUndoActions {
       },
       redo: () => {
         dlg.startingList.splice(index, 0, node);
-      }
+      },
     };
   }
 
   /**
    * Create an action for removing a starting node
    */
-  static removeStartingNode(
-    dlg: DLGObject,
-    node: DLGNode,
-    index: number
-  ): UndoAction {
+  static removeStartingNode(dlg: DLGObject, node: DLGNode, index: number): UndoAction {
     return {
       type: 'remove-starting-node',
       description: `Remove starting node`,
@@ -460,7 +402,7 @@ export class DLGUndoActions {
       },
       redo: () => {
         dlg.startingList.splice(index, 1);
-      }
+      },
     };
   }
 
@@ -482,7 +424,7 @@ export class DLGUndoActions {
         for (const action of actions) {
           action.redo();
         }
-      }
+      },
     };
   }
 }

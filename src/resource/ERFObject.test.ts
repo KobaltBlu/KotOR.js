@@ -67,11 +67,15 @@ describe('ERFObject', () => {
   it('rejects invalid type and version headers', async () => {
     const badType = new Uint8Array(makeErfBuffer());
     badType.set(new TextEncoder().encode('BAD '), 0);
-    await expect(new ERFObject(badType).load()).rejects.toThrow('Tried to save or load an unsupported or corrupted file.');
+    await expect(new ERFObject(badType).load()).rejects.toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
 
     const badVersion = new Uint8Array(makeErfBuffer());
     badVersion.set(new TextEncoder().encode('V2.0'), 4);
-    await expect(new ERFObject(badVersion).load()).rejects.toThrow('Tried to save or load an unsupported or corrupted file.');
+    await expect(new ERFObject(badVersion).load()).rejects.toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
   });
 
   it('write/export round-trip preserves resource data (vendor binary_io pattern)', async () => {
@@ -154,7 +158,9 @@ describe('ERFObject', () => {
     const savReloaded = new ERFObject(savErf.getExportBuffer());
     await savReloaded.load();
     expect(savReloaded.header.fileType).toBe('SAV ');
-    expect(new TextDecoder().decode(await savReloaded.getResourceBufferByResRef('test', ResourceTypes.txt))).toBe('save');
+    expect(new TextDecoder().decode(await savReloaded.getResourceBufferByResRef('test', ResourceTypes.txt))).toBe(
+      'save'
+    );
   });
 
   it('XML round-trip preserves archive structure', () => {

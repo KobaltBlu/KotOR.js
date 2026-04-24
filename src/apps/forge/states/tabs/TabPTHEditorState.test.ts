@@ -203,9 +203,27 @@ describe('TabPTHEditorState', () => {
   it('connectPoints updates the graph and updateFile exports canonical connection indexes', () => {
     const state = buildState();
     state.points = [
-      new PathPoint({ id: 0, connections: [], first_connection: 0, num_connections: 0, vector: new THREE.Vector3(0, 0, 0) }),
-      new PathPoint({ id: 1, connections: [], first_connection: 0, num_connections: 0, vector: new THREE.Vector3(1, 0, 0) }),
-      new PathPoint({ id: 2, connections: [], first_connection: 0, num_connections: 0, vector: new THREE.Vector3(2, 0, 0) }),
+      new PathPoint({
+        id: 0,
+        connections: [],
+        first_connection: 0,
+        num_connections: 0,
+        vector: new THREE.Vector3(0, 0, 0),
+      }),
+      new PathPoint({
+        id: 1,
+        connections: [],
+        first_connection: 0,
+        num_connections: 0,
+        vector: new THREE.Vector3(1, 0, 0),
+      }),
+      new PathPoint({
+        id: 2,
+        connections: [],
+        first_connection: 0,
+        num_connections: 0,
+        vector: new THREE.Vector3(2, 0, 0),
+      }),
     ];
 
     (state as any).connectPoints(state.points[0], state.points[1]);
@@ -220,7 +238,9 @@ describe('TabPTHEditorState', () => {
     expect(state.points[2].connections.map((point) => point.id)).toEqual([1]);
     expect(exportedPoints[1].getFieldByLabel('First_Conection').getValue()).toBe(1);
     expect(exportedPoints[1].getFieldByLabel('Conections').getValue()).toBe(2);
-    expect(exportedConnections.map((connection) => connection.getFieldByLabel('Destination').getValue())).toEqual([1, 0, 2, 1]);
+    expect(exportedConnections.map((connection) => connection.getFieldByLabel('Destination').getValue())).toEqual([
+      1, 0, 2, 1,
+    ]);
   });
 
   it('deleteSelectedPoint removes reciprocal connections before exporting', () => {

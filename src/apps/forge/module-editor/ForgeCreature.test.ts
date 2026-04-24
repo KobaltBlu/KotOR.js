@@ -66,16 +66,13 @@ function buildCoortaGff(): GFFObject {
   r.addField(new GFFField(GFFDataType.RESREF, 'TemplateResRef')).setValue('n_minecoorta');
   r.addField(new GFFField(GFFDataType.BYTE, 'Race')).setValue(6);
   r.addField(new GFFField(GFFDataType.BYTE, 'SubraceIndex')).setValue(1);
-  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName'))
-    .setCExoLocString(new CExoLocString(76046));
-  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName'))
-    .setCExoLocString(new CExoLocString(123));
+  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName')).setCExoLocString(new CExoLocString(76046));
+  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName')).setCExoLocString(new CExoLocString(123));
   r.addField(new GFFField(GFFDataType.WORD, 'Appearance_Type')).setValue(636);
   r.addField(new GFFField(GFFDataType.BYTE, 'Gender')).setValue(2);
   r.addField(new GFFField(GFFDataType.INT, 'Phenotype')).setValue(0);
   r.addField(new GFFField(GFFDataType.WORD, 'PortraitId')).setValue(1);
-  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Description'))
-    .setCExoLocString(new CExoLocString(123));
+  r.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Description')).setCExoLocString(new CExoLocString(123));
   r.addField(new GFFField(GFFDataType.CEXOSTRING, 'Tag')).setValue('Coorta');
   r.addField(new GFFField(GFFDataType.RESREF, 'Conversation')).setValue('coorta');
   r.addField(new GFFField(GFFDataType.BYTE, 'IsPC')).setValue(1);
@@ -204,8 +201,9 @@ function buildCoortaGff(): GFFObject {
   const itemList = new GFFField(GFFDataType.LIST, 'ItemList');
   for (let i = 0; i < 4; i++) {
     const s = new GFFStruct(i);
-    s.addField(new GFFField(GFFDataType.RESREF, 'InventoryRes'))
-      .setValue(i < 3 ? 'g_w_thermldet01' : 'g_w_thermldet02');
+    s.addField(new GFFField(GFFDataType.RESREF, 'InventoryRes')).setValue(
+      i < 3 ? 'g_w_thermldet01' : 'g_w_thermldet02'
+    );
     s.addField(new GFFField(GFFDataType.WORD, 'Repos_PosX')).setValue(i);
     s.addField(new GFFField(GFFDataType.WORD, 'Repos_PosY')).setValue(0);
     if (i === 0) {

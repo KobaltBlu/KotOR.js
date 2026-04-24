@@ -1,4 +1,4 @@
-import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
+import { FileLocationType } from '@/apps/forge/enum/FileLocationType';
 
 export interface EditorFileOptions {
   path?: string;

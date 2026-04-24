@@ -1,4 +1,4 @@
-import * as KotOR from "@/KotOR";
+import * as KotOR from '@/KotOR';
 
 export interface RecentProjectOptions {
   path?: string;
@@ -67,11 +67,15 @@ export class RecentProject {
   /**
    * Create a RecentProject from a serialized object
    */
-  static From(data: RecentProjectOptions | Record<string, unknown> & { path?: string; handle?: FileSystemDirectoryHandle; name?: string }): RecentProject {
+  static From(
+    data:
+      | RecentProjectOptions
+      | (Record<string, unknown> & { path?: string; handle?: FileSystemDirectoryHandle; name?: string })
+  ): RecentProject {
     return new RecentProject({
       path: data.path,
       handle: data.handle, // Handle will be restored from IndexedDB if stored
-      name: data.name
+      name: data.name,
     });
   }
 }

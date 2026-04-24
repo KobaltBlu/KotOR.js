@@ -1,47 +1,47 @@
-import * as THREE from "three";
-import { MDLLoader } from "@/loaders";
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
-import { OdysseyModelNodeReference } from "@/odyssey/OdysseyModelNodeReference";
-import type { OdysseyModelNodeAABB } from "@/odyssey/OdysseyModelNodeAABB";
-import { OdysseyEmitter3D } from "@/three/odyssey/OdysseyEmitter3D";
-import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
-import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
-import type { NodeParseContext } from "@/three/odyssey/OdysseyModel3DNodeParseContext";
+import * as THREE from 'three';
+import { MDLLoader } from '@/loaders';
+import { OdysseyModelControllerType } from '@/enums/odyssey/OdysseyModelControllerType';
+import { OdysseyModelNodeType } from '@/enums/odyssey/OdysseyModelNodeType';
+import type { OdysseyModelNode } from '@/odyssey/OdysseyModelNode';
+import { OdysseyModelNodeReference } from '@/odyssey/OdysseyModelNodeReference';
+import type { OdysseyModelNodeAABB } from '@/odyssey/OdysseyModelNodeAABB';
+import { OdysseyEmitter3D } from '@/three/odyssey/OdysseyEmitter3D';
+import { OdysseyObject3D } from '@/three/odyssey/OdysseyObject3D';
+import type { OdysseyModel3D } from '@/three/odyssey/OdysseyModel3D';
+import type { NodeParseContext } from '@/three/odyssey/OdysseyModel3DNodeParseContext';
 
 /** Lowercase node names that map to engine hook fields on {@link OdysseyModel3D}. */
 const NAMED_MODEL_HOOK_NAMES = new Set<string>([
-  "talkdummy",
-  "cutscenedummy",
-  "rootdummy",
-  "headhook",
-  "camerahook",
-  "camerahookm",
-  "camerahookf",
-  "freelookhook",
-  "lookathook",
-  "lightsaberhook",
-  "deflecthook",
-  "maskhook",
-  "gogglehook",
-  "rhand",
-  "lhand",
-  "impact",
-  "impact_bolt",
-  "headconjure",
-  "handconjure",
-  "trans",
-  "bullethook0",
-  "bullethook1",
-  "bullethook2",
-  "bullethook3",
-  "gunhook0",
-  "gunhook1",
-  "gunhook2",
-  "gunhook3",
-  "modelhook",
-  "hturn_g",
+  'talkdummy',
+  'cutscenedummy',
+  'rootdummy',
+  'headhook',
+  'camerahook',
+  'camerahookm',
+  'camerahookf',
+  'freelookhook',
+  'lookathook',
+  'lightsaberhook',
+  'deflecthook',
+  'maskhook',
+  'gogglehook',
+  'rhand',
+  'lhand',
+  'impact',
+  'impact_bolt',
+  'headconjure',
+  'handconjure',
+  'trans',
+  'bullethook0',
+  'bullethook1',
+  'bullethook2',
+  'bullethook3',
+  'gunhook0',
+  'gunhook1',
+  'gunhook2',
+  'gunhook3',
+  'modelhook',
+  'hturn_g',
 ]);
 
 function assignNamedModelHook(model: OdysseyModel3D, nodeName: string, node: OdysseyObject3D): void {
@@ -53,7 +53,7 @@ function attachMeshIfNeeded(
   odysseyModel: OdysseyModel3D,
   node: OdysseyObject3D,
   odysseyNode: OdysseyModelNode,
-  parseContext: NodeParseContext,
+  parseContext: NodeParseContext
 ): void {
   if ((odysseyNode.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh && odysseyNode) {
     parseContext.builders.NodeMeshBuilder(odysseyModel, node, odysseyNode as any, parseContext.options);
@@ -64,7 +64,7 @@ function attachLightIfNeeded(
   odysseyModel: OdysseyModel3D,
   node: OdysseyObject3D,
   odysseyNode: OdysseyModelNode,
-  parseContext: NodeParseContext,
+  parseContext: NodeParseContext
 ): void {
   if ((odysseyNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light && odysseyNode) {
     node.light = parseContext.builders.NodeLightBuilder(odysseyModel, node, odysseyNode as any, parseContext.options);
@@ -74,12 +74,12 @@ function attachLightIfNeeded(
 function attachEmitterIfNeeded(
   odysseyModel: OdysseyModel3D,
   node: OdysseyObject3D,
-  odysseyNode: OdysseyModelNode,
+  odysseyNode: OdysseyModelNode
 ): void {
   if ((odysseyNode.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter && odysseyNode) {
     node.emitter = new OdysseyEmitter3D(odysseyNode);
     node.emitter.context = odysseyModel.context;
-    node.emitter.name = odysseyNode.name + "_em";
+    node.emitter.name = odysseyNode.name + '_em';
     node.add(node.emitter);
     odysseyModel.emitters.push(node.emitter);
   }
@@ -94,7 +94,7 @@ function attachReferenceIfNeeded(
   parentNode: THREE.Object3D,
   node: OdysseyObject3D,
   odysseyNode: OdysseyModelNode,
-  parseContext: NodeParseContext,
+  parseContext: NodeParseContext
 ): void {
   if ((odysseyNode.nodeType & OdysseyModelNodeType.Reference) != OdysseyModelNodeType.Reference || !odysseyNode) {
     return;
@@ -104,24 +104,30 @@ function attachReferenceIfNeeded(
     return;
   }
   const ref = odysseyNode as OdysseyModelNodeReference;
-  console.log("Loading child model: " + ref.modelName);
-  MDLLoader.loader.load(ref.modelName).then((childModel) => {
-    if (childModel) {
-      parseContext.builders.FromMDL(childModel, {
-        context: odysseyModel.options.context,
-        editorMode: odysseyModel.options.editorMode,
-      }).then((childModel3D) => {
-        if (childModel3D) {
-          node.add(childModel3D);
-          odysseyModel.childModels.push(childModel3D);
-        }
-      }).catch((e: unknown) => {
-        console.error(e);
-      });
-    }
-  }).catch((e: unknown) => {
-    console.error(e);
-  });
+  console.log('Loading child model: ' + ref.modelName);
+  MDLLoader.loader
+    .load(ref.modelName)
+    .then((childModel) => {
+      if (childModel) {
+        parseContext.builders
+          .FromMDL(childModel, {
+            context: odysseyModel.options.context,
+            editorMode: odysseyModel.options.editorMode,
+          })
+          .then((childModel3D) => {
+            if (childModel3D) {
+              node.add(childModel3D);
+              odysseyModel.childModels.push(childModel3D);
+            }
+          })
+          .catch((e: unknown) => {
+            console.error(e);
+          });
+      }
+    })
+    .catch((e: unknown) => {
+      console.error(e);
+    });
 }
 
 /**
@@ -134,7 +140,7 @@ export function parseOdysseyNode(
   odysseyModel: OdysseyModel3D,
   parentNode: THREE.Object3D,
   odysseyNode: OdysseyModelNode,
-  parseContext: NodeParseContext,
+  parseContext: NodeParseContext
 ): OdysseyObject3D {
   const node = new OdysseyObject3D(odysseyNode);
   node.sourceNodeUUID = odysseyNode.uuid;
@@ -162,11 +168,16 @@ export function parseOdysseyNode(
   }
 
   node.position.set(odysseyNode.position.x, odysseyNode.position.y, odysseyNode.position.z);
-  node.quaternion.set(odysseyNode.quaternion.x, odysseyNode.quaternion.y, odysseyNode.quaternion.z, odysseyNode.quaternion.w);
+  node.quaternion.set(
+    odysseyNode.quaternion.x,
+    odysseyNode.quaternion.y,
+    odysseyNode.quaternion.z,
+    odysseyNode.quaternion.w
+  );
 
   node.name = odysseyNode.name.toLowerCase();
 
-  if (node.name == odysseyModel.name.toLowerCase() + "a") {
+  if (node.name == odysseyModel.name.toLowerCase() + 'a') {
     parseContext.flags.isChildrenDynamic = true;
   }
 

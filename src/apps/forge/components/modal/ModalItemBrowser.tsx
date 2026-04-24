@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { Button, Modal } from "react-bootstrap";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
-import { LazyTextureCanvas } from "@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas";
-import "@/apps/forge/components/modal/ModalItemBrowser.scss";
+import React, { useState, useEffect } from 'react';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import { Button, Modal } from 'react-bootstrap';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { ModalItemBrowserState } from '@/apps/forge/states/modal/ModalItemBrowserState';
+import { LazyTextureCanvas } from '@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas';
+import '@/apps/forge/components/modal/ModalItemBrowser.scss';
 
 export const ModalItemBrowser = (props: BaseModalProps) => {
   const modal = props.modal as ModalItemBrowserState;
@@ -44,7 +44,7 @@ export const ModalItemBrowser = (props: BaseModalProps) => {
     modal.addEventListener('onShow', onShow);
     modal.addEventListener('onItemsLoaded', onItemsLoaded);
     modal.addEventListener('onSearchChanged', onSearchChanged);
-    
+
     return () => {
       modal.removeEventListener('onHide', onHide);
       modal.removeEventListener('onShow', onShow);
@@ -81,14 +81,7 @@ export const ModalItemBrowser = (props: BaseModalProps) => {
   };
 
   return (
-    <Modal
-      show={show}
-      onHide={handleHide}
-      backdrop="static"
-      keyboard={false}
-      size="lg"
-      className="modal-item-browser"
-    >
+    <Modal show={show} onHide={handleHide} backdrop="static" keyboard={false} size="lg" className="modal-item-browser">
       <Modal.Header closeButton>
         <Modal.Title>{modal.title}</Modal.Title>
       </Modal.Header>
@@ -124,11 +117,7 @@ export const ModalItemBrowser = (props: BaseModalProps) => {
                 >
                   <div className="item-browser-icon">
                     {item.iconResRef ? (
-                      <LazyTextureCanvas
-                        texture={item.iconResRef}
-                        width={64}
-                        height={64}
-                      />
+                      <LazyTextureCanvas texture={item.iconResRef} width={64} height={64} />
                     ) : (
                       <div className="item-browser-icon-placeholder">?</div>
                     )}
@@ -149,5 +138,3 @@ export const ModalItemBrowser = (props: BaseModalProps) => {
     </Modal>
   );
 };
-
-

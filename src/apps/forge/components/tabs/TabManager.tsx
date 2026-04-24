@@ -1,16 +1,15 @@
-import React, { useEffect, useRef, useState } from "react";
-import TabButton from "@/apps/forge/components/tabs/TabButton";
-import { TabManagerProvider, useTabManager } from "@/apps/forge/context/TabManagerContext";
-import { TabState } from "@/apps/forge/states/tabs";
+import React, { useEffect, useRef, useState } from 'react';
+import TabButton from '@/apps/forge/components/tabs/TabButton';
+import { TabManagerProvider, useTabManager } from '@/apps/forge/context/TabManagerContext';
+import { TabState } from '@/apps/forge/states/tabs';
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from '@/apps/forge/KotOR';
 
 export interface TabManagerProps {
   // manager: EditorTabManager
 }
 
-export const TabManager = function(props: TabManagerProps){
-
+export const TabManager = function (props: TabManagerProps) {
   const tabManagerContext = useTabManager();
   const [render, rerender] = useState(false);
   const [manager, setTabManager] = tabManagerContext.manager;
@@ -44,7 +43,7 @@ export const TabManager = function(props: TabManagerProps){
     rerender(!render);
   };
 
-  useEffect( () => {
+  useEffect(() => {
     manager.addEventListener('onTabAdded', onTabAdded);
     manager.addEventListener('onTabRemoved', onTabRemoved);
     manager.addEventListener('onTabShow', onTabShow);
@@ -55,34 +54,29 @@ export const TabManager = function(props: TabManagerProps){
       manager.removeEventListener('onTabRemoved', onTabRemoved);
       manager.removeEventListener('onTabShow', onTabShow);
       manager.removeEventListener('onTabHide', onTabHide);
-    }
-  })
+    };
+  });
 
   return (
     <div id="tabs-container">
       <div className="tabManager">
         <ul ref={tabsMenuRef} className="tabs-menu">
-          {
-            tabs.map( (tab: any) => {
-              return <TabButton key={tab.id} tab={tab} ></TabButton>
-            })
-          }
+          {tabs.map((tab: any) => {
+            return <TabButton key={tab.id} tab={tab}></TabButton>;
+          })}
         </ul>
         <div ref={tabsContainerRef} className="tabs tab-content">
-          {
-            tabs.map( (tab: any) => {
-              return (
-                <div key={tab.id} className={`tab-pane ${tab.constructor.name} ${tab.visible ? 'active' : ''}`}>
-                  {tab.render()}
-                </div>
-              )
-            })
-          }
-        </div> 
+          {tabs.map((tab: any) => {
+            return (
+              <div key={tab.id} className={`tab-pane ${tab.constructor.name} ${tab.visible ? 'active' : ''}`}>
+                {tab.render()}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
-
-}
+};
 
 export default TabManager;

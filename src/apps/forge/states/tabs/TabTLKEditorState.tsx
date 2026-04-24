@@ -1,21 +1,18 @@
-import React from "react";
+import React from 'react';
 
-import { TabTLKEditor } from "@/apps/forge/components/tabs/tab-tlk-editor/TabTLKEditor";
-import {
-  createKeyResources,
-  findStrRefReferences,
-} from "@/apps/forge/helpers/ReferenceFinder";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalFileResultsState } from "@/apps/forge/states/modal/ModalFileResultsState";
+import { TabTLKEditor } from '@/apps/forge/components/tabs/tab-tlk-editor/TabTLKEditor';
+import { createKeyResources, findStrRefReferences } from '@/apps/forge/helpers/ReferenceFinder';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import * as KotOR from '@/apps/forge/KotOR';
+import { ForgeState } from '@/apps/forge/states/ForgeState';
+import { ModalFileResultsState } from '@/apps/forge/states/modal/ModalFileResultsState';
 import {
   ModalReferenceSearchOptionsState,
   type ReferenceSearchOptionsStateValues,
-} from "@/apps/forge/states/modal/ModalReferenceSearchOptionsState";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { TLKString } from "@/resource/TLKString";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+} from '@/apps/forge/states/modal/ModalReferenceSearchOptionsState';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { TLKString } from '@/resource/TLKString';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -29,11 +26,11 @@ export class TabTLKEditorState extends TabState {
   jumpBoxVisible: boolean = false;
   jumpValue: number = 0;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     log.trace('TabTLKEditorState constructor entry');
     super(options);
 
-    if(this.file){
+    if (this.file) {
       this.tabName = this.file.getFilename();
       log.debug('TabTLKEditorState constructor tabName', this.tabName);
     }
@@ -42,9 +39,9 @@ export class TabTLKEditorState extends TabState {
       {
         description: 'Talk Table File',
         accept: {
-          'application/octet-stream': ['.tlk']
-        }
-      }
+          'application/octet-stream': ['.tlk'],
+        },
+      },
     ];
 
     this.setContentView(<TabTLKEditor tab={this}></TabTLKEditor>);
@@ -54,7 +51,7 @@ export class TabTLKEditorState extends TabState {
 
   async openFile() {
     log.trace('TabTLKEditorState openFile entry');
-    if(!this.file) {
+    if (!this.file) {
       log.trace('TabTLKEditorState openFile no file');
       return;
     }
@@ -157,12 +154,12 @@ export class TabTLKEditorState extends TabState {
 
   async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
     log.trace('TabTLKEditorState getExportBuffer');
-    if(this.tlk){
+    if (this.tlk) {
       const buf = this.tlk.toBuffer();
       log.debug('TabTLKEditorState getExportBuffer tlk length', buf?.length ?? 0);
       return buf;
     }
-    if(this.file?.buffer){
+    if (this.file?.buffer) {
       return this.file.buffer;
     }
     return new Uint8Array(0);

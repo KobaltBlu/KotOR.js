@@ -1,11 +1,10 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 
-import { IndoorMapRoom } from "@/apps/forge/data/IndoorMap";
-import { cloneWalkmesh } from "@/apps/forge/data/IndoorWalkmesh";
-import { OdysseyModel, OdysseyModel3D, OdysseyWalkMesh } from "@/apps/forge/KotOR";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-
+import { IndoorMapRoom } from '@/apps/forge/data/IndoorMap';
+import { cloneWalkmesh } from '@/apps/forge/data/IndoorWalkmesh';
+import { OdysseyModel, OdysseyModel3D, OdysseyWalkMesh } from '@/apps/forge/KotOR';
+import { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
 
 export class IndoorMap3DRoom {
   room: IndoorMapRoom;

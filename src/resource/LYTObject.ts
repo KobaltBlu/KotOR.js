@@ -1,15 +1,21 @@
-import { ILayoutRoom } from "@/interface/resource/ILayoutRoom";
-import { ILayoutDoorHook } from "@/interface/resource/ILayoutDoorHook";
-import { ILayoutObstacle } from "@/interface/resource/ILayoutObstacle";
-import { ILayoutTrack } from "@/interface/resource/ILayoutTrack";
-import * as THREE from "three";
+import { ILayoutRoom } from '@/interface/resource/ILayoutRoom';
+import { ILayoutDoorHook } from '@/interface/resource/ILayoutDoorHook';
+import { ILayoutObstacle } from '@/interface/resource/ILayoutObstacle';
+import { ILayoutTrack } from '@/interface/resource/ILayoutTrack';
+import * as THREE from 'three';
 
-import { ILayoutDoorHook } from "@/interface/resource/ILayoutDoorHook";
-import { ILayoutObstacle } from "@/interface/resource/ILayoutObstacle";
-import { ILayoutRoom } from "@/interface/resource/ILayoutRoom";
-import { ILayoutTrack } from "@/interface/resource/ILayoutTrack";
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
-
+import { ILayoutDoorHook } from '@/interface/resource/ILayoutDoorHook';
+import { ILayoutObstacle } from '@/interface/resource/ILayoutObstacle';
+import { ILayoutRoom } from '@/interface/resource/ILayoutRoom';
+import { ILayoutTrack } from '@/interface/resource/ILayoutTrack';
+import {
+  objectToTOML,
+  objectToXML,
+  objectToYAML,
+  tomlToObject,
+  xmlToObject,
+  yamlToObject,
+} from '@/utility/FormatSerialization';
 
 /**
  * LYTObject class.
@@ -30,10 +36,8 @@ export class LYTObject {
   filedependancy: string;
   text: any;
 
-  constructor( data?: Uint8Array ){
-
-    if(typeof data == 'undefined')
-      data = new Uint8Array(0);
+  constructor(data?: Uint8Array) {
+    if (typeof data == 'undefined') data = new Uint8Array(0);
 
     this.rooms = [];
     this.doorhooks = [];
@@ -45,42 +49,41 @@ export class LYTObject {
     this.text = decoder.decode(data);
 
     this._parse(this.text);
-
   }
 
-  private _tokenize(text: string): Array<{type: string, value: string, line: number, tokens?: string[]}> {
+  private _tokenize(text: string): Array<{ type: string; value: string; line: number; tokens?: string[] }> {
     const lines = text.split('\n');
-    const tokens: Array<{type: string, value: string, line: number, tokens?: string[]}> = [];
+    const tokens: Array<{ type: string; value: string; line: number; tokens?: string[] }> = [];
 
-    for(let i = 0; i < lines.length; i++){
+    for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       const lineNum = i + 1;
 
       // Skip empty lines
-      if(line.length === 0){
+      if (line.length === 0) {
         continue;
       }
 
       // Token types
-      if(line === '#MAXLAYOUT ASCII'){
+      if (line === '#MAXLAYOUT ASCII') {
         tokens.push({ type: 'HEADER', value: line, line: lineNum });
-      } else if(line.startsWith('filedependancy ')){
+      } else if (line.startsWith('filedependancy ')) {
         const value = line.substring('filedependancy '.length);
         tokens.push({ type: 'FILEDEPENDANCY', value: value, line: lineNum });
-      } else if(line === 'beginlayout'){
+      } else if (line === 'beginlayout') {
         tokens.push({ type: 'BEGIN_LAYOUT', value: line, line: lineNum });
-      } else if(line === 'donelayout'){
+      } else if (line === 'donelayout') {
         tokens.push({ type: 'DONE_LAYOUT', value: line, line: lineNum });
-      } else if(line.startsWith('roomcount ')){
+      } else if (line.startsWith('roomcount ')) {
         const count = line.substring('roomcount '.length).trim();
         tokens.push({ type: 'ROOM_COUNT', value: count, line: lineNum });
-      } else if(line.startsWith('trackcount ')){
+      } else if (line.startsWith('trackcount ')) {
         const count = line.substring('trackcount '.length).trim();
         tokens.push({ type: 'TRACK_COUNT', value: count, line: lineNum });
-      } else if(line.startsWith('obstaclecount ')){
+      } else if (line.startsWith('obstaclecount ')) {
         const count = line.substring('obstaclecount '.length).trim();
         tokens.push({ type: 'OBSTACLE_COUNT', value: count, line: lineNum });
-      } else if(line.startsWith('doorhookcount ')){
+      } else if (line.startsWith('doorhookcount ')) {
         const count = line.substring('doorhookcount '.length).trim();
         tokens.push({ type: 'DOORHOOK_COUNT', value: count, line: lineNum });
       } else {
@@ -100,8 +103,8 @@ export class LYTObject {
     let inLayout = false;
     const expectedCounts: { rooms?: number; tracks?: number; obstacles?: number; doorhooks?: number } = {};
 
-    for(const token of tokens){
-      switch(token.type){
+    for (const token of tokens) {
+      switch (token.type) {
         case 'HEADER':
           // Validate header
           break;
@@ -120,7 +123,7 @@ export class LYTObject {
           break;
 
         case 'ROOM_COUNT':
-          if(!inLayout){
+          if (!inLayout) {
             throw new Error(`Unexpected roomcount at line ${token.line}: not inside layout section`);
           }
           expectedCounts.rooms = Number.parseInt(token.value, 10);
@@ -128,7 +131,7 @@ export class LYTObject {
           break;
 
         case 'TRACK_COUNT':
-          if(!inLayout){
+          if (!inLayout) {
             throw new Error(`Unexpected trackcount at line ${token.line}: not inside layout section`);
           }
           expectedCounts.tracks = Number.parseInt(token.value, 10);
@@ -136,7 +139,7 @@ export class LYTObject {
           break;
 
         case 'OBSTACLE_COUNT':
-          if(!inLayout){
+          if (!inLayout) {
             throw new Error(`Unexpected obstaclecount at line ${token.line}: not inside layout section`);
           }
           expectedCounts.obstacles = Number.parseInt(token.value, 10);
@@ -144,7 +147,7 @@ export class LYTObject {
           break;
 
         case 'DOORHOOK_COUNT':
-          if(!inLayout){
+          if (!inLayout) {
             throw new Error(`Unexpected doorhookcount at line ${token.line}: not inside layout section`);
           }
           expectedCounts.doorhooks = Number.parseInt(token.value, 10);
@@ -152,26 +155,22 @@ export class LYTObject {
           break;
 
         case 'DATA':
-          if(!inLayout){
+          if (!inLayout) {
             continue; // Skip data outside layout section
           }
 
-          if(!token.tokens || token.tokens.length === 0){
+          if (!token.tokens || token.tokens.length === 0) {
             continue;
           }
 
           const params = token.tokens;
 
-          switch(mode){
+          switch (mode) {
             case 'ROOMS':
-              if(params.length >= 4){
+              if (params.length >= 4) {
                 this.rooms.push({
                   name: params[0],
-                  position: new THREE.Vector3(
-                    parseFloat(params[1]),
-                    parseFloat(params[2]),
-                    parseFloat(params[3])
-                  )
+                  position: new THREE.Vector3(parseFloat(params[1]), parseFloat(params[2]), parseFloat(params[3])),
                 });
               } else {
                 throw new Error(`Invalid room data at line ${token.line}: expected 4 values, got ${params.length}`);
@@ -179,14 +178,10 @@ export class LYTObject {
               break;
 
             case 'TRACKS':
-              if(params.length >= 4){
+              if (params.length >= 4) {
                 this.tracks.push({
                   name: params[0],
-                  position: new THREE.Vector3(
-                    parseFloat(params[1]),
-                    parseFloat(params[2]),
-                    parseFloat(params[3])
-                  )
+                  position: new THREE.Vector3(parseFloat(params[1]), parseFloat(params[2]), parseFloat(params[3])),
                 });
               } else {
                 throw new Error(`Invalid track data at line ${token.line}: expected 4 values, got ${params.length}`);
@@ -194,14 +189,10 @@ export class LYTObject {
               break;
 
             case 'OBSTACLES':
-              if(params.length >= 4){
+              if (params.length >= 4) {
                 this.obstacles.push({
                   name: params[0],
-                  position: new THREE.Vector3(
-                    parseFloat(params[1]),
-                    parseFloat(params[2]),
-                    parseFloat(params[3])
-                  )
+                  position: new THREE.Vector3(parseFloat(params[1]), parseFloat(params[2]), parseFloat(params[3])),
                 });
               } else {
                 throw new Error(`Invalid obstacle data at line ${token.line}: expected 4 values, got ${params.length}`);
@@ -210,24 +201,22 @@ export class LYTObject {
 
             case 'DOORS':
               // Format: room_name door_name number x y z qx qy qz qw
-              if(params.length >= 10){
+              if (params.length >= 10) {
                 this.doorhooks.push({
                   room: params[0],
                   name: params[1],
-                  position: new THREE.Vector3(
-                    parseFloat(params[3]),
-                    parseFloat(params[4]),
-                    parseFloat(params[5])
-                  ),
+                  position: new THREE.Vector3(parseFloat(params[3]), parseFloat(params[4]), parseFloat(params[5])),
                   quaternion: new THREE.Quaternion(
                     parseFloat(params[6]),
                     parseFloat(params[7]),
                     parseFloat(params[8]),
                     parseFloat(params[9])
-                  )
+                  ),
                 });
               } else {
-                throw new Error(`Invalid doorhook data at line ${token.line}: expected 10 values, got ${params.length}`);
+                throw new Error(
+                  `Invalid doorhook data at line ${token.line}: expected 10 values, got ${params.length}`
+                );
               }
               break;
 
@@ -257,7 +246,7 @@ export class LYTObject {
     }
   }
 
-  export(){
+  export() {
     const encoder = new TextEncoder();
     let text = '';
 
@@ -265,7 +254,7 @@ export class LYTObject {
     text += '#MAXLAYOUT ASCII\n';
 
     // File dependency
-    if(this.filedependancy){
+    if (this.filedependancy) {
       text += 'filedependancy ' + this.filedependancy + '\n';
     }
 
@@ -274,28 +263,72 @@ export class LYTObject {
 
     // Rooms section
     text += '   roomcount ' + this.rooms.length + '\n';
-    for(let i = 0; i < this.rooms.length; i++){
-      text += '      ' + this.rooms[i].name + ' ' + this.rooms[i].position.x + ' ' + this.rooms[i].position.y + ' ' + this.rooms[i].position.z + '\n';
+    for (let i = 0; i < this.rooms.length; i++) {
+      text +=
+        '      ' +
+        this.rooms[i].name +
+        ' ' +
+        this.rooms[i].position.x +
+        ' ' +
+        this.rooms[i].position.y +
+        ' ' +
+        this.rooms[i].position.z +
+        '\n';
     }
 
     // Tracks section
     text += '   trackcount ' + this.tracks.length + '\n';
-    for(let i = 0; i < this.tracks.length; i++){
-      text += '      ' + this.tracks[i].name + ' ' + this.tracks[i].position.x + ' ' + this.tracks[i].position.y + ' ' + this.tracks[i].position.z + '\n';
+    for (let i = 0; i < this.tracks.length; i++) {
+      text +=
+        '      ' +
+        this.tracks[i].name +
+        ' ' +
+        this.tracks[i].position.x +
+        ' ' +
+        this.tracks[i].position.y +
+        ' ' +
+        this.tracks[i].position.z +
+        '\n';
     }
 
     // Obstacles section
     text += '   obstaclecount ' + this.obstacles.length + '\n';
-    for(let i = 0; i < this.obstacles.length; i++){
-      text += '      ' + this.obstacles[i].name + ' ' + this.obstacles[i].position.x + ' ' + this.obstacles[i].position.y + ' ' + this.obstacles[i].position.z + '\n';
+    for (let i = 0; i < this.obstacles.length; i++) {
+      text +=
+        '      ' +
+        this.obstacles[i].name +
+        ' ' +
+        this.obstacles[i].position.x +
+        ' ' +
+        this.obstacles[i].position.y +
+        ' ' +
+        this.obstacles[i].position.z +
+        '\n';
     }
 
     // Door hooks section
     text += '   doorhookcount ' + this.doorhooks.length + '\n';
-    for(let i = 0; i < this.doorhooks.length; i++){
-      text += '      ' + this.doorhooks[i].room + ' ' + this.doorhooks[i].name + ' 0 ' +
-              this.doorhooks[i].position.x + ' ' + this.doorhooks[i].position.y + ' ' + this.doorhooks[i].position.z + ' ' +
-              this.doorhooks[i].quaternion.x + ' ' + this.doorhooks[i].quaternion.y + ' ' + this.doorhooks[i].quaternion.z + ' ' + this.doorhooks[i].quaternion.w + '\n';
+    for (let i = 0; i < this.doorhooks.length; i++) {
+      text +=
+        '      ' +
+        this.doorhooks[i].room +
+        ' ' +
+        this.doorhooks[i].name +
+        ' 0 ' +
+        this.doorhooks[i].position.x +
+        ' ' +
+        this.doorhooks[i].position.y +
+        ' ' +
+        this.doorhooks[i].position.z +
+        ' ' +
+        this.doorhooks[i].quaternion.x +
+        ' ' +
+        this.doorhooks[i].quaternion.y +
+        ' ' +
+        this.doorhooks[i].quaternion.z +
+        ' ' +
+        this.doorhooks[i].quaternion.w +
+        '\n';
     }
 
     // End layout
@@ -309,23 +342,42 @@ export class LYTObject {
     rooms: Array<{ name: string; position: { x: number; y: number; z: number } }>;
     tracks: Array<{ name: string; position: { x: number; y: number; z: number } }>;
     obstacles: Array<{ name: string; position: { x: number; y: number; z: number } }>;
-    doorhooks: Array<{ room: string; name: string; position: { x: number; y: number; z: number }; quaternion: { x: number; y: number; z: number; w: number } }>;
+    doorhooks: Array<{
+      room: string;
+      name: string;
+      position: { x: number; y: number; z: number };
+      quaternion: { x: number; y: number; z: number; w: number };
+    }>;
   } {
     return {
       filedependancy: this.filedependancy,
       rooms: this.rooms.map((room) => ({ name: room.name, position: room.position })),
       tracks: this.tracks.map((track) => ({ name: track.name, position: track.position })),
       obstacles: this.obstacles.map((obstacle) => ({ name: obstacle.name, position: obstacle.position })),
-      doorhooks: this.doorhooks.map((door) => ({ name: door.name, room: door.room, position: door.position, quaternion: door.quaternion })),
+      doorhooks: this.doorhooks.map((door) => ({
+        name: door.name,
+        room: door.room,
+        position: door.position,
+        quaternion: door.quaternion,
+      })),
     };
   }
 
   fromJSON(json: string | ReturnType<LYTObject['toJSON']>): void {
-    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<LYTObject['toJSON']> : json;
+    const data = typeof json === 'string' ? (JSON.parse(json) as ReturnType<LYTObject['toJSON']>) : json;
     this.filedependancy = data.filedependancy || '';
-    this.rooms = (data.rooms || []).map((room) => ({ name: room.name, position: new THREE.Vector3(room.position.x, room.position.y, room.position.z) }));
-    this.tracks = (data.tracks || []).map((track) => ({ name: track.name, position: new THREE.Vector3(track.position.x, track.position.y, track.position.z) }));
-    this.obstacles = (data.obstacles || []).map((obstacle) => ({ name: obstacle.name, position: new THREE.Vector3(obstacle.position.x, obstacle.position.y, obstacle.position.z) }));
+    this.rooms = (data.rooms || []).map((room) => ({
+      name: room.name,
+      position: new THREE.Vector3(room.position.x, room.position.y, room.position.z),
+    }));
+    this.tracks = (data.tracks || []).map((track) => ({
+      name: track.name,
+      position: new THREE.Vector3(track.position.x, track.position.y, track.position.z),
+    }));
+    this.obstacles = (data.obstacles || []).map((obstacle) => ({
+      name: obstacle.name,
+      position: new THREE.Vector3(obstacle.position.x, obstacle.position.y, obstacle.position.z),
+    }));
     this.doorhooks = (data.doorhooks || []).map((door) => ({
       room: door.room,
       name: door.name,
@@ -334,11 +386,22 @@ export class LYTObject {
     }));
   }
 
-  toXML(): string { return objectToXML(this.toJSON()); }
-  fromXML(xml: string): void { this.fromJSON(xmlToObject(xml) as ReturnType<LYTObject['toJSON']>); }
-  toYAML(): string { return objectToYAML(this.toJSON()); }
-  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<LYTObject['toJSON']>); }
-  toTOML(): string { return objectToTOML(this.toJSON()); }
-  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<LYTObject['toJSON']>); }
-
+  toXML(): string {
+    return objectToXML(this.toJSON());
+  }
+  fromXML(xml: string): void {
+    this.fromJSON(xmlToObject(xml) as ReturnType<LYTObject['toJSON']>);
+  }
+  toYAML(): string {
+    return objectToYAML(this.toJSON());
+  }
+  fromYAML(yaml: string): void {
+    this.fromJSON(yamlToObject(yaml) as ReturnType<LYTObject['toJSON']>);
+  }
+  toTOML(): string {
+    return objectToTOML(this.toJSON());
+  }
+  fromTOML(toml: string): void {
+    this.fromJSON(tomlToObject(toml) as ReturnType<LYTObject['toJSON']>);
+  }
 }

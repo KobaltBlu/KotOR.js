@@ -1,20 +1,19 @@
-import { Shader } from "@/shaders/Shader";
-import * as THREE from "three";
+import { Shader } from '@/shaders/Shader';
+import * as THREE from 'three';
 
-import { Shader } from "@/shaders/Shader";
+import { Shader } from '@/shaders/Shader';
 
 /**
  * ShaderAuroraGUI class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ShaderAuroraGUI.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ShaderAuroraGUI extends Shader {
-
-  constructor(){
+  constructor() {
     super();
     this.name = 'odyssey-gui';
     this.fragment = `
@@ -137,8 +136,7 @@ export class ShaderAuroraGUI extends Shader {
         map: { value: null },
         bounds: { value: new THREE.Vector4(0, 0, 0, 0) },
         scissorBounds: { value: new THREE.Vector4(0, 0, 0, 0) },
-      }
-    ]) as Record<string, THREE.IUniform>
+      },
+    ]) as Record<string, THREE.IUniform>;
   }
-
 }

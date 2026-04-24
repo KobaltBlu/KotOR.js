@@ -1,12 +1,7 @@
-import React, { useMemo, useCallback, useState, useRef } from "react";
-import * as KotOR from "@/apps/forge/KotOR";
-import {
-  buildDLGGraph,
-  DLGGraphData,
-  DLGGraphNode,
-  DLGGraphNodeType,
-} from "@/apps/forge/utils/DLGGraphModel";
-import "@/apps/forge/components/tabs/tab-dlg-editor/DLGGraphView.scss";
+import React, { useMemo, useCallback, useState, useRef } from 'react';
+import * as KotOR from '@/apps/forge/KotOR';
+import { buildDLGGraph, DLGGraphData, DLGGraphNode, DLGGraphNodeType } from '@/apps/forge/utils/DLGGraphModel';
+import '@/apps/forge/components/tabs/tab-dlg-editor/DLGGraphView.scss';
 
 const NODE_WIDTH = 160;
 const NODE_HEIGHT = 40;
@@ -15,12 +10,8 @@ const NODE_RX = 6;
 interface DLGGraphViewProps {
   dlg: KotOR.DLGObject;
   selectedNodeIndex: number;
-  selectedNodeType: "starting" | "entry" | "reply" | null;
-  onSelectNode: (
-    node: KotOR.DLGNode | undefined,
-    index: number,
-    type: "starting" | "entry" | "reply" | null
-  ) => void;
+  selectedNodeType: 'starting' | 'entry' | 'reply' | null;
+  onSelectNode: (node: KotOR.DLGNode | undefined, index: number, type: 'starting' | 'entry' | 'reply' | null) => void;
 }
 
 export const DLGGraphView: React.FC<DLGGraphViewProps> = ({
@@ -51,7 +42,7 @@ export const DLGGraphView: React.FC<DLGGraphViewProps> = ({
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 0 || (e.target as SVGElement).closest(".dlg-graph-node")) return;
+      if (e.button !== 0 || (e.target as SVGElement).closest('.dlg-graph-node')) return;
       dragRef.current = { x: e.clientX, y: e.clientY, startX: transform.x, startY: transform.y };
     },
     [transform]
@@ -77,8 +68,7 @@ export const DLGGraphView: React.FC<DLGGraphViewProps> = ({
   }, []);
 
   const bounds = useMemo(() => {
-    if (graphData.nodes.length === 0)
-      return { minX: 0, minY: 0, maxX: 400, maxY: 300 };
+    if (graphData.nodes.length === 0) return { minX: 0, minY: 0, maxX: 400, maxY: 300 };
     let minX = Infinity,
       minY = Infinity,
       maxX = -Infinity,
@@ -102,8 +92,7 @@ export const DLGGraphView: React.FC<DLGGraphViewProps> = ({
   const viewHeight = bounds.maxY - bounds.minY;
 
   const isSelected = useCallback(
-    (node: DLGGraphNode) =>
-      selectedNodeType === node.type && selectedNodeIndex === node.listIndex,
+    (node: DLGGraphNode) => selectedNodeType === node.type && selectedNodeIndex === node.listIndex,
     [selectedNodeIndex, selectedNodeType]
   );
 
@@ -156,7 +145,7 @@ export const DLGGraphView: React.FC<DLGGraphViewProps> = ({
               tabIndex={0}
               aria-label={`${node.type} ${node.listIndex + 1}: ${node.label}`}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
+                if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   handleNodeClick(node);
                 }
@@ -168,9 +157,7 @@ export const DLGGraphView: React.FC<DLGGraphViewProps> = ({
                 rx={NODE_RX}
                 ry={NODE_RX}
                 className={
-                  isSelected(node)
-                    ? "dlg-graph-node__rect dlg-graph-node__rect--selected"
-                    : "dlg-graph-node__rect"
+                  isSelected(node) ? 'dlg-graph-node__rect dlg-graph-node__rect--selected' : 'dlg-graph-node__rect'
                 }
               />
               <text

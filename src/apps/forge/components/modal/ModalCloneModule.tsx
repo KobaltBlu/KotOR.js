@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { Modal, Button, Form } from "react-bootstrap";
+import React, { useEffect, useState } from 'react';
+import { Modal, Button, Form } from 'react-bootstrap';
 
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ModalCloneModuleState } from "@/apps/forge/states/modal/ModalCloneModuleState";
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import { ModalCloneModuleState } from '@/apps/forge/states/modal/ModalCloneModuleState';
 
 export const ModalCloneModule = (props: BaseModalProps) => {
   const modal = props.modal as ModalCloneModuleState;
   const [show, setShow] = useState(modal.visible);
-  const [identifier, setIdentifier] = useState("");
-  const [prefix, setPrefix] = useState("");
-  const [name, setName] = useState("");
-  const [sourcePath, setSourcePath] = useState("");
-  const [error, setError] = useState("");
+  const [identifier, setIdentifier] = useState('');
+  const [prefix, setPrefix] = useState('');
+  const [name, setName] = useState('');
+  const [sourcePath, setSourcePath] = useState('');
+  const [error, setError] = useState('');
   const [copyTextures, setCopyTextures] = useState(true);
   const [copyLightmaps, setCopyLightmaps] = useState(true);
   const [keepDoors, setKeepDoors] = useState(true);
@@ -41,13 +41,13 @@ export const ModalCloneModule = (props: BaseModalProps) => {
 
   useEffect(() => {
     const onStateChange = () => refresh();
-    modal.addEventListener("onHide", onHide);
-    modal.addEventListener("onShow", onShow);
-    modal.addEventListener("onStateChange", onStateChange);
+    modal.addEventListener('onHide', onHide);
+    modal.addEventListener('onShow', onShow);
+    modal.addEventListener('onStateChange', onStateChange);
     return () => {
-      modal.removeEventListener("onHide", onHide);
-      modal.removeEventListener("onShow", onShow);
-      modal.removeEventListener("onStateChange", onStateChange);
+      modal.removeEventListener('onHide', onHide);
+      modal.removeEventListener('onShow', onShow);
+      modal.removeEventListener('onStateChange', onStateChange);
     };
   }, [modal]);
 
@@ -55,36 +55,46 @@ export const ModalCloneModule = (props: BaseModalProps) => {
   const handleBrowse = () => modal.browseSource();
   const handleCreate = async () => {
     if (!modal.sourceModBuffer || !modal.identifier.trim()) {
-      modal.error = "Select a source MOD and enter a module filename.";
-      modal.processEventListener("onStateChange", [modal]);
+      modal.error = 'Select a source MOD and enter a module filename.';
+      modal.processEventListener('onStateChange', [modal]);
       return;
     }
-    await import("@/apps/forge/ForgeFileSystem"); // load for side effects if needed
-    type KotORModule = typeof import("@/apps/forge/KotOR");
-    const KotOR = (await import("@/apps/forge/KotOR")) as KotORModule;
+    await import('@/apps/forge/ForgeFileSystem'); // load for side effects if needed
+    type KotORModule = typeof import('@/apps/forge/KotOR');
+    const KotOR = (await import('@/apps/forge/KotOR')) as KotORModule;
     let outputPath: string | undefined;
     if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
-      const dialog = (window as Window & { dialog?: { showSaveDialog: (opts: { title?: string; defaultPath?: string; filters?: { name: string; extensions: string[] }[] }) => Promise<{ cancelled?: boolean; filePath?: string }> } }).dialog;
+      const dialog = (
+        window as Window & {
+          dialog?: {
+            showSaveDialog: (opts: {
+              title?: string;
+              defaultPath?: string;
+              filters?: { name: string; extensions: string[] }[];
+            }) => Promise<{ cancelled?: boolean; filePath?: string }>;
+          };
+        }
+      ).dialog;
       if (dialog?.showSaveDialog) {
         const result = await dialog.showSaveDialog({
-          title: "Save Cloned Module",
+          title: 'Save Cloned Module',
           defaultPath: `${modal.identifier}.mod`,
-          filters: [{ name: "Module", extensions: ["mod"] }],
+          filters: [{ name: 'Module', extensions: ['mod'] }],
         });
         if (result?.cancelled || !result?.filePath) return;
         outputPath = result.filePath;
       }
     }
     if (!outputPath) {
-      modal.error = "Please choose a destination file (Save dialog).";
-      modal.processEventListener("onStateChange", [modal]);
+      modal.error = 'Please choose a destination file (Save dialog).';
+      modal.processEventListener('onStateChange', [modal]);
       return;
     }
     modal.loading = true;
-    modal.processEventListener("onStateChange", [modal]);
+    modal.processEventListener('onStateChange', [modal]);
     const ok = await modal.runClone(outputPath);
     modal.loading = false;
-    modal.processEventListener("onStateChange", [modal]);
+    modal.processEventListener('onStateChange', [modal]);
     if (ok) modal.close();
   };
 
@@ -211,7 +221,7 @@ export const ModalCloneModule = (props: BaseModalProps) => {
           onClick={handleCreate}
           disabled={!modal.sourceModBuffer || !modal.identifier.trim() || modal.loading}
         >
-          {modal.loading ? "Cloning…" : "Create"}
+          {modal.loading ? 'Cloning…' : 'Create'}
         </Button>
       </Modal.Footer>
     </Modal>

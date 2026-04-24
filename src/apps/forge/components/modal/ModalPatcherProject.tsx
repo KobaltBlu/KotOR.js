@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { Modal } from "react-bootstrap";
+import React, { useState, useEffect } from 'react';
+import { Modal } from 'react-bootstrap';
 
-import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ModalPatcherProjectState, PatcherFile } from "@/apps/forge/states/modal/ModalPatcherProjectState";
+import { ForgeFileSystem } from '@/apps/forge/ForgeFileSystem';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import * as KotOR from '@/apps/forge/KotOR';
+import { ModalPatcherProjectState, PatcherFile } from '@/apps/forge/states/modal/ModalPatcherProjectState';
 
-import "@/apps/forge/components/modal/ModalPatcherProject.scss";
+import '@/apps/forge/components/modal/ModalPatcherProject.scss';
 
 declare const dialog: { locateDirectoryDialog: () => Promise<string | null> };
 
@@ -52,14 +52,14 @@ export const ModalPatcherProject = (props: BaseModalProps) => {
   };
 
   const browseProjectFolder = async () => {
-    if(KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON){
+    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
       const result = await dialog.locateDirectoryDialog();
-      if(result){
+      if (result) {
         modal.setProjectPath(result);
       }
     } else {
       const dirHandle = await window.showDirectoryPicker();
-      if(dirHandle){
+      if (dirHandle) {
         modal.setProjectPath(dirHandle.name);
       }
     }
@@ -78,10 +78,10 @@ export const ModalPatcherProject = (props: BaseModalProps) => {
         path: pathStr,
         filename,
         type: ext,
-        size: buffer.length
+        size: buffer.length,
       };
       modal.addFile(file);
-    } catch(e: unknown) {
+    } catch (e: unknown) {
       modal.setError(`Failed to add file: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
@@ -108,19 +108,13 @@ export const ModalPatcherProject = (props: BaseModalProps) => {
       URL.revokeObjectURL(url);
 
       modal.setStatus('Config exported successfully');
-    } catch(e: unknown) {
+    } catch (e: unknown) {
       modal.setError(`Export failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
   return (
-    <Modal
-      show={show}
-      onHide={handleClose}
-      className="modal-patcher-project"
-      size="lg"
-      centered
-    >
+    <Modal show={show} onHide={handleClose} className="modal-patcher-project" size="lg" centered>
       <Modal.Header closeButton>
         <Modal.Title>{modal.title}</Modal.Title>
       </Modal.Header>
@@ -128,8 +122,8 @@ export const ModalPatcherProject = (props: BaseModalProps) => {
         <div className="patcher-project-content">
           <div className="info-section">
             <p>
-              Create a patcher project to package mod files with configuration.
-              This tool helps you prepare files for distribution as a mod package.
+              Create a patcher project to package mod files with configuration. This tool helps you prepare files for
+              distribution as a mod package.
             </p>
           </div>
 
@@ -179,13 +173,11 @@ export const ModalPatcherProject = (props: BaseModalProps) => {
                   <div key={index} className="file-item">
                     <div className="file-info">
                       <span className="file-name">{file.filename}</span>
-                      <span className="file-details">{file.type} - {(file.size / 1024).toFixed(1)} KB</span>
+                      <span className="file-details">
+                        {file.type} - {(file.size / 1024).toFixed(1)} KB
+                      </span>
                     </div>
-                    <button
-                      onClick={() => modal.removeFile(index)}
-                      className="btn-remove"
-                      title="Remove file"
-                    >
+                    <button onClick={() => modal.removeFile(index)} className="btn-remove" title="Remove file">
                       ×
                     </button>
                   </div>
@@ -194,35 +186,19 @@ export const ModalPatcherProject = (props: BaseModalProps) => {
             )}
           </div>
 
-          {status && (
-            <div className="status-message">
-              {status}
-            </div>
-          )}
+          {status && <div className="status-message">{status}</div>}
 
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
+          {error && <div className="error-message">{error}</div>}
         </div>
       </Modal.Body>
       <Modal.Footer>
         <button onClick={handleClose} className="btn-secondary">
           Close
         </button>
-        <button
-          onClick={generateConfig}
-          className="btn-primary"
-          disabled={files.length === 0}
-        >
+        <button onClick={generateConfig} className="btn-primary" disabled={files.length === 0}>
           Generate Config
         </button>
-        <button
-          onClick={exportProject}
-          className="btn-primary"
-          disabled={files.length === 0 || !projectName}
-        >
+        <button onClick={exportProject} className="btn-primary" disabled={files.length === 0 || !projectName}>
           Export Project
         </button>
       </Modal.Footer>

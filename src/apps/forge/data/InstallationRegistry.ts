@@ -1,9 +1,9 @@
-import { GameState } from "@/GameState";
-import { ResourceLoader } from "@/loaders/ResourceLoader";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { TwoDAObject } from "@/resource/TwoDAObject";
-import { GameEngineType } from "@/enums/engine/GameEngineType";
-import { TwoDARegistry } from "@/apps/forge/data/TwoDARegistry";
+import { GameState } from '@/GameState';
+import { ResourceLoader } from '@/loaders/ResourceLoader';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { TwoDAObject } from '@/resource/TwoDAObject';
+import { GameEngineType } from '@/enums/engine/GameEngineType';
+import { TwoDARegistry } from '@/apps/forge/data/TwoDARegistry';
 
 /**
  * InstallationRegistry – typed, lazy-loading 2DA cache for Forge editors.
@@ -32,51 +32,51 @@ export class InstallationRegistry {
 
   // ── Registry keys (mirrors TwoDARegistry constants) ─────────────────────
   // All resnames are lowercase, matching the game's file naming convention.
-  static readonly APPEARANCES   = TwoDARegistry.APPEARANCES;
-  static readonly BASEITEMS     = TwoDARegistry.BASEITEMS;
-  static readonly CAMERAS       = TwoDARegistry.CAMERAS;
-  static readonly CLASSES       = TwoDARegistry.CLASSES;
+  static readonly APPEARANCES = TwoDARegistry.APPEARANCES;
+  static readonly BASEITEMS = TwoDARegistry.BASEITEMS;
+  static readonly CAMERAS = TwoDARegistry.CAMERAS;
+  static readonly CLASSES = TwoDARegistry.CLASSES;
   static readonly CLASSPOWERGAIN = TwoDARegistry.CLASSPOWERGAIN;
   static readonly COMBATANIMATIONS = TwoDARegistry.COMBATANIMATIONS;
   static readonly CREATURESPEED = TwoDARegistry.CREATURESPEED;
-  static readonly CURSORS       = TwoDARegistry.CURSORS;
-  static readonly DIALOG_ANIMS  = TwoDARegistry.DIALOG_ANIMS;
-  static readonly DOORS         = TwoDARegistry.DOORS;
-  static readonly EMOTIONS      = TwoDARegistry.EMOTIONS;
+  static readonly CURSORS = TwoDARegistry.CURSORS;
+  static readonly DIALOG_ANIMS = TwoDARegistry.DIALOG_ANIMS;
+  static readonly DOORS = TwoDARegistry.DOORS;
+  static readonly EMOTIONS = TwoDARegistry.EMOTIONS;
   static readonly ENC_DIFFICULTIES = TwoDARegistry.ENC_DIFFICULTIES;
-  static readonly EXPRESSIONS   = TwoDARegistry.EXPRESSIONS;
-  static readonly FACTIONS      = TwoDARegistry.FACTIONS;
-  static readonly FEATS         = TwoDARegistry.FEATS;
-  static readonly GENDERS       = TwoDARegistry.GENDERS;
-  static readonly IPRP_ABILITIES   = TwoDARegistry.IPRP_ABILITIES;
-  static readonly IPRP_ACMODTYPE   = TwoDARegistry.IPRP_ACMODTYPE;
-  static readonly IPRP_ALIGNGRP    = TwoDARegistry.IPRP_ALIGNGRP;
-  static readonly IPRP_AMMOTYPE    = TwoDARegistry.IPRP_AMMOTYPE;
-  static readonly IPRP_COMBATDAM   = TwoDARegistry.IPRP_COMBATDAM;
-  static readonly IPRP_COSTTABLE   = TwoDARegistry.IPRP_COSTTABLE;
-  static readonly IPRP_DAMAGETYPE  = TwoDARegistry.IPRP_DAMAGETYPE;
-  static readonly IPRP_IMMUNITY    = TwoDARegistry.IPRP_IMMUNITY;
-  static readonly IPRP_MONSTERHIT  = TwoDARegistry.IPRP_MONSTERHIT;
-  static readonly IPRP_ONHIT       = TwoDARegistry.IPRP_ONHIT;
-  static readonly IPRP_PARAMTABLE  = TwoDARegistry.IPRP_PARAMTABLE;
-  static readonly IPRP_PROTECTION  = TwoDARegistry.IPRP_PROTECTION;
+  static readonly EXPRESSIONS = TwoDARegistry.EXPRESSIONS;
+  static readonly FACTIONS = TwoDARegistry.FACTIONS;
+  static readonly FEATS = TwoDARegistry.FEATS;
+  static readonly GENDERS = TwoDARegistry.GENDERS;
+  static readonly IPRP_ABILITIES = TwoDARegistry.IPRP_ABILITIES;
+  static readonly IPRP_ACMODTYPE = TwoDARegistry.IPRP_ACMODTYPE;
+  static readonly IPRP_ALIGNGRP = TwoDARegistry.IPRP_ALIGNGRP;
+  static readonly IPRP_AMMOTYPE = TwoDARegistry.IPRP_AMMOTYPE;
+  static readonly IPRP_COMBATDAM = TwoDARegistry.IPRP_COMBATDAM;
+  static readonly IPRP_COSTTABLE = TwoDARegistry.IPRP_COSTTABLE;
+  static readonly IPRP_DAMAGETYPE = TwoDARegistry.IPRP_DAMAGETYPE;
+  static readonly IPRP_IMMUNITY = TwoDARegistry.IPRP_IMMUNITY;
+  static readonly IPRP_MONSTERHIT = TwoDARegistry.IPRP_MONSTERHIT;
+  static readonly IPRP_ONHIT = TwoDARegistry.IPRP_ONHIT;
+  static readonly IPRP_PARAMTABLE = TwoDARegistry.IPRP_PARAMTABLE;
+  static readonly IPRP_PROTECTION = TwoDARegistry.IPRP_PROTECTION;
   static readonly IPRP_SAVEELEMENT = TwoDARegistry.IPRP_SAVEELEMENT;
   static readonly IPRP_SAVINGTHROW = TwoDARegistry.IPRP_SAVINGTHROW;
-  static readonly IPRP_WALK        = TwoDARegistry.IPRP_WALK;
-  static readonly ITEM_PROPERTIES  = TwoDARegistry.ITEM_PROPERTIES;
-  static readonly PERCEPTIONS  = TwoDARegistry.PERCEPTIONS;
-  static readonly PLACEABLES   = TwoDARegistry.PLACEABLES;
-  static readonly PLANETS      = TwoDARegistry.PLANETS;
-  static readonly PLOT         = TwoDARegistry.PLOT;
-  static readonly PORTRAITS    = TwoDARegistry.PORTRAITS;
-  static readonly POWERS       = TwoDARegistry.POWERS;
-  static readonly RACES        = TwoDARegistry.RACES;
-  static readonly SKILLS       = TwoDARegistry.SKILLS;
-  static readonly SOUNDSETS    = TwoDARegistry.SOUNDSETS;
-  static readonly SPEEDS       = TwoDARegistry.SPEEDS;
-  static readonly SUBRACES     = TwoDARegistry.SUBRACES;
-  static readonly TRAPS        = TwoDARegistry.TRAPS;
-  static readonly UPGRADES     = TwoDARegistry.UPGRADES;
+  static readonly IPRP_WALK = TwoDARegistry.IPRP_WALK;
+  static readonly ITEM_PROPERTIES = TwoDARegistry.ITEM_PROPERTIES;
+  static readonly PERCEPTIONS = TwoDARegistry.PERCEPTIONS;
+  static readonly PLACEABLES = TwoDARegistry.PLACEABLES;
+  static readonly PLANETS = TwoDARegistry.PLANETS;
+  static readonly PLOT = TwoDARegistry.PLOT;
+  static readonly PORTRAITS = TwoDARegistry.PORTRAITS;
+  static readonly POWERS = TwoDARegistry.POWERS;
+  static readonly RACES = TwoDARegistry.RACES;
+  static readonly SKILLS = TwoDARegistry.SKILLS;
+  static readonly SOUNDSETS = TwoDARegistry.SOUNDSETS;
+  static readonly SPEEDS = TwoDARegistry.SPEEDS;
+  static readonly SUBRACES = TwoDARegistry.SUBRACES;
+  static readonly TRAPS = TwoDARegistry.TRAPS;
+  static readonly UPGRADES = TwoDARegistry.UPGRADES;
   static readonly VIDEO_EFFECTS = TwoDARegistry.VIDEO_EFFECTS;
 
   // ── Game-type detection ──────────────────────────────────────────────────
@@ -164,20 +164,48 @@ export class InstallationRegistry {
   // ── Typed convenience getters (named after registry keys) ────────────────
   // These remove the need for string literals in editors.
 
-  static appearances()     { return InstallationRegistry.get2DASync(TwoDARegistry.APPEARANCES); }
-  static baseItems()       { return InstallationRegistry.get2DASync(TwoDARegistry.BASEITEMS); }
-  static cameras()         { return InstallationRegistry.get2DASync(TwoDARegistry.CAMERAS); }
-  static classes()         { return InstallationRegistry.get2DASync(TwoDARegistry.CLASSES); }
-  static feats()           { return InstallationRegistry.get2DASync(TwoDARegistry.FEATS); }
-  static genders()         { return InstallationRegistry.get2DASync(TwoDARegistry.GENDERS); }
-  static itemProperties()  { return InstallationRegistry.get2DASync(TwoDARegistry.ITEM_PROPERTIES); }
-  static placeables()      { return InstallationRegistry.get2DASync(TwoDARegistry.PLACEABLES); }
-  static planets()         { return InstallationRegistry.get2DASync(TwoDARegistry.PLANETS); }
-  static portraits()       { return InstallationRegistry.get2DASync(TwoDARegistry.PORTRAITS); }
-  static powers()          { return InstallationRegistry.get2DASync(TwoDARegistry.POWERS); }
-  static races()           { return InstallationRegistry.get2DASync(TwoDARegistry.RACES); }
-  static skills()          { return InstallationRegistry.get2DASync(TwoDARegistry.SKILLS); }
-  static soundsets()       { return InstallationRegistry.get2DASync(TwoDARegistry.SOUNDSETS); }
+  static appearances() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.APPEARANCES);
+  }
+  static baseItems() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.BASEITEMS);
+  }
+  static cameras() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.CAMERAS);
+  }
+  static classes() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.CLASSES);
+  }
+  static feats() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.FEATS);
+  }
+  static genders() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.GENDERS);
+  }
+  static itemProperties() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.ITEM_PROPERTIES);
+  }
+  static placeables() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.PLACEABLES);
+  }
+  static planets() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.PLANETS);
+  }
+  static portraits() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.PORTRAITS);
+  }
+  static powers() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.POWERS);
+  }
+  static races() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.RACES);
+  }
+  static skills() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.SKILLS);
+  }
+  static soundsets() {
+    return InstallationRegistry.get2DASync(TwoDARegistry.SOUNDSETS);
+  }
 
   // ── Row helper methods ───────────────────────────────────────────────────
 
@@ -191,7 +219,7 @@ export class InstallationRegistry {
     const row = tbl.rows[rowIndex];
     if (!row) return null;
     const val = row[column];
-    return (val === undefined || val === '****') ? null : String(val);
+    return val === undefined || val === '****' ? null : String(val);
   }
 
   /**
@@ -241,13 +269,13 @@ export class InstallationRegistry {
   static getColumnOptions(
     resname: string,
     column: string,
-    fallback = '(none)',
+    fallback = '(none)'
   ): Array<{ index: number; label: string }> {
     const tbl = InstallationRegistry.get2DASync(resname);
     if (!tbl) return [];
     return (Object.values(tbl.rows) as any[]).map((row) => {
       const raw = row[column];
-      const label = (!raw || raw === '****') ? fallback : String(raw);
+      const label = !raw || raw === '****' ? fallback : String(raw);
       return { index: row['__index'] as number, label };
     });
   }

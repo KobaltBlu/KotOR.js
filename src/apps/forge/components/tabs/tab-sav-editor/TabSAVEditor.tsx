@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabSAVEditorState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/components/tabs/tab-sav-editor/TabSAVEditor.scss";
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import { FileTypeManager } from '@/apps/forge/FileTypeManager';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabSAVEditorState } from '@/apps/forge/states/tabs';
+import '@/apps/forge/components/tabs/tab-sav-editor/TabSAVEditor.scss';
 
 interface BaseTabProps {
   tab: TabSAVEditorState;
 }
 
-export const TabSAVEditor = function(props: BaseTabProps){
+export const TabSAVEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabSAVEditorState;
   const [erf, setErf] = useState(tab.erf);
   const [saveMeta, setSaveMeta] = useState(tab.saveMeta);
@@ -34,12 +34,12 @@ export const TabSAVEditor = function(props: BaseTabProps){
       label: 'File',
       children: [
         { label: 'Save', onClick: () => tab.save() },
-        { label: 'Save As', onClick: () => tab.saveAs() }
-      ]
-    }
+        { label: 'Save As', onClick: () => tab.saveAs() },
+      ],
+    },
   ];
 
-  if(!erf){
+  if (!erf) {
     return (
       <div className="forge-sav-editor">
         <MenuBar items={menuItems} />
@@ -60,7 +60,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
         buffer: buffer,
         resref: resRef,
         reskey: resType,
-        archive_path: tab.file.path
+        archive_path: tab.file.path,
       });
 
       FileTypeManager.onOpenResource(file);
@@ -73,9 +73,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
       <div className="forge-sav-editor__content">
         <div className="sav-info">
           <h3>Save Game Archive</h3>
-          <p>
-            SAV files are ERF archives containing player progress, area states, and game variables.
-          </p>
+          <p>SAV files are ERF archives containing player progress, area states, and game variables.</p>
           <div className="sav-stats">
             <div className="stat-item">
               <label>Resources:</label>
@@ -106,11 +104,7 @@ export const TabSAVEditor = function(props: BaseTabProps){
                 {resources.map((resKey: { resRef: string; resType: number }, index: number) => {
                   const ext = KotOR.ResourceTypes.getKeyByValue(resKey.resType);
                   return (
-                    <tr
-                      key={index}
-                      onClick={() => openResource(resKey)}
-                      className="resource-row"
-                    >
+                    <tr key={index} onClick={() => openResource(resKey)} className="resource-row">
                       <td className="resref-cell">{resKey.resRef}</td>
                       <td className="type-cell">{ext}</td>
                     </tr>

@@ -17,7 +17,7 @@ import { DLGObject } from '@/resource/DLGObject';
 export enum ValidationSeverity {
   Error = 0,
   Warning = 1,
-  Info = 2
+  Info = 2,
 }
 
 export interface ValidationIssue {
@@ -64,7 +64,7 @@ export class DLGValidation {
         severity: ValidationSeverity.Error,
         message: 'Dialog has no starting nodes',
         code: 'NO_STARTING_NODES',
-        autoFix: false
+        autoFix: false,
       });
     }
 
@@ -77,7 +77,7 @@ export class DLGValidation {
           nodeIndex: index,
           nodeType: DLGNodeType.STARTING,
           code: 'STARTING_NO_ENTRIES',
-          autoFix: false
+          autoFix: false,
         });
       }
     });
@@ -97,7 +97,7 @@ export class DLGValidation {
           nodeIndex: index,
           nodeType: DLGNodeType.ENTRY,
           code: 'EMPTY_TEXT',
-          fixable: false
+          fixable: false,
         });
       }
 
@@ -110,7 +110,7 @@ export class DLGValidation {
           nodeIndex: index,
           nodeType: DLGNodeType.ENTRY,
           code: 'NO_SPEAKER',
-          autoFix: false
+          autoFix: false,
         });
       }
 
@@ -123,7 +123,7 @@ export class DLGValidation {
           nodeIndex: index,
           nodeType: DLGNodeType.ENTRY,
           code: 'NO_VO',
-          autoFix: false
+          autoFix: false,
         });
       }
 
@@ -136,7 +136,7 @@ export class DLGValidation {
           nodeIndex: index,
           nodeType: DLGNodeType.ENTRY,
           code: 'NO_REPLIES',
-          autoFix: false
+          autoFix: false,
         });
       }
     });
@@ -156,7 +156,7 @@ export class DLGValidation {
           nodeIndex: index,
           nodeType: DLGNodeType.REPLY,
           code: 'EMPTY_TEXT',
-          autoFix: false
+          autoFix: false,
         });
       }
 
@@ -169,7 +169,7 @@ export class DLGValidation {
           nodeIndex: index,
           nodeType: DLGNodeType.REPLY,
           code: 'NO_ENTRIES',
-          autoFix: false
+          autoFix: false,
         });
       }
     });
@@ -193,20 +193,20 @@ export class DLGValidation {
     const referencedReplies = new Set<number>();
 
     // Collect all referenced entries and replies
-    this.dlg.startingList.forEach(start => {
-      start.entries.forEach(entry => {
+    this.dlg.startingList.forEach((start) => {
+      start.entries.forEach((entry) => {
         referencedEntries.add(entry.index);
       });
     });
 
-    this.dlg.entryList.forEach(entry => {
-      entry.replies.forEach(reply => {
+    this.dlg.entryList.forEach((entry) => {
+      entry.replies.forEach((reply) => {
         referencedReplies.add(reply.index);
       });
     });
 
-    this.dlg.replyList.forEach(reply => {
-      reply.entries.forEach(entry => {
+    this.dlg.replyList.forEach((reply) => {
+      reply.entries.forEach((entry) => {
         referencedEntries.add(entry.index);
       });
     });
@@ -221,7 +221,7 @@ export class DLGValidation {
           nodeIndex: index,
           nodeType: DLGNodeType.ENTRY,
           code: 'ORPHAN_NODE',
-          autoFix: true
+          autoFix: true,
         });
       }
     });
@@ -235,7 +235,7 @@ export class DLGValidation {
           nodeIndex: index,
           nodeType: DLGNodeType.REPLY,
           code: 'ORPHAN_NODE',
-          fixable: true
+          fixable: true,
         });
       }
     });
@@ -275,7 +275,7 @@ export class DLGValidation {
     };
 
     this.dlg.startingList.forEach((start, index) => {
-      start.entries.forEach(entry => {
+      start.entries.forEach((entry) => {
         visited.clear();
         stack.clear();
 
@@ -287,7 +287,7 @@ export class DLGValidation {
             nodeIndex: entry.index,
             nodeType: DLGNodeType.ENTRY,
             code: 'CIRCULAR_REFERENCE',
-            autoFix: false
+            autoFix: false,
           });
         }
       });
@@ -309,10 +309,10 @@ export class DLGValidation {
             ...(node !== null && {
               node,
               nodeIndex: node.index,
-              nodeType: node.nodeType
+              nodeType: node.nodeType,
             }),
             code: 'INVALID_SCRIPT_NAME',
-            autoFix: false
+            autoFix: false,
           });
         }
       }
@@ -328,7 +328,7 @@ export class DLGValidation {
     }
 
     // Check node scripts
-    [...this.dlg.entryList, ...this.dlg.replyList].forEach(node => {
+    [...this.dlg.entryList, ...this.dlg.replyList].forEach((node) => {
       if (node.script?.name) {
         checkScript(node, node.script.name, 'action');
       }
@@ -348,7 +348,7 @@ export class DLGValidation {
    * Validate audio references
    */
   private validateAudioReferences(): void {
-    [...this.dlg.entryList, ...this.dlg.replyList].forEach(node => {
+    [...this.dlg.entryList, ...this.dlg.replyList].forEach((node) => {
       if (node.vo_resref && !/^[a-z0-9_]+$/i.test(node.vo_resref)) {
         this.issues.push({
           severity: ValidationSeverity.Warning,
@@ -357,7 +357,7 @@ export class DLGValidation {
           nodeIndex: node.index,
           nodeType: node.nodeType,
           code: 'INVALID_VO_FORMAT',
-          autoFix: false
+          autoFix: false,
         });
       }
 
@@ -369,7 +369,7 @@ export class DLGValidation {
           nodeIndex: node.index,
           nodeType: node.nodeType,
           code: 'INVALID_SOUND_FORMAT',
-          autoFix: false
+          autoFix: false,
         });
       }
     });
@@ -379,7 +379,7 @@ export class DLGValidation {
    * Get issues by severity
    */
   public getIssuesBySeverity(severity: ValidationSeverity): ValidationIssue[] {
-    return this.issues.filter(issue => issue.severity === severity);
+    return this.issues.filter((issue) => issue.severity === severity);
   }
 
   /**
@@ -389,7 +389,7 @@ export class DLGValidation {
     return {
       errors: this.getIssuesBySeverity(ValidationSeverity.Error).length,
       warnings: this.getIssuesBySeverity(ValidationSeverity.Warning).length,
-      info: this.getIssuesBySeverity(ValidationSeverity.Info).length
+      info: this.getIssuesBySeverity(ValidationSeverity.Info).length,
     };
   }
 
@@ -407,11 +407,9 @@ export class DLGValidation {
     let fixed = 0;
 
     // Remove orphan nodes
-    const orphanIssues = this.issues.filter(
-      issue => issue.code === 'ORPHAN_NODE' && issue.autoFix
-    );
+    const orphanIssues = this.issues.filter((issue) => issue.code === 'ORPHAN_NODE' && issue.autoFix);
 
-    orphanIssues.forEach(issue => {
+    orphanIssues.forEach((issue) => {
       if (issue.nodeType === DLGNodeType.ENTRY && issue.nodeIndex !== undefined) {
         this.dlg.entryList.splice(issue.nodeIndex, 1);
         // Re-index remaining nodes

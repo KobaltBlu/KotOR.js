@@ -2,7 +2,7 @@
  * Command Palette state – VS Code–style command palette (Ctrl+Shift+P).
  */
 
-import type { MenuTopState } from "@/apps/forge/states/MenuTopState";
+import type { MenuTopState } from '@/apps/forge/states/MenuTopState';
 
 export interface CommandPaletteCommand {
   id: string;
@@ -48,88 +48,88 @@ export class CommandPaletteState {
 
   /** Register default Forge commands. Call after MenuTopState init. */
   static registerDefaults(menuState: typeof MenuTopState): void {
-    this.register("file.save", "Save File", "File", () => {
+    this.register('file.save', 'Save File', 'File', () => {
       menuState.menuItemSaveFile?.onClick?.(menuState.menuItemSaveFile);
     });
-    this.register("file.saveAs", "Save File As…", "File", () => {
+    this.register('file.saveAs', 'Save File As…', 'File', () => {
       menuState.menuItemSaveFileAs?.onClick?.(menuState.menuItemSaveFileAs);
     });
-    this.register("file.open", "Open File…", "File", () => {
+    this.register('file.open', 'Open File…', 'File', () => {
       menuState.menuItemOpenFile?.onClick?.(menuState.menuItemOpenFile);
     });
-    this.register("file.compile", "Compile Script", "File", () => {
+    this.register('file.compile', 'Compile Script', 'File', () => {
       menuState.menuItemCompileFile?.onClick?.(menuState.menuItemCompileFile);
     });
-    this.register("file.saveToOverride", "Save to Override…", "File", () => {
+    this.register('file.saveToOverride', 'Save to Override…', 'File', () => {
       menuState.menuItemSaveToOverride?.onClick?.(menuState.menuItemSaveToOverride);
     });
-    this.register("file.saveToRim", "Save to RIM…", "File", () => {
+    this.register('file.saveToRim', 'Save to RIM…', 'File', () => {
       menuState.menuItemSaveToRim?.onClick?.(menuState.menuItemSaveToRim);
     });
-    this.register("file.extractToFolder", "Extract to folder…", "File", () => {
+    this.register('file.extractToFolder', 'Extract to folder…', 'File', () => {
       menuState.menuItemExtractToFolder?.onClick?.(menuState.menuItemExtractToFolder);
     });
-    this.register("file.loadFromModule", "Load From Module…", "File", () => {
+    this.register('file.loadFromModule', 'Load From Module…', 'File', () => {
       menuState.menuItemLoadFromModule?.onClick?.(menuState.menuItemLoadFromModule);
     });
-    this.register("file.compareWith", "Compare with…", "File", () => {
+    this.register('file.compareWith', 'Compare with…', 'File', () => {
       menuState.menuItemCompareWith?.onClick?.(menuState.menuItemCompareWith);
     });
-    this.register("file.saveToModule", "Save to MOD…", "File", () => {
+    this.register('file.saveToModule', 'Save to MOD…', 'File', () => {
       menuState.menuItemSaveToModule?.onClick?.(menuState.menuItemSaveToModule);
     });
-    this.register("file.newERF", "New ERF…", "File", () => {
+    this.register('file.newERF', 'New ERF…', 'File', () => {
       menuState.menuItemNewERF?.onClick?.(menuState.menuItemNewERF);
     });
-    this.register("file.newMOD", "New MOD…", "File", () => {
+    this.register('file.newMOD', 'New MOD…', 'File', () => {
       menuState.menuItemNewMOD?.onClick?.(menuState.menuItemNewMOD);
     });
-    this.register("file.newLIP", "New Lip Sync File", "File", () => {
+    this.register('file.newLIP', 'New Lip Sync File', 'File', () => {
       menuState.menuItemNewLIP?.onClick?.(menuState.menuItemNewLIP);
     });
-    this.register("file.saveAll", "Save All Files", "File", () => {
+    this.register('file.saveAll', 'Save All Files', 'File', () => {
       menuState.menuItemSaveAllFiles?.onClick?.(menuState.menuItemSaveAllFiles);
     });
-    this.register("file.closeFile", "Close File", "File", () => {
+    this.register('file.closeFile', 'Close File', 'File', () => {
       menuState.menuItemCloseFile?.onClick?.(menuState.menuItemCloseFile);
     });
-    this.register("project.referenceFinder", "Reference Finder", "View", () => {
+    this.register('project.referenceFinder', 'Reference Finder', 'View', () => {
       menuState.menuItemReferenceFinder?.onClick?.(menuState.menuItemReferenceFinder);
     });
-    this.register("view.scriptFindReferences", "Script Find References", "View", () => {
+    this.register('view.scriptFindReferences', 'Script Find References', 'View', () => {
       menuState.menuItemScriptFindReferences?.onClick?.(menuState.menuItemScriptFindReferences);
     });
-    this.register("project.openModuleEditor", "Open Module Editor", "Project", () => {
+    this.register('project.openModuleEditor', 'Open Module Editor', 'Project', () => {
       menuState.menuItemOpenModuleEditor?.onClick?.(menuState.menuItemOpenModuleEditor);
     });
-    this.register("project.cloneModule", "Clone Module…", "Project", () => {
+    this.register('project.cloneModule', 'Clone Module…', 'Project', () => {
       menuState.menuItemCloneModule?.onClick?.(menuState.menuItemCloneModule);
     });
-    this.register("project.insertInstance", "Insert Instance…", "Project", () => {
+    this.register('project.insertInstance', 'Insert Instance…', 'Project', () => {
       menuState.menuItemInsertInstance?.onClick?.(menuState.menuItemInsertInstance);
     });
-    this.register("project.lipBatchProcessor", "LIP Batch Processor…", "Project", () => {
+    this.register('project.lipBatchProcessor', 'LIP Batch Processor…', 'Project', () => {
       menuState.menuItemLIPBatchProcessor?.onClick?.(menuState.menuItemLIPBatchProcessor);
     });
-    this.register("view.startPage", "Start Page", "View", () => {
+    this.register('view.startPage', 'Start Page', 'View', () => {
       menuState.menuItemStartPage?.onClick?.(menuState.menuItemStartPage);
     });
-    this.register("view.documentation", "Documentation", "View", () => {
+    this.register('view.documentation', 'Documentation', 'View', () => {
       menuState.menuItemDocumentation?.onClick?.(menuState.menuItemDocumentation);
     });
-    this.register("help.about", "About KotOR Forge", "Help", () => {
+    this.register('help.about', 'About KotOR Forge', 'Help', () => {
       menuState.menuItemAbout?.onClick?.(menuState.menuItemAbout);
     });
-    this.register("help.editorDocs", "Open Editor Documentation", "Help", () => {
+    this.register('help.editorDocs', 'Open Editor Documentation', 'Help', () => {
       menuState.menuItemEditorDocs?.onClick?.(menuState.menuItemEditorDocs);
     });
-    this.register("help.extractOptions", "Extract Options…", "Help", () => {
+    this.register('help.extractOptions', 'Extract Options…', 'Help', () => {
       menuState.menuItemExtractOptions?.onClick?.(menuState.menuItemExtractOptions);
     });
-    this.register("help.helpBrowser", "Help & Tutorials…", "Help", () => {
+    this.register('help.helpBrowser', 'Help & Tutorials…', 'Help', () => {
       menuState.menuItemHelpBrowser?.onClick?.(menuState.menuItemHelpBrowser);
     });
-    this.register("help.gettingStarted", "Getting Started", "Help", () => {
+    this.register('help.gettingStarted', 'Getting Started', 'Help', () => {
       menuState.menuItemGettingStarted?.onClick?.(menuState.menuItemGettingStarted);
     });
   }

@@ -27,24 +27,22 @@ export class ConfigClient {
     }
   }
 
-  static get(path: string|any[] = '', defaultValue?:any){
-    if(Array.isArray(path))
-      path = path.join('.');
+  static get(path: string | any[] = '', defaultValue?: any) {
+    if (Array.isArray(path)) path = path.join('.');
 
     const parts = path.split('.');
     let property = ConfigClient.options;
-    for(let i = 0, len = parts.length; i < len; i++){
-      if(typeof property[parts[i]] != 'undefined'){
+    for (let i = 0, len = parts.length; i < len; i++) {
+      if (typeof property[parts[i]] != 'undefined') {
         property = property[parts[i]];
-      }else{
+      } else {
         property = undefined;
         break;
       }
     }
 
-    if(property != ConfigClient.options){
-      if(property == null || property == 'null')
-        return defaultValue;
+    if (property != ConfigClient.options) {
+      if (property == null || property == 'null') return defaultValue;
 
       return property;
     }
@@ -52,66 +50,74 @@ export class ConfigClient {
     return undefined;
   }
 
-  static set(path: string|any[] = '', value: any = ''): any {
-    if(Array.isArray(path))
-      path = path.join('.');
+  static set(path: string | any[] = '', value: any = ''): any {
+    if (Array.isArray(path)) path = path.join('.');
 
-    if(typeof value == 'string' || typeof value == 'number' || typeof value == 'boolean' || typeof value == 'object' || Array.isArray(value)){
+    if (
+      typeof value == 'string' ||
+      typeof value == 'number' ||
+      typeof value == 'boolean' ||
+      typeof value == 'object' ||
+      Array.isArray(value)
+    ) {
       const parts = path.split('.');
       let scope = ConfigClient.options;
-      let i = 0, len = Math.max(parts.length-1, 0);
-      for(i = 0; i < len; i++){
-        if(scope[parts[i]]){
+      let i = 0,
+        len = Math.max(parts.length - 1, 0);
+      for (i = 0; i < len; i++) {
+        if (scope[parts[i]]) {
           scope = scope[parts[i]];
         }
 
-        if(typeof scope == 'undefined'){
+        if (typeof scope == 'undefined') {
           console.warn('ConfigManager.set', 'Invalid property', path);
           return undefined;
         }
       }
 
-      if(scope[parts[i]] == ConfigClient.options){
+      if (scope[parts[i]] == ConfigClient.options) {
         return undefined;
       }
 
-      if(typeof scope[parts[len]] == 'undefined'){
+      if (typeof scope[parts[len]] == 'undefined') {
         scope[parts[len]] = {};
       }
 
-      if(typeof scope[parts[len]] != 'undefined'){
+      if (typeof scope[parts[len]] != 'undefined') {
         const _old = JSON.parse(JSON.stringify(scope[parts[len]]));
         scope[parts[len]] = value;
-        if(_old != value){
+        if (_old != value) {
           // ConfigClient.triggerEvent(path, value, _old);
           ConfigClient.save(null, true);
         }
       }
-    }else{
+    } else {
       console.warn('ConfigManager.set', 'Invalid value type', typeof value, value);
     }
   }
 
-  static save(onSave?: Function, silent?: boolean){
+  static save(onSave?: Function, silent?: boolean) {
     set('app_settings', ConfigClient.options).catch((e: unknown) => {
       if (!silent) console.warn('ConfigClient.save: IndexedDB write failed, using in-memory config only', e);
     });
     try {
-      localStorage.setItem('client-config-updated', JSON.stringify({
-        time: Date.now(),
-        id: ConfigClient.UUID
-      }));
+      localStorage.setItem(
+        'client-config-updated',
+        JSON.stringify({
+          time: Date.now(),
+          id: ConfigClient.UUID,
+        })
+      );
     } catch (e) {
       if (!silent) console.warn('ConfigClient.save: localStorage write failed', e);
     }
   }
 
   static uuidv4() {
-    return (([1e7] as any)+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, (c:any) =>
-      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    return (([1e7] as any) + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c: any) =>
+      (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
     );
   }
-
 }
 
 window.addEventListener('storage', (event: StorageEvent) => {
@@ -125,20 +131,20 @@ const defaults: any = {
     KOTOR: {
       Location: null,
       recent_files: [],
-      recent_projects: []
+      recent_projects: [],
     },
     TSL: {
       Location: null,
       recent_files: [],
-      recent_projects: []
-    }
+      recent_projects: [],
+    },
   },
   Launcher: {
     selected_profile: null,
     width: 1200,
-    height: 600
+    height: 600,
   },
-  Profiles: { },
+  Profiles: {},
   Game: {
     show_application_menu: false,
     debug: {
@@ -155,39 +161,39 @@ const defaults: any = {
       waypoint_geometry_show: false,
       is_shipping_build: true,
       disable_intro_movies: false,
-    }
+    },
   },
   Theme: {
     NSS: {
       keywords: {
-        color: "#ffb800",
-        fontSize: "inherit"
+        color: '#ffb800',
+        fontSize: 'inherit',
       },
       methods: {
-        color: "#1d7fd9",
-        fontSize: "inherit"
+        color: '#1d7fd9',
+        fontSize: 'inherit',
       },
       constants: {
-        color: "#9648ba",
-        fontSize: "inherit"
-      }
+        color: '#9648ba',
+        fontSize: 'inherit',
+      },
     },
     GFF: {
       struct: {
         label: {
-          color: "#FFF",
-          fontSize: "inherit"
+          color: '#FFF',
+          fontSize: 'inherit',
         },
-        "color": "#8476a2"
+        color: '#8476a2',
       },
       field: {
         label: {
-          color: "#FFF",
-          fontSize: "inherit"
+          color: '#FFF',
+          fontSize: 'inherit',
         },
-        "color": "#337a9c"
-      }
-    }
+        color: '#337a9c',
+      },
+    },
   },
   look_in_override: false,
   Editor: {
@@ -195,39 +201,39 @@ const defaults: any = {
     Module: {
       Helpers: {
         creature: {
-          visible: false
+          visible: false,
         },
         door: {
-          visible: false
+          visible: false,
         },
         encounter: {
-          visible: false
+          visible: false,
         },
         placeable: {
-          visible: false
+          visible: false,
         },
         merchant: {
-          visible: false
+          visible: false,
         },
         sound: {
-          visible: false
+          visible: false,
         },
         trigger: {
-          visible: false
+          visible: false,
         },
         waypoint: {
-          visible: false
+          visible: false,
         },
-      }
-    }
+      },
+    },
   },
   Panes: {
-    left: {open: true},
-    right: {open: true},
-    top: {open: false},
-    bottom: {open: false}
+    left: { open: true },
+    right: { open: true },
+    top: { open: false },
+    bottom: { open: false },
   },
   Projects_Directory: null,
   recent_projects: [],
-  recent_files: []
+  recent_files: [],
 };

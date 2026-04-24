@@ -38,7 +38,12 @@ describe('KEYObject', () => {
 
     const bifEntries = [
       { fileSize: 30, filenameOffset: currentNameOffset, filenameSize: nameBytes[0].length, drives: 0 },
-      { fileSize: 20, filenameOffset: currentNameOffset + nameBytes[0].length, filenameSize: nameBytes[1].length, drives: 0 },
+      {
+        fileSize: 20,
+        filenameOffset: currentNameOffset + nameBytes[0].length,
+        filenameSize: nameBytes[1].length,
+        drives: 0,
+      },
     ];
     currentNameOffset += nameBytes[0].length + nameBytes[1].length;
 
@@ -169,11 +174,15 @@ describe('KEYObject', () => {
   it('throws on invalid file type or version', () => {
     const badType = new Uint8Array(makeKeyBuffer());
     badType.set(new TextEncoder().encode('INV '), 0);
-    expect(() => new KEYObject().loadBuffer(badType)).toThrow('Tried to save or load an unsupported or corrupted file.');
+    expect(() => new KEYObject().loadBuffer(badType)).toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
 
     const badVersion = new Uint8Array(makeKeyBuffer());
     badVersion.set(new TextEncoder().encode('V2  '), 4);
-    expect(() => new KEYObject().loadBuffer(badVersion)).toThrow('Tried to save or load an unsupported or corrupted file.');
+    expect(() => new KEYObject().loadBuffer(badVersion)).toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
   });
 
   // --- Vendor-derived: xoreos reference data (byte-exact golden blob) ---
@@ -183,29 +192,23 @@ describe('KEYObject', () => {
     // 1 BIF ("data\\xoreos.bif", filesize=76), 1 resource ("ozymandias", TXT, resId=1)
     const keyData = new Uint8Array([
       // Header: "KEY " + "V1  "
-      0x4B, 0x45, 0x59, 0x20, 0x56, 0x31, 0x20, 0x20,
+      0x4b, 0x45, 0x59, 0x20, 0x56, 0x31, 0x20, 0x20,
       // bifCount=1, keyCount=1
       0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
       // offsetToFileTable=64, offsetToKeyTable=91
-      0x40, 0x00, 0x00, 0x00, 0x5B, 0x00, 0x00, 0x00,
+      0x40, 0x00, 0x00, 0x00, 0x5b, 0x00, 0x00, 0x00,
       // buildYear=0, buildDay=0
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       // 32 bytes reserved
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       // BIF entry: fileSize=76, filenameOffset=76, filenameSize=15, drives=0
-      0x4C, 0x00, 0x00, 0x00, 0x4C, 0x00, 0x00, 0x00,
-      0x0F, 0x00, 0x00, 0x00,
+      0x4c, 0x00, 0x00, 0x00, 0x4c, 0x00, 0x00, 0x00, 0x0f, 0x00, 0x00, 0x00,
       // Filename: "data\\xoreos.bif"
-      0x64, 0x61, 0x74, 0x61, 0x5C, 0x78, 0x6F, 0x72,
-      0x65, 0x6F, 0x73, 0x2E, 0x62, 0x69, 0x66,
+      0x64, 0x61, 0x74, 0x61, 0x5c, 0x78, 0x6f, 0x72, 0x65, 0x6f, 0x73, 0x2e, 0x62, 0x69, 0x66,
       // Key entry: resRef "ozymandias" (16 bytes padded), resType=0x000A (TXT), resId=1
-      0x6F, 0x7A, 0x79, 0x6D, 0x61, 0x6E, 0x64, 0x69,
-      0x61, 0x73, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x0A, 0x00,
-      0x01, 0x00, 0x00, 0x00,
+      0x6f, 0x7a, 0x79, 0x6d, 0x61, 0x6e, 0x64, 0x69, 0x61, 0x73, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x01,
+      0x00, 0x00, 0x00,
     ]);
 
     const key = new KEYObject();
@@ -247,15 +250,17 @@ describe('KEYObject', () => {
 
     key.loadBuffer(makeKeyBuffer());
 
-    const bif0 = new BIFObject(makeBifBuffer([
-      { id: 0, resType: ResourceTypes.txt, payload: new TextEncoder().encode('alpha') },
-      { id: 1, resType: ResourceTypes.tga, payload: new TextEncoder().encode('skip') },
-    ]));
+    const bif0 = new BIFObject(
+      makeBifBuffer([
+        { id: 0, resType: ResourceTypes.txt, payload: new TextEncoder().encode('alpha') },
+        { id: 1, resType: ResourceTypes.tga, payload: new TextEncoder().encode('skip') },
+      ])
+    );
     bif0.readFromMemory();
 
-    const bif1 = new BIFObject(makeBifBuffer([
-      { id: (1 << 20) | 2, resType: ResourceTypes.txt, payload: new TextEncoder().encode('beta') },
-    ]));
+    const bif1 = new BIFObject(
+      makeBifBuffer([{ id: (1 << 20) | 2, resType: ResourceTypes.txt, payload: new TextEncoder().encode('beta') }])
+    );
     bif1.readFromMemory();
 
     BIFManager.bifs = new Map<number, BIFObject>([
@@ -278,15 +283,17 @@ describe('KEYObject', () => {
 
     key.loadBuffer(makeKeyBuffer());
 
-    const bif0 = new BIFObject(makeBifBuffer([
-      { id: 0, resType: ResourceTypes.txt, payload: new TextEncoder().encode('abc') },
-      { id: 1, resType: ResourceTypes.txt, payload: new TextEncoder().encode('def') },
-    ]));
+    const bif0 = new BIFObject(
+      makeBifBuffer([
+        { id: 0, resType: ResourceTypes.txt, payload: new TextEncoder().encode('abc') },
+        { id: 1, resType: ResourceTypes.txt, payload: new TextEncoder().encode('def') },
+      ])
+    );
     bif0.readFromMemory();
 
-    const bif1 = new BIFObject(makeBifBuffer([
-      { id: (1 << 20) | 2, resType: ResourceTypes.txt, payload: new TextEncoder().encode('ghi') },
-    ]));
+    const bif1 = new BIFObject(
+      makeBifBuffer([{ id: (1 << 20) | 2, resType: ResourceTypes.txt, payload: new TextEncoder().encode('ghi') }])
+    );
     bif1.readFromMemory();
 
     BIFManager.bifs = new Map<number, BIFObject>([
@@ -295,9 +302,15 @@ describe('KEYObject', () => {
     ]);
 
     try {
-      expect(new TextDecoder().decode(await key.getFileBuffer(key.getFileKey('test1', ResourceTypes.txt)!))).toBe('abc');
-      expect(new TextDecoder().decode(await key.getFileBuffer(key.getFileKey('test2', ResourceTypes.txt)!))).toBe('def');
-      expect(new TextDecoder().decode(await key.getFileBuffer(key.getFileKey('test3', ResourceTypes.txt)!))).toBe('ghi');
+      expect(new TextDecoder().decode(await key.getFileBuffer(key.getFileKey('test1', ResourceTypes.txt)!))).toBe(
+        'abc'
+      );
+      expect(new TextDecoder().decode(await key.getFileBuffer(key.getFileKey('test2', ResourceTypes.txt)!))).toBe(
+        'def'
+      );
+      expect(new TextDecoder().decode(await key.getFileBuffer(key.getFileKey('test3', ResourceTypes.txt)!))).toBe(
+        'ghi'
+      );
       expect(await key.getFileBuffer(null as any)).toEqual(new Uint8Array(0));
     } finally {
       BIFManager.bifs = previousBifs;
@@ -355,7 +368,6 @@ describe('KEYObject', () => {
     expect(KEYObject.getBIFIndex(typicalId)).toBe(3);
     expect(KEYObject.getBIFResourceIndex(typicalId)).toBe(5);
     // Max resource index (14 bits): 0x3FFF
-    expect(KEYObject.getBIFResourceIndex(0x3FFF)).toBe(0x3FFF);
+    expect(KEYObject.getBIFResourceIndex(0x3fff)).toBe(0x3fff);
   });
 });
-

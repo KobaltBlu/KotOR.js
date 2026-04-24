@@ -1,6 +1,6 @@
-import React from "react";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { SectionContainer } from '@/apps/forge/components/SectionContainer';
+import * as KotOR from '@/apps/forge/KotOR';
 
 export interface LightSectionProps {
   modelNode: KotOR.OdysseyModelNodeLight;

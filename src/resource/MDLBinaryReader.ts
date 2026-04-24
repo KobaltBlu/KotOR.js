@@ -7,7 +7,23 @@
  * @license GPL-3.0
  */
 
-import type { MDLAABBNode, MDLAnimation, MDLColor, MDLController, MDLControllerRow, MDLEmitter, MDLEvent, MDLFace, MDLLight, MDLMesh, MDLReference, MDLWalkmesh, Vector2, Vector3, Vector4 } from '@/resource/MDLData';
+import type {
+  MDLAABBNode,
+  MDLAnimation,
+  MDLColor,
+  MDLController,
+  MDLControllerRow,
+  MDLEmitter,
+  MDLEvent,
+  MDLFace,
+  MDLLight,
+  MDLMesh,
+  MDLReference,
+  MDLWalkmesh,
+  Vector2,
+  Vector3,
+  Vector4,
+} from '@/resource/MDLData';
 import { MDL, MDLNode } from '@/resource/MDLData';
 import { MDLClassification, MDLDynamicType, MDLNodeFlags, MDLNodeType } from '@/resource/MDLTypes';
 
@@ -88,7 +104,7 @@ class BufferReader {
     return {
       x: this.readFloat32(),
       y: this.readFloat32(),
-      z: this.readFloat32()
+      z: this.readFloat32(),
     };
   }
   readVector4(): Vector4 {
@@ -133,10 +149,7 @@ export interface MDLBinaryReaderOptions {
  * Load an MDL from binary buffer. First 4 bytes zero indicate binary MDL.
  * Offsets in the file are relative to the start of the data block; the reader skips the first 12 bytes.
  */
-export function readMDLFromBinaryBuffer(
-  buffer: Uint8Array,
-  options: MDLBinaryReaderOptions = {}
-): MDL {
+export function readMDLFromBinaryBuffer(buffer: Uint8Array, options: MDLBinaryReaderOptions = {}): MDL {
   const { fastLoad = false, mdxBuffer } = options;
   const reader = new BufferReader(buffer, 12);
 
@@ -333,7 +346,14 @@ function loadNode(
   }
 
   if (!fastLoad && controllerCount > 0 && offsetToControllerData !== 0 && offsetToControllerData !== 0xffffffff) {
-    node.controllers = readControllers(reader, buffer, offsetToControllers, controllerCount, offsetToControllerData, controllerDataLength);
+    node.controllers = readControllers(
+      reader,
+      buffer,
+      offsetToControllers,
+      controllerCount,
+      offsetToControllerData,
+      controllerDataLength
+    );
   }
 
   return node;
@@ -435,7 +455,7 @@ function readTrimeshHeader(reader: BufferReader, buffer: Uint8Array, mdxBuffer: 
     vertexNormals: [],
     vertexUv1: [],
     vertexUv2: [],
-    faces: []
+    faces: [],
   };
 
   if (offsetToFaces !== 0 && offsetToFaces !== 0xffffffff && facesCount > 0) {
@@ -451,7 +471,7 @@ function readTrimeshHeader(reader: BufferReader, buffer: Uint8Array, mdxBuffer: 
           t2: -1,
           t3: -1,
           material: 0,
-          smoothgroup: 0
+          smoothgroup: 0,
         });
       }
     }
@@ -528,7 +548,7 @@ function readLightHeader(reader: BufferReader, buffer: Uint8Array): MDLLight {
     flareSizes: [],
     flarePositions: [],
     flareColorShaders: [],
-    flareTextures: []
+    flareTextures: [],
   };
 }
 
@@ -583,7 +603,7 @@ function readEmitterHeader(reader: BufferReader, buffer: Uint8Array): MDLEmitter
     randomBirthRate: 0,
     bounceCo: 0,
     combinetime: 0,
-    flags: 0
+    flags: 0,
   };
 }
 
@@ -604,7 +624,7 @@ function readDanglyHeader(reader: BufferReader, buffer: Uint8Array): import('@/r
     constraints.push({
       stiffness: reader.readFloat32(),
       period: reader.readFloat32(),
-      length: reader.readFloat32()
+      length: reader.readFloat32(),
     });
   }
   return { displacement, tightness, period, constraints };
@@ -678,7 +698,6 @@ function loadAnimation(reader: BufferReader, buffer: Uint8Array, offset: number,
     animLength: duration,
     transitionLength: transition,
     events,
-    root: rootNode
+    root: rootNode,
   };
 }
-

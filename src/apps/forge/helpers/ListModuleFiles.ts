@@ -19,12 +19,11 @@ const MOD_EXT = /\.(mod|rim|erf)$/i;
  * Requires Node/Electron fs. Returns entries sorted by name.
  */
 export async function listModuleFiles(modulesDir: string): Promise<ModuleFileEntry[]> {
-  const isNode =
-    typeof process !== "undefined" && process.versions?.node != null;
+  const isNode = typeof process !== 'undefined' && process.versions?.node != null;
   if (!isNode) return [];
 
-  const fs = await import("fs");
-  const path = await import("path");
+  const fs = await import('fs');
+  const path = await import('path');
 
   let entries: string[];
   try {
@@ -45,7 +44,7 @@ export async function listModuleFiles(modulesDir: string): Promise<ModuleFileEnt
     } catch {
       continue;
     }
-    const root = e.replace(MOD_EXT, "").toLowerCase();
+    const root = e.replace(MOD_EXT, '').toLowerCase();
     if (seen.has(root)) continue;
     seen.add(root);
     result.push({ name: e, path: fullPath, root });

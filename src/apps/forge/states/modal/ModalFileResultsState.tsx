@@ -1,12 +1,12 @@
-﻿import React from "react";
+﻿import React from 'react';
 
-import { ModalFileResults } from "@/apps/forge/components/modal/ModalFileResults";
-import type { EditorFile } from "@/apps/forge/EditorFile";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
-import { ReferenceSearchResult } from "@/apps/forge/helpers/ReferenceFinder";
-import type { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import { ResourceTypes } from "@/resource/ResourceTypes";
+import { ModalFileResults } from '@/apps/forge/components/modal/ModalFileResults';
+import type { EditorFile } from '@/apps/forge/EditorFile';
+import { EditorFileProtocol } from '@/apps/forge/enum/EditorFileProtocol';
+import { ReferenceSearchResult } from '@/apps/forge/helpers/ReferenceFinder';
+import type { EditorFileOptions } from '@/apps/forge/interfaces/EditorFileOptions';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
+import { ResourceTypes } from '@/resource/ResourceTypes';
 
 export interface ModalFileResultsStateOptions {
   results: ReferenceSearchResult[];
@@ -14,7 +14,7 @@ export interface ModalFileResultsStateOptions {
 }
 
 export class ModalFileResultsState extends ModalState {
-  title: string = "Search Results";
+  title: string = 'Search Results';
   results: ReferenceSearchResult[] = [];
 
   constructor(options: ModalFileResultsStateOptions) {
@@ -28,7 +28,7 @@ export class ModalFileResultsState extends ModalState {
 
   setResults(results: ReferenceSearchResult[]): void {
     this.results = results;
-    this.processEventListener("onResultsChanged", [this.results]);
+    this.processEventListener('onResultsChanged', [this.results]);
   }
 
   getDisplayText(result: ReferenceSearchResult): string {
@@ -38,10 +38,10 @@ export class ModalFileResultsState extends ModalState {
 
   getTooltip(result: ReferenceSearchResult): string {
     const lines = [`Field: ${result.fieldPath}`, `Value: ${result.matchedValue}`];
-    if (typeof result.byteOffset === "number") {
+    if (typeof result.byteOffset === 'number') {
       lines.push(`Byte offset: 0x${result.byteOffset.toString(16)}`);
     }
-    return lines.join("\n");
+    return lines.join('\n');
   }
 
   getEditorFileOptions(result: ReferenceSearchResult): EditorFileOptions {
@@ -53,10 +53,10 @@ export class ModalFileResultsState extends ModalState {
     if (container) {
       const lower = container.toLowerCase();
       let protocol = EditorFileProtocol.BIF;
-      if (lower.endsWith(".erf") || lower.endsWith(".sav")) protocol = EditorFileProtocol.ERF;
-      else if (lower.endsWith(".mod")) protocol = EditorFileProtocol.MOD;
-      else if (lower.endsWith(".rim")) protocol = EditorFileProtocol.RIM;
-      else if (lower.endsWith(".bif")) protocol = EditorFileProtocol.BIF;
+      if (lower.endsWith('.erf') || lower.endsWith('.sav')) protocol = EditorFileProtocol.ERF;
+      else if (lower.endsWith('.mod')) protocol = EditorFileProtocol.MOD;
+      else if (lower.endsWith('.rim')) protocol = EditorFileProtocol.RIM;
+      else if (lower.endsWith('.bif')) protocol = EditorFileProtocol.BIF;
 
       const archivePath = `${protocol}//game.dir/${container}?resref=${resref}&restype=${ext}`;
       return {
@@ -81,17 +81,18 @@ export class ModalFileResultsState extends ModalState {
   async createEditorFile(result: ReferenceSearchResult): Promise<EditorFile> {
     // Dynamic import to avoid circular dependency; runtime requires relative path (path alias not resolved in import())
     // eslint-disable-next-line no-restricted-imports -- dynamic import string not resolved by path alias
-    const mod = await import("@/apps/forge/EditorFile") as { EditorFile: new (opts: EditorFileOptions) => EditorFile };
+    const mod = (await import('@/apps/forge/EditorFile')) as {
+      EditorFile: new (opts: EditorFileOptions) => EditorFile;
+    };
     return new mod.EditorFile(this.getEditorFileOptions(result));
   }
 
   async openResult(result: ReferenceSearchResult): Promise<void> {
     const editorFile = await this.createEditorFile(result);
     // eslint-disable-next-line no-restricted-imports -- dynamic import string not resolved by path alias
-    const { FileTypeManager } = await import("@/apps/forge/FileTypeManager") as {
+    const { FileTypeManager } = (await import('@/apps/forge/FileTypeManager')) as {
       FileTypeManager: { onOpenResource: (f: EditorFile) => void };
     };
     FileTypeManager.onOpenResource(editorFile);
   }
 }
-

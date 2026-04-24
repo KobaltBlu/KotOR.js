@@ -1,10 +1,10 @@
-import React from "react";
+import React from 'react';
 
-import { ModalUpdateCheck } from "@/apps/forge/components/modal/ModalUpdateCheck";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalUpdateCheck } from '@/apps/forge/components/modal/ModalUpdateCheck';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
 
 export class ModalUpdateCheckState extends ModalState {
-  title: string = "Check for Updates";
+  title: string = 'Check for Updates';
 
   checking: boolean = false;
   error: string = '';
@@ -13,7 +13,7 @@ export class ModalUpdateCheckState extends ModalState {
   downloadLink: string = '';
   releaseNotes: string = '';
 
-  constructor(){
+  constructor() {
     super();
     this.setView(<ModalUpdateCheck modal={this} />);
   }
@@ -23,7 +23,13 @@ export class ModalUpdateCheckState extends ModalState {
     this.processEventListener('onCheckingChange', [checking]);
   }
 
-  setResult(result: { error?: string; remoteVersion?: string; hasUpdate?: boolean; downloadLink?: string; releaseNotes?: string }) {
+  setResult(result: {
+    error?: string;
+    remoteVersion?: string;
+    hasUpdate?: boolean;
+    downloadLink?: string;
+    releaseNotes?: string;
+  }) {
     this.error = result.error || '';
     this.remoteVersion = result.remoteVersion || '';
     this.hasUpdate = result.hasUpdate || false;

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { TabLTREditorState } from "@/apps/forge/states/tabs";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
+import { TabLTREditorState } from '@/apps/forge/states/tabs';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
-import "@/apps/forge/components/tabs/tab-ltr-editor/TabLTREditor.scss";
+import '@/apps/forge/components/tabs/tab-ltr-editor/TabLTREditor.scss';
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -12,16 +12,16 @@ interface BaseTabProps {
   tab: TabLTREditorState;
 }
 
-export const TabLTREditor = function(props: BaseTabProps){
+export const TabLTREditor = function (props: BaseTabProps) {
   const tab = props.tab as TabLTREditorState;
   const [ltr, setLtr] = useState(tab.ltr);
   const [generatedNames, setGeneratedNames] = useState<string[]>([]);
 
   useEffect(() => {
     const loadHandler = () => setLtr(tab.ltr);
-    
+
     tab.addEventListener('onEditorFileLoad', loadHandler);
-    
+
     return () => {
       tab.removeEventListener('onEditorFileLoad', loadHandler);
     };
@@ -32,12 +32,12 @@ export const TabLTREditor = function(props: BaseTabProps){
       label: 'File',
       children: [
         { label: 'Save', onClick: () => tab.save() },
-        { label: 'Save As', onClick: () => tab.saveAs() }
-      ]
-    }
+        { label: 'Save As', onClick: () => tab.saveAs() },
+      ],
+    },
   ];
 
-  if(!ltr){
+  if (!ltr) {
     return (
       <div className="forge-ltr-editor">
         <MenuBar items={menuItems} />
@@ -48,11 +48,11 @@ export const TabLTREditor = function(props: BaseTabProps){
 
   const generateNames = (count: number = 10) => {
     const names: string[] = [];
-    for(let i = 0; i < count; i++){
+    for (let i = 0; i < count; i++) {
       try {
         const name = ltr.getName();
         names.push(name);
-      } catch(e) {
+      } catch (e) {
         log.error('Failed to generate name:', e as Error);
       }
     }
@@ -66,10 +66,10 @@ export const TabLTREditor = function(props: BaseTabProps){
         <div className="ltr-info">
           <h3>Name Generator (LTR File)</h3>
           <p>
-            LTR files use Markov chains to generate random character names.
-            This file contains probability tables for character sequences.
+            LTR files use Markov chains to generate random character names. This file contains probability tables for
+            character sequences.
           </p>
-          
+
           <div className="ltr-details">
             <div className="detail-item">
               <label>File Type:</label>
@@ -88,20 +88,12 @@ export const TabLTREditor = function(props: BaseTabProps){
 
         <div className="name-generator">
           <h4>Generate Names</h4>
-          <p className="help-text">
-            Click below to generate random names using this LTR file's Markov chains.
-          </p>
+          <p className="help-text">Click below to generate random names using this LTR file's Markov chains.</p>
           <div className="generator-controls">
-            <button 
-              className="btn-generate"
-              onClick={() => generateNames(10)}
-            >
+            <button className="btn-generate" onClick={() => generateNames(10)}>
               Generate 10 Names
             </button>
-            <button 
-              className="btn-generate"
-              onClick={() => generateNames(20)}
-            >
+            <button className="btn-generate" onClick={() => generateNames(20)}>
               Generate 20 Names
             </button>
           </div>
@@ -122,8 +114,8 @@ export const TabLTREditor = function(props: BaseTabProps){
 
         <div className="ltr-notice">
           <p>
-            <strong>Note:</strong> Direct editing of Markov chain probability tables is not yet implemented.
-            The probabilities are stored in the LTR file and used for name generation.
+            <strong>Note:</strong> Direct editing of Markov chain probability tables is not yet implemented. The
+            probabilities are stored in the LTR file and used for name generation.
           </p>
         </div>
       </div>

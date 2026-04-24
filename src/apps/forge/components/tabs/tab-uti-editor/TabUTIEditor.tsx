@@ -1,17 +1,16 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabUTIEditorState, ItemPropertyEntry } from "@/apps/forge/states/tabs";
-import * as KotOR from "@/apps/forge/KotOR";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
+import React, { useState, useCallback, useEffect } from 'react';
+import { BaseTabProps } from '@/apps/forge/interfaces/BaseTabProps';
+import { TabUTIEditorState, ItemPropertyEntry } from '@/apps/forge/states/tabs';
+import * as KotOR from '@/apps/forge/KotOR';
+import { FormField } from '@/apps/forge/components/form-field/FormField';
+import { CExoLocStringEditor } from '@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor';
+import { ForgeCheckbox } from '@/apps/forge/components/forge-checkbox/forge-checkbox';
+import { SubTab, SubTabHost } from '@/apps/forge/components/SubTabHost';
+import { UI3DRendererView } from '@/apps/forge/components/UI3DRendererView';
+import { ForgeItem } from '@/apps/forge/module-editor/ForgeItem';
+import { clampByte } from '@/apps/forge/helpers/UTxEditorHelpers';
 
-export const TabUTIEditor = function(props: BaseTabProps){
-
+export const TabUTIEditor = function (props: BaseTabProps) {
   const tab: TabUTIEditorState = props.tab as TabUTIEditorState;
   const [selectedTab, setSelectedTab] = useState<string>('basic');
 
@@ -51,7 +50,7 @@ export const TabUTIEditor = function(props: BaseTabProps){
     setStackSize(tab.item.stackSize);
     setPlot(tab.item.plot);
     setStolen(tab.item.stolen);
-    setProperties(tab.item.properties.map((prop) => ({...prop})));
+    setProperties(tab.item.properties.map((prop) => ({ ...prop })));
     setIdentified(tab.item.identified);
     setModelVariation(tab.item.modelVariation);
     setUpgradeLevel(tab.item.upgradeLevel);
@@ -59,7 +58,7 @@ export const TabUTIEditor = function(props: BaseTabProps){
   }, [tab]);
 
   useEffect(() => {
-    if(!tab) return;
+    if (!tab) return;
     onItemChange();
     tab.addEventListener('onEditorFileLoad', onItemChange);
     tab.addEventListener('onEditorFileChange', onItemChange);
@@ -70,8 +69,11 @@ export const TabUTIEditor = function(props: BaseTabProps){
   }, [tab, onItemChange]);
 
   // Helper functions using ForgeItem methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeItem, parser: (value: number) => number = (v) => v) =>
-    tab.item.createNumberFieldHandler(setter, property, tab.item, tab, parser);
+  const onUpdateNumberField = (
+    setter: (value: number) => void,
+    property: keyof ForgeItem,
+    parser: (value: number) => number = (v) => v
+  ) => tab.item.createNumberFieldHandler(setter, property, tab.item, tab, parser);
 
   const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeItem) =>
     tab.item.createByteFieldHandler(setter, property, tab.item, tab);
@@ -96,9 +98,9 @@ export const TabUTIEditor = function(props: BaseTabProps){
 
   const updateProperties = (next: ItemPropertyEntry[]) => {
     setProperties(next);
-    tab.item.properties = next.map((prop) => ({...prop}));
+    tab.item.properties = next.map((prop) => ({ ...prop }));
     tab.updateFile();
-  }
+  };
 
   const addProperty = () => {
     const newProp: ItemPropertyEntry = {
@@ -108,35 +110,39 @@ export const TabUTIEditor = function(props: BaseTabProps){
       param1: 255,
       param1Value: 0,
       propertyName: 0,
-      subtype: 0
+      subtype: 0,
     };
     updateProperties([...properties, newProp]);
-  }
+  };
 
   const removeProperty = (index: number) => {
     updateProperties(properties.filter((_, idx) => idx !== index));
-  }
+  };
 
   const onPropertyFieldChange = (index: number, field: keyof ItemPropertyEntry, value: number) => {
-    const next = properties.map((prop, idx) => idx === index ? {...prop, [field]: value} : prop);
+    const next = properties.map((prop, idx) => (idx === index ? { ...prop, [field]: value } : prop));
     updateProperties(next);
-  }
+  };
 
   const onLoadFromInventoryBrowser = () => {
-    const modal = new ModalInventoryBrowserState([], async (updatedInventory) => {
-      const selectedResref = updatedInventory[0]?.resref;
-      if (!selectedResref) {
-        return;
-      }
+    const modal = new ModalInventoryBrowserState(
+      [],
+      async (updatedInventory) => {
+        const selectedResref = updatedInventory[0]?.resref;
+        if (!selectedResref) {
+          return;
+        }
 
-      const sourceItem = modal.findItemByResref(selectedResref);
-      if (!sourceItem) {
-        return;
-      }
+        const sourceItem = modal.findItemByResref(selectedResref);
+        if (!sourceItem) {
+          return;
+        }
 
-      await tab.importFromBuffer(sourceItem.gff.getExportBuffer());
-      onItemChange();
-    }, 'store');
+        await tab.importFromBuffer(sourceItem.gff.getExportBuffer());
+        onItemChange();
+      },
+      'store'
+    );
 
     modal.attachToModalManager(ForgeState.modalManager);
     modal.open();
@@ -145,22 +151,58 @@ export const TabUTIEditor = function(props: BaseTabProps){
   const renderPropertyRow = (property: ItemPropertyEntry, index: number) => (
     <tr key={`item-property-${index}`}>
       <td>
-        <input type="number" min={0} max={255} value={property.propertyName} onChange={(e) => onPropertyFieldChange(index, 'propertyName', parseInt(e.target.value) || 0)} />
+        <input
+          type="number"
+          min={0}
+          max={255}
+          value={property.propertyName}
+          onChange={(e) => onPropertyFieldChange(index, 'propertyName', parseInt(e.target.value) || 0)}
+        />
       </td>
       <td>
-        <input type="number" min={0} max={65535} value={property.subtype} onChange={(e) => onPropertyFieldChange(index, 'subtype', parseInt(e.target.value) || 0)} />
+        <input
+          type="number"
+          min={0}
+          max={65535}
+          value={property.subtype}
+          onChange={(e) => onPropertyFieldChange(index, 'subtype', parseInt(e.target.value) || 0)}
+        />
       </td>
       <td>
-        <input type="number" min={0} max={255} value={property.costTable} onChange={(e) => onPropertyFieldChange(index, 'costTable', parseInt(e.target.value) || 0)} />
+        <input
+          type="number"
+          min={0}
+          max={255}
+          value={property.costTable}
+          onChange={(e) => onPropertyFieldChange(index, 'costTable', parseInt(e.target.value) || 0)}
+        />
       </td>
       <td>
-        <input type="number" min={0} max={65535} value={property.costValue} onChange={(e) => onPropertyFieldChange(index, 'costValue', parseInt(e.target.value) || 0)} />
+        <input
+          type="number"
+          min={0}
+          max={65535}
+          value={property.costValue}
+          onChange={(e) => onPropertyFieldChange(index, 'costValue', parseInt(e.target.value) || 0)}
+        />
       </td>
       <td>
-        <input type="number" min={0} max={255} value={property.param1} onChange={(e) => onPropertyFieldChange(index, 'param1', clampByte(parseInt(e.target.value) || 0))} />
+        <input
+          type="number"
+          min={0}
+          max={255}
+          value={property.param1}
+          onChange={(e) => onPropertyFieldChange(index, 'param1', clampByte(parseInt(e.target.value) || 0))}
+        />
       </td>
       <td>
-        <input type="number" min={0} max={255} value={property.param1Value} onChange={(e) => onPropertyFieldChange(index, 'param1Value', clampByte(parseInt(e.target.value) || 0))} />
+        <input
+          type="number"
+          min={0}
+          max={255}
+          value={property.param1Value}
+          onChange={(e) => onPropertyFieldChange(index, 'param1Value', clampByte(parseInt(e.target.value) || 0))}
+        />
       </td>
       <td>
         <button className="btn btn-sm btn-danger" onClick={() => removeProperty(index)}>
@@ -201,7 +243,13 @@ export const TabUTIEditor = function(props: BaseTabProps){
                 <input type="number" min={0} value={baseItem} onChange={onUpdateByteField(setBaseItem, 'baseItem')} />
               </FormField>
               <FormField label="Palette ID" info="Palette grouping for the item blueprint.">
-                <input type="number" min={0} max={255} value={paletteID} onChange={onUpdateByteField(setPaletteID, 'paletteID')} />
+                <input
+                  type="number"
+                  min={0}
+                  max={255}
+                  value={paletteID}
+                  onChange={onUpdateByteField(setPaletteID, 'paletteID')}
+                />
               </FormField>
               <FormField label="Cost" info="Final item cost shown in editor views.">
                 <input type="number" min={0} value={cost} onChange={onUpdateNumberField(setCost, 'cost')} />
@@ -210,38 +258,80 @@ export const TabUTIEditor = function(props: BaseTabProps){
                 <input type="number" min={0} value={addCost} onChange={onUpdateNumberField(setAddCost, 'addCost')} />
               </FormField>
               <FormField label="Charges" info="Remaining charges for consumables (0-255).">
-                <input type="number" min={0} max={255} value={charges} onChange={onUpdateByteField(setCharges, 'charges')} />
+                <input
+                  type="number"
+                  min={0}
+                  max={255}
+                  value={charges}
+                  onChange={onUpdateByteField(setCharges, 'charges')}
+                />
               </FormField>
               <FormField label="Stack Size" info="Number of items per stack for stackable base types.">
-                <input type="number" min={1} max={65535} value={stackSize} onChange={onUpdateWordField(setStackSize, 'stackSize')} />
+                <input
+                  type="number"
+                  min={1}
+                  max={65535}
+                  value={stackSize}
+                  onChange={onUpdateWordField(setStackSize, 'stackSize')}
+                />
               </FormField>
               <FormField label="Model Variation" info="Model variation for the item blueprint.">
-                <input type="number" min={1} max={255} value={modelVariation} onChange={onUpdateByteField(setModelVariation, 'modelVariation')} />
+                <input
+                  type="number"
+                  min={1}
+                  max={255}
+                  value={modelVariation}
+                  onChange={onUpdateByteField(setModelVariation, 'modelVariation')}
+                />
               </FormField>
               <FormField label="Icon Preview" info="Resolved from baseitems.2da itemclass and model variation.">
-                <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {iconResRef ? (
                     <LazyTextureCanvas texture={iconResRef} width={32} height={32} />
                   ) : (
-                    <div style={{width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>?</div>
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      ?
+                    </div>
                   )}
                   <code>{iconResRef || '(no icon)'}</code>
                 </div>
               </FormField>
               <FormField label="Upgrade Level" info="Upgrade level for the item blueprint.">
-                <input type="number" min={0} max={255} value={upgradeLevel} onChange={onUpdateByteField(setUpgradeLevel, 'upgradeLevel')} />
+                <input
+                  type="number"
+                  min={0}
+                  max={255}
+                  value={upgradeLevel}
+                  onChange={onUpdateByteField(setUpgradeLevel, 'upgradeLevel')}
+                />
               </FormField>
               <FormField label="Flags" info="Gameplay restrictions for this item.">
-                <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <ForgeCheckbox label="Plot" value={plot} onChange={onUpdateForgeCheckboxField(setPlot, 'plot')} />
-                  <ForgeCheckbox label="Stolen" value={stolen} onChange={onUpdateForgeCheckboxField(setStolen, 'stolen')} />
-                  <ForgeCheckbox label="Identified" value={identified} onChange={onUpdateForgeCheckboxField(setIdentified, 'identified')} />
+                  <ForgeCheckbox
+                    label="Stolen"
+                    value={stolen}
+                    onChange={onUpdateForgeCheckboxField(setStolen, 'stolen')}
+                  />
+                  <ForgeCheckbox
+                    label="Identified"
+                    value={identified}
+                    onChange={onUpdateForgeCheckboxField(setIdentified, 'identified')}
+                  />
                 </div>
               </FormField>
             </tbody>
           </table>
         </>
-      )
+      ),
     },
     {
       id: 'description',
@@ -253,15 +343,21 @@ export const TabUTIEditor = function(props: BaseTabProps){
           <table style={{ width: '100%' }}>
             <tbody>
               <FormField label="Unidentified Description" info="Description shown before the item is identified.">
-                <CExoLocStringEditor value={description} onChange={onUpdateCExoLocStringField(setDescription, 'description')} />
+                <CExoLocStringEditor
+                  value={description}
+                  onChange={onUpdateCExoLocStringField(setDescription, 'description')}
+                />
               </FormField>
               <FormField label="Identified Description" info="Description shown once the item has been identified.">
-                <CExoLocStringEditor value={descIdentified} onChange={onUpdateCExoLocStringField(setDescIdentified, 'descIdentified')} />
+                <CExoLocStringEditor
+                  value={descIdentified}
+                  onChange={onUpdateCExoLocStringField(setDescIdentified, 'descIdentified')}
+                />
               </FormField>
             </tbody>
           </table>
         </>
-      )
+      ),
     },
     {
       id: 'properties',
@@ -270,7 +366,7 @@ export const TabUTIEditor = function(props: BaseTabProps){
       headerTitle: 'Properties',
       content: (
         <>
-          <div style={{marginBottom: '10px'}}>
+          <div style={{ marginBottom: '10px' }}>
             <button className="btn btn-sm btn-primary" onClick={addProperty}>
               <i className="fa-solid fa-plus"></i> Add Property
             </button>
@@ -291,7 +387,9 @@ export const TabUTIEditor = function(props: BaseTabProps){
               <tbody>
                 {properties.length === 0 && (
                   <tr>
-                    <td colSpan={7} style={{textAlign: 'center', fontStyle: 'italic'}}>No properties defined.</td>
+                    <td colSpan={7} style={{ textAlign: 'center', fontStyle: 'italic' }}>
+                      No properties defined.
+                    </td>
                   </tr>
                 )}
                 {properties.map((property, index) => renderPropertyRow(property, index))}
@@ -299,16 +397,9 @@ export const TabUTIEditor = function(props: BaseTabProps){
             </table>
           </div>
         </>
-      )
-    }
+      ),
+    },
   ];
 
-  return (
-    <SubTabHost
-      tabs={tabs}
-      defaultTab="basic"
-      leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />}
-    />
-  );
-}
-
+  return <SubTabHost tabs={tabs} defaultTab="basic" leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />} />;
+};

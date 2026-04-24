@@ -1,5 +1,3 @@
-
-
 export enum ModuleEditorTabNode {
   NA = 0,
   ROOM = 1,

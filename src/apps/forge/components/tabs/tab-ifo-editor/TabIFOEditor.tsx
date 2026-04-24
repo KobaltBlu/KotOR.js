@@ -1,17 +1,17 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from 'react';
 
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import type { GFFFieldValue } from "@/apps/forge/interfaces/GFFFormField";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabIFOEditorState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/components/tabs/tab-ifo-editor/TabIFOEditor.scss";
+import { CExoLocStringEditor } from '@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor';
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
+import type { GFFFieldValue } from '@/apps/forge/interfaces/GFFFormField';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabIFOEditorState } from '@/apps/forge/states/tabs';
+import '@/apps/forge/components/tabs/tab-ifo-editor/TabIFOEditor.scss';
 
 interface BaseTabProps {
   tab: TabIFOEditorState;
 }
 
-export const TabIFOEditor = function(props: BaseTabProps){
+export const TabIFOEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabIFOEditorState;
   const [ifo, setIfo] = useState(tab.ifo);
   const [activeTab, setActiveTab] = useState(tab.activeTab);
@@ -34,12 +34,12 @@ export const TabIFOEditor = function(props: BaseTabProps){
       label: 'File',
       children: [
         { label: 'Save', onClick: () => tab.save() },
-        { label: 'Save As', onClick: () => tab.saveAs() }
-      ]
-    }
+        { label: 'Save As', onClick: () => tab.saveAs() },
+      ],
+    },
   ];
 
-  if(!ifo){
+  if (!ifo) {
     return (
       <div className="forge-ifo-editor">
         <MenuBar items={menuItems} />
@@ -56,34 +56,19 @@ export const TabIFOEditor = function(props: BaseTabProps){
     <div className="forge-ifo-editor">
       <MenuBar items={menuItems} />
       <div className="forge-ifo-editor__tabs">
-        <button
-          className={activeTab === 'basic' ? 'active' : ''}
-          onClick={() => tab.setActiveTab('basic')}
-        >
+        <button className={activeTab === 'basic' ? 'active' : ''} onClick={() => tab.setActiveTab('basic')}>
           Basic
         </button>
-        <button
-          className={activeTab === 'entry' ? 'active' : ''}
-          onClick={() => tab.setActiveTab('entry')}
-        >
+        <button className={activeTab === 'entry' ? 'active' : ''} onClick={() => tab.setActiveTab('entry')}>
           Entry Point
         </button>
-        <button
-          className={activeTab === 'scripts' ? 'active' : ''}
-          onClick={() => tab.setActiveTab('scripts')}
-        >
+        <button className={activeTab === 'scripts' ? 'active' : ''} onClick={() => tab.setActiveTab('scripts')}>
           Scripts
         </button>
-        <button
-          className={activeTab === 'areas' ? 'active' : ''}
-          onClick={() => tab.setActiveTab('areas')}
-        >
+        <button className={activeTab === 'areas' ? 'active' : ''} onClick={() => tab.setActiveTab('areas')}>
           Areas
         </button>
-        <button
-          className={activeTab === 'advanced' ? 'active' : ''}
-          onClick={() => tab.setActiveTab('advanced')}
-        >
+        <button className={activeTab === 'advanced' ? 'active' : ''} onClick={() => tab.setActiveTab('advanced')}>
           Advanced
         </button>
       </div>
@@ -121,11 +106,11 @@ const setRootFieldValue = (
   spec?: RootFieldSpec
 ) => {
   let field = ifo.RootNode.getFieldByLabel(label);
-  if(!field && spec){
+  if (!field && spec) {
     field = ifo.RootNode.addField(new KotOR.GFFField(spec.type, label, spec.defaultValue));
   }
 
-  if(field){
+  if (field) {
     field.setValue(value);
     onUpdate();
   }
@@ -134,15 +119,18 @@ const setRootFieldValue = (
 const formatModIdHex = (ifo: KotOR.GFFObject): string => {
   const field = ifo.RootNode.getFieldByLabel('Mod_ID');
   const bytes = field?.getVoid();
-  if(!bytes || bytes.length === 0){
+  if (!bytes || bytes.length === 0) {
     return '';
   }
 
-  return Array.from(bytes).map((value) => value.toString(16).padStart(2, '0')).join(' ');
+  return Array.from(bytes)
+    .map((value) => value.toString(16).padStart(2, '0'))
+    .join(' ');
 };
 
 const BasicTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => getRootFieldValue(ifo, label, defaultVal);
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue =>
+    getRootFieldValue(ifo, label, defaultVal);
 
   const setFieldValue = (label: string, value: GFFFieldValue, spec?: RootFieldSpec) => {
     setRootFieldValue(ifo, label, value, onUpdate, spec);
@@ -177,25 +165,39 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
         <input
           type="text"
           value={getFieldValue('Mod_Tag')}
-          onChange={(e) => setFieldValue('Mod_Tag', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })}
+          onChange={(e) =>
+            setFieldValue('Mod_Tag', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })
+          }
           placeholder="Module tag..."
         />
         <div className="ifo-inline-actions">
-          <button className="ifo-action-btn" onClick={generateModuleTag}>Generate From Name/VO ID</button>
+          <button className="ifo-action-btn" onClick={generateModuleTag}>
+            Generate From Name/VO ID
+          </button>
         </div>
       </div>
       <div className="property-group">
         <label>Module Name (LocString)</label>
         <CExoLocStringEditor
           value={getLocStringValue('Mod_Name')}
-          onChange={(value) => setFieldValue('Mod_Name', value, { type: KotOR.GFFDataType.CEXOLOCSTRING, defaultValue: new KotOR.CExoLocString() })}
+          onChange={(value) =>
+            setFieldValue('Mod_Name', value, {
+              type: KotOR.GFFDataType.CEXOLOCSTRING,
+              defaultValue: new KotOR.CExoLocString(),
+            })
+          }
         />
       </div>
       <div className="property-group">
         <label>Description (LocString)</label>
         <CExoLocStringEditor
           value={getLocStringValue('Mod_Description')}
-          onChange={(value) => setFieldValue('Mod_Description', value, { type: KotOR.GFFDataType.CEXOLOCSTRING, defaultValue: new KotOR.CExoLocString() })}
+          onChange={(value) =>
+            setFieldValue('Mod_Description', value, {
+              type: KotOR.GFFDataType.CEXOLOCSTRING,
+              defaultValue: new KotOR.CExoLocString(),
+            })
+          }
         />
       </div>
       <div className="property-group">
@@ -203,7 +205,9 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
         <input
           type="text"
           value={getFieldValue('Mod_VO_ID')}
-          onChange={(e) => setFieldValue('Mod_VO_ID', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })}
+          onChange={(e) =>
+            setFieldValue('Mod_VO_ID', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })
+          }
           placeholder="Voice-over ID..."
         />
       </div>
@@ -212,7 +216,9 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
         <input
           type="text"
           value={getFieldValue('Mod_Hak')}
-          onChange={(e) => setFieldValue('Mod_Hak', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })}
+          onChange={(e) =>
+            setFieldValue('Mod_Hak', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })
+          }
           placeholder="HAK file..."
         />
       </div>
@@ -234,7 +240,12 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Creator ID"
             type="number"
             value={getFieldValue('Mod_Creator_ID', 0)}
-            onChange={(e) => setFieldValue('Mod_Creator_ID', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.INT, defaultValue: 0 })}
+            onChange={(e) =>
+              setFieldValue('Mod_Creator_ID', parseInt(e.target.value) || 0, {
+                type: KotOR.GFFDataType.INT,
+                defaultValue: 0,
+              })
+            }
           />
         </div>
         <div className="property-group">
@@ -244,7 +255,12 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Version"
             type="number"
             value={getFieldValue('Mod_Version', 1)}
-            onChange={(e) => setFieldValue('Mod_Version', parseInt(e.target.value) || 1, { type: KotOR.GFFDataType.DWORD, defaultValue: 1 })}
+            onChange={(e) =>
+              setFieldValue('Mod_Version', parseInt(e.target.value) || 1, {
+                type: KotOR.GFFDataType.DWORD,
+                defaultValue: 1,
+              })
+            }
           />
         </div>
       </div>
@@ -253,7 +269,8 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
 };
 
 const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => getRootFieldValue(ifo, label, defaultVal);
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue =>
+    getRootFieldValue(ifo, label, defaultVal);
 
   const setFieldValue = (label: string, value: GFFFieldValue, spec?: RootFieldSpec) => {
     setRootFieldValue(ifo, label, value, onUpdate, spec);
@@ -287,7 +304,9 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
           placeholder="Starting area ResRef..."
           type="text"
           value={getFieldValue('Mod_Entry_Area')}
-          onChange={(e) => setFieldValue('Mod_Entry_Area', e.target.value, { type: KotOR.GFFDataType.RESREF, defaultValue: '' })}
+          onChange={(e) =>
+            setFieldValue('Mod_Entry_Area', e.target.value, { type: KotOR.GFFDataType.RESREF, defaultValue: '' })
+          }
         />
       </div>
       <h4>Position</h4>
@@ -299,7 +318,12 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="X"
             type="number"
             value={getFieldValue('Mod_Entry_X', 0)}
-            onChange={(e) => setFieldValue('Mod_Entry_X', parseFloat(e.target.value) || 0, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 })}
+            onChange={(e) =>
+              setFieldValue('Mod_Entry_X', parseFloat(e.target.value) || 0, {
+                type: KotOR.GFFDataType.FLOAT,
+                defaultValue: 0,
+              })
+            }
             step="0.1"
           />
         </div>
@@ -310,7 +334,12 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Y"
             type="number"
             value={getFieldValue('Mod_Entry_Y', 0)}
-            onChange={(e) => setFieldValue('Mod_Entry_Y', parseFloat(e.target.value) || 0, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 })}
+            onChange={(e) =>
+              setFieldValue('Mod_Entry_Y', parseFloat(e.target.value) || 0, {
+                type: KotOR.GFFDataType.FLOAT,
+                defaultValue: 0,
+              })
+            }
             step="0.1"
           />
         </div>
@@ -321,7 +350,12 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Z"
             type="number"
             value={getFieldValue('Mod_Entry_Z', 0)}
-            onChange={(e) => setFieldValue('Mod_Entry_Z', parseFloat(e.target.value) || 0, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 })}
+            onChange={(e) =>
+              setFieldValue('Mod_Entry_Z', parseFloat(e.target.value) || 0, {
+                type: KotOR.GFFDataType.FLOAT,
+                defaultValue: 0,
+              })
+            }
             step="0.1"
           />
         </div>
@@ -348,7 +382,12 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Dir X"
             type="number"
             value={getFieldValue('Mod_Entry_Dir_X', 0)}
-            onChange={(e) => setFieldValue('Mod_Entry_Dir_X', parseFloat(e.target.value) || 0, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 })}
+            onChange={(e) =>
+              setFieldValue('Mod_Entry_Dir_X', parseFloat(e.target.value) || 0, {
+                type: KotOR.GFFDataType.FLOAT,
+                defaultValue: 0,
+              })
+            }
             step="0.01"
           />
         </div>
@@ -359,7 +398,12 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Dir Y"
             type="number"
             value={getFieldValue('Mod_Entry_Dir_Y', 0)}
-            onChange={(e) => setFieldValue('Mod_Entry_Dir_Y', parseFloat(e.target.value) || 0, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 })}
+            onChange={(e) =>
+              setFieldValue('Mod_Entry_Dir_Y', parseFloat(e.target.value) || 0, {
+                type: KotOR.GFFDataType.FLOAT,
+                defaultValue: 0,
+              })
+            }
             step="0.01"
           />
         </div>
@@ -369,7 +413,8 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
 };
 
 const ScriptsTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => getRootFieldValue(ifo, label, defaultVal);
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue =>
+    getRootFieldValue(ifo, label, defaultVal);
 
   const setFieldValue = (label: string, value: GFFFieldValue) => {
     setRootFieldValue(ifo, label, value, onUpdate, { type: KotOR.GFFDataType.RESREF, defaultValue: '' });
@@ -495,8 +540,16 @@ const AreasTab = ({ ifo, onUpdate: _onUpdate }: TabProps) => {
     <div className="ifo-tab-content">
       <h4>Areas ({areas.length})</h4>
       <div className="ifo-inline-actions">
-        <button className="ifo-action-btn" onClick={addArea}>Add Area</button>
-        <button className="ifo-action-btn ifo-action-btn--danger" onClick={removeSelectedArea} disabled={areas.length === 0}>Remove Selected</button>
+        <button className="ifo-action-btn" onClick={addArea}>
+          Add Area
+        </button>
+        <button
+          className="ifo-action-btn ifo-action-btn--danger"
+          onClick={removeSelectedArea}
+          disabled={areas.length === 0}
+        >
+          Remove Selected
+        </button>
       </div>
       {areas.length === 0 ? (
         <p className="no-data">No areas defined in this module.</p>
@@ -545,7 +598,8 @@ const AreasTab = ({ ifo, onUpdate: _onUpdate }: TabProps) => {
 };
 
 const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => getRootFieldValue(ifo, label, defaultVal);
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue =>
+    getRootFieldValue(ifo, label, defaultVal);
 
   const setFieldValue = (label: string, value: GFFFieldValue, spec?: RootFieldSpec) => {
     setRootFieldValue(ifo, label, value, onUpdate, spec);
@@ -560,7 +614,12 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
           placeholder="Expansion Pack"
           type="number"
           value={getFieldValue('Expansion_Pack', 0)}
-          onChange={(e) => setFieldValue('Expansion_Pack', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.WORD, defaultValue: 0 })}
+          onChange={(e) =>
+            setFieldValue('Expansion_Pack', parseInt(e.target.value) || 0, {
+              type: KotOR.GFFDataType.WORD,
+              defaultValue: 0,
+            })
+          }
         />
       </div>
       <div className="property-group">
@@ -570,7 +629,9 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
           placeholder="e.g. 1.0"
           type="text"
           value={getFieldValue('Mod_MinGameVer')}
-          onChange={(e) => setFieldValue('Mod_MinGameVer', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })}
+          onChange={(e) =>
+            setFieldValue('Mod_MinGameVer', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })
+          }
         />
       </div>
       <div className="property-group">
@@ -580,7 +641,12 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
           placeholder="XP Scale"
           type="number"
           value={getFieldValue('Mod_XPScale', 100)}
-          onChange={(e) => setFieldValue('Mod_XPScale', parseInt(e.target.value) || 100, { type: KotOR.GFFDataType.BYTE, defaultValue: 100 })}
+          onChange={(e) =>
+            setFieldValue('Mod_XPScale', parseInt(e.target.value) || 100, {
+              type: KotOR.GFFDataType.BYTE,
+              defaultValue: 100,
+            })
+          }
           min="0"
         />
       </div>
@@ -591,7 +657,12 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
           placeholder="Minutes Per Hour"
           type="number"
           value={getFieldValue('Mod_MinPerHour', 2)}
-          onChange={(e) => setFieldValue('Mod_MinPerHour', parseInt(e.target.value) || 2, { type: KotOR.GFFDataType.BYTE, defaultValue: 2 })}
+          onChange={(e) =>
+            setFieldValue('Mod_MinPerHour', parseInt(e.target.value) || 2, {
+              type: KotOR.GFFDataType.BYTE,
+              defaultValue: 2,
+            })
+          }
           min="1"
           max="255"
         />
@@ -604,7 +675,12 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Dawn Hour"
             type="number"
             value={getFieldValue('Mod_DawnHour', 6)}
-            onChange={(e) => setFieldValue('Mod_DawnHour', parseInt(e.target.value) || 6, { type: KotOR.GFFDataType.BYTE, defaultValue: 6 })}
+            onChange={(e) =>
+              setFieldValue('Mod_DawnHour', parseInt(e.target.value) || 6, {
+                type: KotOR.GFFDataType.BYTE,
+                defaultValue: 6,
+              })
+            }
             min="0"
             max="23"
           />
@@ -616,7 +692,12 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Dusk Hour"
             type="number"
             value={getFieldValue('Mod_DuskHour', 18)}
-            onChange={(e) => setFieldValue('Mod_DuskHour', parseInt(e.target.value) || 18, { type: KotOR.GFFDataType.BYTE, defaultValue: 18 })}
+            onChange={(e) =>
+              setFieldValue('Mod_DuskHour', parseInt(e.target.value) || 18, {
+                type: KotOR.GFFDataType.BYTE,
+                defaultValue: 18,
+              })
+            }
             min="0"
             max="23"
           />
@@ -630,7 +711,12 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Start Year"
             type="number"
             value={getFieldValue('Mod_StartYear', 0)}
-            onChange={(e) => setFieldValue('Mod_StartYear', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.DWORD, defaultValue: 0 })}
+            onChange={(e) =>
+              setFieldValue('Mod_StartYear', parseInt(e.target.value) || 0, {
+                type: KotOR.GFFDataType.DWORD,
+                defaultValue: 0,
+              })
+            }
             min="0"
           />
         </div>
@@ -641,7 +727,12 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Start Month"
             type="number"
             value={getFieldValue('Mod_StartMonth', 0)}
-            onChange={(e) => setFieldValue('Mod_StartMonth', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.BYTE, defaultValue: 0 })}
+            onChange={(e) =>
+              setFieldValue('Mod_StartMonth', parseInt(e.target.value) || 0, {
+                type: KotOR.GFFDataType.BYTE,
+                defaultValue: 0,
+              })
+            }
             min="0"
             max="12"
           />
@@ -655,7 +746,12 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Start Day"
             type="number"
             value={getFieldValue('Mod_StartDay', 0)}
-            onChange={(e) => setFieldValue('Mod_StartDay', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.BYTE, defaultValue: 0 })}
+            onChange={(e) =>
+              setFieldValue('Mod_StartDay', parseInt(e.target.value) || 0, {
+                type: KotOR.GFFDataType.BYTE,
+                defaultValue: 0,
+              })
+            }
             min="0"
             max="31"
           />
@@ -667,7 +763,12 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
             placeholder="Start Hour"
             type="number"
             value={getFieldValue('Mod_StartHour', 0)}
-            onChange={(e) => setFieldValue('Mod_StartHour', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.BYTE, defaultValue: 0 })}
+            onChange={(e) =>
+              setFieldValue('Mod_StartHour', parseInt(e.target.value) || 0, {
+                type: KotOR.GFFDataType.BYTE,
+                defaultValue: 0,
+              })
+            }
             min="0"
             max="23"
           />
@@ -680,7 +781,9 @@ const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
           placeholder="Movie ResRef..."
           type="text"
           value={getFieldValue('Mod_StartMovie')}
-          onChange={(e) => setFieldValue('Mod_StartMovie', e.target.value, { type: KotOR.GFFDataType.RESREF, defaultValue: '' })}
+          onChange={(e) =>
+            setFieldValue('Mod_StartMovie', e.target.value, { type: KotOR.GFFDataType.RESREF, defaultValue: '' })
+          }
         />
       </div>
     </div>

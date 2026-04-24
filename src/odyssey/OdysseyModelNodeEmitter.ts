@@ -1,14 +1,14 @@
-import { OdysseyModelEmitterFlag } from "@/enums/odyssey/OdysseyModelEmitterFlag";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import { IOdysseyModelEmitterFlags } from "@/interface/odyssey/IOdysseyModelEmitterFlags";
-import type { OdysseyModel } from "@/odyssey/OdysseyModel";
-import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import { OdysseyModelEmitterFlag } from '@/enums/odyssey/OdysseyModelEmitterFlag';
+import { OdysseyModelNodeType } from '@/enums/odyssey/OdysseyModelNodeType';
+import { IOdysseyModelEmitterFlags } from '@/interface/odyssey/IOdysseyModelEmitterFlags';
+import type { OdysseyModel } from '@/odyssey/OdysseyModel';
+import { OdysseyModelNode } from '@/odyssey/OdysseyModelNode';
 
 /**
  * OdysseyModelNodeEmitter class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyModelNodeEmitter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -48,13 +48,13 @@ export class OdysseyModelNodeEmitter extends OdysseyModelNode {
     isDepthTexture: false,
   };
 
-  constructor(parent: OdysseyModelNode){
+  constructor(parent: OdysseyModelNode) {
     super(parent);
     this.type |= OdysseyModelNodeType.Emitter;
     //SIZE: 224 BYTES
   }
 
-  readBinary(odysseyModel: OdysseyModel){
+  readBinary(odysseyModel: OdysseyModel) {
     super.readBinary(odysseyModel);
 
     //angle at which the particle will be culled when aligned with the camera
@@ -72,11 +72,11 @@ export class OdysseyModelNodeEmitter extends OdysseyModelNode {
     this.gridY = this.odysseyModel.mdlReader.readUInt32();
     this.spaceType = this.odysseyModel.mdlReader.readUInt32();
 
-    this.updateMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
-    this.renderMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
-    this.blendMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
-    this.textureResRef = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
-    this.chunkResRef = this.odysseyModel.mdlReader.readChars(16).replace(/\0[\s\S]*$/g,'');
+    this.updateMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g, '');
+    this.renderMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g, '');
+    this.blendMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g, '');
+    this.textureResRef = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g, '');
+    this.chunkResRef = this.odysseyModel.mdlReader.readChars(16).replace(/\0[\s\S]*$/g, '');
 
     this.twoSidedTex = this.odysseyModel.mdlReader.readUInt32();
     this.loop = this.odysseyModel.mdlReader.readUInt32();
@@ -87,17 +87,20 @@ export class OdysseyModelNodeEmitter extends OdysseyModelNode {
 
     this.flags.isP2P = (this.nFlags & OdysseyModelEmitterFlag.P2P) == OdysseyModelEmitterFlag.P2P;
     this.flags.isP2PSel = (this.nFlags & OdysseyModelEmitterFlag.P2P_SEL) == OdysseyModelEmitterFlag.P2P_SEL;
-    this.flags.affectedByWind = (this.nFlags & OdysseyModelEmitterFlag.AFFECTED_WIND) == OdysseyModelEmitterFlag.AFFECTED_WIND;
+    this.flags.affectedByWind =
+      (this.nFlags & OdysseyModelEmitterFlag.AFFECTED_WIND) == OdysseyModelEmitterFlag.AFFECTED_WIND;
     this.flags.isTinted = (this.nFlags & OdysseyModelEmitterFlag.TINTED) == OdysseyModelEmitterFlag.TINTED;
     this.flags.canBounce = (this.nFlags & OdysseyModelEmitterFlag.BOUNCE) == OdysseyModelEmitterFlag.BOUNCE;
     this.flags.isRandom = (this.nFlags & OdysseyModelEmitterFlag.RANDOM) == OdysseyModelEmitterFlag.RANDOM;
     this.flags.canInherit = (this.nFlags & OdysseyModelEmitterFlag.INHERIT) == OdysseyModelEmitterFlag.INHERIT;
-    this.flags.canInheritVelocity = (this.nFlags & OdysseyModelEmitterFlag.INHERIT_VEL) == OdysseyModelEmitterFlag.INHERIT_VEL;
-    this.flags.canInheritLocal = (this.nFlags & OdysseyModelEmitterFlag.INHERIT_LOCAL) == OdysseyModelEmitterFlag.INHERIT_LOCAL;
+    this.flags.canInheritVelocity =
+      (this.nFlags & OdysseyModelEmitterFlag.INHERIT_VEL) == OdysseyModelEmitterFlag.INHERIT_VEL;
+    this.flags.canInheritLocal =
+      (this.nFlags & OdysseyModelEmitterFlag.INHERIT_LOCAL) == OdysseyModelEmitterFlag.INHERIT_LOCAL;
     this.flags.canSplat = (this.nFlags & OdysseyModelEmitterFlag.SPLAT) == OdysseyModelEmitterFlag.SPLAT;
-    this.flags.canInheritPart = (this.nFlags & OdysseyModelEmitterFlag.INHERIT_PART) == OdysseyModelEmitterFlag.INHERIT_PART;
-    this.flags.isDepthTexture = (this.nFlags & OdysseyModelEmitterFlag.DEPTH_TEXTURE) == OdysseyModelEmitterFlag.DEPTH_TEXTURE;
-
+    this.flags.canInheritPart =
+      (this.nFlags & OdysseyModelEmitterFlag.INHERIT_PART) == OdysseyModelEmitterFlag.INHERIT_PART;
+    this.flags.isDepthTexture =
+      (this.nFlags & OdysseyModelEmitterFlag.DEPTH_TEXTURE) == OdysseyModelEmitterFlag.DEPTH_TEXTURE;
   }
-
 }

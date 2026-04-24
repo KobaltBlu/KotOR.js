@@ -7,5 +7,5 @@ export enum EditorControlsTool {
   CAMERA_MOVE = 2001,
   CAMERA_ROTATE = 2002,
 
-  PLACEABLE = 3001
+  PLACEABLE = 3001,
 }

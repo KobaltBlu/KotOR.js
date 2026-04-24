@@ -51,9 +51,5 @@ export const LoadingScreenProvider: React.FC<LoadingScreenProps> = (props) => {
     logoURL: [logoURL, setLogoURL],
   };
 
-  return (
-    <LoadingScreenContext.Provider value={providerValue}>
-      {props.children}
-    </LoadingScreenContext.Provider>
-  );
+  return <LoadingScreenContext.Provider value={providerValue}>{props.children}</LoadingScreenContext.Provider>;
 };

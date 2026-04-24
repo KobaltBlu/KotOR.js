@@ -1,17 +1,17 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabUTEEditorState } from "@/apps/forge/states/tabs/TabUTEEditorState";
-import { EncounterDifficulty } from "@/apps/forge/interfaces/EncounterDifficulty";
-import { CreatureListEntry } from "@/apps/forge/interfaces/CreatureListEntry";
-import * as KotOR from "@/apps/forge/KotOR";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import "@/apps/forge/styles/tabs/tab-ute-editor.scss";
-import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost/SubTabHost";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
+import React, { useEffect, useState, useCallback } from 'react';
+import { BaseTabProps } from '@/apps/forge/interfaces/BaseTabProps';
+import { TabUTEEditorState } from '@/apps/forge/states/tabs/TabUTEEditorState';
+import { EncounterDifficulty } from '@/apps/forge/interfaces/EncounterDifficulty';
+import { CreatureListEntry } from '@/apps/forge/interfaces/CreatureListEntry';
+import * as KotOR from '@/apps/forge/KotOR';
+import { FormField } from '@/apps/forge/components/form-field/FormField';
+import { CExoLocStringEditor } from '@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor';
+import { ForgeCheckbox } from '@/apps/forge/components/forge-checkbox/forge-checkbox';
+import '@/apps/forge/styles/tabs/tab-ute-editor.scss';
+import { SubTab, SubTabHost } from '@/apps/forge/components/SubTabHost/SubTabHost';
+import { ForgeEncounter } from '@/apps/forge/module-editor/ForgeEncounter';
 
-export const TabUTEEditor = function(props: BaseTabProps){
+export const TabUTEEditor = function (props: BaseTabProps) {
   const tab: TabUTEEditorState = props.tab as TabUTEEditorState;
   const [encounterDifficulties, setEncounterDifficulties] = useState<EncounterDifficulty[]>([]);
 
@@ -63,7 +63,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
   }, [tab]);
 
   useEffect(() => {
-    if(!tab) return;
+    if (!tab) return;
     onEncounterChange();
     tab.addEventListener('onEditorFileChange', onEncounterChange);
     tab.addEventListener('onEditorFileLoad', onEncounterChange);
@@ -78,8 +78,11 @@ export const TabUTEEditor = function(props: BaseTabProps){
   }, [tab.encounterDifficulties]);
 
   // Helper functions using ForgeEncounter methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeEncounter, parser: (value: number) => number = (v) => v) =>
-    tab.encounter.createNumberFieldHandler(setter, property, tab.encounter, tab, parser);
+  const onUpdateNumberField = (
+    setter: (value: number) => void,
+    property: keyof ForgeEncounter,
+    parser: (value: number) => number = (v) => v
+  ) => tab.encounter.createNumberFieldHandler(setter, property, tab.encounter, tab, parser);
 
   const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeEncounter) =>
     tab.encounter.createByteFieldHandler(setter, property, tab.encounter, tab);
@@ -124,31 +127,31 @@ export const TabUTEEditor = function(props: BaseTabProps){
       appearance: 0,
       resref: '',
       cr: 0,
-      singleSpawn: false
+      singleSpawn: false,
     };
     const updated = [...creatureList, newCreature];
     setCreatureList(updated);
-    if(!tab) return;
+    if (!tab) return;
     tab.encounter.creatureList = updated;
     tab.updateFile();
-  }
+  };
 
   const onRemoveCreature = (index: number) => {
     const updated = creatureList.filter((_, i) => i !== index);
     setCreatureList(updated);
-    if(!tab) return;
+    if (!tab) return;
     tab.encounter.creatureList = updated;
     tab.updateFile();
-  }
+  };
 
   const onUpdateCreature = (index: number, field: keyof CreatureListEntry, value: any) => {
     const updated = [...creatureList];
     updated[index] = { ...updated[index], [field]: value };
     setCreatureList(updated);
-    if(!tab) return;
+    if (!tab) return;
     tab.encounter.creatureList = updated;
     tab.updateFile();
-  }
+  };
 
   const tabs: SubTab[] = [
     {
@@ -160,22 +163,18 @@ export const TabUTEEditor = function(props: BaseTabProps){
         <>
           <table className="tab-ute-editor__table">
             <tbody>
-              <FormField
-                label="Active"
-                info="Whether this encounter is currently active."
-              >
+              <FormField label="Active" info="Whether this encounter is currently active.">
                 <ForgeCheckbox label="" value={active} onChange={onUpdateForgeCheckboxField(setActive, 'active')} />
               </FormField>
-              <FormField
-                label="Comment"
-                info="Optional comment/notes about this encounter."
-              >
-                <textarea value={comment} onChange={onUpdateCExoStringField(setComment, 'comment')} className="tab-ute-editor__input" rows={2} />
+              <FormField label="Comment" info="Optional comment/notes about this encounter.">
+                <textarea
+                  value={comment}
+                  onChange={onUpdateCExoStringField(setComment, 'comment')}
+                  className="tab-ute-editor__input"
+                  rows={2}
+                />
               </FormField>
-              <FormField
-                label="Name"
-                info="The localized display name for this encounter."
-              >
+              <FormField label="Name" info="The localized display name for this encounter.">
                 <CExoLocStringEditor
                   value={localizedName}
                   onChange={onUpdateCExoLocStringField(setLocalizedName, 'localizedName')}
@@ -185,23 +184,39 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="Tag"
                 info="A unique identifier for this encounter. Used by scripts to reference this specific object."
               >
-                <input type="text" maxLength={32} value={tag} onChange={onUpdateResRefField(setTag, 'tag')} className="tab-ute-editor__input" />
+                <input
+                  type="text"
+                  maxLength={32}
+                  value={tag}
+                  onChange={onUpdateResRefField(setTag, 'tag')}
+                  className="tab-ute-editor__input"
+                />
               </FormField>
-              <FormField
-                label="Difficulty"
-                info="The difficulty level of this encounter."
-              >
-                <select value={difficultyIndex} onChange={(e) => { setDifficultyIndex(Number(e.target.value)); tab.encounter.difficultyIndex = Number(e.target.value); tab.encounter.difficulty = tab.encounterDifficulties[Number(e.target.value)].value; tab.updateFile(); }} className="tab-ute-editor__select">
+              <FormField label="Difficulty" info="The difficulty level of this encounter.">
+                <select
+                  value={difficultyIndex}
+                  onChange={(e) => {
+                    setDifficultyIndex(Number(e.target.value));
+                    tab.encounter.difficultyIndex = Number(e.target.value);
+                    tab.encounter.difficulty = tab.encounterDifficulties[Number(e.target.value)].value;
+                    tab.updateFile();
+                  }}
+                  className="tab-ute-editor__select"
+                >
                   {encounterDifficulties.map((diff, idx) => (
-                    <option key={idx} value={idx}>{diff.label}</option>
+                    <option key={idx} value={idx}>
+                      {diff.label}
+                    </option>
                   ))}
                 </select>
               </FormField>
-              <FormField
-                label="Faction"
-                info="The faction ID that creatures in this encounter belong to."
-              >
-                <input type="number" value={faction} onChange={onUpdateNumberField(setFaction, 'faction')} className="tab-ute-editor__input" />
+              <FormField label="Faction" info="The faction ID that creatures in this encounter belong to.">
+                <input
+                  type="number"
+                  value={faction}
+                  onChange={onUpdateNumberField(setFaction, 'faction')}
+                  className="tab-ute-editor__input"
+                />
               </FormField>
               <FormField
                 label="Max Creatures"
@@ -229,17 +244,23 @@ export const TabUTEEditor = function(props: BaseTabProps){
                   className="tab-ute-editor__input"
                 />
               </FormField>
-              <FormField
-                label="Palette ID"
-                info="The palette ID used for creature spawning appearance."
-              >
-                <input type="number" value={paletteID} onChange={onUpdateByteField(setPaletteID, 'paletteID')} className="tab-ute-editor__input" />
+              <FormField label="Palette ID" info="The palette ID used for creature spawning appearance.">
+                <input
+                  type="number"
+                  value={paletteID}
+                  onChange={onUpdateByteField(setPaletteID, 'paletteID')}
+                  className="tab-ute-editor__input"
+                />
               </FormField>
               <FormField
                 label="Spawn Option"
                 info="0 = Continuous spawn (continuously evaluates and spawns as creatures die). 1 = Single-shot spawn (fires once when hostile creature enters)."
               >
-                <select value={spawnOption} onChange={onUpdateByteField(setSpawnOption, 'spawnOption')} className="tab-ute-editor__select">
+                <select
+                  value={spawnOption}
+                  onChange={onUpdateByteField(setSpawnOption, 'spawnOption')}
+                  className="tab-ute-editor__select"
+                >
                   <option value={0}>Continuous Spawn</option>
                   <option value={1}>Single-Shot Spawn</option>
                 </select>
@@ -257,10 +278,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
                   className="tab-ute-editor__input"
                 />
               </FormField>
-              <FormField
-                label="Reset"
-                info="Whether this encounter resets after all creatures are defeated."
-              >
+              <FormField label="Reset" info="Whether this encounter resets after all creatures are defeated.">
                 <ForgeCheckbox label="" value={reset} onChange={onUpdateForgeCheckboxField(setReset, 'reset')} />
               </FormField>
               <FormField
@@ -280,7 +298,11 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="Player Only"
                 info="Whether this encounter only spawns creatures when the player is nearby."
               >
-                <ForgeCheckbox label="" value={playerOnly} onChange={onUpdateForgeCheckboxField(setPlayerOnly, 'playerOnly')} />
+                <ForgeCheckbox
+                  label=""
+                  value={playerOnly}
+                  onChange={onUpdateForgeCheckboxField(setPlayerOnly, 'playerOnly')}
+                />
               </FormField>
               <FormField
                 label="Template ResRef"
@@ -299,7 +321,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
             </tbody>
           </table>
         </>
-      )
+      ),
     },
     {
       id: 'creatures',
@@ -313,21 +335,20 @@ export const TabUTEEditor = function(props: BaseTabProps){
               <option key={`ute-script-${name}`} value={name} />
             ))}
           </datalist>
-          <table style={{width: '100%'}}>
+          <table style={{ width: '100%' }}>
             <tbody>
               <tr>
                 <td colSpan={2}>
                   <div className="tab-ute-editor__creature-list-header">
                     <strong className="tab-ute-editor__creature-list-label">Creature List</strong>
-                    <button
-                      onClick={onAddCreature}
-                      className="tab-ute-editor__button-add"
-                    >
+                    <button onClick={onAddCreature} className="tab-ute-editor__button-add">
                       Add Creature
                     </button>
                   </div>
                   {creatureList.length === 0 ? (
-                    <div className="tab-ute-editor__creature-list-empty">No creatures in list. Click "Add Creature" to add one.</div>
+                    <div className="tab-ute-editor__creature-list-empty">
+                      No creatures in list. Click "Add Creature" to add one.
+                    </div>
                   ) : (
                     <table className="tab-ute-editor__creature-table">
                       <thead>
@@ -377,10 +398,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
                               />
                             </td>
                             <td>
-                              <button
-                                onClick={() => onRemoveCreature(index)}
-                                className="tab-ute-editor__button-remove"
-                              >
+                              <button onClick={() => onRemoveCreature(index)} className="tab-ute-editor__button-remove">
                                 Remove
                               </button>
                             </td>
@@ -394,7 +412,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
             </tbody>
           </table>
         </>
-      )
+      ),
     },
     {
       id: 'scripts',
@@ -403,7 +421,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
       headerTitle: 'Scripts',
       content: (
         <>
-          <table style={{width: '100%'}}>
+          <table style={{ width: '100%' }}>
             <tbody>
               <FormField
                 label="OnEntered"
@@ -478,17 +496,13 @@ export const TabUTEEditor = function(props: BaseTabProps){
             </tbody>
           </table>
         </>
-      )
-    }
+      ),
+    },
   ];
 
   return (
     <>
-      <SubTabHost
-        tabs={tabs}
-        defaultTab="basic"
-      />
+      <SubTabHost tabs={tabs} defaultTab="basic" />
     </>
   );
 };
-               

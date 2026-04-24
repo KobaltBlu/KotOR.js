@@ -1,5 +1,5 @@
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel } from '@/gui';
 
 /**
  * MenuDebug class.
@@ -11,11 +11,10 @@ import type { GUIListBox, GUILabel } from "@/gui";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuDebug extends GameMenu {
-
   LB_OPTIONS: GUIListBox;
   LBL_BUILD: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'debug';
     this.background = '';
@@ -24,10 +23,9 @@ export class MenuDebug extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       resolve();
     });
-}
-
+  }
 }

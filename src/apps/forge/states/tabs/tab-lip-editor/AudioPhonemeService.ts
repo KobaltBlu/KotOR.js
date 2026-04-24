@@ -1,4 +1,4 @@
-import { TimedPhoneme, TimedPhonemeResult } from "@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
+import { TimedPhoneme, TimedPhonemeResult } from '@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape';
 
 export interface AudioPhonemeService {
   extractTimedPhonemes(audio: AudioBuffer): Promise<TimedPhonemeResult>;
@@ -6,14 +6,8 @@ export interface AudioPhonemeService {
 
 // ── Goertzel single-bin power ─────────────────────────────────────────────────
 
-function goertzelPower(
-  samples: Float32Array,
-  start: number,
-  len: number,
-  freq: number,
-  sampleRate: number,
-): number {
-  const k     = Math.round(len * freq / sampleRate);
+function goertzelPower(samples: Float32Array, start: number, len: number, freq: number, sampleRate: number): number {
+  const k = Math.round((len * freq) / sampleRate);
   const coeff = 2 * Math.cos((2 * Math.PI * k) / len);
   let s1 = 0;
   let s2 = 0;
@@ -35,11 +29,11 @@ function goertzelPower(
 //  FRIC    [10]     5000 Hz      Fricatives (f/v/th/s)
 //  SIBL    [11]     7500 Hz      Sibilants (s/z/sh)
 //
-const BANDS   = [125, 250, 375, 500, 750, 1000, 1500, 2000, 2500, 3500, 5000, 7500];
-const F1L_END = 3;   // bands 0..2
-const F1M_END = 6;   // bands 3..5
-const F1H_END = 8;   // bands 6..7
-const F2F_END = 10;  // bands 8..9
+const BANDS = [125, 250, 375, 500, 750, 1000, 1500, 2000, 2500, 3500, 5000, 7500];
+const F1L_END = 3; // bands 0..2
+const F1M_END = 6; // bands 3..5
+const F1H_END = 8; // bands 6..7
+const F2F_END = 10; // bands 8..9
 
 // ── Per-frame features ────────────────────────────────────────────────────────
 
@@ -48,9 +42,9 @@ interface Frame {
   endSec: number;
   rms: number;
   zcr: number;
-  b: number[];     // normalised Goertzel band energies
+  b: number[]; // normalised Goertzel band energies
   flux: number;
-  onset: number;   // positive energy derivative
+  onset: number; // positive energy derivative
 }
 
 // ── Viseme classifier ─────────────────────────────────────────────────────────
@@ -61,53 +55,53 @@ interface Frame {
 //                 close vowels → liquids → schwa
 
 function classifyViseme(f: Frame, maxRms: number): string {
-  const b    = f.b;
+  const b = f.b;
   const nRms = f.rms / Math.max(maxRms, 1e-10);
-  const zcr  = f.zcr;
+  const zcr = f.zcr;
 
-  const f1Low   = b[0] + b[1] + b[2];
-  const f1Mid   = b[3] + b[4] + b[5];
-  const f1High  = b[6] + b[7];
+  const f1Low = b[0] + b[1] + b[2];
+  const f1Mid = b[3] + b[4] + b[5];
+  const f1High = b[6] + b[7];
   const f2Front = b[8] + b[9];
-  const fric    = b[10];
-  const sibl    = b[11];
+  const fric = b[10];
+  const sibl = b[11];
   const highFreq = f2Front + fric + sibl;
 
   // ── Fricatives ────────────────────────────────────────────────────────────
-  if (sibl + fric > 0.42 && zcr > 0.18) return "s";
-  if (highFreq > 0.58 && zcr > 0.15)    return "S";
-  if (highFreq > 0.45 && zcr > 0.12)    return "f";
-  if (highFreq > 0.32 && zcr > 0.10)    return "T";
+  if (sibl + fric > 0.42 && zcr > 0.18) return 's';
+  if (highFreq > 0.58 && zcr > 0.15) return 'S';
+  if (highFreq > 0.45 && zcr > 0.12) return 'f';
+  if (highFreq > 0.32 && zcr > 0.1) return 'T';
 
   // ── Nasals ────────────────────────────────────────────────────────────────
-  if (nRms < 0.38 && zcr < 0.07 && f1Low + f1Mid > 0.62) return "m";
-  if (nRms < 0.50 && zcr < 0.09 && f1Low + f1Mid > 0.55) return "n";
+  if (nRms < 0.38 && zcr < 0.07 && f1Low + f1Mid > 0.62) return 'm';
+  if (nRms < 0.5 && zcr < 0.09 && f1Low + f1Mid > 0.55) return 'n';
 
   // ── Open vowels (high F1 = jaw wide open) ─────────────────────────────────
-  if (zcr < 0.14 && f1High > 0.28 && f2Front < 0.30 && nRms > 0.40) return "A";
-  if (zcr < 0.14 && f1High > 0.24 && f2Front > 0.28 && nRms > 0.35) return "E";
+  if (zcr < 0.14 && f1High > 0.28 && f2Front < 0.3 && nRms > 0.4) return 'A';
+  if (zcr < 0.14 && f1High > 0.24 && f2Front > 0.28 && nRms > 0.35) return 'E';
 
   // ── Mid vowels ────────────────────────────────────────────────────────────
-  if (zcr < 0.14 && f1Mid > 0.32 && f2Front < 0.28 && nRms > 0.30) return "U";
-  if (zcr < 0.14 && f1Mid > 0.28 && f2Front > 0.32 && nRms > 0.28) return "E";
+  if (zcr < 0.14 && f1Mid > 0.32 && f2Front < 0.28 && nRms > 0.3) return 'U';
+  if (zcr < 0.14 && f1Mid > 0.28 && f2Front > 0.32 && nRms > 0.28) return 'E';
 
   // ── Close vowels ──────────────────────────────────────────────────────────
-  if (zcr < 0.12 && f1Low > 0.38 && f2Front > 0.32) return "i:";
-  if (zcr < 0.12 && f1Low > 0.35 && f2Front < 0.25) return "u";
+  if (zcr < 0.12 && f1Low > 0.38 && f2Front > 0.32) return 'i:';
+  if (zcr < 0.12 && f1Low > 0.35 && f2Front < 0.25) return 'u';
 
   // ── Semivowels / liquids ──────────────────────────────────────────────────
-  if (zcr < 0.10 && f1Low + f1Mid > 0.52 && nRms > 0.20) return "w";
-  if (zcr < 0.10 && f1Mid > 0.22 && f2Front > 0.25)      return "l";
-  if (zcr < 0.14 && f2Front > 0.42)                       return "j";
+  if (zcr < 0.1 && f1Low + f1Mid > 0.52 && nRms > 0.2) return 'w';
+  if (zcr < 0.1 && f1Mid > 0.22 && f2Front > 0.25) return 'l';
+  if (zcr < 0.14 && f2Front > 0.42) return 'j';
 
-  return ">";
+  return '>';
 }
 
 // ── Adaptive noise floor ──────────────────────────────────────────────────────
 
 function adaptiveNoiseFloor(rmsValues: number[]): number {
   const sorted = [...rmsValues].sort((a, b) => a - b);
-  const idx    = Math.max(0, Math.floor(sorted.length * 0.10));
+  const idx = Math.max(0, Math.floor(sorted.length * 0.1));
   return sorted[idx] ?? 0;
 }
 
@@ -124,8 +118,13 @@ function smoothLabels(raw: (string | null)[], halfWin: number): (string | null)[
         votes.set(v, (votes.get(v) ?? 0) + 1);
       }
     }
-    let best = raw[i]!, bestCt = 0;
-    for (const [lbl, ct] of votes) if (ct > bestCt) { bestCt = ct; best = lbl; }
+    let best = raw[i]!,
+      bestCt = 0;
+    for (const [lbl, ct] of votes)
+      if (ct > bestCt) {
+        bestCt = ct;
+        best = lbl;
+      }
     return best;
   });
 }
@@ -162,11 +161,11 @@ function smoothLabels(raw: (string | null)[], halfWin: number): (string | null)[
  */
 export class EnergyWindowPhonemeService implements AudioPhonemeService {
   async extractTimedPhonemes(audio: AudioBuffer): Promise<TimedPhonemeResult> {
-    const sr      = audio.sampleRate;
+    const sr = audio.sampleRate;
     const frameMs = 20;
-    const hopMs   = 5;
-    const frameN  = Math.max(1, Math.round(sr * frameMs / 1000));
-    const hopN    = Math.max(1, Math.round(sr * hopMs   / 1000));
+    const hopMs = 5;
+    const frameN = Math.max(1, Math.round((sr * frameMs) / 1000));
+    const hopN = Math.max(1, Math.round((sr * hopMs) / 1000));
 
     // ── 1. Mono mix ───────────────────────────────────────────────
     const mono = new Float32Array(audio.length);
@@ -181,14 +180,14 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
     // ── 3. Feature extraction ─────────────────────────────────────
     const frames: Frame[] = [];
     const rmsArr: number[] = [];
-    let maxRms   = 0;
+    let maxRms = 0;
     let prevNorm = new Array<number>(BANDS.length).fill(1 / BANDS.length);
-    let prevRms  = 0;
+    let prevRms = 0;
 
     for (let i = 0; i + frameN <= mono.length; i += hopN) {
       let sumSq = 0;
-      let zc    = 0;
-      let prev  = mono[i] || 0;
+      let zc = 0;
+      let prev = mono[i] || 0;
       for (let j = i; j < i + frameN; j++) {
         const s = mono[j];
         sumSq += s * s;
@@ -200,9 +199,9 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
       if (rms > maxRms) maxRms = rms;
       rmsArr.push(rms);
 
-      const rawB = BANDS.map(f => goertzelPower(mono, i, frameN, f, sr));
-      const tot  = rawB.reduce((a, v) => a + v, 0) || 1e-10;
-      const b    = rawB.map(v => v / tot);
+      const rawB = BANDS.map((f) => goertzelPower(mono, i, frameN, f, sr));
+      const tot = rawB.reduce((a, v) => a + v, 0) || 1e-10;
+      const b = rawB.map((v) => v / tot);
 
       let flux = 0;
       for (let k = 0; k < b.length; k++) flux += Math.abs(b[k] - prevNorm[k]);
@@ -215,26 +214,24 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
     }
 
     if (!frames.length || maxRms < 1e-6) {
-      return { source: "auto", engine: "energy-window-v4", items: [] };
+      return { source: 'auto', engine: 'energy-window-v4', items: [] };
     }
 
     // ── 4. Adaptive noise floor + VAD ────────────────────────────
     const noiseFloor = adaptiveNoiseFloor(rmsArr);
-    const onThresh   = Math.max(noiseFloor * 4.0, maxRms * 0.03);
-    const offThresh  = Math.max(noiseFloor * 2.5, maxRms * 0.02);
+    const onThresh = Math.max(noiseFloor * 4.0, maxRms * 0.03);
+    const offThresh = Math.max(noiseFloor * 2.5, maxRms * 0.02);
 
     const voiced = new Array<boolean>(frames.length).fill(false);
-    let active   = false;
+    let active = false;
     for (let i = 0; i < frames.length; i++) {
-      if (!active && frames[i].rms >= onThresh)   active = true;
+      if (!active && frames[i].rms >= onThresh) active = true;
       else if (active && frames[i].rms < offThresh) active = false;
       voiced[i] = active;
     }
 
     // ── 5 & 6. Per-frame labels + majority-vote smoothing ─────────
-    const rawLabels: (string | null)[] = frames.map((f, i) =>
-      voiced[i] ? classifyViseme(f, maxRms) : null
-    );
+    const rawLabels: (string | null)[] = frames.map((f, i) => (voiced[i] ? classifyViseme(f, maxRms) : null));
     const labels = smoothLabels(rawLabels, 2);
 
     // ── 7. Syllable peak detection ───────────────────────────────
@@ -243,10 +240,14 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
     // Each peak = one syllable nucleus = one guaranteed keyframe boundary.
     const smoothWin = Math.round(20 / hopMs); // 20 ms smoothing window
     const smoothedRms = frames.map((_, i) => {
-      let sum = 0; let cnt = 0;
+      let sum = 0;
+      let cnt = 0;
       for (let d = -smoothWin; d <= smoothWin; d++) {
         const j = i + d;
-        if (j >= 0 && j < frames.length) { sum += frames[j].rms; cnt++; }
+        if (j >= 0 && j < frames.length) {
+          sum += frames[j].rms;
+          cnt++;
+        }
       }
       return sum / cnt;
     });
@@ -259,7 +260,10 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
       if (smoothedRms[i] < maxRms * 0.08) continue;
       let isPeak = true;
       for (let d = -peakWin; d <= peakWin; d++) {
-        if (d !== 0 && smoothedRms[i + d] > smoothedRms[i]) { isPeak = false; break; }
+        if (d !== 0 && smoothedRms[i + d] > smoothedRms[i]) {
+          isPeak = false;
+          break;
+        }
       }
       if (isPeak) allPeakCandidates.push({ idx: i, rms: smoothedRms[i] });
     }
@@ -272,26 +276,29 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
     for (const cand of allPeakCandidates) {
       let tooClose = false;
       for (const sel of syllablePeaks) {
-        if (Math.abs(cand.idx - sel) < minPeakDist) { tooClose = true; break; }
+        if (Math.abs(cand.idx - sel) < minPeakDist) {
+          tooClose = true;
+          break;
+        }
       }
       if (!tooClose) syllablePeaks.add(cand.idx);
     }
 
     // ── 8. Onset + flux peak detection ────────────────────────────
     const maxOnset = frames.reduce((m, f) => Math.max(m, f.onset), 1e-10);
-    const maxFlux  = frames.reduce((m, f) => Math.max(m, f.flux),  1e-10);
-    const onsetTh  = maxOnset * 0.15;
-    const fluxTh   = maxFlux  * 0.22;
+    const maxFlux = frames.reduce((m, f) => Math.max(m, f.flux), 1e-10);
+    const onsetTh = maxOnset * 0.15;
+    const fluxTh = maxFlux * 0.22;
 
     const onsetPeaks = new Set<number>();
     for (let i = 1; i < frames.length - 1; i++) {
       if (!voiced[i]) continue;
-      const isEnergyPeak = frames[i].onset > onsetTh &&
-                           frames[i].onset >= frames[i - 1].onset &&
-                           frames[i].onset >= (frames[i + 1]?.onset ?? 0);
-      const isFluxPeak   = frames[i].flux > fluxTh &&
-                           frames[i].flux >= frames[i - 1].flux &&
-                           frames[i].flux >= (frames[i + 1]?.flux ?? 0);
+      const isEnergyPeak =
+        frames[i].onset > onsetTh &&
+        frames[i].onset >= frames[i - 1].onset &&
+        frames[i].onset >= (frames[i + 1]?.onset ?? 0);
+      const isFluxPeak =
+        frames[i].flux > fluxTh && frames[i].flux >= frames[i - 1].flux && frames[i].flux >= (frames[i + 1]?.flux ?? 0);
       if (isEnergyPeak || isFluxPeak) onsetPeaks.add(i);
     }
 
@@ -306,8 +313,7 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
     for (const p of syllablePeaks) splitSet.add(p);
     for (const p of onsetPeaks) splitSet.add(p);
 
-    const boundaries = [...new Set([0, ...splitSet, frames.length])]
-      .sort((a, b) => a - b);
+    const boundaries = [...new Set([0, ...splitSet, frames.length])].sort((a, b) => a - b);
 
     interface Segment {
       startIdx: number;
@@ -319,7 +325,7 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
     const rawSegments: Segment[] = [];
     for (let s = 0; s < boundaries.length - 1; s++) {
       const startIdx = boundaries[s];
-      const endIdx   = boundaries[s + 1] - 1;
+      const endIdx = boundaries[s + 1] - 1;
       if (endIdx < startIdx) continue;
 
       const votes = new Map<string, number>();
@@ -335,7 +341,11 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
 
       let label: string | null = null;
       let topVotes = 0;
-      for (const [lbl, ct] of votes) if (ct > topVotes) { topVotes = ct; label = lbl; }
+      for (const [lbl, ct] of votes)
+        if (ct > topVotes) {
+          topVotes = ct;
+          label = lbl;
+        }
 
       const total = endIdx - startIdx + 1;
       if (voicedCt < total * 0.3) label = null;
@@ -348,16 +358,12 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
     // boundaries that should not be collapsed even on identical labels.
     const merged: Segment[] = [];
     for (const seg of rawSegments) {
-      const hasPeak = [...syllablePeaks].some(
-        p => p >= seg.startIdx && p <= seg.endIdx,
-      );
+      const hasPeak = [...syllablePeaks].some((p) => p >= seg.startIdx && p <= seg.endIdx);
       const prev = merged.length ? merged[merged.length - 1] : null;
-      const prevHasPeak = prev
-        ? [...syllablePeaks].some(p => p >= prev.startIdx && p <= prev.endIdx)
-        : false;
+      const prevHasPeak = prev ? [...syllablePeaks].some((p) => p >= prev.startIdx && p <= prev.endIdx) : false;
 
       if (prev && prev.label === seg.label && !hasPeak && !prevHasPeak) {
-        prev.endIdx  = seg.endIdx;
+        prev.endIdx = seg.endIdx;
         prev.peakRms = Math.max(prev.peakRms, seg.peakRms);
       } else {
         merged.push({ ...seg });
@@ -371,9 +377,9 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
       if (!seg.label) continue;
       if (seg.endIdx - seg.startIdx + 1 < minDurFrames) continue;
       rawItems.push({
-        symbol:     seg.label,
-        startSec:   frames[seg.startIdx].startSec,
-        endSec:     frames[seg.endIdx].endSec,
+        symbol: seg.label,
+        startSec: frames[seg.startIdx].startSec,
+        endSec: frames[seg.endIdx].endSec,
         confidence: Math.min(1, seg.peakRms / Math.max(maxRms, 1e-10)),
       });
     }
@@ -389,9 +395,9 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
         const gap = rawItems[i].startSec - rawItems[i - 1].endSec;
         if (gap >= gapMinSec) {
           withGaps.push({
-            symbol:     "m",
-            startSec:   rawItems[i - 1].endSec,
-            endSec:     rawItems[i].startSec,
+            symbol: 'm',
+            startSec: rawItems[i - 1].endSec,
+            endSec: rawItems[i].startSec,
             confidence: 1,
           });
         }
@@ -401,14 +407,14 @@ export class EnergyWindowPhonemeService implements AudioPhonemeService {
 
     // ── 13. Final filter ──────────────────────────────────────────
     const minDurSec = 0.025;
-    const filtered  = withGaps
-      .filter(it => (it.endSec - it.startSec) >= minDurSec)
-      .map(it => ({
+    const filtered = withGaps
+      .filter((it) => it.endSec - it.startSec >= minDurSec)
+      .map((it) => ({
         ...it,
         startSec: Math.max(0, it.startSec),
-        endSec:   Math.min(audio.duration, it.endSec),
+        endSec: Math.min(audio.duration, it.endSec),
       }));
 
-    return { source: "auto", engine: "energy-window-v4", items: filtered };
+    return { source: 'auto', engine: 'energy-window-v4', items: filtered };
   }
 }

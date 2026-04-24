@@ -1,4 +1,4 @@
-import { TabState } from "@/apps/forge/states/tabs";
+import { TabState } from '@/apps/forge/states/tabs';
 
 export const WIKI_BASE_URL = 'https://github.com/KobaltBlu/KotOR.js/wiki/';
 
@@ -34,10 +34,10 @@ export const EDITOR_WIKI_MAP_BY_TAB: Record<string, string | null> = {
   TabModelViewerState: 'MDL-MDX-File-Format.md',
   TabBinaryViewerState: null,
   TabReferenceFinderState: null,
-  TabScriptFindReferencesState: "Script-Find-References.md",
+  TabScriptFindReferencesState: 'Script-Find-References.md',
   TabHelpState: null,
   TabQuickStartState: null,
-  TabGUIEditorState: "LYT-File-Format.md",
+  TabGUIEditorState: 'LYT-File-Format.md',
 };
 
 export const EDITOR_WIKI_MAP_BY_EXTENSION: Record<string, string | null> = {
@@ -79,15 +79,15 @@ export const EDITOR_WIKI_MAP_BY_EXTENSION: Record<string, string | null> = {
 };
 
 export function getWikiDocForTab(tab?: TabState): string | null {
-  if(!tab) return null;
+  if (!tab) return null;
   const tabType = tab.constructor.name;
   const mappedByTab = EDITOR_WIKI_MAP_BY_TAB[tabType];
-  if(mappedByTab){
+  if (mappedByTab) {
     return mappedByTab;
   }
 
   const ext = tab.file?.ext?.toLowerCase?.();
-  if(ext && Object.hasOwn(EDITOR_WIKI_MAP_BY_EXTENSION, ext)){
+  if (ext && Object.hasOwn(EDITOR_WIKI_MAP_BY_EXTENSION, ext)) {
     return EDITOR_WIKI_MAP_BY_EXTENSION[ext];
   }
 
@@ -96,6 +96,6 @@ export function getWikiDocForTab(tab?: TabState): string | null {
 
 export function getWikiDocUrlForTab(tab?: TabState): string | null {
   const doc = getWikiDocForTab(tab);
-  if(!doc) return null;
+  if (!doc) return null;
   return `${WIKI_BASE_URL}${doc.replace(/\s/g, '-')}`;
 }

@@ -1,23 +1,23 @@
-﻿import ReactDOM from "react-dom/client";
-import React from "react";
-import * as KotOR from "@/apps/game/KotOR";
-import { AppProvider } from "@/apps/game/context/AppContext";
-import { GameApp } from "@/apps/game/app";
-import "@/apps/game/app.scss";
+﻿import ReactDOM from 'react-dom/client';
+import React from 'react';
+import * as KotOR from '@/apps/game/KotOR';
+import { AppProvider } from '@/apps/game/context/AppContext';
+import { GameApp } from '@/apps/game/app';
+import '@/apps/game/app.scss';
 
 window.addEventListener('beforeunload', (e) => {
-  try{
+  try {
     KotOR.GameState.Debugger.close();
-  }catch(e){
+  } catch (e) {
     console.error(e);
   }
 });
 
 window.addEventListener('DOMContentLoaded', () => {
-  ( async () => {
-    const container = document.getElementById("root");
+  (async () => {
+    const container = document.getElementById('root');
     if (!container) {
-      console.error("[Game] Root element #root not found; cannot mount React app.");
+      console.error('[Game] Root element #root not found; cannot mount React app.');
       return;
     }
     const root = ReactDOM.createRoot(container);
@@ -30,5 +30,3 @@ window.addEventListener('DOMContentLoaded', () => {
     );
   })();
 });
-
-

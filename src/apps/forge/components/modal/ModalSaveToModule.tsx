@@ -1,24 +1,23 @@
-import React, { useEffect, useState } from "react";
-import { Modal, Button, Form } from "react-bootstrap";
+import React, { useEffect, useState } from 'react';
+import { Modal, Button, Form } from 'react-bootstrap';
 
-import { SaveDestination } from "@/apps/forge/enum/SaveDestination";
-import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
-import { saveResourceToOverride } from "@/apps/forge/helpers/SaveToOverride";
-import { saveResourceToRim } from "@/apps/forge/helpers/SaveToRim";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ModalSaveToModuleState } from "@/apps/forge/states/modal/ModalSaveToModuleState";
-
+import { SaveDestination } from '@/apps/forge/enum/SaveDestination';
+import { ForgeFileSystem } from '@/apps/forge/ForgeFileSystem';
+import { saveResourceToOverride } from '@/apps/forge/helpers/SaveToOverride';
+import { saveResourceToRim } from '@/apps/forge/helpers/SaveToRim';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import * as KotOR from '@/apps/forge/KotOR';
+import { ModalSaveToModuleState } from '@/apps/forge/states/modal/ModalSaveToModuleState';
 
 export const ModalSaveToModule = (props: BaseModalProps) => {
   const modal = props.modal as ModalSaveToModuleState;
   const [show, setShow] = useState(modal.visible);
-  const [modPath, setModPath] = useState("");
+  const [modPath, setModPath] = useState('');
   const [overridePath, setOverridePath] = useState(modal.overridePath);
   const [rimPath, setRimPath] = useState(modal.rimPath);
-  const [resref, setResref] = useState("");
+  const [resref, setResref] = useState('');
   const [destination, setDestination] = useState(modal.destination);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const refresh = () => {
@@ -39,20 +38,20 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
 
   useEffect(() => {
     const onStateChange = () => refresh();
-    modal.addEventListener("onHide", onHide);
-    modal.addEventListener("onShow", onShow);
-    modal.addEventListener("onStateChange", onStateChange);
+    modal.addEventListener('onHide', onHide);
+    modal.addEventListener('onShow', onShow);
+    modal.addEventListener('onStateChange', onStateChange);
     return () => {
-      modal.removeEventListener("onHide", onHide);
-      modal.removeEventListener("onShow", onShow);
-      modal.removeEventListener("onStateChange", onStateChange);
+      modal.removeEventListener('onHide', onHide);
+      modal.removeEventListener('onShow', onShow);
+      modal.removeEventListener('onStateChange', onStateChange);
     };
   }, [modal]);
 
   const handleClose = () => modal.close();
 
   const handleBrowse = async () => {
-    const response = await ForgeFileSystem.OpenFile({ ext: [".mod"] });
+    const response = await ForgeFileSystem.OpenFile({ ext: ['.mod'] });
     if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
       if (response.paths && response.paths.length > 0) {
         modal.setModPath(response.paths[0]);
@@ -69,25 +68,34 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
         modal.setModBuffer(buf);
       }
     }
-    modal.setError("");
-    setError("");
+    modal.setError('');
+    setError('');
   };
 
   const handleBrowseOverride = async () => {
     if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
-      const dialog = (window as Window & { dialog?: { showOpenDialog: (opts: { title?: string; properties?: string[] }) => Promise<{ canceled?: boolean; filePaths?: string[] }> } }).dialog;
+      const dialog = (
+        window as Window & {
+          dialog?: {
+            showOpenDialog: (opts: {
+              title?: string;
+              properties?: string[];
+            }) => Promise<{ canceled?: boolean; filePaths?: string[] }>;
+          };
+        }
+      ).dialog;
       if (!dialog?.showOpenDialog) return;
       const result = await dialog.showOpenDialog({
-        title: "Choose Override folder",
-        properties: ["openDirectory", "createDirectory"],
+        title: 'Choose Override folder',
+        properties: ['openDirectory', 'createDirectory'],
       });
       if (result?.canceled || !result?.filePaths?.length) return;
       modal.setOverridePath(result.filePaths[0]);
       modal.setOverrideDirHandle(undefined);
       setOverridePath(result.filePaths[0]);
-    } else if (typeof window?.showDirectoryPicker === "function") {
+    } else if (typeof window?.showDirectoryPicker === 'function') {
       try {
-        const handle = await window.showDirectoryPicker({ mode: "readwrite" });
+        const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
         modal.setOverridePath(handle.name);
         modal.setOverrideDirHandle(handle);
         setOverridePath(handle.name);
@@ -95,43 +103,53 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
         return;
       }
     }
-    modal.setError("");
-    setError("");
+    modal.setError('');
+    setError('');
   };
 
   const handleBrowseRim = async () => {
     if (KotOR.ApplicationProfile.ENV !== KotOR.ApplicationEnvironment.ELECTRON) {
-      modal.setError("Save to RIM requires Electron.");
+      modal.setError('Save to RIM requires Electron.');
       return;
     }
-    const dialog = (window as Window & { dialog?: { showSaveDialog: (opts: { title?: string; defaultPath?: string; filters?: { name: string; extensions: string[] }[] }) => Promise<{ canceled?: boolean; filePath?: string }> } }).dialog;
+    const dialog = (
+      window as Window & {
+        dialog?: {
+          showSaveDialog: (opts: {
+            title?: string;
+            defaultPath?: string;
+            filters?: { name: string; extensions: string[] }[];
+          }) => Promise<{ canceled?: boolean; filePath?: string }>;
+        };
+      }
+    ).dialog;
     if (!dialog?.showSaveDialog) return;
     const result = await dialog.showSaveDialog({
-      title: "Save as RIM",
-      defaultPath: `${modal.resref || "resource"}.rim`,
-      filters: [{ name: "RIM", extensions: ["rim"] }],
+      title: 'Save as RIM',
+      defaultPath: `${modal.resref || 'resource'}.rim`,
+      filters: [{ name: 'RIM', extensions: ['rim'] }],
     });
     if (result?.canceled || !result?.filePath) return;
     modal.setRimPath(result.filePath);
     setRimPath(result.filePath);
-    modal.setError("");
-    setError("");
+    modal.setError('');
+    setError('');
   };
 
   const handleSave = async () => {
     const targetResref = resref.trim() || modal.resref;
     if (!targetResref) {
-      modal.setError("ResRef is required.");
+      modal.setError('ResRef is required.');
       return;
     }
     if (modal.destination === SaveDestination.RIM) {
       const outPath = rimPath.trim() || modal.rimPath;
       if (!outPath) {
-        modal.setError("Choose a RIM output file (Browse).");
+        modal.setError('Choose a RIM output file (Browse).');
         return;
       }
       setSaving(true);
-      modal.setError("");
+      modal.setError('');
       try {
         const writtenPath = await saveResourceToRim({
           resref: targetResref,
@@ -142,7 +160,7 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
         if (modal.onSaved) modal.onSaved(writtenPath);
         modal.close();
       } catch (e: unknown) {
-        modal.setError(e instanceof Error ? e.message : "Save to RIM failed.");
+        modal.setError(e instanceof Error ? e.message : 'Save to RIM failed.');
         setError(modal.error);
       }
       setSaving(false);
@@ -150,13 +168,13 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
     }
     if (modal.destination === SaveDestination.Override) {
       setSaving(true);
-      modal.setError("");
+      modal.setError('');
       const dirHandle = modal.overrideDirHandle;
       let outputDir = overridePath.trim() || modal.overridePath;
       if (!outputDir && !dirHandle && KotOR.ApplicationProfile.directory) {
         try {
-          const pathMod = await import("path");
-          outputDir = pathMod.join(KotOR.ApplicationProfile.directory, "Override");
+          const pathMod = await import('path');
+          outputDir = pathMod.join(KotOR.ApplicationProfile.directory, 'Override');
         } catch {
           outputDir = `${KotOR.ApplicationProfile.directory}/Override`;
         }
@@ -164,7 +182,9 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
         setOverridePath(outputDir);
       }
       if (!outputDir && !dirHandle) {
-        modal.setError("Choose the game Override folder (Browse) or set the game directory first (File → Change Game).");
+        modal.setError(
+          'Choose the game Override folder (Browse) or set the game directory first (File → Change Game).'
+        );
         setSaving(false);
         return;
       }
@@ -179,23 +199,23 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
         if (modal.onSaved) modal.onSaved(writtenPath);
         modal.close();
       } catch (e: unknown) {
-        modal.setError(e instanceof Error ? e.message : "Save to Override failed.");
+        modal.setError(e instanceof Error ? e.message : 'Save to Override failed.');
         setError(modal.error);
       }
       setSaving(false);
       return;
     }
     if (!modal.modBuffer || modal.modBuffer.length < 4) {
-      modal.setError("Select a MOD file first.");
+      modal.setError('Select a MOD file first.');
       return;
     }
     const sig = String.fromCharCode(modal.modBuffer[0], modal.modBuffer[1], modal.modBuffer[2], modal.modBuffer[3]);
-    if (sig !== "MOD " && sig !== "ERF ") {
-      modal.setError("Selected file is not a valid MOD/ERF.");
+    if (sig !== 'MOD ' && sig !== 'ERF ') {
+      modal.setError('Selected file is not a valid MOD/ERF.');
       return;
     }
     setSaving(true);
-    modal.setError("");
+    modal.setError('');
     try {
       const erf = new KotOR.ERFObject(modal.modBuffer);
       await erf.load();
@@ -203,7 +223,7 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
       const outBuffer = erf.getExportBuffer();
       let fsMod: { promises?: { writeFile: (path: string, data: Buffer) => Promise<void> } } | null = null;
       try {
-        fsMod = await import("fs");
+        fsMod = await import('fs');
       } catch {
         // Not in Node/Electron
       }
@@ -214,13 +234,13 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
           if (modal.onSaved) modal.onSaved(path);
           modal.close();
         } else {
-          modal.setError("Could not determine MOD file path (use Electron for Save to MOD).");
+          modal.setError('Could not determine MOD file path (use Electron for Save to MOD).');
         }
       } else {
-        modal.setError("Saving to MOD is only supported in Electron with an existing MOD path.");
+        modal.setError('Saving to MOD is only supported in Electron with an existing MOD path.');
       }
     } catch (e: unknown) {
-      modal.setError(e instanceof Error ? e.message : "Save failed.");
+      modal.setError(e instanceof Error ? e.message : 'Save failed.');
       setError(modal.error);
     }
     setSaving(false);
@@ -280,11 +300,7 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
         )}
         <Form.Group className="mb-2">
           <Form.Label>ResRef</Form.Label>
-          <Form.Control
-            value={resref}
-            onChange={(e) => setResref(e.target.value)}
-            placeholder={modal.resref}
-          />
+          <Form.Control value={resref} onChange={(e) => setResref(e.target.value)} placeholder={modal.resref} />
         </Form.Group>
         {error && <div className="text-danger small mb-2">{error}</div>}
       </Modal.Body>
@@ -298,11 +314,19 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
           disabled={
             saving ||
             (destination === SaveDestination.MOD && !modal.modBuffer) ||
-            (destination === SaveDestination.Override && !(overridePath || modal.overridePath) && !(typeof KotOR !== "undefined" && KotOR.ApplicationProfile?.directory)) ||
+            (destination === SaveDestination.Override &&
+              !(overridePath || modal.overridePath) &&
+              !(typeof KotOR !== 'undefined' && KotOR.ApplicationProfile?.directory)) ||
             (destination === SaveDestination.RIM && !(rimPath || modal.rimPath))
           }
         >
-          {saving ? "Saving…" : destination === SaveDestination.MOD ? "Save to MOD" : destination === SaveDestination.Override ? "Save to Override" : "Save to RIM"}
+          {saving
+            ? 'Saving…'
+            : destination === SaveDestination.MOD
+              ? 'Save to MOD'
+              : destination === SaveDestination.Override
+                ? 'Save to Override'
+                : 'Save to RIM'}
         </Button>
       </Modal.Footer>
     </Modal>

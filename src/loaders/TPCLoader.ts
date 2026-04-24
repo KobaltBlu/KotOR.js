@@ -1,69 +1,68 @@
-import { TPCObject } from "@/resource/TPCObject";
-import * as path from "path";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { ERFManager } from "@/managers/ERFManager";
-import { KEYManager } from "@/managers/KEYManager";
-import { OdysseyCompressedTexture } from "@/three/odyssey";
-import { IFindTPCResult } from "@/interface/graphics/IFindTPCResult";
-import { TextureLoaderState } from "@/loaders/TextureLoaderState";
+import { TPCObject } from '@/resource/TPCObject';
+import * as path from 'path';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { ERFManager } from '@/managers/ERFManager';
+import { KEYManager } from '@/managers/KEYManager';
+import { OdysseyCompressedTexture } from '@/three/odyssey';
+import { IFindTPCResult } from '@/interface/graphics/IFindTPCResult';
+import { TextureLoaderState } from '@/loaders/TextureLoaderState';
 
 /**
  * TPCLoader class.
- * 
+ *
  * TPCLoader class is used to decode the TPC image format found in the game archives.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TPCLoader.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class TPCLoader {
-  
-  async findTPC( resRef: string ): Promise<IFindTPCResult> {
+  async findTPC(resRef: string): Promise<IFindTPCResult> {
     resRef = resRef.toLocaleLowerCase();
-  
+
     let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResourceInfo(resRef, ResourceTypes['tpc']);
-    if(erfResource){
+    if (erfResource) {
       const buffer = await ERFManager.ERFs.get('swpc_tex_gui').getResourceBuffer(erfResource);
       return { pack: 0, buffer: buffer };
     }
-  
+
     let activeTexturePack;
-    switch(TextureLoaderState.TextureQuality){
+    switch (TextureLoaderState.TextureQuality) {
       case 2:
         activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpa');
-      break;
+        break;
       case 1:
         activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpb');
-      break;
+        break;
       case 0:
         activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpc');
-      break;
+        break;
       default:
         activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpa');
-      break;
+        break;
     }
-  
+
     erfResource = activeTexturePack.getResourceInfo(resRef, ResourceTypes['tpc']);
-    if(erfResource){
+    if (erfResource) {
       const buffer = await activeTexturePack.getResourceBuffer(erfResource);
       return { pack: TextureLoaderState.TextureQuality || 2, buffer: buffer };
     }
-  
+
     //Check in BIF files
     const resKey = KEYManager.Key.getFileKey(resRef, ResourceTypes['tpc']);
-    if(resKey){
-      const buffer = await KEYManager.Key.getFileBuffer( resKey);
+    if (resKey) {
+      const buffer = await KEYManager.Key.getFileBuffer(resKey);
       return { pack: TextureLoaderState.TextureQuality || 2, buffer: buffer };
     }
-  
+
     throw new Error('TPC not found in game resources!');
   }
-  
-  async fetch(resRef: string = ''): Promise<OdysseyCompressedTexture>{
-    try{
+
+  async fetch(resRef: string = ''): Promise<OdysseyCompressedTexture> {
+    try {
       const result = await this.findTPC(resRef);
       const tpc = new TPCObject({
         filename: resRef,
@@ -75,34 +74,32 @@ export class TPCLoader {
       //console.log("loaded texture", resRef);
 
       return texture;
-    }catch(e){
+    } catch (e) {
       // console.error(e);
       return undefined;
     }
   }
-  
+
   async fetchOverride(resRef: string = ''): Promise<OdysseyCompressedTexture> {
     const dir = path.join('Override');
-  
-    try{
-      const buffer = await GameFileSystem.readFile(path.join(dir, resRef)+'.tpc');
-      if(!buffer){
+
+    try {
+      const buffer = await GameFileSystem.readFile(path.join(dir, resRef) + '.tpc');
+      if (!buffer) {
         throw new Error(`Failed to load ${resRef}.tpc from the override folder`);
       }
-  
+
       const tpc = new TPCObject({
         filename: resRef,
-        file: buffer
+        file: buffer,
       });
-  
+
       const texture = tpc.toCompressedTexture();
 
       return texture;
-    }catch(e){
-
-    }
+    } catch (e) {}
   }
-  
+
   /*fetchLocal( resRef = '', onLoad?: Function, onProgress?: Function, onError?: Function ) {
   
     let file_info = path.parse(resRef);
@@ -171,5 +168,4 @@ export class TPCLoader {
     }
     return undefined;
   };*/
-
 }

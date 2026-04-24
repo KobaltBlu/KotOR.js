@@ -1,6 +1,6 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
-import { ForgeMGGunBank } from "@/apps/forge/module-editor/ForgeMGGunBank";
+import * as KotOR from '@/apps/forge/KotOR';
+import { IModelListItem } from '@/interface/module/minigame/IModelListItem';
+import { ForgeMGGunBank } from '@/apps/forge/module-editor/ForgeMGGunBank';
 
 export class ForgeMGPlayer {
   // Basic properties
@@ -34,14 +34,14 @@ export class ForgeMGPlayer {
   tunnelYPos: number = 0;
   tunnelZNeg: number = 0;
   tunnelZPos: number = 0;
-  tunnelInfinite: {x: number, y: number, z: number} = {x: 0, y: 0, z: 0};
+  tunnelInfinite: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
 
   // Complex properties
   modelProps: IModelListItem[] = [];
   gunBanks: ForgeMGGunBank[] = [];
-  
+
   // Scripts - stored as resref strings
-  scripts: {[key: string]: string} = {};
+  scripts: { [key: string]: string } = {};
 
   // Sounds
   deathSound: string = '';
@@ -50,133 +50,131 @@ export class ForgeMGPlayer {
   // Template reference for additional data
   template: KotOR.GFFObject;
 
-  constructor(struct?: KotOR.GFFStruct){
-    if(struct){
+  constructor(struct?: KotOR.GFFStruct) {
+    if (struct) {
       this.loadFromStruct(struct);
     } else {
       this.template = new KotOR.GFFObject();
     }
   }
 
-  loadFromStruct(struct: KotOR.GFFStruct){
+  loadFromStruct(struct: KotOR.GFFStruct) {
     this.template = KotOR.GFFObject.FromStruct(struct);
 
     // Load basic properties
-    if(struct.hasField('Accel_Secs')){
+    if (struct.hasField('Accel_Secs')) {
       this.accel_secs = struct.getNumberByLabel('Accel_Secs');
     }
-    if(struct.hasField('Bump_Damage')){
+    if (struct.hasField('Bump_Damage')) {
       this.bump_damage = struct.getNumberByLabel('Bump_Damage');
     }
-    if(struct.hasField('Camera')){
+    if (struct.hasField('Camera')) {
       this.cameraName = struct.getStringByLabel('Camera');
     }
-    if(struct.hasField('CameraRotate')){
+    if (struct.hasField('CameraRotate')) {
       this.cameraRotate = struct.getNumberByLabel('CameraRotate');
     }
-    if(struct.hasField('Hit_Points')){
+    if (struct.hasField('Hit_Points')) {
       this.hit_points = struct.getNumberByLabel('Hit_Points');
     }
-    if(struct.hasField('Invince_Period')){
+    if (struct.hasField('Invince_Period')) {
       this.invince_period = struct.getNumberByLabel('Invince_Period');
     }
-    if(struct.hasField('Max_HPs')){
+    if (struct.hasField('Max_HPs')) {
       this.max_hps = struct.getNumberByLabel('Max_HPs');
     }
-    if(struct.hasField('Maximum_Speed')){
+    if (struct.hasField('Maximum_Speed')) {
       this.maximum_speed = struct.getNumberByLabel('Maximum_Speed');
     }
-    if(struct.hasField('Minimum_Speed')){
+    if (struct.hasField('Minimum_Speed')) {
       this.minimum_speed = struct.getNumberByLabel('Minimum_Speed');
     }
-    if(struct.hasField('Num_Loops')){
+    if (struct.hasField('Num_Loops')) {
       this.num_loops = struct.getNumberByLabel('Num_Loops');
     }
-    if(struct.hasField('Sphere_Radius')){
+    if (struct.hasField('Sphere_Radius')) {
       this.sphere_radius = struct.getNumberByLabel('Sphere_Radius');
     }
-    if(struct.hasField('Track')){
+    if (struct.hasField('Track')) {
       this.trackName = struct.getStringByLabel('Track');
     }
-    if(struct.hasField('Type')){
+    if (struct.hasField('Type')) {
       this.type = struct.getNumberByLabel('Type');
     }
-    if(struct.hasField('Uselnertia')){
+    if (struct.hasField('Uselnertia')) {
       this.useInertia = struct.getNumberByLabel('Uselnertia');
     }
 
     // Load offset properties
-    if(struct.hasField('Start_Offset_X')){
+    if (struct.hasField('Start_Offset_X')) {
       this.startOffsetX = struct.getNumberByLabel('Start_Offset_X');
     }
-    if(struct.hasField('Start_Offset_Y')){
+    if (struct.hasField('Start_Offset_Y')) {
       this.startOffsetY = struct.getNumberByLabel('Start_Offset_Y');
     }
-    if(struct.hasField('Start_Offset_Z')){
+    if (struct.hasField('Start_Offset_Z')) {
       this.startOffsetZ = struct.getNumberByLabel('Start_Offset_Z');
     }
-    if(struct.hasField('Target_Offset_X')){
+    if (struct.hasField('Target_Offset_X')) {
       this.targetOffsetX = struct.getNumberByLabel('Target_Offset_X');
     }
-    if(struct.hasField('Target_Offset_Y')){
+    if (struct.hasField('Target_Offset_Y')) {
       this.targetOffsetY = struct.getNumberByLabel('Target_Offset_Y');
     }
-    if(struct.hasField('Target_Offset_Z')){
+    if (struct.hasField('Target_Offset_Z')) {
       this.targetOffsetZ = struct.getNumberByLabel('Target_Offset_Z');
     }
 
     // Load tunnel properties
-    if(struct.hasField('TunnelXNeg')){
+    if (struct.hasField('TunnelXNeg')) {
       this.tunnelXNeg = struct.getNumberByLabel('TunnelXNeg');
     }
-    if(struct.hasField('TunneXPos')){
+    if (struct.hasField('TunneXPos')) {
       this.tunnelXPos = struct.getNumberByLabel('TunneXPos');
     }
-    if(struct.hasField('TunnelYNeg')){
+    if (struct.hasField('TunnelYNeg')) {
       this.tunnelYNeg = struct.getNumberByLabel('TunnelYNeg');
     }
-    if(struct.hasField('TunnelYPos')){
+    if (struct.hasField('TunnelYPos')) {
       this.tunnelYPos = struct.getNumberByLabel('TunnelYPos');
     }
-    if(struct.hasField('TunneZNeg')){
+    if (struct.hasField('TunneZNeg')) {
       this.tunnelZNeg = struct.getNumberByLabel('TunneZNeg');
     }
-    if(struct.hasField('TunnelZPos')){
+    if (struct.hasField('TunnelZPos')) {
       this.tunnelZPos = struct.getNumberByLabel('TunnelZPos');
     }
-    if(struct.hasField('Tunnellnfinite')){
+    if (struct.hasField('Tunnellnfinite')) {
       const tunnelInfiniteField = struct.getFieldByLabel('Tunnellnfinite');
-      if(tunnelInfiniteField && tunnelInfiniteField.vector){
+      if (tunnelInfiniteField && tunnelInfiniteField.vector) {
         this.tunnelInfinite = tunnelInfiniteField.vector;
       }
     }
 
     // Load Models list
-    if(struct.hasField('Models')){
+    if (struct.hasField('Models')) {
       const models = struct.getFieldByLabel('Models').getChildStructs();
-      for(let i = 0; i < models.length; i++){
+      for (let i = 0; i < models.length; i++) {
         const modelStruct = models[i];
         this.modelProps.push({
           model: modelStruct.getStringByLabel('Model'),
-          rotating: modelStruct.getBooleanByLabel('RotatingModel')
+          rotating: modelStruct.getBooleanByLabel('RotatingModel'),
         });
       }
     }
 
     // Load Gun_Banks list
-    if(struct.hasField('Gun_Banks')){
+    if (struct.hasField('Gun_Banks')) {
       const gun_banks = struct.getFieldByLabel('Gun_Banks').getChildStructs();
-      for(let i = 0; i < gun_banks.length; i++){
-        this.gunBanks.push(
-          new ForgeMGGunBank(gun_banks[i])
-        );
+      for (let i = 0; i < gun_banks.length; i++) {
+        this.gunBanks.push(new ForgeMGGunBank(gun_banks[i]));
       }
     }
 
     // Load Scripts struct
-    if(struct.hasField('Scripts')){
+    if (struct.hasField('Scripts')) {
       const scriptsNode = struct.getFieldByLabel('Scripts').getFieldStruct();
-      if(scriptsNode){
+      if (scriptsNode) {
         const scriptKeys = [
           'OnAnimEvent',
           'OnCreate',
@@ -190,10 +188,10 @@ export class ForgeMGPlayer {
           'OnTrackLoop',
         ];
 
-        for(const scriptKey of scriptKeys){
-          if(scriptsNode.hasField(scriptKey)){
+        for (const scriptKey of scriptKeys) {
+          if (scriptsNode.hasField(scriptKey)) {
             const resRef = scriptsNode.getStringByLabel(scriptKey);
-            if(resRef){
+            if (resRef) {
               this.scripts[scriptKey] = resRef;
             }
           }
@@ -202,13 +200,13 @@ export class ForgeMGPlayer {
     }
 
     // Load Sounds struct
-    if(struct.hasField('Sounds')){
+    if (struct.hasField('Sounds')) {
       const soundsNode = struct.getFieldByLabel('Sounds').getFieldStruct();
-      if(soundsNode){
-        if(soundsNode.hasField('Death')){
+      if (soundsNode) {
+        if (soundsNode.hasField('Death')) {
           this.deathSound = soundsNode.getStringByLabel('Death');
         }
-        if(soundsNode.hasField('Engine')){
+        if (soundsNode.hasField('Engine')) {
           this.engineSound = soundsNode.getStringByLabel('Engine');
         }
       }
@@ -219,95 +217,98 @@ export class ForgeMGPlayer {
     const playerStruct = new KotOR.GFFStruct(0);
 
     // Basic player fields
-    if(this.accel_secs !== undefined){
+    if (this.accel_secs !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Accel_Secs', this.accel_secs));
     }
-    if(this.bump_damage !== undefined){
+    if (this.bump_damage !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'Bump_Damage', this.bump_damage));
     }
-    if(this.cameraName !== undefined && this.cameraName !== ''){
+    if (this.cameraName !== undefined && this.cameraName !== '') {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Camera', this.cameraName));
     }
-    if(this.cameraRotate !== undefined){
+    if (this.cameraRotate !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'CameraRotate', this.cameraRotate));
     }
-    if(this.hit_points !== undefined){
+    if (this.hit_points !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Hit_Points', this.hit_points));
     }
-    if(this.invince_period !== undefined){
+    if (this.invince_period !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Invince_Period', this.invince_period));
     }
-    if(this.max_hps !== undefined){
+    if (this.max_hps !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Max_HPs', this.max_hps));
     }
-    if(this.maximum_speed !== undefined){
+    if (this.maximum_speed !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Maximum_Speed', this.maximum_speed));
     }
-    if(this.minimum_speed !== undefined){
+    if (this.minimum_speed !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Minimum_Speed', this.minimum_speed));
     }
-    if(this.num_loops !== undefined){
+    if (this.num_loops !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'Num_Loops', this.num_loops));
     }
-    if(this.sphere_radius !== undefined){
+    if (this.sphere_radius !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Sphere_Radius', this.sphere_radius));
     }
-    if(this.trackName !== undefined && this.trackName !== ''){
+    if (this.trackName !== undefined && this.trackName !== '') {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Track', this.trackName));
     }
-    if(this.type !== undefined){
+    if (this.type !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Type', this.type));
     }
-    if(this.useInertia !== undefined){
+    if (this.useInertia !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Uselnertia', this.useInertia));
     }
 
     // Offset fields
-    if(this.startOffsetX !== undefined){
+    if (this.startOffsetX !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Start_Offset_X', this.startOffsetX));
     }
-    if(this.startOffsetY !== undefined){
+    if (this.startOffsetY !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Start_Offset_Y', this.startOffsetY));
     }
-    if(this.startOffsetZ !== undefined){
+    if (this.startOffsetZ !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Start_Offset_Z', this.startOffsetZ));
     }
-    if(this.targetOffsetX !== undefined){
+    if (this.targetOffsetX !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Target_Offset_X', this.targetOffsetX));
     }
-    if(this.targetOffsetY !== undefined){
+    if (this.targetOffsetY !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Target_Offset_Y', this.targetOffsetY));
     }
-    if(this.targetOffsetZ !== undefined){
+    if (this.targetOffsetZ !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Target_Offset_Z', this.targetOffsetZ));
     }
 
     // Tunnel fields
-    if(this.tunnelXNeg !== undefined){
+    if (this.tunnelXNeg !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunnelXNeg', this.tunnelXNeg));
     }
-    if(this.tunnelXPos !== undefined){
+    if (this.tunnelXPos !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunneXPos', this.tunnelXPos));
     }
-    if(this.tunnelYNeg !== undefined){
+    if (this.tunnelYNeg !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunnelYNeg', this.tunnelYNeg));
     }
-    if(this.tunnelYPos !== undefined){
+    if (this.tunnelYPos !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunnelYPos', this.tunnelYPos));
     }
-    if(this.tunnelZNeg !== undefined){
+    if (this.tunnelZNeg !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunneZNeg', this.tunnelZNeg));
     }
-    if(this.tunnelZPos !== undefined){
+    if (this.tunnelZPos !== undefined) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunnelZPos', this.tunnelZPos));
     }
-    if(this.tunnelInfinite !== undefined && (this.tunnelInfinite.x !== 0 || this.tunnelInfinite.y !== 0 || this.tunnelInfinite.z !== 0)){
+    if (
+      this.tunnelInfinite !== undefined &&
+      (this.tunnelInfinite.x !== 0 || this.tunnelInfinite.y !== 0 || this.tunnelInfinite.z !== 0)
+    ) {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.VECTOR, 'Tunnellnfinite', this.tunnelInfinite));
     }
 
     // Gun_Banks list
     const gunBanksField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Gun_Banks');
-    for(let i = 0; i < this.gunBanks.length; i++){
+    for (let i = 0; i < this.gunBanks.length; i++) {
       const gunBank = this.gunBanks[i];
       const gunBankStruct = gunBank.exportToGFFStruct();
       gunBanksField.addChildStruct(gunBankStruct);
@@ -316,7 +317,7 @@ export class ForgeMGPlayer {
 
     // Models list
     const modelsField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Models');
-    for(let i = 0; i < this.modelProps.length; i++){
+    for (let i = 0; i < this.modelProps.length; i++) {
       const modelProp = this.modelProps[i];
       const modelStruct = new KotOR.GFFStruct(0);
       modelStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Model', modelProp.model || ''));
@@ -328,7 +329,7 @@ export class ForgeMGPlayer {
     // Scripts struct
     const scriptsField = new KotOR.GFFField(KotOR.GFFDataType.STRUCT, 'Scripts');
     const scriptsStruct = new KotOR.GFFStruct(0);
-    
+
     const scriptKeys = [
       'OnAnimEvent',
       'OnCreate',
@@ -342,11 +343,11 @@ export class ForgeMGPlayer {
       'OnTrackLoop',
     ];
 
-    for(const scriptKey of scriptKeys){
+    for (const scriptKey of scriptKeys) {
       const resref = this.scripts[scriptKey] || '';
       scriptsStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, scriptKey, resref));
     }
-    
+
     scriptsField.addChildStruct(scriptsStruct);
     playerStruct.addField(scriptsField);
 
@@ -361,4 +362,3 @@ export class ForgeMGPlayer {
     return playerStruct;
   }
 }
-

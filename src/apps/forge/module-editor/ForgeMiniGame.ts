@@ -1,8 +1,8 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeMGEnemy } from "@/apps/forge/module-editor/ForgeMGEnemy";
-import { ForgeMGPlayer } from "@/apps/forge/module-editor/ForgeMGPlayer";
-import { ForgeMGObstacle } from "@/apps/forge/module-editor/ForgeMGObstacle";
-import { ForgeMGTrack } from "@/apps/forge/module-editor/ForgeMGTrack";
+import * as KotOR from '@/apps/forge/KotOR';
+import { ForgeMGEnemy } from '@/apps/forge/module-editor/ForgeMGEnemy';
+import { ForgeMGPlayer } from '@/apps/forge/module-editor/ForgeMGPlayer';
+import { ForgeMGObstacle } from '@/apps/forge/module-editor/ForgeMGObstacle';
+import { ForgeMGTrack } from '@/apps/forge/module-editor/ForgeMGTrack';
 
 export class ForgeMiniGame {
   type: KotOR.MiniGameType;
@@ -24,7 +24,7 @@ export class ForgeMiniGame {
   obstacles: ForgeMGObstacle[] = [];
   tracks: ForgeMGTrack[] = [];
 
-  constructor(struct: KotOR.GFFStruct){
+  constructor(struct: KotOR.GFFStruct) {
     this.bumpPlane = struct.getNumberByLabel('Bump_Plane');
     this.cameraViewAngle = struct.getNumberByLabel('CameraViewAngle');
     this.dof = struct.getNumberByLabel('DOF');
@@ -36,34 +36,26 @@ export class ForgeMiniGame {
     this.nearClip = struct.getNumberByLabel('Near_Clip');
     this.type = struct.getNumberByLabel('Type') as KotOR.MiniGameType;
     this.useInertia = struct.getNumberByLabel('UseInertia');
-    
 
-    this.player = new ForgeMGPlayer(
-      struct.getFieldByLabel('Player').getChildStructs()[0]
-    );
+    this.player = new ForgeMGPlayer(struct.getFieldByLabel('Player').getChildStructs()[0]);
 
     const enemies = struct.getFieldByLabel('Enemies').getChildStructs();
-    for(let i = 0; i < enemies.length; i++){
-      this.enemies.push(
-        new ForgeMGEnemy(enemies[i])
-      );
+    for (let i = 0; i < enemies.length; i++) {
+      this.enemies.push(new ForgeMGEnemy(enemies[i]));
     }
 
     // Load Obstacles list if it exists
-    if(struct.hasField('Obstacles')){
+    if (struct.hasField('Obstacles')) {
       const obstacles = struct.getFieldByLabel('Obstacles').getChildStructs();
-      for(let i = 0; i < obstacles.length; i++){
-        this.obstacles.push(
-          new ForgeMGObstacle(obstacles[i])
-        );
+      for (let i = 0; i < obstacles.length; i++) {
+        this.obstacles.push(new ForgeMGObstacle(obstacles[i]));
       }
     }
   }
 
-
   exportToGFFStruct(): KotOR.GFFStruct {
     const struct = new KotOR.GFFStruct(0);
-    
+
     // Basic fields
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Bump_Plane', this.bumpPlane));
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'CameraViewAngle', this.cameraViewAngle));
@@ -78,7 +70,7 @@ export class ForgeMiniGame {
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'UseInertia', this.useInertia));
 
     // Player struct
-    if(this.player){
+    if (this.player) {
       const playerField = new KotOR.GFFField(KotOR.GFFDataType.STRUCT, 'Player');
       const playerStruct = this.player.exportToGFFStruct();
       playerField.addChildStruct(playerStruct);
@@ -87,7 +79,7 @@ export class ForgeMiniGame {
 
     // Enemies list
     const enemiesField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Enemies');
-    for(let i = 0; i < this.enemies.length; i++){
+    for (let i = 0; i < this.enemies.length; i++) {
       const enemy = this.enemies[i];
       const enemyStruct = enemy.exportToGFFStruct();
       enemiesField.addChildStruct(enemyStruct);
@@ -96,7 +88,7 @@ export class ForgeMiniGame {
 
     // Obstacles list
     const obstaclesField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Obstacles');
-    for(let i = 0; i < this.obstacles.length; i++){
+    for (let i = 0; i < this.obstacles.length; i++) {
       const obstacle = this.obstacles[i];
       const obstacleStruct = obstacle.exportToGFFStruct();
       obstaclesField.addChildStruct(obstacleStruct);

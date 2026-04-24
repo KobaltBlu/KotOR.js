@@ -1,6 +1,6 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext } from 'react';
 
-export type LoadingConsoleSeverity = "log" | "info" | "warn" | "error" | "debug";
+export type LoadingConsoleSeverity = 'log' | 'info' | 'warn' | 'error' | 'debug';
 
 export interface LoadingConsoleEntry {
   id: number;

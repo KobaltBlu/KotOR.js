@@ -1,7 +1,7 @@
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from '@/apps/forge/KotOR';
 
-export type DLGNodeTypeLabel = "starting" | "entry" | "reply";
-export type DLGTreeItemKind = "node" | "link";
+export type DLGNodeTypeLabel = 'starting' | 'entry' | 'reply';
+export type DLGTreeItemKind = 'node' | 'link';
 
 export interface DLGEditorSelection {
   kind: DLGTreeItemKind;

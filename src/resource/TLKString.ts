@@ -1,10 +1,10 @@
-import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryReader } from '@/utility/binary/BinaryReader';
 
 /**
  * TLKString class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TLKString.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -43,12 +43,11 @@ export class TLKString {
   }
 
   GetValue(binary: BinaryReader, onReturn?: (value: string) => void) {
-    if(this.Value == null) {
+    if (this.Value == null) {
       const pos = binary.tell();
       binary.seek(this.StringOffset);
-      this.Value = binary.readChars(this.StringLength).replace(/\0[\s\S]*$/g,'');
-      if(onReturn != null)
-        onReturn(this.Value);
+      this.Value = binary.readChars(this.StringLength).replace(/\0[\s\S]*$/g, '');
+      if (onReturn != null) onReturn(this.Value);
       binary.seek(pos);
     }
   }
@@ -72,7 +71,15 @@ export class TLKString {
   }
 
   static FromDBObj(row: TLKStringDBRow): TLKString {
-    return new TLKString(row.flags, row.SoundResRef, row.VolumeVariance, row.PitchVariance, 0, row.Value.length, 0, row.Value);
+    return new TLKString(
+      row.flags,
+      row.SoundResRef,
+      row.VolumeVariance,
+      row.PitchVariance,
+      0,
+      row.Value.length,
+      0,
+      row.Value
+    );
   }
-
 }

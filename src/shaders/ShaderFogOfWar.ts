@@ -1,17 +1,17 @@
-import * as THREE from "three";
-import {Shader} from "@/shaders/Shader";
+import * as THREE from 'three';
+import { Shader } from '@/shaders/Shader';
 
 /**
  * ShaderFogOfWar class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ShaderFogOfWar.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ShaderFogOfWar extends Shader {
-  constructor(){
+  constructor() {
     super();
 
     this.name = 'odyssey-fow';
@@ -72,8 +72,7 @@ export class ShaderFogOfWar extends Shader {
         map: { value: null },
         alphaMap: { value: null },
         mapRes: { value: new THREE.Vector2(0, 0) },
-      }
+      },
     ]) as Record<string, THREE.IUniform>;
-
   }
 }

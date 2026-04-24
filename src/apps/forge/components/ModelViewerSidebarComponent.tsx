@@ -1,16 +1,16 @@
-import React, { useState } from "react";
-import * as THREE from "three";
-import { TabModelViewerState, TabModelViewerStateEventListenerTypes } from "@/apps/forge/states/tabs";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { Form } from "react-bootstrap";
-import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import { NodePropertiesPanel } from "@/apps/forge/components/tabs/tab-model-viewer/panels/NodePropertiesPanel";
+import React, { useState } from 'react';
+import * as THREE from 'three';
+import { TabModelViewerState, TabModelViewerStateEventListenerTypes } from '@/apps/forge/states/tabs';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { Form } from 'react-bootstrap';
+import { SceneGraphTreeView } from '@/apps/forge/components/SceneGraphTreeView';
+import { SectionContainer } from '@/apps/forge/components/SectionContainer';
+import { NodePropertiesPanel } from '@/apps/forge/components/tabs/tab-model-viewer/panels/NodePropertiesPanel';
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import * as KotOR from '@/apps/forge/KotOR';
+import { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
 
-export const ModelViewerSidebarComponent = function(props: any){
+export const ModelViewerSidebarComponent = function (props: any) {
   const tab: TabModelViewerState = props.tab as TabModelViewerState;
 
   const [layouts, setLayouts] = useState<KotOR.IKEYEntry[]>([]);
@@ -31,23 +31,26 @@ export const ModelViewerSidebarComponent = function(props: any){
   const [followCameraHook, setFollowCameraHook] = useState<boolean>(tab.followCameraHook);
   const [selectedCameraHookNode, setSelectedCameraHookNode] = useState<string>('');
 
-  const onNodeSelect = function(node: KotOR.OdysseyObject3D | undefined, modelNode: KotOR.OdysseyModelNode | undefined){
+  const onNodeSelect = function (
+    node: KotOR.OdysseyObject3D | undefined,
+    modelNode: KotOR.OdysseyModelNode | undefined
+  ) {
     setSelectedNode(node);
     setSelectedModelNode(modelNode);
   };
 
-  const onEditorFileLoad = function(){
+  const onEditorFileLoad = function () {
     const available = tab.getAvailableCameras();
     setCameras(available);
     setSelectedCameraIndex(0);
     setCameraFov(available[0]?.camera.fov ?? 50);
   };
 
-  const onCameraChange = function(camera: THREE.PerspectiveCamera){
+  const onCameraChange = function (camera: THREE.PerspectiveCamera) {
     setCameraFov(camera.fov);
   };
 
-  const onKeyframeEditorChange = function(){
+  const onKeyframeEditorChange = function () {
     const tracks = tab.getEditableTracks();
     setTrackOptions(tracks);
     setKeyframeEditorEnabled(tab.keyframeEditorEnabled);
@@ -56,13 +59,11 @@ export const ModelViewerSidebarComponent = function(props: any){
     setFollowCameraHook(tab.followCameraHook);
   };
 
-  useEffectOnce( () => {
+  useEffectOnce(() => {
     let keys: KotOR.IKEYEntry[] = [];
     let res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
-    res_list.forEach( (res, index) => {
-      keys.push(
-        KotOR.KEYManager.Key.getFileKeyByRes(res)
-      );
+    res_list.forEach((res, index) => {
+      keys.push(KotOR.KEYManager.Key.getFileKeyByRes(res));
     });
     setLayouts(keys);
 
@@ -85,9 +86,9 @@ export const ModelViewerSidebarComponent = function(props: any){
     };
   });
 
-  const onCameraSpeedChange = function(e: React.ChangeEvent<HTMLInputElement>){
+  const onCameraSpeedChange = function (e: React.ChangeEvent<HTMLInputElement>) {
     let value = parseFloat(e.target.value);
-    if(isNaN(value)) value = 10;
+    if (isNaN(value)) value = 10;
     setCameraSpeed(value);
     UI3DRenderer.CameraMoveSpeed = value;
   };
@@ -119,7 +120,7 @@ export const ModelViewerSidebarComponent = function(props: any){
   };
 
   const onBtnLoadLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
-    tab.loadLayout( layouts.find( key => key.resId == selectedLayout ) );
+    tab.loadLayout(layouts.find((key) => key.resId == selectedLayout));
   };
 
   const onBtnDisposeLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -149,11 +150,7 @@ export const ModelViewerSidebarComponent = function(props: any){
       </div>
       <div className="mvp-properties-scroll">
         {selectedNode && selectedModelNode ? (
-          <NodePropertiesPanel
-            node={selectedNode}
-            modelNode={selectedModelNode}
-            tab={tab}
-          />
+          <NodePropertiesPanel node={selectedNode} modelNode={selectedModelNode} tab={tab} />
         ) : (
           <div className="mvp-no-selection">
             <span>Select a node to view properties</span>
@@ -163,18 +160,34 @@ export const ModelViewerSidebarComponent = function(props: any){
         <SectionContainer name="Camera" collapsible>
           <Form.Select size="sm" value={selectedCameraIndex} onChange={onCameraSelectChange}>
             {cameras.map((entry, index) => (
-              <option key={index} value={index}>{entry.name}</option>
+              <option key={index} value={index}>
+                {entry.name}
+              </option>
             ))}
             {cameras.length === 0 && <option value={0}>Main</option>}
           </Form.Select>
           <div className="property-editor-row">
             <span className="property-editor-label">Speed</span>
-            <Form.Control size="sm" type="number" min={1} max={250} value={cameraSpeed} onChange={onCameraSpeedChange} />
+            <Form.Control
+              size="sm"
+              type="number"
+              min={1}
+              max={250}
+              value={cameraSpeed}
+              onChange={onCameraSpeedChange}
+            />
           </div>
           {!isMainCamera && (
             <div className="property-editor-row">
               <span className="property-editor-label">FOV</span>
-              <Form.Control size="sm" type="number" min={1} max={179} value={Math.round(cameraFov)} onChange={onCameraFovChange} />
+              <Form.Control
+                size="sm"
+                type="number"
+                min={1}
+                max={179}
+                value={Math.round(cameraFov)}
+                onChange={onCameraFovChange}
+              />
             </div>
           )}
         </SectionContainer>
@@ -185,15 +198,21 @@ export const ModelViewerSidebarComponent = function(props: any){
           </div>
           <Form.Select size="sm" value={selectedLayout} onChange={onLayoutSelectChange}>
             <option value={-1}>None</option>
-            {
-              layouts.map( (lytKEY) => {
-                return <option key={lytKEY.resId} value={lytKEY.resId}>{lytKEY.resRef}</option>
-              })
-            }
+            {layouts.map((lytKEY) => {
+              return (
+                <option key={lytKEY.resId} value={lytKEY.resId}>
+                  {lytKEY.resRef}
+                </option>
+              );
+            })}
           </Form.Select>
           <div className="button-group">
-            <button className="btn btn-sm" onClick={onBtnLoadLayout}>Load</button>
-            <button className="btn btn-sm" onClick={onBtnDisposeLayout}>Dispose</button>
+            <button className="btn btn-sm" onClick={onBtnLoadLayout}>
+              Load
+            </button>
+            <button className="btn btn-sm" onClick={onBtnDisposeLayout}>
+              Dispose
+            </button>
           </div>
         </SectionContainer>
 
@@ -246,4 +265,4 @@ export const ModelViewerSidebarComponent = function(props: any){
       </div>
     </div>
   );
-}
+};

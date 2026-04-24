@@ -9,15 +9,15 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { LIPShape } from "@/enums/resource/LIPShape";
-import { LIPObject } from "@/resource/LIPObject";
+import { LIPShape } from '@/enums/resource/LIPShape';
+import { LIPObject } from '@/resource/LIPObject';
 
 /** Basic lip shapes used for auto-generated LIP (closed -> open -> round -> closed). */
 const DEFAULT_LIP_SHAPES = [
-  LIPShape.MBP,  // Start with closed mouth (m, p, b)
-  LIPShape.AH,   // Open for vowel sound (bat, cat)
-  LIPShape.OH,   // Round for O sound (or, boat)
-  LIPShape.MBP,  // Close mouth again
+  LIPShape.MBP, // Start with closed mouth (m, p, b)
+  LIPShape.AH, // Open for vowel sound (bat, cat)
+  LIPShape.OH, // Round for O sound (or, boat)
+  LIPShape.MBP, // Close mouth again
 ];
 
 export interface LIPBatchProcessorOptions {
@@ -39,7 +39,8 @@ export interface LIPBatchProcessorResult {
  * Get audio duration from ArrayBuffer using Web Audio API.
  */
 export async function getAudioDuration(audioBuffer: ArrayBuffer): Promise<number> {
-  const AudioContextCtor = window.AudioContext || (window as { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;
+  const AudioContextCtor =
+    window.AudioContext || (window as { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;
   const audioCtx = new AudioContextCtor();
   const buffer = await audioCtx.decodeAudioData(audioBuffer.slice(0));
   return buffer.duration;
@@ -48,10 +49,7 @@ export async function getAudioDuration(audioBuffer: ArrayBuffer): Promise<number
 /**
  * Create a LIP file buffer from audio duration and optional shapes.
  */
-export function createLIPFromDuration(
-  duration: number,
-  shapes: number[] = DEFAULT_LIP_SHAPES
-): Uint8Array {
+export function createLIPFromDuration(duration: number, shapes: number[] = DEFAULT_LIP_SHAPES): Uint8Array {
   const lip = new LIPObject(new Uint8Array(0));
   lip.duration = duration;
   lip.keyframes = [];
@@ -69,7 +67,7 @@ export function createLIPFromDuration(
  */
 export async function processAudioToLIP(
   audioBuffer: ArrayBuffer,
-  options: Omit<LIPBatchProcessorOptions, "audioBuffer"> = {}
+  options: Omit<LIPBatchProcessorOptions, 'audioBuffer'> = {}
 ): Promise<LIPBatchProcessorResult> {
   try {
     const duration = await getAudioDuration(audioBuffer);

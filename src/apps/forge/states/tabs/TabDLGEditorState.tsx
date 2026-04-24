@@ -1,10 +1,10 @@
-import React from "react";
+import React from 'react';
 
-import { TabDLGEditor } from "@/apps/forge/components/tabs/tab-dlg-editor/TabDLGEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { TabDLGEditor } from '@/apps/forge/components/tabs/tab-dlg-editor/TabDLGEditor';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -15,11 +15,11 @@ export class TabDLGEditorState extends TabState {
   selectedNodeIndex: number = -1;
   selectedNodeType: 'starting' | 'entry' | 'reply' | null = null;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     log.trace('TabDLGEditorState constructor entry');
     super(options);
 
-    if(this.file){
+    if (this.file) {
       this.tabName = this.file.getFilename();
       log.debug('TabDLGEditorState constructor tabName', this.tabName);
     }
@@ -28,9 +28,9 @@ export class TabDLGEditorState extends TabState {
       {
         description: 'Dialog File',
         accept: {
-          'application/octet-stream': ['.dlg']
-        }
-      }
+          'application/octet-stream': ['.dlg'],
+        },
+      },
     ];
 
     this.setContentView(<TabDLGEditor tab={this}></TabDLGEditor>);
@@ -40,7 +40,7 @@ export class TabDLGEditorState extends TabState {
 
   async openFile() {
     log.trace('TabDLGEditorState openFile entry');
-    if(this.file){
+    if (this.file) {
       const response = await this.file.readFile();
       log.debug('TabDLGEditorState openFile readFile done', response.buffer?.length ?? 0);
       const gff = new KotOR.GFFObject(response.buffer);
@@ -63,7 +63,7 @@ export class TabDLGEditorState extends TabState {
 
   async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
     log.trace('TabDLGEditorState getExportBuffer');
-    if(this.dlg && this.dlg.gff){
+    if (this.dlg && this.dlg.gff) {
       const buf = this.dlg.gff.getExportBuffer();
       log.debug('TabDLGEditorState getExportBuffer length', buf?.length ?? 0);
       return buf;

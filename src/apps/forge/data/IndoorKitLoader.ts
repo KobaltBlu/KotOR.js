@@ -1,10 +1,10 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from 'fs';
+import * as path from 'path';
 
-import * as THREE from "three";
+import * as THREE from 'three';
 
-import { Kit, KitComponent, KitComponentHook, KitDoor, MDLMDXTuple } from "@/apps/forge/data/IndoorKit";
-import { cloneWalkmeshFromBuffer } from "@/apps/forge/data/IndoorWalkmesh";
+import { Kit, KitComponent, KitComponentHook, KitDoor, MDLMDXTuple } from '@/apps/forge/data/IndoorKit';
+import { cloneWalkmeshFromBuffer } from '@/apps/forge/data/IndoorWalkmesh';
 
 const numberRegex = /(\d+)/g;
 
@@ -63,17 +63,17 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
 
   const entries = fs.readdirSync(resolvedPath);
   for (const entry of entries) {
-    if (!entry.toLowerCase().endsWith(".json")) {
+    if (!entry.toLowerCase().endsWith('.json')) {
       continue;
     }
     const filePath = path.join(resolvedPath, entry);
     let kitJson: KitJsonShape;
     try {
-      kitJson = JSON.parse(Buffer.from(readFile(filePath)).toString("utf8")) as KitJsonShape;
+      kitJson = JSON.parse(Buffer.from(readFile(filePath)).toString('utf8')) as KitJsonShape;
     } catch {
       continue;
     }
-    if (!kitJson || typeof kitJson !== "object" || !kitJson.name) {
+    if (!kitJson || typeof kitJson !== 'object' || !kitJson.name) {
       continue;
     }
     const kitId = String(kitJson.id || path.parse(entry).name);
@@ -82,28 +82,28 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
 
     const kitRoot = path.join(resolvedPath, kitId);
 
-    const alwaysPath = path.join(kitRoot, "always");
+    const alwaysPath = path.join(kitRoot, 'always');
     if (fs.existsSync(alwaysPath)) {
       fs.readdirSync(alwaysPath).forEach((fileName) => {
         const alwaysFile = path.join(alwaysPath, fileName);
         try {
           kit.always.set(alwaysFile, readFile(alwaysFile));
         } catch {
-          missingFiles.push([kitName, alwaysFile, "always file"]);
+          missingFiles.push([kitName, alwaysFile, 'always file']);
         }
       });
     }
 
-    const texturesPath = path.join(kitRoot, "textures");
+    const texturesPath = path.join(kitRoot, 'textures');
     if (fs.existsSync(texturesPath)) {
       fs.readdirSync(texturesPath).forEach((fileName) => {
-        if (!fileName.toLowerCase().endsWith(".tga")) return;
+        if (!fileName.toLowerCase().endsWith('.tga')) return;
         const textureId = path.parse(fileName).name.toUpperCase();
         const textureFile = path.join(texturesPath, fileName);
         try {
           kit.textures.set(textureId, readFile(textureFile));
         } catch {
-          missingFiles.push([kitName, textureFile, "texture"]);
+          missingFiles.push([kitName, textureFile, 'texture']);
         }
         const txiPath = path.join(texturesPath, `${textureId}.txi`);
         if (fs.existsSync(txiPath)) {
@@ -114,16 +114,16 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
       });
     }
 
-    const lightmapsPath = path.join(kitRoot, "lightmaps");
+    const lightmapsPath = path.join(kitRoot, 'lightmaps');
     if (fs.existsSync(lightmapsPath)) {
       fs.readdirSync(lightmapsPath).forEach((fileName) => {
-        if (!fileName.toLowerCase().endsWith(".tga")) return;
+        if (!fileName.toLowerCase().endsWith('.tga')) return;
         const lightmapId = path.parse(fileName).name.toUpperCase();
         const lightmapFile = path.join(lightmapsPath, fileName);
         try {
           kit.lightmaps.set(lightmapId, readFile(lightmapFile));
         } catch {
-          missingFiles.push([kitName, lightmapFile, "lightmap"]);
+          missingFiles.push([kitName, lightmapFile, 'lightmap']);
         }
         const txiPath = path.join(lightmapsPath, `${lightmapId}.txi`);
         if (fs.existsSync(txiPath)) {
@@ -134,38 +134,38 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
       });
     }
 
-    const skyboxesPath = path.join(kitRoot, "skyboxes");
+    const skyboxesPath = path.join(kitRoot, 'skyboxes');
     if (fs.existsSync(skyboxesPath)) {
       fs.readdirSync(skyboxesPath).forEach((fileName) => {
-        if (!fileName.toLowerCase().endsWith(".mdl")) return;
+        if (!fileName.toLowerCase().endsWith('.mdl')) return;
         const skyboxResref = path.parse(fileName).name.toUpperCase();
         const mdlPath = path.join(skyboxesPath, `${skyboxResref}.mdl`);
         const mdxPath = path.join(skyboxesPath, `${skyboxResref}.mdx`);
         if (!fs.existsSync(mdlPath)) {
-          missingFiles.push([kitName, mdlPath, "skybox model"]);
+          missingFiles.push([kitName, mdlPath, 'skybox model']);
           return;
         }
         if (!fs.existsSync(mdxPath)) {
-          missingFiles.push([kitName, mdxPath, "skybox model"]);
+          missingFiles.push([kitName, mdxPath, 'skybox model']);
           return;
         }
         kit.skyboxes.set(skyboxResref, { mdl: readFile(mdlPath), mdx: readFile(mdxPath) });
       });
     }
 
-    const doorwayPath = path.join(kitRoot, "doorway");
+    const doorwayPath = path.join(kitRoot, 'doorway');
     if (fs.existsSync(doorwayPath)) {
       fs.readdirSync(doorwayPath).forEach((fileName) => {
-        if (!fileName.toLowerCase().endsWith(".mdl")) return;
+        if (!fileName.toLowerCase().endsWith('.mdl')) return;
         const paddingId = path.parse(fileName).name;
         const mdlPath = path.join(doorwayPath, `${paddingId}.mdl`);
         const mdxPath = path.join(doorwayPath, `${paddingId}.mdx`);
         if (!fs.existsSync(mdlPath)) {
-          missingFiles.push([kitName, mdlPath, "doorway padding"]);
+          missingFiles.push([kitName, mdlPath, 'doorway padding']);
           return;
         }
         if (!fs.existsSync(mdxPath)) {
-          missingFiles.push([kitName, mdxPath, "doorway padding"]);
+          missingFiles.push([kitName, mdxPath, 'doorway padding']);
           return;
         }
         const numbers = getNumbers(paddingId);
@@ -175,14 +175,14 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
           mdl: readFile(mdlPath),
           mdx: readFile(mdxPath),
         };
-        if (paddingId.toLowerCase().startsWith("side")) {
+        if (paddingId.toLowerCase().startsWith('side')) {
           if (!kit.sidePadding.has(doorId)) {
             kit.sidePadding.set(doorId, new Map());
           }
           const sideMap = kit.sidePadding.get(doorId);
           if (sideMap) sideMap.set(paddingSize, tuple);
         }
-        if (paddingId.toLowerCase().startsWith("top")) {
+        if (paddingId.toLowerCase().startsWith('top')) {
           if (!kit.topPadding.has(doorId)) {
             kit.topPadding.set(doorId, new Map());
           }
@@ -201,31 +201,33 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
           const utdK2Path = path.join(kitRoot, `${utdK2ResRef}.utd`);
           const utdK1 = readFile(utdK1Path);
           const utdK2 = readFile(utdK2Path);
-          kit.doors.push(new KitDoor(utdK1ResRef, utdK2ResRef, utdK1, utdK2, Number(doorJson.width), Number(doorJson.height)));
+          kit.doors.push(
+            new KitDoor(utdK1ResRef, utdK2ResRef, utdK1, utdK2, Number(doorJson.width), Number(doorJson.height))
+          );
         } catch (err: unknown) {
           const ex = err as { filename?: string };
-          missingFiles.push([kitName, String(ex?.filename ?? ""), "door utd"]);
+          missingFiles.push([kitName, String(ex?.filename ?? ''), 'door utd']);
         }
       });
     }
 
     if (Array.isArray(kitJson.components)) {
       kitJson.components.forEach((componentJson: KitComponentJson) => {
-        const name = String(componentJson.name || "");
-        const componentId = String(componentJson.id || "");
+        const name = String(componentJson.name || '');
+        const componentId = String(componentJson.id || '');
         const wokPath = path.join(kitRoot, `${componentId}.wok`);
         const mdlPath = path.join(kitRoot, `${componentId}.mdl`);
         const mdxPath = path.join(kitRoot, `${componentId}.mdx`);
         if (!fs.existsSync(wokPath)) {
-          missingFiles.push([kitName, wokPath, "walkmesh"]);
+          missingFiles.push([kitName, wokPath, 'walkmesh']);
           return;
         }
         if (!fs.existsSync(mdlPath)) {
-          missingFiles.push([kitName, mdlPath, "model"]);
+          missingFiles.push([kitName, mdlPath, 'model']);
           return;
         }
         if (!fs.existsSync(mdxPath)) {
-          missingFiles.push([kitName, mdxPath, "model extension"]);
+          missingFiles.push([kitName, mdxPath, 'model extension']);
           return;
         }
         const bwmRaw = readFile(wokPath);

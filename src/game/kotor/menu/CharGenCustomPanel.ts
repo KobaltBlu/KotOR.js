@@ -1,19 +1,18 @@
-import { CurrentGame } from "@/engine/CurrentGame";
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIControl, GUILabel, GUIButton } from "@/gui";
+import { CurrentGame } from '@/engine/CurrentGame';
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIControl, GUILabel, GUIButton } from '@/gui';
 
 /**
  * CharGenCustomPanel class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenCustomPanel.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenCustomPanel extends GameMenu {
-
   LBL_BG: GUILabel;
   LBL_6: GUIControl;
   LBL_5: GUIControl;
@@ -36,7 +35,7 @@ export class CharGenCustomPanel extends GameMenu {
   BTN_BACK: GUIButton;
   BTN_CANCEL: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'custpnl';
     this.background = '';
@@ -45,7 +44,7 @@ export class CharGenCustomPanel extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -88,7 +87,7 @@ export class CharGenCustomPanel extends GameMenu {
         GameState.PartyManager.PlayerTemplate = GameState.CharGenManager.selectedCreature.save();
         GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
         GameState.PartyManager.AddPortraitToOrder(GameState.CharGenManager.selectedCreature.getPortraitResRef());
-        CurrentGame.InitGameInProgressFolder(true).then( () => {
+        CurrentGame.InitGameInProgressFolder(true).then(() => {
           GameState.LoadModule('end_m01aa');
         });
       });
@@ -99,5 +98,4 @@ export class CharGenCustomPanel extends GameMenu {
       resolve();
     });
   }
-  
 }

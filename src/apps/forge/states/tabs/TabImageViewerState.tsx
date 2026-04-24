@@ -1,10 +1,10 @@
-import React from "react";
-import { TabState } from "@/apps/forge/states/tabs";
-import { TabImageViewer } from "@/apps/forge/components/tabs/tab-image-viewer/TabImageViewer";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
-import { PixelManager } from "@/utility/PixelManager";
+import React from 'react';
+import { TabState } from '@/apps/forge/states/tabs';
+import { TabImageViewer } from '@/apps/forge/components/tabs/tab-image-viewer/TabImageViewer';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import * as KotOR from '@/apps/forge/KotOR';
+import { PixelManager } from '@/utility/PixelManager';
 
 const concatenate = (resultConstructor: any, ...arrays: any) => {
   let totalLength = 0;
@@ -18,50 +18,48 @@ const concatenate = (resultConstructor: any, ...arrays: any) => {
     offset += arr.length;
   }
   return result;
-}
+};
 
 export class TabImageViewerState extends TabState {
-
   tabName: string = `Image Viewer`;
-  image: KotOR.TPCObject|KotOR.TGAObject;
+  image: KotOR.TPCObject | KotOR.TGAObject;
   workingData: Uint8Array;
   bitsPerPixel: number;
 
-  private static getSaveTypeForExtension(ext: string){
-    switch(ext.toLowerCase()){
+  private static getSaveTypeForExtension(ext: string) {
+    switch (ext.toLowerCase()) {
       case 'tpc':
         return {
           description: 'Compressed Odyssey Image File',
           accept: {
-            'image/*': ['.tpc']
-          }
+            'image/*': ['.tpc'],
+          },
         };
       case 'tga':
         return {
           description: 'TGA Image File',
           accept: {
-            'image/*': ['.tga']
-          }
+            'image/*': ['.tga'],
+          },
         };
       case 'png':
         return {
           description: 'PNG Image File',
           accept: {
-            'image/*': ['.png']
-          }
+            'image/*': ['.png'],
+          },
         };
       default:
         return undefined;
     }
   }
 
-
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
     // this.singleInstance = true;
     this.isClosable = true;
 
-    if(this.file){
+    if (this.file) {
       this.tabName = this.file.getFilename();
     }
 
@@ -71,53 +69,52 @@ export class TabImageViewerState extends TabState {
     this.saveTypes = [
       TabImageViewerState.getSaveTypeForExtension('tpc'),
       TabImageViewerState.getSaveTypeForExtension('tga'),
-      TabImageViewerState.getSaveTypeForExtension('png')
+      TabImageViewerState.getSaveTypeForExtension('png'),
     ];
   }
 
-  async exportAs(ext: 'tga' | 'png' | 'tpc'){
+  async exportAs(ext: 'tga' | 'png' | 'tpc') {
     const saveType = TabImageViewerState.getSaveTypeForExtension(ext);
-    if(!saveType){
+    if (!saveType) {
       return false;
     }
 
     const previousSaveTypes = this.saveTypes;
     this.saveTypes = [saveType];
-    try{
+    try {
       return await this.saveAs();
-    }finally{
+    } finally {
       this.saveTypes = previousSaveTypes;
     }
   }
 
-  openFile(file?: EditorFile){
-    return new Promise<KotOR.TPCObject|KotOR.TGAObject>( (resolve, reject) => {
-      if(!file && this.file instanceof EditorFile){
+  openFile(file?: EditorFile) {
+    return new Promise<KotOR.TPCObject | KotOR.TGAObject>((resolve, reject) => {
+      if (!file && this.file instanceof EditorFile) {
         file = this.file;
       }
-      if(file instanceof EditorFile){
-        if(this.file != file) this.file = file;
-        file.readFile().then( (response) => {
-          switch(file?.ext){
+      if (file instanceof EditorFile) {
+        if (this.file != file) this.file = file;
+        file.readFile().then((response) => {
+          switch (file?.ext) {
             case 'tga':
-              this.image = new KotOR.TGAObject({file: response.buffer, filename: file.resref+'.tga' });
-            break;
+              this.image = new KotOR.TGAObject({ file: response.buffer, filename: file.resref + '.tga' });
+              break;
             case 'tpc':
-              this.image = new KotOR.TPCObject({file: response.buffer, filename: file.resref+'.tpc' });
-            break;
+              this.image = new KotOR.TPCObject({ file: response.buffer, filename: file.resref + '.tpc' });
+              break;
           }
-          
+
           resolve(this.image);
           this.processEventListener('onEditorFileLoad');
         });
       }
     });
-
   }
 
-  getPixelData(): Promise<Uint8Array>{
-    return new Promise<Uint8Array>( (resolve, reject) => {
-      if(this.image instanceof KotOR.TPCObject){
+  getPixelData(): Promise<Uint8Array> {
+    return new Promise<Uint8Array>((resolve, reject) => {
+      if (this.image instanceof KotOR.TPCObject) {
         const tpc = this.image;
         const dds = tpc.getDDS(false);
         let imagePixels = new Uint8Array(0);
@@ -126,43 +123,58 @@ export class TabImageViewerState extends TabState {
         const height = tpc.header.height;
         const mipmapCount = 1;
 
-        if(!tpc.txi.procedureType){
-          if(tpc.header.faces > 1){
-            for ( let face = 0; face < tpc.header.faces; face ++ ) {
-              for ( let i = 0; i < 1; i++ ) {
-                const mipmap = dds.mipmaps[face + (i * dds.mipmapCount)];
-                if(tpc.header.faces == 6){
-                  switch(face){
+        if (!tpc.txi.procedureType) {
+          if (tpc.header.faces > 1) {
+            for (let face = 0; face < tpc.header.faces; face++) {
+              for (let i = 0; i < 1; i++) {
+                const mipmap = dds.mipmaps[face + i * dds.mipmapCount];
+                if (tpc.header.faces == 6) {
+                  switch (face) {
                     case 3:
-                      mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height);
-                    break;
+                      mipmap.data = PixelManager.Rotate90deg(
+                        PixelManager.Rotate90deg(mipmap.data, 4, width, height),
+                        4,
+                        width,
+                        height
+                      );
+                      break;
                     case 1:
                       mipmap.data = PixelManager.Rotate90deg(mipmap.data, 4, width, height);
-                    break;
+                      break;
                     case 0:
-                      mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height), 4, width, height);
-                    break;
+                      mipmap.data = PixelManager.Rotate90deg(
+                        PixelManager.Rotate90deg(
+                          PixelManager.Rotate90deg(mipmap.data, 4, width, height),
+                          4,
+                          width,
+                          height
+                        ),
+                        4,
+                        width,
+                        height
+                      );
+                      break;
                   }
                 }
                 imagePixels = concatenate(Uint8Array, imagePixels, mipmap.data);
               }
             }
-          }else{
+          } else {
             imagePixels = concatenate(Uint8Array, imagePixels, dds.mipmaps[0].data);
           }
-        }else{
+        } else {
           imagePixels = concatenate(Uint8Array, imagePixels, dds.mipmaps[0].data);
         }
         resolve(imagePixels);
-      }else{
-        this.image.getPixelData( (buffer: Uint8Array) => {
+      } else {
+        this.image.getPixelData((buffer: Uint8Array) => {
           resolve(new Uint8Array(buffer));
-        })
+        });
       }
     });
   }
 
-  static FlipY(pixelData: Uint8Array, width = 1, height = 1){
+  static FlipY(pixelData: Uint8Array, width = 1, height = 1) {
     let offset = 0;
     const stride = width * 4;
 
@@ -174,18 +186,19 @@ export class TabImageViewerState extends TabState {
     }
   }
 
-  static FlipX(pixelData: Uint8Array, width = 1, height = 1){
+  static FlipX(pixelData: Uint8Array, width = 1, height = 1) {
     const unFlipped = Uint8Array.from(pixelData);
 
     for (let i = 0; i < pixelData.length; i++) {
-      pixelData[i] = (unFlipped[i - 2 * (i % width) + width - 1]);
+      pixelData[i] = unFlipped[i - 2 * (i % width) + width - 1];
     }
   }
 
-  static PixelDataToRGBA(pixelData: Uint8Array, width = 1, height = 1){
+  static PixelDataToRGBA(pixelData: Uint8Array, width = 1, height = 1) {
     const data = new Uint8Array(pixelData.length);
     const n = 4 * width * height;
-    let s = 0, d = 0;
+    let s = 0,
+      d = 0;
     while (d < n) {
       data[d++] = pixelData[s++];
       data[d++] = pixelData[s++];
@@ -195,10 +208,11 @@ export class TabImageViewerState extends TabState {
     return data;
   }
 
-  static RGBToRGBA(pixelData: Uint8Array, width = 1, height = 1){
+  static RGBToRGBA(pixelData: Uint8Array, width = 1, height = 1) {
     const data = new Uint8Array(4 * width * height);
     const n = 4 * width * height;
-    let s = 0, d = 0;
+    let s = 0,
+      d = 0;
     while (d < n) {
       data[d++] = pixelData[s++];
       data[d++] = pixelData[s++];
@@ -208,23 +222,22 @@ export class TabImageViewerState extends TabState {
     return data;
   }
 
-  static BGRAtoRGBA(pixelData: Uint8Array){
+  static BGRAtoRGBA(pixelData: Uint8Array) {
     for (let i = 0; i < pixelData.length; i += 4) {
-      pixelData[i    ] = pixelData[i + 2]; // red
+      pixelData[i] = pixelData[i + 2]; // red
       pixelData[i + 1] = pixelData[i + 1]; // green
-      pixelData[i + 2] = pixelData[i    ]; // blue
+      pixelData[i + 2] = pixelData[i]; // blue
       pixelData[i + 3] = pixelData[i + 3]; // alpha
     }
   }
 
-  static TGAGrayFix(pixelData: Uint8Array){
+  static TGAGrayFix(pixelData: Uint8Array) {
     const fixed = new Uint8Array(pixelData.length * 4);
     for (let i = 0; i < pixelData.length; i++) {
-
       const color = pixelData[i];
       const offset = i * 4;
 
-      fixed[offset    ] = color; // red
+      fixed[offset] = color; // red
       fixed[offset + 1] = color; // green
       fixed[offset + 2] = color; // blue
       fixed[offset + 3] = 255; // alpha
@@ -232,19 +245,19 @@ export class TabImageViewerState extends TabState {
     return fixed;
   }
 
-  static TGAColorFix(pixelData: Uint8Array){
+  static TGAColorFix(pixelData: Uint8Array) {
     const fixed = Uint8Array.from(pixelData);
     for (let i = 0; i < pixelData.length; i += 4) {
-      fixed[i + 2] = pixelData[i    ]; // red
+      fixed[i + 2] = pixelData[i]; // red
       fixed[i + 1] = pixelData[i + 1]; // green
-      fixed[i    ] = pixelData[i + 2]; // blue
+      fixed[i] = pixelData[i + 2]; // blue
       fixed[i + 3] = pixelData[i + 3]; // alpha
     }
     return fixed;
   }
 
-  static PreviewAlphaFix(pixelData: Uint8Array){
-    for (let i = 0; i < pixelData.length; i += 4){
+  static PreviewAlphaFix(pixelData: Uint8Array) {
+    for (let i = 0; i < pixelData.length; i += 4) {
       pixelData[i + 3] = 255;
     }
   }
@@ -252,7 +265,7 @@ export class TabImageViewerState extends TabState {
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     const normalizedExt = (ext || '').replace('.', '').toLowerCase();
 
-    if(normalizedExt == 'tga'){
+    if (normalizedExt == 'tga') {
       const tga = new KotOR.TGAObject();
       tga.header = {
         ID: 0,
@@ -272,34 +285,34 @@ export class TabImageViewerState extends TabState {
       return tga.toExportBuffer();
     }
 
-    if(normalizedExt == 'png'){
+    if (normalizedExt == 'png') {
       const width = this.image.header.width;
       const height = this.image.header.height;
       let pixelData = await this.getPixelData();
       const bitsPerPixel = this.image.header.bitsPerPixel;
 
-      if(this.image instanceof KotOR.TPCObject){
-        if(bitsPerPixel == 24){
+      if (this.image instanceof KotOR.TPCObject) {
+        if (bitsPerPixel == 24) {
           pixelData = TabImageViewerState.PixelDataToRGBA(pixelData, width, height);
         }
-        if(bitsPerPixel == 8){
+        if (bitsPerPixel == 8) {
           pixelData = TabImageViewerState.TGAGrayFix(pixelData);
         }
         TabImageViewerState.FlipY(pixelData, width, height);
       }
 
-      if(this.image instanceof KotOR.TGAObject){
-        switch(bitsPerPixel){
+      if (this.image instanceof KotOR.TGAObject) {
+        switch (bitsPerPixel) {
           case 32:
             pixelData = TabImageViewerState.TGAColorFix(pixelData);
-          break;
+            break;
           case 24:
             pixelData = TabImageViewerState.RGBToRGBA(pixelData, width, height);
             pixelData = TabImageViewerState.TGAColorFix(pixelData);
-          break;
+            break;
           case 8:
             pixelData = TabImageViewerState.TGAGrayFix(pixelData);
-          break;
+            break;
         }
         TabImageViewerState.FlipY(pixelData, width, height);
       }
@@ -308,7 +321,7 @@ export class TabImageViewerState extends TabState {
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
-      if(!ctx){
+      if (!ctx) {
         return new Uint8Array(0);
       }
       const imageData = ctx.createImageData(width, height);
@@ -319,13 +332,12 @@ export class TabImageViewerState extends TabState {
       const base64 = dataURL.split(',')[1] || '';
       const binary = atob(base64);
       const output = new Uint8Array(binary.length);
-      for(let i = 0; i < binary.length; i++){
+      for (let i = 0; i < binary.length; i++) {
         output[i] = binary.charCodeAt(i);
       }
       return output;
     }
-    
+
     return super.getExportBuffer(resref, ext);
   }
-
 }

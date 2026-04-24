@@ -13,7 +13,7 @@
 import React, { useState, useEffect } from 'react';
 
 import * as KotOR from '@/apps/forge/KotOR';
-import "@/apps/forge/components/tabs/tab-dlg-editor/DLGDialogPropertiesPanel.scss";
+import '@/apps/forge/components/tabs/tab-dlg-editor/DLGDialogPropertiesPanel.scss';
 
 interface DLGDialogPropertiesPanelProps {
   dlg: KotOR.DLGObject | null;
@@ -25,14 +25,9 @@ interface StuntActor {
   resref: string;
 }
 
-export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> = ({
-  dlg,
-  onUpdate
-}) => {
+export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> = ({ dlg, onUpdate }) => {
   const [_localDlg, setLocalDlg] = useState(dlg);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(['general', 'scripts'])
-  );
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['general', 'scripts']));
 
   useEffect(() => {
     setLocalDlg(dlg);
@@ -103,18 +98,13 @@ export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> =
     dlg.stuntActors.forEach((actor, _key) => {
       actors.push({
         participant: actor.participant,
-        resref: actor.resref
+        resref: actor.resref,
       });
     });
     return actors;
   };
 
-  const renderSection = (
-    id: string,
-    title: string,
-    content: React.ReactNode,
-    icon?: string
-  ) => {
+  const renderSection = (id: string, title: string, content: React.ReactNode, icon?: string) => {
     const isExpanded = expandedSections.has(id);
 
     return (
@@ -124,11 +114,7 @@ export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> =
           {icon && <span className="section-icon">{icon}</span>}
           <h4>{title}</h4>
         </div>
-        {isExpanded && (
-          <div className="property-section-content">
-            {content}
-          </div>
-        )}
+        {isExpanded && <div className="property-section-content">{content}</div>}
       </div>
     );
   };
@@ -147,12 +133,7 @@ export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> =
           <>
             <div className="property-group">
               <label>ResRef</label>
-              <input
-                type="text"
-                value={dlg.resref || ''}
-                disabled
-                className="input-disabled"
-              />
+              <input type="text" value={dlg.resref || ''} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
@@ -169,13 +150,7 @@ export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> =
 
             <div className="property-group">
               <label>VO ID</label>
-              <input
-                type="text"
-                value={dlg.vo_id || ''}
-                disabled
-                className="input-disabled"
-                placeholder="No VO ID"
-              />
+              <input type="text" value={dlg.vo_id || ''} disabled className="input-disabled" placeholder="No VO ID" />
             </div>
 
             <div className="property-group">
@@ -238,9 +213,7 @@ export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> =
                 className="input-disabled"
                 placeholder="No script"
               />
-              {dlg.scripts.onEndConversation && (
-                <button className="btn-script">Edit Script</button>
-              )}
+              {dlg.scripts.onEndConversation && <button className="btn-script">Edit Script</button>}
             </div>
 
             <div className="property-group">
@@ -252,9 +225,7 @@ export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> =
                 className="input-disabled"
                 placeholder="No script"
               />
-              {dlg.scripts.onEndConversationAbort && (
-                <button className="btn-script">Edit Script</button>
-              )}
+              {dlg.scripts.onEndConversationAbort && <button className="btn-script">Edit Script</button>}
             </div>
           </>,
           '📜'
@@ -312,9 +283,7 @@ export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> =
                     <div className="stunt-actor-label">
                       <span className="participant">{actor.participant}</span>
                     </div>
-                    <div className="stunt-actor-resref">
-                      {actor.resref || '(No model)'}
-                    </div>
+                    <div className="stunt-actor-resref">{actor.resref || '(No model)'}</div>
                   </div>
                 ))
               )}
@@ -354,16 +323,13 @@ export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> =
               <div className="stat-item">
                 <label>Conversation Type</label>
                 <span className="stat-value">
-                  {dlg.conversationType === 0 ? 'Conversation' :
-                   dlg.conversationType === 1 ? 'Computer' : 'Bark'}
+                  {dlg.conversationType === 0 ? 'Conversation' : dlg.conversationType === 1 ? 'Computer' : 'Bark'}
                 </span>
               </div>
 
               <div className="stat-item">
                 <label>Has VO</label>
-                <span className="stat-value">
-                  {dlg.vo_id ? 'Yes' : 'No'}
-                </span>
+                <span className="stat-value">{dlg.vo_id ? 'Yes' : 'No'}</span>
               </div>
             </div>
           </>,
@@ -376,22 +342,12 @@ export const DLGDialogPropertiesPanel: React.FC<DLGDialogPropertiesPanelProps> =
           <>
             <div className="property-group">
               <label>Alien Race Owner</label>
-              <input
-                type="number"
-                value={dlg.alienRaceOwner || 0}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={dlg.alienRaceOwner || 0} disabled className="input-disabled" />
             </div>
 
             <div className="property-group">
               <label>Post Process Owner</label>
-              <input
-                type="number"
-                value={dlg.postProcOwner || 0}
-                disabled
-                className="input-disabled"
-              />
+              <input type="number" value={dlg.postProcOwner || 0} disabled className="input-disabled" />
             </div>
           </>,
           '🔧'

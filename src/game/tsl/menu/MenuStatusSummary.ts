@@ -1,17 +1,16 @@
-import type { GUILabel, GUIButton } from "@/gui";
-import { MenuStatusSummary as K1_MenuStatusSummary } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton } from '@/gui';
+import { MenuStatusSummary as K1_MenuStatusSummary } from '@/game/kotor/KOTOR';
 
 /**
  * MenuStatusSummary class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuStatusSummary.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuStatusSummary extends K1_MenuStatusSummary {
-
   declare LBL_JOURNAL: GUILabel;
   declare LBL_CREDITS: GUILabel;
   declare LBL_XP: GUILabel;
@@ -40,7 +39,7 @@ export class MenuStatusSummary extends K1_MenuStatusSummary {
   declare LBL_MAX_FP_LOST: GUILabel;
   declare BTN_OK: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'statussummary_p';
     this.background = '';
@@ -49,11 +48,9 @@ export class MenuStatusSummary extends K1_MenuStatusSummary {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
-  
 }
-

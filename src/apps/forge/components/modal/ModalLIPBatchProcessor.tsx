@@ -1,21 +1,20 @@
-import * as fs from "fs";
+import * as fs from 'fs';
 
-import React, { useEffect, useState } from "react";
-import { Modal, Button, Form, ListGroup } from "react-bootstrap";
+import React, { useEffect, useState } from 'react';
+import { Modal, Button, Form, ListGroup } from 'react-bootstrap';
 
-import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
-import { processAudioToLIP } from "@/apps/forge/helpers/LIPBatchProcessor";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ModalLIPBatchProcessorState, AudioFileEntry } from "@/apps/forge/states/modal/ModalLIPBatchProcessorState";
-
+import { ForgeFileSystem } from '@/apps/forge/ForgeFileSystem';
+import { processAudioToLIP } from '@/apps/forge/helpers/LIPBatchProcessor';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import * as KotOR from '@/apps/forge/KotOR';
+import { ModalLIPBatchProcessorState, AudioFileEntry } from '@/apps/forge/states/modal/ModalLIPBatchProcessorState';
 
 export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
   const modal = props.modal as ModalLIPBatchProcessorState;
   const [show, setShow] = useState(modal.visible);
   const [audioFiles, setAudioFiles] = useState<AudioFileEntry[]>([]);
-  const [outputPath, setOutputPath] = useState("");
-  const [error, setError] = useState("");
+  const [outputPath, setOutputPath] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [lastResult, setLastResult] = useState<{ processed: number; errors: number } | null>(null);
 
@@ -34,13 +33,13 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
 
   useEffect(() => {
     const onStateChange = () => refresh();
-    modal.addEventListener("onHide", onHide);
-    modal.addEventListener("onShow", onShow);
-    modal.addEventListener("onStateChange", onStateChange);
+    modal.addEventListener('onHide', onHide);
+    modal.addEventListener('onShow', onShow);
+    modal.addEventListener('onStateChange', onStateChange);
     return () => {
-      modal.removeEventListener("onHide", onHide);
-      modal.removeEventListener("onShow", onShow);
-      modal.removeEventListener("onStateChange", onStateChange);
+      modal.removeEventListener('onHide', onHide);
+      modal.removeEventListener('onShow', onShow);
+      modal.removeEventListener('onStateChange', onStateChange);
     };
   }, [modal]);
 
@@ -49,13 +48,13 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
   const handleAddAudio = async () => {
     const response = await ForgeFileSystem.OpenFile({
       multiple: true,
-      ext: [".wav", ".mp3"],
+      ext: ['.wav', '.mp3'],
     });
     const entries: AudioFileEntry[] = [];
     if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
       if (response.paths && response.paths.length > 0) {
         for (const p of response.paths) {
-          const name = p.split(/[/\\]/).pop() || "unknown";
+          const name = p.split(/[/\\]/).pop() || 'unknown';
           const buf = await fs.promises.readFile(p);
           entries.push({ name, path: p, buffer: buf.buffer as ArrayBuffer });
         }
@@ -94,14 +93,14 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
 
   const handleProcess = async () => {
     if (modal.audioFiles.length === 0) {
-      modal.setError("No audio files selected.");
+      modal.setError('No audio files selected.');
       return;
     }
     if (!modal.outputDirPath && !modal.outputDirHandle) {
-      modal.setError("No output directory selected.");
+      modal.setError('No output directory selected.');
       return;
     }
-    modal.setError("");
+    modal.setError('');
     modal.setLoading(true);
     let processed = 0;
     let errors = 0;
@@ -135,11 +134,11 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
         errors++;
         continue;
       }
-      const stem = entry.name.replace(/\.[^/.]+$/, "");
+      const stem = entry.name.replace(/\.[^/.]+$/, '');
       const lipName = `${stem}.lip`;
 
       if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON && modal.outputDirPath) {
-        const sep = process?.platform === "win32" ? "\\" : "/";
+        const sep = process?.platform === 'win32' ? '\\' : '/';
         const outPath = `${modal.outputDirPath}${sep}${lipName}`;
         try {
           await fs.promises.writeFile(outPath, Buffer.from(result.lipBuffer));
@@ -149,7 +148,9 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
         }
       } else if (modal.outputDirHandle) {
         try {
-          const ws = await (modal.outputDirHandle as FileSystemDirectoryHandle).getFileHandle(lipName, { create: true });
+          const ws = await (modal.outputDirHandle as FileSystemDirectoryHandle).getFileHandle(lipName, {
+            create: true,
+          });
           const writable = await (ws as FileSystemFileHandle).createWritable?.();
           if (writable) {
             await writable.write(result.lipBuffer);
@@ -182,11 +183,16 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
               <Button variant="primary" size="sm" onClick={handleAddAudio}>
                 Add Files…
               </Button>
-              <Button variant="outline-secondary" size="sm" onClick={handleClearAudio} disabled={audioFiles.length === 0}>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={handleClearAudio}
+                disabled={audioFiles.length === 0}
+              >
                 Clear
               </Button>
             </div>
-            <ListGroup style={{ maxHeight: 180, overflowY: "auto" }}>
+            <ListGroup style={{ maxHeight: 180, overflowY: 'auto' }}>
               {audioFiles.map((f, i) => (
                 <ListGroup.Item key={i} className="d-flex justify-content-between align-items-center py-1">
                   <small>{f.name}</small>
@@ -200,15 +206,13 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
           <Form.Group className="mb-3">
             <Form.Label>Output Directory</Form.Label>
             <div className="d-flex gap-2">
-              <Form.Control type="text" readOnly value={outputPath || "(not selected)"} />
+              <Form.Control type="text" readOnly value={outputPath || '(not selected)'} />
               <Button variant="outline-secondary" onClick={handleBrowseOutput}>
                 Browse…
               </Button>
             </div>
           </Form.Group>
-          {error && (
-            <Form.Text className="text-danger d-block mb-2">{error}</Form.Text>
-          )}
+          {error && <Form.Text className="text-danger d-block mb-2">{error}</Form.Text>}
           {lastResult && (
             <Form.Text className="text-muted d-block mb-2">
               Last run: {lastResult.processed} processed, {lastResult.errors} errors
@@ -225,7 +229,7 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
           onClick={handleProcess}
           disabled={loading || audioFiles.length === 0 || (!outputPath && !modal.outputDirHandle)}
         >
-          {loading ? "Processing…" : "Process"}
+          {loading ? 'Processing…' : 'Process'}
         </Button>
       </Modal.Footer>
     </Modal>

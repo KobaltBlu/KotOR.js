@@ -14,7 +14,7 @@ import React, { useState, useEffect } from 'react';
 
 import { DLGTreeNode, DLGNodeReference } from '@/apps/forge/interfaces/DLGTreeNode';
 import { DLGTreeModel } from '@/apps/forge/utils/DLGTreeModel';
-import "@/apps/forge/components/tabs/tab-dlg-editor/DLGReferenceChooser.scss";
+import '@/apps/forge/components/tabs/tab-dlg-editor/DLGReferenceChooser.scss';
 
 interface DLGReferenceChooserProps {
   references: DLGNodeReference[];
@@ -29,7 +29,7 @@ export const DLGReferenceChooser: React.FC<DLGReferenceChooserProps> = ({
   model,
   onSelect,
   onCancel,
-  isOpen
+  isOpen,
 }) => {
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
@@ -96,7 +96,7 @@ export const DLGReferenceChooser: React.FC<DLGReferenceChooserProps> = ({
       current = current.parent;
     }
 
-    return parts. join(' → ');
+    return parts.join(' → ');
   };
 
   const getReferenceText = (reference: DLGNodeReference): string => {
@@ -111,12 +111,7 @@ export const DLGReferenceChooser: React.FC<DLGReferenceChooserProps> = ({
         <div className="dlg-reference-chooser-header">
           <h3>Choose Reference</h3>
           <div className="dlg-reference-chooser-nav">
-            <button
-              className="nav-button"
-              onClick={handleBack}
-              disabled={historyIndex === 0}
-              title="Back"
-            >
+            <button className="nav-button" onClick={handleBack} disabled={historyIndex === 0} title="Back">
               ◀
             </button>
             <button
@@ -135,8 +130,8 @@ export const DLGReferenceChooser: React.FC<DLGReferenceChooserProps> = ({
 
         <div className="dlg-reference-chooser-content">
           <p className="dlg-reference-chooser-description">
-            This node is referenced in {references.length} location{references.length !== 1 ? 's' : ''}.
-            Select which reference to navigate to:
+            This node is referenced in {references.length} location{references.length !== 1 ? 's' : ''}. Select which
+            reference to navigate to:
           </p>
 
           <div className="dlg-reference-list">
@@ -147,12 +142,8 @@ export const DLGReferenceChooser: React.FC<DLGReferenceChooserProps> = ({
                 onClick={() => handleSelect(index)}
                 onDoubleClick={() => handleDoubleClick(index)}
               >
-                <div className="dlg-reference-item-path">
-                  {getReferencePath(ref)}
-                </div>
-                <div className="dlg-reference-item-text">
-                  {getReferenceText(ref)}
-                </div>
+                <div className="dlg-reference-item-path">{getReferencePath(ref)}</div>
+                <div className="dlg-reference-item-text">{getReferenceText(ref)}</div>
                 {ref.sourceNode.hasConditions && (
                   <span className="dlg-reference-item-badge" title="Has conditions">
                     🔒

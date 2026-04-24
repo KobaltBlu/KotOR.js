@@ -1,10 +1,10 @@
-import React from "react";
+import React from 'react';
 
-import { TabAREEditor } from "@/apps/forge/components/tabs/tab-are-editor/TabAREEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { TabAREEditor } from '@/apps/forge/components/tabs/tab-are-editor/TabAREEditor';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -13,11 +13,11 @@ export class TabAREEditorState extends TabState {
   are?: KotOR.GFFObject;
   activeTab: string = 'basic';
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     log.trace('TabAREEditorState constructor entry');
     super(options);
 
-    if(this.file){
+    if (this.file) {
       this.tabName = this.file.getFilename();
       log.debug('TabAREEditorState constructor tabName', this.tabName);
     }
@@ -26,9 +26,9 @@ export class TabAREEditorState extends TabState {
       {
         description: 'Area File',
         accept: {
-          'application/octet-stream': ['.are']
-        }
-      }
+          'application/octet-stream': ['.are'],
+        },
+      },
     ];
 
     this.setContentView(<TabAREEditor tab={this}></TabAREEditor>);
@@ -38,7 +38,7 @@ export class TabAREEditorState extends TabState {
 
   async openFile() {
     log.trace('TabAREEditorState openFile entry');
-    if(this.file){
+    if (this.file) {
       const response = await this.file.readFile();
       log.debug('TabAREEditorState openFile readFile done', response.buffer?.length ?? 0);
       this.are = new KotOR.GFFObject(response.buffer);
@@ -58,7 +58,7 @@ export class TabAREEditorState extends TabState {
 
   async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
     log.trace('TabAREEditorState getExportBuffer');
-    if(this.are){
+    if (this.are) {
       const buf = this.are.getExportBuffer();
       log.debug('TabAREEditorState getExportBuffer length', buf?.length ?? 0);
       return buf;

@@ -1,14 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Form, Table, Button, Spinner, Alert } from "react-bootstrap";
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Form, Table, Button, Spinner, Alert } from 'react-bootstrap';
 
-import type { EventListenerCallback } from "@/apps/forge/EventListenerModel";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import type { ReferenceHit, ReferenceScope } from "@/apps/forge/helpers/ReferenceFinder";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalReferenceSearchOptionsState } from "@/apps/forge/states/modal/ModalReferenceSearchOptionsState";
-import { TabReferenceFinderState } from "@/apps/forge/states/tabs/TabReferenceFinderState";
+import type { EventListenerCallback } from '@/apps/forge/EventListenerModel';
+import { FileTypeManager } from '@/apps/forge/FileTypeManager';
+import type { ReferenceHit, ReferenceScope } from '@/apps/forge/helpers/ReferenceFinder';
+import { ForgeState } from '@/apps/forge/states/ForgeState';
+import { ModalReferenceSearchOptionsState } from '@/apps/forge/states/modal/ModalReferenceSearchOptionsState';
+import { TabReferenceFinderState } from '@/apps/forge/states/tabs/TabReferenceFinderState';
 
-export type TabReferenceFinderEventType = "onResults" | "onSearchState" | "onError";
+export type TabReferenceFinderEventType = 'onResults' | 'onSearchState' | 'onError';
 
 export interface TabReferenceFinderProps {
   tab: TabReferenceFinderState;
@@ -30,14 +30,14 @@ export const TabReferenceFinder = function TabReferenceFinder(props: TabReferenc
     const onSearchState: EventListenerCallback = (...args: unknown[]) => setSearching(!!args[0]);
     const onError: EventListenerCallback = (...args: unknown[]) => setError(String(args[0]));
 
-    tab.addEventListener("onResults" as TabReferenceFinderEventType, onResults);
-    tab.addEventListener("onSearchState" as TabReferenceFinderEventType, onSearchState);
-    tab.addEventListener("onError" as TabReferenceFinderEventType, onError);
+    tab.addEventListener('onResults' as TabReferenceFinderEventType, onResults);
+    tab.addEventListener('onSearchState' as TabReferenceFinderEventType, onSearchState);
+    tab.addEventListener('onError' as TabReferenceFinderEventType, onError);
 
     return () => {
-      tab.removeEventListener("onResults" as TabReferenceFinderEventType, onResults);
-      tab.removeEventListener("onSearchState" as TabReferenceFinderEventType, onSearchState);
-      tab.removeEventListener("onError" as TabReferenceFinderEventType, onError);
+      tab.removeEventListener('onResults' as TabReferenceFinderEventType, onResults);
+      tab.removeEventListener('onSearchState' as TabReferenceFinderEventType, onSearchState);
+      tab.removeEventListener('onError' as TabReferenceFinderEventType, onError);
     };
   }, [tab]);
 
@@ -69,7 +69,7 @@ export const TabReferenceFinder = function TabReferenceFinder(props: TabReferenc
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
+      if (e.key === 'Enter') {
         e.preventDefault();
         onRun();
       }
@@ -82,13 +82,9 @@ export const TabReferenceFinder = function TabReferenceFinder(props: TabReferenc
       <tr key={`${r.scope}-${r.path}-${idx}`}>
         <td style={{ width: 90 }}>{r.scope}</td>
         <td>{r.displayName}</td>
-        <td style={{ width: 110, textAlign: "right" }}>{r.occurrences}</td>
-        <td style={{ width: 120, textAlign: "right" }}>
-          <Button
-            size="sm"
-            variant="outline-primary"
-            onClick={() => FileTypeManager.onOpenResource(r.editorFile)}
-          >
+        <td style={{ width: 110, textAlign: 'right' }}>{r.occurrences}</td>
+        <td style={{ width: 120, textAlign: 'right' }}>
+          <Button size="sm" variant="outline-primary" onClick={() => FileTypeManager.onOpenResource(r.editorFile)}>
             Open
           </Button>
         </td>
@@ -98,7 +94,7 @@ export const TabReferenceFinder = function TabReferenceFinder(props: TabReferenc
 
   return (
     <div style={{ padding: 12 }}>
-      <div style={{ display: "flex", gap: 10, alignItems: "end", flexWrap: "wrap" }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'end', flexWrap: 'wrap' }}>
         <Form.Group style={{ minWidth: 280, flex: 1 }}>
           <Form.Label>Query</Form.Label>
           <Form.Control
@@ -113,11 +109,7 @@ export const TabReferenceFinder = function TabReferenceFinder(props: TabReferenc
 
         <Form.Group style={{ width: 170 }}>
           <Form.Label>Scope</Form.Label>
-          <Form.Select
-            value={scope}
-            onChange={(e) => setScope(e.target.value as ReferenceScope)}
-            disabled={searching}
-          >
+          <Form.Select value={scope} onChange={(e) => setScope(e.target.value as ReferenceScope)} disabled={searching}>
             <option value="project">Project</option>
             <option value="game">Game (name only)</option>
             <option value="both">Both</option>
@@ -141,7 +133,7 @@ export const TabReferenceFinder = function TabReferenceFinder(props: TabReferenc
               <span style={{ marginLeft: 8 }}>Searching…</span>
             </>
           ) : (
-            "Search"
+            'Search'
           )}
         </Button>
 
@@ -156,18 +148,18 @@ export const TabReferenceFinder = function TabReferenceFinder(props: TabReferenc
         </Alert>
       ) : null}
 
-      <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between" }}>
-        <div style={{ color: "#999" }}>{results.length} result(s)</div>
+      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ color: '#999' }}>{results.length} result(s)</div>
       </div>
 
-      <div style={{ marginTop: 10, maxHeight: "calc(100vh - 230px)", overflow: "auto" }}>
+      <div style={{ marginTop: 10, maxHeight: 'calc(100vh - 230px)', overflow: 'auto' }}>
         <Table striped bordered hover size="sm" variant="dark">
           <thead>
             <tr>
               <th>Scope</th>
               <th>File</th>
-              <th style={{ textAlign: "right" }}>Hits</th>
-              <th style={{ textAlign: "right" }}>Actions</th>
+              <th style={{ textAlign: 'right' }}>Hits</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>{resultRows}</tbody>

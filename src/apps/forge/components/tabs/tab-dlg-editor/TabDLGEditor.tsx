@@ -1,23 +1,23 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { DLGDialogPropertiesPanel } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGDialogPropertiesPanel";
-import { DLGNodePropertiesPanel } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGNodePropertiesPanel";
-import { DLGReferenceChooser } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGReferenceChooser";
-import { DLGSearchBar } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGSearchBar";
-import { DLGGraphView } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGGraphView";
-import { DLGTreeView } from "@/apps/forge/components/tabs/tab-dlg-editor/DLGTreeView";
-import { DLGTreeNode, DLGNodeReference } from "@/apps/forge/interfaces/DLGTreeNode";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabDLGEditorState } from "@/apps/forge/states/tabs";
-import { DLGClipboardManager } from "@/apps/forge/utils/DLGClipboardManager";
-import { DLGDragDropManager } from "@/apps/forge/utils/DLGDragDropManager";
-import { DLGNavigationManager } from "@/apps/forge/utils/DLGNavigationManager";
-import { DLGTreeModel } from "@/apps/forge/utils/DLGTreeModel";
-import { DLGUndoManager } from "@/apps/forge/utils/DLGUndoManager";
-import { DLGValidation, ValidationSeverity } from "@/apps/forge/utils/DLGValidation";
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
+import { DLGDialogPropertiesPanel } from '@/apps/forge/components/tabs/tab-dlg-editor/DLGDialogPropertiesPanel';
+import { DLGNodePropertiesPanel } from '@/apps/forge/components/tabs/tab-dlg-editor/DLGNodePropertiesPanel';
+import { DLGReferenceChooser } from '@/apps/forge/components/tabs/tab-dlg-editor/DLGReferenceChooser';
+import { DLGSearchBar } from '@/apps/forge/components/tabs/tab-dlg-editor/DLGSearchBar';
+import { DLGGraphView } from '@/apps/forge/components/tabs/tab-dlg-editor/DLGGraphView';
+import { DLGTreeView } from '@/apps/forge/components/tabs/tab-dlg-editor/DLGTreeView';
+import { DLGTreeNode, DLGNodeReference } from '@/apps/forge/interfaces/DLGTreeNode';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabDLGEditorState } from '@/apps/forge/states/tabs';
+import { DLGClipboardManager } from '@/apps/forge/utils/DLGClipboardManager';
+import { DLGDragDropManager } from '@/apps/forge/utils/DLGDragDropManager';
+import { DLGNavigationManager } from '@/apps/forge/utils/DLGNavigationManager';
+import { DLGTreeModel } from '@/apps/forge/utils/DLGTreeModel';
+import { DLGUndoManager } from '@/apps/forge/utils/DLGUndoManager';
+import { DLGValidation, ValidationSeverity } from '@/apps/forge/utils/DLGValidation';
 
-import "@/apps/forge/components/tabs/tab-dlg-editor/TabDLGEditor.scss";
+import '@/apps/forge/components/tabs/tab-dlg-editor/TabDLGEditor.scss';
 
 interface BaseTabProps {
   tab: TabDLGEditorState;
@@ -197,20 +197,12 @@ export const TabDLGEditor = function (props: BaseTabProps) {
 
   const handleCopy = useCallback(() => {
     if (!selectedTreeNode) return;
-    clipboardManager.current.copy(
-      selectedTreeNode.dlgNode,
-      selectedTreeNode.nodeType,
-      selectedTreeNode.listIndex
-    );
+    clipboardManager.current.copy(selectedTreeNode.dlgNode, selectedTreeNode.nodeType, selectedTreeNode.listIndex);
   }, [selectedTreeNode]);
 
   const handleCut = useCallback(() => {
     if (!selectedTreeNode) return;
-    clipboardManager.current.cut(
-      selectedTreeNode.dlgNode,
-      selectedTreeNode.nodeType,
-      selectedTreeNode.listIndex
-    );
+    clipboardManager.current.cut(selectedTreeNode.dlgNode, selectedTreeNode.nodeType, selectedTreeNode.listIndex);
   }, [selectedTreeNode]);
 
   const handlePaste = useCallback(() => {
@@ -218,11 +210,7 @@ export const TabDLGEditor = function (props: BaseTabProps) {
     if (!clipboard || !selectedTreeNode) return;
 
     // Add link to clipboard node
-    treeModel?.addLink(
-      selectedTreeNode.id,
-      clipboard.listIndex,
-      clipboard.nodeType
-    );
+    treeModel?.addLink(selectedTreeNode.id, clipboard.listIndex, clipboard.nodeType);
 
     tab.file.unsaved_changes = true;
   }, [selectedTreeNode, treeModel, tab]);
@@ -241,33 +229,41 @@ export const TabDLGEditor = function (props: BaseTabProps) {
     }
   }, [treeModel]);
 
-  const handleTreeNodeSelect = useCallback((node: DLGTreeNode | null) => {
-    setSelectedTreeNode(node);
-    if (node) {
-      setSelectedNode(node.dlgNode);
-      setSelectedNodeIndex(node.listIndex);
-      setSelectedNodeType(
-        node.nodeType === 0 ? 'starting' : node.nodeType === 1 ? 'entry' : 'reply'
-      );
-      navigationManager.current.navigateTo(node.id);
-      tab.selectNode(node.dlgNode, node.listIndex, node.nodeType === 0 ? 'starting' : node.nodeType === 1 ? 'entry' : 'reply');
-    } else {
-      setSelectedNode(undefined);
-      setSelectedNodeIndex(-1);
-      setSelectedNodeType(null);
-    }
-  }, [tab]);
-
-  const handleTreeNodeDoubleClick = useCallback((node: DLGTreeNode) => {
-    // Check for references
-    if (treeModel) {
-      const refs = treeModel.getNodeReferences(node.listIndex, node.nodeType);
-      if (refs.length > 1) {
-        setReferences(refs);
-        setShowReferenceChooser(true);
+  const handleTreeNodeSelect = useCallback(
+    (node: DLGTreeNode | null) => {
+      setSelectedTreeNode(node);
+      if (node) {
+        setSelectedNode(node.dlgNode);
+        setSelectedNodeIndex(node.listIndex);
+        setSelectedNodeType(node.nodeType === 0 ? 'starting' : node.nodeType === 1 ? 'entry' : 'reply');
+        navigationManager.current.navigateTo(node.id);
+        tab.selectNode(
+          node.dlgNode,
+          node.listIndex,
+          node.nodeType === 0 ? 'starting' : node.nodeType === 1 ? 'entry' : 'reply'
+        );
+      } else {
+        setSelectedNode(undefined);
+        setSelectedNodeIndex(-1);
+        setSelectedNodeType(null);
       }
-    }
-  }, [treeModel]);
+    },
+    [tab]
+  );
+
+  const handleTreeNodeDoubleClick = useCallback(
+    (node: DLGTreeNode) => {
+      // Check for references
+      if (treeModel) {
+        const refs = treeModel.getNodeReferences(node.listIndex, node.nodeType);
+        if (refs.length > 1) {
+          setReferences(refs);
+          setShowReferenceChooser(true);
+        }
+      }
+    },
+    [treeModel]
+  );
 
   const handleTreeNodeContextMenu = useCallback((_node: DLGTreeNode, _event: React.MouseEvent) => {
     // Show context menu
@@ -285,12 +281,15 @@ export const TabDLGEditor = function (props: BaseTabProps) {
     }
   }, [tab, treeModel, dlg]);
 
-  const handleReferenceSelect = useCallback((reference: DLGNodeReference) => {
-    setShowReferenceChooser(false);
-    if (treeModel) {
-      treeModel.selectNode(reference.sourceNode.id);
-    }
-  }, [treeModel]);
+  const handleReferenceSelect = useCallback(
+    (reference: DLGNodeReference) => {
+      setShowReferenceChooser(false);
+      if (treeModel) {
+        treeModel.selectNode(reference.sourceNode.id);
+      }
+    },
+    [treeModel]
+  );
 
   const handleRunValidation = useCallback(() => {
     if (dlg) {
@@ -312,93 +311,136 @@ export const TabDLGEditor = function (props: BaseTabProps) {
   }, [dlg, treeModel, tab]);
 
   const tabActions = tab as TabDLGEditorState & TabSaveRevert;
-  const onSave = useCallback(() => { void tabActions.save(); }, [tabActions]);
-  const onSaveAs = useCallback(() => { void tabActions.saveAs(); }, [tabActions]);
-  const onRevert = useCallback(() => { void tabActions.revert(); }, [tabActions]);
+  const onSave = useCallback(() => {
+    void tabActions.save();
+  }, [tabActions]);
+  const onSaveAs = useCallback(() => {
+    void tabActions.saveAs();
+  }, [tabActions]);
+  const onRevert = useCallback(() => {
+    void tabActions.revert();
+  }, [tabActions]);
 
-  const menuItems: MenuItem[] = useMemo(() => [
-    {
-      label: 'File',
-      children: [
-        { label: 'Save', onClick: onSave, disabled: !tab.file.unsaved_changes },
-        { label: 'Save As', onClick: onSaveAs },
-        { label: 'Revert', onClick: onRevert, disabled: !tab.file.unsaved_changes }
-      ]
-    },
-    {
-      label: 'Edit',
-      children: [
-        { label: 'Undo', onClick: handleUndo, disabled: !canUndo },
-        { label: 'Redo', onClick: handleRedo, disabled: !canRedo },
-        { label: '---' },
-        { label: 'Copy', onClick: handleCopy, disabled: !selectedTreeNode },
-        { label: 'Cut', onClick: handleCut, disabled: !selectedTreeNode },
-        { label: 'Paste', onClick: handlePaste, disabled: !canPaste },
-        { label: '---' },
-        { label: 'Find', onClick: () => { setSearchMode('search'); setShowSearch(true); } },
-        { label: 'Go To', onClick: () => { setSearchMode('goto'); setShowSearch(true); } }
-      ]
-    },
-    {
-      label: 'View',
-      children: [
-        { label: 'Tree View', onClick: () => setViewMode('tree'), disabled: viewMode === 'tree' },
-        { label: 'List View', onClick: () => setViewMode('list'), disabled: viewMode === 'list' },
-        { label: 'Split View', onClick: () => setViewMode('split'), disabled: viewMode === 'split' },
-        { label: 'Graph View', onClick: () => setViewMode('graph'), disabled: viewMode === 'graph' },
-        { label: '---' },
-        { label: 'Node Properties', onClick: () => setPanelMode('node'), disabled: panelMode === 'node' },
-        { label: 'Dialog Properties', onClick: () => setPanelMode('dialog'), disabled: panelMode === 'dialog' },
-        { label: 'Both Panels', onClick: () => setPanelMode('both'), disabled: panelMode === 'both' },
-        { label: '---' },
-        { label: 'Expand All', onClick: () => { if (treeModel) treeModel.expandAll(); } },
-        { label: 'Collapse All', onClick: () => { if (treeModel) treeModel.collapseAll(); } }
-      ]
-    },
-    {
-      label: 'Navigate',
-      children: [
-        { label: 'Back', onClick: handleNavigateBack, disabled: !canGoBack },
-        { label: 'Forward', onClick: handleNavigateForward, disabled: !canGoForward },
-        { label: '---' },
-        { label: 'Go To Node', onClick: () => { setSearchMode('goto'); setShowSearch(true); } },
-        { label: 'Find References', onClick: () => { /* TODO */ }, disabled: !selectedTreeNode }
-      ]
-    },
-    {
-      label: 'Tools',
-      children: [
-        { label: 'Validate Dialog', onClick: handleRunValidation },
-        { label: 'Auto-Fix Issues', onClick: handleAutoFix, disabled: validationIssues.length === 0 },
-        { label: 'Show Validation Results', onClick: () => setShowValidation(!showValidation) }
-      ]
-    }
-  ], [
-    tab,
-    viewMode,
-    panelMode,
-    canUndo,
-    canRedo,
-    canGoBack,
-    canGoForward,
-    canPaste,
-    selectedTreeNode,
-    validationIssues.length,
-    showValidation,
-    treeModel,
-    handleUndo,
-    handleRedo,
-    handleCopy,
-    handleCut,
-    handlePaste,
-    handleNavigateBack,
-    handleNavigateForward,
-    handleRunValidation,
-    handleAutoFix,
-    onSave,
-    onSaveAs,
-    onRevert
-  ]);
+  const menuItems: MenuItem[] = useMemo(
+    () => [
+      {
+        label: 'File',
+        children: [
+          { label: 'Save', onClick: onSave, disabled: !tab.file.unsaved_changes },
+          { label: 'Save As', onClick: onSaveAs },
+          { label: 'Revert', onClick: onRevert, disabled: !tab.file.unsaved_changes },
+        ],
+      },
+      {
+        label: 'Edit',
+        children: [
+          { label: 'Undo', onClick: handleUndo, disabled: !canUndo },
+          { label: 'Redo', onClick: handleRedo, disabled: !canRedo },
+          { label: '---' },
+          { label: 'Copy', onClick: handleCopy, disabled: !selectedTreeNode },
+          { label: 'Cut', onClick: handleCut, disabled: !selectedTreeNode },
+          { label: 'Paste', onClick: handlePaste, disabled: !canPaste },
+          { label: '---' },
+          {
+            label: 'Find',
+            onClick: () => {
+              setSearchMode('search');
+              setShowSearch(true);
+            },
+          },
+          {
+            label: 'Go To',
+            onClick: () => {
+              setSearchMode('goto');
+              setShowSearch(true);
+            },
+          },
+        ],
+      },
+      {
+        label: 'View',
+        children: [
+          { label: 'Tree View', onClick: () => setViewMode('tree'), disabled: viewMode === 'tree' },
+          { label: 'List View', onClick: () => setViewMode('list'), disabled: viewMode === 'list' },
+          { label: 'Split View', onClick: () => setViewMode('split'), disabled: viewMode === 'split' },
+          { label: 'Graph View', onClick: () => setViewMode('graph'), disabled: viewMode === 'graph' },
+          { label: '---' },
+          { label: 'Node Properties', onClick: () => setPanelMode('node'), disabled: panelMode === 'node' },
+          { label: 'Dialog Properties', onClick: () => setPanelMode('dialog'), disabled: panelMode === 'dialog' },
+          { label: 'Both Panels', onClick: () => setPanelMode('both'), disabled: panelMode === 'both' },
+          { label: '---' },
+          {
+            label: 'Expand All',
+            onClick: () => {
+              if (treeModel) treeModel.expandAll();
+            },
+          },
+          {
+            label: 'Collapse All',
+            onClick: () => {
+              if (treeModel) treeModel.collapseAll();
+            },
+          },
+        ],
+      },
+      {
+        label: 'Navigate',
+        children: [
+          { label: 'Back', onClick: handleNavigateBack, disabled: !canGoBack },
+          { label: 'Forward', onClick: handleNavigateForward, disabled: !canGoForward },
+          { label: '---' },
+          {
+            label: 'Go To Node',
+            onClick: () => {
+              setSearchMode('goto');
+              setShowSearch(true);
+            },
+          },
+          {
+            label: 'Find References',
+            onClick: () => {
+              /* TODO */
+            },
+            disabled: !selectedTreeNode,
+          },
+        ],
+      },
+      {
+        label: 'Tools',
+        children: [
+          { label: 'Validate Dialog', onClick: handleRunValidation },
+          { label: 'Auto-Fix Issues', onClick: handleAutoFix, disabled: validationIssues.length === 0 },
+          { label: 'Show Validation Results', onClick: () => setShowValidation(!showValidation) },
+        ],
+      },
+    ],
+    [
+      tab,
+      viewMode,
+      panelMode,
+      canUndo,
+      canRedo,
+      canGoBack,
+      canGoForward,
+      canPaste,
+      selectedTreeNode,
+      validationIssues.length,
+      showValidation,
+      treeModel,
+      handleUndo,
+      handleRedo,
+      handleCopy,
+      handleCut,
+      handlePaste,
+      handleNavigateBack,
+      handleNavigateForward,
+      handleRunValidation,
+      handleAutoFix,
+      onSave,
+      onSaveAs,
+      onRevert,
+    ]
+  );
 
   // Statistics
   const stats = useMemo(() => {
@@ -408,38 +450,23 @@ export const TabDLGEditor = function (props: BaseTabProps) {
       entries: dlg.entryList.length,
       replies: dlg.replyList.length,
       totalNodes: dlg.startingList.length + dlg.entryList.length + dlg.replyList.length,
-      errors: validationIssues.filter(i => i.severity === ValidationSeverity.Error).length,
-      warnings: validationIssues.filter(i => i.severity === ValidationSeverity.Warning).length,
-      info: validationIssues.filter(i => i.severity === ValidationSeverity.Info).length
+      errors: validationIssues.filter((i) => i.severity === ValidationSeverity.Error).length,
+      warnings: validationIssues.filter((i) => i.severity === ValidationSeverity.Warning).length,
+      info: validationIssues.filter((i) => i.severity === ValidationSeverity.Info).length,
     };
   }, [dlg, validationIssues]);
 
   // Toolbar
   const renderToolbar = () => (
     <div className="forge-dlg-editor__toolbar">
-      <button
-        className="toolbar-button"
-        onClick={handleUndo}
-        disabled={!canUndo}
-        title="Undo (Ctrl+Z)"
-      >
+      <button className="toolbar-button" onClick={handleUndo} disabled={!canUndo} title="Undo (Ctrl+Z)">
         ↶
       </button>
-      <button
-        className="toolbar-button"
-        onClick={handleRedo}
-        disabled={!canRedo}
-        title="Redo (Ctrl+Y)"
-      >
+      <button className="toolbar-button" onClick={handleRedo} disabled={!canRedo} title="Redo (Ctrl+Y)">
         ↷
       </button>
       <div className="toolbar-separator" />
-      <button
-        className="toolbar-button"
-        onClick={handleNavigateBack}
-        disabled={!canGoBack}
-        title="Navigate Back"
-      >
+      <button className="toolbar-button" onClick={handleNavigateBack} disabled={!canGoBack} title="Navigate Back">
         ←
       </button>
       <button
@@ -451,12 +478,7 @@ export const TabDLGEditor = function (props: BaseTabProps) {
         →
       </button>
       <div className="toolbar-separator" />
-      <button
-        className="toolbar-button"
-        onClick={handleCopy}
-        disabled={!selectedTreeNode}
-        title="Copy (Ctrl+C)"
-      >
+      <button className="toolbar-button" onClick={handleCopy} disabled={!selectedTreeNode} title="Copy (Ctrl+C)">
         📋
       </button>
       <button
@@ -470,24 +492,26 @@ export const TabDLGEditor = function (props: BaseTabProps) {
       <div className="toolbar-separator" />
       <button
         className="toolbar-button"
-        onClick={() => { setSearchMode('search'); setShowSearch(true); }}
+        onClick={() => {
+          setSearchMode('search');
+          setShowSearch(true);
+        }}
         title="Search (Ctrl+F)"
       >
         🔍
       </button>
       <button
         className="toolbar-button"
-        onClick={() => { setSearchMode('goto'); setShowSearch(true); }}
+        onClick={() => {
+          setSearchMode('goto');
+          setShowSearch(true);
+        }}
         title="Go To (Ctrl+G)"
       >
         🎯
       </button>
       <div className="toolbar-separator" />
-      <button
-        className="toolbar-button"
-        onClick={handleRunValidation}
-        title="Validate Dialog"
-      >
+      <button className="toolbar-button" onClick={handleRunValidation} title="Validate Dialog">
         ✓
       </button>
       <div className="toolbar-separator" />
@@ -538,15 +562,18 @@ export const TabDLGEditor = function (props: BaseTabProps) {
               }}
             >
               <span className="issue-severity">
-                {issue.severity === ValidationSeverity.Error ? '❌' :
-                  issue.severity === ValidationSeverity.Warning ? '⚠' : 'ℹ'}
+                {issue.severity === ValidationSeverity.Error
+                  ? '❌'
+                  : issue.severity === ValidationSeverity.Warning
+                    ? '⚠'
+                    : 'ℹ'}
               </span>
               <span className="issue-message">{issue.message}</span>
               {issue.autoFix && <span className="issue-fixable">🔧</span>}
             </div>
           ))}
         </div>
-        {validationIssues.some(i => i.autoFix) && (
+        {validationIssues.some((i) => i.autoFix) && (
           <div className="validation-footer">
             <button onClick={handleAutoFix}>Auto-Fix All</button>
           </div>
@@ -615,12 +642,7 @@ export const TabDLGEditor = function (props: BaseTabProps) {
             />
           )}
 
-          {panelMode === 'dialog' && (
-            <DLGDialogPropertiesPanel
-              dlg={dlg}
-              onUpdate={handleNodeUpdate}
-            />
-          )}
+          {panelMode === 'dialog' && <DLGDialogPropertiesPanel dlg={dlg} onUpdate={handleNodeUpdate} />}
 
           {panelMode === 'both' && (
             <>
@@ -632,10 +654,7 @@ export const TabDLGEditor = function (props: BaseTabProps) {
                   onUpdate={handleNodeUpdate}
                 />
               )}
-              <DLGDialogPropertiesPanel
-                dlg={dlg}
-                onUpdate={handleNodeUpdate}
-              />
+              <DLGDialogPropertiesPanel dlg={dlg} onUpdate={handleNodeUpdate} />
             </>
           )}
 
@@ -661,8 +680,12 @@ export const TabDLGEditor = function (props: BaseTabProps) {
                         <td>{stats.replies}</td>
                       </tr>
                       <tr>
-                        <td><strong>Total Nodes:</strong></td>
-                        <td><strong>{stats.totalNodes}</strong></td>
+                        <td>
+                          <strong>Total Nodes:</strong>
+                        </td>
+                        <td>
+                          <strong>{stats.totalNodes}</strong>
+                        </td>
                       </tr>
                       {dlg.vo_id && (
                         <tr>

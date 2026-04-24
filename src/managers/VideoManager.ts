@@ -1,9 +1,9 @@
-import * as THREE from "three";
-import { BIKObject } from "@/resource/BIKObject";
-import { GameState } from "@/GameState";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { AudioEngine } from "@/audio/AudioEngine";
-import { YUVFrame } from "@/video/binkvideo";
+import * as THREE from 'three';
+import { BIKObject } from '@/resource/BIKObject';
+import { GameState } from '@/GameState';
+import { EngineMode } from '@/enums/engine/EngineMode';
+import { AudioEngine } from '@/audio/AudioEngine';
+import { YUVFrame } from '@/video/binkvideo';
 
 /**
  * VideoManager class.
@@ -19,7 +19,6 @@ import { YUVFrame } from "@/video/binkvideo";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class VideoManager {
-
   static bikObject: BIKObject | null = null;
 
   static movieQueue: { name: string; skippable: boolean }[] = [];
@@ -117,10 +116,7 @@ export class VideoManager {
     VideoManager.videoPlane.visible = false;
 
     VideoManager.backPlaneMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-    VideoManager.backPlane = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1, 1, 1),
-      VideoManager.backPlaneMaterial,
-    );
+    VideoManager.backPlane = new THREE.Mesh(new THREE.PlaneGeometry(1, 1, 1, 1), VideoManager.backPlaneMaterial);
     VideoManager.backPlane.position.z = 497;
     VideoManager.backPlane.visible = false;
   }
@@ -148,9 +144,42 @@ export class VideoManager {
     if (VideoManager.uTex) VideoManager.uTex.dispose();
     if (VideoManager.vTex) VideoManager.vTex.dispose();
 
-    VideoManager.yTex = new THREE.DataTexture(yBuffer, yStride, yBh, THREE.LuminanceFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter);
-    VideoManager.uTex = new THREE.DataTexture(uBuffer, cStride, cBh, THREE.LuminanceFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter);
-    VideoManager.vTex = new THREE.DataTexture(vBuffer, cStride, cBh, THREE.LuminanceFormat, THREE.UnsignedByteType, THREE.UVMapping, THREE.ClampToEdgeWrapping, THREE.ClampToEdgeWrapping, THREE.LinearFilter, THREE.LinearFilter);
+    VideoManager.yTex = new THREE.DataTexture(
+      yBuffer,
+      yStride,
+      yBh,
+      THREE.LuminanceFormat,
+      THREE.UnsignedByteType,
+      THREE.UVMapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.LinearFilter,
+      THREE.LinearFilter
+    );
+    VideoManager.uTex = new THREE.DataTexture(
+      uBuffer,
+      cStride,
+      cBh,
+      THREE.LuminanceFormat,
+      THREE.UnsignedByteType,
+      THREE.UVMapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.LinearFilter,
+      THREE.LinearFilter
+    );
+    VideoManager.vTex = new THREE.DataTexture(
+      vBuffer,
+      cStride,
+      cBh,
+      THREE.LuminanceFormat,
+      THREE.UnsignedByteType,
+      THREE.UVMapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.ClampToEdgeWrapping,
+      THREE.LinearFilter,
+      THREE.LinearFilter
+    );
 
     if (VideoManager.material?.uniforms) {
       VideoManager.material.uniforms.yTex.value = VideoManager.yTex;
@@ -233,20 +262,22 @@ export class VideoManager {
         GameState.SetEngineMode(EngineMode.MOVIE);
       }
 
-
       this.currentMovie = { name: movieName, skippable: skipable };
       this.isPlaying = true;
-      await this.bikObject.play(movieName, () => {
-        this.isPlaying = false;
-        this.onMovieComplete();
-        if (typeof onComplete === 'function') {
-          onComplete();
-        }
-      }, onReady);
+      await this.bikObject.play(
+        movieName,
+        () => {
+          this.isPlaying = false;
+          this.onMovieComplete();
+          if (typeof onComplete === 'function') {
+            onComplete();
+          }
+        },
+        onReady
+      );
 
       VideoManager.videoPlane!.visible = true;
       VideoManager.backPlane!.visible = true;
-
     } catch (error) {
       console.error('VideoManager.playMovie: Failed to play movie:', error);
       this.cleanup();
@@ -284,9 +315,9 @@ export class VideoManager {
   }
 
   static async playNextMovie(): Promise<boolean> {
-    if (this.movieQueue.length === 0){
+    if (this.movieQueue.length === 0) {
       this.isPlaying = false;
-      if(typeof this.onQueueComplete === 'function'){
+      if (typeof this.onQueueComplete === 'function') {
         console.log('VideoManager.playNextMovie: Queue complete');
         const onComplete = this.onQueueComplete;
         this.onQueueComplete = undefined;
@@ -308,10 +339,10 @@ export class VideoManager {
     return true;
   }
 
-  static async playMovieQueue( onComplete?: Function ): Promise<void> {
+  static async playMovieQueue(onComplete?: Function): Promise<void> {
     this.onQueueComplete = onComplete;
-    if (this.movieQueue.length === 0){
-      if(typeof this.onQueueComplete === 'function'){
+    if (this.movieQueue.length === 0) {
+      if (typeof this.onQueueComplete === 'function') {
         console.log('VideoManager.playNextMovie: Queue complete');
         this.onQueueComplete();
         this.onQueueComplete = undefined;
@@ -374,5 +405,4 @@ export class VideoManager {
       GameState.RestoreEnginePlayMode();
     }
   }
-
 }

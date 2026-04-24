@@ -1,8 +1,8 @@
 /**
  * Shader class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file Shader.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -14,11 +14,11 @@ export class Shader {
   uniforms: { [key: string]: { value: unknown } } | { [key: string]: { value: unknown } }[] = [];
   name: string;
 
-  getVertex(){
+  getVertex() {
     return this.vertex;
   }
 
-  getFragment(){
+  getFragment() {
     return this.fragment;
   }
 

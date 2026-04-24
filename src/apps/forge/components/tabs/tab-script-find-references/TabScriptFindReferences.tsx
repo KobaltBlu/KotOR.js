@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 
 import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
-import type { TabScriptFindReferencesState, TextReferenceMatch } from '@/apps/forge/states/tabs/TabScriptFindReferencesState';
+import type {
+  TabScriptFindReferencesState,
+  TextReferenceMatch,
+} from '@/apps/forge/states/tabs/TabScriptFindReferencesState';
 import type { TabTextEditorState } from '@/apps/forge/states/tabs/TabTextEditorState';
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -25,9 +28,9 @@ export const TabScriptFindReferences: React.FC<TabScriptFindReferencesProps> = (
   };
 
   useEffectOnce(() => {
-    tab.addEventListener("onSetResults", onSetResults);
+    tab.addEventListener('onSetResults', onSetResults);
     return () => {
-      tab.removeEventListener("onSetResults", onSetResults);
+      tab.removeEventListener('onSetResults', onSetResults);
     };
   });
 
@@ -51,17 +54,15 @@ export const TabScriptFindReferences: React.FC<TabScriptFindReferencesProps> = (
           <span>References</span>
         </div>
         <div className="error-list__counts" aria-live="polite">
-          <span className="error-list__pill error-list__pill--info">
-            {results.length} Matches
-          </span>
+          <span className="error-list__pill error-list__pill--info">{results.length} Matches</span>
         </div>
       </div>
 
       {!results.length ? (
         <div className="error-list__empty">
           {parentTab
-            ? "No references found."
-            : "Open a script (File → New → NW Script) and use Find References from the editor to search for symbol usages."}
+            ? 'No references found.'
+            : 'Open a script (File → New → NW Script) and use Find References from the editor to search for symbol usages.'}
         </div>
       ) : (
         <div className="error-list__items">
@@ -77,7 +78,9 @@ export const TabScriptFindReferences: React.FC<TabScriptFindReferencesProps> = (
                 <i className="fa-solid fa-location-crosshairs"></i>
               </span>
               <span className="error-list__body">
-                <span className="error-list__message">Line {match.line}, Col {match.column}</span>
+                <span className="error-list__message">
+                  Line {match.line}, Col {match.column}
+                </span>
                 <span className="error-list__meta">
                   <span className="error-list__meta-item error-list__location">{match.lineText}</span>
                 </span>

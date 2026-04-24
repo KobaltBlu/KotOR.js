@@ -1,9 +1,9 @@
-import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { TabBIKPlayer } from "@/apps/forge/components/tabs/tab-bik-player/TabBIKPlayer";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { TabBIKPlayer } from '@/apps/forge/components/tabs/tab-bik-player/TabBIKPlayer';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import * as KotOR from '@/apps/forge/KotOR';
 
 /**
  * Tab state for the BIK video player. Loads the opened EditorFile into a BIKObject
@@ -11,7 +11,7 @@ import * as KotOR from "@/apps/forge/KotOR";
  * video to a canvas and provides play/stop controls.
  */
 export class TabBIKPlayerState extends TabState {
-  tabName: string = "BIK Video Player";
+  tabName: string = 'BIK Video Player';
   bikObject: KotOR.BIKObject;
 
   constructor(options: BaseTabStateOptions = {}) {
@@ -36,24 +36,27 @@ export class TabBIKPlayerState extends TabState {
         return;
       }
       if (this.file !== target) this.file = target;
-      target.readFile().then((response: { buffer: Uint8Array }) => {
-        const buffer = response?.buffer;
-        if (!buffer?.length) {
-          reject(new Error("No buffer"));
-          return;
-        }
-        const arrayBuffer = buffer.buffer instanceof ArrayBuffer ? buffer.buffer : buffer;
-        this.bikObject.playFromBuffer(
-          arrayBuffer as ArrayBuffer,
-          () => {
-            this.processEventListener("onEditorFileLoad");
-          },
-          () => {
-            this.processEventListener("onEditorFileLoad");
+      target
+        .readFile()
+        .then((response: { buffer: Uint8Array }) => {
+          const buffer = response?.buffer;
+          if (!buffer?.length) {
+            reject(new Error('No buffer'));
+            return;
           }
-        );
-        resolve();
-      }).catch(reject);
+          const arrayBuffer = buffer.buffer instanceof ArrayBuffer ? buffer.buffer : buffer;
+          this.bikObject.playFromBuffer(
+            arrayBuffer as ArrayBuffer,
+            () => {
+              this.processEventListener('onEditorFileLoad');
+            },
+            () => {
+              this.processEventListener('onEditorFileLoad');
+            }
+          );
+          resolve();
+        })
+        .catch(reject);
     });
   }
 

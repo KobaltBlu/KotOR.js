@@ -1,13 +1,12 @@
 /**
  * DeepObject class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file DeepObject.ts
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class DeepObject {
-
   /**
    * Simple object check.
    * @param item
@@ -31,7 +30,10 @@ export class DeepObject {
           if (!target[key] || !DeepObject._isObject(target[key])) {
             (target as Record<string, unknown>)[key] = {};
           }
-          DeepObject.Merge((target as Record<string, unknown>)[key] as Record<string, unknown>, source[key] as Record<string, unknown>);
+          DeepObject.Merge(
+            (target as Record<string, unknown>)[key] as Record<string, unknown>,
+            source[key] as Record<string, unknown>
+          );
         } else {
           (target as Record<string, unknown>)[key] = source[key];
         }
@@ -40,5 +42,4 @@ export class DeepObject {
 
     return DeepObject.Merge(target, ...sources);
   }
-
 }

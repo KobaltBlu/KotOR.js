@@ -1,23 +1,22 @@
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton } from '@/gui';
 
 enum AbilityFilter {
   SKILLS = 1,
   POWERS = 2,
-  FEATS = 3
+  FEATS = 3,
 }
 
 /**
  * MenuAbilities class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuAbilities.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuAbilities extends GameMenu {
-
   LBL_INFOBG: GUILabel;
   LB_DESC: GUIListBox;
   LBL_PORTRAIT: GUILabel;
@@ -39,7 +38,7 @@ export class MenuAbilities extends GameMenu {
   filter: AbilityFilter = AbilityFilter.SKILLS;
   selected: any;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'abilities';
     this.background = '1600x1200back';
@@ -48,7 +47,7 @@ export class MenuAbilities extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -90,7 +89,7 @@ export class MenuAbilities extends GameMenu {
   }
 
   getFilteredItems(): any[] {
-    switch(this.filter){
+    switch (this.filter) {
       case AbilityFilter.SKILLS:
         return GameState.PartyManager.party[0]?.skills.slice() || [];
       case AbilityFilter.POWERS:
@@ -123,7 +122,7 @@ export class MenuAbilities extends GameMenu {
           }
         }
       }
-      if(group && group.length){
+      if (group && group.length) {
         groups.push(group);
       }
     }
@@ -142,14 +141,24 @@ export class MenuAbilities extends GameMenu {
       const spell = spells[i];
       const id = spell.__index;
       const usertype = parseInt(spell.usertype);
-      if(allowedTypes.indexOf(usertype) == -1){ continue; }
-      if(!GameState.PartyManager.party[0]?.getHasSpell(id) && unknownSpells.indexOf(id) == -1){ continue; }
+      if (allowedTypes.indexOf(usertype) == -1) {
+        continue;
+      }
+      if (!GameState.PartyManager.party[0]?.getHasSpell(id) && unknownSpells.indexOf(id) == -1) {
+        continue;
+      }
       allowedSpells.push(spell);
     }
 
-    const rootSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 0; });
-    const midSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 1; });
-    const endSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 2; });
+    const rootSpells: any[] = allowedSpells.filter((spell) => {
+      return parseInt(spell.forcepriority) === 0;
+    });
+    const midSpells: any[] = allowedSpells.filter((spell) => {
+      return parseInt(spell.forcepriority) === 1;
+    });
+    const endSpells: any[] = allowedSpells.filter((spell) => {
+      return parseInt(spell.forcepriority) === 2;
+    });
 
     const mapSpells = new Map<number, any[]>();
 
@@ -158,22 +167,22 @@ export class MenuAbilities extends GameMenu {
       const id = spell.__index;
       const group = [spell];
 
-      const midSpell = midSpells.find( (curSpell) => {
-        const prereqs = curSpell.prerequisites.split('_').map((id:string) => parseInt(id));
+      const midSpell = midSpells.find((curSpell) => {
+        const prereqs = curSpell.prerequisites.split('_').map((id: string) => parseInt(id));
         return prereqs[0] == id && GameState.PartyManager.party[0]?.getHasSpell(curSpell.__index);
       });
 
-      if(midSpell){ 
-        group[parseInt(midSpell.forcepriority)] = midSpell; 
+      if (midSpell) {
+        group[parseInt(midSpell.forcepriority)] = midSpell;
       }
 
-      const endSpell = endSpells.find( (curSpell) => {
-        const prereqs = curSpell.prerequisites.split('_').map((id:string) => parseInt(id));
+      const endSpell = endSpells.find((curSpell) => {
+        const prereqs = curSpell.prerequisites.split('_').map((id: string) => parseInt(id));
         return prereqs[0] == id && GameState.PartyManager.party[0]?.getHasSpell(curSpell.__index);
       });
 
-      if(endSpell){ 
-        group[parseInt(endSpell.forcepriority)] = endSpell; 
+      if (endSpell) {
+        group[parseInt(endSpell.forcepriority)] = endSpell;
       }
 
       mapSpells.set(id, group);
@@ -182,14 +191,14 @@ export class MenuAbilities extends GameMenu {
     return Array.from(mapSpells.values());
   }
 
-  updateFilter(){
+  updateFilter() {
     this.LB_ABILITY.show();
     this.LB_DESC.show();
     this.LB_DESC.clearItems();
     this.LB_ABILITY.clearItems();
 
     const items = this.getFilteredItems();
-    switch(this.filter){
+    switch (this.filter) {
       case AbilityFilter.SKILLS:
         this.LB_ABILITY.GUIProtoItemClass = GUICreatureSkill;
         this.LB_ABILITY.padding = 0;
@@ -200,7 +209,7 @@ export class MenuAbilities extends GameMenu {
         this.LBL_SKILLRANK.show();
         this.LBL_RANKVAL.show();
         this.LBL_INFOBG.show();
-      break;
+        break;
       case AbilityFilter.POWERS:
         this.LB_ABILITY.GUIProtoItemClass = GUISpellItem;
         this.LB_ABILITY.padding = 5.5;
@@ -211,7 +220,7 @@ export class MenuAbilities extends GameMenu {
         this.LBL_SKILLRANK.show();
         this.LBL_RANKVAL.show();
         this.LBL_INFOBG.show();
-      break;
+        break;
       case AbilityFilter.FEATS:
         this.LB_ABILITY.GUIProtoItemClass = GUIFeatItem;
         this.LB_ABILITY.padding = 5.5;
@@ -222,16 +231,16 @@ export class MenuAbilities extends GameMenu {
         this.LBL_SKILLRANK.hide();
         this.LBL_RANKVAL.hide();
         this.LBL_INFOBG.hide();
-      break;
+        break;
     }
 
-    for(let i = 0; i < items.length; i++){
+    for (let i = 0; i < items.length; i++) {
       this.LB_ABILITY.addItem(items[i]);
     }
     this.LB_ABILITY.updateList();
   }
 
-  updateSelected(){
+  updateSelected() {
     this.LB_DESC.clearItems();
     this.LBL_NAME?.setText('');
     this.LBL_SKILLRANK?.setText('');
@@ -240,37 +249,39 @@ export class MenuAbilities extends GameMenu {
     this.LBL_TOTALVAL?.setText('');
 
     const item = this.selected;
-    if(!item){ return; }
+    if (!item) {
+      return;
+    }
 
-    if(this.filter === AbilityFilter.SKILLS){
+    if (this.filter === AbilityFilter.SKILLS) {
       this.LBL_NAME?.setText(item.getName());
       this.LBL_RANKVAL?.setText(item.getRank());
       this.LBL_BONUSVAL?.setText('');
       this.LBL_TOTALVAL?.setText(item.getRank());
-      if(item.getDescription){
+      if (item.getDescription) {
         this.LB_DESC.addItem(item.getDescription());
       }
       return;
     }
 
-    if(this.filter === AbilityFilter.FEATS){
+    if (this.filter === AbilityFilter.FEATS) {
       const feat = Array.isArray(item) ? item[0] : item;
-      if(feat?.getName){
+      if (feat?.getName) {
         this.LBL_NAME?.setText(feat.getName());
       }
-      if(feat?.getDescription){
+      if (feat?.getDescription) {
         this.LB_DESC.addItem(feat.getDescription());
       }
       return;
     }
 
-    if(this.filter === AbilityFilter.POWERS){
+    if (this.filter === AbilityFilter.POWERS) {
       const spell = Array.isArray(item) ? item.find(Boolean) : item;
-      if(spell){
+      if (spell) {
         const name = GameState.TLKManager.GetStringById(parseInt(spell.name))?.Value;
         const desc = GameState.TLKManager.GetStringById(parseInt(spell.spelldesc))?.Value;
         this.LBL_NAME?.setText(name || '');
-        if(desc){
+        if (desc) {
           this.LB_DESC.addItem(desc);
         }
       }
@@ -284,6 +295,4 @@ export class MenuAbilities extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_MSG.click();
   }
-  
 }
-

@@ -1,4 +1,4 @@
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { EventListenerModel } from '@/apps/forge/EventListenerModel';
 
 export interface SceneGraphNodeOptions {
   uuid?: string;
@@ -12,7 +12,11 @@ export interface SceneGraphNodeOptions {
 }
 
 export type SceneGraphNodeEventListenerTypes =
-  'onExpandStateChange'|'onNameChange'|'onNodesChange'|'onParentChanged'|'onSelectStateChange';
+  | 'onExpandStateChange'
+  | 'onNameChange'
+  | 'onNodesChange'
+  | 'onParentChanged'
+  | 'onSelectStateChange';
 
 /** Callback for scene graph node events (args vary by event). */
 export type SceneGraphNodeEventCallback = (...args: unknown[]) => void;
@@ -38,43 +42,46 @@ export class SceneGraphNode extends EventListenerModel {
   selected: boolean = false;
   parent: SceneGraphNode | undefined = undefined;
 
-  constructor( props: SceneGraphNodeOptions){
+  constructor(props: SceneGraphNodeOptions) {
     super();
-    props = Object.assign({
-      name: '',
-      icon: '',
-      nodes: [],
-      onClick: undefined,
-      parent: undefined,
-      data: {},
-      open: false,
-    }, props);
+    props = Object.assign(
+      {
+        name: '',
+        icon: '',
+        nodes: [],
+        onClick: undefined,
+        parent: undefined,
+        data: {},
+        open: false,
+      },
+      props
+    );
 
     this.name = props.name;
     this.icon = props.icon as string;
     this.parent = props.parent;
-    if(props.nodes)   this.nodes = props.nodes;
-    if(props.onClick) this.onClick = props.onClick;
-    if(props.data)    this.data = props.data;
-    if(props.open)    this.open = props.open;
+    if (props.nodes) this.nodes = props.nodes;
+    if (props.onClick) this.onClick = props.onClick;
+    if (props.data) this.data = props.data;
+    if (props.open) this.open = props.open;
     this.id = SceneGraphNode.NODE_ID++;
   }
 
-  setNodes(nodes: SceneGraphNode[] = []){
+  setNodes(nodes: SceneGraphNode[] = []) {
     // Clear existing nodes and remove parent references
-    for(let i = 0; i < this.nodes.length; i++){
+    for (let i = 0; i < this.nodes.length; i++) {
       this.nodes[i].parent = undefined;
     }
     this.nodes = [];
     // Add new nodes
-    for(let i = 0; i < nodes.length; i++){
+    for (let i = 0; i < nodes.length; i++) {
       this.addChildNode(nodes[i]);
     }
     // Fire onNodesChange event to notify listeners that nodes have changed
     this.processEventListener<SceneGraphNodeEventListenerTypes>('onNodesChange', [this]);
   }
 
-  addChildNode(node: SceneGraphNode){
+  addChildNode(node: SceneGraphNode) {
     node.parent = this;
     const idx = this.nodes.push(node);
     node.processEventListener<SceneGraphNodeEventListenerTypes>('onParentChanged', [node, this]);
@@ -82,32 +89,32 @@ export class SceneGraphNode extends EventListenerModel {
     return idx;
   }
 
-  setName(name: string = ''){
+  setName(name: string = '') {
     this.name = name;
     this.processEventListener<SceneGraphNodeEventListenerTypes>('onNameChange', [this.name]);
   }
 
-  expandNode(){
+  expandNode() {
     this.open = true;
     this.processEventListener<SceneGraphNodeEventListenerTypes>('onExpandStateChange', [this.name]);
   }
 
-  closeNode(){
+  closeNode() {
     this.open = false;
     this.processEventListener<SceneGraphNodeEventListenerTypes>('onExpandStateChange', [this.name]);
   }
 
-  select(){
+  select() {
     this.selected = true;
     this.processEventListener<SceneGraphNodeEventListenerTypes>('onSelectStateChange', [this.name]);
   }
 
-  deselect(){
+  deselect() {
     this.selected = false;
     this.processEventListener<SceneGraphNodeEventListenerTypes>('onSelectStateChange', [this.name]);
   }
 
-  traverseAll(cb: Function){
+  traverseAll(cb: Function) {
     this.traverseChildren(cb);
     this.traverseAncestors(cb);
   }
@@ -131,7 +138,5 @@ export class SceneGraphNode extends EventListenerModel {
     }
   }
 
-  dispose(){
-
-  }
+  dispose() {}
 }

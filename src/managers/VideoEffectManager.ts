@@ -1,6 +1,6 @@
-import { VideoEffect } from "@/engine/VideoEffect";
-import { GameState } from "@/GameState";
-import type { TwoDAObject } from "@/resource/TwoDAObject";
+import { VideoEffect } from '@/engine/VideoEffect';
+import { GameState } from '@/GameState';
+import type { TwoDAObject } from '@/resource/TwoDAObject';
 
 /**
  * VideoEffectManager class.
@@ -12,7 +12,6 @@ import type { TwoDAObject } from "@/resource/TwoDAObject";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class VideoEffectManager {
-
   static videoEffects: VideoEffect[] = [];
   static videoEffect: VideoEffect;
   static videoEffectId: number = -1;
@@ -29,8 +28,8 @@ export class VideoEffectManager {
    */
   static SetSpeedBlurEffect(bEnabled: boolean, fRatio: number = 0.75): void {
     VideoEffectManager.enableSpeedBlur = !!bEnabled;
-    VideoEffectManager.speedBlurRatio = typeof fRatio === 'number' && !isNaN(fRatio)
-      ? Math.max(0, Math.min(1, fRatio)) : 0.75;
+    VideoEffectManager.speedBlurRatio =
+      typeof fRatio === 'number' && !isNaN(fRatio) ? Math.max(0, Math.min(1, fRatio)) : 0.75;
     const pass = GameState.afterimagePass;
     if (pass) {
       pass.enabled = VideoEffectManager.enableSpeedBlur;
@@ -40,17 +39,19 @@ export class VideoEffectManager {
     }
   }
 
-  static SetVideoEffect(id: number = -1){
-    if(VideoEffectManager.videoEffectId == id){ return; }
+  static SetVideoEffect(id: number = -1) {
+    if (VideoEffectManager.videoEffectId == id) {
+      return;
+    }
 
     VideoEffectManager.videoEffectId = id;
-    if(VideoEffectManager.videoEffectId == -1){
+    if (VideoEffectManager.videoEffectId == -1) {
       VideoEffectManager.Reset();
       return;
     }
 
     const vEffect = GameState.VideoEffectManager.videoEffects[id];
-    if(!vEffect){
+    if (!vEffect) {
       VideoEffectManager.Reset();
       return;
     }
@@ -58,54 +59,60 @@ export class VideoEffectManager {
     VideoEffectManager.videoEffect = vEffect;
   }
 
-  static Update(delta: number = 0){
-    if(!VideoEffectManager.videoEffect){ return; }
+  static Update(delta: number = 0) {
+    if (!VideoEffectManager.videoEffect) {
+      return;
+    }
 
-    if(!GameState.odysseyShaderPass){ return; }
+    if (!GameState.odysseyShaderPass) {
+      return;
+    }
 
     const effect = VideoEffectManager.videoEffect;
 
-    if(effect.enableSaturation){
-			GameState.odysseyShaderPass.uniforms.saturation.value = effect.saturation;
-			GameState.odysseyShaderPass.uniforms.modulation.value.set(
-				effect.modulation.red, effect.modulation.green, effect.modulation.blue
-			);
-			GameState.odysseyShaderPass.uniforms.bmodulate.value = true;
-		}else{
-			GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
-			GameState.odysseyShaderPass.uniforms.saturation.value = 1;
-			GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
-		}
+    if (effect.enableSaturation) {
+      GameState.odysseyShaderPass.uniforms.saturation.value = effect.saturation;
+      GameState.odysseyShaderPass.uniforms.modulation.value.set(
+        effect.modulation.red,
+        effect.modulation.green,
+        effect.modulation.blue
+      );
+      GameState.odysseyShaderPass.uniforms.bmodulate.value = true;
+    } else {
+      GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
+      GameState.odysseyShaderPass.uniforms.saturation.value = 1;
+      GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
+    }
 
-    if(effect.enableScanNoise){
-			GameState.odysseyShaderPass.uniforms.bscanlines.value = true;
-			GameState.odysseyShaderPass.uniforms.grayscale.value = true;
-			GameState.odysseyShaderPass.uniforms.sCount.value = (Math.floor(Math.random() * 256) + 250)*0.5;
-		}else{
-			GameState.odysseyShaderPass.uniforms.bscanlines.value = false;
-			GameState.odysseyShaderPass.uniforms.grayscale.value = false;
+    if (effect.enableScanNoise) {
+      GameState.odysseyShaderPass.uniforms.bscanlines.value = true;
+      GameState.odysseyShaderPass.uniforms.grayscale.value = true;
+      GameState.odysseyShaderPass.uniforms.sCount.value = (Math.floor(Math.random() * 256) + 250) * 0.5;
+    } else {
+      GameState.odysseyShaderPass.uniforms.bscanlines.value = false;
+      GameState.odysseyShaderPass.uniforms.grayscale.value = false;
     }
   }
 
-  static Reset(){
+  static Reset() {
     VideoEffectManager.videoEffectId = -1;
     VideoEffectManager.videoEffect = new VideoEffect();
     VideoEffectManager.SetSpeedBlurEffect(false);
-		GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
-		GameState.odysseyShaderPass.uniforms.saturation.value = 1;
-		GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
+    GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
+    GameState.odysseyShaderPass.uniforms.saturation.value = 1;
+    GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
 
-		GameState.odysseyShaderPass.uniforms.bscanlines.value = false;
-		GameState.odysseyShaderPass.uniforms.grayscale.value = false;
+    GameState.odysseyShaderPass.uniforms.bscanlines.value = false;
+    GameState.odysseyShaderPass.uniforms.grayscale.value = false;
   }
 
-  static Init2DA(dataTable: TwoDAObject){
-    if(!dataTable){ return; }
-
-    for(let i = 0; i < dataTable.RowCount; i++){
-      VideoEffectManager.videoEffects[i] = VideoEffect.From2DA(dataTable.rows[i]);
+  static Init2DA(dataTable: TwoDAObject) {
+    if (!dataTable) {
+      return;
     }
 
+    for (let i = 0; i < dataTable.RowCount; i++) {
+      VideoEffectManager.videoEffects[i] = VideoEffect.From2DA(dataTable.rows[i]);
+    }
   }
-
 }

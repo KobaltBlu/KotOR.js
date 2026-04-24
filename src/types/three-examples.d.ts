@@ -2,8 +2,8 @@
  * Module declarations for three.js examples (jsm) when using Node16/tsconfig paths.
  * Runtime resolves via three package exports.
  */
-declare module "three/examples/jsm/objects/Lensflare" {
-  import type * as THREE from "three";
+declare module 'three/examples/jsm/objects/Lensflare' {
+  import type * as THREE from 'three';
   export class LensflareElement {
     constructor(texture?: THREE.Texture, size?: number, distance?: number, color?: THREE.Color);
   }
@@ -12,18 +12,18 @@ declare module "three/examples/jsm/objects/Lensflare" {
   }
 }
 
-declare module "three/examples/jsm/utils/BufferGeometryUtils" {
-  import type * as THREE from "three";
+declare module 'three/examples/jsm/utils/BufferGeometryUtils' {
+  import type * as THREE from 'three';
   export function mergeGeometries(geometries: THREE.BufferGeometry[], useGroups?: boolean): THREE.BufferGeometry;
   export function mergeBufferGeometries(geometries: THREE.BufferGeometry[], useGroups?: boolean): THREE.BufferGeometry;
 }
 
-declare module "three/examples/jsm/libs/stats.module" {
+declare module 'three/examples/jsm/libs/stats.module' {
   export default function Stats(): { showPanel(panel?: number): void; update(): void };
 }
 
-declare module "three/examples/jsm/postprocessing/EffectComposer" {
-  import type * as THREE from "three";
+declare module 'three/examples/jsm/postprocessing/EffectComposer' {
+  import type * as THREE from 'three';
   export class EffectComposer {
     constructor(renderer: THREE.WebGLRenderer);
     addPass(pass: unknown): void;
@@ -33,8 +33,8 @@ declare module "three/examples/jsm/postprocessing/EffectComposer" {
   }
 }
 
-declare module "three/examples/jsm/postprocessing/RenderPass" {
-  import type * as THREE from "three";
+declare module 'three/examples/jsm/postprocessing/RenderPass' {
+  import type * as THREE from 'three';
   export class RenderPass {
     constructor(scene: THREE.Scene, camera: THREE.Camera);
     renderToScreen: boolean;
@@ -45,8 +45,8 @@ declare module "three/examples/jsm/postprocessing/RenderPass" {
   }
 }
 
-declare module "three/examples/jsm/postprocessing/SSAARenderPass" {
-  import type * as THREE from "three";
+declare module 'three/examples/jsm/postprocessing/SSAARenderPass' {
+  import type * as THREE from 'three';
   export class SSAARenderPass {
     constructor(scene: THREE.Scene, camera: THREE.Camera);
     sampleLevel: number;
@@ -57,8 +57,8 @@ declare module "three/examples/jsm/postprocessing/SSAARenderPass" {
   }
 }
 
-declare module "three/examples/jsm/postprocessing/ShaderPass" {
-  import type * as _THREE from "three";
+declare module 'three/examples/jsm/postprocessing/ShaderPass' {
+  import type * as _THREE from 'three';
   export class ShaderPass {
     constructor(shader: { uniformLocations?: unknown; uniforms?: Record<string, { value: unknown }> });
     renderToScreen: boolean;
@@ -68,7 +68,7 @@ declare module "three/examples/jsm/postprocessing/ShaderPass" {
   }
 }
 
-declare module "three/examples/jsm/postprocessing/BloomPass" {
+declare module 'three/examples/jsm/postprocessing/BloomPass' {
   export class BloomPass {
     constructor(strength?: number);
     clear: boolean;
@@ -76,27 +76,36 @@ declare module "three/examples/jsm/postprocessing/BloomPass" {
   }
 }
 
-declare module "three/examples/jsm/postprocessing/BokehPass" {
-  import type * as THREE from "three";
+declare module 'three/examples/jsm/postprocessing/BokehPass' {
+  import type * as THREE from 'three';
   export class BokehPass {
-    constructor(scene: THREE.Scene, camera: THREE.Camera, params?: { focus?: number; aperture?: number; maxblur?: number });
+    constructor(
+      scene: THREE.Scene,
+      camera: THREE.Camera,
+      params?: { focus?: number; aperture?: number; maxblur?: number }
+    );
     camera: THREE.Camera;
     needsSwap: boolean;
     enabled: boolean;
   }
 }
 
-declare module "three/examples/jsm/shaders/CopyShader" {
+declare module 'three/examples/jsm/shaders/CopyShader' {
   export const CopyShader: { uniformLocations?: unknown; uniforms?: Record<string, { value: unknown }> };
 }
 
-declare module "three/examples/jsm/postprocessing/Pass" {
-  import type * as THREE from "three";
+declare module 'three/examples/jsm/postprocessing/Pass' {
+  import type * as THREE from 'three';
   export class Pass {
     enabled: boolean;
     clear: boolean;
     needsSwap: boolean;
     renderToScreen: boolean;
-    render(renderer: THREE.WebGLRenderer, writeBuffer: THREE.WebGLRenderTarget, readBuffer: THREE.WebGLRenderTarget, deltaTime: number): void;
+    render(
+      renderer: THREE.WebGLRenderer,
+      writeBuffer: THREE.WebGLRenderTarget,
+      readBuffer: THREE.WebGLRenderTarget,
+      deltaTime: number
+    ): void;
   }
 }

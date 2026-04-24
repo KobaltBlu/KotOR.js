@@ -1,6 +1,6 @@
-import React from "react";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import { ModalExtractionResults } from "@/apps/forge/components/modal/ModalExtractionResults";
+import React from 'react';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
+import { ModalExtractionResults } from '@/apps/forge/components/modal/ModalExtractionResults';
 
 export interface ExtractionResults {
   modelName: string;

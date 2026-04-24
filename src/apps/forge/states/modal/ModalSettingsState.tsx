@@ -1,8 +1,8 @@
-import React from "react";
+import React from 'react';
 
-import { ModalSettings } from "@/apps/forge/components/modal/ModalSettings";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalSettings } from '@/apps/forge/components/modal/ModalSettings';
+import * as KotOR from '@/apps/forge/KotOR';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
 
 export interface SettingsData {
   // Game installations
@@ -23,12 +23,12 @@ export interface SettingsData {
 }
 
 export class ModalSettingsState extends ModalState {
-  title: string = "Settings";
+  title: string = 'Settings';
 
   activeTab: string = 'installations';
   settings: SettingsData;
 
-  constructor(){
+  constructor() {
     super();
 
     // Load settings from ConfigClient

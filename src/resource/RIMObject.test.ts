@@ -116,15 +116,21 @@ describe('RIMObject', () => {
   it('rejects invalid type, version, and malformed offsets', async () => {
     const badType = new Uint8Array(makeRimBuffer());
     badType.set(new TextEncoder().encode('BAD '), 0);
-    await expect(new RIMObject(badType).load()).rejects.toThrow('Tried to save or load an unsupported or corrupted file.');
+    await expect(new RIMObject(badType).load()).rejects.toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
 
     const badVersion = new Uint8Array(makeRimBuffer());
     badVersion.set(new TextEncoder().encode('V2.0'), 4);
-    await expect(new RIMObject(badVersion).load()).rejects.toThrow('Tried to save or load an unsupported or corrupted file.');
+    await expect(new RIMObject(badVersion).load()).rejects.toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
 
     const badOffset = new Uint8Array(makeRimBuffer());
     new DataView(badOffset.buffer).setUint32(16, 1000, true);
-    await expect(new RIMObject(badOffset).load()).rejects.toThrow('Tried to save or load an unsupported or corrupted file.');
+    await expect(new RIMObject(badOffset).load()).rejects.toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
   });
 
   it('getResource returns undefined for non-existent resref', async () => {
@@ -216,7 +222,9 @@ describe('RIMObject', () => {
     expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('1', ResourceTypes.txt))).toBe('abc');
     expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('2', ResourceTypes.txt))).toBe('def');
     expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('3', ResourceTypes.txt))).toBe('ghi');
-    expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('image', ResourceTypes.txt))).toBe('image data');
+    expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('image', ResourceTypes.txt))).toBe(
+      'image data'
+    );
   });
 
   it('export writes a mutated disk-backed RIM that can be reloaded with original and appended resources', async () => {
@@ -242,7 +250,9 @@ describe('RIMObject', () => {
       expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('1', ResourceTypes.txt))).toBe('abc');
       expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('2', ResourceTypes.txt))).toBe('def');
       expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('3', ResourceTypes.txt))).toBe('ghi');
-      expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('image', ResourceTypes.txt))).toBe('image data');
+      expect(new TextDecoder().decode(await reloaded.getResourceBufferByResRef('image', ResourceTypes.txt))).toBe(
+        'image data'
+      );
     } finally {
       ApplicationProfile.ENV = previousEnv;
       ApplicationProfile.directory = previousDirectory;

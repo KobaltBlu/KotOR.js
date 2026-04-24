@@ -1,10 +1,22 @@
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import type { NWScript } from "@/nwscript/NWScript";
-import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
-import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_CPDOWNBP, OP_MOVSP, OP_NEG, OP_ACTION, OP_SAVEBP, OP_JSR, OP_RESTOREBP, OP_RETN } from "@/nwscript/NWScriptOPCodes";
-import { EdgeType } from "@/nwscript/decompiler/NWScriptEdge";
+import type { NWScriptInstruction } from '@/nwscript/NWScriptInstruction';
+import type { NWScript } from '@/nwscript/NWScript';
+import type { NWScriptControlFlowGraph } from '@/nwscript/decompiler/NWScriptControlFlowGraph';
+import type { NWScriptBasicBlock } from '@/nwscript/decompiler/NWScriptBasicBlock';
+import { NWScriptDataType } from '@/enums/nwscript/NWScriptDataType';
+import {
+  OP_RSADD,
+  OP_CONST,
+  OP_CPDOWNSP,
+  OP_CPDOWNBP,
+  OP_MOVSP,
+  OP_NEG,
+  OP_ACTION,
+  OP_SAVEBP,
+  OP_JSR,
+  OP_RESTOREBP,
+  OP_RETN,
+} from '@/nwscript/NWScriptOPCodes';
+import { EdgeType } from '@/nwscript/decompiler/NWScriptEdge';
 
 /**
  * Represents a detected global variable initialization
@@ -152,7 +164,7 @@ export class NWScriptGlobalVariableAnalyzer {
       // CPDOWNSP FFFFFFF8 means offset -8 (writing to the space reserved by RSADD)
       // The offset is a signed 32-bit integer (e.g. -8)
       const cpdownspOffset = cpdownsp.offset;
-      const cpdownspOffsetSigned = cpdownspOffset > 0x7FFFFFFF ? cpdownspOffset - 0x100000000 : cpdownspOffset;
+      const cpdownspOffsetSigned = cpdownspOffset > 0x7fffffff ? cpdownspOffset - 0x100000000 : cpdownspOffset;
       if (cpdownspOffsetSigned !== -8 || cpdownsp.size !== 4) continue;
 
       // Find MOVSP
@@ -166,7 +178,7 @@ export class NWScriptGlobalVariableAnalyzer {
       // Check MOVSP offset
       // MOVSP FFFFFFFC means offset -4 (cleaning up the stack)
       const movspOffset = movsp.offset;
-      const movspOffsetSigned = movspOffset > 0x7FFFFFFF ? movspOffset - 0x100000000 : movspOffset;
+      const movspOffsetSigned = movspOffset > 0x7fffffff ? movspOffset - 0x100000000 : movspOffset;
       if (movspOffsetSigned !== -4) continue;
 
       // Extract initialization
@@ -222,7 +234,12 @@ export class NWScriptGlobalVariableAnalyzer {
           // This indicates a function call, not a constant initialization
           let hasAction = false;
           let actionCheck = nextAfterConst;
-          while (actionCheck && actionCheck.code !== OP_CPDOWNSP && actionCheck.code !== OP_CPDOWNBP && actionCheck.address < constInstr.address + 50) {
+          while (
+            actionCheck &&
+            actionCheck.code !== OP_CPDOWNSP &&
+            actionCheck.code !== OP_CPDOWNBP &&
+            actionCheck.address < constInstr.address + 50
+          ) {
             if (actionCheck.code === OP_ACTION) {
               hasAction = true;
               break;
@@ -242,7 +259,7 @@ export class NWScriptGlobalVariableAnalyzer {
           while (cpdownspInstr && cpdownspSearchLimit < 10) {
             if (cpdownspInstr.code === OP_CPDOWNSP || cpdownspInstr.code === OP_CPDOWNBP) {
               const offset = cpdownspInstr.offset;
-              const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
+              const offsetSigned = offset > 0x7fffffff ? offset - 0x100000000 : offset;
 
               // CPDOWNSP -8 writes to the space reserved by the most recent RSADD
               // But we need to verify this is actually for our RSADD
@@ -254,15 +271,17 @@ export class NWScriptGlobalVariableAnalyzer {
                 while (movspInstr && movspSearchLimit < 10) {
                   if (movspInstr.code === OP_MOVSP && movspInstr.offset !== undefined) {
                     const movspOffset = movspInstr.offset;
-                    const movspOffsetSigned = movspOffset > 0x7FFFFFFF ? movspOffset - 0x100000000 : movspOffset;
+                    const movspOffsetSigned = movspOffset > 0x7fffffff ? movspOffset - 0x100000000 : movspOffset;
 
                     // MOVSP -4 after CPDOWNSP completes the initialization pattern
                     if (movspOffsetSigned === -4) {
                       // Verify this pattern is for our RSADD by checking the sequence
                       // The instructions should be sequential: RSADD -> CONST -> CPDOWNSP -> MOVSP
-                      if (constInstr.address > rsadd.address &&
-                          cpdownspInstr.address > constInstr.address &&
-                          movspInstr.address > cpdownspInstr.address) {
+                      if (
+                        constInstr.address > rsadd.address &&
+                        cpdownspInstr.address > constInstr.address &&
+                        movspInstr.address > cpdownspInstr.address
+                      ) {
                         hasInitialization = true;
                         break;
                       }
@@ -301,11 +320,20 @@ export class NWScriptGlobalVariableAnalyzer {
         // Determine data type from RSADD type
         let dataType: NWScriptDataType;
         switch (rsadd.type) {
-          case 3: dataType = NWScriptDataType.INTEGER; break;
-          case 4: dataType = NWScriptDataType.FLOAT; break;
-          case 5: dataType = NWScriptDataType.STRING; break;
-          case 6: dataType = NWScriptDataType.OBJECT; break;
-          default: continue; // Skip unknown types
+          case 3:
+            dataType = NWScriptDataType.INTEGER;
+            break;
+          case 4:
+            dataType = NWScriptDataType.FLOAT;
+            break;
+          case 5:
+            dataType = NWScriptDataType.STRING;
+            break;
+          case 6:
+            dataType = NWScriptDataType.OBJECT;
+            break;
+          default:
+            continue; // Skip unknown types
         }
 
         // Calculate global variable BP offset (will be recalculated after all globals are found)
@@ -317,7 +345,7 @@ export class NWScriptGlobalVariableAnalyzer {
           dataType: dataType,
           initialValue: undefined,
           hasInitializer: false,
-          instructionAddress: rsadd.address
+          instructionAddress: rsadd.address,
         });
 
         // Mark RSADD as processed
@@ -381,11 +409,20 @@ export class NWScriptGlobalVariableAnalyzer {
     // Determine data type from RSADD type
     let dataType: NWScriptDataType;
     switch (rsadd.type) {
-      case 3: dataType = NWScriptDataType.INTEGER; break;
-      case 4: dataType = NWScriptDataType.FLOAT; break;
-      case 5: dataType = NWScriptDataType.STRING; break;
-      case 6: dataType = NWScriptDataType.OBJECT; break;
-      default: return null;
+      case 3:
+        dataType = NWScriptDataType.INTEGER;
+        break;
+      case 4:
+        dataType = NWScriptDataType.FLOAT;
+        break;
+      case 5:
+        dataType = NWScriptDataType.STRING;
+        break;
+      case 6:
+        dataType = NWScriptDataType.OBJECT;
+        break;
+      default:
+        return null;
     }
 
     // Extract value from CONST instruction
@@ -428,21 +465,24 @@ export class NWScriptGlobalVariableAnalyzer {
 
     // For objects, if the value is 0, 1, or undefined after processing, treat as no initializer
     // Value 1 for objects is often OBJECT_INVALID or a placeholder
-    if (dataType === NWScriptDataType.OBJECT && (initialValue === 0 || initialValue === 1 || initialValue === undefined)) {
+    if (
+      dataType === NWScriptDataType.OBJECT &&
+      (initialValue === 0 || initialValue === 1 || initialValue === undefined)
+    ) {
       hasInitializer = false;
       initialValue = undefined;
     }
 
-        // Calculate global variable BP offset (will be recalculated after all globals are found)
-        // For now, use a placeholder - we'll fix it in a second pass
-        const offset = 0; // Placeholder, will be recalculated
+    // Calculate global variable BP offset (will be recalculated after all globals are found)
+    // For now, use a placeholder - we'll fix it in a second pass
+    const offset = 0; // Placeholder, will be recalculated
 
     return {
       offset: offset,
       dataType: dataType,
       initialValue: initialValue,
       hasInitializer: hasInitializer,
-      instructionAddress: rsadd.address
+      instructionAddress: rsadd.address,
     };
   }
 
@@ -464,7 +504,7 @@ export class NWScriptGlobalVariableAnalyzer {
    * Get the initialization for a specific offset
    */
   getInitForOffset(offset: number): NWScriptGlobalInit | null {
-    return this.globalInits.find(init => init.offset === offset) || null;
+    return this.globalInits.find((init) => init.offset === offset) || null;
   }
 
   /**
@@ -478,7 +518,7 @@ export class NWScriptGlobalVariableAnalyzer {
    *
    * Returns blocks from the first JSR target up to (but not including) SAVEBP
    */
-  private identifyGlobalInitBlocks(): { blocks: NWScriptBasicBlock[], savebpAddress: number | null } {
+  private identifyGlobalInitBlocks(): { blocks: NWScriptBasicBlock[]; savebpAddress: number | null } {
     if (!this.cfg || !this.cfg.entryBlock) {
       return { blocks: [], savebpAddress: null };
     }
@@ -580,7 +620,7 @@ export class NWScriptGlobalVariableAnalyzer {
               if (!foundJSR && savebpAddress) {
                 for (const succSucc of succBlock.successors) {
                   if (!jsrSearchVisited.has(succSucc)) {
-                    const hasRetn = succSucc.instructions.some(i => i.code === OP_RETN);
+                    const hasRetn = succSucc.instructions.some((i) => i.code === OP_RETN);
                     if (!hasRetn) {
                       jsrSearchQueue.push(succSucc);
                     }
@@ -611,7 +651,7 @@ export class NWScriptGlobalVariableAnalyzer {
             }
 
             // Stop if we hit a RETN (end of function)
-            const hasRetn = successor.instructions.some(instr => instr.code === OP_RETN);
+            const hasRetn = successor.instructions.some((instr) => instr.code === OP_RETN);
             if (!hasRetn) {
               queue.push(successor);
             }
@@ -658,9 +698,7 @@ export class NWScriptGlobalVariableAnalyzer {
 
       // Check if any instruction in this block is at or after SAVEBP address
       const savebpAddr = savebpAddress;
-      const blockHasSavebp = savebpAddr !== null && block.instructions.some(instr =>
-        instr.address >= savebpAddr
-      );
+      const blockHasSavebp = savebpAddr !== null && block.instructions.some((instr) => instr.address >= savebpAddr);
 
       if (blockHasSavebp) {
         // This block contains SAVEBP - we still want to include it
@@ -701,9 +739,7 @@ export class NWScriptGlobalVariableAnalyzer {
 
           // Check if successor is before SAVEBP or is the SAVEBP block itself
           // We include the SAVEBP block because it may contain globals before SAVEBP
-          const successorBeforeSavebp = successor.instructions.every(instr =>
-            instr.address < savebpAddr
-          );
+          const successorBeforeSavebp = successor.instructions.every((instr) => instr.address < savebpAddr);
           const isSavebpBlock = successor === savebpBlock;
           if (successorBeforeSavebp || isSavebpBlock) {
             blockQueue.push(successor);
@@ -715,4 +751,3 @@ export class NWScriptGlobalVariableAnalyzer {
     return { blocks, savebpAddress };
   }
 }
-

@@ -1,14 +1,14 @@
-import { GameState } from "@/GameState";
-import { ActionUnlockObject } from "@/actions/ActionUnlockObject";
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { TalentObjectType } from "@/enums/engine/TalentObjectType";
-import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import type { ModuleObject } from "@/module";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { TwoDAObject } from "@/resource/TwoDAObject";
-import { TalentObject } from "@/talents/TalentObject";
+import { GameState } from '@/GameState';
+import { ActionUnlockObject } from '@/actions/ActionUnlockObject';
+import { ActionParameterType } from '@/enums/actions/ActionParameterType';
+import { TalentObjectType } from '@/enums/engine/TalentObjectType';
+import { ModuleObjectConstant } from '@/enums/module/ModuleObjectConstant';
+import { GFFDataType } from '@/enums/resource/GFFDataType';
+import type { ModuleObject } from '@/module';
+import { GFFField } from '@/resource/GFFField';
+import { GFFStruct } from '@/resource/GFFStruct';
+import { TwoDAObject } from '@/resource/TwoDAObject';
+import { TalentObject } from '@/talents/TalentObject';
 
 interface SkillClass {
   class: string;
@@ -18,9 +18,9 @@ interface SkillClass {
 
 /**
  * TalentSkill class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TalentSkill.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -43,85 +43,86 @@ export class TalentSkill extends TalentObject {
 
   classData: Map<string, SkillClass> = new Map();
 
-  constructor( id = 0, rank = 0 ){
-    super( id );
+  constructor(id = 0, rank = 0) {
+    super(id);
     this.objectType = TalentObjectType.TalentObject | TalentObjectType.TalentSkill;
     this.rank = rank;
   }
-  
-  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
+
+  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject) {
     this.oCaster = oCaster;
     this.oTarget = oTarget;
-    if(this.id == 6){ //Security
+    if (this.id == 6) {
+      //Security
       const action = new ActionUnlockObject();
       action.setParameter(0, ActionParameterType.DWORD, this.oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
       this.oCaster.actionQueue.add(action);
     }
   }
 
-  setId( value = 0 ){
+  setId(value = 0) {
     this.id = value;
   }
 
-  getRank(){
+  getRank() {
     return this.rank;
   }
 
-  setRank( value = 0){
+  setRank(value = 0) {
     this.rank = value;
   }
 
-  getIcon(){
+  getIcon() {
     return this.icon;
   }
 
-  getName(){
+  getName() {
     return this.name != -1 ? GameState.TLKManager.GetStringById(this.name).Value : this.label;
   }
 
-  getDescription(){
+  getDescription() {
     return this.description != -1 ? GameState.TLKManager.GetStringById(this.description).Value : '';
   }
 
-  isUntrained(){
+  isUntrained() {
     return this.untrained || false;
   }
 
-  getKeyAbility(){
+  getKeyAbility() {
     return this.keyAbility || '';
   }
 
-  hasArmorCheckPenalty(){
+  hasArmorCheckPenalty() {
     return this.armorCheckPenalty || false;
   }
 
-  canAllClassesUse(){
+  canAllClassesUse() {
     return this.allClassesCanUse || false;
   }
 
-  getCategory(){
+  getCategory() {
     return this.category || 0;
   }
 
-  getMaxCR(){
+  getMaxCR() {
     return this.maxCR || 0;
   }
 
-  getConstant(){
+  getConstant() {
     return this.constant || '';
   }
 
-  isHostileSkill(){
+  isHostileSkill() {
     return this.hostileSkill || false;
   }
 
-  save(){
+  save() {
     const skillStruct = new GFFStruct();
-    skillStruct.addField( new GFFField(GFFDataType.BYTE, 'Rank') ).setValue(this.getRank());
+    skillStruct.addField(new GFFField(GFFDataType.BYTE, 'Rank')).setValue(this.getRank());
     return skillStruct;
   }
 
-  clone(){
+  clone() {
     const skill = new TalentSkill(this.id, this.rank);
     skill.id = this.id;
     skill.label = this.label;
@@ -142,7 +143,7 @@ export class TalentSkill extends TalentObject {
     return skill;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: any = {}) {
     const skill = new TalentSkill();
     skill.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     skill.label = TwoDAObject.normalizeValue(row.label, 'string', '');
@@ -161,13 +162,12 @@ export class TalentSkill extends TalentObject {
     skill.npcCanUse = TwoDAObject.normalizeValue(row.npccanuse, 'boolean', false);
 
     const classData = GameState.TwoDAManager.datatables.get('classes');
-    if(classData){
-      for(let i = 0; i < classData.RowCount; i++){
+    if (classData) {
+      for (let i = 0; i < classData.RowCount; i++) {
         const classRow = classData.rows[i];
 
         const classCode = TwoDAObject.normalizeValue(classRow.skillstable, 'string', '');
-        if(classCode === '')
-          continue;
+        if (classCode === '') continue;
 
         const classCodeLower = classCode.toLowerCase();
 
@@ -179,12 +179,11 @@ export class TalentSkill extends TalentObject {
           isClassSkill: isClassSkill,
           recommendedLevel: recommendedLevel,
         };
-        
+
         skill.classData.set(classCode, skillClass);
       }
     }
 
     return skill;
   }
-
 }

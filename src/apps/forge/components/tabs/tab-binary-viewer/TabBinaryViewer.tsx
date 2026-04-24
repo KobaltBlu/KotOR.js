@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { TabBinaryViewerState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/components/tabs/tab-binary-viewer/TabBinaryViewer.scss";
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
+import { TabBinaryViewerState } from '@/apps/forge/states/tabs';
+import '@/apps/forge/components/tabs/tab-binary-viewer/TabBinaryViewer.scss';
 
 interface BaseTabProps {
   tab: TabBinaryViewerState;
 }
 
-export const TabBinaryViewer = function(props: BaseTabProps){
+export const TabBinaryViewer = function (props: BaseTabProps) {
   const tab = props.tab as TabBinaryViewerState;
   const [, forceUpdate] = useState({});
 
@@ -40,9 +40,9 @@ export const TabBinaryViewer = function(props: BaseTabProps){
           label: '32 Bytes / Row',
           onClick: () => tab.setBytesPerRow(32),
           checked: tab.bytesPerRow === 32,
-        }
-      ]
-    }
+        },
+      ],
+    },
   ];
 
   return (

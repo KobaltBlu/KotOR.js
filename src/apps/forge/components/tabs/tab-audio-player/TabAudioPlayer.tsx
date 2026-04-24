@@ -1,12 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
-import {
-  AudioPlayerOstStatePayload,
-  AudioPlayerState,
-} from "@/apps/forge/states/AudioPlayerState";
-import { ForgeAudioOstControls } from "@/apps/forge/components/ForgeAudioOstControls";
+import React, { useEffect, useRef, useState } from 'react';
+import { BaseTabProps } from '@/apps/forge/interfaces/BaseTabProps';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { TabAudioPlayerState } from '@/apps/forge/states/tabs/TabAudioPlayerState';
+import { AudioPlayerOstStatePayload, AudioPlayerState } from '@/apps/forge/states/AudioPlayerState';
+import { ForgeAudioOstControls } from '@/apps/forge/components/ForgeAudioOstControls';
 import {
   drawHyperspace,
   drawSpectrumBars,
@@ -15,8 +12,8 @@ import {
   HyperspaceVizState,
   TAB_AUDIO_VISUAL_OPTIONS,
   TabAudioVisualId,
-} from "@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
-import * as KotOR from "@/KotOR";
+} from '@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations';
+import * as KotOR from '@/KotOR';
 
 const VISUAL_MIN_H = 168;
 const VISUAL_MAX_H = 320;
@@ -29,19 +26,19 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const visualRef = useRef<HTMLDivElement>(null);
-  const visualIdRef = useRef<TabAudioVisualId>("spectrum");
+  const visualIdRef = useRef<TabAudioVisualId>('spectrum');
   const hyperspaceStateRef = useRef<HyperspaceVizState | null>(null);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
-  const [currentTimeString, setCurrentTimeString] = useState<string>("0:00");
-  const [durationString, setDurationString] = useState<string>("0:00");
+  const [currentTimeString, setCurrentTimeString] = useState<string>('0:00');
+  const [durationString, setDurationString] = useState<string>('0:00');
   const [file, setFile] = useState<KotOR.AudioFile>();
-  const [visualId, setVisualId] = useState<TabAudioVisualId>("spectrum");
+  const [visualId, setVisualId] = useState<TabAudioVisualId>('spectrum');
   const [ost, setOst] = useState<AudioPlayerOstStatePayload>(() => ({
     active: false,
-    label: "",
+    label: '',
     trackIndex: -1,
     total: 0,
     shuffle: false,
@@ -53,11 +50,10 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   const syncOstFromState = () => {
     const active = AudioPlayerState.ostMode && AudioPlayerState.ostTracks.length > 0;
     const physical = AudioPlayerState.getCurrentOstPhysicalIndex();
-    const entry =
-      active && physical >= 0 ? AudioPlayerState.ostTracks[physical] : undefined;
+    const entry = active && physical >= 0 ? AudioPlayerState.ostTracks[physical] : undefined;
     setOst({
       active,
-      label: entry?.displayName ?? entry?.label ?? "",
+      label: entry?.displayName ?? entry?.label ?? '',
       trackIndex: physical,
       total: AudioPlayerState.ostTracks.length,
       shuffle: AudioPlayerState.ostShuffle,
@@ -101,12 +97,8 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
       animationFrame = requestAnimationFrame(() => onFrame());
       setCurrentTime(AudioPlayerState.GetCurrentTime());
       setDuration(AudioPlayerState.GetDuration());
-      setCurrentTimeString(
-        AudioPlayerState.SecondsToTimeString(AudioPlayerState.GetCurrentTime())
-      );
-      setDurationString(
-        AudioPlayerState.SecondsToTimeString(AudioPlayerState.GetDuration())
-      );
+      setCurrentTimeString(AudioPlayerState.SecondsToTimeString(AudioPlayerState.GetCurrentTime()));
+      setDurationString(AudioPlayerState.SecondsToTimeString(AudioPlayerState.GetDuration()));
     }
   };
 
@@ -137,28 +129,28 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
 
   useEffectOnce(() => {
     if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext("2d");
+      const ctx = canvasRef.current.getContext('2d');
       contextRef.current = ctx;
       onResize();
     }
 
-    AudioPlayerState.AddEventListener("onPlay", onPlay);
-    AudioPlayerState.AddEventListener("onPause", onPause);
-    AudioPlayerState.AddEventListener("onStop", onStop);
-    AudioPlayerState.AddEventListener("onLoop", onLoop);
-    AudioPlayerState.AddEventListener("onOpen", onOpen);
+    AudioPlayerState.AddEventListener('onPlay', onPlay);
+    AudioPlayerState.AddEventListener('onPause', onPause);
+    AudioPlayerState.AddEventListener('onStop', onStop);
+    AudioPlayerState.AddEventListener('onLoop', onLoop);
+    AudioPlayerState.AddEventListener('onOpen', onOpen);
     syncOstFromState();
-    AudioPlayerState.AddEventListener("onOstState", onOstState);
+    AudioPlayerState.AddEventListener('onOstState', onOstState);
 
     requestRef.current = requestAnimationFrame(animate);
 
     return () => {
-      AudioPlayerState.RemoveEventListener("onPlay", onPlay);
-      AudioPlayerState.RemoveEventListener("onPause", onPause);
-      AudioPlayerState.RemoveEventListener("onStop", onStop);
-      AudioPlayerState.RemoveEventListener("onLoop", onLoop);
-      AudioPlayerState.RemoveEventListener("onOpen", onOpen);
-      AudioPlayerState.RemoveEventListener("onOstState", onOstState);
+      AudioPlayerState.RemoveEventListener('onPlay', onPlay);
+      AudioPlayerState.RemoveEventListener('onPause', onPause);
+      AudioPlayerState.RemoveEventListener('onStop', onStop);
+      AudioPlayerState.RemoveEventListener('onLoop', onLoop);
+      AudioPlayerState.RemoveEventListener('onOpen', onOpen);
+      AudioPlayerState.RemoveEventListener('onOstState', onOstState);
       cancelAnimationFrame(requestRef.current as number);
     };
   });
@@ -213,18 +205,14 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
       }
 
       const mode = visualIdRef.current;
-      if (mode === "spectrum") {
+      if (mode === 'spectrum') {
         if (data && bufferLength > 0) {
           drawSpectrumBars(context, w, h, data, bufferLength);
         } else {
           drawSpectrumIdle(context, w, h);
         }
-      } else if (mode === "hyperspace") {
-        hyperspaceStateRef.current = ensureHyperspaceState(
-          hyperspaceStateRef.current,
-          w,
-          h
-        );
+      } else if (mode === 'hyperspace') {
+        hyperspaceStateRef.current = ensureHyperspaceState(hyperspaceStateRef.current, w, h);
         drawHyperspace(context, w, h, hyperspaceStateRef.current, data, bufferLength, time);
       }
     }
@@ -233,29 +221,21 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   };
 
   const seekDisabled = duration <= 0;
-  const title = file?.filename?.trim() || "No file loaded";
+  const title = file?.filename?.trim() || 'No file loaded';
   const ostPosition =
-    ost.active && ost.total > 0
-      ? `${ost.queuePosition} / ${ost.total}${ost.shuffle ? " · shuffle" : ""}`
-      : "";
+    ost.active && ost.total > 0 ? `${ost.queuePosition} / ${ost.total}${ost.shuffle ? ' · shuffle' : ''}` : '';
   const ostMetaTitle =
-    ost.active && ost.label
-      ? `Ambient soundtrack: ${ost.label}${ostPosition ? ` (${ostPosition})` : ""}`
-      : "";
+    ost.active && ost.label ? `Ambient soundtrack: ${ost.label}${ostPosition ? ` (${ostPosition})` : ''}` : '';
 
   return (
     <div className="forge-tab-audio" data-tab-id={tab.id}>
       <div className="forge-tab-audio__visual" ref={visualRef}>
-        <div
-          className="forge-tab-audio__visual-toolbar"
-          role="toolbar"
-          aria-label="Audio visualization"
-        >
+        <div className="forge-tab-audio__visual-toolbar" role="toolbar" aria-label="Audio visualization">
           {TAB_AUDIO_VISUAL_OPTIONS.map((opt) => (
             <button
               key={opt.id}
               type="button"
-              className={`forge-tab-audio__viz-btn${visualId === opt.id ? " forge-tab-audio__viz-btn--active" : ""}`}
+              className={`forge-tab-audio__viz-btn${visualId === opt.id ? ' forge-tab-audio__viz-btn--active' : ''}`}
               title={opt.title}
               aria-label={opt.label}
               aria-pressed={visualId === opt.id}
@@ -266,13 +246,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
             </button>
           ))}
         </div>
-        <canvas
-          ref={canvasRef}
-          className="forge-tab-audio__canvas"
-          width={640}
-          height={240}
-          aria-hidden
-        />
+        <canvas ref={canvasRef} className="forge-tab-audio__canvas" width={640} height={240} aria-hidden />
       </div>
 
       <div className="forge-tab-audio__meta">
@@ -284,14 +258,11 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
           <p className="forge-tab-audio__meta-ost" title={ostMetaTitle}>
             <span className="forge-tab-audio__meta-ost-badge">OST</span>
             <span className="forge-tab-audio__meta-ost-title">{ost.label}</span>
-            {ostPosition ? (
-              <span className="forge-tab-audio__meta-ost-pos">{ostPosition}</span>
-            ) : null}
+            {ostPosition ? <span className="forge-tab-audio__meta-ost-pos">{ostPosition}</span> : null}
           </p>
         ) : null}
         <p className="forge-tab-audio__meta-hint">
-          Use the deck below for transport, export, and the ambientmusic.2da soundtrack
-          (playlist, shuffle, skip).
+          Use the deck below for transport, export, and the ambientmusic.2da soundtrack (playlist, shuffle, skip).
         </p>
       </div>
 
@@ -300,19 +271,13 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
           <button
             type="button"
             className="forge-tab-audio__btn forge-tab-audio__btn--primary"
-            title={isPlaying ? "Pause" : "Play"}
-            aria-label={isPlaying ? "Pause" : "Play"}
+            title={isPlaying ? 'Pause' : 'Play'}
+            aria-label={isPlaying ? 'Pause' : 'Play'}
             onClick={onBtnPlay}
           >
-            <i className={`fa-solid ${isPlaying ? "fa-pause" : "fa-play"}`} />
+            <i className={`fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'}`} />
           </button>
-          <button
-            type="button"
-            className="forge-tab-audio__btn"
-            title="Stop"
-            aria-label="Stop"
-            onClick={onBtnStop}
-          >
+          <button type="button" className="forge-tab-audio__btn" title="Stop" aria-label="Stop" onClick={onBtnStop}>
             <i className="fa-solid fa-stop" />
           </button>
         </div>
@@ -334,9 +299,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
             <span className="forge-tab-audio__time-sep" aria-hidden>
               /
             </span>
-            <span className="forge-tab-audio__time forge-tab-audio__time--dim">
-              {durationString}
-            </span>
+            <span className="forge-tab-audio__time forge-tab-audio__time--dim">{durationString}</span>
           </div>
         </div>
 

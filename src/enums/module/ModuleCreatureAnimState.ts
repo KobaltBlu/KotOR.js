@@ -1,8 +1,8 @@
 /**
  * ModuleCreatureAnimState enum.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ModuleCreatureAnimState.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -14,16 +14,13 @@ export enum ModuleCreatureAnimState {
   //CREATURE
   PAUSE = 10000,
 
-
   //READY - depends on equipped weapons
   //1=92,2=133,3=174,4=215,5=223,6=237,7=245,8=249,9=245
   READY = 10001,
 
-
   //WALK - depends on equipped weapons
   //2=338,3=341,4=339,5=0,6=0,7=340,8=0,9=340 simple 253
   WALKING = 10002,
-
 
   //WALKING_BACK - depends on equipped weapons
   //2=338,3=341,4=339,5=0,6=0,7=340,8=0,9=340 simple 253
@@ -56,8 +53,8 @@ export enum ModuleCreatureAnimState {
   PAUSE2 = 10052,
   HEAD_TURN_LEFT = 10053,
   HEAD_TURN_RIGHT = 10054,
-  TURN_LEFT = 10509, /** Value Not Confirmed */
-  TURN_RIGHT = 10510, /** Value Not Confirmed */
+  TURN_LEFT = 10509 /** Value Not Confirmed */,
+  TURN_RIGHT = 10510 /** Value Not Confirmed */,
   PAUSE_SCRATCH_HEAD = 10055,
   PAUSE_BORED = 10056,
   PAUSE_TIRED = 10057,
@@ -100,7 +97,6 @@ export enum ModuleCreatureAnimState {
   FBLOCK = 10145,
   PAUSE4 = 10147,
 
-
   //READY_ALT - depends on equipped weapons
   //1=92,2=133,3=174,4=215,5=223,6=237,7=245,8=249,9=245
   READY_ALT = 10148,
@@ -112,11 +108,9 @@ export enum ModuleCreatureAnimState {
   LISTEN_INJURED = 10155,
   DEAD_PRONE = 10156,
 
-
   //MELEE_WIELD - depends on equipped weapons
   //1=378,2=377,3=378,4=376,5=378,6=378,7=378,8=378,9=378
   MELEE_WIELD = 10157,
-
 
   //MELEE_COMBAT_WIELD - depends on equipped weapons
   //2=132,3=214,4=173
@@ -136,22 +130,18 @@ export enum ModuleCreatureAnimState {
   KNEEL = 10237,
   KNEEL1 = 10238,
 
-
   //FLOURISH - depends on equipped weapons
   //1=91,2=132,3=173,4=214,5=222,6=136,7=244,8=373,9=244
   FLOURISH = 10246,
   KNEELING = 10271,
 
-
   //DAMAGED - depends on equipped weapons
   //1=unknown,2=124,3=206,4=165,5=220,6=234,7=242,8=280,9=242
   DAMAGED = 10302,
 
-
   //BLASTER_DEFLECTION_1H - depends on equipped weapons
   //2=109,3=151,4=192
   BLASTER_DEFLECTION_1H = 10300,
-
 
   //BLASTER_DEFLECTION_2H - depends on equipped weapons
   //2=110,3=151,4=192
@@ -159,8 +149,6 @@ export enum ModuleCreatureAnimState {
   KNOCKED_DOWN_LP = 10400,
   POWER_ATTACK_SS = 10401,
   KNOCKED_DOWN2_LP = 10402,
-
-
 
   //BEGIN TSL ANIMATIONS
   TOUCH_HEART = 10403,
@@ -191,11 +179,11 @@ export enum ModuleCreatureAnimState {
   CASTOUT3 = 11000,
   CRITICAL_STRIKE2_SS = 11001,
   CRITICAL_STRIKE3_SS = 11002,
-  
+
   KNEEL_TALK_ANGRY,
   KNEEL_TALK_SAD,
   COLLAPSE_LP,
   POINT_UP,
   POINT_UP_LOWER,
-  DIVE_ROLL
+  DIVE_ROLL,
 }

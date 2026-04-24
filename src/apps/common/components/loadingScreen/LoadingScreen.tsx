@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
-import "@/apps/common/components/loadingScreen/LoadingScreen.scss";
+import React, { useEffect, useRef, useState } from 'react';
+import '@/apps/common/components/loadingScreen/LoadingScreen.scss';
 
 export interface ILoadingScreenProps {
   active?: boolean;
@@ -14,17 +14,19 @@ function formatTime(ms: number): string {
 }
 
 function LogLine({ entry }: { entry: LoadingConsoleEntry }) {
-  const extra = entry.args.length > 0 ? " " + entry.args.join(" ") : "";
+  const extra = entry.args.length > 0 ? ' ' + entry.args.join(' ') : '';
   return (
     <div className={`loading-console-line loading-console-${entry.severity}`} key={entry.id}>
-      <span className="loading-console-time">[{formatTime(entry.time)}]</span>{" "}
-      <span className="loading-console-text">{entry.message}{extra}</span>
+      <span className="loading-console-time">[{formatTime(entry.time)}]</span>{' '}
+      <span className="loading-console-text">
+        {entry.message}
+        {extra}
+      </span>
     </div>
   );
 }
 
 export const LoadingScreen = (props: ILoadingScreenProps) => {
-
   //component props
   const [active, setActive] = useState<boolean>(!!props.active);
   const [message, setMessage] = useState<string>(props.message || 'Loading...');
@@ -61,9 +63,9 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
 
   useEffect(() => {
     setActive(!!props.active);
-    if(!!props.active){
+    if (!!props.active) {
       onShow();
-    }else{
+    } else {
       onHide();
     }
   }, [props.active]);
@@ -76,7 +78,7 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
 
   useEffect(() => {
     if (loadingConsole.enabled && loadingConsole.entries.length) {
-      consoleEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      consoleEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [loadingConsole.enabled, loadingConsole.entries.length]);
 
@@ -84,8 +86,13 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
 
   return (
     <div className={`app-loader ${visible ? 'active' : ''} ${fadeIn ? 'fade-in' : ''} ${fadeOut ? 'fade-out' : ''}`}>
-      <div className="background" style={{backgroundImage: (!!backgroundURL) ? `url(${backgroundURL})` : 'initial'}}></div>
-      <div className="logo-wrapper"><img src={logoURL || undefined} style={{display: (!!logoURL) ? 'block' : 'none'}} alt="" /></div>
+      <div
+        className="background"
+        style={{ backgroundImage: !!backgroundURL ? `url(${backgroundURL})` : 'initial' }}
+      ></div>
+      <div className="logo-wrapper">
+        <img src={logoURL || undefined} style={{ display: !!logoURL ? 'block' : 'none' }} alt="" />
+      </div>
       <div className="loading-container">
         <div className="spinner-wrapper">
           <div className="ball"></div>
@@ -97,7 +104,9 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
         <div className="loading-console">
           <div className="loading-console-header">
             <span>Loading log</span>
-            <button type="button" className="loading-console-clear" onClick={loadingConsole.clear}>Clear</button>
+            <button type="button" className="loading-console-clear" onClick={loadingConsole.clear}>
+              Clear
+            </button>
           </div>
           <div className="loading-console-body">
             {loadingConsole.entries.map((entry) => (
@@ -109,7 +118,4 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
       )}
     </div>
   );
-
 };
-
-

@@ -1,16 +1,23 @@
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import type { NWScriptInstruction } from '@/nwscript/NWScriptInstruction';
+import { NWScriptDataType } from '@/enums/nwscript/NWScriptDataType';
 import {
-  OP_CPDOWNBP, OP_CPTOPBP, OP_CPDOWNSP, OP_CPTOPSP, OP_MOVSP,
-  OP_DECIBP, OP_INCIBP, OP_DECISP, OP_INCISP
-} from "@/nwscript/NWScriptOPCodes";
+  OP_CPDOWNBP,
+  OP_CPTOPBP,
+  OP_CPDOWNSP,
+  OP_CPTOPSP,
+  OP_MOVSP,
+  OP_DECIBP,
+  OP_INCIBP,
+  OP_DECISP,
+  OP_INCISP,
+} from '@/nwscript/NWScriptOPCodes';
 
 /**
  * Tracks variable usage during NCS-to-NSS conversion.
  * Identifies global and local variables from stack/base pointer operations.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptVariableTracker.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -239,7 +246,7 @@ export class NWScriptVariableTracker {
       firstRead: null,
       firstWrite: null,
       lastRead: null,
-      lastWrite: null
+      lastWrite: null,
     };
   }
 
@@ -257,7 +264,7 @@ export class NWScriptVariableTracker {
       firstRead: null,
       firstWrite: null,
       lastRead: null,
-      lastWrite: null
+      lastWrite: null,
     };
   }
 
@@ -276,16 +283,14 @@ export class NWScriptVariableTracker {
    * Get all global variables
    */
   getGlobalVariables(): NWScriptVariable[] {
-    return Array.from(this.globalVars.values())
-      .sort((a, b) => a.offset - b.offset);
+    return Array.from(this.globalVars.values()).sort((a, b) => a.offset - b.offset);
   }
 
   /**
    * Get all local variables
    */
   getLocalVariables(): NWScriptVariable[] {
-    return Array.from(this.localVars.values())
-      .sort((a, b) => a.offset - b.offset);
+    return Array.from(this.localVars.values()).sort((a, b) => a.offset - b.offset);
   }
 
   /**
@@ -348,4 +353,3 @@ export class NWScriptVariableTracker {
     this.currentBasePointer = 0;
   }
 }
-

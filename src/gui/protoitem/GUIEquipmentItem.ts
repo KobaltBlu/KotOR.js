@@ -1,47 +1,45 @@
-import { GUIButton, GUIListBox, GUIProtoItem } from "@/gui";
-import { GameState } from "@/GameState";
-import { GameEngineType } from "@/enums/engine";
-import { TextureType } from "@/enums/loaders/TextureType";
-import { TextureLoader } from "@/loaders";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { GUIControl } from "@/gui/GUIControl";
-import { GameMenu } from "@/gui/GameMenu";
-import * as THREE from "three";
+import { GUIButton, GUIListBox, GUIProtoItem } from '@/gui';
+import { GameState } from '@/GameState';
+import { GameEngineType } from '@/enums/engine';
+import { TextureType } from '@/enums/loaders/TextureType';
+import { TextureLoader } from '@/loaders';
+import { GFFStruct } from '@/resource/GFFStruct';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { GUIControl } from '@/gui/GUIControl';
+import { GameMenu } from '@/gui/GameMenu';
+import * as THREE from 'three';
 
-import { GameEngineType } from "@/enums/engine";
-import { TextureType } from "@/enums/loaders/TextureType";
-import { GameState } from "@/GameState";
-import { GUIButton, GUIListBox, GUIProtoItem } from "@/gui";
-import { GameMenu } from "@/gui/GameMenu";
-import { GUIControl } from "@/gui/GUIControl";
-import { TextureLoader } from "@/loaders";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-
+import { GameEngineType } from '@/enums/engine';
+import { TextureType } from '@/enums/loaders/TextureType';
+import { GameState } from '@/GameState';
+import { GUIButton, GUIListBox, GUIProtoItem } from '@/gui';
+import { GameMenu } from '@/gui/GameMenu';
+import { GUIControl } from '@/gui/GUIControl';
+import { TextureLoader } from '@/loaders';
+import { GFFStruct } from '@/resource/GFFStruct';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
 
 /**
  * GUIEquipmentItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIEquipmentItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIEquipmentItem extends GUIProtoItem {
-
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false) {
     super(menu, control, parent, scale);
   }
 
-  buildFill(){}
-  buildBorder(){}
-  buildHighlight(){}
-  buildText(){}
+  buildFill() {}
+  buildBorder() {}
+  buildHighlight() {}
+  buildText() {}
 
-  createControl(){
-    try{
+  createControl() {
+    try {
       super.createControl();
       //Create the actual control elements below
       const button = new GUIButton(this.menu, this.control, this, this.scale);
@@ -70,30 +68,35 @@ export class GUIEquipmentItem extends GUIProtoItem {
       this.children.push(buttonIcon);
 
       const _buttonIconWidget = buttonIcon.createControl();
-      _buttonIconWidget.position.x = -(this.extent.width/2 - buttonIcon.extent.width/2);
+      _buttonIconWidget.position.x = -(this.extent.width / 2 - buttonIcon.extent.width / 2);
       _buttonIconWidget.position.y = 0;
       _buttonIconWidget.position.z = this.zIndex + 1;
 
       //Stack Count Text Position
-      if(this.node.getStackSize() >= 100){
+      if (this.node.getStackSize() >= 100) {
         buttonIcon.widget.userData.text.position.set(6, -10, 5);
-      }else if(this.node.getStackSize() >= 10){
+      } else if (this.node.getStackSize() >= 10) {
         buttonIcon.widget.userData.text.position.set(10, -10, 5);
-      }else{
+      } else {
         buttonIcon.widget.userData.text.position.set(14, -10, 5);
       }
 
       this.widget.add(_buttonIconWidget);
 
-      this.widget.userData.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+      this.widget.userData.iconMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
       this.widget.userData.iconMaterial.transparent = true;
       this.widget.userData.iconMaterial.visible = false;
-      this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
+      this.widget.userData.iconSprite = new THREE.Sprite(this.widget.userData.iconMaterial);
       //console.log(this.node.getIcon());
-      TextureLoader.enQueue(this.node.getIcon(), this.widget.userData.iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        this.widget.userData.iconMaterial.visible = true;
-      });
-      
+      TextureLoader.enQueue(
+        this.node.getIcon(),
+        this.widget.userData.iconMaterial,
+        TextureType.TEXTURE,
+        (texture: OdysseyTexture) => {
+          this.widget.userData.iconMaterial.visible = true;
+        }
+      );
+
       this.widget.userData.spriteGroup = new THREE.Group();
       //this.widget.spriteGroup.position.x = -(this.extent.width/2)-(52/2); //HACK
       //this.widget.spriteGroup.position.y -= 4;
@@ -101,37 +104,36 @@ export class GUIEquipmentItem extends GUIProtoItem {
       this.widget.userData.iconSprite.scale.y = 52;
       this.widget.userData.iconSprite.position.z = 1;
 
-      this.widget.userData.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+      this.widget.userData.hexMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
       this.widget.userData.hexMaterial.transparent = true;
-      this.widget.userData.hexSprite = new THREE.Sprite( this.widget.userData.hexMaterial );
+      this.widget.userData.hexSprite = new THREE.Sprite(this.widget.userData.hexMaterial);
       this.widget.userData.hexSprite.scale.x = this.widget.userData.hexSprite.scale.y = 64;
       this.widget.userData.hexSprite.position.z = 1;
 
-      if(GameState.GameKey != GameEngineType.TSL)
-        this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);
-        
+      if (GameState.GameKey != GameEngineType.TSL) this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);
+
       this.widget.userData.spriteGroup.add(this.widget.userData.iconSprite);
 
-      if(this.node.getStackSize() >= 100){
+      if (this.node.getStackSize() >= 100) {
         this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_7');
         this.widget.userData.hexMaterial.needsUpdate = true;
-      }else if(this.node.getStackSize() > 1){
+      } else if (this.node.getStackSize() > 1) {
         this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_6');
         this.widget.userData.hexMaterial.needsUpdate = true;
-      }else{
+      } else {
         this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('lbl_hex_3');
         this.widget.userData.hexMaterial.needsUpdate = true;
       }
 
       this.onSelect = () => {
-        if(this.selected){
+        if (this.selected) {
           this.showHighlight();
           this.hideBorder();
           this.pulsing = true;
           this.text.color.setRGB(1, 1, 0);
           this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
-  
+
           button.showHighlight();
           button.hideBorder();
           this.widget.userData.hexMaterial.color.setRGB(1, 1, 0);
@@ -142,14 +144,14 @@ export class GUIEquipmentItem extends GUIProtoItem {
           button.text.color.setRGB(1, 1, 0);
           button.text.material.uniforms.diffuse.value = button.text.color;
           button.text.material.needsUpdate = true;
-        }else{
+        } else {
           this.hideHighlight();
           this.showBorder();
           this.pulsing = false;
           this.text.color.setRGB(0, 0.658824, 0.980392);
           this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
-  
+
           button.hideHighlight();
           button.showBorder();
           this.widget.userData.hexMaterial.color.setRGB(0, 0.658823549747467, 0.9803921580314636);
@@ -167,11 +169,9 @@ export class GUIEquipmentItem extends GUIProtoItem {
       //StackCount Text
       _buttonIconWidget.add(this.widget.userData.spriteGroup);
       return this.widget;
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
     return this.widget;
-
   }
-
 }

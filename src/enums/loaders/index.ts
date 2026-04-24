@@ -1,1 +1,1 @@
-export * from "@/enums/loaders/TextureType";
+export * from '@/enums/loaders/TextureType';

@@ -9,20 +9,16 @@ import {
 } from '@/resource/WAVObject';
 
 describe('WAVObject', () => {
-  function makeRiffWave(options: {
-    channels?: number;
-    sampleRate?: number;
-    bitsPerSample?: number;
-    encoding?: number;
-    data?: Uint8Array;
-  } = {}): Uint8Array {
-    const {
-      channels = 1,
-      sampleRate = 22050,
-      bitsPerSample = 16,
-      encoding = 0x01,
-      data = new Uint8Array(4),
-    } = options;
+  function makeRiffWave(
+    options: {
+      channels?: number;
+      sampleRate?: number;
+      bitsPerSample?: number;
+      encoding?: number;
+      data?: Uint8Array;
+    } = {}
+  ): Uint8Array {
+    const { channels = 1, sampleRate = 22050, bitsPerSample = 16, encoding = 0x01, data = new Uint8Array(4) } = options;
     const blockAlign = channels * Math.max(bitsPerSample >> 3, 1);
     const byteRate = sampleRate * blockAlign;
     const riff = new Uint8Array(44 + data.length);
@@ -62,12 +58,16 @@ describe('WAVObject', () => {
   });
 
   it('parses stereo and 8-bit WAV metadata', () => {
-    const stereo = new WAVObject(makeRiffWave({ channels: 2, sampleRate: 44100, bitsPerSample: 16, data: new Uint8Array(8) }));
+    const stereo = new WAVObject(
+      makeRiffWave({ channels: 2, sampleRate: 44100, bitsPerSample: 16, data: new Uint8Array(8) })
+    );
     expect(stereo.channels).toBe(2);
     expect(stereo.sampleRate).toBe(44100);
     expect(stereo.bitsPerSample).toBe(16);
 
-    const mono8Bit = new WAVObject(makeRiffWave({ channels: 1, sampleRate: 48000, bitsPerSample: 8, data: new Uint8Array(5) }));
+    const mono8Bit = new WAVObject(
+      makeRiffWave({ channels: 1, sampleRate: 48000, bitsPerSample: 8, data: new Uint8Array(5) })
+    );
     expect(mono8Bit.channels).toBe(1);
     expect(mono8Bit.sampleRate).toBe(48000);
     expect(mono8Bit.bitsPerSample).toBe(8);
@@ -84,12 +84,14 @@ describe('WAVObject', () => {
 
     cases.forEach(({ channels, sampleRate, bitsPerSample }) => {
       const blockAlign = channels * Math.max(bitsPerSample >> 3, 1);
-      const source = new WAVObject(makeRiffWave({
-        channels,
-        sampleRate,
-        bitsPerSample,
-        data: new Uint8Array(blockAlign * 3),
-      }));
+      const source = new WAVObject(
+        makeRiffWave({
+          channels,
+          sampleRate,
+          bitsPerSample,
+          data: new Uint8Array(blockAlign * 3),
+        })
+      );
       const reloaded = new WAVObject(source.toBuffer());
 
       expect(reloaded.audioFormat).toBe(AudioFileAudioType.WAVE);
@@ -265,12 +267,14 @@ describe('WAVObject', () => {
 
     cases.forEach(({ channels, sampleRate, bitsPerSample }) => {
       const blockAlign = channels * Math.max(bitsPerSample >> 3, 1);
-      const source = new WAVObject(makeRiffWave({
-        channels,
-        sampleRate,
-        bitsPerSample,
-        data: new Uint8Array(blockAlign * 4),
-      }));
+      const source = new WAVObject(
+        makeRiffWave({
+          channels,
+          sampleRate,
+          bitsPerSample,
+          data: new Uint8Array(blockAlign * 4),
+        })
+      );
       source.wavType = WAVType.SFX;
 
       const reloaded = new WAVObject(source.toBuffer());
@@ -295,7 +299,9 @@ describe('WAVObject', () => {
   });
 
   it('toJSON and fromJSON round-trip audio metadata', () => {
-    const wav = new WAVObject(makeRiffWave({ channels: 2, sampleRate: 44100, bitsPerSample: 16, data: new Uint8Array([1, 2, 3, 4]) }));
+    const wav = new WAVObject(
+      makeRiffWave({ channels: 2, sampleRate: 44100, bitsPerSample: 16, data: new Uint8Array([1, 2, 3, 4]) })
+    );
     wav.wavType = WAVType.SFX;
     const reloaded = new WAVObject();
     reloaded.fromJSON(wav.toJSON());

@@ -1,22 +1,20 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 
-import { Kit } from "@/apps/forge/data/IndoorKit";
-import { loadKits } from "@/apps/forge/data/IndoorKitLoader";
-import { IndoorMap, IndoorMapRoom } from "@/apps/forge/data/IndoorMap";
-import { cloneWalkmesh, applyWalkmeshTransform } from "@/apps/forge/data/IndoorWalkmesh";
-import { OdysseyWalkMesh } from "@/apps/forge/KotOR";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { AreaMap } from "@/module/AreaMap";
-import { ModuleArea } from "@/module/ModuleArea";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { ERFObject } from "@/resource/ERFObject";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { LYTObject } from "@/resource/LYTObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-
-
+import { Kit } from '@/apps/forge/data/IndoorKit';
+import { loadKits } from '@/apps/forge/data/IndoorKitLoader';
+import { IndoorMap, IndoorMapRoom } from '@/apps/forge/data/IndoorMap';
+import { cloneWalkmesh, applyWalkmeshTransform } from '@/apps/forge/data/IndoorWalkmesh';
+import { OdysseyWalkMesh } from '@/apps/forge/KotOR';
+import { GFFDataType } from '@/enums/resource/GFFDataType';
+import { AreaMap } from '@/module/AreaMap';
+import { ModuleArea } from '@/module/ModuleArea';
+import { CExoLocString } from '@/resource/CExoLocString';
+import { ERFObject } from '@/resource/ERFObject';
+import { GFFField } from '@/resource/GFFField';
+import { GFFObject } from '@/resource/GFFObject';
+import { LYTObject } from '@/resource/LYTObject';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
 export type IndoorBuildOptions = {
   outputPath: string;
@@ -85,10 +83,14 @@ const buildAreaMap = (indoorMap: IndoorMap): AreaMap => {
   return areaMap;
 };
 
-export const buildModFromIndoorMap = async (indoorMap: IndoorMap, kits: Kit[], options: IndoorBuildOptions): Promise<Uint8Array> => {
+export const buildModFromIndoorMap = async (
+  indoorMap: IndoorMap,
+  kits: Kit[],
+  options: IndoorBuildOptions
+): Promise<Uint8Array> => {
   const moduleId = (options.moduleId || indoorMap.moduleId).toLowerCase();
   const erf = new ERFObject();
-  erf.header.fileType = "MOD ";
+  erf.header.fileType = 'MOD ';
 
   const lyt = new LYTObject();
   lyt.rooms = [];
@@ -122,30 +124,30 @@ export const buildModFromIndoorMap = async (indoorMap: IndoorMap, kits: Kit[], o
   area.dynamicAmbientColor = toColorInt(indoorMap.lighting);
 
   const { git, are } = area.save();
-  are.FileType = "ARE ";
-  git.FileType = "GIT ";
+  are.FileType = 'ARE ';
+  git.FileType = 'GIT ';
 
   const ifo = new GFFObject();
-  ifo.FileType = "IFO ";
-  ifo.RootNode.addField(new GFFField(GFFDataType.LIST, "Creature List"));
-  const areaList = ifo.RootNode.addField(new GFFField(GFFDataType.LIST, "Mod_Area_list"));
+  ifo.FileType = 'IFO ';
+  ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Creature List'));
+  const areaList = ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Mod_Area_list'));
   areaList.addChildStruct(area.saveAreaListStruct());
-  ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, "Mod_ResRef")).setValue(moduleId);
-  ifo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, "Mod_Tag")).setValue(moduleId.toUpperCase());
+  ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_ResRef')).setValue(moduleId);
+  ifo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'Mod_Tag')).setValue(moduleId.toUpperCase());
   const modName = new CExoLocString(-1);
   modName.addSubString(indoorMap.name.substrings.get(0) || moduleId, 0);
-  ifo.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, "Mod_Name")).setValue(modName);
-  ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, "Mod_Entry_Area")).setValue(moduleId);
-  ifo.RootNode.addField(new GFFField(GFFDataType.FLOAT, "Mod_Entry_X")).setValue(indoorMap.warpPoint.x);
-  ifo.RootNode.addField(new GFFField(GFFDataType.FLOAT, "Mod_Entry_Y")).setValue(indoorMap.warpPoint.y);
-  ifo.RootNode.addField(new GFFField(GFFDataType.FLOAT, "Mod_Entry_Z")).setValue(indoorMap.warpPoint.z);
-  ifo.RootNode.addField(new GFFField(GFFDataType.LIST, "Mod_Expan_List"));
+  ifo.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Name')).setValue(modName);
+  ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_Entry_Area')).setValue(moduleId);
+  ifo.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_X')).setValue(indoorMap.warpPoint.x);
+  ifo.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Y')).setValue(indoorMap.warpPoint.y);
+  ifo.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Z')).setValue(indoorMap.warpPoint.z);
+  ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Mod_Expan_List'));
 
   erf.addResource(moduleId, ResourceTypes.lyt, lyt.export());
   erf.addResource(moduleId, ResourceTypes.vis, buildVisBuffer(visRooms));
   erf.addResource(moduleId, ResourceTypes.are, are.getExportBuffer());
   erf.addResource(moduleId, ResourceTypes.git, git.getExportBuffer());
-  erf.addResource("module", ResourceTypes.ifo, ifo.getExportBuffer());
+  erf.addResource('module', ResourceTypes.ifo, ifo.getExportBuffer());
 
   indoorMap.rooms.forEach((room, index) => {
     const resref = `${moduleId}_room${index}`;
@@ -189,7 +191,11 @@ export const buildModFromIndoorMap = async (indoorMap: IndoorMap, kits: Kit[], o
   return erf.getExportBuffer();
 };
 
-export const buildModFromIndoorFile = async (indoorPath: string, kitsPath: string, options: IndoorBuildOptions): Promise<Uint8Array> => {
+export const buildModFromIndoorFile = async (
+  indoorPath: string,
+  kitsPath: string,
+  options: IndoorBuildOptions
+): Promise<Uint8Array> => {
   const kits = await loadKits(kitsPath);
   const raw = await fsReadFile(indoorPath);
   const map = new IndoorMap();
@@ -201,7 +207,7 @@ export const buildModFromIndoorFile = async (indoorPath: string, kitsPath: strin
 };
 
 const fsReadFile = async (filePath: string): Promise<Uint8Array> => {
-  const fs = await import("fs");
+  const fs = await import('fs');
   return new Uint8Array(fs.readFileSync(filePath));
 };
 
@@ -247,7 +253,13 @@ export const inferRoomTransform = (
   if (baseVertices.length !== instanceVertices.length || !baseVertices.length) return null;
   const _baseCentroid = centroid(baseVertices);
   const instCentroid = centroid(instanceVertices);
-  let best: { flipX: boolean; flipY: boolean; rotationDeg: number; translation: THREE.Vector3; rmsError: number } | null = null;
+  let best: {
+    flipX: boolean;
+    flipY: boolean;
+    rotationDeg: number;
+    translation: THREE.Vector3;
+    rmsError: number;
+  } | null = null;
 
   [false, true].forEach((flipX) => {
     [false, true].forEach((flipY) => {
@@ -283,7 +295,13 @@ export const inferRoomTransformWalkmesh = (
 ): { flipX: boolean; flipY: boolean; rotationDeg: number; translation: THREE.Vector3; rmsError: number } | null => {
   if (!baseWalkmesh.faces.length || !instanceWalkmesh.faces.length) return null;
   const instanceVertices = instanceWalkmesh.vertices;
-  let best: { flipX: boolean; flipY: boolean; rotationDeg: number; translation: THREE.Vector3; rmsError: number } | null = null;
+  let best: {
+    flipX: boolean;
+    flipY: boolean;
+    rotationDeg: number;
+    translation: THREE.Vector3;
+    rmsError: number;
+  } | null = null;
   [false, true].forEach((flipX) => {
     [false, true].forEach((flipY) => {
       const clone = cloneWalkmesh(baseWalkmesh);

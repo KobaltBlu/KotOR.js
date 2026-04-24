@@ -1,19 +1,18 @@
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
-import { TextureLoaderState } from "@/loaders/TextureLoaderState";
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from '@/gui';
+import { TextureLoaderState } from '@/loaders/TextureLoaderState';
 
 /**
  * MenuGraphicsAdvanced class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuGraphicsAdvanced.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuGraphicsAdvanced extends GameMenu {
-
   LBL_TITLE: GUILabel;
   LB_DESC: GUIListBox;
   BTN_DEFAULT: GUIButton;
@@ -32,7 +31,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
   CB_VSYNC: GUICheckBox;
   CB_SOFTSHADOWS: GUICheckBox;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optgraphicsadv';
     this.background = '1600x1200back';
@@ -41,7 +40,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_ANTIALIASLEFT.border.dimension = 0;
       this.BTN_ANISOTROPYLEFT.border.dimension = 0;
@@ -60,7 +59,8 @@ export class MenuGraphicsAdvanced extends GameMenu {
       this.BTN_TEXQUALRIGHT.addEventListener('click', (e) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality++;
-        if(quality >= GameState.TwoDAManager.datatables.get('texpacks').RowCount) quality = GameState.TwoDAManager.datatables.get('texpacks').RowCount-1;
+        if (quality >= GameState.TwoDAManager.datatables.get('texpacks').RowCount)
+          quality = GameState.TwoDAManager.datatables.get('texpacks').RowCount - 1;
         GameState.iniConfig.setProperty('Graphics Options.Texture Quality', quality);
         this.updateTextureQualityLabel();
       });
@@ -68,13 +68,13 @@ export class MenuGraphicsAdvanced extends GameMenu {
       this.BTN_TEXQUALLEFT.addEventListener('click', (e) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality--;
-        if(quality < 0) quality = 0;
+        if (quality < 0) quality = 0;
         GameState.iniConfig.setProperty('Graphics Options.Texture Quality', quality);
         this.updateTextureQualityLabel();
       });
 
       // this.CB_FRAMEBUFF.onValueChanged = (value) => {
-      // 
+      //
       // };
       // this.CB_FRAMEBUFF.attachINIProperty('Graphics Options.Grass');
 
@@ -108,7 +108,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
 
   updateTextureQualityLabel() {
     const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
-    
+
     const _2darow = GameState.TwoDAManager.datatables.get('texpacks').rows[quality];
     if (_2darow) {
       this.BTN_TEXQUAL.setText(GameState.TLKManager.GetStringById(_2darow.strrefname).Value);
@@ -124,5 +124,4 @@ export class MenuGraphicsAdvanced extends GameMenu {
       this.BTN_TEXQUALRIGHT.show();
     }
   }
-  
 }

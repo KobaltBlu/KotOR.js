@@ -1,28 +1,27 @@
-import * as path from "path";
-import { PixelFormat } from "@/enums/graphics/tpc/PixelFormat";
-import { TextureType } from "@/enums/loaders/TextureType";
-import { ITextureLoaderQueuedRef } from "@/interface/loaders/ITextureLoaderQueuedRef";
-import { TXIBlending } from "@/enums/graphics/txi/TXIBlending";
-import { TPCLoader } from "@/loaders/TPCLoader";
-import { TGALoader } from "@/loaders/TGALoader";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
-import { GameEngineType } from "@/enums/engine";
+import * as path from 'path';
+import { PixelFormat } from '@/enums/graphics/tpc/PixelFormat';
+import { TextureType } from '@/enums/loaders/TextureType';
+import { ITextureLoaderQueuedRef } from '@/interface/loaders/ITextureLoaderQueuedRef';
+import { TXIBlending } from '@/enums/graphics/txi/TXIBlending';
+import { TPCLoader } from '@/loaders/TPCLoader';
+import { TGALoader } from '@/loaders/TGALoader';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { TXIPROCEDURETYPE } from '@/enums/graphics/txi/TXIPROCEDURETYPE';
+import { GameEngineType } from '@/enums/engine';
 
 type onProgressCallback = (ref: ITextureLoaderQueuedRef, index: number, total: number) => void;
 
 /**
  * TextureLoader class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TextureLoader.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class TextureLoader {
-
   static tpcLoader = new TPCLoader();
   static tgaLoader = new TGALoader();
   static textures = new Map();
@@ -33,45 +32,49 @@ export class TextureLoader {
   static Anisotropy = 8;
 
   static GameKey: GameEngineType;
-  
+
   static onAnisotropyChanged = () => {
-    TextureLoader.textures.forEach( tex => {
+    TextureLoader.textures.forEach((tex) => {
       tex.anisotropy = TextureLoader.Anisotropy;
       tex.needsUpdate = true;
     });
   };
-  
+
   static CACHE = false; //Should be false but it's causing isses if textures are cached
   static NOCACHE = true;
 
   static async Load(resRef: string, noCache: boolean = false): Promise<OdysseyTexture> {
     resRef = resRef.toLowerCase();
-    if(TextureLoader.textures.has(resRef) || TextureLoader.guiTextures.has(resRef) && !noCache){
-      return (TextureLoader.textures.has(resRef) ? TextureLoader.textures.get(resRef) : TextureLoader.guiTextures.has(resRef) ? TextureLoader.guiTextures.get(resRef) : undefined)
+    if (TextureLoader.textures.has(resRef) || (TextureLoader.guiTextures.has(resRef) && !noCache)) {
+      return TextureLoader.textures.has(resRef)
+        ? TextureLoader.textures.get(resRef)
+        : TextureLoader.guiTextures.has(resRef)
+          ? TextureLoader.guiTextures.get(resRef)
+          : undefined;
     }
 
     const tga = await TextureLoader.tgaLoader.fetch(resRef);
-    if(tga){
+    if (tga) {
       tga.anisotropy = TextureLoader.Anisotropy;
       tga.wrapS = tga.wrapT = THREE.RepeatWrapping;
 
-      if(!noCache) TextureLoader.textures.set(resRef, tga);
+      if (!noCache) TextureLoader.textures.set(resRef, tga);
       return tga;
     }
-    
+
     const texture = await TextureLoader.tpcLoader.fetch(resRef);
-    if(texture){
+    if (texture) {
       texture.anisotropy = TextureLoader.Anisotropy;
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
-      if(!noCache){
-        if(texture.pack === 0){
+      if (!noCache) {
+        if (texture.pack === 0) {
           TextureLoader.guiTextures.set(resRef, texture);
-        }else{
+        } else {
           TextureLoader.textures.set(resRef, texture);
         }
       }
-      
+
       return texture;
     }
 
@@ -79,41 +82,47 @@ export class TextureLoader {
   }
 
   static async LoadLocal(resRef: string, noCache: boolean = false): Promise<OdysseyTexture> {
-
     const dir = resRef;
     const tga_exists = await GameFileSystem.exists(path.join(dir, resRef));
-    if(!tga_exists){ return undefined; }
+    if (!tga_exists) {
+      return undefined;
+    }
 
     const tga = await TextureLoader.tgaLoader.fetchLocal(resRef);
-    if(!tga){ return undefined; }
+    if (!tga) {
+      return undefined;
+    }
 
     tga.anisotropy = TextureLoader.Anisotropy;
     tga.wrapS = tga.wrapT = THREE.RepeatWrapping;
 
-    if(!noCache)
-      TextureLoader.textures.set(resRef, tga);
+    if (!noCache) TextureLoader.textures.set(resRef, tga);
 
     return tga;
   }
 
-  static async LoadLightmap(resRef: string, noCache: boolean = false){
+  static async LoadLightmap(resRef: string, noCache: boolean = false) {
     resRef = resRef.toLowerCase();
-    if(TextureLoader.lightmaps.hasOwnProperty(resRef) && !noCache){
+    if (TextureLoader.lightmaps.hasOwnProperty(resRef) && !noCache) {
       return TextureLoader.lightmaps[resRef];
     }
-    
-    if(TextureLoader.GameKey == GameEngineType.TSL){
+
+    if (TextureLoader.GameKey == GameEngineType.TSL) {
       const lightmap = await TextureLoader.tpcLoader.fetch(resRef);
-      if(!lightmap){ return undefined; }
+      if (!lightmap) {
+        return undefined;
+      }
 
       lightmap.wrapS = lightmap.wrapT = THREE.RepeatWrapping;
       lightmap.anisotropy = TextureLoader.Anisotropy;
 
       TextureLoader.lightmaps[resRef] = lightmap;
       return TextureLoader.lightmaps[resRef];
-    }else{
+    } else {
       const lightmap = await TextureLoader.tgaLoader.fetch(resRef);
-      if(!lightmap){ return undefined; }
+      if (!lightmap) {
+        return undefined;
+      }
 
       lightmap.wrapS = lightmap.wrapT = THREE.RepeatWrapping;
       lightmap.anisotropy = TextureLoader.Anisotropy;
@@ -123,65 +132,80 @@ export class TextureLoader {
     }
   }
 
-  static enQueue(name: string|string[], material: THREE.Material, type = TextureType.TEXTURE, onLoad?: Function, fallback?: string){
-    if(typeof name == 'string' && name.length){
+  static enQueue(
+    name: string | string[],
+    material: THREE.Material,
+    type = TextureType.TEXTURE,
+    onLoad?: Function,
+    fallback?: string
+  ) {
+    if (typeof name == 'string' && name.length) {
       name = name.toLowerCase();
-      const obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad } as ITextureLoaderQueuedRef;
-      if(TextureLoader.textures.has(name)){
+      const obj = {
+        name: name,
+        material: material,
+        type: type,
+        fallback: fallback,
+        onLoad: onLoad,
+      } as ITextureLoaderQueuedRef;
+      if (TextureLoader.textures.has(name)) {
         TextureLoader.UpdateMaterial(obj);
-        if(typeof onLoad == 'function')
-          onLoad(TextureLoader.textures.get(name), obj)
-      }else{
+        if (typeof onLoad == 'function') onLoad(TextureLoader.textures.get(name), obj);
+      } else {
         TextureLoader.queue.push(obj);
       }
-    }else if(Array.isArray(name)){
-      for(let i = 0, len = name.length; i < len; i++){
+    } else if (Array.isArray(name)) {
+      for (let i = 0, len = name.length; i < len; i++) {
         const texName = name[i].toLowerCase();
-        const obj = { name: texName, material: material, type: type, fallback: fallback, onLoad: onLoad } as ITextureLoaderQueuedRef;
-        if(TextureLoader.textures.has(texName)){
+        const obj = {
+          name: texName,
+          material: material,
+          type: type,
+          fallback: fallback,
+          onLoad: onLoad,
+        } as ITextureLoaderQueuedRef;
+        if (TextureLoader.textures.has(texName)) {
           TextureLoader.UpdateMaterial(obj);
-          if(typeof onLoad == 'function')
-            onLoad(TextureLoader.textures.get(texName), obj)
-        }else{
+          if (typeof onLoad == 'function') onLoad(TextureLoader.textures.get(texName), obj);
+        } else {
           TextureLoader.queue.push(obj);
         }
       }
-    }else{
+    } else {
       console.warn('unhandled enQueue', name);
       console.log('enQueue', name, material, type);
     }
   }
 
-  static enQueueParticle(name: string, partGroup: any, onLoad?: Function){
+  static enQueueParticle(name: string, partGroup: any, onLoad?: Function) {
     name = name.toLowerCase();
     TextureLoader.queue.push({ name: name, partGroup: partGroup, type: TextureType.PARTICLE, onLoad: onLoad });
   }
 
-  static async LoadQueue(onProgress?: onProgressCallback){
+  static async LoadQueue(onProgress?: onProgressCallback) {
     const queue = TextureLoader.queue.slice(0);
     TextureLoader.queue = [];
-    const promises = queue.map(tex => TextureLoader.UpdateMaterial(tex));
+    const promises = queue.map((tex) => TextureLoader.UpdateMaterial(tex));
     await Promise.all(promises);
-    for(let i = 0; i < queue.length; i++){
-      if(typeof onProgress == 'function'){
+    for (let i = 0; i < queue.length; i++) {
+      if (typeof onProgress == 'function') {
         onProgress(queue[i], i, promises.length);
       }
     }
   }
 
-  static async UpdateMaterial(tex: ITextureLoaderQueuedRef){
-    switch(tex.type){
+  static async UpdateMaterial(tex: ITextureLoaderQueuedRef) {
+    switch (tex.type) {
       case TextureType.TEXTURE:
         const texture: OdysseyTexture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
-        if(!!texture && tex.material instanceof THREE.Material){
-
-          if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+        if (!!texture && tex.material instanceof THREE.Material) {
+          if (tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial) {
             //console.log('THREE.RawShaderMaterial', tex);
             tex.material.uniforms.map.value = texture;
             (tex.material as any).map = texture;
             tex.material.uniformsNeedUpdate = true;
             tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
-          }else{
+          } else {
             (tex.material as any).map = texture;
             (tex.material as any).needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
           }
@@ -202,20 +226,23 @@ export class TextureLoader {
 
           //Check to see if alpha value is set in the TPC Header
           //I think this has to do with alphaTesting... Not sure...
-          if(typeof texture.header === 'object'){
-            if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
-              if(texture.txi.blending != TXIBlending.PUNCHTHROUGH){
+          if (typeof texture.header === 'object') {
+            if (texture.header.alphaTest != 1 && texture.txi.envMapTexture == null) {
+              if (texture.txi.blending != TXIBlending.PUNCHTHROUGH) {
                 tex.material.transparent = true;
               }
-              
-              if(texture.txi.blending == TXIBlending.ADDITIVE){
+
+              if (texture.txi.blending == TXIBlending.ADDITIVE) {
                 //tex.material.alphaTest = 0;
               }
 
-              if( (texture.header.alphaTest && texture.header.format != PixelFormat.DXT5) || texture.txi.blending == TXIBlending.PUNCHTHROUGH){
-                if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+              if (
+                (texture.header.alphaTest && texture.header.format != PixelFormat.DXT5) ||
+                texture.txi.blending == TXIBlending.PUNCHTHROUGH
+              ) {
+                if (tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial) {
                   tex.material.alphaTest = texture.header.alphaTest;
-                  if(tex.material.uniforms?.alphaTest){
+                  if (tex.material.uniforms?.alphaTest) {
                     tex.material.uniforms.alphaTest.value = texture.header.alphaTest;
                   }
                 }
@@ -228,19 +255,17 @@ export class TextureLoader {
           }
 
           //tex.material.needsUpdate = true;
-          if(typeof tex.onLoad == 'function')
-            tex.onLoad(texture, tex)
-        }else if(!texture && !!tex.fallback){
+          if (typeof tex.onLoad == 'function') tex.onLoad(texture, tex);
+        } else if (!texture && !!tex.fallback) {
           const fallback: OdysseyTexture = await TextureLoader.Load(tex.fallback, TextureLoader.CACHE);
-          if(!!fallback && tex.material instanceof THREE.Material){
-
-            if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+          if (!!fallback && tex.material instanceof THREE.Material) {
+            if (tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial) {
               //console.log('THREE.RawShaderMaterial', tex);
               tex.material.uniforms.map.value = fallback;
               (tex.material as any).map = fallback;
               tex.material.uniformsNeedUpdate = true;
               tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
-            }else{
+            } else {
               (tex.material as any).map = fallback;
               (tex.material as any).needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
             }
@@ -261,12 +286,12 @@ export class TextureLoader {
 
             //Check to see if alpha value is set in the TPC Header
             //I think this has to do with alphaTesting... Not sure...
-            if(typeof fallback.header === 'object'){
-              if(fallback.header.alphaTest != 1 && fallback.txi.envMapTexture == null){
-                if(fallback.txi.blending != TXIBlending.PUNCHTHROUGH){
+            if (typeof fallback.header === 'object') {
+              if (fallback.header.alphaTest != 1 && fallback.txi.envMapTexture == null) {
+                if (fallback.txi.blending != TXIBlending.PUNCHTHROUGH) {
                   tex.material.transparent = true;
                 }
-                if(fallback.txi.blending == TXIBlending.ADDITIVE){
+                if (fallback.txi.blending == TXIBlending.ADDITIVE) {
                   //tex.material.alphaTest = 0;
                 }
                 //tex.material.alphaTest = fallback.header.alphaTest;
@@ -276,57 +301,54 @@ export class TextureLoader {
             //tex.material.needsUpdate = true;
           }
 
-          if(typeof tex.onLoad == 'function')
-            tex.onLoad(texture, tex)
-        }else{
-          if(typeof tex.onLoad == 'function')
-            tex.onLoad(texture, tex)
+          if (typeof tex.onLoad == 'function') tex.onLoad(texture, tex);
+        } else {
+          if (typeof tex.onLoad == 'function') tex.onLoad(texture, tex);
         }
-      break;
+        break;
       case TextureType.LIGHTMAP:
         const lightmap: OdysseyTexture = await TextureLoader.LoadLightmap(tex.name, TextureLoader.CACHE);
-        if(lightmap){
-          if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+        if (lightmap) {
+          if (tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial) {
             tex.material.uniforms.lightMap.value = lightmap;
             (tex.material as any).lightMap = lightmap;
             lightmap.updateMatrix();
-            if(tex.material.uniforms.map.value){
+            if (tex.material.uniforms.map.value) {
               tex.material.uniforms.map.value.updateMatrix();
             }
             tex.material.defines.USE_LIGHTMAP = '';
             tex.material.defines.USE_ENVMAP = '';
             tex.material.defines.ENVMAP_TYPE_CUBE = '';
             delete tex.material.defines.IGNORE_LIGHTING;
-            tex.material.defines.AURORA = "";
+            tex.material.defines.AURORA = '';
             tex.material.uniformsNeedUpdate = true;
-          }else{
+          } else {
             (tex.material as any).lightMap = lightmap;
             (tex.material as any).defines = (tex.material as any).defines || {};
-            if((tex.material as any).defines.hasOwnProperty('IGNORE_LIGHTING')){
+            if ((tex.material as any).defines.hasOwnProperty('IGNORE_LIGHTING')) {
               delete (tex.material as any).defines.IGNORE_LIGHTING;
             }
           }
-          
+
           tex.material.needsUpdate = true;
-        }else{
-          if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+        } else {
+          if (tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial) {
             delete tex.material.defines.IGNORE_LIGHTING;
             tex.material.uniformsNeedUpdate = true;
           }
         }
 
-        if(typeof tex.onLoad == 'function')
-          tex.onLoad(lightmap, tex)
-      break;
+        if (typeof tex.onLoad == 'function') tex.onLoad(lightmap, tex);
+        break;
       case TextureType.PARTICLE:
         const particle_texture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
-        if(particle_texture){
-          if(tex.partGroup?.type == 'OdysseyEmitter'){
+        if (particle_texture) {
+          if (tex.partGroup?.type == 'OdysseyEmitter') {
             tex.partGroup.material.uniforms.map.value = particle_texture;
             (tex.partGroup.material as any).map = particle_texture;
             tex.partGroup.material.depthWrite = false;
             tex.partGroup.material.needsUpdate = true;
-          }else{
+          } else {
             tex.partGroup.material.uniforms.texture.value = particle_texture;
             tex.partGroup.material.map = particle_texture;
             tex.partGroup.material.depthWrite = false;
@@ -334,33 +356,32 @@ export class TextureLoader {
           }
         }
 
-        if(typeof tex.onLoad == 'function')
-          tex.onLoad(texture, tex)
-      break;
+        if (typeof tex.onLoad == 'function') tex.onLoad(texture, tex);
+        break;
       default:
         console.warn('TextureLoader.UpdateMaterial: Unhandled Texture Type', tex);
-      break;
+        break;
     }
   }
 
-  static ParseTXI(texture: OdysseyTexture, tex: ITextureLoaderQueuedRef){
+  static ParseTXI(texture: OdysseyTexture, tex: ITextureLoaderQueuedRef) {
     //console.log('ParseTXI', texture.txi);
-    if(!texture.txi) return;
+    if (!texture.txi) return;
 
-    return new Promise<void>( async (resolve, reject) => {
-      try{
+    return new Promise<void>(async (resolve, reject) => {
+      try {
         let hasAnimatedBumpCycle = false;
         //ENVMAP
-        if(texture.txi.envMapTexture){
+        if (texture.txi.envMapTexture) {
           const envmap: OdysseyTexture = await TextureLoader.Load(texture.txi.envMapTexture, TextureLoader.NOCACHE);
-          if(envmap){
+          if (envmap) {
             envmap.wrapS = envmap.wrapT = THREE.RepeatWrapping;
 
-            if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+            if (tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial) {
               tex.material.uniforms.envMap.value = envmap;
               (tex.material as any).envMap = envmap;
               envmap.updateMatrix();
-              if(tex.material.uniforms.map.value){
+              if (tex.material.uniforms.map.value) {
                 tex.material.uniforms.map.value.updateMatrix();
               }
               tex.material.defines.USE_ENVMAP = '';
@@ -368,24 +389,24 @@ export class TextureLoader {
               tex.material.defines.ENVMAP_MODE_REFLECTION = '';
               tex.material.defines.ENVMAP_BLENDING_ADD = '';
               tex.material.uniformsNeedUpdate = true;
-            }else{
+            } else {
               (tex.material as any).envMap = envmap;
             }
 
             //tex.material.alphaMap = texture;
-            
+
             //if(tex.material.opacity == 1)
-              //tex.material.transparent = false;
+            //tex.material.transparent = false;
 
             tex.material.side = THREE.FrontSide;
-            if(texture.txi.waterAlpha == null){
+            if (texture.txi.waterAlpha == null) {
               (tex.material as any).combine = THREE.AddOperation;
               (tex.material as any).reflectivity = 1;
             }
             tex.material.needsUpdate = true;
 
-            if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-              if(tex.material.defines.hasOwnProperty('HOLOGRAM')){
+            if (tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial) {
+              if (tex.material.defines.hasOwnProperty('HOLOGRAM')) {
                 //tex.material.alphaTest = 1;
                 (tex.material as any).combine = THREE.AddOperation;
                 tex.material.blending = THREE['NormalBlending'];
@@ -395,54 +416,54 @@ export class TextureLoader {
             }
 
             //tex.material.map.flipY = true;
-          }else{
+          } else {
             console.error(`Envmap missing: ${texture.txi.envMapTexture}`);
           }
         }
 
         //BUMPMAP
-        if(texture.txi.bumpMapTexture){
+        if (texture.txi.bumpMapTexture) {
           const bumpMap: OdysseyTexture = await TextureLoader.Load(texture.txi.bumpMapTexture, TextureLoader.CACHE);
-          if(bumpMap){
+          if (bumpMap) {
             bumpMap.wrapS = bumpMap.wrapT = THREE.RepeatWrapping;
-            
-            if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-              if(bumpMap.txi.procedureType){
-                switch(bumpMap.txi.procedureType){
+
+            if (tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial) {
+              if (bumpMap.txi.procedureType) {
+                switch (bumpMap.txi.procedureType) {
                   case TXIPROCEDURETYPE.CYCLE:
                     hasAnimatedBumpCycle = true;
                     tex.material.defines.CYCLE_BUMP = '';
-                  break;
+                    break;
                   case TXIPROCEDURETYPE.RANDOM:
                     tex.material.defines.RANDOM = '';
-                  break;
+                    break;
                   case TXIPROCEDURETYPE.RINGTEXDISTORT:
                     tex.material.defines.RINGTEXDISTORT = '';
-                  break;
+                    break;
                   case TXIPROCEDURETYPE.WATER:
                     tex.material.defines.WATER = '';
-                  break;
+                    break;
                 }
               }
 
-              if(tex.material.uniforms.animationVectorBump){
-                if(bumpMap.txi.numx){
+              if (tex.material.uniforms.animationVectorBump) {
+                if (bumpMap.txi.numx) {
                   tex.material.uniforms.animationVectorBump.value.x = bumpMap.txi.numx;
                   bumpMap.repeat.x = 1 / tex.material.uniforms.animationVectorBump.value.x;
                   bumpMap.updateMatrix();
                 }
 
-                if(bumpMap.txi.numy){
+                if (bumpMap.txi.numy) {
                   tex.material.uniforms.animationVectorBump.value.y = bumpMap.txi.numy;
                   bumpMap.repeat.y = 1 / tex.material.uniforms.animationVectorBump.value.y;
                   bumpMap.updateMatrix();
                 }
 
-                if(bumpMap.txi.numx && bumpMap.txi.numy){
+                if (bumpMap.txi.numx && bumpMap.txi.numy) {
                   tex.material.uniforms.animationVectorBump.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
                 }
 
-                if(bumpMap.txi.fps){
+                if (bumpMap.txi.fps) {
                   tex.material.uniforms.animationVectorBump.value.w = bumpMap.txi.fps;
                 }
               }
@@ -450,41 +471,37 @@ export class TextureLoader {
 
             (bumpMap as any).material = tex.material;
 
-            if(bumpMap.bumpMapType == 'NORMAL'){
-
-              if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+            if (bumpMap.bumpMapType == 'NORMAL') {
+              if (tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial) {
                 tex.material.uniforms.normalMap.value = bumpMap;
                 tex.material.defines.USE_NORMALMAP = '';
                 tex.material.uniformsNeedUpdate = true;
                 (tex.material as any).vertexTangents = true;
                 (tex.material as any).normalMapType = THREE.TangentSpaceNormalMap;
                 tex.material.defines['TANGENTSPACE_NORMALMAP'] = '';
-              }else{
+              } else {
                 (tex.material as any).normalMap = bumpMap;
                 (tex.material as any).normalMapType = THREE.ObjectSpaceNormalMap;
                 (tex.material as any).defines['OBJECTSPACE_NORMALMAP'] = '';
               }
 
               tex.material.transparent = false;
-
-            }else{
-
-              if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+            } else {
+              if (tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial) {
                 tex.material.uniforms.bumpMap.value = bumpMap;
                 tex.material.defines.USE_BUMPMAP = '';
                 tex.material.uniformsNeedUpdate = true;
-              }else{
+              } else {
                 (tex.material as any).bumpMap = bumpMap;
               }
               tex.material.uniforms.bumpScale.value = bumpMap.txi.bumpMapScaling;
-
             }
 
-            if(texture.txi.waterAlpha != null){
+            if (texture.txi.waterAlpha != null) {
               tex.material.defines = tex.material.defines || {};
-              tex.material.defines.WATER = "";
-              tex.material.defines.USE_DISPLACEMENTMAP = "";
-              tex.material.defines.ENVMAP_BLENDING_MIX = ''
+              tex.material.defines.WATER = '';
+              tex.material.defines.USE_DISPLACEMENTMAP = '';
+              tex.material.defines.ENVMAP_BLENDING_MIX = '';
               delete tex.material.defines.USE_NORMALMAP;
               delete tex.material.defines.ENVMAP_BLENDING_ADD;
               (tex.material as any).combine = THREE.MixOperation;
@@ -513,66 +530,65 @@ export class TextureLoader {
               tex.material.uniforms.animationVectorBump.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
               tex.material.uniforms.animationVectorBump.value.w = bumpMap.txi.fps;
             }
-
           }
         }
 
-        if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-          if(tex.material.uniforms.map.value){
-            tex.material.name = tex.material.uniforms.map.value.name
+        if (tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial) {
+          if (tex.material.uniforms.map.value) {
+            tex.material.name = tex.material.uniforms.map.value.name;
             tex.material.defines.USE_MAP = '';
             tex.material.uniforms.uvTransform.value = tex.material.uniforms.map.value.matrix;
             tex.material.uniforms.map.value.updateMatrix();
             tex.material.uniformsNeedUpdate = true;
           }
 
-          if(texture.txi.procedureType){
-            switch(texture.txi.procedureType){
+          if (texture.txi.procedureType) {
+            switch (texture.txi.procedureType) {
               case TXIPROCEDURETYPE.CYCLE:
                 // If bump cycle animation is active, let bump drive animation alone.
-                if(!hasAnimatedBumpCycle){
+                if (!hasAnimatedBumpCycle) {
                   tex.material.defines.CYCLE_MAP = '';
-                }else if(tex.material.defines.hasOwnProperty('CYCLE_MAP')){
+                } else if (tex.material.defines.hasOwnProperty('CYCLE_MAP')) {
                   delete tex.material.defines.CYCLE_MAP;
                 }
-              break;
+                break;
               case TXIPROCEDURETYPE.RANDOM:
                 tex.material.defines.RANDOM = '';
-              break;
+                break;
               case TXIPROCEDURETYPE.RINGTEXDISTORT:
                 tex.material.defines.RINGTEXDISTORT = '';
-              break;
+                break;
               case TXIPROCEDURETYPE.WATER:
                 tex.material.defines.WATER = '';
-              break;
+                break;
             }
           }
-    
-          if(tex.material.uniforms.animationVectorMap){
-            if(texture.txi.numx){
+
+          if (tex.material.uniforms.animationVectorMap) {
+            if (texture.txi.numx) {
               tex.material.uniforms.animationVectorMap.value.x = texture.txi.numx;
               texture.repeat.x = 1 / tex.material.uniforms.animationVectorMap.value.x;
               texture.updateMatrix();
             }
-      
-            if(texture.txi.numy){
+
+            if (texture.txi.numy) {
               tex.material.uniforms.animationVectorMap.value.y = texture.txi.numy;
               texture.repeat.y = 1 / tex.material.uniforms.animationVectorMap.value.y;
               texture.updateMatrix();
             }
-      
-            if(texture.txi.numx && texture.txi.numy){
+
+            if (texture.txi.numx && texture.txi.numy) {
               tex.material.uniforms.animationVectorMap.value.z = texture.txi.numx * texture.txi.numy;
             }
-      
-            if(texture.txi.fps){
+
+            if (texture.txi.fps) {
               tex.material.uniforms.animationVectorMap.value.w = texture.txi.fps;
             }
           }
         }
 
         //DECAL
-        if(texture.txi.decal || texture.txi.procedureType == 2){
+        if (texture.txi.decal || texture.txi.procedureType == 2) {
           tex.material.side = THREE.DoubleSide;
           tex.material.depthWrite = false;
           tex.material.transparent = true;
@@ -581,16 +597,16 @@ export class TextureLoader {
         }
 
         //BLENDING
-        switch(texture.txi.blending){
+        switch (texture.txi.blending) {
           case TXIBlending.ADDITIVE:
             tex.material.transparent = false;
             tex.material.blending = THREE['AdditiveBlending'];
-          break;
+            break;
           case TXIBlending.PUNCHTHROUGH:
             tex.material.transparent = false;
             tex.material.blending = THREE['NormalBlending'];
             //tex.material.alphaTest = texture.header.alphaTest || GameState.AlphaTest;//0.5;
-          break;
+            break;
         }
 
         //tex.material.transparent = true;
@@ -599,14 +615,12 @@ export class TextureLoader {
           txi: texture.txi,
         });
         resolve();
-      }catch(e){
+      } catch (e) {
         console.error('TextureLoader.parseTXI', e);
         resolve();
       }
     });
   }
-
-
 }
 
 TGALoader.TextureLoader = TextureLoader;

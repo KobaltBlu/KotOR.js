@@ -4,8 +4,8 @@
  * RIM format: 160-byte header, then resource table (34 bytes per entry), then resource data.
  */
 
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 const RIM_HEADER_LENGTH = 160;
@@ -25,7 +25,7 @@ export interface SaveToRimOptions {
 export function buildRimBuffer(options: SaveToRimOptions): Uint8Array {
   log.trace('SaveToRim.buildRimBuffer', options.resref, options.resType, options.data?.length);
   const { resref, resType, data } = options;
-  const resRef16 = resref.toLowerCase().slice(0, 16).padEnd(16, "\0");
+  const resRef16 = resref.toLowerCase().slice(0, 16).padEnd(16, '\0');
   const resourcesOffset = RIM_HEADER_LENGTH;
   const dataOffset = resourcesOffset + RIM_RESOURCE_ENTRY_SIZE;
   const totalSize = dataOffset + data.length;
@@ -33,8 +33,8 @@ export function buildRimBuffer(options: SaveToRimOptions): Uint8Array {
   const buffer = new Uint8Array(totalSize);
   const bw = new BinaryWriter(buffer);
 
-  bw.writeChars("RIM ");
-  bw.writeChars("V1.0");
+  bw.writeChars('RIM ');
+  bw.writeChars('V1.0');
   bw.skip(4);
   bw.writeUInt32(1);
   bw.writeUInt32(resourcesOffset);
@@ -60,13 +60,13 @@ export async function saveResourceToRim(options: SaveToRimOptions): Promise<stri
   const { outputPath } = options;
   if (!outputPath) {
     log.error('SaveToRim.saveResourceToRim outputPath required');
-    throw new Error("outputPath is required for saveResourceToRim.");
+    throw new Error('outputPath is required for saveResourceToRim.');
   }
   const rimBuffer = buildRimBuffer(options);
-  type FsModule = typeof import("fs");
-  type PathModule = typeof import("path");
-  const fsMod = (await import("fs")) as FsModule;
-  const pathMod = (await import("path")) as PathModule;
+  type FsModule = typeof import('fs');
+  type PathModule = typeof import('path');
+  const fsMod = (await import('fs')) as FsModule;
+  const pathMod = (await import('path')) as PathModule;
   const dir = pathMod.dirname(outputPath);
   if (fsMod.promises?.mkdir) {
     await fsMod.promises.mkdir(dir, { recursive: true });

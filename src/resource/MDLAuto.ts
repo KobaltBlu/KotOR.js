@@ -62,14 +62,7 @@ export interface ReadMDLOptions {
  * @throws Error if format is invalid or parsing fails.
  */
 export function readMDL(buffer: Uint8Array, options: ReadMDLOptions = {}): MDL {
-  const {
-    offset = 0,
-    size = 0,
-    mdxBuffer,
-    mdxOffset = 0,
-    mdxSize = 0,
-    format: formatOverride
-  } = options;
+  const { offset = 0, size = 0, mdxBuffer, mdxOffset = 0, mdxSize = 0, format: formatOverride } = options;
 
   const format = formatOverride ?? detectMDLFormat(buffer, offset);
   const sizeToUse = size > 0 ? size : buffer.length - offset;
@@ -100,14 +93,7 @@ export function readMDL(buffer: Uint8Array, options: ReadMDLOptions = {}): MDL {
  * @returns Parsed MDL instance with minimal data for rendering.
  */
 export function readMDLFast(buffer: Uint8Array, options: ReadMDLOptions = {}): MDL {
-  const {
-    offset = 0,
-    size = 0,
-    mdxBuffer,
-    mdxOffset = 0,
-    mdxSize = 0,
-    format: formatOverride
-  } = options;
+  const { offset = 0, size = 0, mdxBuffer, mdxOffset = 0, mdxSize = 0, format: formatOverride } = options;
 
   const format = formatOverride ?? detectMDLFormat(buffer, offset);
   const sizeToUse = size > 0 ? size : buffer.length - offset;

@@ -1,14 +1,14 @@
-import { GameState } from "@/GameState";
-import { GameMenu, LBL_MapView } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import { NWScript } from "@/nwscript/NWScript";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { MapMode } from "@/enums/engine/MapMode";
-import { Mouse } from "@/controls";
-import type { ModuleWaypoint } from "@/module";
-import { CExoLocString } from "@/resource/CExoLocString";
+import { GameState } from '@/GameState';
+import { GameMenu, LBL_MapView } from '@/gui';
+import type { GUILabel, GUIButton } from '@/gui';
+import { TextureLoader } from '@/loaders';
+import { NWScript } from '@/nwscript/NWScript';
+import { NWScriptInstance } from '@/nwscript/NWScriptInstance';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { MapMode } from '@/enums/engine/MapMode';
+import { Mouse } from '@/controls';
+import type { ModuleWaypoint } from '@/module';
+import { CExoLocString } from '@/resource/CExoLocString';
 
 /**
  * MenuMap class.
@@ -20,7 +20,6 @@ import { CExoLocString } from "@/resource/CExoLocString";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuMap extends GameMenu {
-
   LBL_Map: GUILabel;
   LBL_MapNote: GUILabel;
   LBL_Area: GUILabel;
@@ -38,7 +37,7 @@ export class MenuMap extends GameMenu {
   transitScript: string;
   miniMap: LBL_MapView;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'map';
     this.background = '1600x1200back';
@@ -47,15 +46,15 @@ export class MenuMap extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     this.childMenu = this.manager.MenuTop;
-    return new Promise<void>( async (resolve, reject) => {
+    return new Promise<void>(async (resolve, reject) => {
       this.LBL_MapNote.setText('');
       this.LBL_Map.addEventListener('click', (e) => {
         e.stopPropagation();
         const mapNote: ModuleWaypoint = this.miniMap.onClick();
-        if(mapNote && mapNote.mapNote instanceof CExoLocString){
-          this.LBL_MapNote.setText(mapNote.mapNote.getValue())
+        if (mapNote && mapNote.mapNote instanceof CExoLocString) {
+          this.LBL_MapNote.setText(mapNote.mapNote.getValue());
         }
       });
 
@@ -67,9 +66,8 @@ export class MenuMap extends GameMenu {
       this.BTN_RETURN.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
-        if(!GameState.module.area.unescapable){
-          if(this.onTransitScript instanceof NWScriptInstance)
-            this.onTransitScript.run();
+        if (!GameState.module.area.unescapable) {
+          if (this.onTransitScript instanceof NWScriptInstance) this.onTransitScript.run();
         }
       });
 
@@ -80,7 +78,7 @@ export class MenuMap extends GameMenu {
       this._button_b = this.BTN_EXIT;
 
       this.addEventListener('keydown', (e: KeyboardEvent) => {
-        if(e.key === 'Enter' && !this.BTN_PRTYSLCT.disableSelection){
+        if (e.key === 'Enter' && !this.BTN_PRTYSLCT.disableSelection) {
           e.preventDefault();
           this.manager.MenuPartySelection.open();
         }
@@ -105,8 +103,7 @@ export class MenuMap extends GameMenu {
 
   update(delta = 0) {
     super.update(delta);
-    if (!this.bVisible)
-      return;
+    if (!this.bVisible) return;
 
     if (!GameState.module.area.miniGame) {
       const oPC = GameState.getCurrentPlayer();
@@ -115,9 +112,9 @@ export class MenuMap extends GameMenu {
       this.miniMap.setPosition(oPC.position.x, oPC.position.y);
       this.miniMap.setRotation(GameState.controls.camera.rotation.z);
       this.miniMap.updateMousePosition(
-        Mouse.positionUI.x + (this.LBL_Map.extent.width/2)  + (this.LBL_Map.widget.position.x * -1),
-        Mouse.positionUI.y + (this.LBL_Map.extent.height/2) + (this.LBL_Map.widget.position.y * -1),
-      )
+        Mouse.positionUI.x + this.LBL_Map.extent.width / 2 + this.LBL_Map.widget.position.x * -1,
+        Mouse.positionUI.y + this.LBL_Map.extent.height / 2 + this.LBL_Map.widget.position.y * -1
+      );
       this.miniMap.render(delta);
     }
   }
@@ -135,17 +132,16 @@ export class MenuMap extends GameMenu {
   show() {
     super.show();
     this.manager.MenuTop.LBLH_MAP.onHoverIn();
-    if (this.onOpenScript instanceof NWScriptInstance)
-      this.onOpenScript.run();
+    if (this.onOpenScript instanceof NWScriptInstance) this.onOpenScript.run();
 
     this.LBL_MapNote.setText('');
     this.miniMap.mapNoteSelected = this.miniMap.areaMap.getRevealedMapNotes()[0];
-    if(this.miniMap.mapNoteSelected){
+    if (this.miniMap.mapNoteSelected) {
       this.LBL_MapNote.setText(this.miniMap.mapNoteSelected.mapNote.getValue());
     }
 
-    this.BTN_PRTYSLCT.disableSelection = (GameState.module.area.unescapable);
-    this.BTN_RETURN.disableSelection = (GameState.module.area.unescapable);
+    this.BTN_PRTYSLCT.disableSelection = GameState.module.area.unescapable;
+    this.BTN_RETURN.disableSelection = GameState.module.area.unescapable;
   }
 
   triggerControllerBumperLPress() {
@@ -155,5 +151,4 @@ export class MenuMap extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_OPT.click();
   }
-
 }

@@ -1,9 +1,4 @@
-import type {
-  Color,
-  Matrix3,
-  ShaderMaterial,
-  Texture,
-} from "three";
+import type { Color, Matrix3, ShaderMaterial, Texture } from 'three';
 
 export interface IGUIShaderMaterial extends ShaderMaterial {
   defines: Record<string, string>;

@@ -1,10 +1,10 @@
-import * as THREE from "three";
-import { Shader } from "@/shaders/Shader";
-import { ODYSSEY_DANGLY_VERTEX_LIBRARY } from "@/shaders/odysseyDangly";
+import * as THREE from 'three';
+import { Shader } from '@/shaders/Shader';
+import { ODYSSEY_DANGLY_VERTEX_LIBRARY } from '@/shaders/odysseyDangly';
 
-import { Shader } from "@/shaders/Shader";
+import { Shader } from '@/shaders/Shader';
 
-const odyssey_envmap_fragment = ( `
+const odyssey_envmap_fragment = `
 #ifdef USE_ENVMAP
   #ifdef ENV_WORLDPOS
     vec3 cameraToFrag;
@@ -43,7 +43,7 @@ const odyssey_envmap_fragment = ( `
   #elif defined( ENVMAP_BLENDING_ADD )
     outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a); //odyssey uses the alpha of the texture to blend the envmap
   #endif
-#endif` );
+#endif`;
 
 (THREE.ShaderChunk as Record<string, string>).meshodyssey_vert = `
 #define PHONG
@@ -161,16 +161,15 @@ void main() {
 
 /**
  * ShaderOdysseyModel class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ShaderOdysseyModel.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ShaderOdysseyModel extends Shader {
-
-  constructor(){
+  constructor() {
     super();
 
     this.name = 'odyssey';
@@ -617,20 +616,23 @@ export class ShaderOdysseyModel extends Shader {
       { time: { value: 0.0 } },
       { animatedUV: { value: new THREE.Vector4(0, 0, 0, 0) } },
       { waterAlpha: { value: 1 } },
-      { animationVectorMap : { value: new THREE.Vector4(0, 0, 0, 0) } },
-      { animationVectorBump : { value: new THREE.Vector4(0, 0, 0, 0) } },
+      { animationVectorMap: { value: new THREE.Vector4(0, 0, 0, 0) } },
+      { animationVectorBump: { value: new THREE.Vector4(0, 0, 0, 0) } },
       { danglyDisplacement: { value: 0 } },
       { danglyTightness: { value: 0 } },
       { danglyPeriod: { value: 0 } },
       { danglyWindPower: { value: 1 } },
-      { animPointLights: { value: [], properties: {
-        color: {},
-        position: {},
-        decay: {},
-        distance: {}
-      } } },
+      {
+        animPointLights: {
+          value: [],
+          properties: {
+            color: {},
+            position: {},
+            decay: {},
+            distance: {},
+          },
+        },
+      },
     ] as { [key: string]: { value: unknown } }[];
-
   }
-
 }

@@ -1,18 +1,17 @@
-import type { INIConfig } from "@/engine/INIConfig";
-import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
-import { FeedbackOption } from "@/enums/engine/FeedbackOption";
+import type { INIConfig } from '@/engine/INIConfig';
+import { FeedbackMessageEntry } from '@/engine/FeedbackMessageEntry';
+import { FeedbackOption } from '@/enums/engine/FeedbackOption';
 
 /**
  * FeedbackMessageManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file FeedbackMessageManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class FeedbackMessageManager {
-
   static INIConfig: INIConfig;
 
   static FeedbackOptions = {
@@ -24,11 +23,11 @@ export class FeedbackMessageManager {
     StatusSummary: true,
     HideQuickMenuButtons: false,
     EnableToolTips: true,
-  }
-  
+  };
+
   static Entries: FeedbackMessageEntry[] = [];
 
-  static Init(){
+  static Init() {
     console.log('FeedbackMessageManager.Init');
     this.FeedbackOptions.HideUnequippable = this.INIConfig.getProperty('Game Options.Hide Unequippable') == 1;
     this.FeedbackOptions.TutorialPopups = this.INIConfig.getProperty('Game Options.Tutorial Popups') == 1;
@@ -40,16 +39,16 @@ export class FeedbackMessageManager {
     this.FeedbackOptions.EnableToolTips = this.INIConfig.getProperty('Game Options.Enable Tooltips') == 1;
   }
 
-  static AddEntry(entry: FeedbackMessageEntry){
+  static AddEntry(entry: FeedbackMessageEntry) {
     FeedbackMessageManager.Entries.push(entry);
   }
 
-  static ClearEntries(){
+  static ClearEntries() {
     FeedbackMessageManager.Entries = [];
   }
 
-  static GetFeedbackTypeEnabled(type: FeedbackOption){
-    switch(type){
+  static GetFeedbackTypeEnabled(type: FeedbackOption) {
+    switch (type) {
       case FeedbackOption.HideUnequippable:
         return this.FeedbackOptions.HideUnequippable;
       case FeedbackOption.TutorialPopups:
@@ -70,33 +69,32 @@ export class FeedbackMessageManager {
     return false;
   }
 
-  static SetFeedbackTypeEnabled(type: FeedbackOption, value: boolean){
-    switch(type){
+  static SetFeedbackTypeEnabled(type: FeedbackOption, value: boolean) {
+    switch (type) {
       case FeedbackOption.HideUnequippable:
         this.FeedbackOptions.HideUnequippable = value;
-      break;
+        break;
       case FeedbackOption.TutorialPopups:
         this.FeedbackOptions.TutorialPopups = value;
-      break;
+        break;
       case FeedbackOption.Subtitles:
         this.FeedbackOptions.Subtitles = value;
-      break;
+        break;
       case FeedbackOption.MiniMap:
         this.FeedbackOptions.MiniMap = value;
-      break;
+        break;
       case FeedbackOption.FloatingNumbers:
         this.FeedbackOptions.FloatingNumbers = value;
-      break;
+        break;
       case FeedbackOption.StatusSummary:
         this.FeedbackOptions.StatusSummary = value;
-      break;
+        break;
       case FeedbackOption.HideQuickMenuButtons:
         this.FeedbackOptions.HideQuickMenuButtons = value;
-      break;
+        break;
       case FeedbackOption.EnableToolTips:
         this.FeedbackOptions.EnableToolTips = value;
-      break;
+        break;
     }
   }
-
 }

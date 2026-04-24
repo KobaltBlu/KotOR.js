@@ -1,19 +1,19 @@
-import type { NWScript } from "@/nwscript/NWScript";
-import { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
-import { NWScriptControlStructureBuilder } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
-import { NWScriptFunctionAnalyzer } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
-import { NWScriptASTCodeGenerator } from "@/nwscript/decompiler/NWScriptASTCodeGenerator";
-import { NWScriptGlobalVariableAnalyzer } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
-import { NWScriptLocalVariableAnalyzer } from "@/nwscript/decompiler/NWScriptLocalVariableAnalyzer";
-import { NWScriptControlNodeToASTConverter } from "@/nwscript/decompiler/NWScriptControlNodeToASTConverter";
-import { NWScriptAST } from "@/nwscript/decompiler/NWScriptAST";
+import type { NWScript } from '@/nwscript/NWScript';
+import { NWScriptControlFlowGraph } from '@/nwscript/decompiler/NWScriptControlFlowGraph';
+import { NWScriptControlStructureBuilder } from '@/nwscript/decompiler/NWScriptControlStructureBuilder';
+import { NWScriptFunctionAnalyzer } from '@/nwscript/decompiler/NWScriptFunctionAnalyzer';
+import { NWScriptASTCodeGenerator } from '@/nwscript/decompiler/NWScriptASTCodeGenerator';
+import { NWScriptGlobalVariableAnalyzer } from '@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer';
+import { NWScriptLocalVariableAnalyzer } from '@/nwscript/decompiler/NWScriptLocalVariableAnalyzer';
+import { NWScriptControlNodeToASTConverter } from '@/nwscript/decompiler/NWScriptControlNodeToASTConverter';
+import { NWScriptAST } from '@/nwscript/decompiler/NWScriptAST';
 
 /**
  * Main decompiler orchestrator.
  * Coordinates all decompilation phases to convert NCS bytecode to NSS source.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptDecompiler.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -34,9 +34,9 @@ export class NWScriptDecompiler {
 
   /**
    * Decompile the script from NCS to NSS
-   * 
+   *
    * Pipeline (Option A - ControlNode-First):
-   * CFG -> StructureBuilder -> Variable Analyzers -> Function Analyzer -> 
+   * CFG -> StructureBuilder -> Variable Analyzers -> Function Analyzer ->
    * ControlNode Tree -> AST Converter -> Code Generator
    */
   decompile(): string {
@@ -83,13 +83,15 @@ export class NWScriptDecompiler {
       this.structureBuilder = new NWScriptControlStructureBuilder(this.cfg);
       this.structureBuilder.analyze();
       // console.log(JSON.stringify(this.structureBuilder.toJSON(), null, 2));
-      
+
       // Use the main function's entry block, not the CFG entry block
       // The CFG entry block is the JSR caller, but we need the actual function entry block
-      const mainFunction = functions.find(f => f.isMain);
+      const mainFunction = functions.find((f) => f.isMain);
       const functionEntryBlock = mainFunction?.entryBlock || this.cfg.entryBlock;
-      console.log(`[Decompiler] Building ControlNode tree from function entry block ${functionEntryBlock.id} (CFG entry block is ${this.cfg.entryBlock.id})`);
-      
+      console.log(
+        `[Decompiler] Building ControlNode tree from function entry block ${functionEntryBlock.id} (CFG entry block is ${this.cfg.entryBlock.id})`
+      );
+
       const controlNodeTree = this.structureBuilder.buildProcedure(functionEntryBlock);
       console.log('ControlNode tree built successfully');
       console.log(`[Decompiler] CFG has ${this.cfg.blocks.size} blocks`);
@@ -98,12 +100,7 @@ export class NWScriptDecompiler {
 
       // Phase 6: Convert ControlNode Tree to AST
       console.log('Converting ControlNode tree to AST...');
-      this.astConverter = new NWScriptControlNodeToASTConverter(
-        this.cfg,
-        functions,
-        globalInits,
-        localInits
-      );
+      this.astConverter = new NWScriptControlNodeToASTConverter(this.cfg, functions, globalInits, localInits);
       const ast = this.astConverter.convertToAST(controlNodeTree, this.structureBuilder);
       console.log('AST built successfully');
       console.log('AST JSON:', JSON.stringify(NWScriptAST.toJSON(ast), null, 2));

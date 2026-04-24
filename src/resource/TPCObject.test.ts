@@ -2,7 +2,6 @@ import { ENCODING } from '@/enums/graphics/tpc/Encoding';
 import { detectTPCFormat, isTPCBuffer, readTPCFromBuffer, TPCObject, writeTPCToBuffer } from '@/resource/TPCObject';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
-
 describe('TPCObject', () => {
   /** Minimal valid TPC: uncompressed RGBA 2x2, one mipmap, no TXI. */
   function makeMinimalTPC(): Uint8Array {
@@ -204,22 +203,21 @@ describe('TPCObject', () => {
     bad.writeUInt32(0);
     bad.writeBytes(new Uint8Array(8));
 
-    expect(() => readTPCFromBuffer(bad.buffer, 'bad-bioware.dds')).toThrow('BioWare DDS requires power-of-two dimensions');
+    expect(() => readTPCFromBuffer(bad.buffer, 'bad-bioware.dds')).toThrow(
+      'BioWare DDS requires power-of-two dimensions'
+    );
   });
 
   it('readTPCFromBuffer loads standard DDS BGRA payload as uncompressed BGRA', () => {
     const width = 2;
     const height = 2;
     const pixels = new Uint8Array([
-      0xff, 0x00, 0x00, 0xff,
-      0x00, 0xff, 0x00, 0xff,
-      0x00, 0x00, 0xff, 0xff,
-      0xff, 0xff, 0xff, 0xff,
+      0xff, 0x00, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     ]);
     const dds = makeStandardDDSHeader(width, height, 1, {
       fourCC: null,
       bitCount: 32,
-      masks: [0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000],
+      masks: [0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000],
       pixelFormatFlags: 0x40 | 0x1,
     });
     const combined = new Uint8Array(dds.length + pixels.length);
@@ -241,7 +239,7 @@ describe('TPCObject', () => {
     const dds = makeStandardDDSHeader(width, height, 1, {
       fourCC: null,
       bitCount: 24,
-      masks: [0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000],
+      masks: [0x00ff0000, 0x0000ff00, 0x000000ff, 0x00000000],
       pixelFormatFlags: 0x40,
     });
     const combined = new Uint8Array(dds.length + bgrPixel.length);
@@ -377,7 +375,8 @@ describe('TPCObject', () => {
   it('TGA round-trip preserves dimensions and pixel byte count for uncompressed RGBA', () => {
     // Build a TPC with known non-zero pixel data
     const headerLen = 128;
-    const w = 2, h = 2;
+    const w = 2,
+      h = 2;
     const dataSize = w * h * 4;
     const total = headerLen + dataSize + 1;
     const bw2 = new BinaryWriter(new Uint8Array(total));
@@ -460,7 +459,8 @@ describe('TPCObject', () => {
   it('RGBA uncompressed toBuffer round-trip preserves all pixel bytes', () => {
     // Vendor parity: rgb_to_rgba adds alpha=255 to all pixels.
     // Equivalent: RGBA uncompressed TPC preserves raw pixel bytes through round-trip.
-    const w = 2, h = 2;
+    const w = 2,
+      h = 2;
     const headerLen = 128;
     const dataSize = w * h * 4;
     const total = headerLen + dataSize + 1;
@@ -494,7 +494,7 @@ function makeDXT1Buffer(w: number, h: number): Uint8Array {
   const blocksX = Math.max(1, (w + 3) >> 2);
   const blocksY = Math.max(1, (h + 3) >> 2);
   const dataSize = blocksX * blocksY * 8; // DXT1: 8 bytes per block
-  const total = headerLen + dataSize + 1;  // +1 null TXI
+  const total = headerLen + dataSize + 1; // +1 null TXI
   const bw = new BinaryWriter(new Uint8Array(total));
   bw.writeUInt32(dataSize); // compressed (non-zero = compressed data size)
   bw.writeSingle(1.0);
@@ -586,11 +586,13 @@ function makeStandardDDSHeader(
     bitCount: number;
     masks: [number, number, number, number];
     pixelFormatFlags: number;
-  },
+  }
 ): Uint8Array {
   const writer = new BinaryWriter();
   const hasFourCC = options.fourCC !== null;
-  const headerFlags = hasFourCC ? 0x1 | 0x2 | 0x4 | 0x1000 | 0x80000 | (mipMapCount > 1 ? 0x20000 : 0) : 0x1 | 0x2 | 0x4 | 0x8 | 0x1000 | (mipMapCount > 1 ? 0x20000 : 0);
+  const headerFlags = hasFourCC
+    ? 0x1 | 0x2 | 0x4 | 0x1000 | 0x80000 | (mipMapCount > 1 ? 0x20000 : 0)
+    : 0x1 | 0x2 | 0x4 | 0x8 | 0x1000 | (mipMapCount > 1 ? 0x20000 : 0);
   const linearOrPitch = hasFourCC
     ? Math.max(1, Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4)) * (options.fourCC === 'DXT1' ? 8 : 16)
     : width * Math.floor(options.bitCount / 8);
@@ -620,4 +622,3 @@ function makeStandardDDSHeader(
   writer.writeUInt32(0);
   return writer.buffer;
 }
-

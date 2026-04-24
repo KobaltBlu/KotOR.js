@@ -1,20 +1,20 @@
-import * as THREE from "three";
-import { GFFObject } from "@/resource/GFFObject";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { GameState } from "@/GameState";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import type { MenuManager } from "@/managers/MenuManager";
-import { ResolutionManager } from "@/managers/ResolutionManager";
-import { ShaderManager } from "@/managers/ShaderManager"
-import { ResourceLoader, TextureLoader } from "@/loaders";
-import { GUIControl } from "@/gui/GUIControl";
-import { GUIControlFactory } from "@/gui/GUIControlFactory";
-import { BitWise } from "@/utility/BitWise";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import { Mouse } from "@/controls/Mouse";
-import { KeyMapper } from "@/controls";
-import { shouldSuppressGameMenuHoverForListRow } from "@/gui/listrow/listRowHover";
+import * as THREE from 'three';
+import { GFFObject } from '@/resource/GFFObject';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { GameState } from '@/GameState';
+import { EngineMode } from '@/enums/engine/EngineMode';
+import type { MenuManager } from '@/managers/MenuManager';
+import { ResolutionManager } from '@/managers/ResolutionManager';
+import { ShaderManager } from '@/managers/ShaderManager';
+import { ResourceLoader, TextureLoader } from '@/loaders';
+import { GUIControl } from '@/gui/GUIControl';
+import { GUIControlFactory } from '@/gui/GUIControlFactory';
+import { BitWise } from '@/utility/BitWise';
+import { GUIControlTypeMask } from '@/enums/gui/GUIControlTypeMask';
+import { Mouse } from '@/controls/Mouse';
+import { KeyMapper } from '@/controls';
+import { shouldSuppressGameMenuHoverForListRow } from '@/gui/listrow/listRowHover';
 
 /**
  * GameMenu class.
@@ -71,7 +71,7 @@ export class GameMenu {
    * KotOR.js default: 0x8F = original 0x87 + 0x08 for centering at arbitrary resolutions.
    * Set to 0x87 for original behavior (no centering, panel at raw extent position).
    */
-  panelBitFlags: number = 0x8F;
+  panelBitFlags: number = 0x8f;
   background: string;
   backgroundSprite: THREE.Mesh;
   backgroundMaterial: THREE.ShaderMaterial;
@@ -86,7 +86,7 @@ export class GameMenu {
   /** Runtime context (GameState in game, UI3DRenderer in Forge GUI editor). */
   context: any = GameState;
 
-  constructor(){
+  constructor() {
     this._button_a = undefined;
     this._button_b = undefined;
     this._button_x = undefined;
@@ -94,9 +94,9 @@ export class GameMenu {
   }
 
   async load(): Promise<GameMenu> {
-    GameState.PerformanceMonitor.start(this.constructor.name+'.load');
+    GameState.PerformanceMonitor.start(this.constructor.name + '.load');
     await this.loadMenu();
-    GameState.PerformanceMonitor.stop(this.constructor.name+'.load');
+    GameState.PerformanceMonitor.stop(this.constructor.name + '.load');
     return this;
   }
 
@@ -105,18 +105,18 @@ export class GameMenu {
 
     //mainmenu16x12
     await this.loadBackground();
-    try{
+    try {
       const buffer = await ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref);
       this.menuGFF = new GFFObject(buffer);
       await this.buildMenu(this.menuGFF);
-    }catch(e){
+    } catch (e) {
       console.error(e);
-    };
+    }
     return this;
   }
 
-  async buildMenu(gff: GFFObject){
-    GameState.PerformanceMonitor.start(this.constructor.name+'.buildMenu');
+  async buildMenu(gff: GFFObject) {
+    GameState.PerformanceMonitor.start(this.constructor.name + '.buildMenu');
     this.tGuiPanel = new GUIControl(this, gff.RootNode, undefined, this.enablePositionScaling);
     this.tGuiPanel.allowClick = false;
 
@@ -126,11 +126,11 @@ export class GameMenu {
 
     const panelControl = this.tGuiPanel.createControl();
 
-    if(this.voidFill){
+    if (this.voidFill) {
       this.tGuiPanel.widget.add(this.backgroundVoidSprite);
     }
 
-    if(this.backgroundSprite){
+    if (this.backgroundSprite) {
       this.tGuiPanel.widget.add(this.backgroundSprite);
     }
 
@@ -147,40 +147,42 @@ export class GameMenu {
     await this.menuControlInitializer();
 
     await TextureLoader.LoadQueue();
-    GameState.PerformanceMonitor.stop(this.constructor.name+'.buildMenu');
+    GameState.PerformanceMonitor.stop(this.constructor.name + '.buildMenu');
     return this;
   }
 
   async menuControlInitializer(skipInit: boolean = false): Promise<any> {
     return;
-  };
+  }
 
-  assignChildControlsToMenu(object: GUIControl){
-    if(!object){ return; }
+  assignChildControlsToMenu(object: GUIControl) {
+    if (!object) {
+      return;
+    }
 
-    for(let i = 0, len = object.children.length; i < len; i++){
+    for (let i = 0, len = object.children.length; i < len; i++) {
       const ctrl = object.children[i];
-      if(!!ctrl && !isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_'+ctrl.name;
+      if (!!ctrl && !isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_' + ctrl.name;
       (this as unknown as Record<string, GUIControl>)[ctrl.name] = ctrl;
       this.assignChildControlsToMenu(ctrl);
     }
   }
 
-  async loadBackground(){
+  async loadBackground() {
     /**
      * Background black void to fill the screen behind the menu
      */
-    if(this.voidFill){
-      const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+    if (this.voidFill) {
+      const geometry = new THREE.PlaneGeometry(1, 1, 1);
       // this.backgroundVoidMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0x000000), side: THREE.DoubleSide} );
       this.backgroundVoidMaterial = new THREE.ShaderMaterial({
-        uniforms: THREE.UniformsUtils.merge([
-          ShaderManager.Shaders.get('void-gui').getUniforms()
-        ] as unknown as { [uniform: string]: THREE.IUniform }[]),
+        uniforms: THREE.UniformsUtils.merge([ShaderManager.Shaders.get('void-gui').getUniforms()] as unknown as {
+          [uniform: string]: THREE.IUniform;
+        }[]),
         vertexShader: ShaderManager.Shaders.get('void-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('void-gui').getFragment(),
-      })
-      this.backgroundVoidSprite = new THREE.Mesh( geometry, this.backgroundVoidMaterial );
+      });
+      this.backgroundVoidSprite = new THREE.Mesh(geometry, this.backgroundVoidMaterial);
       this.backgroundVoidSprite.position.z = -6;
       this.backgroundVoidSprite.renderOrder = -6;
 
@@ -192,44 +194,43 @@ export class GameMenu {
     /**
      * Background texture of the menu
      */
-    if(this.background){
+    if (this.background) {
       const texture: OdysseyTexture = await TextureLoader.tpcLoader.fetch(this.background);
-      const geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
+      const geometry = new THREE.PlaneGeometry(1600, 1200, 1);
       this.backgroundMaterial = new THREE.ShaderMaterial({
-        uniforms: THREE.UniformsUtils.merge([
-          ShaderManager.Shaders.get('background-gui').getUniforms()
-        ] as unknown as { [uniform: string]: THREE.IUniform }[]),
+        uniforms: THREE.UniformsUtils.merge([ShaderManager.Shaders.get('background-gui').getUniforms()] as unknown as {
+          [uniform: string]: THREE.IUniform;
+        }[]),
         vertexShader: ShaderManager.Shaders.get('background-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('background-gui').getFragment(),
       });
       this.backgroundMaterial.transparent = true;
-      this.backgroundSprite = new THREE.Mesh( geometry, this.backgroundMaterial );
+      this.backgroundSprite = new THREE.Mesh(geometry, this.backgroundMaterial);
       this.backgroundSprite.position.z = -5;
       this.backgroundSprite.renderOrder = -5;
       this.backgroundMaterial.uniforms.map.value = texture;
     }
   }
 
-  async loadTexture( resRef: string ): Promise<OdysseyTexture> {
+  async loadTexture(resRef: string): Promise<OdysseyTexture> {
     return await TextureLoader.Load(resRef);
   }
 
   getControlByName(name: string): GUIControl | undefined {
-    try{
-      return (this as any)[name];//this.tGuiPanel.getControl().getObjectByName(name).userData.control;
-    }catch(e){
+    try {
+      return (this as any)[name]; //this.tGuiPanel.getControl().getObjectByName(name).userData.control;
+    } catch (e) {
       console.error('getControlByName', 'Control not found', name);
     }
     return undefined;
   }
 
-  hide(){
+  hide() {
     this.bVisible = false;
     GameState.scene_gui.remove(this.tGuiPanel.getControl());
 
     //Handle the child menu if it is set
-    if(this.childMenu instanceof GameMenu)
-      this.childMenu.hide();
+    if (this.childMenu instanceof GameMenu) this.childMenu.hide();
   }
 
   show(): void {
@@ -245,11 +246,10 @@ export class GameMenu {
     GameState.scene_gui.add(this.tGuiPanel.getControl());
 
     //Handle the child menu if it is set
-    if(this.childMenu instanceof GameMenu)
-      this.childMenu.show();
+    if (this.childMenu instanceof GameMenu) this.childMenu.show();
   }
 
-  close(){
+  close() {
     this.hide();
     this.manager.Remove(this);
     // if(!this.isOverlayGUI){
@@ -257,110 +257,108 @@ export class GameMenu {
     // }
   }
 
-  open(){
+  open() {
     this.manager.Add(this);
     this.show();
   }
 
-  remove(){
+  remove() {
     //TODO
   }
 
-  isVisible(){
+  isVisible() {
     return this.bVisible;
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0) {
     //Only update if the Menu is visible
-    if(!this.bVisible)
-      return;
+    if (!this.bVisible) return;
 
-    if(this.voidFill){
+    if (this.voidFill) {
       this.backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
-      this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
+      this.backgroundVoidMaterial.uniforms.u_resolution.value.set(
+        ResolutionManager.getViewportWidth(),
+        ResolutionManager.getViewportHeight()
+      );
       // Void in design space so root panel scale maps it to viewport
       this.backgroundVoidSprite.scale.set(this.width, this.height, 1);
     }
 
-    if(this.background){
+    if (this.background) {
       this.backgroundMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
       this.backgroundMaterial.uniforms.u_resolution.value.set(1600, 1200);
     }
 
-    if(this.activeControls.length){
-      for(var i = this.activeControls.length; i--;){
+    if (this.activeControls.length) {
+      for (var i = this.activeControls.length; i--; ) {
         const control = this.activeControls[i];
-        if(!control.box.containsPoint(Mouse.positionUI)){
+        if (!control.box.containsPoint(Mouse.positionUI)) {
           control.onHoverOut();
           this.activeControls.splice(i, 1);
         }
       }
     }
 
-    if(this.tGuiPanel && this.tGuiPanel.children){
+    if (this.tGuiPanel && this.tGuiPanel.children) {
       let len = this.tGuiPanel.children.length;
-      for(let i = 0; i < len; i++){
+      for (let i = 0; i < len; i++) {
         this.tGuiPanel.children[i].update(delta);
       }
     }
   }
 
-  recalculatePosition(){
-    try{
+  recalculatePosition() {
+    try {
       this.tGuiPanel.recalculate();
-    }catch(e){ console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
-  setWidgetHoverActive(control: GUIControl, bActive: boolean = false){
+  setWidgetHoverActive(control: GUIControl, bActive: boolean = false) {
+    if (!BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIControl)) return false;
 
-    if(!BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIControl))
-      return false;
-
-    if(shouldSuppressGameMenuHoverForListRow(control)){
+    if (shouldSuppressGameMenuHoverForListRow(control)) {
       return false;
     }
 
     let idx = this.activeControls.indexOf(control);
 
-    if(bActive){
-      if(idx == -1){
+    if (bActive) {
+      if (idx == -1) {
         this.activeControls.push(control);
-        if(control){
+        if (control) {
           control.onHoverIn();
         }
       }
-    }else{
-      if(idx > -1){
-        if(control){
+    } else {
+      if (idx > -1) {
+        if (control) {
           control.onHoverOut();
         }
         this.activeControls.splice(idx, 1);
       }
     }
-
   }
 
-  getActiveControls(){
+  getActiveControls() {
     let controls: GUIControl[] = [];
-    if(this.tGuiPanel){
+    if (this.tGuiPanel) {
       controls = this.tGuiPanel.getActiveControls();
     }
-    if(this.childMenu){
+    if (this.childMenu) {
       controls = controls.concat(controls, this.childMenu.getActiveControls());
     }
     return controls;
   }
 
-  setScale(scale = 1.0){
-
+  setScale(scale = 1.0) {
     this.scale = scale;
     this.tGuiPanel.widget.scale.set(this.scale, this.scale, 1.0);
 
-    for(let i = 0; i < this.tGuiPanel.children.length; i++){
-      if(this.tGuiPanel.children[i])
-        this.tGuiPanel.children[i].updateScale();
+    for (let i = 0; i < this.tGuiPanel.children.length; i++) {
+      if (this.tGuiPanel.children[i]) this.tGuiPanel.children[i].updateScale();
     }
-
   }
 
   /**
@@ -368,157 +366,164 @@ export class GameMenu {
    * Ensures GUI fills the viewport and mouse hit-testing stays in sync.
    * Called on show() and when resolution changes (MenuManager.Resize).
    */
-  resize(){
-    if(!this.tGuiPanel || this.width <= 0 || this.height <= 0)
-      return;
+  resize() {
+    if (!this.tGuiPanel || this.width <= 0 || this.height <= 0) return;
     const scaleX = ResolutionManager.getViewportWidth() / this.width;
     const scaleY = ResolutionManager.getViewportHeight() / this.height;
     this.tGuiPanel.widget.scale.set(scaleX, scaleY, 1.0);
     this.tGuiPanel.recalculate();
   }
 
-  triggerControllerAPress(){
-    if(this._button_a){
+  triggerControllerAPress() {
+    if (this._button_a) {
       this._button_a.click();
-    }else if(this.manager.activeGUIElement){
+    } else if (this.manager.activeGUIElement) {
       this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerBPress(){
-    if(this._button_b){
+  triggerControllerBPress() {
+    if (this._button_b) {
       this._button_b.click();
     }
   }
 
-  triggerControllerXPress(){
-    if(this._button_x){
+  triggerControllerXPress() {
+    if (this._button_x) {
       this._button_x.click();
     }
   }
 
-  triggerControllerYPress(){
-    if(this._button_y){
+  triggerControllerYPress() {
+    if (this._button_y) {
       this._button_y.click();
     }
   }
 
-  triggerControllerDUpPress(){
-    if(
+  triggerControllerDUpPress() {
+    if (
       this.selectedControl &&
       BitWise.InstanceOfObject(this.selectedControl.objectType, GUIControlTypeMask.GUIListBox)
-    ){
+    ) {
       (this.selectedControl as GUIControl & { directionalNavigate(dir: string): void }).directionalNavigate('up');
       return;
     }
-    if(this.manager.activeGUIElement){
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerDDownPress(){
-    if(
+  triggerControllerDDownPress() {
+    if (
       this.selectedControl &&
       BitWise.InstanceOfObject(this.selectedControl.objectType, GUIControlTypeMask.GUIListBox)
-    ){
+    ) {
       (this.selectedControl as GUIControl & { directionalNavigate(dir: string): void }).directionalNavigate('down');
       return;
     }
-    if(this.manager.activeGUIElement){
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerDLeftPress(){
-    if(this.manager.activeGUIElement){
+  triggerControllerDLeftPress() {
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerDRightPress(){
-    if(this.manager.activeGUIElement){
+  triggerControllerDRightPress() {
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerBumperLPress(){
-    if(this.manager.activeGUIElement){
+  triggerControllerBumperLPress() {
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerBumperRPress(){
-    if(this.manager.activeGUIElement){
+  triggerControllerBumperRPress() {
+    if (this.manager.activeGUIElement) {
       //this.manager.activeGUIElement.click();
     }
   }
 
-  triggerControllerLStickXPress( positive = false ){
+  triggerControllerLStickXPress(positive = false) {}
 
-  }
+  triggerControllerLStickYPress(positive = false) {}
 
-  triggerControllerLStickYPress( positive = false ){
+  triggerControllerRStickXPress(positive = false) {}
 
-  }
+  triggerControllerRStickYPress(positive = false) {}
 
-  triggerControllerRStickXPress( positive = false ){
-
-  }
-
-  triggerControllerRStickYPress( positive = false ){
-
-  }
-
-  addEventListener(name: string, callback: Function){
-    if(typeof callback !== 'function'){ return; }
+  addEventListener(name: string, callback: Function) {
+    if (typeof callback !== 'function') {
+      return;
+    }
 
     name = name.toUpperCase().trim();
     let listeners = this.eventListenters.get(name);
-    if(!Array.isArray(listeners)){
+    if (!Array.isArray(listeners)) {
       listeners = [callback];
       this.eventListenters.set(name, listeners);
-    }else if(listeners.indexOf(callback) == -1){
+    } else if (listeners.indexOf(callback) == -1) {
       listeners.push(callback);
     }
   }
 
-  removeEventListener(name: string, callback: Function){
-    if(typeof callback !== 'function'){ return; }
+  removeEventListener(name: string, callback: Function) {
+    if (typeof callback !== 'function') {
+      return;
+    }
 
     name = name.toUpperCase().trim();
     let listeners = this.eventListenters.get(name);
-    if(Array.isArray(listeners)){
+    if (Array.isArray(listeners)) {
       let idx = listeners.indexOf(callback);
-      if(idx >= 0){ listeners.splice(idx, 1); }
+      if (idx >= 0) {
+        listeners.splice(idx, 1);
+      }
     }
   }
 
   triggerEventListener(name: string, ...args: unknown[]): void {
     name = name.toUpperCase().trim();
     let listeners = this.eventListenters.get(name);
-    if(Array.isArray(listeners)){
-      for(let i = 0; i < listeners.length; i++){
+    if (Array.isArray(listeners)) {
+      for (let i = 0; i < listeners.length; i++) {
         listeners[i](...args);
       }
     }
   }
 
-  gameStringParse(text: string){
-    text = text.split('##')[0].replaceAll(/\{.*?\}/ig, '').trim();
-    text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
-    text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
-    text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('LastName')?.getValue());
+  gameStringParse(text: string) {
+    text = text
+      .split('##')[0]
+      .replaceAll(/\{.*?\}/gi, '')
+      .trim();
+    text = text.replace(
+      /<FullName>/gm,
+      GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue()
+    );
+    text = text.replace(
+      /<FirstName>/gm,
+      GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue()
+    );
+    text = text.replace(
+      /<LastName>/gm,
+      GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('LastName')?.getValue()
+    );
 
-    KeyMapper.ACTIONS_ALL.forEach( (keymap) => {
+    KeyMapper.ACTIONS_ALL.forEach((keymap) => {
       text = text.replace(keymap.tokenRegEx, keymap.character);
     });
 
-    text = text.replace(/<CUSTOM(\d+)>/gm, function(match, p1, offset, string){
+    text = text.replace(/<CUSTOM(\d+)>/gm, function (match, p1, offset, string) {
       return GameState.module.getCustomToken(parseInt(p1));
     });
 
     return text;
   }
-
 }
-

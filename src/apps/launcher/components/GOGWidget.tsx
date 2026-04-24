@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import "@/apps/launcher/styles/GOGWidget.scss";
+import '@/apps/launcher/styles/GOGWidget.scss';
 
 // Types and Interfaces
 export enum ContentType {
   GAME = 0,
-  MOVIE = 1
+  MOVIE = 1,
 }
 
 export interface GOGProduct {
@@ -44,7 +44,7 @@ export interface GOGWidgetProps {
 }
 
 // Utility functions
-const CURRENCY_EXCEPTIONS_FORMATTING = ["RUB", "CNY"];
+const CURRENCY_EXCEPTIONS_FORMATTING = ['RUB', 'CNY'];
 
 const formatPrice = (price: number, currency: string): string => {
   // GOG API returns prices in cents, so we need to convert to dollars
@@ -57,7 +57,7 @@ const formatPrice = (price: number, currency: string): string => {
 };
 
 const calculateDiscountPercent = (basePrice: number, finalPrice: number): number => {
-  return 100 - Math.ceil(100 * finalPrice / basePrice);
+  return 100 - Math.ceil((100 * finalPrice) / basePrice);
 };
 
 const isPriceDiscounted = (basePrice: number, finalPrice: number): boolean => {
@@ -66,14 +66,14 @@ const isPriceDiscounted = (basePrice: number, finalPrice: number): boolean => {
 
 const generateImageUrl = (template: string, formatter?: string): string => {
   if (!template) return '';
-  return template.replace("_{formatter}", formatter ? "_" + formatter : "");
+  return template.replace('_{formatter}', formatter ? '_' + formatter : '');
 };
 
 const generateBackgroundUrl = (template: string, formatter?: string): string => {
   if (!template) return '';
   const extension = template.match(/.jpg|.png/);
   if (!extension) return template;
-  return template.replace(extension[0], formatter ? "_" + formatter + extension[0] : extension[0]);
+  return template.replace(extension[0], formatter ? '_' + formatter + extension[0] : extension[0]);
 };
 
 /** GOG API product response shape (external API - structure from gog.com) */
@@ -123,7 +123,7 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
   showPrice = true,
   showDiscount = true,
   imageFormatter = '',
-  backgroundFormatter: _backgroundFormatter = ''
+  backgroundFormatter: _backgroundFormatter = '',
 }) => {
   const [product, setProduct] = useState<GOGProduct | null>(null);
   const [priceData, setPriceData] = useState<GOGPriceData | null>(null);
@@ -154,13 +154,14 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
         currency: '',
         basePrice: 0,
         finalPrice: 0,
-        supportedOs: productResponse._embedded?.supportedOperatingSystems?.map((os) =>
-          os.operatingSystem?.name || 'Unknown'
-        ) || [],
+        supportedOs:
+          productResponse._embedded?.supportedOperatingSystems?.map((os) => os.operatingSystem?.name || 'Unknown') ||
+          [],
         imageFormatterTemplate: productData._links?.image?.href || '',
         backgroundFormatterTemplate: productResponse._links?.backgroundImage?.href || '',
         getImage: (formatter?: string) => generateImageUrl(productData._links?.image?.href || '', formatter),
-        getBackground: (formatter?: string) => generateBackgroundUrl(productResponse._links?.backgroundImage?.href || '', formatter)
+        getBackground: (formatter?: string) =>
+          generateBackgroundUrl(productResponse._links?.backgroundImage?.href || '', formatter),
       };
 
       setProduct(newProduct);
@@ -169,7 +170,12 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
       try {
         const priceResponse = await fetchPriceData(`52756712356612660`, productId);
 
-        if (priceResponse && priceResponse._embedded && priceResponse._embedded.prices && priceResponse._embedded.prices.length > 0) {
+        if (
+          priceResponse &&
+          priceResponse._embedded &&
+          priceResponse._embedded.prices &&
+          priceResponse._embedded.prices.length > 0
+        ) {
           const price = priceResponse._embedded.prices[0];
           const basePrice = parseInt(price.basePrice) || 0;
           const finalPrice = parseInt(price.finalPrice) || 0;
@@ -179,16 +185,22 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
             basePrice,
             finalPrice,
             currency,
-            discount: isPriceDiscounted(basePrice, finalPrice) ? calculateDiscountPercent(basePrice, finalPrice) : undefined
+            discount: isPriceDiscounted(basePrice, finalPrice)
+              ? calculateDiscountPercent(basePrice, finalPrice)
+              : undefined,
           });
 
           // Update product with price info
-          setProduct(prev => prev ? {
-            ...prev,
-            basePrice,
-            finalPrice,
-            currency
-          } : null);
+          setProduct((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  basePrice,
+                  finalPrice,
+                  currency,
+                }
+              : null
+          );
         } else {
           log.warn('No price data found in response:', priceResponse);
         }
@@ -305,24 +317,22 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
                         {formatPrice(priceData.finalPrice, priceData.currency)} {priceData.currency}
                       </span>
                       {showDiscount && priceData.discount && (
-                        <span className="gog-widget__discount">
-                          -{priceData.discount}%
-                        </span>
+                        <span className="gog-widget__discount">-{priceData.discount}%</span>
                       )}
                     </div>
                   </>
                 ) : (
                   <div className="gog-widget__price-final">
                     <span className="gog-widget__price">
-                      {priceData.basePrice === 0 ? 'Free' : `${formatPrice(priceData.finalPrice, priceData.currency)} ${priceData.currency}`}
+                      {priceData.basePrice === 0
+                        ? 'Free'
+                        : `${formatPrice(priceData.finalPrice, priceData.currency)} ${priceData.currency}`}
                     </span>
                   </div>
                 )
               ) : (
                 <div className="gog-widget__price-final">
-                  <span className="gog-widget__price gog-widget__price--unavailable">
-                    Price not available
-                  </span>
+                  <span className="gog-widget__price gog-widget__price--unavailable">Price not available</span>
                 </div>
               )}
             </div>

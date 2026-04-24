@@ -15,7 +15,23 @@ const xmlParser = new XMLParser({
   parseTagValue: true,
   parseAttributeValue: true,
   trimValues: true,
-  isArray: (name) => ['entries', 'rows', 'resources', 'keyframes', 'sound_refs', 'bifs', 'keys', 'localizedStrings', 'keyList', 'rooms', 'doorhooks', 'tracks', 'obstacles', 'headers'].includes(name),
+  isArray: (name) =>
+    [
+      'entries',
+      'rows',
+      'resources',
+      'keyframes',
+      'sound_refs',
+      'bifs',
+      'keys',
+      'localizedStrings',
+      'keyList',
+      'rooms',
+      'doorhooks',
+      'tracks',
+      'obstacles',
+      'headers',
+    ].includes(name),
 });
 
 const xmlBuilder = new XMLBuilder({
@@ -74,9 +90,7 @@ function sanitizeForTOML(value: unknown): unknown {
   }
 
   if (Array.isArray(value)) {
-    const sanitized = value
-      .map((item) => sanitizeForTOML(item))
-      .filter((item) => item !== undefined);
+    const sanitized = value.map((item) => sanitizeForTOML(item)).filter((item) => item !== undefined);
     return sanitized;
   }
 

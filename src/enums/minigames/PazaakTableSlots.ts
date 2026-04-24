@@ -9,5 +9,5 @@ export enum PazaakTableSlots {
   SLOT_7 = 6,
   SLOT_8 = 7,
   SLOT_9 = 8,
-  MAX_SLOTS = 9
+  MAX_SLOTS = 9,
 }

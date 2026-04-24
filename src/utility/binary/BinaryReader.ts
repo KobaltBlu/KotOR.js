@@ -1,4 +1,4 @@
-import { Endians } from "@/enums/resource/Endians";
+import { Endians } from '@/enums/resource/Endians';
 
 /**
  * BinaryReader class.
@@ -10,7 +10,6 @@ import { Endians } from "@/enums/resource/Endians";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class BinaryReader {
-
   position: number = 0;
   buffer: Uint8Array;
   bufferView: DataView;
@@ -26,7 +25,7 @@ export class BinaryReader {
    * @param reader - The reader to read from.
    * @param endians - The endianness of the data.
    */
-  constructor(reader: Uint8Array, endians = Endians.LITTLE, sourceLength?: number){
+  constructor(reader: Uint8Array, endians = Endians.LITTLE, sourceLength?: number) {
     //variables
     this.position = 0;
     this.buffer = reader;
@@ -48,7 +47,7 @@ export class BinaryReader {
    *
    * @param endian - The endianness of the data.
    */
-  setEndian(endian: Endians){
+  setEndian(endian: Endians) {
     this.endians = endian;
     this.isLE = endian == Endians.LITTLE;
   }
@@ -76,19 +75,19 @@ export class BinaryReader {
    *
    * @returns The length of the buffer.
    */
-  length(){
+  length() {
     return this.buffer.length;
   }
 
-  size(){
+  size() {
     return this.buffer.length;
   }
 
-  trueSize(){
+  trueSize() {
     return this.sourceLength;
   }
 
-  remaining(){
+  remaining() {
     return Math.max(this.buffer.length - this.position, 0);
   }
 
@@ -111,8 +110,7 @@ export class BinaryReader {
    * @returns The 8-bit integer.
    */
   readInt8(): number {
-    if(this.position >= this.buffer.length)
-      return 0;
+    if (this.position >= this.buffer.length) return 0;
 
     this._value = this.bufferView.getInt8(this.position);
     this.position += 1;
@@ -125,8 +123,7 @@ export class BinaryReader {
    * @returns The unsigned 8-bit integer.
    */
   readUInt8(): number {
-    if(this.position >= this.buffer.length)
-      return 0;
+    if (this.position >= this.buffer.length) return 0;
 
     this._value = this.bufferView.getUint8(this.position);
     this.position += 1;
@@ -139,8 +136,7 @@ export class BinaryReader {
    * @returns The 16-bit integer.
    */
   readInt16(): number {
-    if(this.position + 2 > this.buffer.length)
-      return 0;
+    if (this.position + 2 > this.buffer.length) return 0;
 
     this._value = this.bufferView.getInt16(this.position, this.isLE);
     this.position += 2;
@@ -153,8 +149,7 @@ export class BinaryReader {
    * @returns The unsigned 16-bit integer.
    */
   readUInt16(): number {
-    if(this.position + 2 > this.buffer.length)
-      return 0;
+    if (this.position + 2 > this.buffer.length) return 0;
 
     this._value = this.bufferView.getUint16(this.position, this.isLE);
     this.position += 2;
@@ -167,11 +162,10 @@ export class BinaryReader {
    * @returns The unsigned 32-bit integer.
    */
   readUInt32(): number {
-    if(this.position + 4 > this.buffer.length)
-      return 0;
+    if (this.position + 4 > this.buffer.length) return 0;
 
     this._value = this.bufferView.getUint32(this.position, this.isLE);
-    if(typeof this._value ==='undefined'){
+    if (typeof this._value === 'undefined') {
       console.warn('readUInt32', this._value, this.position, this.buffer.length);
     }
     this.position += 4;
@@ -184,11 +178,10 @@ export class BinaryReader {
    * @returns The 32-bit integer.
    */
   readInt32(): number {
-    if(this.position + 4 > this.buffer.length)
-      return 0;
+    if (this.position + 4 > this.buffer.length) return 0;
 
     this._value = this.bufferView.getInt32(this.position, this.isLE);
-    if(typeof this._value ==='undefined'){
+    if (typeof this._value === 'undefined') {
       console.warn('readInt32', this._value, this.position, this.buffer.length);
     }
     this.position += 4;
@@ -201,8 +194,7 @@ export class BinaryReader {
    * @returns The character.
    */
   readChar(): string {
-    if(this.position >= this.buffer.length)
-      return '\0';
+    if (this.position >= this.buffer.length) return '\0';
 
     this._value = String.fromCharCode(this.readInt8());
     return this._value;
@@ -219,9 +211,11 @@ export class BinaryReader {
    * @returns The string.
    */
   readChars(num: number, encoding: BufferEncoding = 'latin1'): string {
-    if(this.position >= this.buffer.length)
-      return '\0';
-    this._value = encoding == 'utf8' ? this.#textDecoderUTF8.decode(this.buffer.slice(this.position, this.position + num)) : this.#textDecoder.decode(this.buffer.slice(this.position, this.position + num));
+    if (this.position >= this.buffer.length) return '\0';
+    this._value =
+      encoding == 'utf8'
+        ? this.#textDecoderUTF8.decode(this.buffer.slice(this.position, this.position + num))
+        : this.#textDecoder.decode(this.buffer.slice(this.position, this.position + num));
     this.position += num;
     //console.log(num, this._value);
     return this._value;
@@ -232,13 +226,12 @@ export class BinaryReader {
    *
    * @returns The string.
    */
-  readString(): string{
-    if(this.position >= this.buffer.length)
-      return '';
+  readString(): string {
+    if (this.position >= this.buffer.length) return '';
 
     let _value = '';
     let lastChar;
-    while((lastChar = this.readInt8()) > 0){
+    while ((lastChar = this.readInt8()) > 0) {
       _value += String.fromCharCode(lastChar);
     }
     return _value;
@@ -250,8 +243,7 @@ export class BinaryReader {
    * @returns The byte.
    */
   readByte(): number {
-    if(this.position >= this.buffer.length)
-      return 0;
+    if (this.position >= this.buffer.length) return 0;
 
     return this.readUInt8();
   }
@@ -262,8 +254,7 @@ export class BinaryReader {
    * @returns The signed byte.
    */
   readSByte(): number {
-    if(this.position >= this.buffer.length)
-      return 0;
+    if (this.position >= this.buffer.length) return 0;
 
     return this.readInt8();
   }
@@ -275,8 +266,7 @@ export class BinaryReader {
    * @returns The array of bytes.
    */
   readBytes(num: number): Uint8Array {
-    if(this.position >= this.buffer.length)
-      return new Uint8Array(0);
+    if (this.position >= this.buffer.length) return new Uint8Array(0);
 
     this._value = this.buffer.slice(this.position, this.position + num);
     this.position += num;
@@ -289,8 +279,7 @@ export class BinaryReader {
    * @returns The single-precision floating point number.
    */
   readSingle(): number {
-    if(this.position + 4 > this.buffer.length)
-      return 0;
+    if (this.position + 4 > this.buffer.length) return 0;
 
     this._value = this.bufferView.getFloat32(this.position, this.isLE);
     this.position += 4;
@@ -303,8 +292,7 @@ export class BinaryReader {
    * @returns The double-precision floating point number.
    */
   readDouble(): number {
-    if(this.position + 8 > this.buffer.length)
-      return 0;
+    if (this.position + 8 > this.buffer.length) return 0;
 
     this._value = this.bufferView.getFloat64(this.position, this.isLE);
     this.position += 8;
@@ -317,8 +305,7 @@ export class BinaryReader {
    * @returns The 64-bit unsigned integer.
    */
   readUInt64(): bigint {
-    if(this.position + 8 > this.buffer.length)
-      return BigInt(0);
+    if (this.position + 8 > this.buffer.length) return BigInt(0);
 
     this._value = this.bufferView.getBigUint64(this.position, this.isLE);
     this.position += 8;
@@ -331,8 +318,7 @@ export class BinaryReader {
    * @returns The 64-bit integer.
    */
   readInt64(): bigint {
-    if(this.position + 8 > this.buffer.length)
-      return BigInt(0);
+    if (this.position + 8 > this.buffer.length) return BigInt(0);
 
     this._value = this.bufferView.getBigInt64(this.position, this.isLE);
     this.position += 8;
@@ -347,10 +333,10 @@ export class BinaryReader {
    * @returns The sliced buffer.
    */
   slice(offset = 0, end = 0): BinaryReader {
-    end = (end) ? end : this.buffer.length;
+    end = end ? end : this.buffer.length;
 
     const buffer = this.buffer.slice(offset, end);
-    return new BinaryReader(buffer, this.endians, this.sourceLength)
+    return new BinaryReader(buffer, this.endians, this.sourceLength);
   }
 
   /**
@@ -358,7 +344,7 @@ export class BinaryReader {
    *
    * @param buffer - The buffer to reuse.
    */
-  reuse(buffer: Uint8Array){
+  reuse(buffer: Uint8Array) {
     this.position = 0;
     this.buffer = buffer;
     this.bufferView = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
@@ -368,11 +354,10 @@ export class BinaryReader {
   /**
    * Disposes of the BinaryReader class.
    */
-  dispose(){
+  dispose() {
     this.position = 0;
     this.buffer = new Uint8Array(0);
     this.bufferView = new DataView(this.buffer.buffer);
     this.sourceLength = 0;
   }
-
 }

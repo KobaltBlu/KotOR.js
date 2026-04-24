@@ -1,10 +1,10 @@
 /**
  * SignalEventType enum.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * https://github.com/nwn-dotnet/NWN.Native/blob/38098e06b9eeb5ffd5e9280b53f210f02bcbfc6f/src/main/API/ScriptEvent.cs#L40
- * 
+ *
  * @file SignalEventType.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -54,5 +54,5 @@ export enum SignalEventType {
   OnEquipItem = 39,
   OnUnequipItem = 40,
   OnXxx = 41,
-  OnLeftClick = 42
+  OnLeftClick = 42,
 }

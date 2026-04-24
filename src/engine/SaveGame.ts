@@ -1,21 +1,21 @@
-import * as path from "path";
-import { GFFObject } from "@/resource/GFFObject";
-import { TextureLoader } from "@/loaders";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { CurrentGame } from "@/engine/CurrentGame";
-import { GFFField } from "@/resource/GFFField";
-import { GameState } from "@/GameState";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { ERFObject } from "@/resource/ERFObject";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { Utility } from "@/utility/Utility";
-import EngineLocation from "@/engine/EngineLocation";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { ResourceTypes } from "@/KotOR";
-import { exists } from "fs";
+import * as path from 'path';
+import { GFFObject } from '@/resource/GFFObject';
+import { TextureLoader } from '@/loaders';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { CurrentGame } from '@/engine/CurrentGame';
+import { GFFField } from '@/resource/GFFField';
+import { GameState } from '@/GameState';
+import { GFFDataType } from '@/enums/resource/GFFDataType';
+import { GFFStruct } from '@/resource/GFFStruct';
+import { ERFObject } from '@/resource/ERFObject';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { Utility } from '@/utility/Utility';
+import EngineLocation from '@/engine/EngineLocation';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { ResourceTypes } from '@/KotOR';
+import { exists } from 'fs';
 
-const winEpoch = new Date("01-01-1601 UTC").getTime();
+const winEpoch = new Date('01-01-1601 UTC').getTime();
 
 /**
  * SaveGame class.
@@ -86,7 +86,6 @@ export class SaveGame {
   /** Whether this is a new save game being created */
   isNewSave = false;
 
-
   /** Array of all loaded save games */
   static saves: SaveGame[] = [];
   /** Base directory where save games are stored */
@@ -104,7 +103,6 @@ export class SaveGame {
   //NEXT_SAVE_ID - 1 AUTOSAVE
   //NEXT_SAVE_ID - X Higher than 1 is a custom save game
 
-
   /**
    * Creates a new SaveGame instance.
    *
@@ -117,7 +115,7 @@ export class SaveGame {
    * // Create a save game from full path
    * const saveGame = new SaveGame('Saves/000001 - AUTOSAVE');
    */
-  constructor(name = ''){
+  constructor(name = '') {
     this.folderName = name.split('/').pop();
     this.directory = path.join(SaveGame.base_directory, this.folderName);
     this.isLoaded = false;
@@ -151,87 +149,87 @@ export class SaveGame {
    * await saveGame.loadNFO();
    * console.log(saveGame.getAreaName()); // "Endar Spire"
    */
-  async loadNFO(){
-    try{
+  async loadNFO() {
+    try {
       const buffer = await GameFileSystem.readFile(path.join(this.directory, 'savenfo.res'));
       this.savenfo = new GFFObject(buffer);
-      if(this.savenfo.RootNode.hasField('AREANAME')){
-        this.AREANAME = this.savenfo.getFieldByLabel('AREANAME').getValue()
+      if (this.savenfo.RootNode.hasField('AREANAME')) {
+        this.AREANAME = this.savenfo.getFieldByLabel('AREANAME').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('CHEATUSED')){
-        this.CHEATUSED = this.savenfo.getFieldByLabel('CHEATUSED').getValue()
+      if (this.savenfo.RootNode.hasField('CHEATUSED')) {
+        this.CHEATUSED = this.savenfo.getFieldByLabel('CHEATUSED').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('GAMEPLAYHINT')){
-        this.GAMEPLAYHINT = this.savenfo.getFieldByLabel('GAMEPLAYHINT').getValue()
+      if (this.savenfo.RootNode.hasField('GAMEPLAYHINT')) {
+        this.GAMEPLAYHINT = this.savenfo.getFieldByLabel('GAMEPLAYHINT').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('LASTMODULE')){
-        this.LASTMODULE = this.savenfo.getFieldByLabel('LASTMODULE').getValue()
+      if (this.savenfo.RootNode.hasField('LASTMODULE')) {
+        this.LASTMODULE = this.savenfo.getFieldByLabel('LASTMODULE').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('LIVE1')){
-        this.LIVE1 = this.savenfo.getFieldByLabel('LIVE1').getValue()
+      if (this.savenfo.RootNode.hasField('LIVE1')) {
+        this.LIVE1 = this.savenfo.getFieldByLabel('LIVE1').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('LIVE2')){
-        this.LIVE2 = this.savenfo.getFieldByLabel('LIVE2').getValue()
+      if (this.savenfo.RootNode.hasField('LIVE2')) {
+        this.LIVE2 = this.savenfo.getFieldByLabel('LIVE2').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('LIVE3')){
-        this.LIVE3 = this.savenfo.getFieldByLabel('LIVE3').getValue()
+      if (this.savenfo.RootNode.hasField('LIVE3')) {
+        this.LIVE3 = this.savenfo.getFieldByLabel('LIVE3').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('LIVE4')){
-        this.LIVE4 = this.savenfo.getFieldByLabel('LIVE4').getValue()
+      if (this.savenfo.RootNode.hasField('LIVE4')) {
+        this.LIVE4 = this.savenfo.getFieldByLabel('LIVE4').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('LIVE5')){
-        this.LIVE5 = this.savenfo.getFieldByLabel('LIVE5').getValue()
+      if (this.savenfo.RootNode.hasField('LIVE5')) {
+        this.LIVE5 = this.savenfo.getFieldByLabel('LIVE5').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('LIVE6')){
-        this.LIVE6 = this.savenfo.getFieldByLabel('LIVE6').getValue()
+      if (this.savenfo.RootNode.hasField('LIVE6')) {
+        this.LIVE6 = this.savenfo.getFieldByLabel('LIVE6').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('LIVECONTENT')){
-        this.LIVECONTENT = this.savenfo.getFieldByLabel('LIVECONTENT').getValue()
+      if (this.savenfo.RootNode.hasField('LIVECONTENT')) {
+        this.LIVECONTENT = this.savenfo.getFieldByLabel('LIVECONTENT').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('PORTRAIT0')){
-        this.PORTRAIT0 = this.savenfo.getFieldByLabel('PORTRAIT0').getValue()
+      if (this.savenfo.RootNode.hasField('PORTRAIT0')) {
+        this.PORTRAIT0 = this.savenfo.getFieldByLabel('PORTRAIT0').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('PORTRAIT1')){
-        this.PORTRAIT1 = this.savenfo.getFieldByLabel('PORTRAIT1').getValue()
+      if (this.savenfo.RootNode.hasField('PORTRAIT1')) {
+        this.PORTRAIT1 = this.savenfo.getFieldByLabel('PORTRAIT1').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('PORTRAIT2')){
-        this.PORTRAIT2 = this.savenfo.getFieldByLabel('PORTRAIT2').getValue()
+      if (this.savenfo.RootNode.hasField('PORTRAIT2')) {
+        this.PORTRAIT2 = this.savenfo.getFieldByLabel('PORTRAIT2').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('SAVEGAMENAME')){
-        this.SAVEGAMENAME = this.savenfo.getFieldByLabel('SAVEGAMENAME').getValue()
+      if (this.savenfo.RootNode.hasField('SAVEGAMENAME')) {
+        this.SAVEGAMENAME = this.savenfo.getFieldByLabel('SAVEGAMENAME').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('STORYHINT')){
-        this.STORYHINT = this.savenfo.getFieldByLabel('STORYHINT').getValue()
+      if (this.savenfo.RootNode.hasField('STORYHINT')) {
+        this.STORYHINT = this.savenfo.getFieldByLabel('STORYHINT').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('TIMEPLAYED')){
-        this.TIMEPLAYED = this.savenfo.getFieldByLabel('TIMEPLAYED').getValue()
+      if (this.savenfo.RootNode.hasField('TIMEPLAYED')) {
+        this.TIMEPLAYED = this.savenfo.getFieldByLabel('TIMEPLAYED').getValue();
       }
 
-      if(this.savenfo.RootNode.hasField('TIMESTAMP')){
+      if (this.savenfo.RootNode.hasField('TIMESTAMP')) {
         let timestamp: bigint = this.savenfo.getFieldByLabel('TIMESTAMP').getValue();
-        this.TIMESTAMP = new Date(parseInt((timestamp/10000n) as any) + winEpoch);
+        this.TIMESTAMP = new Date(parseInt((timestamp / 10000n) as any) + winEpoch);
       }
 
-      if(this.savenfo.RootNode.hasField('PCNAME')){
-        this.PCNAME = this.savenfo.getFieldByLabel('PCNAME').getValue()
+      if (this.savenfo.RootNode.hasField('PCNAME')) {
+        this.PCNAME = this.savenfo.getFieldByLabel('PCNAME').getValue();
       }
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
@@ -253,21 +251,25 @@ export class SaveGame {
    * await saveGame.loadPIFO();
    * // Player template is now available in GameState.PartyManager.PlayerTemplate
    */
-  async loadPIFO(): Promise<void>{
-    try{
+  async loadPIFO(): Promise<void> {
+    try {
       const buffer = await GameFileSystem.readFile(path.join(this.directory, 'pifo.ifo'));
       if (!buffer || buffer.byteLength < 56) {
         return;
       }
       this.pifo = new GFFObject(buffer);
-      if(!this.pifo.RootNode.hasField('Mod_PlayerList')){ return; }
+      if (!this.pifo.RootNode.hasField('Mod_PlayerList')) {
+        return;
+      }
 
       const playerList = this.pifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
-      if(!playerList.length){ return; }
+      if (!playerList.length) {
+        return;
+      }
 
       GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
       GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
@@ -290,14 +292,14 @@ export class SaveGame {
    * await saveGame.loadPC();
    * // PC data is now available in saveGame.pc
    */
-  async loadPC(): Promise<void>{
-    try{
+  async loadPC(): Promise<void> {
+    try {
       const buffer = await this.SAVEGAME.getResourceBufferByResRef('pc', ResourceTypes.utc);
       if (!buffer || buffer.byteLength < 56) {
         return;
       }
       this.pc = new GFFObject(buffer);
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
@@ -326,27 +328,24 @@ export class SaveGame {
    * await saveGame.load();
    * // Game state is now restored and ready to play
    */
-  async load(): Promise<void>{
+  async load(): Promise<void> {
     localStorage.setItem(`${GameState.GameKey}_last_save_id`, SaveGame.saves.indexOf(this).toString());
     GameState.isLoadingSave = true;
     GameState.TutorialWindowTracker = [];
 
-    try{
+    try {
       GameState.time = this.TIMEPLAYED;
-    }catch(e){}
+    } catch (e) {}
 
     GameState.SaveGame = this;
 
     GameState.PartyManager.PortraitOrder = [];
 
-    if(this.PORTRAIT0)
-      GameState.PartyManager.PortraitOrder[0] = this.PORTRAIT0;
+    if (this.PORTRAIT0) GameState.PartyManager.PortraitOrder[0] = this.PORTRAIT0;
 
-    if(this.PORTRAIT1)
-      GameState.PartyManager.PortraitOrder[1] = this.PORTRAIT1;
+    if (this.PORTRAIT1) GameState.PartyManager.PortraitOrder[1] = this.PORTRAIT1;
 
-    if(this.PORTRAIT2)
-      GameState.PartyManager.PortraitOrder[2] = this.PORTRAIT2;
+    if (this.PORTRAIT2) GameState.PartyManager.PortraitOrder[2] = this.PORTRAIT2;
 
     //Init SAVEGAME.sav
     await this.initSaveGameResourceLoader();
@@ -385,9 +384,9 @@ export class SaveGame {
    * await saveGame.initGameInProgressFolder();
    * // Game resources are now available in the game in progress folder
    */
-  async initGameInProgressFolder(): Promise<void>{
+  async initGameInProgressFolder(): Promise<void> {
     await CurrentGame.InitGameInProgressFolder(true);
-    await CurrentGame.ExtractERFToGameInProgress( this.SAVEGAME );
+    await CurrentGame.ExtractERFToGameInProgress(this.SAVEGAME);
   }
 
   /**
@@ -409,7 +408,7 @@ export class SaveGame {
    * await saveGame.initSaveGameResourceLoader();
    * // SAVEGAME.sav is now loaded and ready for resource extraction
    */
-  async initSaveGameResourceLoader(): Promise<void>{
+  async initSaveGameResourceLoader(): Promise<void> {
     this.SAVEGAME = new ERFObject(path.join(this.directory, 'SAVEGAME.sav'));
     await this.SAVEGAME.load();
     this.isLoaded = true;
@@ -439,62 +438,66 @@ export class SaveGame {
    * await saveGame.loadGlobalVARS();
    * // Global variables are now available in GameState.GlobalVariableManager
    */
-  async loadGlobalVARS(): Promise<void>{
+  async loadGlobalVARS(): Promise<void> {
     console.log('SaveGame', 'Loading GlobalVARS...');
     const data = await GameFileSystem.readFile(path.join(this.directory, 'GLOBALVARS.res'));
     this.globalVars = new GFFObject(data);
 
     let numBytes = new BinaryReader(this.globalVars.RootNode.getFieldByLabel('ValNumber').getVoid());
     let catNumbers = this.globalVars.getFieldByLabel('CatNumber').getChildStructs();
-    for(let i = 0; i < catNumbers.length; i++){
+    for (let i = 0; i < catNumbers.length; i++) {
       let numCat = catNumbers[i];
       let numLabel = numCat.getFieldByLabel('Name').getValue();
       let value = numBytes.readByte();
-      if(GameState.GlobalVariableManager.Globals.Number.has(numLabel.toLowerCase())){
+      if (GameState.GlobalVariableManager.Globals.Number.has(numLabel.toLowerCase())) {
         GameState.GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = value;
-      }else{
-        GameState.GlobalVariableManager.Globals.Number.set(numLabel.toLowerCase(), {name: numLabel.toLowerCase(), value: value});
+      } else {
+        GameState.GlobalVariableManager.Globals.Number.set(numLabel.toLowerCase(), {
+          name: numLabel.toLowerCase(),
+          value: value,
+        });
         console.warn('Global Number: missing', numLabel.toLowerCase(), value);
       }
     }
 
     let locBytes = new BinaryReader(this.globalVars.RootNode.getFieldByLabel('ValLocation').getVoid());
     let catLocations = this.globalVars.getFieldByLabel('CatLocation').getChildStructs();
-    for(let i = 0; i < catLocations.length; i++){
+    for (let i = 0; i < catLocations.length; i++) {
       let locCat = catLocations[i];
       let locLabel = locCat.getFieldByLabel('Name').getValue();
 
-      GameState.GlobalVariableManager.Globals.Location.set(
-        locLabel.toLowerCase(), {
-          name: locLabel,
-          value: new EngineLocation(
-            locBytes.readSingle(),
-            locBytes.readSingle(),
-            locBytes.readSingle(),
-            locBytes.readSingle(),
-            locBytes.readSingle(),
-            locBytes.readSingle(),
-          )
-        }
-      );
+      GameState.GlobalVariableManager.Globals.Location.set(locLabel.toLowerCase(), {
+        name: locLabel,
+        value: new EngineLocation(
+          locBytes.readSingle(),
+          locBytes.readSingle(),
+          locBytes.readSingle(),
+          locBytes.readSingle(),
+          locBytes.readSingle(),
+          locBytes.readSingle()
+        ),
+      });
     }
 
     let boolBytes = this.globalVars.RootNode.getFieldByLabel('ValBoolean').getVoid();
     let catBooleans = this.globalVars.getFieldByLabel('CatBoolean').getChildStructs();
     let maxBits = boolBytes.length * 8;
-    for(let i = 0; i < maxBits; i++){
-      for(let j = 0; j < 8; j++){
-        let index = (i * 8) + j;
-        let bit = (boolBytes[i] >> 7-j) & 1; //reverse the bit index because of ENDIANS -_-
+    for (let i = 0; i < maxBits; i++) {
+      for (let j = 0; j < 8; j++) {
+        let index = i * 8 + j;
+        let bit = (boolBytes[i] >> (7 - j)) & 1; //reverse the bit index because of ENDIANS -_-
 
         let boolCat = catBooleans[index];
-        if(boolCat){
+        if (boolCat) {
           let boolLabel = boolCat.getFieldByLabel('Name').getValue();
           let value = !!bit;
-          if(GameState.GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
+          if (GameState.GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())) {
             GameState.GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
-          }else{
-            GameState.GlobalVariableManager.Globals.Boolean.set(boolLabel.toLowerCase(), {name: boolLabel.toLowerCase(), value: value});
+          } else {
+            GameState.GlobalVariableManager.Globals.Boolean.set(boolLabel.toLowerCase(), {
+              name: boolLabel.toLowerCase(),
+              value: value,
+            });
             console.warn('Global Boolean: missing', boolLabel.toLowerCase(), value);
           }
         }
@@ -503,15 +506,18 @@ export class SaveGame {
 
     let stringValues = this.globalVars.RootNode.getFieldByLabel('ValString').getChildStructs();
     let catStrings = this.globalVars.getFieldByLabel('CatString').getChildStructs();
-    for(let i = 0; i < catStrings.length; i++){
+    for (let i = 0; i < catStrings.length; i++) {
       let strCat = catStrings[i];
-      if(strCat){
+      if (strCat) {
         let strLabel = strCat.getFieldByLabel('Name').getValue();
         let strValue = stringValues[i].getFieldByLabel('String').getValue();
-        if(GameState.GlobalVariableManager.Globals.String.has(strLabel.toLowerCase())){
+        if (GameState.GlobalVariableManager.Globals.String.has(strLabel.toLowerCase())) {
           GameState.GlobalVariableManager.Globals.String.get(strLabel.toLowerCase()).value = strValue;
-        }else{
-          GameState.GlobalVariableManager.Globals.String.set(strLabel.toLowerCase(), {name: strLabel.toLowerCase(), value: strValue});
+        } else {
+          GameState.GlobalVariableManager.Globals.String.set(strLabel.toLowerCase(), {
+            name: strLabel.toLowerCase(),
+            value: strValue,
+          });
           console.warn('Global String: missing', strLabel.toLowerCase(), strValue);
         }
       }
@@ -536,15 +542,15 @@ export class SaveGame {
    * await saveGame.loadPartyTable();
    * // Party data is now available in GameState.PartyManager
    */
-  async loadPartyTable(): Promise<void>{
+  async loadPartyTable(): Promise<void> {
     console.log('SaveGame', 'Loading Partytable...');
-    try{
+    try {
       const data = await GameFileSystem.readFile(path.join(this.directory, 'PARTYTABLE.res'));
       const gff = new GFFObject(data);
       await GameState.PartyManager.Load(gff);
       // this.partytable = new GameState.PartyTableManager(gff);
       // await this.partytable.Load();
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
@@ -567,17 +573,17 @@ export class SaveGame {
    * await saveGame.loadInventory();
    * // Inventory items are now available in GameState.InventoryManager
    */
-  async loadInventory(): Promise<void>{
+  async loadInventory(): Promise<void> {
     console.log('SaveGame', 'Loading Inventory...');
 
-    try{
-      const buffer = await GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'inventory.res'));
+    try {
+      const buffer = await GameFileSystem.readFile(path.join(CurrentGame.gameinprogress_dir, 'inventory.res'));
       this.inventory = new GFFObject(buffer);
       let invArr = this.inventory.RootNode.getFieldByLabel('ItemList').getChildStructs();
-      for(let i = 0; i < invArr.length; i++){
+      for (let i = 0; i < invArr.length; i++) {
         GameState.InventoryManager.addItem(GFFObject.FromStruct(invArr[i]));
       }
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
@@ -591,7 +597,7 @@ export class SaveGame {
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * console.log(saveGame.getAreaName()); // "Endar Spire"
    */
-  getAreaName(): string{
+  getAreaName(): string {
     return this.AREANAME;
   }
 
@@ -604,7 +610,7 @@ export class SaveGame {
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * console.log(saveGame.getLastModule()); // "001EBO"
    */
-  getLastModule(): string{
+  getLastModule(): string {
     return this.LASTMODULE;
   }
 
@@ -617,7 +623,7 @@ export class SaveGame {
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * console.log(saveGame.getSaveName()); // "My Save Game" or ""
    */
-  getSaveName(): string{
+  getSaveName(): string {
     return this.SAVEGAMENAME;
   }
 
@@ -638,13 +644,24 @@ export class SaveGame {
    * customSave.SAVEGAMENAME = 'My Adventure';
    * console.log(customSave.getFullName()); // "Game1 - My Adventure"
    */
-  getFullName(){
-    if(this.getIsQuickSave()) {
-      return GameState.TLKManager.GetStringById(47991).Value + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M`;
-    } else if(this.getIsAutoSave()) {
-      return GameState.TLKManager.GetStringById(1593).Value + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M`;
-    } else if(this.getSaveName() != '') {
-      return this.folderName.split(' - ')[1] + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M\n` + this.getSaveName();
+  getFullName() {
+    if (this.getIsQuickSave()) {
+      return (
+        GameState.TLKManager.GetStringById(47991).Value +
+        ' - ' +
+        `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M`
+      );
+    } else if (this.getIsAutoSave()) {
+      return (
+        GameState.TLKManager.GetStringById(1593).Value + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M`
+      );
+    } else if (this.getSaveName() != '') {
+      return (
+        this.folderName.split(' - ')[1] +
+        ' - ' +
+        `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M\n` +
+        this.getSaveName()
+      );
     } else {
       return this.folderName.split(' - ')[1];
     }
@@ -662,7 +679,7 @@ export class SaveGame {
    * const manualSave = new SaveGame('000002 - Game1');
    * console.log(manualSave.getIsAutoSave()); // false
    */
-  getIsAutoSave(): boolean{
+  getIsAutoSave(): boolean {
     return this.folderName.split(' - ')[1] == 'AUTOSAVE';
   }
 
@@ -678,7 +695,7 @@ export class SaveGame {
    * const manualSave = new SaveGame('000002 - Game1');
    * console.log(manualSave.getIsQuickSave()); // false
    */
-  getIsQuickSave(): boolean{
+  getIsQuickSave(): boolean {
     return this.folderName.split(' - ')[1] == 'QUICKSAVE';
   }
 
@@ -694,7 +711,7 @@ export class SaveGame {
    * const quickSave = new SaveGame('000000 - QUICKSAVE');
    * console.log(quickSave.getSaveNumber()); // 0
    */
-  getSaveNumber(): number{
+  getSaveNumber(): number {
     return parseInt(this.folderName.split(' - ')[0]);
   }
 
@@ -708,7 +725,7 @@ export class SaveGame {
    * saveGame.TIMEPLAYED = 7200; // 2 hours in seconds
    * console.log(saveGame.getHoursPlayed()); // 2
    */
-  getHoursPlayed(): number{
+  getHoursPlayed(): number {
     return Math.floor(this.TIMEPLAYED / 3600);
   }
 
@@ -722,7 +739,7 @@ export class SaveGame {
    * saveGame.TIMEPLAYED = 7320; // 2 hours and 2 minutes in seconds
    * console.log(saveGame.getMinutesPlayed()); // 2
    */
-  getMinutesPlayed(): number{
+  getMinutesPlayed(): number {
     return Math.floor(60 * ((this.TIMEPLAYED / 3600) % 1));
   }
 
@@ -744,19 +761,21 @@ export class SaveGame {
    * const thumbnail = await saveGame.getThumbnail();
    * // Use thumbnail in UI
    */
-  async getThumbnail(): Promise<OdysseyTexture>{
-    if(this.thumbnail){ return this.thumbnail; }
+  async getThumbnail(): Promise<OdysseyTexture> {
+    if (this.thumbnail) {
+      return this.thumbnail;
+    }
 
-    try{
+    try {
       this.thumbnail = await TextureLoader.tgaLoader.fetchLocal(path.join(this.directory, 'Screen.tga'));
-    }catch(e){
+    } catch (e) {
       console.error(e);
-      try{
-        this.thumbnail = await TextureLoader.Load('load_'+this.getLastModule());
-      }catch(e){
-        try{
+      try {
+        this.thumbnail = await TextureLoader.Load('load_' + this.getLastModule());
+      } catch (e) {
+        try {
           this.thumbnail = await TextureLoader.Load('whitefill');
-        }catch(e){
+        } catch (e) {
           console.error(e);
         }
       }
@@ -783,19 +802,18 @@ export class SaveGame {
    * const playerPortrait = await saveGame.getPortrait(0); // First party member
    * const companionPortrait = await saveGame.getPortrait(1); // Second party member
    */
-  async getPortrait(nth = 0): Promise<OdysseyTexture|undefined>{
-
+  async getPortrait(nth = 0): Promise<OdysseyTexture | undefined> {
     let name = undefined;
 
-    if(typeof (this as any)['PORTRAIT'+nth] === 'string'){
-      name = (this as any)['PORTRAIT'+nth];
+    if (typeof (this as any)['PORTRAIT' + nth] === 'string') {
+      name = (this as any)['PORTRAIT' + nth];
     }
 
-    if(typeof name === 'string'){
+    if (typeof name === 'string') {
       return await TextureLoader.Load(name);
     }
 
-    return undefined
+    return undefined;
   }
 
   /**
@@ -881,39 +899,41 @@ export class SaveGame {
    * // Create an autosave
    * await SaveGame.SaveCurrentGame('', 1);
    */
-  static async SaveCurrentGame( name = '', replace_id = 0 ): Promise<void>{
-    if(!GameState.module){ return; }
+  static async SaveCurrentGame(name = '', replace_id = 0): Promise<void> {
+    if (!GameState.module) {
+      return;
+    }
 
     GameState.MenuManager.LoadScreen.open();
     GameState.MenuManager.LoadScreen.showSavingMessage();
 
     let save_id = 0;
     let save_dir_name = '';
-    if(replace_id === 0){
+    if (replace_id === 0) {
       save_id = 0;
       save_dir_name = `${Utility.PadInt(save_id, 6)} - QUICKSAVE`;
-      if(!name){
+      if (!name) {
         name = 'QUICKSAVE';
       }
-    }else if(replace_id === 1){
+    } else if (replace_id === 1) {
       save_id = 1;
       save_dir_name = `${Utility.PadInt(save_id, 6)} - AUTOSAVE`;
-      if(!name){
+      if (!name) {
         name = 'AUTOSAVE';
       }
-    }else{
+    } else {
       save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
-      save_dir_name = Utility.PadInt(save_id, 6)+' - Game'+(save_id-1);
+      save_dir_name = Utility.PadInt(save_id, 6) + ' - Game' + (save_id - 1);
     }
 
     //Prepare SaveGame directory
-    if(!(await GameFileSystem.exists(SaveGame.base_directory))){
+    if (!(await GameFileSystem.exists(SaveGame.base_directory))) {
       await GameFileSystem.mkdir(SaveGame.base_directory);
     }
 
-    let save_dir = path.join( SaveGame.base_directory, save_dir_name );
+    let save_dir = path.join(SaveGame.base_directory, save_dir_name);
 
-    if(await GameFileSystem.exists(save_dir)){
+    if (await GameFileSystem.exists(save_dir)) {
       await GameFileSystem.rmdir(save_dir, { recursive: true });
     }
     await GameFileSystem.mkdir(save_dir);
@@ -939,7 +959,7 @@ export class SaveGame {
     await tga.export(path.join(save_dir, 'Screen.tga'));
 
     const newEntry = new SaveGame(save_dir_name);
-    const existingIndex = SaveGame.saves.findIndex(s => s.getSaveNumber() === save_id);
+    const existingIndex = SaveGame.saves.findIndex((s) => s.getSaveNumber() === save_id);
     if (existingIndex >= 0) {
       SaveGame.saves[existingIndex] = newEntry;
     } else {
@@ -972,15 +992,17 @@ export class SaveGame {
    * await SaveGame.ExportSaveNFO('Saves/000001 - Game1', 'My Adventure');
    * // savenfo.res file created with metadata
    */
-  static async ExportSaveNFO( directory: string, savename: string): Promise<void>{
+  static async ExportSaveNFO(directory: string, savename: string): Promise<void> {
     console.log('ExportSaveNFO', directory, savename);
     const nfo = new GFFObject();
     nfo.FileType = 'NFO ';
 
-    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).value = GameState.module.area.areaName.getValue();
+    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).value =
+      GameState.module.area.areaName.getValue();
     nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'CHEATUSED')).value = 0;
     nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'GAMEPLAYHINT')).value = 0;
-    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LASTMODULE')).value = GameState.module.filename.toUpperCase();
+    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LASTMODULE')).value =
+      GameState.module.filename.toUpperCase();
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE1')).value = '';
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE2')).value = '';
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE3')).value = '';
@@ -990,8 +1012,9 @@ export class SaveGame {
     nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'LIVECONTENT')).value = 0;
 
     //Save the portraits of the current party
-    for(let i = 0; i < GameState.PartyManager.party.length; i++){
-      nfo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'PORTRAIT'+i)).value = GameState.PartyManager.party[i].getPortraitResRef();
+    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+      nfo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'PORTRAIT' + i)).value =
+        GameState.PartyManager.party[i].getPortraitResRef();
     }
 
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'SAVEGAMENAME')).value = savename;
@@ -1030,81 +1053,79 @@ export class SaveGame {
    * await SaveGame.ExportGlobalVars('Saves/000001 - Game1');
    * // GLOBALVARS.res file created with current global variables
    */
-  static async ExportGlobalVars( directory: string ): Promise<void>{
-    console.log('ExportGlobalVars')
+  static async ExportGlobalVars(directory: string): Promise<void> {
+    console.log('ExportGlobalVars');
     let gvt = new GFFObject();
     gvt.FileType = 'GVT ';
 
     //Global Booleans
-    const catBooleanList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
-    const boolBuffer =  new Uint8Array( ( GameState.GlobalVariableManager.Globals.Boolean.size / 8 ) );
+    const catBooleanList = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
+    const boolBuffer = new Uint8Array(GameState.GlobalVariableManager.Globals.Boolean.size / 8);
     let i = 0;
-    GameState.GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
+    GameState.GlobalVariableManager.Globals.Boolean.forEach((globBool, key: string) => {
       let boolean = globBool;
-      let byte_offset = Math.floor( i / 8 );
-      let bit_index = (i % 8);
+      let byte_offset = Math.floor(i / 8);
+      let bit_index = i % 8;
 
-      if(boolean.value){
+      if (boolean.value) {
         boolBuffer[byte_offset] |= 1 << bit_index;
       }
 
       let boolStruct = new GFFStruct();
-      boolStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(boolean.name);
+      boolStruct.addField(new GFFField(GFFDataType.CEXOSTRING, 'Name')).setValue(boolean.name);
       catBooleanList.addChildStruct(boolStruct);
       i++;
     });
 
     //Global Locations
-    const catLocationList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatLocation'));
+    const catLocationList = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatLocation'));
     const locationBuffer = new Uint8Array(24 * 100);
     const locationDataView = new DataView(locationBuffer.buffer);
 
     i = 0;
-    GameState.GlobalVariableManager.Globals.Location.forEach( (location, key: string) => {
-      locationDataView.setFloat32( (24 * i) + 0, location.value.position.x, true );
-      locationDataView.setFloat32( (24 * i) + 4, location.value.position.y, true );
-      locationDataView.setFloat32( (24 * i) + 8, location.value.position.z, true );
-      locationDataView.setFloat32( (24 * i) + 12, location.value.rotation.x, true );
-      locationDataView.setFloat32( (24 * i) + 16, location.value.rotation.y, true );
-      locationDataView.setFloat32( (24 * i) + 20, location.value.rotation.z, true );
+    GameState.GlobalVariableManager.Globals.Location.forEach((location, key: string) => {
+      locationDataView.setFloat32(24 * i + 0, location.value.position.x, true);
+      locationDataView.setFloat32(24 * i + 4, location.value.position.y, true);
+      locationDataView.setFloat32(24 * i + 8, location.value.position.z, true);
+      locationDataView.setFloat32(24 * i + 12, location.value.rotation.x, true);
+      locationDataView.setFloat32(24 * i + 16, location.value.rotation.y, true);
+      locationDataView.setFloat32(24 * i + 20, location.value.rotation.z, true);
 
       let locStruct = new GFFStruct();
-      locStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(location.name);
+      locStruct.addField(new GFFField(GFFDataType.CEXOSTRING, 'Name')).setValue(location.name);
       catLocationList.addChildStruct(locStruct);
       i++;
     });
 
     //Global Numbers
-    const catNumberList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatNumber'));
+    const catNumberList = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatNumber'));
     const numberBuffer = new Uint8Array(GameState.GlobalVariableManager.Globals.Number.size);
 
     i = 0;
-    GameState.GlobalVariableManager.Globals.Number.forEach( (numberObj, key: string) => {
-      numberBuffer[i] = (numberObj.value & 0xFF);
+    GameState.GlobalVariableManager.Globals.Number.forEach((numberObj, key: string) => {
+      numberBuffer[i] = numberObj.value & 0xff;
 
       const numberStruct = new GFFStruct();
-      numberStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(numberObj.name);
+      numberStruct.addField(new GFFField(GFFDataType.CEXOSTRING, 'Name')).setValue(numberObj.name);
       catNumberList.addChildStruct(numberStruct);
       i++;
     });
 
+    const catStringList = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatString'));
 
-    const catStringList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatString'));
+    gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValBoolean')).setData(boolBuffer);
+    gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValLocation')).setData(locationBuffer);
+    gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValNumber')).setData(numberBuffer);
 
-    gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValBoolean')).setData( boolBuffer );
-    gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValLocation')).setData( locationBuffer );
-    gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValNumber')).setData( numberBuffer );
-
-    const valStringList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'ValString'));
+    const valStringList = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'ValString'));
     i = 0;
-    GameState.GlobalVariableManager.Globals.String.forEach( (stringObj, key: string) => {
+    GameState.GlobalVariableManager.Globals.String.forEach((stringObj, key: string) => {
       const stringCatStruct = new GFFStruct();
-      stringCatStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(stringObj.name);
+      stringCatStruct.addField(new GFFField(GFFDataType.CEXOSTRING, 'Name')).setValue(stringObj.name);
       catStringList.addChildStruct(stringCatStruct);
 
-
       const stringValStruct = new GFFStruct();
-      stringValStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'String') ).setValue(stringObj.value);
+      stringValStruct.addField(new GFFField(GFFDataType.CEXOSTRING, 'String')).setValue(stringObj.value);
       valStringList.addChildStruct(stringValStruct);
       i++;
     });
@@ -1131,20 +1152,20 @@ export class SaveGame {
    * console.log(SaveGame.saves.length); // Number of save games found
    * console.log(SaveGame.NEXT_SAVE_ID); // Next available save ID
    */
-  static async GetSaveGames(): Promise<void>{
-    try{
-      const savegamesRAW = await GameFileSystem.readdir('Saves', {list_dirs: false, recursive: true});
+  static async GetSaveGames(): Promise<void> {
+    try {
+      const savegamesRAW = await GameFileSystem.readdir('Saves', { list_dirs: false, recursive: true });
       const savegames = savegamesRAW.filter((path) => path.includes('SAVEGAME.sav'));
 
-      for(let i = 0; i < savegames.length; i++){
-        const saveFolder = savegames[i].replace(path.sep+'SAVEGAME.sav', '');
-        SaveGame.AddSaveGame( new SaveGame(saveFolder) );
+      for (let i = 0; i < savegames.length; i++) {
+        const saveFolder = savegames[i].replace(path.sep + 'SAVEGAME.sav', '');
+        SaveGame.AddSaveGame(new SaveGame(saveFolder));
       }
-    }catch(e){
-      try{
+    } catch (e) {
+      try {
         //Make the default savegame directory
         await GameFileSystem.mkdir(SaveGame.base_directory);
-      }catch(e){
+      } catch (e) {
         console.error(e);
       }
     }
@@ -1169,16 +1190,16 @@ export class SaveGame {
    * SaveGame.AddSaveGame(saveGame);
    * // saveGame is now in SaveGame.saves array
    */
-  static AddSaveGame( savegame: SaveGame ): void{
-    if(!(savegame instanceof SaveGame)){ return; }
+  static AddSaveGame(savegame: SaveGame): void {
+    if (!(savegame instanceof SaveGame)) {
+      return;
+    }
 
-    const len = SaveGame.saves.push( savegame );
+    const len = SaveGame.saves.push(savegame);
     const lastSave = SaveGame.saves[len - 1];
     const saveNumber = lastSave.getSaveNumber();
-    if(saveNumber >= SaveGame.NEXT_SAVE_ID){
+    if (saveNumber >= SaveGame.NEXT_SAVE_ID) {
       SaveGame.NEXT_SAVE_ID = saveNumber + 1;
     }
   }
-
 }
-

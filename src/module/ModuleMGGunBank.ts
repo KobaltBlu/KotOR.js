@@ -1,24 +1,24 @@
-import { ModuleObject } from "@/module/ModuleObject";
-import { GameState } from "@/GameState";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { MDLLoader } from "@/loaders";
-import { OdysseyModel } from "@/odyssey";
-import { GFFObject } from "@/resource/GFFObject";
-import { OdysseyModel3D } from "@/three/odyssey";
-import { ModuleMGGunBullet } from "@/module/ModuleMGGunBullet";
+import { ModuleObject } from '@/module/ModuleObject';
+import { GameState } from '@/GameState';
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import { MDLLoader } from '@/loaders';
+import { OdysseyModel } from '@/odyssey';
+import { GFFObject } from '@/resource/GFFObject';
+import { OdysseyModel3D } from '@/three/odyssey';
+import { ModuleMGGunBullet } from '@/module/ModuleMGGunBullet';
 
 /**
-* ModuleMGGunBank class.
-* 
-* Class representing a gunbank attached to players and enemy objects found in minigame modules.
-* 
-* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
-* @file ModuleMGGunBank.ts
-* @author KobaltBlu <https://github.com/KobaltBlu>
-* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
-* @memberof KotOR
-*/
+ * ModuleMGGunBank class.
+ *
+ * Class representing a gunbank attached to players and enemy objects found in minigame modules.
+ *
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ *
+ * @file ModuleMGGunBank.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @memberof KotOR
+ */
 export class ModuleMGGunBank extends ModuleObject {
   bullets: ModuleMGGunBullet[];
   owner: ModuleObject;
@@ -35,7 +35,7 @@ export class ModuleMGGunBank extends ModuleObject {
   sensingRadius: any;
   vertSpread: any;
 
-  constructor( template: GFFObject, owner: ModuleObject, isPlayer: boolean = false ){
+  constructor(template: GFFObject, owner: ModuleObject, isPlayer: boolean = false) {
     super();
     this.objectType |= ModuleObjectType.ModuleMGGunBank;
     this.template = template;
@@ -44,59 +44,56 @@ export class ModuleMGGunBank extends ModuleObject {
     this.isPlayer = isPlayer;
 
     this.proto_bullet = undefined;
-    
   }
 
-  update(delta = 0){
+  update(delta = 0) {
     //Update the gun timer
-    if(this.proto_bullet.fire_timer > 0){
+    if (this.proto_bullet.fire_timer > 0) {
       this.proto_bullet.fire_timer -= 1 * delta;
-      if(this.proto_bullet.fire_timer < 0){
+      if (this.proto_bullet.fire_timer < 0) {
         this.proto_bullet.fire_timer = 0;
       }
-    }else{
+    } else {
       this.proto_bullet.fire_timer = 0;
     }
 
-    if(this.model) this.model.update(delta);
+    if (this.model) this.model.update(delta);
 
     let old_bullet_indexes = [];
 
-    for(let i = 0, len = this.bullets.length; i < len; i++){
-      if(!this.bullets[i].update(delta)){
+    for (let i = 0, len = this.bullets.length; i < len; i++) {
+      if (!this.bullets[i].update(delta)) {
         old_bullet_indexes.push(i);
       }
     }
 
     let old_bullets_index = old_bullet_indexes.length;
-    while(old_bullets_index--){
+    while (old_bullets_index--) {
       this.bullets.splice(old_bullet_indexes[old_bullets_index], 1);
     }
   }
 
-  updatePaused(delta: number = 0){
-    
-  }
+  updatePaused(delta: number = 0) {}
 
-  fire(){
-    if(!this.proto_bullet.fire_timer){
+  fire() {
+    if (!this.proto_bullet.fire_timer) {
       this.proto_bullet.fire_timer = this.proto_bullet.rate_of_fire;
 
-      if(this.fire_sound || this.fireSound){
+      if (this.fire_sound || this.fireSound) {
         GameState.guiAudioEmitter.playSoundFireAndForget(this.fire_sound || this.fireSound);
       }
 
-      if(this.model instanceof OdysseyModel3D){
+      if (this.model instanceof OdysseyModel3D) {
         this.model.playAnimation('fire', false);
       }
 
-      if(GameState.module?.area?.miniGame){
+      if (GameState.module?.area?.miniGame) {
         GameState.module.area.miniGame.lastBulletFiredDamage = this.proto_bullet.damage_amt;
         GameState.module.area.miniGame.lastBulletFiredTarget = this.proto_bullet.target_type ?? 0;
       }
 
-      const bullet = new ModuleMGGunBullet( this.bulletTemplate, this );
-      bullet.load().then( () => {
+      const bullet = new ModuleMGGunBullet(this.bulletTemplate, this);
+      bullet.load().then(() => {
         this.bullet_hook.getWorldPosition(bullet.position);
         //this.bullet_hook.getWorldQuaternion(bullet.quaternion);
         this.owner.model.getWorldQuaternion(bullet.quaternion);
@@ -108,19 +105,19 @@ export class ModuleMGGunBank extends ModuleObject {
     }
   }
 
-  load(){
+  load() {
     this.initProperties();
-    return new Promise<void>( (resolve, reject) => {
-      this.loadModel().then( () => {
+    return new Promise<void>((resolve, reject) => {
+      this.loadModel().then(() => {
         resolve();
       });
     });
   }
 
-  loadModel(){
-    return new Promise<void>( (resolve, reject) => {
-      const resref = this.gunModel.replace(/\0[\s\S]*$/g,'').toLowerCase();
-      MDLLoader.loader.load(resref).then( (mdl: OdysseyModel) => {
+  loadModel() {
+    return new Promise<void>((resolve, reject) => {
+      const resref = this.gunModel.replace(/\0[\s\S]*$/g, '').toLowerCase();
+      MDLLoader.loader.load(resref).then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           onComplete: (model: OdysseyModel3D) => {
             this.model = model;
@@ -129,41 +126,37 @@ export class ModuleMGGunBank extends ModuleObject {
           },
           context: this.context,
           castShadow: true,
-          receiveShadow: true
+          receiveShadow: true,
         });
       });
     });
   }
 
-  initProperties(){
-    if(this.template.RootNode.hasField('BankID'))
-      this.bankID = this.template.getFieldByLabel('BankID').getValue()
+  initProperties() {
+    if (this.template.RootNode.hasField('BankID')) this.bankID = this.template.getFieldByLabel('BankID').getValue();
 
-    if(this.template.RootNode.hasField('Fire_Sound')) {
+    if (this.template.RootNode.hasField('Fire_Sound')) {
       this.fireSound = this.template.getFieldByLabel('Fire_Sound').getValue();
       this.fire_sound = this.fireSound;
     }
 
-    if(this.template.RootNode.hasField('Gun_Model'))
-      this.gunModel = this.template.getFieldByLabel('Gun_Model').getValue()
+    if (this.template.RootNode.hasField('Gun_Model'))
+      this.gunModel = this.template.getFieldByLabel('Gun_Model').getValue();
 
-    if(this.template.RootNode.hasField('Horiz_Spread'))
-      this.horizSpread = this.template.getFieldByLabel('Horiz_Spread').getValue()
+    if (this.template.RootNode.hasField('Horiz_Spread'))
+      this.horizSpread = this.template.getFieldByLabel('Horiz_Spread').getValue();
 
-    if(this.template.RootNode.hasField('Inaccuracy'))
-      this.inaccuracy = this.template.getFieldByLabel('Inaccuracy').getValue()
+    if (this.template.RootNode.hasField('Inaccuracy'))
+      this.inaccuracy = this.template.getFieldByLabel('Inaccuracy').getValue();
 
-    if(this.template.RootNode.hasField('Sensing_Radius'))
-      this.sensingRadius = this.template.getFieldByLabel('Sensing_Radius').getValue()
+    if (this.template.RootNode.hasField('Sensing_Radius'))
+      this.sensingRadius = this.template.getFieldByLabel('Sensing_Radius').getValue();
 
-    if(this.template.RootNode.hasField('Vert_Spread'))
-      this.vertSpread = this.template.getFieldByLabel('Vert_Spread').getValue()
-      
+    if (this.template.RootNode.hasField('Vert_Spread'))
+      this.vertSpread = this.template.getFieldByLabel('Vert_Spread').getValue();
+
     this.bulletTemplate = GFFObject.FromStruct(this.template.RootNode.getFieldByLabel('Bullet').getChildStructs()[0]);
     this.proto_bullet = new ModuleMGGunBullet(this.bulletTemplate, this);
     this.proto_bullet.initProperties();
-
   }
-
 }
-

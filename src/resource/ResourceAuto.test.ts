@@ -1,4 +1,3 @@
-
 import { readResourceFromBuffer, resourceToBytes } from '@/resource/ResourceAuto';
 import { ResourceTypes } from '@/resource/ResourceTypes';
 import { TPCObject } from '@/resource/TPCObject';

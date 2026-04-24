@@ -1,23 +1,22 @@
-import React, { useEffect, useState } from "react";
-import { Modal, Button, Form } from "react-bootstrap";
+import React, { useEffect, useState } from 'react';
+import { Modal, Button, Form } from 'react-bootstrap';
 
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { EditorFile } from '@/apps/forge/EditorFile';
+import { FileTypeManager } from '@/apps/forge/FileTypeManager';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import * as KotOR from '@/apps/forge/KotOR';
+import { ForgeState } from '@/apps/forge/states/ForgeState';
 import {
   ModalInsertInstanceState,
   InsertInstanceResourceType,
-} from "@/apps/forge/states/modal/ModalInsertInstanceState";
-import { ModalLoadFromModuleState } from "@/apps/forge/states/modal/ModalLoadFromModuleState";
-
+} from '@/apps/forge/states/modal/ModalInsertInstanceState';
+import { ModalLoadFromModuleState } from '@/apps/forge/states/modal/ModalLoadFromModuleState';
 
 export const ModalInsertInstance = (props: BaseModalProps) => {
   const modal = props.modal as ModalInsertInstanceState;
   const [show, setShow] = useState(modal.visible);
   const [selectedType, setSelectedType] = useState<InsertInstanceResourceType>(modal.selectedType);
-  const [mode, setMode] = useState<"create" | "load">(modal.mode);
+  const [mode, setMode] = useState<'create' | 'load'>(modal.mode);
   const [resref, setResref] = useState(modal.resref);
 
   const refresh = () => {
@@ -34,13 +33,13 @@ export const ModalInsertInstance = (props: BaseModalProps) => {
 
   useEffect(() => {
     const onStateChange = () => refresh();
-    modal.addEventListener("onHide", onHide);
-    modal.addEventListener("onShow", onShow);
-    modal.addEventListener("onStateChange", onStateChange);
+    modal.addEventListener('onHide', onHide);
+    modal.addEventListener('onShow', onShow);
+    modal.addEventListener('onStateChange', onStateChange);
     return () => {
-      modal.removeEventListener("onHide", onHide);
-      modal.removeEventListener("onShow", onShow);
-      modal.removeEventListener("onStateChange", onStateChange);
+      modal.removeEventListener('onHide', onHide);
+      modal.removeEventListener('onShow', onShow);
+      modal.removeEventListener('onStateChange', onStateChange);
     };
   }, [modal]);
 
@@ -65,7 +64,7 @@ export const ModalInsertInstance = (props: BaseModalProps) => {
     const resType = KotOR.ResourceTypes[modal.selectedType];
     if (resType == null) return;
     const loadModal = new ModalLoadFromModuleState({
-      title: "Load blueprint from MOD/ERF/RIM",
+      title: 'Load blueprint from MOD/ERF/RIM',
       supportedTypes: [resType],
       onSelect: (resrefName: string, ext: string, data: Uint8Array) => {
         const editorFile = new EditorFile({ buffer: data, resref: resrefName, ext, reskey: resType });
@@ -107,10 +106,10 @@ export const ModalInsertInstance = (props: BaseModalProps) => {
             id="insert-create"
             name="insert-mode"
             label="Create new blueprint"
-            checked={mode === "create"}
+            checked={mode === 'create'}
             onChange={() => {
-              setMode("create");
-              modal.setMode("create");
+              setMode('create');
+              modal.setMode('create');
             }}
           />
           <Form.Check
@@ -118,14 +117,14 @@ export const ModalInsertInstance = (props: BaseModalProps) => {
             id="insert-load"
             name="insert-mode"
             label="Load from MOD/ERF/RIM"
-            checked={mode === "load"}
+            checked={mode === 'load'}
             onChange={() => {
-              setMode("load");
-              modal.setMode("load");
+              setMode('load');
+              modal.setMode('load');
             }}
           />
         </Form.Group>
-        {mode === "create" && (
+        {mode === 'create' && (
           <Form.Group className="mb-2">
             <Form.Label>ResRef (name)</Form.Label>
             <Form.Control
@@ -144,7 +143,7 @@ export const ModalInsertInstance = (props: BaseModalProps) => {
         <Button variant="secondary" onClick={handleClose}>
           Cancel
         </Button>
-        {mode === "create" ? (
+        {mode === 'create' ? (
           <Button variant="primary" onClick={handleCreate}>
             Create
           </Button>

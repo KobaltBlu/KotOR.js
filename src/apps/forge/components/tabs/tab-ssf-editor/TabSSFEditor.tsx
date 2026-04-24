@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { TabSSFEditorState } from "@/apps/forge/states/tabs";
-import type { SSFObject } from "@/resource/SSFObject";
-import "@/apps/forge/components/tabs/tab-ssf-editor/TabSSFEditor.scss";
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
+import { TabSSFEditorState } from '@/apps/forge/states/tabs';
+import type { SSFObject } from '@/resource/SSFObject';
+import '@/apps/forge/components/tabs/tab-ssf-editor/TabSSFEditor.scss';
 
 interface BaseTabProps {
   tab: TabSSFEditorState;
 }
 
-export const TabSSFEditor = function(props: BaseTabProps){
+export const TabSSFEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabSSFEditorState;
   const [ssf, setSsf] = useState(tab.ssf);
 
@@ -28,12 +28,12 @@ export const TabSSFEditor = function(props: BaseTabProps){
       label: 'File',
       children: [
         { label: 'Save', onClick: () => tab.save() },
-        { label: 'Save As', onClick: () => tab.saveAs() }
-      ]
-    }
+        { label: 'Save As', onClick: () => tab.saveAs() },
+      ],
+    },
   ];
 
-  if(!ssf){
+  if (!ssf) {
     return (
       <div className="forge-ssf-editor">
         <MenuBar items={menuItems} />
@@ -101,8 +101,8 @@ export const TabSSFEditor = function(props: BaseTabProps){
         <div className="ssf-info">
           <h3>Sound Set Editor</h3>
           <p>
-            SSF files map sound slots to dialog.tlk string references.
-            Each slot corresponds to a specific character action or event.
+            SSF files map sound slots to dialog.tlk string references. Each slot corresponds to a specific character
+            action or event.
           </p>
           <div className="ssf-details">
             <div className="detail-item">

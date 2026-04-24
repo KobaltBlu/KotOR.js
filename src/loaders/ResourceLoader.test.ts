@@ -50,7 +50,7 @@ async function makeRimArchive(): Promise<RIMObject> {
       resref: 'shared',
       resType: ResourceTypes.utc,
       data: Uint8Array.from([9, 8, 7]),
-    }),
+    })
   );
   await rim.load();
   return rim;
@@ -144,7 +144,7 @@ describe('ResourceLoader', () => {
     ResourceLoader.ModuleArchives = [];
 
     await expect(ResourceLoader.loadResource(ResourceTypes.utc, 'missing')).rejects.toThrow(
-      'Resource not found: ResRef: missing ResId: 2027',
+      'Resource not found: ResRef: missing ResId: 2027'
     );
   });
 });

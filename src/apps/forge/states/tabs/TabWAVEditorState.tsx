@@ -1,10 +1,10 @@
-import React from "react";
+import React from 'react';
 
-import { TabWAVEditor } from "@/apps/forge/components/tabs/tab-wav-editor/TabWAVEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { WAVObject } from "@/resource/WAVObject";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { TabWAVEditor } from '@/apps/forge/components/tabs/tab-wav-editor/TabWAVEditor';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { WAVObject } from '@/resource/WAVObject';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -14,9 +14,9 @@ export class TabWAVEditorState extends TabState {
     {
       description: 'Wave Audio',
       accept: {
-        'application/octet-stream': ['.wav']
-      }
-    }
+        'application/octet-stream': ['.wav'],
+      },
+    },
   ];
   wavObject?: WAVObject;
 

@@ -1,19 +1,18 @@
-import { CurrentGame } from "@/engine/CurrentGame";
-import { GameState } from "@/GameState";
-import type { GUILabel, GUIButton, GUIControl } from "@/gui";
-import { CharGenQuickPanel as K1_CharGenQuickPanel } from "@/game/kotor/KOTOR";
+import { CurrentGame } from '@/engine/CurrentGame';
+import { GameState } from '@/GameState';
+import type { GUILabel, GUIButton, GUIControl } from '@/gui';
+import { CharGenQuickPanel as K1_CharGenQuickPanel } from '@/game/kotor/KOTOR';
 
 /**
  * CharGenQuickPanel class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenQuickPanel.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenQuickPanel extends K1_CharGenQuickPanel {
-
   declare BTN_BACK: GUIButton;
   declare BTN_CANCEL: GUIButton;
   declare LBL_3: GUIControl;
@@ -26,7 +25,7 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
   declare BTN_STEPNAME3: GUIButton;
   declare LBL_NUM3: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'quickpnl_p';
     this.background = '';
@@ -35,7 +34,7 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       this.BTN_STEPNAME1.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -55,7 +54,7 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
         GameState.PartyManager.PlayerTemplate = GameState.CharGenManager.selectedCreature.save();
         GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
         GameState.PartyManager.AddPortraitToOrder(GameState.CharGenManager.selectedCreature.getPortraitResRef());
-        CurrentGame.InitGameInProgressFolder(true).then( () => {
+        CurrentGame.InitGameInProgressFolder(true).then(() => {
           GameState.LoadModule('001EBO');
         });
       });
@@ -75,6 +74,4 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
       resolve();
     });
   }
-  
 }
-

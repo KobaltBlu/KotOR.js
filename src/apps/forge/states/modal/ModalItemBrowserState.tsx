@@ -1,7 +1,7 @@
-import React from "react";
-import { ModalItemBrowser } from "@/apps/forge/components/modal/ModalItemBrowser";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { ModalItemBrowser } from '@/apps/forge/components/modal/ModalItemBrowser';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
+import * as KotOR from '@/apps/forge/KotOR';
 
 export interface UTIItem {
   resref: string;
@@ -86,7 +86,7 @@ export class ModalItemBrowserState extends ModalState {
               const baseItemRow = baseitems2DA.getRowByIndex(baseItem);
               if (baseItemRow) {
                 iconResRef = (baseItemRow['itemclass'] || '').toLowerCase();
-                iconResRef = `i${iconResRef}_${("000" + modelVariation).slice(-3)}`;
+                iconResRef = `i${iconResRef}_${('000' + modelVariation).slice(-3)}`;
               }
             }
           }
@@ -101,7 +101,7 @@ export class ModalItemBrowserState extends ModalState {
             baseItem,
             localizedName,
             iconResRef,
-            gff
+            gff,
           });
         } catch (error) {
           console.error(`Failed to load UTI: ${key.resRef}`, error);
@@ -120,9 +120,10 @@ export class ModalItemBrowserState extends ModalState {
 
   setSearchQuery(query: string) {
     this.searchQuery = query.toLowerCase();
-    this.filteredItems = this.items.filter(item =>
-      item.resref.toLowerCase().includes(this.searchQuery) ||
-      item.localizedName.toLowerCase().includes(this.searchQuery)
+    this.filteredItems = this.items.filter(
+      (item) =>
+        item.resref.toLowerCase().includes(this.searchQuery) ||
+        item.localizedName.toLowerCase().includes(this.searchQuery)
     );
     this.processEventListener('onSearchChanged', [this]);
   }
@@ -134,4 +135,3 @@ export class ModalItemBrowserState extends ModalState {
     this.close();
   }
 }
-

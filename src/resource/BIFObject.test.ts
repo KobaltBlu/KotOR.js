@@ -13,13 +13,16 @@ describe('BIFObject', () => {
    * Build a minimal BIF buffer with a configurable number of resources.
    * When `resources` is omitted, falls back to the original single-resource builder.
    */
-  function makeBifBuffer(options: { fileType?: string; fileVersion?: string; resourceSize?: number; resourceType?: number; resources?: { id: number; size: number; resType: number; data: Uint8Array }[] } = {}): Uint8Array {
-    const {
-      fileType = 'BIFF',
-      fileVersion = 'V1  ',
-      resourceSize = 4,
-      resourceType = 0x0f,
-    } = options;
+  function makeBifBuffer(
+    options: {
+      fileType?: string;
+      fileVersion?: string;
+      resourceSize?: number;
+      resourceType?: number;
+      resources?: { id: number; size: number; resType: number; data: Uint8Array }[];
+    } = {}
+  ): Uint8Array {
+    const { fileType = 'BIFF', fileVersion = 'V1  ', resourceSize = 4, resourceType = 0x0f } = options;
 
     const bifBuf = new Uint8Array(20 + 16 + resourceSize);
     const view = new DataView(bifBuf.buffer);
@@ -51,9 +54,9 @@ describe('BIFObject', () => {
 
     new TextEncoder().encodeInto('BIFF', new Uint8Array(buf.buffer, 0, 4));
     new TextEncoder().encodeInto('V1  ', new Uint8Array(buf.buffer, 4, 4));
-    view.setUint32(8, entries.length, true);   // variableResourceCount
-    view.setUint32(12, 0, true);               // fixedResourceCount
-    view.setUint32(16, headerSize, true);      // variableTableOffset
+    view.setUint32(8, entries.length, true); // variableResourceCount
+    view.setUint32(12, 0, true); // fixedResourceCount
+    view.setUint32(16, headerSize, true); // variableTableOffset
 
     let payloadCursor = headerSize + tableSize;
     for (let i = 0; i < entries.length; i++) {
@@ -159,8 +162,12 @@ describe('BIFObject', () => {
   });
 
   it('rejects invalid type and version headers', () => {
-    expect(() => new BIFObject(makeBifBuffer({ fileType: 'BZF ' })).readFromMemory()).toThrow('Tried to save or load an unsupported or corrupted file.');
-    expect(() => new BIFObject(makeBifBuffer({ fileVersion: 'V2  ' })).readFromMemory()).toThrow('Tried to save or load an unsupported or corrupted file.');
+    expect(() => new BIFObject(makeBifBuffer({ fileType: 'BZF ' })).readFromMemory()).toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
+    expect(() => new BIFObject(makeBifBuffer({ fileVersion: 'V2  ' })).readFromMemory()).toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
   });
 
   // --- Vendor-derived: multi-resource parsing (mirrors test_bif_write / test_bif_real_file) ---
@@ -212,10 +219,12 @@ describe('BIFObject', () => {
   it('getResource and getResourceBufferByResRef resolve through KEYManager mappings', async () => {
     const previousKey = KEYManager.Key;
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    const bif = new BIFObject(makeMultiResourceBif([
-      { id: 0, resType: ResourceTypes.txt, payload: new TextEncoder().encode('alpha') },
-      { id: 1, resType: ResourceTypes.txt, payload: new TextEncoder().encode('beta') },
-    ]));
+    const bif = new BIFObject(
+      makeMultiResourceBif([
+        { id: 0, resType: ResourceTypes.txt, payload: new TextEncoder().encode('alpha') },
+        { id: 1, resType: ResourceTypes.txt, payload: new TextEncoder().encode('beta') },
+      ])
+    );
     bif.readFromMemory();
 
     KEYManager.Key = {

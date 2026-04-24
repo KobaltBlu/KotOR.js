@@ -1,6 +1,5 @@
-import type { KitComponent } from "@/apps/forge/data/IndoorKit";
-import type { OdysseyWalkMesh } from "@/apps/forge/KotOR";
-
+import type { KitComponent } from '@/apps/forge/data/IndoorKit';
+import type { OdysseyWalkMesh } from '@/apps/forge/KotOR';
 
 const PREVIEW_PIXELS_PER_UNIT = 10;
 const PREVIEW_MIN_SIZE = 256;
@@ -14,7 +13,7 @@ const getFaceColor = (walkmesh: OdysseyWalkMesh, faceIndex: number): string => {
     const b = Math.floor(face.color.b * 255);
     return `rgb(${r}, ${g}, ${b})`;
   }
-  return "rgb(128, 128, 128)";
+  return 'rgb(128, 128, 128)';
 };
 
 export const ensureComponentPreview = (component: KitComponent): HTMLCanvasElement => {
@@ -25,12 +24,12 @@ export const ensureComponentPreview = (component: KitComponent): HTMLCanvasEleme
   const walkmesh = component.bwm;
   const vertices = walkmesh.vertices;
   if (!vertices.length) {
-    const blank = document.createElement("canvas");
+    const blank = document.createElement('canvas');
     blank.width = PREVIEW_MIN_SIZE;
     blank.height = PREVIEW_MIN_SIZE;
-    const ctx = blank.getContext("2d");
+    const ctx = blank.getContext('2d');
     if (ctx) {
-      ctx.fillStyle = "black";
+      ctx.fillStyle = 'black';
       ctx.fillRect(0, 0, blank.width, blank.height);
     }
     component.image = blank;
@@ -56,16 +55,16 @@ export const ensureComponentPreview = (component: KitComponent): HTMLCanvasEleme
   const width = Math.max(Math.round((maxX - minX) * PREVIEW_PIXELS_PER_UNIT), PREVIEW_MIN_SIZE);
   const height = Math.max(Math.round((maxY - minY) * PREVIEW_PIXELS_PER_UNIT), PREVIEW_MIN_SIZE);
 
-  const canvas = document.createElement("canvas");
+  const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
   if (!ctx) {
     component.image = canvas;
     return canvas;
   }
 
-  ctx.fillStyle = "black";
+  ctx.fillStyle = 'black';
   ctx.fillRect(0, 0, width, height);
   ctx.save();
   ctx.translate(0, height);

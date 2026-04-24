@@ -1,12 +1,12 @@
-import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleObject, ModuleRoom } from "@/module";
-import { OdysseyWalkMesh, WalkmeshEdge } from "@/odyssey";
-import * as THREE from "three";
-import { Utility } from "@/utility/Utility";
-import { OdysseyFace3 } from "@/three/odyssey";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import { GameState } from '@/GameState';
+import type { ModuleCreature, ModuleObject, ModuleRoom } from '@/module';
+import { OdysseyWalkMesh, WalkmeshEdge } from '@/odyssey';
+import * as THREE from 'three';
+import { Utility } from '@/utility/Utility';
+import { OdysseyFace3 } from '@/three/odyssey';
+import { BitWise } from '@/utility/BitWise';
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import { EngineDebugType } from '@/enums/engine/EngineDebugType';
 
 // =============================================
 // TYPE DEFINITIONS
@@ -30,12 +30,11 @@ interface ProcessedCollision {
   type?: CollisionType;
 }
 
-
 enum CollisionType {
   CREATURE = 'creature',
   DOOR = 'door',
   PLACEABLE = 'placeable',
-  ROOM = 'room'
+  ROOM = 'room',
 }
 
 interface CollisionProfile {
@@ -67,13 +66,15 @@ class CollisionPool {
   private static vectorPool: THREE.Vector3[] = [];
 
   static getProcessedCollision(): ProcessedCollision {
-    return this.collisionDataPool.pop() || {
-      edge: {} as CollisionEdge,
-      penetration: 0,
-      distance: 0,
-      closestPoint: new THREE.Vector3(),
-      priority: 0
-    };
+    return (
+      this.collisionDataPool.pop() || {
+        edge: {} as CollisionEdge,
+        penetration: 0,
+        distance: 0,
+        closestPoint: new THREE.Vector3(),
+        priority: 0,
+      }
+    );
   }
 
   static releaseProcessedCollision(data: ProcessedCollision): void {
@@ -145,9 +146,9 @@ class CollisionState {
 
 /**
  * CollisionManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CollisionManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -189,7 +190,7 @@ export class CollisionManager {
   private edgeHelperPositions: THREE.Float32BufferAttribute;
   private edgeHelperGeometry = new THREE.BufferGeometry();
   private edgeHelperMaterial = new THREE.LineBasicMaterial({
-    color: 0xFF0000,
+    color: 0xff0000,
     vertexColors: true,
     depthTest: false,
     depthWrite: false,
@@ -197,7 +198,7 @@ export class CollisionManager {
   });
   private edgeHelperMesh: THREE.LineSegments;
 
-  constructor(object: ModuleObject){
+  constructor(object: ModuleObject) {
     this.object = object;
   }
 
@@ -271,7 +272,7 @@ export class CollisionManager {
 
     this.object.forceVector.copy(finalVelocity);
   }
-  
+
   // =============================================
   // MAIN COLLISION UPDATE METHOD
   // =============================================
@@ -377,8 +378,11 @@ export class CollisionManager {
   }
 
   private updateGroundPositioning(): void {
-    if (this.groundFace && this.object.room?.model?.wok &&
-        this.object.room.model.wok.walkableFaces.indexOf(this.groundFace) === -1) {
+    if (
+      this.groundFace &&
+      this.object.room?.model?.wok &&
+      this.object.room.model.wok.walkableFaces.indexOf(this.groundFace) === -1
+    ) {
       this.findWalkableFace();
     }
   }
@@ -445,14 +449,13 @@ export class CollisionManager {
     }
 
     const penetration = Math.max(0, minDist - dist);
-    const normal = (dist > CollisionConfig.TOLERANCE)
-      ? new THREE.Vector3(dx / dist, dy / dist, 0)
-      : new THREE.Vector3(1, 0, 0);
+    const normal =
+      dist > CollisionConfig.TOLERANCE ? new THREE.Vector3(dx / dist, dy / dist, 0) : new THREE.Vector3(1, 0, 0);
 
     // Populate processed collision
     collision.edge = {
       line: new THREE.Line3(otherPos.clone(), otherPos.clone()),
-      normal
+      normal,
     };
     collision.type = CollisionType.CREATURE;
     collision.penetration = penetration;
@@ -466,7 +469,7 @@ export class CollisionManager {
 
     return collision;
   }
-    
+
   private handlePlaceableCollisions(): void {
     const placeables = this.object.room.placeables;
     for (const placeable of placeables) {
@@ -480,8 +483,16 @@ export class CollisionManager {
   }
 
   static DIR_COUNT: number = 12;
-  static DX_LIST: number[] = [1,  0.15425144988758405, -0.9524129804151563, -0.4480736161291702, 0.8141809705265618,  0.6992508064783751, -0.5984600690578581, -0.8838774731823718,  0.32578130553514806, 0.9843819506325049, -0.022096619278683942, -0.9911988217552068];
-  static DY_LIST: number[] = [0, -0.9880316240928618,  -0.3048106211022167,  0.8939966636005579, 0.5806111842123143, -0.7148764296291646, -0.8011526357338304,  0.46771851834275896, 0.9454451549211168, -0.1760459464712114, -0.9997558399011495,   -0.13238162920545193];
+  static DX_LIST: number[] = [
+    1, 0.15425144988758405, -0.9524129804151563, -0.4480736161291702, 0.8141809705265618, 0.6992508064783751,
+    -0.5984600690578581, -0.8838774731823718, 0.32578130553514806, 0.9843819506325049, -0.022096619278683942,
+    -0.9911988217552068,
+  ];
+  static DY_LIST: number[] = [
+    0, -0.9880316240928618, -0.3048106211022167, 0.8939966636005579, 0.5806111842123143, -0.7148764296291646,
+    -0.8011526357338304, 0.46771851834275896, 0.9454451549211168, -0.1760459464712114, -0.9997558399011495,
+    -0.13238162920545193,
+  ];
   private tmpDirection = new THREE.Vector3();
   private tmpNormal = new THREE.Vector3();
   private tmpMatrix3 = new THREE.Matrix3();
@@ -526,7 +537,7 @@ export class CollisionManager {
           collision.edge = {
             line: new THREE.Line3(),
             normal: this.tmpNormal,
-            face: face as OdysseyFace3
+            face: face as OdysseyFace3,
           };
           collision.edge.line.start.copy(hit.point);
           collision.edge.line.end.copy(hit.point);
@@ -612,7 +623,10 @@ export class CollisionManager {
     return placeable.box.intersectsBox(this.box) || placeable.box.containsBox(this.box);
   }
 
-  private detectEdgeCollisions(edges: any[], collisionType: CollisionType = CollisionType.PLACEABLE): ProcessedCollision[] {
+  private detectEdgeCollisions(
+    edges: any[],
+    collisionType: CollisionType = CollisionType.PLACEABLE
+  ): ProcessedCollision[] {
     const collisions: ProcessedCollision[] = [];
     if (!edges || edges.length === 0) return collisions;
 
@@ -754,7 +768,8 @@ export class CollisionManager {
 
     // Closer edge must be significantly closer and in similar direction
     const distanceRatio = closeDistance / farDistance;
-    if (distanceRatio > 0.8) { // Not significantly closer
+    if (distanceRatio > 0.8) {
+      // Not significantly closer
       CollisionPool.releaseVector(toClosePoint);
       CollisionPool.releaseVector(toFarPoint);
       return false;
@@ -854,20 +869,30 @@ export class CollisionManager {
     if (collision.penetration > 0.01) {
       // Active collision (penetrating) - bright colors
       switch (collisionType) {
-        case CollisionType.ROOM: return new THREE.Color(0xFF0000); // Red
-        case CollisionType.PLACEABLE: return new THREE.Color(0x00FF00); // Green
-        case CollisionType.DOOR: return new THREE.Color(0x0000FF); // Blue
-        case CollisionType.CREATURE: return new THREE.Color(0xFFFF00); // Yellow
-        default: return new THREE.Color(0xFFFFFF); // White
+        case CollisionType.ROOM:
+          return new THREE.Color(0xff0000); // Red
+        case CollisionType.PLACEABLE:
+          return new THREE.Color(0x00ff00); // Green
+        case CollisionType.DOOR:
+          return new THREE.Color(0x0000ff); // Blue
+        case CollisionType.CREATURE:
+          return new THREE.Color(0xffff00); // Yellow
+        default:
+          return new THREE.Color(0xffffff); // White
       }
     } else {
       // Grazing collision - dimmed colors
       switch (collisionType) {
-        case CollisionType.ROOM: return new THREE.Color(0x880000); // Dark red
-        case CollisionType.PLACEABLE: return new THREE.Color(0x008800); // Dark green
-        case CollisionType.DOOR: return new THREE.Color(0x000088); // Dark blue
-        case CollisionType.CREATURE: return new THREE.Color(0x888800); // Dark yellow
-        default: return new THREE.Color(0x888888); // Gray
+        case CollisionType.ROOM:
+          return new THREE.Color(0x880000); // Dark red
+        case CollisionType.PLACEABLE:
+          return new THREE.Color(0x008800); // Dark green
+        case CollisionType.DOOR:
+          return new THREE.Color(0x000088); // Dark blue
+        case CollisionType.CREATURE:
+          return new THREE.Color(0x888800); // Dark yellow
+        default:
+          return new THREE.Color(0x888888); // Gray
       }
     }
   }
@@ -883,16 +908,18 @@ export class CollisionManager {
     for (const [index, edge] of this.object.room.collisionManager.walkmesh.edges) {
       if (!edge || edge.transition === -1) continue;
 
-      if (Utility.LineLineIntersection(
-        this.object.position.x,
-        this.object.position.y,
-        this.object.position.x + this.object.forceVector.x,
-        this.object.position.y + this.object.forceVector.y,
-        edge.line.start.x,
-        edge.line.start.y,
-        edge.line.end.x,
-        edge.line.end.y
-      )) {
+      if (
+        Utility.LineLineIntersection(
+          this.object.position.x,
+          this.object.position.y,
+          this.object.position.x + this.object.forceVector.x,
+          this.object.position.y + this.object.forceVector.y,
+          edge.line.start.x,
+          edge.line.start.y,
+          edge.line.end.x,
+          edge.line.end.y
+        )
+      ) {
         this.object.attachToRoom(this.object.area.rooms[edge.transition]);
         break;
       }
@@ -936,24 +963,24 @@ export class CollisionManager {
     this.collisionState.clear();
   }
 
-  findWalkableFace(object: ModuleObject = this.object){
+  findWalkableFace(object: ModuleObject = this.object) {
     const objectPos = object.position;
     let face;
     let room;
-    if(!object.area){
+    if (!object.area) {
       return;
     }
-    for(let i = 0, il = object.area.rooms.length; i < il; i++){
+    for (let i = 0, il = object.area.rooms.length; i < il; i++) {
       room = object.area.rooms[i];
-      if(!room.collisionManager.walkmesh){
+      if (!room.collisionManager.walkmesh) {
         continue;
       }
 
       const walkableFaces = room.collisionManager.walkmesh.walkableFaces;
 
-      for(let j = 0, jl = walkableFaces.length; j < jl; j++){
+      for (let j = 0, jl = walkableFaces.length; j < jl; j++) {
         face = walkableFaces[j];
-        if(!face.triangle.containsPoint(objectPos)){
+        if (!face.triangle.containsPoint(objectPos)) {
           continue;
         }
         this.groundFace = face;
@@ -961,7 +988,7 @@ export class CollisionManager {
         this.surfaceId = this.groundFace.walkIndex;
         object.attachToRoom(room);
         face.triangle.closestPointToPoint(objectPos, this.wm_c_point);
-        objectPos.z = this.wm_c_point.z + .005;
+        objectPos.z = this.wm_c_point.z + 0.005;
       }
     }
     return face;
@@ -969,9 +996,9 @@ export class CollisionManager {
 
   // Room checking
   roomCheckTimer: number = 0;
-  roomCheck(delta: number = 0){
-    if(!this.object.room && this.object.area){
-      if(!this.roomCheckTimer || this.roomCheckTimer <= 0){
+  roomCheck(delta: number = 0) {
+    if (!this.object.room && this.object.area) {
+      if (!this.roomCheckTimer || this.roomCheckTimer <= 0) {
         this.roomCheckTimer = 1;
         this.findWalkableFace();
       }
@@ -979,5 +1006,4 @@ export class CollisionManager {
     }
     this.object.updateModelVisibility();
   }
-
 }

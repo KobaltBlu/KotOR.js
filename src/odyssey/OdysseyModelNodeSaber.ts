@@ -1,13 +1,13 @@
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import type { OdysseyModel } from "@/odyssey/OdysseyModel";
-import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
-import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
+import { OdysseyModelNodeType } from '@/enums/odyssey/OdysseyModelNodeType';
+import type { OdysseyModel } from '@/odyssey/OdysseyModel';
+import type { OdysseyModelNode } from '@/odyssey/OdysseyModelNode';
+import { OdysseyModelNodeMesh } from '@/odyssey/OdysseyModelNodeMesh';
 
 /**
  * OdysseyModelNodeSaber class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyModelNodeSaber.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -19,12 +19,12 @@ export class OdysseyModelNodeSaber extends OdysseyModelNodeMesh {
   invCount1: number;
   invCount2: number;
 
-  constructor(parent: OdysseyModelNode){
+  constructor(parent: OdysseyModelNode) {
     super(parent);
     this.type |= OdysseyModelNodeType.Saber;
   }
 
-  readBinary(odysseyModel: OdysseyModel){
+  readBinary(odysseyModel: OdysseyModel) {
     super.readBinary(odysseyModel);
 
     this.offsetToSaberVerts = this.odysseyModel.mdlReader.readUInt32();
@@ -44,62 +44,86 @@ export class OdysseyModelNodeSaber extends OdysseyModelNodeMesh {
     const normalDataSize = 12;
     const uvDataSize = 8;
 
-    for(let i = 0; i < 176; i++){
+    for (let i = 0; i < 176; i++) {
       //SABER Vertices
-      this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + this.offsetToSaberVerts + (vertexDataSize * i);
-      this.vertices.push(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
+      this.odysseyModel.mdlReader.position =
+        this.odysseyModel.fileHeader.modelDataOffset + this.offsetToSaberVerts + vertexDataSize * i;
+      this.vertices.push(
+        this.odysseyModel.mdlReader.readSingle(),
+        this.odysseyModel.mdlReader.readSingle(),
+        this.odysseyModel.mdlReader.readSingle()
+      );
 
       //SABER Normals
-      this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + this.offsetToSaberNormals + (normalDataSize * i);
-      this.normals.push(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
+      this.odysseyModel.mdlReader.position =
+        this.odysseyModel.fileHeader.modelDataOffset + this.offsetToSaberNormals + normalDataSize * i;
+      this.normals.push(
+        this.odysseyModel.mdlReader.readSingle(),
+        this.odysseyModel.mdlReader.readSingle(),
+        this.odysseyModel.mdlReader.readSingle()
+      );
 
       //SABER UVs
-      this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + this.offsetToSaberUVs + (uvDataSize * i);
+      this.odysseyModel.mdlReader.position =
+        this.odysseyModel.fileHeader.modelDataOffset + this.offsetToSaberUVs + uvDataSize * i;
       this.tvectors[0].push(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle());
       // this.tvectors[1][i] = this.tvectors[0][i];
     }
 
     this.tvectors[1] = this.tvectors[0];
 
-/* 
- *  SABER MESH VERTEX INDICES
- * 
- *  95-----91-----<<<-----11-----7
- *   |      |              |     |
- *  94-----90-----<<<-----10-----6
- *   |      |              |     |
- *   |      |              |     |
- *   |      |              |     |
- *   |      |              |     |
- *   |      |              |     |
- *   |      |              |     |
- *   |      |              |     |
- *   |      |              |     |
- *   |      |              |     |
- *  93-----89-----<<<------9-----5
- *   |      |              |     |
- *  92-----88-----<<<------8-----4
- * 
- */
+    /*
+     *  SABER MESH VERTEX INDICES
+     *
+     *  95-----91-----<<<-----11-----7
+     *   |      |              |     |
+     *  94-----90-----<<<-----10-----6
+     *   |      |              |     |
+     *   |      |              |     |
+     *   |      |              |     |
+     *   |      |              |     |
+     *   |      |              |     |
+     *   |      |              |     |
+     *   |      |              |     |
+     *   |      |              |     |
+     *   |      |              |     |
+     *  93-----89-----<<<------9-----5
+     *   |      |              |     |
+     *  92-----88-----<<<------8-----4
+     *
+     */
 
     this.indices = [];
 
-    const order = [                      //--\\
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+    const order = [
+      //--\\
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
     ];
 
     //Build the face indices
-    for(let i = 0, len = order.length-1; i < len; i++){
-      const f1 = (order[i    ] * 4);
-      const f2 = (order[i + 1] * 4);
+    for (let i = 0, len = order.length - 1; i < len; i++) {
+      const f1 = order[i] * 4;
+      const f2 = order[i + 1] * 4;
 
       this.indices.push(
-        f1 + 0, f1 + 1, f2 + 0,
-        f1 + 1, f2 + 1, f2 + 0,
-        f1 + 1, f1 + 2, f2 + 1,
-        f1 + 2, f2 + 2, f2 + 1,
-        f1 + 2, f2 + 3, f2 + 2, 
-        f1 + 2, f1 + 3, f2 + 3
+        f1 + 0,
+        f1 + 1,
+        f2 + 0,
+        f1 + 1,
+        f2 + 1,
+        f2 + 0,
+        f1 + 1,
+        f1 + 2,
+        f2 + 1,
+        f1 + 2,
+        f2 + 2,
+        f2 + 1,
+        f1 + 2,
+        f2 + 3,
+        f2 + 2,
+        f1 + 2,
+        f1 + 3,
+        f2 + 3
       );
     }
 
@@ -114,7 +138,5 @@ export class OdysseyModelNodeSaber extends OdysseyModelNodeMesh {
       93,94,89,94,90,89,
       94,95,90,95,91,90
     ];*/
-
   }
-
 }

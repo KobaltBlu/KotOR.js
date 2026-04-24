@@ -31,7 +31,7 @@ export class DLGNavigationManager {
   public navigateTo(nodeId: string): void {
     const entry: NavigationEntry = {
       nodeId,
-      timestamp: Date. now()
+      timestamp: Date.now(),
     };
 
     // If we're not at the end of history, remove everything after current position
@@ -139,6 +139,6 @@ export class DLGNavigationManager {
    * Notify all listeners
    */
   private notifyChange(): void {
-    this.changeListeners.forEach(listener => listener());
+    this.changeListeners.forEach((listener) => listener());
   }
 }

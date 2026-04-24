@@ -1,1 +1,1 @@
-export * from "@/interface/twoDA/ITwoDAAnimation";
+export * from '@/interface/twoDA/ITwoDAAnimation';

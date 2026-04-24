@@ -77,9 +77,9 @@ describe('DeepObject', () => {
     it('deep-merges nested plain objects without overwriting sibling keys', () => {
       const target: any = { nested: { a: 1, b: 2 } };
       const result: any = DeepObject.Merge(target, { nested: { b: 99, c: 3 } });
-      expect(result.nested.a).toBe(1);   // not overwritten
-      expect(result.nested.b).toBe(99);  // merged
-      expect(result.nested.c).toBe(3);   // added
+      expect(result.nested.a).toBe(1); // not overwritten
+      expect(result.nested.b).toBe(99); // merged
+      expect(result.nested.c).toBe(3); // added
     });
 
     it('recursively deep-merges three levels', () => {
@@ -115,11 +115,7 @@ describe('DeepObject', () => {
 
     it('correctly processes three sources with nested objects', () => {
       const target: any = { x: { v: 0 } };
-      const result: any = DeepObject.Merge(
-        target,
-        { x: { v: 1, w: 'foo' } },
-        { x: { w: 'bar' } }
-      );
+      const result: any = DeepObject.Merge(target, { x: { v: 1, w: 'foo' } }, { x: { w: 'bar' } });
       expect(result.x.v).toBe(1);
       expect(result.x.w).toBe('bar');
     });

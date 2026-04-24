@@ -86,13 +86,7 @@ export { TGAObject } from '@/resource/TGAObject';
 export { TLKObject } from '@/resource/TLKObject';
 export { TLKString } from '@/resource/TLKString';
 export type { TLKStringDBRow } from '@/resource/TLKString';
-export {
-  detectTPCFormat,
-  isTPCBuffer,
-  readTPCFromBuffer,
-  TPCObject,
-  writeTPCToBuffer,
-} from '@/resource/TPCObject';
+export { detectTPCFormat, isTPCBuffer, readTPCFromBuffer, TPCObject, writeTPCToBuffer } from '@/resource/TPCObject';
 export type { TPCDetectedFormat, TPCDDSResult, TPCMipmap, WriteTPCFormat } from '@/resource/TPCObject';
 export {
   detectTwoDAFormat,

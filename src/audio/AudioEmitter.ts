@@ -1,7 +1,7 @@
-import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
-import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
-import { AudioEngine } from "@/audio/AudioEngine";
-import { AudioLoader } from "@/audio/AudioLoader";
+import { AudioEmitterType } from '@/enums/audio/AudioEmitterType';
+import { AudioEngineChannel } from '@/enums/audio/AudioEngineChannel';
+import { AudioEngine } from '@/audio/AudioEngine';
+import { AudioLoader } from '@/audio/AudioLoader';
 
 const GAIN_RAMP_TIME = 0.25;
 const PRIORITY_GROUP_DEFAULT = 23;
@@ -15,18 +15,18 @@ enum AudioEmitterState {
 
 /**
  * AudioEmitter class.
- * 
+ *
  * The AudioEmitter class is used in conjunction with AudioEngine class manage global and positional audio emitters in the game.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AudioEmitter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class AudioEmitter {
   isDestroyed: boolean;
-  position: { x: number; y: number; z: number; } = {x: 0, y: 0, z: 0};
+  position: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
   engine: AudioEngine;
   gainNode: GainNode;
   pannerNode: PannerNode;
@@ -63,20 +63,20 @@ export class AudioEmitter {
 
   disabled: boolean = false;
 
-  constructor (audioEngine: AudioEngine, channel: AudioEngineChannel = AudioEngineChannel.SFX) {
+  constructor(audioEngine: AudioEngine, channel: AudioEngineChannel = AudioEngineChannel.SFX) {
     this.isDestroyed = false;
 
     this.engine = audioEngine;
     this.channel = channel;
 
-    this.position = {x: 0, y: 0, z: 0};
+    this.position = { x: 0, y: 0, z: 0 };
     this.gainNode = this.engine.audioCtx.createGain();
     this.pannerNode = this.engine.audioCtx.createPanner();
   }
 
   setVolume(volume: number = 127): AudioEmitter {
     this.volume = Math.max(0, Math.min(127, volume));
-    if(this.gainNode){
+    if (this.gainNode) {
       this.gainNode.gain.value = this.volume;
     }
     return this;
@@ -89,17 +89,18 @@ export class AudioEmitter {
 
     // We need to cache the values below because setPosition stores the floats in a higher precision than THREE.Vector3
     // which could keep them from matching when compared
-    if(this.position.x != x || this.position.y != y || this.position.z != z){
+    if (this.position.x != x || this.position.y != y || this.position.z != z) {
       this.position.x = x;
       this.position.y = y;
       this.position.z = z + this.elevation;
     }
 
-    if(this.mainNode instanceof PannerNode && (
-      this.mainNode.positionX.value != this.position.x ||
-      this.mainNode.positionY.value != this.position.y ||
-      this.mainNode.positionZ.value != this.position.z + this.elevation
-    )){
+    if (
+      this.mainNode instanceof PannerNode &&
+      (this.mainNode.positionX.value != this.position.x ||
+        this.mainNode.positionY.value != this.position.y ||
+        this.mainNode.positionZ.value != this.position.z + this.elevation)
+    ) {
       this.mainNode.positionX.value = this.position.x;
       this.mainNode.positionY.value = this.position.y;
       this.mainNode.positionZ.value = this.position.z + this.elevation;
@@ -107,7 +108,7 @@ export class AudioEmitter {
   }
 
   setDisabled(disabled: boolean): void {
-    if(disabled == this.disabled){
+    if (disabled == this.disabled) {
       return;
     }
     return;
@@ -118,28 +119,28 @@ export class AudioEmitter {
   async load(): Promise<void> {
     this.gainNode.gain.value = this.getVolume();
 
-    switch(this.type){
+    switch (this.type) {
       case AudioEmitterType.POSITIONAL:
         this.mainNode = this.engine.audioCtx.createPanner();
-        this.setPosition( this.position.x, this.position.y, this.position.z + this.elevation );
+        this.setPosition(this.position.x, this.position.y, this.position.z + this.elevation);
         (this.mainNode as PannerNode).maxDistance = this.maxDistance;
         this.mainNode.connect(this.gainNode);
-      break;
+        break;
       case AudioEmitterType.GLOBAL:
         this.mainNode = this.gainNode;
-      break;
+        break;
     }
 
     this.setChannel(this.channel);
 
-    if(this.engine){
+    if (this.engine) {
       this.engine.addEmitter(this);
     }
 
-    for(let i = 0; i < this.sounds.length; i++){
+    for (let i = 0; i < this.sounds.length; i++) {
       await this.loadSounds(i);
     }
-    if(this.isActive){
+    if (this.isActive) {
       this.start();
     }
   }
@@ -147,65 +148,69 @@ export class AudioEmitter {
   setChannel(channel: AudioEngineChannel): void {
     this.channel = channel;
 
-    if(!this.gainNode){ return; }
+    if (!this.gainNode) {
+      return;
+    }
 
-    try{
+    try {
       this.gainNode.disconnect();
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
 
-    switch(this.channel){
+    switch (this.channel) {
       case AudioEngineChannel.VO:
         this.gainNode.connect(AudioEngine.voChannel.getGainNode());
-      break;
+        break;
       case AudioEngineChannel.MUSIC:
         this.gainNode.connect(AudioEngine.musicChannel.getGainNode());
-      break;
+        break;
       case AudioEngineChannel.MOVIE:
         this.gainNode.connect(AudioEngine.movieChannel.getGainNode());
-      break;
+        break;
       case AudioEngineChannel.GUI:
         this.gainNode.connect(AudioEngine.guiChannel.getGainNode());
-      break;
+        break;
       default:
         this.gainNode.connect(AudioEngine.sfxChannel.getGainNode());
-      break;
+        break;
     }
   }
 
   async loadSounds(soundIndex = 0): Promise<void> {
-    if(soundIndex >= this.sounds.length){
+    if (soundIndex >= this.sounds.length) {
       return;
     }
 
     const resRef = this.sounds[soundIndex];
-    try{
+    try {
       const data = await AudioLoader.LoadSound(resRef);
-      try{
+      try {
         await this.addSound(resRef, data);
-      }catch(e){
+      } catch (e) {
         console.error('AudioEmitter', 'Sound not added to emitter', resRef);
       }
-    }catch(e){
+    } catch (e) {
       console.error('AudioEmitter', 'Sound not found', resRef);
     }
   }
 
   ffsounds: AudioBufferSourceNode[] = [];
 
-  async playSoundFireAndForget(resRef = ''): Promise<AudioBufferSourceNode>{
-    if(resRef == '****' || !resRef?.length){ return; }
-    try{
+  async playSoundFireAndForget(resRef = ''): Promise<AudioBufferSourceNode> {
+    if (resRef == '****' || !resRef?.length) {
+      return;
+    }
+    try {
       const sound: AudioBufferSourceNode = this.engine.audioCtx.createBufferSource();
       (sound as any).name = resRef;
-      let buffer: AudioBuffer = (this.buffers.has(resRef)) ? this.buffers.get(resRef) : undefined;
-      if(!buffer){
+      let buffer: AudioBuffer = this.buffers.has(resRef) ? this.buffers.get(resRef) : undefined;
+      if (!buffer) {
         const data = await AudioLoader.LoadSound(resRef);
         buffer = await this.addSound(resRef, data);
       }
 
-      if(!buffer){
+      if (!buffer) {
         console.error('AudioEmitter', 'Sound not found', resRef);
         return;
       }
@@ -220,21 +225,23 @@ export class AudioEmitter {
         sound.disconnect();
         sound.stop(0);
         this.ffsounds.splice(this.ffsounds.indexOf(sound), 1);
-      }
+      };
       return sound;
-    }catch(e){
+    } catch (e) {
       console.error('AudioEmitter', 'Failed to play sound', resRef);
       console.error(e);
     }
     return;
   }
 
-  async playSound(resRef = ''): Promise<AudioBufferSourceNode>{
-    if(resRef == '****' || !resRef?.length){ return; }
+  async playSound(resRef = ''): Promise<AudioBufferSourceNode> {
+    if (resRef == '****' || !resRef?.length) {
+      return;
+    }
     this.disposeCurrentSound();
 
     //attempt to load from the buffer cache
-    if(this.buffers.has(resRef)){
+    if (this.buffers.has(resRef)) {
       this.currentSound = this.engine.audioCtx.createBufferSource();
       this.currentSound.buffer = this.buffers.get(resRef);
       (this.currentSound as any).name = resRef;
@@ -243,11 +250,11 @@ export class AudioEmitter {
       this.currentSound.start(this.engine.audioCtx.currentTime);
       return this.currentSound;
     }
-    
+
     //load from disk
-    try{
+    try {
       const data = await AudioLoader.LoadSound(resRef);
-      try{
+      try {
         const buffer = await this.addSound(resRef, data);
         this.currentSound = this.engine.audioCtx.createBufferSource();
         this.currentSound.buffer = buffer;
@@ -256,20 +263,20 @@ export class AudioEmitter {
         this.currentSound.connect(this.mainNode);
         this.currentSound.start(this.engine.audioCtx.currentTime);
         return this.currentSound;
-      }catch(e){
+      } catch (e) {
         console.log('AudioEmitter', 'Sound not added to emitter', resRef);
         console.error(e);
       }
-    }catch(e){
+    } catch (e) {
       console.log('AudioEmitter', 'Sound not found', resRef);
     }
   }
 
-  async playStreamWave(resRef =''): Promise<AudioBufferSourceNode> {
+  async playStreamWave(resRef = ''): Promise<AudioBufferSourceNode> {
     this.disposeCurrentSound();
 
     //attempt to load from the buffer cache
-    if(this.buffers.has(resRef)){
+    if (this.buffers.has(resRef)) {
       this.stop();
       this.currentSound = this.engine.audioCtx.createBufferSource();
       this.currentSound.buffer = this.buffers.get(resRef);
@@ -279,11 +286,11 @@ export class AudioEmitter {
       this.currentSound.connect(this.mainNode);
       return this.currentSound;
     }
-    
+
     //load from disk
-    try{
+    try {
       const data = await AudioLoader.LoadStreamWave(resRef);
-      try{
+      try {
         const buffer = await this.addSound(resRef, data);
         this.stop();
         this.currentSound = this.engine.audioCtx.createBufferSource();
@@ -294,18 +301,18 @@ export class AudioEmitter {
         this.currentSound.connect(this.mainNode);
 
         return this.currentSound;
-      }catch(e: unknown){
+      } catch (e: unknown) {
         console.log('AudioEmitter', 'Sound not added to emitter', resRef);
         throw e;
       }
-    }catch(e){
+    } catch (e) {
       console.log('AudioEmitter', 'Failed to locate StreamWave', resRef);
       throw e;
     }
   }
 
   start(): void {
-    if(!this.sounds.length){
+    if (!this.sounds.length) {
       return;
     }
     this.state = AudioEmitterState.PLAYING;
@@ -316,22 +323,21 @@ export class AudioEmitter {
   }
 
   getRandomVariation(value: number): number {
-    return ( Math.random() * (value * 2) ) - value;
+    return Math.random() * (value * 2) - value;
   }
 
   getNextSoundIndex(): number {
-    if(this.isRandom){
+    if (this.isRandom) {
       return Math.floor(Math.random() * this.sounds.length);
-    }else{
+    } else {
       this.soundIndex++;
-      if(this.soundIndex >= this.sounds.length)
-        this.soundIndex = 0;
+      if (this.soundIndex >= this.sounds.length) this.soundIndex = 0;
     }
     return this.soundIndex;
   }
 
   getDelayInSeconds(): number {
-    return this.interationCount == 0 ? 0 : (this.interval + this.getRandomVariation(this.intervalVariation))/1000;
+    return this.interationCount == 0 ? 0 : (this.interval + this.getRandomVariation(this.intervalVariation)) / 1000;
   }
 
   getPlaybackRate(): number {
@@ -351,12 +357,11 @@ export class AudioEmitter {
   }
 
   playNextSound(): void {
-    if(this.isDestroyed || this.state == AudioEmitterState.FADING_OUT)
-      return;
-    
+    if (this.isDestroyed || this.state == AudioEmitterState.FADING_OUT) return;
+
     this.disposeCurrentSound();
 
-    if(!this.sounds.length){
+    if (!this.sounds.length) {
       return;
     }
 
@@ -365,47 +370,51 @@ export class AudioEmitter {
     this.interationCount++;
     this.currentSound = this.engine.audioCtx.createBufferSource();
     this.currentSound.buffer = this.buffers.get(resRef);
-    this.currentSound.loop = (this.sounds.length == 1 && this.isLooping);
+    this.currentSound.loop = this.sounds.length == 1 && this.isLooping;
     (this.currentSound as any).name = resRef;
     this.currentSound.playbackRate.value = this.getPlaybackRate();
     this.gainNode.gain.value = this.getVolume();
 
-    if(this.type == AudioEmitterType.POSITIONAL && (this.mainNode instanceof PannerNode)){
+    if (this.type == AudioEmitterType.POSITIONAL && this.mainNode instanceof PannerNode) {
       this.mainNode.positionX.value = this.position.x;
       this.mainNode.positionY.value = this.position.y;
       this.mainNode.positionZ.value = this.position.z + this.elevation;
-      if(this.isRandomPosition){
+      if (this.isRandomPosition) {
         this.mainNode.positionX.value += this.getRandomVariation(this.randomX);
         this.mainNode.positionY.value += this.getRandomVariation(this.randomY);
       }
     }
 
     const canExecuteCallback = !this.currentSound?.loop;
-    this.currentSound.onended = canExecuteCallback ? () => {
-      if(!!this.currentSound?.loop || !this.isActive || this.isDestroyed){
-        return;
-      }
-      this.getNextSoundIndex();
-      this.playNextSound();
-    } : undefined;
+    this.currentSound.onended = canExecuteCallback
+      ? () => {
+          if (!!this.currentSound?.loop || !this.isActive || this.isDestroyed) {
+            return;
+          }
+          this.getNextSoundIndex();
+          this.playNextSound();
+        }
+      : undefined;
     this.currentSound.start(this.engine.audioCtx.currentTime + delay);
     this.currentSound.connect(this.mainNode);
   }
 
   async addSound(resRef: string, data: Uint8Array): Promise<AudioBuffer> {
-    if(!data){
+    if (!data) {
       console.error('AudioEmitter.addSound: No audio data present');
       throw new Error('No audio data present');
     }
-    
-    try{
-      const buffer: AudioBuffer = await this.engine.audioCtx.decodeAudioData(data.buffer as ArrayBuffer );
+
+    try {
+      const buffer: AudioBuffer = await this.engine.audioCtx.decodeAudioData(data.buffer as ArrayBuffer);
       this.buffers.set(resRef, buffer);
       return buffer;
-    }catch(e: unknown){
+    } catch (e: unknown) {
       console.error('AudioEmitter.addSound: Failed to decodeAudioData');
       if (e instanceof Error && e.name === 'DataCloneError') {
-        console.error('AudioEmitter.addSound: ArrayBuffer is detached. This usually happens when the buffer was transferred to another context.');
+        console.error(
+          'AudioEmitter.addSound: ArrayBuffer is detached. This usually happens when the buffer was transferred to another context.'
+        );
       }
       console.error(e);
       throw e;
@@ -413,14 +422,14 @@ export class AudioEmitter {
   }
 
   disposeCurrentSound(): void {
-    if(!this.currentSound){
+    if (!this.currentSound) {
       return;
     }
-    try{
+    try {
       this.currentSound.onended = undefined;
       this.currentSound.disconnect();
       this.currentSound.stop(0);
-    }catch(e: unknown) { 
+    } catch (e: unknown) {
       console.error('Failed to disconnect sound', e);
     }
     this.currentSound = null;
@@ -434,14 +443,13 @@ export class AudioEmitter {
     fadeTime = Math.max(0, fadeTime);
     const isInstant = fadeTime <= 0;
 
-    if(this.isDestroyed)
-      return;
-    
-    if(!this.currentSound){
+    if (this.isDestroyed) return;
+
+    if (!this.currentSound) {
       return;
     }
 
-    if(isInstant){
+    if (isInstant) {
       this.state = AudioEmitterState.STOPPED;
       this.interationCount = 0;
       this.disposeCurrentSound();
@@ -452,8 +460,8 @@ export class AudioEmitter {
     const fadeEndTime = now + fadeTime;
     this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
     this.gainNode.gain.linearRampToValueAtTime(0, fadeEndTime);
-      
-    if(this.currentSound){
+
+    if (this.currentSound) {
       this.currentSound.onended = () => {
         this.state = AudioEmitterState.STOPPED;
         this.interationCount = 0;
@@ -467,8 +475,9 @@ export class AudioEmitter {
     this.buffers.clear();
     this.interationCount = 0;
     this.isDestroyed = true;
-    if(!this.engine){ return; }
+    if (!this.engine) {
+      return;
+    }
     this.engine.removeEmitter(this);
   }
-
 }

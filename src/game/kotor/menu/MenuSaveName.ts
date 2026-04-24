@@ -1,5 +1,5 @@
-import { GameMenu } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUILabel, GUIButton } from '@/gui';
 
 /**
  * MenuSaveName class.
@@ -11,7 +11,6 @@ import type { GUILabel, GUIButton } from "@/gui";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuSaveName extends GameMenu {
-
   BTN_OK: GUIButton;
   BTN_CANCEL: GUIButton;
   EDITBOX: GUILabel;
@@ -62,6 +61,4 @@ export class MenuSaveName extends GameMenu {
     super.show();
     this.manager.activeGUIElement = this.EDITBOX;
   }
-
 }
-

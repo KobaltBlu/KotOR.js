@@ -1,8 +1,8 @@
-import React from "react";
+import React from 'react';
 
-import { ModalSaveToModule } from "@/apps/forge/components/modal/ModalSaveToModule";
-import { SaveDestination } from "@/apps/forge/enum/SaveDestination";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalSaveToModule } from '@/apps/forge/components/modal/ModalSaveToModule';
+import { SaveDestination } from '@/apps/forge/enum/SaveDestination';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
 
 export interface ModalSaveToModuleStateOptions {
   title?: string;
@@ -14,21 +14,21 @@ export interface ModalSaveToModuleStateOptions {
 }
 
 export class ModalSaveToModuleState extends ModalState {
-  title: string = "Save to MOD / Override / RIM";
-  resref: string = "";
+  title: string = 'Save to MOD / Override / RIM';
+  resref: string = '';
   resType: number = 0;
   data: Uint8Array = new Uint8Array(0);
   /** Where to save: MOD, Override, or RIM. */
   destination: SaveDestination = SaveDestination.MOD;
-  modPath: string = "";
+  modPath: string = '';
   modBuffer: Uint8Array | null = null;
   /** Override folder path (game Override or user-picked). Used when destination is Override. */
-  overridePath: string = "";
+  overridePath: string = '';
   /** Override folder handle (browser). Used when destination is Override in browser. */
   overrideDirHandle?: FileSystemDirectoryHandle;
   /** RIM output file path. Used when destination is RIM. */
-  rimPath: string = "";
-  error: string = "";
+  rimPath: string = '';
+  error: string = '';
   onSaved?: (modPath: string) => void;
 
   constructor(options: ModalSaveToModuleStateOptions) {
@@ -44,36 +44,36 @@ export class ModalSaveToModuleState extends ModalState {
 
   setDestination(dest: SaveDestination): void {
     this.destination = dest;
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   setModPath(path: string): void {
     this.modPath = path;
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   setModBuffer(buffer: Uint8Array): void {
     this.modBuffer = buffer;
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   setError(msg: string): void {
     this.error = msg;
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   setOverridePath(path: string): void {
     this.overridePath = path;
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   setOverrideDirHandle(handle: FileSystemDirectoryHandle | undefined): void {
     this.overrideDirHandle = handle;
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   setRimPath(path: string): void {
     this.rimPath = path;
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 }

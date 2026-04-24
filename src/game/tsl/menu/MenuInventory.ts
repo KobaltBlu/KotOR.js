@@ -1,10 +1,10 @@
-import { GameState } from "@/GameState";
-import { ModuleCreatureArmorSlot } from "@/enums";
-import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
-import { TextureLoader } from "@/loaders/TextureLoader";
-import type { ModuleItem } from "@/module/ModuleItem";
-import { MenuInventory as K1_MenuInventory } from "@/game/kotor/KOTOR";
-import { GUIInventoryItem } from "@/game/tsl/gui/GUIInventoryItem";
+import { GameState } from '@/GameState';
+import { ModuleCreatureArmorSlot } from '@/enums';
+import type { GUILabel, GUIButton, GUIListBox } from '@/gui';
+import { TextureLoader } from '@/loaders/TextureLoader';
+import type { ModuleItem } from '@/module/ModuleItem';
+import { MenuInventory as K1_MenuInventory } from '@/game/kotor/KOTOR';
+import { GUIInventoryItem } from '@/game/tsl/gui/GUIInventoryItem';
 
 enum InventoryFilter {
   DATAPADS = 1,
@@ -13,7 +13,7 @@ enum InventoryFilter {
   USEABLE = 8,
   QUESTS = 16,
   MISC = 32,
-  ALL = -1
+  ALL = -1,
 }
 
 /**
@@ -26,7 +26,6 @@ enum InventoryFilter {
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuInventory extends K1_MenuInventory {
-
   declare LBL_BAR6: GUILabel;
   declare LBL_FILTER: GUILabel;
   declare LBL_INV: GUILabel;
@@ -51,7 +50,7 @@ export class MenuInventory extends K1_MenuInventory {
 
   filter: InventoryFilter = InventoryFilter.ALL;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'inventory_p';
     this.background = 'blackfill';
@@ -60,7 +59,7 @@ export class MenuInventory extends K1_MenuInventory {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -119,13 +118,13 @@ export class MenuInventory extends K1_MenuInventory {
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.selected = item;
         this.UpdateSelected();
-      }
+      };
       this.LB_ITEMS.onActivated = () => {
         this.useSelectedItem();
       };
 
       this.addEventListener('keydown', (e: KeyboardEvent) => {
-        if(e.key === 'Enter'){
+        if (e.key === 'Enter') {
           e.preventDefault();
           this.useSelectedItem();
         }
@@ -147,28 +146,35 @@ export class MenuInventory extends K1_MenuInventory {
     this.BTN_MISC.pulsing = this.filter == InventoryFilter.MISC;
   }
 
-  filterInventory(){
+  filterInventory() {
     this.LB_ITEMS.clearItems();
-    const inventory = GameState.InventoryManager.inventory.slice().filter( (item) => {
-      switch(this.filter){
+    const inventory = GameState.InventoryManager.inventory.slice().filter((item) => {
+      switch (this.filter) {
         case InventoryFilter.DATAPADS:
           return item.plot || item.baseItem.itemClass.toLocaleLowerCase() == 'i_datapad';
         case InventoryFilter.WEAPONS:
-          return (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.LEFTHAND) == ModuleCreatureArmorSlot.LEFTHAND ||
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.RIGHTHAND) == ModuleCreatureArmorSlot.RIGHTHAND;
+          return (
+            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.LEFTHAND) == ModuleCreatureArmorSlot.LEFTHAND ||
+            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.RIGHTHAND) == ModuleCreatureArmorSlot.RIGHTHAND
+          );
         case InventoryFilter.ARMOR:
-          return (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.ARMOR) == ModuleCreatureArmorSlot.ARMOR ||
+          return (
+            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.ARMOR) == ModuleCreatureArmorSlot.ARMOR ||
             (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.HEAD) == ModuleCreatureArmorSlot.HEAD ||
             (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.ARMS) == ModuleCreatureArmorSlot.ARMS ||
             (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.BELT) == ModuleCreatureArmorSlot.BELT ||
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.IMPLANT) == ModuleCreatureArmorSlot.IMPLANT;
+            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.IMPLANT) == ModuleCreatureArmorSlot.IMPLANT
+          );
         case InventoryFilter.USEABLE:
-          return item.baseItem.itemClass.toLocaleLowerCase() == 'i_medeqpmnt' ||
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_drdrepeqp';
+          return (
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_medeqpmnt' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_drdrepeqp'
+          );
         case InventoryFilter.QUESTS:
           return item.plot || item.baseItem.itemClass.toLocaleLowerCase() == 'p_pltuseitm';
         case InventoryFilter.MISC:
-          return item.baseItem.itemClass.toLocaleLowerCase() == 'i_adrnaline' ||
+          return (
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_adrnaline' ||
             item.baseItem.itemClass.toLocaleLowerCase() == 'i_cmbtshot' ||
             item.baseItem.itemClass.toLocaleLowerCase() == 'i_collarlgt' ||
             item.baseItem.itemClass.toLocaleLowerCase() == 'i_Progspike' ||
@@ -183,7 +189,8 @@ export class MenuInventory extends K1_MenuInventory {
             item.baseItem.itemClass.toLocaleLowerCase() == 'w_poisngren' ||
             item.baseItem.itemClass.toLocaleLowerCase() == 'w_sonicgren' ||
             item.baseItem.itemClass.toLocaleLowerCase() == 'w_stungren' ||
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_glowrod';
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_glowrod'
+          );
       }
       return true;
     });
@@ -198,5 +205,4 @@ export class MenuInventory extends K1_MenuInventory {
     this.filter = InventoryFilter.ALL;
     this.updateFilterButton();
   }
-
 }

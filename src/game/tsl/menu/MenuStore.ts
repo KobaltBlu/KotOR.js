@@ -1,20 +1,19 @@
-import { GameState } from "@/GameState";
-import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import { ModuleItem, ModuleStore } from "@/module";
-import { MenuStore as K1_MenuStore } from "@/game/kotor/KOTOR";
+import { GameState } from '@/GameState';
+import type { GUILabel, GUIListBox, GUIButton } from '@/gui';
+import { TextureLoader } from '@/loaders';
+import { ModuleItem, ModuleStore } from '@/module';
+import { MenuStore as K1_MenuStore } from '@/game/kotor/KOTOR';
 
 /**
  * MenuStore class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuStore.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuStore extends K1_MenuStore {
-
   declare LBL_BAR5: GUILabel;
   declare LB_INVITEMS: GUIListBox;
   declare LB_DESCRIPTION: GUIListBox;
@@ -41,7 +40,7 @@ export class MenuStore extends K1_MenuStore {
   declare BTN_ARMOR: GUIButton;
   declare BTN_MISC: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'store_p';
     this.background = '';
@@ -50,7 +49,7 @@ export class MenuStore extends K1_MenuStore {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       this.BTN_Cancel.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -65,34 +64,32 @@ export class MenuStore extends K1_MenuStore {
 
       this.BTN_Accept.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(!this.sellMode){
-          if(this.LB_SHOPITEMS.selectedItem.node instanceof ModuleItem){
+        if (!this.sellMode) {
+          if (this.LB_SHOPITEMS.selectedItem.node instanceof ModuleItem) {
             const item = this.LB_SHOPITEMS.selectedItem.node;
             //Buy Mode
             const price = this.getItemBuyPrice(item);
-            if(GameState.PartyManager.Gold >= price){
+            if (GameState.PartyManager.Gold >= price) {
               GameState.PartyManager.AddGold(-price);
               this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
               GameState.InventoryManager.addItem(item.template, true);
-              if(!item.isInfinite()){
+              if (!item.isInfinite()) {
                 item.setStackSize(item.getStackSize() - 1);
 
-                if(item.getStackSize() <= 0){
+                if (item.getStackSize() <= 0) {
                   //Remove this item from the store if there are no more of them in stock
                   const idx = this.storeObject.getInventory().indexOf(item);
-                  if(idx >= 0){
+                  if (idx >= 0) {
                     this.storeObject.getInventory().splice(idx, 1);
                     this.LB_SHOPITEMS.removeItemByIndex(idx);
                   }
                 }
-
               }
             }
-          }else{
+          } else {
             //You do not have enough credits message here
           }
-
-        }else{
+        } else {
           //Sell Mode
           this.LBL_CREDITS_VALUE.setText((GameState.PartyManager.Gold || 0).toString());
         }
@@ -109,7 +106,8 @@ export class MenuStore extends K1_MenuStore {
     return item.cost + item.cost * this.storeObject.getMarkDown();
   }
 
-  open(){ //storeObject: ModuleStore, creature: ModuleCreature, bonusMarkUp = 0, bonusMarkDown = 0) {
+  open() {
+    //storeObject: ModuleStore, creature: ModuleCreature, bonusMarkUp = 0, bonusMarkDown = 0) {
     // this.storeObject = storeObject;
     // this.creature = creature;
     // this.bonusMarkUp = bonusMarkUp;
@@ -132,14 +130,14 @@ export class MenuStore extends K1_MenuStore {
         this.LB_INVITEMS.clearItems();
         const inv = GameState.InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
-          this.LB_INVITEMS.addItem(inv[i], { 
+          this.LB_INVITEMS.addItem(inv[i], {
             onClick: (e: MouseEvent, item: ModuleItem) => {
               this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
               this.LB_DESCRIPTION.clearItems();
               this.LB_DESCRIPTION.addItem(item.getDescription());
               this.LB_DESCRIPTION.updateList();
               this.LB_DESCRIPTION.show();
-            } 
+            },
           });
         }
         this.LB_INVITEMS.select(this.LB_INVITEMS.children[0]);
@@ -152,14 +150,14 @@ export class MenuStore extends K1_MenuStore {
         this.LB_SHOPITEMS.clearItems();
         const inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {
-          this.LB_SHOPITEMS.addItem(inv[i], { 
+          this.LB_SHOPITEMS.addItem(inv[i], {
             onClick: (e: MouseEvent, item: ModuleItem) => {
               this.LBL_COST_VALUE.setText(this.getItemBuyPrice(item));
               this.LB_DESCRIPTION.clearItems();
               this.LB_DESCRIPTION.addItem(item.getDescription());
               this.LB_DESCRIPTION.updateList();
               this.LB_DESCRIPTION.show();
-            } 
+            },
           });
         }
         this.LB_SHOPITEMS.select(this.LB_SHOPITEMS.children[0]);
@@ -171,6 +169,4 @@ export class MenuStore extends K1_MenuStore {
       this.close();
     }
   }
-  
 }
-

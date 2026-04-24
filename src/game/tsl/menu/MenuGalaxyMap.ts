@@ -1,13 +1,13 @@
-import { GameState } from "@/GameState";
-import { LBL_3DView } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
-import { MenuGalaxyMap as K1_MenuGalaxyMap } from "@/game/kotor/KOTOR";
-import { Planetary } from "@/engine/Planetary";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { NWScript } from "@/nwscript/NWScript";
-import { OdysseyModel } from "@/odyssey";
-import { OdysseyModel3D } from "@/three/odyssey";
-import { MDLLoader, TextureLoader } from "@/loaders";
+import { GameState } from '@/GameState';
+import { LBL_3DView } from '@/gui';
+import type { GUILabel, GUIButton } from '@/gui';
+import { MenuGalaxyMap as K1_MenuGalaxyMap } from '@/game/kotor/KOTOR';
+import { Planetary } from '@/engine/Planetary';
+import { NWScriptInstance } from '@/nwscript/NWScriptInstance';
+import { NWScript } from '@/nwscript/NWScript';
+import { OdysseyModel } from '@/odyssey';
+import { OdysseyModel3D } from '@/three/odyssey';
+import { MDLLoader, TextureLoader } from '@/loaders';
 
 const STR_ALREADY_AT_THAT_LOCATION = 125629;
 
@@ -21,7 +21,6 @@ const STR_ALREADY_AT_THAT_LOCATION = 125629;
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuGalaxyMap extends K1_MenuGalaxyMap {
-
   declare LBL_BAR2: GUILabel;
   declare LBL_BAR1: GUILabel;
   declare _3D_PlanetDisplay: GUILabel;
@@ -43,7 +42,7 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
   declare LBL_Planet_Citadel: GUIButton;
   declare LBL_EbonHawk: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'galaxymap_p';
     this.background = '';
@@ -52,7 +51,7 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -63,14 +62,14 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
 
       this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(!this.activePlanet?.selectable){
-          if(this.activePlanet.lockedOutReason >= 0){
+        if (!this.activePlanet?.selectable) {
+          if (this.activePlanet.lockedOutReason >= 0) {
             GameState.MenuManager.InGameConfirm.fromStringRef(this.activePlanet.lockedOutReason);
           }
-        }else if(this.activePlanet.id == Planetary.selectedIndex){
+        } else if (this.activePlanet.id == Planetary.selectedIndex) {
           GameState.MenuManager.InGameConfirm.fromStringRef(STR_ALREADY_AT_THAT_LOCATION);
-        }else{
-          if(this.script instanceof NWScriptInstance){
+        } else {
+          if (this.script instanceof NWScriptInstance) {
             this.script.run(GameState.PartyManager.party[0]);
           }
           this.close();
@@ -85,31 +84,32 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
       this.script = NWScript.Load('k_sup_galaxymap');
       NWScript.SetGlobalScript('k_sup_galaxymap', true);
 
-      MDLLoader.loader.load('galaxy')
-      .then((mdl: OdysseyModel) => {
+      MDLLoader.loader
+        .load('galaxy')
+        .then((mdl: OdysseyModel) => {
+          this._3dView = new LBL_3DView();
+          this._3dView.visible = true;
+          this._3dView.setControl(this._3D_PlanetDisplay);
+          this._3D_PlanetDisplay.setText('');
 
-        this._3dView = new LBL_3DView();
-        this._3dView.visible = true;
-        this._3dView.setControl(this._3D_PlanetDisplay);
-        this._3D_PlanetDisplay.setText('');
+          OdysseyModel3D.FromMDL(mdl, {
+            context: this._3dView,
+          })
+            .then((model: OdysseyModel3D) => {
+              //log.info('Model Loaded', model);
+              this._3dViewModel = model;
 
-        OdysseyModel3D.FromMDL(mdl, {
-          context: this._3dView
-        }).then((model: OdysseyModel3D) => {
-          //log.info('Model Loaded', model);
-          this._3dViewModel = model;
+              this._3dView.camera.position.copy(model.camerahook.position);
+              this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
-          this._3dView.camera.position.copy(model.camerahook.position);
-          this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
-
-          this._3dView.addModel(this._3dViewModel);
-          TextureLoader.LoadQueue().then(() => {
-            resolve();
-          });
-        }).catch(resolve);
-      }).catch(resolve);
+              this._3dView.addModel(this._3dViewModel);
+              TextureLoader.LoadQueue().then(() => {
+                resolve();
+              });
+            })
+            .catch(resolve);
+        })
+        .catch(resolve);
     });
   }
-
 }
-

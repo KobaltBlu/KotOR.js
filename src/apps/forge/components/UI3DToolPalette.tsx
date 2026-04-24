@@ -1,7 +1,7 @@
-﻿import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import "@/apps/forge/styles/UI3DToolPalette.scss";
+﻿import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
+import '@/apps/forge/styles/UI3DToolPalette.scss';
 
 /**
  * Sub-tool definition for tools that have a submenu
@@ -71,7 +71,7 @@ export const UI3DToolPalette: React.FC<UI3DToolPaletteProps> = ({
   activeToolId,
   onToolChange,
   className = '',
-  style = {}
+  style = {},
 }) => {
   const [openSubmenuId, setOpenSubmenuId] = useState<string | null>(null);
   const submenuRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -122,12 +122,12 @@ export const UI3DToolPalette: React.FC<UI3DToolPaletteProps> = ({
 
   const handleSubToolClick = (tool: Tool, subTool: SubTool, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (subTool.disabled) return;
 
     subTool.onClick();
     setOpenSubmenuId(null);
-    
+
     // Also trigger tool change if callback provided
     if (onToolChange) {
       onToolChange(tool.id);
@@ -161,16 +161,14 @@ export const UI3DToolPalette: React.FC<UI3DToolPaletteProps> = ({
                 ${hasSubTools ? 'tool-palette-item-with-submenu' : ''}
                 ${isSubmenuOpen ? 'submenu-open' : ''}
                 ${tool.disabled ? 'disabled' : ''}
-              `.trim().replace(/\s+/g, ' ')}
+              `
+                .trim()
+                .replace(/\s+/g, ' ')}
               onClick={(e) => handleToolClick(tool, e)}
             >
               <a title={tool.title || tool.label}>
                 <span className="fa-layers fa-fw">
-                  <FontAwesomeIcon 
-                    icon={tool.icon} 
-                    size='lg' 
-                    color={tool.iconColor || 'white'} 
-                  />
+                  <FontAwesomeIcon icon={tool.icon} size="lg" color={tool.iconColor || 'white'} />
                 </span>
               </a>
               {hasSubTools && isSubmenuOpen && (
@@ -189,11 +187,7 @@ export const UI3DToolPalette: React.FC<UI3DToolPaletteProps> = ({
                     >
                       {subTool.icon && (
                         <span className="tool-palette-submenu-icon">
-                          <FontAwesomeIcon 
-                            icon={subTool.icon} 
-                            size="sm" 
-                            color={subTool.iconColor || '#fff'} 
-                          />
+                          <FontAwesomeIcon icon={subTool.icon} size="sm" color={subTool.iconColor || '#fff'} />
                         </span>
                       )}
                       <span>{subTool.label}</span>
@@ -208,4 +202,3 @@ export const UI3DToolPalette: React.FC<UI3DToolPaletteProps> = ({
     </div>
   );
 };
-

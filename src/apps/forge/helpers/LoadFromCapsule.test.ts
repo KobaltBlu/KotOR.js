@@ -22,7 +22,7 @@ describe('loadFromCapsuleBuffer', () => {
     expect(capsule?.entries).toHaveLength(2);
     expect(capsule?.entries.map((entry) => entry.resref)).toEqual(['alpha', 'beta']);
     await expect(capsule?.getResourceBuffer('alpha', ResourceTypes.utc)).resolves.toEqual(
-      Uint8Array.from([0x55, 0x54, 0x43, 0x20]),
+      Uint8Array.from([0x55, 0x54, 0x43, 0x20])
     );
   });
 
@@ -64,7 +64,7 @@ describe('loadFromCapsuleBuffer', () => {
       ext: 'ifo',
     });
     await expect(capsule?.getResourceBuffer('module', ResourceTypes.ifo)).resolves.toEqual(
-      Uint8Array.from([0x49, 0x46, 0x4f, 0x20]),
+      Uint8Array.from([0x49, 0x46, 0x4f, 0x20])
     );
   });
 

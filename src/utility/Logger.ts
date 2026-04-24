@@ -70,7 +70,13 @@ export function setLogWriter(writer: ILogWriter | null): void {
   customWriter = writer;
 }
 
-function write(level: LogLevelValue, scope: string, method: keyof ILogWriter, msg: string | Error | unknown, ...args: unknown[]): void {
+function write(
+  level: LogLevelValue,
+  scope: string,
+  method: keyof ILogWriter,
+  msg: string | Error | unknown,
+  ...args: unknown[]
+): void {
   const msgStr = typeof msg === 'string' ? msg : msg instanceof Error ? msg.message : String(msg);
   if (!shouldLog(level)) return;
   const full = formatMessage(scope, msgStr);

@@ -1,22 +1,22 @@
-import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
-import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameEffectDurationType } from '@/enums/effects/GameEffectDurationType';
+import { GameEffectType } from '@/enums/effects/GameEffectType';
 import * as THREE from 'three';
-import { GameState } from "@/GameState";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameEffect } from "@/effects/GameEffect";
+import { GameState } from '@/GameState';
+import { BitWise } from '@/utility/BitWise';
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import { GameEffect } from '@/effects/GameEffect';
 
 /**
  * EffectForcePushed class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EffectForcePushed.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectForcePushed extends GameEffect {
-  constructor(){
+  constructor() {
     super();
     this.type = GameEffectType.EffectForcePushed;
 
@@ -28,10 +28,10 @@ export class EffectForcePushed extends GameEffect {
     //floatList[2] : fTargetedLocationZ
   }
 
-  update(delta: number = 0){
+  update(delta: number = 0) {
     super.update(delta);
 
-    if(this.durationEnded && this.getDurationType() == GameEffectDurationType.TEMPORARY){
+    if (this.durationEnded && this.getDurationType() == GameEffectDurationType.TEMPORARY) {
       return;
     }
   }
@@ -74,11 +74,13 @@ export class EffectForcePushed extends GameEffect {
         if (wokFace?.walk) continue;
         if (hit.distance != null && hit.distance < closestDist && hit.distance >= 0) {
           closestDist = hit.distance;
-          closestHit = hit.point?.clone?.() ?? new THREE.Vector3(
-            start.x + raycaster.ray.direction.x * hit.distance,
-            start.y + raycaster.ray.direction.y * hit.distance,
-            start.z + raycaster.ray.direction.z * hit.distance
-          );
+          closestHit =
+            hit.point?.clone?.() ??
+            new THREE.Vector3(
+              start.x + raycaster.ray.direction.x * hit.distance,
+              start.y + raycaster.ray.direction.y * hit.distance,
+              start.z + raycaster.ray.direction.z * hit.distance
+            );
         }
       }
     }
@@ -91,23 +93,23 @@ export class EffectForcePushed extends GameEffect {
     return { clear: true };
   }
 
-  validateWalkablePosition( position = new THREE.Vector3 ){
+  validateWalkablePosition(position = new THREE.Vector3()) {
     let face;
     let room;
     let surfaceId = -1;
     let closestPoint = new THREE.Vector3();
-    for(let i = 0, il = GameState.module.area.rooms.length; i < il; i++){
+    for (let i = 0, il = GameState.module.area.rooms.length; i < il; i++) {
       room = GameState.module.area.rooms[i];
-      if(room.collisionData.walkmesh){
-        for(let j = 0, jl = room.collisionData.walkmesh.walkableFaces.length; j < jl; j++){
+      if (room.collisionData.walkmesh) {
+        for (let j = 0, jl = room.collisionData.walkmesh.walkableFaces.length; j < jl; j++) {
           face = room.collisionData.walkmesh.walkableFaces[j];
-          if(face.triangle.containsPoint(position)){
+          if (face.triangle.containsPoint(position)) {
             surfaceId = face.walkIndex;
             face.triangle.closestPointToPoint(position, closestPoint);
             return {
               face: face,
               surfaceId: surfaceId,
-              closestPoint: closestPoint
+              closestPoint: closestPoint,
             };
           }
         }
@@ -116,34 +118,31 @@ export class EffectForcePushed extends GameEffect {
     return {
       face: undefined,
       surfaceId: -1,
-      closestPoint: undefined
+      closestPoint: undefined,
     };
   }
 
-  onApply(){
-    if(this.applied)
-      return;
-    
+  onApply() {
+    if (this.applied) return;
+
     super.onApply();
 
-    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
-
-      if(!this.getInt(0)){
-
-        const fpDirX = -Math.cos(this.object.facing + Math.PI/2);
-        const fpDirY = -Math.sin(this.object.facing + Math.PI/2);
+    if (BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)) {
+      if (!this.getInt(0)) {
+        const fpDirX = -Math.cos(this.object.facing + Math.PI / 2);
+        const fpDirY = -Math.sin(this.object.facing + Math.PI / 2);
         let fPushDistance = 5.0;
-        this.setFloat(0, this.object.position.x + (fPushDistance * fpDirX));
-        this.setFloat(1, this.object.position.y + (fPushDistance* fpDirY));
+        this.setFloat(0, this.object.position.x + fPushDistance * fpDirX);
+        this.setFloat(1, this.object.position.y + fPushDistance * fpDirY);
         this.setFloat(2, this.object.position.z + 0.0);
 
         const destination = new THREE.Vector3(this.getFloat(0), this.getFloat(1), this.getFloat(2));
         let validated = this.validateWalkablePosition(destination);
 
-        while(!validated.face && fPushDistance > 0){
+        while (!validated.face && fPushDistance > 0) {
           fPushDistance -= 1;
-          this.setFloat(0, this.object.position.x + (fPushDistance * fpDirX));
-          this.setFloat(1, this.object.position.y + (fPushDistance * fpDirY));
+          this.setFloat(0, this.object.position.x + fPushDistance * fpDirX);
+          this.setFloat(1, this.object.position.y + fPushDistance * fpDirY);
           this.setFloat(2, this.object.position.z + 0.0);
           destination.set(this.getFloat(0), this.getFloat(1), this.getFloat(2));
           validated = this.validateWalkablePosition(destination);
@@ -165,7 +164,6 @@ export class EffectForcePushed extends GameEffect {
           this.setFloat(1, validated.closestPoint.y);
           this.setFloat(2, validated.closestPoint.z + 0.005);
         }
-
       }
 
       this.object.fp_push_played = false;
@@ -188,14 +186,14 @@ export class EffectForcePushed extends GameEffect {
       eSetState.setFloat(3, this.getFloat(0));
       eSetState.setFloat(4, this.getFloat(1));
       eSetState.setFloat(5, this.getFloat(2));
-      eSetState.setFloat(6, Math.sqrt( Math.abs( this.object.position.x - this.getFloat(0) ) + Math.abs( this.object.position.y - this.getFloat(1) ) ) );
+      eSetState.setFloat(
+        6,
+        Math.sqrt(
+          Math.abs(this.object.position.x - this.getFloat(0)) + Math.abs(this.object.position.y - this.getFloat(1))
+        )
+      );
       eSetState.initialize();
       this.object.addEffect(eSetState);
-
     }
-
   }
-
 }
-
-

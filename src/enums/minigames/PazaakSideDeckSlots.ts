@@ -1,6 +1,6 @@
 /**
  * Pazaak Side Deck Slots
- * 
+ *
  * @file PazaakSideDeckSlots.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -17,5 +17,5 @@ export enum PazaakSideDeckSlots {
   SLOT_8 = 7,
   SLOT_9 = 8,
   SLOT_10 = 9,
-  MAX_SLOTS = 10
+  MAX_SLOTS = 10,
 }

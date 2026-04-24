@@ -1,11 +1,11 @@
-import { GameMenu } from "@/gui";
-import type { GUIControl, GUILabel, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import type { ModulePlayer } from "@/module";
-import { OdysseyModel3D } from "@/three/odyssey";
-import * as THREE from "three";
-import { CharGenClasses } from "@/game/CharGenClasses";
-import { GameState } from "@/GameState";
+import { GameMenu } from '@/gui';
+import type { GUIControl, GUILabel, GUIButton } from '@/gui';
+import { TextureLoader } from '@/loaders';
+import type { ModulePlayer } from '@/module';
+import { OdysseyModel3D } from '@/three/odyssey';
+import * as THREE from 'three';
+import { CharGenClasses } from '@/game/CharGenClasses';
+import { GameState } from '@/GameState';
 
 /**
  * CharGenClass class.
@@ -20,7 +20,6 @@ import { GameState } from "@/GameState";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenClass extends GameMenu {
-
   _3D_MODEL2: GUILabel;
   LBL_CHAR_GEN: GUILabel;
   LBL_CLASS: GUILabel;
@@ -49,7 +48,7 @@ export class CharGenClass extends GameMenu {
   private _hoverBtnExtent: { width: number; height: number } = { width: 0, height: 0 };
   private _baseExtentsCaptured: boolean = false;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'classsel';
     this.background = '1600x1200back';
@@ -59,7 +58,7 @@ export class CharGenClass extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -68,7 +67,7 @@ export class CharGenClass extends GameMenu {
 
       this.BTN_SEL1.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 0;
         let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -85,7 +84,7 @@ export class CharGenClass extends GameMenu {
 
       this.BTN_SEL2.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 1;
         let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -102,7 +101,7 @@ export class CharGenClass extends GameMenu {
 
       this.BTN_SEL3.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 2;
         let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -119,7 +118,7 @@ export class CharGenClass extends GameMenu {
 
       this.BTN_SEL4.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 3;
         let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -136,7 +135,7 @@ export class CharGenClass extends GameMenu {
 
       this.BTN_SEL5.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 4;
         let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -153,7 +152,7 @@ export class CharGenClass extends GameMenu {
 
       this.BTN_SEL6.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 5;
         let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -170,8 +169,8 @@ export class CharGenClass extends GameMenu {
 
       this.tGuiPanel.getFill().position.z = -0.5;
 
-      for(let i = 0; i < 6; i++){
-        let control = this.getControlByName('_3D_MODEL'+(i+1));
+      for (let i = 0; i < 6; i++) {
+        let control = this.getControlByName('_3D_MODEL' + (i + 1));
         let _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
         _3dView.visible = true;
         _3dView.camera.aspect = control.extent.width / control.extent.height;
@@ -197,7 +196,7 @@ export class CharGenClass extends GameMenu {
   }
 
   initCharacter3D(control: GUIControl, nth = 0) {
-    return new Promise<void>( (resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       let _3dView = GameState.CharGenManager.lbl_3d_views.get(nth);
       let _3dViewModel = GameState.CharGenManager.models.get(nth);
       let creature = GameState.CharGenManager.creatures.get(nth);
@@ -206,7 +205,7 @@ export class CharGenClass extends GameMenu {
       control.border.fill.material.transparent = true;
       control.border.fill.material.blending = 1;
 
-      if(_3dViewModel) _3dViewModel.removeFromParent();
+      if (_3dViewModel) _3dViewModel.removeFromParent();
 
       OdysseyModel3D.FromMDL(GameState.CharGenManager.cgmain_light, {
         onComplete: (background_model: OdysseyModel3D) => {
@@ -222,14 +221,14 @@ export class CharGenClass extends GameMenu {
             creature.model.rotation.z = -Math.PI / 2;
             _3dView.addModel(creature.model);
             TextureLoader.LoadQueue().then(() => {
-              this.manager.LoadScreen.setProgress((nth + 1) / 6 * 100);
+              this.manager.LoadScreen.setProgress(((nth + 1) / 6) * 100);
               _3dViewModel.playAnimation(0, true);
               resolve();
             });
           });
         },
         manageLighting: false,
-        context: _3dView
+        context: _3dView,
       });
     });
   }
@@ -263,8 +262,7 @@ export class CharGenClass extends GameMenu {
 
   update(delta = 0) {
     super.update(delta);
-    if (!this.bVisible)
-      return;
+    if (!this.bVisible) return;
     try {
       if (!this._baseExtentsCaptured) this.captureBaseExtents();
 
@@ -306,8 +304,15 @@ export class CharGenClass extends GameMenu {
         modelControl.resizeControl();
       }
       if (this.textNeedsUpdate) {
-        this.LBL_DESC.setText(GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.description].Value);
-        this.LBL_CLASS.setText(GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.gender].Value + ' ' + GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.name].Value);
+        this.LBL_DESC.setText(
+          GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.description]
+            .Value
+        );
+        this.LBL_CLASS.setText(
+          GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.gender].Value +
+            ' ' +
+            GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.name].Value
+        );
         this.textNeedsUpdate = false;
       }
     } catch (e: unknown) {
@@ -324,8 +329,5 @@ export class CharGenClass extends GameMenu {
     await this.load3D();
   }
 
-  GetRandomAnimation() {
-  }
-
+  GetRandomAnimation() {}
 }
-

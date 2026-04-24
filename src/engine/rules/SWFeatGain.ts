@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from '@/resource/TwoDAObject';
 
 interface IFeatGainClass {
   index: number;
@@ -10,15 +10,14 @@ interface IFeatGainClass {
 /**
  * class SWFeatGain
  * - used to get feat gain points for a class per level
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SWFeatGain.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class SWFeatGain {
-
   index: number = 0;
   label: number = 0;
 
@@ -44,26 +43,23 @@ export class SWFeatGain {
     return this.classMap.get(classCode.toLowerCase())?.points || [];
   }
 
-  apply2DA(table: TwoDAObject){
-
+  apply2DA(table: TwoDAObject) {
     /**
      * Get class columns from the 2DA row
      * ex: jcn_reg, jcn_bon, etc...
      */
-    for(let i = 0; i < table.RowCount; i++){
+    for (let i = 0; i < table.RowCount; i++) {
       const row = table.rows[i];
       const columns = Object.keys(row);
 
-      const index = (Object.hasOwn(row,'__index')) ? TwoDAObject.normalizeValue(row.__index, 'number', 0) : 0;
-      const label = (Object.hasOwn(row,'label')) ? TwoDAObject.normalizeValue(row.label, 'number', 0) : 0;
+      const index = Object.hasOwn(row, '__index') ? TwoDAObject.normalizeValue(row.__index, 'number', 0) : 0;
+      const label = Object.hasOwn(row, 'label') ? TwoDAObject.normalizeValue(row.label, 'number', 0) : 0;
 
-      
-      for(let j = 0; j < columns.length; j++){
+      for (let j = 0; j < columns.length; j++) {
         const col = columns[j];
         const colNormalized = col.toLowerCase();
 
-        if(!colNormalized.includes('_'))
-          continue;
+        if (!colNormalized.includes('_')) continue;
 
         const classCode = colNormalized.split('_')[0];
         const pointType = colNormalized.split('_')[1];
@@ -73,24 +69,23 @@ export class SWFeatGain {
           index: index,
           label: label,
           points: [] as number[],
-          bonuses: [] as number[]
+          bonuses: [] as number[],
         };
 
         const value = TwoDAObject.normalizeValue(row[col], 'number', 0);
 
-        if(pointType === 'reg'){
+        if (pointType === 'reg') {
           classData.points.push(value);
-        } else if(pointType === 'bon'){
+        } else if (pointType === 'bon') {
           classData.bonuses.push(value);
         }
 
-        if(isNew)
-          this.classMap.set(classCode, classData);
-      } 
+        if (isNew) this.classMap.set(classCode, classData);
+      }
     }
   }
 
-  static From2DA(table: TwoDAObject){
+  static From2DA(table: TwoDAObject) {
     const featGain = new SWFeatGain();
     featGain.apply2DA(table);
     return featGain;

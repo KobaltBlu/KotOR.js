@@ -1,15 +1,15 @@
-import * as THREE from "three";
-import { GameState } from "@/GameState";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { Utility } from "@/utility/Utility";
-import type { ModuleArea, ModuleMGPlayer, ModuleObject } from "@/module";
-import { MiniGameType } from "@/enums/engine/MiniGameType";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { ResolutionManager } from "@/managers/ResolutionManager";
+import * as THREE from 'three';
+import { GameState } from '@/GameState';
+import { EngineMode } from '@/enums/engine/EngineMode';
+import { Utility } from '@/utility/Utility';
+import type { ModuleArea, ModuleMGPlayer, ModuleObject } from '@/module';
+import { MiniGameType } from '@/enums/engine/MiniGameType';
+import { BitWise } from '@/utility/BitWise';
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import { ResolutionManager } from '@/managers/ResolutionManager';
 
 const HALF_PI = Math.PI / 2;
-const EASE_THRESHOLD = Math.PI/2;
+const EASE_THRESHOLD = Math.PI / 2;
 const FOCUS_DEAD_ZONE = 0.16;
 
 /**
@@ -22,12 +22,16 @@ const FOCUS_DEAD_ZONE = 0.16;
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class FollowerCamera {
-
   static DEBUG_OFFSET = 0;
 
   static DEFAULT_FOV = 55;
 
-  static camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera( 55, ResolutionManager.getViewportWidth() / ResolutionManager.getViewportHeight(), 0.01, 15000 );
+  static camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(
+    55,
+    ResolutionManager.getViewportWidth() / ResolutionManager.getViewportHeight(),
+    0.01,
+    15000
+  );
   static box: THREE.Box3 = new THREE.Box3();
 
   static turning: boolean = false;
@@ -54,57 +58,63 @@ export class FollowerCamera {
 
   static raycaster: THREE.Raycaster = new THREE.Raycaster();
 
-  static setCameraStyle(cameraStyle: { pitch?: string | number; height?: string | number; distance?: string | number } = {}){
+  static setCameraStyle(
+    cameraStyle: { pitch?: string | number; height?: string | number; distance?: string | number } = {}
+  ) {
     FollowerCamera.cameraStyle = cameraStyle;
-    if(typeof cameraStyle.pitch !== 'undefined') FollowerCamera.pitch = cameraStyle.pitch == '****' ? 0 : parseInt(cameraStyle.pitch);
-    if(typeof cameraStyle.height !== 'undefined') FollowerCamera.height = cameraStyle.height == '****' ? 0 : parseFloat(cameraStyle.height);
-    if(typeof cameraStyle.distance !== 'undefined') FollowerCamera.distance = FollowerCamera.maxDistance = cameraStyle.distance == '****' ? 0 : parseFloat(cameraStyle.distance);
+    if (typeof cameraStyle.pitch !== 'undefined')
+      FollowerCamera.pitch = cameraStyle.pitch == '****' ? 0 : parseInt(cameraStyle.pitch);
+    if (typeof cameraStyle.height !== 'undefined')
+      FollowerCamera.height = cameraStyle.height == '****' ? 0 : parseFloat(cameraStyle.height);
+    if (typeof cameraStyle.distance !== 'undefined')
+      FollowerCamera.distance = FollowerCamera.maxDistance =
+        cameraStyle.distance == '****' ? 0 : parseFloat(cameraStyle.distance);
 
     FollowerCamera.pitch = THREE.MathUtils.degToRad(this.pitch);
   }
 
-  static setCameraFOV(fov: number = 55){
+  static setCameraFOV(fov: number = 55) {
     FollowerCamera.fov = FollowerCamera.camera.fov = fov;
     FollowerCamera.resize();
   }
 
-  static update(delta: number = 0, area: ModuleArea){
-    if(FollowerCamera.turning && FollowerCamera.speed < FollowerCamera.maxSpeed){
+  static update(delta: number = 0, area: ModuleArea) {
+    if (FollowerCamera.turning && FollowerCamera.speed < FollowerCamera.maxSpeed) {
       FollowerCamera.speed += FollowerCamera.rampSpeed * delta;
 
-      if(FollowerCamera.speed > FollowerCamera.maxSpeed)
-      FollowerCamera.speed = FollowerCamera.maxSpeed;
-    }else if(FollowerCamera.speed > FollowerCamera.minSpeed){
+      if (FollowerCamera.speed > FollowerCamera.maxSpeed) FollowerCamera.speed = FollowerCamera.maxSpeed;
+    } else if (FollowerCamera.speed > FollowerCamera.minSpeed) {
       FollowerCamera.speed -= FollowerCamera.rampSpeed * delta;
 
-      if(FollowerCamera.speed < 0)
-      FollowerCamera.speed = 0;
+      if (FollowerCamera.speed < 0) FollowerCamera.speed = 0;
     }
 
-    if(FollowerCamera.speed > 0){
-      FollowerCamera.facing = (Utility.NormalizeRadian(FollowerCamera.facing + (FollowerCamera.speed * FollowerCamera.dir) * delta))
+    if (FollowerCamera.speed > 0) {
+      FollowerCamera.facing = Utility.NormalizeRadian(
+        FollowerCamera.facing + FollowerCamera.speed * FollowerCamera.dir * delta
+      );
     }
 
     FollowerCamera.turning = false;
 
     const followee = GameState.getCurrentPlayer();
-    if(!followee) return;
+    if (!followee) return;
 
-    if(FollowerCamera.focusObject){
-      if(FollowerCamera.focusObject.destroyed || FollowerCamera.focusObject.willDestroy){
+    if (FollowerCamera.focusObject) {
+      if (FollowerCamera.focusObject.destroyed || FollowerCamera.focusObject.willDestroy) {
         FollowerCamera.focusObject = undefined;
-      }else{
+      } else {
         const dx = FollowerCamera.focusObject.position.x - followee.position.x;
         const dy = FollowerCamera.focusObject.position.y - followee.position.y;
         const targetFacing = Utility.NormalizeRadian(Math.atan2(dy, dx) + Math.PI);
         let angleDiff = targetFacing - FollowerCamera.facing;
-        angleDiff = ((angleDiff + Math.PI) % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI) - Math.PI;
+        angleDiff = ((((angleDiff + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI;
         const absDiff = Math.abs(angleDiff);
-        if(absDiff > FOCUS_DEAD_ZONE){
+        if (absDiff > FOCUS_DEAD_ZONE) {
           const easeFactor = Math.min(1, absDiff / EASE_THRESHOLD);
           const speed = FollowerCamera.focusTurnSpeed * easeFactor;
           const step = speed * delta;
-          if(absDiff > step){
+          if (absDiff > step) {
             FollowerCamera.facing = Utility.NormalizeRadian(FollowerCamera.facing + Math.sign(angleDiff) * step);
           }
         }
@@ -112,23 +122,25 @@ export class FollowerCamera {
     }
 
     const appearance = followee.creatureAppearance;
-    const followeeHeight = 1.6 + FollowerCamera.DEBUG_OFFSET;//appearance.height + FollowerCamera.DEBUG_OFFSET;
+    const followeeHeight = 1.6 + FollowerCamera.DEBUG_OFFSET; //appearance.height + FollowerCamera.DEBUG_OFFSET;
 
     let offsetHeight = 0;
 
-    if(GameState.Mode == EngineMode.MINIGAME){
+    if (GameState.Mode == EngineMode.MINIGAME) {
       offsetHeight = 1;
-    }else{
-      if(followee && appearance && (appearance.cameraheightoffset > 0 || appearance.cameraheightoffset < 0)){
+    } else {
+      if (followee && appearance && (appearance.cameraheightoffset > 0 || appearance.cameraheightoffset < 0)) {
         offsetHeight = appearance.cameraheightoffset;
       }
     }
 
-    const camHeight = (followeeHeight + FollowerCamera.height) - offsetHeight;
+    const camHeight = followeeHeight + FollowerCamera.height - offsetHeight;
     let distance = FollowerCamera.maxDistance * GameState.CameraDebugZoom;
 
     FollowerCamera.raycaster.far = 10;
-    FollowerCamera.raycaster.ray.direction.set(Math.cos(FollowerCamera.facing), Math.sin(FollowerCamera.facing), 0).normalize();
+    FollowerCamera.raycaster.ray.direction
+      .set(Math.cos(FollowerCamera.facing), Math.sin(FollowerCamera.facing), 0)
+      .normalize();
     FollowerCamera.raycaster.ray.origin.set(followee.position.x, followee.position.y, followee.position.z + camHeight);
 
     const aabbFaces = [];
@@ -138,32 +150,37 @@ export class FollowerCamera {
     FollowerCamera.box.max.copy(FollowerCamera.raycaster.ray.origin);
     FollowerCamera.box.expandByScalar(distance * 1.5);
 
-    if(followee.room && followee.room.collisionManager.walkmesh && followee.room.collisionManager.walkmesh.aabbNodes.length){
+    if (
+      followee.room &&
+      followee.room.collisionManager.walkmesh &&
+      followee.room.collisionManager.walkmesh.aabbNodes.length
+    ) {
       aabbFaces.push({
         object: followee.room,
-        faces: followee.room.collisionManager.walkmesh.getAABBCollisionFaces(FollowerCamera.box)
+        faces: followee.room.collisionManager.walkmesh.getAABBCollisionFaces(FollowerCamera.box),
       });
     }
 
-    for(let j = 0, jl = area.doors.length; j < jl; j++){
+    for (let j = 0, jl = area.doors.length; j < jl; j++) {
       const door = area.doors[j];
-      if(door && door.collisionManager.walkmesh && !door.isOpen()){
-        if(door.box.intersectsBox(FollowerCamera.box) || door.box.containsBox(FollowerCamera.box)){
+      if (door && door.collisionManager.walkmesh && !door.isOpen()) {
+        if (door.box.intersectsBox(FollowerCamera.box) || door.box.containsBox(FollowerCamera.box)) {
           aabbFaces.push({
             object: door,
-            faces: door.collisionManager.walkmesh.faces
+            faces: door.collisionManager.walkmesh.faces,
           });
         }
       }
     }
 
-    for(let k = 0, kl = aabbFaces.length; k < kl; k++){
+    for (let k = 0, kl = aabbFaces.length; k < kl; k++) {
       const castableFaces = aabbFaces[k];
-      intersects = castableFaces.object.collisionManager.walkmesh.raycast(FollowerCamera.raycaster, castableFaces.faces) || [];
-      if ( intersects.length > 0 ) {
-        for(let i = 0; i < intersects.length; i++){
-          if(intersects[i].distance < distance){
-            distance = intersects[i].distance * .75;
+      intersects =
+        castableFaces.object.collisionManager.walkmesh.raycast(FollowerCamera.raycaster, castableFaces.faces) || [];
+      if (intersects.length > 0) {
+        for (let i = 0; i < intersects.length; i++) {
+          if (intersects[i].distance < distance) {
+            distance = intersects[i].distance * 0.75;
           }
         }
       }
@@ -171,35 +188,35 @@ export class FollowerCamera {
 
     FollowerCamera.raycaster.far = Infinity;
 
-    if(GameState.Mode == EngineMode.MINIGAME){
-      if(BitWise.InstanceOf(followee?.objectType, ModuleObjectType.ModuleMGPlayer)){
-        ( (followee: ModuleMGPlayer) => {
+    if (GameState.Mode == EngineMode.MINIGAME) {
+      if (BitWise.InstanceOf(followee?.objectType, ModuleObjectType.ModuleMGPlayer)) {
+        ((followee: ModuleMGPlayer) => {
           followee.camera.camerahook.getWorldPosition(FollowerCamera.camera.position);
           followee.camera.camerahook.getWorldQuaternion(FollowerCamera.camera.quaternion);
 
-          switch(area.miniGame.type){
+          switch (area.miniGame.type) {
             case MiniGameType.SWOOPRACE:
               FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
-            break;
+              break;
             case MiniGameType.TURRET:
               FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
-            break;
+              break;
           }
           FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
         })(followee as ModuleMGPlayer);
       }
-    }else{
+    } else {
       FollowerCamera.camera.position.copy(followee.position);
 
       //If the distance is greater than the last distance applied to the camera.
       //Increase the distance by the frame delta so it will grow overtime until it
       //reaches the max allowed distance wether by collision or camera settings.
-      if(distance > FollowerCamera.distance){
+      if (distance > FollowerCamera.distance) {
         distance = FollowerCamera.distance += 2 * delta;
       }
 
-      if(distance > FollowerCamera.maxDistance * GameState.CameraDebugZoom){
-        distance = (FollowerCamera.maxDistance * GameState.CameraDebugZoom);
+      if (distance > FollowerCamera.maxDistance * GameState.CameraDebugZoom) {
+        distance = FollowerCamera.maxDistance * GameState.CameraDebugZoom;
       }
 
       FollowerCamera.camera.position.x += distance * Math.cos(FollowerCamera.facing);
@@ -215,21 +232,19 @@ export class FollowerCamera {
     FollowerCamera.camera.updateProjectionMatrix();
   }
 
-  static setFocusObject(object: ModuleObject | undefined){
+  static setFocusObject(object: ModuleObject | undefined) {
     FollowerCamera.focusObject = object;
   }
 
-  static clearFocusObject(){
+  static clearFocusObject() {
     FollowerCamera.focusObject = undefined;
   }
 
-  static resize(){
+  static resize() {
     const width = ResolutionManager.getViewportWidth();
     const height = ResolutionManager.getViewportHeight();
     FollowerCamera.camera.fov = FollowerCamera.fov;
     FollowerCamera.camera.aspect = width / height;
     FollowerCamera.camera.updateProjectionMatrix();
   }
-
 }
-

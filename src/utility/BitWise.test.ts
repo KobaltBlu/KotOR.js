@@ -2,9 +2,9 @@ import { describe, expect, it } from '@jest/globals';
 import { BitWise } from '@/utility/BitWise';
 
 // Representative object-type bit flags that mirror game engine usage
-const CREATURE  = 0b0001;
-const ITEM      = 0b0010;
-const DOOR      = 0b0100;
+const CREATURE = 0b0001;
+const ITEM = 0b0010;
+const DOOR = 0b0100;
 const PLACEABLE = 0b1000;
 
 describe('BitWise', () => {
@@ -83,7 +83,10 @@ describe('BitWise', () => {
     });
 
     it('is type-safe and returns the same reference type', () => {
-      interface GameObj { objectType: number; hp: number }
+      interface GameObj {
+        objectType: number;
+        hp: number;
+      }
       const obj: GameObj = { objectType: CREATURE, hp: 100 };
       const result = BitWise.InstanceOfObject(obj, CREATURE);
       // TypeScript: result is `GameObj | undefined`

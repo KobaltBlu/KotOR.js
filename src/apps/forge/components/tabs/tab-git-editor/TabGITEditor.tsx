@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import type { GFFFieldValue } from "@/apps/forge/interfaces/GFFFormField";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalInsertInstanceState } from "@/apps/forge/states/modal/ModalInsertInstanceState";
-import { TabGITEditorState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/components/tabs/tab-git-editor/TabGITEditor.scss";
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
+import type { GFFFieldValue } from '@/apps/forge/interfaces/GFFFormField';
+import * as KotOR from '@/apps/forge/KotOR';
+import { ForgeState } from '@/apps/forge/states/ForgeState';
+import { ModalInsertInstanceState } from '@/apps/forge/states/modal/ModalInsertInstanceState';
+import { TabGITEditorState } from '@/apps/forge/states/tabs';
+import '@/apps/forge/components/tabs/tab-git-editor/TabGITEditor.scss';
 
 interface BaseTabProps {
   tab: TabGITEditorState;
 }
 
-export const TabGITEditor = function(props: BaseTabProps){
+export const TabGITEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabGITEditorState;
   const [git, setGit] = useState(tab.git);
   const [selectedInstance, setSelectedInstance] = useState(tab.selectedInstance);
@@ -43,12 +43,12 @@ export const TabGITEditor = function(props: BaseTabProps){
       label: 'File',
       children: [
         { label: 'Save', onClick: () => tab.save() },
-        { label: 'Save As', onClick: () => tab.saveAs() }
-      ]
-    }
+        { label: 'Save As', onClick: () => tab.saveAs() },
+      ],
+    },
   ];
 
-  if(!git){
+  if (!git) {
     return (
       <div className="forge-git-editor">
         <MenuBar items={menuItems} />
@@ -69,7 +69,7 @@ export const TabGITEditor = function(props: BaseTabProps){
         if (tab.addInstanceFromBlueprint(resref, ext)) {
           markUnsavedAndRefresh();
         }
-      }
+      },
     });
     modal.attachToModalManager(ForgeState.modalManager);
     modal.open();
@@ -112,7 +112,7 @@ export const TabGITEditor = function(props: BaseTabProps){
   ];
 
   const selectedListLength = selectedType
-    ? (git.RootNode.getFieldByLabel(selectedType)?.getChildStructs()?.length || 0)
+    ? git.RootNode.getFieldByLabel(selectedType)?.getChildStructs()?.length || 0
     : 0;
 
   return (
@@ -121,11 +121,33 @@ export const TabGITEditor = function(props: BaseTabProps){
       <div className="forge-git-editor__container">
         <div className="forge-git-editor__sidebar">
           <div className="forge-git-editor__sidebar-actions">
-            <button className="git-action-btn" onClick={openInsertInstanceModal}>Insert Instance</button>
-            <button className="git-action-btn" onClick={duplicateSelectedInstance} disabled={!selectedInstance}>Duplicate Selected</button>
-            <button className="git-action-btn" onClick={moveSelectedInstanceUp} disabled={!selectedInstance || selectedIndex <= 0}>Move Up</button>
-            <button className="git-action-btn" onClick={moveSelectedInstanceDown} disabled={!selectedInstance || selectedIndex < 0 || selectedIndex >= selectedListLength - 1}>Move Down</button>
-            <button className="git-action-btn git-action-btn--danger" onClick={deleteSelectedInstance} disabled={!selectedInstance}>Delete Selected</button>
+            <button className="git-action-btn" onClick={openInsertInstanceModal}>
+              Insert Instance
+            </button>
+            <button className="git-action-btn" onClick={duplicateSelectedInstance} disabled={!selectedInstance}>
+              Duplicate Selected
+            </button>
+            <button
+              className="git-action-btn"
+              onClick={moveSelectedInstanceUp}
+              disabled={!selectedInstance || selectedIndex <= 0}
+            >
+              Move Up
+            </button>
+            <button
+              className="git-action-btn"
+              onClick={moveSelectedInstanceDown}
+              disabled={!selectedInstance || selectedIndex < 0 || selectedIndex >= selectedListLength - 1}
+            >
+              Move Down
+            </button>
+            <button
+              className="git-action-btn git-action-btn--danger"
+              onClick={deleteSelectedInstance}
+              disabled={!selectedInstance}
+            >
+              Delete Selected
+            </button>
           </div>
           <div className="forge-git-editor__sidebar-filter">
             <input
@@ -165,7 +187,11 @@ export const TabGITEditor = function(props: BaseTabProps){
                 <h4>Instance Statistics</h4>
                 {instanceLists.map(({ label, field }) => {
                   const count = git.RootNode.getFieldByLabel(field)?.getChildStructs()?.length || 0;
-                  return <p key={field}>{label}: {count}</p>;
+                  return (
+                    <p key={field}>
+                      {label}: {count}
+                    </p>
+                  );
                 })}
               </div>
             </div>
@@ -198,11 +224,11 @@ const InstanceList = (props: InstanceListProps) => {
 
   return (
     <div className="git-instance-list">
-      <h4>{icon} {label} ({instances.length})</h4>
+      <h4>
+        {icon} {label} ({instances.length})
+      </h4>
       <div className="git-instance-list__items">
-        {filteredInstances.length === 0 && (
-          <div className="git-instance-list__empty">No matching instances.</div>
-        )}
+        {filteredInstances.length === 0 && <div className="git-instance-list__empty">No matching instances.</div>}
         {filteredInstances.map((instance) => {
           const index = instances.indexOf(instance);
           const templateResRef = instance.getFieldByLabel('TemplateResRef')?.getValue() || '(none)';
@@ -243,7 +269,7 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
 
   const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = instance.getFieldByLabel(label);
-    if(field){
+    if (field) {
       field.setValue(value);
       onUpdate();
     }
@@ -356,10 +382,22 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
     if (!selected) return;
 
     const duplicate = new KotOR.GFFStruct(selected.type);
-    duplicate.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', selected.getFieldByLabel('X')?.getValue() || 0));
-    duplicate.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', selected.getFieldByLabel('Y')?.getValue() || 0));
-    duplicate.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', selected.getFieldByLabel('Z')?.getValue() || 0));
-    duplicate.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Orientation', selected.getFieldByLabel('Orientation')?.getValue() || 0));
+    duplicate.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', selected.getFieldByLabel('X')?.getValue() || 0)
+    );
+    duplicate.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', selected.getFieldByLabel('Y')?.getValue() || 0)
+    );
+    duplicate.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', selected.getFieldByLabel('Z')?.getValue() || 0)
+    );
+    duplicate.addField(
+      new KotOR.GFFField(
+        KotOR.GFFDataType.FLOAT,
+        'Orientation',
+        selected.getFieldByLabel('Orientation')?.getValue() || 0
+      )
+    );
 
     list.splice(index + 1, 0, duplicate);
     setSelectedSpawnPointIndex(index + 1);
@@ -436,9 +474,15 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
     if (!selected) return;
 
     const duplicate = new KotOR.GFFStruct(selected.type);
-    duplicate.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointX', selected.getFieldByLabel('PointX')?.getValue() || 0));
-    duplicate.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointY', selected.getFieldByLabel('PointY')?.getValue() || 0));
-    duplicate.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointZ', selected.getFieldByLabel('PointZ')?.getValue() || 0));
+    duplicate.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointX', selected.getFieldByLabel('PointX')?.getValue() || 0)
+    );
+    duplicate.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointY', selected.getFieldByLabel('PointY')?.getValue() || 0)
+    );
+    duplicate.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointZ', selected.getFieldByLabel('PointZ')?.getValue() || 0)
+    );
 
     list.splice(index + 1, 0, duplicate);
     setSelectedGeometryPointIndex(index + 1);
@@ -603,7 +647,14 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
         )}
       </div>
 
-      {(hasField('LinkedTo') || hasField('LinkedToFlags') || hasField('LinkedToModule') || hasField('GeneratedType') || hasField('Appearance') || hasField('PaletteID') || hasField('HasMapNote') || hasField('MapNoteEnabled')) && (
+      {(hasField('LinkedTo') ||
+        hasField('LinkedToFlags') ||
+        hasField('LinkedToModule') ||
+        hasField('GeneratedType') ||
+        hasField('Appearance') ||
+        hasField('PaletteID') ||
+        hasField('HasMapNote') ||
+        hasField('MapNoteEnabled')) && (
         <>
           <h4>Instance Settings</h4>
           <div className="property-row">
@@ -715,7 +766,9 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
               <label>Spawn Points</label>
               <div className="git-inline-actions">
                 <span>{getListCount('SpawnPointList')} entries</span>
-                <button className="git-action-btn git-action-btn--inline" onClick={addSpawnPoint}>Add</button>
+                <button className="git-action-btn git-action-btn--inline" onClick={addSpawnPoint}>
+                  Add
+                </button>
                 <button
                   className="git-action-btn git-action-btn--inline"
                   onClick={duplicateSelectedSpawnPoint}
@@ -733,7 +786,9 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
                 <button
                   className="git-action-btn git-action-btn--inline"
                   onClick={moveSelectedSpawnPointDown}
-                  disabled={getListCount('SpawnPointList') < 2 || selectedSpawnPointIndex >= getListCount('SpawnPointList') - 1}
+                  disabled={
+                    getListCount('SpawnPointList') < 2 || selectedSpawnPointIndex >= getListCount('SpawnPointList') - 1
+                  }
                 >
                   Move Down
                 </button>
@@ -773,8 +828,18 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
                         title="Spawn X"
                         placeholder="Spawn X"
                         type="number"
-                        value={getSpawnPointFieldValue(Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1), 'X', 0)}
-                        onChange={(e) => setSpawnPointFieldValue(Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1), 'X', parseFloat(e.target.value) || 0)}
+                        value={getSpawnPointFieldValue(
+                          Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1),
+                          'X',
+                          0
+                        )}
+                        onChange={(e) =>
+                          setSpawnPointFieldValue(
+                            Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1),
+                            'X',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
                         step="0.1"
                       />
                     </div>
@@ -784,8 +849,18 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
                         title="Spawn Y"
                         placeholder="Spawn Y"
                         type="number"
-                        value={getSpawnPointFieldValue(Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1), 'Y', 0)}
-                        onChange={(e) => setSpawnPointFieldValue(Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1), 'Y', parseFloat(e.target.value) || 0)}
+                        value={getSpawnPointFieldValue(
+                          Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1),
+                          'Y',
+                          0
+                        )}
+                        onChange={(e) =>
+                          setSpawnPointFieldValue(
+                            Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1),
+                            'Y',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
                         step="0.1"
                       />
                     </div>
@@ -795,8 +870,18 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
                         title="Spawn Z"
                         placeholder="Spawn Z"
                         type="number"
-                        value={getSpawnPointFieldValue(Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1), 'Z', 0)}
-                        onChange={(e) => setSpawnPointFieldValue(Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1), 'Z', parseFloat(e.target.value) || 0)}
+                        value={getSpawnPointFieldValue(
+                          Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1),
+                          'Z',
+                          0
+                        )}
+                        onChange={(e) =>
+                          setSpawnPointFieldValue(
+                            Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1),
+                            'Z',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
                         step="0.1"
                       />
                     </div>
@@ -806,8 +891,18 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
                         title="Spawn Orientation"
                         placeholder="Spawn Orientation"
                         type="number"
-                        value={getSpawnPointFieldValue(Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1), 'Orientation', 0)}
-                        onChange={(e) => setSpawnPointFieldValue(Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1), 'Orientation', parseFloat(e.target.value) || 0)}
+                        value={getSpawnPointFieldValue(
+                          Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1),
+                          'Orientation',
+                          0
+                        )}
+                        onChange={(e) =>
+                          setSpawnPointFieldValue(
+                            Math.min(selectedSpawnPointIndex, getListCount('SpawnPointList') - 1),
+                            'Orientation',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
                         step="0.01"
                       />
                     </div>
@@ -821,7 +916,9 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
               <label>Geometry Points</label>
               <div className="git-inline-actions">
                 <span>{getListCount('Geometry')} entries</span>
-                <button className="git-action-btn git-action-btn--inline" onClick={addGeometryPoint}>Add</button>
+                <button className="git-action-btn git-action-btn--inline" onClick={addGeometryPoint}>
+                  Add
+                </button>
                 <button
                   className="git-action-btn git-action-btn--inline"
                   onClick={duplicateSelectedGeometryPoint}
@@ -879,8 +976,18 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
                         title="Point X"
                         placeholder="Point X"
                         type="number"
-                        value={getGeometryPointFieldValue(Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1), 'PointX', 0)}
-                        onChange={(e) => setGeometryPointFieldValue(Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1), 'PointX', parseFloat(e.target.value) || 0)}
+                        value={getGeometryPointFieldValue(
+                          Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1),
+                          'PointX',
+                          0
+                        )}
+                        onChange={(e) =>
+                          setGeometryPointFieldValue(
+                            Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1),
+                            'PointX',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
                         step="0.1"
                       />
                     </div>
@@ -890,8 +997,18 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
                         title="Point Y"
                         placeholder="Point Y"
                         type="number"
-                        value={getGeometryPointFieldValue(Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1), 'PointY', 0)}
-                        onChange={(e) => setGeometryPointFieldValue(Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1), 'PointY', parseFloat(e.target.value) || 0)}
+                        value={getGeometryPointFieldValue(
+                          Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1),
+                          'PointY',
+                          0
+                        )}
+                        onChange={(e) =>
+                          setGeometryPointFieldValue(
+                            Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1),
+                            'PointY',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
                         step="0.1"
                       />
                     </div>
@@ -901,8 +1018,18 @@ const InstanceProperties = (props: InstancePropertiesProps) => {
                         title="Point Z"
                         placeholder="Point Z"
                         type="number"
-                        value={getGeometryPointFieldValue(Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1), 'PointZ', 0)}
-                        onChange={(e) => setGeometryPointFieldValue(Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1), 'PointZ', parseFloat(e.target.value) || 0)}
+                        value={getGeometryPointFieldValue(
+                          Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1),
+                          'PointZ',
+                          0
+                        )}
+                        onChange={(e) =>
+                          setGeometryPointFieldValue(
+                            Math.min(selectedGeometryPointIndex, getListCount('Geometry') - 1),
+                            'PointZ',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
                         step="0.1"
                       />
                     </div>

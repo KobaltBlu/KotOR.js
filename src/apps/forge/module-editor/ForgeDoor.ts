@@ -1,5 +1,5 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from '@/apps/forge/module-editor/ForgeGameObject';
+import * as KotOR from '@/apps/forge/KotOR';
 
 export class ForgeDoor extends ForgeGameObject {
   linkedTo: string = '';
@@ -88,26 +88,26 @@ export class ForgeDoor extends ForgeGameObject {
   trapType: number = 0;
   will: number = 0;
 
-  constructor(buffer?: Uint8Array){
+  constructor(buffer?: Uint8Array) {
     super();
-    if(buffer){
+    if (buffer) {
       this.loadFromBuffer(buffer);
     }
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
-    if(property === 'genericType'){
+  onPropertyChange(property: string, newValue: any, oldValue: any) {
+    if (property === 'genericType') {
       this.loadAppearance();
-      if(newValue !== oldValue){
+      if (newValue !== oldValue) {
         this.loadModel();
       }
     }
-    if(property === 'hp'){
+    if (property === 'hp') {
       this.currentHP = newValue;
     }
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
+    if (property === 'templateResRef') {
+      if (newValue !== oldValue) {
         this.loadBlueprint().then(() => {
           this.load();
         });
@@ -115,179 +115,179 @@ export class ForgeDoor extends ForgeGameObject {
     }
   }
 
-  loadFromBuffer(buffer: Uint8Array){
+  loadFromBuffer(buffer: Uint8Array) {
     this.blueprint = new KotOR.GFFObject(buffer);
     this.loadFromBlueprint();
   }
 
-  loadFromBlueprint(){
-    if(!this.blueprint) return;
+  loadFromBlueprint() {
+    if (!this.blueprint) return;
     const root = this.blueprint.RootNode;
-    if(!root) return;
+    if (!root) return;
 
-    if(root.hasField('AnimationState')){
+    if (root.hasField('AnimationState')) {
       this.animationState = root.getFieldByLabel('AnimationState').getValue() || 0;
     }
-    if(root.hasField('Appearance')){
+    if (root.hasField('Appearance')) {
       this.appearance = root.getFieldByLabel('Appearance').getValue() || 0;
     }
-    if(root.hasField('AutoRemoveKey')){
+    if (root.hasField('AutoRemoveKey')) {
       this.autoRemoveKey = !!root.getFieldByLabel('AutoRemoveKey').getValue();
     }
-    if(root.hasField('CloseLockDC')){
+    if (root.hasField('CloseLockDC')) {
       this.closeLockDC = root.getFieldByLabel('CloseLockDC').getValue() || 0;
     }
-    if(root.hasField('Comment')){
+    if (root.hasField('Comment')) {
       this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
-    if(root.hasField('Conversation')){
+    if (root.hasField('Conversation')) {
       this.conversation = root.getFieldByLabel('Conversation').getValue() || '';
     }
-    if(root.hasField('CurrentHP')){
+    if (root.hasField('CurrentHP')) {
       this.currentHP = root.getFieldByLabel('CurrentHP').getValue() || 0;
     }
-    if(root.hasField('Description')){
+    if (root.hasField('Description')) {
       this.description = root.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
     }
-    if(root.hasField('DisarmDC')){
+    if (root.hasField('DisarmDC')) {
       this.disarmDC = root.getFieldByLabel('DisarmDC').getValue() || 0;
     }
-    if(root.hasField('Faction')){
+    if (root.hasField('Faction')) {
       this.factionId = root.getFieldByLabel('Faction').getValue() || 0;
     }
-    if(root.hasField('Fort')){
+    if (root.hasField('Fort')) {
       this.fort = root.getFieldByLabel('Fort').getValue() || 0;
     }
-    if(root.hasField('GenericType')){
+    if (root.hasField('GenericType')) {
       this.genericType = root.getFieldByLabel('GenericType').getValue() || 0;
     }
-    if(root.hasField('HP')){
+    if (root.hasField('HP')) {
       this.hp = root.getFieldByLabel('HP').getValue() || 0;
     }
-    if(root.hasField('Hardness')){
+    if (root.hasField('Hardness')) {
       this.hardness = root.getFieldByLabel('Hardness').getValue() || 0;
     }
-    if(root.hasField('Interruptable')){
+    if (root.hasField('Interruptable')) {
       this.interruptable = !!root.getFieldByLabel('Interruptable').getValue();
     }
-    if(root.hasField('KeyName')){
+    if (root.hasField('KeyName')) {
       this.keyName = root.getFieldByLabel('KeyName').getValue() || '';
     }
-    if(root.hasField('KeyRequired')){
+    if (root.hasField('KeyRequired')) {
       this.keyRequired = !!root.getFieldByLabel('KeyRequired').getValue();
     }
-    if(root.hasField('LoadScreenID')){
+    if (root.hasField('LoadScreenID')) {
       this.loadScreenID = root.getFieldByLabel('LoadScreenID').getValue() || 0;
     }
-    if(root.hasField('LocName')){
+    if (root.hasField('LocName')) {
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
-    if(root.hasField('Lockable')){
+    if (root.hasField('Lockable')) {
       this.lockable = !!root.getFieldByLabel('Lockable').getValue();
     }
-    if(root.hasField('Locked')){
+    if (root.hasField('Locked')) {
       this.locked = !!root.getFieldByLabel('Locked').getValue();
     }
-    if(root.hasField('Min1HP')){
+    if (root.hasField('Min1HP')) {
       this.min1HP = !!root.getFieldByLabel('Min1HP').getValue();
     }
-    if(root.hasField('NotBlastable')){
+    if (root.hasField('NotBlastable')) {
       this.notBlastable = !!root.getFieldByLabel('NotBlastable').getValue();
     }
-    if(root.hasField('OnClick')){
+    if (root.hasField('OnClick')) {
       this.onClick = root.getFieldByLabel('OnClick').getValue() || '';
     }
-    if(root.hasField('OnClosed')){
+    if (root.hasField('OnClosed')) {
       this.onClosed = root.getFieldByLabel('OnClosed').getValue() || '';
     }
-    if(root.hasField('OnDamaged')){
+    if (root.hasField('OnDamaged')) {
       this.onDamaged = root.getFieldByLabel('OnDamaged').getValue() || '';
     }
-    if(root.hasField('OnDeath')){
+    if (root.hasField('OnDeath')) {
       this.onDeath = root.getFieldByLabel('OnDeath').getValue() || '';
     }
-    if(root.hasField('OnDisarm')){
+    if (root.hasField('OnDisarm')) {
       this.onDisarm = root.getFieldByLabel('OnDisarm').getValue() || '';
     }
-    if(root.hasField('OnFailToOpen')){
+    if (root.hasField('OnFailToOpen')) {
       this.onFailToOpen = root.getFieldByLabel('OnFailToOpen').getValue() || '';
     }
-    if(root.hasField('OnHeartbeat')){
+    if (root.hasField('OnHeartbeat')) {
       this.onHeartbeat = root.getFieldByLabel('OnHeartbeat').getValue() || '';
     }
-    if(root.hasField('OnLock')){
+    if (root.hasField('OnLock')) {
       this.onLock = root.getFieldByLabel('OnLock').getValue() || '';
     }
-    if(root.hasField('OnMeleeAttacked')){
+    if (root.hasField('OnMeleeAttacked')) {
       this.onMeleeAttacked = root.getFieldByLabel('OnMeleeAttacked').getValue() || '';
     }
-    if(root.hasField('OnOpen')){
+    if (root.hasField('OnOpen')) {
       this.onOpen = root.getFieldByLabel('OnOpen').getValue() || '';
     }
-    if(root.hasField('OnSpellCastAt')){
+    if (root.hasField('OnSpellCastAt')) {
       this.onSpellCastAt = root.getFieldByLabel('OnSpellCastAt').getValue() || '';
     }
-    if(root.hasField('OnTrapTriggered')){
+    if (root.hasField('OnTrapTriggered')) {
       this.onTrapTriggered = root.getFieldByLabel('OnTrapTriggered').getValue() || '';
     }
-    if(root.hasField('OnUnlock')){
+    if (root.hasField('OnUnlock')) {
       this.onUnlock = root.getFieldByLabel('OnUnlock').getValue() || '';
     }
-    if(root.hasField('OnUserDefined')){
+    if (root.hasField('OnUserDefined')) {
       this.onUserDefined = root.getFieldByLabel('OnUserDefined').getValue() || '';
     }
-    if(root.hasField('OpenLockDC')){
+    if (root.hasField('OpenLockDC')) {
       this.openLockDC = root.getFieldByLabel('OpenLockDC').getValue() || 0;
     }
-    if(root.hasField('OpenLockDiff')){
+    if (root.hasField('OpenLockDiff')) {
       this.openLockDiff = root.getFieldByLabel('OpenLockDiff').getValue() || 0;
     }
-    if(root.hasField('OpenLockDiffMod')){
+    if (root.hasField('OpenLockDiffMod')) {
       this.openLockDiffMod = root.getFieldByLabel('OpenLockDiffMod').getValue() || 0;
     }
-    if(root.hasField('OpenState')){
+    if (root.hasField('OpenState')) {
       this.openState = root.getFieldByLabel('OpenState').getValue() || 0;
     }
-    if(root.hasField('PaletteID')){
+    if (root.hasField('PaletteID')) {
       this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
-    if(root.hasField('Plot')){
+    if (root.hasField('Plot')) {
       this.plot = !!root.getFieldByLabel('Plot').getValue();
     }
-    if(root.hasField('PortraitId')){
+    if (root.hasField('PortraitId')) {
       this.portraitId = root.getFieldByLabel('PortraitId').getValue() || 0;
     }
-    if(root.hasField('Ref')){
+    if (root.hasField('Ref')) {
       this.ref = root.getFieldByLabel('Ref').getValue() || 0;
     }
-    if(root.hasField('Static')){
+    if (root.hasField('Static')) {
       this.static = !!root.getFieldByLabel('Static').getValue();
     }
-    if(root.hasField('Tag')){
+    if (root.hasField('Tag')) {
       this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
-    if(root.hasField('TemplateResRef')){
+    if (root.hasField('TemplateResRef')) {
       this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
     }
-    if(root.hasField('TrapDetectDC')){
+    if (root.hasField('TrapDetectDC')) {
       this.trapDetectDC = root.getFieldByLabel('TrapDetectDC').getValue() || 0;
     }
-    if(root.hasField('TrapDetectable')){
+    if (root.hasField('TrapDetectable')) {
       this.trapDetectable = !!root.getFieldByLabel('TrapDetectable').getValue();
     }
-    if(root.hasField('TrapDisarmable')){
+    if (root.hasField('TrapDisarmable')) {
       this.trapDisarmable = !!root.getFieldByLabel('TrapDisarmable').getValue();
     }
-    if(root.hasField('TrapFlag')){
+    if (root.hasField('TrapFlag')) {
       this.trapFlag = !!root.getFieldByLabel('TrapFlag').getValue();
     }
-    if(root.hasField('TrapOneShot')){
+    if (root.hasField('TrapOneShot')) {
       this.trapOneShot = !!root.getFieldByLabel('TrapOneShot').getValue();
     }
-    if(root.hasField('TrapType')){
+    if (root.hasField('TrapType')) {
       this.trapType = root.getFieldByLabel('TrapType').getValue() || 0;
     }
-    if(root.hasField('Will')){
+    if (root.hasField('Will')) {
       this.will = root.getFieldByLabel('Will').getValue() || 0;
     }
   }
@@ -297,93 +297,95 @@ export class ForgeDoor extends ForgeGameObject {
     this.blueprint.FileType = 'UTD ';
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
-    if(!root) return this.blueprint;
+    if (!root) return this.blueprint;
 
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AnimationState', this.animationState || 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Appearance', this.appearance) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AutoRemoveKey', this.autoRemoveKey ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'CloseLockDC', this.closeLockDC) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Conversation', this.conversation) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.SHORT, 'CurrentHP', this.currentHP) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'DisarmDC', this.disarmDC) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Faction', this.factionId || 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Fort', this.fort) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'GenericType', this.genericType || 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.SHORT, 'HP', this.hp) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Hardness', this.hardness) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Interruptable', this.interruptable ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'KeyName', this.keyName) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'KeyRequired', this.keyRequired ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'LoadScreenID', this.loadScreenID || 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocName', this.locName) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Lockable', this.lockable ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Locked', this.locked ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Min1HP', this.min1HP ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'NotBlastable', this.notBlastable ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnClick', this.onClick) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnClosed', this.onClosed) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnDamaged', this.onDamaged) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnDeath', this.onDeath) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnDisarm', this.onDisarm) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnFailToOpen', this.onFailToOpen) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnHeartbeat', this.onHeartbeat) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnLock', this.onLock) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnMeleeAttacked', this.onMeleeAttacked) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnOpen', this.onOpen) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnSpellCastAt', this.onSpellCastAt) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnTrapTriggered', this.onTrapTriggered) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnUnlock', this.onUnlock) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnUserDefined', this.onUserDefined) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenLockDC', this.openLockDC) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenLockDiff', this.openLockDiff) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CHAR, 'OpenLockDiffMod', this.openLockDiffMod) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenState', this.openState || 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID || 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Plot', this.plot ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'PortraitId', this.portraitId || 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Ref', this.ref) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Static', this.static ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDetectDC', this.trapDetectDC || 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDetectable', this.trapDetectable ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDisarmable', this.trapDisarmable ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapFlag', this.trapFlag ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapOneShot', this.trapOneShot ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapType', this.trapType || 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Will', this.will) );
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AnimationState', this.animationState || 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Appearance', this.appearance));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AutoRemoveKey', this.autoRemoveKey ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'CloseLockDC', this.closeLockDC));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Conversation', this.conversation));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.SHORT, 'CurrentHP', this.currentHP));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'DisarmDC', this.disarmDC));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Faction', this.factionId || 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Fort', this.fort));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'GenericType', this.genericType || 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.SHORT, 'HP', this.hp));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Hardness', this.hardness));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Interruptable', this.interruptable ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'KeyName', this.keyName));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'KeyRequired', this.keyRequired ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'LoadScreenID', this.loadScreenID || 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocName', this.locName));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Lockable', this.lockable ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Locked', this.locked ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Min1HP', this.min1HP ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'NotBlastable', this.notBlastable ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnClick', this.onClick));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnClosed', this.onClosed));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnDamaged', this.onDamaged));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnDeath', this.onDeath));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnDisarm', this.onDisarm));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnFailToOpen', this.onFailToOpen));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnHeartbeat', this.onHeartbeat));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnLock', this.onLock));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnMeleeAttacked', this.onMeleeAttacked));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnOpen', this.onOpen));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnSpellCastAt', this.onSpellCastAt));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnTrapTriggered', this.onTrapTriggered));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnUnlock', this.onUnlock));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnUserDefined', this.onUserDefined));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenLockDC', this.openLockDC));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenLockDiff', this.openLockDiff));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CHAR, 'OpenLockDiffMod', this.openLockDiffMod));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenState', this.openState || 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID || 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Plot', this.plot ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'PortraitId', this.portraitId || 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Ref', this.ref));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Static', this.static ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || ''));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDetectDC', this.trapDetectDC || 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDetectable', this.trapDetectable ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDisarmable', this.trapDisarmable ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapFlag', this.trapFlag ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapOneShot', this.trapOneShot ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapType', this.trapType || 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Will', this.will));
 
     return this.blueprint;
   }
 
-  loadAppearance(){
-    if(!this.kDoorAppearance){
+  loadAppearance() {
+    if (!this.kDoorAppearance) {
       this.kDoorAppearance = {};
     }
     const twodaObject = KotOR.TwoDAManager.datatables.get('genericdoors');
-    if(!twodaObject) return;
+    if (!twodaObject) return;
     this.kDoorAppearances = Object.values(twodaObject.rows);
-    return this.kDoorAppearance = twodaObject.getRowByIndex(this.genericType || 0);
+    return (this.kDoorAppearance = twodaObject.getRowByIndex(this.genericType || 0));
   }
 
-  stringCleaner(str: string = ''){
-    return str.replace(/\0[\s\S]*$/g,'').toLowerCase();
+  stringCleaner(str: string = '') {
+    return str.replace(/\0[\s\S]*$/g, '').toLowerCase();
   }
 
-  async loadModel(){
-    if(this.model){
+  async loadModel() {
+    if (this.model) {
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch(e){}
+      try {
+        this.model.dispose();
+      } catch (e) {}
     }
 
     // Load appearance data first if not already loaded
-    if(!this.kDoorAppearance || Object.keys(this.kDoorAppearance).length === 0){
+    if (!this.kDoorAppearance || Object.keys(this.kDoorAppearance).length === 0) {
       this.loadAppearance();
     }
 
-    if(!this.blueprint){
+    if (!this.blueprint) {
       this.model = new KotOR.OdysseyModel3D();
       this.modelLoading = false;
       this.processEventListener('onModelChange', [this]);
@@ -393,16 +395,16 @@ export class ForgeDoor extends ForgeGameObject {
 
     const modelName = this.stringCleaner(this.kDoorAppearance?.modelname) || 'plc_invis';
 
-    try{
+    try {
       this.modelLoading = true;
       this.processEventListener('onModelChange', [this]);
       const mdl = await KotOR.MDLLoader.loader.load(modelName);
       const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
         context: this.context,
-        lighting: true
+        lighting: true,
       });
       this.model = model;
-    }catch(e){
+    } catch (e) {
       console.error(e);
       this.model = new KotOR.OdysseyModel3D();
     }
@@ -412,7 +414,7 @@ export class ForgeDoor extends ForgeGameObject {
     return this.model;
   }
 
-  async load(){
+  async load() {
     this.loadAppearance();
     await this.loadModel();
     this.updateBoundingBox();
@@ -433,7 +435,7 @@ export class ForgeDoor extends ForgeGameObject {
     return instance;
   }
 
-  setGITInstance(strt: KotOR.GFFStruct){
+  setGITInstance(strt: KotOR.GFFStruct) {
     this.rotation.z = strt.getFieldByLabel('Bearing').getValue() as number;
     this.linkedTo = strt.getFieldByLabel('LinkedTo').getValue() as string;
     this.linkedToFlags = strt.getFieldByLabel('LinkedToFlags').getValue() as number;
@@ -445,5 +447,4 @@ export class ForgeDoor extends ForgeGameObject {
     this.position.y = strt.getFieldByLabel('Y').getValue() as number;
     this.position.z = strt.getFieldByLabel('Z').getValue() as number;
   }
-
 }

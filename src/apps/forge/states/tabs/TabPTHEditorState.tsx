@@ -1,19 +1,30 @@
-import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { TabPTHEditor } from "@/apps/forge/components/tabs/tab-pth-editor/TabPTHEditor";
-import { CameraFocusMode, GroupType, ObjectType, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import { TabPTHEditor } from '@/apps/forge/components/tabs/tab-pth-editor/TabPTHEditor';
+import {
+  CameraFocusMode,
+  GroupType,
+  ObjectType,
+  UI3DRenderer,
+  UI3DRendererEventListenerTypes,
+} from '@/apps/forge/UI3DRenderer';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import * as KotOR from '@/apps/forge/KotOR';
 import * as THREE from 'three';
 
-import { TabPTHEditor } from "@/apps/forge/components/tabs/tab-pth-editor/TabPTHEditor";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { CameraFocusMode, GroupType, ObjectType, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-
+import { TabPTHEditor } from '@/apps/forge/components/tabs/tab-pth-editor/TabPTHEditor';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import {
+  CameraFocusMode,
+  GroupType,
+  ObjectType,
+  UI3DRenderer,
+  UI3DRendererEventListenerTypes,
+} from '@/apps/forge/UI3DRenderer';
 
 const POINT_OFFSET_HEIGHT = 1;
 
@@ -50,7 +61,7 @@ export class TabPTHEditorState extends TabState {
   previewPosition: THREE.Vector3 = new THREE.Vector3();
   previewValid: boolean = false;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
@@ -67,20 +78,20 @@ export class TabPTHEditorState extends TabState {
       {
         description: 'Odyssey Pathfinding Blueprint',
         accept: {
-          'application/octet-stream': ['.pth']
-        }
-      }
+          'application/octet-stream': ['.pth'],
+        },
+      },
     ];
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
 
     // Listen to transform controls changes to update point positions
     // Add listener immediately if transform controls exist, otherwise wait for canvas attachment
-    if(this.ui3DRenderer.transformControls){
+    if (this.ui3DRenderer.transformControls) {
       this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
     } else {
       // Wait for canvas to be attached so transform controls are built
       this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => {
-        if(this.ui3DRenderer.transformControls){
+        if (this.ui3DRenderer.transformControls) {
           this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
         }
       });
@@ -92,31 +103,31 @@ export class TabPTHEditorState extends TabState {
       color: 0x00ff00,
       wireframe: false,
       transparent: true,
-      opacity: 0.5
+      opacity: 0.5,
     });
     this.ghostPreviewMesh = new THREE.Mesh(ghostGeometry, ghostMaterial);
     this.ghostPreviewMesh.visible = false;
     this.pathHelperGroup.add(this.ghostPreviewMesh);
 
     this.addEventListener('onKeyUp', (e: KeyboardEvent) => {
-      if(e.key === 'Escape'){
+      if (e.key === 'Escape') {
         this.setControlMode(TabPTHEditorControlMode.SELECT);
         this.selectPoint(-1);
         this.ui3DRenderer.selectObject(undefined);
-      } else if(e.key === 'Delete'){
+      } else if (e.key === 'Delete') {
         this.deleteSelectedPoint();
       }
     });
   }
 
-  public openFile(file?: EditorFile){
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
-      if(!file && this.file instanceof EditorFile){
+  public openFile(file?: EditorFile) {
+    return new Promise<KotOR.GFFObject>((resolve, reject) => {
+      if (!file && this.file instanceof EditorFile) {
         file = this.file;
       }
 
-      if(file instanceof EditorFile){
-        if(this.file != file) {
+      if (file instanceof EditorFile) {
+        if (this.file != file) {
           // Dispose of previous layout when switching files
           this.disposeLayout();
           this.file = file;
@@ -124,7 +135,7 @@ export class TabPTHEditorState extends TabState {
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
 
-        file.readFile().then( async (response) => {
+        file.readFile().then(async (response) => {
           this.blueprint = new KotOR.GFFObject(response.buffer);
           this.setPropsFromBlueprint();
 
@@ -142,24 +153,24 @@ export class TabPTHEditorState extends TabState {
     this.controlMode = mode;
 
     this.ui3DRenderer.disableSelection = mode !== TabPTHEditorControlMode.SELECT;
-    if(this.ui3DRenderer.disableSelection){
+    if (this.ui3DRenderer.disableSelection) {
       this.ui3DRenderer.selectObject(undefined);
     }
     // Show/hide ghost preview based on mode
-    if(mode === TabPTHEditorControlMode.ADD_POINT){
+    if (mode === TabPTHEditorControlMode.ADD_POINT) {
       this.ghostPreviewMesh.visible = this.previewValid;
     } else {
       this.ghostPreviewMesh.visible = false;
     }
 
     // Clear selection when switching modes
-    if(mode !== TabPTHEditorControlMode.ADD_CONNECTION){
+    if (mode !== TabPTHEditorControlMode.ADD_CONNECTION) {
       this.selectedPointA = undefined as any;
       this.selectedPointB = undefined as any;
     }
 
     // Detach transform controls when not in SELECT mode
-    if(mode !== TabPTHEditorControlMode.SELECT){
+    if (mode !== TabPTHEditorControlMode.SELECT) {
       this.ui3DRenderer.transformControls.detach();
       this.selectedPointIndex = -1;
     }
@@ -168,13 +179,12 @@ export class TabPTHEditorState extends TabState {
   }
 
   public setPropsFromBlueprint(): void {
-
     /**
      * Parse the Path Points
      */
-    if(this.blueprint.RootNode.hasField('Path_Points')){
+    if (this.blueprint.RootNode.hasField('Path_Points')) {
       const pathPoints = this.blueprint.getFieldByLabel('Path_Points').getChildStructs();
-      for(let i = 0, len = pathPoints.length; i < len; i++){
+      for (let i = 0, len = pathPoints.length; i < len; i++) {
         this.points[i] = KotOR.PathPoint.FromGFFStruct(pathPoints[i]);
         this.points[i].id = i;
       }
@@ -183,14 +193,14 @@ export class TabPTHEditorState extends TabState {
     /**
      * Parse the Path Connections
      */
-    if(this.blueprint.RootNode.hasField('Path_Conections')){
+    if (this.blueprint.RootNode.hasField('Path_Conections')) {
       const pathConnections = this.blueprint.getFieldByLabel('Path_Conections').getChildStructs();
-      for(let i = 0, len = this.points.length; i < len; i++){
+      for (let i = 0, len = this.points.length; i < len; i++) {
         const point = this.points[i];
-        if(!point.num_connections) continue;
+        if (!point.num_connections) continue;
 
         const connIdx = point.first_connection;
-        for(let j = 0; j < point.num_connections; j++){
+        for (let j = 0; j < point.num_connections; j++) {
           const pointIdx = pathConnections[connIdx + j].getFieldByLabel('Destination').getValue();
           point.addConnection(this.points[pointIdx]);
         }
@@ -203,7 +213,7 @@ export class TabPTHEditorState extends TabState {
 
   private updateCameraFocus(): void {
     this.box3 = new THREE.Box3();
-    for(let i = 0; i < this.points.length; i++){
+    for (let i = 0; i < this.points.length; i++) {
       this.box3.expandByPoint(this.points[i].vector);
     }
     this.box3.getCenter(this.center);
@@ -211,20 +221,20 @@ export class TabPTHEditorState extends TabState {
   }
 
   private onSelect(intersect: THREE.Intersection): void {
-    if(this.controlMode === TabPTHEditorControlMode.SELECT){
+    if (this.controlMode === TabPTHEditorControlMode.SELECT) {
       // SELECT mode: select points for transform controls
-      if(intersect && intersect.object){
+      if (intersect && intersect.object) {
         const pointIndex = (intersect.object as THREE.Mesh).userData.pointIndex;
-        if(pointIndex !== undefined){
+        if (pointIndex !== undefined) {
           this.selectPoint(pointIndex);
           return;
         }
       }
       this.selectPoint(-1);
-    } else if(this.controlMode === TabPTHEditorControlMode.ADD_POINT){
+    } else if (this.controlMode === TabPTHEditorControlMode.ADD_POINT) {
       // POINT mode: add new point on walkable face
       this.handlePointPlacement(intersect);
-    } else if(this.controlMode === TabPTHEditorControlMode.ADD_CONNECTION){
+    } else if (this.controlMode === TabPTHEditorControlMode.ADD_CONNECTION) {
       // CONNECTION mode: connect points
       this.handleConnection(intersect);
     }
@@ -233,25 +243,25 @@ export class TabPTHEditorState extends TabState {
   private handlePointPlacement(intersect: THREE.Intersection | undefined): void {
     // Find walkable face intersection at current mouse position
     const walkableIntersect = this.findWalkableFaceIntersection();
-    if(walkableIntersect && walkableIntersect.point){
+    if (walkableIntersect && walkableIntersect.point) {
       this.addPathPoint(walkableIntersect.point);
     }
   }
 
   private handleConnection(intersect: THREE.Intersection | undefined): void {
-    if(!intersect || !intersect.object){
+    if (!intersect || !intersect.object) {
       return;
     }
 
     const pointIndex = (intersect.object as THREE.Mesh).userData.pointIndex;
-    if(pointIndex !== undefined && pointIndex >= 0 && pointIndex < this.points.length){
+    if (pointIndex !== undefined && pointIndex >= 0 && pointIndex < this.points.length) {
       const clickedPoint = this.points[pointIndex];
 
-      if(!this.selectedPointA){
+      if (!this.selectedPointA) {
         // First point selected
         this.selectedPointA = clickedPoint;
         this.selectPoint(pointIndex);
-      } else if(this.selectedPointA !== clickedPoint){
+      } else if (this.selectedPointA !== clickedPoint) {
         // Second point selected - create connection
         this.selectedPointB = clickedPoint;
         this.connectPoints(this.selectedPointA, this.selectedPointB);
@@ -271,7 +281,7 @@ export class TabPTHEditorState extends TabState {
   }
 
   private findWalkableFaceIntersection(): THREE.Intersection | null {
-    if(!this.ui3DRenderer.canvas) return null;
+    if (!this.ui3DRenderer.canvas) return null;
 
     this.ui3DRenderer.raycaster.setFromCamera(KotOR.Mouse.Vector, this.ui3DRenderer.camera);
 
@@ -279,10 +289,10 @@ export class TabPTHEditorState extends TabState {
     let closestDistance = Infinity;
 
     // Raycast against all walkmeshes
-    for(let i = 0; i < this.layoutModels.length; i++){
+    for (let i = 0; i < this.layoutModels.length; i++) {
       const model = this.layoutModels[i];
 
-      if(model.wok && model.wok.mesh){
+      if (model.wok && model.wok.mesh) {
         // model.updateMatrixWorld(true);
 
         // Get walkable faces
@@ -291,19 +301,19 @@ export class TabPTHEditorState extends TabState {
         tempBox.setFromCenterAndSize(rayOrigin, new THREE.Vector3(100, 100, 2000));
         let faces = model.wok.getAABBCollisionFaces(tempBox);
 
-        if(!faces || faces.length === 0){
+        if (!faces || faces.length === 0) {
           faces = model.wok.walkableFaces;
         }
 
         const intersects = model.wok.raycast(this.ui3DRenderer.raycaster, model.wok.walkableFaces);
 
-        if(intersects && intersects.length > 0){
-          for(let j = 0; j < intersects.length; j++){
+        if (intersects && intersects.length > 0) {
+          for (let j = 0; j < intersects.length; j++) {
             const intersect = intersects[j];
             // Only consider walkable faces (materialIndex 7 or 2)
             const face = (intersect as any).face;
-            if(face && face.walkCheck){
-              if(intersect.distance < closestDistance){
+            if (face && face.walkCheck) {
+              if (intersect.distance < closestDistance) {
                 closestDistance = intersect.distance;
                 closestIntersection = intersect;
               }
@@ -317,15 +327,15 @@ export class TabPTHEditorState extends TabState {
   }
 
   private updateGhostPreview(): void {
-    if(this.controlMode !== TabPTHEditorControlMode.ADD_POINT){
+    if (this.controlMode !== TabPTHEditorControlMode.ADD_POINT) {
       this.ghostPreviewMesh.visible = false;
       return;
     }
 
-    if(!this.ui3DRenderer.canvas) return;
+    if (!this.ui3DRenderer.canvas) return;
 
     const walkableIntersect = this.findWalkableFaceIntersection();
-    if(walkableIntersect && walkableIntersect.point){
+    if (walkableIntersect && walkableIntersect.point) {
       this.previewPosition.copy(walkableIntersect.point);
       this.previewPosition.z += POINT_OFFSET_HEIGHT; // Offset above surface
       this.ghostPreviewMesh.position.copy(this.previewPosition);
@@ -343,7 +353,7 @@ export class TabPTHEditorState extends TabState {
       connections: [],
       first_connection: 0,
       num_connections: 0,
-      vector: position.clone()
+      vector: position.clone(),
     });
     newPoint.vector.z += POINT_OFFSET_HEIGHT; // Offset above surface
 
@@ -351,14 +361,14 @@ export class TabPTHEditorState extends TabState {
     this.updatePathVisualization();
 
     // Mark file as having unsaved changes
-    if(this.file){
+    if (this.file) {
       this.file.unsaved_changes = true;
       this.editorFileUpdated();
     }
   }
 
   private connectPoints(pointA: KotOR.PathPoint, pointB: KotOR.PathPoint): void {
-    if(!pointA || !pointB || pointA === pointB) return;
+    if (!pointA || !pointB || pointA === pointB) return;
 
     pointA.addConnection(pointB);
     this.updatePathVisualization();
@@ -372,16 +382,16 @@ export class TabPTHEditorState extends TabState {
 
   private deleteSelectedPoint(): void {
     // Only delete in SELECT mode
-    if(this.controlMode !== TabPTHEditorControlMode.SELECT) return;
+    if (this.controlMode !== TabPTHEditorControlMode.SELECT) return;
 
     const pointToDelete = this.points[this.selectedPointIndex];
-    if(!pointToDelete) return;
+    if (!pointToDelete) return;
 
     console.log('selectedPointIndex', this.selectedPointIndex);
     console.log('pointToDelete', pointToDelete);
 
     const connections = pointToDelete.connections.slice();
-    for(let i = 0; i < connections.length; i++){
+    for (let i = 0; i < connections.length; i++) {
       const connection = connections[i];
       pointToDelete.removeConnection(connection);
       connection.removeConnection(pointToDelete);
@@ -393,7 +403,7 @@ export class TabPTHEditorState extends TabState {
     this.points.splice(this.selectedPointIndex, 1);
 
     // Update IDs for remaining points
-    for(let i = 0; i < this.points.length; i++){
+    for (let i = 0; i < this.points.length; i++) {
       this.points[i].id = i;
     }
 
@@ -413,9 +423,9 @@ export class TabPTHEditorState extends TabState {
     this.ui3DRenderer.transformControls.detach();
     this.selectedPointIndex = pointIndex;
     const point = this.points[pointIndex];
-    if(point){
+    if (point) {
       const mesh = this.pointMeshes[pointIndex] as THREE.Mesh;
-      if(mesh){
+      if (mesh) {
         this.ui3DRenderer.transformControls.attach(mesh);
         this.ui3DRenderer.transformControls.size = 0.5;
         this.ui3DRenderer.transformControls.showZ = false;
@@ -425,13 +435,13 @@ export class TabPTHEditorState extends TabState {
   }
 
   private onTransformControlsChange(): void {
-    if(this.selectedPointIndex < 0 || this.selectedPointIndex >= this.points.length) return;
+    if (this.selectedPointIndex < 0 || this.selectedPointIndex >= this.points.length) return;
 
     const mesh = this.pointMeshes[this.selectedPointIndex] as THREE.Mesh;
-    if(!mesh) return;
+    if (!mesh) return;
 
     const point = this.points[this.selectedPointIndex];
-    if(!point) return;
+    if (!point) return;
 
     // Update point vector from mesh position
     point.vector.copy(mesh.position);
@@ -440,43 +450,51 @@ export class TabPTHEditorState extends TabState {
     this.updateConnectionLines();
 
     // Mark file as having unsaved changes
-    if(this.file){
+    if (this.file) {
       this.file.unsaved_changes = true;
       this.editorFileUpdated();
     }
   }
 
   private updateConnectionLines(): void {
-    if(!this.connectionLines) return;
+    if (!this.connectionLines) return;
 
     const positions: number[] = [];
     const colors: number[] = [];
 
-    for(let i = 0; i < this.points.length; i++){
+    for (let i = 0; i < this.points.length; i++) {
       const point = this.points[i];
-      for(let j = 0; j < point.connections.length; j++){
+      for (let j = 0; j < point.connections.length; j++) {
         const connectedPoint = point.connections[j];
 
         // Add line from current point to connected point
         positions.push(
-          point.vector.x, point.vector.y, point.vector.z || 0,
-          connectedPoint.vector.x, connectedPoint.vector.y, connectedPoint.vector.z || 0
+          point.vector.x,
+          point.vector.y,
+          point.vector.z || 0,
+          connectedPoint.vector.x,
+          connectedPoint.vector.y,
+          connectedPoint.vector.z || 0
         );
 
         // Add colors (cyan for connections)
         colors.push(
-          0, 1, 1, // cyan
-          0, 1, 1  // cyan
+          0,
+          1,
+          1, // cyan
+          0,
+          1,
+          1 // cyan
         );
       }
     }
 
-    if(positions.length > 0){
+    if (positions.length > 0) {
       const positionArray = new Float32Array(positions);
       const colorArray = new Float32Array(colors);
 
       const positionAttribute = this.connectionLines.geometry.getAttribute('position') as THREE.BufferAttribute;
-      if(positionAttribute && positionAttribute.array.length === positionArray.length){
+      if (positionAttribute && positionAttribute.array.length === positionArray.length) {
         // Update existing attribute
         (positionAttribute.array as Float32Array).set(positionArray);
         positionAttribute.needsUpdate = true;
@@ -486,7 +504,7 @@ export class TabPTHEditorState extends TabState {
       }
 
       const colorAttribute = this.connectionLines.geometry.getAttribute('color') as THREE.BufferAttribute;
-      if(colorAttribute && colorAttribute.array.length === colorArray.length){
+      if (colorAttribute && colorAttribute.array.length === colorArray.length) {
         // Update existing attribute
         (colorAttribute.array as Float32Array).set(colorArray);
         colorAttribute.needsUpdate = true;
@@ -499,7 +517,7 @@ export class TabPTHEditorState extends TabState {
 
   private updatePathVisualization(): void {
     // Clear existing meshes
-    this.pointMeshes.forEach(mesh => {
+    this.pointMeshes.forEach((mesh) => {
       this.ui3DRenderer.selectable.remove(mesh);
       mesh.geometry.dispose();
       (mesh.material as THREE.Material).dispose();
@@ -507,23 +525,23 @@ export class TabPTHEditorState extends TabState {
     this.pointMeshes = [];
 
     // Remove existing connection lines
-    if(this.connectionLines){
+    if (this.connectionLines) {
       this.pathHelperGroup.remove(this.connectionLines);
       this.connectionLines.geometry.dispose();
       (this.connectionLines.material as THREE.Material).dispose();
       this.connectionLines = undefined as any;
     }
 
-    if(this.points.length === 0) return;
+    if (this.points.length === 0) return;
 
     // Create shared material for points (geometry will be created per mesh)
     const pointMaterial = new THREE.MeshBasicMaterial({
       color: 0x00ff00,
-      wireframe: false
+      wireframe: false,
     });
 
     // Create visual indicators for each point
-    for(let i = 0; i < this.points.length; i++){
+    for (let i = 0; i < this.points.length; i++) {
       const point = this.points[i];
       const sphereGeometry = new THREE.SphereGeometry(0.5, 16, 16);
       const sphere = new THREE.Mesh(sphereGeometry, pointMaterial);
@@ -538,32 +556,40 @@ export class TabPTHEditorState extends TabState {
     const positions: number[] = [];
     const colors: number[] = [];
 
-    for(let i = 0; i < this.points.length; i++){
+    for (let i = 0; i < this.points.length; i++) {
       const point = this.points[i];
-      for(let j = 0; j < point.connections.length; j++){
+      for (let j = 0; j < point.connections.length; j++) {
         const connectedPoint = point.connections[j];
 
         // Add line from current point to connected point
         positions.push(
-          point.vector.x, point.vector.y, point.vector.z || 0,
-          connectedPoint.vector.x, connectedPoint.vector.y, connectedPoint.vector.z || 0
+          point.vector.x,
+          point.vector.y,
+          point.vector.z || 0,
+          connectedPoint.vector.x,
+          connectedPoint.vector.y,
+          connectedPoint.vector.z || 0
         );
 
         // Add colors (cyan for connections)
         colors.push(
-          0, 1, 1, // cyan
-          0, 1, 1  // cyan
+          0,
+          1,
+          1, // cyan
+          0,
+          1,
+          1 // cyan
         );
       }
     }
 
-    if(positions.length > 0){
+    if (positions.length > 0) {
       connectionGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
       connectionGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
       const connectionMaterial = new THREE.LineBasicMaterial({
         vertexColors: true,
-        linewidth: 2
+        linewidth: 2,
       });
 
       this.connectionLines = new THREE.LineSegments(connectionGeometry, connectionMaterial);
@@ -572,18 +598,18 @@ export class TabPTHEditorState extends TabState {
   }
 
   private async loadLayoutFile(): Promise<void> {
-    if(!this.file) return;
+    if (!this.file) return;
 
     try {
       // Get the resref (filename without extension) from the PTH file
       const pthResref = this.file.resref;
 
-      if(!pthResref) return;
+      if (!pthResref) return;
 
       // Use ResourceLoader to load the LYT file with the same name
       const lytBuffer = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, pthResref);
 
-      if(lytBuffer && lytBuffer.length > 0){
+      if (lytBuffer && lytBuffer.length > 0) {
         // Parse the LYT file
         this.layout = new KotOR.LYTObject(lytBuffer);
 
@@ -600,26 +626,26 @@ export class TabPTHEditorState extends TabState {
     // Clear existing layout models
     this.disposeLayout();
 
-    if(!this.layout || !this.layout.rooms || this.layout.rooms.length === 0) return;
+    if (!this.layout || !this.layout.rooms || this.layout.rooms.length === 0) return;
 
     // Load each room model
-    for(let i = 0; i < this.layout.rooms.length; i++){
+    for (let i = 0; i < this.layout.rooms.length; i++) {
       const room = this.layout.rooms[i];
       try {
         const mdl = await KotOR.MDLLoader.loader.load(room.name);
-        if(mdl){
+        if (mdl) {
           const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
             context: this.ui3DRenderer,
             manageLighting: true,
             mergeStatic: true,
           });
-          if(model){
+          if (model) {
             model.position.copy(room.position);
 
             // Load walkmesh for the room
             try {
               const wokBuffer = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.wok, room.name);
-              if(wokBuffer && wokBuffer.length > 0){
+              if (wokBuffer && wokBuffer.length > 0) {
                 const wok = new KotOR.OdysseyWalkMesh(new KotOR.BinaryReader(wokBuffer));
                 model.wok = wok;
                 this.ui3DRenderer.unselectable.add(wok.mesh);
@@ -647,7 +673,7 @@ export class TabPTHEditorState extends TabState {
   }
 
   private async updatePointsFromWalkmesh(): Promise<void> {
-    if(this.points.length === 0 || this.layoutModels.length === 0) return;
+    if (this.points.length === 0 || this.layoutModels.length === 0) return;
 
     const raycaster = new THREE.Raycaster();
     const rayDirection = new THREE.Vector3(0, 0, -1); // Point downward
@@ -655,7 +681,7 @@ export class TabPTHEditorState extends TabState {
     const tempBox = new THREE.Box3();
 
     // Loop through all points
-    for(let i = 0; i < this.points.length; i++){
+    for (let i = 0; i < this.points.length; i++) {
       const point = this.points[i];
       let closestIntersection: THREE.Intersection | null = null;
       let closestDistance = Infinity;
@@ -668,11 +694,11 @@ export class TabPTHEditorState extends TabState {
       raycaster.far = 2000; // Large enough to reach the ground
 
       // Raycast against all room model walkmeshes
-      for(let j = 0; j < this.layoutModels.length; j++){
+      for (let j = 0; j < this.layoutModels.length; j++) {
         const model = this.layoutModels[j];
 
         // Check if model has a walkmesh
-        if(model.wok && model.wok.mesh){
+        if (model.wok && model.wok.mesh) {
           // Update model's world matrix to ensure walkmesh is in correct position
           model.updateMatrixWorld(true);
 
@@ -681,7 +707,7 @@ export class TabPTHEditorState extends TabState {
           let faces = model.wok.getAABBCollisionFaces(tempBox);
 
           // If AABB doesn't return faces, try using all walkable faces
-          if(!faces || faces.length === 0){
+          if (!faces || faces.length === 0) {
             faces = model.wok.walkableFaces;
           }
 
@@ -689,11 +715,11 @@ export class TabPTHEditorState extends TabState {
           const intersects = model.wok.raycast(raycaster, faces);
 
           // Find the closest intersection
-          if(intersects && intersects.length > 0){
-            for(let k = 0; k < intersects.length; k++){
+          if (intersects && intersects.length > 0) {
+            for (let k = 0; k < intersects.length; k++) {
               const intersect = intersects[k];
               // Only consider intersections that are below the ray origin
-              if(intersect.point && intersect.point.z < rayOrigin.z && intersect.distance < closestDistance){
+              if (intersect.point && intersect.point.z < rayOrigin.z && intersect.distance < closestDistance) {
                 closestDistance = intersect.distance;
                 closestIntersection = intersect;
               }
@@ -703,7 +729,7 @@ export class TabPTHEditorState extends TabState {
       }
 
       // Update point Z position if we found an intersection
-      if(closestIntersection && closestIntersection.point){
+      if (closestIntersection && closestIntersection.point) {
         point.vector.z = closestIntersection.point.z + POINT_OFFSET_HEIGHT;
       }
     }
@@ -714,7 +740,7 @@ export class TabPTHEditorState extends TabState {
 
   private disposeLayout(): void {
     // Remove and dispose of all layout models
-    this.layoutModels.forEach(model => {
+    this.layoutModels.forEach((model) => {
       this.ui3DRenderer.removeObjectFromGroup(model, GroupType.ROOMS);
       try {
         model.dispose();
@@ -727,7 +753,7 @@ export class TabPTHEditorState extends TabState {
 
   public destroy(): void {
     // Dispose ghost preview
-    if(this.ghostPreviewMesh){
+    if (this.ghostPreviewMesh) {
       this.pathHelperGroup.remove(this.ghostPreviewMesh);
       this.ghostPreviewMesh.geometry.dispose();
       (this.ghostPreviewMesh.material as THREE.Material).dispose();
@@ -736,9 +762,9 @@ export class TabPTHEditorState extends TabState {
     super.destroy();
   }
 
-  animate(delta: number = 0){
+  animate(delta: number = 0) {
     // Update ghost preview when in POINT mode
-    if(this.controlMode === TabPTHEditorControlMode.ADD_POINT){
+    if (this.controlMode === TabPTHEditorControlMode.ADD_POINT) {
       this.updateGhostPreview();
     }
   }
@@ -755,39 +781,41 @@ export class TabPTHEditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(!!resref && ext == 'pth'){
+    if (!!resref && ext == 'pth') {
       this.updateFile();
       return this.blueprint.getExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
   }
 
-  updateFile(){
+  updateFile() {
     const pth = new KotOR.GFFObject();
     pth.FileType = 'PTH ';
     pth.RootNode.type = -1;
 
     const root = pth.RootNode;
-    if(!root) return;
+    if (!root) return;
 
-    const pathConnectionsField = root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Path_Conections') );
-    const pathPointsField = root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Path_Points') );
+    const pathConnectionsField = root.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Path_Conections'));
+    const pathPointsField = root.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Path_Points'));
     let connIdx = 0;
-    for(let i = 0, len = this.points.length; i < len; i++){
+    for (let i = 0, len = this.points.length; i < len; i++) {
       const point = this.points[i];
-      const validConnections = point.connections.filter((destinationPoint) => this.points.indexOf(destinationPoint) >= 0);
+      const validConnections = point.connections.filter(
+        (destinationPoint) => this.points.indexOf(destinationPoint) >= 0
+      );
       const pathPointStruct = new KotOR.GFFStruct(2);
-      pathPointStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'First_Conection', connIdx ) );
-      pathPointStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Conections', validConnections.length ) );
-      pathPointStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', point.vector.x ) );
-      pathPointStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', point.vector.y ) );
+      pathPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'First_Conection', connIdx));
+      pathPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Conections', validConnections.length));
+      pathPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', point.vector.x));
+      pathPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', point.vector.y));
       pathPointsField?.addChildStruct(pathPointStruct);
 
-      for(let j = 0; j < validConnections.length; j++){
+      for (let j = 0; j < validConnections.length; j++) {
         const pathConnectionStruct = new KotOR.GFFStruct(3);
         const destinationPoint = validConnections[j];
         const destinationIndex = this.points.indexOf(destinationPoint);
-        pathConnectionStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Destination', destinationIndex ) );
+        pathConnectionStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Destination', destinationIndex));
         pathConnectionsField?.addChildStruct(pathConnectionStruct);
         connIdx++;
       }

@@ -1,9 +1,9 @@
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameMenu } from "@/gui";
-import type { GUILabel } from "@/gui";
-import type { ModuleObject } from "@/module";
-import { BitWise } from "@/utility/BitWise";
+import { EngineMode } from '@/enums/engine/EngineMode';
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import { GameMenu } from '@/gui';
+import type { GUILabel } from '@/gui';
+import type { ModuleObject } from '@/module';
+import { BitWise } from '@/utility/BitWise';
 
 /**
  * InGameAreaTransition class.
@@ -15,7 +15,6 @@ import { BitWise } from "@/utility/BitWise";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class InGameAreaTransition extends GameMenu {
-
   engineMode: EngineMode = EngineMode.INGAME;
   LBL_ICON: GUILabel;
   LBL_TEXTBG: GUILabel;
@@ -23,7 +22,7 @@ export class InGameAreaTransition extends GameMenu {
 
   transitionObject: ModuleObject;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'areatransition';
     this.background = '';
@@ -32,7 +31,7 @@ export class InGameAreaTransition extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       resolve();
     });
@@ -42,19 +41,21 @@ export class InGameAreaTransition extends GameMenu {
     this.LBL_DESCRIPTION.setText(text);
   }
 
-  setTransitionObject(object: ModuleObject){
-    if(!object) return;
+  setTransitionObject(object: ModuleObject) {
+    if (!object) return;
 
-    if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(object, ModuleObjectType.ModuleTrigger)){
+    if (
+      BitWise.InstanceOfObject(object, ModuleObjectType.ModuleDoor) ||
+      BitWise.InstanceOfObject(object, ModuleObjectType.ModuleTrigger)
+    ) {
       this.transitionObject = object;
       this.SetDescription(object.getTransitionDestin());
     }
   }
 
-  unsetTransitionObject(object: ModuleObject){
-    if(this.transitionObject == object){
+  unsetTransitionObject(object: ModuleObject) {
+    if (this.transitionObject == object) {
       this.transitionObject = undefined;
     }
   }
-
 }

@@ -1,7 +1,7 @@
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
-import { ApplicationMode } from "@/enums/ApplicationMode";
-import { GameEngineType } from "@/enums/engine";
-import { OSInfo } from "@/utility/OSInfo";
+import { ApplicationEnvironment } from '@/enums/ApplicationEnvironment';
+import { ApplicationMode } from '@/enums/ApplicationMode';
+import { GameEngineType } from '@/enums/engine';
+import { OSInfo } from '@/utility/OSInfo';
 
 /**
  * ApplicationProfile class.
@@ -13,7 +13,6 @@ import { OSInfo } from "@/utility/OSInfo";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ApplicationProfile {
-
   static MODE: ApplicationMode = ApplicationMode.GAME;
   static ENV: ApplicationEnvironment = ApplicationEnvironment.BROWSER;
   static directory: string;
@@ -25,36 +24,36 @@ export class ApplicationProfile {
   static profile: Record<string, unknown> = {};
   static isMac: boolean = false;
 
-  static SetProfile(profile: any){
-    if(typeof profile === 'object'){
+  static SetProfile(profile: any) {
+    if (typeof profile === 'object') {
       ApplicationProfile.profile = profile;
       ApplicationProfile.InitEnvironment();
     }
-    if(ApplicationProfile.profile){
-      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+    if (ApplicationProfile.profile) {
+      if (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON) {
         ApplicationProfile.directory = ApplicationProfile.profile.directory;
-      }else{
+      } else {
         ApplicationProfile.directoryHandle = ApplicationProfile.profile.directory_handle;
       }
     }
   }
 
-  static InitEnvironment(){
-    if(window.location.origin === 'file://'){
+  static InitEnvironment() {
+    if (window.location.origin === 'file://') {
       ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
-      if(typeof window.electron !== 'undefined'){
+      if (typeof window.electron !== 'undefined') {
         ApplicationProfile.isMac = window.electron.isMac();
       }
-      if(OSInfo.isWindows()){
+      if (OSInfo.isWindows()) {
         ApplicationProfile.path_sep = '/';
-      }else{
+      } else {
         ApplicationProfile.path_sep = '/';
       }
-    }else{
+    } else {
       ApplicationProfile.ENV = ApplicationEnvironment.BROWSER;
-      if(OSInfo.isWindows()){
+      if (OSInfo.isWindows()) {
         ApplicationProfile.path_sep = '/';
-      }else{
+      } else {
         ApplicationProfile.path_sep = '/';
       }
     }
@@ -67,5 +66,4 @@ export class ApplicationProfile {
       }
     }
   }
-
 }

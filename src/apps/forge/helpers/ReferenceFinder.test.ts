@@ -1,4 +1,8 @@
-import { countOccurrencesInBuffer, countOccurrencesInText, getWordAtIndex } from '@/apps/forge/helpers/ReferenceFinderCore';
+import {
+  countOccurrencesInBuffer,
+  countOccurrencesInText,
+  getWordAtIndex,
+} from '@/apps/forge/helpers/ReferenceFinderCore';
 
 describe('ReferenceFinder', () => {
   test('countOccurrencesInBuffer counts non-overlapping matches', () => {

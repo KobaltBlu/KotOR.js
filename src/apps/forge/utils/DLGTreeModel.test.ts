@@ -33,17 +33,19 @@ import { DLGTreeModel } from '@/apps/forge/utils/DLGTreeModel';
 // ---------------------------------------------------------------------------
 
 /** Minimal DLGNode-shaped plain object for testing. */
-function makeNode(opts: {
-  text?: string;
-  comment?: string;
-  speaker?: string;
-  entries?: any[];
-  replies?: any[];
-  index?: number;
-  script?: any;
-  isActive?: any;
-  nodeType?: DLGNodeType;
-} = {}): any {
+function makeNode(
+  opts: {
+    text?: string;
+    comment?: string;
+    speaker?: string;
+    entries?: any[];
+    replies?: any[];
+    index?: number;
+    script?: any;
+    isActive?: any;
+    nodeType?: DLGNodeType;
+  } = {}
+): any {
   return {
     nodeType: opts.nodeType ?? DLGNodeType.ENTRY,
     text: opts.text ?? '',
@@ -61,11 +63,13 @@ function makeNode(opts: {
   };
 }
 
-function makeDlg(opts: {
-  startingList?: any[];
-  entryList?: any[];
-  replyList?: any[];
-} = {}): any {
+function makeDlg(
+  opts: {
+    startingList?: any[];
+    entryList?: any[];
+    replyList?: any[];
+  } = {}
+): any {
   return {
     startingList: opts.startingList ?? [],
     entryList: opts.entryList ?? [],
@@ -85,7 +89,10 @@ function buildTwoLevelDlg() {
 
   return {
     dlg: makeDlg({ startingList: [starting], entryList: [entry1, entry2], replyList: [reply1] }),
-    entry1, entry2, reply1, starting,
+    entry1,
+    entry2,
+    reply1,
+    starting,
   };
 }
 
@@ -130,9 +137,7 @@ describe('DLGTreeModel', () => {
       });
       const nodeWithNeither = makeNode({ nodeType: DLGNodeType.STARTING });
 
-      const model = new DLGTreeModel(
-        makeDlg({ startingList: [nodeWithBoth, nodeWithNeither] }),
-      );
+      const model = new DLGTreeModel(makeDlg({ startingList: [nodeWithBoth, nodeWithNeither] }));
 
       const [withBoth, withNeither] = model.getRootNodes();
       expect(withBoth.hasActions).toBe(true);
@@ -253,7 +258,7 @@ describe('DLGTreeModel', () => {
       model.expandAll();
 
       const allNodes = model.getAllNodes();
-      allNodes.forEach(n => {
+      allNodes.forEach((n) => {
         expect(n.expanded).toBe(true);
       });
     });
@@ -265,7 +270,7 @@ describe('DLGTreeModel', () => {
 
       model.collapseAll();
 
-      model.getRootNodes().forEach(n => {
+      model.getRootNodes().forEach((n) => {
         expect(n.expanded).toBe(false);
       });
     });
@@ -383,7 +388,7 @@ describe('DLGTreeModel', () => {
       const model = new DLGTreeModel(dlg);
       model.expandAll();
 
-      const entryNodes = model.filterNodes(n => n.nodeType === DLGNodeType.ENTRY);
+      const entryNodes = model.filterNodes((n) => n.nodeType === DLGNodeType.ENTRY);
       // entry1 + entry2 = 2
       expect(entryNodes).toHaveLength(2);
     });
@@ -593,7 +598,7 @@ describe('DLGTreeModel', () => {
       model.expandAll();
       model.markOrphans();
 
-      const orphans = model.filterNodes(n => n.isOrphan);
+      const orphans = model.filterNodes((n) => n.isOrphan);
       // All tree nodes representing unlinkedEntry (listIndex=1, ENTRY) are orphans.
       // In this test tree entry2 is at index 1 and IS linked (reply1 links it), so
       // only nodes for the appended unlinked entry should be orphaned.

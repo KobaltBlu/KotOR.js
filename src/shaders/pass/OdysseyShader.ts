@@ -12,20 +12,20 @@ interface OdysseyShader {
 export const OdysseyShader: OdysseyShader = {
   uniforms: {
     //Saturation/Modulation
-    'tDiffuse': { value: null },
-    'saturation': { value: 1.0 },
-    'modulation': new THREE.Uniform( new THREE.Vector3(1, 1, 1) ),
+    tDiffuse: { value: null },
+    saturation: { value: 1.0 },
+    modulation: new THREE.Uniform(new THREE.Vector3(1, 1, 1)),
 
     //FilmPass
-		'time': { value: 0.0 },
-		'nIntensity': { value: 1 },
-		'sIntensity': { value: 0.325 },
-		'sCount': { value: 512 },
+    time: { value: 0.0 },
+    nIntensity: { value: 1 },
+    sIntensity: { value: 0.325 },
+    sCount: { value: 512 },
 
     //booleans
-		'grayscale': { value: 1 },
-		'bscanlines': { value: 0 },
-		'bmodulate': { value: 0 },
+    grayscale: { value: 1 },
+    bscanlines: { value: 0 },
+    bmodulate: { value: 0 },
   },
 
   vertexShader: /* glsl */ `
@@ -93,5 +93,5 @@ export const OdysseyShader: OdysseyShader = {
       }
 
       gl_FragColor = vec4( cResult, cTextureScreen.a );
-    }`
+    }`,
 };

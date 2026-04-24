@@ -1,6 +1,6 @@
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { EditorFile } from '@/apps/forge/EditorFile';
+import { EditorFileProtocol } from '@/apps/forge/enum/EditorFileProtocol';
+import { FileBrowserNode } from '@/apps/forge/FileBrowserNode';
 import {
   ReferenceFileResource,
   ReferenceSearchResult,
@@ -18,14 +18,13 @@ import {
   findAllReferencesInText,
   getWordAtIndex,
   findStrRefReferences,
-} from "@/apps/forge/helpers/ReferenceFinderCore";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+} from '@/apps/forge/helpers/ReferenceFinderCore';
+import { ProjectFileSystem } from '@/apps/forge/ProjectFileSystem';
 
-
-export type ReferenceScope = "project" | "game" | "both";
+export type ReferenceScope = 'project' | 'game' | 'both';
 
 export interface ReferenceHit {
-  scope: Exclude<ReferenceScope, "both">;
+  scope: Exclude<ReferenceScope, 'both'>;
   displayName: string;
   path: string;
   occurrences: number;
@@ -50,7 +49,7 @@ export function flattenResourceNodes(nodes: FileBrowserNode[]): FileBrowserNode[
   const out: FileBrowserNode[] = [];
   const visit = (n: FileBrowserNode) => {
     if (!n) return;
-    if (n.type === "resource") {
+    if (n.type === 'resource') {
       out.push(n);
       return;
     }
@@ -66,15 +65,13 @@ export { countOccurrencesInBuffer, countOccurrencesInText };
 
 function globToRegExp(pattern: string): RegExp {
   const escaped = pattern
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*/g, ".*")
-    .replace(/\?/g, ".");
-  return new RegExp(`^${escaped}$`, "i");
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '.*')
+    .replace(/\?/g, '.');
+  return new RegExp(`^${escaped}$`, 'i');
 }
 
-export async function searchProjectReferences(
-  options: ReferenceSearchOptions
-): Promise<ReferenceHit[]> {
+export async function searchProjectReferences(options: ReferenceSearchOptions): Promise<ReferenceHit[]> {
   const {
     query,
     caseSensitive = false,
@@ -87,15 +84,13 @@ export async function searchProjectReferences(
 
   if (!query?.trim()) return [];
 
-  const files = await ProjectFileSystem.readdir("", { recursive: true });
-  let filtered = files
-    .map((p) => p.replace(/\\/g, "/"))
-    .filter((p) => p && !excludePaths.some((re) => re.test(p)));
+  const files = await ProjectFileSystem.readdir('', { recursive: true });
+  let filtered = files.map((p) => p.replace(/\\/g, '/')).filter((p) => p && !excludePaths.some((re) => re.test(p)));
 
   if (fileTypes != null && fileTypes.size > 0) {
     const extSet = new Set([...fileTypes].map((t) => t.toLowerCase()));
     filtered = filtered.filter((p) => {
-      const ext = p.split(/[/\\]/).pop()?.split(".").pop()?.toLowerCase() ?? "";
+      const ext = p.split(/[/\\]/).pop()?.split('.').pop()?.toLowerCase() ?? '';
       return extSet.has(ext);
     });
   }
@@ -122,7 +117,7 @@ export async function searchProjectReferences(
       if (caseSensitive && needleBytes) {
         occurrences = countOccurrencesInBuffer(buffer, needleBytes);
       } else {
-        const decoder = new TextDecoder("utf-8", { fatal: false });
+        const decoder = new TextDecoder('utf-8', { fatal: false });
         const text = decoder.decode(buffer);
         occurrences = countOccurrencesInText(text, query, false);
       }
@@ -133,7 +128,7 @@ export async function searchProjectReferences(
           useProjectFileSystem: true,
         });
         hits.push({
-          scope: "project",
+          scope: 'project',
           displayName: relPath,
           path: relPath,
           occurrences,
@@ -148,9 +143,7 @@ export async function searchProjectReferences(
   return hits.sort((a, b) => b.occurrences - a.occurrences);
 }
 
-export async function searchGameReferencesByName(
-  options: ReferenceSearchOptions
-): Promise<ReferenceHit[]> {
+export async function searchGameReferencesByName(options: ReferenceSearchOptions): Promise<ReferenceHit[]> {
   const { query, filePattern = null, fileTypes = null, gameRootNodes = [] } = options;
   if (!query?.trim() || !gameRootNodes.length) return [];
 
@@ -158,24 +151,18 @@ export async function searchGameReferencesByName(
   const q = query.toLowerCase();
   const hits: ReferenceHit[] = [];
 
-  const extSet =
-    fileTypes != null && fileTypes.size > 0
-      ? new Set([...fileTypes].map((t) => t.toLowerCase()))
-      : null;
-  const patternMatcher =
-    filePattern != null && filePattern.trim()
-      ? globToRegExp(filePattern.trim())
-      : null;
+  const extSet = fileTypes != null && fileTypes.size > 0 ? new Set([...fileTypes].map((t) => t.toLowerCase())) : null;
+  const patternMatcher = filePattern != null && filePattern.trim() ? globToRegExp(filePattern.trim()) : null;
 
   for (const node of nodes) {
-    const name = node.name || "";
+    const name = node.name || '';
     if (!name.toLowerCase().includes(q)) continue;
 
     const path = node.data?.path;
     if (!path) continue;
 
     if (extSet) {
-      const ext = path.split(/[/\\]/).pop()?.split(".").pop()?.toLowerCase() ?? "";
+      const ext = path.split(/[/\\]/).pop()?.split('.').pop()?.toLowerCase() ?? '';
       if (!extSet.has(ext)) continue;
     }
     if (patternMatcher) {
@@ -189,7 +176,7 @@ export async function searchGameReferencesByName(
     });
 
     hits.push({
-      scope: "game",
+      scope: 'game',
       displayName: name,
       path,
       occurrences: 1,
@@ -200,16 +187,14 @@ export async function searchGameReferencesByName(
   return hits;
 }
 
-export async function searchReferences(
-  options: ReferenceSearchOptions
-): Promise<ReferenceHit[]> {
-  const scope = options.scope ?? "project";
+export async function searchReferences(options: ReferenceSearchOptions): Promise<ReferenceHit[]> {
+  const scope = options.scope ?? 'project';
   const results: ReferenceHit[] = [];
 
-  if (scope === "project" || scope === "both") {
+  if (scope === 'project' || scope === 'both') {
     results.push(...(await searchProjectReferences(options)));
   }
-  if (scope === "game" || scope === "both") {
+  if (scope === 'game' || scope === 'both') {
     results.push(...(await searchGameReferencesByName(options)));
   }
 
@@ -217,12 +202,7 @@ export async function searchReferences(
   return results;
 }
 
-export type {
-  ReferenceFileResource,
-  ReferenceSearchResult,
-  ReferenceFinderOptions,
-  ReferenceFinderResrefOptions,
-};
+export type { ReferenceFileResource, ReferenceSearchResult, ReferenceFinderOptions, ReferenceFinderResrefOptions };
 export {
   findResrefReferences,
   findFieldValueReferences,

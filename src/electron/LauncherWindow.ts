@@ -1,13 +1,12 @@
-﻿import { BrowserWindow, shell } from "electron";
-import * as path from "path";
-import Main from "@/electron/Main";
+﻿import { BrowserWindow, shell } from 'electron';
+import * as path from 'path';
+import Main from '@/electron/Main';
 
 export class LauncherWindow {
-
   browserWindow?: BrowserWindow;
 
-  constructor(){
-    if(this.browserWindow instanceof BrowserWindow){
+  constructor() {
+    if (this.browserWindow instanceof BrowserWindow) {
       this.browserWindow.show();
       this.browserWindow.focus();
       return;
@@ -31,31 +30,33 @@ export class LauncherWindow {
         //worldSafeExecuteJavaScript: true,
         contextIsolation: true,
         sandbox: false,
-      }
+      },
     });
     // and load the index.html of the app.
     this.browserWindow.loadURL(`file://${Main.ApplicationPath}/dist/launcher/index.html`);
     //this.browserWindow.openDevTools();
     this.browserWindow.on('ready-to-show', () => {
       // this.browserWindow.webcontents.openDevTools();
-      if(!this.browserWindow) { return; }
+      if (!this.browserWindow) {
+        return;
+      }
       this.browserWindow.webContents.setWindowOpenHandler((details) => {
         console.log(details);
-        if(details.frameName == '_new' || details.url.indexOf('https://') >= 0){
+        if (details.frameName == '_new' || details.url.indexOf('https://') >= 0) {
           shell.openExternal(details.url);
           return { action: 'deny' };
         }
         return { action: 'allow' };
-      })
-    })
+      });
+    });
 
     // Emitted when the window is closed.
     this.browserWindow.on('closed', () => {
       this.browserWindow = undefined;
     });
 
-    this.browserWindow.on('minimize',() => {
-      if(this.browserWindow) this.browserWindow.hide();
+    this.browserWindow.on('minimize', () => {
+      if (this.browserWindow) this.browserWindow.hide();
     });
 
     this.browserWindow.on('close', () => {
@@ -76,26 +77,20 @@ export class LauncherWindow {
     });
   }
 
-  toggleWindow(){
-    if(this.browserWindow && !this.browserWindow.isDestroyed())
-      this.browserWindow.isVisible() ?
-        this.browserWindow.hide() : this.browserWindow.show();
+  toggleWindow() {
+    if (this.browserWindow && !this.browserWindow.isDestroyed())
+      this.browserWindow.isVisible() ? this.browserWindow.hide() : this.browserWindow.show();
   }
 
-  hide(){
-    if(this.browserWindow && !this.browserWindow.isDestroyed())
-      this.browserWindow.hide();
+  hide() {
+    if (this.browserWindow && !this.browserWindow.isDestroyed()) this.browserWindow.hide();
   }
 
-  show(){
-    if(this.browserWindow && !this.browserWindow.isDestroyed())
-      this.browserWindow.show();
+  show() {
+    if (this.browserWindow && !this.browserWindow.isDestroyed()) this.browserWindow.show();
   }
 
   send(event: string, data: any) {
-    if(this.browserWindow && !this.browserWindow.isDestroyed())
-      this.browserWindow.webContents.send(event, data);
+    if (this.browserWindow && !this.browserWindow.isDestroyed()) this.browserWindow.webContents.send(event, data);
   }
-
 }
-

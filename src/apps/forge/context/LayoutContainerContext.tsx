@@ -29,9 +29,5 @@ export const LayoutContainerProvider: React.FC<LayoutContainerProviderProps> = (
 
   const providerValue: LayoutContainerProviderValues = {};
 
-  return (
-    <LayoutContainerContext.Provider value={providerValue}>
-      {props.children}
-    </LayoutContainerContext.Provider>
-  );
+  return <LayoutContainerContext.Provider value={providerValue}>{props.children}</LayoutContainerContext.Provider>;
 };

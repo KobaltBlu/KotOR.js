@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 
 import {
   IndoorDragMode,
@@ -23,10 +23,10 @@ import {
   INDOOR_ROOM_HOVER_COLOR,
   INDOOR_WARP_POINT_COLOR,
   INDOOR_WARP_POINT_RADIUS,
-} from "@/apps/forge/data/IndoorBuilderConstants";
-import { KitComponent } from "@/apps/forge/data/IndoorKit";
-import { IndoorMap, IndoorMapRoom } from "@/apps/forge/data/IndoorMap";
-import { clamp, toRadians } from "@/apps/forge/data/IndoorTypes";
+} from '@/apps/forge/data/IndoorBuilderConstants';
+import { KitComponent } from '@/apps/forge/data/IndoorKit';
+import { IndoorMap, IndoorMapRoom } from '@/apps/forge/data/IndoorMap';
+import { clamp, toRadians } from '@/apps/forge/data/IndoorTypes';
 
 type RendererOptions = {
   showGrid: boolean;
@@ -52,7 +52,7 @@ const DEFAULT_OPTIONS: RendererOptions = {
 
 const colorToRgba = (color: [number, number, number, number], alphaOverride?: number): string => {
   const [r, g, b, a] = color;
-  const alpha = typeof alphaOverride === "number" ? alphaOverride / 255 : a / 255;
+  const alpha = typeof alphaOverride === 'number' ? alphaOverride / 255 : a / 255;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
@@ -89,7 +89,10 @@ export class IndoorMapCanvasRenderer {
   private frameHandle: number | null = null;
   private dirty = true;
 
-  private cameraPosition: THREE.Vector2 = new THREE.Vector2(INDOOR_DEFAULT_CAMERA_POSITION_X, INDOOR_DEFAULT_CAMERA_POSITION_Y);
+  private cameraPosition: THREE.Vector2 = new THREE.Vector2(
+    INDOOR_DEFAULT_CAMERA_POSITION_X,
+    INDOOR_DEFAULT_CAMERA_POSITION_Y
+  );
   private cameraRotation = INDOOR_DEFAULT_CAMERA_ROTATION;
   private cameraScale = INDOOR_DEFAULT_CAMERA_ZOOM;
 
@@ -97,7 +100,7 @@ export class IndoorMapCanvasRenderer {
 
   attach(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
-    this.ctx = canvas.getContext("2d");
+    this.ctx = canvas.getContext('2d');
     this.startRenderLoop();
   }
 
@@ -275,10 +278,7 @@ export class IndoorMapCanvasRenderer {
     const rotation = toRadians(this.cameraRotation);
     const cos = Math.cos(rotation);
     const sin = Math.sin(rotation);
-    const rotated = new THREE.Vector2(
-      scaled.x * cos + scaled.y * sin,
-      -scaled.x * sin + scaled.y * cos
-    );
+    const rotated = new THREE.Vector2(scaled.x * cos + scaled.y * sin, -scaled.x * sin + scaled.y * cos);
     return rotated.add(this.cameraPosition);
   }
 

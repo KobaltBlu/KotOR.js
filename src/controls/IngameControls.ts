@@ -1,24 +1,24 @@
-import * as THREE from "three";
-import { GameState } from "@/GameState";
-import type { GUIControl, GUIListBox, GUIScrollBar } from "@/gui";
-import { Utility } from "@/utility/Utility";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { EngineState } from "@/enums/engine/EngineState";
-import { KeyMapAction } from "@/enums/controls/KeyMapAction";
-import { MiniGameType } from "@/enums/engine/MiniGameType";
-import { FollowerCamera } from "@/engine/FollowerCamera";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
-import { Keyboard } from "@/controls/Keyboard";
-import { GamePad } from "@/controls/GamePad";
-import { Mouse } from "@/controls/Mouse";
-import { KeyMapper } from "@/controls/KeyMapper";
-import { AnalogInput } from "@/controls/AnalogInput";
-import { TGAObject } from "@/resource/TGAObject";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
+import * as THREE from 'three';
+import { GameState } from '@/GameState';
+import type { GUIControl, GUIListBox, GUIScrollBar } from '@/gui';
+import { Utility } from '@/utility/Utility';
+import { EngineMode } from '@/enums/engine/EngineMode';
+import { EngineState } from '@/enums/engine/EngineState';
+import { KeyMapAction } from '@/enums/controls/KeyMapAction';
+import { MiniGameType } from '@/enums/engine/MiniGameType';
+import { FollowerCamera } from '@/engine/FollowerCamera';
+import { BitWise } from '@/utility/BitWise';
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import { GUIControlTypeMask } from '@/enums/gui/GUIControlTypeMask';
+import { GUIControlEventFactory } from '@/gui/GUIControlEventFactory';
+import { Keyboard } from '@/controls/Keyboard';
+import { GamePad } from '@/controls/GamePad';
+import { Mouse } from '@/controls/Mouse';
+import { KeyMapper } from '@/controls/KeyMapper';
+import { AnalogInput } from '@/controls/AnalogInput';
+import { TGAObject } from '@/resource/TGAObject';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { TURN_SPEED_FAST } from '@/engine/TurnSpeeds';
 
 /**
  * IngameControls class.
@@ -44,8 +44,7 @@ export class IngameControls {
 
   plMoveEvent: (e: MouseEvent) => void;
 
-  constructor(camera: THREE.Camera, element: HTMLElement){
-
+  constructor(camera: THREE.Camera, element: HTMLElement) {
     this.camera = camera;
     this.element = element;
 
@@ -56,13 +55,13 @@ export class IngameControls {
     this.element.requestPointerLock = this.element.requestPointerLock;
 
     window.addEventListener('keydown', (e: KeyboardEvent) => {
-      if(e.key === 'F4' || e.key === 'F5'){
+      if (e.key === 'F4' || e.key === 'F5') {
         e.preventDefault();
       }
       this.keyboard.onKeyDown(e);
 
-      if(GameState.MenuManager.activeGUIElement){
-        if(typeof GameState.MenuManager.activeGUIElement.onKeyDown === 'function'){
+      if (GameState.MenuManager.activeGUIElement) {
+        if (typeof GameState.MenuManager.activeGUIElement.onKeyDown === 'function') {
           GameState.MenuManager.activeGUIElement.onKeyDown(e);
         }
       }
@@ -70,24 +69,27 @@ export class IngameControls {
       const ae = GameState.MenuManager.activeGUIElement as { editable?: boolean } | undefined;
       const editingTextField = !!(ae && ae.editable === true);
 
-      if(
+      if (
         !editingTextField &&
         (GameState.Mode == EngineMode.GUI || GameState.Mode == EngineMode.DIALOG) &&
         (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'UpArrow' || e.code === 'DownArrow')
-      ){
+      ) {
         const fg = GameState.MenuManager.GetForegroundMenu();
-        if(fg){
-          if(e.code === 'ArrowUp' || e.code === 'UpArrow'){
+        if (fg) {
+          if (e.code === 'ArrowUp' || e.code === 'UpArrow') {
             fg.triggerControllerDUpPress();
-          }else{
+          } else {
             fg.triggerControllerDDownPress();
           }
           e.preventDefault();
         }
       }
 
-      if(GameState.MenuManager.activeMenus.length){
-        GameState.MenuManager.activeMenus[GameState.MenuManager.activeMenus.length-1].triggerEventListener('keydown', e);
+      if (GameState.MenuManager.activeMenus.length) {
+        GameState.MenuManager.activeMenus[GameState.MenuManager.activeMenus.length - 1].triggerEventListener(
+          'keydown',
+          e
+        );
       }
     });
 
@@ -95,18 +97,18 @@ export class IngameControls {
       /**
        * Debugger Hotkey
        */
-      if(e.key == 'D' && e.ctrlKey && e.shiftKey){
+      if (e.key == 'D' && e.ctrlKey && e.shiftKey) {
         GameState.Debugger.open();
       }
 
       /**
        * Generate a TGA Screenshot of the Game canvas and export it to the game directory
        */
-      if(e.key == 'PrintScreen'){
-        if(GameState.iniConfig.getProperty('Game Options.EnableScreenShot') != 1){
+      if (e.key == 'PrintScreen') {
+        if (GameState.iniConfig.getProperty('Game Options.EnableScreenShot') != 1) {
           return;
         }
-        if(!GameState.composer || !GameState.renderer){
+        if (!GameState.composer || !GameState.renderer) {
           return;
         }
         /**
@@ -123,7 +125,7 @@ export class IngameControls {
          */
         const screenshot = new Image();
         screenshot.src = GameState.canvas.toDataURL('image/png');
-        screenshot.onload = async function() {
+        screenshot.onload = async function () {
           /**
            * Draw the contents of the Image onto an OffscreenCanvas
            */
@@ -141,14 +143,14 @@ export class IngameControls {
           /**
            * Generate the export filename
            */
-          const count = (await GameFileSystem.readdir('')).filter( (file) => {
+          const count = (await GameFileSystem.readdir('')).filter((file) => {
             return !!file.match(/KotOR\d{4}.tga/);
           }).length;
           const isK1 = GameState.GameKey == 'KOTOR';
           const ssName = isK1 ? 'KotOR' : 'K2_';
-          const ssNumber = "00000" + count;
+          const ssNumber = '00000' + count;
           const ssMaxDigits = isK1 ? 4 : 5;
-          const ssFilename = `${ssName}${ssNumber.substring(ssNumber.length-ssMaxDigits)}.tga`;
+          const ssFilename = `${ssName}${ssNumber.substring(ssNumber.length - ssMaxDigits)}.tga`;
 
           /**
            * Export the generated TGAObject as a TGA Image
@@ -159,14 +161,17 @@ export class IngameControls {
 
       this.keyboard.onKeyUp(e);
 
-      if(GameState.MenuManager.activeGUIElement){
-        if(typeof GameState.MenuManager.activeGUIElement.onKeyUp === 'function'){
+      if (GameState.MenuManager.activeGUIElement) {
+        if (typeof GameState.MenuManager.activeGUIElement.onKeyUp === 'function') {
           GameState.MenuManager.activeGUIElement.onKeyUp(e);
         }
       }
 
-      if(GameState.MenuManager.activeMenus.length){
-        GameState.MenuManager.activeMenus[GameState.MenuManager.activeMenus.length-1].triggerEventListener('keyup', e);
+      if (GameState.MenuManager.activeMenus.length) {
+        GameState.MenuManager.activeMenus[GameState.MenuManager.activeMenus.length - 1].triggerEventListener(
+          'keyup',
+          e
+        );
       }
     });
 
@@ -176,33 +181,30 @@ export class IngameControls {
 
     window.addEventListener('mousedown', (event: MouseEvent) => {
       Mouse.Update(event.clientX, event.clientY);
-      if(event.target == this.element){
+      if (event.target == this.element) {
         GameState.MenuManager.activeGUIElement = undefined;
-        if(GameState.debug.CONTROLS)
-          console.log('Valid Mouse Target');
+        if (GameState.debug.CONTROLS) console.log('Valid Mouse Target');
         Mouse.ButtonState = event.which;
         Mouse.MouseDown = true;
         // let parentOffset = this.editor.canvas.offset();
         Mouse.MouseDownX = event.pageX - this.element.offsetLeft;
         Mouse.MouseDownY = event.pageY - this.element.offsetTop;
 
-        if(Mouse.ButtonState == MouseState.LEFT){
-
-        }else{
+        if (Mouse.ButtonState == MouseState.LEFT) {
+        } else {
           // Ask the browser to lock the pointer
           this.element.requestPointerLock();
         }
-      }else{
+      } else {
         //console.log('Invalid Mouse Target', this.element);
       }
 
-      if(GameState.debug.CONTROLS)
-        console.log('DOWN');
+      if (GameState.debug.CONTROLS) console.log('DOWN');
 
       // GameState.mouse.x = ( event.clientX / ResolutionManager.getViewportWidth() ) * 2 - 1;
       // GameState.mouse.y = - ( event.clientY / ResolutionManager.getViewportHeight() ) * 2 + 1;
 
-      GameState.raycaster.setFromCamera( GameState.mouse, GameState.camera_gui );
+      GameState.raycaster.setFromCamera(GameState.mouse, GameState.camera_gui);
 
       let clickCaptured = false;
 
@@ -212,33 +214,29 @@ export class IngameControls {
       Mouse.clickItem = null;
 
       let uiControls = this.MenuGetActiveUIElements();
-      for(let i = 0; i < uiControls.length; i++){
-        if(!customEvent.propagate)
-          break;
+      for (let i = 0; i < uiControls.length; i++) {
+        if (!customEvent.propagate) break;
 
         let control = uiControls[i];
-        if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
+        if (!(control.widget.parent instanceof THREE.Scene) && control.widget.visible) {
           clickCaptured = true;
-          if(GameState.debug.CONTROLS)
-            console.log('uiControls', control)
-          try{
-            if(control.processEventListener('mouseDown', [customEvent])){
+          if (GameState.debug.CONTROLS) console.log('uiControls', control);
+          try {
+            if (control.processEventListener('mouseDown', [customEvent])) {
               Mouse.downItem = control;
               customEvent.propagate = false;
               //control.onMouseDown(customEvent);
             }
 
-            if(control.eventListeners['click'].length){
+            if (control.eventListeners['click'].length) {
               Mouse.clickItem = control;
               customEvent.propagate = false;
             }
 
             //GameState.guiAudioEmitter.playSound('gui_click');
-            if(GameState.debug.CONTROLS)
+            if (GameState.debug.CONTROLS)
               console.log('MouseDown', control, Mouse.downItem, Mouse.clickItem, typeof control.onClick);
-          }catch(e){
-
-          }
+          } catch (e) {}
         }
       }
       Mouse.leftDown = (event.buttons & 1) === 1;
@@ -248,7 +246,7 @@ export class IngameControls {
     window.addEventListener('mousemove', (event: MouseEvent) => {
       GameState.scene_cursor_holder.visible = true;
 
-      Mouse.Update( event.clientX, event.clientY );
+      Mouse.Update(event.clientX, event.clientY);
 
       // Keep leftDown/rightDown in sync with actual button state (critical for both-buttons = move forward)
       Mouse.leftDown = (event.buttons & 1) === 1;
@@ -256,16 +254,16 @@ export class IngameControls {
 
       //onMouseMove events HERE
       //console.log('move', Mouse.downItem, Mouse.leftDown);
-      if(Mouse.downItem && Mouse.leftDown){
-        if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
+      if (Mouse.downItem && Mouse.leftDown) {
+        if (BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)) {
           //if(typeof Mouse.downItem.widget.parent !== 'undefined'){
-            if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
-              Mouse.downItem.processEventListener('mouseMove', [])
-              /*if(typeof Mouse.downItem.onMouseMove === 'function'){
+          if (!(Mouse.downItem.widget.parent instanceof THREE.Scene)) {
+            Mouse.downItem.processEventListener('mouseMove', []);
+            /*if(typeof Mouse.downItem.onMouseMove === 'function'){
                 //console.log('Dragging');
                 Mouse.downItem.onMouseMove();
               }*/
-            }
+          }
           //}
         }
       }
@@ -274,9 +272,9 @@ export class IngameControls {
       Mouse.MouseX = event.pageX - this.element.offsetLeft;
       Mouse.MouseY = event.pageY - this.element.offsetTop;
 
-      if(Mouse.MouseDown && !Mouse.Dragging && Mouse.ButtonState == MouseState.RIGHT){
+      if (Mouse.MouseDown && !Mouse.Dragging && Mouse.ButtonState == MouseState.RIGHT) {
         Mouse.Dragging = true;
-      }else if(Mouse.MouseDown && !Mouse.Dragging && Mouse.ButtonState == MouseState.LEFT){
+      } else if (Mouse.MouseDown && !Mouse.Dragging && Mouse.ButtonState == MouseState.LEFT) {
         Mouse.Dragging = true;
       }
     });
@@ -300,17 +298,16 @@ export class IngameControls {
       document.exitPointerLock();
 
       //event.preventDefault();
-      if(GameState.debug.CONTROLS)
-        console.log('UP');
+      if (GameState.debug.CONTROLS) console.log('UP');
 
       // Dispatch UI click on left-button release (event.buttons is 0 here, so don't gate on Mouse.leftDown).
-      if(isLeftButton){
-        Mouse.Update( event.clientX, event.clientY );
+      if (isLeftButton) {
+        Mouse.Update(event.clientX, event.clientY);
         // GameState.mouse.x = ( event.clientX / ResolutionManager.getViewportWidth() ) * 2 - 1;
         // GameState.mouse.y = - ( event.clientY / ResolutionManager.getViewportHeight() ) * 2 + 1;
 
         //If the NoClickTimer is active then we will return out of this function
-        if(GameState.noClickTimer){
+        if (GameState.noClickTimer) {
           return;
         }
 
@@ -321,44 +318,40 @@ export class IngameControls {
         //GameState.selected = undefined;
 
         //Try to fire mouse up regardless if mouse is still inside object
-        if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
+        if (BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)) {
           //if(typeof Mouse.downItem.widget.parent !== 'undefined'){
-            if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
-              try{
-                Mouse.downItem.processEventListener('mouseUp', [customEvent]);
-                //Mouse.downItem.onMouseUp(customEvent);
-                //GameState.guiAudioEmitter.playSound('gui_click');
-                if(GameState.debug.CONTROLS)
-                  console.log('MouseUp', Mouse.downItem, Mouse.downItem.name);
-                Mouse.leftClick = false;
-              }catch(e){
-                console.error(e);
-              }
-
+          if (!(Mouse.downItem.widget.parent instanceof THREE.Scene)) {
+            try {
+              Mouse.downItem.processEventListener('mouseUp', [customEvent]);
+              //Mouse.downItem.onMouseUp(customEvent);
+              //GameState.guiAudioEmitter.playSound('gui_click');
+              if (GameState.debug.CONTROLS) console.log('MouseUp', Mouse.downItem, Mouse.downItem.name);
+              Mouse.leftClick = false;
+            } catch (e) {
+              console.error(e);
             }
+          }
           //}
         }
 
         let uiControls = this.MenuGetActiveUIElements();
-        for(let i = 0; i < uiControls.length; i++){
-          if(!customEvent.propagate)
-            break;
+        for (let i = 0; i < uiControls.length; i++) {
+          if (!customEvent.propagate) break;
 
           let control = uiControls[i];
-          if(control === Mouse.clickItem){
-            if(typeof control.widget.parent !== 'undefined'){
-              if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
+          if (control === Mouse.clickItem) {
+            if (typeof control.widget.parent !== 'undefined') {
+              if (!(control.widget.parent instanceof THREE.Scene) && control.widget.visible) {
                 clickCaptured = true;
-                try{
+                try {
                   Mouse.clickItem = null;
                   //control.onClick(customEvent);
                   GameState.MenuManager.activeGUIElement = control;
                   control.processEventListener('click', [customEvent]);
                   GameState.guiAudioEmitter.playSoundFireAndForget('gui_click');
-                  if(GameState.debug.CONTROLS)
-                    console.log('MouseClick', control, control.name);
+                  if (GameState.debug.CONTROLS) console.log('MouseClick', control, control.name);
                   Mouse.leftClick = false;
-                }catch(e){
+                } catch (e) {
                   console.error(e);
                 }
               }
@@ -368,25 +361,27 @@ export class IngameControls {
 
         let selectedObject = clickCaptured;
 
-        if(!clickCaptured && (GameState.Mode != EngineMode.DIALOG)){
-          if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
+        if (!clickCaptured && GameState.Mode != EngineMode.DIALOG) {
+          if (
+            GameState.Mode == EngineMode.INGAME &&
+            GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay
+          ) {
             const moduleObject = GameState.CursorManager.onMouseHitInteractive();
-            if(BitWise.InstanceOf(moduleObject?.objectType, ModuleObjectType.ModuleObject)){
-              if(moduleObject.isUseable() && moduleObject != GameState.getCurrentPlayer()){
-
+            if (BitWise.InstanceOf(moduleObject?.objectType, ModuleObjectType.ModuleObject)) {
+              if (moduleObject.isUseable() && moduleObject != GameState.getCurrentPlayer()) {
                 selectedObject = true;
 
                 let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
                 let distanceThreshold = 20;
 
-                if(GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
-                  if(typeof moduleObject.onClick === 'function'){
+                if (GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold) {
+                  if (typeof moduleObject.onClick === 'function') {
                     GameState.getCurrentPlayer().clearAllActions();
                     moduleObject.onClick(GameState.getCurrentPlayer());
-                  }else{
+                  } else {
                     let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
                     //console.log(distance);
-                    if(distance > 1.5){
+                    if (distance > 1.5) {
                       GameState.getCurrentPlayer().clearAllActions();
                       moduleObject.clearAllActions();
                       GameState.getCurrentPlayer().actionDialogObject(moduleObject);
@@ -395,14 +390,12 @@ export class IngameControls {
                 }
                 GameState.CursorManager.setReticleSelectedObject(moduleObject);
               }
-              if(GameState.debug.SELECTED_OBJECT)
-                console.log('Ingame Object', moduleObject);
-            }else{
-              if(GameState.debug.SELECTED_OBJECT)
-                console.log('Object', moduleObject);
+              if (GameState.debug.SELECTED_OBJECT) console.log('Ingame Object', moduleObject);
+            } else {
+              if (GameState.debug.SELECTED_OBJECT) console.log('Object', moduleObject);
             }
 
-            if(!selectedObject){
+            if (!selectedObject) {
               // GameState.CursorManager.hovered = GameState.CursorManager.hoveredObject = GameState.CursorManager.selected = GameState.CursorManager.selectedObject = undefined;
             }
           }
@@ -414,16 +407,20 @@ export class IngameControls {
     });
 
     document.body.addEventListener('wheel', (e: WheelEvent) => {
-      if(e.deltaY < 0){
-        if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
+      if (e.deltaY < 0) {
+        if (BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)) {
           (GameState.MenuManager.hoveredGUIElement as GUIListBox).scrollUp();
-        }else if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
+        } else if (
+          BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)
+        ) {
           (GameState.MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollUp();
         }
-      }else{
-        if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
+      } else {
+        if (BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)) {
           (GameState.MenuManager.hoveredGUIElement as GUIListBox).scrollDown();
-        }else if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
+        } else if (
+          BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)
+        ) {
           (GameState.MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollDown();
         }
       }
@@ -432,76 +429,72 @@ export class IngameControls {
     GameState.canvas.addEventListener('contextmenu', (e: MouseEvent) => {
       e.preventDefault();
     });
-
   }
 
-  initKeys(){
+  initKeys() {
     KeyMapper.BindKeyboard(this.keyboard, GameState.iniConfig);
     KeyMapper.BindGamepad(this.gamePad);
 
     //W
-    KeyMapper.Actions[KeyMapAction.ActionUp].setProcessor( (keymap) => {
-      if(GameState.State == EngineState.PAUSED) return;
-      if(!keymap.keyboardInput?.down) return;
-      if(this.gamePadMovement) return;
+    KeyMapper.Actions[KeyMapAction.ActionUp].setProcessor((keymap) => {
+      if (GameState.State == EngineState.PAUSED) return;
+      if (!keymap.keyboardInput?.down) return;
+      if (this.gamePadMovement) return;
       const followee = GameState.PartyManager.party[0];
-      if(!followee) return;
-      if(!followee.canMove()) return;
+      if (!followee) return;
+      if (!followee.canMove()) return;
 
       followee.clearAllActions(true);
       followee.force = 1;
-      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI/2));
+      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI / 2));
       followee.controlled = true;
       GameState.scene_cursor_holder.visible = true;
     });
 
     //S
-    KeyMapper.Actions[KeyMapAction.ActionDown].setProcessor( (keymap) => {
-      if(GameState.State == EngineState.PAUSED) return;
-      if(!keymap.keyboardInput?.down) return;
-      if(this.gamePadMovement) return;
+    KeyMapper.Actions[KeyMapAction.ActionDown].setProcessor((keymap) => {
+      if (GameState.State == EngineState.PAUSED) return;
+      if (!keymap.keyboardInput?.down) return;
+      if (this.gamePadMovement) return;
       const followee = GameState.PartyManager.party[0];
-      if(!followee) return;
-      if(!followee.canMove()) return;
+      if (!followee) return;
+      if (!followee.canMove()) return;
 
       followee.clearAllActions(true);
       followee.force = 1;
-      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing - Math.PI/2));
+      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing - Math.PI / 2));
       followee.controlled = true;
       GameState.scene_cursor_holder.visible = true;
     });
 
     //Z
-    KeyMapper.Actions[KeyMapAction.ActionLeft].setProcessor( (keymap) => {
-      if(GameState.State == EngineState.PAUSED) return;
-      if(!keymap.keyboardInput?.down) return;
+    KeyMapper.Actions[KeyMapAction.ActionLeft].setProcessor((keymap) => {
+      if (GameState.State == EngineState.PAUSED) return;
+      if (!keymap.keyboardInput?.down) return;
       const followee = GameState.PartyManager.party[0];
-      if(!followee) return;
-      if(!followee.canMove()) return;
+      if (!followee) return;
+      if (!followee.canMove()) return;
     });
 
     //C
-    KeyMapper.Actions[KeyMapAction.ActionRight].setProcessor( (keymap) => {
-      if(GameState.State == EngineState.PAUSED) return;
-      if(!keymap.keyboardInput?.down) return;
+    KeyMapper.Actions[KeyMapAction.ActionRight].setProcessor((keymap) => {
+      if (GameState.State == EngineState.PAUSED) return;
+      if (!keymap.keyboardInput?.down) return;
       const followee = GameState.PartyManager.party[0];
-      if(!followee) return;
-      if(!followee.canMove()) return;
+      if (!followee) return;
+      if (!followee.canMove()) return;
     });
 
     //A
-    KeyMapper.Actions[KeyMapAction.CameraRotateLeft].setProcessor( (keymap) => {
+    KeyMapper.Actions[KeyMapAction.CameraRotateLeft].setProcessor((keymap) => {
       // if(GameState.State == EngineState.PAUSED) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
-      if(
-        (keymap.keyboardInput.down ||
-        (keymap.gamepadInput as AnalogInput).value < 0)
-      ){
+      if (GameState.Mode != EngineMode.INGAME) return;
+      if (keymap.keyboardInput.down || (keymap.gamepadInput as AnalogInput).value < 0) {
         FollowerCamera.turning = true;
-        if(this.gamePad.stick_r_x.value){
+        if (this.gamePad.stick_r_x.value) {
           GameState.scene_cursor_holder.visible = false;
           FollowerCamera.dir = -this.gamePad.stick_r_x.value;
-        }else{
+        } else {
           FollowerCamera.dir = 1;
           GameState.scene_cursor_holder.visible = true;
         }
@@ -509,18 +502,15 @@ export class IngameControls {
     });
 
     //D
-    KeyMapper.Actions[KeyMapAction.CameraRotateRight].setProcessor( (keymap) => {
+    KeyMapper.Actions[KeyMapAction.CameraRotateRight].setProcessor((keymap) => {
       // if(GameState.State == EngineState.PAUSED) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
-      if(
-        (keymap.keyboardInput.down ||
-        (keymap.gamepadInput as AnalogInput).value > 0)
-      ){
+      if (GameState.Mode != EngineMode.INGAME) return;
+      if (keymap.keyboardInput.down || (keymap.gamepadInput as AnalogInput).value > 0) {
         FollowerCamera.turning = true;
-        if(this.gamePad.stick_r_x.value){
+        if (this.gamePad.stick_r_x.value) {
           GameState.scene_cursor_holder.visible = false;
           FollowerCamera.dir = -this.gamePad.stick_r_x.value;
-        }else{
+        } else {
           FollowerCamera.dir = -1;
           GameState.scene_cursor_holder.visible = true;
         }
@@ -528,329 +518,327 @@ export class IngameControls {
     });
 
     //ChangeLeader
-    KeyMapper.Actions[KeyMapAction.ChangeChar].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.ChangeChar].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.PartyManager.ShiftLeader();
     });
 
-    KeyMapper.Actions[KeyMapAction.Quicksave].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
+    KeyMapper.Actions[KeyMapAction.Quicksave].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if (GameState.Mode != EngineMode.INGAME) return;
       SaveGame.SaveCurrentGame('QUICKSAVE', 0);
     });
 
-    KeyMapper.Actions[KeyMapAction.QUICKLOAD].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
+    KeyMapper.Actions[KeyMapAction.QUICKLOAD].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if (GameState.Mode != EngineMode.INGAME) return;
       const quickSave = SaveGame.saves.find((save) => save.getIsQuickSave());
-      if(!quickSave){ return; }
+      if (!quickSave) {
+        return;
+      }
       GameState.MenuManager.ClearMenus();
-      if(GameState.module instanceof Module){
+      if (GameState.module instanceof Module) {
         GameState.module.dispose();
         GameState.module = undefined;
       }
       quickSave.load();
     });
 
-    KeyMapper.Actions[KeyMapAction.PrevMenu].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.PrevMenu].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.MenuManager.CyclePrimaryMenu(-1);
     });
 
-    KeyMapper.Actions[KeyMapAction.NextMenu].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.NextMenu].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.MenuManager.CyclePrimaryMenu(1);
     });
 
-    KeyMapper.Actions[KeyMapAction.CancleCombat].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.CancleCombat].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.getCurrentPlayer()?.cancelCombat();
     });
 
-    KeyMapper.Actions[KeyMapAction.Freelook].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Freelook].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       const nextMode = GameState.Mode == EngineMode.FREELOOK ? EngineMode.INGAME : EngineMode.FREELOOK;
       GameState.SetEngineMode(nextMode);
-      if(nextMode == EngineMode.FREELOOK){
+      if (nextMode == EngineMode.FREELOOK) {
         this.element.requestPointerLock();
         Mouse.Dragging = true;
-      }else{
+      } else {
         document.exitPointerLock();
         Mouse.Dragging = false;
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       const pc = GameState.getCurrentPlayer();
-      if(pc){
+      if (pc) {
         pc.walk = !pc.walk;
       }
     });
 
     //Dialog1
-    KeyMapper.Actions[KeyMapAction.Dialog1].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Dialog1].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(0);
     });
 
     //Dialog2
-    KeyMapper.Actions[KeyMapAction.Dialog2].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Dialog2].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(1);
     });
 
     //Dialog3
-    KeyMapper.Actions[KeyMapAction.Dialog3].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Dialog3].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(2);
     });
 
     //Dialog4
-    KeyMapper.Actions[KeyMapAction.Dialog4].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Dialog4].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(3);
     });
 
     //Dialog5
-    KeyMapper.Actions[KeyMapAction.Dialog5].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Dialog5].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(4);
     });
 
     //Dialog6
-    KeyMapper.Actions[KeyMapAction.Dialog6].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Dialog6].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(5);
     });
 
     //Dialog7
-    KeyMapper.Actions[KeyMapAction.Dialog7].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Dialog7].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(6);
     });
 
     //Dialog8
-    KeyMapper.Actions[KeyMapAction.Dialog8].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Dialog8].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(7);
     });
 
     //Dialog9
-    KeyMapper.Actions[KeyMapAction.Dialog9].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Dialog9].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(8);
     });
 
     //DialogSkip
-    KeyMapper.Actions[KeyMapAction.DialogSkip].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed && !Mouse.leftClick) return;
+    KeyMapper.Actions[KeyMapAction.DialogSkip].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed && !Mouse.leftClick) return;
 
-      if(GameState.CutsceneManager.active && GameState.CutsceneManager.isListening){
-        if(keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed){
+      if (GameState.CutsceneManager.active && GameState.CutsceneManager.isListening) {
+        if (keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed) {
           GameState.CutsceneManager.playerSkipEntry(GameState.CutsceneManager.currentEntry);
-        }else if(Mouse.leftClick){
+        } else if (Mouse.leftClick) {
           GameState.CutsceneManager.playerSkipEntry(GameState.CutsceneManager.currentEntry);
         }
       }
     });
 
     //DialogAbort
-    KeyMapper.Actions[KeyMapAction.DialogAbort].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.DialogAbort].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
 
-      if(GameState.CutsceneManager.active){
+      if (GameState.CutsceneManager.active) {
         GameState.CutsceneManager.endConversation(true);
       }
-    })
+    });
 
-    KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
-      if(GameState.State != EngineState.RUNNING) return;
-      switch(GameState.module.area.miniGame.type){
+    KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor((keymap, delta = 0) => {
+      if (!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if (GameState.State != EngineState.RUNNING) return;
+      switch (GameState.module.area.miniGame.type) {
         case MiniGameType.SWOOPRACE:
-
-        break;
+          break;
         case MiniGameType.TURRET:
           GameState.module.area.miniGame.player.rotate('x', 1 * delta);
-        break;
+          break;
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.MGActionDown].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
-      if(GameState.State != EngineState.RUNNING) return;
-      switch(GameState.module.area.miniGame.type){
+    KeyMapper.Actions[KeyMapAction.MGActionDown].setProcessor((keymap, delta = 0) => {
+      if (!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if (GameState.State != EngineState.RUNNING) return;
+      switch (GameState.module.area.miniGame.type) {
         case MiniGameType.SWOOPRACE:
-
-        break;
+          break;
         case MiniGameType.TURRET:
           GameState.module.area.miniGame.player.rotate('x', -1 * delta);
-        break;
+          break;
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.MGActionLeft].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
-      if(GameState.State != EngineState.RUNNING) return;
-      switch(GameState.module.area.miniGame.type){
+    KeyMapper.Actions[KeyMapAction.MGActionLeft].setProcessor((keymap, delta = 0) => {
+      if (!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if (GameState.State != EngineState.RUNNING) return;
+      switch (GameState.module.area.miniGame.type) {
         case MiniGameType.SWOOPRACE:
-          GameState.module.area.miniGame.player.lateralForce = -GameState.module.area.miniGame.player.accel_lateral_secs;
-        break;
+          GameState.module.area.miniGame.player.lateralForce =
+            -GameState.module.area.miniGame.player.accel_lateral_secs;
+          break;
         case MiniGameType.TURRET:
           GameState.module.area.miniGame.player.rotate('z', 1 * delta);
-        break;
+          break;
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.MGActionRight].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
-      if(GameState.State != EngineState.RUNNING) return;
-      switch(GameState.module.area.miniGame.type){
+    KeyMapper.Actions[KeyMapAction.MGActionRight].setProcessor((keymap, delta = 0) => {
+      if (!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if (GameState.State != EngineState.RUNNING) return;
+      switch (GameState.module.area.miniGame.type) {
         case MiniGameType.SWOOPRACE:
           GameState.module.area.miniGame.player.lateralForce = GameState.module.area.miniGame.player.accel_lateral_secs;
-        break;
+          break;
         case MiniGameType.TURRET:
           GameState.module.area.miniGame.player.rotate('z', -1 * delta);
-        break;
+          break;
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.PauseMinigame].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      GameState.State = ( GameState.State == EngineState.PAUSED ? EngineState.RUNNING : EngineState.PAUSED );
+    KeyMapper.Actions[KeyMapAction.PauseMinigame].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      GameState.State = GameState.State == EngineState.PAUSED ? EngineState.RUNNING : EngineState.PAUSED;
     });
 
-    KeyMapper.Actions[KeyMapAction.MGshoot].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.State != EngineState.RUNNING) return;
-      switch(GameState.module.area.miniGame.type){
+    KeyMapper.Actions[KeyMapAction.MGshoot].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if (GameState.State != EngineState.RUNNING) return;
+      switch (GameState.module.area.miniGame.type) {
         case MiniGameType.TURRET:
           GameState.module.area.miniGame.player.fire();
-        break;
+          break;
         case MiniGameType.SWOOPRACE:
           GameState.module.area.miniGame.player.jump();
-        break;
+          break;
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.GUI].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.GUI].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       const currentMenu = GameState.MenuManager.GetCurrentMenu();
-      switch(GameState.Mode){
+      switch (GameState.Mode) {
         case EngineMode.GUI:
-          if(currentMenu?.userCanClose){
+          if (currentMenu?.userCanClose) {
             currentMenu.close();
           }
-        break;
+          break;
         default:
           GameState.MenuManager.MenuOptions.open();
-        break;
+          break;
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.Pause1].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Pause1].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
 
       const currentMenu = GameState.MenuManager.GetCurrentMenu();
-      if(currentMenu == GameState.MenuManager.InGameOverlay){
-        if(GameState.State == EngineState.RUNNING){
+      if (currentMenu == GameState.MenuManager.InGameOverlay) {
+        if (GameState.State == EngineState.RUNNING) {
           GameState.AutoPauseManager.SignalAutoPauseEvent(0);
-        }else{
+        } else {
           GameState.AutoPauseManager.Unpause();
         }
-      }else if( currentMenu == GameState.MenuManager.InGameConfirm){
+      } else if (currentMenu == GameState.MenuManager.InGameConfirm) {
         GameState.MenuManager.InGameConfirm.close();
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.Flourish].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.Flourish].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.getCurrentPlayer().flourish();
     });
 
-    KeyMapper.Actions[KeyMapAction.FlyUp].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.FlyUp].setProcessor((keymap, delta = 0) => {
+      if (!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       const followee = GameState.PartyManager.party[0];
-      if(!followee) return;
+      if (!followee) return;
       followee.position.z += 5 * delta;
     });
 
-    KeyMapper.Actions[KeyMapAction.FlyDown].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.FlyDown].setProcessor((keymap, delta = 0) => {
+      if (!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       const followee = GameState.PartyManager.party[0];
-      if(!followee) return;
+      if (!followee) return;
       followee.position.z -= 5 * delta;
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleUp].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
-       GameState.rendererUpscaleFactor += 0.25;
-      if(GameState.rendererUpscaleFactor >= 4) GameState.rendererUpscaleFactor = 4;
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleUp].setProcessor((keymap, delta = 0) => {
+      if (!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      GameState.rendererUpscaleFactor += 0.25;
+      if (GameState.rendererUpscaleFactor >= 4) GameState.rendererUpscaleFactor = 4;
       GameState.updateRendererUpscaleFactor();
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleDown].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleDown].setProcessor((keymap, delta = 0) => {
+      if (!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       GameState.rendererUpscaleFactor -= 0.25;
-      if(GameState.rendererUpscaleFactor <= 0.25) GameState.rendererUpscaleFactor = 0.25;
+      if (GameState.rendererUpscaleFactor <= 0.25) GameState.rendererUpscaleFactor = 0.25;
       GameState.updateRendererUpscaleFactor();
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleReset].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+    KeyMapper.Actions[KeyMapAction.ResolutionScaleReset].setProcessor((keymap, delta = 0) => {
+      if (!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       GameState.rendererUpscaleFactor = 1.0;
       GameState.updateRendererUpscaleFactor();
     });
 
-    KeyMapper.Actions[KeyMapAction.Equip].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
+    KeyMapper.Actions[KeyMapAction.Equip].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if (GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuEquipment.open();
     });
 
-    KeyMapper.Actions[KeyMapAction.Inventory].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
+    KeyMapper.Actions[KeyMapAction.Inventory].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if (GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuInventory.open();
     });
 
-    KeyMapper.Actions[KeyMapAction.Character].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
+    KeyMapper.Actions[KeyMapAction.Character].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if (GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuCharacter.open();
     });
 
-    KeyMapper.Actions[KeyMapAction.SkillsAndFeats].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
+    KeyMapper.Actions[KeyMapAction.SkillsAndFeats].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if (GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuAbilities.open();
     });
 
-
-    KeyMapper.Actions[KeyMapAction.Messages].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
+    KeyMapper.Actions[KeyMapAction.Messages].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if (GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuMessages.open();
     });
 
-
-    KeyMapper.Actions[KeyMapAction.Quests].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
+    KeyMapper.Actions[KeyMapAction.Quests].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if (GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuJournal.open();
     });
 
-
-    KeyMapper.Actions[KeyMapAction.Map].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
+    KeyMapper.Actions[KeyMapAction.Map].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if (GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuMap.open();
     });
 
-    KeyMapper.Actions[KeyMapAction.Options].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.Mode != EngineMode.INGAME) return;
+    KeyMapper.Actions[KeyMapAction.Options].setProcessor((keymap) => {
+      if (!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if (GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuOptions.open();
     });
   }
@@ -858,31 +846,30 @@ export class IngameControls {
   MenuGetActiveUIElements(): GUIControl[] {
     let elements: GUIControl[] = [];
 
-    for(let i = 0, len = GameState.MenuManager.activeModals.length; i < len; i++){
+    for (let i = 0, len = GameState.MenuManager.activeModals.length; i < len; i++) {
       const activeMenu = GameState.MenuManager.activeModals[i];
-      if(!activeMenu.isVisible()) continue;
+      if (!activeMenu.isVisible()) continue;
 
       elements = elements.concat(activeMenu.getActiveControls());
     }
 
-    if(GameState.MenuManager.activeModals.length) return elements;
+    if (GameState.MenuManager.activeModals.length) return elements;
 
-    for(let i = 0, len = GameState.MenuManager.activeMenus.length; i < len; i++){
+    for (let i = 0, len = GameState.MenuManager.activeMenus.length; i < len; i++) {
       const activeMenu = GameState.MenuManager.activeMenus[i];
-      if(!activeMenu.isVisible()) continue;
+      if (!activeMenu.isVisible()) continue;
 
       elements = elements.concat(activeMenu.getActiveControls());
     }
 
-    if(GameState.State == EngineState.PAUSED){
+    if (GameState.State == EngineState.PAUSED) {
       elements = elements.concat(GameState.MenuManager.InGamePause.getActiveControls());
     }
 
     return elements.reverse();
   }
 
-  Update(delta: number = 0){
-
+  Update(delta: number = 0) {
     let xoffset = 0;
     let yoffset = 0;
     let currentMenu = GameState.MenuManager.GetCurrentMenu();
@@ -890,90 +877,94 @@ export class IngameControls {
     this.gamePadMovement = false;
 
     let gp = undefined;
-    if(GamePad.CurrentGamePad instanceof Gamepad){
+    if (GamePad.CurrentGamePad instanceof Gamepad) {
       gp = navigator.getGamepads()[GamePad.CurrentGamePad.index];
       this.gamePad.setGamePad(gp);
       KeyMapper.BindGamepad(this.gamePad);
     }
     this.gamePad.updateState(delta);
 
-    if(Mouse.Dragging){
+    if (Mouse.Dragging) {
       xoffset = Mouse.OffsetX || 0;
       yoffset = Mouse.OffsetY || 0;
       //Reset the offset value to fix the lingering drag effect
       Mouse.OffsetX = Mouse.OffsetY = 0;
     }
 
-    if(
+    if (
       Mouse.Dragging &&
-      (
-        (GameState.Mode == EngineMode.INGAME && Mouse.ButtonState == MouseState.RIGHT) ||
-        (GameState.Mode == EngineMode.FREELOOK)
-      )
-    ){
+      ((GameState.Mode == EngineMode.INGAME && Mouse.ButtonState == MouseState.RIGHT) ||
+        GameState.Mode == EngineMode.FREELOOK)
+    ) {
       const rotateSpeed = 0.005;
-      FollowerCamera.facing = Utility.NormalizeRadian(FollowerCamera.facing + (xoffset * rotateSpeed));
-      if(yoffset){
+      FollowerCamera.facing = Utility.NormalizeRadian(FollowerCamera.facing + xoffset * rotateSpeed);
+      if (yoffset) {
         const pitchSpeed = 0.002;
         const minPitch = -1.2;
         const maxPitch = 0.2;
-        FollowerCamera.pitch = THREE.MathUtils.clamp(FollowerCamera.pitch + (yoffset * pitchSpeed), minPitch, maxPitch);
+        FollowerCamera.pitch = THREE.MathUtils.clamp(FollowerCamera.pitch + yoffset * pitchSpeed, minPitch, maxPitch);
       }
     }
 
-    if(currentMenu){
-      if(this.gamePad.button_a.pressed){
+    if (currentMenu) {
+      if (this.gamePad.button_a.pressed) {
         currentMenu.triggerControllerAPress();
-      }else if(this.gamePad.button_b.pressed){
+      } else if (this.gamePad.button_b.pressed) {
         currentMenu.triggerControllerBPress();
-      }else if(this.gamePad.button_x.pressed){
+      } else if (this.gamePad.button_x.pressed) {
         currentMenu.triggerControllerXPress();
-      }else if(this.gamePad.button_y.pressed){
+      } else if (this.gamePad.button_y.pressed) {
         currentMenu.triggerControllerYPress();
-      }else if(this.gamePad.button_bumper_l.pressed){
+      } else if (this.gamePad.button_bumper_l.pressed) {
         currentMenu.triggerControllerBumperLPress();
-      }else if(this.gamePad.button_bumper_r.pressed){
+      } else if (this.gamePad.button_bumper_r.pressed) {
         currentMenu.triggerControllerBumperRPress();
-      }else if(this.gamePad.button_d_up.pressed){
+      } else if (this.gamePad.button_d_up.pressed) {
         currentMenu.triggerControllerDUpPress();
-      }else if(this.gamePad.button_d_down.pressed){
+      } else if (this.gamePad.button_d_down.pressed) {
         currentMenu.triggerControllerDDownPress();
-      }else if(this.gamePad.button_d_left.pressed){
+      } else if (this.gamePad.button_d_left.pressed) {
         currentMenu.triggerControllerDLeftPress();
-      }else if(this.gamePad.button_d_right.pressed){
+      } else if (this.gamePad.button_d_right.pressed) {
         currentMenu.triggerControllerDRightPress();
-      }else if(this.gamePad.stick_l_x.pressed){
-        currentMenu.triggerControllerLStickXPress( this.gamePad.stick_l_x.value > 0 ? true : false );
-      }else if(this.gamePad.stick_l_y.pressed){
-        currentMenu.triggerControllerLStickYPress( this.gamePad.stick_l_y.value > 0 ? true : false );
-      }else if(this.gamePad.stick_r_x.pressed){
-        currentMenu.triggerControllerRStickXPress( this.gamePad.stick_r_x.value > 0 ? true : false );
-      }else if(this.gamePad.stick_r_y.pressed){
-        currentMenu.triggerControllerRStickYPress( this.gamePad.stick_r_y.value > 0 ? true : false );
+      } else if (this.gamePad.stick_l_x.pressed) {
+        currentMenu.triggerControllerLStickXPress(this.gamePad.stick_l_x.value > 0 ? true : false);
+      } else if (this.gamePad.stick_l_y.pressed) {
+        currentMenu.triggerControllerLStickYPress(this.gamePad.stick_l_y.value > 0 ? true : false);
+      } else if (this.gamePad.stick_r_x.pressed) {
+        currentMenu.triggerControllerRStickXPress(this.gamePad.stick_r_x.value > 0 ? true : false);
+      } else if (this.gamePad.stick_r_y.pressed) {
+        currentMenu.triggerControllerRStickYPress(this.gamePad.stick_r_y.value > 0 ? true : false);
       }
     }
 
-    if(GameState.State == EngineState.RUNNING){
-
-      if(
-        (GameState.Mode == EngineMode.INGAME) &&
+    if (GameState.State == EngineState.RUNNING) {
+      if (
+        GameState.Mode == EngineMode.INGAME &&
         currentMenu != GameState.MenuManager.InGameConfirm &&
         currentMenu != GameState.MenuManager.MenuContainer
-      ){
+      ) {
         const followee = GameState.PartyManager.party[0];
-        if(followee){
-          if(followee.canMove()){
-            if(Mouse.leftDown && Mouse.rightDown){
+        if (followee) {
+          if (followee.canMove()) {
+            if (Mouse.leftDown && Mouse.rightDown) {
               followee.clearAllActions(true);
               followee.force = 1;
-              followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI/2));
+              followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI / 2));
               followee.controlled = true;
               GameState.scene_cursor_holder.visible = false;
             }
-            if( this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value ){
+            if (this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value) {
               followee.clearAllActions(true);
               followee.force = 1;
-              followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + FollowerCamera.facing + Math.PI/2 ) , false);
+              followee.setFacing(
+                Utility.NormalizeRadian(
+                  Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) +
+                    FollowerCamera.facing +
+                    Math.PI / 2
+                ),
+                false
+              );
               followee.controlled = true;
               GameState.scene_cursor_holder.visible = false;
               this.gamePadMovement = true;
@@ -996,12 +987,18 @@ export class IngameControls {
   }
 
   plChangeCallback(_e: Event): void {
-    if(document.pointerLockElement === this.element) {
-      this.element.addEventListener("mousemove", this.plMoveEvent = (e: MouseEvent) => { this.plMouseMove(e); }, true);
+    if (document.pointerLockElement === this.element) {
+      this.element.addEventListener(
+        'mousemove',
+        (this.plMoveEvent = (e: MouseEvent) => {
+          this.plMouseMove(e);
+        }),
+        true
+      );
       Mouse.Dragging = true;
     } else {
       //console.log('The pointer lock status is now unlocked');
-      this.element.removeEventListener("mousemove", this.plMoveEvent, true);
+      this.element.removeEventListener('mousemove', this.plMoveEvent, true);
       Mouse.Dragging = false;
     }
   }
@@ -1013,6 +1010,4 @@ export class IngameControls {
     Mouse.leftDown = (event.buttons & 1) === 1;
     Mouse.rightDown = (event.buttons & 2) === 2;
   }
-
 }
-

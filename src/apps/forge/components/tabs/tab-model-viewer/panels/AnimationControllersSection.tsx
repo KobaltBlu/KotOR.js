@@ -1,6 +1,6 @@
-import React from "react";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { SectionContainer } from '@/apps/forge/components/SectionContainer';
+import * as KotOR from '@/apps/forge/KotOR';
 
 export interface AnimationControllersSectionProps {
   modelNode: KotOR.OdysseyModelNode;
@@ -33,10 +33,13 @@ function getControllerName(type: number): string {
   return controllerTypeNames[type] || `Controller(${type})`;
 }
 
-export const AnimationControllersSection: React.FC<AnimationControllersSectionProps> = ({ modelNode, currentAnimation }) => {
+export const AnimationControllersSection: React.FC<AnimationControllersSectionProps> = ({
+  modelNode,
+  currentAnimation,
+}) => {
   if (!currentAnimation) return null;
 
-  const animNode = currentAnimation.nodes.find(n => n.name === modelNode.name);
+  const animNode = currentAnimation.nodes.find((n) => n.name === modelNode.name);
   if (!animNode || !animNode.controllers || animNode.controllers.size === 0) return null;
 
   const controllers = Array.from(animNode.controllers.entries());

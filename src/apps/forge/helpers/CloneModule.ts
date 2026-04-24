@@ -2,11 +2,11 @@
  * CloneModule – clone a KotOR module (MOD) with new identifier/name.
  */
 
-import { ERFObject } from "@/resource/ERFObject";
-import { GFFObject } from "@/resource/GFFObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { ERFObject } from '@/resource/ERFObject';
+import { GFFObject } from '@/resource/GFFObject';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 const ERF_HEADER_SIZE = 160;
@@ -29,8 +29,8 @@ export interface CloneModuleOptions {
 export function createEmptyErfHeader(): Uint8Array {
   log.trace('CloneModule.createEmptyErfHeader');
   const bw = new BinaryWriter(new Uint8Array(ERF_HEADER_SIZE));
-  bw.writeString("ERF ");
-  bw.writeString("V1.0");
+  bw.writeString('ERF ');
+  bw.writeString('V1.0');
   bw.writeUInt32(0); // languageCount
   bw.writeUInt32(0); // localizedStringSize
   bw.writeUInt32(0); // entryCount
@@ -48,8 +48,8 @@ export function createEmptyErfHeader(): Uint8Array {
 export function createEmptyModHeader(): Uint8Array {
   log.trace('CloneModule.createEmptyModHeader');
   const bw = new BinaryWriter(new Uint8Array(ERF_HEADER_SIZE));
-  bw.writeString("MOD ");
-  bw.writeString("V1.0");
+  bw.writeString('MOD ');
+  bw.writeString('V1.0');
   bw.writeUInt32(0); // languageCount
   bw.writeUInt32(0); // localizedStringSize
   bw.writeUInt32(0); // entryCount
@@ -87,30 +87,30 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
   await sourceErf.load();
   log.trace('CloneModule.cloneModuleFromBuffer sourceErf loaded');
 
-  const ifoBuffer = await sourceErf.getResourceBufferByResRef("module", ResourceTypes.ifo);
+  const ifoBuffer = await sourceErf.getResourceBufferByResRef('module', ResourceTypes.ifo);
   if (!ifoBuffer || ifoBuffer.length === 0) {
     log.error('CloneModule.cloneModuleFromBuffer no module.ifo');
-    throw new Error("Source MOD has no module.ifo");
+    throw new Error('Source MOD has no module.ifo');
   }
 
   const ifoGff = new GFFObject(ifoBuffer);
 
-  const areaList = ifoGff.RootNode.getFieldByLabel("Mod_Area_list");
+  const areaList = ifoGff.RootNode.getFieldByLabel('Mod_Area_list');
   if (!areaList || !areaList.getChildStructs().length) {
     log.error('CloneModule.cloneModuleFromBuffer no Mod_Area_list');
-    throw new Error("Source MOD has no Mod_Area_list");
+    throw new Error('Source MOD has no Mod_Area_list');
   }
   const firstArea = areaList.getChildStructs()[0];
-  const oldAreaName = firstArea.getFieldByLabel("Area_Name")?.getValue() ?? "module";
+  const oldAreaName = firstArea.getFieldByLabel('Area_Name')?.getValue() ?? 'module';
   log.debug('CloneModule.cloneModuleFromBuffer oldAreaName', oldAreaName);
 
-  const modResRef = ifoGff.RootNode.getFieldByLabel("Mod_ResRef");
+  const modResRef = ifoGff.RootNode.getFieldByLabel('Mod_ResRef');
   if (modResRef) modResRef.setValue(identifier);
-  const modName = ifoGff.RootNode.getFieldByLabel("Mod_Name");
+  const modName = ifoGff.RootNode.getFieldByLabel('Mod_Name');
   if (modName) modName.setValue(identifier.toUpperCase());
-  const modTag = ifoGff.RootNode.getFieldByLabel("Mod_Tag");
+  const modTag = ifoGff.RootNode.getFieldByLabel('Mod_Tag');
   if (modTag) modTag.setValue(identifier.toUpperCase());
-  const areaNameField = firstArea.getFieldByLabel("Area_Name");
+  const areaNameField = firstArea.getFieldByLabel('Area_Name');
   if (areaNameField) areaNameField.setValue(identifier);
 
   const newIfoBuffer = ifoGff.getExportBuffer();
@@ -121,7 +121,7 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
   if (areBuf && areBuf.length > 0) {
     log.trace('CloneModule.cloneModuleFromBuffer ARE load');
     const areGff = new GFFObject(areBuf);
-    const nameField = areGff.RootNode.getFieldByLabel("Name");
+    const nameField = areGff.RootNode.getFieldByLabel('Name');
     if (nameField && nameField.cexoLocString) {
       const loc = nameField.getCExoLocString();
       loc.strings = [];
@@ -130,7 +130,7 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
     areBuffer = areGff.getExportBuffer();
   } else {
     log.error('CloneModule.cloneModuleFromBuffer no ARE');
-    throw new Error("Source MOD has no ARE file");
+    throw new Error('Source MOD has no ARE file');
   }
 
   let gitBuffer: Uint8Array;
@@ -139,31 +139,31 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
     log.trace('CloneModule.cloneModuleFromBuffer GIT load');
     const gitGff = new GFFObject(gitBuf);
     if (!keepDoors) {
-      const doors = gitGff.RootNode.getFieldByLabel("Door List");
+      const doors = gitGff.RootNode.getFieldByLabel('Door List');
       if (doors) doors.childStructs = [];
     }
     if (!keepPlaceables) {
-      const placeables = gitGff.RootNode.getFieldByLabel("Placeable List");
+      const placeables = gitGff.RootNode.getFieldByLabel('Placeable List');
       if (placeables) placeables.childStructs = [];
     }
     if (!keepSounds) {
-      const sounds = gitGff.RootNode.getFieldByLabel("SoundList");
+      const sounds = gitGff.RootNode.getFieldByLabel('SoundList');
       if (sounds) sounds.childStructs = [];
     }
-    const creatures = gitGff.RootNode.getFieldByLabel("Creature List");
+    const creatures = gitGff.RootNode.getFieldByLabel('Creature List');
     if (creatures) creatures.childStructs = [];
-    const encounters = gitGff.RootNode.getFieldByLabel("Encounter List");
+    const encounters = gitGff.RootNode.getFieldByLabel('Encounter List');
     if (encounters) encounters.childStructs = [];
-    const stores = gitGff.RootNode.getFieldByLabel("StoreList");
+    const stores = gitGff.RootNode.getFieldByLabel('StoreList');
     if (stores) stores.childStructs = [];
-    const waypoints = gitGff.RootNode.getFieldByLabel("WaypointList");
+    const waypoints = gitGff.RootNode.getFieldByLabel('WaypointList');
     if (waypoints) waypoints.childStructs = [];
-    const cameras = gitGff.RootNode.getFieldByLabel("CameraList");
+    const cameras = gitGff.RootNode.getFieldByLabel('CameraList');
     if (cameras) cameras.childStructs = [];
     gitBuffer = gitGff.getExportBuffer();
   } else {
     log.error('CloneModule.cloneModuleFromBuffer no GIT');
-    throw new Error("Source MOD has no GIT file");
+    throw new Error('Source MOD has no GIT file');
   }
 
   let lytBuffer: Uint8Array | null = null;
@@ -185,7 +185,7 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
   const newErf = new ERFObject(emptyHeader);
   await newErf.load();
 
-  newErf.addResource("module", ResourceTypes.ifo, newIfoBuffer);
+  newErf.addResource('module', ResourceTypes.ifo, newIfoBuffer);
   newErf.addResource(identifier, ResourceTypes.are, areBuffer);
   newErf.addResource(identifier, ResourceTypes.git, gitBuffer);
   if (lytBuffer) newErf.addResource(identifier, ResourceTypes.lyt, lytBuffer);
@@ -195,13 +195,13 @@ export async function cloneModuleFromBuffer(options: CloneModuleOptions): Promis
   const outBuffer = newErf.getExportBuffer();
   log.trace('CloneModule.cloneModuleFromBuffer export buffer size', outBuffer?.length);
 
-  type FsModule = typeof import("fs");
-  const fsMod = (await import("fs")) as FsModule;
+  type FsModule = typeof import('fs');
+  const fsMod = (await import('fs')) as FsModule;
   if (fsMod.promises?.writeFile) {
     await fsMod.promises.writeFile(outputPath, Buffer.from(outBuffer));
     log.info('CloneModule.cloneModuleFromBuffer written', outputPath);
   } else {
     log.error('CloneModule.cloneModuleFromBuffer fs write not available');
-    throw new Error("File system write not available (run in Electron for Save dialog).");
+    throw new Error('File system write not available (run in Electron for Save dialog).');
   }
 }

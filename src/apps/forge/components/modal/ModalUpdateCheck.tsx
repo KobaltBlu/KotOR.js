@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { Modal } from "react-bootstrap";
+import React, { useState, useEffect } from 'react';
+import { Modal } from 'react-bootstrap';
 
-import { CURRENT_VERSION } from "@/apps/forge/config";
-import { getRemoteUpdateInfo, isRemoteVersionNewer } from "@/apps/forge/config/ConfigUpdate";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ModalUpdateCheckState } from "@/apps/forge/states/modal/ModalUpdateCheckState";
+import { CURRENT_VERSION } from '@/apps/forge/config';
+import { getRemoteUpdateInfo, isRemoteVersionNewer } from '@/apps/forge/config/ConfigUpdate';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import { ModalUpdateCheckState } from '@/apps/forge/states/modal/ModalUpdateCheckState';
 
-import "@/apps/forge/components/modal/ModalUpdateCheck.scss";
+import '@/apps/forge/components/modal/ModalUpdateCheck.scss';
 
 export const ModalUpdateCheck = (props: BaseModalProps) => {
   const modal = props.modal as ModalUpdateCheckState;
@@ -53,7 +53,7 @@ export const ModalUpdateCheck = (props: BaseModalProps) => {
     try {
       const result = await getRemoteUpdateInfo({ silent: true });
 
-      if(result instanceof Error){
+      if (result instanceof Error) {
         modal.setResult({ error: `Failed to check for updates: ${result.message}` });
       } else {
         const remote = result.latestVersion || result.currentVersion || '';
@@ -63,10 +63,10 @@ export const ModalUpdateCheck = (props: BaseModalProps) => {
           remoteVersion: remote,
           hasUpdate: newer === true,
           downloadLink: result.downloadLink || '',
-          releaseNotes: result.latestNotes || ''
+          releaseNotes: result.latestNotes || '',
         });
       }
-    } catch(e: unknown) {
+    } catch (e: unknown) {
       modal.setResult({ error: `Failed to check for updates: ${e instanceof Error ? e.message : String(e)}` });
     } finally {
       modal.setChecking(false);
@@ -78,12 +78,7 @@ export const ModalUpdateCheck = (props: BaseModalProps) => {
   };
 
   return (
-    <Modal
-      show={show}
-      onHide={handleClose}
-      className="modal-update-check"
-      centered
-    >
+    <Modal show={show} onHide={handleClose} className="modal-update-check" centered>
       <Modal.Header closeButton>
         <Modal.Title>{modal.title}</Modal.Title>
       </Modal.Header>
@@ -118,12 +113,7 @@ export const ModalUpdateCheck = (props: BaseModalProps) => {
               </div>
             )}
             {downloadLink && (
-              <a
-                href={downloadLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="download-link"
-              >
+              <a href={downloadLink} target="_blank" rel="noopener noreferrer" className="download-link">
                 Download Update
               </a>
             )}

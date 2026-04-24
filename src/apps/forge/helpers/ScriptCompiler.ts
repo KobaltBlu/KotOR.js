@@ -3,10 +3,10 @@
  * Wraps NWScriptParser + NWScriptCompiler to compile NSS → NCS, and NWScript for NCS → NSS.
  */
 
-import type { CompilerProgramNode } from "@/nwscript/compiler/CompilerNodeTypes";
-import { NWScriptCompiler } from "@/nwscript/compiler/NWScriptCompiler";
-import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
-import { NWScript } from "@/nwscript/NWScript";
+import type { CompilerProgramNode } from '@/nwscript/compiler/CompilerNodeTypes';
+import { NWScriptCompiler } from '@/nwscript/compiler/NWScriptCompiler';
+import { NWScriptParser } from '@/nwscript/compiler/NWScriptParser';
+import { NWScript } from '@/nwscript/NWScript';
 
 export interface ScriptCompileResult {
   success: boolean;
@@ -26,7 +26,7 @@ export function compileNssToNcs(source: string): ScriptCompileResult {
       return {
         success: false,
         errors: (parser.errors || []).map((e: { message?: string; type?: string }) => ({
-          message: (e as { message?: string }).message ?? "Parse error",
+          message: (e as { message?: string }).message ?? 'Parse error',
           type: (e as { type?: string }).type,
         })),
       };
@@ -38,7 +38,7 @@ export function compileNssToNcs(source: string): ScriptCompileResult {
     }
     return {
       success: false,
-      errors: [{ message: "Compiler returned no output." }],
+      errors: [{ message: 'Compiler returned no output.' }],
     };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

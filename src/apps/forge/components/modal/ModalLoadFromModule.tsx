@@ -1,22 +1,21 @@
-import React, { useEffect, useState } from "react";
-import { Modal, Button, Form, ListGroup } from "react-bootstrap";
+import React, { useEffect, useState } from 'react';
+import { Modal, Button, Form, ListGroup } from 'react-bootstrap';
 
-import { listModuleFiles, type ModuleFileEntry } from "@/apps/forge/helpers/ListModuleFiles";
-import { CapsuleResourceEntry } from "@/apps/forge/helpers/LoadFromCapsule";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ModalLoadFromModuleState } from "@/apps/forge/states/modal/ModalLoadFromModuleState";
-
+import { listModuleFiles, type ModuleFileEntry } from '@/apps/forge/helpers/ListModuleFiles';
+import { CapsuleResourceEntry } from '@/apps/forge/helpers/LoadFromCapsule';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import * as KotOR from '@/apps/forge/KotOR';
+import { ModalLoadFromModuleState } from '@/apps/forge/states/modal/ModalLoadFromModuleState';
 
 export const ModalLoadFromModule = (props: BaseModalProps) => {
   const modal = props.modal as ModalLoadFromModuleState;
   const [show, setShow] = useState(modal.visible);
   const [entries, setEntries] = useState<CapsuleResourceEntry[]>([]);
-  const [filterText, setFilterText] = useState("");
+  const [filterText, setFilterText] = useState('');
   const [selected, setSelected] = useState<CapsuleResourceEntry | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [capsulePath, setCapsulePath] = useState("");
+  const [error, setError] = useState('');
+  const [capsulePath, setCapsulePath] = useState('');
   const [gameModules, setGameModules] = useState<ModuleFileEntry[]>([]);
 
   const refresh = () => {
@@ -36,13 +35,13 @@ export const ModalLoadFromModule = (props: BaseModalProps) => {
 
   useEffect(() => {
     const onStateChange = () => refresh();
-    modal.addEventListener("onHide", onHide);
-    modal.addEventListener("onShow", onShow);
-    modal.addEventListener("onStateChange", onStateChange);
+    modal.addEventListener('onHide', onHide);
+    modal.addEventListener('onShow', onShow);
+    modal.addEventListener('onStateChange', onStateChange);
     return () => {
-      modal.removeEventListener("onHide", onHide);
-      modal.removeEventListener("onShow", onShow);
-      modal.removeEventListener("onStateChange", onStateChange);
+      modal.removeEventListener('onHide', onHide);
+      modal.removeEventListener('onShow', onShow);
+      modal.removeEventListener('onStateChange', onStateChange);
     };
   }, [modal]);
 
@@ -54,10 +53,12 @@ export const ModalLoadFromModule = (props: BaseModalProps) => {
     if (!show) return;
     const dir = KotOR.ApplicationProfile.directory;
     if (dir && typeof KotOR.ApplicationProfile.directory === 'string') {
-      import("path").then((pathMod) => {
-        const modulesDir = pathMod.join(dir, "modules");
-        listModuleFiles(modulesDir).then(setGameModules);
-      }).catch(() => setGameModules([]));
+      import('path')
+        .then((pathMod) => {
+          const modulesDir = pathMod.join(dir, 'modules');
+          listModuleFiles(modulesDir).then(setGameModules);
+        })
+        .catch(() => setGameModules([]));
     } else {
       setGameModules([]);
     }
@@ -106,11 +107,9 @@ export const ModalLoadFromModule = (props: BaseModalProps) => {
         )}
         <div className="mb-2">
           <Button variant="outline-primary" size="sm" onClick={handleBrowse} disabled={loading}>
-            {loading ? "Loading…" : "Browse MOD / ERF / RIM…"}
+            {loading ? 'Loading…' : 'Browse MOD / ERF / RIM…'}
           </Button>
-          {capsulePath && (
-            <span className="ms-2 small text-muted">{capsulePath}</span>
-          )}
+          {capsulePath && <span className="ms-2 small text-muted">{capsulePath}</span>}
         </div>
         {error && <div className="text-danger small mb-2">{error}</div>}
         {modal.entries.length > 0 && (
@@ -122,7 +121,7 @@ export const ModalLoadFromModule = (props: BaseModalProps) => {
               onChange={handleFilterChange}
               className="mb-2"
             />
-            <ListGroup style={{ maxHeight: "320px", overflowY: "auto" }}>
+            <ListGroup style={{ maxHeight: '320px', overflowY: 'auto' }}>
               {entries.map((entry, idx) => (
                 <ListGroup.Item
                   key={`${entry.resref}-${entry.resType}-${idx}`}

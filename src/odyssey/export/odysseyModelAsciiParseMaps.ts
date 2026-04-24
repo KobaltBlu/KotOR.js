@@ -1,27 +1,27 @@
-import * as THREE from "three";
-import { OdysseyModelClass } from "@/enums/odyssey/OdysseyModelClass";
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import * as THREE from 'three';
+import { OdysseyModelClass } from '@/enums/odyssey/OdysseyModelClass';
+import { OdysseyModelControllerType } from '@/enums/odyssey/OdysseyModelControllerType';
+import { OdysseyModelNodeType } from '@/enums/odyssey/OdysseyModelNodeType';
 
 /** Inverse of `classificationToAscii` in odysseyModelAsciiHelpers. */
 export function asciiClassificationToEnum(word: string): OdysseyModelClass {
   const w = word.toLowerCase().trim();
   switch (w) {
-    case "other":
+    case 'other':
       return OdysseyModelClass.OTHER;
-    case "effect":
+    case 'effect':
       return OdysseyModelClass.EFFECT;
-    case "tile":
+    case 'tile':
       return OdysseyModelClass.TILE;
-    case "character":
+    case 'character':
       return OdysseyModelClass.CREATURE;
-    case "door":
+    case 'door':
       return OdysseyModelClass.DOOR;
-    case "lightsaber":
+    case 'lightsaber':
       return OdysseyModelClass.LIGHTSABER;
-    case "placeable":
+    case 'placeable':
       return OdysseyModelClass.PLACEABLE;
-    case "flyer":
+    case 'flyer':
       return OdysseyModelClass.FLYER;
     default:
       return OdysseyModelClass.OTHER;
@@ -48,10 +48,10 @@ export interface ParsedControllerKeySpec {
 export function parseControllerKeyHeader(word: string): ParsedControllerKeySpec {
   let w = word.toLowerCase();
   let bezier = false;
-  if (w.endsWith("key")) {
+  if (w.endsWith('key')) {
     w = w.slice(0, -3);
   }
-  if (w.endsWith("bezier")) {
+  if (w.endsWith('bezier')) {
     bezier = true;
     w = w.slice(0, -6);
   }
@@ -64,28 +64,28 @@ export function parseControllerKeyHeader(word: string): ParsedControllerKeySpec 
  */
 export function asciiControllerBaseToType(
   baseName: string,
-  nodeType: number,
+  nodeType: number
 ): { type: OdysseyModelControllerType; defaultCols: number } | undefined {
   const b = baseName.toLowerCase();
   switch (b) {
-    case "position":
+    case 'position':
       return { type: OdysseyModelControllerType.Position, defaultCols: 3 };
-    case "orientation":
+    case 'orientation':
       return { type: OdysseyModelControllerType.Orientation, defaultCols: 4 };
-    case "scale":
+    case 'scale':
       return { type: OdysseyModelControllerType.Scale, defaultCols: 1 };
   }
   if (nodeType & OdysseyModelNodeType.Light) {
     switch (b) {
-      case "color":
+      case 'color':
         return { type: OdysseyModelControllerType.Color, defaultCols: 3 };
-      case "radius":
+      case 'radius':
         return { type: OdysseyModelControllerType.Radius, defaultCols: 1 };
-      case "shadowradius":
+      case 'shadowradius':
         return { type: OdysseyModelControllerType.ShadowRadius, defaultCols: 1 };
-      case "verticaldisplacement":
+      case 'verticaldisplacement':
         return { type: OdysseyModelControllerType.VerticalDisplacement, defaultCols: 1 };
-      case "multiplier":
+      case 'multiplier':
         return { type: OdysseyModelControllerType.Multiplier, defaultCols: 1 };
     }
   }
@@ -152,8 +152,8 @@ export function asciiControllerBaseToType(
     }
   }
   if (nodeType & OdysseyModelNodeType.Mesh) {
-    if (b === "selfillumcolor") return { type: OdysseyModelControllerType.SelfIllumColor, defaultCols: 3 };
-    if (b === "alpha") return { type: OdysseyModelControllerType.Alpha, defaultCols: 1 };
+    if (b === 'selfillumcolor') return { type: OdysseyModelControllerType.SelfIllumColor, defaultCols: 3 };
+    if (b === 'alpha') return { type: OdysseyModelControllerType.Alpha, defaultCols: 1 };
   }
   return undefined;
 }

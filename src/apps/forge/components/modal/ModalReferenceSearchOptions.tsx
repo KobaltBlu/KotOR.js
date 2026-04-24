@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { Modal, Button, Form, FormCheck, FormControl } from "react-bootstrap";
+import React, { useEffect, useState } from 'react';
+import { Modal, Button, Form, FormCheck, FormControl } from 'react-bootstrap';
 
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ModalReferenceSearchOptionsState } from "@/apps/forge/states/modal/ModalReferenceSearchOptionsState";
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import { ModalReferenceSearchOptionsState } from '@/apps/forge/states/modal/ModalReferenceSearchOptionsState';
 
 export const ModalReferenceSearchOptions = (props: BaseModalProps) => {
   const modal = props.modal as ModalReferenceSearchOptionsState;
   const [show, setShow] = useState(modal.visible);
   const [partialMatch, setPartialMatch] = useState(modal.getPartialMatch());
   const [caseSensitive, setCaseSensitive] = useState(modal.getCaseSensitive());
-  const [filePattern, setFilePattern] = useState(modal.getFilePattern() || "");
+  const [filePattern, setFilePattern] = useState(modal.getFilePattern() || '');
   const [selectedTypes, setSelectedTypes] = useState(new Set(modal.getFileTypes() ?? []));
 
   const onHide = () => setShow(false);
@@ -19,18 +19,18 @@ export const ModalReferenceSearchOptions = (props: BaseModalProps) => {
     const onOptionsChanged = () => {
       setPartialMatch(modal.getPartialMatch());
       setCaseSensitive(modal.getCaseSensitive());
-      setFilePattern(modal.getFilePattern() || "");
+      setFilePattern(modal.getFilePattern() || '');
       setSelectedTypes(new Set(modal.getFileTypes() ?? []));
     };
 
-    modal.addEventListener("onHide", onHide);
-    modal.addEventListener("onShow", onShow);
-    modal.addEventListener("onOptionsChanged", onOptionsChanged);
+    modal.addEventListener('onHide', onHide);
+    modal.addEventListener('onShow', onShow);
+    modal.addEventListener('onOptionsChanged', onOptionsChanged);
 
     return () => {
-      modal.removeEventListener("onHide", onHide);
-      modal.removeEventListener("onShow", onShow);
-      modal.removeEventListener("onOptionsChanged", onOptionsChanged);
+      modal.removeEventListener('onHide', onHide);
+      modal.removeEventListener('onShow', onShow);
+      modal.removeEventListener('onOptionsChanged', onOptionsChanged);
     };
   }, [modal]);
 

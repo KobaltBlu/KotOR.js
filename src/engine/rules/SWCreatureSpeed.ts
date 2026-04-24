@@ -1,8 +1,7 @@
-import { TLKManager } from "@/managers/TLKManager";
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TLKManager } from '@/managers/TLKManager';
+import { TwoDAObject } from '@/resource/TwoDAObject';
 
 export class SWCreatureSpeed {
-
   id: number;
   label: string;
   name: number;
@@ -10,22 +9,24 @@ export class SWCreatureSpeed {
   walkrate: number;
   runrate: number;
 
-  getName(){
+  getName() {
     return this.name != -1 ? TLKManager.GetStringById(this.name).Value : this.label;
   }
 
-  getTwoDAName(){
+  getTwoDAName() {
     return this.twoDAName ? this.twoDAName : this.label;
   }
 
-  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWCreatureSpeed {
+  static From2DA(
+    row: import('@/resource/TwoDAObject').ITwoDARowData | Record<string, string | number> = {}
+  ): SWCreatureSpeed {
     const creatureSpeed = new SWCreatureSpeed();
     creatureSpeed.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     creatureSpeed.label = TwoDAObject.normalizeValue(row.label, 'string', '');
     creatureSpeed.name = TwoDAObject.normalizeValue(row.name, 'number', -1);
     creatureSpeed.twoDAName = TwoDAObject.normalizeValue(row['2daname'], 'string', '');
-    creatureSpeed.walkrate = TwoDAObject.normalizeValue(row.walkrate, 'number', 1.00);
-    creatureSpeed.runrate = TwoDAObject.normalizeValue(row.runrate, 'number', 1.00);
+    creatureSpeed.walkrate = TwoDAObject.normalizeValue(row.walkrate, 'number', 1.0);
+    creatureSpeed.runrate = TwoDAObject.normalizeValue(row.runrate, 'number', 1.0);
     return creatureSpeed;
   }
 }

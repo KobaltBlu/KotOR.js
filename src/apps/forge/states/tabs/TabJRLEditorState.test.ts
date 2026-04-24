@@ -83,7 +83,9 @@ function buildJrlGff(): GFFObject {
   const quest = new GFFStruct(0);
   quest.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Name')).setCExoLocString(new CExoLocString(33089));
   quest.addField(new GFFField(GFFDataType.DWORD, 'Priority')).setValue(1);
-  quest.addField(new GFFField(GFFDataType.CEXOSTRING, 'Comment')).setValue('Plot to be considered worthy to hear the Sand People history.');
+  quest
+    .addField(new GFFField(GFFDataType.CEXOSTRING, 'Comment'))
+    .setValue('Plot to be considered worthy to hear the Sand People history.');
   quest.addField(new GFFField(GFFDataType.CEXOSTRING, 'Tag')).setValue('Tat20aa_worthy');
   quest.addField(new GFFField(GFFDataType.INT, 'PlotIndex')).setValue(72);
   quest.addField(new GFFField(GFFDataType.INT, 'PlanetID')).setValue(4);

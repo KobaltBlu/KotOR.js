@@ -1,10 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { IRIMResource } from "@/interface/resource/IRIMResource";
-import { IRIMHeader } from "@/interface/resource/IRIMHeader";
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { IRIMResource } from '@/interface/resource/IRIMResource';
+import { IRIMHeader } from '@/interface/resource/IRIMHeader';
 
 const RIM_HEADER_LENGTH = 160;
 const DEFAULT_RIM_RESOURCES_OFFSET = 120;
@@ -34,8 +34,7 @@ export class RIMObject {
 
   resourceMap: Map<number, Map<string, IRIMResource>> = new Map();
 
-  constructor(file: Uint8Array|string){
-
+  constructor(file: Uint8Array | string) {
     this.resources = [];
     this.inMemory = false;
     this.group = 'rim';
@@ -47,10 +46,10 @@ export class RIMObject {
       resourcesOffset: DEFAULT_RIM_RESOURCES_OFFSET,
     };
 
-    if(typeof file == 'string'){
+    if (typeof file == 'string') {
       this.resource_path = file;
       this.inMemory = false;
-    }else{
+    } else {
       this.buffer = file;
       this.inMemory = true;
     }
@@ -59,7 +58,6 @@ export class RIMObject {
       if (typeof value !== 'number') return;
       this.resourceMap.set(value, new Map());
     });
-
   }
 
   static fromBufferSync(buffer: Uint8Array): RIMObject {
@@ -70,20 +68,20 @@ export class RIMObject {
   }
 
   async load(): Promise<RIMObject> {
-    try{
-      if(!this.inMemory){
+    try {
+      if (!this.inMemory) {
         await this.loadFromDisk(this.resource_path);
-      }else{
+      } else {
         await this.loadFromBuffer(this.buffer);
       }
-    }catch(e){
+    } catch (e) {
       console.error(e);
       throw e;
     }
     return this;
   }
 
-  readHeaderFromBuffer(buffer: Uint8Array){
+  readHeaderFromBuffer(buffer: Uint8Array) {
     this.reader = new BinaryReader(buffer);
     this.header = {} as IRIMHeader;
 
@@ -110,7 +108,7 @@ export class RIMObject {
     }
 
     //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
-    this.rimDataOffset = (this.header.resourcesOffset + (this.header.resourceCount * 34));
+    this.rimDataOffset = this.header.resourcesOffset + this.header.resourceCount * 34;
     if (this.rimDataOffset > buffer.length) {
       throw new Error('Tried to save or load an unsupported or corrupted file.');
     }
@@ -121,17 +119,21 @@ export class RIMObject {
     const resourceCount = this.header.resourceCount;
     for (let i = 0; i < resourceCount; i++) {
       this.addResource({
-        resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
+        resRef: this.reader
+          .readChars(16)
+          .replace(/\0[\s\S]*$/g, '')
+          .trim()
+          .toLowerCase(),
         resType: this.reader.readUInt16(),
         unused: this.reader.readUInt16(),
         resId: this.reader.readUInt32(),
         offset: this.reader.readUInt32(),
-        size: this.reader.readUInt32()
+        size: this.reader.readUInt32(),
       });
     }
   }
 
-  async readHeaderFromFileDecriptor(fd: any){
+  async readHeaderFromFileDecriptor(fd: any) {
     let header = new Uint8Array(RIM_HEADER_LENGTH);
     await GameFileSystem.read(fd, header, 0, RIM_HEADER_LENGTH, 0);
     this.reader = new BinaryReader(header);
@@ -159,7 +161,7 @@ export class RIMObject {
     }
 
     //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
-    this.rimDataOffset = (this.header.resourcesOffset + (this.header.resourceCount * 34));
+    this.rimDataOffset = this.header.resourcesOffset + this.header.resourceCount * 34;
     if (this.rimDataOffset > RIM_HEADER_LENGTH && this.rimDataOffset < this.header.resourcesOffset) {
       throw new Error('Tried to save or load an unsupported or corrupted file.');
     }
@@ -171,12 +173,16 @@ export class RIMObject {
     const resourceCount = this.header.resourceCount;
     for (let i = 0; i < resourceCount; i++) {
       this.addResource({
-        resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
+        resRef: this.reader
+          .readChars(16)
+          .replace(/\0[\s\S]*$/g, '')
+          .trim()
+          .toLowerCase(),
         resType: this.reader.readUInt16(),
         unused: this.reader.readUInt16(),
         resId: this.reader.readUInt32(),
         offset: this.reader.readUInt32(),
-        size: this.reader.readUInt32()
+        size: this.reader.readUInt32(),
       });
     }
 
@@ -185,21 +191,22 @@ export class RIMObject {
 
   addResource(res: IRIMResource): IRIMResource;
   addResource(resRef: string, resType: number, data: Uint8Array): IRIMResource;
-  addResource(resOrRef: IRIMResource|string, resType?: number, data?: Uint8Array): IRIMResource {
-    const res = typeof resOrRef === 'string'
-      ? {
-          resId: this.resources.length,
-          resRef: resOrRef.toLowerCase(),
-          resType: resType as number,
-          unused: 0,
-          offset: 0,
-          size: data?.length ?? 0,
-          data,
-        }
-      : {
-          ...resOrRef,
-          resRef: resOrRef.resRef.toLowerCase(),
-        };
+  addResource(resOrRef: IRIMResource | string, resType?: number, data?: Uint8Array): IRIMResource {
+    const res =
+      typeof resOrRef === 'string'
+        ? {
+            resId: this.resources.length,
+            resRef: resOrRef.toLowerCase(),
+            resType: resType as number,
+            unused: 0,
+            offset: 0,
+            size: data?.length ?? 0,
+            data,
+          }
+        : {
+            ...resOrRef,
+            resRef: resOrRef.resRef.toLowerCase(),
+          };
 
     if (res.resId == null || res.resId < 0) {
       res.resId = this.resources.length;
@@ -210,7 +217,7 @@ export class RIMObject {
     }
 
     let typeMap = this.resourceMap.get(res.resType);
-    if(!typeMap){
+    if (!typeMap) {
       typeMap = new Map();
       this.resourceMap.set(res.resType, typeMap);
     }
@@ -220,7 +227,7 @@ export class RIMObject {
     return res;
   }
 
-  async loadFromBuffer(buffer: Uint8Array){
+  async loadFromBuffer(buffer: Uint8Array) {
     this.inMemory = true;
     const header = new Uint8Array(RIM_HEADER_LENGTH);
     header.set(buffer.slice(0, RIM_HEADER_LENGTH));
@@ -229,11 +236,11 @@ export class RIMObject {
     this.reader.dispose();
   }
 
-  async loadFromDisk(resource_path: string){
+  async loadFromDisk(resource_path: string) {
     const fd = await GameFileSystem.open(resource_path, 'r');
-    try{
+    try {
       await this.readHeaderFromFileDecriptor(fd);
-    }catch(e){
+    } catch (e) {
       console.error('RIM Header Read', e);
     }
     await GameFileSystem.close(fd);
@@ -241,14 +248,14 @@ export class RIMObject {
 
   getResource(resRef: string, resType: number): IRIMResource {
     let typeMap = this.resourceMap.get(resType);
-    if(!typeMap){
+    if (!typeMap) {
       return undefined;
     }
     return typeMap.get(resRef.toLowerCase());
   }
 
   async getResourceBuffer(resource?: IRIMResource): Promise<Uint8Array> {
-    if(!resource){
+    if (!resource) {
       return new Uint8Array(0);
     }
 
@@ -257,19 +264,18 @@ export class RIMObject {
     }
 
     try {
-      if(this.inMemory && this.buffer instanceof Uint8Array){
+      if (this.inMemory && this.buffer instanceof Uint8Array) {
         const buffer = new Uint8Array(resource.size);
         buffer.set(this.buffer.slice(resource.offset, resource.offset + resource.size));
         return buffer;
-      }else{
+      } else {
         const fd = await this.getFileDescription();
         const buffer = new Uint8Array(resource.size);
         await GameFileSystem.read(fd, buffer, 0, buffer.length, resource.offset);
         // Do not close fd here: getFileDescription() caches it for reuse; closing caused EBADF on subsequent reads.
         return buffer;
       }
-    }
-    catch (e) {
+    } catch (e) {
       console.error(e);
     }
     return new Uint8Array(0);
@@ -279,9 +285,9 @@ export class RIMObject {
     return this.getResource(resRef, resType) !== undefined;
   }
 
-  async getResourceBufferByResRef(resRef: string = '', resType: number = 0x000F): Promise<Uint8Array> {
+  async getResourceBufferByResRef(resRef: string = '', resType: number = 0x000f): Promise<Uint8Array> {
     const resource = this.getResource(resRef, resType);
-    if(!resource){
+    if (!resource) {
       return;
     }
 
@@ -289,27 +295,27 @@ export class RIMObject {
   }
 
   #fd: any;
-  async getFileDescription(){
-    if(this.#fd){
+  async getFileDescription() {
+    if (this.#fd) {
       return this.#fd;
     }
     this.#fd = await GameFileSystem.open(this.resource_path, 'r');
     return this.#fd;
   }
 
-  async exportRawResource(directory: string, resref: string, restype = 0x000F): Promise<Uint8Array> {
-    if(directory == null){
+  async exportRawResource(directory: string, resref: string, restype = 0x000f): Promise<Uint8Array> {
+    if (directory == null) {
       return new Uint8Array(0);
     }
 
     const resource = this.getResource(resref, restype);
-    if(!resource){
+    if (!resource) {
       return new Uint8Array(0);
     }
 
-    const outputPath = path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype));
+    const outputPath = path.join(directory, resref + '.' + ResourceTypes.getKeyByValue(restype));
 
-    if(this.inMemory){
+    if (this.inMemory) {
       const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + resource.size));
       if (path.isAbsolute(directory)) {
         await fs.promises.writeFile(outputPath, buffer);
@@ -317,7 +323,7 @@ export class RIMObject {
         await GameFileSystem.writeFile(outputPath, buffer);
       }
       return buffer;
-    }else{
+    } else {
       let buffer = new Uint8Array(resource.size);
       const fd = await this.getFileDescription();
       await GameFileSystem.read(fd, buffer, 0, resource.size, resource.offset);
@@ -352,7 +358,7 @@ export class RIMObject {
     this.header.resourceCount = resources.length;
     this.header.resourcesOffset = DEFAULT_RIM_RESOURCES_OFFSET;
 
-    let currentOffset = headerSize + (resources.length * entrySize);
+    let currentOffset = headerSize + resources.length * entrySize;
     resources.forEach((resource, index) => {
       resource.resId = index;
       resource.offset = currentOffset;
@@ -403,10 +409,12 @@ export class RIMObject {
       throw new Error('Failed to export: Missing file path.');
     }
 
-    const resources = await Promise.all(this.resources.map(async (resource) => ({
-      ...resource,
-      data: await this.getResourceBuffer(resource),
-    })));
+    const resources = await Promise.all(
+      this.resources.map(async (resource) => ({
+        ...resource,
+        data: await this.getResourceBuffer(resource),
+      }))
+    );
 
     const buffer = this.buildExportBufferFromResources(resources as Array<IRIMResource & { data: Uint8Array }>);
 
@@ -431,7 +439,7 @@ export class RIMObject {
   }
 
   fromJSON(json: string | ReturnType<RIMObject['toJSON']>): void {
-    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<RIMObject['toJSON']> : json;
+    const data = typeof json === 'string' ? (JSON.parse(json) as ReturnType<RIMObject['toJSON']>) : json;
     this.header = { ...data.header };
     this.type = data.type || 'rim';
     this.group = data.group || 'rim';
@@ -440,7 +448,9 @@ export class RIMObject {
     (data.resources || []).forEach((resource) => this.addResource({ ...resource }));
   }
 
-  toXML(): string { return objectToXML({ json: JSON.stringify(this.toJSON()) }); }
+  toXML(): string {
+    return objectToXML({ json: JSON.stringify(this.toJSON()) });
+  }
   fromXML(xml: string): void {
     const data = xmlToObject(xml) as { json?: string } | ReturnType<RIMObject['toJSON']>;
     if (typeof (data as { json?: string }).json === 'string') {
@@ -449,9 +459,16 @@ export class RIMObject {
     }
     this.fromJSON(data as ReturnType<RIMObject['toJSON']>);
   }
-  toYAML(): string { return objectToYAML(this.toJSON()); }
-  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<RIMObject['toJSON']>); }
-  toTOML(): string { return objectToTOML(this.toJSON()); }
-  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<RIMObject['toJSON']>); }
-
+  toYAML(): string {
+    return objectToYAML(this.toJSON());
+  }
+  fromYAML(yaml: string): void {
+    this.fromJSON(yamlToObject(yaml) as ReturnType<RIMObject['toJSON']>);
+  }
+  toTOML(): string {
+    return objectToTOML(this.toJSON());
+  }
+  fromTOML(toml: string): void {
+    this.fromJSON(tomlToObject(toml) as ReturnType<RIMObject['toJSON']>);
+  }
 }

@@ -1,17 +1,16 @@
-import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
-import { CharGenSkills as K1_CharGenSkills } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton, GUIListBox } from '@/gui';
+import { CharGenSkills as K1_CharGenSkills } from '@/game/kotor/KOTOR';
 
 /**
  * CharGenSkills class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenSkills.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenSkills extends K1_CharGenSkills {
-
   declare MAIN_TITLE_LBL: GUILabel;
   declare SUB_TITLE_LBL: GUILabel;
   declare SELECTIONS_REMAINING_LBL: GUILabel;
@@ -58,7 +57,7 @@ export class CharGenSkills extends K1_CharGenSkills {
   declare BTN_ACCEPT: GUIButton;
   declare BTN_RECOMMENDED: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'skchrgen_p';
     this.background = '';
@@ -67,11 +66,9 @@ export class CharGenSkills extends K1_CharGenSkills {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
-  
 }
-

@@ -1,7 +1,7 @@
-import * as THREE from "three";
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIButton, GUILabel } from "@/gui";
+import * as THREE from 'three';
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIButton, GUILabel } from '@/gui';
 
 type ItemType = 'RANGED' | 'MELEE' | 'LIGHTSABER' | 'ARMOR' | 'NONE';
 
@@ -15,7 +15,6 @@ type ItemType = 'RANGED' | 'MELEE' | 'LIGHTSABER' | 'ARMOR' | 'NONE';
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuUpgradeSelect extends GameMenu {
-
   BTN_RANGED: GUIButton;
   LBL_RANGED: GUILabel;
   BTN_LIGHTSABER: GUIButton;
@@ -32,7 +31,7 @@ export class MenuUpgradeSelect extends GameMenu {
   btnNormalColor: THREE.Color;
   btnSelectedColor: THREE.Color;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'upgradesel';
     this.background = '1600x1200back';
@@ -41,7 +40,7 @@ export class MenuUpgradeSelect extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       this.btnSelectedColor = new THREE.Color().copy(this.BTN_LIGHTSABER.border.color as THREE.Color);
       this.btnNormalColor = new THREE.Color().copy(this.BTN_MELEE.border.color as THREE.Color);
@@ -81,20 +80,26 @@ export class MenuUpgradeSelect extends GameMenu {
     this.BTN_LIGHTSABER.selected = this.selected == 'LIGHTSABER';
     this.BTN_MELEE.selected = this.selected == 'MELEE';
     this.BTN_ARMOR.selected = this.selected == 'ARMOR';
-    this.BTN_RANGED.hover = (this.BTN_RANGED.selected);
-    this.BTN_MELEE.hover = (this.BTN_MELEE.selected);
-    this.BTN_LIGHTSABER.hover = (this.BTN_LIGHTSABER.selected);
-    this.BTN_ARMOR.hover = (this.BTN_ARMOR.selected);
-    (this.BTN_LIGHTSABER.border.color as THREE.Color).copy(this.selected == 'LIGHTSABER' ? this.btnSelectedColor : this.btnNormalColor);
-    (this.BTN_MELEE.border.color as THREE.Color).copy(this.selected == 'MELEE' ? this.btnSelectedColor : this.btnNormalColor);
-    (this.BTN_RANGED.border.color as THREE.Color).copy(this.selected == 'RANGED' ? this.btnSelectedColor : this.btnNormalColor);
-    (this.BTN_ARMOR.border.color as THREE.Color).copy(this.selected == 'ARMOR' ? this.btnSelectedColor : this.btnNormalColor);
+    this.BTN_RANGED.hover = this.BTN_RANGED.selected;
+    this.BTN_MELEE.hover = this.BTN_MELEE.selected;
+    this.BTN_LIGHTSABER.hover = this.BTN_LIGHTSABER.selected;
+    this.BTN_ARMOR.hover = this.BTN_ARMOR.selected;
+    (this.BTN_LIGHTSABER.border.color as THREE.Color).copy(
+      this.selected == 'LIGHTSABER' ? this.btnSelectedColor : this.btnNormalColor
+    );
+    (this.BTN_MELEE.border.color as THREE.Color).copy(
+      this.selected == 'MELEE' ? this.btnSelectedColor : this.btnNormalColor
+    );
+    (this.BTN_RANGED.border.color as THREE.Color).copy(
+      this.selected == 'RANGED' ? this.btnSelectedColor : this.btnNormalColor
+    );
+    (this.BTN_ARMOR.border.color as THREE.Color).copy(
+      this.selected == 'ARMOR' ? this.btnSelectedColor : this.btnNormalColor
+    );
   }
 
   show() {
     super.show();
     this.select('LIGHTSABER');
   }
-
 }
-

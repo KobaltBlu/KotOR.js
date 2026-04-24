@@ -1,19 +1,19 @@
-import { TLKManager } from "@/managers/TLKManager";
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TLKManager } from '@/managers/TLKManager';
+import { TwoDAObject } from '@/resource/TwoDAObject';
 
 export class SWGender {
   static genders: SWGender[] = [];
   id: number;
   name: number;
-  gender: 'M'|'F'|'B'|'O'|'N'|string;
+  gender: 'M' | 'F' | 'B' | 'O' | 'N' | string;
   graphic: number;
   constant: string;
 
-  getName(){
+  getName() {
     return TLKManager.GetStringById(this.name).Value;
   }
 
-  static From2DA(row: import("@/resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWGender {
+  static From2DA(row: import('@/resource/TwoDAObject').ITwoDARowData | Record<string, string | number> = {}): SWGender {
     const gender = new SWGender();
     gender.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     gender.name = TwoDAObject.normalizeValue(row.name, 'number', -1);

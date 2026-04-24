@@ -1,26 +1,25 @@
-import React, { useState, useCallback, useRef } from "react";
-import * as fs from "fs";
-import * as nodePath from "path";
-import TabManager from "@/apps/forge/components/tabs/TabManager";
-import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { MenuTop } from "@/apps/forge/components/MenuTop";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import ModalGrantAccess from "@/apps/forge/components/modal/ModalGrantAccess";
-import { ModalChangeGame } from "@/apps/forge/components/modal/ModalChangeGame";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { useApp } from "@/apps/forge/context/AppContext";
-import { ModalManager } from "@/apps/forge/components/modal/ModalManager";
-import { LoadingScreen } from "@/apps/common/components/loadingScreen/LoadingScreen";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
-import { pathParse } from "@/apps/forge/helpers/PathParse";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
-import * as KotOR from "@/KotOR";
+import React, { useState, useCallback, useRef } from 'react';
+import * as fs from 'fs';
+import * as nodePath from 'path';
+import TabManager from '@/apps/forge/components/tabs/TabManager';
+import { TabManagerProvider } from '@/apps/forge/context/TabManagerContext';
+import { ForgeState } from '@/apps/forge/states/ForgeState';
+import { MenuTop } from '@/apps/forge/components/MenuTop';
+import { LayoutContainerProvider } from '@/apps/forge/context/LayoutContainerContext';
+import { LayoutContainer } from '@/apps/forge/components/LayoutContainer/LayoutContainer';
+import ModalGrantAccess from '@/apps/forge/components/modal/ModalGrantAccess';
+import { ModalChangeGame } from '@/apps/forge/components/modal/ModalChangeGame';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { useApp } from '@/apps/forge/context/AppContext';
+import { ModalManager } from '@/apps/forge/components/modal/ModalManager';
+import { LoadingScreen } from '@/apps/common/components/loadingScreen/LoadingScreen';
+import { FileTypeManager } from '@/apps/forge/FileTypeManager';
+import { ForgeFileSystem } from '@/apps/forge/ForgeFileSystem';
+import { pathParse } from '@/apps/forge/helpers/PathParse';
+import { EditorFileProtocol } from '@/apps/forge/enum/EditorFileProtocol';
+import * as KotOR from '@/KotOR';
 
 export const App = (props: any) => {
-
   const appContext = useApp();
   const [appReady, setAppReady] = appContext.appReady;
   const [showGrantModal, setShowGrantModal] = appContext.showGrantModal;
@@ -31,22 +30,21 @@ export const App = (props: any) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const dragCounter = useRef(0);
 
-
   const onUserGrant = () => {
     setShowGrantModal(false);
     beginInit();
-  }
+  };
 
   const beginInit = () => {
-    ForgeState.InitializeApp().then( () => {
+    ForgeState.InitializeApp().then(() => {
       onInitComplete();
     });
   };
 
   const onInitComplete = () => {
     setAppReady(true);
-    setTimeout( () => {
-      dispatchEvent( new Event('resize'));
+    setTimeout(() => {
+      dispatchEvent(new Event('resize'));
     }, 100);
 
     // console.log('start');
@@ -58,22 +56,24 @@ export const App = (props: any) => {
   const onUserCancel = () => {
     setShowGrantModal(true);
     window.close();
-  }
+  };
 
-  useEffectOnce( () => {
-
-    ForgeState.VerifyGameDirectory(() => {
-      console.log('Game Directory', 'verified');
-      setShowGrantModal(false);
-      beginInit();
-    }, () => {
-      console.warn('Game Directory', 'not found');
-      setShowGrantModal(true);
-    });
+  useEffectOnce(() => {
+    ForgeState.VerifyGameDirectory(
+      () => {
+        console.log('Game Directory', 'verified');
+        setShowGrantModal(false);
+        beginInit();
+      },
+      () => {
+        console.warn('Game Directory', 'not found');
+        setShowGrantModal(true);
+      }
+    );
 
     return () => {
       //Deconstructor
-    }
+    };
   });
 
   const onDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -97,7 +97,7 @@ export const App = (props: any) => {
   const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    e.dataTransfer.dropEffect = 'open' as any || 'copy';
+    e.dataTransfer.dropEffect = ('open' as any) || 'copy';
   }, []);
 
   const onDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
@@ -108,9 +108,9 @@ export const App = (props: any) => {
 
     if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
       const allFiles = Array.from(e.dataTransfer.files);
-      const mdlFiles = allFiles.filter(f => pathParse(f.name).ext.toLowerCase() === 'mdl');
-      const mdxFiles = allFiles.filter(f => pathParse(f.name).ext.toLowerCase() === 'mdx');
-      const otherFiles = allFiles.filter(f => {
+      const mdlFiles = allFiles.filter((f) => pathParse(f.name).ext.toLowerCase() === 'mdl');
+      const mdxFiles = allFiles.filter((f) => pathParse(f.name).ext.toLowerCase() === 'mdx');
+      const otherFiles = allFiles.filter((f) => {
         const ext = pathParse(f.name).ext.toLowerCase();
         return ext !== 'mdl' && ext !== 'mdx';
       });
@@ -133,9 +133,9 @@ export const App = (props: any) => {
         const filePath = (mdlFile as any).path as string;
 
         // Prefer a counterpart from the same drop batch
-        const batchMdx = mdxFiles.find(f =>
-          pathParse(f.name).name.toLowerCase() === parsed.name.toLowerCase() &&
-          !pairedMdxPaths.has((f as any).path)
+        const batchMdx = mdxFiles.find(
+          (f) =>
+            pathParse(f.name).name.toLowerCase() === parsed.name.toLowerCase() && !pairedMdxPaths.has((f as any).path)
         );
 
         let path2: string | undefined;
@@ -187,23 +187,22 @@ export const App = (props: any) => {
           });
         }
       }
-
     } else {
       // Browser: use FileSystemFileHandle via dataTransfer.items.
       // All getAsFileSystemHandle() calls must be initiated synchronously before
       // any await, because the browser clears the DataTransfer object on the
       // first yield back to the event loop.
-      const items = Array.from(e.dataTransfer.items).filter(item => item.kind === 'file');
+      const items = Array.from(e.dataTransfer.items).filter((item) => item.kind === 'file');
       const handlePromises = items
-        .filter(item => 'getAsFileSystemHandle' in item)
-        .map(item => (item as any).getAsFileSystemHandle() as Promise<FileSystemFileHandle>);
+        .filter((item) => 'getAsFileSystemHandle' in item)
+        .map((item) => (item as any).getAsFileSystemHandle() as Promise<FileSystemFileHandle>);
 
       const resolvedHandles = await Promise.all(handlePromises);
-      const handles = resolvedHandles.filter(h => h && h.kind === 'file');
+      const handles = resolvedHandles.filter((h) => h && h.kind === 'file');
 
-      const mdlHandles = handles.filter(h => pathParse(h.name).ext.toLowerCase() === 'mdl');
-      const mdxHandles = handles.filter(h => pathParse(h.name).ext.toLowerCase() === 'mdx');
-      const otherHandles = handles.filter(h => {
+      const mdlHandles = handles.filter((h) => pathParse(h.name).ext.toLowerCase() === 'mdl');
+      const mdxHandles = handles.filter((h) => pathParse(h.name).ext.toLowerCase() === 'mdx');
+      const otherHandles = handles.filter((h) => {
         const ext = pathParse(h.name).ext.toLowerCase();
         return ext !== 'mdl' && ext !== 'mdx';
       });
@@ -225,9 +224,8 @@ export const App = (props: any) => {
         const parsed = pathParse(mdlHandle.name);
 
         // Prefer a counterpart from the same drop batch
-        const batchMdx = mdxHandles.find(h =>
-          pathParse(h.name).name.toLowerCase() === parsed.name.toLowerCase() &&
-          !pairedMdxHandles.has(h)
+        const batchMdx = mdxHandles.find(
+          (h) => pathParse(h.name).name.toLowerCase() === parsed.name.toLowerCase() && !pairedMdxHandles.has(h)
         );
 
         if (batchMdx) {
@@ -310,7 +308,7 @@ export const App = (props: any) => {
   }, []);
 
   const westContent = (
-    <div id="tabs-explorer" style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}>
+    <div id="tabs-explorer" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
       <TabManagerProvider manager={ForgeState.explorerTabManager}>
         <TabManager></TabManager>
       </TabManagerProvider>
@@ -321,7 +319,7 @@ export const App = (props: any) => {
     <>
       <div
         id="app"
-        style={{ opacity: (appReady) ? '1': '0' }}
+        style={{ opacity: appReady ? '1' : '0' }}
         onDragEnter={onDragEnter}
         onDragLeave={onDragLeave}
         onDragOver={onDragOver}
@@ -349,8 +347,12 @@ export const App = (props: any) => {
       </div>
       <ModalManager manager={ForgeState.modalManager}></ModalManager>
       <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>
-      <LoadingScreen active={showLoadingScreen} message={loadingScreenMessage} backgroundURL={loadingScreenBackgroundURL} logoURL={loadingScreenLogoURL} />
+      <LoadingScreen
+        active={showLoadingScreen}
+        message={loadingScreenMessage}
+        backgroundURL={loadingScreenBackgroundURL}
+        logoURL={loadingScreenLogoURL}
+      />
     </>
   );
-
 };

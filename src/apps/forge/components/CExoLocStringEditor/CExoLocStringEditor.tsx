@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TLKSearchModal } from "@/apps/forge/components/TLKSearchModal";
-import "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor.scss";
+import React, { useState, useEffect } from 'react';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TLKSearchModal } from '@/apps/forge/components/TLKSearchModal';
+import '@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor.scss';
 
 export interface CExoLocStringEditorProps {
   value: KotOR.CExoLocString;
@@ -27,16 +27,12 @@ const GENDERS = [
   { id: 1, name: 'Female' },
 ];
 
-export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
-  value,
-  onChange,
-  label
-}) => {
+export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({ value, onChange, label }) => {
   const [expanded, setExpanded] = useState(false);
   const [resref, setResref] = useState(value.RESREF);
   const [substrings, setSubstrings] = useState(value.getStrings());
   const [showTLKModal, setShowTLKModal] = useState(false);
-  
+
   // Store original values when editor is opened
   const [originalResref, setOriginalResref] = useState(value.RESREF);
   const [originalSubstrings, setOriginalSubstrings] = useState(value.getStrings());
@@ -53,7 +49,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
 
   const handleResrefChange = (newResref: number) => {
     setResref(newResref);
-    
+
     // If RESREF > -1, clear all substrings (mutual exclusion)
     if (newResref > -1) {
       setSubstrings([]);
@@ -67,7 +63,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
   const handleSubstringChange = (index: number, field: 'language' | 'gender' | 'str', newValue: any) => {
     const updatedSubstrings = [...substrings];
     const substring = updatedSubstrings[index];
-    
+
     if (field === 'language') {
       substring.setLanguage(Number(newValue));
     } else if (field === 'gender') {
@@ -75,7 +71,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
     } else if (field === 'str') {
       substring.setString(newValue);
     }
-    
+
     setSubstrings(updatedSubstrings);
   };
 
@@ -83,7 +79,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
     const newSubstring = new KotOR.CExoLocSubString(0, '');
     const updatedSubstrings = [...substrings, newSubstring];
     setSubstrings(updatedSubstrings);
-    
+
     // When adding a substring, RESREF must be -1 (mutual exclusion)
     setResref(-1);
   };
@@ -114,39 +110,21 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
   return (
     <div className="cexoloc-editor">
       {label && <label className="cexoloc-label">{label}</label>}
-      
+
       <div className="cexoloc-container">
         {/* Main input showing current value */}
         <div className="cexoloc-main-input-row">
-          <input 
-            type="text" 
-            value={displayValue} 
-            readOnly 
-            className="cexoloc-display-input"
-            placeholder="(empty)"
-          />
+          <input type="text" value={displayValue} readOnly className="cexoloc-display-input" placeholder="(empty)" />
           {!expanded ? (
-            <button 
-              type="button"
-              onClick={() => setExpanded(true)}
-              className="cexoloc-toggle-button"
-            >
+            <button type="button" onClick={() => setExpanded(true)} className="cexoloc-toggle-button">
               Edit
             </button>
           ) : (
             <div className="cexoloc-button-group">
-              <button 
-                type="button"
-                onClick={handleSave}
-                className="cexoloc-save-button"
-              >
+              <button type="button" onClick={handleSave} className="cexoloc-save-button">
                 Save
               </button>
-              <button 
-                type="button"
-                onClick={handleCancel}
-                className="cexoloc-cancel-button"
-              >
+              <button type="button" onClick={handleCancel} className="cexoloc-cancel-button">
                 Cancel
               </button>
             </div>
@@ -157,10 +135,8 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
         {expanded && (
           <div className="cexoloc-expanded">
             <div className="cexoloc-resref-section">
-              <label className="cexoloc-resref-label">
-                TLK RESREF:
-              </label>
-              
+              <label className="cexoloc-resref-label">TLK RESREF:</label>
+
               <div className="cexoloc-resref-display">
                 {resref > -1 && KotOR.TLKManager.TLKStrings[resref] ? (
                   <div className="cexoloc-tlk-current">
@@ -169,7 +145,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
                       <span className="cexoloc-tlk-text">{KotOR.TLKManager.TLKStrings[resref].Value}</span>
                     </div>
                     <div className="cexoloc-tlk-actions">
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setShowTLKModal(true)}
                         className="cexoloc-inline-button cexoloc-search-icon-button"
@@ -177,7 +153,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
                       >
                         <i className="fa-solid fa-search"></i>
                       </button>
-                      <button 
+                      <button
                         type="button"
                         onClick={() => handleResrefChange(-1)}
                         className="cexoloc-inline-button cexoloc-clear-icon-button"
@@ -194,7 +170,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
                       <span className="cexoloc-tlk-text">Using custom strings</span>
                     </div>
                     <div className="cexoloc-tlk-actions">
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setShowTLKModal(true)}
                         className="cexoloc-inline-button cexoloc-search-icon-button"
@@ -206,25 +182,23 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
                   </div>
                 )}
               </div>
-              
+
               <small className="cexoloc-resref-hint">
-                {resref > -1 
-                  ? 'Using TLK reference (substrings disabled). Click search to find a different string or Ã— to use custom strings.' 
+                {resref > -1
+                  ? 'Using TLK reference (substrings disabled). Click search to find a different string or Ã— to use custom strings.'
                   : 'Using custom strings. Add substrings below for different languages, or click search to use a TLK reference.'}
               </small>
             </div>
 
             <div className="cexoloc-substrings-section">
               <div className="cexoloc-substrings-header">
-                <label className="cexoloc-substrings-label">
-                  SubStrings ({substrings.length}):
-                </label>
-                <button 
+                <label className="cexoloc-substrings-label">SubStrings ({substrings.length}):</label>
+                <button
                   type="button"
                   onClick={handleAddSubstring}
                   className="cexoloc-add-button"
                   disabled={resref > -1}
-                  title={resref > -1 ? "Cannot add substrings when using TLK reference" : "Add a new substring"}
+                  title={resref > -1 ? 'Cannot add substrings when using TLK reference' : 'Add a new substring'}
                 >
                   + Add SubString
                 </button>
@@ -232,48 +206,45 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
 
               {substrings.length === 0 && (
                 <div className="cexoloc-empty-state">
-                  {resref > -1 
+                  {resref > -1
                     ? 'Substrings disabled when using TLK reference. Set RESREF to -1 to add custom strings.'
                     : 'No substrings. Add one to provide custom text.'}
                 </div>
               )}
 
               {substrings.map((substring, index) => (
-                <div 
-                  key={index}
-                  className="cexoloc-substring"
-                >
+                <div key={index} className="cexoloc-substring">
                   <div className="cexoloc-substring-controls">
                     <div className="cexoloc-substring-field">
-                      <label className="cexoloc-substring-field-label">
-                        Language:
-                      </label>
-                      <select 
+                      <label className="cexoloc-substring-field-label">Language:</label>
+                      <select
                         value={substring.language}
                         onChange={(e) => handleSubstringChange(index, 'language', e.target.value)}
                         className="cexoloc-substring-select"
                       >
-                        {LANGUAGES.map(lang => (
-                          <option key={lang.id} value={lang.id}>{lang.name}</option>
+                        {LANGUAGES.map((lang) => (
+                          <option key={lang.id} value={lang.id}>
+                            {lang.name}
+                          </option>
                         ))}
                       </select>
                     </div>
                     <div className="cexoloc-substring-field">
-                      <label className="cexoloc-substring-field-label">
-                        Gender:
-                      </label>
-                      <select 
+                      <label className="cexoloc-substring-field-label">Gender:</label>
+                      <select
                         value={substring.gender}
                         onChange={(e) => handleSubstringChange(index, 'gender', e.target.value)}
                         className="cexoloc-substring-select"
                       >
-                        {GENDERS.map(gender => (
-                          <option key={gender.id} value={gender.id}>{gender.name}</option>
+                        {GENDERS.map((gender) => (
+                          <option key={gender.id} value={gender.id}>
+                            {gender.name}
+                          </option>
                         ))}
                       </select>
                     </div>
                     <div className="cexoloc-substring-remove-wrapper">
-                      <button 
+                      <button
                         type="button"
                         onClick={() => handleRemoveSubstring(index)}
                         className="cexoloc-remove-button"
@@ -284,10 +255,8 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
                     </div>
                   </div>
                   <div className="cexoloc-substring-text">
-                    <label className="cexoloc-substring-text-label">
-                      Text (max 1024 chars):
-                    </label>
-                    <textarea 
+                    <label className="cexoloc-substring-text-label">Text (max 1024 chars):</label>
+                    <textarea
                       value={substring.str}
                       onChange={(e) => handleSubstringChange(index, 'str', e.target.value)}
                       maxLength={1024}
@@ -295,9 +264,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
                       className="cexoloc-substring-textarea"
                       placeholder="Enter text..."
                     />
-                    <small className="cexoloc-char-counter">
-                      {substring.str.length} / 1024 characters
-                    </small>
+                    <small className="cexoloc-char-counter">{substring.str.length} / 1024 characters</small>
                   </div>
                 </div>
               ))}
@@ -306,7 +273,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
         )}
       </div>
 
-      <TLKSearchModal 
+      <TLKSearchModal
         isOpen={showTLKModal}
         onClose={() => setShowTLKModal(false)}
         onSelect={handleTLKModalSelect}
@@ -315,5 +282,3 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
     </div>
   );
 };
-
-

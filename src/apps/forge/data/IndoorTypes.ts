@@ -29,7 +29,7 @@ export class IndoorLocalizedString {
   }
 
   static substringId(language: number, gender: number): number {
-    return (language * 2) + gender;
+    return language * 2 + gender;
   }
 
   static substringPair(substringId: number | string): [number, number] {
@@ -57,8 +57,8 @@ export class IndoorLocalizedString {
   static fromJson(data: Record<string, unknown>): IndoorLocalizedString {
     const loc = new IndoorLocalizedString(Number(data.stringref ?? -1));
     Object.entries(data).forEach(([key, value]) => {
-      if (key === "stringref") return;
-      if (!Number.isNaN(Number(key)) && typeof value === "string") {
+      if (key === 'stringref') return;
+      if (!Number.isNaN(Number(key)) && typeof value === 'string') {
         loc.setString(Number(key), value);
       }
     });

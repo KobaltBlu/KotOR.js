@@ -1,24 +1,24 @@
-import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { Button, FormControl, FormSelect, InputGroup, Modal } from "react-bootstrap";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
-import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { Project } from "@/apps/forge/Project";
-import path from "path";
+import React, { useEffect, useState } from 'react';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import { Button, FormControl, FormSelect, InputGroup, Modal } from 'react-bootstrap';
+import * as KotOR from '@/apps/forge/KotOR';
+import { ProjectType } from '@/apps/forge/enum/ProjectType';
+import { ForgeFileSystem, ForgeFileSystemResponseType } from '@/apps/forge/ForgeFileSystem';
+import { ForgeState } from '@/apps/forge/states/ForgeState';
+import { ProjectFileSystem } from '@/apps/forge/ProjectFileSystem';
+import { Project } from '@/apps/forge/Project';
+import path from 'path';
 
-import React, { useEffect, useState } from "react";
-import { Button, FormControl, FormSelect, InputGroup, Modal } from "react-bootstrap";
+import React, { useEffect, useState } from 'react';
+import { Button, FormControl, FormSelect, InputGroup, Modal } from 'react-bootstrap';
 
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
-import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import * as KotOR from "@/apps/forge/KotOR";
-import { Project } from "@/apps/forge/Project";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ProjectType } from '@/apps/forge/enum/ProjectType';
+import { ForgeFileSystem, ForgeFileSystemResponseType } from '@/apps/forge/ForgeFileSystem';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import * as KotOR from '@/apps/forge/KotOR';
+import { Project } from '@/apps/forge/Project';
+import { ProjectFileSystem } from '@/apps/forge/ProjectFileSystem';
+import { ForgeState } from '@/apps/forge/states/ForgeState';
 
 type GameModule = {
   moduleName: string;
@@ -29,8 +29,8 @@ type GameModule = {
   ifo: KotOR.GFFObject;
   git: KotOR.GFFObject;
   are: KotOR.GFFObject;
-  rooms: { roomName: string, envAudio: number, ambientScale: number }[];
-}
+  rooms: { roomName: string; envAudio: number; ambientScale: number }[];
+};
 
 const DEFAULT_PROJECT_NAME = '';
 const DEFAULT_MODULE_NAME = 'pal_m80aa';
@@ -61,7 +61,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
     setShow(true);
   };
 
-  useEffect( () => {
+  useEffect(() => {
     modal.addEventListener('onHide', onHide);
     modal.addEventListener('onShow', onShow);
     modal.addEventListener('onGameModulesLoaded', onGameModulesLoaded);
@@ -69,7 +69,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
       modal.removeEventListener('onHide', onHide);
       modal.removeEventListener('onShow', onShow);
       modal.removeEventListener('onGameModulesLoaded', onGameModulesLoaded);
-    }
+    };
   }, []);
 
   const handleHide = () => {
@@ -87,7 +87,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
 
   const handleCreateProject = async () => {
     console.log('handleCreateProject', projectName, selectedGameModule);
-    if(!projectDirectory){
+    if (!projectDirectory) {
       return;
     }
     const project = new Project();
@@ -95,8 +95,8 @@ export const ModalNewProject = (props: BaseModalProps) => {
     project.settings.name = projectName;
     project.settings.type = projectType;
     project.settings.open_files = [];
-    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-      if(!projectDirectory.path){
+    if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
+      if (!projectDirectory.path) {
         console.error('Project directory path is required');
         return;
       }
@@ -104,16 +104,16 @@ export const ModalNewProject = (props: BaseModalProps) => {
       ProjectFileSystem.rootDirectoryHandle = undefined as unknown as FileSystemDirectoryHandle;
       ForgeState.project = project;
       project.saveSettings();
-      if(projectType === ProjectType.MODULE){
+      if (projectType === ProjectType.MODULE) {
         const gameModule = gameModules[selectedGameModule];
-        if(gameModule){
+        if (gameModule) {
           console.log('selectedGameModule', gameModule.entryArea);
           const lyt = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, gameModule.entryArea);
-          if(lyt){  
+          if (lyt) {
             await ProjectFileSystem.writeFile(areaName + '.lyt', lyt);
           }
           const vis = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.vis, gameModule.entryArea);
-          if(vis){
+          if (vis) {
             await ProjectFileSystem.writeFile(areaName + '.vis', vis);
           }
         }
@@ -122,9 +122,9 @@ export const ModalNewProject = (props: BaseModalProps) => {
       modal.close();
       return;
     }
-    
-    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
-      if(!projectDirectory.handle){
+
+    if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER) {
+      if (!projectDirectory.handle) {
         console.error('Project directory handle is required');
         return;
       }
@@ -133,16 +133,16 @@ export const ModalNewProject = (props: BaseModalProps) => {
       console.log('ProjectFileSystem.rootDirectoryHandle', ProjectFileSystem.rootDirectoryHandle);
       ForgeState.project = project;
       project.saveSettings();
-      if(projectType === ProjectType.MODULE){
+      if (projectType === ProjectType.MODULE) {
         const gameModule = gameModules[selectedGameModule];
-        if(gameModule){
+        if (gameModule) {
           console.log('selectedGameModule', gameModule.entryArea);
           const lyt = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, gameModule.entryArea);
-          if(lyt){  
+          if (lyt) {
             await ProjectFileSystem.writeFile(areaName + '.lyt', lyt);
           }
           const vis = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.vis, gameModule.entryArea);
-          if(vis){
+          if (vis) {
             await ProjectFileSystem.writeFile(areaName + '.vis', vis);
           }
         }
@@ -156,7 +156,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
   const onProjectTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newProjectType = parseInt(e.target.value) as ProjectType;
     setProjectType(newProjectType);
-    if(newProjectType !== ProjectType.MODULE){
+    if (newProjectType !== ProjectType.MODULE) {
       setSelectedGameModule(-1);
       setModuleName('');
       setAreaName('');
@@ -164,25 +164,25 @@ export const ModalNewProject = (props: BaseModalProps) => {
   };
 
   const handleSelectProjectDirectory = () => {
-      ForgeFileSystem.showOpenDirectoryDialog().then((response) => {
-        if(response.cancelled){
-          return;
-        }
-        if(response.type === ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE){
-          setProjectDirectory({ 
-            name: response.handle?.name,
-            path: response.handle?.name as string,
-            handle: response.handle as FileSystemDirectoryHandle,
-          });
-        }
-        if(response.type === ForgeFileSystemResponseType.FILE_PATH_STRING){
-          setProjectDirectory({ 
-            name: response.path?.split('/').pop(),
-            path: response.path as string,
-            handle: undefined,
-          });
-        }
-      });
+    ForgeFileSystem.showOpenDirectoryDialog().then((response) => {
+      if (response.cancelled) {
+        return;
+      }
+      if (response.type === ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE) {
+        setProjectDirectory({
+          name: response.handle?.name,
+          path: response.handle?.name as string,
+          handle: response.handle as FileSystemDirectoryHandle,
+        });
+      }
+      if (response.type === ForgeFileSystemResponseType.FILE_PATH_STRING) {
+        setProjectDirectory({
+          name: response.path?.split('/').pop(),
+          path: response.path as string,
+          handle: undefined,
+        });
+      }
+    });
   };
 
   const onModuleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -191,12 +191,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
   };
 
   return (
-    <Modal 
-      show={show} 
-      onHide={handleHide} 
-      backdrop="static" 
-      keyboard={false}
-    >
+    <Modal show={show} onHide={handleHide} backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title>{modal.title}</Modal.Title>
       </Modal.Header>
@@ -212,8 +207,14 @@ export const ModalNewProject = (props: BaseModalProps) => {
 
           <InputGroup>
             <InputGroup.Text>Directory</InputGroup.Text>
-            <FormControl type="text" value={projectDirectory?.name} onChange={(e) => setProjectDirectory({ path: e.target.value })} />
-            <Button variant="primary" onClick={handleSelectProjectDirectory}>Locate</Button>
+            <FormControl
+              type="text"
+              value={projectDirectory?.name}
+              onChange={(e) => setProjectDirectory({ path: e.target.value })}
+            />
+            <Button variant="primary" onClick={handleSelectProjectDirectory}>
+              Locate
+            </Button>
           </InputGroup>
 
           <InputGroup>
@@ -231,18 +232,30 @@ export const ModalNewProject = (props: BaseModalProps) => {
             <h3>Module Details:</h3>
             <InputGroup>
               <InputGroup.Text>Module Name</InputGroup.Text>
-              <FormControl type="text" value={moduleName} placeholder={DEFAULT_MODULE_NAME} onChange={(e) => setModuleName(e.target.value)} />
+              <FormControl
+                type="text"
+                value={moduleName}
+                placeholder={DEFAULT_MODULE_NAME}
+                onChange={(e) => setModuleName(e.target.value)}
+              />
             </InputGroup>
             <InputGroup>
               <InputGroup.Text>Area Name</InputGroup.Text>
-              <FormControl type="text" value={areaName} placeholder={DEFAULT_AREA_NAME} onChange={(e) => setAreaName(e.target.value)} />
+              <FormControl
+                type="text"
+                value={areaName}
+                placeholder={DEFAULT_AREA_NAME}
+                onChange={(e) => setAreaName(e.target.value)}
+              />
             </InputGroup>
             <InputGroup>
               <InputGroup.Text>Template Module</InputGroup.Text>
               <FormSelect className="game-modules" value={selectedGameModule as any} onChange={onModuleTemplateChange}>
                 <option value="-1">None</option>
                 {gameModules.map((module, index) => (
-                  <option key={module.moduleName} value={index as any}>{module.moduleName} - {module.areaName}</option>
+                  <option key={module.moduleName} value={index as any}>
+                    {module.moduleName} - {module.areaName}
+                  </option>
                 ))}
               </FormSelect>
             </InputGroup>
@@ -251,8 +264,12 @@ export const ModalNewProject = (props: BaseModalProps) => {
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>Close</Button>
-        <Button variant="primary" onClick={handleCreateProject}>Create Project</Button>
+        <Button variant="secondary" onClick={handleClose}>
+          Close
+        </Button>
+        <Button variant="primary" onClick={handleCreateProject}>
+          Create Project
+        </Button>
       </Modal.Footer>
     </Modal>
   );

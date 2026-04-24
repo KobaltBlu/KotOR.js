@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { CommandPaletteState } from "@/apps/forge/states/CommandPaletteState";
-import { TabTLKEditorState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/components/tabs/tab-tlk-editor/TabTLKEditor.scss";
+import { CommandPaletteState } from '@/apps/forge/states/CommandPaletteState';
+import { TabTLKEditorState } from '@/apps/forge/states/tabs';
+import '@/apps/forge/components/tabs/tab-tlk-editor/TabTLKEditor.scss';
 
 interface BaseTabProps {
   tab: TabTLKEditorState;
@@ -101,10 +101,10 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
   useEffect(() => {
     const baseId = `tlk.${tab.id}`;
     const register = () => {
-      CommandPaletteState.register(`${baseId}.find`, "TLK: Find", "TLK Editor", () => tab.toggleSearchBox(true));
-      CommandPaletteState.register(`${baseId}.goto`, "TLK: Go To Line", "TLK Editor", () => tab.toggleJumpBox(true));
-      CommandPaletteState.register(`${baseId}.insert`, "TLK: Insert Entry", "TLK Editor", () => tab.insertEntry());
-      CommandPaletteState.register(`${baseId}.references`, "TLK: Find References", "TLK Editor", () => {
+      CommandPaletteState.register(`${baseId}.find`, 'TLK: Find', 'TLK Editor', () => tab.toggleSearchBox(true));
+      CommandPaletteState.register(`${baseId}.goto`, 'TLK: Go To Line', 'TLK Editor', () => tab.toggleJumpBox(true));
+      CommandPaletteState.register(`${baseId}.insert`, 'TLK: Insert Entry', 'TLK Editor', () => tab.insertEntry());
+      CommandPaletteState.register(`${baseId}.references`, 'TLK: Find References', 'TLK Editor', () => {
         if (tab.selectedStringIndex >= 0) {
           tab.findReferencesForIndex(tab.selectedStringIndex);
         }
@@ -158,13 +158,16 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
     });
   }, [tlk, filterQuery, revision]);
 
-  const setRowRef = useCallback((index: number) => (el: HTMLTableRowElement | null) => {
-    if (el) {
-      rowRefs.current.set(index, el);
-    } else {
-      rowRefs.current.delete(index);
-    }
-  }, []);
+  const setRowRef = useCallback(
+    (index: number) => (el: HTMLTableRowElement | null) => {
+      if (el) {
+        rowRefs.current.set(index, el);
+      } else {
+        rowRefs.current.delete(index);
+      }
+    },
+    []
+  );
 
   const scrollToIndex = useCallback((index: number) => {
     const row = rowRefs.current.get(index);
@@ -197,9 +200,8 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
       e.preventDefault();
 
       const currentIdx = filteredEntries.findIndex((entry) => entry.index === selectedIndex);
-      const nextIdx = e.key === 'ArrowDown'
-        ? Math.min(currentIdx + 1, filteredEntries.length - 1)
-        : Math.max(currentIdx - 1, 0);
+      const nextIdx =
+        e.key === 'ArrowDown' ? Math.min(currentIdx + 1, filteredEntries.length - 1) : Math.max(currentIdx - 1, 0);
       const nextEntry = filteredEntries[nextIdx];
       if (!nextEntry) return;
       tab.selectString(nextEntry.index);
@@ -208,13 +210,10 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
     [filteredEntries, scrollToIndex, selectedIndex, tab]
   );
 
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent, index: number) => {
-      e.preventDefault();
-      setContextMenu({ index, x: e.clientX, y: e.clientY });
-    },
-    []
-  );
+  const handleContextMenu = useCallback((e: React.MouseEvent, index: number) => {
+    e.preventDefault();
+    setContextMenu({ index, x: e.clientX, y: e.clientY });
+  }, []);
 
   if (!tlk) {
     return (
@@ -323,7 +322,9 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
                         onClick={() => tab.selectString(entry.index)}
                         onContextMenu={(e) => handleContextMenu(e, entry.index)}
                       >
-                        <th className="tlk-table__index" scope="row">{entry.index}</th>
+                        <th className="tlk-table__index" scope="row">
+                          {entry.index}
+                        </th>
                         <td className="tlk-table__text">{entry.text}</td>
                         <td className="tlk-table__sound">{entry.sound}</td>
                       </tr>
@@ -351,7 +352,9 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
               placeholder={selectedEntry ? '' : 'Select a row to edit its text'}
             />
             <div className="tlk-sound-row">
-              <label htmlFor={`tlk-sound-resref-${tab.id}`} className="tlk-sound-label">Sound ResRef:</label>
+              <label htmlFor={`tlk-sound-resref-${tab.id}`} className="tlk-sound-label">
+                Sound ResRef:
+              </label>
               <input
                 id={`tlk-sound-resref-${tab.id}`}
                 type="text"
@@ -376,10 +379,7 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
       {contextMenu && (
         <>
           <style>{`.tlk-context-menu--pos-${tab.id} { --tlk-context-menu-x: ${contextMenu.x}px; --tlk-context-menu-y: ${contextMenu.y}px; }`}</style>
-          <div
-            className={`tlk-context-menu tlk-context-menu--pos-${tab.id}`}
-            role="menu"
-          >
+          <div className={`tlk-context-menu tlk-context-menu--pos-${tab.id}`} role="menu">
             <button
               type="button"
               className="tlk-context-menu__item"

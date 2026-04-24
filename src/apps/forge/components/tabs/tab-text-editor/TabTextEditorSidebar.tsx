@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
-import { TabTextEditorState } from "@/apps/forge/states/tabs";
+import { TabTextEditorState } from '@/apps/forge/states/tabs';
 
 interface TabTextEditorSidebarProps {
   tab: TabTextEditorState;
 }
 
-export const TabTextEditorSidebar = function(props: TabTextEditorSidebarProps){
+export const TabTextEditorSidebar = function (props: TabTextEditorSidebarProps) {
   const tab = props.tab;
   const [bookmarks, setBookmarks] = useState(tab.bookmarks);
   const [snippets, setSnippets] = useState(tab.snippets);
@@ -16,10 +16,10 @@ export const TabTextEditorSidebar = function(props: TabTextEditorSidebarProps){
 
   useEffect(() => {
     const onBookmarksChanged = () => {
-      setBookmarks([ ...tab.bookmarks ]);
+      setBookmarks([...tab.bookmarks]);
     };
     const onSnippetsChanged = () => {
-      setSnippets([ ...tab.snippets ]);
+      setSnippets([...tab.snippets]);
     };
 
     tab.addEventListener('onBookmarksChanged', onBookmarksChanged);
@@ -37,7 +37,7 @@ export const TabTextEditorSidebar = function(props: TabTextEditorSidebarProps){
   };
 
   const onAddSnippet = () => {
-    if(!snippetName.trim()) return;
+    if (!snippetName.trim()) return;
     tab.addSnippet(snippetName, snippetContent);
     setSnippetName('');
     setSnippetContent('');
@@ -48,7 +48,9 @@ export const TabTextEditorSidebar = function(props: TabTextEditorSidebarProps){
       <div className="forge-text-editor__section">
         <div className="forge-text-editor__section-header">
           <span>Bookmarks</span>
-          <button className="forge-text-editor__button" onClick={() => tab.clearBookmarks()}>Clear</button>
+          <button className="forge-text-editor__button" onClick={() => tab.clearBookmarks()}>
+            Clear
+          </button>
         </div>
         <div className="forge-text-editor__field">
           <input
@@ -57,18 +59,15 @@ export const TabTextEditorSidebar = function(props: TabTextEditorSidebarProps){
             placeholder="Bookmark description"
             onChange={(e) => setBookmarkDescription(e.target.value)}
           />
-          <button className="forge-text-editor__button" onClick={onAddBookmark}>Add</button>
+          <button className="forge-text-editor__button" onClick={onAddBookmark}>
+            Add
+          </button>
         </div>
         <div className="forge-text-editor__list">
-          {bookmarks.length === 0 && (
-            <div className="forge-text-editor__empty">No bookmarks</div>
-          )}
+          {bookmarks.length === 0 && <div className="forge-text-editor__empty">No bookmarks</div>}
           {bookmarks.map((bookmark) => (
             <div key={`bookmark-${bookmark.line}`} className="forge-text-editor__list-item">
-              <button
-                className="forge-text-editor__link"
-                onClick={() => tab.goToLine(bookmark.line)}
-              >
+              <button className="forge-text-editor__link" onClick={() => tab.goToLine(bookmark.line)}>
                 {bookmark.line}
               </button>
               <span className="forge-text-editor__list-text">{bookmark.description}</span>
@@ -102,12 +101,12 @@ export const TabTextEditorSidebar = function(props: TabTextEditorSidebarProps){
             placeholder="Snippet content"
             onChange={(e) => setSnippetContent(e.target.value)}
           />
-          <button className="forge-text-editor__button" onClick={onAddSnippet}>Save</button>
+          <button className="forge-text-editor__button" onClick={onAddSnippet}>
+            Save
+          </button>
         </div>
         <div className="forge-text-editor__list">
-          {snippets.length === 0 && (
-            <div className="forge-text-editor__empty">No snippets</div>
-          )}
+          {snippets.length === 0 && <div className="forge-text-editor__empty">No snippets</div>}
           {snippets.map((snippet) => (
             <div key={`snippet-${snippet.name}`} className="forge-text-editor__list-item">
               <button

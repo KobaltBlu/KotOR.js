@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { Modal } from "react-bootstrap";
+import React, { useState, useEffect } from 'react';
+import { Modal } from 'react-bootstrap';
 
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
 import * as KotOR from '@/apps/forge/KotOR';
-import { ModalSettingsState } from "@/apps/forge/states/modal/ModalSettingsState";
+import { ModalSettingsState } from '@/apps/forge/states/modal/ModalSettingsState';
 
-import "@/apps/forge/components/modal/ModalSettings.scss";
+import '@/apps/forge/components/modal/ModalSettings.scss';
 
 export const ModalSettings: React.FC<BaseModalProps> = (props) => {
   const modal = props.modal as ModalSettingsState;
@@ -17,7 +17,7 @@ export const ModalSettings: React.FC<BaseModalProps> = (props) => {
     const showHandler = () => setShow(true);
     const hideHandler = () => setShow(false);
     const tabHandler = () => setActiveTab(modal.activeTab);
-    const settingsHandler = () => setSettings({...modal.settings});
+    const settingsHandler = () => setSettings({ ...modal.settings });
 
     modal.addEventListener('onShow', showHandler);
     modal.addEventListener('onHide', hideHandler);
@@ -42,31 +42,25 @@ export const ModalSettings: React.FC<BaseModalProps> = (props) => {
   };
 
   const browseKotorPath = async () => {
-    if(KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON){
+    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
       const result = await window.dialog.locateDirectoryDialog();
-      if(result){
+      if (result) {
         modal.updateSetting('kotorPath', result);
       }
     }
   };
 
   const browseKotor2Path = async () => {
-    if(KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON){
+    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
       const result = await window.dialog.locateDirectoryDialog();
-      if(result){
+      if (result) {
         modal.updateSetting('kotor2Path', result);
       }
     }
   };
 
   return (
-    <Modal
-      show={show}
-      onHide={handleClose}
-      className="modal-settings"
-      size="lg"
-      centered
-    >
+    <Modal show={show} onHide={handleClose} className="modal-settings" size="lg" centered>
       <Modal.Header closeButton>
         <Modal.Title>{modal.title}</Modal.Title>
       </Modal.Header>
@@ -79,16 +73,10 @@ export const ModalSettings: React.FC<BaseModalProps> = (props) => {
             >
               Installations
             </button>
-            <button
-              className={activeTab === 'editor' ? 'active' : ''}
-              onClick={() => modal.setActiveTab('editor')}
-            >
+            <button className={activeTab === 'editor' ? 'active' : ''} onClick={() => modal.setActiveTab('editor')}>
               Editor
             </button>
-            <button
-              className={activeTab === 'updates' ? 'active' : ''}
-              onClick={() => modal.setActiveTab('updates')}
-            >
+            <button className={activeTab === 'updates' ? 'active' : ''} onClick={() => modal.setActiveTab('updates')}>
               Updates
             </button>
             <button
@@ -103,9 +91,7 @@ export const ModalSettings: React.FC<BaseModalProps> = (props) => {
             {activeTab === 'installations' && (
               <div className="settings-section">
                 <h4>Game Installations</h4>
-                <p className="section-description">
-                  Configure paths to your KotOR I and KotOR II installations.
-                </p>
+                <p className="section-description">Configure paths to your KotOR I and KotOR II installations.</p>
 
                 <div className="form-group">
                   <label>KotOR I Path</label>
@@ -142,9 +128,7 @@ export const ModalSettings: React.FC<BaseModalProps> = (props) => {
             {activeTab === 'editor' && (
               <div className="settings-section">
                 <h4>Editor Preferences</h4>
-                <p className="section-description">
-                  Configure editor behavior and display options.
-                </p>
+                <p className="section-description">Configure editor behavior and display options.</p>
 
                 <div className="form-group">
                   <label className="checkbox-label">
@@ -155,7 +139,9 @@ export const ModalSettings: React.FC<BaseModalProps> = (props) => {
                     />
                     Use specialized editors for GFF files
                   </label>
-                  <small>When enabled, GFF files open in type-specific editors (e.g. UTC, UTI) instead of generic GFF editor</small>
+                  <small>
+                    When enabled, GFF files open in type-specific editors (e.g. UTC, UTI) instead of generic GFF editor
+                  </small>
                 </div>
 
                 <div className="form-group">
@@ -188,9 +174,7 @@ export const ModalSettings: React.FC<BaseModalProps> = (props) => {
             {activeTab === 'updates' && (
               <div className="settings-section">
                 <h4>Update Settings</h4>
-                <p className="section-description">
-                  Configure how Forge checks for updates.
-                </p>
+                <p className="section-description">Configure how Forge checks for updates.</p>
 
                 <div className="form-group">
                   <label className="checkbox-label">
@@ -221,16 +205,11 @@ export const ModalSettings: React.FC<BaseModalProps> = (props) => {
             {activeTab === 'appearance' && (
               <div className="settings-section">
                 <h4>Appearance</h4>
-                <p className="section-description">
-                  Customize the visual appearance of Forge.
-                </p>
+                <p className="section-description">Customize the visual appearance of Forge.</p>
 
                 <div className="form-group">
                   <label>Theme</label>
-                  <select
-                    value={settings.theme}
-                    onChange={(e) => modal.updateSetting('theme', e.target.value)}
-                  >
+                  <select value={settings.theme} onChange={(e) => modal.updateSetting('theme', e.target.value)}>
                     <option value="dark">Dark (Default)</option>
                     <option value="light">Light</option>
                     <option value="auto">Auto (System)</option>

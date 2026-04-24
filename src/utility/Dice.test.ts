@@ -23,14 +23,14 @@ describe('Dice', () => {
   // -------------------------------------------------------------------------
   describe('intToDiceType', () => {
     const cases: [number, DiceType][] = [
-      [2,   DiceType.d2],
-      [3,   DiceType.d3],
-      [4,   DiceType.d4],
-      [6,   DiceType.d6],
-      [8,   DiceType.d8],
-      [10,  DiceType.d10],
-      [12,  DiceType.d12],
-      [20,  DiceType.d20],
+      [2, DiceType.d2],
+      [3, DiceType.d3],
+      [4, DiceType.d4],
+      [6, DiceType.d6],
+      [8, DiceType.d8],
+      [10, DiceType.d10],
+      [12, DiceType.d12],
+      [20, DiceType.d20],
       [100, DiceType.d100],
     ];
 
@@ -73,14 +73,14 @@ describe('Dice', () => {
      *   random = (faces-1)/faces → faces (maximum)
      */
     const rollCases: { die: DiceType; faces: number }[] = [
-      { die: DiceType.d2,   faces: 2   },
-      { die: DiceType.d3,   faces: 3   },
-      { die: DiceType.d4,   faces: 4   },
-      { die: DiceType.d6,   faces: 6   },
-      { die: DiceType.d8,   faces: 8   },
-      { die: DiceType.d10,  faces: 10  },
-      { die: DiceType.d12,  faces: 12  },
-      { die: DiceType.d20,  faces: 20  },
+      { die: DiceType.d2, faces: 2 },
+      { die: DiceType.d3, faces: 3 },
+      { die: DiceType.d4, faces: 4 },
+      { die: DiceType.d6, faces: 6 },
+      { die: DiceType.d8, faces: 8 },
+      { die: DiceType.d10, faces: 10 },
+      { die: DiceType.d12, faces: 12 },
+      { die: DiceType.d20, faces: 20 },
       { die: DiceType.d100, faces: 100 },
     ];
 

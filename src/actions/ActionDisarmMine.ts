@@ -1,17 +1,17 @@
-import { GameState } from "@/GameState";
-import { ModuleTriggerType } from "@/enums";
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { ActionStatus } from "@/enums/actions/ActionStatus";
-import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { ResourceLoader } from "@/loaders/ResourceLoader";
-import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleTrigger } from "@/module/ModuleTrigger";
-import { GFFObject } from "@/resource/GFFObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { BitWise } from "@/utility/BitWise";
-import { Utility } from "@/utility/Utility";
-import { Action } from "@/actions/Action";
+import { GameState } from '@/GameState';
+import { ModuleTriggerType } from '@/enums';
+import { ActionParameterType } from '@/enums/actions/ActionParameterType';
+import { ActionStatus } from '@/enums/actions/ActionStatus';
+import { ActionType } from '@/enums/actions/ActionType';
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import { ResourceLoader } from '@/loaders/ResourceLoader';
+import type { ModuleObject } from '@/module/ModuleObject';
+import type { ModuleTrigger } from '@/module/ModuleTrigger';
+import { GFFObject } from '@/resource/GFFObject';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { BitWise } from '@/utility/BitWise';
+import { Utility } from '@/utility/Utility';
+import { Action } from '@/actions/Action';
 
 /**
  * ActionDisarmMine class.
@@ -24,8 +24,7 @@ import { Action } from "@/actions/Action";
  */
 
 export class ActionDisarmMine extends Action {
-
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionDisarmMine;
 
@@ -34,16 +33,15 @@ export class ActionDisarmMine extends Action {
   }
 
   update(delta?: number): ActionStatus {
-
     this.target = this.getParameter<ModuleObject>(0);
-    if(!this.target){
+    if (!this.target) {
       return ActionStatus.FAILED;
     }
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if (BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
       const distance = Utility.Distance2D(this.owner.position, this.target.position);
 
-      if(distance > 3){
+      if (distance > 3) {
         // this.owner.openSpot = undefined;
         const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
@@ -52,7 +50,7 @@ export class ActionDisarmMine extends Action {
         actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.target.area.id);
         actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
         actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 3 );
+        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 3);
         actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
         actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
         this.owner.actionQueue.addFront(actionMoveToTarget);
@@ -60,34 +58,38 @@ export class ActionDisarmMine extends Action {
         return ActionStatus.IN_PROGRESS;
       }
 
-      if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)){
+      if (BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)) {
         const trap: ModuleTrigger = this.target as any;
-        if(trap.type != ModuleTriggerType.TRAP){
+        if (trap.type != ModuleTriggerType.TRAP) {
           return ActionStatus.FAILED;
         }
 
-        if(!trap.trapDisarmable){
+        if (!trap.trapDisarmable) {
           return ActionStatus.FAILED;
         }
 
         const ownerCreature = this.owner as ModuleCreature;
         let disarmSuccess = false;
 
-        if(trap.creatorId !== undefined && trap.creatorId !== ModuleObjectConstant.OBJECT_INVALID && trap.creatorId === ownerCreature.id){
+        if (
+          trap.creatorId !== undefined &&
+          trap.creatorId !== ModuleObjectConstant.OBJECT_INVALID &&
+          trap.creatorId === ownerCreature.id
+        ) {
           disarmSuccess = true;
-        }else{
+        } else {
           const disarmDC = Math.max(1, trap.trapDisarmDC || trap.trapDetectDC || 1);
-          if(disarmDC > 35){
+          if (disarmDC > 35) {
             return ActionStatus.FAILED;
           }
           const skillRank = ownerCreature.getSkillLevel(SkillType.DEMOLITIONS);
           const d20Roll = Math.floor(Math.random() * 20) + 1;
-          disarmSuccess = (skillRank + d20Roll) >= disarmDC;
+          disarmSuccess = skillRank + d20Roll >= disarmDC;
         }
 
-        if(disarmSuccess){
+        if (disarmSuccess) {
           trap.destroy();
-        }else{
+        } else {
           return ActionStatus.FAILED;
         }
       }
@@ -97,5 +99,4 @@ export class ActionDisarmMine extends Action {
 
     return ActionStatus.FAILED;
   }
-
 }

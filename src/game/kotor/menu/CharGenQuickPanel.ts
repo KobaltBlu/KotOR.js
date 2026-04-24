@@ -1,7 +1,7 @@
-import { CurrentGame } from "@/engine/CurrentGame";
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIControl, GUILabel, GUIButton } from "@/gui";
+import { CurrentGame } from '@/engine/CurrentGame';
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIControl, GUILabel, GUIButton } from '@/gui';
 
 /**
  * CharGenQuickPanel class.
@@ -13,7 +13,6 @@ import type { GUIControl, GUILabel, GUIButton } from "@/gui";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenQuickPanel extends GameMenu {
-
   LBL_DECORATION: GUILabel;
   BTN_BACK: GUIButton;
   BTN_CANCEL: GUIButton;
@@ -29,7 +28,7 @@ export class CharGenQuickPanel extends GameMenu {
   step1: boolean;
   step2: boolean;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'quickpnl';
     this.background = '';
@@ -38,7 +37,7 @@ export class CharGenQuickPanel extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       this.step1 = false;
       this.step2 = false;
@@ -61,7 +60,7 @@ export class CharGenQuickPanel extends GameMenu {
         GameState.PartyManager.PlayerTemplate = GameState.CharGenManager.selectedCreature.save();
         GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
         GameState.PartyManager.AddPortraitToOrder(GameState.CharGenManager.selectedCreature.getPortraitResRef());
-        CurrentGame.InitGameInProgressFolder(true).then( () => {
+        CurrentGame.InitGameInProgressFolder(true).then(() => {
           GameState.LoadModule('end_m01aa');
         });
       });
@@ -101,5 +100,4 @@ export class CharGenQuickPanel extends GameMenu {
       this.LBL_NUM3.show();
     }
   }
-
 }

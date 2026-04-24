@@ -1,7 +1,7 @@
-import React from "react";
+import React from 'react';
 
-import { ModalPatcherProject } from "@/apps/forge/components/modal/ModalPatcherProject";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalPatcherProject } from '@/apps/forge/components/modal/ModalPatcherProject';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
 
 export interface PatcherFile {
   path: string;
@@ -11,7 +11,7 @@ export interface PatcherFile {
 }
 
 export class ModalPatcherProjectState extends ModalState {
-  title: string = "Patcher Project";
+  title: string = 'Patcher Project';
 
   projectPath: string = '';
   projectName: string = 'NewPatcher';
@@ -20,7 +20,7 @@ export class ModalPatcherProjectState extends ModalState {
   status: string = '';
   error: string = '';
 
-  constructor(){
+  constructor() {
     super();
     this.setView(<ModalPatcherProject modal={this} />);
   }

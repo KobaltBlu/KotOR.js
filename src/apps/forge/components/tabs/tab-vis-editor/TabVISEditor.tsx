@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { TabVISEditorState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/components/tabs/tab-vis-editor/TabVISEditor.scss";
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
+import { TabVISEditorState } from '@/apps/forge/states/tabs';
+import '@/apps/forge/components/tabs/tab-vis-editor/TabVISEditor.scss';
 
 interface BaseTabProps {
   tab: TabVISEditorState;
 }
 
-export const TabVISEditor = function(props: BaseTabProps){
+export const TabVISEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabVISEditorState;
   const [vis, setVis] = useState(tab.vis);
   const [selectedRoom, setSelectedRoom] = useState(tab.selectedRoomName);
@@ -31,12 +31,12 @@ export const TabVISEditor = function(props: BaseTabProps){
       label: 'File',
       children: [
         { label: 'Save', onClick: () => tab.save() },
-        { label: 'Save As', onClick: () => tab.saveAs() }
-      ]
-    }
+        { label: 'Save As', onClick: () => tab.saveAs() },
+      ],
+    },
   ];
 
-  if(!vis){
+  if (!vis) {
     return (
       <div className="forge-vis-editor">
         <MenuBar items={menuItems} />
@@ -55,8 +55,8 @@ export const TabVISEditor = function(props: BaseTabProps){
         <div className="vis-info">
           <h3>Visibility Editor</h3>
           <p>
-            VIS files define which rooms are visible from each room.
-            This optimization data tells the engine which rooms to render when the player is in a specific room.
+            VIS files define which rooms are visible from each room. This optimization data tells the engine which rooms
+            to render when the player is in a specific room.
           </p>
           <div className="vis-stats">
             <span>Total Rooms: {rooms.length}</span>
@@ -110,12 +110,10 @@ export const TabVISEditor = function(props: BaseTabProps){
                 <div className="vis-explanation">
                   <h5>How VIS Files Work</h5>
                   <p>
-                    When the player enters a room, the engine checks the VIS file to determine which
-                    other rooms should be rendered. Rooms not listed will not be drawn, improving performance.
+                    When the player enters a room, the engine checks the VIS file to determine which other rooms should
+                    be rendered. Rooms not listed will not be drawn, improving performance.
                   </p>
-                  <p>
-                    This is critical for large, complex areas with many rooms and models.
-                  </p>
+                  <p>This is critical for large, complex areas with many rooms and models.</p>
                 </div>
               </div>
             )}
@@ -123,8 +121,8 @@ export const TabVISEditor = function(props: BaseTabProps){
         </div>
 
         <div className="vis-notice">
-          <strong>Note:</strong> Direct editing of visibility relationships is not yet fully implemented.
-          The VIS file can be viewed and saved in its current state.
+          <strong>Note:</strong> Direct editing of visibility relationships is not yet fully implemented. The VIS file
+          can be viewed and saved in its current state.
         </div>
       </div>
     </div>

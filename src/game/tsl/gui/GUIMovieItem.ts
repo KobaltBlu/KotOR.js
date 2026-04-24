@@ -1,33 +1,31 @@
-import { GameState } from "@/GameState";
-import { GUIProtoItem } from "@/gui";
-import type { GameMenu, GUIControl } from "@/gui";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { GameState } from '@/GameState';
+import { GUIProtoItem } from '@/gui';
+import type { GameMenu, GUIControl } from '@/gui';
+import { GFFStruct } from '@/resource/GFFStruct';
 
 /**
  * GUIMovieItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIMovieItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIMovieItem extends GUIProtoItem {
-
   declare node: any;
 
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false) {
     super(menu, control, parent, scale);
   }
 
-  createControl(){
-    try{
+  createControl() {
+    try {
       this.setText(GameState.TLKManager.GetStringById(this.node.strrefname).Value);
       super.createControl();
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
     return this.widget;
   }
-
 }

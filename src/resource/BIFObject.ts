@@ -1,9 +1,9 @@
-import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryReader } from '@/utility/binary/BinaryReader';
 import * as path from 'path';
-import { KEYManager } from "@/managers/KEYManager";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { IResourceDiskInfo } from "@/interface/resource/IResourceDiskInfo";
-import { IBIFResource } from "@/interface/resource/IBIFResource";
+import { KEYManager } from '@/managers/KEYManager';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { IResourceDiskInfo } from '@/interface/resource/IResourceDiskInfo';
+import { IBIFResource } from '@/interface/resource/IBIFResource';
 
 const BIF_HEADER_SIZE = 20;
 
@@ -36,8 +36,7 @@ export class BIFObject {
   resources: IBIFResource[] = [];
   file: string;
 
-  constructor(file: Uint8Array|string){
-
+  constructor(file: Uint8Array | string) {
     this.resourceDiskInfo = {
       path: '',
       existsOnDisk: false,
@@ -45,12 +44,12 @@ export class BIFObject {
 
     this.resources = [];
 
-    if(file instanceof Uint8Array){
+    if (file instanceof Uint8Array) {
       this.buffer = file;
       this.inMemory = true;
       this.resourceDiskInfo.path = '';
       this.resourceDiskInfo.existsOnDisk = false;
-    }else if(typeof file === 'string'){
+    } else if (typeof file === 'string') {
       this.file = file;
       this.inMemory = false;
       this.buffer = new Uint8Array(0);
@@ -58,22 +57,19 @@ export class BIFObject {
       this.resourceDiskInfo.existsOnDisk = true;
       this.resourceDiskInfo.pathInfo = path.parse(this.resourceDiskInfo.path);
     }
-
   }
 
-  async load(): Promise<BIFObject>{
-
-    if(this.inMemory){
+  async load(): Promise<BIFObject> {
+    if (this.inMemory) {
       this.readFromMemory();
-    }else{
+    } else {
       await this.readFromDisk();
     }
 
     return this;
-
   }
 
-  readFromMemory(){
+  readFromMemory() {
     if (!this.inMemory || !(this.buffer instanceof Uint8Array)) {
       throw new Error('BIFObject.readFromMemory requires an in-memory buffer');
     }
@@ -107,10 +103,10 @@ export class BIFObject {
     }
   }
 
-  async readFromDisk(){
+  async readFromDisk() {
     const fd = await GameFileSystem.open(this.resourceDiskInfo.path, 'r');
     const header = new Uint8Array(BIF_HEADER_SIZE);
-    await GameFileSystem.read(fd, header, 0, BIF_HEADER_SIZE, 0)
+    await GameFileSystem.read(fd, header, 0, BIF_HEADER_SIZE, 0);
     this.reader = new BinaryReader(header);
 
     this.fileType = this.reader.readChars(4);
@@ -130,12 +126,12 @@ export class BIFObject {
     const variableTable: Uint8Array = new Uint8Array(this.variableTableSize);
     await GameFileSystem.read(fd, variableTable, 0, this.variableTableSize, this.variableTableOffset);
     this.reader.reuse(variableTable);
-    for(let i = 0; i < this.variableResourceCount; i++){
+    for (let i = 0; i < this.variableResourceCount; i++) {
       this.resources[i] = {
         Id: this.reader.readUInt32(),
         offset: this.reader.readUInt32(),
         size: this.reader.readUInt32(),
-        resType: this.reader.readUInt32()
+        resType: this.reader.readUInt32(),
       } as IBIFResource;
     }
 
@@ -144,10 +140,10 @@ export class BIFObject {
     await GameFileSystem.close(fd);
   }
 
-  getResourceById(id: number){
-    if(id != null){
-      for(let i = 0; i < this.variableResourceCount; i++){
-        if(this.resources[i].Id == id){
+  getResourceById(id: number) {
+    if (id != null) {
+      for (let i = 0; i < this.variableResourceCount; i++) {
+        if (this.resources[i].Id == id) {
           return this.resources[i];
         }
       }
@@ -155,11 +151,11 @@ export class BIFObject {
     return null;
   }
 
-  getResourcesByType(ResType: number){
-    const arr: IBIFResource[] = []
-    if(ResType != null){
-      for(let i = 0; i < this.variableResourceCount; i++){
-        if(this.resources[i].resType == ResType){
+  getResourcesByType(ResType: number) {
+    const arr: IBIFResource[] = [];
+    if (ResType != null) {
+      for (let i = 0; i < this.variableResourceCount; i++) {
+        if (this.resources[i].resType == ResType) {
           arr.push(this.resources[i]);
         }
       }
@@ -167,18 +163,18 @@ export class BIFObject {
     return arr;
   }
 
-  getResource(resRef: string, ResType: number): IBIFResource|undefined {
-    if(resRef == null){
+  getResource(resRef: string, ResType: number): IBIFResource | undefined {
+    if (resRef == null) {
       return undefined;
     }
 
     const len = KEYManager.Key.keys.length;
-    for(let i = 0; i < len; i++){
+    for (let i = 0; i < len; i++) {
       const key = KEYManager.Key.keys[i];
-      if(key.resRef == resRef && key.resType == ResType){
-        for(let j = 0; j != this.resources.length; j++){
+      if (key.resRef == resRef && key.resType == ResType) {
+        for (let j = 0; j != this.resources.length; j++) {
           const res = this.resources[j];
-          if(res.Id == key.resId && res.resType == ResType){
+          if (res.Id == key.resId && res.resType == ResType) {
             return res;
           }
         }
@@ -187,21 +183,25 @@ export class BIFObject {
   }
 
   async getResourceBuffer(res?: IBIFResource): Promise<Uint8Array> {
-    if(!res){ return new Uint8Array(0); }
-    if(!res.size){ return new Uint8Array(0); }
+    if (!res) {
+      return new Uint8Array(0);
+    }
+    if (!res.size) {
+      return new Uint8Array(0);
+    }
 
     if (this.inMemory && this.buffer instanceof Uint8Array) {
       return this.buffer.slice(res.offset, res.offset + res.size);
     }
 
-    try{
-      const fd = await GameFileSystem.open(this.resourceDiskInfo.path, 'r')
+    try {
+      const fd = await GameFileSystem.open(this.resourceDiskInfo.path, 'r');
       const buffer = new Uint8Array(res.size);
       await GameFileSystem.read(fd, buffer, 0, buffer.length, res.offset);
       await GameFileSystem.close(fd);
 
       return buffer;
-    }catch(e){
+    } catch (e) {
       return new Uint8Array(0);
     }
   }
@@ -216,7 +216,14 @@ export class BIFObject {
     return await this.getResourceBuffer(resource);
   }
 
-  toJSON(): { fileType: string; fileVersion: string; variableResourceCount: number; fixedResourceCount: number; variableTableOffset: number; resources: IBIFResource[] } {
+  toJSON(): {
+    fileType: string;
+    fileVersion: string;
+    variableResourceCount: number;
+    fixedResourceCount: number;
+    variableTableOffset: number;
+    resources: IBIFResource[];
+  } {
     return {
       fileType: this.fileType,
       fileVersion: this.fileVersion,
@@ -228,7 +235,7 @@ export class BIFObject {
   }
 
   fromJSON(json: string | ReturnType<BIFObject['toJSON']>): void {
-    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<BIFObject['toJSON']> : json;
+    const data = typeof json === 'string' ? (JSON.parse(json) as ReturnType<BIFObject['toJSON']>) : json;
     this.fileType = data.fileType;
     this.fileVersion = data.fileVersion;
     this.variableResourceCount = data.variableResourceCount;
@@ -239,7 +246,9 @@ export class BIFObject {
     this.variableTableSize = this.variableResourceCount * this.variableTableRowSize;
   }
 
-  toXML(): string { return objectToXML({ json: JSON.stringify(this.toJSON()) }); }
+  toXML(): string {
+    return objectToXML({ json: JSON.stringify(this.toJSON()) });
+  }
   fromXML(xml: string): void {
     const data = xmlToObject(xml) as { json?: string } | ReturnType<BIFObject['toJSON']>;
     if (typeof (data as { json?: string }).json === 'string') {
@@ -248,10 +257,18 @@ export class BIFObject {
     }
     this.fromJSON(data as ReturnType<BIFObject['toJSON']>);
   }
-  toYAML(): string { return objectToYAML(this.toJSON()); }
-  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<BIFObject['toJSON']>); }
-  toTOML(): string { return objectToTOML(this.toJSON()); }
-  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<BIFObject['toJSON']>); }
+  toYAML(): string {
+    return objectToYAML(this.toJSON());
+  }
+  fromYAML(yaml: string): void {
+    this.fromJSON(yamlToObject(yaml) as ReturnType<BIFObject['toJSON']>);
+  }
+  toTOML(): string {
+    return objectToTOML(this.toJSON());
+  }
+  fromTOML(toml: string): void {
+    this.fromJSON(tomlToObject(toml) as ReturnType<BIFObject['toJSON']>);
+  }
 
   /*load( path: string, onLoad?: Function, onError?: Function ){
 
@@ -280,5 +297,4 @@ export class BIFObject {
     }
 
   }*/
-
 }

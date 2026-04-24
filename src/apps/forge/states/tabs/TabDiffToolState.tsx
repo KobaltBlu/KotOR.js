@@ -1,9 +1,9 @@
-import React from "react";
+import React from 'react';
 
-import { TabDiffTool } from "@/apps/forge/components/tabs/tab-diff-tool/TabDiffTool";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { TabDiffTool } from '@/apps/forge/components/tabs/tab-diff-tool/TabDiffTool';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -19,7 +19,7 @@ export class TabDiffToolState extends TabState {
   leftExt: string = '';
   rightExt: string = '';
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     log.trace('TabDiffToolState constructor entry');
     super(options);
 

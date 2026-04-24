@@ -1,8 +1,8 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 
-import { Kit, KitComponent, KitComponentHook, KitDoor } from "@/apps/forge/data/IndoorKit";
-import { IndoorLocalizedString, ColorRGB } from "@/apps/forge/data/IndoorTypes";
-import { cloneWalkmesh, cloneWalkmeshFromBuffer, applyWalkmeshTransform } from "@/apps/forge/data/IndoorWalkmesh";
+import { Kit, KitComponent, KitComponentHook, KitDoor } from '@/apps/forge/data/IndoorKit';
+import { IndoorLocalizedString, ColorRGB } from '@/apps/forge/data/IndoorTypes';
+import { cloneWalkmesh, cloneWalkmeshFromBuffer, applyWalkmeshTransform } from '@/apps/forge/data/IndoorWalkmesh';
 
 export type DoorInsertion = {
   door: KitDoor;
@@ -18,7 +18,7 @@ export type DoorInsertion = {
 export type MissingRoomInfo = {
   kitName: string;
   componentName: string | null;
-  reason: "kit_missing" | "component_missing";
+  reason: 'kit_missing' | 'component_missing';
 };
 
 export type EmbeddedComponentData = {
@@ -52,23 +52,23 @@ export type IndoorMapData = {
   embedded_components?: EmbeddedComponentData[];
 };
 
-const EMBEDDED_KIT_ID = "__embedded__";
+const EMBEDDED_KIT_ID = '__embedded__';
 
 export class EmbeddedKit extends Kit {
   isEmbeddedKit = true;
   constructor() {
-    super("Embedded", EMBEDDED_KIT_ID);
+    super('Embedded', EMBEDDED_KIT_ID);
     const blank = new Uint8Array(0);
-    const door = new KitDoor("sw_door", "sw_door", blank, blank, 2, 3);
+    const door = new KitDoor('sw_door', 'sw_door', blank, blank, 2, 3);
     this.doors.push(door);
   }
 }
 
 const toBase64 = (data: Uint8Array): string => {
-  if (typeof Buffer !== "undefined") {
-    return Buffer.from(data).toString("base64");
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(data).toString('base64');
   }
-  let binary = "";
+  let binary = '';
   data.forEach((byte) => {
     binary += String.fromCharCode(byte);
   });
@@ -76,8 +76,8 @@ const toBase64 = (data: Uint8Array): string => {
 };
 
 const fromBase64 = (data: string): Uint8Array => {
-  if (typeof Buffer !== "undefined") {
-    return new Uint8Array(Buffer.from(data, "base64"));
+  if (typeof Buffer !== 'undefined') {
+    return new Uint8Array(Buffer.from(data, 'base64'));
   }
   const binary = atob(data);
   const bytes = new Uint8Array(binary.length);
@@ -102,10 +102,10 @@ const ensureEmbeddedKit = (kits: Kit[]): EmbeddedKit => {
 
 export class IndoorMap {
   rooms: IndoorMapRoom[] = [];
-  moduleId = "test01";
-  name: IndoorLocalizedString = IndoorLocalizedString.fromEnglish("New Module");
+  moduleId = 'test01';
+  name: IndoorLocalizedString = IndoorLocalizedString.fromEnglish('New Module');
   lighting: ColorRGB = { r: 0.5, g: 0.5, b: 0.5 };
-  skybox = "";
+  skybox = '';
   warpPoint: THREE.Vector3 = new THREE.Vector3();
   targetGameType: boolean | null = null;
 
@@ -221,13 +221,13 @@ export class IndoorMap {
 
   load(raw: Uint8Array, kits: Kit[]): MissingRoomInfo[] {
     this.reset();
-    const data = JSON.parse(new TextDecoder("utf8").decode(raw)) as IndoorMapData;
+    const data = JSON.parse(new TextDecoder('utf8').decode(raw)) as IndoorMapData;
     return this.loadFromData(data, kits);
   }
 
   loadFromData(data: IndoorMapData, kits: Kit[]): MissingRoomInfo[] {
     const missingRooms: MissingRoomInfo[] = [];
-    if (data.name && typeof data.name === "object") {
+    if (data.name && typeof data.name === 'object') {
       this.name = IndoorLocalizedString.fromJson(data.name as Record<string, unknown>);
     }
     if (Array.isArray(data.lighting)) {
@@ -237,9 +237,9 @@ export class IndoorMap {
         b: Number(data.lighting[2] ?? this.lighting.b),
       };
     }
-    this.moduleId = data.warp || data.module_id || "test01";
-    this.skybox = data.skybox || "";
-    this.targetGameType = typeof data.target_game_type === "boolean" ? data.target_game_type : null;
+    this.moduleId = data.warp || data.module_id || 'test01';
+    this.skybox = data.skybox || '';
+    this.targetGameType = typeof data.target_game_type === 'boolean' ? data.target_game_type : null;
 
     const embeddedList = data.embedded_components || [];
     if (embeddedList.length) {
@@ -287,12 +287,12 @@ export class IndoorMap {
       const compId = roomData.component;
       const kit = kits.find((entry) => entry.id === kitId);
       if (!kit) {
-        missingRooms.push({ kitName: kitId, componentName: compId, reason: "kit_missing" });
+        missingRooms.push({ kitName: kitId, componentName: compId, reason: 'kit_missing' });
         return;
       }
       const component = kit.components.find((entry) => entry.id === compId);
       if (!component) {
-        missingRooms.push({ kitName: kitId, componentName: compId, reason: "component_missing" });
+        missingRooms.push({ kitName: kitId, componentName: compId, reason: 'component_missing' });
         return;
       }
       const room = new IndoorMapRoom(
@@ -317,8 +317,8 @@ export class IndoorMap {
 
   reset(): void {
     this.rooms = [];
-    this.moduleId = "test01";
-    this.name = IndoorLocalizedString.fromEnglish("New Module");
+    this.moduleId = 'test01';
+    this.name = IndoorLocalizedString.fromEnglish('New Module');
     this.lighting = { r: 0.5, g: 0.5, b: 0.5 };
     this.targetGameType = null;
   }
@@ -331,7 +331,7 @@ export class IndoorMapRoom {
   hooks: Array<IndoorMapRoom | null>;
   flipX: boolean;
   flipY: boolean;
-  walkmeshOverride: import("@/apps/forge/KotOR").OdysseyWalkMesh | null = null;
+  walkmeshOverride: import('@/apps/forge/KotOR').OdysseyWalkMesh | null = null;
 
   constructor(component: KitComponent, position: THREE.Vector3, rotation: number, flipX: boolean, flipY: boolean) {
     this.component = component;
@@ -373,11 +373,11 @@ export class IndoorMapRoom {
     });
   }
 
-  baseWalkmesh(): import("@/apps/forge/KotOR").OdysseyWalkMesh {
+  baseWalkmesh(): import('@/apps/forge/KotOR').OdysseyWalkMesh {
     return this.walkmeshOverride || this.component.bwm;
   }
 
-  walkmesh(): import("@/apps/forge/KotOR").OdysseyWalkMesh {
+  walkmesh(): import('@/apps/forge/KotOR').OdysseyWalkMesh {
     const walkmesh = cloneWalkmesh(this.baseWalkmesh());
     applyWalkmeshTransform(walkmesh, {
       position: this.position,

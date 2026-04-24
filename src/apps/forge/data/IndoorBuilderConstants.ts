@@ -83,9 +83,9 @@ export const INDOOR_DUPLICATE_OFFSET_Z = 0;
 export const INDOOR_COMPONENT_PREVIEW_SCALE = 0.1;
 
 export enum IndoorDragMode {
-  NONE = "none",
-  ROOMS = "rooms",
-  WARP = "warp",
-  MARQUEE = "marquee",
-  HOOK = "hook",
+  NONE = 'none',
+  ROOMS = 'rooms',
+  WARP = 'warp',
+  MARQUEE = 'marquee',
+  HOOK = 'hook',
 }

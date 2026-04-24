@@ -1,8 +1,8 @@
-import * as THREE from "three";
-import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
-import { TXI } from "@/resource/TXI";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
+import * as THREE from 'three';
+import { GUIControlAlignment } from '@/enums/gui/GUIControlAlignment';
+import { TXI } from '@/resource/TXI';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { createQuadElements as createIndicies } from '@/utility/QuadIndices';
 
 interface Line {
   chars: GUIFontChar[];
@@ -11,7 +11,6 @@ interface Line {
 }
 
 export class GUIFont {
-
   texture: OdysseyTexture;
   txi: TXI;
 
@@ -27,37 +26,39 @@ export class GUIFont {
 
   builtLines: Line[] = [];
 
-  constructor(texture: OdysseyTexture){
-    if(!texture){ return }
+  constructor(texture: OdysseyTexture) {
+    if (!texture) {
+      return;
+    }
     this.texture = texture;
 
-    if(this.texture.txi){
+    if (this.texture.txi) {
       this.txi = this.texture.txi;
       this.scale = 1;
-  
+
       const img = texture.image as HTMLImageElement | undefined;
       this.ratio = img && img.width && img.height ? img.width / img.height : 1;
-  
-      this.height = this.txi.fontheight     * 100;
+
+      this.height = this.txi.fontheight * 100;
       this.bsline = this.txi.baselineheight * 100;
-      this.spaceR = this.txi.spacingr       * 100;
-      this.spaceB = this.txi.spacingb       * 100;
+      this.spaceR = this.txi.spacingr * 100;
+      this.spaceB = this.txi.spacingb * 100;
       this.charCount = this.txi.numchars;
 
       this.chars = new Array(this.charCount);
-      for(let i = 0; i < this.charCount; i++){
+      for (let i = 0; i < this.charCount; i++) {
         this.chars[i] = new GUIFontChar(this, String.fromCharCode(i));
       }
     }
   }
 
   getWordWidth(word: string): number {
-    if(!word || !word.length) return 0;
+    if (!word || !word.length) return 0;
 
     let width = 0;
 
     const chars = word.split('');
-    for(let i = 0; i < chars.length; i++){
+    for (let i = 0; i < chars.length; i++) {
       width += this.chars[word.charCodeAt(i)].width;
     }
 
@@ -65,39 +66,46 @@ export class GUIFont {
   }
 
   getWordChars(word: string): GUIFontChar[] {
-    return word.split('').map( (char) => this.chars[char.charCodeAt(0)] );
+    return word.split('').map((char) => this.chars[char.charCodeAt(0)]);
   }
 
-  buildGeometry(geometry: THREE.BufferGeometry, text: string, alignment: GUIControlAlignment, maxWidth: number = 0): void {
+  buildGeometry(
+    geometry: THREE.BufferGeometry,
+    text: string,
+    alignment: GUIControlAlignment,
+    maxWidth: number = 0
+  ): void {
     const lines: string[] = text.split('\n');
     const lineCount: number = lines.length;
     const spaceChar = this.chars[32];
     const lines2: Line[] = [];
 
-    let lineY = 0
-    for(let l = 0; l < lineCount; l++){
+    let lineY = 0;
+    for (let l = 0; l < lineCount; l++) {
       const words: string[] = lines[l].split(' ');
-      let newLine: Line = {chars: [], width: 0, y: lineY};
+      let newLine: Line = { chars: [], width: 0, y: lineY };
 
-      for(let w = 0; w < words.length; w++){
+      for (let w = 0; w < words.length; w++) {
         const word = words[w];
         const chars = this.getWordChars(word);
         const wordWidth = this.getWordWidth(word);
-        const spacing = (w) ? spaceChar.width : 0;
-        if(newLine.width + (wordWidth + spacing) < maxWidth || !maxWidth){
-          if(w){ chars.unshift(spaceChar); }
+        const spacing = w ? spaceChar.width : 0;
+        if (newLine.width + (wordWidth + spacing) < maxWidth || !maxWidth) {
+          if (w) {
+            chars.unshift(spaceChar);
+          }
           newLine.chars.push(...chars);
-          newLine.width += (wordWidth + spacing);
-        }else{
+          newLine.width += wordWidth + spacing;
+        } else {
           lines2.push(newLine);
           lineY -= this.height;
-          newLine = {chars: [], width: 0, y: lineY};
+          newLine = { chars: [], width: 0, y: lineY };
           newLine.chars.push(...chars);
           newLine.width += wordWidth;
         }
       }
 
-      if(newLine.chars.length > 0){
+      if (newLine.chars.length > 0) {
         lines2.push(newLine);
       }
       lineY -= this.height;
@@ -109,7 +117,7 @@ export class GUIFont {
     const maxHeight = lines2.length * this.height;
 
     let textCharCount: number = 0;
-    for(let l = 0; l < lines2.length; l++){
+    for (let l = 0; l < lines2.length; l++) {
       textCharCount += lines2[l].chars.length;
     }
 
@@ -120,20 +128,20 @@ export class GUIFont {
     const indices = createIndicies({
       clockwise: true,
       type: 'uint16',
-      count: textCharCount
+      count: textCharCount,
     });
 
     let charIndex = 0;
-    for(let l = 0; l < lines2.length; l++){
+    for (let l = 0; l < lines2.length; l++) {
       const line = lines2[l];
 
       let lineX = 0;
       // Apply horizontal alignment - center the text within the available width
-      if(horizontal == GUIControlAlignment.HorizontalLeft){
+      if (horizontal == GUIControlAlignment.HorizontalLeft) {
         lineX = 0; // Default left alignment
-      }else if(horizontal == GUIControlAlignment.HorizontalCenter){
+      } else if (horizontal == GUIControlAlignment.HorizontalCenter) {
         lineX = (maxWidth - line.width) / 2;
-      }else if(horizontal == GUIControlAlignment.HorizontalRight){
+      } else if (horizontal == GUIControlAlignment.HorizontalRight) {
         lineX = maxWidth - line.width;
       }
 
@@ -141,11 +149,11 @@ export class GUIFont {
       let halfWidth = 0;
       let halfHeight = 0;
       let stride = 0;
-      for(let c = 0; c < line.chars.length; c++){
+      for (let c = 0; c < line.chars.length; c++) {
         char = line.chars[c];
-        halfWidth = char.width/2;
-        halfHeight = char.height/2;
-        stride = (charIndex * 8);
+        halfWidth = char.width / 2;
+        halfHeight = char.height / 2;
+        stride = charIndex * 8;
 
         // Remove the incorrect first character offset
         // Characters should be positioned normally without special first-character handling
@@ -154,7 +162,7 @@ export class GUIFont {
         positions[stride + 0] = lineX;
         positions[stride + 1] = line.y;
         // TL
-        positions[stride + 2] = lineX ;
+        positions[stride + 2] = lineX;
         positions[stride + 3] = line.y - char.height;
         // TR
         positions[stride + 4] = lineX + char.width;
@@ -180,13 +188,13 @@ export class GUIFont {
       }
     }
 
-    if(geometry){
-      geometry.index = new THREE.BufferAttribute( indices, 1 ).setUsage( THREE.StaticDrawUsage );
+    if (geometry) {
+      geometry.index = new THREE.BufferAttribute(indices, 1).setUsage(THREE.StaticDrawUsage);
 
-      const posAttribute = new THREE.BufferAttribute( positions, 2 ).setUsage( THREE.StaticDrawUsage );
-      const uvAttribute = new THREE.BufferAttribute( uvs, 2 ).setUsage( THREE.StaticDrawUsage );
-      geometry.setAttribute( 'position', posAttribute );
-      geometry.setAttribute( 'uv', uvAttribute );
+      const posAttribute = new THREE.BufferAttribute(positions, 2).setUsage(THREE.StaticDrawUsage);
+      const uvAttribute = new THREE.BufferAttribute(uvs, 2).setUsage(THREE.StaticDrawUsage);
+      geometry.setAttribute('position', posAttribute);
+      geometry.setAttribute('uv', uvAttribute);
 
       geometry.index.needsUpdate = true;
       geometry.attributes.position.needsUpdate = true;
@@ -194,19 +202,18 @@ export class GUIFont {
       geometry.computeBoundingBox();
     }
   }
-
 }
 
 export class GUIFontChar {
   font: GUIFont;
   char: number;
-  ul: {x: number, y: number, z: number};
-  lr: {x: number, y: number, z: number};
+  ul: { x: number; y: number; z: number };
+  lr: { x: number; y: number; z: number };
 
   width: number = 0;
   height: number = 0;
 
-  constructor(font: GUIFont, letter: string){
+  constructor(font: GUIFont, letter: string) {
     this.font = font;
     this.char = letter.charCodeAt(0);
     this.ul = font.txi.upperleftcoords[this.char];
@@ -216,8 +223,9 @@ export class GUIFontChar {
     // this.lr.x = Math.min(Math.max(this.lr.x, 0), 1);
     // this.lr.y = Math.min(Math.max(this.lr.y, 0), 1);
     const img = font.texture.image as HTMLImageElement | undefined;
-    const w = img?.width ?? 1, h = img?.height ?? 1;
-    this.width = ((this.lr.x - this.ul.x) * w) * this.font.scale;
-    this.height = ((this.ul.y - this.lr.y) * h) * this.font.scale;
+    const w = img?.width ?? 1,
+      h = img?.height ?? 1;
+    this.width = (this.lr.x - this.ul.x) * w * this.font.scale;
+    this.height = (this.ul.y - this.lr.y) * h * this.font.scale;
   }
 }

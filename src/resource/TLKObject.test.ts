@@ -13,7 +13,7 @@ describe('TLKObject', () => {
       new TLKString(0, '', 0, 0, 0, 10, 0, 'qrstuvwxyz'),
     ];
     tlk.StringCount = tlk.TLKStrings.length;
-    tlk.StringEntriesOffset = 20 + (tlk.StringCount * 40);
+    tlk.StringEntriesOffset = 20 + tlk.StringCount * 40;
     return tlk;
   }
 

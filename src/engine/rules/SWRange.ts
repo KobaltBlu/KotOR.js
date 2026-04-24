@@ -1,5 +1,5 @@
-import { TLKManager } from "@/managers/TLKManager";
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TLKManager } from '@/managers/TLKManager';
+import { TwoDAObject } from '@/resource/TwoDAObject';
 
 const RANGE_TYPES = {
   SPELL: 0,
@@ -17,12 +17,12 @@ export class SWRange {
   secondaryRange: number;
   name: number;
 
-  getName(){
+  getName() {
     return this.name != -1 ? TLKManager.GetStringById(this.name).Value : this.label;
   }
 
-  getType(){
-    switch(this.id){
+  getType() {
+    switch (this.id) {
       case 0:
       case 1:
       case 2:

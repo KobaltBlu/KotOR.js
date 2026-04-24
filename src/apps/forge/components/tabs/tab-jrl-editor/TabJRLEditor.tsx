@@ -1,19 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ContextMenuItem, useContextMenu } from "@/apps/forge/components/common/ContextMenu";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { InstallationRegistry } from "@/apps/forge/data/InstallationRegistry";
-import type { GFFFieldValue } from "@/apps/forge/interfaces/GFFFormField";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabJRLEditorState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/components/tabs/tab-jrl-editor/TabJRLEditor.scss";
+import { CExoLocStringEditor } from '@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor';
+import { ContextMenuItem, useContextMenu } from '@/apps/forge/components/common/ContextMenu';
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
+import { InstallationRegistry } from '@/apps/forge/data/InstallationRegistry';
+import type { GFFFieldValue } from '@/apps/forge/interfaces/GFFFormField';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabJRLEditorState } from '@/apps/forge/states/tabs';
+import '@/apps/forge/components/tabs/tab-jrl-editor/TabJRLEditor.scss';
 
 interface BaseTabProps {
   tab: TabJRLEditorState;
 }
 
-export const TabJRLEditor = function(props: BaseTabProps){
+export const TabJRLEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabJRLEditorState;
   const [jrl, setJrl] = useState(tab.jrl);
   const [selectedQuest, setSelectedQuest] = useState(tab.selectedQuest);
@@ -50,7 +50,13 @@ export const TabJRLEditor = function(props: BaseTabProps){
       if (event.key !== 'Delete') return;
 
       const target = event.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)) {
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
         return;
       }
 
@@ -77,12 +83,12 @@ export const TabJRLEditor = function(props: BaseTabProps){
       label: 'File',
       children: [
         { label: 'Save', onClick: () => tab.save() },
-        { label: 'Save As', onClick: () => tab.saveAs() }
-      ]
-    }
+        { label: 'Save As', onClick: () => tab.saveAs() },
+      ],
+    },
   ];
 
-  if(!jrl){
+  if (!jrl) {
     return (
       <div className="forge-jrl-editor">
         <MenuBar items={menuItems} />
@@ -211,7 +217,13 @@ export const TabJRLEditor = function(props: BaseTabProps){
     showContextMenu(event.clientX, event.clientY, contextItems);
   };
 
-  const showEntryContextMenu = (event: React.MouseEvent, quest: KotOR.GFFStruct, questIndex: number, entry: KotOR.GFFStruct, entryIndex: number) => {
+  const showEntryContextMenu = (
+    event: React.MouseEvent,
+    quest: KotOR.GFFStruct,
+    questIndex: number,
+    entry: KotOR.GFFStruct,
+    entryIndex: number
+  ) => {
     event.preventDefault();
     event.stopPropagation();
 
@@ -269,16 +281,44 @@ export const TabJRLEditor = function(props: BaseTabProps){
         <div className="forge-jrl-editor__sidebar">
           <h4>Quests ({categories.length})</h4>
           <div className="forge-jrl-editor__sidebar-actions">
-            <button className="jrl-action-btn" onClick={handleAddQuest}>Add Quest</button>
-            <button className="jrl-action-btn" onClick={handleAddEntry} disabled={!selectedQuest}>Add Entry</button>
-            <button className="jrl-action-btn" onClick={handleDuplicateQuest} disabled={!selectedQuest}>Duplicate Quest</button>
-            <button className="jrl-action-btn" onClick={handleDuplicateEntry} disabled={!selectedEntry}>Duplicate Entry</button>
-            <button className="jrl-action-btn" onClick={handleMoveQuestUp} disabled={!canMoveQuestUp}>Quest Up</button>
-            <button className="jrl-action-btn" onClick={handleMoveQuestDown} disabled={!canMoveQuestDown}>Quest Down</button>
-            <button className="jrl-action-btn" onClick={handleMoveEntryUp} disabled={!canMoveEntryUp}>Entry Up</button>
-            <button className="jrl-action-btn" onClick={handleMoveEntryDown} disabled={!canMoveEntryDown}>Entry Down</button>
-            <button className="jrl-action-btn jrl-action-btn--danger" onClick={handleRemoveEntry} disabled={!selectedEntry}>Remove Entry</button>
-            <button className="jrl-action-btn jrl-action-btn--danger" onClick={handleRemoveQuest} disabled={!selectedQuest}>Remove Quest</button>
+            <button className="jrl-action-btn" onClick={handleAddQuest}>
+              Add Quest
+            </button>
+            <button className="jrl-action-btn" onClick={handleAddEntry} disabled={!selectedQuest}>
+              Add Entry
+            </button>
+            <button className="jrl-action-btn" onClick={handleDuplicateQuest} disabled={!selectedQuest}>
+              Duplicate Quest
+            </button>
+            <button className="jrl-action-btn" onClick={handleDuplicateEntry} disabled={!selectedEntry}>
+              Duplicate Entry
+            </button>
+            <button className="jrl-action-btn" onClick={handleMoveQuestUp} disabled={!canMoveQuestUp}>
+              Quest Up
+            </button>
+            <button className="jrl-action-btn" onClick={handleMoveQuestDown} disabled={!canMoveQuestDown}>
+              Quest Down
+            </button>
+            <button className="jrl-action-btn" onClick={handleMoveEntryUp} disabled={!canMoveEntryUp}>
+              Entry Up
+            </button>
+            <button className="jrl-action-btn" onClick={handleMoveEntryDown} disabled={!canMoveEntryDown}>
+              Entry Down
+            </button>
+            <button
+              className="jrl-action-btn jrl-action-btn--danger"
+              onClick={handleRemoveEntry}
+              disabled={!selectedEntry}
+            >
+              Remove Entry
+            </button>
+            <button
+              className="jrl-action-btn jrl-action-btn--danger"
+              onClick={handleRemoveQuest}
+              disabled={!selectedQuest}
+            >
+              Remove Quest
+            </button>
           </div>
           <div className="quest-list" onContextMenu={showEmptyListContextMenu}>
             {categories.map((quest, index) => {
@@ -296,7 +336,9 @@ export const TabJRLEditor = function(props: BaseTabProps){
                     <span className="quest-index">[{index}]</span>
                     <div className="quest-info">
                       <div className="quest-name">{name}</div>
-                      <div className="quest-tag">{tag} ({entries.length} entries)</div>
+                      <div className="quest-tag">
+                        {tag} ({entries.length} entries)
+                      </div>
                     </div>
                   </div>
                   {selectedQuestIndex === index && entries.length > 0 && (
@@ -314,7 +356,9 @@ export const TabJRLEditor = function(props: BaseTabProps){
                               e.stopPropagation();
                               tab.selectEntry(entry, entryIdx);
                             }}
-                            onContextMenu={(event: React.MouseEvent) => showEntryContextMenu(event, quest, index, entry, entryIdx)}
+                            onContextMenu={(event: React.MouseEvent) =>
+                              showEntryContextMenu(event, quest, index, entry, entryIdx)
+                            }
                           >
                             <span className="entry-id">{entryId}</span>
                             <span className="entry-text">{text.substring(0, 60)}</span>
@@ -330,15 +374,9 @@ export const TabJRLEditor = function(props: BaseTabProps){
         </div>
         <div className="forge-jrl-editor__main">
           {selectedEntry ? (
-            <EntryProperties
-              entry={selectedEntry}
-              onUpdate={markUnsavedAndRefresh}
-            />
+            <EntryProperties entry={selectedEntry} onUpdate={markUnsavedAndRefresh} />
           ) : selectedQuest ? (
-            <QuestProperties
-              quest={selectedQuest}
-              onUpdate={markUnsavedAndRefresh}
-            />
+            <QuestProperties quest={selectedQuest} onUpdate={markUnsavedAndRefresh} />
           ) : (
             <div className="forge-jrl-editor__no-selection">
               <p>Select a quest or entry to view and edit its properties.</p>
@@ -393,19 +431,12 @@ const QuestProperties = (props: QuestPropertiesProps) => {
     let disposed = false;
 
     const load2DAOptions = async () => {
-      await InstallationRegistry.prefetch([
-        InstallationRegistry.PLANETS,
-        InstallationRegistry.PLOT,
-      ]);
+      await InstallationRegistry.prefetch([InstallationRegistry.PLANETS, InstallationRegistry.PLOT]);
 
       if (disposed) return;
 
-      setPlanetOptions(
-        InstallationRegistry.getColumnOptions(InstallationRegistry.PLANETS, 'label', '(unset)')
-      );
-      setPlotOptions(
-        InstallationRegistry.getColumnOptions(InstallationRegistry.PLOT, 'label', '(unset)')
-      );
+      setPlanetOptions(InstallationRegistry.getColumnOptions(InstallationRegistry.PLANETS, 'label', '(unset)'));
+      setPlotOptions(InstallationRegistry.getColumnOptions(InstallationRegistry.PLOT, 'label', '(unset)'));
     };
 
     void load2DAOptions();
@@ -415,7 +446,8 @@ const QuestProperties = (props: QuestPropertiesProps) => {
     };
   }, []);
 
-  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => getStructFieldValue(quest, label, defaultVal);
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue =>
+    getStructFieldValue(quest, label, defaultVal);
 
   const getLocStringValue = (label: string): KotOR.CExoLocString => {
     const field = quest.getFieldByLabel(label);
@@ -447,7 +479,12 @@ const QuestProperties = (props: QuestPropertiesProps) => {
         <label>Name (LocString)</label>
         <CExoLocStringEditor
           value={getLocStringValue('Name')}
-          onChange={(value) => setFieldValue('Name', value, { type: KotOR.GFFDataType.CEXOLOCSTRING, defaultValue: new KotOR.CExoLocString() })}
+          onChange={(value) =>
+            setFieldValue('Name', value, {
+              type: KotOR.GFFDataType.CEXOLOCSTRING,
+              defaultValue: new KotOR.CExoLocString(),
+            })
+          }
         />
       </div>
 
@@ -456,7 +493,9 @@ const QuestProperties = (props: QuestPropertiesProps) => {
         <input
           type="text"
           value={getFieldValue('Tag')}
-          onChange={(e) => setFieldValue('Tag', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })}
+          onChange={(e) =>
+            setFieldValue('Tag', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })
+          }
           placeholder="Quest tag/plot ID..."
         />
       </div>
@@ -466,10 +505,17 @@ const QuestProperties = (props: QuestPropertiesProps) => {
         <select
           title="Priority"
           value={Number.isNaN(priorityValue) ? 4 : priorityValue}
-          onChange={(e) => setFieldValue('Priority', parseInt(e.target.value, 10) || 0, { type: KotOR.GFFDataType.DWORD, defaultValue: 4 })}
+          onChange={(e) =>
+            setFieldValue('Priority', parseInt(e.target.value, 10) || 0, {
+              type: KotOR.GFFDataType.DWORD,
+              defaultValue: 4,
+            })
+          }
         >
           {priorityOptions.map((option) => (
-            <option key={`priority-${option.value}`} value={option.value}>{option.label}</option>
+            <option key={`priority-${option.value}`} value={option.value}>
+              {option.label}
+            </option>
           ))}
         </select>
       </div>
@@ -481,7 +527,10 @@ const QuestProperties = (props: QuestPropertiesProps) => {
           value={Number.isNaN(planetValue) ? -1 : planetValue}
           onChange={(e) => {
             const parsed = parseInt(e.target.value, 10);
-            setFieldValue('PlanetID', Number.isNaN(parsed) ? -1 : parsed, { type: KotOR.GFFDataType.INT, defaultValue: -1 });
+            setFieldValue('PlanetID', Number.isNaN(parsed) ? -1 : parsed, {
+              type: KotOR.GFFDataType.INT,
+              defaultValue: -1,
+            });
           }}
         >
           <option value={-1}>[Unset]</option>
@@ -498,7 +547,10 @@ const QuestProperties = (props: QuestPropertiesProps) => {
           value={Number.isNaN(plotValue) ? -1 : plotValue}
           onChange={(e) => {
             const parsed = parseInt(e.target.value, 10);
-            setFieldValue('PlotIndex', Number.isNaN(parsed) ? -1 : parsed, { type: KotOR.GFFDataType.INT, defaultValue: -1 });
+            setFieldValue('PlotIndex', Number.isNaN(parsed) ? -1 : parsed, {
+              type: KotOR.GFFDataType.INT,
+              defaultValue: -1,
+            });
           }}
         >
           <option value={-1}>[Unset]</option>
@@ -512,7 +564,9 @@ const QuestProperties = (props: QuestPropertiesProps) => {
         <label>Comment</label>
         <textarea
           value={getFieldValue('Comment')}
-          onChange={(e) => setFieldValue('Comment', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })}
+          onChange={(e) =>
+            setFieldValue('Comment', e.target.value, { type: KotOR.GFFDataType.CEXOSTRING, defaultValue: '' })
+          }
           rows={4}
           placeholder="Developer comment..."
         />
@@ -531,7 +585,8 @@ interface EntryPropertiesProps {
 const EntryProperties = (props: EntryPropertiesProps) => {
   const { entry, onUpdate } = props;
 
-  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => getStructFieldValue(entry, label, defaultVal);
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue =>
+    getStructFieldValue(entry, label, defaultVal);
 
   const getLocStringValue = (label: string): KotOR.CExoLocString => {
     const field = entry.getFieldByLabel(label);
@@ -552,7 +607,9 @@ const EntryProperties = (props: EntryPropertiesProps) => {
           title="Entry ID"
           type="number"
           value={getFieldValue('ID', 0)}
-          onChange={(e) => setFieldValue('ID', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.DWORD, defaultValue: 0 })}
+          onChange={(e) =>
+            setFieldValue('ID', parseInt(e.target.value) || 0, { type: KotOR.GFFDataType.DWORD, defaultValue: 0 })
+          }
           min="0"
         />
       </div>
@@ -561,7 +618,12 @@ const EntryProperties = (props: EntryPropertiesProps) => {
         <label>Text (LocString)</label>
         <CExoLocStringEditor
           value={getLocStringValue('Text')}
-          onChange={(value) => setFieldValue('Text', value, { type: KotOR.GFFDataType.CEXOLOCSTRING, defaultValue: new KotOR.CExoLocString() })}
+          onChange={(value) =>
+            setFieldValue('Text', value, {
+              type: KotOR.GFFDataType.CEXOLOCSTRING,
+              defaultValue: new KotOR.CExoLocString(),
+            })
+          }
         />
       </div>
 
@@ -571,7 +633,12 @@ const EntryProperties = (props: EntryPropertiesProps) => {
           title="XP Percentage"
           type="number"
           value={getFieldValue('XP_Percentage', 0)}
-          onChange={(e) => setFieldValue('XP_Percentage', parseFloat(e.target.value) || 0, { type: KotOR.GFFDataType.FLOAT, defaultValue: 0 })}
+          onChange={(e) =>
+            setFieldValue('XP_Percentage', parseFloat(e.target.value) || 0, {
+              type: KotOR.GFFDataType.FLOAT,
+              defaultValue: 0,
+            })
+          }
           min="0"
           step="0.1"
         />
@@ -584,7 +651,9 @@ const EntryProperties = (props: EntryPropertiesProps) => {
           title="End Node"
           type="checkbox"
           checked={!!getFieldValue('End', 0)}
-          onChange={(e) => setFieldValue('End', e.target.checked ? 1 : 0, { type: KotOR.GFFDataType.WORD, defaultValue: 0 })}
+          onChange={(e) =>
+            setFieldValue('End', e.target.checked ? 1 : 0, { type: KotOR.GFFDataType.WORD, defaultValue: 0 })
+          }
         />
         <small>If checked, this marks the quest as complete</small>
       </div>

@@ -1,7 +1,7 @@
-import type { SaveGame } from "@/engine/SaveGame";
-import { GUIProtoItem } from "@/gui";
-import type { GameMenu, GUIControl } from "@/gui";
-import { GFFStruct } from "@/resource/GFFStruct";
+import type { SaveGame } from '@/engine/SaveGame';
+import { GUIProtoItem } from '@/gui';
+import type { GameMenu, GUIControl } from '@/gui';
+import { GFFStruct } from '@/resource/GFFStruct';
 
 /**
  * GUISaveGameItem class.
@@ -13,22 +13,20 @@ import { GFFStruct } from "@/resource/GFFStruct";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUISaveGameItem extends GUIProtoItem {
-
   declare node: SaveGame;
 
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false) {
     super(menu, control, parent, scale);
   }
 
-  createControl(){
-    try{
+  createControl() {
+    try {
       this.extent.height = 48;
       super.createControl();
       this.setText(this.node.getFullName());
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
     return this.widget;
   }
-
 }

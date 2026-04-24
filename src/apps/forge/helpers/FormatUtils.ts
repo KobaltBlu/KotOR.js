@@ -7,7 +7,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-const SIZE_UNITS = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"] as const;
+const SIZE_UNITS = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] as const;
 
 /**
  * Format a byte size as a human-readable string.
@@ -27,14 +27,14 @@ export function humanReadableSize(byteSize: number): string {
  * Extract numbers from a string. Numbers are separated by any non-numeric character.
  */
 export function getNums(stringInput: string): number[] {
-  let s = "";
+  let s = '';
   const nums: number[] = [];
   for (const char of `${stringInput} `) {
     if (/\d/.test(char)) {
       s += char;
     } else if (s.trim()) {
       nums.push(parseInt(s, 10));
-      s = "";
+      s = '';
     }
   }
   return nums;

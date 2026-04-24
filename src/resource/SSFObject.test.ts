@@ -1,9 +1,11 @@
 import { SSFObject } from '@/resource/SSFObject';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
-
 describe('SSFObject', () => {
-  function makeSSFBuffer(soundRefs: number[] = new Array(28).fill(0xffffffff), options: { fileType?: string; fileVersion?: string } = {}): Uint8Array {
+  function makeSSFBuffer(
+    soundRefs: number[] = new Array(28).fill(0xffffffff),
+    options: { fileType?: string; fileVersion?: string } = {}
+  ): Uint8Array {
     const { fileType = 'SSF ', fileVersion = 'V1.1' } = options;
     const bw = new BinaryWriter(new Uint8Array(12 + soundRefs.length * 4));
     bw.writeChars(fileType);
@@ -15,10 +17,8 @@ describe('SSFObject', () => {
 
   function makeVendorLikeSoundRefs(): number[] {
     return [
-      123075, 123074, 123073, 123072, 123071, 123070, 123069,
-      123068, 123067, 123066, 123065, 123064, 123063, 123062,
-      123061, 123060, 123059, 123058, 123057, 123056, 123055,
-      123054, 123053, 123052, 123051, 123050, 123049, 123048,
+      123075, 123074, 123073, 123072, 123071, 123070, 123069, 123068, 123067, 123066, 123065, 123064, 123063, 123062,
+      123061, 123060, 123059, 123058, 123057, 123056, 123055, 123054, 123053, 123052, 123051, 123050, 123049, 123048,
     ];
   }
 
@@ -80,8 +80,12 @@ describe('SSFObject', () => {
   });
 
   it('rejects invalid headers', () => {
-    expect(() => new SSFObject(makeSSFBuffer([], { fileType: 'BAD ' }))).toThrow('Tried to save or load an unsupported or corrupted file.');
-    expect(() => new SSFObject(makeSSFBuffer([], { fileVersion: 'V2.0' }))).toThrow('Tried to save or load an unsupported or corrupted file.');
+    expect(() => new SSFObject(makeSSFBuffer([], { fileType: 'BAD ' }))).toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
+    expect(() => new SSFObject(makeSSFBuffer([], { fileVersion: 'V2.0' }))).toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
     expect(() => new SSFObject(new Uint8Array(4))).toThrow('Tried to save or load an unsupported or corrupted file.');
   });
 
@@ -153,7 +157,7 @@ describe('SSFObject', () => {
     // b"SSF V1.1\x0c\x00\x00\x00" + 28 StrRefs (123075..123048) + 12 × 0xFFFFFFFF
     const bytes: number[] = [
       // Header: "SSF " + "V1.1"
-      0x53, 0x53, 0x46, 0x20,  0x56, 0x31, 0x2e, 0x31,
+      0x53, 0x53, 0x46, 0x20, 0x56, 0x31, 0x2e, 0x31,
       // Offset: 12 (little-endian)
       0x0c, 0x00, 0x00, 0x00,
     ];
@@ -173,42 +177,39 @@ describe('SSFObject', () => {
 
     expect(ssf.sound_refs).toHaveLength(28);
     // Validate all 28 named slots (vendor validate_io)
-    expect(ssf.sound_refs[0]).toBe(123075);   // BATTLE_CRY_1
-    expect(ssf.sound_refs[1]).toBe(123074);   // BATTLE_CRY_2
-    expect(ssf.sound_refs[2]).toBe(123073);   // BATTLE_CRY_3
-    expect(ssf.sound_refs[3]).toBe(123072);   // BATTLE_CRY_4
-    expect(ssf.sound_refs[4]).toBe(123071);   // BATTLE_CRY_5
-    expect(ssf.sound_refs[5]).toBe(123070);   // BATTLE_CRY_6
-    expect(ssf.sound_refs[6]).toBe(123069);   // SELECT_1
-    expect(ssf.sound_refs[7]).toBe(123068);   // SELECT_2
-    expect(ssf.sound_refs[8]).toBe(123067);   // SELECT_3
-    expect(ssf.sound_refs[9]).toBe(123066);   // ATTACK_GRUNT_1
-    expect(ssf.sound_refs[10]).toBe(123065);  // ATTACK_GRUNT_2
-    expect(ssf.sound_refs[11]).toBe(123064);  // ATTACK_GRUNT_3
-    expect(ssf.sound_refs[12]).toBe(123063);  // PAIN_GRUNT_1
-    expect(ssf.sound_refs[13]).toBe(123062);  // PAIN_GRUNT_2
-    expect(ssf.sound_refs[14]).toBe(123061);  // LOW_HEALTH
-    expect(ssf.sound_refs[15]).toBe(123060);  // DEAD
-    expect(ssf.sound_refs[16]).toBe(123059);  // CRITICAL_HIT
-    expect(ssf.sound_refs[17]).toBe(123058);  // TARGET_IMMUNE
-    expect(ssf.sound_refs[18]).toBe(123057);  // LAY_MINE
-    expect(ssf.sound_refs[19]).toBe(123056);  // DISARM_MINE
-    expect(ssf.sound_refs[20]).toBe(123055);  // BEGIN_STEALTH
-    expect(ssf.sound_refs[21]).toBe(123054);  // BEGIN_SEARCH
-    expect(ssf.sound_refs[22]).toBe(123053);  // BEGIN_UNLOCK
-    expect(ssf.sound_refs[23]).toBe(123052);  // UNLOCK_FAILED
-    expect(ssf.sound_refs[24]).toBe(123051);  // UNLOCK_SUCCESS
-    expect(ssf.sound_refs[25]).toBe(123050);  // SEPARATED_FROM_PARTY
-    expect(ssf.sound_refs[26]).toBe(123049);  // REJOINED_PARTY
-    expect(ssf.sound_refs[27]).toBe(123048);  // POISONED
+    expect(ssf.sound_refs[0]).toBe(123075); // BATTLE_CRY_1
+    expect(ssf.sound_refs[1]).toBe(123074); // BATTLE_CRY_2
+    expect(ssf.sound_refs[2]).toBe(123073); // BATTLE_CRY_3
+    expect(ssf.sound_refs[3]).toBe(123072); // BATTLE_CRY_4
+    expect(ssf.sound_refs[4]).toBe(123071); // BATTLE_CRY_5
+    expect(ssf.sound_refs[5]).toBe(123070); // BATTLE_CRY_6
+    expect(ssf.sound_refs[6]).toBe(123069); // SELECT_1
+    expect(ssf.sound_refs[7]).toBe(123068); // SELECT_2
+    expect(ssf.sound_refs[8]).toBe(123067); // SELECT_3
+    expect(ssf.sound_refs[9]).toBe(123066); // ATTACK_GRUNT_1
+    expect(ssf.sound_refs[10]).toBe(123065); // ATTACK_GRUNT_2
+    expect(ssf.sound_refs[11]).toBe(123064); // ATTACK_GRUNT_3
+    expect(ssf.sound_refs[12]).toBe(123063); // PAIN_GRUNT_1
+    expect(ssf.sound_refs[13]).toBe(123062); // PAIN_GRUNT_2
+    expect(ssf.sound_refs[14]).toBe(123061); // LOW_HEALTH
+    expect(ssf.sound_refs[15]).toBe(123060); // DEAD
+    expect(ssf.sound_refs[16]).toBe(123059); // CRITICAL_HIT
+    expect(ssf.sound_refs[17]).toBe(123058); // TARGET_IMMUNE
+    expect(ssf.sound_refs[18]).toBe(123057); // LAY_MINE
+    expect(ssf.sound_refs[19]).toBe(123056); // DISARM_MINE
+    expect(ssf.sound_refs[20]).toBe(123055); // BEGIN_STEALTH
+    expect(ssf.sound_refs[21]).toBe(123054); // BEGIN_SEARCH
+    expect(ssf.sound_refs[22]).toBe(123053); // BEGIN_UNLOCK
+    expect(ssf.sound_refs[23]).toBe(123052); // UNLOCK_FAILED
+    expect(ssf.sound_refs[24]).toBe(123051); // UNLOCK_SUCCESS
+    expect(ssf.sound_refs[25]).toBe(123050); // SEPARATED_FROM_PARTY
+    expect(ssf.sound_refs[26]).toBe(123049); // REJOINED_PARTY
+    expect(ssf.sound_refs[27]).toBe(123048); // POISONED
   });
 
   it('toBuffer re-serializes parsed 40-entry binary to 28-slot canonical form', () => {
     // Same binary as above; toBuffer() must produce exactly 12+28*4 = 124 bytes
-    const bytes: number[] = [
-      0x53, 0x53, 0x46, 0x20,  0x56, 0x31, 0x2e, 0x31,
-      0x0c, 0x00, 0x00, 0x00,
-    ];
+    const bytes: number[] = [0x53, 0x53, 0x46, 0x20, 0x56, 0x31, 0x2e, 0x31, 0x0c, 0x00, 0x00, 0x00];
     for (let i = 0; i < 28; i++) {
       const val = 123075 - i;
       bytes.push(val & 0xff, (val >> 8) & 0xff, (val >> 16) & 0xff, (val >> 24) & 0xff);

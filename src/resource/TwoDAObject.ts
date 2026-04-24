@@ -1,6 +1,6 @@
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
 /**
  * TwoDAObject class.
@@ -14,8 +14,7 @@ import { BinaryWriter } from "@/utility/binary/BinaryWriter";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class TwoDAObject {
-
-  file: Uint8Array|string|undefined = undefined;
+  file: Uint8Array | string | undefined = undefined;
   FileType: string;
   FileVersion: string;
   ColumnCount: number;
@@ -29,35 +28,35 @@ export class TwoDAObject {
    * @param file - The file to read from
    * @param onComplete - The function to call when the 2DA object is loaded
    */
-  constructor(file: Uint8Array|string|undefined = undefined, onComplete?: Function){
+  constructor(file: Uint8Array | string | undefined = undefined, onComplete?: Function) {
     this.file = file;
     this.FileType = '2DA ';
     this.FileVersion = 'V2.b';
-    this.columns = ["__rowlabel"];
+    this.columns = ['__rowlabel'];
     this.ColumnCount = 0;
     this.RowCount = 0;
     this.CellCount = 0;
     this.rows = {};
 
-    if(file){
-      if(file instanceof Uint8Array) {
+    if (file) {
+      if (file instanceof Uint8Array) {
         const br = new BinaryReader(file);
         this.read2DA(br);
 
-        if(onComplete != null)
-          onComplete();
-      }else if(typeof file === "string"){
+        if (onComplete != null) onComplete();
+      } else if (typeof file === 'string') {
         this.file = file;
-        GameFileSystem.readFile(this.file).then((buffer) => {
-          const br = new BinaryReader(buffer);
-          this.read2DA(br);
+        GameFileSystem.readFile(this.file)
+          .then((buffer) => {
+            const br = new BinaryReader(buffer);
+            this.read2DA(br);
 
-          if(onComplete != null)
-            onComplete();
-        }).catch((err) => {
-          throw err;
-        });
-      }else{
+            if (onComplete != null) onComplete();
+          })
+          .catch((err) => {
+            throw err;
+          });
+      } else {
         //invalid resource
       }
     }
@@ -73,13 +72,13 @@ export class TwoDAObject {
 
     br.position += 1; //0x0A = Newline (Skip)
 
-    let str = "";
+    let str = '';
     let ch;
-    this.columns = ["__rowlabel"];
-    while ((ch = br.readChar()).charCodeAt(0) != 0){
-      if(ch.charCodeAt(0) != 9){
+    this.columns = ['__rowlabel'];
+    while ((ch = br.readChar()).charCodeAt(0) != 0) {
+      if (ch.charCodeAt(0) != 9) {
         str = str + ch;
-      }else{
+      } else {
         this.columns.push(str);
         str = '';
       }
@@ -90,21 +89,21 @@ export class TwoDAObject {
 
     //Get the row index numbers
     const RowIndexes = [];
-    for (let i = 0; i < this.RowCount; i++){
-      let rowIndex = "";
+    for (let i = 0; i < this.RowCount; i++) {
+      let rowIndex = '';
       let c;
 
-      while ((c = br.readChar()).charCodeAt(0) != 9){
+      while ((c = br.readChar()).charCodeAt(0) != 9) {
         rowIndex = rowIndex + c;
       }
 
-      RowIndexes[i] = (rowIndex);
+      RowIndexes[i] = rowIndex;
     }
 
     //Get the Row Data Offsets
     this.CellCount = this.ColumnCount * this.RowCount;
     const offsets = [];
-    for (let i = 0; i < this.CellCount; i++){
+    for (let i = 0; i < this.CellCount; i++) {
       offsets[i] = br.readUInt16();
     }
 
@@ -112,39 +111,33 @@ export class TwoDAObject {
     const dataOffset = br.position;
 
     //Get the Row Data
-    for (let i = 0; i < this.RowCount; i++){
+    for (let i = 0; i < this.RowCount; i++) {
+      const row: Record<string, string> = { __index: String(i), __rowlabel: RowIndexes[i] };
 
-      const row: Record<string, string> = { '__index': String(i), '__rowlabel': RowIndexes[i] };
-
-      for (let j = 0; j < this.ColumnCount; j++){
-
+      for (let j = 0; j < this.ColumnCount; j++) {
         const offset = dataOffset + offsets[i * this.ColumnCount + j];
 
-        try{
+        try {
           br.position = offset;
-        }catch(e){
+        } catch (e) {
           console.error(e);
           throw e;
         }
 
-        let token = "";
+        let token = '';
         let c;
 
-        while((c = br.readChar()).charCodeAt(0) != 0)
-          token = token + c;
+        while ((c = br.readChar()).charCodeAt(0) != 0) token = token + c;
 
-        if(token == "")
-          token = "****";
+        if (token == '') token = '****';
 
-        row[this.columns[j+1]] = token;
+        row[this.columns[j + 1]] = token;
       }
 
       this.rows[i] = row;
-
     }
 
     this.syncCounts();
-
   }
 
   /**
@@ -152,24 +145,26 @@ export class TwoDAObject {
    * @returns The buffer
    */
   toExportBuffer(): Uint8Array {
-    try{
+    try {
       const bw = new BinaryWriter();
       bw.writeChars('2DA ');
       bw.writeChars('V2.b');
-      bw.writeByte(0x0A);//NewLine
+      bw.writeByte(0x0a); //NewLine
 
-      for(let i = 1; i < this.columns.length; i++){
+      for (let i = 1; i < this.columns.length; i++) {
         bw.writeChars(this.columns[i]);
         bw.writeByte(0x09); //HT Delineate Column Entry
       }
 
       bw.writeByte(0x00); //Null Terminate Columns List
 
-      const indexes = Object.keys(this.rows).map((value) => Number.parseInt(value, 10)).sort((a, b) => a - b);
+      const indexes = Object.keys(this.rows)
+        .map((value) => Number.parseInt(value, 10))
+        .sort((a, b) => a - b);
       //Write the row count as a UInt32
       bw.writeUInt32(indexes.length);
 
-      for(let i = 0; i < indexes.length; i++){
+      for (let i = 0; i < indexes.length; i++) {
         bw.writeChars(this.getRowLabel(indexes[i]));
         bw.writeByte(0x09); //HT Delineate Row Index Entry
       }
@@ -177,17 +172,17 @@ export class TwoDAObject {
       const valuesWriter = new BinaryWriter();
       const values = new Map<string, number>(); //value, offset
       // values.set('Some Value', 0);
-      for(let i = 0; i < indexes.length; i++){
+      for (let i = 0; i < indexes.length; i++) {
         const index = indexes[i];
         const row = this.rows[index];
         const rowKeys = Object.keys(row);
-        for(let j = 0; j < rowKeys.length; j++){
+        for (let j = 0; j < rowKeys.length; j++) {
           const key = rowKeys[j];
-          if(key != '__rowlabel' && key != '__index'){
+          if (key != '__rowlabel' && key != '__index') {
             const value: string = row[key] == '****' ? '' : String(row[key]);
-            if(values.has(value)){
+            if (values.has(value)) {
               bw.writeUInt16(values.get(value));
-            }else{
+            } else {
               const offset = valuesWriter.position;
               bw.writeUInt16(offset);
               valuesWriter.writeStringNullTerminated(value);
@@ -201,7 +196,7 @@ export class TwoDAObject {
       bw.writeBytes(valuesWriter.buffer);
 
       return bw.buffer;
-    }catch(e){
+    } catch (e) {
       console.error(e);
       return new Uint8Array(0);
     }
@@ -213,27 +208,29 @@ export class TwoDAObject {
    */
   toCSV(): string {
     const quoteIfNeeded = (v: any): string => {
-      if(v == null) return '';
+      if (v == null) return '';
       const s = String(v);
-      if(s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')){
+      if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
         return '"' + s.replace(/"/g, '""') + '"';
       }
       return s;
     };
 
     let csv = '';
-    for(let i = 0; i < this.columns.length; i++){
+    for (let i = 0; i < this.columns.length; i++) {
       csv += quoteIfNeeded(this.columns[i]);
-      if(i < this.columns.length - 1) csv += ',';
+      if (i < this.columns.length - 1) csv += ',';
     }
     csv += '\n';
-    const indexes = Object.keys(this.rows).map((value) => Number.parseInt(value, 10)).sort((a, b) => a - b);
-    for(let i = 0; i < indexes.length; i++){
+    const indexes = Object.keys(this.rows)
+      .map((value) => Number.parseInt(value, 10))
+      .sort((a, b) => a - b);
+    for (let i = 0; i < indexes.length; i++) {
       const index = indexes[i];
       const row = this.rows[index];
-      for(let j = 0; j < this.columns.length; j++){
+      for (let j = 0; j < this.columns.length; j++) {
         csv += quoteIfNeeded(row[this.columns[j]]);
-        if(j < this.columns.length - 1) csv += ',';
+        if (j < this.columns.length - 1) csv += ',';
       }
       csv += '\n';
     }
@@ -253,19 +250,19 @@ export class TwoDAObject {
       const result: string[] = [];
       let current = '';
       let inQuotes = false;
-      for(let i = 0; i < line.length; i++){
+      for (let i = 0; i < line.length; i++) {
         const ch = line[i];
-        if(ch === '"'){
-          if(inQuotes && i + 1 < line.length && line[i + 1] === '"'){
+        if (ch === '"') {
+          if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
             current += '"';
             i++;
-          }else{
+          } else {
             inQuotes = !inQuotes;
           }
-        }else if(ch === ',' && !inQuotes){
+        } else if (ch === ',' && !inQuotes) {
           result.push(current);
           current = '';
-        }else{
+        } else {
           current += ch;
         }
       }
@@ -274,23 +271,23 @@ export class TwoDAObject {
     };
 
     // Normalise line endings
-    const lines = csv.split('\n').map(l => l.endsWith('\r') ? l.slice(0, -1) : l);
+    const lines = csv.split('\n').map((l) => (l.endsWith('\r') ? l.slice(0, -1) : l));
     let lineIdx = 0;
 
-    while(lineIdx < lines.length && lines[lineIdx].trim() === '') lineIdx++;
-    if(lineIdx >= lines.length) return obj;
+    while (lineIdx < lines.length && lines[lineIdx].trim() === '') lineIdx++;
+    if (lineIdx >= lines.length) return obj;
 
     const headers = parseCSVLine(lines[lineIdx++]);
     obj.columns = headers;
     obj.ColumnCount = Math.max(0, headers.length - 1);
 
     let rowIdx = 0;
-    while(lineIdx < lines.length){
+    while (lineIdx < lines.length) {
       const line = lines[lineIdx++];
-      if(line.trim() === '') continue;
+      if (line.trim() === '') continue;
       const cells = parseCSVLine(line);
       const row: any = { __index: rowIdx };
-      for(let j = 0; j < headers.length; j++){
+      for (let j = 0; j < headers.length; j++) {
         row[headers[j]] = cells[j] !== undefined ? cells[j] : '****';
       }
       obj.rows[rowIdx] = row;
@@ -307,9 +304,9 @@ export class TwoDAObject {
    * @param index - The index to get the row by
    * @returns The row
    */
-  getRowByIndex(index = -1){
+  getRowByIndex(index = -1) {
     for (const key of Object.keys(this.rows)) {
-      if(this.rows[key]['__index'] == index){
+      if (this.rows[key]['__index'] == index) {
         return this.rows[key];
       }
     }
@@ -379,8 +376,8 @@ export class TwoDAObject {
 
     const nextIndex = this.RowCount;
     const row: Record<string, string> = {
-      '__index': String(nextIndex),
-      '__rowlabel': String(label),
+      __index: String(nextIndex),
+      __rowlabel: String(label),
     };
 
     for (let i = 1; i < this.columns.length; i++) {
@@ -526,13 +523,13 @@ export class TwoDAObject {
   }
 
   fromJSON(json: string | TwoDAJSONData): void {
-    const data = typeof json === 'string' ? JSON.parse(json) as TwoDAJSONData : json;
+    const data = typeof json === 'string' ? (JSON.parse(json) as TwoDAJSONData) : json;
     this.columns = ['__rowlabel', ...(data.headers ?? [])];
     this.rows = {};
     (data.rows ?? []).forEach((row, index) => {
       const mapped: Record<string, string> = {
-        '__index': String(index),
-        '__rowlabel': String(row.label),
+        __index: String(index),
+        __rowlabel: String(row.label),
       };
       this.columns.slice(1).forEach((column, columnIndex) => {
         mapped[column] = String(row.cells?.[columnIndex] ?? '****');
@@ -623,9 +620,9 @@ export class TwoDAObject {
    * @param index - The ID to get the row by
    * @returns The row
    */
-  getByID(index = -1){
+  getByID(index = -1) {
     for (const key of Object.keys(this.rows)) {
-      if(this.rows[key]['__rowlabel'] == index){
+      if (this.rows[key]['__rowlabel'] == index) {
         return this.rows[key];
       }
     }
@@ -637,9 +634,9 @@ export class TwoDAObject {
    * @param value - The value to get the row by
    * @returns The row
    */
-  getRowByColumnAndValue(column: string = '', value: any = undefined){
+  getRowByColumnAndValue(column: string = '', value: any = undefined) {
     for (const key of Object.keys(this.rows)) {
-      if(this.rows[key][column] == value){
+      if (this.rows[key][column] == value) {
         return this.rows[key];
       }
     }
@@ -650,10 +647,10 @@ export class TwoDAObject {
    * @param cell - The cell value to parse
    * @returns The parsed value
    */
-  static cellParser(cell: any){
-    if(cell === '****'){
+  static cellParser(cell: any) {
+    if (cell === '****') {
       return null;
-    }else{
+    } else {
       return cell;
     }
   }
@@ -665,35 +662,34 @@ export class TwoDAObject {
    * @param default_value - The default value to return if the value is null
    * @returns The normalized value
    */
-  static normalizeValue(value: any, datatype: 'number'|'string'|'boolean', default_value: any){
-    switch(datatype){
+  static normalizeValue(value: any, datatype: 'number' | 'string' | 'boolean', default_value: any) {
+    switch (datatype) {
       case 'number':
-        if(typeof default_value === 'undefined') default_value = 0;
-        if(value === '****') return default_value;
+        if (typeof default_value === 'undefined') default_value = 0;
+        if (value === '****') return default_value;
 
-        if(typeof value === 'string' && value.slice(0, 2) == '0x'){
+        if (typeof value === 'string' && value.slice(0, 2) == '0x') {
           return parseInt(value);
         }
 
         value = parseFloat(value);
-        if(isNaN(value)) value = default_value;
+        if (isNaN(value)) value = default_value;
         return value;
-      break;
+        break;
       case 'string':
-        if(typeof default_value === 'undefined') default_value = '';
-        if(value === '****') return default_value;
+        if (typeof default_value === 'undefined') default_value = '';
+        if (value === '****') return default_value;
         return value;
-      break;
+        break;
       case 'boolean':
-        if(typeof default_value === 'undefined') default_value = false;
-        if(value === '****') return default_value;
+        if (typeof default_value === 'undefined') default_value = false;
+        if (value === '****') return default_value;
         return !!value;
-      break;
+        break;
     }
     console.warn('normalizeValue', 'unhandled datatype', value);
     return '';
   }
-
 }
 
 export function detectTwoDAFormat(buffer: Uint8Array): WriteTwoDAFormat | 'invalid' {

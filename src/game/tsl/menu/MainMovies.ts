@@ -1,8 +1,8 @@
-import { GameState } from "@/GameState";
-import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
-import { TwoDAObject } from "@/resource/TwoDAObject";
-import { MainMovies as K1_MainMovies } from "@/game/kotor/KOTOR";
-import { GUIMovieItem } from "@/game/tsl/gui/GUIMovieItem";
+import { GameState } from '@/GameState';
+import type { GUILabel, GUIButton, GUIListBox } from '@/gui';
+import { TwoDAObject } from '@/resource/TwoDAObject';
+import { MainMovies as K1_MainMovies } from '@/game/kotor/KOTOR';
+import { GUIMovieItem } from '@/game/tsl/gui/GUIMovieItem';
 
 interface MovieItem {
   name: string;
@@ -23,7 +23,6 @@ interface MovieItem {
 }
 
 class GUIMovieItemTsl implements MovieItem {
-
   name: string;
   strrefname: number;
   strefdesc: number;
@@ -31,7 +30,7 @@ class GUIMovieItemTsl implements MovieItem {
   played: boolean;
   order: number;
 
-  constructor(movie: MovieItem){
+  constructor(movie: MovieItem) {
     this.name = movie.name;
     this.strrefname = movie.strrefname;
     this.strefdesc = movie.strefdesc;
@@ -47,15 +46,14 @@ class GUIMovieItemTsl implements MovieItem {
 
 /**
  * MainMovies class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMovies.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MainMovies extends K1_MainMovies {
-
   declare LBL_TITLE: GUILabel;
   declare LBL_UNLOCKED: GUILabel;
   declare LBL_UNLOCKED_VALUE: GUILabel;
@@ -69,7 +67,7 @@ export class MainMovies extends K1_MainMovies {
   selectedIndex: number = 0;
   movieList: MovieItem[] = [];
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'titlemovie_p';
     this.background = '';
@@ -78,20 +76,28 @@ export class MainMovies extends K1_MainMovies {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LB_MOVIES.protoItem.extent.height = 64;
-      this.LB_MOVIES.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
-      this.LB_MOVIES.protoItem.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
+      this.LB_MOVIES.setTextColor(
+        this.LB_MOVIES.defaultColor.r,
+        this.LB_MOVIES.defaultColor.g,
+        this.LB_MOVIES.defaultColor.b
+      );
+      this.LB_MOVIES.protoItem.setTextColor(
+        this.LB_MOVIES.defaultColor.r,
+        this.LB_MOVIES.defaultColor.g,
+        this.LB_MOVIES.defaultColor.b
+      );
       this.LB_MOVIES.onClicked = (movie: GUIMovieItemTsl, control: any, index: number) => {
         console.log(movie);
         this.selected = movie;
         this.selectedIndex = this.movieList.indexOf(movie);
         GameState.VideoManager.playMovie(movie.name, true);
       };
-      
+
       const moviesTable = GameState.TwoDAManager.datatables.get('movies');
-      for(let i = 0; i < moviesTable.RowCount; i++){
+      for (let i = 0; i < moviesTable.RowCount; i++) {
         const row = moviesTable.getRowByIndex(i);
         const movieItem: MovieItem = {
           name: TwoDAObject.normalizeValue(row.__rowlabel, 'string', ''),
@@ -105,7 +111,7 @@ export class MainMovies extends K1_MainMovies {
       }
 
       this.movieList.sort((a, b) => a.order - b.order);
-      for(const movie of this.movieList){
+      for (const movie of this.movieList) {
         this.LB_MOVIES.addItem(new GUIMovieItemTsl(movie));
       }
       this.LB_MOVIES.updateList();
@@ -121,5 +127,4 @@ export class MainMovies extends K1_MainMovies {
       resolve();
     });
   }
-  
 }

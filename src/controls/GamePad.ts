@@ -1,17 +1,16 @@
-import { AnalogInput } from "@/controls/AnalogInput";
-import { KeyInput } from "@/controls/KeyInput";
+import { AnalogInput } from '@/controls/AnalogInput';
+import { KeyInput } from '@/controls/KeyInput';
 
 /**
  * GamePad class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GamePad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GamePad {
-
   button_a = new KeyInput('A');
   button_b = new KeyInput('B');
   button_x = new KeyInput('X');
@@ -41,18 +40,18 @@ export class GamePad {
   gamePad: Gamepad;
   controlsMapped: boolean;
 
-  constructor(){
+  constructor() {
     this.gamePad = undefined;
     this.controlsMapped = false;
     this.mapKeys();
   }
 
-  setGamePad( gamePad: Gamepad ){
+  setGamePad(gamePad: Gamepad) {
     this.gamePad = gamePad;
   }
 
-  updateState(delta = 0){
-    if(this.gamePad instanceof Gamepad){
+  updateState(delta = 0) {
+    if (this.gamePad instanceof Gamepad) {
       this.button_a.update(this.gamePad, delta);
       this.button_b.update(this.gamePad, delta);
       this.button_x.update(this.gamePad, delta);
@@ -75,14 +74,14 @@ export class GamePad {
       this.stick_l.update(this.gamePad, delta);
       this.stick_l_x.update(this.gamePad, delta);
       this.stick_l_y.update(this.gamePad, delta);
-      
+
       this.stick_r.update(this.gamePad, delta);
       this.stick_r_x.update(this.gamePad, delta);
       this.stick_r_y.update(this.gamePad, delta);
     }
   }
 
-  mapKeys(){
+  mapKeys() {
     //A B X Y | X O â—» â–³
     this.button_a.buttonIndex = 0; //A | X == 0
     this.button_b.buttonIndex = 1; //B | O == 1
@@ -117,22 +116,17 @@ export class GamePad {
     this.button_d_left.buttonIndex = 14; //d_left == 14
     this.button_d_right.buttonIndex = 15; //d_right == 15
 
-
     //16 //home_button
     //17 //dualshock4 trackpad button
 
     this.controlsMapped = true;
   }
 
-  onDisconnected(){
+  onDisconnected() {}
 
-  }
+  onConnected() {}
 
-  onConnected(){
-
-  }
-
-  static Init(){
+  static Init() {
     GamePad.GamePads = {};
 
     function gamepadHandler(e: GamepadEvent, connecting: boolean = false): void {
@@ -142,26 +136,36 @@ export class GamePad {
       console.log('gamepadHandler', e, connecting);
       if (connecting) {
         GamePad.GamePads[gamepad.index] = gamepad;
-        if(GamePad.CurrentGamePadIndex == -1){
+        if (GamePad.CurrentGamePadIndex == -1) {
           GamePad.CurrentGamePad = gamepad;
         }
       } else {
-        if(GamePad.CurrentGamePadIndex == gamepad.index){
+        if (GamePad.CurrentGamePadIndex == gamepad.index) {
           GamePad.CurrentGamePadIndex = -1;
           GamePad.CurrentGamePad = undefined;
         }
-        
+
         delete GamePad.GamePads[gamepad.index];
       }
     }
 
-    global.addEventListener("gamepadconnected", (e: Event) => { gamepadHandler(e as GamepadEvent, true); }, false);
-    global.addEventListener("gamepaddisconnected", (e: Event) => { gamepadHandler(e as GamepadEvent, false); }, false);
+    global.addEventListener(
+      'gamepadconnected',
+      (e: Event) => {
+        gamepadHandler(e as GamepadEvent, true);
+      },
+      false
+    );
+    global.addEventListener(
+      'gamepaddisconnected',
+      (e: Event) => {
+        gamepadHandler(e as GamepadEvent, false);
+      },
+      false
+    );
   }
-
 
   static CurrentGamePad: Gamepad | undefined;
   static CurrentGamePadIndex: number = -1;
   static GamePads: Record<number, Gamepad> = {};
-
 }

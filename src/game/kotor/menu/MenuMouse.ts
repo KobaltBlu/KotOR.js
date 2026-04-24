@@ -1,5 +1,5 @@
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from '@/gui';
 
 /**
  * MenuMouse class.
@@ -11,7 +11,6 @@ import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "@/
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuMouse extends GameMenu {
-
   LBL_TITLE: GUILabel;
   LB_DESC: GUIListBox;
   BTN_BACK: GUIButton;
@@ -20,7 +19,7 @@ export class MenuMouse extends GameMenu {
   LBL_MOUSESEN: GUILabel;
   CB_REVBUTTONS: GUICheckBox;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optmouse';
     this.background = '1600x1200back';
@@ -29,10 +28,9 @@ export class MenuMouse extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       resolve();
     });
-}
-
+  }
 }

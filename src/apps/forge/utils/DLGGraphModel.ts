@@ -3,9 +3,9 @@
  * One node per starting/entry/reply list entry; edges follow entries/replies links.
  */
 
-import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
-import { DLGNode } from "@/resource/DLGNode";
-import { DLGObject } from "@/resource/DLGObject";
+import { DLGNodeType } from '@/enums/dialog/DLGNodeType';
+import { DLGNode } from '@/resource/DLGNode';
+import { DLGObject } from '@/resource/DLGObject';
 
 const MAX_LABEL_LEN = 24;
 const NODE_WIDTH = 160;
@@ -13,7 +13,7 @@ const NODE_HEIGHT = 40;
 const LEVEL_GAP = 70;
 const NODE_GAP = 24;
 
-export type DLGGraphNodeType = "starting" | "entry" | "reply";
+export type DLGGraphNodeType = 'starting' | 'entry' | 'reply';
 
 export interface DLGGraphNode {
   id: string;
@@ -41,14 +41,14 @@ function nodeId(type: DLGGraphNodeType, listIndex: number): string {
 }
 
 function truncate(s: string, max: number = MAX_LABEL_LEN): string {
-  if (!s || typeof s !== "string") return "(no text)";
-  const t = s.replace(/\s+/g, " ").trim();
-  return t.length <= max ? t : t.slice(0, max - 1) + "…";
+  if (!s || typeof s !== 'string') return '(no text)';
+  const t = s.replace(/\s+/g, ' ').trim();
+  return t.length <= max ? t : t.slice(0, max - 1) + '…';
 }
 
 function getNodeText(node: DLGNode): string {
-  const raw = node.text ?? "";
-  return truncate(typeof raw === "string" ? raw : String(raw));
+  const raw = node.text ?? '';
+  return truncate(typeof raw === 'string' ? raw : String(raw));
 }
 
 /**
@@ -59,8 +59,8 @@ function buildNodes(dlg: DLGObject): DLGGraphNode[] {
 
   dlg.startingList.forEach((n, i) => {
     nodes.push({
-      id: nodeId("starting", i),
-      type: "starting",
+      id: nodeId('starting', i),
+      type: 'starting',
       listIndex: i,
       dlgNode: n,
       label: `Start ${i + 1}`,
@@ -71,8 +71,8 @@ function buildNodes(dlg: DLGObject): DLGGraphNode[] {
 
   dlg.entryList.forEach((n, i) => {
     nodes.push({
-      id: nodeId("entry", i),
-      type: "entry",
+      id: nodeId('entry', i),
+      type: 'entry',
       listIndex: i,
       dlgNode: n,
       label: getNodeText(n),
@@ -83,8 +83,8 @@ function buildNodes(dlg: DLGObject): DLGGraphNode[] {
 
   dlg.replyList.forEach((n, i) => {
     nodes.push({
-      id: nodeId("reply", i),
-      type: "reply",
+      id: nodeId('reply', i),
+      type: 'reply',
       listIndex: i,
       dlgNode: n,
       label: getNodeText(n),
@@ -109,8 +109,8 @@ function buildEdges(dlg: DLGObject): DLGGraphEdge[] {
       if (listIndex >= 0 && listIndex < dlg.entryList.length) {
         edges.push({
           id: `e${edgeIdx++}`,
-          sourceId: nodeId("starting", i),
-          targetId: nodeId("entry", listIndex),
+          sourceId: nodeId('starting', i),
+          targetId: nodeId('entry', listIndex),
         });
       }
     });
@@ -122,8 +122,8 @@ function buildEdges(dlg: DLGObject): DLGGraphEdge[] {
       if (listIndex >= 0 && listIndex < dlg.replyList.length) {
         edges.push({
           id: `e${edgeIdx++}`,
-          sourceId: nodeId("entry", i),
-          targetId: nodeId("reply", listIndex),
+          sourceId: nodeId('entry', i),
+          targetId: nodeId('reply', listIndex),
         });
       }
     });
@@ -135,8 +135,8 @@ function buildEdges(dlg: DLGObject): DLGGraphEdge[] {
       if (listIndex >= 0 && listIndex < dlg.entryList.length) {
         edges.push({
           id: `e${edgeIdx++}`,
-          sourceId: nodeId("reply", i),
-          targetId: nodeId("entry", listIndex),
+          sourceId: nodeId('reply', i),
+          targetId: nodeId('entry', listIndex),
         });
       }
     });
@@ -161,10 +161,12 @@ function layoutNodes(nodes: DLGGraphNode[], edges: DLGGraphEdge[]): void {
 
   const levels = new Map<string, number>();
   const queue: string[] = [];
-  nodes.filter((n) => n.type === "starting").forEach((n) => {
-    levels.set(n.id, 0);
-    queue.push(n.id);
-  });
+  nodes
+    .filter((n) => n.type === 'starting')
+    .forEach((n) => {
+      levels.set(n.id, 0);
+      queue.push(n.id);
+    });
   let head = 0;
   while (head < queue.length) {
     const id = queue[head++];

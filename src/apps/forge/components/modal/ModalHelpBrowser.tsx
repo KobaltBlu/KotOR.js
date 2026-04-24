@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Modal, Button, Form, FormControl } from "react-bootstrap";
+import React, { useEffect, useMemo, useState } from 'react';
+import { Modal, Button, Form, FormControl } from 'react-bootstrap';
 
-import { type HelpDocument } from "@/apps/forge/data";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ModalHelpBrowserState } from "@/apps/forge/states/modal/ModalHelpBrowserState";
-
+import { type HelpDocument } from '@/apps/forge/data';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import { ModalHelpBrowserState } from '@/apps/forge/states/modal/ModalHelpBrowserState';
 
 interface FilteredFolder {
   name: string;
@@ -14,17 +13,17 @@ interface FilteredFolder {
 export const ModalHelpBrowser = (props: BaseModalProps) => {
   const modal = props.modal as ModalHelpBrowserState;
   const [show, setShow] = useState(modal.visible);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
 
   const onHide = () => setShow(false);
   const onShow = () => setShow(true);
 
   useEffect(() => {
-    modal.addEventListener("onHide", onHide);
-    modal.addEventListener("onShow", onShow);
+    modal.addEventListener('onHide', onHide);
+    modal.addEventListener('onShow', onShow);
     return () => {
-      modal.removeEventListener("onHide", onHide);
-      modal.removeEventListener("onShow", onShow);
+      modal.removeEventListener('onHide', onHide);
+      modal.removeEventListener('onShow', onShow);
     };
   }, [modal]);
 
@@ -51,8 +50,8 @@ export const ModalHelpBrowser = (props: BaseModalProps) => {
 
   const openDocument = (doc: HelpDocument) => {
     const target = doc.url ?? doc.file;
-    if (typeof window !== "undefined") {
-      window.open(target, "_blank", "noopener");
+    if (typeof window !== 'undefined') {
+      window.open(target, '_blank', 'noopener');
     }
   };
 
@@ -63,8 +62,8 @@ export const ModalHelpBrowser = (props: BaseModalProps) => {
       </Modal.Header>
       <Modal.Body>
         <p className="small text-muted">
-          Browse getting-started guides, tool overviews, and tutorials bundled with Forge
-          documentation. Use the search box to locate topics quickly.
+          Browse getting-started guides, tool overviews, and tutorials bundled with Forge documentation. Use the search
+          box to locate topics quickly.
         </p>
         <Form className="mb-3" onSubmit={(event) => event.preventDefault()}>
           <FormControl
@@ -91,11 +90,7 @@ export const ModalHelpBrowser = (props: BaseModalProps) => {
                       <div className="small text-muted">{doc.url ?? doc.file}</div>
                     </div>
                     <div className="mt-2 mt-md-0">
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => openDocument(doc)}
-                      >
+                      <Button variant="outline-primary" size="sm" onClick={() => openDocument(doc)}>
                         Open
                       </Button>
                     </div>

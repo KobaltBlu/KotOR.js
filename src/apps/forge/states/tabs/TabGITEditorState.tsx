@@ -1,11 +1,11 @@
-import React from "react";
+import React from 'react';
 
-import { TabGITEditor } from "@/apps/forge/components/tabs/tab-git-editor/TabGITEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { InsertInstanceResourceType } from "@/apps/forge/states/modal/ModalInsertInstanceState";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { TabGITEditor } from '@/apps/forge/components/tabs/tab-git-editor/TabGITEditor';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import * as KotOR from '@/apps/forge/KotOR';
+import { InsertInstanceResourceType } from '@/apps/forge/states/modal/ModalInsertInstanceState';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
@@ -27,11 +27,11 @@ export class TabGITEditorState extends TabState {
     utw: 'WaypointList',
   };
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     log.trace('TabGITEditorState constructor entry');
     super(options);
 
-    if(this.file){
+    if (this.file) {
       this.tabName = this.file.getFilename();
       log.debug('TabGITEditorState constructor tabName', this.tabName);
     }
@@ -40,9 +40,9 @@ export class TabGITEditorState extends TabState {
       {
         description: 'Game Instance Template',
         accept: {
-          'application/octet-stream': ['.git']
-        }
-      }
+          'application/octet-stream': ['.git'],
+        },
+      },
     ];
 
     this.setContentView(<TabGITEditor tab={this}></TabGITEditor>);
@@ -52,7 +52,7 @@ export class TabGITEditorState extends TabState {
 
   async openFile() {
     log.trace('TabGITEditorState openFile entry');
-    if(this.file){
+    if (this.file) {
       const response = await this.file.readFile();
       log.debug('TabGITEditorState openFile readFile done', response.buffer?.length ?? 0);
       this.git = new KotOR.GFFObject(response.buffer);
@@ -220,7 +220,7 @@ export class TabGITEditorState extends TabState {
 
   async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
     log.trace('TabGITEditorState getExportBuffer');
-    if(this.git){
+    if (this.git) {
       const buf = this.git.getExportBuffer();
       log.debug('TabGITEditorState getExportBuffer length', buf?.length ?? 0);
       return buf;

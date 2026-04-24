@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Modal, Button, Form, FormCheck } from "react-bootstrap";
+import React, { useEffect, useState } from 'react';
+import { Modal, Button, Form, FormCheck } from 'react-bootstrap';
 
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { ModalExtractOptionsState } from "@/apps/forge/states/modal/ModalExtractOptionsState";
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import { ModalExtractOptionsState } from '@/apps/forge/states/modal/ModalExtractOptionsState';
 
 /**
  * Dialog for configuring extraction options.
@@ -20,11 +20,11 @@ export const ModalExtractOptions = (props: BaseModalProps) => {
   const onShow = () => setShow(true);
 
   useEffect(() => {
-    modal.addEventListener("onHide", onHide);
-    modal.addEventListener("onShow", onShow);
+    modal.addEventListener('onHide', onHide);
+    modal.addEventListener('onShow', onShow);
     return () => {
-      modal.removeEventListener("onHide", onHide);
-      modal.removeEventListener("onShow", onShow);
+      modal.removeEventListener('onHide', onHide);
+      modal.removeEventListener('onShow', onShow);
     };
   }, [modal]);
 

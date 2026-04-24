@@ -45,7 +45,7 @@ describe('LTRObject', () => {
       expect(LTRObject.CharacterArrays[26]).toBe('abcdefghijklmnopqrstuvwxyz');
     });
 
-    it("maps 28 to the lowercase alphabet plus apostrophe and hyphen", () => {
+    it('maps 28 to the lowercase alphabet plus apostrophe and hyphen', () => {
       expect(LTRObject.CharacterArrays[28]).toBe("abcdefghijklmnopqrstuvwxyz'-");
     });
   });

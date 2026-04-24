@@ -1,26 +1,23 @@
-import * as THREE from "three";
-import type { OdysseyModelNodeDangly } from "@/odyssey/OdysseyModelNodeDangly";
+import * as THREE from 'three';
+import type { OdysseyModelNodeDangly } from '@/odyssey/OdysseyModelNodeDangly';
 
 /**
  * Compiled MDL fills `danglyVec4` in `readBinary`. ASCII imports only have `constraints`
  * weights; we build vec4 per vertex using normals as the sway axis so shaders still run.
  * Preserves existing .w when rebuilding a mismatched buffer if possible.
  */
-export function ensureDanglyConstraintAttribute(
-  node: OdysseyModelNodeDangly,
-  geometry: THREE.BufferGeometry
-): void {
-  const pos = geometry.getAttribute("position");
+export function ensureDanglyConstraintAttribute(node: OdysseyModelNodeDangly, geometry: THREE.BufferGeometry): void {
+  const pos = geometry.getAttribute('position');
   if (!pos) return;
 
   const n = pos.count;
   const expected = n * 4;
   if (node.danglyVec4 && node.danglyVec4.length === expected) return;
 
-  let nx = geometry.getAttribute("normal");
+  let nx = geometry.getAttribute('normal');
   if (!nx || nx.count !== n) {
     geometry.computeVertexNormals();
-    nx = geometry.getAttribute("normal");
+    nx = geometry.getAttribute('normal');
   }
   if (!nx || nx.count !== n) return;
 

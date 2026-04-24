@@ -1,13 +1,13 @@
-import * as path from "path";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { IERFLanguage } from "@/interface/resource/IERFLanguage";
-import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
-import { IERFResource } from "@/interface/resource/IERFResource";
-import { IERFObjectHeader } from "@/interface/resource/IERFObjectHeader";
-  
+import * as path from 'path';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { IERFLanguage } from '@/interface/resource/IERFLanguage';
+import { IERFKeyEntry } from '@/interface/resource/IERFKeyEntry';
+import { IERFResource } from '@/interface/resource/IERFResource';
+import { IERFObjectHeader } from '@/interface/resource/IERFObjectHeader';
+
 const ERF_HEADER_SIZE = 160;
 
 /**
@@ -36,27 +36,34 @@ export class ERFObject {
   group: string = 'erf';
   type: string = 'erf';
 
-  constructor(file?: string|Uint8Array){
+  constructor(file?: string | Uint8Array) {
     this.localizedStrings = [];
     this.keyList = [];
     this.resources = [];
 
     this.header = {
       fileType: 'MOD ',
-      fileVersion: 'V1.0'
+      fileVersion: 'V1.0',
     } as IERFObjectHeader;
 
-    if(file instanceof Uint8Array){
+    if (file instanceof Uint8Array) {
       this.inMemory = true;
       this.buffer = file;
-    }else if(typeof file === 'string'){
+    } else if (typeof file === 'string') {
       this.resource_path = file;
       this.inMemory = false;
       this.pathInfo = path.parse(file);
     }
   }
 
-  toJSON(): { header: IERFObjectHeader; localizedStrings: IERFLanguage[]; keyList: IERFKeyEntry[]; resources: Array<Omit<IERFResource, 'data'> & { data?: number[] }>; type: string; group: string } {
+  toJSON(): {
+    header: IERFObjectHeader;
+    localizedStrings: IERFLanguage[];
+    keyList: IERFKeyEntry[];
+    resources: Array<Omit<IERFResource, 'data'> & { data?: number[] }>;
+    type: string;
+    group: string;
+  } {
     return {
       header: { ...this.header },
       localizedStrings: this.localizedStrings.map((entry) => ({ ...entry })),
@@ -68,16 +75,21 @@ export class ERFObject {
   }
 
   fromJSON(json: string | ReturnType<ERFObject['toJSON']>): void {
-    const data = typeof json === 'string' ? JSON.parse(json) as ReturnType<ERFObject['toJSON']> : json;
+    const data = typeof json === 'string' ? (JSON.parse(json) as ReturnType<ERFObject['toJSON']>) : json;
     this.header = { ...data.header };
     this.localizedStrings = (data.localizedStrings || []).map((entry) => ({ ...entry }));
     this.keyList = (data.keyList || []).map((entry) => ({ ...entry }));
-    this.resources = (data.resources || []).map((entry) => ({ ...entry, data: entry.data ? Uint8Array.from(entry.data) : undefined }));
+    this.resources = (data.resources || []).map((entry) => ({
+      ...entry,
+      data: entry.data ? Uint8Array.from(entry.data) : undefined,
+    }));
     this.type = data.type || 'erf';
     this.group = data.group || 'erf';
   }
 
-  toXML(): string { return objectToXML({ json: JSON.stringify(this.toJSON()) }); }
+  toXML(): string {
+    return objectToXML({ json: JSON.stringify(this.toJSON()) });
+  }
   fromXML(xml: string): void {
     const data = xmlToObject(xml) as { json?: string } | ReturnType<ERFObject['toJSON']>;
     if (typeof (data as { json?: string }).json === 'string') {
@@ -86,22 +98,30 @@ export class ERFObject {
     }
     this.fromJSON(data as ReturnType<ERFObject['toJSON']>);
   }
-  toYAML(): string { return objectToYAML(this.toJSON()); }
-  fromYAML(yaml: string): void { this.fromJSON(yamlToObject(yaml) as ReturnType<ERFObject['toJSON']>); }
-  toTOML(): string { return objectToTOML(this.toJSON()); }
-  fromTOML(toml: string): void { this.fromJSON(tomlToObject(toml) as ReturnType<ERFObject['toJSON']>); }
+  toYAML(): string {
+    return objectToYAML(this.toJSON());
+  }
+  fromYAML(yaml: string): void {
+    this.fromJSON(yamlToObject(yaml) as ReturnType<ERFObject['toJSON']>);
+  }
+  toTOML(): string {
+    return objectToTOML(this.toJSON());
+  }
+  fromTOML(toml: string): void {
+    this.fromJSON(tomlToObject(toml) as ReturnType<ERFObject['toJSON']>);
+  }
 
   async load(): Promise<ERFObject> {
-    if(!this.inMemory){
+    if (!this.inMemory) {
       await this.loadFromDisk();
       return this;
-    }else{
+    } else {
       await this.loadFromBuffer();
       return this;
     }
   }
 
-  parseHeader(buffer: Uint8Array){
+  parseHeader(buffer: Uint8Array) {
     this.reader = new BinaryReader(buffer);
     this.header.fileType = this.reader.readChars(4);
     this.header.fileVersion = this.reader.readChars(4);
@@ -123,7 +143,7 @@ export class ERFObject {
     this.reader.dispose();
   }
 
-  parseStructures(buffer: Uint8Array){
+  parseStructures(buffer: Uint8Array) {
     this.reader.reuse(buffer);
     this.reader.seek(this.header.offsetToLocalizedString);
 
@@ -139,7 +159,11 @@ export class ERFObject {
 
     for (let i = 0; i < this.header.entryCount; i++) {
       let key: IERFKeyEntry = {} as IERFKeyEntry;
-      key.resRef = this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
+      key.resRef = this.reader
+        .readChars(16)
+        .replace(/\0[\s\S]*$/g, '')
+        .trim()
+        .toLowerCase();
       key.resId = this.reader.readUInt32();
       key.resType = this.reader.readUInt16();
       key.unused = this.reader.readUInt16();
@@ -158,7 +182,7 @@ export class ERFObject {
   }
 
   async loadFromDisk(): Promise<void> {
-    try{
+    try {
       const fd = await GameFileSystem.open(this.resource_path, 'r');
       let header = new Uint8Array(ERF_HEADER_SIZE);
       await GameFileSystem.read(fd, header, 0, ERF_HEADER_SIZE, 0);
@@ -166,14 +190,14 @@ export class ERFObject {
       header = new Uint8Array(0);
 
       //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
-      this.erfDataOffset = (this.header.offsetToResourceList + (this.header.entryCount * 8));
+      this.erfDataOffset = this.header.offsetToResourceList + this.header.entryCount * 8;
       header = new Uint8Array(this.erfDataOffset);
       await GameFileSystem.read(fd, header, 0, this.erfDataOffset, 0);
       this.parseStructures(header);
       header = new Uint8Array(0);
 
       await GameFileSystem.close(fd);
-    }catch(e){
+    } catch (e) {
       const err = e as NodeJS.ErrnoException & { message?: string };
       const isNotFound = err?.code === 'ENOENT' || (err?.message != null && String(err.message).includes('ENOENT'));
       if (!isNotFound) {
@@ -189,20 +213,20 @@ export class ERFObject {
     this.parseHeader(header);
     header = new Uint8Array(0);
     //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
-    this.erfDataOffset = (this.header.offsetToResourceList + (this.header.entryCount * 8));
+    this.erfDataOffset = this.header.offsetToResourceList + this.header.entryCount * 8;
     header = new Uint8Array(this.buffer.slice(0, this.erfDataOffset));
     this.parseStructures(header);
     header = new Uint8Array(0);
   }
 
-  getResource(resRef: string, resType: number): IERFResource{
+  getResource(resRef: string, resType: number): IERFResource {
     resRef = resRef.toLowerCase();
-    for(let i = 0; i < this.keyList.length; i++){
+    for (let i = 0; i < this.keyList.length; i++) {
       let key = this.keyList[i];
       if (key.resRef == resRef && key.resType == resType) {
         return this.resources[key.resId];
       }
-    };
+    }
     return undefined;
   }
 
@@ -211,16 +235,16 @@ export class ERFObject {
       return new Uint8Array(0);
     }
 
-    if(!resource.size){
+    if (!resource.size) {
       return new Uint8Array(0);
     }
 
     const buffer = new Uint8Array(resource.size);
 
-    if(this.inMemory){
+    if (this.inMemory) {
       buffer.set(this.buffer.slice(resource.offset, resource.offset + resource.size));
       return buffer;
-    }else{
+    } else {
       const fd = await GameFileSystem.open(this.resource_path, 'r');
       await GameFileSystem.read(fd, buffer, 0, buffer.length, resource.offset);
       await GameFileSystem.close(fd);
@@ -256,104 +280,98 @@ export class ERFObject {
 
   getResourcesByType(resType: number): IERFResource[] {
     const resources: IERFResource[] = [];
-    for(let i = 0; i < this.keyList.length; i++){
+    for (let i = 0; i < this.keyList.length; i++) {
       const key = this.keyList[i];
       if (key.resType == resType) {
         resources.push(this.resources[key.resId]);
       }
-    };
+    }
     return resources;
   }
 
-  async exportRawResource(directory: string, resref: string, restype: number = 0x000F): Promise<Uint8Array> {
-    if(directory == null){
+  async exportRawResource(directory: string, resref: string, restype: number = 0x000f): Promise<Uint8Array> {
+    if (directory == null) {
       return new Uint8Array(0);
     }
 
     const resource = this.getResource(resref, restype);
-    if(!resource){
+    if (!resource) {
       return new Uint8Array(0);
     }
 
-    if(this.inMemory){
-        const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + resource.size));
-      await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
+    if (this.inMemory) {
+      const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + resource.size));
+      await GameFileSystem.writeFile(path.join(directory, resref + '.' + ResourceTypes.getKeyByValue(restype)), buffer);
       return buffer;
-    }else{
+    } else {
       let buffer = new Uint8Array(resource.size);
       const fd = await GameFileSystem.open(this.resource_path, 'r');
       await GameFileSystem.read(fd, buffer, 0, resource.size, resource.offset);
       // console.log('ERF Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
-      await GameFileSystem.writeFile(
-        path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer
-      );
+      await GameFileSystem.writeFile(path.join(directory, resref + '.' + ResourceTypes.getKeyByValue(restype)), buffer);
       return buffer;
     }
   }
 
-  addResource(resRef: string, resType: number, buffer: Uint8Array){
-
-    const resId = this.resources.push({
-      offset: -1,
-      size: buffer.length,
-      data: buffer
-    }) - 1;
+  addResource(resRef: string, resType: number, buffer: Uint8Array) {
+    const resId =
+      this.resources.push({
+        offset: -1,
+        size: buffer.length,
+        data: buffer,
+      }) - 1;
 
     this.keyList.push({
       resRef: resRef,
       resId: resId,
       resType: resType,
-      unused: 0
+      unused: 0,
     });
-
   }
 
-  export( file: string, onExport?: Function, onError?: Function ){
-    return new Promise( (resolve: Function, reject: Function) => {
-
-      if(!file){
+  export(file: string, onExport?: Function, onError?: Function) {
+    return new Promise((resolve: Function, reject: Function) => {
+      if (!file) {
         reject('Failed to export: Missing file path.');
         return;
       }
 
       let buffer = this.getExportBuffer();
-      GameFileSystem.writeFile( file, buffer ).then( () => {
-        if(typeof onExport === 'function')
-          onExport();
+      GameFileSystem.writeFile(file, buffer)
+        .then(() => {
+          if (typeof onExport === 'function') onExport();
 
-        resolve();
-      }).catch( (err) => {
-        console.error(err);
-        if(typeof onError === 'function')
-          onError(err);
-        reject();
-      });
-
+          resolve();
+        })
+        .catch((err) => {
+          console.error(err);
+          if (typeof onError === 'function') onError(err);
+          reject();
+        });
     });
   }
 
-  getExportBuffer(){
-
+  getExportBuffer() {
     let output = new BinaryWriter();
 
     let keyEleLen = 24;
     let resEleLen = 8;
     let locStringsLen = 0;
 
-    for(let i = 0; i < this.localizedStrings.length; i++){
-      locStringsLen += (this.localizedStrings[i].value.length + 8);
+    for (let i = 0; i < this.localizedStrings.length; i++) {
+      locStringsLen += this.localizedStrings[i].value.length + 8;
     }
 
     this.header.offsetToLocalizedString = ERF_HEADER_SIZE;
     this.header.languageCount = this.localizedStrings.length;
     this.header.entryCount = this.keyList.length;
     this.header.offsetToKeyList = ERF_HEADER_SIZE + locStringsLen;
-    this.header.offsetToResourceList = ERF_HEADER_SIZE + locStringsLen + (this.header.entryCount * keyEleLen);
+    this.header.offsetToResourceList = ERF_HEADER_SIZE + locStringsLen + this.header.entryCount * keyEleLen;
 
     //Offset to the beginning of the data block
-    let offset = this.header.offsetToResourceList + (this.header.entryCount * resEleLen);
+    let offset = this.header.offsetToResourceList + this.header.entryCount * resEleLen;
     //Update the resource data offsets
-    for(let i = 0; i < this.resources.length; i++){
+    for (let i = 0; i < this.resources.length; i++) {
       this.resources[i].offset = offset;
       offset += this.resources[i].size;
     }
@@ -372,32 +390,34 @@ export class ERFObject {
     output.writeBytes(new Uint8Array(116));
 
     //LocalStrings
-    for(let i = 0; i < this.localizedStrings.length; i++){
+    for (let i = 0; i < this.localizedStrings.length; i++) {
       output.writeUInt32(this.localizedStrings[i].languageId);
       output.writeUInt32(this.localizedStrings[i].stringSize);
       output.writeString(this.localizedStrings[i].value);
     }
 
     //Key List
-    for(let i = 0; i < this.keyList.length; i++){
-      output.writeString( this.keyList[i].resRef.padEnd(16, '\0').substr(0, 16) );
-      output.writeUInt32( this.keyList[i].resId );
-      output.writeUInt16( this.keyList[i].resType );
-      output.writeUInt16( 0 );
+    for (let i = 0; i < this.keyList.length; i++) {
+      output.writeString(this.keyList[i].resRef.padEnd(16, '\0').substr(0, 16));
+      output.writeUInt32(this.keyList[i].resId);
+      output.writeUInt16(this.keyList[i].resType);
+      output.writeUInt16(0);
     }
 
     //Resource List
-    for(let i = 0; i < this.resources.length; i++){
-      output.writeUInt32( this.resources[i].offset );
-      output.writeUInt32( this.resources[i].size );
+    for (let i = 0; i < this.resources.length; i++) {
+      output.writeUInt32(this.resources[i].offset);
+      output.writeUInt32(this.resources[i].size);
     }
 
     //Data
-    for(let i = 0; i < this.resources.length; i++){
+    for (let i = 0; i < this.resources.length; i++) {
       const res = this.resources[i];
-      const data = res.data ?? (this.inMemory && res.offset >= 0 && res.size > 0
-        ? this.buffer.slice(res.offset, res.offset + res.size)
-        : new Uint8Array(0));
+      const data =
+        res.data ??
+        (this.inMemory && res.offset >= 0 && res.size > 0
+          ? this.buffer.slice(res.offset, res.offset + res.size)
+          : new Uint8Array(0));
       output.writeBytes(data);
     }
 
@@ -405,12 +425,16 @@ export class ERFObject {
   }
 
   static DayOfTheYear(date?: Date) {
-    if(!date){
+    if (!date) {
       date = new Date(Date.now());
     }
 
-    return (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(date.getFullYear(), 0, 0)) / 24 / 60 / 60 / 1000;
-  };
-
+    return (
+      (Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(date.getFullYear(), 0, 0)) /
+      24 /
+      60 /
+      60 /
+      1000
+    );
+  }
 }
-

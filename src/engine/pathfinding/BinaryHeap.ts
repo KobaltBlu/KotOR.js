@@ -5,7 +5,7 @@ export class BinaryHeap<T> {
   content: T[];
   scoreFunction?: ScoreFunctionType<T>;
 
-  constructor(scoreFunction?: ScoreFunctionType<T>){
+  constructor(scoreFunction?: ScoreFunctionType<T>) {
     this.content = [];
     this.scoreFunction = scoreFunction;
   }
@@ -64,7 +64,6 @@ export class BinaryHeap<T> {
 
     // When at 0, an element can not sink any further.
     while (n > 0) {
-
       // Compute the parent element's index, and fetch it.
       const parentN = ((n + 1) >> 1) - 1;
       const parent = this.content[parentN];
@@ -128,5 +127,4 @@ export class BinaryHeap<T> {
       }
     }
   }
-
 }

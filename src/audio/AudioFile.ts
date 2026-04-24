@@ -1,27 +1,27 @@
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { AudioFileAudioType } from "@/enums/audio/AudioFileAudioType";
-import { AudioFileWaveEncoding } from "@/enums/audio/AudioFileWaveEncoding";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { Utility } from "@/utility/Utility";
-import { ADPCMDecoder } from "@/audio/ADPCMDecoder";
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
+import { AudioFileAudioType } from '@/enums/audio/AudioFileAudioType';
+import { AudioFileWaveEncoding } from '@/enums/audio/AudioFileWaveEncoding';
+import { GameFileSystem } from '@/utility/GameFileSystem';
+import { Utility } from '@/utility/Utility';
+import { ADPCMDecoder } from '@/audio/ADPCMDecoder';
 
 //Header Tests
-const fakeHeaderTest = [0xFF, 0xF3, 0x60, 0xC4];
+const fakeHeaderTest = [0xff, 0xf3, 0x60, 0xc4];
 const riffHeaderTest = [0x52, 0x49, 0x46, 0x46];
 
 //MP3 Tests
-const lameHeaderTest = [0x4C, 0x41, 0x4D, 0x45];
+const lameHeaderTest = [0x4c, 0x41, 0x4d, 0x45];
 const id3HeaderTest = [0x49, 0x44, 0x33];
-const mp3HeaderTest = [0xFF, 0xFB];
+const mp3HeaderTest = [0xff, 0xfb];
 
 /**
  * AudioFile class.
- * 
+ *
  * The AudioFile class is a general purpose class used for retrieving and passing on useful audio bytes as some file have extra garbage in the headers.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AudioFile.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -31,43 +31,39 @@ export class AudioFile {
   data: Uint8Array;
   isProcessed: boolean;
   filename: any;
-  header: any = { riff: {}, riffSize: {}, wave: {}, };
+  header: any = { riff: {}, riffSize: {}, wave: {} };
   reader: BinaryReader;
 
-  constructor(data: Uint8Array){
+  constructor(data: Uint8Array) {
     this.audioType = AudioFileAudioType.Unknown;
     this.data = data;
     this.isProcessed = false;
   }
 
   //Get the binary data and remove any junk bytes that may be padding the file
-  async getBinaryStream(): Promise<Uint8Array>{
+  async getBinaryStream(): Promise<Uint8Array> {
     //String file path
-    if(typeof this.data == 'string'){
-
+    if (typeof this.data == 'string') {
       const info = Utility.filePathInfo(this.data);
 
-      if(info.location == 'local'){
-
+      if (info.location == 'local') {
         this.filename = info.file.name;
 
-        try{
+        try {
           const buffer = await GameFileSystem.readFile(info.path);
-          try{
+          try {
             this.reader = new BinaryReader(buffer);
             this.processFile();
             return this.data;
-          }catch (e) {
+          } catch (e) {
             console.error(e);
             throw e;
           }
-        }catch(e){
+        } catch (e) {
           throw e;
         }
-
-      }else if(info.location == 'archive'){
-
-        switch(info.archive.type){
+      } else if (info.location == 'archive') {
+        switch (info.archive.type) {
           case 'bif':
             // Global.kotorBIF[info.archive.name].getResourceBuffer(Global.kotorBIF[info.archive.name].getResource(info.file.name, ResourceTypes[info.file.ext]), (buffer) => {
             //   this.reader = new BinaryReader(buffer);
@@ -76,29 +72,26 @@ export class AudioFile {
             // }, (e: any) => {
             //   throw 'Resource not found in BIF archive '+pathInfo.archive.name;
             // });
-          break;
+            break;
         }
-
       }
-
     }
 
     //BinaryReader
-    else if(this.reader instanceof BinaryReader){
-      if(!this.filename) this.filename = 'Unknown';
-      if(this.isProcessed){
+    else if (this.reader instanceof BinaryReader) {
+      if (!this.filename) this.filename = 'Unknown';
+      if (this.isProcessed) {
         return this.data;
-      }else{
+      } else {
         this.processFile();
         return this.data;
       }
-
     } else {
-      if(!this.filename) this.filename = 'Unknown';
-      if(this.isProcessed){
+      if (!this.filename) this.filename = 'Unknown';
+      if (this.isProcessed) {
         this.reader = new BinaryReader(this.data);
         return this.data;
-      }else{
+      } else {
         this.reader = new BinaryReader(this.data);
         this.processFile();
         return this.data;
@@ -108,13 +101,13 @@ export class AudioFile {
     return;
   }
 
-  processFile(){
+  processFile() {
     this.isProcessed = true;
     const flag = this.reader.readBytes(4);
     const riffSize = this.reader.readUInt32(); //for an MP3 this will be 50
     this.reader.seek(0);
 
-    if(Utility.ArrayMatch(flag, fakeHeaderTest)) {
+    if (Utility.ArrayMatch(flag, fakeHeaderTest)) {
       this.audioType = AudioFileAudioType.WAVE;
 
       this.reader = this.reader.slice(470, this.reader.length()); //Remove the fake data
@@ -126,19 +119,19 @@ export class AudioFile {
     }
 
     //Test for RIFF header
-    if(Utility.ArrayMatch(flag, riffHeaderTest)) {
+    if (Utility.ArrayMatch(flag, riffHeaderTest)) {
       this.header = this.readWavHeader(this.reader);
       this.reader.seek(0);
 
       //Test for MP3 offset
-      if(riffSize == 50){
+      if (riffSize == 50) {
         this.audioType = AudioFileAudioType.MP3;
 
         this.reader = this.reader.slice(58, this.reader.length()); //Remove the fake data
         // this.header = this.readMP3Header(this.reader);
         this.reader.seek(0);
-        this.data = this.reader.buffer; 
-      }else{
+        this.data = this.reader.buffer;
+      } else {
         //Looks like we have a real wave file
         this.audioType = AudioFileAudioType.WAVE;
         return;
@@ -149,12 +142,12 @@ export class AudioFile {
         Utility.ArrayMatch(flag.slice(0, 2), mp3HeaderTest) ||
         Utility.ArrayMatch(flag.slice(0, 4), lameHeaderTest)) {*/
 
-      this.audioType = AudioFileAudioType.MP3;
+    this.audioType = AudioFileAudioType.MP3;
 
-      // this.header = this.readMP3Header(this.reader);
-      this.reader.seek(0);
+    // this.header = this.readMP3Header(this.reader);
+    this.reader.seek(0);
 
-      return;
+    return;
 
     /*}
 
@@ -162,16 +155,14 @@ export class AudioFile {
   }
 
   async getPlayableByteStream(): Promise<Uint8Array> {
-
     const b = await this.getBinaryStream();
 
-    if(!(this.reader instanceof BinaryReader))
-      console.error('AudioFile.getPlayableByteStream', this.data);
+    if (!(this.reader instanceof BinaryReader)) console.error('AudioFile.getPlayableByteStream', this.data);
 
     this.reader.seek(0);
 
-    if(this.audioType == AudioFileAudioType.WAVE){
-      if(this.header.format == AudioFileWaveEncoding.ADPCM){
+    if (this.audioType == AudioFileAudioType.WAVE) {
+      if (this.header.format == AudioFileWaveEncoding.ADPCM) {
         // Use parsed data chunk offsets/sizes (files can have varying headers/chunks).
         const dataOffset = typeof this.header.dataOffset === 'number' ? this.header.dataOffset : 60;
         const dataSize =
@@ -181,42 +172,46 @@ export class AudioFile {
 
         this.reader.seek(dataOffset);
         const dataADPCM = this.reader.readBytes(dataSize);
-        const adpcm = new ADPCMDecoder({
-          sampleRate: this.header.sampleRate,
-          frameSize: this.header.frameSize,
-          channels: this.header.channels
-        }, dataADPCM);
+        const adpcm = new ADPCMDecoder(
+          {
+            sampleRate: this.header.sampleRate,
+            frameSize: this.header.frameSize,
+            channels: this.header.channels,
+          },
+          dataADPCM
+        );
 
-        const decompiled = this.buildWave({
-          sampleRate: this.header.sampleRate,
-          bytesPerSec: 176400,
-          bits: 16,
-          channels: this.header.channels
-        }, adpcm.pcm);
+        const decompiled = this.buildWave(
+          {
+            sampleRate: this.header.sampleRate,
+            bytesPerSec: 176400,
+            bits: 16,
+            channels: this.header.channels,
+          },
+          adpcm.pcm
+        );
 
         return decompiled;
-      }else if(this.header.format == AudioFileWaveEncoding.PCM){
+      } else if (this.header.format == AudioFileWaveEncoding.PCM) {
         return this.reader.buffer;
-      }else{
+      } else {
         throw 'Unsupported WAVE encoding';
       }
-
-    }else if(this.audioType == AudioFileAudioType.MP3){
+    } else if (this.audioType == AudioFileAudioType.MP3) {
       return this.reader.buffer;
-    }else{
+    } else {
       console.error('AudioFile.getPlayableByteStream', this.header);
-      throw 'Not a valid audio file'
+      throw 'Not a valid audio file';
     }
-
   }
 
-  readMP3Header (reader: BinaryReader): any {
+  readMP3Header(reader: BinaryReader): any {
     return {};
   }
 
-  waveSubChunkParser (header: any, reader: BinaryReader) {
+  waveSubChunkParser(header: any, reader: BinaryReader) {
     const chunkID = reader.readChars(4);
-    switch(chunkID){
+    switch (chunkID) {
       case 'fmt ':
         header.fmt = chunkID;
         header.chunkSize = reader.readUInt32();
@@ -227,53 +222,48 @@ export class AudioFile {
         header.frameSize = reader.readUInt16();
         header.bits = reader.readUInt16();
 
-        if(header.format == AudioFileWaveEncoding.ADPCM){
+        if (header.format == AudioFileWaveEncoding.ADPCM) {
           header.blobSize = reader.readUInt16();
           header.blobData = reader.readBytes(header.blobSize);
         }
         return true;
-      break;
+        break;
       case 'fact':
         header.fact = chunkID;
         header.factSize = reader.readUInt32();
         header.factBOH = reader.readUInt32();
         return true;
-      break;
+        break;
       case 'data':
         header.data = chunkID;
         header.dataSize = reader.readUInt32();
         header.dataOffset = reader.tell();
         return false;
-      break;
+        break;
       default:
         throw 'Unkown WAVE chunk';
         return false;
-      break;
+        break;
     }
-
   }
 
-  readWavHeader (reader: BinaryReader): any {
+  readWavHeader(reader: BinaryReader): any {
     const header = {
       riff: reader.readChars(4),
       riffSize: reader.readUInt32(),
-      wave: reader.readChars(4)
+      wave: reader.readChars(4),
     };
 
-    if(header.wave != 'WAVE')
-      throw 'Not a valid wave header';
+    if (header.wave != 'WAVE') throw 'Not a valid wave header';
 
-    while(this.waveSubChunkParser(header, reader))
-
-    return header;
+    while (this.waveSubChunkParser(header, reader)) return header;
   }
 
-  buildWave(header: any, data: Uint8Array){
-
+  buildWave(header: any, data: Uint8Array) {
     const riffHeaderLen = 8;
     const waveHeaderLen = 56;
 
-    const buffer = new Uint8Array( data.length + 44 );//data.length + riffHeaderLen + waveHeaderLen );
+    const buffer = new Uint8Array(data.length + 44); //data.length + riffHeaderLen + waveHeaderLen );
     const bWriter = new BinaryWriter(buffer);
 
     const riffSize = data.length + waveHeaderLen;
@@ -285,7 +275,7 @@ export class AudioFile {
     //header.sampleRate = header.sampleRate / 2;
     //header.channels = 2;
 
-	  header.bits = 16;
+    header.bits = 16;
     const bytesPerSample = header.bits / 8;
     const blockAlign = header.channels * bytesPerSample;
     const byteRate = header.sampleRate * blockAlign;
@@ -317,15 +307,15 @@ export class AudioFile {
     return buffer;
   }
 
-  getExportableData(){
+  getExportableData() {
     if (!this.isProcessed && this.data instanceof Uint8Array && this.data.length > 0) {
       this.reader = new BinaryReader(this.data);
       this.processFile();
     }
 
-    switch(this.audioType){
+    switch (this.audioType) {
       case AudioFileAudioType.WAVE:
-        switch(this.header.format){
+        switch (this.header.format) {
           case AudioFileWaveEncoding.ADPCM:
             /*let rawDataOffset = 60;
             console.log('rawDataOffset', rawDataOffset);
@@ -343,21 +333,21 @@ export class AudioFile {
 
             return decompiled;*/
             return this.reader.buffer;
-          break;
+            break;
           case AudioFileWaveEncoding.PCM:
             return this.reader.buffer;
-          break;
+            break;
           default:
             // Unknown / extended WAV codec — still export raw file bytes
             if (this.reader?.buffer?.length) {
               return new Uint8Array(this.reader.buffer);
             }
-          break;
+            break;
         }
-      break;
+        break;
       case AudioFileAudioType.MP3:
         return this.reader.buffer;
-      break;
+        break;
     }
 
     if (this.data instanceof Uint8Array && this.data.length > 0) {
@@ -367,11 +357,10 @@ export class AudioFile {
       return new Uint8Array(this.reader.buffer);
     }
     return new Uint8Array(0);
-
   }
 
-  getExportExtension(){
-    switch(this.audioType){
+  getExportExtension() {
+    switch (this.audioType) {
       case AudioFileAudioType.MP3:
         return 'mp3';
       case AudioFileAudioType.WAVE:
@@ -379,16 +368,17 @@ export class AudioFile {
     }
   }
 
-  export( args: any = {} ){
+  export(args: any = {}) {
+    args = Object.assign(
+      {
+        file: null,
+        onComplete: null,
+        onError: null,
+      },
+      args
+    );
 
-    args = Object.assign({
-      file: null,
-      onComplete: null,
-      onError: null
-    }, args);
-
-    if(args.file!=null){
-
+    if (args.file != null) {
       // fs.writeFile(args.file, this.getExportableData(), (err) => {
       //   if (err) {
       //     if(typeof args.onError == 'function')
@@ -399,9 +389,6 @@ export class AudioFile {
       //   }
       //   console.log('AudioFile Saved');
       // });
-
     }
-
   }
-
 }

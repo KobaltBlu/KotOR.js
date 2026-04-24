@@ -1,11 +1,11 @@
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { NWScriptDataType } from '@/enums/nwscript/NWScriptDataType';
 
 /**
  * Represents an expression in NWScript decompilation.
  * Can be a constant, variable, binary operation, unary operation, or function call.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptExpression.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -17,29 +17,29 @@ export enum NWScriptExpressionType {
   UNARY_OP = 'unary_op',
   FUNCTION_CALL = 'function_call',
   COMPARISON = 'comparison',
-  LOGICAL = 'logical'
+  LOGICAL = 'logical',
 }
 
 export class NWScriptExpression {
   type: NWScriptExpressionType;
   dataType: NWScriptDataType;
-  
+
   // For constants
   value: any; // number, string, etc.
-  
+
   // For variables
   variableName: string;
   isGlobal: boolean;
-  
+
   // For operations
   operator: string;
   left: NWScriptExpression | null;
   right: NWScriptExpression | null;
-  
+
   // For function calls
   functionName: string;
   arguments: NWScriptExpression[];
-  
+
   constructor(type: NWScriptExpressionType, dataType: NWScriptDataType) {
     this.type = type;
     this.dataType = dataType;
@@ -70,7 +70,12 @@ export class NWScriptExpression {
   /**
    * Create a binary operation expression
    */
-  static binaryOp(operator: string, left: NWScriptExpression, right: NWScriptExpression, dataType: NWScriptDataType): NWScriptExpression {
+  static binaryOp(
+    operator: string,
+    left: NWScriptExpression,
+    right: NWScriptExpression,
+    dataType: NWScriptDataType
+  ): NWScriptExpression {
     const expr = new NWScriptExpression(NWScriptExpressionType.BINARY_OP, dataType);
     expr.operator = operator;
     expr.left = left;
@@ -150,7 +155,7 @@ export class NWScriptExpression {
         return `${this.operator}${operandStr}`;
 
       case NWScriptExpressionType.FUNCTION_CALL:
-        const argsStr = this.arguments.map(arg => arg.toNSS()).join(', ');
+        const argsStr = this.arguments.map((arg) => arg.toNSS()).join(', ');
         return `${this.functionName}(${argsStr})`;
 
       case NWScriptExpressionType.COMPARISON:
@@ -173,13 +178,18 @@ export class NWScriptExpression {
    */
   getDataTypeName(): string {
     switch (this.dataType) {
-      case NWScriptDataType.INTEGER: return 'int';
-      case NWScriptDataType.FLOAT: return 'float';
-      case NWScriptDataType.STRING: return 'string';
-      case NWScriptDataType.OBJECT: return 'object';
-      case NWScriptDataType.VOID: return 'void';
-      default: return 'unknown';
+      case NWScriptDataType.INTEGER:
+        return 'int';
+      case NWScriptDataType.FLOAT:
+        return 'float';
+      case NWScriptDataType.STRING:
+        return 'string';
+      case NWScriptDataType.OBJECT:
+        return 'object';
+      case NWScriptDataType.VOID:
+        return 'void';
+      default:
+        return 'unknown';
     }
   }
 }
-

@@ -7,7 +7,7 @@
  *
  * KotOR 1 dialog.tlk combat strings - IDs may vary; fallbacks used when TLK returns empty.
  */
-import { AttackResult } from "@/enums/combat/AttackResult";
+import { AttackResult } from '@/enums/combat/AttackResult';
 
 /** Duration to show combat message before auto-hiding (ms). Matches round feedback timing. */
 export const COMBAT_MESSAGE_DURATION_MS = 2500;
@@ -17,14 +17,14 @@ export const TLK_COMBAT_CLEAR = 48208;
 
 /** AttackResult -> { tlkId, fallback } for combat menu display */
 export const COMBAT_MESSAGE_BY_ATTACK_RESULT: Record<number, { tlkId: number; fallback: string }> = {
-  [AttackResult.HIT_SUCCESSFUL]: { tlkId: 0, fallback: "Hit" },
-  [AttackResult.CRITICAL_HIT]: { tlkId: 0, fallback: "Critical Hit" },
-  [AttackResult.AUTOMATIC_HIT]: { tlkId: 0, fallback: "Hit" },
-  [AttackResult.MISS]: { tlkId: 0, fallback: "Miss" },
-  [AttackResult.ATTACK_RESISTED]: { tlkId: 0, fallback: "Resisted" },
-  [AttackResult.ATTACK_FAILED]: { tlkId: 0, fallback: "Attack Failed" },
-  [AttackResult.PARRIED]: { tlkId: 0, fallback: "Parried" },
-  [AttackResult.DEFLECTED]: { tlkId: 0, fallback: "Deflected" },
+  [AttackResult.HIT_SUCCESSFUL]: { tlkId: 0, fallback: 'Hit' },
+  [AttackResult.CRITICAL_HIT]: { tlkId: 0, fallback: 'Critical Hit' },
+  [AttackResult.AUTOMATIC_HIT]: { tlkId: 0, fallback: 'Hit' },
+  [AttackResult.MISS]: { tlkId: 0, fallback: 'Miss' },
+  [AttackResult.ATTACK_RESISTED]: { tlkId: 0, fallback: 'Resisted' },
+  [AttackResult.ATTACK_FAILED]: { tlkId: 0, fallback: 'Attack Failed' },
+  [AttackResult.PARRIED]: { tlkId: 0, fallback: 'Parried' },
+  [AttackResult.DEFLECTED]: { tlkId: 0, fallback: 'Deflected' },
 };
 
 /**
@@ -36,11 +36,10 @@ export function getCombatMessageText(
   tlkGetStringById: (id: number) => { Value: string }
 ): string {
   const entry = COMBAT_MESSAGE_BY_ATTACK_RESULT[attackResult];
-  if (!entry) return "";
+  if (!entry) return '';
   if (entry.tlkId > 0) {
     const tlk = tlkGetStringById(entry.tlkId);
     if (tlk?.Value?.trim()) return tlk.Value;
   }
   return entry.fallback;
 }
-

@@ -1,5 +1,5 @@
-import { GameMenu } from "@/gui";
-import type { GUIListBox } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUIListBox } from '@/gui';
 
 /**
  * MenuCredits class.
@@ -11,10 +11,9 @@ import type { GUIListBox } from "@/gui";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuCredits extends GameMenu {
-
   LB_CREDITS: GUIListBox;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'credits';
     this.background = '';
@@ -23,10 +22,9 @@ export class MenuCredits extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       resolve();
     });
-}
-
+  }
 }

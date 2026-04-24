@@ -1,32 +1,31 @@
-import React from "react";
-import * as THREE from "three";
+import React from 'react';
+import * as THREE from 'three';
 
-import { TabIndoorBuilder } from "@/apps/forge/components/tabs/tab-indoor-builder/TabIndoorBuilder";
+import { TabIndoorBuilder } from '@/apps/forge/components/tabs/tab-indoor-builder/TabIndoorBuilder';
 import {
   INDOOR_DUPLICATE_OFFSET_X,
   INDOOR_DUPLICATE_OFFSET_Y,
   INDOOR_DUPLICATE_OFFSET_Z,
-} from "@/apps/forge/data/IndoorBuilderConstants";
-import { Kit, KitComponent } from "@/apps/forge/data/IndoorKit";
-import { loadKits } from "@/apps/forge/data/IndoorKitLoader";
-import { IndoorMap, IndoorMapRoom, EmbeddedKit } from "@/apps/forge/data/IndoorMap";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { IndoorMap3DScene } from "@/apps/forge/helpers/IndoorMap3DScene";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+} from '@/apps/forge/data/IndoorBuilderConstants';
+import { Kit, KitComponent } from '@/apps/forge/data/IndoorKit';
+import { loadKits } from '@/apps/forge/data/IndoorKitLoader';
+import { IndoorMap, IndoorMapRoom, EmbeddedKit } from '@/apps/forge/data/IndoorMap';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import { IndoorMap3DScene } from '@/apps/forge/helpers/IndoorMap3DScene';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
-
 export enum IndoorBuilderViewMode {
-  TwoD = "2d",
-  ThreeD = "3d",
+  TwoD = '2d',
+  ThreeD = '3d',
 }
 
 export class TabIndoorBuilderState extends TabState {
-  tabName: string = "Indoor Builder";
+  tabName: string = 'Indoor Builder';
   map: IndoorMap = new IndoorMap();
   kits: Kit[] = [];
   embeddedKit: EmbeddedKit = new EmbeddedKit();
@@ -44,9 +43,9 @@ export class TabIndoorBuilderState extends TabState {
     this.setContentView(<TabIndoorBuilder tab={this} />);
     this.saveTypes = [
       {
-        description: "Indoor Map",
+        description: 'Indoor Map',
         accept: {
-          "application/json": [".indoor"],
+          'application/json': ['.indoor'],
         },
       },
     ];
@@ -94,7 +93,7 @@ export class TabIndoorBuilderState extends TabState {
       this.map.load(response.buffer, this.kits);
       this.map.rebuildRoomConnections();
       await this.scene3D.syncRooms(this.map.rooms);
-      this.processEventListener("onMapLoaded", [this.map]);
+      this.processEventListener('onMapLoaded', [this.map]);
       log.trace('TabIndoorBuilderState openFile loaded');
     } else {
       log.trace('TabIndoorBuilderState openFile empty buffer');
@@ -115,12 +114,12 @@ export class TabIndoorBuilderState extends TabState {
     if (!this.selectedKit && this.kits.length) {
       this.selectedKit = this.kits[0];
     }
-    this.processEventListener("onKitsLoaded", [this.kits]);
+    this.processEventListener('onKitsLoaded', [this.kits]);
   }
 
   setSelectedComponent(component: KitComponent | null): void {
     this.selectedComponent = component;
-    this.processEventListener("onComponentSelected", [component]);
+    this.processEventListener('onComponentSelected', [component]);
   }
 
   addRoomAt(position: THREE.Vector3): void {
@@ -130,7 +129,7 @@ export class TabIndoorBuilderState extends TabState {
     this.map.rebuildRoomConnections();
     this.selectedRooms = [room];
     this.markDirty();
-    this.processEventListener("onMapChanged", [this.map]);
+    this.processEventListener('onMapChanged', [this.map]);
   }
 
   deleteSelectedRooms(): void {
@@ -144,7 +143,7 @@ export class TabIndoorBuilderState extends TabState {
     this.selectedRooms = [];
     this.map.rebuildRoomConnections();
     this.markDirty();
-    this.processEventListener("onMapChanged", [this.map]);
+    this.processEventListener('onMapChanged', [this.map]);
   }
 
   duplicateSelectedRooms(): void {
@@ -153,7 +152,9 @@ export class TabIndoorBuilderState extends TabState {
     this.selectedRooms.forEach((room) => {
       const clone = new IndoorMapRoom(
         room.component,
-        room.position.clone().add(new THREE.Vector3(INDOOR_DUPLICATE_OFFSET_X, INDOOR_DUPLICATE_OFFSET_Y, INDOOR_DUPLICATE_OFFSET_Z)),
+        room.position
+          .clone()
+          .add(new THREE.Vector3(INDOOR_DUPLICATE_OFFSET_X, INDOOR_DUPLICATE_OFFSET_Y, INDOOR_DUPLICATE_OFFSET_Z)),
         room.rotation,
         room.flipX,
         room.flipY
@@ -164,7 +165,7 @@ export class TabIndoorBuilderState extends TabState {
     this.selectedRooms = clones;
     this.map.rebuildRoomConnections();
     this.markDirty();
-    this.processEventListener("onMapChanged", [this.map]);
+    this.processEventListener('onMapChanged', [this.map]);
   }
 
   rotateSelectedRooms(degrees: number): void {
@@ -174,7 +175,7 @@ export class TabIndoorBuilderState extends TabState {
     });
     this.map.rebuildRoomConnections();
     this.markDirty();
-    this.processEventListener("onMapChanged", [this.map]);
+    this.processEventListener('onMapChanged', [this.map]);
   }
 
   flipSelectedRooms(flipX: boolean, flipY: boolean): void {
@@ -185,12 +186,12 @@ export class TabIndoorBuilderState extends TabState {
     });
     this.map.rebuildRoomConnections();
     this.markDirty();
-    this.processEventListener("onMapChanged", [this.map]);
+    this.processEventListener('onMapChanged', [this.map]);
   }
 
   setSelectedRooms(rooms: IndoorMapRoom[]): void {
     this.selectedRooms = rooms;
-    this.processEventListener("onSelectionChanged", [rooms]);
+    this.processEventListener('onSelectionChanged', [rooms]);
   }
 
   setViewMode(mode: IndoorBuilderViewMode): void {
@@ -199,7 +200,7 @@ export class TabIndoorBuilderState extends TabState {
     if (this.ui3DRenderer.enabled) {
       this.ui3DRenderer.render();
     }
-    this.processEventListener("onViewModeChanged", [mode]);
+    this.processEventListener('onViewModeChanged', [mode]);
   }
 
   async sync3D(): Promise<void> {

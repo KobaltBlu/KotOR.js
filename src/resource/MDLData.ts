@@ -7,12 +7,7 @@
  * @license GPL-3.0
  */
 
-import {
-  MDLClassification,
-  MDLGeometryType,
-  MDLNodeFlags,
-  MDLNodeType
-} from '@/resource/MDLTypes';
+import { MDLClassification, MDLGeometryType, MDLNodeFlags, MDLNodeType } from '@/resource/MDLTypes';
 
 /** 3D vector (x, y, z). */
 export interface Vector3 {

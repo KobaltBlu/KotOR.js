@@ -1,14 +1,13 @@
-
 export interface ParsedPath {
-  root:string, 
-  dir: string, 
-  base: string, 
-  ext: string, 
-  name: string,
-  isWin32Path: boolean,
-  originalPath: string,
-  protocol: string,
-  hasProtocol: boolean
+  root: string;
+  dir: string;
+  base: string;
+  ext: string;
+  name: string;
+  isWin32Path: boolean;
+  originalPath: string;
+  protocol: string;
+  hasProtocol: boolean;
 }
 
 export const pathParse = (filepath: string): ParsedPath => {
@@ -16,35 +15,35 @@ export const pathParse = (filepath: string): ParsedPath => {
   const protocolMatch = filepath.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\/\//);
   const hasProtocol = protocolMatch !== null;
   const protocol = hasProtocol ? protocolMatch[1] : '';
-  
+
   // Remove protocol from path for processing
   const pathWithoutProtocol = hasProtocol ? filepath.substring(protocol.length + 3) : filepath;
-  
+
   // Detect if this is a Windows path (contains backslashes or drive letter)
   const isWin32Path = pathWithoutProtocol.includes('\\') || /^[A-Za-z]:/.test(pathWithoutProtocol);
-  
+
   // Normalize the path to use forward slashes
   const normalizedPath = pathWithoutProtocol.replace(/\\/g, '/');
-  
-  const parsed: ParsedPath = { 
-    root: '', 
-    dir: '', 
-    base: '', 
-    ext: '', 
+
+  const parsed: ParsedPath = {
+    root: '',
+    dir: '',
+    base: '',
+    ext: '',
     name: '',
     isWin32Path: isWin32Path,
     originalPath: filepath,
     protocol: protocol,
-    hasProtocol: hasProtocol
+    hasProtocol: hasProtocol,
   };
-  
+
   // Handle empty or root paths
   if (!normalizedPath || normalizedPath === '/') {
     parsed.root = isWin32Path ? '' : '/';
     parsed.dir = isWin32Path ? '' : '/';
     return parsed;
   }
-  
+
   // Extract root (drive letter for Windows, / for Unix)
   let root = '';
   if (isWin32Path && /^[A-Za-z]:/.test(normalizedPath)) {
@@ -53,16 +52,16 @@ export const pathParse = (filepath: string): ParsedPath => {
     root = '/';
   }
   parsed.root = root;
-  
+
   // Split path into parts
-  const parts = normalizedPath.split('/').filter(part => part !== '');
-  
+  const parts = normalizedPath.split('/').filter((part) => part !== '');
+
   // Handle case where path ends with a slash (directory path)
   const endsWithSlash = normalizedPath.endsWith('/');
-  
+
   let filename = '';
   let dirParts: string[] = [];
-  
+
   if (endsWithSlash || parts.length === 0) {
     // This is a directory path, no filename
     dirParts = parts;
@@ -71,7 +70,7 @@ export const pathParse = (filepath: string): ParsedPath => {
     filename = parts[parts.length - 1];
     dirParts = parts.slice(0, -1);
   }
-  
+
   // Build directory path
   let dir = '';
   if (hasProtocol) {
@@ -99,14 +98,14 @@ export const pathParse = (filepath: string): ParsedPath => {
       dir = dirParts.join('/');
     }
   }
-  
+
   // Ensure directory path ends with slash for consistency
   if (dir && !dir.endsWith('/') && (dirParts.length > 0 || root === '/')) {
     dir += '/';
   }
-  
+
   parsed.dir = dir;
-  
+
   // Parse filename if present
   if (filename) {
     const filenameParts = filename.split('.');
@@ -119,6 +118,6 @@ export const pathParse = (filepath: string): ParsedPath => {
     parsed.ext = ext;
     parsed.name = name;
   }
-  
+
   return parsed;
-}
+};

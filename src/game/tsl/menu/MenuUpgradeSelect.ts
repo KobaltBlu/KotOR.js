@@ -1,17 +1,16 @@
-import type { GUIButton, GUILabel, GUIListBox } from "@/gui";
-import { MenuUpgradeSelect as K1_MenuUpgradeSelect } from "@/game/kotor/KOTOR";
+import type { GUIButton, GUILabel, GUIListBox } from '@/gui';
+import { MenuUpgradeSelect as K1_MenuUpgradeSelect } from '@/game/kotor/KOTOR';
 
 /**
  * MenuUpgradeSelect class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuUpgradeSelect.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
-
   declare BTN_RANGED: GUIButton;
   declare BTN_LIGHTSABER: GUIButton;
   declare BTN_MELEE: GUIButton;
@@ -25,7 +24,7 @@ export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
   declare BTN_ALL: GUIButton;
   declare LBL_TITLE2: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'upgradesel_p';
     this.background = '1600x1200back';
@@ -34,11 +33,9 @@ export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
-  
 }
-

@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { Button, Modal, Nav, Tab } from "react-bootstrap";
+import React, { useState, useEffect } from 'react';
+import { Button, Modal, Nav, Tab } from 'react-bootstrap';
 
-import { LazyTextureCanvas } from "@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import type { InventoryItemEntry } from "@/apps/forge/module-editor/ForgeCreature";
-import { ModalInventoryBrowserState, type UTISourceItem } from "@/apps/forge/states/modal/ModalInventoryBrowserState";
-import "@/apps/forge/components/modal/ModalInventoryBrowser.scss";
+import { LazyTextureCanvas } from '@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import type { InventoryItemEntry } from '@/apps/forge/module-editor/ForgeCreature';
+import { ModalInventoryBrowserState, type UTISourceItem } from '@/apps/forge/states/modal/ModalInventoryBrowserState';
+import '@/apps/forge/components/modal/ModalInventoryBrowser.scss';
 
 export const ModalInventoryBrowser = (props: BaseModalProps) => {
   const modal = props.modal as ModalInventoryBrowserState;
@@ -26,21 +26,21 @@ export const ModalInventoryBrowser = (props: BaseModalProps) => {
     setShow(true);
     if (!modal.coreLoaded) {
       setCoreLoading(true);
-      modal.loadCoreItems().catch(err => {
+      modal.loadCoreItems().catch((err) => {
         console.error('Failed to load core items', err);
         setCoreLoading(false);
       });
     }
     if (!modal.moduleLoaded) {
       setModuleLoading(true);
-      modal.loadModuleItems().catch(err => {
+      modal.loadModuleItems().catch((err) => {
         console.error('Failed to load module items', err);
         setModuleLoading(false);
       });
     }
     if (!modal.overrideLoaded) {
       setOverrideLoading(true);
-      modal.loadOverrideItems().catch(err => {
+      modal.loadOverrideItems().catch((err) => {
         console.error('Failed to load override items', err);
         setOverrideLoading(false);
       });
@@ -91,7 +91,7 @@ export const ModalInventoryBrowser = (props: BaseModalProps) => {
   useEffect(() => {
     if (modal.visible && !modal.coreLoaded) {
       setCoreLoading(true);
-      modal.loadCoreItems().catch(err => {
+      modal.loadCoreItems().catch((err) => {
         console.error('Failed to load core items', err);
         setCoreLoading(false);
       });
@@ -199,14 +199,10 @@ export const ModalInventoryBrowser = (props: BaseModalProps) => {
             <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'core')}>
               <Nav variant="tabs" className="inv-browser-tabs">
                 <Nav.Item>
-                  <Nav.Link eventKey="core">
-                    Core{!coreLoading && ` (${filteredCoreItems.length})`}
-                  </Nav.Link>
+                  <Nav.Link eventKey="core">Core{!coreLoading && ` (${filteredCoreItems.length})`}</Nav.Link>
                 </Nav.Item>
                 <Nav.Item>
-                  <Nav.Link eventKey="module">
-                    Module{!moduleLoading && ` (${filteredModuleItems.length})`}
-                  </Nav.Link>
+                  <Nav.Link eventKey="module">Module{!moduleLoading && ` (${filteredModuleItems.length})`}</Nav.Link>
                 </Nav.Item>
                 <Nav.Item>
                   <Nav.Link eventKey="override">
@@ -215,15 +211,9 @@ export const ModalInventoryBrowser = (props: BaseModalProps) => {
                 </Nav.Item>
               </Nav>
               <Tab.Content>
-                <Tab.Pane eventKey="core">
-                  {renderItemGrid(filteredCoreItems, coreLoading)}
-                </Tab.Pane>
-                <Tab.Pane eventKey="module">
-                  {renderItemGrid(filteredModuleItems, moduleLoading)}
-                </Tab.Pane>
-                <Tab.Pane eventKey="override">
-                  {renderItemGrid(filteredOverrideItems, overrideLoading)}
-                </Tab.Pane>
+                <Tab.Pane eventKey="core">{renderItemGrid(filteredCoreItems, coreLoading)}</Tab.Pane>
+                <Tab.Pane eventKey="module">{renderItemGrid(filteredModuleItems, moduleLoading)}</Tab.Pane>
+                <Tab.Pane eventKey="override">{renderItemGrid(filteredOverrideItems, overrideLoading)}</Tab.Pane>
               </Tab.Content>
             </Tab.Container>
           </div>
@@ -309,8 +299,12 @@ export const ModalInventoryBrowser = (props: BaseModalProps) => {
       </Modal.Body>
 
       <Modal.Footer>
-        <Button variant="secondary" onClick={handleCancel}>Cancel</Button>
-        <Button variant="primary" onClick={handleSave}>OK</Button>
+        <Button variant="secondary" onClick={handleCancel}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={handleSave}>
+          OK
+        </Button>
       </Modal.Footer>
     </Modal>
   );

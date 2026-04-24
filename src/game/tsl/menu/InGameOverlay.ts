@@ -1,30 +1,29 @@
-import { EngineState } from "@/enums/engine/EngineState";
-import { Anchor } from "@/enums/gui/Anchor";
-import { GameState } from "@/GameState";
-import { LBL_MapView } from "@/gui";
-import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
-import { InGameOverlay as K1_InGameOverlay } from "@/game/kotor/KOTOR";
-import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
-import { TalentObject } from "@/talents";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { AutoPauseState } from "@/enums/engine/AutoPauseState";
-import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { TextureLoader } from "@/loaders/TextureLoader";
-import * as THREE from "three";
+import { EngineState } from '@/enums/engine/EngineState';
+import { Anchor } from '@/enums/gui/Anchor';
+import { GameState } from '@/GameState';
+import { LBL_MapView } from '@/gui';
+import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from '@/gui';
+import { InGameOverlay as K1_InGameOverlay } from '@/game/kotor/KOTOR';
+import { ActionMenuManager } from '@/engine/menu/ActionMenuManager';
+import { TalentObject } from '@/talents';
+import { EngineMode } from '@/enums/engine/EngineMode';
+import { AutoPauseState } from '@/enums/engine/AutoPauseState';
+import type { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { TextureLoader } from '@/loaders/TextureLoader';
+import * as THREE from 'three';
 
-import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
-import { AutoPauseState } from "@/enums/engine/AutoPauseState";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { EngineState } from "@/enums/engine/EngineState";
-import { Anchor } from "@/enums/gui/Anchor";
-import { InGameOverlay as K1_InGameOverlay } from "@/game/kotor/KOTOR";
-import { GameState } from "@/GameState";
-import { LBL_MapView } from "@/gui";
-import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
-import { TextureLoader } from "@/loaders/TextureLoader";
-import { TalentObject } from "@/talents";
-import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-
+import { ActionMenuManager } from '@/engine/menu/ActionMenuManager';
+import { AutoPauseState } from '@/enums/engine/AutoPauseState';
+import { EngineMode } from '@/enums/engine/EngineMode';
+import { EngineState } from '@/enums/engine/EngineState';
+import { Anchor } from '@/enums/gui/Anchor';
+import { InGameOverlay as K1_InGameOverlay } from '@/game/kotor/KOTOR';
+import { GameState } from '@/GameState';
+import { LBL_MapView } from '@/gui';
+import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from '@/gui';
+import { TextureLoader } from '@/loaders/TextureLoader';
+import { TalentObject } from '@/talents';
+import type { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
 
 const preloadTextures = ['enemy_bar', 'hostilearrow', 'friend_bar', 'friendlyarrow'];
 const preloadTexturesMap = new Map<string, OdysseyTexture>();
@@ -32,7 +31,7 @@ const preloadTexturesMap = new Map<string, OdysseyTexture>();
 const ARROW_SCALE = 32;
 const ARROW_SCALE_HALF = ARROW_SCALE / 2;
 const ARROW_DIR_LEFT = 0;
-const ARROW_DIR_DOWN = Math.PI/2;
+const ARROW_DIR_DOWN = Math.PI / 2;
 const ARROW_DIR_RIGHT = Math.PI;
 
 /**
@@ -45,7 +44,6 @@ const ARROW_DIR_RIGHT = Math.PI;
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class InGameOverlay extends K1_InGameOverlay {
-
   declare LBL_MAPBORDER: GUILabel;
   declare LBL_MOULDING3: GUILabel;
   declare LBL_BACK3: GUILabel;
@@ -159,7 +157,7 @@ export class InGameOverlay extends K1_InGameOverlay {
   declare LBL_ACTION4: GUIButton;
   declare miniMap: LBL_MapView;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'mipc28x6_p';
     this.background = '';
@@ -169,7 +167,7 @@ export class InGameOverlay extends K1_InGameOverlay {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>(async (resolve, reject) => {
       const getButtonControl = (name: string): GUIButton => this.getControlByName(name) as GUIButton;
       const fillNode = this.tGuiPanel.widget.userData.fill as { visible?: boolean };
@@ -225,7 +223,6 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.LBL_DEBILATATED3.hide();
       this.LBL_DISABLE3.hide();
 
-
       this.LBL_ACTIONDESC.hide();
       this.LBL_ACTIONDESCBG.hide();
 
@@ -240,7 +237,6 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       this.LBL_MOULDING3.widget.position.z = -1;
       this.LBL_MENUBG.widget.position.z = -1;
-
 
       this.BTN_MSG.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -285,12 +281,11 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        if(GameState.State == EngineState.PAUSED){
+        if (GameState.State == EngineState.PAUSED) {
           GameState.AutoPauseManager.Unpause();
-        }else{
+        } else {
           GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
         }
-
       });
 
       this.TB_SOLO.addEventListener('click', (e) => {
@@ -302,7 +297,7 @@ export class InGameOverlay extends K1_InGameOverlay {
       });
 
       this.BTN_CHAR1.addEventListener('click', (_e) => {
-        this.manager.MenuEquipment.open()
+        this.manager.MenuEquipment.open();
       });
 
       this.BTN_CHAR2.addEventListener('click', (_e) => {
@@ -351,46 +346,42 @@ export class InGameOverlay extends K1_InGameOverlay {
         currentPlayer.clearCombatActionAtIndex(2);
       });
 
-      for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
-
-        getButtonControl('LBL_TARGET'+i).addEventListener('click', (e) => {
+      for (let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++) {
+        getButtonControl('LBL_TARGET' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.onTargetMenuAction(i);
         });
 
-        getButtonControl('BTN_TARGETUP'+i).addEventListener('click', (e) => {
+        getButtonControl('BTN_TARGETUP' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
           this.UpdateTargetUIIcon(i);
         });
 
-        getButtonControl('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
+        getButtonControl('BTN_TARGETDOWN' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
           this.UpdateTargetUIIcon(i);
         });
-
       }
 
-      for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
-
-        getButtonControl('LBL_ACTION'+i).addEventListener('click', (e) => {
+      for (let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++) {
+        getButtonControl('LBL_ACTION' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.onSelfMenuAction(i);
         });
 
-        getButtonControl('BTN_ACTIONUP'+i).addEventListener('click', (e) => {
+        getButtonControl('BTN_ACTIONUP' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
           this.UpdateSelfUIIcon(i);
         });
 
-        getButtonControl('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
+        getButtonControl('BTN_ACTIONDOWN' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
           this.UpdateSelfUIIcon(i);
         });
-
       }
 
       //BTN_ACTION buttons alignment fix
@@ -400,15 +391,19 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       //this.lbl_combatbg2.visible = false;
 
-      for(const texture of preloadTextures){
+      for (const texture of preloadTextures) {
         const tex = await TextureLoader.Load(texture);
         preloadTexturesMap.set(texture, tex);
       }
 
-      const arrowGeometry = new THREE.PlaneGeometry( 1, 1, 1 );
-      const arrowMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, transparent: false, blending: THREE.AdditiveBlending } );
+      const arrowGeometry = new THREE.PlaneGeometry(1, 1, 1);
+      const arrowMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: false,
+        blending: THREE.AdditiveBlending,
+      });
       arrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
-      this.namePlateArrow = new THREE.Mesh( arrowGeometry, arrowMaterial );
+      this.namePlateArrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
       this.namePlateArrow.scale.x = 32;
       this.namePlateArrow.scale.y = 32;
       this.namePlateArrow.position.z = 5;
@@ -419,7 +414,6 @@ export class InGameOverlay extends K1_InGameOverlay {
       resolve();
     });
   }
-
 
   show() {
     super.show();
@@ -435,6 +429,4 @@ export class InGameOverlay extends K1_InGameOverlay {
   resize() {
     this.recalculatePosition();
   }
-
 }
-

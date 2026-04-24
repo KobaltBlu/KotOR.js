@@ -1,24 +1,23 @@
-import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { MenuMessages as K1_MenuMessages } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIListBox, GUIButton } from '@/gui';
+import { MenuMessages as K1_MenuMessages } from '@/game/kotor/KOTOR';
 
 enum MessageType {
   DIALOG = 1,
   FEEDBACK = 2,
   COMBAT = 3,
-  EFFECTS = 4
+  EFFECTS = 4,
 }
 
 /**
  * MenuMessages class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuMessages.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuMessages extends K1_MenuMessages {
-
   declare LBL_BAR6: GUILabel;
   declare LB_MESSAGES: GUIListBox;
   declare LBL_MESSAGES: GUILabel;
@@ -42,7 +41,7 @@ export class MenuMessages extends K1_MenuMessages {
 
   messageType: MessageType = MessageType.DIALOG;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'messages_p';
     this.background = 'blackfill';
@@ -51,9 +50,8 @@ export class MenuMessages extends K1_MenuMessages {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
-
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -87,7 +85,7 @@ export class MenuMessages extends K1_MenuMessages {
     });
   }
 
-  updateListVisibility(){
+  updateListVisibility() {
     this.LBL_EFFECTS_BAD.hide();
     this.LB_EFFECTS_BAD.hide();
     this.LBL_EFFECTS_GOOD.hide();
@@ -96,26 +94,22 @@ export class MenuMessages extends K1_MenuMessages {
     this.LB_DIALOG.hide();
     this.LB_MESSAGES.hide();
 
-    switch(this.messageType){
+    switch (this.messageType) {
       case MessageType.DIALOG:
         this.LB_DIALOG.show();
-      break;
+        break;
       case MessageType.FEEDBACK:
         this.LB_MESSAGES.show();
-      break;
+        break;
       case MessageType.COMBAT:
         this.LB_COMBAT.show();
-      break;
+        break;
       default:
         this.LBL_EFFECTS_BAD.show();
         this.LB_EFFECTS_BAD.show();
         this.LBL_EFFECTS_GOOD.show();
         this.LB_EFFECTS_GOOD.show();
-      break;
+        break;
     }
-
-
   }
-  
 }
-

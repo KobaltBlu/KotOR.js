@@ -10,7 +10,6 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-
 import { DLGNodeType } from '@/enums/dialog/DLGNodeType';
 import { DLGNode } from '@/resource/DLGNode';
 import { createScopedLogger, LogScope } from '@/utility/Logger';
@@ -59,7 +58,7 @@ export class DLGClipboardManager {
       nodeType,
       listIndex,
       timestamp: Date.now(),
-      isCut: false
+      isCut: false,
     };
 
     this.notifyChange();
@@ -74,7 +73,7 @@ export class DLGClipboardManager {
       nodeType,
       listIndex,
       timestamp: Date.now(),
-      isCut: true
+      isCut: true,
     };
 
     this.notifyChange();
@@ -172,7 +171,7 @@ export class DLGClipboardManager {
       length: node.fade.length,
       delay: node.fade.delay,
       color: { ...node.fade.color },
-      started: false
+      started: false,
     };
 
     return cloned;
@@ -195,7 +194,7 @@ export class DLGClipboardManager {
    * Notify all listeners
    */
   private notifyChange(): void {
-    this.changeListeners.forEach(listener => listener());
+    this.changeListeners.forEach((listener) => listener());
   }
 
   /**
@@ -209,7 +208,7 @@ export class DLGClipboardManager {
       node: this.serializeNode(this.clipboard.node),
       nodeType: this.clipboard.nodeType,
       listIndex: this.clipboard.listIndex,
-      isCut: this.clipboard.isCut
+      isCut: this.clipboard.isCut,
     };
 
     try {
@@ -241,7 +240,7 @@ export class DLGClipboardManager {
         nodeType: data.nodeType as DLGNodeType,
         listIndex: data.listIndex as number,
         timestamp: Date.now(),
-        isCut: data.isCut || false
+        isCut: data.isCut || false,
       };
 
       this.notifyChange();

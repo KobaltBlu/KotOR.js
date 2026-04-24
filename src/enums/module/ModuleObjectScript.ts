@@ -1,8 +1,8 @@
 /**
  * ModuleObjectScript enum.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ModuleObjectScript.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -24,7 +24,6 @@ export enum ModuleObjectScript {
   ModuleOnSpawnButtonDown = 'Mod_OnSpawnBtnDn',
   ModuleOnUnAcquireItem = 'Mod_OnUnAqreItem',
   ModuleOnUserDefined = 'Mod_OnUsrDefined',
-
 
   //Area
   AreaOnEnter = 'OnEnter',
@@ -90,14 +89,14 @@ export enum ModuleObjectScript {
   TriggerOnEnter = 'ScriptOnEnter',
   TriggerOnExit = 'ScriptOnExit',
   TriggerOnUserDefined = 'ScriptUserDefine',
-  
+
   //Encounter
   EncounterOnEntered = 'OnEntered',
   EncounterOnExhausted = 'OnExhausted',
   EncounterOnExit = 'OnExit',
   EncounterOnHeartbeat = 'OnHeartbeat',
   EncounterOnUserDefined = 'OnUserDefined',
-  
+
   //MGPlayer
   MGPlayerOnAccelerate = 'OnAccelerate',
   MGPlayerOnAnimEvent = 'OnAnimEvent',
@@ -112,7 +111,7 @@ export enum ModuleObjectScript {
   MGPlayerOnHitObstacle = 'OnHitObstacle',
   MGPlayerOnHitWorld = 'OnHitWorld',
   MGPlayerOnTrackLoop = 'OnTrackLoop',
-  
+
   //MGEnemy
   MGEnemyOnAccelerate = 'OnAccelerate',
   MGEnemyOnAnimEvent = 'OnAnimEvent',

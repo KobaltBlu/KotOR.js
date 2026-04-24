@@ -2,7 +2,11 @@ import * as THREE from 'three';
 import { describe, expect, it, jest } from '@jest/globals';
 
 import { EditorFile } from '@/apps/forge/EditorFile';
-import { INDOOR_DUPLICATE_OFFSET_X, INDOOR_DUPLICATE_OFFSET_Y, INDOOR_DUPLICATE_OFFSET_Z } from '@/apps/forge/data/IndoorBuilderConstants';
+import {
+  INDOOR_DUPLICATE_OFFSET_X,
+  INDOOR_DUPLICATE_OFFSET_Y,
+  INDOOR_DUPLICATE_OFFSET_Z,
+} from '@/apps/forge/data/IndoorBuilderConstants';
 import { Kit, KitComponent, KitComponentHook, KitDoor } from '@/apps/forge/data/IndoorKit';
 import { IndoorMapRoom } from '@/apps/forge/data/IndoorMap';
 import { loadKits } from '@/apps/forge/data/IndoorKitLoader';
@@ -179,7 +183,7 @@ describe('TabIndoorBuilderState', () => {
     expect(state.selectedRooms[0].component).toBe(component);
     expect(state.selectedRooms[0].position.toArray()).toEqual([10, 20, 30]);
     expect(file.unsaved_changes).toBe(true);
-    expect((state.scene3D.syncRooms as jest.Mock)).toHaveBeenCalledWith(state.map.rooms);
+    expect(state.scene3D.syncRooms as jest.Mock).toHaveBeenCalledWith(state.map.rooms);
   });
 
   it('duplicateSelectedRooms offsets clones and deleteSelectedRooms removes them cleanly', () => {
@@ -231,7 +235,7 @@ describe('TabIndoorBuilderState', () => {
     state.setViewMode(IndoorBuilderViewMode.ThreeD);
     expect(state.viewMode).toBe(IndoorBuilderViewMode.ThreeD);
     expect(state.ui3DRenderer.enabled).toBe(true);
-    expect((state.ui3DRenderer.render as jest.Mock)).toHaveBeenCalled();
+    expect(state.ui3DRenderer.render as jest.Mock).toHaveBeenCalled();
 
     state.setViewMode(IndoorBuilderViewMode.TwoD);
     expect(state.ui3DRenderer.enabled).toBe(false);
@@ -259,7 +263,7 @@ describe('TabIndoorBuilderState', () => {
     expect(state.tabName).toBe('module01.indoor');
     expect(loadSpy).toHaveBeenCalledWith(file.buffer, state.kits);
     expect(rebuildSpy).toHaveBeenCalled();
-    expect((state.scene3D.syncRooms as jest.Mock)).toHaveBeenCalledWith([room]);
+    expect(state.scene3D.syncRooms as jest.Mock).toHaveBeenCalledWith([room]);
   });
 
   it('getExportBuffer serializes the current indoor map rooms', async () => {

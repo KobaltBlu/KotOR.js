@@ -1,17 +1,37 @@
-import React from "react";
+import React from 'react';
 
-import { TabJsonView } from "@/apps/forge/components/tabs/tab-json-view/TabJsonView";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { TabJsonView } from '@/apps/forge/components/tabs/tab-json-view/TabJsonView';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
 
 const log = createScopedLogger(LogScope.Forge);
 
 const GFF_EXTS = new Set([
-  'gff', 'res', 'are', 'bic', 'git', 'ifo', 'jrl', 'fac', 'gui', 'pth', 'vis', 'ltr', 'dlg',
-  'utc', 'utd', 'utp', 'uti', 'ute', 'uts', 'utt', 'utw', 'utm'
+  'gff',
+  'res',
+  'are',
+  'bic',
+  'git',
+  'ifo',
+  'jrl',
+  'fac',
+  'gui',
+  'pth',
+  'vis',
+  'ltr',
+  'dlg',
+  'utc',
+  'utd',
+  'utp',
+  'uti',
+  'ute',
+  'uts',
+  'utt',
+  'utw',
+  'utm',
 ]);
 
 export class TabJsonViewState extends TabState {
@@ -50,7 +70,8 @@ export class TabJsonViewState extends TabState {
     try {
       const response = await file.readFile();
       const buffer = response.buffer;
-      const ext = (this.file.ext ?? '').toLowerCase() || (this.file.getFilename()?.split('.').pop() ?? '').toLowerCase();
+      const ext =
+        (this.file.ext ?? '').toLowerCase() || (this.file.getFilename()?.split('.').pop() ?? '').toLowerCase();
       let data: unknown;
 
       if (GFF_EXTS.has(ext)) {
@@ -61,13 +82,17 @@ export class TabJsonViewState extends TabState {
         data = two.toJSON();
       } else if (ext === 'tlk') {
         data = await new Promise<unknown>((resolve, reject) => {
-          const tlk = new KotOR.TLKObject(buffer, () => {
-            try {
-              resolve(tlk.toJSON());
-            } catch (e) {
-              reject(e);
-            }
-          }, undefined);
+          const tlk = new KotOR.TLKObject(
+            buffer,
+            () => {
+              try {
+                resolve(tlk.toJSON());
+              } catch (e) {
+                reject(e);
+              }
+            },
+            undefined
+          );
         });
       } else {
         this.errorMessage = `JSON view is not supported for .${ext} files. Supported: GFF-based (.gff, .utc, .are, …), .2da, .tlk`;

@@ -1,47 +1,47 @@
 import type { LauncherProfile } from '@/apps/launcher/types';
 
 export const LauncherConfig: LauncherProfile = {
-  "name": "KotOR",
-  "full_name": "Star Wars: Knights of the Old Republic",
-  "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/32370/0bb8aed2de4ae751637ddb5ac7edb0b786698f14.ico",
-  "logo": "https://steamcdn-a.akamaihd.net/steam/apps/32370/logo.png",
-  "background": "https://swkotor.net/images/malak-revan.jpg",
-  "background_fallback": "./images/kotor_forge.jpg",
-  "category": "game",
-  "directory": null,
-  "locate_required": true,
-  "isForgeCompatible": true,
-  "steam_id" : 32370,
-  "width": 1200,
-  "height": 600,
-  "executable": {
-    "win": "swkotor.exe",
-    "mac": "KOTOR.app"
+  name: 'KotOR',
+  full_name: 'Star Wars: Knights of the Old Republic',
+  icon: 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/32370/0bb8aed2de4ae751637ddb5ac7edb0b786698f14.ico',
+  logo: 'https://steamcdn-a.akamaihd.net/steam/apps/32370/logo.png',
+  background: 'https://swkotor.net/images/malak-revan.jpg',
+  background_fallback: './images/kotor_forge.jpg',
+  category: 'game',
+  directory: null,
+  locate_required: true,
+  isForgeCompatible: true,
+  steam_id: 32370,
+  width: 1200,
+  height: 600,
+  executable: {
+    win: 'swkotor.exe',
+    mac: 'KOTOR.app',
   },
-  "launch": {
-    "type": "electron",
-    "path": "game/index.html",
-    "backgroundColor": "#000000",
-    "args": { "gameChoice": 1 },
-    "fullscreen": true
+  launch: {
+    type: 'electron',
+    path: 'game/index.html',
+    backgroundColor: '#000000',
+    args: { gameChoice: 1 },
+    fullscreen: true,
   },
-  "verify_install_dir": true,
-  "elements" : [
+  verify_install_dir: true,
+  elements: [
     {
-      "type": "video",
-      "url": "https://steamcdn-a.akamaihd.net/steam/apps/256671298/movie_max.webm"
-    }
-  ],
-  "settings" : {
-    "fullscreen": {
-      "name": "Fullscreen at launch?",
-      "type": "boolean",
-      "defaultValue": true
+      type: 'video',
+      url: 'https://steamcdn-a.akamaihd.net/steam/apps/256671298/movie_max.webm',
     },
-    "devtools": {
-      "name": "Open Devtools at launch?",
-      "type": "boolean",
-      "defaultValue": false
-    }
-  }
-}
+  ],
+  settings: {
+    fullscreen: {
+      name: 'Fullscreen at launch?',
+      type: 'boolean',
+      defaultValue: true,
+    },
+    devtools: {
+      name: 'Open Devtools at launch?',
+      type: 'boolean',
+      defaultValue: false,
+    },
+  },
+};

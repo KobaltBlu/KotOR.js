@@ -1,5 +1,5 @@
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton } from '@/gui';
 
 /**
  * MainOptions class.
@@ -11,7 +11,6 @@ import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MainOptions extends GameMenu {
-
   LB_DESC: GUIListBox;
   BTN_GAMEPLAY: GUIButton;
   BTN_AUTOPAUSE: GUIButton;
@@ -21,7 +20,7 @@ export class MainOptions extends GameMenu {
   LBL_TITLE: GUILabel;
   BTN_BACK: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optionsmain';
     this.background = '1600x1200back';
@@ -30,7 +29,7 @@ export class MainOptions extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -65,5 +64,4 @@ export class MainOptions extends GameMenu {
       resolve();
     });
   }
-
 }

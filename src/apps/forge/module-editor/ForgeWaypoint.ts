@@ -1,5 +1,5 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeGameObject } from '@/apps/forge/module-editor/ForgeGameObject';
+import * as KotOR from '@/apps/forge/KotOR';
 
 export class ForgeWaypoint extends ForgeGameObject {
   //GIT Instance Properties
@@ -17,17 +17,17 @@ export class ForgeWaypoint extends ForgeGameObject {
   paletteID: number = 0;
   tag: string = '';
 
-  constructor(buffer?: Uint8Array){
+  constructor(buffer?: Uint8Array) {
     super();
-    if(buffer){
+    if (buffer) {
       this.loadFromBuffer(buffer);
     }
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
+  onPropertyChange(property: string, newValue: any, oldValue: any) {
+    if (property === 'templateResRef') {
+      if (newValue !== oldValue) {
         this.loadBlueprint().then(() => {
           this.load();
         });
@@ -35,47 +35,47 @@ export class ForgeWaypoint extends ForgeGameObject {
     }
   }
 
-  loadFromBuffer(buffer: Uint8Array){
+  loadFromBuffer(buffer: Uint8Array) {
     this.blueprint = new KotOR.GFFObject(buffer);
     this.loadFromBlueprint();
   }
 
-  loadFromBlueprint(){
-    if(!this.blueprint) return;
+  loadFromBlueprint() {
+    if (!this.blueprint) return;
     const root = this.blueprint.RootNode;
-    if(!root) return;
+    if (!root) return;
 
-    if(root.hasField('Appearance')){
+    if (root.hasField('Appearance')) {
       this.appearance = root.getFieldByLabel('Appearance').getValue() || 0;
     }
-    if(root.hasField('Comment')){
+    if (root.hasField('Comment')) {
       this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
-    if(root.hasField('Description')){
+    if (root.hasField('Description')) {
       this.description = root.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
     }
-    if(root.hasField('HasMapNote')){
+    if (root.hasField('HasMapNote')) {
       this.hasMapNote = !!root.getFieldByLabel('HasMapNote').getValue();
     }
-    if(root.hasField('LinkedTo')){
+    if (root.hasField('LinkedTo')) {
       this.linkedTo = root.getFieldByLabel('LinkedTo').getValue() || '';
     }
-    if(root.hasField('LocalizedName')){
+    if (root.hasField('LocalizedName')) {
       this.localizedName = root.getFieldByLabel('LocalizedName').getCExoLocString() || new KotOR.CExoLocString();
     }
-    if(root.hasField('MapNote')){
+    if (root.hasField('MapNote')) {
       this.mapNote = root.getFieldByLabel('MapNote').getCExoLocString() || new KotOR.CExoLocString();
     }
-    if(root.hasField('MapNoteEnabled')){
+    if (root.hasField('MapNoteEnabled')) {
       this.mapNoteEnabled = !!root.getFieldByLabel('MapNoteEnabled').getValue();
     }
-    if(root.hasField('PaletteID')){
+    if (root.hasField('PaletteID')) {
       this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
-    if(root.hasField('Tag')){
+    if (root.hasField('Tag')) {
       this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
-    if(root.hasField('TemplateResRef')){
+    if (root.hasField('TemplateResRef')) {
       this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
     }
   }
@@ -85,24 +85,24 @@ export class ForgeWaypoint extends ForgeGameObject {
     this.blueprint.FileType = 'UTW ';
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
-    if(!root) return this.blueprint;
+    if (!root) return this.blueprint;
 
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Appearance', this.appearance) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'HasMapNote', this.hasMapNote ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'LinkedTo', this.linkedTo) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocalizedName', this.localizedName) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'MapNote', this.mapNote) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'MapNoteEnabled', this.mapNoteEnabled ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') );
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Appearance', this.appearance));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'HasMapNote', this.hasMapNote ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'LinkedTo', this.linkedTo));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocalizedName', this.localizedName));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'MapNote', this.mapNote));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'MapNoteEnabled', this.mapNoteEnabled ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || ''));
 
     return this.blueprint;
   }
 
-  async load(){
+  async load() {
     this.updateBoundingBox();
   }
 
@@ -124,7 +124,7 @@ export class ForgeWaypoint extends ForgeGameObject {
     return instance;
   }
 
-  setGITInstance(strt: KotOR.GFFStruct){
+  setGITInstance(strt: KotOR.GFFStruct) {
     this.appearance = strt.getFieldByLabel('Appearance').getValue() as number;
     this.description = strt.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
     this.hasMapNote = !!strt.getFieldByLabel('HasMapNote').getValue();

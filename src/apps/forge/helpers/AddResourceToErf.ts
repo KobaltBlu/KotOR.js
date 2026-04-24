@@ -3,9 +3,9 @@
  * Used when saving a resource into an open ERF/MOD file.
  */
 
-import type { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
-import type { IERFResource } from "@/interface/resource/IERFResource";
-import { ERFObject } from "@/resource/ERFObject";
+import type { IERFKeyEntry } from '@/interface/resource/IERFKeyEntry';
+import type { IERFResource } from '@/interface/resource/IERFResource';
+import { ERFObject } from '@/resource/ERFObject';
 
 export interface AddResourceToErfOptions {
   /** Existing ERF/MOD buffer. */
@@ -48,9 +48,7 @@ export async function addResourceToErf(options: AddResourceToErfOptions): Promis
   const keyList: IERFKeyEntry[] = erf.keyList;
   const resources: IERFResource[] = erf.resources;
 
-  const existingIndex = keyList.findIndex(
-    (k) => k.resRef.toLowerCase() === normalizedRef && k.resType === resType
-  );
+  const existingIndex = keyList.findIndex((k) => k.resRef.toLowerCase() === normalizedRef && k.resType === resType);
   if (existingIndex >= 0) {
     const resId = keyList[existingIndex].resId;
     resources[resId] = { offset: -1, size: data.length, data };

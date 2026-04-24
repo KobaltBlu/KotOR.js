@@ -1,33 +1,32 @@
-import { GameState } from "@/GameState";
-import { ModuleCreatureAnimState, ModuleItemProperty } from "@/enums";
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { ActionStatus } from "@/enums/actions/ActionStatus";
-import { ActionType } from "@/enums/actions/ActionType";
-import { SignalEventType } from "@/enums/events/SignalEventType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import type { ModuleItem } from "@/module/ModuleItem";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
-import { Utility } from "@/utility/Utility";
-import { Action } from "@/actions/Action";
+import { GameState } from '@/GameState';
+import { ModuleCreatureAnimState, ModuleItemProperty } from '@/enums';
+import { ActionParameterType } from '@/enums/actions/ActionParameterType';
+import { ActionStatus } from '@/enums/actions/ActionStatus';
+import { ActionType } from '@/enums/actions/ActionType';
+import { SignalEventType } from '@/enums/events/SignalEventType';
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import type { ModuleItem } from '@/module/ModuleItem';
+import type { ModuleObject } from '@/module/ModuleObject';
+import { BitWise } from '@/utility/BitWise';
+import { Utility } from '@/utility/Utility';
+import { Action } from '@/actions/Action';
 
 /**
  * ActionSetMine class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionSetMine.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
 export class ActionSetMine extends Action {
-
   bAnimQueued = false;
   oItem: ModuleItem;
   usedItem: boolean = false;
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionSetMine;
 
@@ -40,14 +39,13 @@ export class ActionSetMine extends Action {
   }
 
   update(delta?: number): ActionStatus {
-
     this.oItem = this.getParameter<ModuleItem>(0);
     this.target = this.getParameter<ModuleObject>(1);
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if (BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
       const distance = Utility.Distance2D(this.owner.position, this.target.position);
-            
-      if(distance > 2 && !this.target.box.intersectsBox(this.owner.box)){
+
+      if (distance > 2 && !this.target.box.intersectsBox(this.owner.box)) {
         const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
@@ -55,7 +53,7 @@ export class ActionSetMine extends Action {
         actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
         actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
         actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 2 );
+        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 2);
         actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
         actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
         this.owner.actionQueue.addFront(actionMoveToTarget);
@@ -64,7 +62,7 @@ export class ActionSetMine extends Action {
         return ActionStatus.IN_PROGRESS;
       }
 
-      if(!this.bAnimQueued){
+      if (!this.bAnimQueued) {
         this.bAnimQueued = true;
         const action = new GameState.ActionFactory.ActionPlayAnimation();
         action.setParameter(0, ActionParameterType.INT, ModuleCreatureAnimState.SET_MINE);
@@ -75,13 +73,16 @@ export class ActionSetMine extends Action {
         return ActionStatus.IN_PROGRESS;
       }
 
-      if(this.oItem && !this.usedItem){
-        for(let i = 0, len = this.oItem.properties.length; i < len; i++){
+      if (this.oItem && !this.usedItem) {
+        for (let i = 0, len = this.oItem.properties.length; i < len; i++) {
           const property = this.oItem.properties[i];
           // if(!property.isUseable()){ continue; }
-    
-          if(property.is(ModuleItemProperty.Trap)){
-            if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable)){
+
+          if (property.is(ModuleItemProperty.Trap)) {
+            if (
+              BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) ||
+              BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable)
+            ) {
               this.target.addTrap(property.subType, this.getOwner());
             }
           }
@@ -99,24 +100,22 @@ export class ActionSetMine extends Action {
         event.setTime(futureTime.pauseTime);
         event.eventType = SignalEventType.OnTrapTriggered;
         GameState.module.addEvent(event);
-        
+
         //If we have more charges, reduce the charges count by 1
-        if(this.oItem.charges > 1){
+        if (this.oItem.charges > 1) {
           this.oItem.charges -= 1;
         }
         //If we are out of charges remove the item from the owners inventory
-        else
-        {
+        else {
           this.owner.removeItem(this.oItem, 1);
         }
       }
-      
+
       console.log('ActionSetMine', 'COMPLETE');
       return ActionStatus.COMPLETE;
     }
-    
+
     console.log('ActionSetMine', 'FAILED');
     return ActionStatus.FAILED;
   }
-
 }

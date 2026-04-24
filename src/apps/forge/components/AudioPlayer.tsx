@@ -1,14 +1,14 @@
-import React, { useState } from "react";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
-import { ForgeAudioOstControls } from "@/apps/forge/components/ForgeAudioOstControls";
+import React, { useState } from 'react';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { AudioPlayerState } from '@/apps/forge/states/AudioPlayerState';
+import { ForgeAudioOstControls } from '@/apps/forge/components/ForgeAudioOstControls';
 
 export const AudioPlayer = function () {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
-  const [currentTimeString, setCurrentTimeString] = useState<string>("0:00");
-  const [durationString, setDurationString] = useState<string>("0:00");
+  const [currentTimeString, setCurrentTimeString] = useState<string>('0:00');
+  const [durationString, setDurationString] = useState<string>('0:00');
 
   let animationFrame: number;
 
@@ -37,25 +37,21 @@ export const AudioPlayer = function () {
       animationFrame = requestAnimationFrame(() => onFrame());
       setCurrentTime(AudioPlayerState.GetCurrentTime());
       setDuration(AudioPlayerState.GetDuration());
-      setCurrentTimeString(
-        AudioPlayerState.SecondsToTimeString(AudioPlayerState.GetCurrentTime())
-      );
-      setDurationString(
-        AudioPlayerState.SecondsToTimeString(AudioPlayerState.GetDuration())
-      );
+      setCurrentTimeString(AudioPlayerState.SecondsToTimeString(AudioPlayerState.GetCurrentTime()));
+      setDurationString(AudioPlayerState.SecondsToTimeString(AudioPlayerState.GetDuration()));
     }
   };
 
   useEffectOnce(() => {
-    AudioPlayerState.AddEventListener("onPlay", onPlay);
-    AudioPlayerState.AddEventListener("onPause", onPause);
-    AudioPlayerState.AddEventListener("onStop", onStop);
-    AudioPlayerState.AddEventListener("onLoop", onLoop);
+    AudioPlayerState.AddEventListener('onPlay', onPlay);
+    AudioPlayerState.AddEventListener('onPause', onPause);
+    AudioPlayerState.AddEventListener('onStop', onStop);
+    AudioPlayerState.AddEventListener('onLoop', onLoop);
     return () => {
-      AudioPlayerState.RemoveEventListener("onPlay", onPlay);
-      AudioPlayerState.RemoveEventListener("onPause", onPause);
-      AudioPlayerState.RemoveEventListener("onStop", onStop);
-      AudioPlayerState.RemoveEventListener("onLoop", onLoop);
+      AudioPlayerState.RemoveEventListener('onPlay', onPlay);
+      AudioPlayerState.RemoveEventListener('onPause', onPause);
+      AudioPlayerState.RemoveEventListener('onStop', onStop);
+      AudioPlayerState.RemoveEventListener('onLoop', onLoop);
     };
   });
 
@@ -99,11 +95,11 @@ export const AudioPlayer = function () {
         <button
           type="button"
           className="forge-mini-player__icon-btn forge-mini-player__icon-btn--primary"
-          title={isPlaying ? "Pause" : "Play"}
-          aria-label={isPlaying ? "Pause" : "Play"}
+          title={isPlaying ? 'Pause' : 'Play'}
+          aria-label={isPlaying ? 'Pause' : 'Play'}
           onClick={onBtnPlay}
         >
-          <i className={`fa-solid ${isPlaying ? "fa-pause" : "fa-play"}`} />
+          <i className={`fa-solid ${isPlaying ? 'fa-pause' : 'fa-play'}`} />
         </button>
         <button
           type="button"
@@ -135,9 +131,7 @@ export const AudioPlayer = function () {
           <span className="forge-mini-player__time-sep" aria-hidden>
             /
           </span>
-          <span className="forge-mini-player__time forge-mini-player__time--dim">
-            {durationString}
-          </span>
+          <span className="forge-mini-player__time forge-mini-player__time--dim">{durationString}</span>
         </div>
       </div>
 

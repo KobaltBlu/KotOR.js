@@ -1,24 +1,23 @@
-import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { EventActivateItem } from "@/nwscript/events/EventActivateItem";
-import { EventConversation } from "@/nwscript/events/EventConversation";
-import { EventSpellCastAt } from "@/nwscript/events/EventSpellCastAt";
-import { EventUserDefined } from "@/nwscript/events/EventUserDefined";
-import { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
+import { NWScriptEventType } from '@/enums/nwscript/NWScriptEventType';
+import { GFFStruct } from '@/resource/GFFStruct';
+import { EventActivateItem } from '@/nwscript/events/EventActivateItem';
+import { EventConversation } from '@/nwscript/events/EventConversation';
+import { EventSpellCastAt } from '@/nwscript/events/EventSpellCastAt';
+import { EventUserDefined } from '@/nwscript/events/EventUserDefined';
+import { NWScriptEvent } from '@/nwscript/events/NWScriptEvent';
 
 /**
  * NWScriptEventFactory class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptEventFactory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class NWScriptEventFactory {
-
-  static EventFromStruct( struct: GFFStruct ){
-    if(struct instanceof GFFStruct){
+  static EventFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
       let event: NWScriptEvent = undefined as any;
 
       const eType = struct.getFieldByLabel('EventType').getValue();
@@ -29,57 +28,54 @@ export class NWScriptEventFactory {
       const objectList: number[] = [];
 
       let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
-      for(let i = 0, len = tmpList.length; i < len; i++){
+      for (let i = 0, len = tmpList.length; i < len; i++) {
         intList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
       }
 
       tmpList = struct.getFieldByLabel('FloatList').getChildStructs();
-      for(let i = 0, len = tmpList.length; i < len; i++){
+      for (let i = 0, len = tmpList.length; i < len; i++) {
         floatList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
       }
 
       tmpList = struct.getFieldByLabel('StringList').getChildStructs();
-      for(let i = 0, len = tmpList.length; i < len; i++){
+      for (let i = 0, len = tmpList.length; i < len; i++) {
         stringList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
       }
 
-      if(struct.hasField('ObjectList')){
+      if (struct.hasField('ObjectList')) {
         tmpList = struct.getFieldByLabel('ObjectList').getChildStructs();
-        for(let i = 0, len = tmpList.length; i < len; i++){
+        for (let i = 0, len = tmpList.length; i < len; i++) {
           objectList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
         }
       }
 
       //Initialize the event object based on the type
-      switch(eType){
+      switch (eType) {
         case NWScriptEventType.EventConversation: //EventConversation
           event = new EventConversation();
-        break;
+          break;
         case NWScriptEventType.EventSpellCastAt: //EventSpellCastAt
           event = new EventSpellCastAt();
-        break;
+          break;
         case NWScriptEventType.EventUserDefined: //EventUserDefined
           event = new EventUserDefined();
-        break;
+          break;
         case NWScriptEventType.EventActivateItem: //EventActivateItem
           event = new EventActivateItem();
-        break;
+          break;
       }
 
-      if(event instanceof NWScriptEvent){
+      if (event instanceof NWScriptEvent) {
         event.setIntList(intList);
         event.setFloatList(floatList);
         event.setStringList(stringList);
         event.setObjectList(objectList);
         console.log('NWScriptEvent', event, struct);
-      }else{
+      } else {
         console.log('NWScriptEvent', event, struct);
       }
 
       return event;
-
     }
-
   }
-
 }

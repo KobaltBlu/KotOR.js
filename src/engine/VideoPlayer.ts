@@ -1,4 +1,4 @@
-import { VideoManager } from "@/managers/VideoManager";
+import { VideoManager } from '@/managers/VideoManager';
 
 export class VideoPlayer {
   static async Load(movieName: string): Promise<void> {

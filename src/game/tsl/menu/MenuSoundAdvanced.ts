@@ -1,17 +1,16 @@
-import type { GUILabel, GUIListBox, GUICheckBox, GUIButton } from "@/gui";
-import { MenuSoundAdvanced as K1_MenuSoundAdvanced } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIListBox, GUICheckBox, GUIButton } from '@/gui';
+import { MenuSoundAdvanced as K1_MenuSoundAdvanced } from '@/game/kotor/KOTOR';
 
 /**
  * MenuSoundAdvanced class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuSoundAdvanced.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
-
   declare LBL_BAR4: GUILabel;
   declare LBL_TITLE: GUILabel;
   declare LB_DESC: GUIListBox;
@@ -26,7 +25,7 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
   declare BTN_CANCEL: GUIButton;
   declare BTN_DEFAULT: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optsoundadv_p';
     this.background = '';
@@ -35,7 +34,7 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, _reject) => {
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -52,6 +51,4 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
       resolve();
     });
   }
-  
 }
-

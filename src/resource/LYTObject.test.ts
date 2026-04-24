@@ -69,7 +69,9 @@ describe('LYTObject', () => {
   });
 
   it('rejects malformed declared counts', () => {
-    expect(() => new LYTObject(new TextEncoder().encode(corruptLYT))).toThrow('Tried to save or load an unsupported or corrupted file.');
+    expect(() => new LYTObject(new TextEncoder().encode(corruptLYT))).toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
   });
 
   it('XML round-trip preserves layout data', () => {

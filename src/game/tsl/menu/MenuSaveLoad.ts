@@ -1,10 +1,10 @@
-import { GameState } from "@/GameState";
-import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "@/game/kotor/KOTOR";
-import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
-import { GUISaveGameItem } from "@/game/tsl/gui/GUISaveGameItem";
-import { SaveGame } from "@/engine/SaveGame";
-import { TextureLoader } from "@/loaders";
+import { GameState } from '@/GameState';
+import type { GUILabel, GUIListBox, GUIButton } from '@/gui';
+import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from '@/game/kotor/KOTOR';
+import { MenuSaveLoadMode } from '@/enums/gui/MenuSaveLoadMode';
+import { GUISaveGameItem } from '@/game/tsl/gui/GUISaveGameItem';
+import { SaveGame } from '@/engine/SaveGame';
+import { TextureLoader } from '@/loaders';
 
 /**
  * MenuSaveLoad class.
@@ -16,7 +16,6 @@ import { TextureLoader } from "@/loaders";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuSaveLoad extends K1_MenuSaveLoad {
-
   declare LBL_BAR4: GUILabel;
   declare LBL_PANELNAME: GUILabel;
   declare LBL_SCREENSHOT: GUILabel;
@@ -39,7 +38,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
   filters: string[] = [];
   cFilterIndex: number = 0;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'saveload_p';
     this.background = 'blackfill';
@@ -48,7 +47,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_SAVELOAD.setText('Load');
       this.BTN_SAVELOAD.addEventListener('click', (e) => {
@@ -64,9 +63,9 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       this._button_b = this.BTN_BACK;
 
       this.BTN_FILTER.addEventListener('click', (e) => {
-        if(this.filters.length){
+        if (this.filters.length) {
           this.cFilterIndex++;
-          if(this.cFilterIndex >= this.filters.length){
+          if (this.cFilterIndex >= this.filters.length) {
             this.cFilterIndex = 0;
           }
         }
@@ -85,25 +84,26 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
         this.LBL_TIMEPLAYED.setText('');
         if (this.selected instanceof SaveGame) {
           if (this.selected instanceof NewSaveItem) {
-
-          }else{
+          } else {
             this.LBL_PCNAME.setText(this.selected.PCNAME);
-            this.LBL_TIMEPLAYED.setText(`Time: ${this.selected.getHoursPlayed()}H ${this.selected.getMinutesPlayed()}M`);
+            this.LBL_TIMEPLAYED.setText(
+              `Time: ${this.selected.getHoursPlayed()}H ${this.selected.getMinutesPlayed()}M`
+            );
           }
         }
-      }
+      };
       this.LB_GAMES.onActivated = () => {
         this.activateSelectedSave();
       };
 
       this.addEventListener('keydown', (e: KeyboardEvent) => {
-        if(e.key === 'ArrowUp'){
+        if (e.key === 'ArrowUp') {
           e.preventDefault();
           this.LB_GAMES.directionalNavigate('up');
-        }else if(e.key === 'ArrowDown'){
+        } else if (e.key === 'ArrowDown') {
           e.preventDefault();
           this.LB_GAMES.directionalNavigate('down');
-        }else if(e.key === 'Enter'){
+        } else if (e.key === 'Enter') {
           e.preventDefault();
           this.activateSelectedSave();
         }
@@ -118,32 +118,37 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
     let saves: SaveGame[] = [];
 
     if (this.mode == MenuSaveLoadMode.SAVEGAME) {
-      saves = SaveGame.saves.slice().filter(save => {
+      saves = SaveGame.saves.slice().filter((save) => {
         return !save.getIsQuickSave() && !save.getIsAutoSave();
       });
       saves = saves.reverse();
       saves.unshift(new NewSaveItem());
-    }else{
+    } else {
       saves = SaveGame.saves.slice();
-      const special = saves.filter(save => {
+      const special = saves.filter((save) => {
         return save.getIsQuickSave() || save.getIsAutoSave();
       });
 
-      saves = saves.filter(save => {
-        return !save.getIsQuickSave() && !save.getIsAutoSave();
-      }).reverse();
+      saves = saves
+        .filter((save) => {
+          return !save.getIsQuickSave() && !save.getIsAutoSave();
+        })
+        .reverse();
       saves.unshift(...special);
     }
 
-    this.filters = saves.filter( (save) => {
-      return !save.getIsQuickSave() && !save.getIsAutoSave() && !save.isNewSave;
-    }).map( (save) => {
-      return save.PCNAME;
-    }).filter( (pcname, index, array) => {
-      return array.indexOf(pcname) === index;
-    });
+    this.filters = saves
+      .filter((save) => {
+        return !save.getIsQuickSave() && !save.getIsAutoSave() && !save.isNewSave;
+      })
+      .map((save) => {
+        return save.PCNAME;
+      })
+      .filter((pcname, index, array) => {
+        return array.indexOf(pcname) === index;
+      });
 
-    if(this.filters.length){
+    if (this.filters.length) {
       saves = saves.filter((save) => {
         return save.PCNAME == this.filters[this.cFilterIndex];
       });
@@ -151,5 +156,4 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
 
     return saves;
   }
-
 }

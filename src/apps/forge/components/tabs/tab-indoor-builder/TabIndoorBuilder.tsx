@@ -1,19 +1,18 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import * as THREE from 'three';
 
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { Kit, KitComponent } from "@/apps/forge/data/IndoorKit";
-import { ensureComponentPreview } from "@/apps/forge/data/IndoorKitPreview";
-import { IndoorMapRoom } from "@/apps/forge/data/IndoorMap";
-import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
-import { IndoorMapCanvasRenderer } from "@/apps/forge/helpers/IndoorMapCanvasRenderer";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabIndoorBuilderState, IndoorBuilderViewMode } from "@/apps/forge/states/tabs/TabIndoorBuilderState";
+import { LayoutContainer } from '@/apps/forge/components/LayoutContainer/LayoutContainer';
+import { UI3DRendererView } from '@/apps/forge/components/UI3DRendererView';
+import { LayoutContainerProvider } from '@/apps/forge/context/LayoutContainerContext';
+import { Kit, KitComponent } from '@/apps/forge/data/IndoorKit';
+import { ensureComponentPreview } from '@/apps/forge/data/IndoorKitPreview';
+import { IndoorMapRoom } from '@/apps/forge/data/IndoorMap';
+import { ForgeFileSystem } from '@/apps/forge/ForgeFileSystem';
+import { IndoorMapCanvasRenderer } from '@/apps/forge/helpers/IndoorMapCanvasRenderer';
+import { BaseTabProps } from '@/apps/forge/interfaces/BaseTabProps';
+import { TabIndoorBuilderState, IndoorBuilderViewMode } from '@/apps/forge/states/tabs/TabIndoorBuilderState';
 
-
-import "@/apps/forge/components/tabs/tab-indoor-builder/TabIndoorBuilder.scss";
+import '@/apps/forge/components/tabs/tab-indoor-builder/TabIndoorBuilder.scss';
 
 export const TabIndoorBuilder = function TabIndoorBuilder(props: BaseTabProps) {
   const tab = props.tab as TabIndoorBuilderState;
@@ -49,19 +48,19 @@ export const TabIndoorBuilder = function TabIndoorBuilder(props: BaseTabProps) {
       tab.sync3D();
     };
 
-    tab.addEventListener("onKitsLoaded", onKitsLoaded);
-    tab.addEventListener("onSelectionChanged", onSelectionChanged);
-    tab.addEventListener("onComponentSelected", onComponentSelected);
-    tab.addEventListener("onViewModeChanged", onViewModeChanged);
-    tab.addEventListener("onMapLoaded", onMapLoaded);
-    tab.addEventListener("onMapChanged", onMapChanged);
+    tab.addEventListener('onKitsLoaded', onKitsLoaded);
+    tab.addEventListener('onSelectionChanged', onSelectionChanged);
+    tab.addEventListener('onComponentSelected', onComponentSelected);
+    tab.addEventListener('onViewModeChanged', onViewModeChanged);
+    tab.addEventListener('onMapLoaded', onMapLoaded);
+    tab.addEventListener('onMapChanged', onMapChanged);
     return () => {
-      tab.removeEventListener("onKitsLoaded", onKitsLoaded);
-      tab.removeEventListener("onSelectionChanged", onSelectionChanged);
-      tab.removeEventListener("onComponentSelected", onComponentSelected);
-      tab.removeEventListener("onViewModeChanged", onViewModeChanged);
-      tab.removeEventListener("onMapLoaded", onMapLoaded);
-      tab.removeEventListener("onMapChanged", onMapChanged);
+      tab.removeEventListener('onKitsLoaded', onKitsLoaded);
+      tab.removeEventListener('onSelectionChanged', onSelectionChanged);
+      tab.removeEventListener('onComponentSelected', onComponentSelected);
+      tab.removeEventListener('onViewModeChanged', onViewModeChanged);
+      tab.removeEventListener('onMapLoaded', onMapLoaded);
+      tab.removeEventListener('onMapChanged', onMapChanged);
     };
   }, [tab]);
 
@@ -86,16 +85,16 @@ export const TabIndoorBuilder = function TabIndoorBuilder(props: BaseTabProps) {
     const onMouseUp = (event: MouseEvent) => renderer.onMouseUp(event);
     const onWheel = (event: WheelEvent) => renderer.onWheel(event);
 
-    canvas.addEventListener("mousedown", onMouseDown);
-    canvas.addEventListener("mousemove", onMouseMove);
-    canvas.addEventListener("mouseup", onMouseUp);
-    canvas.addEventListener("wheel", onWheel, { passive: true });
+    canvas.addEventListener('mousedown', onMouseDown);
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mouseup', onMouseUp);
+    canvas.addEventListener('wheel', onWheel, { passive: true });
 
     return () => {
-      canvas.removeEventListener("mousedown", onMouseDown);
-      canvas.removeEventListener("mousemove", onMouseMove);
-      canvas.removeEventListener("mouseup", onMouseUp);
-      canvas.removeEventListener("wheel", onWheel);
+      canvas.removeEventListener('mousedown', onMouseDown);
+      canvas.removeEventListener('mousemove', onMouseMove);
+      canvas.removeEventListener('mouseup', onMouseUp);
+      canvas.removeEventListener('wheel', onWheel);
       renderer.detach();
       rendererRef.current = null;
     };
@@ -137,12 +136,14 @@ export const TabIndoorBuilder = function TabIndoorBuilder(props: BaseTabProps) {
       <div className="indoor-panel-section">
         <div className="indoor-panel-header">
           <span>Kits</span>
-          <button className="indoor-button" onClick={onLoadKits}>Load Kits</button>
+          <button className="indoor-button" onClick={onLoadKits}>
+            Load Kits
+          </button>
         </div>
         <select
           className="indoor-select"
           aria-label="Indoor kits"
-          value={selectedKit?.id || ""}
+          value={selectedKit?.id || ''}
           onChange={(event) => {
             const kit = kits.find((entry) => entry.id === event.target.value) || null;
             setSelectedKit(kit);
@@ -150,7 +151,9 @@ export const TabIndoorBuilder = function TabIndoorBuilder(props: BaseTabProps) {
           }}
         >
           {kits.map((kit) => (
-            <option key={kit.id} value={kit.id}>{kit.name}</option>
+            <option key={kit.id} value={kit.id}>
+              {kit.name}
+            </option>
           ))}
         </select>
       </div>
@@ -162,7 +165,7 @@ export const TabIndoorBuilder = function TabIndoorBuilder(props: BaseTabProps) {
             return (
               <button
                 key={component.id}
-                className={`indoor-component-button ${selectedComponent?.id === component.id ? "active" : ""}`}
+                className={`indoor-component-button ${selectedComponent?.id === component.id ? 'active' : ''}`}
                 onClick={() => tab.setSelectedComponent(component)}
                 title={component.name}
               >
@@ -212,16 +215,48 @@ export const TabIndoorBuilder = function TabIndoorBuilder(props: BaseTabProps) {
           <div>{selectedRooms.length}</div>
         </div>
         <div className="indoor-button-row">
-          <button className="indoor-button" onClick={() => tab.duplicateSelectedRooms()} disabled={!selectedRooms.length}>Duplicate</button>
-          <button className="indoor-button" onClick={() => tab.deleteSelectedRooms()} disabled={!selectedRooms.length}>Delete</button>
+          <button
+            className="indoor-button"
+            onClick={() => tab.duplicateSelectedRooms()}
+            disabled={!selectedRooms.length}
+          >
+            Duplicate
+          </button>
+          <button className="indoor-button" onClick={() => tab.deleteSelectedRooms()} disabled={!selectedRooms.length}>
+            Delete
+          </button>
         </div>
         <div className="indoor-button-row">
-          <button className="indoor-button" onClick={() => tab.rotateSelectedRooms(15)} disabled={!selectedRooms.length}>Rotate +15</button>
-          <button className="indoor-button" onClick={() => tab.rotateSelectedRooms(-15)} disabled={!selectedRooms.length}>Rotate -15</button>
+          <button
+            className="indoor-button"
+            onClick={() => tab.rotateSelectedRooms(15)}
+            disabled={!selectedRooms.length}
+          >
+            Rotate +15
+          </button>
+          <button
+            className="indoor-button"
+            onClick={() => tab.rotateSelectedRooms(-15)}
+            disabled={!selectedRooms.length}
+          >
+            Rotate -15
+          </button>
         </div>
         <div className="indoor-button-row">
-          <button className="indoor-button" onClick={() => tab.flipSelectedRooms(true, false)} disabled={!selectedRooms.length}>Flip X</button>
-          <button className="indoor-button" onClick={() => tab.flipSelectedRooms(false, true)} disabled={!selectedRooms.length}>Flip Y</button>
+          <button
+            className="indoor-button"
+            onClick={() => tab.flipSelectedRooms(true, false)}
+            disabled={!selectedRooms.length}
+          >
+            Flip X
+          </button>
+          <button
+            className="indoor-button"
+            onClick={() => tab.flipSelectedRooms(false, true)}
+            disabled={!selectedRooms.length}
+          >
+            Flip Y
+          </button>
         </div>
       </div>
     </div>
@@ -230,13 +265,13 @@ export const TabIndoorBuilder = function TabIndoorBuilder(props: BaseTabProps) {
   const centerToolbar = (
     <div className="indoor-toolbar">
       <button
-        className={`indoor-button ${viewMode === IndoorBuilderViewMode.TwoD ? "active" : ""}`}
+        className={`indoor-button ${viewMode === IndoorBuilderViewMode.TwoD ? 'active' : ''}`}
         onClick={() => tab.setViewMode(IndoorBuilderViewMode.TwoD)}
       >
         2D View
       </button>
       <button
-        className={`indoor-button ${viewMode === IndoorBuilderViewMode.ThreeD ? "active" : ""}`}
+        className={`indoor-button ${viewMode === IndoorBuilderViewMode.ThreeD ? 'active' : ''}`}
         onClick={() => tab.setViewMode(IndoorBuilderViewMode.ThreeD)}
       >
         3D View
@@ -246,14 +281,17 @@ export const TabIndoorBuilder = function TabIndoorBuilder(props: BaseTabProps) {
 
   return (
     <LayoutContainerProvider>
-      <LayoutContainer westContent={westPanel} eastContent={eastPanel} northContent={centerToolbar} westSize={320} eastSize={320} northSize={48}>
+      <LayoutContainer
+        westContent={westPanel}
+        eastContent={eastPanel}
+        northContent={centerToolbar}
+        westSize={320}
+        eastSize={320}
+        northSize={48}
+      >
         <div className="indoor-canvas-container" ref={containerRef}>
           {viewMode === IndoorBuilderViewMode.TwoD ? (
-            <canvas
-              ref={canvasRef}
-              className="indoor-canvas"
-              onDoubleClick={onAddRoomAtCursor}
-            />
+            <canvas ref={canvasRef} className="indoor-canvas" onDoubleClick={onAddRoomAtCursor} />
           ) : (
             <UI3DRendererView context={tab.ui3DRenderer} showMenuBar={true} />
           )}

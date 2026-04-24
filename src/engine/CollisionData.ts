@@ -1,3 +1,3 @@
-import { CollisionManager } from "@/engine/CollisionManager";
+import { CollisionManager } from '@/engine/CollisionManager';
 
 export class CollisionData extends CollisionManager {}

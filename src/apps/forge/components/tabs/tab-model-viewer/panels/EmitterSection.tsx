@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanvas";
-import * as KotOR from "@/apps/forge/KotOR";
+import React, { useState, useCallback, useEffect } from 'react';
+import { SectionContainer } from '@/apps/forge/components/SectionContainer';
+import { TextureCanvas } from '@/apps/forge/components/TextureCanvas/TextureCanvas';
+import * as KotOR from '@/apps/forge/KotOR';
 
 export interface EmitterSectionProps {
   node: KotOR.OdysseyObject3D;
@@ -26,19 +26,25 @@ export const EmitterSection: React.FC<EmitterSectionProps> = ({ node, modelNode 
     }
   }, [refNode, hasRefNode]);
 
-  const applyRefPosition = useCallback((axis: 'x' | 'y' | 'z', raw: string) => {
-    if (!refNode) return;
-    const val = parseFloat(raw);
-    if (!Number.isFinite(val)) return;
-    refNode.position[axis] = val;
-  }, [refNode]);
+  const applyRefPosition = useCallback(
+    (axis: 'x' | 'y' | 'z', raw: string) => {
+      if (!refNode) return;
+      const val = parseFloat(raw);
+      if (!Number.isFinite(val)) return;
+      refNode.position[axis] = val;
+    },
+    [refNode]
+  );
 
-  const handleRefChange = useCallback((axis: 'x' | 'y' | 'z', value: string) => {
-    if (axis === 'x') setRefX(value);
-    else if (axis === 'y') setRefY(value);
-    else setRefZ(value);
-    applyRefPosition(axis, value);
-  }, [applyRefPosition]);
+  const handleRefChange = useCallback(
+    (axis: 'x' | 'y' | 'z', value: string) => {
+      if (axis === 'x') setRefX(value);
+      else if (axis === 'y') setRefY(value);
+      else setRefZ(value);
+      applyRefPosition(axis, value);
+    },
+    [applyRefPosition]
+  );
 
   return (
     <SectionContainer name="Emitter">
@@ -71,7 +77,9 @@ export const EmitterSection: React.FC<EmitterSectionProps> = ({ node, modelNode 
       </div>
       <div className="property-editor-row">
         <span className="property-editor-label">Grid</span>
-        <span className="property-editor-value">{modelNode.gridX} × {modelNode.gridY}</span>
+        <span className="property-editor-value">
+          {modelNode.gridX} × {modelNode.gridY}
+        </span>
       </div>
       <div className="property-editor-row">
         <span className="property-editor-label">Loop</span>
@@ -113,9 +121,15 @@ export const EmitterSection: React.FC<EmitterSectionProps> = ({ node, modelNode 
           <div className="property-editor-row">
             <span className="property-editor-label">Ref Position</span>
             <span className="property-editor-value mvp-vec3-input">
-              <label>X <input type="number" step="0.1" value={refX} onChange={(e) => handleRefChange('x', e.target.value)} /></label>
-              <label>Y <input type="number" step="0.1" value={refY} onChange={(e) => handleRefChange('y', e.target.value)} /></label>
-              <label>Z <input type="number" step="0.1" value={refZ} onChange={(e) => handleRefChange('z', e.target.value)} /></label>
+              <label>
+                X <input type="number" step="0.1" value={refX} onChange={(e) => handleRefChange('x', e.target.value)} />
+              </label>
+              <label>
+                Y <input type="number" step="0.1" value={refY} onChange={(e) => handleRefChange('y', e.target.value)} />
+              </label>
+              <label>
+                Z <input type="number" step="0.1" value={refZ} onChange={(e) => handleRefChange('z', e.target.value)} />
+              </label>
             </span>
           </div>
         </>

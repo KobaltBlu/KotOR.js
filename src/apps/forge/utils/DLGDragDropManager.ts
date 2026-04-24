@@ -10,7 +10,6 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-
 import { DLGTreeNode } from '@/apps/forge/interfaces/DLGTreeNode';
 import { DLGTreeModel } from '@/apps/forge/utils/DLGTreeModel';
 import { DLGNodeType } from '@/enums/dialog/DLGNodeType';
@@ -22,7 +21,7 @@ export enum DropPosition {
   BEFORE = 'before',
   AFTER = 'after',
   ON = 'on',
-  INVALID = 'invalid'
+  INVALID = 'invalid',
 }
 
 export interface DropTarget {
@@ -80,7 +79,7 @@ export class DLGDragDropManager {
         node: targetNode,
         position,
         canDrop: false,
-        reason: 'No active drag operation'
+        reason: 'No active drag operation',
       };
     }
 
@@ -90,7 +89,7 @@ export class DLGDragDropManager {
         node: targetNode,
         position,
         canDrop: false,
-        reason: 'Drag node not found'
+        reason: 'Drag node not found',
       };
     }
 
@@ -100,7 +99,7 @@ export class DLGDragDropManager {
         node: targetNode,
         position,
         canDrop: false,
-        reason: 'Cannot drop on self'
+        reason: 'Cannot drop on self',
       };
     }
 
@@ -110,7 +109,7 @@ export class DLGDragDropManager {
         node: targetNode,
         position,
         canDrop: false,
-        reason: 'Cannot drop on descendant'
+        reason: 'Cannot drop on descendant',
       };
     }
 
@@ -121,14 +120,14 @@ export class DLGDragDropManager {
         node: targetNode,
         position,
         canDrop: false,
-        reason: typeValidation.reason
+        reason: typeValidation.reason,
       };
     }
 
     return {
       node: targetNode,
       position,
-      canDrop: true
+      canDrop: true,
     };
   }
 
@@ -278,8 +277,8 @@ export class DLGDragDropManager {
     }
 
     // Find indices
-    const dragIndex = parent.children.findIndex(c => c.id === dragNode.id);
-    let targetIndex = parent.children.findIndex(c => c.id === targetNode.id);
+    const dragIndex = parent.children.findIndex((c) => c.id === dragNode.id);
+    let targetIndex = parent.children.findIndex((c) => c.id === targetNode.id);
 
     if (dragIndex === -1) {
       throw new Error('Drag node not found in parent children');
@@ -319,10 +318,7 @@ export class DLGDragDropManager {
   /**
    * Calculate drop position from mouse coordinates
    */
-  public calculateDropPosition(
-    targetElement: HTMLElement,
-    mouseY: number
-  ): DropPosition {
+  public calculateDropPosition(targetElement: HTMLElement, mouseY: number): DropPosition {
     const rect = targetElement.getBoundingClientRect();
     const y = mouseY - rect.top;
     const height = rect.height;
@@ -346,7 +342,7 @@ export class DLGDragDropManager {
       listIndex: node.listIndex,
       nodeType: node.nodeType,
       sourceParentId: node.parent?.id,
-      sourceLinkIndex: node.linkIndex
+      sourceLinkIndex: node.linkIndex,
     };
   }
 }

@@ -1,7 +1,7 @@
-import React from "react";
+import React from 'react';
 
-import { ModalLIPBatchProcessor } from "@/apps/forge/components/modal/ModalLIPBatchProcessor";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ModalLIPBatchProcessor } from '@/apps/forge/components/modal/ModalLIPBatchProcessor';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
 
 export interface ModalLIPBatchProcessorStateOptions {
   title?: string;
@@ -16,12 +16,12 @@ export interface AudioFileEntry {
 }
 
 export class ModalLIPBatchProcessorState extends ModalState {
-  title: string = "LIP Batch Processor";
+  title: string = 'LIP Batch Processor';
   audioFiles: AudioFileEntry[] = [];
-  outputDirPath: string = "";
+  outputDirPath: string = '';
   outputDirHandle: FileSystemDirectoryHandle | null = null;
   loading: boolean = false;
-  error: string = "";
+  error: string = '';
   lastProcessedCount: number = 0;
   lastErrorCount: number = 0;
   onComplete?: (processedCount: number, errorCount: number) => void;
@@ -41,39 +41,39 @@ export class ModalLIPBatchProcessorState extends ModalState {
         seen.add(e.name.toLowerCase());
       }
     }
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   removeAudioFile(index: number): void {
     this.audioFiles.splice(index, 1);
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   clearAudioFiles(): void {
     this.audioFiles = [];
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   setOutputDir(path: string, handle?: FileSystemDirectoryHandle | null): void {
     this.outputDirPath = path;
     this.outputDirHandle = handle ?? null;
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   setError(msg: string): void {
     this.error = msg;
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   setLoading(v: boolean): void {
     this.loading = v;
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 
   setLastResult(processed: number, errors: number): void {
     this.lastProcessedCount = processed;
     this.lastErrorCount = errors;
     if (this.onComplete) this.onComplete(processed, errors);
-    this.processEventListener("onStateChange", [this]);
+    this.processEventListener('onStateChange', [this]);
   }
 }
